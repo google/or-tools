@@ -12,7 +12,7 @@
 // limitations under the License.
 
 //
-// This file containt the presolving code for a LinearProgram.
+// This file contains the presolving code for a LinearProgram.
 //
 // A classical reference is:
 // E. D. Andersen, K. D. Andersen, "Presolving in linear programming.",
