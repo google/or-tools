@@ -56,7 +56,7 @@ struct Status {
 
 }  // namespace util
 
-#define CHECK_OK(status) CHECK_EQ("", (status).ToString())
+#define CHECK_OK(status) CHECK_EQ("OK", (status).ToString())
 
 }  // namespace operations_research
 
