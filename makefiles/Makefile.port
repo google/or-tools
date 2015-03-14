@@ -118,7 +118,7 @@ ifeq ("$(SYSTEM)","win")
 endif
 
 ifeq ("$(SYSTEM)","unix")
-GIT_REVISION:= $(shell git log --oneline | wc -l)
+GIT_REVISION:= $(shell git log --oneline | wc -l | tr -d ' ')
 GIT_HASH:= $(shell git log --pretty=format:'%h' -n 1)
 else
 GIT_REVISION:= $(shell git log --oneline | find /C " ")
@@ -133,6 +133,6 @@ printport:
 	@echo PTRLENGTH = $(PTRLENGTH)
 	@echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
 	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
-	@echo GIT_REVISION = $(GIT_REVISION)
+	@echo GIT_REVISION = \"$(GIT_REVISION)\"
 	@echo GIT_HASH = $(GIT_HASH)
 	@echo PORT = $(PORT)
