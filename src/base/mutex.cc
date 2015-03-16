@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <thread>
+#include <thread>  // NOLINT
 
 #include "base/mutex.h"
 

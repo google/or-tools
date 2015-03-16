@@ -33,7 +33,7 @@ int64 GetCurrentTimeNanos() {
   if (!QueryPerformanceFrequency(&l_freq)) {
     return 0;
   }
-  const double freq = static_cast<double>(l_freq.QuadPart)/kSecInNanoSeconds;
+  const double freq = static_cast<double>(l_freq.QuadPart) / kSecInNanoSeconds;
   LARGE_INTEGER now;
   QueryPerformanceCounter(&now);
   return static_cast<int64>(now.QuadPart / freq);

@@ -28,7 +28,6 @@ DECLARE_bool(log_prefix);
 #pragma warning(disable : 4722)
 #endif
 
-
 // Always-on checking
 #define CHECK(x)                                           \
   if (!(x))                                                \
