@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "graph/ebert_graph.h"
@@ -23,7 +22,7 @@ namespace operations_research {
 // http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
 // modified so the optimum solution is unique.
 void AssignmentOn4x4Matrix() {
-  LOG(INFO) << "Assignment on 4x4 Matrix";
+  LOG(INFO) << "Assignment on 4x4 matrix";
   const int kNumSources = 4;
   const int kNumTargets = 4;
   const CostValue kCost[kNumSources][kNumTargets] = {{90, 76, 75, 80},
@@ -45,10 +44,31 @@ void AssignmentOn4x4Matrix() {
   CHECK_EQ(kExpectedCost, total_cost);
 }
 
+void AnotherAssignment() {
+  LOG(INFO) << "Another assignment on 4x4 matrix";
+  std::vector<std::vector<int>> matrice(
+      {{8, 7, 9, 9}, {5, 2, 7, 8}, {6, 1, 4, 9}, {2, 3, 2, 6}});
+  const int kSize = matrice.size();
+  ForwardStarGraph graph(2 * kSize, kSize * kSize);
+  LinearSumAssignment<ForwardStarGraph>* assignement =
+      new LinearSumAssignment<ForwardStarGraph>(graph, kSize);
+  for (int i = 0; i < kSize; ++i) {
+    CHECK_EQ(kSize, matrice[i].size());
+    for (int j = 0; j < kSize; ++j) {
+      int arcIndex = graph.AddArc(i, j + kSize);
+      assignement->SetArcCost(arcIndex, matrice[i][j]);
+    }
+  }
+
+  bool succes = assignement->ComputeAssignment();
+  LOG(INFO) << "Cost : " << assignement->GetCost();
+}
+
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::AssignmentOn4x4Matrix();
+  operations_research::AnotherAssignment();
   return 0;
 }
