@@ -193,8 +193,7 @@ struct hash<std::array<T, N>> {
     return current;
   }
   // Less than operator for MSVC.
-  bool operator()(const std::array<T, N>& a,
-                  const std::array<T, N>& b) const {
+  bool operator()(const std::array<T, N>& a, const std::array<T, N>& b) const {
     return a < b;
   }
   static const size_t bucket_size = 4;  // These are required by MSVC
@@ -364,8 +363,7 @@ struct StdArrayHasher : public stdext::hash_compare<std::array<T, N>> {
     return current;
   }
   // Less than operator for MSVC.
-  bool operator()(const std::array<T, N>& a,
-                  const std::array<T, N>& b) const {
+  bool operator()(const std::array<T, N>& a, const std::array<T, N>& b) const {
     return a < b;
   }
   static const size_t bucket_size = 4;  // These are required by MSVC

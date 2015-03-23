@@ -1,5 +1,5 @@
-# SVN tags of dependencies to checkout.
-GFLAGS_TAG = 76 # version 2.0
+# tags of dependencies to checkout.
+GFLAGS_TAG = 2.1.1
 PROTOBUF_TAG = 512 # version 2.5.0 + fix
 GOOGLE_APPUTILS_TAG = 14 # 0.4.0
 SPARSEHASH_TAG = 116 # 2.0.2
@@ -37,8 +37,46 @@ endif
 .PHONY: third_party build_third_party makefile_third_party
 third_party: build_third_party makefile_third_party
 
+# Create missing directories
+
+MISSING_DIRECTORIES = \
+	bin \
+	lib \
+	objs/algorithms \
+	objs/base \
+	objs/bop \
+	objs/com/google/ortools \
+	objs/constraint_solver \
+	objs/flatzinc \
+	objs/glop \
+	objs/graph \
+	objs/linear_solver \
+	objs/lp_data \
+	objs/sat \
+	objs/swig \
+	objs/util \
+	src/gen/algorithms \
+	src/gen/bop \
+	src/gen/com/google/ortools/algorithms \
+	src/gen/com/google/ortools/constraintsolver \
+	src/gen/com/google/ortools/graph \
+	src/gen/com/google/ortools/linearsolver \
+	src/gen/constraint_solver \
+	src/gen/flatzinc \
+	src/gen/glop \
+	src/gen/graph \
+	src/gen/linear_solver \
+	src/gen/ortools/algorithms \
+	src/gen/ortools/constraint_solver \
+	src/gen/ortools/graph \
+	src/gen/ortools/linear_solver \
+	src/gen/sat
+
+missing_directories: $(MISSING_DIRECTORIES)
+
 build_third_party: \
 	install_directories \
+	missing_directories \
 	install_zlib \
 	install_gflags \
 	install_google_apputils \
@@ -48,6 +86,100 @@ build_third_party: \
 	install_coin_cbc \
 	install_glpk \
 	install_scip
+
+bin:
+	$(MKDIR_P) bin
+
+lib:
+	$(MKDIR_P) lib
+
+objs/algorithms:
+	$(MKDIR_P) objs$Salgorithms
+
+objs/base:
+	$(MKDIR_P) objs$Sbase
+
+objs/bop:
+	$(MKDIR_P) objs$Sbop
+
+objs/com/google/ortools:
+	$(MKDIR_P) objs$Scom$Sgoogle$Sortools
+
+objs/constraint_solver:
+	$(MKDIR_P) objs$Sconstraint_solver
+
+objs/flatzinc:
+	$(MKDIR_P) objs$Sflatzinc
+
+objs/glop:
+	$(MKDIR_P) objs$Sglop
+
+objs/graph:
+	$(MKDIR_P) objs$Sgraph
+
+objs/linear_solver:
+	$(MKDIR_P) objs$Slinear_solver
+
+objs/lp_data:
+	$(MKDIR_P) objs$Slp_data
+
+objs/sat:
+	$(MKDIR_P) objs$Ssat
+
+objs/swig:
+	$(MKDIR_P) objs$Sswig
+
+objs/util:
+	$(MKDIR_P) objs$Sutil
+
+src/gen/algorithms:
+	$(MKDIR_P) src$Sgen$Salgorithms
+
+src/gen/bop:
+	$(MKDIR_P) src$Sgen$Sbop
+
+src/gen/com/google/ortools/algorithms:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Salgorithms
+
+src/gen/com/google/ortools/constraintsolver:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
+
+src/gen/com/google/ortools/graph:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sgraph
+
+src/gen/com/google/ortools/linearsolver:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
+
+src/gen/constraint_solver:
+	$(MKDIR_P) src$Sgen$Sconstraint_solver
+
+src/gen/flatzinc:
+	$(MKDIR_P) src$Sgen$Sflatzinc
+
+src/gen/glop:
+	$(MKDIR_P) src$Sgen$Sglop
+
+src/gen/graph:
+	$(MKDIR_P) src$Sgen$Sgraph
+
+src/gen/linear_solver:
+	$(MKDIR_P) src$Sgen$Slinear_solver
+
+src/gen/ortools/algorithms:
+	$(MKDIR_P) src$Sgen$Sortools$Salgorithms
+
+src/gen/ortools/constraint_solver:
+	$(MKDIR_P) src$Sgen$Sortools$Sconstraint_solver
+
+src/gen/ortools/graph:
+	$(MKDIR_P) src$Sgen$Sortools$Sgraph
+
+src/gen/ortools/linear_solver:
+	$(MKDIR_P) src$Sgen$Sortools$Slinear_solver
+
+src/gen/sat:
+	$(MKDIR_P) src$Sgen$Ssat
+
 
 download_third_party: \
     dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
@@ -111,49 +243,31 @@ dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h: dependencies\archives\zlib$(ZLIB_A
 dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
 	tools\wget -P dependencies\archives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
 
-# Install gflags.
-install_gflags: dependencies\install\lib\libgflags.lib dependencies\install\include\gflags\gflags.h
+install_gflags: dependencies/install/lib/gflags.lib
 
-dependencies\install\lib\libgflags.lib: dependencies\sources\gflags\autogen.sh
-ifeq ("$(VisualStudioVersion)", "11.0")
-	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libgflags.vcxproj
-endif
-ifeq ("$(VisualStudioVersion)", "12.0")
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libgflags.vcxproj
-endif
-	cd dependencies\solutions && msbuild libgflags.sln /target:Build
-ifeq ("$(VisualStudioVersion)", "11.0")
-	svn revert dependencies/solutions/libgflags.vcxproj
-endif
-ifeq ("$(VisualStudioVersion)", "12.0")
-	svn revert dependencies/solutions/libgflags.vcxproj
-endif
+dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/CMakeLists.txt
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
+	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\install \
+	           -D CMAKE_BUILD_TYPE=Release \
+	           -G "NMake Makefiles" \
+	           .
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && nmake install
+	$(TOUCH) dependencies/install/lib/gflags.lib
+
+dependencies/sources/gflags-$(GFLAGS_TAG)/CMakeLists.txt: dependencies/archives/gflags-$(GFLAGS_TAG).zip
+	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
+	$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\CMakeLists.txt
+
+dependencies/archives/gflags-$(GFLAGS_TAG).zip:
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/schuhschuh/gflags/archive/v$(GFLAGS_TAG).zip
+	cd dependencies/archives && rename v$(GFLAGS_TAG) gflags-$(GFLAGS_TAG).zip
 
 
-dependencies\install\include\gflags\gflags.h: dependencies\install\include\gflags dependencies\sources\gflags\src\windows\gflags\gflags.h
-	copy dependencies\sources\gflags\src\windows\gflags\*.h dependencies\install\include\gflags
-	tools\touch.exe dependencies\install\include\gflags\gflags.h
-
-dependencies\install\include\gflags: dependencies\install\include
-ifeq ($(wildcard dependencies\install\include\gflags),)
-	tools\mkdir.exe dependencies\install\include\gflags
-endif
-
-dependencies\sources\gflags\src\windows\gflags\gflags.h: dependencies\sources\gflags\autogen.sh
-
-dependencies\sources\gflags\autogen.sh:
-	svn co http://gflags.googlecode.com/svn/trunk/ -r $(GFLAGS_TAG) dependencies/sources/gflags
 
 # Install protocol buffers.
 install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
 
 dependencies\install\bin\protoc.exe: dependencies\sources\protobuf\autogen.sh
-ifeq ("$(VisualStudioVersion)", "11.0")
-	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libprotobuf.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libprotobuf-lite.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\libprotoc.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\protoc.vcxproj
-endif
 ifeq ("$(VisualStudioVersion)", "12.0")
 	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libprotobuf.vcxproj
 	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libprotobuf-lite.vcxproj
@@ -161,17 +275,11 @@ ifeq ("$(VisualStudioVersion)", "12.0")
 	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\protoc.vcxproj
 endif
 	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
-ifeq ("$(VisualStudioVersion)", "11.0")
-	svn revert dependencies/solutions/libprotobuf.vcxproj
-	svn revert dependencies/solutions/libprotobuf-lite.vcxproj
-	svn revert dependencies/solutions/libprotoc.vcxproj
-	svn revert dependencies/solutions/protoc.vcxproj
-endif
 ifeq ("$(VisualStudioVersion)", "12.0")
-	svn revert dependencies/solutions/libprotobuf.vcxproj
-	svn revert dependencies/solutions/libprotobuf-lite.vcxproj
-	svn revert dependencies/solutions/libprotoc.vcxproj
-	svn revert dependencies/solutions/protoc.vcxproj
+	git checkout dependencies/solutions/libprotobuf.vcxproj
+	git checkout dependencies/solutions/libprotobuf-lite.vcxproj
+	git checkout dependencies/solutions/libprotoc.vcxproj
+	git checkout dependencies/solutions/protoc.vcxproj
 endif
 
 
@@ -228,17 +336,6 @@ dependencies\install\bin\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisu
 	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
 
 dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\configure
-ifeq ("$(VisualStudioVersion)", "11.0")
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
-endif
 ifeq ("$(VisualStudioVersion)", "12.0")
 	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
 	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
@@ -290,23 +387,15 @@ dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG
 	cd dependencies\install && ..\..\tools\gzip -dc ..\archives\scipoptsuite-$(SCIP_TAG).tgz | ..\..\tools\tar.exe xvmf -
 	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc soplex-$(SOPLEX_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
 	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
-ifeq ("$(VisualStudioVersion)", "11.0")
-	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
-	tools\upgrade_to_vs2012.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
-endif
 ifeq ("$(VisualStudioVersion)", "12.0")
 	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
 	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
 endif
 	cd dependencies\solutions\Scip && msbuild /t:soplex
 	cd dependencies\solutions\Scip && msbuild /t:scip
-ifeq ("$(VisualStudioVersion)", "11.0")
-	svn revert dependencies/solutions/Scip/soplex/soplex.vcxproj
-	svn revert dependencies/solutions/Scip/scip/scip.vcxproj
-endif
 ifeq ("$(VisualStudioVersion)", "12.0")
-	svn revert dependencies/solutions/Scip/soplex/soplex.vcxproj
-	svn revert dependencies/solutions/Scip/scip/scip.vcxproj
+	git checkout dependencies/solutions/Scip/soplex/soplex.vcxproj
+	git checkout dependencies/solutions/Scip/scip/scip.vcxproj
 endif
 
 # Install bison and flex in one package.

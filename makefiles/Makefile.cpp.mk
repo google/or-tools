@@ -1067,7 +1067,7 @@ $(OBJ_DIR)/glop/mps_driver.$O:$(EX_DIR)/cpp/mps_driver.cc $(GEN_DIR)/glop/parame
 $(BIN_DIR)/mps_driver$E: $(OBJ_DIR)/glop/mps_driver.$O $(STATIC_LP_DEPS)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Smps_driver.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smps_driver$E
 
-$(OBJ_DIR)/glop/solve.$O:$(EX_DIR)/cpp/solve.cc $(GEN_DIR)/glop/parameters.pb.h
+$(OBJ_DIR)/glop/solve.$O:$(EX_DIR)/cpp/solve.cc $(GEN_DIR)/glop/parameters.pb.h $(GEN_DIR)/linear_solver/linear_solver2.pb.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssolve.$O
 
 $(BIN_DIR)/solve$E: $(OBJ_DIR)/glop/solve.$O $(STATIC_LP_DEPS)
