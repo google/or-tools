@@ -94,6 +94,9 @@ DECLARE_bool(log_prefix);
 #define DLOG_IF(severity, condition) LOG_IF(severity, condition)
 #endif
 
+// Poor man version of LOG_EVERY_N
+#define LOG_EVERY_N(severity, n) LOG(severity)
+
 namespace operations_research {
 class DateLogger {
  public:
