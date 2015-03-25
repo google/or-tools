@@ -2463,30 +2463,32 @@ class FastOnePathBuilder : public DecisionBuilder {
     Assignment* const assignment = solver->MakeAssignment();
     Assignment::IntContainer* const container =
         assignment->MutableIntVarContainer();
-    int64 next = FindCheapestValue(index, *container);
+    added_.resize(model_->Size(), false);
+    int64 next = FindCheapestValue(index);
     while (next >= 0) {
-      container->Add(nexts[index]);
-      container->MutableElement(nexts[index])->SetValue(next);
+      added_[index] = true;
+      container->FastAdd(nexts[index])->SetValue(next);
       index = next;
       std::vector<int> alternates;
       model_->GetDisjunctionIndicesFromIndex(index, &alternates);
       for (const int alternate : alternates) {
         if (index != alternate) {
-          container->Add(nexts[alternate]);
-          container->MutableElement(nexts[alternate])->SetValue(alternate);
+          added_[alternate] = true;
+          container->FastAdd(nexts[alternate])->SetValue(alternate);
         }
       }
-      next = FindCheapestValue(index, *container);
+      next = FindCheapestValue(index);
     }
     // Make unassigned nexts loop to themselves.
     // TODO(user): Make finalization more robust, might have some next
     // variables non-instantiated.
     for (int index = 0; index < model_->Size(); ++index) {
-      IntVar* const next = nexts[index];
-      if (!container->Contains(next)) {
-        container->Add(next);
+      if (!added_[index]) {
+        added_[index] = true;
+        IntVar* const next = nexts[index];
+        IntVarElement* const element = container->FastAdd(next);
         if (next->Contains(index)) {
-          container->MutableElement(next)->SetValue(index);
+          element->SetValue(index);
         }
       }
     }
@@ -2534,8 +2536,7 @@ class FastOnePathBuilder : public DecisionBuilder {
     return false;
   }
 
-  int64 FindCheapestValue(int index,
-                          const Assignment::IntContainer& container) const {
+  int64 FindCheapestValue(int index) const {
     IntVar* const* nexts = model_->Nexts().data();
     const int size = model_->Size();
     int64 best_evaluation = kint64max;
@@ -2544,8 +2545,7 @@ class FastOnePathBuilder : public DecisionBuilder {
       IntVar* const next = nexts[index];
       std::unique_ptr<IntVarIterator> it(next->MakeDomainIterator(false));
       for (const int64 value : InitAndGetValues(it.get())) {
-        if (value != index &&
-            (value >= size || !container.Contains(nexts[value]))) {
+        if (value != index && (value >= size || !added_[value])) {
           const int64 evaluation = evaluator_->Run(index, value);
           if (evaluation <= best_evaluation) {
             best_evaluation = evaluation;
@@ -2558,6 +2558,8 @@ class FastOnePathBuilder : public DecisionBuilder {
   }
 
   RoutingModel* const model_;
+  // added_[node] is true if node had been added to the solution.
+  std::vector<bool> added_;
   std::unique_ptr<ResultCallback2<int64, int64, int64>> evaluator_;
 };
 
