@@ -42,4 +42,12 @@ const bool DEBUG_MODE = true;
   } while (0)
 #endif
 
+template <typename T, size_t N>
+char(&ArraySizeHelper(T(&array)[N]))[N];
+#ifndef COMPILER_MSVC
+template <typename T, size_t N>
+char(&ArraySizeHelper(const T(&array)[N]))[N];
+#endif
+#define arraysize(array) (sizeof(ArraySizeHelper(array)))
+
 #endif  // OR_TOOLS_BASE_MACROS_H_
