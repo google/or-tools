@@ -892,7 +892,7 @@ flags.DEFINE_string('cp_profile_file', '',
 // SetFlags() with the python flags as parameters.
 // Note: Indentation is critical here as the code is copied verbatim in the
 // python code.
-%feature("pythonappend") operations_research::Solver::Solver %{
+%feature("pythonprepend") operations_research::Solver::Solver %{
         Solver.SetFlags(FLAGS.cp_trace_propagation,
                         FLAGS.cp_trace_search,
                         FLAGS.cp_print_model,
