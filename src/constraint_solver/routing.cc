@@ -2463,7 +2463,7 @@ class FastOnePathBuilder : public DecisionBuilder {
     Assignment* const assignment = solver->MakeAssignment();
     Assignment::IntContainer* const container =
         assignment->MutableIntVarContainer();
-    added_.resize(model_->Size(), false);
+    added_.assign(model_->Size(), false);
     int64 next = FindCheapestValue(index);
     while (next >= 0) {
       added_[index] = true;
