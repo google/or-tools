@@ -20,6 +20,22 @@
 #include "constraint_solver/routing.h"
 %}
 
+// As with the solver ctor, at the beginning of the routing model's
+// constructor code (in python), call SetFlags() with the python flags
+// as parameters.
+// Note: Indentation is critical here as the code is copied verbatim in the
+// python code.
+%feature("pythonprepend") operations_research::RoutingModel::RoutingModel %{
+        Solver.SetFlags(FLAGS.cp_trace_propagation,
+                        FLAGS.cp_trace_search,
+                        FLAGS.cp_print_model,
+                        FLAGS.cp_model_stats,
+                        FLAGS.cp_export_file,
+                        FLAGS.cp_no_solve,
+                        FLAGS.cp_profile_file)
+%}
+
+
 // Convert RoutingModel::NodeIndex to (32-bit signed) integers.
 %typemap(in) operations_research::RoutingModel::NodeIndex {
   $1 = operations_research::RoutingModel::NodeIndex(PyInt_AsLong($input));
