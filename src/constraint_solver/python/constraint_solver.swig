@@ -1146,6 +1146,11 @@ namespace operations_research {
 %rename (MoveTowardTargetOperator) Solver::MakeMoveTowardTargetOperator;
 %rename (NeighborhoodLimit) Solver::MakeNeighborhoodLimit;
 
+// Random part.
+%uningnore Solver::Rand64;
+%uningnore Solver::Rand32;
+%uningnore Solver::ReSeed;
+
 // Enums. Each section below exposes one enum, with all its exposed values.
 %unignore Solver::IntVarStrategy;
 %unignore Solver::INT_VAR_DEFAULT;
@@ -1284,10 +1289,6 @@ namespace operations_research {
 //
 // - SaveAndSetValue()
 // - SaveAndAdd()
-//
-// - Rand64()
-// - Rand32()
-// - ReSeed()
 //
 // - AddFailHook()
 // - ExportProfilingOverview()
