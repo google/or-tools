@@ -888,7 +888,7 @@ flags.DEFINE_string('cp_profile_file', '',
     FLAGS_cp_profile_file = profile_file;
   }
 }
-// Phase 4: at the end of the Solver's constructor code (in python), call
+// Phase 4: at the beginning of the Solver's constructor code (in python), call
 // SetFlags() with the python flags as parameters.
 // Note: Indentation is critical here as the code is copied verbatim in the
 // python code.
