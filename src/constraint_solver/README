@@ -1,14 +1,11 @@
-<summary>Constraint Programming (CP) and Routing/Arc Routing
-extensions.</summary>
+<summary>Constraint Programming (CP) and Routing extensions.</summary>
 
 Constraint Programming
 (http://en.wikipedia.org/wiki/Constraint_programming) is a technology
 issued from IA and used in Operations Research.
 
-Vehicle Routing (http://en.wikipedia.org/wiki/Vehicle_routing) and
-Vehicle Arc Routing
-(http://www.lums.lancs.ac.uk/departments/mansci/Research/ResGroups/OArc/)
-are useful extensions that are implemented on top of the CP library.
+Vehicle Routing (http://en.wikipedia.org/wiki/Vehicle_routing)
+is a useful extension that is implemented on top of the CP library.
 
 - constraint_solver.h: The point of entry for all constraint programming users.
 
@@ -38,5 +35,5 @@ Python examples are available in the python directory alongside the
 constraint_solver library.
 
 Java examples are available in the
-/java/com/google/wrappers/util/operationsresearch directory.
+examples/com/google/ortools/samples directory.
 
