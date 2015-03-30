@@ -214,6 +214,8 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
   bool Integer() const { return $self->integer(); }
   double Lb() const { return $self->lb(); }
   double Ub() const { return $self->ub(); }
+  void SetLb(double x) { $self->SetLB(x); }
+  void SetUb(double x) { $self->SetUB(x); }
   double ReducedCost() const { return $self->reduced_cost(); }
 }  // extend MPVariable
 
