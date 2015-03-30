@@ -1147,9 +1147,9 @@ namespace operations_research {
 %rename (NeighborhoodLimit) Solver::MakeNeighborhoodLimit;
 
 // Random part.
-%uningnore Solver::Rand64;
-%uningnore Solver::Rand32;
-%uningnore Solver::ReSeed;
+%unignore Solver::Rand64;
+%unignore Solver::Rand32;
+%unignore Solver::ReSeed;
 
 // Enums. Each section below exposes one enum, with all its exposed values.
 %unignore Solver::IntVarStrategy;
