@@ -199,7 +199,7 @@ python_archive: python
 	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
 	$(COPY) tools$Ssetup.py temp$Sor-tools.$(PORT)
 	$(COPY) tools$Sdummy_ortools_dependency.cc temp$Sortools.$(PORT)$Sdummy
-	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sor-tools.$(PORT)$Ssetup.py
+	$(SED) -i -e 's/VVVV/$(GIT_REVISION)/' temp$Sor-tools.$(PORT)$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
@@ -264,7 +264,7 @@ pypi_archive: python $(PATCHELF)
 	$(COPY) tools$SREADME.pypi temp$Sortools$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools
 	$(COPY) tools$Ssetup.py temp$Sortools
-	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sortools$Ssetup.py
+	$(SED) -i -e 's/VVVV/$(GIT_REVISION)/' temp$Sortools$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sortools$Sortools$Sconstraint_solver
 	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sortools$Sortools$Slinear_solver

@@ -16,7 +16,7 @@ DELETEUNIX               extra_link_args=['/MANIFEST'],
 
 setup(
     name='ortools',
-    version='1.VVVV',
+    version='2.VVVV',
     packages=[
         'ortools',
         'ortools.algorithms',
@@ -33,7 +33,7 @@ setup(
         'ortools.linear_solver' : ['_pywraplp.dll'],
         'ortools.graph' : ['_pywrapgraph.dll'],
         'ortools.algorithms' : ['_pywrapknapsack_solver.dll'],
-        DELETEWIN 'ortools' : ['libortools.DLL'] 
+        DELETEWIN 'ortools' : ['libortools.DLL']
     },
     license='Apache 2.0',
     author = 'Google Inc',
