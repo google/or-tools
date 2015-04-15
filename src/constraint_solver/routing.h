@@ -1199,6 +1199,7 @@ class RoutingModel {
   void SetupAssignmentCollector();
   void SetupTrace();
   void SetupSearchMonitors();
+  bool UsesLightPropagation() const;
 
   int64 GetArcCostForCostClassInternal(int64 i, int64 j, int64 cost_class);
   int GetVehicleStartClass(int64 start) const;

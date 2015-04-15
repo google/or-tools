@@ -85,7 +85,7 @@ DEFINE_bool(routing_simulated_annealing, false,
 DEFINE_bool(routing_tabu_search, false, "Routing: use tabu search.");
 
 // Search control
-DEFINE_bool(routing_dfs, false, "Routing: use a complete deoth-first search.");
+DEFINE_bool(routing_dfs, false, "Routing: use a complete depth-first search.");
 DEFINE_string(routing_first_solution, "",
               "Routing: first solution heuristic. See RoutingStrategyName() "
               "in the code to get a full list.");
@@ -126,7 +126,7 @@ DEFINE_int64(sweep_sectors, 1,
              "by the ray.");
 
 // Propagation control
-DEFINE_bool(routing_use_light_propagation, false,
+DEFINE_bool(routing_use_light_propagation, true,
             "Use constraints with light propagation in routing model.");
 
 // Misc
@@ -1490,7 +1490,7 @@ void RoutingModel::AppendHomogeneousArcCosts(int node_index,
   CHECK(cost_elements != nullptr);
   Solver::IndexEvaluator1* arc_cost_evaluator = NewPermanentCallback(
       this, &RoutingModel::GetHomogeneousCost, static_cast<int64>(node_index));
-  if (FLAGS_routing_use_light_propagation) {
+  if (UsesLightPropagation()) {
     // Only supporting positive costs.
     // TODO(user): Detect why changing lower bound to kint64min stalls
     // the search in GLS in some cases (Solomon instances for instance).
@@ -1512,7 +1512,7 @@ void RoutingModel::AppendArcCosts(int node_index,
                                   std::vector<IntVar*>* cost_elements) {
   CHECK(cost_elements != nullptr);
   DCHECK_GT(vehicles_, 0);
-  if (FLAGS_routing_use_light_propagation) {
+  if (UsesLightPropagation()) {
     // Only supporting positive costs.
     // TODO(user): Detect why changing lower bound to kint64min stalls
     // the search in GLS in some cases (Solomon instances for instance).
@@ -4176,6 +4176,11 @@ void RoutingModel::SetupSearchMonitors() {
   SetupTrace();
 }
 
+bool RoutingModel::UsesLightPropagation() const {
+  return FLAGS_routing_use_light_propagation && !FLAGS_routing_dfs &&
+         GetSelectedFirstSolutionStrategy() != ROUTING_DEFAULT_STRATEGY;
+}
+
 void RoutingModel::AddVariableMinimizedByFinalizer(IntVar* var) {
   CHECK(var != nullptr);
   variables_minimized_by_finalizer_.push_back(var);
@@ -4460,7 +4465,7 @@ void RoutingDimension::InitializeCumuls(
   if (vehicle_capacity != nullptr) {
     for (int i = 0; i < size; ++i) {
       IntVar* capacity_var = nullptr;
-      if (FLAGS_routing_use_light_propagation) {
+      if (model_->UsesLightPropagation()) {
         capacity_var = solver->MakeIntVar(0, kint64max);
         solver->AddConstraint(MakeLightElement(
             solver, capacity_var, model_->VehicleVar(i),
@@ -4540,7 +4545,7 @@ void RoutingDimension::InitializeTransits(
   CHECK(!class_evaluators_.empty());
   for (int i = 0; i < size; ++i) {
     IntVar* fixed_transit = nullptr;
-    if (FLAGS_routing_use_light_propagation) {
+    if (model_->UsesLightPropagation()) {
       if (class_evaluators_.size() == 1) {
         fixed_transit = solver->MakeIntVar(kint64min, kint64max);
         solver->AddConstraint(
