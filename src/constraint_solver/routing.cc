@@ -3472,7 +3472,7 @@ int64 RoutingModel::UnperformedPenalty(int64 var_index) const {
 
 int64 RoutingModel::UnperformedPenaltyOrValue(
     int64 default_value, int64 var_index) const {
-  if (active_[var_index]->Min() == 1) return default_value;  // Forced active.
+  if (active_[var_index]->Min() == 1) return kint64max;  // Forced active.
   DisjunctionIndex disjunction_index = kNoDisjunction;
   GetDisjunctionIndexFromVariableIndex(var_index, &disjunction_index);
   if (disjunction_index == kNoDisjunction) return default_value;
@@ -3989,8 +3989,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
               this,
               NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle),
               NewPermanentCallback(this,
-                                   &RoutingModel::UnperformedPenaltyOrValue,
-                                   kint64max),
+                                   &RoutingModel::UnperformedPenaltyOrValue, 0),
               GetOrCreateFeasibilityFilters()));
   first_solution_decision_builders_[ROUTING_GLOBAL_CHEAPEST_INSERTION] =
       solver_->Try(
