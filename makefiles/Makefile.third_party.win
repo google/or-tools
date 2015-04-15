@@ -10,11 +10,11 @@ SWIG_TAG = 3.0.5
 BISON_FLEX_TAG = 2.5.5
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
-# The archive should be glpk-4.53.tar.gz
+# The archive should be glpk-4.55.tar.gz
 GLPK_TAG = 4.55
-# The archive should be scipoptsuite-3.0.2.tgz
-SCIP_TAG = 3.0.2
-SOPLEX_TAG = 1.7.2
+# The archive should be scipoptsuite-3.1.1.tgz
+SCIP_TAG = 3.1.1
+SOPLEX_TAG = 2.0.1
 
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
@@ -393,6 +393,16 @@ ifeq ("$(VisualStudioVersion)", "12.0")
 endif
 	cd dependencies\solutions\Scip && msbuild /t:soplex
 	cd dependencies\solutions\Scip && msbuild /t:scip
+	-mkdir dependencies\install\include
+	-mkdir dependencies\install\include\scip
+	-mkdir dependencies\install\include\scip\scip
+	-mkdir dependencies\install\include\scip\blockmemshell
+	-mkdir dependencies\install\include\scip\lpi
+	-mkdir dependencies\install\include\scip\nlpi
+	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\scip\*.h dependencies\install\include\scip\scip
+	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\lpi\*.h dependencies\install\include\scip\lpi
+	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\nlpi\*.h dependencies\install\include\scip\nlpi
+	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\blockmemshell\*.h dependencies\install\include\scip\blockmemshell
 ifeq ("$(VisualStudioVersion)", "12.0")
 	git checkout dependencies/solutions/Scip/soplex/soplex.vcxproj
 	git checkout dependencies/solutions/Scip/scip/scip.vcxproj
