@@ -44,75 +44,75 @@ class GurobiInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying GRB solver.
   explicit GurobiInterface(MPSolver* const solver, bool mip);
-  ~GurobiInterface();
+  ~GurobiInterface() override;
 
   // Sets the optimization direction (min/max).
-  virtual void SetOptimizationDirection(bool maximize);
+  void SetOptimizationDirection(bool maximize) override;
 
   // ----- Solve -----
   // Solves the problem using the parameter values specified.
-  virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param);
+  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
 
   // ----- Model modifications and extraction -----
   // Resets extracted model
-  virtual void Reset();
+  void Reset() override;
 
   // Modifies bounds.
-  virtual void SetVariableBounds(int var_index, double lb, double ub);
-  virtual void SetVariableInteger(int var_index, bool integer);
-  virtual void SetConstraintBounds(int row_index, double lb, double ub);
+  void SetVariableBounds(int var_index, double lb, double ub) override;
+  void SetVariableInteger(int var_index, bool integer) override;
+  void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   // Adds Constraint incrementally.
-  void AddRowConstraint(MPConstraint* const ct);
+  void AddRowConstraint(MPConstraint* const ct) override;
   // Adds variable incrementally.
-  void AddVariable(MPVariable* const var);
+  void AddVariable(MPVariable* const var) override;
   // Changes a coefficient in a constraint.
-  virtual void SetCoefficient(MPConstraint* const constraint,
-                              const MPVariable* const variable,
-                              double new_value, double old_value);
+  void SetCoefficient(MPConstraint* const constraint,
+                      const MPVariable* const variable, double new_value,
+                      double old_value) override;
   // Clears a constraint from all its terms.
-  virtual void ClearConstraint(MPConstraint* const constraint);
+  void ClearConstraint(MPConstraint* const constraint) override;
   // Changes a coefficient in the linear objective
-  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
-                                       double coefficient);
+  void SetObjectiveCoefficient(const MPVariable* const variable,
+                               double coefficient) override;
   // Changes the constant term in the linear objective.
-  virtual void SetObjectiveOffset(double value);
+  void SetObjectiveOffset(double value) override;
   // Clears the objective from all its terms.
-  virtual void ClearObjective();
+  void ClearObjective() override;
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex or interior-point iterations
-  virtual int64 iterations() const;
+  int64 iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  virtual int64 nodes() const;
+  int64 nodes() const override;
   // Best objective bound. Only available for discrete problems.
-  virtual double best_objective_bound() const;
+  double best_objective_bound() const override;
 
   // Returns the basis status of a row.
-  virtual MPSolver::BasisStatus row_status(int constraint_index) const;
+  MPSolver::BasisStatus row_status(int constraint_index) const override;
   // Returns the basis status of a column.
-  virtual MPSolver::BasisStatus column_status(int variable_index) const;
+  MPSolver::BasisStatus column_status(int variable_index) const override;
 
   // ----- Misc -----
   // Queries problem type.
-  virtual bool IsContinuous() const { return IsLP(); }
-  virtual bool IsLP() const { return !mip_; }
-  virtual bool IsMIP() const { return mip_; }
+  bool IsContinuous() const override { return IsLP(); }
+  bool IsLP() const override { return !mip_; }
+  bool IsMIP() const override { return mip_; }
 
-  virtual void ExtractNewVariables();
-  virtual void ExtractNewConstraints();
-  virtual void ExtractObjective();
+  void ExtractNewVariables() override;
+  void ExtractNewConstraints() override;
+  void ExtractObjective() override;
 
-  virtual std::string SolverVersion() const {
+  std::string SolverVersion() const override {
     int major, minor, technical;
     GRBversion(&major, &minor, &technical);
     return StringPrintf("Gurobi library version %d.%d.%d\n", major, minor,
                         technical);
   }
 
-  virtual void* underlying_solver() { return reinterpret_cast<void*>(model_); }
+  void* underlying_solver() override { return reinterpret_cast<void*>(model_); }
 
-  virtual double ComputeExactConditionNumber() const {
+  double ComputeExactConditionNumber() const override {
     if (!IsContinuous()) {
       LOG(DFATAL) << "ComputeExactConditionNumber not implemented for"
                   << " GUROBI_MIXED_INTEGER_PROGRAMMING";
@@ -137,17 +137,17 @@ class GurobiInterface : public MPSolverInterface {
 
  private:
   // Sets all parameters in the underlying solver.
-  virtual void SetParameters(const MPSolverParameters& param);
+  void SetParameters(const MPSolverParameters& param) override;
   // Sets each parameter in the underlying solver.
-  virtual void SetRelativeMipGap(double value);
-  virtual void SetPrimalTolerance(double value);
-  virtual void SetDualTolerance(double value);
-  virtual void SetPresolveMode(int value);
-  virtual void SetScalingMode(int value);
-  virtual void SetLpAlgorithm(int value);
+  void SetRelativeMipGap(double value) override;
+  void SetPrimalTolerance(double value) override;
+  void SetDualTolerance(double value) override;
+  void SetPresolveMode(int value) override;
+  void SetScalingMode(int value) override;
+  void SetLpAlgorithm(int value) override;
 
-  virtual bool ReadParameterFile(const std::string& filename);
-  virtual std::string ValidFileExtensionForParameterFile() const;
+  bool ReadParameterFile(const std::string& filename) override;
+  std::string ValidFileExtensionForParameterFile() const override;
 
   MPSolver::BasisStatus TransformGRBVarBasisStatus(int gurobi_basis_status)
       const;

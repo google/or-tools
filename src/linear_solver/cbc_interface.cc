@@ -49,84 +49,84 @@ class CBCInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying glpk solver.
   explicit CBCInterface(MPSolver* const solver);
-  virtual ~CBCInterface();
+  ~CBCInterface() override;
 
   // ----- Reset -----
-  virtual void Reset();
+  void Reset() override;
 
   // Sets the optimization direction (min/max).
-  virtual void SetOptimizationDirection(bool maximize);
+  void SetOptimizationDirection(bool maximize) override;
 
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
-  virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param);
+  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
 
   // TODO(user): separate the solve from the model extraction.
   virtual void ExtractModel() {}
 
   // Query problem type.
-  virtual bool IsContinuous() const { return false; }
-  virtual bool IsLP() const { return false; }
-  virtual bool IsMIP() const { return true; }
+  bool IsContinuous() const override { return false; }
+  bool IsLP() const override { return false; }
+  bool IsMIP() const override { return true; }
 
   // Modify bounds.
-  virtual void SetVariableBounds(int var_index, double lb, double ub);
-  virtual void SetVariableInteger(int var_index, bool integer);
-  virtual void SetConstraintBounds(int row_index, double lb, double ub);
+  void SetVariableBounds(int var_index, double lb, double ub) override;
+  void SetVariableInteger(int var_index, bool integer) override;
+  void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   // Add constraint incrementally.
-  void AddRowConstraint(MPConstraint* const ct);
+  void AddRowConstraint(MPConstraint* const ct) override;
   // Add variable incrementally.
-  void AddVariable(MPVariable* const var);
+  void AddVariable(MPVariable* const var) override;
   // Change a coefficient in a constraint.
-  virtual void SetCoefficient(MPConstraint* const constraint,
-                              const MPVariable* const variable,
-                              double new_value, double old_value) {
+  void SetCoefficient(MPConstraint* const constraint,
+                      const MPVariable* const variable, double new_value,
+                      double old_value) override {
     sync_status_ = MUST_RELOAD;
   }
   // Clear a constraint from all its terms.
-  virtual void ClearConstraint(MPConstraint* const constraint) {
+  void ClearConstraint(MPConstraint* const constraint) override {
     sync_status_ = MUST_RELOAD;
   }
 
   // Change a coefficient in the linear objective.
-  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
-                                       double coefficient) {
+  void SetObjectiveCoefficient(const MPVariable* const variable,
+                               double coefficient) override {
     sync_status_ = MUST_RELOAD;
   }
   // Change the constant term in the linear objective.
-  virtual void SetObjectiveOffset(double value) { sync_status_ = MUST_RELOAD; }
+  void SetObjectiveOffset(double value) override { sync_status_ = MUST_RELOAD; }
   // Clear the objective from all its terms.
-  virtual void ClearObjective() { sync_status_ = MUST_RELOAD; }
+  void ClearObjective() override { sync_status_ = MUST_RELOAD; }
 
   // Number of simplex iterations
-  virtual int64 iterations() const;
+  int64 iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  virtual int64 nodes() const;
+  int64 nodes() const override;
   // Best objective bound. Only available for discrete problems.
-  virtual double best_objective_bound() const;
+  double best_objective_bound() const override;
 
   // Returns the basis status of a row.
-  virtual MPSolver::BasisStatus row_status(int constraint_index) const {
+  MPSolver::BasisStatus row_status(int constraint_index) const override {
     LOG(FATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
   }
   // Returns the basis status of a column.
-  virtual MPSolver::BasisStatus column_status(int variable_index) const {
+  MPSolver::BasisStatus column_status(int variable_index) const override {
     LOG(FATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
   }
 
-  virtual void ExtractNewVariables() {}
-  virtual void ExtractNewConstraints() {}
-  virtual void ExtractObjective() {}
+  void ExtractNewVariables() override {}
+  void ExtractNewConstraints() override {}
+  void ExtractObjective() override {}
 
-  virtual std::string SolverVersion() const { return "Cbc " CBC_VERSION; }
+  std::string SolverVersion() const override { return "Cbc " CBC_VERSION; }
 
   // TODO(user): Maybe we should expose the CbcModel build from osi_
   // instead, but a new CbcModel is built every time Solve is called,
   // so it is not possible right now.
-  virtual void* underlying_solver() { return reinterpret_cast<void*>(&osi_); }
+  void* underlying_solver() override { return reinterpret_cast<void*>(&osi_); }
 
  private:
   // Reset best objective bound to +/- infinity depending on the
@@ -134,14 +134,14 @@ class CBCInterface : public MPSolverInterface {
   void ResetBestObjectiveBound();
 
   // Set all parameters in the underlying solver.
-  virtual void SetParameters(const MPSolverParameters& param);
+  void SetParameters(const MPSolverParameters& param) override;
   // Set each parameter in the underlying solver.
-  virtual void SetRelativeMipGap(double value);
-  virtual void SetPrimalTolerance(double value);
-  virtual void SetDualTolerance(double value);
-  virtual void SetPresolveMode(int value);
-  virtual void SetScalingMode(int value);
-  virtual void SetLpAlgorithm(int value);
+  void SetRelativeMipGap(double value) override;
+  void SetPrimalTolerance(double value) override;
+  void SetDualTolerance(double value) override;
+  void SetPresolveMode(int value) override;
+  void SetScalingMode(int value) override;
+  void SetLpAlgorithm(int value) override;
 
   OsiClpSolverInterface osi_;
   // TODO(user): remove and query number of iterations directly from CbcModel

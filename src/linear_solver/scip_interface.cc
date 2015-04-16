@@ -53,72 +53,72 @@ class SCIPInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying SCIP solver.
   explicit SCIPInterface(MPSolver* const solver);
-  ~SCIPInterface();
+  ~SCIPInterface() override;
 
   // Sets the optimization direction (min/max).
-  virtual void SetOptimizationDirection(bool maximize);
+  void SetOptimizationDirection(bool maximize) override;
 
   // ----- Solve -----
   // Solve the problem using the parameter values specified.
-  virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param);
+  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
 
   // ----- Model modifications and extraction -----
   // Resets extracted model
-  virtual void Reset();
+  void Reset() override;
 
   // Modify bounds.
-  virtual void SetVariableBounds(int var_index, double lb, double ub);
-  virtual void SetVariableInteger(int var_index, bool integer);
-  virtual void SetConstraintBounds(int row_index, double lb, double ub);
+  void SetVariableBounds(int var_index, double lb, double ub) override;
+  void SetVariableInteger(int var_index, bool integer) override;
+  void SetConstraintBounds(int row_index, double lb, double ub) override;
 
   // Add Constraint incrementally.
-  void AddRowConstraint(MPConstraint* const ct);
+  void AddRowConstraint(MPConstraint* const ct) override;
   // Add variable incrementally.
-  void AddVariable(MPVariable* const var);
+  void AddVariable(MPVariable* const var) override;
   // Change a coefficient in a constraint.
-  virtual void SetCoefficient(MPConstraint* const constraint,
-                              const MPVariable* const variable,
-                              double new_value, double old_value);
+  void SetCoefficient(MPConstraint* const constraint,
+                      const MPVariable* const variable, double new_value,
+                      double old_value) override;
   // Clear a constraint from all its terms.
-  virtual void ClearConstraint(MPConstraint* const constraint);
+  void ClearConstraint(MPConstraint* const constraint) override;
   // Change a coefficient in the linear objective
-  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
-                                       double coefficient);
+  void SetObjectiveCoefficient(const MPVariable* const variable,
+                               double coefficient) override;
   // Change the constant term in the linear objective.
-  virtual void SetObjectiveOffset(double value);
+  void SetObjectiveOffset(double value) override;
   // Clear the objective from all its terms.
-  virtual void ClearObjective();
+  void ClearObjective() override;
 
   // ------ Query statistics on the solution and the solve ------
   // Number of simplex iterations
-  virtual int64 iterations() const;
+  int64 iterations() const override;
   // Number of branch-and-bound nodes. Only available for discrete problems.
-  virtual int64 nodes() const;
+  int64 nodes() const override;
   // Best objective bound. Only available for discrete problems.
-  virtual double best_objective_bound() const;
+  double best_objective_bound() const override;
 
   // Returns the basis status of a row.
-  virtual MPSolver::BasisStatus row_status(int constraint_index) const {
+  MPSolver::BasisStatus row_status(int constraint_index) const override {
     LOG(FATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
   }
   // Returns the basis status of a column.
-  virtual MPSolver::BasisStatus column_status(int variable_index) const {
+  MPSolver::BasisStatus column_status(int variable_index) const override {
     LOG(FATAL) << "Basis status only available for continuous problems";
     return MPSolver::FREE;
   }
 
   // ----- Misc -----
   // Query problem type.
-  virtual bool IsContinuous() const { return false; }
-  virtual bool IsLP() const { return false; }
-  virtual bool IsMIP() const { return true; }
+  bool IsContinuous() const override { return false; }
+  bool IsLP() const override { return false; }
+  bool IsMIP() const override { return true; }
 
-  virtual void ExtractNewVariables();
-  virtual void ExtractNewConstraints();
-  virtual void ExtractObjective();
+  void ExtractNewVariables() override;
+  void ExtractNewConstraints() override;
+  void ExtractObjective() override;
 
-  virtual std::string SolverVersion() const {
+  std::string SolverVersion() const override {
     return StringPrintf("SCIP %d.%d.%d [LP solver: %s]", SCIPmajorVersion(),
                         SCIPminorVersion(), SCIPtechVersion(),
                         SCIPlpiGetSolverName());
@@ -129,21 +129,21 @@ class SCIPInterface : public MPSolverInterface {
     return true;
   }
 
-  virtual void* underlying_solver() { return reinterpret_cast<void*>(scip_); }
+  void* underlying_solver() override { return reinterpret_cast<void*>(scip_); }
 
  private:
   // Set all parameters in the underlying solver.
-  virtual void SetParameters(const MPSolverParameters& param);
+  void SetParameters(const MPSolverParameters& param) override;
   // Set each parameter in the underlying solver.
-  virtual void SetRelativeMipGap(double value);
-  virtual void SetPrimalTolerance(double value);
-  virtual void SetDualTolerance(double value);
-  virtual void SetPresolveMode(int value);
-  virtual void SetScalingMode(int value);
-  virtual void SetLpAlgorithm(int value);
+  void SetRelativeMipGap(double value) override;
+  void SetPrimalTolerance(double value) override;
+  void SetDualTolerance(double value) override;
+  void SetPresolveMode(int value) override;
+  void SetScalingMode(int value) override;
+  void SetLpAlgorithm(int value) override;
 
-  virtual bool ReadParameterFile(const std::string& filename);
-  virtual std::string ValidFileExtensionForParameterFile() const;
+  bool ReadParameterFile(const std::string& filename) override;
+  std::string ValidFileExtensionForParameterFile() const override;
 
   void CreateSCIP();
   void DeleteSCIP();

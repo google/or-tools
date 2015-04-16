@@ -53,55 +53,56 @@ MPSolver::ResultStatus TranslateProblemStatus(bop::BopSolveStatus status) {
 class BopInterface : public MPSolverInterface {
  public:
   explicit BopInterface(MPSolver* const solver);
-  virtual ~BopInterface();
+  ~BopInterface() override;
 
   // ----- Solve -----
-  virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param);
+  MPSolver::ResultStatus Solve(const MPSolverParameters& param) override;
 
   // ----- Model modifications and extraction -----
-  virtual void Reset();
-  virtual void SetOptimizationDirection(bool maximize);
-  virtual void SetVariableBounds(int index, double lb, double ub);
-  virtual void SetVariableInteger(int index, bool integer);
-  virtual void SetConstraintBounds(int index, double lb, double ub);
-  virtual void AddRowConstraint(MPConstraint* const ct);
-  virtual void AddVariable(MPVariable* const var);
-  virtual void SetCoefficient(MPConstraint* const constraint,
-                              const MPVariable* const variable,
-                              double new_value, double old_value);
-  virtual void ClearConstraint(MPConstraint* const constraint);
-  virtual void SetObjectiveCoefficient(const MPVariable* const variable,
-                                       double coefficient);
-  virtual void SetObjectiveOffset(double value);
-  virtual void ClearObjective();
+  void Reset() override;
+  void SetOptimizationDirection(bool maximize) override;
+  void SetVariableBounds(int index, double lb, double ub) override;
+  void SetVariableInteger(int index, bool integer) override;
+  void SetConstraintBounds(int index, double lb, double ub) override;
+  void AddRowConstraint(MPConstraint* const ct) override;
+  void AddVariable(MPVariable* const var) override;
+  void SetCoefficient(MPConstraint* const constraint,
+                      const MPVariable* const variable, double new_value,
+                      double old_value) override;
+  void ClearConstraint(MPConstraint* const constraint) override;
+  void SetObjectiveCoefficient(const MPVariable* const variable,
+                               double coefficient) override;
+  void SetObjectiveOffset(double value) override;
+  void ClearObjective() override;
 
   // ------ Query statistics on the solution and the solve ------
-  virtual int64 iterations() const;
-  virtual int64 nodes() const;
-  virtual double best_objective_bound() const;
-  virtual MPSolver::BasisStatus row_status(int constraint_index) const;
-  virtual MPSolver::BasisStatus column_status(int variable_index) const;
+  int64 iterations() const override;
+  int64 nodes() const override;
+  double best_objective_bound() const override;
+  MPSolver::BasisStatus row_status(int constraint_index) const override;
+  MPSolver::BasisStatus column_status(int variable_index) const override;
 
   // ----- Misc -----
-  virtual bool IsContinuous() const;
-  virtual bool IsLP() const;
-  virtual bool IsMIP() const;
+  bool IsContinuous() const override;
+  bool IsLP() const override;
+  bool IsMIP() const override;
 
-  virtual std::string SolverVersion() const;
-  virtual void* underlying_solver();
+  std::string SolverVersion() const override;
+  bool InterruptSolve() override;
+  void* underlying_solver() override;
 
-  virtual void ExtractNewVariables();
-  virtual void ExtractNewConstraints();
-  virtual void ExtractObjective();
+  void ExtractNewVariables() override;
+  void ExtractNewConstraints() override;
+  void ExtractObjective() override;
 
-  virtual void SetParameters(const MPSolverParameters& param);
-  virtual void SetRelativeMipGap(double value);
-  virtual void SetPrimalTolerance(double value);
-  virtual void SetDualTolerance(double value);
-  virtual void SetPresolveMode(int value);
-  virtual void SetScalingMode(int value);
-  virtual void SetLpAlgorithm(int value);
-  virtual bool ReadParameterFile(const std::string& filename);
+  void SetParameters(const MPSolverParameters& param) override;
+  void SetRelativeMipGap(double value) override;
+  void SetPrimalTolerance(double value) override;
+  void SetDualTolerance(double value) override;
+  void SetPresolveMode(int value) override;
+  void SetScalingMode(int value) override;
+  void SetLpAlgorithm(int value) override;
+  bool ReadParameterFile(const std::string& filename) override;
 
  private:
   void NonIncrementalChange();
