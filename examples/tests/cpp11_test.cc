@@ -5,7 +5,6 @@
 #include "base/hash.h"
 
 namespace operations_research {
-#if defined(__linux__) || defined(_MSC_VER) || defined(__APPLE__)
 struct Foo {
   Foo() { std::cout << "Foo::Foo\n"; }
   ~Foo() { std::cout << "Foo::~Foo\n"; }
@@ -32,11 +31,6 @@ void test_unique() {
   if (p1) p1->bar();
   // Foo instance is destroyed when p1 goes out of scope
 }
-#else
-void test_unique() {
-  std::cout << "test_unique not launched" << std::endl;
-}
-#endif
 
 void test_auto() {
   std::cout << "test_auto" << std::endl;
@@ -64,11 +58,32 @@ void test_chevron() {
   std::vector<std::pair<int,int>> toto;
   toto.push_back(std::make_pair(2, 4));
 }
+
+class A {
+ public:
+  virtual ~A() {}
+  virtual int V() const { return 1; }
+};
+
+class B : public A {
+ public:
+  ~B() override {}
+  int V() const override { return 2; }
+};
+
+void test_override() {
+  std::cout << "test_override" << std::endl;
+  B* b = new B();
+  if (b->V() != 2) {
+    std::cout << "Problem with override" << std::endl;
+  }
+}
 }  // namespace operations_research
 
 int main() {
   operations_research::test_unique();
   operations_research::test_auto();
   operations_research::test_chevron();
+  operations_research::test_override();
   return 0;
 }
