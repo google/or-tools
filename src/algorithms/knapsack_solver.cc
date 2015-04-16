@@ -536,13 +536,13 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
-            const std::vector<int64>& capacities);
+            const std::vector<int64>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve();
+  int64 Solve() override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
-  bool best_solution(int item_id) const {
+  bool best_solution(int item_id) const override {
     return (best_solution_ & OneBit32(item_id)) != 0U;
   }
 
@@ -660,13 +660,13 @@ class Knapsack64ItemsSolver : public BaseKnapsackSolver {
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
-            const std::vector<int64>& capacities);
+            const std::vector<int64>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve();
+  int64 Solve() override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
-  bool best_solution(int item_id) const {
+  bool best_solution(int item_id) const override {
     return (best_solution_ & OneBit64(item_id)) != 0ULL;
   }
 
@@ -912,13 +912,15 @@ class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
-            const std::vector<int64>& capacities);
+            const std::vector<int64>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve();
+  int64 Solve() override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
-  bool best_solution(int item_id) const { return best_solution_.at(item_id); }
+  bool best_solution(int item_id) const override {
+    return best_solution_.at(item_id);
+  }
 
  private:
   int64 SolveSubProblem(int64 capacity, int num_items);
@@ -1005,13 +1007,15 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
 
   // Initializes the solver and enters the problem to be solved.
   void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
-            const std::vector<int64>& capacities);
+            const std::vector<int64>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve();
+  int64 Solve() override;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
-  bool best_solution(int item_id) const { return best_solution_.at(item_id); }
+  bool best_solution(int item_id) const override {
+    return best_solution_.at(item_id);
+  }
 
  private:
   MPSolver::OptimizationProblemType problem_type_;

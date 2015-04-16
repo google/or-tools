@@ -421,20 +421,20 @@ class KnapsackPropagator {
 class KnapsackCapacityPropagator : public KnapsackPropagator {
  public:
   KnapsackCapacityPropagator(const KnapsackState& state, int64 capacity);
-  virtual ~KnapsackCapacityPropagator();
-  virtual void ComputeProfitBounds();
-  virtual int GetNextItemId() const { return break_item_id_; }
+  ~KnapsackCapacityPropagator() override;
+  void ComputeProfitBounds() override;
+  int GetNextItemId() const override { return break_item_id_; }
 
  protected:
   // Initializes KnapsackCapacityPropagator (eg. sort items in decreasing
   // order).
-  virtual void InitPropagator();
+  void InitPropagator() override;
   // Updates internal data structure incrementally (ie. 'consumed_capacity_')
   // to avoid a O(number_of_items) scan.
-  virtual bool UpdatePropagator(bool revert,
-                                const KnapsackAssignment& assignment);
-  virtual void CopyCurrentStateToSolutionPropagator(std::vector<bool>* solution)
-      const;
+  bool UpdatePropagator(bool revert,
+                        const KnapsackAssignment& assignment) override;
+  void CopyCurrentStateToSolutionPropagator(
+      std::vector<bool>* solution) const override;
 
  private:
   // An obvious additional profit upper bound corresponds to the linear
@@ -500,15 +500,15 @@ class BaseKnapsackSolver {
 class KnapsackGenericSolver : public BaseKnapsackSolver {
  public:
   explicit KnapsackGenericSolver(const std::string& solver_name);
-  virtual ~KnapsackGenericSolver();
+  ~KnapsackGenericSolver() override;
 
   // Initializes the solver and enters the problem to be solved.
-  virtual void Init(const std::vector<int64>& profits,
-                    const std::vector<std::vector<int64> >& weights,
-                    const std::vector<int64>& capacities);
+  void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
+            const std::vector<int64>& capacities) override;
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
   void GetLowerAndUpperBoundWhenItem(int item_id, bool is_item_in,
-                                     int64* lower_bound, int64* upper_bound);
+                                     int64* lower_bound,
+                                     int64* upper_bound) override;
 
   // Sets which propagator should be used to guide the search.
   // 'master_propagator_id' should be in 0..p-1 with p the number of
@@ -518,9 +518,9 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
   }
 
   // Solves the problem and returns the profit of the optimal solution.
-  virtual int64 Solve();
+  int64 Solve() override;
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
-  virtual bool best_solution(int item_id) const {
+  bool best_solution(int item_id) const override {
     return best_solution_.at(item_id);
   }
 
