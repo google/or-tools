@@ -32,26 +32,26 @@ class RangeEquality : public Constraint {
   RangeEquality(Solver* const s, IntExpr* const l, IntExpr* const r)
       : Constraint(s), left_(l), right_(r) {}
 
-  virtual ~RangeEquality() {}
+  ~RangeEquality() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const d = solver()->MakeConstraintInitialPropagateCallback(this);
     left_->WhenRange(d);
     right_->WhenRange(d);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     left_->SetRange(right_->Min(), right_->Max());
     right_->SetRange(left_->Min(), left_->Max());
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return left_->DebugString() + " == " + right_->DebugString();
   }
 
-  virtual IntVar* Var() { return solver()->MakeIsEqualVar(left_, right_); }
+  IntVar* Var() override { return solver()->MakeIsEqualVar(left_, right_); }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -70,14 +70,14 @@ class RangeEquality : public Constraint {
 class RangeLessOrEqual : public Constraint {
  public:
   RangeLessOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
-  virtual ~RangeLessOrEqual() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() {
+  ~RangeLessOrEqual() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
+  IntVar* Var() override {
     return solver()->MakeIsLessOrEqualVar(left_, right_);
   }
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -119,14 +119,14 @@ std::string RangeLessOrEqual::DebugString() const {
 class RangeGreaterOrEqual : public Constraint {
  public:
   RangeGreaterOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
-  virtual ~RangeGreaterOrEqual() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() {
+  ~RangeGreaterOrEqual() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
+  IntVar* Var() override {
     return solver()->MakeIsGreaterOrEqualVar(left_, right_);
   }
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -168,12 +168,12 @@ std::string RangeGreaterOrEqual::DebugString() const {
 class RangeLess : public Constraint {
  public:
   RangeLess(Solver* const s, IntExpr* const l, IntExpr* const r);
-  virtual ~RangeLess() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() { return solver()->MakeIsLessVar(left_, right_); }
-  virtual void Accept(ModelVisitor* const visitor) const {
+  ~RangeLess() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
+  IntVar* Var() override { return solver()->MakeIsLessVar(left_, right_); }
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kLess, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -214,12 +214,12 @@ std::string RangeLess::DebugString() const {
 class RangeGreater : public Constraint {
  public:
   RangeGreater(Solver* const s, IntExpr* const l, IntExpr* const r);
-  virtual ~RangeGreater() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() { return solver()->MakeIsGreaterVar(left_, right_); }
-  virtual void Accept(ModelVisitor* const visitor) const {
+  ~RangeGreater() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
+  IntVar* Var() override { return solver()->MakeIsGreaterVar(left_, right_); }
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kGreater, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -260,15 +260,15 @@ std::string RangeGreater::DebugString() const {
 class DiffVar : public Constraint {
  public:
   DiffVar(Solver* const s, IntVar* const l, IntVar* const r);
-  virtual ~DiffVar() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() { return solver()->MakeIsDifferentVar(left_, right_); }
+  ~DiffVar() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
+  IntVar* Var() override { return solver()->MakeIsDifferentVar(left_, right_); }
   void LeftBound();
   void RightBound();
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -336,9 +336,9 @@ class IsEqualCt : public CastConstraint {
             IntVar* const b)
       : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
 
-  virtual ~IsEqualCt() {}
+  ~IsEqualCt() override {}
 
-  virtual void Post() {
+  void Post() override {
     range_demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     left_->WhenRange(range_demon_);
     right_->WhenRange(range_demon_);
@@ -347,7 +347,7 @@ class IsEqualCt : public CastConstraint {
     target_var_->WhenBound(target_demon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     if (target_var_->Bound()) {
       PropagateTarget();
       return;
@@ -394,13 +394,13 @@ class IsEqualCt : public CastConstraint {
     }
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IsEqualCt(%s, %s, %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -424,9 +424,9 @@ class IsDifferentCt : public CastConstraint {
                 IntVar* const b)
       : CastConstraint(s, b), left_(l), right_(r), range_demon_(nullptr) {}
 
-  virtual ~IsDifferentCt() {}
+  ~IsDifferentCt() override {}
 
-  virtual void Post() {
+  void Post() override {
     range_demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     left_->WhenRange(range_demon_);
     right_->WhenRange(range_demon_);
@@ -435,7 +435,7 @@ class IsDifferentCt : public CastConstraint {
     target_var_->WhenBound(target_demon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     if (target_var_->Bound()) {
       PropagateTarget();
       return;
@@ -474,13 +474,13 @@ class IsDifferentCt : public CastConstraint {
     }
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf(
         "IsDifferentCt(%s, %s, %s)", left_->DebugString().c_str(),
         right_->DebugString().c_str(), target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -502,16 +502,16 @@ class IsLessOrEqualCt : public CastConstraint {
                   IntVar* const b)
       : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
 
-  virtual ~IsLessOrEqualCt() {}
+  ~IsLessOrEqualCt() override {}
 
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     left_->WhenRange(demon_);
     right_->WhenRange(demon_);
     target_var_->WhenBound(demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     if (target_var_->Bound()) {
       if (target_var_->Min() == 0) {
         right_->SetMax(left_->Max() - 1);
@@ -529,13 +529,13 @@ class IsLessOrEqualCt : public CastConstraint {
     }
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf(
         "IsLessOrEqualCt(%s, %s, %s)", left_->DebugString().c_str(),
         right_->DebugString().c_str(), target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
@@ -556,16 +556,16 @@ class IsLessCt : public CastConstraint {
   IsLessCt(Solver* const s, IntExpr* const l, IntExpr* const r, IntVar* const b)
       : CastConstraint(s, b), left_(l), right_(r), demon_(nullptr) {}
 
-  virtual ~IsLessCt() {}
+  ~IsLessCt() override {}
 
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     left_->WhenRange(demon_);
     right_->WhenRange(demon_);
     target_var_->WhenBound(demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     if (target_var_->Bound()) {
       if (target_var_->Min() == 0) {
         right_->SetMax(left_->Max());
@@ -583,13 +583,13 @@ class IsLessCt : public CastConstraint {
     }
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IsLessCt(%s, %s, %s)", left_->DebugString().c_str(),
                         right_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsLess, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,

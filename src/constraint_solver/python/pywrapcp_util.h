@@ -46,7 +46,7 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
     Py_XINCREF(str_func_);
   }
 
-  virtual ~CallPyDecisionBuilder() {
+  ~CallPyDecisionBuilder() override {
     Py_CLEAR(pydb_);
     Py_CLEAR(func_);
     Py_CLEAR(str_func_);
@@ -54,8 +54,8 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
     Py_CLEAR(pyarg_);
   }
 
-  virtual operations_research::Decision* Next(
-      operations_research::Solver* const s) {
+  operations_research::Decision* Next(
+      operations_research::Solver* const s) override {
     if (pysolver_ == nullptr) {
       pysolver_ = SWIG_NewPointerObj(s, SWIGTYPE_p_operations_research__Solver,
                                      SWIG_POINTER_EXCEPTION);
@@ -78,7 +78,7 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
     return result;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     std::string result = "PyDecisionBuilder";
     if (str_func_) {
       PyObject* pyresult = PyEval_CallObject(str_func_, nullptr);
@@ -109,20 +109,20 @@ class PyLNSNoValues : public operations_research::BaseLNS {
     Py_XINCREF(fragment_func_);
   }
 
-  virtual ~PyLNSNoValues() {
+  ~PyLNSNoValues() override {
     Py_CLEAR(op_);
     Py_CLEAR(init_func_);
     Py_CLEAR(fragment_func_);
   }
 
-  virtual void InitFragments() {
+  void InitFragments() override {
     if (init_func_) {
       PyObject* pyresult = PyEval_CallObject(init_func_, nullptr);
       Py_XDECREF(pyresult);
     }
   }
 
-  virtual bool NextFragment(std::vector<int>* fragment) {
+  bool NextFragment(std::vector<int>* fragment) override {
     PyObject* list = PyList_New(0);
     PyObject* args = Py_BuildValue(const_cast<char*>("(O)"), list);
     PyObject* pyresult = PyEval_CallObject(fragment_func_, args);
@@ -141,7 +141,7 @@ class PyLNSNoValues : public operations_research::BaseLNS {
     return result;
   }
 
-  virtual std::string DebugString() const { return "PyLNSNoValues()"; }
+  std::string DebugString() const override { return "PyLNSNoValues()"; }
 
  private:
   PyObject* op_;
@@ -168,21 +168,21 @@ class PyLNS : public operations_research::BaseLNS {
         this, SWIGTYPE_p_operations_research__BaseLNS, SWIG_POINTER_EXCEPTION);
     Py_INCREF(base_lns_);
   }
-  virtual ~PyLNS() {
+  ~PyLNS() override {
     Py_CLEAR(op_);
     Py_CLEAR(init_func_);
     Py_CLEAR(fragment_func_);
     Py_CLEAR(base_lns_);
   }
 
-  virtual void InitFragments() {
+  void InitFragments() override {
     if (init_func_) {
       PyObject* pyresult = PyEval_CallObject(init_func_, nullptr);
       Py_XDECREF(pyresult);
     }
   }
 
-  virtual bool NextFragment(std::vector<int>* fragment) {
+  bool NextFragment(std::vector<int>* fragment) override {
     PyObject* list = PyList_New(0);
     PyObject* args = Py_BuildValue(const_cast<char*>("(OO)"), list, base_lns_);
     PyObject* pyresult = PyEval_CallObject(fragment_func_, args);
@@ -201,7 +201,7 @@ class PyLNS : public operations_research::BaseLNS {
     return result;
   }
 
-  virtual std::string DebugString() const { return "PyLNS()"; }
+  std::string DebugString() const override { return "PyLNS()"; }
 
  private:
   PyObject* op_;

@@ -97,11 +97,11 @@ struct AffineTransformation {  // y == a*x + b.
 class VarLinearizer : public ModelParser {
  public:
   VarLinearizer() : target_var_(nullptr), transformation_(nullptr) {}
-  virtual ~VarLinearizer() {}
+  ~VarLinearizer() override {}
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     if (operation == ModelVisitor::kSumOperation) {
       AddConstant(value);
       delegate->Accept(this);
@@ -120,8 +120,8 @@ class VarLinearizer : public ModelParser {
     }
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     *target_var_ = const_cast<IntVar*>(variable);
     transformation_->a = multipliers_.back();
   }
@@ -137,7 +137,7 @@ class VarLinearizer : public ModelParser {
     CHECK(multipliers_.empty());
   }
 
-  virtual std::string DebugString() const { return "VarLinearizer"; }
+  std::string DebugString() const override { return "VarLinearizer"; }
 
  private:
   void AddConstant(int64 constant) {
@@ -207,14 +207,14 @@ class BasePositiveTableConstraint : public Constraint {
     }
   }
 
-  virtual ~BasePositiveTableConstraint() {}
+  ~BasePositiveTableConstraint() override {}
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
                         arity_, tuple_count_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kAllowedAssignments, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -265,7 +265,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  virtual ~PositiveTableConstraint() {
+  ~PositiveTableConstraint() override {
     for (int var_index = 0; var_index < arity_; ++var_index) {
       for (const auto& it : masks_[var_index]) {
         delete[] it.second;
@@ -273,7 +273,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  virtual void Post() {
+  void Post() override {
     Demon* d = MakeDelayedConstraintDemon0(
         solver(), this, &PositiveTableConstraint::Propagate, "Propagate");
     for (int i = 0; i < arity_; ++i) {
@@ -288,7 +288,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Build active_ structure.
     for (int var_index = 0; var_index < arity_; ++var_index) {
       for (const auto& it : masks_[var_index]) {
@@ -387,7 +387,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     return false;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("PositiveTableConstraint([%s], %d tuples)",
                         JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
   }
@@ -446,9 +446,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         first_active_(0),
         last_active_(-1) {}
 
-  virtual ~CompactPositiveTableConstraint() {}
+  ~CompactPositiveTableConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
         solver(), this, &CompactPositiveTableConstraint::Propagate,
         "Propagate"));
@@ -462,7 +462,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     BuildStructures();
     BuildMasks();
     FillMasks();
@@ -670,7 +670,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("CompactPositiveTableConstraint([%s], %d tuples)",
                         JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
   }
@@ -944,14 +944,14 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     memset(masks_.get(), 0, arity_ * sizeof(*masks_.get()));
   }
 
-  virtual ~SmallCompactPositiveTableConstraint() {
+  ~SmallCompactPositiveTableConstraint() override {
     for (int i = 0; i < arity_; ++i) {
       delete[] masks_[i];
       masks_[i] = nullptr;
     }
   }
 
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
         solver(), this, &SmallCompactPositiveTableConstraint::Propagate,
         "Propagate"));
@@ -1022,7 +1022,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     InitMasks();
     ComputeActiveTuples();
     RemoveUnsupportedValues();
@@ -1214,7 +1214,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("SmallCompactPositiveTableConstraint([%s], %d tuples)",
                         JoinDebugStringPtr(vars_, ", ").c_str(), tuple_count_);
   }
@@ -1310,9 +1310,9 @@ class TransitionConstraint : public Constraint {
     }
   }
 
-  virtual ~TransitionConstraint() {}
+  ~TransitionConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     Solver* const s = solver();
     int64 state_min = kint64max;
     int64 state_max = kint64min;
@@ -1360,9 +1360,9 @@ class TransitionConstraint : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {}
+  void InitialPropagate() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kTransition, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1374,7 +1374,7 @@ class TransitionConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kTransition, this);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf(
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",

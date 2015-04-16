@@ -511,15 +511,15 @@ class NoCompressionTrailPacker : public TrailPacker<T> {
  public:
   explicit NoCompressionTrailPacker(int block_size)
       : TrailPacker<T>(block_size) {}
-  virtual ~NoCompressionTrailPacker() {}
-  virtual void Pack(const addrval<T>* block, std::string* packed_block) {
+  ~NoCompressionTrailPacker() override {}
+  void Pack(const addrval<T>* block, std::string* packed_block) override {
     DCHECK(block != nullptr);
     DCHECK(packed_block != nullptr);
     StringPiece block_str;
     block_str.set(block, this->input_size());
     block_str.CopyToString(packed_block);
   }
-  virtual void Unpack(const std::string& packed_block, addrval<T>* block) {
+  void Unpack(const std::string& packed_block, addrval<T>* block) override {
     DCHECK(block != nullptr);
     memcpy(block, packed_block.c_str(), packed_block.size());
   }
@@ -536,9 +536,9 @@ class ZlibTrailPacker : public TrailPacker<T> {
         tmp_size_(compressBound(this->input_size())),
         tmp_block_(new char[tmp_size_]) {}
 
-  virtual ~ZlibTrailPacker() {}
+  ~ZlibTrailPacker() override {}
 
-  virtual void Pack(const addrval<T>* block, std::string* packed_block) {
+  void Pack(const addrval<T>* block, std::string* packed_block) override {
     DCHECK(block != nullptr);
     DCHECK(packed_block != nullptr);
     uLongf size = tmp_size_;
@@ -551,7 +551,7 @@ class ZlibTrailPacker : public TrailPacker<T> {
     block_str.CopyToString(packed_block);
   }
 
-  virtual void Unpack(const std::string& packed_block, addrval<T>* block) {
+  void Unpack(const std::string& packed_block, addrval<T>* block) override {
     DCHECK(block != nullptr);
     uLongf size = this->input_size();
     const int result =
@@ -1092,13 +1092,13 @@ namespace {
 class UndoBranchSelector : public Action {
  public:
   explicit UndoBranchSelector(int depth) : depth_(depth) {}
-  virtual ~UndoBranchSelector() {}
-  virtual void Run(Solver* const s) {
+  ~UndoBranchSelector() override {}
+  void Run(Solver* const s) override {
     if (s->SolveDepth() == depth_) {
       s->ActiveSearch()->SetBranchSelector(nullptr);
     }
   }
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("UndoBranchSelector(%i)", depth_);
   }
 
@@ -1111,14 +1111,14 @@ class ApplyBranchSelector : public DecisionBuilder {
   explicit ApplyBranchSelector(
       ResultCallback1<Solver::DecisionModification, Solver*>* const bs)
       : selector_(bs) {}
-  virtual ~ApplyBranchSelector() {}
+  ~ApplyBranchSelector() override {}
 
-  virtual Decision* Next(Solver* const s) {
+  Decision* Next(Solver* const s) override {
     s->SetBranchSelector(selector_);
     return nullptr;
   }
 
-  virtual std::string DebugString() const { return "Apply(BranchSelector)"; }
+  std::string DebugString() const override { return "Apply(BranchSelector)"; }
 
  private:
   ResultCallback1<Solver::DecisionModification, Solver*>* const selector_;
@@ -1362,17 +1362,17 @@ namespace {
 
 class FailDecision : public Decision {
  public:
-  virtual void Apply(Solver* const s) { s->Fail(); }
-  virtual void Refute(Solver* const s) { s->Fail(); }
+  void Apply(Solver* const s) override { s->Fail(); }
+  void Refute(Solver* const s) override { s->Fail(); }
 };
 
 // Balancing decision
 
 class BalancingDecision : public Decision {
  public:
-  virtual ~BalancingDecision() {}
-  virtual void Apply(Solver* const s) {}
-  virtual void Refute(Solver* const s) {}
+  ~BalancingDecision() override {}
+  void Apply(Solver* const s) override {}
+  void Refute(Solver* const s) override {}
 };
 }  // namespace
 
@@ -2100,17 +2100,17 @@ class ReverseDecision : public Decision {
   explicit ReverseDecision(Decision* const d) : decision_(d) {
     CHECK(d != nullptr);
   }
-  virtual ~ReverseDecision() {}
+  ~ReverseDecision() override {}
 
-  virtual void Apply(Solver* const s) { decision_->Refute(s); }
+  void Apply(Solver* const s) override { decision_->Refute(s); }
 
-  virtual void Refute(Solver* const s) { decision_->Apply(s); }
+  void Refute(Solver* const s) override { decision_->Apply(s); }
 
-  virtual void Accept(DecisionVisitor* const visitor) const {
+  void Accept(DecisionVisitor* const visitor) const override {
     decision_->Accept(visitor);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     std::string str = "Reverse(";
     str += decision_->DebugString();
     str += ")";
@@ -2369,14 +2369,14 @@ class AddConstraintDecisionBuilder : public DecisionBuilder {
     CHECK(ct != nullptr);
   }
 
-  virtual ~AddConstraintDecisionBuilder() {}
+  ~AddConstraintDecisionBuilder() override {}
 
-  virtual Decision* Next(Solver* const solver) {
+  Decision* Next(Solver* const solver) override {
     solver->AddConstraint(constraint_);
     return nullptr;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("AddConstraintDecisionBuilder(%s)",
                         constraint_->DebugString().c_str());
   }
@@ -2930,236 +2930,236 @@ class Trace : public PropagationMonitor {
  public:
   explicit Trace(Solver* const s) : PropagationMonitor(s) {}
 
-  virtual ~Trace() {}
+  ~Trace() override {}
 
-  virtual void BeginConstraintInitialPropagation(Constraint* const constraint) {
+  void BeginConstraintInitialPropagation(
+      Constraint* const constraint) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->BeginConstraintInitialPropagation(constraint);
     }
   }
 
-  virtual void EndConstraintInitialPropagation(Constraint* const constraint) {
+  void EndConstraintInitialPropagation(Constraint* const constraint) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->EndConstraintInitialPropagation(constraint);
     }
   }
 
-  virtual void BeginNestedConstraintInitialPropagation(
-      Constraint* const parent, Constraint* const nested) {
+  void BeginNestedConstraintInitialPropagation(
+      Constraint* const parent, Constraint* const nested) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->BeginNestedConstraintInitialPropagation(parent, nested);
     }
   }
 
-  virtual void EndNestedConstraintInitialPropagation(Constraint* const parent,
-                                                     Constraint* const nested) {
+  void EndNestedConstraintInitialPropagation(
+      Constraint* const parent, Constraint* const nested) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->EndNestedConstraintInitialPropagation(parent, nested);
     }
   }
 
-  virtual void RegisterDemon(Demon* const demon) {
+  void RegisterDemon(Demon* const demon) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RegisterDemon(demon);
     }
   }
 
-  virtual void BeginDemonRun(Demon* const demon) {
+  void BeginDemonRun(Demon* const demon) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->BeginDemonRun(demon);
     }
   }
 
-  virtual void EndDemonRun(Demon* const demon) {
+  void EndDemonRun(Demon* const demon) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->EndDemonRun(demon);
     }
   }
 
-  virtual void StartProcessingIntegerVariable(IntVar* const var) {
+  void StartProcessingIntegerVariable(IntVar* const var) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->StartProcessingIntegerVariable(var);
     }
   }
 
-  virtual void EndProcessingIntegerVariable(IntVar* const var) {
+  void EndProcessingIntegerVariable(IntVar* const var) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->EndProcessingIntegerVariable(var);
     }
   }
 
-  virtual void PushContext(const std::string& context) {
+  void PushContext(const std::string& context) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->PushContext(context);
     }
   }
 
-  virtual void PopContext() {
+  void PopContext() override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->PopContext();
     }
   }
 
   // IntExpr modifiers.
-  virtual void SetMin(IntExpr* const expr, int64 new_min) {
+  void SetMin(IntExpr* const expr, int64 new_min) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetMin(expr, new_min);
     }
   }
 
-  virtual void SetMax(IntExpr* const expr, int64 new_max) {
+  void SetMax(IntExpr* const expr, int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetMax(expr, new_max);
     }
   }
 
-  virtual void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) {
+  void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetRange(expr, new_min, new_max);
     }
   }
 
   // IntVar modifiers.
-  virtual void SetMin(IntVar* const var, int64 new_min) {
+  void SetMin(IntVar* const var, int64 new_min) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetMin(var, new_min);
     }
   }
 
-  virtual void SetMax(IntVar* const var, int64 new_max) {
+  void SetMax(IntVar* const var, int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetMax(var, new_max);
     }
   }
 
-  virtual void SetRange(IntVar* const var, int64 new_min, int64 new_max) {
+  void SetRange(IntVar* const var, int64 new_min, int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetRange(var, new_min, new_max);
     }
   }
 
-  virtual void RemoveValue(IntVar* const var, int64 value) {
+  void RemoveValue(IntVar* const var, int64 value) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RemoveValue(var, value);
     }
   }
 
-  virtual void SetValue(IntVar* const var, int64 value) {
+  void SetValue(IntVar* const var, int64 value) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetValue(var, value);
     }
   }
 
-  virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) {
+  void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RemoveInterval(var, imin, imax);
     }
   }
 
-  virtual void SetValues(IntVar* const var, const std::vector<int64>& values) {
+  void SetValues(IntVar* const var, const std::vector<int64>& values) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetValues(var, values);
     }
   }
 
-  virtual void RemoveValues(IntVar* const var, const std::vector<int64>& values) {
+  void RemoveValues(IntVar* const var, const std::vector<int64>& values) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RemoveValues(var, values);
     }
   }
 
   // IntervalVar modifiers.
-  virtual void SetStartMin(IntervalVar* const var, int64 new_min) {
+  void SetStartMin(IntervalVar* const var, int64 new_min) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetStartMin(var, new_min);
     }
   }
 
-  virtual void SetStartMax(IntervalVar* const var, int64 new_max) {
+  void SetStartMax(IntervalVar* const var, int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetStartMax(var, new_max);
     }
   }
 
-  virtual void SetStartRange(IntervalVar* const var, int64 new_min,
-                             int64 new_max) {
+  void SetStartRange(IntervalVar* const var, int64 new_min,
+                     int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetStartRange(var, new_min, new_max);
     }
   }
 
-  virtual void SetEndMin(IntervalVar* const var, int64 new_min) {
+  void SetEndMin(IntervalVar* const var, int64 new_min) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetEndMin(var, new_min);
     }
   }
 
-  virtual void SetEndMax(IntervalVar* const var, int64 new_max) {
+  void SetEndMax(IntervalVar* const var, int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetEndMax(var, new_max);
     }
   }
 
-  virtual void SetEndRange(IntervalVar* const var, int64 new_min,
-                           int64 new_max) {
+  void SetEndRange(IntervalVar* const var, int64 new_min,
+                   int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetEndRange(var, new_min, new_max);
     }
   }
 
-  virtual void SetDurationMin(IntervalVar* const var, int64 new_min) {
+  void SetDurationMin(IntervalVar* const var, int64 new_min) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetDurationMin(var, new_min);
     }
   }
 
-  virtual void SetDurationMax(IntervalVar* const var, int64 new_max) {
+  void SetDurationMax(IntervalVar* const var, int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetDurationMax(var, new_max);
     }
   }
 
-  virtual void SetDurationRange(IntervalVar* const var, int64 new_min,
-                                int64 new_max) {
+  void SetDurationRange(IntervalVar* const var, int64 new_min,
+                        int64 new_max) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetDurationRange(var, new_min, new_max);
     }
   }
 
-  virtual void SetPerformed(IntervalVar* const var, bool value) {
+  void SetPerformed(IntervalVar* const var, bool value) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->SetPerformed(var, value);
     }
   }
 
-  virtual void RankFirst(SequenceVar* const var, int index) {
+  void RankFirst(SequenceVar* const var, int index) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RankFirst(var, index);
     }
   }
 
-  virtual void RankNotFirst(SequenceVar* const var, int index) {
+  void RankNotFirst(SequenceVar* const var, int index) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RankNotFirst(var, index);
     }
   }
 
-  virtual void RankLast(SequenceVar* const var, int index) {
+  void RankLast(SequenceVar* const var, int index) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RankLast(var, index);
     }
   }
 
-  virtual void RankNotLast(SequenceVar* const var, int index) {
+  void RankNotLast(SequenceVar* const var, int index) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RankNotLast(var, index);
     }
   }
 
-  virtual void RankSequence(SequenceVar* const var,
-                            const std::vector<int>& rank_first,
-                            const std::vector<int>& rank_last,
-                            const std::vector<int>& unperformed) {
+  void RankSequence(SequenceVar* const var, const std::vector<int>& rank_first,
+                    const std::vector<int>& rank_last,
+                    const std::vector<int>& unperformed) override {
     for (int i = 0; i < monitors_.size(); ++i) {
       monitors_[i]->RankSequence(var, rank_first, rank_last, unperformed);
     }
@@ -3174,9 +3174,9 @@ class Trace : public PropagationMonitor {
 
   // The trace will dispatch propagation events. It needs to listen to search
   // events.
-  virtual void Install() { SearchMonitor::Install(); }
+  void Install() override { SearchMonitor::Install(); }
 
-  virtual std::string DebugString() const { return "Trace"; }
+  std::string DebugString() const override { return "Trace"; }
 
  private:
   std::vector<PropagationMonitor*> monitors_;

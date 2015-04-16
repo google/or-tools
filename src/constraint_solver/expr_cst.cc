@@ -41,15 +41,15 @@ namespace {
 class EqualityExprCst : public Constraint {
  public:
   EqualityExprCst(Solver* const s, IntExpr* const e, int64 v);
-  virtual ~EqualityExprCst() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual IntVar* Var() {
+  ~EqualityExprCst() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  IntVar* Var() override {
     return solver()->MakeIsEqualCstVar(expr_->Var(), value_);
   }
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -117,15 +117,15 @@ namespace {
 class GreaterEqExprCst : public Constraint {
  public:
   GreaterEqExprCst(Solver* const s, IntExpr* const e, int64 v);
-  virtual ~GreaterEqExprCst() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() {
+  ~GreaterEqExprCst() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
+  IntVar* Var() override {
     return solver()->MakeIsGreaterOrEqualCstVar(expr_->Var(), value_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -216,14 +216,14 @@ namespace {
 class LessEqExprCst : public Constraint {
  public:
   LessEqExprCst(Solver* const s, IntExpr* const e, int64 v);
-  virtual ~LessEqExprCst() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() {
+  ~LessEqExprCst() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
+  IntVar* Var() override {
     return solver()->MakeIsLessOrEqualCstVar(expr_->Var(), value_);
   }
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -314,15 +314,15 @@ namespace {
 class DiffCst : public Constraint {
  public:
   DiffCst(Solver* const s, IntVar* const var, int64 value);
-  virtual ~DiffCst() {}
-  virtual void Post() {}
-  virtual void InitialPropagate();
+  ~DiffCst() override {}
+  void Post() override {}
+  void InitialPropagate() override;
   void BoundPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() {
+  std::string DebugString() const override;
+  IntVar* Var() override {
     return solver()->MakeIsDifferentCstVar(var_, value_);
   }
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNonEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -406,12 +406,12 @@ class IsEqualCstCt : public CastConstraint {
  public:
   IsEqualCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
       : CastConstraint(s, b), var_(v), cst_(c), demon_(nullptr) {}
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenDomain(demon_);
     target_var_->WhenBound(demon_);
   }
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     bool inhibit = var_->Bound();
     int64 u = var_->Contains(cst_);
     int64 l = inhibit ? u : 0;
@@ -428,13 +428,13 @@ class IsEqualCstCt : public CastConstraint {
       demon_->inhibit(solver());
     }
   }
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IsEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -520,13 +520,13 @@ class IsDiffCstCt : public CastConstraint {
   IsDiffCstCt(Solver* const s, IntVar* const v, int64 c, IntVar* const b)
       : CastConstraint(s, b), var_(v), cst_(c), demon_(nullptr) {}
 
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenDomain(demon_);
     target_var_->WhenBound(demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     bool inhibit = var_->Bound();
     int64 l = 1 - var_->Contains(cst_);
     int64 u = inhibit ? l : 1;
@@ -544,13 +544,13 @@ class IsDiffCstCt : public CastConstraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IsDiffCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         var_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsDifferent, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -618,12 +618,12 @@ class IsGreaterEqualCstCt : public CastConstraint {
   IsGreaterEqualCstCt(Solver* const s, IntExpr* const v, int64 c,
                       IntVar* const b)
       : CastConstraint(s, b), expr_(v), cst_(c), demon_(nullptr) {}
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(demon_);
     target_var_->WhenBound(demon_);
   }
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     bool inhibit = false;
     int64 u = expr_->Max() >= cst_;
     int64 l = expr_->Min() >= cst_;
@@ -643,13 +643,13 @@ class IsGreaterEqualCstCt : public CastConstraint {
       demon_->inhibit(solver());
     }
   }
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IsGreaterEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         expr_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsGreaterOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -716,13 +716,13 @@ class IsLessEqualCstCt : public CastConstraint {
   IsLessEqualCstCt(Solver* const s, IntExpr* const v, int64 c, IntVar* const b)
       : CastConstraint(s, b), expr_(v), cst_(c), demon_(nullptr) {}
 
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(demon_);
     target_var_->WhenBound(demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     bool inhibit = false;
     int64 u = expr_->Min() <= cst_;
     int64 l = expr_->Max() <= cst_;
@@ -743,13 +743,13 @@ class IsLessEqualCstCt : public CastConstraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IsLessEqualCstCt(%s, %" GG_LL_FORMAT "d, %s)",
                         expr_->DebugString().c_str(), cst_,
                         target_var_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             expr_);
@@ -816,14 +816,14 @@ class BetweenCt : public Constraint {
   BetweenCt(Solver* const s, IntExpr* const v, int64 l, int64 u)
       : Constraint(s), expr_(v), min_(l), max_(u), demon_(nullptr) {}
 
-  virtual void Post() {
+  void Post() override {
     if (!expr_->IsVar()) {
       demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
       expr_->WhenRange(demon_);
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     expr_->SetRange(min_, max_);
     int64 emin = 0;
     int64 emax = 0;
@@ -833,12 +833,12 @@ class BetweenCt : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("BetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
                         expr_->DebugString().c_str(), min_, max_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kBetween, this);
     visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
@@ -909,13 +909,13 @@ class IsBetweenCt : public Constraint {
         boolvar_(b),
         demon_(nullptr) {}
 
-  virtual void Post() {
+  void Post() override {
     demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
     expr_->WhenRange(demon_);
     boolvar_->WhenBound(demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     bool inhibit = false;
     int64 emin = 0;
     int64 emax = 0;
@@ -944,14 +944,14 @@ class IsBetweenCt : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IsBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
                         "d, %s)",
                         expr_->DebugString().c_str(), min_, max_,
                         boolvar_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsBetween, this);
     visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
@@ -1028,16 +1028,16 @@ class MemberCt : public Constraint {
     DCHECK(s != nullptr);
   }
 
-  virtual void Post() {}
+  void Post() override {}
 
-  virtual void InitialPropagate() { var_->SetValues(values_); }
+  void InitialPropagate() override { var_->SetValues(values_); }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Member(%s, %s)", var_->DebugString().c_str(),
                         strings::Join(values_, ", ").c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -1060,16 +1060,16 @@ class NotMemberCt : public Constraint {
     DCHECK(s != nullptr);
   }
 
-  virtual void Post() {}
+  void Post() override {}
 
-  virtual void InitialPropagate() { var_->RemoveValues(values_); }
+  void InitialPropagate() override { var_->RemoveValues(values_); }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("NotMember(%s, %s)", var_->DebugString().c_str(),
                         strings::Join(values_, ", ").c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);
@@ -1178,7 +1178,7 @@ class IsMemberCt : public Constraint {
     }
   }
 
-  virtual void Post() {
+  void Post() override {
     demon_ = MakeConstraintDemon0(solver(), this, &IsMemberCt::VarDomain,
                                   "VarDomain");
     if (!var_->Bound()) {
@@ -1191,7 +1191,7 @@ class IsMemberCt : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     boolvar_->SetRange(0, 1);
     if (boolvar_->Bound()) {
       TargetBound();
@@ -1200,13 +1200,13 @@ class IsMemberCt : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IsMemberCt(%s, %s, %s)", var_->DebugString().c_str(),
                         strings::Join(values_, ", ").c_str(),
                         boolvar_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIsMember, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
                                             var_);

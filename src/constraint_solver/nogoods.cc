@@ -69,7 +69,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
     CHECK(integer_variable_ != nullptr);
   }
 
-  virtual TermStatus Evaluate() const {
+  TermStatus Evaluate() const override {
     if (!integer_variable_->Contains(value_)) {
       return assign_ ? ALWAYS_FALSE : ALWAYS_TRUE;
     } else if (integer_variable_->Bound()) {
@@ -79,7 +79,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
     }
   }
 
-  virtual void Refute() {
+  void Refute() override {
     if (assign_) {
       integer_variable_->RemoveValue(value_);
     } else {
@@ -87,7 +87,7 @@ class IntegerVariableNoGoodTerm : public NoGoodTerm {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("(%s %s %lld)", integer_variable_->name().c_str(),
                         assign_ ? "==" : "!=", value_);
   }
@@ -160,24 +160,24 @@ namespace {
 class NaiveNoGoodManager : public NoGoodManager {
  public:
   explicit NaiveNoGoodManager(Solver* const solver) : NoGoodManager(solver) {}
-  virtual ~NaiveNoGoodManager() { Clear(); }
+  ~NaiveNoGoodManager() override { Clear(); }
 
-  virtual void Clear() { STLDeleteElements(&nogoods_); }
+  void Clear() override { STLDeleteElements(&nogoods_); }
 
-  virtual void Init() {}
+  void Init() override {}
 
-  virtual void AddNoGood(NoGood* const nogood) { nogoods_.push_back(nogood); }
+  void AddNoGood(NoGood* const nogood) override { nogoods_.push_back(nogood); }
 
-  virtual int NoGoodCount() const { return nogoods_.size(); }
+  int NoGoodCount() const override { return nogoods_.size(); }
 
-  virtual void Apply() {
+  void Apply() override {
     Solver* const s = solver();
     for (int i = 0; i < nogoods_.size(); ++i) {
       nogoods_[i]->Apply(s);
     }
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("NaiveNoGoodManager(%d)", NoGoodCount());
   }
 

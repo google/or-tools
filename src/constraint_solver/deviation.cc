@@ -53,9 +53,9 @@ class Deviation : public Constraint {
     CHECK(deviation_var != nullptr);
   }
 
-  virtual ~Deviation() {}
+  ~Deviation() override {}
 
-  virtual void Post() {
+  void Post() override {
     Solver* const s = solver();
     Demon* const demon = s->MakeConstraintInitialPropagateCallback(this);
     for (int i = 0; i < size_; ++i) {
@@ -65,19 +65,19 @@ class Deviation : public Constraint {
     s->AddConstraint(s->MakeSumEquality(vars_, total_sum_));
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     const int64 delta_min = BuildMinimalDeviationAssignment();
     deviation_var_->SetMin(delta_min);
     PropagateBounds(delta_min);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Deviation([%s], deviation_var = %s, sum = %lld)",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         deviation_var_->DebugString().c_str(), total_sum_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDeviation, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);

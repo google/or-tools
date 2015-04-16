@@ -36,7 +36,7 @@ class Dimension : public BaseObject {
  public:
   explicit Dimension(Solver* const s, Pack* const pack)
       : solver_(s), pack_(pack) {}
-  virtual ~Dimension() {}
+  ~Dimension() override {}
 
   virtual void Post() = 0;
   virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
@@ -49,7 +49,7 @@ class Dimension : public BaseObject {
   virtual void PropagateUnassigned(const std::vector<int>& assigned,
                                    const std::vector<int>& unassigned) = 0;
   virtual void EndPropagate() = 0;
-  virtual std::string DebugString() const { return "Dimension"; }
+  std::string DebugString() const override { return "Dimension"; }
   virtual void Accept(ModelVisitor* const visitor) const = 0;
 
   Solver* solver() const { return solver_; }
@@ -175,7 +175,7 @@ class InitialPropagateData : public BaseObject {
   const std::vector<int>& assigned() const { return assigned_; }
   const std::vector<int>& unassigned() const { return unassigned_; }
 
-  virtual std::string DebugString() const { return "InitialPropagateData"; }
+  std::string DebugString() const override { return "InitialPropagateData"; }
 
  private:
   std::vector<std::vector<int>> undecided_;
@@ -572,9 +572,9 @@ class DimensionLessThanConstant : public Dimension {
     SortIndexByWeight(&ranked_, weights_);
   }
 
-  virtual ~DimensionLessThanConstant() {}
+  ~DimensionLessThanConstant() override {}
 
-  virtual void Post() {}
+  void Post() override {}
 
   void PushFromTop(int bin_index) {
     const int64 slack =
@@ -596,8 +596,8 @@ class DimensionLessThanConstant : public Dimension {
     first_unbound_backward_vector_.SetValue(solver(), bin_index, last_unbound);
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {
     Solver* const s = solver();
     int64 sum = 0LL;
     for (const int value : forced) {
@@ -608,10 +608,10 @@ class DimensionLessThanConstant : public Dimension {
     PushFromTop(bin_index);
   }
 
-  virtual void EndInitialPropagate() {}
+  void EndInitialPropagate() override {}
 
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {
     if (forced.size() > 0) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
@@ -622,14 +622,14 @@ class DimensionLessThanConstant : public Dimension {
       PushFromTop(bin_index);
     }
   }
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {}
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {}
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {}
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {}
 
-  virtual void EndPropagate() {}
+  void EndPropagate() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageLessConstantExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_);
@@ -672,9 +672,9 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
     SortIndexByWeight(&ranked_, weights_.get());
   }
 
-  virtual ~DimensionSumCallbackLessThanConstant() {}
+  ~DimensionSumCallbackLessThanConstant() override {}
 
-  virtual void Post() {}
+  void Post() override {}
 
   void PushFromTop(int bin_index) {
     const int64 slack =
@@ -696,8 +696,8 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
     first_unbound_backward_vector_.SetValue(solver(), bin_index, last_unbound);
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {
     Solver* const s = solver();
     int64 sum = 0LL;
     for (const int value : forced) {
@@ -708,10 +708,10 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
     PushFromTop(bin_index);
   }
 
-  virtual void EndInitialPropagate() {}
+  void EndInitialPropagate() override {}
 
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {
     if (forced.size() > 0) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
@@ -722,14 +722,14 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
       PushFromTop(bin_index);
     }
   }
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {}
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {}
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {}
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {}
 
-  virtual void EndPropagate() {}
+  void EndPropagate() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageLessConstantExtension);
     // TODO(user) : Visit weight correctly.
     // visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
@@ -776,9 +776,9 @@ class DimensionLessThanConstantCallback2 : public Dimension {
     }
   }
 
-  virtual ~DimensionLessThanConstantCallback2() {}
+  ~DimensionLessThanConstantCallback2() override {}
 
-  virtual void Post() {}
+  void Post() override {}
 
   void PushFromTop(int bin_index) {
     const int64 slack =
@@ -800,8 +800,8 @@ class DimensionLessThanConstantCallback2 : public Dimension {
     first_unbound_backward_vector_.SetValue(solver(), bin_index, last_unbound);
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {
     Solver* const s = solver();
     int64 sum = 0LL;
     for (const int value : forced) {
@@ -813,10 +813,10 @@ class DimensionLessThanConstantCallback2 : public Dimension {
     PushFromTop(bin_index);
   }
 
-  virtual void EndInitialPropagate() {}
+  void EndInitialPropagate() override {}
 
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {
     if (forced.size() > 0) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
@@ -827,14 +827,14 @@ class DimensionLessThanConstantCallback2 : public Dimension {
       PushFromTop(bin_index);
     }
   }
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {}
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {}
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {}
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {}
 
-  virtual void EndPropagate() {}
+  void EndPropagate() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageLessConstantExtension);
     // TODO(user): Visit weight correctly
     // visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
@@ -860,9 +860,9 @@ class DimensionWeightedSumEqVar : public Dimension {
    public:
     VarDemon(DimensionWeightedSumEqVar* const dim, int index)
         : dim_(dim), index_(index) {}
-    virtual ~VarDemon() {}
+    ~VarDemon() override {}
 
-    virtual void Run(Solver* const s) { dim_->PushFromTop(index_); }
+    void Run(Solver* const s) override { dim_->PushFromTop(index_); }
 
    private:
     DimensionWeightedSumEqVar* const dim_;
@@ -889,11 +889,11 @@ class DimensionWeightedSumEqVar : public Dimension {
     SortIndexByWeight(&ranked_, weights_);
   }
 
-  virtual ~DimensionWeightedSumEqVar() {}
+  ~DimensionWeightedSumEqVar() override {}
 
-  virtual std::string DebugString() const { return "DimensionWeightedSumEqVar"; }
+  std::string DebugString() const override { return "DimensionWeightedSumEqVar"; }
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < bins_count_; ++i) {
       Demon* const d = solver()->RevAlloc(new VarDemon(this, i));
       loads_[i]->WhenRange(d);
@@ -926,8 +926,8 @@ class DimensionWeightedSumEqVar : public Dimension {
     first_unbound_backward_vector_.SetValue(solver(), bin_index, last_unbound);
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {
     Solver* const s = solver();
     int64 sum = 0LL;
     for (const int value : forced) {
@@ -942,10 +942,10 @@ class DimensionWeightedSumEqVar : public Dimension {
     PushFromTop(bin_index);
   }
 
-  virtual void EndInitialPropagate() {}
+  void EndInitialPropagate() override {}
 
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {
     Solver* const s = solver();
     int64 down = sum_of_bound_variables_vector_[bin_index];
     for (const int value : forced) {
@@ -959,14 +959,14 @@ class DimensionWeightedSumEqVar : public Dimension {
     sum_of_all_variables_vector_.SetValue(s, bin_index, up);
     PushFromTop(bin_index);
   }
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {}
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {}
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {}
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {}
 
-  virtual void EndPropagate() {}
+  void EndPropagate() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageEqualVariableExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
                                        weights_);
@@ -992,9 +992,9 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
    public:
     VarDemon(DimensionWeightedCallback2SumEqVar* const dim, int index)
         : dim_(dim), index_(index) {}
-    virtual ~VarDemon() {}
+    ~VarDemon() override {}
 
-    virtual void Run(Solver* const s) { dim_->PushFromTop(index_); }
+    void Run(Solver* const s) override { dim_->PushFromTop(index_); }
 
    private:
     DimensionWeightedCallback2SumEqVar* const dim_;
@@ -1027,13 +1027,13 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     }
   }
 
-  virtual ~DimensionWeightedCallback2SumEqVar() {}
+  ~DimensionWeightedCallback2SumEqVar() override {}
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return "DimensionWeightedCallback2SumEqVar";
   }
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < bins_count_; ++i) {
       Demon* const d = solver()->RevAlloc(new VarDemon(this, i));
       loads_[i]->WhenRange(d);
@@ -1066,8 +1066,8 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     first_unbound_backward_vector_.SetValue(solver(), bin_index, last_unbound);
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {
     Solver* const s = solver();
     int64 sum = 0LL;
     for (const int value : forced) {
@@ -1083,10 +1083,10 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     PushFromTop(bin_index);
   }
 
-  virtual void EndInitialPropagate() {}
+  void EndInitialPropagate() override {}
 
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {
     Solver* const s = solver();
     int64 down = sum_of_bound_variables_vector_[bin_index];
     for (const int value : forced) {
@@ -1100,14 +1100,14 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     sum_of_all_variables_vector_.SetValue(s, bin_index, up);
     PushFromTop(bin_index);
   }
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {}
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {}
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {}
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {}
 
-  virtual void EndPropagate() {}
+  void EndPropagate() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kUsageEqualVariableExtension);
     // TODO(user): Visit weight correctly
     // visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
@@ -1133,9 +1133,9 @@ class AssignedWeightedSumDimension : public Dimension {
   class VarDemon : public Demon {
    public:
     explicit VarDemon(AssignedWeightedSumDimension* const dim) : dim_(dim) {}
-    virtual ~VarDemon() {}
+    ~VarDemon() override {}
 
-    virtual void Run(Solver* const s) { dim_->PropagateAll(); }
+    void Run(Solver* const s) override { dim_->PropagateAll(); }
 
    private:
     AssignedWeightedSumDimension* const dim_;
@@ -1164,9 +1164,9 @@ class AssignedWeightedSumDimension : public Dimension {
     first_unbound_backward_.SetValue(s, ranked_.size() - 1);
   }
 
-  virtual ~AssignedWeightedSumDimension() {}
+  ~AssignedWeightedSumDimension() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const uv = solver()->RevAlloc(new VarDemon(this));
     cost_var_->WhenRange(uv);
   }
@@ -1193,13 +1193,13 @@ class AssignedWeightedSumDimension : public Dimension {
     first_unbound_backward_.SetValue(solver(), last_unbound);
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {}
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {}
 
-  virtual void EndInitialPropagate() {}
+  void EndInitialPropagate() override {}
 
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {
     for (int index = 0; index < vars_count_; ++index) {
       sum_all_weights_ += weights_[index];
     }
@@ -1207,11 +1207,11 @@ class AssignedWeightedSumDimension : public Dimension {
     PropagateUnassigned(assigned, unassigned);
   }
 
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {}
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {}
 
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {
     int64 sum_assigned = sum_of_assigned_items_.Value();
     for (int index = 0; index < assigned.size(); ++index) {
       const int var_index = assigned[index];
@@ -1230,9 +1230,9 @@ class AssignedWeightedSumDimension : public Dimension {
     PropagateAll();
   }
 
-  virtual void EndPropagate() {}
+  void EndPropagate() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(
         ModelVisitor::kWeightedSumOfAssignedEqualVariableExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kCoefficientsArgument,
@@ -1262,9 +1262,9 @@ class CountAssignedItemsDimension : public Dimension {
   class VarDemon : public Demon {
    public:
     explicit VarDemon(CountAssignedItemsDimension* const dim) : dim_(dim) {}
-    virtual ~VarDemon() {}
+    ~VarDemon() override {}
 
-    virtual void Run(Solver* const s) { dim_->PropagateAll(); }
+    void Run(Solver* const s) override { dim_->PropagateAll(); }
 
    private:
     CountAssignedItemsDimension* const dim_;
@@ -1284,9 +1284,9 @@ class CountAssignedItemsDimension : public Dimension {
     DCHECK_GT(bins_count, 0);
   }
 
-  virtual ~CountAssignedItemsDimension() {}
+  ~CountAssignedItemsDimension() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const uv = solver()->RevAlloc(new VarDemon(this));
     cost_var_->WhenRange(uv);
   }
@@ -1301,21 +1301,21 @@ class CountAssignedItemsDimension : public Dimension {
     }
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {}
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {}
 
-  virtual void EndInitialPropagate() {}
+  void EndInitialPropagate() override {}
 
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {
     PropagateUnassigned(assigned, unassigned);
   }
 
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {}
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {}
 
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {
     Solver* const s = solver();
     assigned_count_.SetValue(s, assigned_count_.Value() + assigned.size());
     unassigned_count_.SetValue(s,
@@ -1323,9 +1323,9 @@ class CountAssignedItemsDimension : public Dimension {
     PropagateAll();
   }
 
-  virtual void EndPropagate() {}
+  void EndPropagate() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kCountAssignedItemsExtension);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             cost_var_);
@@ -1348,9 +1348,9 @@ class CountUsedBinDimension : public Dimension {
   class VarDemon : public Demon {
    public:
     explicit VarDemon(CountUsedBinDimension* const dim) : dim_(dim) {}
-    virtual ~VarDemon() {}
+    ~VarDemon() override {}
 
-    virtual void Run(Solver* const s) { dim_->PropagateAll(); }
+    void Run(Solver* const s) override { dim_->PropagateAll(); }
 
    private:
     CountUsedBinDimension* const dim_;
@@ -1373,9 +1373,9 @@ class CountUsedBinDimension : public Dimension {
     DCHECK_GT(bins_count, 0);
   }
 
-  virtual ~CountUsedBinDimension() {}
+  ~CountUsedBinDimension() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const uv = solver()->RevAlloc(new VarDemon(this));
     count_var_->WhenRange(uv);
     initial_min_ = 0;
@@ -1399,8 +1399,8 @@ class CountUsedBinDimension : public Dimension {
     }
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {
     if (forced.size() > 0) {
       used_.SetToOne(solver(), bin_index);
       initial_min_++;
@@ -1411,17 +1411,17 @@ class CountUsedBinDimension : public Dimension {
     }
   }
 
-  virtual void EndInitialPropagate() {
+  void EndInitialPropagate() override {
     card_min_.SetValue(solver(), initial_min_);
     card_max_.SetValue(solver(), initial_max_);
     PropagateAll();
   }
 
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {}
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {}
 
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {
     if (!used_.IsSet(bin_index)) {
       if (forced.size() > 0) {
         used_.SetToOne(solver(), bin_index);
@@ -1436,12 +1436,12 @@ class CountUsedBinDimension : public Dimension {
     }
   }
 
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {}
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {}
 
-  virtual void EndPropagate() { PropagateAll(); }
+  void EndPropagate() override { PropagateAll(); }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kCountUsedBinsExtension);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             count_var_);
@@ -1470,9 +1470,9 @@ class VariableUsageDimension : public Dimension {
                          const std::vector<IntVar*>& weights)
       : Dimension(solver, pack), capacities_(capacities), weights_(weights) {}
 
-  virtual ~VariableUsageDimension() {}
+  ~VariableUsageDimension() override {}
 
-  virtual void Post() {
+  void Post() override {
     Solver* const s = solver();
     const int num_bins = capacities_.size();
     const int num_items = weights_.size();
@@ -1487,20 +1487,20 @@ class VariableUsageDimension : public Dimension {
     }
   }
 
-  virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
-                                const std::vector<int>& undecided) {}
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) {}
-  virtual void EndInitialPropagate() {}
-  virtual void Propagate(int bin_index, const std::vector<int>& forced,
-                         const std::vector<int>& removed) {}
-  virtual void PropagateUnassigned(const std::vector<int>& assigned,
-                                   const std::vector<int>& unassigned) {}
-  virtual void EndPropagate() {}
+  void InitialPropagate(int bin_index, const std::vector<int>& forced,
+                        const std::vector<int>& undecided) override {}
+  void InitialPropagateUnassigned(const std::vector<int>& assigned,
+                                  const std::vector<int>& unassigned) override {}
+  void EndInitialPropagate() override {}
+  void Propagate(int bin_index, const std::vector<int>& forced,
+                 const std::vector<int>& removed) override {}
+  void PropagateUnassigned(const std::vector<int>& assigned,
+                           const std::vector<int>& unassigned) override {}
+  void EndPropagate() override {}
 
-  virtual std::string DebugString() const { return "VariableUsageDimension"; }
+  std::string DebugString() const override { return "VariableUsageDimension"; }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(
         ModelVisitor::kVariableUsageLessConstantExtension);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,

@@ -75,23 +75,23 @@ class Distribute : public Constraint {
         min_(cards.size(), 0),
         max_(cards.size(), 0) {}
 
-  virtual ~Distribute() {}
+  ~Distribute() override {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  void Post() override;
+  void InitialPropagate() override;
   void OneBound(int vindex);
   void OneDomain(int vindex);
   void CountVar(int cindex);
   void CardMin(int cindex);
   void CardMax(int cindex);
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Distribute(vars = [%s], values = [%s], cards = [%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         strings::Join(values_, ", ").c_str(),
                         JoinDebugStringPtr(cards_, ", ").c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -239,16 +239,16 @@ class FastDistribute : public Constraint {
  public:
   FastDistribute(Solver* const s, const std::vector<IntVar*>& vars,
                  const std::vector<IntVar*>& cards);
-  virtual ~FastDistribute() {}
+  ~FastDistribute() override {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  void Post() override;
+  void InitialPropagate() override;
   void OneBound(int vindex);
   void OneDomain(int vindex);
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
   void SetRevCannotContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
@@ -268,7 +268,7 @@ class FastDistribute : public Constraint {
     }
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -425,16 +425,16 @@ class BoundedDistribute : public Constraint {
   BoundedDistribute(Solver* const s, const std::vector<IntVar*>& vars,
                     const std::vector<int64>& values, const std::vector<int64>& card_min,
                     const std::vector<int64>& card_max);
-  virtual ~BoundedDistribute() {}
+  ~BoundedDistribute() override {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  void Post() override;
+  void InitialPropagate() override;
   void OneBound(int vindex);
   void OneDomain(int vindex);
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
   void SetRevCannotContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
@@ -458,7 +458,7 @@ class BoundedDistribute : public Constraint {
     }
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -628,16 +628,16 @@ class BoundedFastDistribute : public Constraint {
   BoundedFastDistribute(Solver* const s, const std::vector<IntVar*>& vars,
                         const std::vector<int64>& card_min,
                         const std::vector<int64>& card_max);
-  virtual ~BoundedFastDistribute() {}
+  ~BoundedFastDistribute() override {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  void Post() override;
+  void InitialPropagate() override;
   void OneBound(int vindex);
   void OneDomain(int vindex);
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
   void SetRevCannotContribute(int64 var_index, int64 card_index) {
     Solver* const s = solver();
     undecided_.SetToZero(s, var_index, card_index);
@@ -661,7 +661,7 @@ class BoundedFastDistribute : public Constraint {
     }
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -842,19 +842,19 @@ class SetAllToZero : public Constraint {
   SetAllToZero(Solver* const s, const std::vector<IntVar*>& vars)
       : Constraint(s), vars_(vars) {}
 
-  virtual ~SetAllToZero() {}
+  ~SetAllToZero() override {}
 
-  virtual void Post() {}
+  void Post() override {}
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     for (int i = 0; i < vars_.size(); ++i) {
       vars_[i]->SetValue(0);
     }
   }
 
-  virtual std::string DebugString() const { return "SetAllToZero()"; }
+  std::string DebugString() const override { return "SetAllToZero()"; }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDistribute, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kCardsArgument,
                                                vars_);

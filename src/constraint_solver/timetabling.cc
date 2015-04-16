@@ -40,18 +40,18 @@ class IntervalUnaryRelation : public Constraint {
   IntervalUnaryRelation(Solver* const s, IntervalVar* const t, int64 d,
                         Solver::UnaryIntervalRelation rel)
       : Constraint(s), t_(t), d_(d), rel_(rel) {}
-  virtual ~IntervalUnaryRelation() {}
+  ~IntervalUnaryRelation() override {}
 
-  virtual void Post();
+  void Post() override;
 
-  virtual void InitialPropagate();
+  void InitialPropagate() override;
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("(%s %s %" GG_LL_FORMAT "d)", t_->DebugString().c_str(),
                         kUnaryNames[rel_], d_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalUnaryRelation, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, t_);
     visitor->VisitIntegerArgument(ModelVisitor::kRelationArgument, rel_);
@@ -125,18 +125,18 @@ class IntervalBinaryRelation : public Constraint {
                          IntervalVar* const t2,
                          Solver::BinaryIntervalRelation rel)
       : Constraint(s), t1_(t1), t2_(t2), rel_(rel) {}
-  virtual ~IntervalBinaryRelation() {}
+  ~IntervalBinaryRelation() override {}
 
-  virtual void Post();
+  void Post() override;
 
-  virtual void InitialPropagate();
+  void InitialPropagate() override;
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("(%s %s %s)", t1_->DebugString().c_str(),
                         kBinaryNames[rel_], t2_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalBinaryRelation, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, t1_);
     visitor->VisitIntegerArgument(ModelVisitor::kRelationArgument, rel_);
@@ -259,11 +259,11 @@ class TemporalDisjunction : public Constraint {
   TemporalDisjunction(Solver* const s, IntervalVar* const t1,
                       IntervalVar* const t2, IntVar* const alt)
       : Constraint(s), t1_(t1), t2_(t2), alt_(alt), state_(UNDECIDED) {}
-  virtual ~TemporalDisjunction() {}
+  ~TemporalDisjunction() override {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
 
   void RangeDemon1();
   void RangeDemon2();
@@ -271,7 +271,7 @@ class TemporalDisjunction : public Constraint {
   void Decide(State s);
   void TryToDecide();
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIntervalDisjunction, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, t1_);
     visitor->VisitIntervalArgument(ModelVisitor::kRightArgument, t2_);

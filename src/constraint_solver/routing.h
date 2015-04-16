@@ -1595,8 +1595,8 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
  public:
   IntVarFilteredDecisionBuilder(Solver* solver, const std::vector<IntVar*>& vars,
                                 const std::vector<LocalSearchFilter*>& filters);
-  virtual ~IntVarFilteredDecisionBuilder() {}
-  virtual Decision* Next(Solver* solver);
+  ~IntVarFilteredDecisionBuilder() override {}
+  Decision* Next(Solver* solver) override;
   // Virtual method to redefine to build a solution.
   virtual bool BuildSolution() = 0;
   // Returns statistics on search, number of decisions sent to filters, number
@@ -1661,7 +1661,7 @@ class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
  public:
   RoutingFilteredDecisionBuilder(RoutingModel* model,
                                  const std::vector<LocalSearchFilter*>& filters);
-  virtual ~RoutingFilteredDecisionBuilder() {}
+  ~RoutingFilteredDecisionBuilder() override {}
   RoutingModel* model() const { return model_; }
   // Initializes the current solution with empty or partial vehicle routes.
   bool InitializeRoutes();
@@ -1687,7 +1687,7 @@ class CheapestInsertionFilteredDecisionBuilder
       ResultCallback3<int64, int64, int64, int64>* evaluator,
       ResultCallback1<int64, int64>* penalty_evaluator,
       const std::vector<LocalSearchFilter*>& filters);
-  virtual ~CheapestInsertionFilteredDecisionBuilder() {}
+  ~CheapestInsertionFilteredDecisionBuilder() override {}
 
  protected:
   typedef std::pair<int64, int64> ValuedPosition;
@@ -1726,8 +1726,8 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
       ResultCallback3<int64, int64, int64, int64>* evaluator,
       ResultCallback1<int64, int64>* penalty_evaluator,
       const std::vector<LocalSearchFilter*>& filters);
-  virtual ~GlobalCheapestInsertionFilteredDecisionBuilder() {}
-  virtual bool BuildSolution();
+  ~GlobalCheapestInsertionFilteredDecisionBuilder() override {}
+  bool BuildSolution() override;
 
  private:
   class PairEntry;
@@ -1813,8 +1813,8 @@ class LocalCheapestInsertionFilteredDecisionBuilder
       RoutingModel* model,
       ResultCallback3<int64, int64, int64, int64>* evaluator,
       const std::vector<LocalSearchFilter*>& filters);
-  virtual ~LocalCheapestInsertionFilteredDecisionBuilder() {}
-  virtual bool BuildSolution();
+  ~LocalCheapestInsertionFilteredDecisionBuilder() override {}
+  bool BuildSolution() override;
 
  private:
   // Computes the possible insertion positions of 'node' and sorts them
@@ -1840,8 +1840,8 @@ class CheapestAdditionFilteredDecisionBuilder
  public:
   CheapestAdditionFilteredDecisionBuilder(
       RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
-  virtual ~CheapestAdditionFilteredDecisionBuilder() {}
-  virtual bool BuildSolution();
+  ~CheapestAdditionFilteredDecisionBuilder() override {}
+  bool BuildSolution() override;
 
  private:
   class PartialRoutesAndLargeVehicleIndicesFirst {
@@ -1871,11 +1871,11 @@ class EvaluatorCheapestAdditionFilteredDecisionBuilder
       RoutingModel* model,
       ResultCallback2<int64, /*from*/ int64, /*to*/ int64>* evaluator,
       const std::vector<LocalSearchFilter*>& filters);
-  virtual ~EvaluatorCheapestAdditionFilteredDecisionBuilder() {}
+  ~EvaluatorCheapestAdditionFilteredDecisionBuilder() override {}
 
  private:
   // Next nodes are sorted according to the current evaluator.
-  virtual void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts);
+  void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts) override;
 
   std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
 };
@@ -1890,11 +1890,11 @@ class ComparatorCheapestAdditionFilteredDecisionBuilder
       RoutingModel* model, ResultCallback3<bool, /*from*/ int64, /*to1*/ int64,
                                            /*to2*/ int64>* comparator,
       const std::vector<LocalSearchFilter*>& filters);
-  virtual ~ComparatorCheapestAdditionFilteredDecisionBuilder() {}
+  ~ComparatorCheapestAdditionFilteredDecisionBuilder() override {}
 
  private:
   // Next nodes are sorted according to the current comparator.
-  virtual void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts);
+  void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts) override;
 
   std::unique_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
 };
@@ -1915,8 +1915,8 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
   SavingsFilteredDecisionBuilder(
       RoutingModel* model, int64 saving_neighbors,
       const std::vector<LocalSearchFilter*>& filters);
-  virtual ~SavingsFilteredDecisionBuilder() {}
-  virtual bool BuildSolution();
+  ~SavingsFilteredDecisionBuilder() override {}
+  bool BuildSolution() override;
 
  private:
   typedef std::pair</*saving*/ int64, /*saving index*/ int64> Saving;
@@ -1957,7 +1957,7 @@ class RoutingLocalSearchFilter : public IntVarLocalSearchFilter {
  public:
   RoutingLocalSearchFilter(const std::vector<IntVar*> nexts,
                            Callback1<int64>* objective_callback);
-  virtual ~RoutingLocalSearchFilter() {}
+  ~RoutingLocalSearchFilter() override {}
   virtual void InjectObjectiveValue(int64 objective_value);
 
  protected:
@@ -1978,9 +1978,9 @@ class BasePathFilter : public RoutingLocalSearchFilter {
  public:
   BasePathFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
                  Callback1<int64>* objective_callback);
-  virtual ~BasePathFilter() {}
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
-  virtual void OnSynchronize(const Assignment* delta);
+  ~BasePathFilter() override {}
+  bool Accept(const Assignment* delta, const Assignment* deltadelta) override;
+  void OnSynchronize(const Assignment* delta) override;
 
  protected:
   static const int64 kUnassigned;

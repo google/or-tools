@@ -386,9 +386,9 @@ class ScheduleOrPostpone : public Decision {
  public:
   ScheduleOrPostpone(IntervalVar* const var, int64 est, int64* const marker)
       : var_(var), est_(est), marker_(marker) {}
-  virtual ~ScheduleOrPostpone() {}
+  ~ScheduleOrPostpone() override {}
 
-  virtual void Apply(Solver* const s) {
+  void Apply(Solver* const s) override {
     var_->SetPerformed(true);
     if (est_.Value() < var_->StartMin()) {
       est_.SetValue(s, var_->StartMin());
@@ -396,16 +396,16 @@ class ScheduleOrPostpone : public Decision {
     var_->SetStartRange(est_.Value(), est_.Value());
   }
 
-  virtual void Refute(Solver* const s) {
+  void Refute(Solver* const s) override {
     s->SaveAndSetValue(marker_, est_.Value() + 1);
   }
 
-  virtual void Accept(DecisionVisitor* const visitor) const {
+  void Accept(DecisionVisitor* const visitor) const override {
     CHECK(visitor != nullptr);
     visitor->VisitScheduleOrPostpone(var_, est_.Value());
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("ScheduleOrPostpone(%s at %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(), est_.Value());
   }
@@ -421,9 +421,9 @@ class SetTimesForward : public DecisionBuilder {
   explicit SetTimesForward(const std::vector<IntervalVar*>& vars)
       : vars_(vars), markers_(vars.size(), kint64min) {}
 
-  virtual ~SetTimesForward() {}
+  ~SetTimesForward() override {}
 
-  virtual Decision* Next(Solver* const s) {
+  Decision* Next(Solver* const s) override {
     int64 best_est = kint64max;
     int64 best_lct = kint64max;
     int support = -1;
@@ -455,9 +455,9 @@ class SetTimesForward : public DecisionBuilder {
         vars_[support], vars_[support]->StartMin(), &markers_[support]));
   }
 
-  virtual std::string DebugString() const { return "SetTimesForward()"; }
+  std::string DebugString() const override { return "SetTimesForward()"; }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         vars_);
@@ -476,9 +476,9 @@ class ScheduleOrExpedite : public Decision {
  public:
   ScheduleOrExpedite(IntervalVar* const var, int64 est, int64* const marker)
       : var_(var), est_(est), marker_(marker) {}
-  virtual ~ScheduleOrExpedite() {}
+  ~ScheduleOrExpedite() override {}
 
-  virtual void Apply(Solver* const s) {
+  void Apply(Solver* const s) override {
     var_->SetPerformed(true);
     if (est_.Value() > var_->EndMax()) {
       est_.SetValue(s, var_->EndMax());
@@ -486,16 +486,16 @@ class ScheduleOrExpedite : public Decision {
     var_->SetEndRange(est_.Value(), est_.Value());
   }
 
-  virtual void Refute(Solver* const s) {
+  void Refute(Solver* const s) override {
     s->SaveAndSetValue(marker_, est_.Value() - 1);
   }
 
-  virtual void Accept(DecisionVisitor* const visitor) const {
+  void Accept(DecisionVisitor* const visitor) const override {
     CHECK(visitor != nullptr);
     visitor->VisitScheduleOrExpedite(var_, est_.Value());
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("ScheduleOrExpedite(%s at %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(), est_.Value());
   }
@@ -511,9 +511,9 @@ class SetTimesBackward : public DecisionBuilder {
   explicit SetTimesBackward(const std::vector<IntervalVar*>& vars)
       : vars_(vars), markers_(vars.size(), kint64max) {}
 
-  virtual ~SetTimesBackward() {}
+  ~SetTimesBackward() override {}
 
-  virtual Decision* Next(Solver* const s) {
+  Decision* Next(Solver* const s) override {
     int64 best_end = kint64min;
     int64 best_start = kint64min;
     int support = -1;
@@ -545,9 +545,9 @@ class SetTimesBackward : public DecisionBuilder {
         vars_[support], vars_[support]->EndMax(), &markers_[support]));
   }
 
-  virtual std::string DebugString() const { return "SetTimesBackward()"; }
+  std::string DebugString() const override { return "SetTimesBackward()"; }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         vars_);
@@ -565,18 +565,18 @@ class RankFirst : public Decision {
  public:
   RankFirst(SequenceVar* const seq, int index)
       : sequence_(seq), index_(index) {}
-  virtual ~RankFirst() {}
+  ~RankFirst() override {}
 
-  virtual void Apply(Solver* const s) { sequence_->RankFirst(index_); }
+  void Apply(Solver* const s) override { sequence_->RankFirst(index_); }
 
-  virtual void Refute(Solver* const s) { sequence_->RankNotFirst(index_); }
+  void Refute(Solver* const s) override { sequence_->RankNotFirst(index_); }
 
-  void Accept(DecisionVisitor* const visitor) const {
+  void Accept(DecisionVisitor* const visitor) const override {
     CHECK(visitor != nullptr);
     visitor->VisitRankFirstInterval(sequence_, index_);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("RankFirst(%s, %d)", sequence_->DebugString().c_str(),
                         index_);
   }
@@ -589,18 +589,18 @@ class RankFirst : public Decision {
 class RankLast : public Decision {
  public:
   RankLast(SequenceVar* const seq, int index) : sequence_(seq), index_(index) {}
-  virtual ~RankLast() {}
+  ~RankLast() override {}
 
-  virtual void Apply(Solver* const s) { sequence_->RankLast(index_); }
+  void Apply(Solver* const s) override { sequence_->RankLast(index_); }
 
-  virtual void Refute(Solver* const s) { sequence_->RankNotLast(index_); }
+  void Refute(Solver* const s) override { sequence_->RankNotLast(index_); }
 
-  void Accept(DecisionVisitor* const visitor) const {
+  void Accept(DecisionVisitor* const visitor) const override {
     CHECK(visitor != nullptr);
     visitor->VisitRankLastInterval(sequence_, index_);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("RankLast(%s, %d)", sequence_->DebugString().c_str(),
                         index_);
   }
@@ -616,9 +616,9 @@ class RankFirstIntervalVars : public DecisionBuilder {
                         Solver::SequenceStrategy str)
       : sequences_(sequences), strategy_(str) {}
 
-  virtual ~RankFirstIntervalVars() {}
+  ~RankFirstIntervalVars() override {}
 
-  virtual Decision* Next(Solver* const s) {
+  Decision* Next(Solver* const s) override {
     SequenceVar* best_sequence = nullptr;
     best_possible_firsts_.clear();
     while (true) {
@@ -643,7 +643,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
     }
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitSequenceArrayArgument(ModelVisitor::kSequencesArgument,
                                         sequences_);

@@ -53,7 +53,7 @@ class DemonProfiler : public PropagationMonitor {
         active_demon_(nullptr),
         start_time_ns_(base::GetCurrentTimeNanos()) {}
 
-  virtual ~DemonProfiler() {
+  ~DemonProfiler() override {
     STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
                                          constraint_map_.end());
   }
@@ -64,7 +64,8 @@ class DemonProfiler : public PropagationMonitor {
     return (base::GetCurrentTimeNanos() - start_time_ns_) / 1000;
   }
 
-  virtual void BeginConstraintInitialPropagation(Constraint* const constraint) {
+  void BeginConstraintInitialPropagation(
+      Constraint* const constraint) override {
     if (solver()->state() == Solver::IN_SEARCH) {
       return;
     }
@@ -79,7 +80,7 @@ class DemonProfiler : public PropagationMonitor {
     constraint_map_[constraint] = ct_run;
   }
 
-  virtual void EndConstraintInitialPropagation(Constraint* const constraint) {
+  void EndConstraintInitialPropagation(Constraint* const constraint) override {
     CHECK(active_constraint_ != nullptr);
     CHECK(active_demon_ == nullptr);
     CHECK(constraint != nullptr);
@@ -92,8 +93,8 @@ class DemonProfiler : public PropagationMonitor {
     active_constraint_ = nullptr;
   }
 
-  virtual void BeginNestedConstraintInitialPropagation(
-      Constraint* const constraint, Constraint* const delayed) {
+  void BeginNestedConstraintInitialPropagation(
+      Constraint* const constraint, Constraint* const delayed) override {
     if (solver()->state() == Solver::IN_SEARCH) {
       return;
     }
@@ -107,8 +108,8 @@ class DemonProfiler : public PropagationMonitor {
     active_constraint_ = constraint;
   }
 
-  virtual void EndNestedConstraintInitialPropagation(
-      Constraint* const constraint, Constraint* const delayed) {
+  void EndNestedConstraintInitialPropagation(
+      Constraint* const constraint, Constraint* const delayed) override {
     CHECK(active_constraint_ != nullptr);
     CHECK(active_demon_ == nullptr);
     CHECK(constraint != nullptr);
@@ -122,7 +123,7 @@ class DemonProfiler : public PropagationMonitor {
     active_constraint_ = nullptr;
   }
 
-  virtual void RegisterDemon(Demon* const demon) {
+  void RegisterDemon(Demon* const demon) override {
     if (solver()->state() == Solver::IN_SEARCH) {
       return;
     }
@@ -140,7 +141,7 @@ class DemonProfiler : public PropagationMonitor {
     }
   }
 
-  virtual void BeginDemonRun(Demon* const demon) {
+  void BeginDemonRun(Demon* const demon) override {
     if (demon->priority() == Solver::VAR_PRIORITY) {
       return;
     }
@@ -153,7 +154,7 @@ class DemonProfiler : public PropagationMonitor {
     }
   }
 
-  virtual void EndDemonRun(Demon* const demon) {
+  void EndDemonRun(Demon* const demon) override {
     if (demon->priority() == Solver::VAR_PRIORITY) {
       return;
     }
@@ -166,12 +167,12 @@ class DemonProfiler : public PropagationMonitor {
     active_demon_ = nullptr;
   }
 
-  virtual void StartProcessingIntegerVariable(IntVar* const var) {}
-  virtual void EndProcessingIntegerVariable(IntVar* const var) {}
-  virtual void PushContext(const std::string& context) {}
-  virtual void PopContext() {}
+  void StartProcessingIntegerVariable(IntVar* const var) override {}
+  void EndProcessingIntegerVariable(IntVar* const var) override {}
+  void PushContext(const std::string& context) override {}
+  void PopContext() override {}
 
-  virtual void BeginFail() {
+  void BeginFail() override {
     if (active_demon_ != nullptr) {
       DemonRuns* const demon_run = demon_map_[active_demon_];
       if (demon_run != nullptr) {
@@ -192,7 +193,7 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   // Restarts a search and clears all previously collected information.
-  virtual void RestartSearch() {
+  void RestartSearch() override {
     STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
                                          constraint_map_.end());
     constraint_map_.clear();
@@ -201,40 +202,39 @@ class DemonProfiler : public PropagationMonitor {
   }
 
   // IntExpr modifiers.
-  virtual void SetMin(IntExpr* const expr, int64 new_min) {}
-  virtual void SetMax(IntExpr* const expr, int64 new_max) {}
-  virtual void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) {}
+  void SetMin(IntExpr* const expr, int64 new_min) override {}
+  void SetMax(IntExpr* const expr, int64 new_max) override {}
+  void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) override {}
   // IntVar modifiers.
-  virtual void SetMin(IntVar* const var, int64 new_min) {}
-  virtual void SetMax(IntVar* const var, int64 new_max) {}
-  virtual void SetRange(IntVar* const var, int64 new_min, int64 new_max) {}
-  virtual void RemoveValue(IntVar* const var, int64 value) {}
-  virtual void SetValue(IntVar* const var, int64 value) {}
-  virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) {}
-  virtual void SetValues(IntVar* const var, const std::vector<int64>& values) {}
-  virtual void RemoveValues(IntVar* const var, const std::vector<int64>& values) {}
+  void SetMin(IntVar* const var, int64 new_min) override {}
+  void SetMax(IntVar* const var, int64 new_max) override {}
+  void SetRange(IntVar* const var, int64 new_min, int64 new_max) override {}
+  void RemoveValue(IntVar* const var, int64 value) override {}
+  void SetValue(IntVar* const var, int64 value) override {}
+  void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {}
+  void SetValues(IntVar* const var, const std::vector<int64>& values) override {}
+  void RemoveValues(IntVar* const var, const std::vector<int64>& values) override {}
   // IntervalVar modifiers.
-  virtual void SetStartMin(IntervalVar* const var, int64 new_min) {}
-  virtual void SetStartMax(IntervalVar* const var, int64 new_max) {}
-  virtual void SetStartRange(IntervalVar* const var, int64 new_min,
-                             int64 new_max) {}
-  virtual void SetEndMin(IntervalVar* const var, int64 new_min) {}
-  virtual void SetEndMax(IntervalVar* const var, int64 new_max) {}
-  virtual void SetEndRange(IntervalVar* const var, int64 new_min,
-                           int64 new_max) {}
-  virtual void SetDurationMin(IntervalVar* const var, int64 new_min) {}
-  virtual void SetDurationMax(IntervalVar* const var, int64 new_max) {}
-  virtual void SetDurationRange(IntervalVar* const var, int64 new_min,
-                                int64 new_max) {}
-  virtual void SetPerformed(IntervalVar* const var, bool value) {}
-  virtual void RankFirst(SequenceVar* const var, int index) {}
-  virtual void RankNotFirst(SequenceVar* const var, int index) {}
-  virtual void RankLast(SequenceVar* const var, int index) {}
-  virtual void RankNotLast(SequenceVar* const var, int index) {}
-  virtual void RankSequence(SequenceVar* const var,
-                            const std::vector<int>& rank_first,
-                            const std::vector<int>& rank_last,
-                            const std::vector<int>& unperformed) {}
+  void SetStartMin(IntervalVar* const var, int64 new_min) override {}
+  void SetStartMax(IntervalVar* const var, int64 new_max) override {}
+  void SetStartRange(IntervalVar* const var, int64 new_min,
+                     int64 new_max) override {}
+  void SetEndMin(IntervalVar* const var, int64 new_min) override {}
+  void SetEndMax(IntervalVar* const var, int64 new_max) override {}
+  void SetEndRange(IntervalVar* const var, int64 new_min,
+                   int64 new_max) override {}
+  void SetDurationMin(IntervalVar* const var, int64 new_min) override {}
+  void SetDurationMax(IntervalVar* const var, int64 new_max) override {}
+  void SetDurationRange(IntervalVar* const var, int64 new_min,
+                        int64 new_max) override {}
+  void SetPerformed(IntervalVar* const var, bool value) override {}
+  void RankFirst(SequenceVar* const var, int index) override {}
+  void RankNotFirst(SequenceVar* const var, int index) override {}
+  void RankLast(SequenceVar* const var, int index) override {}
+  void RankNotLast(SequenceVar* const var, int index) override {}
+  void RankSequence(SequenceVar* const var, const std::vector<int>& rank_first,
+                    const std::vector<int>& rank_last,
+                    const std::vector<int>& unperformed) override {}
 
   // Useful for unit tests.
   void AddFakeRun(Demon* const demon, int64 start_time, int64 end_time,
@@ -410,9 +410,9 @@ class DemonProfiler : public PropagationMonitor {
   // The demon_profiler is added by default on the main propagation
   // monitor.  It just needs to be added to the search monitors at the
   // start of the search.
-  virtual void Install() { SearchMonitor::Install(); }
+  void Install() override { SearchMonitor::Install(); }
 
-  virtual std::string DebugString() const { return "DemonProfiler"; }
+  std::string DebugString() const override { return "DemonProfiler"; }
 
  private:
   Constraint* active_constraint_;

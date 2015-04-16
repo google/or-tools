@@ -37,9 +37,9 @@ class CollectVariablesVisitor : public ModelParser {
         sequences_(sequence_variables),
         intervals_(interval_variables) {}
 
-  virtual ~CollectVariablesVisitor() {}
+  ~CollectVariablesVisitor() override {}
 
-  virtual void EndVisitModel(const std::string& solver_name) {
+  void EndVisitModel(const std::string& solver_name) override {
     PopArgumentHolder();
     primaries_->assign(primary_set_.begin(), primary_set_.end());
     std::sort(primaries_->begin(), primaries_->end());
@@ -51,8 +51,8 @@ class CollectVariablesVisitor : public ModelParser {
     std::sort(sequences_->begin(), sequences_->end());
   }
 
-  virtual void EndVisitConstraint(const std::string& type_name,
-                                  const Constraint* const constraint) {
+  void EndVisitConstraint(const std::string& type_name,
+                          const Constraint* const constraint) override {
     if (type_name.compare(ModelVisitor::kLinkExprVar) == 0 ||
         (type_name.compare(ModelVisitor::kSumEqual) == 0 &&
          Top()->HasIntegerExpressionArgument(ModelVisitor::kTargetArgument)) ||
@@ -147,8 +147,8 @@ class CollectVariablesVisitor : public ModelParser {
     PopArgumentHolder();
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
     if (delegate != nullptr) {
       delegate->Accept(this);
@@ -162,16 +162,16 @@ class CollectVariablesVisitor : public ModelParser {
     }
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     IgnoreIntegerVariable(const_cast<IntVar*>(variable));
     delegate->Accept(this);
   }
 
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const std::string& operation, int64 value,
-                                     IntervalVar* const delegate) {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     if (delegate != nullptr) {
       delegate->Accept(this);
     } else {
@@ -179,7 +179,7 @@ class CollectVariablesVisitor : public ModelParser {
     }
   }
 
-  virtual void VisitSequenceVariable(const SequenceVar* const variable) {
+  void VisitSequenceVariable(const SequenceVar* const variable) override {
     SequenceVar* const var = const_cast<SequenceVar*>(variable);
     sequence_set_.insert(var);
     for (int i = 0; i < var->size(); ++i) {
@@ -188,7 +188,7 @@ class CollectVariablesVisitor : public ModelParser {
     }
   }
 
-  virtual std::string DebugString() const { return "CollectVariablesVisitor"; }
+  std::string DebugString() const override { return "CollectVariablesVisitor"; }
 
  private:
   void IgnoreIntegerVariable(IntVar* const var) {

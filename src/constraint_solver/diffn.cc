@@ -49,9 +49,9 @@ class Diffn : public Constraint {
     CHECK_EQ(x_vars.size(), y_size.size());
   }
 
-  virtual ~Diffn() {}
+  ~Diffn() override {}
 
-  virtual void Post() {
+  void Post() override {
     Solver* const s = solver();
     for (int i = 0; i < size_; ++i) {
       Demon* const demon = MakeConstraintDemon1(
@@ -102,7 +102,7 @@ class Diffn : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // All sizes should be > 0.
     for (int i = 0; i < size_; ++i) {
       dx_[i]->SetMin(1);
@@ -117,7 +117,7 @@ class Diffn : public Constraint {
     PropagateAll();
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Diffn(x = [%s], y = [%s], dx = [%s], dy = [%s]))",
                         JoinDebugStringPtr(x_, ", ").c_str(),
                         JoinDebugStringPtr(y_, ", ").c_str(),
@@ -125,7 +125,7 @@ class Diffn : public Constraint {
                         JoinDebugStringPtr(dy_, ", ").c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDisjunctive, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kPositionXArgument,
                                                x_);

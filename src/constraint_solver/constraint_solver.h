@@ -3127,9 +3127,9 @@ std::ostream& operator<<(std::ostream& out, const BaseObject* o);  // NOLINT
 class PropagationBaseObject : public BaseObject {
  public:
   explicit PropagationBaseObject(Solver* const s) : solver_(s) {}
-  virtual ~PropagationBaseObject() {}
+  ~PropagationBaseObject() override {}
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     if (name().empty()) {
       return "PropagationBaseObject";
     } else {
@@ -3181,7 +3181,7 @@ class PropagationBaseObject : public BaseObject {
 class Decision : public BaseObject {
  public:
   Decision() {}
-  virtual ~Decision() {}
+  ~Decision() override {}
 
   // Apply will be called first when the decision is executed.
   virtual void Apply(Solver* const s) = 0;
@@ -3189,7 +3189,7 @@ class Decision : public BaseObject {
   // Refute will be called after a backtrack.
   virtual void Refute(Solver* const s) = 0;
 
-  virtual std::string DebugString() const { return "Decision"; }
+  std::string DebugString() const override { return "Decision"; }
   // Accepts the given visitor.
   virtual void Accept(DecisionVisitor* const visitor) const;
 
@@ -3202,7 +3202,7 @@ class Decision : public BaseObject {
 class DecisionVisitor : public BaseObject {
  public:
   DecisionVisitor() {}
-  virtual ~DecisionVisitor() {}
+  ~DecisionVisitor() override {}
   virtual void VisitSetVariableValue(IntVar* const var, int64 value);
   virtual void VisitSplitVariableDomain(IntVar* const var, int64 value,
                                         bool start_with_lower_half);
@@ -3221,13 +3221,13 @@ class DecisionVisitor : public BaseObject {
 class DecisionBuilder : public BaseObject {
  public:
   DecisionBuilder() {}
-  virtual ~DecisionBuilder() {}
+  ~DecisionBuilder() override {}
   // This is the main method of the decision builder class. It must
   // return a decision (an instance of the class Decision). If it
   // returns nullptr, this means that the decision builder has finished
   // its work.
   virtual Decision* Next(Solver* const s) = 0;
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 #if !defined(SWIG)
   // This method will be called at the start of the search.  It asks
   // the decision builder if it wants to append search monitors to the
@@ -3256,7 +3256,7 @@ class Demon : public BaseObject {
   // This indicates the priority of a demon. Immediate demons are treated
   // separately and corresponds to variables.
   Demon() : stamp_(GG_ULONGLONG(0)) {}
-  virtual ~Demon() {}
+  ~Demon() override {}
 
   // This is the main callback of the demon.
   virtual void Run(Solver* const s) = 0;
@@ -3266,7 +3266,7 @@ class Demon : public BaseObject {
   // use to maintain variables.
   virtual Solver::DemonPriority priority() const;
 
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
   // This method inhibits the demon in the search tree below the
   // current position.
@@ -3288,11 +3288,11 @@ class Demon : public BaseObject {
 class Action : public BaseObject {
  public:
   Action() {}
-  virtual ~Action() {}
+  ~Action() override {}
 
   // The main callback of the class.
   virtual void Run(Solver* const s) = 0;
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Action);
@@ -3466,7 +3466,7 @@ class ModelVisitor : public BaseObject {
   static const char kStartSyncOnEndOperation[];
   static const char kTraceOperation[];
 
-  virtual ~ModelVisitor();
+  ~ModelVisitor() override;
 
   // ----- Virtual methods for visitors -----
 
@@ -3542,7 +3542,7 @@ class ModelVisitor : public BaseObject {
 class Constraint : public PropagationBaseObject {
  public:
   explicit Constraint(Solver* const solver) : PropagationBaseObject(solver) {}
-  virtual ~Constraint() {}
+  ~Constraint() override {}
 
   // This method is called when the constraint is processed by the
   // solver. Its main usage is to attach demons to variables.
@@ -3551,7 +3551,7 @@ class Constraint : public PropagationBaseObject {
   // This method performs the initial propagation of the
   // constraint. It is called just after the post.
   virtual void InitialPropagate() = 0;
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
   // Calls Post and then Propagate to initialize the constraints. This
   // is usually done in the root node.
@@ -3581,7 +3581,7 @@ class CastConstraint : public Constraint {
       : Constraint(solver), target_var_(target_var) {
     CHECK(target_var != nullptr);
   }
-  virtual ~CastConstraint() {}
+  ~CastConstraint() override {}
 
   IntVar* target_var() const { return target_var_; }
 
@@ -3595,7 +3595,7 @@ class SearchMonitor : public BaseObject {
   static const int kNoProgress = -1;
 
   explicit SearchMonitor(Solver* const s) : solver_(s) {}
-  virtual ~SearchMonitor() {}
+  ~SearchMonitor() override {}
   // Beginning of the search.
   virtual void EnterSearch();
 
@@ -3786,7 +3786,7 @@ class NumericalRevArray : public RevArray<T> {
 class IntExpr : public PropagationBaseObject {
  public:
   explicit IntExpr(Solver* const s) : PropagationBaseObject(s) {}
-  virtual ~IntExpr() {}
+  ~IntExpr() override {}
 
   virtual int64 Min() const = 0;
   virtual void SetMin(int64 m) = 0;
@@ -3852,7 +3852,7 @@ class IntExpr : public PropagationBaseObject {
 
 class IntVarIterator : public BaseObject {
  public:
-  virtual ~IntVarIterator() {}
+  ~IntVarIterator() override {}
 
   // This method must be called before each loop.
   virtual void Init() = 0;
@@ -3867,7 +3867,7 @@ class IntVarIterator : public BaseObject {
   virtual void Next() = 0;
 
   // Pretty Print.
-  virtual std::string DebugString() const { return "IntVar::Iterator"; }
+  std::string DebugString() const override { return "IntVar::Iterator"; }
 };
 
 #ifndef SWIG
@@ -3935,10 +3935,10 @@ class IntVar : public IntExpr {
  public:
   explicit IntVar(Solver* const s);
   IntVar(Solver* const s, const std::string& name);
-  virtual ~IntVar() {}
+  ~IntVar() override {}
 
-  virtual bool IsVar() const { return true; }
-  virtual IntVar* Var() { return this; }
+  bool IsVar() const override { return true; }
+  IntVar* Var() override { return this; }
 
   // This method returns the value of the variable. This method checks
   // before that the variable is bound.
@@ -3990,7 +3990,7 @@ class IntVar : public IntExpr {
   virtual int VarType() const;
 
   // Accepts the given visitor.
-  virtual void Accept(ModelVisitor* const visitor) const;
+  void Accept(ModelVisitor* const visitor) const override;
 
   // IsEqual
   virtual IntVar* IsEqual(int64 constant) = 0;
@@ -4015,7 +4015,7 @@ class SolutionCollector : public SearchMonitor {
  public:
   SolutionCollector(Solver* const s, const Assignment* assignment);
   explicit SolutionCollector(Solver* const s);
-  virtual ~SolutionCollector();
+  ~SolutionCollector() override;
 
   // Add API
   void Add(IntVar* const var);
@@ -4027,7 +4027,7 @@ class SolutionCollector : public SearchMonitor {
   void AddObjective(IntVar* const objective);
 
   // Beginning of the search.
-  virtual void EnterSearch();
+  void EnterSearch() override;
 
   // Returns how many solutions were stored during the search.
   int solution_count() const;
@@ -4106,7 +4106,7 @@ class SolutionCollector : public SearchMonitor {
 class OptimizeVar : public SearchMonitor {
  public:
   OptimizeVar(Solver* const s, bool maximize, IntVar* const a, int64 step);
-  virtual ~OptimizeVar();
+  ~OptimizeVar() override;
 
   // Returns the best value found during search.
   int64 best() const { return best_; }
@@ -4114,14 +4114,14 @@ class OptimizeVar : public SearchMonitor {
   // Returns the variable that is optimized.
   IntVar* Var() const { return var_; }
   // Internal methods
-  virtual void EnterSearch();
-  virtual void BeginNextDecision(DecisionBuilder* const db);
-  virtual void RefuteDecision(Decision* const d);
-  virtual bool AtSolution();
-  virtual bool AcceptSolution();
+  void EnterSearch() override;
+  void BeginNextDecision(DecisionBuilder* const db) override;
+  void RefuteDecision(Decision* const d) override;
+  bool AtSolution() override;
+  bool AcceptSolution() override;
   virtual std::string Print() const;
-  virtual std::string DebugString() const;
-  virtual void Accept(ModelVisitor* const visitor) const;
+  std::string DebugString() const override;
+  void Accept(ModelVisitor* const visitor) const override;
 
   void ApplyBound();
 
@@ -4142,7 +4142,7 @@ class OptimizeVar : public SearchMonitor {
 class SearchLimit : public SearchMonitor {
  public:
   explicit SearchLimit(Solver* const s) : SearchMonitor(s), crossed_(false) {}
-  virtual ~SearchLimit();
+  ~SearchLimit() override;
 
   // Returns true if the limit has been crossed.
   bool crossed() const { return crossed_; }
@@ -4164,11 +4164,11 @@ class SearchLimit : public SearchMonitor {
   virtual SearchLimit* MakeClone() const = 0;
 
   // Internal methods
-  virtual void EnterSearch();
-  virtual void BeginNextDecision(DecisionBuilder* const b);
-  virtual void PeriodicCheck();
-  virtual void RefuteDecision(Decision* const d);
-  virtual std::string DebugString() const {
+  void EnterSearch() override;
+  void BeginNextDecision(DecisionBuilder* const b) override;
+  void PeriodicCheck() override;
+  void RefuteDecision(Decision* const d) override;
+  std::string DebugString() const override {
     return StringPrintf("SearchLimit(crossed = %i)", crossed_);
   }
 
@@ -4219,7 +4219,7 @@ class NoGood {
 class NoGoodManager : public SearchMonitor {
  public:
   explicit NoGoodManager(Solver* const s) : SearchMonitor(s) {}
-  virtual ~NoGoodManager() {}
+  ~NoGoodManager() override {}
 
   // ----- User API -----
 
@@ -4232,12 +4232,12 @@ class NoGoodManager : public SearchMonitor {
   // Returns the number of nogoods added to the recorder.
   virtual int NoGoodCount() const = 0;
   // Pretty Print.
-  virtual std::string DebugString() const = 0;
+  std::string DebugString() const override = 0;
 
   // ----- Internal methods that links search events to the recorder API -----
-  virtual void EnterSearch();
-  virtual void BeginNextDecision(DecisionBuilder* const db);
-  virtual bool AcceptSolution();
+  void EnterSearch() override;
+  void BeginNextDecision(DecisionBuilder* const db) override;
+  bool AcceptSolution() override;
 
  private:
   // ----- Implementor API -----
@@ -4271,7 +4271,7 @@ class IntervalVar : public PropagationBaseObject {
       : PropagationBaseObject(solver) {
     set_name(name);
   }
-  virtual ~IntervalVar() {}
+  ~IntervalVar() override {}
 
   // These methods query, set and watch the start position of the
   // interval var.
@@ -4356,9 +4356,9 @@ class SequenceVar : public PropagationBaseObject {
   SequenceVar(Solver* const s, const std::vector<IntervalVar*>& intervals,
               const std::vector<IntVar*>& nexts, const std::string& name);
 
-  virtual ~SequenceVar();
+  ~SequenceVar() override;
 
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
   // Returns the minimum and maximum duration of combined interval
   // vars in the sequence.
@@ -4842,7 +4842,7 @@ class Assignment : public PropagationBaseObject {
 
   explicit Assignment(Solver* const s);
   explicit Assignment(const Assignment* const copy);
-  virtual ~Assignment();
+  ~Assignment() override;
 
   void Clear();
   bool Empty() const {
@@ -4964,7 +4964,7 @@ class Assignment : public PropagationBaseObject {
   void DeactivateObjective();
   bool ActivatedObjective() const;
 
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
   bool Contains(const IntVar* const var) const;
   bool Contains(const IntervalVar* const var) const;
@@ -5017,7 +5017,7 @@ class Pack : public Constraint {
 
   Pack(Solver* const s, const std::vector<IntVar*>& vars, int number_of_bins);
 
-  virtual ~Pack();
+  ~Pack() override;
 
   // ----- Public API -----
 
@@ -5082,13 +5082,13 @@ class Pack : public Constraint {
   void AddCountAssignedItemsDimension(IntVar* const count_var);
   // ----- Internal API -----
 
-  virtual void Post();
+  void Post() override;
   void ClearAll();
   void PropagateDelayed();
-  virtual void InitialPropagate();
+  void InitialPropagate() override;
   void Propagate();
   void OneDomain(int var_index);
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
   bool IsUndecided(int var_index, int bin_index) const;
   void SetImpossible(int var_index, int bin_index);
   void Assign(int var_index, int bin_index);
@@ -5103,7 +5103,7 @@ class Pack : public Constraint {
   void AssignAllRemainingItems();
   void UnassignAllRemainingItems();
   // Accepts the given visitor.
-  virtual void Accept(ModelVisitor* const visitor) const;
+  void Accept(ModelVisitor* const visitor) const override;
 
  private:
   bool IsInProcess() const;
@@ -5127,7 +5127,7 @@ class DisjunctiveConstraint : public Constraint {
  public:
   DisjunctiveConstraint(Solver* const s, const std::vector<IntervalVar*>& intervals,
                         const std::string& name);
-  virtual ~DisjunctiveConstraint();
+  ~DisjunctiveConstraint() override;
 
   // Creates a sequence variable from the constraint.
   virtual SequenceVar* MakeSequenceVar() = 0;
@@ -5172,7 +5172,7 @@ class DisjunctiveConstraint : public Constraint {
 class SolutionPool : public BaseObject {
  public:
   SolutionPool() {}
-  virtual ~SolutionPool() {}
+  ~SolutionPool() override {}
 
   // This method is called to initialize the solution pool with the assignment
   // from the local search.

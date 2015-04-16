@@ -121,10 +121,10 @@ class SimpleLNS : public BaseLNS {
       : BaseLNS(vars), index_(0), number_of_variables_(number_of_variables) {
     CHECK_GT(number_of_variables_, 0);
   }
-  ~SimpleLNS() {}
-  virtual void InitFragments() { index_ = 0; }
-  virtual bool NextFragment(std::vector<int>* fragment);
-  virtual std::string DebugString() const { return "SimpleLNS"; }
+  ~SimpleLNS() override {}
+  void InitFragments() override { index_ = 0; }
+  bool NextFragment(std::vector<int>* fragment) override;
+  std::string DebugString() const override { return "SimpleLNS"; }
 
  private:
   int index_;
@@ -155,10 +155,10 @@ class RandomLNS : public BaseLNS {
     CHECK_GT(number_of_variables_, 0);
     CHECK_LE(number_of_variables_, Size());
   }
-  ~RandomLNS() {}
-  virtual bool NextFragment(std::vector<int>* fragment);
+  ~RandomLNS() override {}
+  bool NextFragment(std::vector<int>* fragment) override;
 
-  virtual std::string DebugString() const { return "RandomLNS"; }
+  std::string DebugString() const override { return "RandomLNS"; }
 
  private:
   ACMRandom rand_;
@@ -204,13 +204,13 @@ class MoveTowardTargetLS : public IntVarLocalSearchOperator {
     CHECK_EQ(target_values.size(), variables.size()) << "Illegal arguments.";
   }
 
-  virtual ~MoveTowardTargetLS() {}
+  ~MoveTowardTargetLS() override {}
 
-  virtual std::string DebugString() const { return "MoveTowardTargetLS"; }
+  std::string DebugString() const override { return "MoveTowardTargetLS"; }
 
  protected:
   // Make a neighbor assigning one variable to its target value.
-  virtual bool MakeOneNeighbor() {
+  bool MakeOneNeighbor() override {
     while (num_var_since_last_start_ < Size()) {
       ++num_var_since_last_start_;
       variable_index_ = (variable_index_ + 1) % Size();
@@ -225,7 +225,7 @@ class MoveTowardTargetLS : public IntVarLocalSearchOperator {
   }
 
  private:
-  virtual void OnStart() {
+  void OnStart() override {
     // Do not change the value of variable_index_: this way, we keep going from
     // where we last modified something. This is because we expect that most
     // often, the variables we have just checked are less likely to be able
@@ -300,10 +300,10 @@ namespace {
 class IncrementValue : public ChangeValue {
  public:
   explicit IncrementValue(const std::vector<IntVar*>& vars) : ChangeValue(vars) {}
-  virtual ~IncrementValue() {}
-  virtual int64 ModifyValue(int64 index, int64 value) { return value + 1; }
+  ~IncrementValue() override {}
+  int64 ModifyValue(int64 index, int64 value) override { return value + 1; }
 
-  virtual std::string DebugString() const { return "IncrementValue"; }
+  std::string DebugString() const override { return "IncrementValue"; }
 };
 
 // Decrements the current value of variables.
@@ -311,10 +311,10 @@ class IncrementValue : public ChangeValue {
 class DecrementValue : public ChangeValue {
  public:
   explicit DecrementValue(const std::vector<IntVar*>& vars) : ChangeValue(vars) {}
-  virtual ~DecrementValue() {}
-  virtual int64 ModifyValue(int64 index, int64 value) { return value - 1; }
+  ~DecrementValue() override {}
+  int64 ModifyValue(int64 index, int64 value) override { return value - 1; }
 
-  virtual std::string DebugString() const { return "DecrementValue"; }
+  std::string DebugString() const override { return "DecrementValue"; }
 };
 }  // namespace
 
@@ -669,20 +669,20 @@ class TwoOpt : public PathOperator {
       : PathOperator(vars, secondary_vars, 2, start_empty_path_class),
         last_base_(-1),
         last_(-1) {}
-  virtual ~TwoOpt() {}
-  virtual bool MakeNeighbor();
-  virtual bool IsIncremental() const { return true; }
+  ~TwoOpt() override {}
+  bool MakeNeighbor() override;
+  bool IsIncremental() const override { return true; }
 
-  virtual std::string DebugString() const { return "TwoOpt"; }
+  std::string DebugString() const override { return "TwoOpt"; }
 
  protected:
-  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+  bool OnSamePathAsPreviousBase(int64 base_index) override {
     // Both base nodes have to be on the same path.
     return true;
   }
 
  private:
-  virtual void OnNodeInitialization() { last_ = -1; }
+  void OnNodeInitialization() override { last_ = -1; }
 
   int64 last_base_;
   int64 last_;
@@ -741,13 +741,13 @@ class Relocate : public PathOperator {
         single_path_(single_path) {
     CHECK_GT(chain_length_, 0);
   }
-  virtual ~Relocate() {}
-  virtual bool MakeNeighbor();
+  ~Relocate() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "Relocate"; }
+  std::string DebugString() const override { return "Relocate"; }
 
  protected:
-  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+  bool OnSamePathAsPreviousBase(int64 base_index) override {
     // Both base nodes have to be on the same path when it's the single path
     // version.
     return single_path_;
@@ -787,10 +787,10 @@ class Exchange : public PathOperator {
   Exchange(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
            ResultCallback1<int, int64>* start_empty_path_class)
       : PathOperator(vars, secondary_vars, 2, start_empty_path_class) {}
-  virtual ~Exchange() {}
-  virtual bool MakeNeighbor();
+  ~Exchange() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "Exchange"; }
+  std::string DebugString() const override { return "Exchange"; }
 };
 
 bool Exchange::MakeNeighbor() {
@@ -828,10 +828,10 @@ class Cross : public PathOperator {
   Cross(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
         ResultCallback1<int, int64>* start_empty_path_class)
       : PathOperator(vars, secondary_vars, 2, start_empty_path_class) {}
-  virtual ~Cross() {}
-  virtual bool MakeNeighbor();
+  ~Cross() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "Cross"; }
+  std::string DebugString() const override { return "Cross"; }
 };
 
 bool Cross::MakeNeighbor() {
@@ -864,14 +864,14 @@ class BaseInactiveNodeToPathOperator : public PathOperator {
       : PathOperator(vars, secondary_vars, number_of_base_nodes,
                      start_empty_path_class),
         inactive_node_(0) {}
-  virtual ~BaseInactiveNodeToPathOperator() {}
+  ~BaseInactiveNodeToPathOperator() override {}
 
  protected:
-  virtual bool MakeOneNeighbor();
+  bool MakeOneNeighbor() override;
   int64 GetInactiveNode() const { return inactive_node_; }
 
  private:
-  virtual void OnNodeInitialization();
+  void OnNodeInitialization() override;
 
   int inactive_node_;
 };
@@ -914,10 +914,10 @@ class MakeActiveOperator : public BaseInactiveNodeToPathOperator {
                      ResultCallback1<int, int64>* start_empty_path_class)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 1,
                                        start_empty_path_class) {}
-  virtual ~MakeActiveOperator() {}
-  virtual bool MakeNeighbor();
+  ~MakeActiveOperator() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "MakeActiveOperator"; }
+  std::string DebugString() const override { return "MakeActiveOperator"; }
 };
 
 bool MakeActiveOperator::MakeNeighbor() {
@@ -937,10 +937,12 @@ class MakeActiveAndRelocate : public BaseInactiveNodeToPathOperator {
                         ResultCallback1<int, int64>* start_empty_path_class)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 2,
                                        start_empty_path_class) {}
-  virtual ~MakeActiveAndRelocate() {}
-  virtual bool MakeNeighbor();
+  ~MakeActiveAndRelocate() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "MakeActiveAndRelocateOperator"; }
+  std::string DebugString() const override {
+    return "MakeActiveAndRelocateOperator";
+  }
 };
 
 bool MakeActiveAndRelocate::MakeNeighbor() {
@@ -966,8 +968,8 @@ class MakeInactiveOperator : public PathOperator {
                        const std::vector<IntVar*>& secondary_vars,
                        ResultCallback1<int, int64>* start_empty_path_class)
       : PathOperator(vars, secondary_vars, 1, start_empty_path_class) {}
-  virtual ~MakeInactiveOperator() {}
-  virtual bool MakeNeighbor() {
+  ~MakeInactiveOperator() override {}
+  bool MakeNeighbor() override {
     const int64 base = BaseNode(0);
     if (IsPathEnd(base)) {
       return false;
@@ -975,7 +977,7 @@ class MakeInactiveOperator : public PathOperator {
     return MakeChainInactive(base, Next(base));
   }
 
-  virtual std::string DebugString() const { return "MakeInactiveOperator"; }
+  std::string DebugString() const override { return "MakeInactiveOperator"; }
 };
 
 // ----- MakeChainInactiveOperator -----
@@ -993,21 +995,21 @@ class MakeChainInactiveOperator : public PathOperator {
                             const std::vector<IntVar*>& secondary_vars,
                             ResultCallback1<int, int64>* start_empty_path_class)
       : PathOperator(vars, secondary_vars, 2, start_empty_path_class) {}
-  virtual ~MakeChainInactiveOperator() {}
-  virtual bool MakeNeighbor() {
+  ~MakeChainInactiveOperator() override {}
+  bool MakeNeighbor() override {
     return MakeChainInactive(BaseNode(0), BaseNode(1));
   }
 
-  virtual std::string DebugString() const { return "MakeChainInactiveOperator"; }
+  std::string DebugString() const override { return "MakeChainInactiveOperator"; }
 
  protected:
-  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+  bool OnSamePathAsPreviousBase(int64 base_index) override {
     // Start and end of chain (defined by both base nodes) must be on the same
     // path.
     return true;
   }
 
-  virtual int64 GetBaseNodeRestartPosition(int base_index) {
+  int64 GetBaseNodeRestartPosition(int base_index) override {
     // Base node 1 must be after base node 0.
     if (base_index == 0) {
       return StartNode(base_index);
@@ -1032,10 +1034,10 @@ class SwapActiveOperator : public BaseInactiveNodeToPathOperator {
                      ResultCallback1<int, int64>* start_empty_path_class)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 1,
                                        start_empty_path_class) {}
-  virtual ~SwapActiveOperator() {}
-  virtual bool MakeNeighbor();
+  ~SwapActiveOperator() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "SwapActiveOperator"; }
+  std::string DebugString() const override { return "SwapActiveOperator"; }
 };
 
 bool SwapActiveOperator::MakeNeighbor() {
@@ -1067,10 +1069,10 @@ class ExtendedSwapActiveOperator : public BaseInactiveNodeToPathOperator {
       ResultCallback1<int, int64>* start_empty_path_class)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 2,
                                        start_empty_path_class) {}
-  virtual ~ExtendedSwapActiveOperator() {}
-  virtual bool MakeNeighbor();
+  ~ExtendedSwapActiveOperator() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "ExtendedSwapActiveOperator"; }
+  std::string DebugString() const override { return "ExtendedSwapActiveOperator"; }
 };
 
 bool ExtendedSwapActiveOperator::MakeNeighbor() {
@@ -1102,10 +1104,10 @@ class TSPOpt : public PathOperator {
  public:
   TSPOpt(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
          Solver::IndexEvaluator3* evaluator, int chain_length);
-  virtual ~TSPOpt() {}
-  virtual bool MakeNeighbor();
+  ~TSPOpt() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "TSPOpt"; }
+  std::string DebugString() const override { return "TSPOpt"; }
 
  private:
   std::vector<std::vector<int64> > cost_;
@@ -1168,13 +1170,13 @@ class TSPLns : public PathOperator {
  public:
   TSPLns(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
          Solver::IndexEvaluator3* evaluator, int tsp_size);
-  virtual ~TSPLns() {}
-  virtual bool MakeNeighbor();
+  ~TSPLns() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "TSPLns"; }
+  std::string DebugString() const override { return "TSPLns"; }
 
  protected:
-  virtual bool MakeOneNeighbor();
+  bool MakeOneNeighbor() override;
 
  private:
   std::vector<std::vector<int64> > cost_;
@@ -1409,13 +1411,13 @@ class LinKernighan : public PathOperator {
                Solver::IndexEvaluator3* evaluator,
                bool owner,  // Owner of callback
                bool topt);
-  virtual ~LinKernighan();
-  virtual bool MakeNeighbor();
+  ~LinKernighan() override;
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "LinKernighan"; }
+  std::string DebugString() const override { return "LinKernighan"; }
 
  private:
-  virtual void OnNodeInitialization();
+  void OnNodeInitialization() override;
 
   static const int kNeighbors;
 
@@ -1562,10 +1564,10 @@ class PathLNS : public PathOperator {
         unactive_fragments_(unactive_fragments) {
     CHECK_GE(chunk_size_, 0);
   }
-  virtual ~PathLNS() {}
-  virtual bool MakeNeighbor();
+  ~PathLNS() override {}
+  bool MakeNeighbor() override;
 
-  virtual std::string DebugString() const { return "PathLNS"; }
+  std::string DebugString() const override { return "PathLNS"; }
 
  private:
   inline bool ChainsAreFullPaths() const { return chunk_size_ == 0; }
@@ -1627,12 +1629,12 @@ class NeighborhoodLimit : public LocalSearchOperator {
     CHECK_GT(limit, 0);
   }
 
-  virtual void Start(const Assignment* assignment) {
+  void Start(const Assignment* assignment) override {
     next_neighborhood_calls_ = 0;
     operator_->Start(assignment);
   }
 
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
     if (next_neighborhood_calls_ >= limit_) {
       return false;
     }
@@ -1640,7 +1642,7 @@ class NeighborhoodLimit : public LocalSearchOperator {
     return operator_->MakeNextNeighbor(delta, deltadelta);
   }
 
-  virtual std::string DebugString() const { return "NeighborhoodLimit"; }
+  std::string DebugString() const override { return "NeighborhoodLimit"; }
 
  private:
   LocalSearchOperator* const operator_;
@@ -1660,11 +1662,11 @@ class CompoundOperator : public LocalSearchOperator {
  public:
   CompoundOperator(const std::vector<LocalSearchOperator*>& operators,
                    ResultCallback2<int64, int, int>* const evaluator);
-  virtual ~CompoundOperator() {}
-  virtual void Start(const Assignment* assignment);
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
+  ~CompoundOperator() override {}
+  void Start(const Assignment* assignment) override;
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
 
-  virtual std::string DebugString() const { return "CompoundOperator"; }
+  std::string DebugString() const override { return "CompoundOperator"; }
 
  private:
   class OperatorComparator {
@@ -1799,11 +1801,11 @@ class RandomCompoundOperator : public LocalSearchOperator {
       const std::vector<LocalSearchOperator*>& operators);
   RandomCompoundOperator(const std::vector<LocalSearchOperator*>& operators,
                          int32 seed);
-  virtual ~RandomCompoundOperator() {}
-  virtual void Start(const Assignment* assignment);
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
+  ~RandomCompoundOperator() override {}
+  void Start(const Assignment* assignment) override;
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
 
-  virtual std::string DebugString() const { return "RandomCompoundOperator"; }
+  std::string DebugString() const override { return "RandomCompoundOperator"; }
 
  private:
   const int size_;
@@ -2110,12 +2112,12 @@ class MaxOperation {
 class VariableDomainFilter : public LocalSearchFilter {
  public:
   VariableDomainFilter() {}
-  virtual ~VariableDomainFilter() {}
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta);
-  virtual void Synchronize(const Assignment* assignment,
-                           const Assignment* delta) {}
+  ~VariableDomainFilter() override {}
+  bool Accept(const Assignment* delta, const Assignment* deltadelta) override;
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override {}
 
-  virtual std::string DebugString() const { return "VariableDomainFilter"; }
+  std::string DebugString() const override { return "VariableDomainFilter"; }
 };
 
 bool VariableDomainFilter::Accept(const Assignment* delta,
@@ -2229,11 +2231,11 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
     op_.Init();
     old_value_ = op_.value();
   }
-  virtual ~ObjectiveFilter() {
+  ~ObjectiveFilter() override {
     delete[] cache_;
     delete[] delta_cache_;
   }
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta) {
+  bool Accept(const Assignment* delta, const Assignment* deltadelta) override {
     if (delta == nullptr) {
       return false;
     }
@@ -2285,9 +2287,9 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   virtual bool EvaluateElementValue(const Assignment::IntContainer& container,
                                     int index, int* container_index,
                                     int64* obj_value) = 0;
-  virtual bool IsIncremental() const { return true; }
+  bool IsIncremental() const override { return true; }
 
-  virtual std::string DebugString() const { return "ObjectiveFilter"; }
+  std::string DebugString() const override { return "ObjectiveFilter"; }
 
  protected:
   const int primary_vars_size_;
@@ -2302,7 +2304,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   bool incremental_;
 
  private:
-  virtual void OnSynchronize(const Assignment* delta) {
+  void OnSynchronize(const Assignment* delta) override {
     op_.Init();
   for (int i = 0; i < primary_vars_size_; ++i) {
     const int64 obj_value = SynchronizedElementValue(i);
@@ -2355,16 +2357,16 @@ class BinaryObjectiveFilter : public ObjectiveFilter<Operator> {
         value_evaluator_(value_evaluator) {
     value_evaluator_->CheckIsRepeatable();
   }
-  virtual ~BinaryObjectiveFilter() {}
-  virtual int64 SynchronizedElementValue(int64 index) {
+  ~BinaryObjectiveFilter() override {}
+  int64 SynchronizedElementValue(int64 index) override {
     return IntVarLocalSearchFilter::IsVarSynced(index)
                ? value_evaluator_->Run(index,
                                        IntVarLocalSearchFilter::Value(index))
                : 0;
   }
-  virtual bool EvaluateElementValue(const Assignment::IntContainer& container,
-                                    int index, int* container_index,
-                                    int64* obj_value) {
+  bool EvaluateElementValue(const Assignment::IntContainer& container,
+                            int index, int* container_index,
+                            int64* obj_value) override {
     const IntVarElement& element = container.Element(*container_index);
     if (element.Activated()) {
       *obj_value = value_evaluator_->Run(index, element.Value());
@@ -2400,8 +2402,8 @@ class TernaryObjectiveFilter : public ObjectiveFilter<Operator> {
     IntVarLocalSearchFilter::AddVars(secondary_vars);
     CHECK_GE(IntVarLocalSearchFilter::Size(), 0);
   }
-  virtual ~TernaryObjectiveFilter() {}
-  virtual int64 SynchronizedElementValue(int64 index) {
+  ~TernaryObjectiveFilter() override {}
+  int64 SynchronizedElementValue(int64 index) override {
     DCHECK_LT(index, secondary_vars_offset_);
     return IntVarLocalSearchFilter::IsVarSynced(index)
                ? value_evaluator_->Run(index,
@@ -2411,7 +2413,8 @@ class TernaryObjectiveFilter : public ObjectiveFilter<Operator> {
                : 0;
   }
   bool EvaluateElementValue(const Assignment::IntContainer& container,
-                            int index, int* container_index, int64* obj_value) {
+                            int index, int* container_index,
+                            int64* obj_value) override {
     DCHECK_LT(index, secondary_vars_offset_);
     *obj_value = 0LL;
     const IntVarElement& element = container.Element(*container_index);
@@ -2541,9 +2544,9 @@ class FindOneNeighbor : public DecisionBuilder {
                   DecisionBuilder* const sub_decision_builder,
                   const SearchLimit* const limit,
                   const std::vector<LocalSearchFilter*>& filters);
-  virtual ~FindOneNeighbor() {}
-  virtual Decision* Next(Solver* const solver);
-  virtual std::string DebugString() const { return "FindOneNeighbor"; }
+  ~FindOneNeighbor() override {}
+  Decision* Next(Solver* const solver) override;
+  std::string DebugString() const override { return "FindOneNeighbor"; }
 
  private:
   bool FilterAccept(const Assignment* delta, const Assignment* deltadelta);
@@ -2713,8 +2716,8 @@ class LocalSearchPhaseParameters : public BaseObject {
         sub_decision_builder_(sub_decision_builder),
         limit_(limit),
         filters_(filters) {}
-  ~LocalSearchPhaseParameters() {}
-  virtual std::string DebugString() const { return "LocalSearchPhaseParameters"; }
+  ~LocalSearchPhaseParameters() override {}
+  std::string DebugString() const override { return "LocalSearchPhaseParameters"; }
 
   SolutionPool* solution_pool() const { return solution_pool_; }
   LocalSearchOperator* ls_operator() const { return ls_operator_; }
@@ -2800,10 +2803,10 @@ class NestedSolveDecision : public Decision {
   NestedSolveDecision(DecisionBuilder* const db, bool restore,
                       const std::vector<SearchMonitor*>& monitors);
   NestedSolveDecision(DecisionBuilder* const db, bool restore);
-  virtual ~NestedSolveDecision() {}
-  virtual void Apply(Solver* const solver);
-  virtual void Refute(Solver* const solver);
-  virtual std::string DebugString() const { return "NestedSolveDecision"; }
+  ~NestedSolveDecision() override {}
+  void Apply(Solver* const solver) override;
+  void Refute(Solver* const solver) override;
+  std::string DebugString() const override { return "NestedSolveDecision"; }
   int state() const { return state_; }
 
  private:
@@ -2878,10 +2881,10 @@ class LocalSearch : public DecisionBuilder {
               DecisionBuilder* const sub_decision_builder,
               SearchLimit* const limit,
               const std::vector<LocalSearchFilter*>& filters);
-  virtual ~LocalSearch();
-  virtual Decision* Next(Solver* const solver);
-  virtual std::string DebugString() const { return "LocalSearch"; }
-  virtual void Accept(ModelVisitor* const visitor) const;
+  ~LocalSearch() override;
+  Decision* Next(Solver* const solver) override;
+  std::string DebugString() const override { return "LocalSearch"; }
+  void Accept(ModelVisitor* const visitor) const override;
 
  protected:
   void PushFirstSolutionDecision(DecisionBuilder* first_solution);
@@ -3075,23 +3078,23 @@ class DefaultSolutionPool : public SolutionPool {
  public:
   DefaultSolutionPool() {}
 
-  virtual ~DefaultSolutionPool() {}
+  ~DefaultSolutionPool() override {}
 
-  virtual void Initialize(Assignment* const assignment) {
+  void Initialize(Assignment* const assignment) override {
     reference_assignment_.reset(new Assignment(assignment));
   }
 
-  virtual void RegisterNewSolution(Assignment* const assignment) {
+  void RegisterNewSolution(Assignment* const assignment) override {
     reference_assignment_->Copy(assignment);
   }
 
-  virtual void GetNextSolution(Assignment* const assignment) {
+  void GetNextSolution(Assignment* const assignment) override {
     assignment->Copy(reference_assignment_.get());
   }
 
-  virtual bool SyncNeeded(Assignment* const local_assignment) { return false; }
+  bool SyncNeeded(Assignment* const local_assignment) override { return false; }
 
-  virtual std::string DebugString() const { return "DefaultSolutionPool"; }
+  std::string DebugString() const override { return "DefaultSolutionPool"; }
 
  private:
   std::unique_ptr<Assignment> reference_assignment_;

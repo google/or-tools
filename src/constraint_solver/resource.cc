@@ -720,9 +720,9 @@ class RankedPropagator : public Constraint {
         partial_sequence_(intervals.size()),
         previous_(intervals.size() + 2, 0) {}
 
-  virtual ~RankedPropagator() {}
+  ~RankedPropagator() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const delayed =
         solver()->MakeDelayedConstraintInitialPropagateCallback(this);
     for (int i = 0; i < intervals_.size(); ++i) {
@@ -733,7 +733,7 @@ class RankedPropagator : public Constraint {
     nexts_.back()->WhenBound(delayed);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     PropagateNexts();
     PropagateSequence();
   }
@@ -894,7 +894,7 @@ class RankedPropagator : public Constraint {
     return disjunctive_->TransitionTime(before_index, after_index);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf(
         "RankedPropagator([%s], nexts = [%s], intervals = [%s])",
         partial_sequence_.DebugString().c_str(),
@@ -902,7 +902,7 @@ class RankedPropagator : public Constraint {
         JoinDebugStringPtr(intervals_, ", ").c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     LOG(FATAL) << "Not yet implemented";
     // TODO(user): IMPLEMENT ME.
   }
@@ -931,9 +931,9 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
         straight_not_last_(s, intervals, false),
         mirror_not_last_(s, intervals, true) {}
 
-  virtual ~FullDisjunctiveConstraint() {}
+  ~FullDisjunctiveConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const d = MakeDelayedConstraintDemon0(
         solver(), this, &FullDisjunctiveConstraint::InitialPropagate,
         "InitialPropagate");
@@ -942,7 +942,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     bool all_optional_or_unperformed = true;
     for (const IntervalVar* const interval : intervals_) {
       if (interval->MustBePerformed()) {
@@ -1024,7 +1024,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     }
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDisjunctive, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
                                         intervals_);
@@ -1035,7 +1035,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     visitor->EndVisitConstraint(ModelVisitor::kDisjunctive, this);
   }
 
-  virtual SequenceVar* MakeSequenceVar() {
+  SequenceVar* MakeSequenceVar() override {
     BuildNextModelIfNeeded();
     if (sequence_var_ == nullptr) {
       solver()->SaveValue(reinterpret_cast<void**>(&sequence_var_));
@@ -1045,18 +1045,18 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     return sequence_var_;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("FullDisjunctiveConstraint([%s])",
                         JoinDebugStringPtr(intervals_, ", ").c_str());
   }
 
-  virtual const std::vector<IntVar*>& nexts() const { return nexts_; }
+  const std::vector<IntVar*>& nexts() const override { return nexts_; }
 
-  virtual const std::vector<IntVar*>& actives() const { return actives_; }
+  const std::vector<IntVar*>& actives() const override { return actives_; }
 
-  virtual const std::vector<IntVar*>& time_cumuls() const { return time_cumuls_; }
+  const std::vector<IntVar*>& time_cumuls() const override { return time_cumuls_; }
 
-  virtual const std::vector<IntVar*>& time_slacks() const { return time_slacks_; }
+  const std::vector<IntVar*>& time_slacks() const override { return time_slacks_; }
 
  private:
   int64 Distance(int64 activity_plus_one, int64 next_activity_plus_one) {
@@ -1379,12 +1379,12 @@ class EdgeFinder : public Constraint {
     }
   }
 
-  virtual ~EdgeFinder() {
+  ~EdgeFinder() override {
     STLDeleteElements(&by_start_min_);
     STLDeleteValues(&update_map_);
   }
 
-  virtual void Post() {
+  void Post() override {
     // Add the demons
     Demon* const demon = MakeDelayedConstraintDemon0(
         solver(), this, &EdgeFinder::InitialPropagate, "RangeChanged");
@@ -1398,7 +1398,7 @@ class EdgeFinder : public Constraint {
 
   // The propagation algorithms: checks for overloading, computes new start mins
   // according to the edge-finding rules, and applies them.
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     InitPropagation();
     PropagateBasedOnEndMinGreaterThanEndMax();
     FillInTree();
@@ -1406,11 +1406,11 @@ class EdgeFinder : public Constraint {
     ApplyNewBounds();
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     LOG(FATAL) << "Should Not Be Visited";
   }
 
-  virtual std::string DebugString() const { return "EdgeFinder"; }
+  std::string DebugString() const override { return "EdgeFinder"; }
 
  private:
   UpdatesForADemand* GetOrMakeUpdate(int64 demand_min) {
@@ -1667,16 +1667,16 @@ class CumulativeTimeTable : public Constraint {
     profile_unique_time_.reserve(profile_max_size);
   }
 
-  virtual ~CumulativeTimeTable() { STLDeleteElements(&by_start_min_); }
+  ~CumulativeTimeTable() override { STLDeleteElements(&by_start_min_); }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     BuildProfile();
     PushTasks();
     // TODO(user): When a task has a fixed part, we could propagate
     // max_demand from its current location.
   }
 
-  virtual void Post() {
+  void Post() override {
     Demon* demon = MakeDelayedConstraintDemon0(
         solver(), this, &CumulativeTimeTable::InitialPropagate,
         "InitialPropagate");
@@ -1686,11 +1686,11 @@ class CumulativeTimeTable : public Constraint {
     capacity_->WhenRange(demon);
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     LOG(FATAL) << "Should not be visited";
   }
 
-  virtual std::string DebugString() const { return "CumulativeTimeTable"; }
+  std::string DebugString() const override { return "CumulativeTimeTable"; }
 
  private:
   // Build the usage profile. Runs in O(n log n).
@@ -1852,7 +1852,7 @@ class CumulativeConstraint : public Constraint {
     }
   }
 
-  virtual void Post() {
+  void Post() override {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
@@ -1872,11 +1872,11 @@ class CumulativeConstraint : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Nothing to do: this constraint delegates all the work to other classes
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     // TODO(user): Build arrays on demand?
     visitor->BeginVisitConstraint(ModelVisitor::kCumulative, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
@@ -1888,7 +1888,7 @@ class CumulativeConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("CumulativeConstraint([%s], %s)",
                         JoinDebugString(tasks_, ", ").c_str(),
                         capacity_->DebugString().c_str());
@@ -2031,7 +2031,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
     }
   }
 
-  virtual void Post() {
+  void Post() override {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
@@ -2051,11 +2051,11 @@ class VariableDemandCumulativeConstraint : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Nothing to do: this constraint delegates all the work to other classes
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     // TODO(user): Build arrays on demand?
     visitor->BeginVisitConstraint(ModelVisitor::kCumulative, this);
     visitor->VisitIntervalArrayArgument(ModelVisitor::kIntervalsArgument,
@@ -2067,7 +2067,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kCumulative, this);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("VariableDemandCumulativeConstraint([%s], %s)",
                         JoinDebugString(tasks_, ", ").c_str(),
                         capacity_->DebugString().c_str());

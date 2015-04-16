@@ -81,20 +81,20 @@ class FindVar : public DecisionVisitor {
  public:
   FindVar() : var_(nullptr), value_(0), valid_(false) {}
 
-  virtual ~FindVar() {}
+  ~FindVar() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     var_ = var;
     value_ = value;
     valid_ = true;
   }
 
-  virtual void VisitSplitVariableDomain(IntVar* const var, int64 value,
-                                        bool start_with_lower_half) {
+  void VisitSplitVariableDomain(IntVar* const var, int64 value,
+                                bool start_with_lower_half) override {
     valid_ = false;
   }
 
-  virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) {
+  void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) override {
     valid_ = false;
   }
 
@@ -106,7 +106,7 @@ class FindVar : public DecisionVisitor {
     valid_ = false;
   }
 
-  virtual void VisitUnknownDecision() { valid_ = false; }
+  void VisitUnknownDecision() override { valid_ = false; }
 
   // Indicates whether var() and value() can be called.
   bool valid() { return valid_; }
@@ -123,7 +123,7 @@ class FindVar : public DecisionVisitor {
     return value_;
   }
 
-  virtual std::string DebugString() const { return "FindVar decision visitor"; }
+  std::string DebugString() const override { return "FindVar decision visitor"; }
 
  private:
   IntVar* var_;
@@ -150,7 +150,7 @@ class InitVarImpacts : public DecisionBuilder {
     CHECK(update_impact_closure_ != nullptr);
   }
 
-  virtual ~InitVarImpacts() {}
+  ~InitVarImpacts() override {}
 
   void UpdateImpacts() {
     // the Min is always the value we just set.
@@ -165,7 +165,7 @@ class InitVarImpacts : public DecisionBuilder {
     value_index_ = 0;
   }
 
-  virtual Decision* Next(Solver* const solver) {
+  Decision* Next(Solver* const solver) override {
     CHECK(var_ != nullptr);
     CHECK(iterator_ != nullptr);
     if (new_start_) {
@@ -198,15 +198,15 @@ class InitVarImpacts : public DecisionBuilder {
           update_impact_closure_(update_impact_closure) {
       CHECK(update_impact_closure_ != nullptr);
     }
-    virtual ~AssignCallFail() {}
-    virtual void Apply(Solver* const solver) {
+    ~AssignCallFail() override {}
+    void Apply(Solver* const solver) override {
       CHECK(var_ != nullptr);
       var_->SetValue(value_);
       // We call the closure on the part that cannot fail.
       update_impact_closure_->Run();
       solver->Fail();
     }
-    virtual void Refute(Solver* const solver) {}
+    void Refute(Solver* const solver) override {}
     // Public data for easy access.
     IntVar* var_;
     int64 value_;
@@ -242,15 +242,15 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
           update_impact_closure_(update_impact_closure) {
       CHECK(update_impact_closure_ != nullptr);
     }
-    virtual ~AssignIntervalCallFail() {}
-    virtual void Apply(Solver* const solver) {
+    ~AssignIntervalCallFail() override {}
+    void Apply(Solver* const solver) override {
       CHECK(var_ != nullptr);
       var_->SetRange(value_min_, value_max_);
       // We call the closure on the part that cannot fail.
       update_impact_closure_->Run();
       solver->Fail();
     }
-    virtual void Refute(Solver* const solver) {}
+    void Refute(Solver* const solver) override {}
 
     // Public for easy access.
     IntVar* var_;
@@ -279,7 +279,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     CHECK(update_impact_closure_ != nullptr);
   }
 
-  virtual ~InitVarImpactsWithSplits() {}
+  ~InitVarImpactsWithSplits() override {}
 
   void UpdateImpacts() {
     for (const int64 value : InitAndGetValues(iterator_)) {
@@ -300,7 +300,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     return (min_value_ + length * index / split_size_);
   }
 
-  virtual Decision* Next(Solver* const solver) {
+  Decision* Next(Solver* const solver) override {
     if (new_start_) {
       min_value_ = var_->Min();
       max_value_ = var_->Max();
@@ -372,7 +372,7 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
-  virtual void ApplyDecision(Decision* const d) {
+  void ApplyDecision(Decision* const d) override {
     if (!init_done_) {
       return;
     }
@@ -387,7 +387,7 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
-  virtual void AfterDecision(Decision* const d, bool apply) {
+  void AfterDecision(Decision* const d, bool apply) override {
     if (init_done_ && current_var_ != kUninitializedVarIndex) {
       if (current_log_space_ > 0.0) {
         const double log_space = domain_watcher_->LogSearchSpaceSize();
@@ -402,7 +402,7 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
-  virtual void BeginFail() {
+  void BeginFail() override {
     if (init_done_ && current_var_ != kUninitializedVarIndex) {
       UpdateImpact(current_var_, current_value_, kFailureImpact);
       current_var_ = kUninitializedVarIndex;
@@ -573,7 +573,7 @@ class ImpactRecorder : public SearchMonitor {
     }
   }
 
-  virtual std::string DebugString() const { return "ImpactRecorder"; }
+  std::string DebugString() const override { return "ImpactRecorder"; }
 
  private:
   // A container for the variables needed in FirstRun that is reversibly
@@ -597,7 +597,7 @@ class ImpactRecorder : public SearchMonitor {
     InitVarImpacts* without_split() { return &without_splits_; }
     InitVarImpactsWithSplits* with_splits() { return &with_splits_; }
 
-    virtual std::string DebugString() const { return "FirstRunVariableContainers"; }
+    std::string DebugString() const override { return "FirstRunVariableContainers"; }
 
    private:
     std::unique_ptr<Callback2<int, int64> > update_impact_callback_;
@@ -686,9 +686,9 @@ class RestartMonitor : public SearchMonitor {
         maximum_restart_depth_(kint64max),
         num_restarts_(0) {}
 
-  virtual ~RestartMonitor() {}
+  ~RestartMonitor() override {}
 
-  virtual void ApplyDecision(Decision* const d) {
+  void ApplyDecision(Decision* const d) override {
     Solver* const s = solver();
     branches_between_restarts_++;
     d->Accept(&find_var_);
@@ -702,7 +702,7 @@ class RestartMonitor : public SearchMonitor {
     }
   }
 
-  virtual void RefuteDecision(Decision* const d) {
+  void RefuteDecision(Decision* const d) override {
     CHECK(d != nullptr);
     Solver* const s = solver();
     branches_between_restarts_++;
@@ -727,7 +727,7 @@ class RestartMonitor : public SearchMonitor {
     }
   }
 
-  virtual void ExitSearch() {
+  void ExitSearch() override {
     if (parameters_.display_level != DefaultPhaseParameters::NONE &&
         no_good_manager_ != nullptr) {
       LOG(INFO) << "Default search has generated "
@@ -736,7 +736,7 @@ class RestartMonitor : public SearchMonitor {
     }
   }
 
-  virtual bool AtSolution() {
+  bool AtSolution() override {
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
       VLOG(2) << "Found a solution after the following decisions:";
       for (SimpleRevFIFO<ChoiceInfo>::Iterator it(&choices_); it.ok(); ++it) {
@@ -746,20 +746,20 @@ class RestartMonitor : public SearchMonitor {
     return false;
   }
 
-  virtual void BeginFail() {
+  void BeginFail() override {
     if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
       VLOG(2) << "-- Failure";
     }
   }
 
-  void Install() {
+  void Install() override {
     SearchMonitor::Install();
     if (no_good_manager_ != nullptr) {
       no_good_manager_->Install();
     }
   }
 
-  virtual std::string DebugString() const { return "RestartMonitor"; }
+  std::string DebugString() const override { return "RestartMonitor"; }
 
  private:
   // Called before applying the refutation of the decision.  This
@@ -933,15 +933,15 @@ class RunHeuristicsAsDives : public Decision {
     Init(solver, vars, heuristic_num_failures_limit);
   }
 
-  virtual ~RunHeuristicsAsDives() { STLDeleteElements(&heuristics_); }
+  ~RunHeuristicsAsDives() override { STLDeleteElements(&heuristics_); }
 
-  virtual void Apply(Solver* const solver) {
+  void Apply(Solver* const solver) override {
     if (!RunAllHeuristics(solver)) {
       solver->Fail();
     }
   }
 
-  virtual void Refute(Solver* const solver) {}
+  void Refute(Solver* const solver) override {}
 
   bool ShouldRun() {
     if (heuristic_period_ <= 0) {
@@ -1075,9 +1075,9 @@ class DefaultIntegerSearch : public DecisionBuilder {
         restart_monitor_(solver, parameters_, &domain_watcher_),
         init_done_(false) {}
 
-  virtual ~DefaultIntegerSearch() {}
+  ~DefaultIntegerSearch() override {}
 
-  virtual Decision* Next(Solver* const solver) {
+  Decision* Next(Solver* const solver) override {
     CheckInit(solver);
 
     if (heuristics_.ShouldRun()) {
@@ -1089,8 +1089,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
                : ImpactNext(solver);
   }
 
-  virtual void AppendMonitors(Solver* const solver,
-                              std::vector<SearchMonitor*>* const extras) {
+  void AppendMonitors(Solver* const solver,
+                      std::vector<SearchMonitor*>* const extras) override {
     CHECK(solver != nullptr);
     CHECK(extras != nullptr);
     if (parameters_.decision_builder == nullptr) {
@@ -1101,14 +1101,14 @@ class DefaultIntegerSearch : public DecisionBuilder {
     }
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     std::string out = "DefaultIntegerSearch(";
 
     if (parameters_.decision_builder == nullptr) {

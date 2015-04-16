@@ -111,9 +111,9 @@ class CPIntervalVariableProto;
 class BaseIntExpr : public IntExpr {
  public:
   explicit BaseIntExpr(Solver* const s) : IntExpr(s), var_(nullptr) {}
-  virtual ~BaseIntExpr() {}
+  ~BaseIntExpr() override {}
 
-  virtual IntVar* Var();
+  IntVar* Var() override;
   virtual IntVar* CastToVar();
 
  private:
@@ -524,11 +524,11 @@ class CallMethod0 : public Demon {
   CallMethod0(T* const ct, void (T::*method)(), const std::string& name)
       : constraint_(ct), method_(method), name_(name) {}
 
-  virtual ~CallMethod0() {}
+  ~CallMethod0() override {}
 
-  virtual void Run(Solver* const s) { (constraint_->*method_)(); }
+  void Run(Solver* const s) override { (constraint_->*method_)(); }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return "CallMethod_" + name_ + "(" + constraint_->DebugString() + ")";
   }
 
@@ -551,11 +551,11 @@ class CallMethod1 : public Demon {
   CallMethod1(T* const ct, void (T::*method)(P), const std::string& name, P param1)
       : constraint_(ct), method_(method), name_(name), param1_(param1) {}
 
-  virtual ~CallMethod1() {}
+  ~CallMethod1() override {}
 
-  virtual void Run(Solver* const s) { (constraint_->*method_)(param1_); }
+  void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString(), ", "),
                   StrCat(param1_, ")"));
@@ -586,13 +586,13 @@ class CallMethod2 : public Demon {
         param1_(param1),
         param2_(param2) {}
 
-  virtual ~CallMethod2() {}
+  ~CallMethod2() override {}
 
-  virtual void Run(Solver* const s) {
+  void Run(Solver* const s) override {
     (constraint_->*method_)(param1_, param2_);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
                   StrCat(", ", param1_), StrCat(", ", param2_, ")"));
@@ -626,13 +626,13 @@ class CallMethod3 : public Demon {
         param2_(param2),
         param3_(param3) {}
 
-  virtual ~CallMethod3() {}
+  ~CallMethod3() override {}
 
-  virtual void Run(Solver* const s) {
+  void Run(Solver* const s) override {
     (constraint_->*method_)(param1_, param2_, param3_);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
                   StrCat(", ", param1_), StrCat(", ", param2_),
@@ -669,15 +669,15 @@ class DelayedCallMethod0 : public Demon {
   DelayedCallMethod0(T* const ct, void (T::*method)(), const std::string& name)
       : constraint_(ct), method_(method), name_(name) {}
 
-  virtual ~DelayedCallMethod0() {}
+  ~DelayedCallMethod0() override {}
 
-  virtual void Run(Solver* const s) { (constraint_->*method_)(); }
+  void Run(Solver* const s) override { (constraint_->*method_)(); }
 
-  virtual Solver::DemonPriority priority() const {
+  Solver::DemonPriority priority() const override {
     return Solver::DELAYED_PRIORITY;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return "DelayedCallMethod_" + name_ + "(" + constraint_->DebugString() +
            ")";
   }
@@ -702,15 +702,15 @@ class DelayedCallMethod1 : public Demon {
                      P param1)
       : constraint_(ct), method_(method), name_(name), param1_(param1) {}
 
-  virtual ~DelayedCallMethod1() {}
+  ~DelayedCallMethod1() override {}
 
-  virtual void Run(Solver* const s) { (constraint_->*method_)(param1_); }
+  void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
 
-  virtual Solver::DemonPriority priority() const {
+  Solver::DemonPriority priority() const override {
     return Solver::DELAYED_PRIORITY;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StrCat(StrCat("DelayedCallMethod_", name_),
                   StrCat("(", constraint_->DebugString(), ", "),
                   StrCat(param1_, ")"));
@@ -742,17 +742,17 @@ class DelayedCallMethod2 : public Demon {
         param1_(param1),
         param2_(param2) {}
 
-  virtual ~DelayedCallMethod2() {}
+  ~DelayedCallMethod2() override {}
 
-  virtual void Run(Solver* const s) {
+  void Run(Solver* const s) override {
     (constraint_->*method_)(param1_, param2_);
   }
 
-  virtual Solver::DemonPriority priority() const {
+  Solver::DemonPriority priority() const override {
     return Solver::DELAYED_PRIORITY;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StrCat(StrCat("DelayedCallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
                   StrCat(", ", param1_), StrCat(", ", param2_, ")"));
@@ -797,7 +797,7 @@ Demon* MakeDelayedConstraintDemon2(Solver* const s, T* const ct,
 class LocalSearchOperator : public BaseObject {
  public:
   LocalSearchOperator() {}
-  virtual ~LocalSearchOperator() {}
+  ~LocalSearchOperator() override {}
   virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) = 0;
   virtual void Start(const Assignment* assignment) = 0;
 };
@@ -813,10 +813,10 @@ class VarLocalSearchOperator : public LocalSearchOperator {
         was_activated_(),
         cleared_(true),
         var_handler_(var_handler) {}
-  virtual ~VarLocalSearchOperator() {}
+  ~VarLocalSearchOperator() override {}
   // This method should not be overridden. Override OnStart() instead which is
   // called before exiting this method.
-  void Start(const Assignment* assignment) {
+  void Start(const Assignment* assignment) override {
     const int size = Size();
     CHECK_LE(size, assignment->Size())
         << "Assignment contains fewer variables than operator";
@@ -996,14 +996,14 @@ class IntVarLocalSearchOperator
             vars, IntVarLocalSearchHandler()) {
     AddVars(vars);
   }
-  virtual ~IntVarLocalSearchOperator() {}
+  ~IntVarLocalSearchOperator() override {}
   // Redefines MakeNextNeighbor to export a simpler interface. The calls to
   // ApplyChanges() and RevertChanges() are factored in this method, hiding both
   // delta and deltadelta from subclasses which only need to override
   // MakeOneNeighbor().
   // Therefore this method should not be overridden. Override MakeOneNeighbor()
   // instead.
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
 
  protected:
   // Creates a new neighbor. It returns false when the neighborhood is
@@ -1060,7 +1060,7 @@ class SequenceVarLocalSearchOperator
             vars, SequenceVarLocalSearchHandler(this)) {
     AddVars(vars);
   }
-  virtual ~SequenceVarLocalSearchOperator() {}
+  ~SequenceVarLocalSearchOperator() override {}
   // Returns the value in the current assignment of the variable of given index.
   const std::vector<int>& Sequence(int64 index) const { return Value(index); }
   const std::vector<int>& OldSequence(int64 index) const { return OldValue(index); }
@@ -1144,17 +1144,17 @@ inline void SequenceVarLocalSearchHandler::OnAddVars() {
 class BaseLNS : public IntVarLocalSearchOperator {
  public:
   explicit BaseLNS(const std::vector<IntVar*>& vars);
-  virtual ~BaseLNS();
+  ~BaseLNS() override;
   virtual void InitFragments();
   virtual bool NextFragment(std::vector<int>* fragment) = 0;
 
  protected:
   // This method should not be overridden. Override NextFragment() instead.
-  virtual bool MakeOneNeighbor();
+  bool MakeOneNeighbor() override;
 
  private:
   // This method should not be overridden. Override InitFragments() instead.
-  virtual void OnStart();
+  void OnStart() override;
 };
 
 // ----- ChangeValue Operators -----
@@ -1166,15 +1166,15 @@ class BaseLNS : public IntVarLocalSearchOperator {
 class ChangeValue : public IntVarLocalSearchOperator {
  public:
   explicit ChangeValue(const std::vector<IntVar*>& vars);
-  virtual ~ChangeValue();
+  ~ChangeValue() override;
   virtual int64 ModifyValue(int64 index, int64 value) = 0;
 
  protected:
   // This method should not be overridden. Override ModifyValue() instead.
-  virtual bool MakeOneNeighbor();
+  bool MakeOneNeighbor() override;
 
  private:
-  virtual void OnStart();
+  void OnStart() override;
 
   int index_;
 };
@@ -1217,11 +1217,11 @@ class PathOperator : public IntVarLocalSearchOperator {
                const std::vector<IntVar*>& path_vars,
                int number_of_base_nodes,
                ResultCallback1<int, int64>* start_empty_path_class);
-  virtual ~PathOperator() {}
+  ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
 
   // TODO(user): Make the following methods protected.
-  virtual bool SkipUnchanged(int index) const;
+  bool SkipUnchanged(int index) const override;
 
   // Returns the index of the node after the node of index node_index in the
   // current assignment.
@@ -1241,7 +1241,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
  protected:
   // This method should not be overridden. Override MakeNeighbor() instead.
-  virtual bool MakeOneNeighbor();
+  bool MakeOneNeighbor() override;
 
   // Returns the index of the variable corresponding to the ith base node.
   int64 BaseNode(int i) const { return base_nodes_[i]; }
@@ -1321,7 +1321,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   const bool ignore_path_vars_;
 
  private:
-  virtual void OnStart();
+  void OnStart() override;
   // Called by OnStart() after initializing node information. Should be
   // overriden instead of OnStart() to avoid calling PathOperator::OnStart
   // explicitly.
@@ -1399,11 +1399,11 @@ class LocalSearchFilter : public BaseObject {
 class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
   explicit IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
-  ~IntVarLocalSearchFilter();
+  ~IntVarLocalSearchFilter() override;
   // This method should not be overridden. Override OnSynchronize() instead
   // which is called before exiting this method.
-  virtual void Synchronize(const Assignment* assignment,
-                           const Assignment* delta);
+  void Synchronize(const Assignment* assignment,
+                   const Assignment* delta) override;
 
   bool FindIndex(IntVar* const var, int64* index) const {
     DCHECK(index != nullptr);
@@ -1441,7 +1441,7 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
 class PropagationMonitor : public SearchMonitor {
  public:
   explicit PropagationMonitor(Solver* const solver);
-  virtual ~PropagationMonitor();
+  ~PropagationMonitor() override;
 
   // Propagation events.
   virtual void BeginConstraintInitialPropagation(
@@ -1496,7 +1496,7 @@ class PropagationMonitor : public SearchMonitor {
                             const std::vector<int>& rank_last,
                             const std::vector<int>& unperformed) = 0;
   // Install itself on the solver.
-  virtual void Install();
+  void Install() override;
 };
 
 // ----- Boolean Variable -----
@@ -1508,37 +1508,37 @@ class BooleanVar : public IntVar {
   explicit BooleanVar(Solver* const s, const std::string& name = "")
       : IntVar(s, name), value_(kUnboundBooleanVarValue) {}
 
-  virtual ~BooleanVar() {}
+  ~BooleanVar() override {}
 
-  virtual int64 Min() const { return (value_ == 1); }
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const { return (value_ != 0); }
-  virtual void SetMax(int64 m);
-  virtual void SetRange(int64 l, int64 u);
-  virtual bool Bound() const { return (value_ != kUnboundBooleanVarValue); }
-  virtual int64 Value() const {
+  int64 Min() const override { return (value_ == 1); }
+  void SetMin(int64 m) override;
+  int64 Max() const override { return (value_ != 0); }
+  void SetMax(int64 m) override;
+  void SetRange(int64 l, int64 u) override;
+  bool Bound() const override { return (value_ != kUnboundBooleanVarValue); }
+  int64 Value() const override {
     CHECK_NE(value_, kUnboundBooleanVarValue) << "variable is not bound";
     return value_;
   }
-  virtual void RemoveValue(int64 v);
-  virtual void RemoveInterval(int64 l, int64 u);
-  virtual void WhenBound(Demon* d);
-  virtual void WhenRange(Demon* d) { WhenBound(d); }
-  virtual void WhenDomain(Demon* d) { WhenBound(d); }
-  virtual uint64 Size() const;
-  virtual bool Contains(int64 v) const;
-  virtual IntVarIterator* MakeHoleIterator(bool reversible) const;
-  virtual IntVarIterator* MakeDomainIterator(bool reversible) const;
-  virtual std::string DebugString() const;
-  virtual int VarType() const { return BOOLEAN_VAR; }
+  void RemoveValue(int64 v) override;
+  void RemoveInterval(int64 l, int64 u) override;
+  void WhenBound(Demon* d) override;
+  void WhenRange(Demon* d) override { WhenBound(d); }
+  void WhenDomain(Demon* d) override { WhenBound(d); }
+  uint64 Size() const override;
+  bool Contains(int64 v) const override;
+  IntVarIterator* MakeHoleIterator(bool reversible) const override;
+  IntVarIterator* MakeDomainIterator(bool reversible) const override;
+  std::string DebugString() const override;
+  int VarType() const override { return BOOLEAN_VAR; }
 
-  virtual IntVar* IsEqual(int64 constant);
-  virtual IntVar* IsDifferent(int64 constant);
-  virtual IntVar* IsGreaterOrEqual(int64 constant);
-  virtual IntVar* IsLessOrEqual(int64 constant);
+  IntVar* IsEqual(int64 constant) override;
+  IntVar* IsDifferent(int64 constant) override;
+  IntVar* IsGreaterOrEqual(int64 constant) override;
+  IntVar* IsLessOrEqual(int64 constant) override;
 
   virtual void RestoreValue() = 0;
-  virtual std::string BaseName() const { return "BooleanVar"; }
+  std::string BaseName() const override { return "BooleanVar"; }
 
   int RawValue() const { return value_; }
 
@@ -1559,7 +1559,7 @@ class SymmetryBreaker : public DecisionVisitor {
  public:
   SymmetryBreaker()
       : symmetry_manager_(nullptr), index_in_symmetry_manager_(-1) {}
-  virtual ~SymmetryBreaker() {}
+  ~SymmetryBreaker() override {}
 
   void AddIntegerVariableEqualValueClause(IntVar* const var, int64 value);
   void AddIntegerVariableGreaterOrEqualValueClause(IntVar* const var,
@@ -1590,19 +1590,19 @@ class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
             ResultCallback<std::string>* display_callback, int period);
-  virtual ~SearchLog();
-  virtual void EnterSearch();
-  virtual void ExitSearch();
-  virtual bool AtSolution();
-  virtual void BeginFail();
-  virtual void NoMoreSolutions();
-  virtual void ApplyDecision(Decision* const decision);
-  virtual void RefuteDecision(Decision* const decision);
+  ~SearchLog() override;
+  void EnterSearch() override;
+  void ExitSearch() override;
+  bool AtSolution() override;
+  void BeginFail() override;
+  void NoMoreSolutions() override;
+  void ApplyDecision(Decision* const decision) override;
+  void RefuteDecision(Decision* const decision) override;
   void OutputDecision();
   void Maintain();
-  virtual void BeginInitialPropagation();
-  virtual void EndInitialPropagation();
-  virtual std::string DebugString() const;
+  void BeginInitialPropagation() override;
+  void EndInitialPropagation() override;
+  std::string DebugString() const override;
 
  protected:
   /* Bottleneck function used for all UI related output. */
@@ -1871,7 +1871,7 @@ class ModelCache {
 class DependencyGraphNode;
 class DependencyGraph : public BaseObject {
  public:
-  virtual ~DependencyGraph();
+  ~DependencyGraph() override;
 
   // start(left) >= end(right) + delay.
   void AddStartsAfterEndWithDelay(IntervalVar* const left,
@@ -1975,49 +1975,49 @@ class ModelParser : public ModelVisitor {
  public:
   ModelParser();
 
-  virtual ~ModelParser();
+  ~ModelParser() override;
 
   // Header/footers.
-  virtual void BeginVisitModel(const std::string& solver_name);
-  virtual void EndVisitModel(const std::string& solver_name);
-  virtual void BeginVisitConstraint(const std::string& type_name,
-                                    const Constraint* const constraint);
-  virtual void EndVisitConstraint(const std::string& type_name,
-                                  const Constraint* const constraint);
-  virtual void BeginVisitIntegerExpression(const std::string& type_name,
-                                           const IntExpr* const expr);
-  virtual void EndVisitIntegerExpression(const std::string& type_name,
-                                         const IntExpr* const expr);
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate);
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate);
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const std::string& operation, int64 value,
-                                     IntervalVar* const delegate);
-  virtual void VisitSequenceVariable(const SequenceVar* const variable);
+  void BeginVisitModel(const std::string& solver_name) override;
+  void EndVisitModel(const std::string& solver_name) override;
+  void BeginVisitConstraint(const std::string& type_name,
+                            const Constraint* const constraint) override;
+  void EndVisitConstraint(const std::string& type_name,
+                          const Constraint* const constraint) override;
+  void BeginVisitIntegerExpression(const std::string& type_name,
+                                   const IntExpr* const expr) override;
+  void EndVisitIntegerExpression(const std::string& type_name,
+                                 const IntExpr* const expr) override;
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override;
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override;
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override;
+  void VisitSequenceVariable(const SequenceVar* const variable) override;
   // Integer arguments
-  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value);
-  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
-                                         const std::vector<int64>& values);
-  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
-                                          const IntTupleSet& values);
+  void VisitIntegerArgument(const std::string& arg_name, int64 value) override;
+  void VisitIntegerArrayArgument(const std::string& arg_name,
+                                 const std::vector<int64>& values) override;
+  void VisitIntegerMatrixArgument(const std::string& arg_name,
+                                  const IntTupleSet& values) override;
   // Variables.
-  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                              IntExpr* const argument);
-  virtual void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments);
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override;
+  void VisitIntegerVariableArrayArgument(
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) override;
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const std::string& arg_name,
-                                     IntervalVar* const argument);
-  virtual void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments);
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override;
+  void VisitIntervalArrayArgument(
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override;
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const std::string& arg_name,
-                                     SequenceVar* const argument);
-  virtual void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments);
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* const argument) override;
+  void VisitSequenceArrayArgument(
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override;
 
  protected:
   void PushArgumentHolder();

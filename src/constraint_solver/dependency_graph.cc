@@ -83,21 +83,21 @@ class IntervalVarStartAdapter : public DependencyGraphNode {
     interval_var_->WhenAnything(demon);
   }
 
-  virtual ~IntervalVarStartAdapter() {}
+  ~IntervalVarStartAdapter() override {}
 
-  virtual int64 Min() const { return interval_var_->StartMin(); }
+  int64 Min() const override { return interval_var_->StartMin(); }
 
-  virtual int64 Max() const { return interval_var_->StartMax(); }
+  int64 Max() const override { return interval_var_->StartMax(); }
 
-  virtual void SetMinInternal(int64 new_min) {
+  void SetMinInternal(int64 new_min) override {
     interval_var_->SetStartMin(new_min);
   }
 
-  virtual void SetMaxInternal(int64 new_max) {
+  void SetMaxInternal(int64 new_max) override {
     interval_var_->SetStartMax(new_max);
   }
 
-  virtual PerformedState State() {
+  PerformedState State() override {
     if (interval_var_->MustBePerformed()) {
       return PERFORMED;
     } else if (interval_var_->MayBePerformed()) {
@@ -107,12 +107,12 @@ class IntervalVarStartAdapter : public DependencyGraphNode {
     }
   }
 
-  virtual void SetState(PerformedState state) {
+  void SetState(PerformedState state) override {
     CHECK_NE(state, UNDECIDED);
     interval_var_->SetPerformed(state == PERFORMED);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Node-Start(%s)", interval_var_->DebugString().c_str());
   }
 
@@ -137,16 +137,16 @@ class NonReversibleDependencyGraph : public DependencyGraph {
   explicit NonReversibleDependencyGraph(Solver* const solver)
       : solver_(solver), in_process_(0) {}
 
-  virtual ~NonReversibleDependencyGraph() {}
+  ~NonReversibleDependencyGraph() override {}
 
-  virtual void AddEquality(DependencyGraphNode* const left,
-                           DependencyGraphNode* const right, int64 offset) {
+  void AddEquality(DependencyGraphNode* const left,
+                   DependencyGraphNode* const right, int64 offset) override {
     AddInequality(left, right, offset);
     AddInequality(right, left, -offset);
   }
 
-  virtual void AddInequality(DependencyGraphNode* const left,
-                             DependencyGraphNode* const right, int64 offset) {
+  void AddInequality(DependencyGraphNode* const left,
+                     DependencyGraphNode* const right, int64 offset) override {
     right->AddMinDependency(left, offset);
     left->AddMaxDependency(right, offset);
     Freeze();
@@ -162,13 +162,13 @@ class NonReversibleDependencyGraph : public DependencyGraph {
     UnFreeze();
   }
 
-  virtual void Enqueue(DependencyGraphNode* const node, bool changed_min) {
+  void Enqueue(DependencyGraphNode* const node, bool changed_min) override {
     CheckStamp();
     actives_.push_back(QueueElem(node, changed_min));
     ProcessQueue();
   }
 
-  virtual std::string DebugString() const { return "NonReversibleDependencyGraph"; }
+  std::string DebugString() const override { return "NonReversibleDependencyGraph"; }
 
  private:
   bool Dequeue(DependencyGraphNode** const node, bool* const changed_min) {

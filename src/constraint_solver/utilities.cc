@@ -223,51 +223,51 @@ namespace {
 class PrintModelVisitor : public ModelVisitor {
  public:
   PrintModelVisitor() : indent_(0) {}
-  virtual ~PrintModelVisitor() {}
+  ~PrintModelVisitor() override {}
 
   // Header/footers.
-  virtual void BeginVisitModel(const std::string& solver_name) {
+  void BeginVisitModel(const std::string& solver_name) override {
     LOG(INFO) << "Model " << solver_name << " {";
     Increase();
   }
 
-  virtual void EndVisitModel(const std::string& solver_name) {
+  void EndVisitModel(const std::string& solver_name) override {
     LOG(INFO) << "}";
     Decrease();
     CHECK_EQ(0, indent_);
   }
 
-  virtual void BeginVisitConstraint(const std::string& type_name,
-                                    const Constraint* const constraint) {
+  void BeginVisitConstraint(const std::string& type_name,
+                            const Constraint* const constraint) override {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  virtual void EndVisitConstraint(const std::string& type_name,
-                                  const Constraint* const constraint) {
+  void EndVisitConstraint(const std::string& type_name,
+                          const Constraint* const constraint) override {
     Decrease();
   }
 
-  virtual void BeginVisitIntegerExpression(const std::string& type_name,
-                                           const IntExpr* const expr) {
+  void BeginVisitIntegerExpression(const std::string& type_name,
+                                   const IntExpr* const expr) override {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  virtual void EndVisitIntegerExpression(const std::string& type_name,
-                                         const IntExpr* const expr) {
+  void EndVisitIntegerExpression(const std::string& type_name,
+                                 const IntExpr* const expr) override {
     Decrease();
   }
 
-  virtual void BeginVisitExtension(const std::string& type_name) {
+  void BeginVisitExtension(const std::string& type_name) override {
     LOG(INFO) << Spaces() << type_name;
     Increase();
   }
 
-  virtual void EndVisitExtension(const std::string& type_name) { Decrease(); }
+  void EndVisitExtension(const std::string& type_name) override { Decrease(); }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     if (delegate != nullptr) {
       delegate->Accept(this);
     } else {
@@ -279,9 +279,9 @@ class PrintModelVisitor : public ModelVisitor {
     }
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     LOG(INFO) << Spaces() << "IntVar";
     Increase();
     LOG(INFO) << Spaces() << value;
@@ -290,9 +290,9 @@ class PrintModelVisitor : public ModelVisitor {
     Decrease();
   }
 
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const std::string& operation, int64 value,
-                                     IntervalVar* const delegate) {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     if (delegate != nullptr) {
       LOG(INFO) << Spaces() << operation << " <" << value << ", ";
       Increase();
@@ -304,23 +304,23 @@ class PrintModelVisitor : public ModelVisitor {
     }
   }
 
-  virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
+  void VisitSequenceVariable(const SequenceVar* const sequence) override {
     LOG(INFO) << Spaces() << sequence->DebugString();
   }
 
   // Variables.
-  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value) {
+  void VisitIntegerArgument(const std::string& arg_name, int64 value) override {
     LOG(INFO) << Spaces() << arg_name << ": " << value;
   }
 
-  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
-                                         const std::vector<int64>& values) {
+  void VisitIntegerArrayArgument(const std::string& arg_name,
+                                 const std::vector<int64>& values) override {
     LOG(INFO) << Spaces() << arg_name << ": [" << strings::Join(values, ", ")
               << "]";
   }
 
-  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
-                                          const IntTupleSet& values) {
+  void VisitIntegerMatrixArgument(const std::string& arg_name,
+                                  const IntTupleSet& values) override {
     const int rows = values.NumTuples();
     const int columns = values.Arity();
     std::string array = "[";
@@ -341,16 +341,16 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << arg_name << ": " << array;
   }
 
-  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                              IntExpr* const argument) {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
     argument->Accept(this);
     Decrease();
   }
 
-  virtual void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
+  void VisitIntegerVariableArrayArgument(
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
     LOG(INFO) << Spaces() << arg_name << ": [";
     Increase();
     for (int i = 0; i < arguments.size(); ++i) {
@@ -361,8 +361,8 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const std::string& arg_name,
-                                     IntervalVar* const argument) {
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
     argument->Accept(this);
@@ -381,8 +381,8 @@ class PrintModelVisitor : public ModelVisitor {
   }
 
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const std::string& arg_name,
-                                     SequenceVar* const argument) {
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* const argument) override {
     set_prefix(StringPrintf("%s: ", arg_name.c_str()));
     Increase();
     argument->Accept(this);
@@ -400,7 +400,7 @@ class PrintModelVisitor : public ModelVisitor {
     LOG(INFO) << Spaces() << "]";
   }
 
-  virtual std::string DebugString() const { return "PrintModelVisitor"; }
+  std::string DebugString() const override { return "PrintModelVisitor"; }
 
  private:
   void Increase() { indent_ += 2; }
@@ -438,10 +438,10 @@ class ModelStatisticsVisitor : public ModelVisitor {
         num_sequences_(0),
         num_extensions_(0) {}
 
-  virtual ~ModelStatisticsVisitor() {}
+  ~ModelStatisticsVisitor() override {}
 
   // Begin/End visit element.
-  virtual void BeginVisitModel(const std::string& solver_name) {
+  void BeginVisitModel(const std::string& solver_name) override {
     // Reset statistics.
     num_constraints_ = 0;
     num_variables_ = 0;
@@ -456,7 +456,7 @@ class ModelStatisticsVisitor : public ModelVisitor {
     extension_types_.clear();
   }
 
-  virtual void EndVisitModel(const std::string& solver_name) {
+  void EndVisitModel(const std::string& solver_name) override {
     // Display statistics.
     LOG(INFO) << "Model has:";
     LOG(INFO) << "  - " << num_constraints_ << " constraints.";
@@ -477,25 +477,25 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
   }
 
-  virtual void BeginVisitConstraint(const std::string& type_name,
-                                    const Constraint* const constraint) {
+  void BeginVisitConstraint(const std::string& type_name,
+                            const Constraint* const constraint) override {
     num_constraints_++;
     AddConstraintType(type_name);
   }
 
-  virtual void BeginVisitIntegerExpression(const std::string& type_name,
-                                           const IntExpr* const expr) {
+  void BeginVisitIntegerExpression(const std::string& type_name,
+                                   const IntExpr* const expr) override {
     AddExpressionType(type_name);
     num_expressions_++;
   }
 
-  virtual void BeginVisitExtension(const std::string& type_name) {
+  void BeginVisitExtension(const std::string& type_name) override {
     AddExtensionType(type_name);
     num_extensions_++;
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     num_variables_++;
     Register(variable);
     if (delegate) {
@@ -504,25 +504,25 @@ class ModelStatisticsVisitor : public ModelVisitor {
     }
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     num_variables_++;
     Register(variable);
     num_casts_++;
     VisitSubArgument(delegate);
   }
 
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const std::string& operation, int64 value,
-                                     IntervalVar* const delegate) {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     num_intervals_++;
     if (delegate) {
       VisitSubArgument(delegate);
     }
   }
 
-  virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
+  void VisitSequenceVariable(const SequenceVar* const sequence) override {
     num_sequences_++;
     for (int i = 0; i < sequence->size(); ++i) {
       VisitSubArgument(sequence->Interval(i));
@@ -530,45 +530,45 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                              IntExpr* const argument) {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
+  void VisitIntegerVariableArrayArgument(
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const std::string& arg_name,
-                                     IntervalVar* const argument) {
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
+  void VisitIntervalArrayArgument(
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const std::string& arg_name,
-                                     SequenceVar* const argument) {
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
+  void VisitSequenceArrayArgument(
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
-  virtual std::string DebugString() const { return "ModelStatisticsVisitor"; }
+  std::string DebugString() const override { return "ModelStatisticsVisitor"; }
 
  private:
   void Register(const BaseObject* const object) {
@@ -619,11 +619,11 @@ class VariableDegreeVisitor : public ModelVisitor {
  public:
   VariableDegreeVisitor(hash_map<const IntVar*, int>* const map) : map_(map) {}
 
-  virtual ~VariableDegreeVisitor() {}
+  ~VariableDegreeVisitor() override {}
 
   // Begin/End visit element.
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
     if (ContainsKey(*map_, var)) {
       (*map_)[var]++;
@@ -633,9 +633,9 @@ class VariableDegreeVisitor : public ModelVisitor {
     }
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     IntVar* const var = const_cast<IntVar*>(variable);
     if (ContainsKey(*map_, var)) {
       (*map_)[var]++;
@@ -643,60 +643,60 @@ class VariableDegreeVisitor : public ModelVisitor {
     VisitSubArgument(delegate);
   }
 
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const std::string& operation, int64 value,
-                                     IntervalVar* const delegate) {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     if (delegate) {
       VisitSubArgument(delegate);
     }
   }
 
-  virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
+  void VisitSequenceVariable(const SequenceVar* const sequence) override {
     for (int i = 0; i < sequence->size(); ++i) {
       VisitSubArgument(sequence->Interval(i));
     }
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                              IntExpr* const argument) {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
+  void VisitIntegerVariableArrayArgument(
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const std::string& arg_name,
-                                     IntervalVar* const argument) {
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
+  void VisitIntervalArrayArgument(
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const std::string& arg_name,
-                                     SequenceVar* const argument) {
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
+  void VisitSequenceArrayArgument(
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
-  virtual std::string DebugString() const { return "VariableDegreeVisitor"; }
+  std::string DebugString() const override { return "VariableDegreeVisitor"; }
 
  private:
   // T should derive from BaseObject

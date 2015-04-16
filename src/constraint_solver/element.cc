@@ -40,16 +40,16 @@ namespace {
 class BaseIntExprElement : public BaseIntExpr {
  public:
   BaseIntExprElement(Solver* const s, IntVar* const expr);
-  virtual ~BaseIntExprElement() {}
-  virtual int64 Min() const;
-  virtual int64 Max() const;
-  virtual void Range(int64* mi, int64* ma);
-  virtual void SetMin(int64 m);
-  virtual void SetMax(int64 m);
-  virtual void SetRange(int64 mi, int64 ma);
-  virtual bool Bound() const { return (expr_->Bound()); }
+  ~BaseIntExprElement() override {}
+  int64 Min() const override;
+  int64 Max() const override;
+  void Range(int64* mi, int64* ma) override;
+  void SetMin(int64 m) override;
+  void SetMax(int64 m) override;
+  void SetRange(int64 mi, int64 ma) override;
+  bool Bound() const override { return (expr_->Bound()); }
   // TODO(user) : improve me, the previous test is not always true
-  virtual void WhenRange(Demon* d) { expr_->WhenRange(d); }
+  void WhenRange(Demon* d) override { expr_->WhenRange(d); }
 
  protected:
   virtual int64 ElementValue(int index) const = 0;
@@ -198,14 +198,14 @@ class IntElementConstraint : public CastConstraint {
     CHECK(index != nullptr);
   }
 
-  virtual void Post() {
+  void Post() override {
     Demon* const d =
         solver()->MakeDelayedConstraintInitialPropagateCallback(this);
     index_->WhenDomain(d);
     target_var_->WhenRange(d);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     index_->SetRange(0, values_.size() - 1);
     const int64 target_var_min = target_var_->Min();
     const int64 target_var_max = target_var_->Max();
@@ -231,14 +231,14 @@ class IntElementConstraint : public CastConstraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IntElementConstraint(%s, %s, %s)",
                         strings::Join(values_, ", ").c_str(),
                         index_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument, values_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
@@ -264,9 +264,9 @@ class IntExprElement : public BaseIntExprElement {
   IntExprElement(Solver* const s, const std::vector<int64>& vals, IntVar* const expr)
       : BaseIntExprElement(s, expr), values_(vals) {}
 
-  virtual ~IntExprElement() {}
+  ~IntExprElement() override {}
 
-  virtual std::string name() const {
+  std::string name() const override {
     const int size = values_.size();
     if (size > 10) {
       return StringPrintf("IntElement(array of size %d, %s)", size,
@@ -278,7 +278,7 @@ class IntExprElement : public BaseIntExprElement {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     const int size = values_.size();
     if (size > 10) {
       return StringPrintf("IntElement(array of size %d, %s)", size,
@@ -290,7 +290,7 @@ class IntExprElement : public BaseIntExprElement {
     }
   }
 
-  virtual IntVar* CastToVar() {
+  IntVar* CastToVar() override {
     Solver* const s = solver();
     IntVar* const var = s->MakeIntVar(values_);
     s->AddCastConstraint(
@@ -299,7 +299,7 @@ class IntExprElement : public BaseIntExprElement {
     return var;
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument, values_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
@@ -308,12 +308,12 @@ class IntExprElement : public BaseIntExprElement {
   }
 
  protected:
-  virtual int64 ElementValue(int index) const {
+  int64 ElementValue(int index) const override {
     DCHECK_LT(index, values_.size());
     return values_[index];
   }
-  virtual int64 ExprMin() const { return std::max(0LL, expr_->Min()); }
-  virtual int64 ExprMax() const {
+  int64 ExprMin() const override { return std::max(0LL, expr_->Min()); }
+  int64 ExprMax() const override {
     return std::min(static_cast<int64>(values_.size()) - 1, expr_->Max());
   }
 
@@ -327,27 +327,27 @@ class IncreasingIntExprElement : public BaseIntExpr {
  public:
   IncreasingIntExprElement(Solver* const s, const std::vector<int64>& values,
                            IntVar* const index);
-  virtual ~IncreasingIntExprElement() {}
+  ~IncreasingIntExprElement() override {}
 
-  virtual int64 Min() const;
-  virtual void SetMin(int64 m);
-  virtual int64 Max() const;
-  virtual void SetMax(int64 m);
-  virtual void SetRange(int64 mi, int64 ma);
-  virtual bool Bound() const { return (index_->Bound()); }
+  int64 Min() const override;
+  void SetMin(int64 m) override;
+  int64 Max() const override;
+  void SetMax(int64 m) override;
+  void SetRange(int64 mi, int64 ma) override;
+  bool Bound() const override { return (index_->Bound()); }
   // TODO(user) : improve me, the previous test is not always true
-  virtual std::string name() const {
+  std::string name() const override {
     return StringPrintf("IntElement(%s, %s)",
                         strings::Join(values_, ", ").c_str(),
                         index_->name().c_str());
   }
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IntElement(%s, %s)",
                         strings::Join(values_, ", ").c_str(),
                         index_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument, values_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
@@ -355,9 +355,9 @@ class IncreasingIntExprElement : public BaseIntExpr {
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
 
-  virtual void WhenRange(Demon* d) { index_->WhenRange(d); }
+  void WhenRange(Demon* d) override { index_->WhenRange(d); }
 
-  virtual IntVar* CastToVar() {
+  IntVar* CastToVar() override {
     Solver* const s = solver();
     IntVar* const var = s->MakeIntVar(values_);
     LinkVarExpr(s, this, var);
@@ -543,17 +543,17 @@ class IntExprFunctionElement : public BaseIntExprElement {
  public:
   IntExprFunctionElement(Solver* const s, ResultCallback1<int64, int64>* values,
                          IntVar* const expr, bool del);
-  virtual ~IntExprFunctionElement();
+  ~IntExprFunctionElement() override;
 
-  virtual std::string name() const {
+  std::string name() const override {
     return StringPrintf("IntFunctionElement(%s)", expr_->name().c_str());
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IntFunctionElement(%s)", expr_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     // Warning: This will expand all values into a vector.
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
@@ -568,9 +568,9 @@ class IntExprFunctionElement : public BaseIntExprElement {
   }
 
  protected:
-  virtual int64 ElementValue(int index) const { return values_->Run(index); }
-  virtual int64 ExprMin() const { return expr_->Min(); }
-  virtual int64 ExprMax() const { return expr_->Max(); }
+  int64 ElementValue(int index) const override { return values_->Run(index); }
+  int64 ExprMin() const override { return expr_->Min(); }
+  int64 ExprMax() const override { return expr_->Max(); }
 
  private:
   ResultCallback1<int64, int64>* values_;
@@ -605,11 +605,11 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
     values->CheckIsRepeatable();
   }
 
-  virtual ~IncreasingIntExprFunctionElement() { delete values_; }
+  ~IncreasingIntExprFunctionElement() override { delete values_; }
 
-  virtual int64 Min() const { return values_->Run(index_->Min()); }
+  int64 Min() const override { return values_->Run(index_->Min()); }
 
-  virtual void SetMin(int64 m) {
+  void SetMin(int64 m) override {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
     if (m > values_->Run(expression_max)) {
@@ -623,9 +623,9 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
     index_->SetMin(nmin);
   }
 
-  virtual int64 Max() const { return values_->Run(index_->Max()); }
+  int64 Max() const override { return values_->Run(index_->Max()); }
 
-  virtual void SetMax(int64 m) {
+  void SetMax(int64 m) override {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
     if (m < values_->Run(expression_min)) {
@@ -639,7 +639,7 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
     index_->SetMax(nmax);
   }
 
-  virtual void SetRange(int64 mi, int64 ma) {
+  void SetRange(int64 mi, int64 ma) override {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
     if (mi > ma || ma < values_->Run(expression_min) ||
@@ -659,19 +659,19 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
     index_->SetRange(nmin, nmax);
   }
 
-  virtual std::string name() const {
+  std::string name() const override {
     return StringPrintf("IncreasingIntExprFunctionElement(values, %s)",
                         index_->name().c_str());
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IncreasingIntExprFunctionElement(values, %s)",
                         index_->DebugString().c_str());
   }
 
-  virtual void WhenRange(Demon* d) { index_->WhenRange(d); }
+  void WhenRange(Demon* d) override { index_->WhenRange(d); }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     // Warning: This will expand all values into a vector.
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
@@ -708,11 +708,11 @@ class OppositeCallback : public BaseObject {
     values_->CheckIsRepeatable();
   }
 
-  virtual ~OppositeCallback() {}
+  ~OppositeCallback() override {}
 
   int64 Run(int64 index) { return -values_->Run(index); }
 
-  virtual std::string DebugString() const { return "OppositeCallback"; }
+  std::string DebugString() const override { return "OppositeCallback"; }
 
  public:
   std::unique_ptr<ResultCallback1<int64, int64>> values_;
@@ -743,26 +743,26 @@ class IntIntExprFunctionElement : public BaseIntExpr {
   IntIntExprFunctionElement(Solver* const s,
                             ResultCallback2<int64, int64, int64>* values,
                             IntVar* const expr1, IntVar* const expr2);
-  virtual ~IntIntExprFunctionElement();
-  virtual std::string DebugString() const {
+  ~IntIntExprFunctionElement() override;
+  std::string DebugString() const override {
     return StringPrintf("IntIntFunctionElement(%s,%s)",
                         expr1_->DebugString().c_str(),
                         expr2_->DebugString().c_str());
   }
-  virtual int64 Min() const;
-  virtual int64 Max() const;
-  virtual void Range(int64* mi, int64* ma);
-  virtual void SetMin(int64 m);
-  virtual void SetMax(int64 m);
-  virtual void SetRange(int64 mi, int64 ma);
-  virtual bool Bound() const { return expr1_->Bound() && expr2_->Bound(); }
+  int64 Min() const override;
+  int64 Max() const override;
+  void Range(int64* mi, int64* ma) override;
+  void SetMin(int64 m) override;
+  void SetMax(int64 m) override;
+  void SetRange(int64 mi, int64 ma) override;
+  bool Bound() const override { return expr1_->Bound() && expr2_->Bound(); }
   // TODO(user) : improve me, the previous test is not always true
-  virtual void WhenRange(Demon* d) {
+  void WhenRange(Demon* d) override {
     expr1_->WhenRange(d);
     expr2_->WhenRange(d);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
     // TODO(user): Implement me.
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
@@ -1046,18 +1046,18 @@ class IntExprArrayElementCt : public CastConstraint {
  public:
   IntExprArrayElementCt(Solver* const s, const std::vector<IntVar*>& vars,
                         IntVar* const index, IntVar* const target_var);
-  virtual ~IntExprArrayElementCt() {}
+  ~IntExprArrayElementCt() override {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  void Post() override;
+  void InitialPropagate() override;
 
   void Propagate();
   void Update(int index);
   void UpdateExpr();
 
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1195,9 +1195,9 @@ class IntExprArrayElementCstCt : public Constraint {
         target_(target),
         demons_(vars.size()) {}
 
-  virtual ~IntExprArrayElementCstCt() {}
+  ~IntExprArrayElementCstCt() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       demons_[i] = MakeConstraintDemon1(
           solver(), this, &IntExprArrayElementCstCt::Propagate, "Propagate", i);
@@ -1209,7 +1209,7 @@ class IntExprArrayElementCstCt : public Constraint {
     index_->WhenBound(index_demon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     for (int i = 0; i < vars_.size(); ++i) {
       Propagate(i);
     }
@@ -1229,13 +1229,13 @@ class IntExprArrayElementCstCt : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IntExprArrayElement([%s], %s) == %" GG_LL_FORMAT "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         index_->DebugString().c_str(), target_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1265,9 +1265,9 @@ class IntExprIndexOfCt : public Constraint {
         demons_(vars_.size()),
         index_iterator_(index->MakeHoleIterator(true)) {}
 
-  virtual ~IntExprIndexOfCt() {}
+  ~IntExprIndexOfCt() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       demons_[i] = MakeConstraintDemon1(
           solver(), this, &IntExprIndexOfCt::Propagate, "Propagate", i);
@@ -1278,7 +1278,7 @@ class IntExprIndexOfCt : public Constraint {
     index_->WhenDomain(index_demon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!index_->Contains(i)) {
         vars_[i]->RemoveValue(target_);
@@ -1322,13 +1322,13 @@ class IntExprIndexOfCt : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("IntExprIndexOf([%s], %s) == %" GG_LL_FORMAT "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         index_->DebugString().c_str(), target_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kIndexOf, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);

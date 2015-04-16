@@ -32,7 +32,7 @@ class BaseAllDifferent : public Constraint {
  public:
   BaseAllDifferent(Solver* const s, const std::vector<IntVar*>& vars)
       : Constraint(s), vars_(vars) {}
-  ~BaseAllDifferent() {}
+  ~BaseAllDifferent() override {}
   std::string DebugStringInternal(const std::string& name) const {
     return StringPrintf("%s(%s)", name.c_str(),
                         JoinDebugStringPtr(vars_, ", ").c_str());
@@ -50,17 +50,17 @@ class ValueAllDifferent : public BaseAllDifferent {
  public:
   ValueAllDifferent(Solver* const s, const std::vector<IntVar*>& vars)
       : BaseAllDifferent(s, vars) {}
-  virtual ~ValueAllDifferent() {}
+  ~ValueAllDifferent() override {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  void Post() override;
+  void InitialPropagate() override;
   void OneMove(int index);
   bool AllMoves();
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return DebugStringInternal("ValueAllDifferent");
   }
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -354,9 +354,9 @@ class BoundsAllDifferent : public BaseAllDifferent {
   BoundsAllDifferent(Solver* const s, const std::vector<IntVar*>& vars)
       : BaseAllDifferent(s, vars), matching_(s, vars.size()) {}
 
-  virtual ~BoundsAllDifferent() {}
+  ~BoundsAllDifferent() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* range = MakeDelayedConstraintDemon0(
         solver(), this, &BoundsAllDifferent::IncrementalPropagate,
         "IncrementalPropagate");
@@ -370,7 +370,7 @@ class BoundsAllDifferent : public BaseAllDifferent {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     IncrementalPropagate();
     for (int i = 0; i < size(); ++i) {
       if (vars_[i]->Bound()) {
@@ -409,11 +409,11 @@ class BoundsAllDifferent : public BaseAllDifferent {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return DebugStringInternal("BoundsAllDifferent");
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -436,9 +436,9 @@ class SortConstraint : public Constraint {
         maxs_(original_vars.size(), 0),
         matching_(solver, original_vars.size()) {}
 
-  virtual ~SortConstraint() {}
+  ~SortConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const demon =
         solver()->MakeDelayedConstraintInitialPropagateCallback(this);
     for (int i = 0; i < size(); ++i) {
@@ -447,7 +447,7 @@ class SortConstraint : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     for (int i = 0; i < size(); ++i) {
       int64 vmin = 0;
       int64 vmax = 0;
@@ -483,7 +483,7 @@ class SortConstraint : public Constraint {
     }
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSortingConstraint, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                ovars_);
@@ -492,7 +492,7 @@ class SortConstraint : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kSortingConstraint, this);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Sort(%s, %s)",
                         JoinDebugStringPtr(ovars_, ", ").c_str(),
                         JoinDebugStringPtr(svars_, ", ").c_str());
@@ -539,9 +539,9 @@ class AllDifferentExcept : public Constraint {
   AllDifferentExcept(Solver* const s, std::vector<IntVar*> vars, int64 escape_value)
       : Constraint(s), vars_(vars), escape_value_(escape_value) {}
 
-  virtual ~AllDifferentExcept() {}
+  ~AllDifferentExcept() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
       Demon* const d = MakeConstraintDemon1(
@@ -550,7 +550,7 @@ class AllDifferentExcept : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Bound()) {
         Propagate(i);
@@ -569,12 +569,12 @@ class AllDifferentExcept : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("AllDifferentExcept([%s], %" GG_LL_FORMAT "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(), escape_value_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kAllDifferent, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -610,9 +610,9 @@ class NullIntersectArrayExcept : public Constraint {
         escape_value_(0),
         has_escape_value_(false) {}
 
-  virtual ~NullIntersectArrayExcept() {}
+  ~NullIntersectArrayExcept() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < first_vars_.size(); ++i) {
       IntVar* const var = first_vars_[i];
       Demon* const d = MakeConstraintDemon1(
@@ -629,7 +629,7 @@ class NullIntersectArrayExcept : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     for (int i = 0; i < first_vars_.size(); ++i) {
       if (first_vars_[i]->Bound()) {
         PropagateFirst(i);
@@ -660,14 +660,14 @@ class NullIntersectArrayExcept : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf(
         "NullIntersectArray([%s], [%s], escape = %" GG_LL_FORMAT "d",
         JoinDebugStringPtr(first_vars_, ", ").c_str(),
         JoinDebugStringPtr(second_vars_, ", ").c_str(), escape_value_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNullIntersect, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kLeftArgument,
                                                first_vars_);

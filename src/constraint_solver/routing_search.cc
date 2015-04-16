@@ -65,7 +65,7 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
         active_per_disjunction_(routing_model.GetNumberOfDisjunctions(), 0),
         penalty_value_(0) {}
 
-  virtual bool Accept(const Assignment* delta, const Assignment* deltadelta) {
+  bool Accept(const Assignment* delta, const Assignment* deltadelta) override {
     const int64 kUnassigned = -1;
     const Assignment::IntContainer& container = delta->IntVarContainer();
     const int delta_size = container.Size();
@@ -128,10 +128,10 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
       return new_objective_value <= cost_var->Max();
     }
   }
-  virtual std::string DebugString() const { return "NodeDisjunctionFilter"; }
+  std::string DebugString() const override { return "NodeDisjunctionFilter"; }
 
  private:
-  virtual void OnSynchronize(const Assignment* delta) {
+  void OnSynchronize(const Assignment* delta) override {
     penalty_value_ = 0;
     for (RoutingModel::DisjunctionIndex i(0);
          i < active_per_disjunction_.size(); ++i) {
@@ -393,14 +393,15 @@ class ChainCumulFilter : public BasePathFilter {
   ChainCumulFilter(const RoutingModel& routing_model,
                    const RoutingDimension& dimension,
                    Callback1<int64>* objective_callback);
-  virtual ~ChainCumulFilter() {}
-  virtual std::string DebugString() const {
+  ~ChainCumulFilter() override {}
+  std::string DebugString() const override {
     return "ChainCumulFilter(" + name_ + ")";
   }
 
  private:
-  virtual void OnSynchronizePathFromStart(int64 start);
-  virtual bool AcceptPath(int64 path_start, int64 chain_start, int64 chain_end);
+  void OnSynchronizePathFromStart(int64 start) override;
+  bool AcceptPath(int64 path_start, int64 chain_start,
+                  int64 chain_end) override;
 
   const std::vector<IntVar*> cumuls_;
   std::vector<int64> start_to_vehicle_;
@@ -509,8 +510,8 @@ class PathCumulFilter : public BasePathFilter {
   PathCumulFilter(const RoutingModel& routing_model,
                   const RoutingDimension& dimension,
                   Callback1<int64>* objective_callback);
-  virtual ~PathCumulFilter() {}
-  virtual std::string DebugString() const {
+  ~PathCumulFilter() override {}
+  std::string DebugString() const override {
     return "PathCumulFilter(" + name_ + ")";
   }
 
@@ -573,12 +574,13 @@ class PathCumulFilter : public BasePathFilter {
     std::vector<std::vector<int64>> transits_;
   };
 
-  virtual void InitializeAcceptPath() {
+  void InitializeAcceptPath() override {
     cumul_cost_delta_ = total_current_cumul_cost_value_;
   }
-  virtual bool AcceptPath(int64 path_start, int64 chain_start, int64 chain_end);
-  virtual bool FinalizeAcceptPath();
-  virtual void OnBeforeSynchronizePaths();
+  bool AcceptPath(int64 path_start, int64 chain_start,
+                  int64 chain_end) override;
+  bool FinalizeAcceptPath() override;
+  void OnBeforeSynchronizePaths() override;
 
   bool FilterSpanCost() const { return global_span_cost_coefficient_ != 0; }
 
@@ -1065,9 +1067,10 @@ class NodePrecedenceFilter : public BasePathFilter {
  public:
   NodePrecedenceFilter(const std::vector<IntVar*>& nexts, int next_domain_size,
                        const RoutingModel::NodePairs& pairs);
-  virtual ~NodePrecedenceFilter() {}
-  virtual bool AcceptPath(int64 path_start, int64 chain_start, int64 chain_end);
-  virtual std::string DebugString() const { return "NodePrecedenceFilter"; }
+  ~NodePrecedenceFilter() override {}
+  bool AcceptPath(int64 path_start, int64 chain_start,
+                  int64 chain_end) override;
+  std::string DebugString() const override { return "NodePrecedenceFilter"; }
 
  private:
   std::vector<int> pair_firsts_;
@@ -1136,11 +1139,11 @@ namespace {
 class VehicleVarFilter : public BasePathFilter {
  public:
   explicit VehicleVarFilter(const RoutingModel& routing_model);
-  ~VehicleVarFilter() {}
-  virtual bool Accept(const Assignment* delta,
-                      const Assignment* deltadelta);
-  virtual bool AcceptPath(int64 path_start, int64 chain_start, int64 chain_end);
-  virtual std::string DebugString() const { return "VehicleVariableFilter"; }
+  ~VehicleVarFilter() override {}
+  bool Accept(const Assignment* delta, const Assignment* deltadelta) override;
+  bool AcceptPath(int64 path_start, int64 chain_start,
+                  int64 chain_end) override;
+  std::string DebugString() const override { return "VehicleVariableFilter"; }
 
  private:
   std::vector<int64> start_to_vehicle_;

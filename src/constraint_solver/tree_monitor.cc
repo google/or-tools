@@ -107,22 +107,22 @@ class TreeNode;
 class TreeDecisionVisitor : public DecisionVisitor {
  public:
   TreeDecisionVisitor() {}
-  virtual ~TreeDecisionVisitor() {}
+  ~TreeDecisionVisitor() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     name_ = var->name();
     value_ = value;
     valid_ = true;
   }
 
-  virtual void VisitSplitVariableDomain(IntVar* const var, int64 value,
-                                        bool start_with_lower_half) {
+  void VisitSplitVariableDomain(IntVar* const var, int64 value,
+                                bool start_with_lower_half) override {
     name_ = var->name();
     value_ = value;
     valid_ = true;
   }
 
-  virtual void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) {
+  void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) override {
     name_ = var->name();
     value_ = est;
     valid_ = true;
@@ -140,7 +140,7 @@ class TreeDecisionVisitor : public DecisionVisitor {
     valid_ = true;
   }
 
-  virtual void VisitUnknownDecision() { valid_ = false; }
+  void VisitUnknownDecision() override { valid_ = false; }
 
   // Indicates whether name and value can be called.
   bool valid() { return valid_; }
@@ -157,7 +157,7 @@ class TreeDecisionVisitor : public DecisionVisitor {
     return value_;
   }
 
-  virtual std::string DebugString() const { return "TreeDecisionVisitor"; }
+  std::string DebugString() const override { return "TreeDecisionVisitor"; }
 
  private:
   std::string name_;
@@ -194,20 +194,20 @@ class TreeMonitor : public SearchMonitor {
               std::string* const config_xml, std::string* const tree_xml,
               std::string* const visualization_xml);
 
-  ~TreeMonitor();
+  ~TreeMonitor() override;
 
   // Callback for the beginning of the search.
-  virtual void EnterSearch();
+  void EnterSearch() override;
 
   // Callback called after each decision, but before any variables are changed.
   // The decision is empty if a solution has been reached.
-  virtual void EndNextDecision(DecisionBuilder* const decision_builder,
-                               Decision* const decision);
+  void EndNextDecision(DecisionBuilder* const decision_builder,
+                       Decision* const decision) override;
   // Callback for the end of the search.
-  virtual void ExitSearch();
+  void ExitSearch() override;
 
   // Returns the XML of the current tree.
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
   // Generates and returns the Tree XML file for CPVIZ.
   std::string GenerateTreeXML() const;
@@ -218,7 +218,7 @@ class TreeMonitor : public SearchMonitor {
   // Callback called to indicate that the solver goes up one level in the
   // search tree. This is also used to restart the search at a parent node
   // after a solution is found.
-  virtual void RefuteDecision(Decision* const decision);
+  void RefuteDecision(Decision* const decision) override;
 
   // Strips characters that cause problems with CPViz from attributes
   static std::string StripSpecialCharacters(std::string attribute);

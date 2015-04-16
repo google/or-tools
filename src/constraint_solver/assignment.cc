@@ -1037,14 +1037,14 @@ class RestoreAssignment : public DecisionBuilder {
   explicit RestoreAssignment(Assignment* assignment)
       : assignment_(assignment) {}
 
-  virtual ~RestoreAssignment() {}
+  ~RestoreAssignment() override {}
 
-  virtual Decision* Next(Solver* const solver) {
+  Decision* Next(Solver* const solver) override {
     assignment_->Restore();
     return nullptr;
   }
 
-  virtual std::string DebugString() const { return "RestoreAssignment"; }
+  std::string DebugString() const override { return "RestoreAssignment"; }
 
  private:
   Assignment* const assignment_;
@@ -1054,14 +1054,14 @@ class StoreAssignment : public DecisionBuilder {
  public:
   explicit StoreAssignment(Assignment* assignment) : assignment_(assignment) {}
 
-  virtual ~StoreAssignment() {}
+  ~StoreAssignment() override {}
 
-  virtual Decision* Next(Solver* const solver) {
+  Decision* Next(Solver* const solver) override {
     assignment_->Store();
     return nullptr;
   }
 
-  virtual std::string DebugString() const { return "StoreAssignment"; }
+  std::string DebugString() const override { return "StoreAssignment"; }
 
  private:
   Assignment* const assignment_;

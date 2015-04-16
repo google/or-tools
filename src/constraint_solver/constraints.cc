@@ -48,9 +48,9 @@ class Callback1Demon : public Demon {
     CHECK(callback != nullptr);
     callback_->CheckIsRepeatable();
   }
-  virtual ~Callback1Demon() {}
+  ~Callback1Demon() override {}
 
-  virtual void Run(Solver* const solver) { callback_->Run(solver); }
+  void Run(Solver* const solver) override { callback_->Run(solver); }
 
  private:
   std::unique_ptr<Callback1<Solver*> > callback_;
@@ -63,9 +63,9 @@ class ClosureDemon : public Demon {
     CHECK(callback != nullptr);
     callback_->CheckIsRepeatable();
   }
-  virtual ~ClosureDemon() {}
+  ~ClosureDemon() override {}
 
-  virtual void Run(Solver* const solver) { callback_->Run(); }
+  void Run(Solver* const solver) override { callback_->Run(); }
 
  private:
   std::unique_ptr<Closure> callback_;
@@ -76,13 +76,13 @@ class ClosureDemon : public Demon {
 class TrueConstraint : public Constraint {
  public:
   explicit TrueConstraint(Solver* const s) : Constraint(s) {}
-  virtual ~TrueConstraint() {}
+  ~TrueConstraint() override {}
 
-  virtual void Post() {}
-  virtual void InitialPropagate() {}
-  virtual std::string DebugString() const { return "TrueConstraint()"; }
+  void Post() override {}
+  void InitialPropagate() override {}
+  std::string DebugString() const override { return "TrueConstraint()"; }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kTrueConstraint, this);
     visitor->EndVisitConstraint(ModelVisitor::kTrueConstraint, this);
   }
@@ -93,15 +93,15 @@ class FalseConstraint : public Constraint {
   explicit FalseConstraint(Solver* const s) : Constraint(s) {}
   FalseConstraint(Solver* const s, const std::string& explanation)
       : Constraint(s), explanation_(explanation) {}
-  virtual ~FalseConstraint() {}
+  ~FalseConstraint() override {}
 
-  virtual void Post() {}
-  virtual void InitialPropagate() { solver()->Fail(); }
-  virtual std::string DebugString() const {
+  void Post() override {}
+  void InitialPropagate() override { solver()->Fail(); }
+  std::string DebugString() const override {
     return StrCat("FalseConstraint(", explanation_, ")");
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kFalseConstraint, this);
     visitor->EndVisitConstraint(ModelVisitor::kFalseConstraint, this);
   }
@@ -123,9 +123,9 @@ class MapDomain : public Constraint {
     holes_ = var->MakeHoleIterator(true);
   }
 
-  virtual ~MapDomain() {}
+  ~MapDomain() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* vd = MakeConstraintDemon0(solver(), this, &MapDomain::VarDomain,
                                      "VarDomain");
     var_->WhenDomain(vd);
@@ -143,7 +143,7 @@ class MapDomain : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     for (int i = 0; i < actives_.size(); ++i) {
       actives_[i]->SetRange(0LL, 1LL);
       if (!var_->Contains(i)) {
@@ -194,12 +194,12 @@ class MapDomain : public Constraint {
       actives_[val]->SetValue(1);
     }
   }
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("MapDomain(%s, [%s])", var_->DebugString().c_str(),
                         JoinDebugStringPtr(actives_, ", ").c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMapDomain, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
                                             var_);
@@ -229,9 +229,9 @@ class LexicalLess : public Constraint {
     CHECK_EQ(left.size(), right.size());
   }
 
-  virtual ~LexicalLess() {}
+  ~LexicalLess() override {}
 
-  virtual void Post() {
+  void Post() override {
     const int position = JumpEqualVariables(0);
     active_var_.SetValue(solver(), position);
     if (position < left_.size()) {
@@ -241,7 +241,7 @@ class LexicalLess : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     const int position = JumpEqualVariables(active_var_.Value());
     if (position >= left_.size()) {
       if (strict_) {
@@ -268,14 +268,14 @@ class LexicalLess : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("%s([%s], [%s])",
                         strict_ ? "LexicalLess" : "LexicalLessOrEqual",
                         JoinDebugStringPtr(left_, ", ").c_str(),
                         JoinDebugStringPtr(right_, ", ").c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kLexLess, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kLeftArgument,
                                                left_);
@@ -325,9 +325,9 @@ class InversePermutationConstraint : public Constraint {
     }
   }
 
-  virtual ~InversePermutationConstraint() {}
+  ~InversePermutationConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < left_.size(); ++i) {
       Demon* const left_demon = MakeConstraintDemon1(
           solver(), this,
@@ -346,7 +346,7 @@ class InversePermutationConstraint : public Constraint {
         solver()->MakeAllDifferent(right_, /*stronger_propagation=*/ false));
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     const int size = left_.size();
     for (int i = 0; i < size; ++i) {
       left_[i]->SetRange(0, size - 1);
@@ -366,13 +366,13 @@ class InversePermutationConstraint : public Constraint {
     PropagateHoles(index, right_[index], right_hole_iterators_[index], left_);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("InversePermutationConstraint([%s], [%s])",
                         JoinDebugStringPtr(left_, ", ").c_str(),
                         JoinDebugStringPtr(right_, ", ").c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kInversePermutation, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kLeftArgument,
                                                left_);

@@ -46,21 +46,21 @@ class NoCycle : public Constraint {
           const std::vector<IntVar*>& active,
           ResultCallback1<bool, int64>* sink_handler, bool owner,
           bool assume_paths);
-  virtual ~NoCycle() {
+  ~NoCycle() override {
     if (owner_) {
       delete sink_handler_;
     }
   }
-  virtual void Post();
-  virtual void InitialPropagate();
+  void Post() override;
+  void InitialPropagate() override;
   void NextChange(int index);
   void ActiveBound(int index);
   void NextBound(int index);
   void ComputeSupports();
   void ComputeSupport(int index);
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kNoCycle, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -385,9 +385,9 @@ class Circuit : public Constraint {
     }
   }
 
-  virtual ~Circuit() {}
+  ~Circuit() override {}
 
-  virtual void Post() {
+  void Post() override {
     inbound_demon_ = MakeDelayedConstraintDemon0(
         solver(), this, &Circuit::CheckReachabilityToRoot,
         "CheckReachabilityToRoot");
@@ -407,7 +407,7 @@ class Circuit : public Constraint {
     solver()->AddConstraint(solver()->MakeAllDifferent(nexts_));
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     Solver* const s = solver();
     if (!sub_circuit_) {
       root_.SetValue(solver(), 0);
@@ -432,12 +432,12 @@ class Circuit : public Constraint {
     CheckReachabilityToRoot();
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("%sCircuit(%s)", sub_circuit_ ? "Sub" : "",
                         JoinDebugStringPtr(nexts_, " ").c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kCircuit, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -652,15 +652,15 @@ class BasePathCumul : public Constraint {
  public:
   BasePathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
                 const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls);
-  virtual ~BasePathCumul() {}
-  virtual void Post();
-  virtual void InitialPropagate();
+  ~BasePathCumul() override {}
+  void Post() override;
+  void InitialPropagate() override;
   void ActiveBound(int index);
   virtual void NextBound(int index) = 0;
   virtual bool AcceptLink(int i, int j) const = 0;
   void UpdateSupport(int index);
   void CumulRange(int index);
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
  protected:
   int64 size() const { return nexts_.size(); }
@@ -775,13 +775,13 @@ class PathCumul : public BasePathCumul {
             const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
             const std::vector<IntVar*>& transits)
       : BasePathCumul(s, nexts, active, cumuls), transits_(transits) {}
-  virtual ~PathCumul() {}
-  virtual void Post();
-  virtual void NextBound(int index);
-  virtual bool AcceptLink(int i, int j) const;
+  ~PathCumul() override {}
+  void Post() override;
+  void NextBound(int index) override;
+  bool AcceptLink(int i, int j) const override;
   void TransitRange(int index);
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -912,8 +912,8 @@ class DelayedPathCumul : public Constraint {
       supports_[i] = -1;
     }
   }
-  virtual ~DelayedPathCumul() {}
-  virtual void Post() {
+  ~DelayedPathCumul() override {}
+  void Post() override {
     solver()->RegisterDemon(path_demon_);
     for (int i = 0; i < nexts_.size(); ++i) {
       if (!nexts_[i]->Bound()) {
@@ -932,7 +932,7 @@ class DelayedPathCumul : public Constraint {
       }
     }
   }
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     touched_.Clear(solver());
     for (int i = 0; i < nexts_.size(); ++i) {
       if (nexts_[i]->Bound()) {
@@ -1036,7 +1036,7 @@ class DelayedPathCumul : public Constraint {
     touched_.Clear(solver());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -1049,7 +1049,7 @@ class DelayedPathCumul : public Constraint {
     visitor->EndVisitConstraint(ModelVisitor::kPathCumul, this);
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     std::string out = "DelayedPathCumul(";
     for (int i = 0; i < nexts_.size(); ++i) {
       out += nexts_[i]->DebugString() + " " + cumuls_[i]->DebugString();
@@ -1139,11 +1139,11 @@ class ResultCallback2PathCumul : public BasePathCumul {
                            const std::vector<IntVar*>& active,
                            const std::vector<IntVar*>& cumuls,
                            Solver::IndexEvaluator2* transit_evaluator);
-  virtual ~ResultCallback2PathCumul() {}
-  virtual void NextBound(int index);
-  virtual bool AcceptLink(int i, int j) const;
+  ~ResultCallback2PathCumul() override {}
+  void NextBound(int index) override;
+  bool AcceptLink(int i, int j) const override;
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
@@ -1203,13 +1203,13 @@ class ResultCallback2SlackPathCumul : public BasePathCumul {
                                 const std::vector<IntVar*>& cumuls,
                                 const std::vector<IntVar*>& slacks,
                                 Solver::IndexEvaluator2* transit_evaluator);
-  virtual ~ResultCallback2SlackPathCumul() {}
-  virtual void Post();
-  virtual void NextBound(int index);
-  virtual bool AcceptLink(int i, int j) const;
+  ~ResultCallback2SlackPathCumul() override {}
+  void Post() override;
+  void NextBound(int index) override;
+  bool AcceptLink(int i, int j) const override;
   void SlackRange(int index);
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);

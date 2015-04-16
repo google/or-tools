@@ -443,7 +443,7 @@ class NonReversibleCache : public ModelCache {
     }
   }
 
-  virtual ~NonReversibleCache() {
+  ~NonReversibleCache() override {
     STLDeleteElements(&var_constant_constraints_);
     STLDeleteElements(&expr_expr_constraints_);
     STLDeleteElements(&var_constant_constant_constraints_);
@@ -458,7 +458,7 @@ class NonReversibleCache : public ModelCache {
     STLDeleteElements(&expr_expr_constant_expressions_);
   }
 
-  virtual void Clear() {
+  void Clear() override {
     for (int i = 0; i < VAR_CONSTANT_CONSTRAINT_MAX; ++i) {
       var_constant_constraints_[i]->Clear();
     }
@@ -499,14 +499,14 @@ class NonReversibleCache : public ModelCache {
 
   // Void Constraint.-
 
-  virtual Constraint* FindVoidConstraint(VoidConstraintType type) const {
+  Constraint* FindVoidConstraint(VoidConstraintType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VOID_CONSTRAINT_MAX);
     return void_constraints_[type];
   }
 
-  virtual void InsertVoidConstraint(Constraint* const ct,
-                                    VoidConstraintType type) {
+  void InsertVoidConstraint(Constraint* const ct,
+                            VoidConstraintType type) override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VOID_CONSTRAINT_MAX);
     DCHECK(ct != nullptr);
@@ -518,17 +518,18 @@ class NonReversibleCache : public ModelCache {
 
   // VarConstantConstraint.
 
-  virtual Constraint* FindVarConstantConstraint(
-      IntVar* const var, int64 value, VarConstantConstraintType type) const {
+  Constraint* FindVarConstantConstraint(
+      IntVar* const var, int64 value,
+      VarConstantConstraintType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTRAINT_MAX);
     return var_constant_constraints_[type]->Find(var, value);
   }
 
-  virtual void InsertVarConstantConstraint(Constraint* const ct,
-                                           IntVar* const var, int64 value,
-                                           VarConstantConstraintType type) {
+  void InsertVarConstantConstraint(Constraint* const ct, IntVar* const var,
+                                   int64 value,
+                                   VarConstantConstraintType type) override {
     DCHECK(ct != nullptr);
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -542,18 +543,18 @@ class NonReversibleCache : public ModelCache {
 
   // Var Constant Constant Constraint.
 
-  virtual Constraint* FindVarConstantConstantConstraint(
+  Constraint* FindVarConstantConstantConstraint(
       IntVar* const var, int64 value1, int64 value2,
-      VarConstantConstantConstraintType type) const {
+      VarConstantConstantConstraintType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTANT_CONSTRAINT_MAX);
     return var_constant_constant_constraints_[type]->Find(var, value1, value2);
   }
 
-  virtual void InsertVarConstantConstantConstraint(
+  void InsertVarConstantConstantConstraint(
       Constraint* const ct, IntVar* const var, int64 value1, int64 value2,
-      VarConstantConstantConstraintType type) {
+      VarConstantConstantConstraintType type) override {
     DCHECK(ct != nullptr);
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -569,9 +570,9 @@ class NonReversibleCache : public ModelCache {
 
   // Var Var Constraint.
 
-  virtual Constraint* FindExprExprConstraint(
+  Constraint* FindExprExprConstraint(
       IntExpr* const var1, IntExpr* const var2,
-      ExprExprConstraintType type) const {
+      ExprExprConstraintType type) const override {
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
     DCHECK_GE(type, 0);
@@ -579,10 +580,9 @@ class NonReversibleCache : public ModelCache {
     return expr_expr_constraints_[type]->Find(var1, var2);
   }
 
-  virtual void InsertExprExprConstraint(Constraint* const ct,
-                                        IntExpr* const var1,
-                                        IntExpr* const var2,
-                                        ExprExprConstraintType type) {
+  void InsertExprExprConstraint(Constraint* const ct, IntExpr* const var1,
+                                IntExpr* const var2,
+                                ExprExprConstraintType type) override {
     DCHECK(ct != nullptr);
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
@@ -597,17 +597,16 @@ class NonReversibleCache : public ModelCache {
 
   // Expr Expression.
 
-  virtual IntExpr* FindExprExpression(IntExpr* const expr,
-                                      ExprExpressionType type) const {
+  IntExpr* FindExprExpression(IntExpr* const expr,
+                              ExprExpressionType type) const override {
     DCHECK(expr != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_EXPRESSION_MAX);
     return expr_expressions_[type]->Find(expr);
   }
 
-  virtual void InsertExprExpression(IntExpr* const expression,
-                                    IntExpr* const expr,
-                                    ExprExpressionType type) {
+  void InsertExprExpression(IntExpr* const expression, IntExpr* const expr,
+                            ExprExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(expr != nullptr);
     DCHECK_GE(type, 0);
@@ -621,17 +620,18 @@ class NonReversibleCache : public ModelCache {
 
   // Expr Constant Expressions.
 
-  virtual IntExpr* FindExprConstantExpression(
-      IntExpr* const expr, int64 value, ExprConstantExpressionType type) const {
+  IntExpr* FindExprConstantExpression(
+      IntExpr* const expr, int64 value,
+      ExprConstantExpressionType type) const override {
     DCHECK(expr != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, EXPR_CONSTANT_EXPRESSION_MAX);
     return expr_constant_expressions_[type]->Find(expr, value);
   }
 
-  virtual void InsertExprConstantExpression(IntExpr* const expression,
-                                            IntExpr* const expr, int64 value,
-                                            ExprConstantExpressionType type) {
+  void InsertExprConstantExpression(IntExpr* const expression,
+                                    IntExpr* const expr, int64 value,
+                                    ExprConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(expr != nullptr);
     DCHECK_GE(type, 0);
@@ -645,9 +645,8 @@ class NonReversibleCache : public ModelCache {
 
   // Expr Expr Expression.
 
-  virtual IntExpr* FindExprExprExpression(IntExpr* const var1,
-                                          IntExpr* const var2,
-                                          ExprExprExpressionType type) const {
+  IntExpr* FindExprExprExpression(IntExpr* const var1, IntExpr* const var2,
+                                  ExprExprExpressionType type) const override {
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
     DCHECK_GE(type, 0);
@@ -655,10 +654,9 @@ class NonReversibleCache : public ModelCache {
     return expr_expr_expressions_[type]->Find(var1, var2);
   }
 
-  virtual void InsertExprExprExpression(IntExpr* const expression,
-                                        IntExpr* const var1,
-                                        IntExpr* const var2,
-                                        ExprExprExpressionType type) {
+  void InsertExprExprExpression(IntExpr* const expression, IntExpr* const var1,
+                                IntExpr* const var2,
+                                ExprExprExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
@@ -673,9 +671,9 @@ class NonReversibleCache : public ModelCache {
 
   // Expr Expr Constant Expression.
 
-  virtual IntExpr* FindExprExprConstantExpression(
+  IntExpr* FindExprExprConstantExpression(
       IntExpr* const var1, IntExpr* const var2, int64 constant,
-      ExprExprConstantExpressionType type) const {
+      ExprExprConstantExpressionType type) const override {
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
     DCHECK_GE(type, 0);
@@ -683,9 +681,9 @@ class NonReversibleCache : public ModelCache {
     return expr_expr_constant_expressions_[type]->Find(var1, var2, constant);
   }
 
-  virtual void InsertExprExprConstantExpression(
+  void InsertExprExprConstantExpression(
       IntExpr* const expression, IntExpr* const var1, IntExpr* const var2,
-      int64 constant, ExprExprConstantExpressionType type) {
+      int64 constant, ExprExprConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var1 != nullptr);
     DCHECK(var2 != nullptr);
@@ -701,18 +699,18 @@ class NonReversibleCache : public ModelCache {
 
   // Var Constant Constant Expression.
 
-  virtual IntExpr* FindVarConstantConstantExpression(
+  IntExpr* FindVarConstantConstantExpression(
       IntVar* const var, int64 value1, int64 value2,
-      VarConstantConstantExpressionType type) const {
+      VarConstantConstantExpressionType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_CONSTANT_EXPRESSION_MAX);
     return var_constant_constant_expressions_[type]->Find(var, value1, value2);
   }
 
-  virtual void InsertVarConstantConstantExpression(
+  void InsertVarConstantConstantExpression(
       IntExpr* const expression, IntVar* const var, int64 value1, int64 value2,
-      VarConstantConstantExpressionType type) {
+      VarConstantConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -728,18 +726,18 @@ class NonReversibleCache : public ModelCache {
 
   // Var Constant Array Expression.
 
-  virtual IntExpr* FindVarConstantArrayExpression(
+  IntExpr* FindVarConstantArrayExpression(
       IntVar* const var, const std::vector<int64>& values,
-      VarConstantArrayExpressionType type) const {
+      VarConstantArrayExpressionType type) const override {
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_CONSTANT_ARRAY_EXPRESSION_MAX);
     return var_constant_array_expressions_[type]->Find(var, values);
   }
 
-  virtual void InsertVarConstantArrayExpression(
+  void InsertVarConstantArrayExpression(
       IntExpr* const expression, IntVar* const var, const std::vector<int64>& values,
-      VarConstantArrayExpressionType type) {
+      VarConstantArrayExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var != nullptr);
     DCHECK_GE(type, 0);
@@ -754,16 +752,16 @@ class NonReversibleCache : public ModelCache {
 
   // Var Array Expression.
 
-  virtual IntExpr* FindVarArrayExpression(const std::vector<IntVar*>& vars,
-                                          VarArrayExpressionType type) const {
+  IntExpr* FindVarArrayExpression(const std::vector<IntVar*>& vars,
+                                  VarArrayExpressionType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_EXPRESSION_MAX);
     return var_array_expressions_[type]->Find(vars);
   }
 
-  virtual void InsertVarArrayExpression(IntExpr* const expression,
-                                        const std::vector<IntVar*>& vars,
-                                        VarArrayExpressionType type) {
+  void InsertVarArrayExpression(IntExpr* const expression,
+                                const std::vector<IntVar*>& vars,
+                                VarArrayExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_EXPRESSION_MAX);
@@ -776,17 +774,18 @@ class NonReversibleCache : public ModelCache {
 
   // Var Array Constant Array Expressions.
 
-  virtual IntExpr* FindVarArrayConstantArrayExpression(
+  IntExpr* FindVarArrayConstantArrayExpression(
       const std::vector<IntVar*>& vars, const std::vector<int64>& values,
-      VarArrayConstantArrayExpressionType type) const {
+      VarArrayConstantArrayExpressionType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_CONSTANT_ARRAY_EXPRESSION_MAX);
     return var_array_constant_array_expressions_[type]->Find(vars, values);
   }
 
-  virtual void InsertVarArrayConstantArrayExpression(
+  void InsertVarArrayConstantArrayExpression(
       IntExpr* const expression, const std::vector<IntVar*>& vars,
-      const std::vector<int64>& values, VarArrayConstantArrayExpressionType type) {
+      const std::vector<int64>& values,
+      VarArrayConstantArrayExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_CONSTANT_ARRAY_EXPRESSION_MAX);
@@ -800,17 +799,17 @@ class NonReversibleCache : public ModelCache {
 
   // Var Array Constant Expressions.
 
-  virtual IntExpr* FindVarArrayConstantExpression(
+  IntExpr* FindVarArrayConstantExpression(
       const std::vector<IntVar*>& vars, int64 value,
-      VarArrayConstantExpressionType type) const {
+      VarArrayConstantExpressionType type) const override {
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_CONSTANT_EXPRESSION_MAX);
     return var_array_constant_expressions_[type]->Find(vars, value);
   }
 
-  virtual void InsertVarArrayConstantExpression(
+  void InsertVarArrayConstantExpression(
       IntExpr* const expression, const std::vector<IntVar*>& vars, int64 value,
-      VarArrayConstantExpressionType type) {
+      VarArrayConstantExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK_GE(type, 0);
     DCHECK_LT(type, VAR_ARRAY_CONSTANT_EXPRESSION_MAX);

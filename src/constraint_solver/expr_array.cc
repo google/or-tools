@@ -162,9 +162,9 @@ class SumConstraint : public TreeArrayConstraint {
                 IntVar* const sum_var)
       : TreeArrayConstraint(solver, vars, sum_var), sum_demon_(nullptr) {}
 
-  virtual ~SumConstraint() {}
+  ~SumConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       Demon* const demon = MakeConstraintDemon1(
           solver(), this, &SumConstraint::LeafChanged, "LeafChanged", i);
@@ -175,7 +175,7 @@ class SumConstraint : public TreeArrayConstraint {
     target_var_->WhenRange(sum_demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Copy vars to leaf nodes.
     for (int i = 0; i < vars_.size(); ++i) {
       InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
@@ -278,9 +278,9 @@ class SumConstraint : public TreeArrayConstraint {
     target_var_->SetRange(RootMin(), RootMax());
   }
 
-  std::string DebugString() const { return DebugStringInternal("Sum"); }
+  std::string DebugString() const override { return DebugStringInternal("Sum"); }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kSumEqual, visitor);
   }
 
@@ -300,9 +300,9 @@ class SmallSumConstraint : public Constraint {
         computed_max_(0),
         sum_demon_(nullptr) {}
 
-  virtual ~SmallSumConstraint() {}
+  ~SmallSumConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const demon = MakeConstraintDemon1(
@@ -315,7 +315,7 @@ class SmallSumConstraint : public Constraint {
     target_var_->WhenRange(sum_demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Compute up.
     int64 sum_min = 0;
     int64 sum_max = 0;
@@ -385,13 +385,13 @@ class SmallSumConstraint : public Constraint {
     }
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("SmallSum(%s) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -429,9 +429,9 @@ class SafeSumConstraint : public TreeArrayConstraint {
                     IntVar* const sum_var)
       : TreeArrayConstraint(solver, vars, sum_var), sum_demon_(nullptr) {}
 
-  virtual ~SafeSumConstraint() {}
+  ~SafeSumConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       Demon* const demon = MakeConstraintDemon1(
           solver(), this, &SafeSumConstraint::LeafChanged, "LeafChanged", i);
@@ -460,7 +460,7 @@ class SafeSumConstraint : public TreeArrayConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Copy vars to leaf nodes.
     for (int i = 0; i < vars_.size(); ++i) {
       InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
@@ -587,9 +587,9 @@ class SafeSumConstraint : public TreeArrayConstraint {
     target_var_->SetRange(RootMin(), RootMax());
   }
 
-  std::string DebugString() const { return DebugStringInternal("Sum"); }
+  std::string DebugString() const override { return DebugStringInternal("Sum"); }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kSumEqual, visitor);
   }
 
@@ -631,9 +631,9 @@ class MinConstraint : public TreeArrayConstraint {
                 IntVar* const min_var)
       : TreeArrayConstraint(solver, vars, min_var), min_demon_(nullptr) {}
 
-  virtual ~MinConstraint() {}
+  ~MinConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       Demon* const demon = MakeConstraintDemon1(
           solver(), this, &MinConstraint::LeafChanged, "LeafChanged", i);
@@ -644,7 +644,7 @@ class MinConstraint : public TreeArrayConstraint {
     target_var_->WhenRange(min_demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Copy vars to leaf nodes.
     for (int i = 0; i < vars_.size(); ++i) {
       InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
@@ -767,9 +767,9 @@ class MinConstraint : public TreeArrayConstraint {
     MinVarChanged();
   }
 
-  std::string DebugString() const { return DebugStringInternal("Min"); }
+  std::string DebugString() const override { return DebugStringInternal("Min"); }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kMinEqual, visitor);
   }
 
@@ -787,9 +787,9 @@ class SmallMinConstraint : public Constraint {
         computed_min_(0),
         computed_max_(0) {}
 
-  virtual ~SmallMinConstraint() {}
+  ~SmallMinConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const demon = MakeConstraintDemon1(
@@ -802,7 +802,7 @@ class SmallMinConstraint : public Constraint {
     target_var_->WhenRange(mdemon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     int64 min_min = kint64max;
     int64 min_max = kint64max;
     for (IntVar* const var : vars_) {
@@ -818,13 +818,13 @@ class SmallMinConstraint : public Constraint {
     MinVarChanged();
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("SmallMin(%s) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMinEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -910,9 +910,9 @@ class MaxConstraint : public TreeArrayConstraint {
                 IntVar* const max_var)
       : TreeArrayConstraint(solver, vars, max_var), max_demon_(nullptr) {}
 
-  virtual ~MaxConstraint() {}
+  ~MaxConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       Demon* const demon = MakeConstraintDemon1(
           solver(), this, &MaxConstraint::LeafChanged, "LeafChanged", i);
@@ -923,7 +923,7 @@ class MaxConstraint : public TreeArrayConstraint {
     target_var_->WhenRange(max_demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Copy vars to leaf nodes.
     for (int i = 0; i < vars_.size(); ++i) {
       InitLeaf(i, vars_[i]->Min(), vars_[i]->Max());
@@ -1045,9 +1045,9 @@ class MaxConstraint : public TreeArrayConstraint {
     MaxVarChanged();
   }
 
-  std::string DebugString() const { return DebugStringInternal("Max"); }
+  std::string DebugString() const override { return DebugStringInternal("Max"); }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kMaxEqual, visitor);
   }
 
@@ -1065,9 +1065,9 @@ class SmallMaxConstraint : public Constraint {
         computed_min_(0),
         computed_max_(0) {}
 
-  virtual ~SmallMaxConstraint() {}
+  ~SmallMaxConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const demon = MakeConstraintDemon1(
@@ -1080,7 +1080,7 @@ class SmallMaxConstraint : public Constraint {
     target_var_->WhenRange(mdemon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     int64 max_min = kint64min;
     int64 max_max = kint64min;
     for (IntVar* const var : vars_) {
@@ -1096,13 +1096,13 @@ class SmallMaxConstraint : public Constraint {
     MaxVarChanged();
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("SmallMax(%s) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMaxEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1190,9 +1190,9 @@ class ArrayBoolAndEq : public CastConstraint {
         demons_(vars.size()),
         unbounded_(0) {}
 
-  virtual ~ArrayBoolAndEq() {}
+  ~ArrayBoolAndEq() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         demons_[i] = MakeConstraintDemon1(
@@ -1207,7 +1207,7 @@ class ArrayBoolAndEq : public CastConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     target_var_->SetRange(0, 1);
     if (target_var_->Min() == 1) {
       for (int i = 0; i < vars_.size(); ++i) {
@@ -1269,13 +1269,13 @@ class ArrayBoolAndEq : public CastConstraint {
     }
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("And(%s) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMinEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1319,9 +1319,9 @@ class ArrayBoolOrEq : public CastConstraint {
         demons_(vars.size()),
         unbounded_(0) {}
 
-  virtual ~ArrayBoolOrEq() {}
+  ~ArrayBoolOrEq() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         demons_[i] = MakeConstraintDemon1(
@@ -1336,7 +1336,7 @@ class ArrayBoolOrEq : public CastConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     target_var_->SetRange(0, 1);
     if (target_var_->Max() == 0) {
       for (int i = 0; i < vars_.size(); ++i) {
@@ -1399,12 +1399,12 @@ class ArrayBoolOrEq : public CastConstraint {
     }
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Or(%s) == %s", JoinDebugStringPtr(vars_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kMaxEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1446,7 +1446,7 @@ class BaseSumBooleanConstraint : public Constraint {
   BaseSumBooleanConstraint(Solver* const s, const std::vector<IntVar*>& vars)
       : Constraint(s), vars_(vars) {}
 
-  virtual ~BaseSumBooleanConstraint() {}
+  ~BaseSumBooleanConstraint() override {}
 
  protected:
   std::string DebugStringInternal(const std::string& name) const {
@@ -1465,9 +1465,9 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
   SumBooleanLessOrEqualToOne(Solver* const s, const std::vector<IntVar*>& vars)
       : BaseSumBooleanConstraint(s, vars) {}
 
-  virtual ~SumBooleanLessOrEqualToOne() {}
+  ~SumBooleanLessOrEqualToOne() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* u = MakeConstraintDemon1(
@@ -1477,7 +1477,7 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Min() == 1) {
         PushAllToZeroExcept(i);
@@ -1504,11 +1504,11 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return DebugStringInternal("SumBooleanLessOrEqualToOne");
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSumLessOrEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1524,17 +1524,17 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
 class SumBooleanGreaterOrEqualToOne : public BaseSumBooleanConstraint {
  public:
   SumBooleanGreaterOrEqualToOne(Solver* const s, const std::vector<IntVar*>& vars);
-  virtual ~SumBooleanGreaterOrEqualToOne() {}
+  ~SumBooleanGreaterOrEqualToOne() override {}
 
-  virtual void Post();
-  virtual void InitialPropagate();
+  void Post() override;
+  void InitialPropagate() override;
 
   void Update(int index);
   void UpdateVar();
 
-  virtual std::string DebugString() const;
+  std::string DebugString() const override;
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSumGreaterOrEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1604,9 +1604,9 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
   SumBooleanEqualToOne(Solver* const s, const std::vector<IntVar*>& vars)
       : BaseSumBooleanConstraint(s, vars), active_vars_(0) {}
 
-  virtual ~SumBooleanEqualToOne() {}
+  ~SumBooleanEqualToOne() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       Demon* u = MakeConstraintDemon1(
           solver(), this, &SumBooleanEqualToOne::Update, "Update", i);
@@ -1614,7 +1614,7 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     int min1 = 0;
     int max1 = 0;
     int index_min = -1;
@@ -1683,11 +1683,11 @@ class SumBooleanEqualToOne : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return DebugStringInternal("SumBooleanEqualToOne");
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1710,9 +1710,9 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
         num_always_true_vars_(0),
         sum_var_(sum_var) {}
 
-  virtual ~SumBooleanEqualToVar() {}
+  ~SumBooleanEqualToVar() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       Demon* const u = MakeConstraintDemon1(
           solver(), this, &SumBooleanEqualToVar::Update, "Update", i);
@@ -1725,7 +1725,7 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     int num_always_true_vars = 0;
     int possible_true = 0;
     for (int i = 0; i < vars_.size(); ++i) {
@@ -1814,12 +1814,12 @@ class SumBooleanEqualToVar : public BaseSumBooleanConstraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("%s == %s", DebugStringInternal("SumBoolean").c_str(),
                         sum_var_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1905,9 +1905,9 @@ class BooleanScalProdLessConstant : public Constraint {
     max_coefficient_.SetValue(s, coefs_[vars_.size() - 1]);
   }
 
-  virtual ~BooleanScalProdLessConstant() {}
+  ~BooleanScalProdLessConstant() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int var_index = 0; var_index < vars_.size(); ++var_index) {
       if (vars_[var_index]->Bound()) {
         continue;
@@ -1940,7 +1940,7 @@ class BooleanScalProdLessConstant : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     Solver* const s = solver();
     int last_unbound = -1;
     int64 sum = 0LL;
@@ -1965,13 +1965,13 @@ class BooleanScalProdLessConstant : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("BooleanScalProd([%s], [%s]) <= %" GG_LL_FORMAT "d)",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         strings::Join(coefs_, ", ").c_str(), upper_bound_);
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kScalProdLessOrEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -2007,9 +2007,9 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
     max_coefficient_.SetValue(s, coefs_[vars_.size() - 1]);
   }
 
-  virtual ~PositiveBooleanScalProdEqVar() {}
+  ~PositiveBooleanScalProdEqVar() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int var_index = 0; var_index < vars_.size(); ++var_index) {
       if (vars_[var_index]->Bound()) {
         continue;
@@ -2051,7 +2051,7 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     Solver* const s = solver();
     int last_unbound = -1;
     int64 sum_bound = 0;
@@ -2082,14 +2082,14 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
     Propagate();
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("PositiveBooleanScal([%s], [%s]) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         strings::Join(coefs_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kScalProdEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -2125,9 +2125,9 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     }
   }
 
-  virtual ~PositiveBooleanScalProd() {}
+  ~PositiveBooleanScalProd() override {}
 
-  virtual int64 Min() const {
+  int64 Min() const override {
     int64 min = 0;
     for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Min()) {
@@ -2137,9 +2137,9 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     return min;
   }
 
-  virtual void SetMin(int64 m) { SetRange(m, kint64max); }
+  void SetMin(int64 m) override { SetRange(m, kint64max); }
 
-  virtual int64 Max() const {
+  int64 Max() const override {
     int64 max = 0;
     for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Max()) {
@@ -2149,9 +2149,9 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     return max;
   }
 
-  virtual void SetMax(int64 m) { SetRange(kint64min, m); }
+  void SetMax(int64 m) override { SetRange(kint64min, m); }
 
-  virtual void SetRange(int64 l, int64 u) {
+  void SetRange(int64 l, int64 u) override {
     int64 current_min = 0;
     int64 current_max = 0;
     int64 diameter = -1;
@@ -2195,18 +2195,18 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("PositiveBooleanScalProd([%s], [%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         strings::Join(coefs_, ", ").c_str());
   }
 
-  virtual void WhenRange(Demon* d) {
+  void WhenRange(Demon* d) override {
     for (int i = 0; i < vars_.size(); ++i) {
       vars_[i]->WhenRange(d);
     }
   }
-  virtual IntVar* CastToVar() {
+  IntVar* CastToVar() override {
     Solver* const s = solver();
     int64 vmin = 0LL;
     int64 vmax = 0LL;
@@ -2220,7 +2220,7 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     return var;
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kScalProd, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -2253,9 +2253,9 @@ class PositiveBooleanScalProdEqCst : public Constraint {
     max_coefficient_.SetValue(s, coefs_[vars_.size() - 1]);
   }
 
-  virtual ~PositiveBooleanScalProdEqCst() {}
+  ~PositiveBooleanScalProdEqCst() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int var_index = 0; var_index < vars_.size(); ++var_index) {
       if (!vars_[var_index]->Bound()) {
         Demon* const d = MakeConstraintDemon1(
@@ -2292,7 +2292,7 @@ class PositiveBooleanScalProdEqCst : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     Solver* const s = solver();
     int last_unbound = -1;
     int64 sum_bound = 0LL;
@@ -2323,14 +2323,14 @@ class PositiveBooleanScalProdEqCst : public Constraint {
     Propagate();
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("PositiveBooleanScalProd([%s], [%s]) == %" GG_LL_FORMAT
                         "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
                         strings::Join(coefs_, ", ").c_str(), constant_);
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kScalProdEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -2359,37 +2359,37 @@ class ExprLinearizer : public ModelParser {
   ExprLinearizer(hash_map<IntVar*, int64>* const variables_to_coefficients)
       : variables_to_coefficients_(variables_to_coefficients), constant_(0) {}
 
-  virtual ~ExprLinearizer() {}
+  ~ExprLinearizer() override {}
 
   // Begin/End visit element.
-  virtual void BeginVisitModel(const std::string& solver_name) {
+  void BeginVisitModel(const std::string& solver_name) override {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void EndVisitModel(const std::string& solver_name) {
+  void EndVisitModel(const std::string& solver_name) override {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void BeginVisitConstraint(const std::string& type_name,
-                                    const Constraint* const constraint) {
+  void BeginVisitConstraint(const std::string& type_name,
+                            const Constraint* const constraint) override {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void EndVisitConstraint(const std::string& type_name,
-                                  const Constraint* const constraint) {
+  void EndVisitConstraint(const std::string& type_name,
+                          const Constraint* const constraint) override {
     LOG(FATAL) << "Should not be here";
   }
 
-  virtual void BeginVisitExtension(const std::string& type) {}
+  void BeginVisitExtension(const std::string& type) override {}
 
-  virtual void EndVisitExtension(const std::string& type) {}
-  virtual void BeginVisitIntegerExpression(const std::string& type_name,
-                                           const IntExpr* const expr) {
+  void EndVisitExtension(const std::string& type) override {}
+  void BeginVisitIntegerExpression(const std::string& type_name,
+                                   const IntExpr* const expr) override {
     BeginVisit(true);
   }
 
-  virtual void EndVisitIntegerExpression(const std::string& type_name,
-                                         const IntExpr* const expr) {
+  void EndVisitIntegerExpression(const std::string& type_name,
+                                 const IntExpr* const expr) override {
     if (IS_TYPE(type_name, kSum)) {
       VisitSum(expr);
     } else if (IS_TYPE(type_name, kScalProd)) {
@@ -2408,9 +2408,9 @@ class ExprLinearizer : public ModelParser {
     EndVisit();
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     if (operation == ModelVisitor::kSumOperation) {
       AddConstant(value);
       VisitSubExpression(delegate);
@@ -2428,8 +2428,8 @@ class ExprLinearizer : public ModelParser {
     }
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     if (delegate != nullptr) {
       VisitSubExpression(delegate);
     } else {
@@ -2442,37 +2442,37 @@ class ExprLinearizer : public ModelParser {
   }
 
   // Visit integer arguments.
-  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value) {
+  void VisitIntegerArgument(const std::string& arg_name, int64 value) override {
     Top()->SetIntegerArgument(arg_name, value);
   }
 
-  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
-                                         const std::vector<int64>& values) {
+  void VisitIntegerArrayArgument(const std::string& arg_name,
+                                 const std::vector<int64>& values) override {
     Top()->SetIntegerArrayArgument(arg_name, values);
   }
 
-  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
-                                          const IntTupleSet& values) {
+  void VisitIntegerMatrixArgument(const std::string& arg_name,
+                                  const IntTupleSet& values) override {
     Top()->SetIntegerMatrixArgument(arg_name, values);
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                              IntExpr* const argument) {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     Top()->SetIntegerExpressionArgument(arg_name, argument);
   }
 
-  virtual void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
+  void VisitIntegerVariableArrayArgument(
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
     Top()->SetIntegerVariableArrayArgument(arg_name, arguments);
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const std::string& arg_name,
-                                     IntervalVar* const argument) {}
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override {}
 
-  virtual void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& argument) {}
+  void VisitIntervalArrayArgument(
+      const std::string& arg_name, const std::vector<IntervalVar*>& argument) override {}
 
   void Visit(const IntExpr* const expr, int64 multiplier) {
     if (expr->Min() == expr->Max()) {
@@ -2486,7 +2486,7 @@ class ExprLinearizer : public ModelParser {
 
   int64 Constant() const { return constant_; }
 
-  virtual std::string DebugString() const { return "ExprLinearizer"; }
+  std::string DebugString() const override { return "ExprLinearizer"; }
 
  private:
   void BeginVisit(bool active) { PushArgumentHolder(); }

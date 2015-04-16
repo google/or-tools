@@ -260,9 +260,9 @@ class CoverConstraint : public TreeArrayConstraint {
                   IntervalVar* const cover_var)
       : TreeArrayConstraint(solver, vars, cover_var), cover_demon_(nullptr) {}
 
-  virtual ~CoverConstraint() {}
+  ~CoverConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       Demon* const demon = MakeConstraintDemon1(
           solver(), this, &CoverConstraint::LeafChanged, "LeafChanged", i);
@@ -277,7 +277,7 @@ class CoverConstraint : public TreeArrayConstraint {
     target_var_->WhenPerformedBound(cover_demon_);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Copy vars to leaf nodes.
     for (int i = 0; i < vars_.size(); ++i) {
       InitLeaf(i, VarStartMin(i), VarStartMax(i), VarEndMin(i), VarEndMax(i),
@@ -476,11 +476,11 @@ class CoverConstraint : public TreeArrayConstraint {
     PropagateRoot();
   }
 
-  std::string DebugString() const {
+  std::string DebugString() const override {
     return DebugStringInternal(ModelVisitor::kCover);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     AcceptInternal(ModelVisitor::kCover, visitor);
   }
 
@@ -533,15 +533,15 @@ class IntervalEquality : public Constraint {
                    IntervalVar* const var2)
       : Constraint(solver), var1_(var1), var2_(var2) {}
 
-  virtual ~IntervalEquality() {}
+  ~IntervalEquality() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
     var1_->WhenAnything(demon);
     var2_->WhenAnything(demon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     // Naive code. Can be split by property (performed, start...).
     if (!var1_->MayBePerformed()) {
       var2_->SetPerformed(false);
@@ -565,12 +565,12 @@ class IntervalEquality : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Equality(%s, %s)", var1_->DebugString().c_str(),
                         var2_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kEquality, this);
     visitor->VisitIntervalArgument(ModelVisitor::kLeftArgument, var1_);
     visitor->VisitIntervalArgument(ModelVisitor::kRightArgument, var2_);

@@ -178,26 +178,26 @@ class LightFunctionElementConstraint : public Constraint {
     CHECK(values_ != nullptr);
     values_->CheckIsRepeatable();
   }
-  virtual ~LightFunctionElementConstraint() {}
+  ~LightFunctionElementConstraint() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* demon = MakeConstraintDemon0(
         solver(), this, &LightFunctionElementConstraint::IndexBound,
         "IndexBound");
     index_->WhenBound(demon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     if (index_->Bound()) {
       IndexBound();
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return "LightFunctionElementConstraint";
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     LOG(FATAL) << "Not yet implemented";
     // TODO(user): IMPLEMENT ME.
   }
@@ -235,21 +235,21 @@ class LightFunctionElement2Constraint : public Constraint {
     CHECK(values_ != nullptr);
     values_->CheckIsRepeatable();
   }
-  virtual ~LightFunctionElement2Constraint() {}
-  virtual void Post() {
+  ~LightFunctionElement2Constraint() override {}
+  void Post() override {
     Demon* demon = MakeConstraintDemon0(
         solver(), this, &LightFunctionElement2Constraint::IndexBound,
         "IndexBound");
     index1_->WhenBound(demon);
     index2_->WhenBound(demon);
   }
-  virtual void InitialPropagate() { IndexBound(); }
+  void InitialPropagate() override { IndexBound(); }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return "LightFunctionElement2Constraint";
   }
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     LOG(FATAL) << "Not yet implemented";
     // TODO(user): IMPLEMENT ME.
   }
@@ -311,8 +311,8 @@ class MakeRelocateNeighborsOperator : public PathOperator {
     }
     prevs_.resize(max_next + 1, -1);
   }
-  virtual ~MakeRelocateNeighborsOperator() {}
-  virtual bool MakeNeighbor() {
+  ~MakeRelocateNeighborsOperator() override {}
+  bool MakeNeighbor() override {
     const int64 before_chain = BaseNode(0);
     if (IsPathEnd(before_chain)) {
       return false;
@@ -331,10 +331,10 @@ class MakeRelocateNeighborsOperator : public PathOperator {
     }
     return MoveChainAndRepair(before_chain, chain_end, destination);
   }
-  virtual std::string DebugString() const { return "RelocateNeighbors"; }
+  std::string DebugString() const override { return "RelocateNeighbors"; }
 
  private:
-  virtual void OnNodeInitialization() {
+  void OnNodeInitialization() override {
     for (int i = 0; i < number_of_nexts(); ++i) {
       prevs_[Next(i)] = i;
     }
@@ -435,18 +435,18 @@ class MakePairActiveOperator : public PathOperator {
       : PathOperator(vars, secondary_vars, 2, start_empty_path_class),
         inactive_pair_(0),
         pairs_(pairs) {}
-  virtual ~MakePairActiveOperator() {}
-  virtual std::string DebugString() const { return "MakePairActive"; }
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta);
-  virtual bool MakeNeighbor();
+  ~MakePairActiveOperator() override {}
+  std::string DebugString() const override { return "MakePairActive"; }
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
+  bool MakeNeighbor() override;
 
  protected:
-  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+  bool OnSamePathAsPreviousBase(int64 base_index) override {
     // Both base nodes have to be on the same path since they represent the
     // nodes after which unactive node pairs will be moved.
     return true;
   }
-  virtual int64 GetBaseNodeRestartPosition(int base_index) {
+  int64 GetBaseNodeRestartPosition(int base_index) override {
     // Base node 1 must be after base node 0 if they are both on the same path.
     if (base_index == 0 || StartNode(base_index) != StartNode(base_index - 1)) {
       return StartNode(base_index);
@@ -456,10 +456,10 @@ class MakePairActiveOperator : public PathOperator {
   }
   // Required to ensure that after synchronization the operator is in a state
   // compatible with GetBaseNodeRestartPosition.
-  virtual bool RestartAtPathStartOnSynchronize() { return true; }
+  bool RestartAtPathStartOnSynchronize() override { return true; }
 
  private:
-  virtual void OnNodeInitialization();
+  void OnNodeInitialization() override;
 
   int inactive_pair_;
   RoutingModel::NodePairs pairs_;
@@ -542,15 +542,15 @@ class PairRelocateOperator : public PathOperator {
       is_first_[node_pair.first] = true;
     }
   }
-  virtual ~PairRelocateOperator() {}
-  virtual bool MakeNeighbor();
+  ~PairRelocateOperator() override {}
+  bool MakeNeighbor() override;
 
  protected:
-  virtual bool OnSamePathAsPreviousBase(int64 base_index) {
+  bool OnSamePathAsPreviousBase(int64 base_index) override {
     // Both destination nodes must be on the same path.
     return base_index == kPairSecondNodeDestination;
   }
-  virtual int64 GetBaseNodeRestartPosition(int base_index) {
+  int64 GetBaseNodeRestartPosition(int base_index) override {
     // Destination node of the second node of a pair must be after the
     // destination node of the first node of a pair.
     if (base_index == kPairSecondNodeDestination) {
@@ -561,8 +561,8 @@ class PairRelocateOperator : public PathOperator {
   }
 
  private:
-  virtual void OnNodeInitialization();
-  virtual bool RestartAtPathStartOnSynchronize() { return true; }
+  void OnNodeInitialization() override;
+  bool RestartAtPathStartOnSynchronize() override { return true; }
 
   std::vector<int> pairs_;
   std::vector<int> prevs_;
@@ -630,8 +630,8 @@ class RoutingCache : public RoutingModel::NodeEvaluator2 {
     }
     callback->CheckIsRepeatable();
   }
-  virtual bool IsRepeatable() const { return true; }
-  virtual int64 Run(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) {
+  bool IsRepeatable() const override { return true; }
+  int64 Run(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) override {
     // This method does lazy caching of results of callbacks: first
     // checks if it has been run with these parameters before, and
     // returns previous result if so, or runs underlaying callback and
@@ -667,7 +667,7 @@ class MatrixEvaluator : public BaseObject {
       memcpy(values_[i], values[i], nodes_ * sizeof(*values[i]));
     }
   }
-  virtual ~MatrixEvaluator() {
+  ~MatrixEvaluator() override {
     for (int i = 0; i < nodes_; ++i) {
       delete[] values_[i];
     }
@@ -690,7 +690,7 @@ class VectorEvaluator : public BaseObject {
     CHECK(values) << "null pointer";
     memcpy(values_.get(), values, nodes * sizeof(*values));
   }
-  virtual ~VectorEvaluator() {}
+  ~VectorEvaluator() override {}
   int64 Value(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) const;
 
  private:
@@ -707,7 +707,7 @@ int64 VectorEvaluator::Value(RoutingModel::NodeIndex i,
 class ConstantEvaluator : public BaseObject {
  public:
   explicit ConstantEvaluator(int64 value) : value_(value) {}
-  virtual ~ConstantEvaluator() {}
+  ~ConstantEvaluator() override {}
   int64 Value(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) const {
     return value_;
   }
@@ -2200,9 +2200,9 @@ class SavingsBuilder : public DecisionBuilder {
  public:
   SavingsBuilder(RoutingModel* const model, bool check_assignment)
       : model_(model), check_assignment_(check_assignment) {}
-  virtual ~SavingsBuilder() {}
+  ~SavingsBuilder() override {}
 
-  virtual Decision* Next(Solver* const solver) {
+  Decision* Next(Solver* const solver) override {
     // Setup the model of the instance for the Savings Algorithm
     ModelSetup();
 
@@ -2382,9 +2382,9 @@ class SweepBuilder : public DecisionBuilder {
  public:
   SweepBuilder(RoutingModel* const model, bool check_assignment)
       : model_(model), check_assignment_(check_assignment) {}
-  virtual ~SweepBuilder() {}
+  ~SweepBuilder() override {}
 
-  virtual Decision* Next(Solver* const solver) {
+  Decision* Next(Solver* const solver) override {
     // Setup the model of the instance for the Sweep Algorithm
     ModelSetup();
 
@@ -2451,8 +2451,8 @@ class FastOnePathBuilder : public DecisionBuilder {
       : model_(model), evaluator_(evaluator) {
     evaluator_->CheckIsRepeatable();
   }
-  virtual ~FastOnePathBuilder() {}
-  virtual Decision* Next(Solver* const solver) {
+  ~FastOnePathBuilder() override {}
+  Decision* Next(Solver* const solver) override {
     int64 index = -1;
     if (!FindPathStart(&index)) {
       return nullptr;
@@ -2570,8 +2570,8 @@ class AllUnperformed : public DecisionBuilder {
  public:
   // Does not take ownership of model.
   explicit AllUnperformed(RoutingModel* const model) : model_(model) {}
-  virtual ~AllUnperformed() {}
-  virtual Decision* Next(Solver* const solver) {
+  ~AllUnperformed() override {}
+  Decision* Next(Solver* const solver) override {
     // Solver::(Un)FreezeQueue is private, passing through the public API
     // on PropagationBaseObject.
     model_->CostVar()->FreezeQueue();
@@ -4398,15 +4398,15 @@ int64 WrappedVehicleEvaluator(RoutingModel::VehicleEvaluator* evaluator,
 class LightRangeLessOrEqual : public Constraint {
  public:
   LightRangeLessOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
-  virtual ~LightRangeLessOrEqual() {}
-  virtual void Post();
-  virtual void InitialPropagate();
-  virtual std::string DebugString() const;
-  virtual IntVar* Var() {
+  ~LightRangeLessOrEqual() override {}
+  void Post() override;
+  void InitialPropagate() override;
+  std::string DebugString() const override;
+  IntVar* Var() override {
     return solver()->MakeIsLessOrEqualVar(left_, right_);
   }
   // TODO(user): introduce a kLightLessOrEqual tag.
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kLessOrEqual, this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,

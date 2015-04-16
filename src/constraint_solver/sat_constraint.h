@@ -140,7 +140,7 @@ class SatConstraint : public Constraint {
         rev_decision_level_(0) {}
 
   // Register the demons.
-  virtual void Post() {
+  void Post() override {
     int i = 0;
     for (IntVar* int_var : variable_manager_.RegisteredIntVars()) {
       int_var->WhenDomain(MakeConstraintDemon1(
@@ -150,7 +150,7 @@ class SatConstraint : public Constraint {
   }
 
   // Initial propagation.
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     if (sat_solver_.IsModelUnsat()) solver()->Fail();
     for (int i = 0; i < variable_manager_.RegisteredIntVars().size(); ++i) {
       Enqueue(i);
@@ -261,8 +261,8 @@ class SatTableConstraint : public Constraint {
                      const IntTupleSet& tuples)
       : Constraint(s), vars_(vars), tuples_(tuples), sat_constraint_(s) {}
 
-  virtual void Post();
-  virtual void InitialPropagate() { sat_constraint_.InitialPropagate(); }
+  void Post() override;
+  void InitialPropagate() override { sat_constraint_.InitialPropagate(); }
 
  private:
   const std::vector<IntVar*> vars_;

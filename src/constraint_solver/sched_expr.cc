@@ -31,31 +31,31 @@ class IntervalVarStartExpr : public BaseIntExpr {
  public:
   explicit IntervalVarStartExpr(IntervalVar* const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
-  virtual ~IntervalVarStartExpr() {}
+  ~IntervalVarStartExpr() override {}
 
-  virtual int64 Min() const { return interval_->StartMin(); }
+  int64 Min() const override { return interval_->StartMin(); }
 
-  virtual void SetMin(int64 m) { interval_->SetStartMin(m); }
+  void SetMin(int64 m) override { interval_->SetStartMin(m); }
 
-  virtual int64 Max() const { return interval_->StartMax(); }
+  int64 Max() const override { return interval_->StartMax(); }
 
-  virtual void SetMax(int64 m) { interval_->SetStartMax(m); }
+  void SetMax(int64 m) override { interval_->SetStartMax(m); }
 
-  virtual void SetRange(int64 l, int64 u) { interval_->SetStartRange(l, u); }
+  void SetRange(int64 l, int64 u) override { interval_->SetStartRange(l, u); }
 
-  virtual void SetValue(int64 v) { interval_->SetStartRange(v, v); }
+  void SetValue(int64 v) override { interval_->SetStartRange(v, v); }
 
-  virtual bool Bound() const {
+  bool Bound() const override {
     return interval_->StartMin() == interval_->StartMax();
   }
 
-  virtual void WhenRange(Demon* d) { interval_->WhenStartRange(d); }
+  void WhenRange(Demon* d) override { interval_->WhenStartRange(d); }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("start(%s)", interval_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kStartExpr, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kStartExpr, this);
@@ -70,31 +70,31 @@ class IntervalVarEndExpr : public BaseIntExpr {
  public:
   explicit IntervalVarEndExpr(IntervalVar* const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
-  virtual ~IntervalVarEndExpr() {}
+  ~IntervalVarEndExpr() override {}
 
-  virtual int64 Min() const { return interval_->EndMin(); }
+  int64 Min() const override { return interval_->EndMin(); }
 
-  virtual void SetMin(int64 m) { interval_->SetEndMin(m); }
+  void SetMin(int64 m) override { interval_->SetEndMin(m); }
 
-  virtual int64 Max() const { return interval_->EndMax(); }
+  int64 Max() const override { return interval_->EndMax(); }
 
-  virtual void SetMax(int64 m) { interval_->SetEndMax(m); }
+  void SetMax(int64 m) override { interval_->SetEndMax(m); }
 
-  virtual void SetRange(int64 l, int64 u) { interval_->SetEndRange(l, u); }
+  void SetRange(int64 l, int64 u) override { interval_->SetEndRange(l, u); }
 
-  virtual void SetValue(int64 v) { interval_->SetEndRange(v, v); }
+  void SetValue(int64 v) override { interval_->SetEndRange(v, v); }
 
-  virtual bool Bound() const {
+  bool Bound() const override {
     return interval_->EndMin() == interval_->EndMax();
   }
 
-  virtual void WhenRange(Demon* d) { interval_->WhenEndRange(d); }
+  void WhenRange(Demon* d) override { interval_->WhenEndRange(d); }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("end(%s)", interval_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kEndExpr, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kEndExpr, this);
@@ -109,31 +109,33 @@ class IntervalVarDurationExpr : public BaseIntExpr {
  public:
   explicit IntervalVarDurationExpr(IntervalVar* const i)
       : BaseIntExpr(i->solver()), interval_(i) {}
-  virtual ~IntervalVarDurationExpr() {}
+  ~IntervalVarDurationExpr() override {}
 
-  virtual int64 Min() const { return interval_->DurationMin(); }
+  int64 Min() const override { return interval_->DurationMin(); }
 
-  virtual void SetMin(int64 m) { interval_->SetDurationMin(m); }
+  void SetMin(int64 m) override { interval_->SetDurationMin(m); }
 
-  virtual int64 Max() const { return interval_->DurationMax(); }
+  int64 Max() const override { return interval_->DurationMax(); }
 
-  virtual void SetMax(int64 m) { interval_->SetDurationMax(m); }
+  void SetMax(int64 m) override { interval_->SetDurationMax(m); }
 
-  virtual void SetRange(int64 l, int64 u) { interval_->SetDurationRange(l, u); }
+  void SetRange(int64 l, int64 u) override {
+    interval_->SetDurationRange(l, u);
+  }
 
-  virtual void SetValue(int64 v) { interval_->SetDurationRange(v, v); }
+  void SetValue(int64 v) override { interval_->SetDurationRange(v, v); }
 
-  virtual bool Bound() const {
+  bool Bound() const override {
     return interval_->DurationMin() == interval_->DurationMax();
   }
 
-  virtual void WhenRange(Demon* d) { interval_->WhenDurationRange(d); }
+  void WhenRange(Demon* d) override { interval_->WhenDurationRange(d); }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("duration(%s)", interval_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kDurationExpr, this);
     visitor->VisitIntervalArgument(ModelVisitor::kIntervalArgument, interval_);
     visitor->EndVisitIntegerExpression(ModelVisitor::kDurationExpr, this);

@@ -299,61 +299,61 @@ class SearchTrace : public SearchMonitor {
  public:
   SearchTrace(Solver* const s, const std::string& prefix)
       : SearchMonitor(s), prefix_(prefix) {}
-  virtual ~SearchTrace() {}
+  ~SearchTrace() override {}
 
-  virtual void EnterSearch() {
+  void EnterSearch() override {
     LOG(INFO) << prefix_ << " EnterSearch(" << solver()->SolveDepth() << ")";
   }
-  virtual void RestartSearch() {
+  void RestartSearch() override {
     LOG(INFO) << prefix_ << " RestartSearch(" << solver()->SolveDepth() << ")";
   }
-  virtual void ExitSearch() {
+  void ExitSearch() override {
     LOG(INFO) << prefix_ << " ExitSearch(" << solver()->SolveDepth() << ")";
   }
-  virtual void BeginNextDecision(DecisionBuilder* const b) {
+  void BeginNextDecision(DecisionBuilder* const b) override {
     LOG(INFO) << prefix_ << " BeginNextDecision(" << b << ") ";
   }
-  virtual void EndNextDecision(DecisionBuilder* const b, Decision* const d) {
+  void EndNextDecision(DecisionBuilder* const b, Decision* const d) override {
     if (d) {
       LOG(INFO) << prefix_ << " EndNextDecision(" << b << ", " << d << ") ";
     } else {
       LOG(INFO) << prefix_ << " EndNextDecision(" << b << ") ";
     }
   }
-  virtual void ApplyDecision(Decision* const d) {
+  void ApplyDecision(Decision* const d) override {
     LOG(INFO) << prefix_ << " ApplyDecision(" << d << ") ";
   }
-  virtual void RefuteDecision(Decision* const d) {
+  void RefuteDecision(Decision* const d) override {
     LOG(INFO) << prefix_ << " RefuteDecision(" << d << ") ";
   }
-  virtual void AfterDecision(Decision* const d, bool apply) {
+  void AfterDecision(Decision* const d, bool apply) override {
     LOG(INFO) << prefix_ << " AfterDecision(" << d << ", " << apply << ") ";
   }
-  virtual void BeginFail() {
+  void BeginFail() override {
     LOG(INFO) << prefix_ << " BeginFail(" << solver()->SearchDepth() << ")";
   }
-  virtual void EndFail() {
+  void EndFail() override {
     LOG(INFO) << prefix_ << " EndFail(" << solver()->SearchDepth() << ")";
   }
-  virtual void BeginInitialPropagation() {
+  void BeginInitialPropagation() override {
     LOG(INFO) << prefix_ << " BeginInitialPropagation()";
   }
-  virtual void EndInitialPropagation() {
+  void EndInitialPropagation() override {
     LOG(INFO) << prefix_ << " EndInitialPropagation()";
   }
-  virtual bool AtSolution() {
+  bool AtSolution() override {
     LOG(INFO) << prefix_ << " AtSolution()";
     return false;
   }
-  virtual bool AcceptSolution() {
+  bool AcceptSolution() override {
     LOG(INFO) << prefix_ << " AcceptSolution()";
     return true;
   }
-  virtual void NoMoreSolutions() {
+  void NoMoreSolutions() override {
     LOG(INFO) << prefix_ << " NoMoreSolutions()";
   }
 
-  virtual std::string DebugString() const { return "SearchTrace"; }
+  std::string DebugString() const override { return "SearchTrace"; }
 
  private:
   const std::string prefix_;
@@ -371,11 +371,11 @@ class CompositeDecisionBuilder : public DecisionBuilder {
  public:
   CompositeDecisionBuilder();
   explicit CompositeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
-  virtual ~CompositeDecisionBuilder();
+  ~CompositeDecisionBuilder() override;
   void Add(DecisionBuilder* const db);
-  virtual void AppendMonitors(Solver* const solver,
-                              std::vector<SearchMonitor*>* const monitors);
-  virtual void Accept(ModelVisitor* const visitor) const;
+  void AppendMonitors(Solver* const solver,
+                      std::vector<SearchMonitor*>* const monitors) override;
+  void Accept(ModelVisitor* const visitor) const override;
 
  protected:
   std::vector<DecisionBuilder*> builders_;
@@ -419,9 +419,9 @@ class ComposeDecisionBuilder : public CompositeDecisionBuilder {
  public:
   ComposeDecisionBuilder();
   explicit ComposeDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
-  ~ComposeDecisionBuilder();
-  virtual Decision* Next(Solver* const s);
-  virtual std::string DebugString() const;
+  ~ComposeDecisionBuilder() override;
+  Decision* Next(Solver* const s) override;
+  std::string DebugString() const override;
 
  private:
   int start_index_;
@@ -500,10 +500,10 @@ class TryDecisionBuilder;
 class TryDecision : public Decision {
  public:
   explicit TryDecision(TryDecisionBuilder* const try_builder);
-  virtual ~TryDecision();
-  virtual void Apply(Solver* const solver);
-  virtual void Refute(Solver* const solver);
-  virtual std::string DebugString() const { return "TryDecision"; }
+  ~TryDecision() override;
+  void Apply(Solver* const solver) override;
+  void Refute(Solver* const solver) override;
+  std::string DebugString() const override { return "TryDecision"; }
 
  private:
   TryDecisionBuilder* const try_builder_;
@@ -513,9 +513,9 @@ class TryDecisionBuilder : public CompositeDecisionBuilder {
  public:
   TryDecisionBuilder();
   explicit TryDecisionBuilder(const std::vector<DecisionBuilder*>& dbs);
-  virtual ~TryDecisionBuilder();
-  virtual Decision* Next(Solver* const s);
-  virtual std::string DebugString() const;
+  ~TryDecisionBuilder() override;
+  Decision* Next(Solver* const s) override;
+  std::string DebugString() const override;
   void AdvanceToNextBuilder(Solver* const solver);
 
  private:
@@ -619,7 +619,7 @@ namespace {
 class BaseVariableAssignmentSelector : public BaseObject {
  public:
   BaseVariableAssignmentSelector() {}
-  virtual ~BaseVariableAssignmentSelector() {}
+  ~BaseVariableAssignmentSelector() override {}
   virtual int64 SelectValue(const IntVar* const v, int64 id) = 0;
   virtual IntVar* SelectVariable(Solver* const s, int64* id) = 0;
   virtual void Accept(ModelVisitor* const visitor) const = 0;
@@ -630,7 +630,7 @@ class BaseVariableAssignmentSelector : public BaseObject {
 class VariableSelector : public BaseObject {
  public:
   explicit VariableSelector(const std::vector<IntVar*>& vars) : vars_(vars) {}
-  virtual ~VariableSelector() {}
+  ~VariableSelector() override {}
   virtual IntVar* Select(Solver* const s, int64* id) = 0;
   std::string VarDebugString() const {
     return StringPrintf("(%s)", JoinDebugStringPtr(vars_, ", ").c_str());
@@ -652,9 +652,9 @@ class FirstUnboundSelector : public VariableSelector {
  public:
   explicit FirstUnboundSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars), first_(0) {}
-  virtual ~FirstUnboundSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "ChooseFirstUnbound"; }
+  ~FirstUnboundSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "ChooseFirstUnbound"; }
 
  private:
   int first_;
@@ -680,9 +680,9 @@ class MinSizeLowestMinSelector : public VariableSelector {
  public:
   explicit MinSizeLowestMinSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~MinSizeLowestMinSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "MinSizeLowestMinSelector"; }
+  ~MinSizeLowestMinSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "MinSizeLowestMinSelector"; }
 };
 
 IntVar* MinSizeLowestMinSelector::Select(Solver* const s, int64* id) {
@@ -717,9 +717,9 @@ class MinSizeHighestMinSelector : public VariableSelector {
  public:
   explicit MinSizeHighestMinSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~MinSizeHighestMinSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "MinSizeHighestMinSelector"; }
+  ~MinSizeHighestMinSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "MinSizeHighestMinSelector"; }
 };
 
 IntVar* MinSizeHighestMinSelector::Select(Solver* const s, int64* id) {
@@ -754,9 +754,9 @@ class MinSizeLowestMaxSelector : public VariableSelector {
  public:
   explicit MinSizeLowestMaxSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~MinSizeLowestMaxSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "MinSizeLowestMaxSelector"; }
+  ~MinSizeLowestMaxSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "MinSizeLowestMaxSelector"; }
 };
 
 IntVar* MinSizeLowestMaxSelector::Select(Solver* const s, int64* id) {
@@ -791,9 +791,9 @@ class MinSizeHighestMaxSelector : public VariableSelector {
  public:
   explicit MinSizeHighestMaxSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~MinSizeHighestMaxSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "MinSizeHighestMaxSelector"; }
+  ~MinSizeHighestMaxSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "MinSizeHighestMaxSelector"; }
 };
 
 IntVar* MinSizeHighestMaxSelector::Select(Solver* const s, int64* id) {
@@ -828,9 +828,9 @@ class LowestMinSelector : public VariableSelector {
  public:
   explicit LowestMinSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~LowestMinSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "LowestMinSelector"; }
+  ~LowestMinSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "LowestMinSelector"; }
 };
 
 IntVar* LowestMinSelector::Select(Solver* const s, int64* id) {
@@ -862,9 +862,9 @@ class HighestMaxSelector : public VariableSelector {
  public:
   explicit HighestMaxSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~HighestMaxSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "HighestMaxSelector"; }
+  ~HighestMaxSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "HighestMaxSelector"; }
 };
 
 IntVar* HighestMaxSelector::Select(Solver* const s, int64* id) {
@@ -896,9 +896,9 @@ class LowestSizeSelector : public VariableSelector {
  public:
   explicit LowestSizeSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~LowestSizeSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "MinSizeSelector"; }
+  ~LowestSizeSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "MinSizeSelector"; }
 };
 
 IntVar* LowestSizeSelector::Select(Solver* const s, int64* id) {
@@ -931,9 +931,9 @@ class HighestSizeSelector : public VariableSelector {
  public:
   explicit HighestSizeSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~HighestSizeSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "MaxSizeSelector"; }
+  ~HighestSizeSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "MaxSizeSelector"; }
 };
 
 IntVar* HighestSizeSelector::Select(Solver* const s, int64* id) {
@@ -970,9 +970,9 @@ class HighestRegretSelectorOnMin : public VariableSelector {
       iterators_[i] = vars[i]->MakeDomainIterator(true);
     }
   }
-  virtual ~HighestRegretSelectorOnMin() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "MaxRegretSelector"; }
+  ~HighestRegretSelectorOnMin() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "MaxRegretSelector"; }
 
   int64 ComputeRegret(int index) const {
     DCHECK(!vars_[index]->Bound());
@@ -1017,9 +1017,9 @@ class RandomSelector : public VariableSelector {
  public:
   explicit RandomSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars) {}
-  virtual ~RandomSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "RandomSelector"; }
+  ~RandomSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "RandomSelector"; }
 };
 
 IntVar* RandomSelector::Select(Solver* const s, int64* id) {
@@ -1043,9 +1043,9 @@ class CheapestVarSelector : public VariableSelector {
   CheapestVarSelector(const std::vector<IntVar*>& vars,
                       ResultCallback1<int64, int64>* var_eval)
       : VariableSelector(vars), var_evaluator_(var_eval) {}
-  virtual ~CheapestVarSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "CheapestVarSelector"; }
+  ~CheapestVarSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "CheapestVarSelector"; }
 
  private:
   std::unique_ptr<ResultCallback1<int64, int64> > var_evaluator_;
@@ -1082,9 +1082,9 @@ class PathSelector : public VariableSelector {
  public:
   explicit PathSelector(const std::vector<IntVar*>& vars)
       : VariableSelector(vars), first_(kint64max) {}
-  virtual ~PathSelector() {}
-  virtual IntVar* Select(Solver* const s, int64* id);
-  virtual std::string DebugString() const { return "ChooseNextOnPath"; }
+  ~PathSelector() override {}
+  IntVar* Select(Solver* const s, int64* id) override;
+  std::string DebugString() const override { return "ChooseNextOnPath"; }
 
  private:
   bool UpdateIndex(int64* index) const;
@@ -1171,7 +1171,7 @@ bool PathSelector::FindPathStart(int64* index) const {
 class ValueSelector : public BaseObject {
  public:
   ValueSelector() {}
-  virtual ~ValueSelector() {}
+  ~ValueSelector() override {}
   virtual int64 Select(const IntVar* const v, int64 id) = 0;
 };
 
@@ -1180,9 +1180,9 @@ class ValueSelector : public BaseObject {
 class MinValueSelector : public ValueSelector {
  public:
   MinValueSelector() {}
-  virtual ~MinValueSelector() {}
-  virtual int64 Select(const IntVar* const v, int64 id) { return v->Min(); }
-  std::string DebugString() const { return "AssignMin"; }
+  ~MinValueSelector() override {}
+  int64 Select(const IntVar* const v, int64 id) override { return v->Min(); }
+  std::string DebugString() const override { return "AssignMin"; }
 };
 
 // ----- Select max -----
@@ -1190,9 +1190,9 @@ class MinValueSelector : public ValueSelector {
 class MaxValueSelector : public ValueSelector {
  public:
   MaxValueSelector() {}
-  virtual ~MaxValueSelector() {}
-  virtual int64 Select(const IntVar* const v, int64 id) { return v->Max(); }
-  std::string DebugString() const { return "AssignMax"; }
+  ~MaxValueSelector() override {}
+  int64 Select(const IntVar* const v, int64 id) override { return v->Max(); }
+  std::string DebugString() const override { return "AssignMax"; }
 };
 
 // ----- Select random -----
@@ -1200,9 +1200,9 @@ class MaxValueSelector : public ValueSelector {
 class RandomValueSelector : public ValueSelector {
  public:
   RandomValueSelector() {}
-  virtual ~RandomValueSelector() {}
-  virtual int64 Select(const IntVar* const v, int64 id);
-  std::string DebugString() const { return "AssignRandom"; }
+  ~RandomValueSelector() override {}
+  int64 Select(const IntVar* const v, int64 id) override;
+  std::string DebugString() const override { return "AssignRandom"; }
 };
 
 int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
@@ -1251,9 +1251,9 @@ int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
 class CenterValueSelector : public ValueSelector {
  public:
   CenterValueSelector() {}
-  virtual ~CenterValueSelector() {}
-  virtual int64 Select(const IntVar* const v, int64 id);
-  std::string DebugString() const { return "AssignCenter"; }
+  ~CenterValueSelector() override {}
+  int64 Select(const IntVar* const v, int64 id) override;
+  std::string DebugString() const override { return "AssignCenter"; }
 };
 
 int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
@@ -1284,9 +1284,9 @@ int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
 class SplitValueSelector : public ValueSelector {
  public:
   explicit SplitValueSelector(const std::string& name) : name_(name) {}
-  virtual ~SplitValueSelector() {}
-  virtual int64 Select(const IntVar* const v, int64 id);
-  std::string DebugString() const { return name_; }
+  ~SplitValueSelector() override {}
+  int64 Select(const IntVar* const v, int64 id) override;
+  std::string DebugString() const override { return name_; }
 
  private:
   const std::string name_;
@@ -1307,9 +1307,9 @@ class CheapestValueSelector : public ValueSelector {
   CheapestValueSelector(ResultCallback2<int64, int64, int64>* eval,
                         ResultCallback1<int64, int64>* tie_breaker)
       : eval_(eval), tie_breaker_(tie_breaker) {}
-  virtual ~CheapestValueSelector() {}
-  virtual int64 Select(const IntVar* const v, int64 id);
-  std::string DebugString() const { return "CheapestValue"; }
+  ~CheapestValueSelector() override {}
+  int64 Select(const IntVar* const v, int64 id) override;
+  std::string DebugString() const override { return "CheapestValue"; }
 
  private:
   std::unique_ptr<ResultCallback2<int64, int64, int64> > eval_;
@@ -1354,9 +1354,11 @@ class BestValueByComparisonSelector : public ValueSelector {
       ResultCallback3<bool, /*var id*/ int64,
                       /*value1*/ int64, /*value2*/ int64>* comparator)
       : comparator_(comparator) {}
-  virtual ~BestValueByComparisonSelector() {}
-  virtual int64 Select(const IntVar* const v, int64 id);
-  std::string DebugString() const { return "BestValueByComparisonSelector"; }
+  ~BestValueByComparisonSelector() override {}
+  int64 Select(const IntVar* const v, int64 id) override;
+  std::string DebugString() const override {
+    return "BestValueByComparisonSelector";
+  }
 
  private:
   std::unique_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
@@ -1383,16 +1385,16 @@ class VariableAssignmentSelector : public BaseVariableAssignmentSelector {
   VariableAssignmentSelector(VariableSelector* const var_selector,
                              ValueSelector* const value_selector)
       : var_selector_(var_selector), value_selector_(value_selector) {}
-  virtual ~VariableAssignmentSelector() {}
-  virtual int64 SelectValue(const IntVar* const var, int64 id) {
+  ~VariableAssignmentSelector() override {}
+  int64 SelectValue(const IntVar* const var, int64 id) override {
     return value_selector_->Select(var, id);
   }
-  virtual IntVar* SelectVariable(Solver* const s, int64* id) {
+  IntVar* SelectVariable(Solver* const s, int64* id) override {
     return var_selector_->Select(s, id);
   }
-  std::string DebugString() const;
+  std::string DebugString() const override;
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     var_selector_->Accept(visitor);
   }
 
@@ -1412,9 +1414,9 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
  public:
   BaseEvaluatorSelector(const std::vector<IntVar*>& vars,
                         ResultCallback2<int64, int64, int64>* evaluator);
-  ~BaseEvaluatorSelector() {}
+  ~BaseEvaluatorSelector() override {}
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -1450,10 +1452,10 @@ class DynamicEvaluatorSelector : public BaseEvaluatorSelector {
   DynamicEvaluatorSelector(const std::vector<IntVar*>& vars,
                            ResultCallback2<int64, int64, int64>* evaluator,
                            ResultCallback1<int64, int64>* tie_breaker);
-  virtual ~DynamicEvaluatorSelector() {}
-  virtual int64 SelectValue(const IntVar* const var, int64 id);
-  virtual IntVar* SelectVariable(Solver* const s, int64* id);
-  virtual std::string DebugString() const;
+  ~DynamicEvaluatorSelector() override {}
+  int64 SelectValue(const IntVar* const var, int64 id) override;
+  IntVar* SelectVariable(Solver* const s, int64* id) override;
+  std::string DebugString() const override;
 
  private:
   int first_;
@@ -1517,10 +1519,10 @@ class StaticEvaluatorSelector : public BaseEvaluatorSelector {
  public:
   StaticEvaluatorSelector(const std::vector<IntVar*>& vars,
                           ResultCallback2<int64, int64, int64>* evaluator);
-  virtual ~StaticEvaluatorSelector() {}
-  virtual int64 SelectValue(const IntVar* const var, int64 id);
-  virtual IntVar* SelectVariable(Solver* const s, int64* id);
-  virtual std::string DebugString() const;
+  ~StaticEvaluatorSelector() override {}
+  int64 SelectValue(const IntVar* const var, int64 id) override;
+  IntVar* SelectVariable(Solver* const s, int64* id) override;
+  std::string DebugString() const override;
 
  private:
   class Compare {
@@ -1604,11 +1606,11 @@ std::string StaticEvaluatorSelector::DebugString() const {
 class AssignOneVariableValue : public Decision {
  public:
   AssignOneVariableValue(IntVar* const v, int64 val);
-  virtual ~AssignOneVariableValue() {}
-  virtual void Apply(Solver* const s);
-  virtual void Refute(Solver* const s);
-  virtual std::string DebugString() const;
-  virtual void Accept(DecisionVisitor* const visitor) const {
+  ~AssignOneVariableValue() override {}
+  void Apply(Solver* const s) override;
+  void Refute(Solver* const s) override;
+  std::string DebugString() const override;
+  void Accept(DecisionVisitor* const visitor) const override {
     visitor->VisitSetVariableValue(var_, value_);
   }
 
@@ -1642,11 +1644,11 @@ namespace {
 class AssignOneVariableValueOrFail : public Decision {
  public:
   AssignOneVariableValueOrFail(IntVar* const v, int64 value);
-  virtual ~AssignOneVariableValueOrFail() {}
-  virtual void Apply(Solver* const s);
-  virtual void Refute(Solver* const s);
-  virtual std::string DebugString() const;
-  virtual void Accept(DecisionVisitor* const visitor) const {
+  ~AssignOneVariableValueOrFail() override {}
+  void Apply(Solver* const s) override;
+  void Refute(Solver* const s) override;
+  std::string DebugString() const override;
+  void Accept(DecisionVisitor* const visitor) const override {
     visitor->VisitSetVariableValue(var_, value_);
   }
 
@@ -1681,11 +1683,11 @@ namespace {
 class SplitOneVariable : public Decision {
  public:
   SplitOneVariable(IntVar* const v, int64 val, bool start_with_lower_half);
-  virtual ~SplitOneVariable() {}
-  virtual void Apply(Solver* const s);
-  virtual void Refute(Solver* const s);
-  virtual std::string DebugString() const;
-  virtual void Accept(DecisionVisitor* const visitor) const {
+  ~SplitOneVariable() override {}
+  void Apply(Solver* const s) override;
+  void Refute(Solver* const s) override;
+  std::string DebugString() const override;
+  void Accept(DecisionVisitor* const visitor) const override {
     visitor->VisitSplitVariableDomain(var_, value_, start_with_lower_half_);
   }
 
@@ -1747,11 +1749,11 @@ class AssignVariablesValues : public Decision {
  public:
   AssignVariablesValues(const std::vector<IntVar*>& vars,
                         const std::vector<int64>& values);
-  virtual ~AssignVariablesValues() {}
-  virtual void Apply(Solver* const s);
-  virtual void Refute(Solver* const s);
-  virtual std::string DebugString() const;
-  virtual void Accept(DecisionVisitor* const visitor) const {
+  ~AssignVariablesValues() override {}
+  void Apply(Solver* const s) override;
+  void Refute(Solver* const s) override;
+  std::string DebugString() const override;
+  void Accept(DecisionVisitor* const visitor) const override {
     for (int i = 0; i < vars_.size(); ++i) {
       visitor->VisitSetVariableValue(vars_[i], values_[i]);
     }
@@ -1819,9 +1821,9 @@ class BaseAssignVariables : public DecisionBuilder {
   explicit BaseAssignVariables(BaseVariableAssignmentSelector* const selector,
                                Mode mode)
       : selector_(selector), mode_(mode) {}
-  virtual ~BaseAssignVariables();
-  virtual Decision* Next(Solver* const s);
-  virtual std::string DebugString() const;
+  ~BaseAssignVariables() override;
+  Decision* Next(Solver* const s) override;
+  std::string DebugString() const override;
   static BaseAssignVariables* MakePhase(Solver* const s,
                                         const std::vector<IntVar*>& vars,
                                         VariableSelector* const var_selector,
@@ -1908,7 +1910,7 @@ class BaseAssignVariables : public DecisionBuilder {
     return value_selector;
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     selector_->Accept(visitor);
   }
 
@@ -2128,9 +2130,9 @@ class AssignVariablesFromAssignment : public DecisionBuilder {
                                 const std::vector<IntVar*>& vars)
       : assignment_(assignment), db_(db), vars_(vars), iter_(0) {}
 
-  ~AssignVariablesFromAssignment() {}
+  ~AssignVariablesFromAssignment() override {}
 
-  Decision* Next(Solver* const s) {
+  Decision* Next(Solver* const s) override {
     if (iter_ < vars_.size()) {
       IntVar* const var = vars_[iter_++];
       return s->RevAlloc(
@@ -2140,7 +2142,7 @@ class AssignVariablesFromAssignment : public DecisionBuilder {
     }
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -2348,10 +2350,10 @@ class FirstSolutionCollector : public SolutionCollector {
  public:
   FirstSolutionCollector(Solver* const s, const Assignment* const a);
   explicit FirstSolutionCollector(Solver* const s);
-  virtual ~FirstSolutionCollector();
-  virtual void EnterSearch();
-  virtual bool AtSolution();
-  virtual std::string DebugString() const;
+  ~FirstSolutionCollector() override;
+  void EnterSearch() override;
+  bool AtSolution() override;
+  std::string DebugString() const override;
 
  private:
   bool done_;
@@ -2405,9 +2407,9 @@ class LastSolutionCollector : public SolutionCollector {
  public:
   LastSolutionCollector(Solver* const s, const Assignment* const a);
   explicit LastSolutionCollector(Solver* const s);
-  virtual ~LastSolutionCollector();
-  virtual bool AtSolution();
-  virtual std::string DebugString() const;
+  ~LastSolutionCollector() override;
+  bool AtSolution() override;
+  std::string DebugString() const override;
 };
 
 LastSolutionCollector::LastSolutionCollector(Solver* const s,
@@ -2451,10 +2453,10 @@ class BestValueSolutionCollector : public SolutionCollector {
   BestValueSolutionCollector(Solver* const s, const Assignment* const a,
                              bool maximize);
   BestValueSolutionCollector(Solver* const s, bool maximize);
-  virtual ~BestValueSolutionCollector() {}
-  virtual void EnterSearch();
-  virtual bool AtSolution();
-  virtual std::string DebugString() const;
+  ~BestValueSolutionCollector() override {}
+  void EnterSearch() override;
+  bool AtSolution() override;
+  std::string DebugString() const override;
 
  public:
   const bool maximize_;
@@ -2522,9 +2524,9 @@ class AllSolutionCollector : public SolutionCollector {
  public:
   AllSolutionCollector(Solver* const s, const Assignment* const a);
   explicit AllSolutionCollector(Solver* const s);
-  virtual ~AllSolutionCollector();
-  virtual bool AtSolution();
-  virtual std::string DebugString() const;
+  ~AllSolutionCollector() override;
+  bool AtSolution() override;
+  std::string DebugString() const override;
 };
 
 AllSolutionCollector::AllSolutionCollector(Solver* const s,
@@ -2676,8 +2678,8 @@ class WeightedOptimizeVar : public OptimizeVar {
     CHECK_EQ(sub_objectives.size(), weights.size());
   }
 
-  virtual ~WeightedOptimizeVar() {}
-  virtual std::string Print() const;
+  ~WeightedOptimizeVar() override {}
+  std::string Print() const override;
 
  private:
   const std::vector<IntVar*> sub_objectives_;
@@ -2747,11 +2749,11 @@ class Metaheuristic : public SearchMonitor {
  public:
   Metaheuristic(Solver* const solver, bool maximize, IntVar* objective,
                 int64 step);
-  virtual ~Metaheuristic() {}
+  ~Metaheuristic() override {}
 
-  virtual bool AtSolution();
-  virtual void EnterSearch();
-  virtual void RefuteDecision(Decision* const d);
+  bool AtSolution() override;
+  void EnterSearch() override;
+  void RefuteDecision(Decision* const d) override;
 
  protected:
   IntVar* const objective_;
@@ -2807,13 +2809,13 @@ class TabuSearch : public Metaheuristic {
   TabuSearch(Solver* const s, bool maximize, IntVar* objective, int64 step,
              const std::vector<IntVar*>& vars, int64 keep_tenure,
              int64 forbid_tenure, double tabu_factor);
-  virtual ~TabuSearch() {}
-  virtual void EnterSearch();
-  virtual void ApplyDecision(Decision* d);
-  virtual bool AtSolution();
-  virtual bool LocalOptimum();
-  virtual void AcceptNeighbor();
-  virtual std::string DebugString() const { return "Tabu Search"; }
+  ~TabuSearch() override {}
+  void EnterSearch() override;
+  void ApplyDecision(Decision* d) override;
+  bool AtSolution() override;
+  bool LocalOptimum() override;
+  void AcceptNeighbor() override;
+  std::string DebugString() const override { return "Tabu Search"; }
 
  private:
   struct VarValue {
@@ -2993,13 +2995,13 @@ class SimulatedAnnealing : public Metaheuristic {
  public:
   SimulatedAnnealing(Solver* const s, bool maximize, IntVar* objective,
                      int64 step, int64 initial_temperature);
-  virtual ~SimulatedAnnealing() {}
-  virtual void EnterSearch();
-  virtual void ApplyDecision(Decision* d);
-  virtual bool AtSolution();
-  virtual bool LocalOptimum();
-  virtual void AcceptNeighbor();
-  virtual std::string DebugString() const { return "Simulated Annealing"; }
+  ~SimulatedAnnealing() override {}
+  void EnterSearch() override;
+  void ApplyDecision(Decision* d) override;
+  bool AtSolution() override;
+  bool LocalOptimum() override;
+  void AcceptNeighbor() override;
+  std::string DebugString() const override { return "Simulated Annealing"; }
 
  private:
   float Temperature() const;
@@ -3108,11 +3110,11 @@ class GuidedLocalSearchPenalties {
 class GuidedLocalSearchPenaltiesTable : public GuidedLocalSearchPenalties {
  public:
   explicit GuidedLocalSearchPenaltiesTable(int size);
-  virtual ~GuidedLocalSearchPenaltiesTable() {}
-  virtual bool HasValues() const { return has_values_; }
-  virtual void Increment(const Arc& arc);
-  virtual int64 Value(const Arc& arc) const;
-  virtual void Reset();
+  ~GuidedLocalSearchPenaltiesTable() override {}
+  bool HasValues() const override { return has_values_; }
+  void Increment(const Arc& arc) override;
+  int64 Value(const Arc& arc) const override;
+  void Reset() override;
 
  private:
   std::vector<std::vector<int64> > penalties_;
@@ -3154,11 +3156,11 @@ int64 GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
 class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
  public:
   explicit GuidedLocalSearchPenaltiesMap(int size);
-  virtual ~GuidedLocalSearchPenaltiesMap() {}
-  virtual bool HasValues() const { return (penalties_.size() != 0); }
-  virtual void Increment(const Arc& arc);
-  virtual int64 Value(const Arc& arc) const;
-  virtual void Reset();
+  ~GuidedLocalSearchPenaltiesMap() override {}
+  bool HasValues() const override { return (penalties_.size() != 0); }
+  void Increment(const Arc& arc) override;
+  int64 Value(const Arc& arc) const override;
+  void Reset() override;
 
  private:
   Bitmap penalized_;
@@ -3194,12 +3196,12 @@ class GuidedLocalSearch : public Metaheuristic {
   GuidedLocalSearch(Solver* const s, IntVar* objective, bool maximize,
                     int64 step, const std::vector<IntVar*>& vars,
                     double penalty_factor);
-  virtual ~GuidedLocalSearch() {}
-  virtual bool AcceptDelta(Assignment* delta, Assignment* deltadelta);
-  virtual void ApplyDecision(Decision* d);
-  virtual bool AtSolution();
-  virtual void EnterSearch();
-  virtual bool LocalOptimum();
+  ~GuidedLocalSearch() override {}
+  bool AcceptDelta(Assignment* delta, Assignment* deltadelta) override;
+  void ApplyDecision(Decision* d) override;
+  bool AtSolution() override;
+  void EnterSearch() override;
+  bool LocalOptimum() override;
   virtual int64 AssignmentElementPenalty(const Assignment& assignment,
                                          int index) = 0;
   virtual int64 AssignmentPenalty(const Assignment& assignment, int index,
@@ -3208,7 +3210,7 @@ class GuidedLocalSearch : public Metaheuristic {
                                     int64 index, int* container_index,
                                     int64* penalty) = 0;
   virtual IntExpr* MakeElementPenalty(int index) = 0;
-  virtual std::string DebugString() const { return "Guided Local Search"; }
+  std::string DebugString() const override { return "Guided Local Search"; }
 
  protected:
   struct Comparator {
@@ -3440,15 +3442,15 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch {
                           Solver::IndexEvaluator2* objective_function,
                           bool maximize, int64 step,
                           const std::vector<IntVar*>& vars, double penalty_factor);
-  virtual ~BinaryGuidedLocalSearch() {}
-  virtual IntExpr* MakeElementPenalty(int index);
-  virtual int64 AssignmentElementPenalty(const Assignment& assignment,
-                                         int index);
-  virtual int64 AssignmentPenalty(const Assignment& assignment, int index,
-                                  int64 next);
-  virtual bool EvaluateElementValue(const Assignment::IntContainer& container,
-                                    int64 index, int* container_index,
-                                    int64* penalty);
+  ~BinaryGuidedLocalSearch() override {}
+  IntExpr* MakeElementPenalty(int index) override;
+  int64 AssignmentElementPenalty(const Assignment& assignment,
+                                 int index) override;
+  int64 AssignmentPenalty(const Assignment& assignment, int index,
+                          int64 next) override;
+  bool EvaluateElementValue(const Assignment::IntContainer& container,
+                            int64 index, int* container_index,
+                            int64* penalty) override;
 
  private:
   int64 PenalizedValue(int64 i, int64 j);
@@ -3518,15 +3520,15 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch {
                            const std::vector<IntVar*>& vars,
                            const std::vector<IntVar*>& secondary_vars,
                            double penalty_factor);
-  virtual ~TernaryGuidedLocalSearch() {}
-  virtual IntExpr* MakeElementPenalty(int index);
-  virtual int64 AssignmentElementPenalty(const Assignment& assignment,
-                                         int index);
-  virtual int64 AssignmentPenalty(const Assignment& assignment, int index,
-                                  int64 next);
-  virtual bool EvaluateElementValue(const Assignment::IntContainer& container,
-                                    int64 index, int* container_index,
-                                    int64* penalty);
+  ~TernaryGuidedLocalSearch() override {}
+  IntExpr* MakeElementPenalty(int index) override;
+  int64 AssignmentElementPenalty(const Assignment& assignment,
+                                 int index) override;
+  int64 AssignmentPenalty(const Assignment& assignment, int index,
+                          int64 next) override;
+  bool EvaluateElementValue(const Assignment::IntContainer& container,
+                            int64 index, int* container_index,
+                            int64* penalty) override;
 
  private:
   int64 PenalizedValue(int64 i, int64 j, int64 k);
@@ -3678,19 +3680,19 @@ class RegularLimit : public SearchLimit {
  public:
   RegularLimit(Solver* const s, int64 time, int64 branches, int64 failures,
                int64 solutions, bool smart_time_check, bool cumulative);
-  virtual ~RegularLimit();
-  virtual void Copy(const SearchLimit* const limit);
-  virtual SearchLimit* MakeClone() const;
-  virtual bool Check();
-  virtual void Init();
-  virtual void ExitSearch();
+  ~RegularLimit() override;
+  void Copy(const SearchLimit* const limit) override;
+  SearchLimit* MakeClone() const override;
+  bool Check() override;
+  void Init() override;
+  void ExitSearch() override;
   void UpdateLimits(int64 time, int64 branches, int64 failures,
                     int64 solutions);
   int64 wall_time() { return wall_time_; }
-  virtual int ProgressPercent();
-  virtual std::string DebugString() const;
+  int ProgressPercent() override;
+  std::string DebugString() const override;
 
-  void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitExtension(ModelVisitor::kSearchLimitExtension);
     visitor->VisitIntegerArgument(ModelVisitor::kTimeLimitArgument, wall_time_);
     visitor->VisitIntegerArgument(ModelVisitor::kBranchesLimitArgument,
@@ -3907,7 +3909,7 @@ class ORLimit : public SearchLimit {
         << "not the other.";
   }
 
-  virtual bool Check() {
+  bool Check() override {
     // Check being non-const, there may be side effects. So we always call both
     // checks.
     const bool check_1 = limit_1_->Check();
@@ -3915,37 +3917,37 @@ class ORLimit : public SearchLimit {
     return check_1 || check_2;
   }
 
-  virtual void Init() {
+  void Init() override {
     limit_1_->Init();
     limit_2_->Init();
   }
 
-  virtual void Copy(const SearchLimit* const limit) {
+  void Copy(const SearchLimit* const limit) override {
     LOG(FATAL) << "Not implemented.";
   }
 
-  virtual SearchLimit* MakeClone() const {
+  SearchLimit* MakeClone() const override {
     // Deep cloning: the underlying limits are cloned, too.
     return solver()->MakeLimit(limit_1_->MakeClone(), limit_2_->MakeClone());
   }
 
-  virtual void EnterSearch() {
+  void EnterSearch() override {
     limit_1_->EnterSearch();
     limit_2_->EnterSearch();
   }
-  virtual void BeginNextDecision(DecisionBuilder* const b) {
+  void BeginNextDecision(DecisionBuilder* const b) override {
     limit_1_->BeginNextDecision(b);
     limit_2_->BeginNextDecision(b);
   }
-  virtual void PeriodicCheck() {
+  void PeriodicCheck() override {
     limit_1_->PeriodicCheck();
     limit_2_->PeriodicCheck();
   }
-  virtual void RefuteDecision(Decision* const d) {
+  void RefuteDecision(Decision* const d) override {
     limit_1_->RefuteDecision(d);
     limit_2_->RefuteDecision(d);
   }
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StrCat("OR limit (", limit_1_->DebugString(), " OR ",
                   limit_2_->DebugString(), ")");
   }
@@ -3975,11 +3977,11 @@ namespace {
 class CustomLimit : public SearchLimit {
  public:
   CustomLimit(Solver* const s, ResultCallback<bool>* limiter, bool del);
-  virtual ~CustomLimit();
-  virtual bool Check();
-  virtual void Init();
-  virtual void Copy(const SearchLimit* const limit);
-  virtual SearchLimit* MakeClone() const;
+  ~CustomLimit() override;
+  bool Check() override;
+  void Init() override;
+  void Copy(const SearchLimit* const limit) override;
+  SearchLimit* MakeClone() const override;
 
  private:
   ResultCallback<bool>* limiter_;
@@ -4032,9 +4034,9 @@ class SolveOnce : public DecisionBuilder {
     CHECK(db != nullptr);
   }
 
-  virtual ~SolveOnce() {}
+  ~SolveOnce() override {}
 
-  virtual Decision* Next(Solver* s) {
+  Decision* Next(Solver* s) override {
     bool res = s->SolveAndCommit(db_, monitors_);
     if (!res) {
       s->Fail();
@@ -4042,11 +4044,11 @@ class SolveOnce : public DecisionBuilder {
     return nullptr;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("SolveOnce(%s)", db_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     db_->Accept(visitor);
   }
 
@@ -4147,7 +4149,7 @@ class NestedOptimize : public DecisionBuilder {
     monitors_.push_back(optimize);
   }
 
-  virtual Decision* Next(Solver* solver) {
+  Decision* Next(Solver* solver) override {
     solver->Solve(db_, monitors_);
     if (collector_->solution_count() == 0) {
       solver->Fail();
@@ -4156,12 +4158,12 @@ class NestedOptimize : public DecisionBuilder {
     return nullptr;
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("NestedOptimize(db = %s, maximize = %d, step = %lld)",
                         db_->DebugString().c_str(), maximize_, step_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     db_->Accept(visitor);
   }
 
@@ -4264,9 +4266,9 @@ class LubyRestart : public SearchMonitor {
     CHECK_GE(scale_factor, 1);
   }
 
-  virtual ~LubyRestart() {}
+  ~LubyRestart() override {}
 
-  virtual void BeginFail() {
+  void BeginFail() override {
     if (++current_fails_ >= next_step_) {
       current_fails_ = 0;
       next_step_ = NextLuby(++iteration_) * scale_factor_;
@@ -4274,7 +4276,7 @@ class LubyRestart : public SearchMonitor {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("LubyRestart(%i)", scale_factor_);
   }
 
@@ -4300,16 +4302,16 @@ class ConstantRestart : public SearchMonitor {
     CHECK_GE(frequency, 1);
   }
 
-  virtual ~ConstantRestart() {}
+  ~ConstantRestart() override {}
 
-  virtual void BeginFail() {
+  void BeginFail() override {
     if (++current_fails_ >= frequency_) {
       current_fails_ = 0;
       solver()->RestartCurrentSearch();
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("ConstantRestart(%i)", frequency_);
   }
 
@@ -4353,9 +4355,9 @@ class SymmetryManager : public SearchMonitor {
     }
   }
 
-  virtual ~SymmetryManager() {}
+  ~SymmetryManager() override {}
 
-  virtual void EndNextDecision(DecisionBuilder* const db, Decision* const d) {
+  void EndNextDecision(DecisionBuilder* const db, Decision* const d) override {
     if (d) {
       for (int i = 0; i < visitors_.size(); ++i) {
         const void* const last = clauses_[i].Last();
@@ -4369,7 +4371,7 @@ class SymmetryManager : public SearchMonitor {
     }
   }
 
-  virtual void RefuteDecision(Decision* d) {
+  void RefuteDecision(Decision* d) override {
     for (int i = 0; i < visitors_.size(); ++i) {
       if (decisions_[i].Last() != nullptr && decisions_[i].LastValue() == d) {
         CheckSymmetries(i);
@@ -4420,7 +4422,7 @@ class SymmetryManager : public SearchMonitor {
     clauses_[visitor->index_in_symmetry_manager()].Push(solver(), term);
   }
 
-  std::string DebugString() const { return "SymmetryManager"; }
+  std::string DebugString() const override { return "SymmetryManager"; }
 
  private:
   const std::vector<SymmetryBreaker*> visitors_;

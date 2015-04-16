@@ -133,12 +133,12 @@ namespace {
 class FirstPassVisitor : public ModelVisitor {
  public:
   FirstPassVisitor() {}  // Needed for Visual Studio.
-  virtual ~FirstPassVisitor() {}
+  ~FirstPassVisitor() override {}
 
-  virtual std::string DebugString() const { return "FirstPassVisitor"; }
+  std::string DebugString() const override { return "FirstPassVisitor"; }
 
   // Begin/End visit element.
-  virtual void BeginVisitModel(const std::string& solver_name) {
+  void BeginVisitModel(const std::string& solver_name) override {
     // Reset statistics.
     expression_map_.clear();
     delegate_map_.clear();
@@ -148,18 +148,18 @@ class FirstPassVisitor : public ModelVisitor {
     sequence_list_.clear();
   }
 
-  virtual void EndVisitConstraint(const std::string& type_name,
-                                  const Constraint* const constraint) {
+  void EndVisitConstraint(const std::string& type_name,
+                          const Constraint* const constraint) override {
     Register(constraint);
   }
 
-  virtual void EndVisitIntegerExpression(const std::string& type_name,
-                                         const IntExpr* const expression) {
+  void EndVisitIntegerExpression(const std::string& type_name,
+                                 const IntExpr* const expression) override {
     Register(expression);
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     if (delegate != nullptr) {
       delegate->Accept(this);
       delegate_map_[variable] = delegate;
@@ -167,24 +167,24 @@ class FirstPassVisitor : public ModelVisitor {
     Register(variable);
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     delegate->Accept(this);
     delegate_map_[variable] = delegate;
     Register(variable);
   }
 
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const std::string& operation, int64 value,
-                                     IntervalVar* const delegate) {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     if (delegate != nullptr) {
       delegate->Accept(this);
     }
     Register(variable);
   }
 
-  virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
+  void VisitSequenceVariable(const SequenceVar* const sequence) override {
     for (int i = 0; i < sequence->size(); ++i) {
       sequence->Interval(i)->Accept(this);
     }
@@ -192,39 +192,39 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   // Visit integer expression argument.
-  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                              IntExpr* const argument) {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
+  void VisitIntegerVariableArrayArgument(
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit interval argument.
-  virtual void VisitIntervalArgument(const std::string& arg_name,
-                                     IntervalVar* const argument) {
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
+  void VisitIntervalArrayArgument(
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
   }
 
   // Visit sequence argument.
-  virtual void VisitSequenceArgument(const std::string& arg_name,
-                                     SequenceVar* const argument) {
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* const argument) override {
     VisitSubArgument(argument);
   }
 
-  virtual void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
+  void VisitSequenceArrayArgument(
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -501,11 +501,11 @@ class SecondPassVisitor : public ModelVisitor {
         sequence_list_(first_pass.sequence_list()),
         model_proto_(model_proto) {}
 
-  virtual ~SecondPassVisitor() {}
+  ~SecondPassVisitor() override {}
 
-  virtual std::string DebugString() const { return "SecondPassVisitor"; }
+  std::string DebugString() const override { return "SecondPassVisitor"; }
 
-  virtual void BeginVisitModel(const std::string& model_name) {
+  void BeginVisitModel(const std::string& model_name) override {
     model_proto_->set_model(model_name);
     model_proto_->set_version(kModelVersion);
     PushArgumentHolder();
@@ -522,7 +522,7 @@ class SecondPassVisitor : public ModelVisitor {
     }
   }
 
-  virtual void EndVisitModel(const std::string& model_name) {
+  void EndVisitModel(const std::string& model_name) override {
     for (ArgumentHolder* const arg : extensions_) {
       WriteModelExtension(arg);
     }
@@ -533,13 +533,13 @@ class SecondPassVisitor : public ModelVisitor {
     }
   }
 
-  virtual void BeginVisitConstraint(const std::string& type_name,
-                                    const Constraint* const constraint) {
+  void BeginVisitConstraint(const std::string& type_name,
+                            const Constraint* const constraint) override {
     PushArgumentHolder();
   }
 
-  virtual void EndVisitConstraint(const std::string& type_name,
-                                  const Constraint* const constraint) {
+  void EndVisitConstraint(const std::string& type_name,
+                          const Constraint* const constraint) override {
     // We ignore cast constraints, they will be regenerated automatically.
     if (constraint->IsCastConstraint()) {
       return;
@@ -554,13 +554,13 @@ class SecondPassVisitor : public ModelVisitor {
     PopArgumentHolder();
   }
 
-  virtual void BeginVisitIntegerExpression(const std::string& type_name,
-                                           const IntExpr* const expression) {
+  void BeginVisitIntegerExpression(const std::string& type_name,
+                                   const IntExpr* const expression) override {
     PushArgumentHolder();
   }
 
-  virtual void EndVisitIntegerExpression(const std::string& type_name,
-                                         const IntExpr* const expression) {
+  void EndVisitIntegerExpression(const std::string& type_name,
+                                 const IntExpr* const expression) override {
     const int index = model_proto_->expressions_size();
     CPIntegerExpressionProto* const expression_proto =
         model_proto_->add_expressions();
@@ -568,36 +568,36 @@ class SecondPassVisitor : public ModelVisitor {
     PopArgumentHolder();
   }
 
-  virtual void BeginVisitExtension(const std::string& type_name) {
+  void BeginVisitExtension(const std::string& type_name) override {
     PushExtension(type_name);
   }
 
-  virtual void EndVisitExtension(const std::string& type_name) {
+  void EndVisitExtension(const std::string& type_name) override {
     PopAndSaveExtension();
   }
 
-  virtual void VisitIntegerArgument(const std::string& arg_name, int64 value) {
+  void VisitIntegerArgument(const std::string& arg_name, int64 value) override {
     top()->set_integer_argument(arg_name, value);
   }
 
-  virtual void VisitIntegerArrayArgument(const std::string& arg_name,
-                                         const std::vector<int64>& values) {
+  void VisitIntegerArrayArgument(const std::string& arg_name,
+                                 const std::vector<int64>& values) override {
     top()->set_integer_array_argument(arg_name, values);
   }
 
-  virtual void VisitIntegerMatrixArgument(const std::string& arg_name,
-                                          const IntTupleSet& values) {
+  void VisitIntegerMatrixArgument(const std::string& arg_name,
+                                  const IntTupleSet& values) override {
     top()->set_integer_matrix_argument(arg_name, values);
   }
 
-  virtual void VisitIntegerExpressionArgument(const std::string& arg_name,
-                                              IntExpr* const argument) {
+  void VisitIntegerExpressionArgument(const std::string& arg_name,
+                                      IntExpr* const argument) override {
     top()->set_integer_expression_argument(arg_name,
                                            FindExpressionIndexOrDie(argument));
   }
 
-  virtual void VisitIntegerVariableArrayArgument(
-      const std::string& arg_name, const std::vector<IntVar*>& arguments) {
+  void VisitIntegerVariableArrayArgument(
+      const std::string& arg_name, const std::vector<IntVar*>& arguments) override {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindExpressionIndexOrDie(arguments[i]));
@@ -606,13 +606,13 @@ class SecondPassVisitor : public ModelVisitor {
                                                indices.size());
   }
 
-  virtual void VisitIntervalArgument(const std::string& arg_name,
-                                     IntervalVar* argument) {
+  void VisitIntervalArgument(const std::string& arg_name,
+                             IntervalVar* argument) override {
     top()->set_interval_argument(arg_name, FindIntervalIndexOrDie(argument));
   }
 
-  virtual void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
+  void VisitIntervalArrayArgument(
+      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindIntervalIndexOrDie(arguments[i]));
@@ -621,13 +621,13 @@ class SecondPassVisitor : public ModelVisitor {
                                        indices.size());
   }
 
-  virtual void VisitSequenceArgument(const std::string& arg_name,
-                                     SequenceVar* argument) {
+  void VisitSequenceArgument(const std::string& arg_name,
+                             SequenceVar* argument) override {
     top()->set_sequence_argument(arg_name, FindSequenceIndexOrDie(argument));
   }
 
-  virtual void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
+  void VisitSequenceArrayArgument(
+      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindSequenceIndexOrDie(arguments[i]));
@@ -636,8 +636,8 @@ class SecondPassVisitor : public ModelVisitor {
                                        indices.size());
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    IntExpr* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            IntExpr* const delegate) override {
     if (delegate != nullptr) {
       const int index = model_proto_->expressions_size();
       CPIntegerExpressionProto* const var_proto =
@@ -679,9 +679,9 @@ class SecondPassVisitor : public ModelVisitor {
     }
   }
 
-  virtual void VisitIntegerVariable(const IntVar* const variable,
-                                    const std::string& operation, int64 value,
-                                    IntVar* const delegate) {
+  void VisitIntegerVariable(const IntVar* const variable,
+                            const std::string& operation, int64 value,
+                            IntVar* const delegate) override {
     const int index = model_proto_->expressions_size();
     CPIntegerExpressionProto* const var_proto = model_proto_->add_expressions();
     var_proto->set_index(index);
@@ -694,9 +694,9 @@ class SecondPassVisitor : public ModelVisitor {
     value_proto->set_integer_value(value);
   }
 
-  virtual void VisitIntervalVariable(const IntervalVar* const variable,
-                                     const std::string& operation, int64 value,
-                                     IntervalVar* const delegate) {
+  void VisitIntervalVariable(const IntervalVar* const variable,
+                             const std::string& operation, int64 value,
+                             IntervalVar* const delegate) override {
     if (delegate != nullptr) {
       const int index = model_proto_->intervals_size();
       CPIntervalVariableProto* const var_proto = model_proto_->add_intervals();
@@ -750,7 +750,7 @@ class SecondPassVisitor : public ModelVisitor {
     }
   }
 
-  virtual void VisitSequenceVariable(const SequenceVar* const sequence) {
+  void VisitSequenceVariable(const SequenceVar* const sequence) override {
     const int index = model_proto_->sequences_size();
     CPSequenceVariableProto* const var_proto = model_proto_->add_sequences();
     var_proto->set_index(index);
@@ -901,7 +901,7 @@ class ArrayWithOffset : public BaseObject {
     DCHECK_LE(index_min, index_max);
   }
 
-  virtual ~ArrayWithOffset() {}
+  ~ArrayWithOffset() override {}
 
   virtual T Evaluate(int64 index) const {
     DCHECK_GE(index, index_min_);
@@ -915,7 +915,7 @@ class ArrayWithOffset : public BaseObject {
     values_[index - index_min_] = value;
   }
 
-  virtual std::string DebugString() const { return "ArrayWithOffset"; }
+  std::string DebugString() const override { return "ArrayWithOffset"; }
 
  private:
   const int64 index_min_;
