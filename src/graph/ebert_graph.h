@@ -578,18 +578,18 @@ class ForwardStaticGraph
         : ArrayIndexCycleHandler<NodeIndexType, ArcIndexType>(&data[kFirstArc]),
           annotation_handler_(annotation_handler) {}
 
-    virtual void SetTempFromIndex(ArcIndexType source) {
+    void SetTempFromIndex(ArcIndexType source) override {
       Base::SetTempFromIndex(source);
       annotation_handler_->SetTempFromIndex(source);
     }
 
-    virtual void SetIndexFromIndex(ArcIndexType source,
-                                   ArcIndexType destination) const {
+    void SetIndexFromIndex(ArcIndexType source,
+                           ArcIndexType destination) const override {
       Base::SetIndexFromIndex(source, destination);
       annotation_handler_->SetIndexFromIndex(source, destination);
     }
 
-    virtual void SetIndexFromTemp(ArcIndexType destination) const {
+    void SetIndexFromTemp(ArcIndexType destination) const override {
       Base::SetIndexFromTemp(destination);
       annotation_handler_->SetIndexFromTemp(destination);
     }
@@ -1055,7 +1055,7 @@ class EbertGraphBase
           head_temp_(kNilNode),
           tail_temp_(kNilNode) {}
 
-    virtual void SetTempFromIndex(ArcIndexType source) {
+    void SetTempFromIndex(ArcIndexType source) override {
       if (annotation_handler_ != NULL) {
         annotation_handler_->SetTempFromIndex(source);
       }
@@ -1063,8 +1063,8 @@ class EbertGraphBase
       tail_temp_ = graph_->Tail(source);
     }
 
-    virtual void SetIndexFromIndex(ArcIndexType source,
-                                   ArcIndexType destination) const {
+    void SetIndexFromIndex(ArcIndexType source,
+                           ArcIndexType destination) const override {
       if (annotation_handler_ != NULL) {
         annotation_handler_->SetIndexFromIndex(source, destination);
       }
@@ -1072,7 +1072,7 @@ class EbertGraphBase
       graph_->SetTail(destination, graph_->Tail(source));
     }
 
-    virtual void SetIndexFromTemp(ArcIndexType destination) const {
+    void SetIndexFromTemp(ArcIndexType destination) const override {
       if (annotation_handler_ != NULL) {
         annotation_handler_->SetIndexFromTemp(destination);
       }
@@ -1084,15 +1084,15 @@ class EbertGraphBase
     // kNilArc value to mark entries in the array that have been
     // processed already. There is no need to be able to recover the
     // original permutation array entries once they have been seen.
-    virtual void SetSeen(ArcIndexType* permutation_element) const {
+    void SetSeen(ArcIndexType* permutation_element) const override {
       *permutation_element = kNilArc;
     }
 
-    virtual bool Unseen(ArcIndexType permutation_element) const {
+    bool Unseen(ArcIndexType permutation_element) const override {
       return permutation_element != kNilArc;
     }
 
-    virtual ~CycleHandlerForAnnotatedArcs() {}
+    ~CycleHandlerForAnnotatedArcs() override {}
 
    private:
     PermutationCycleHandler<ArcIndexType>* annotation_handler_;

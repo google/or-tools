@@ -343,8 +343,8 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   // to free some memory if you know that no more calls to Tail() are needed.
   void FreeTailArray();
 
-  virtual void ReserveNodes(NodeIndexType bound);
-  virtual void ReserveArcs(ArcIndexType bound);
+  void ReserveNodes(NodeIndexType bound) override;
+  void ReserveArcs(ArcIndexType bound) override;
 
  private:
   std::vector<ArcIndexType> start_;
@@ -393,8 +393,8 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   // graph algorithms.
   BeginEndWrapper<NodeIndexType const*> operator[](NodeIndexType node) const;
 
-  virtual void ReserveNodes(NodeIndexType bound);
-  virtual void ReserveArcs(ArcIndexType bound);
+  void ReserveNodes(NodeIndexType bound) override;
+  void ReserveArcs(ArcIndexType bound) override;
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
@@ -491,8 +491,8 @@ class ReverseArcListGraph
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
 
-  virtual void ReserveNodes(NodeIndexType bound);
-  virtual void ReserveArcs(ArcIndexType bound);
+  void ReserveNodes(NodeIndexType bound) override;
+  void ReserveArcs(ArcIndexType bound) override;
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
@@ -564,8 +564,8 @@ class ReverseArcStaticGraph
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
 
-  virtual void ReserveNodes(NodeIndexType bound);
-  virtual void ReserveArcs(ArcIndexType bound);
+  void ReserveNodes(NodeIndexType bound) override;
+  void ReserveArcs(ArcIndexType bound) override;
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
@@ -640,8 +640,8 @@ class ReverseArcMixedGraph
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
 
-  virtual void ReserveNodes(NodeIndexType bound);
-  virtual void ReserveArcs(ArcIndexType bound);
+  void ReserveNodes(NodeIndexType bound) override;
+  void ReserveArcs(ArcIndexType bound) override;
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 

@@ -388,13 +388,13 @@ class LinearSumAssignment {
 
   class ActiveNodeStack : public ActiveNodeContainerInterface {
    public:
-    virtual ~ActiveNodeStack() {}
+    ~ActiveNodeStack() override {}
 
-    virtual bool Empty() const { return v_.empty(); }
+    bool Empty() const override { return v_.empty(); }
 
-    virtual void Add(NodeIndex node) { v_.push_back(node); }
+    void Add(NodeIndex node) override { v_.push_back(node); }
 
-    virtual NodeIndex Get() {
+    NodeIndex Get() override {
       DCHECK(!Empty());
       NodeIndex result = v_.back();
       v_.pop_back();
@@ -407,13 +407,13 @@ class LinearSumAssignment {
 
   class ActiveNodeQueue : public ActiveNodeContainerInterface {
    public:
-    virtual ~ActiveNodeQueue() {}
+    ~ActiveNodeQueue() override {}
 
-    virtual bool Empty() const { return q_.empty(); }
+    bool Empty() const override { return q_.empty(); }
 
-    virtual void Add(NodeIndex node) { q_.push_front(node); }
+    void Add(NodeIndex node) override { q_.push_front(node); }
 
-    virtual NodeIndex Get() {
+    NodeIndex Get() override {
       DCHECK(!Empty());
       NodeIndex result = q_.back();
       q_.pop_back();
@@ -1001,20 +1001,20 @@ class CostValueCycleHandler : public PermutationCycleHandler<ArcIndexType> {
  public:
   explicit CostValueCycleHandler(CostArray* cost) : temp_(0), cost_(cost) {}
 
-  virtual void SetTempFromIndex(ArcIndexType source) {
+  void SetTempFromIndex(ArcIndexType source) override {
     temp_ = cost_->Value(source);
   }
 
-  virtual void SetIndexFromIndex(ArcIndexType source,
-                                 ArcIndexType destination) const {
+  void SetIndexFromIndex(ArcIndexType source,
+                         ArcIndexType destination) const override {
     cost_->Set(destination, cost_->Value(source));
   }
 
-  virtual void SetIndexFromTemp(ArcIndexType destination) const {
+  void SetIndexFromTemp(ArcIndexType destination) const override {
     cost_->Set(destination, temp_);
   }
 
-  virtual ~CostValueCycleHandler() {}
+  ~CostValueCycleHandler() override {}
 
  private:
   CostValue temp_;
