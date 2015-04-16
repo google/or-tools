@@ -16,13 +16,19 @@
 // and local search filters.
 // TODO(user): Move all existing routing search code here.
 
-#include "constraint_solver/routing.h"
-
 #include <map>
 #include <set>
 #include "base/small_map.h"
 #include "base/small_ordered_set.h"
+#include "constraint_solver/routing.h"
 #include "util/bitset.h"
+#include "util/saturated_arithmetic.h"
+
+DEFINE_bool(routing_strong_debug_checks, false,
+            "Run stronger checks in debug; these stronger tests might change "
+            "the complexity of the code in particular.");
+DEFINE_bool(routing_shift_insertion_cost_by_penalty, true,
+            "Shift insertion costs by the penalty of the inserted node(s).");
 
 namespace operations_research {
 
@@ -327,7 +333,7 @@ void BasePathFilter::OnSynchronize(const Assignment* delta) {
   // needed).
   PropagateObjectiveValue(injected_objective_value_);
   // This code supposes that path starts didn't change.
-  DCHECK(!HavePathsChanged());
+  DCHECK(!FLAGS_routing_strong_debug_checks || !HavePathsChanged());
   const Assignment::IntContainer& container = delta->IntVarContainer();
   touched_paths_.SparseClearAll();
   for (int i = 0; i < container.Size(); ++i) {
@@ -1617,7 +1623,6 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InsertPairs() {
 }
 
 void GlobalCheapestInsertionFilteredDecisionBuilder::InsertNodes() {
-  // TODO(user): Add support for making node unperformed.
   AdjustablePriorityQueue<NodeEntry> priority_queue;
   std::vector<NodeEntries> position_to_node_entries;
   InitializePositions(&priority_queue, &position_to_node_entries);
@@ -1626,17 +1631,26 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InsertNodes() {
     if (Contains(node_entry->node_to_insert())) {
       DeleteNodeEntry(node_entry, &priority_queue, &position_to_node_entries);
     } else {
-      InsertBetween(node_entry->node_to_insert(), node_entry->insert_after(),
-                    Value(node_entry->insert_after()));
-      if (Commit()) {
-        const int vehicle = node_entry->vehicle();
-        UpdatePositions(
-            vehicle, node_entry->node_to_insert(), &priority_queue,
-            &position_to_node_entries);
-        UpdatePositions(vehicle, node_entry->insert_after(), &priority_queue,
-                        &position_to_node_entries);
+      if (node_entry->vehicle() == -1) {
+        // Pair is unperformed.
+        SetValue(node_entry->node_to_insert(), node_entry->node_to_insert());
+        if (!Commit()) {
+          DeleteNodeEntry(node_entry, &priority_queue,
+                          &position_to_node_entries);
+        }
       } else {
-        DeleteNodeEntry(node_entry, &priority_queue, &position_to_node_entries);
+        InsertBetween(node_entry->node_to_insert(), node_entry->insert_after(),
+                      Value(node_entry->insert_after()));
+        if (Commit()) {
+          const int vehicle = node_entry->vehicle();
+          UpdatePositions(vehicle, node_entry->node_to_insert(),
+                          &priority_queue, &position_to_node_entries);
+          UpdatePositions(vehicle, node_entry->insert_after(), &priority_queue,
+                          &position_to_node_entries);
+        } else {
+          DeleteNodeEntry(node_entry, &priority_queue,
+                          &position_to_node_entries);
+        }
       }
     }
   }
@@ -1665,9 +1679,17 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePairPositions(
     // Add insertion entry making pair unperformed.
     const int64 pickup_penalty = GetUnperformedValue(pickup);
     const int64 delivery_penalty = GetUnperformedValue(delivery);
+    int64 penalty =
+        FLAGS_routing_shift_insertion_cost_by_penalty ? kint64max : 0;
     if (pickup_penalty != kint64max && delivery_penalty != kint64max) {
       PairEntry* const entry = new PairEntry(pickup, -1, delivery, -1, -1);
-      entry->set_value(pickup_penalty + delivery_penalty);
+      if (FLAGS_routing_shift_insertion_cost_by_penalty) {
+        entry->set_value(0);
+        penalty = CapAdd(pickup_penalty, delivery_penalty);
+      } else {
+        entry->set_value(CapAdd(pickup_penalty, delivery_penalty));
+        penalty = 0;
+      }
       priority_queue->Add(entry);
     }
     // Add all other insertion entries with pair performed.
@@ -1700,7 +1722,7 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePairPositions(
       PairEntry* const entry = new PairEntry(
           pickup, valued_position.second.first, delivery,
           valued_position.second.second, valued_position.first.second);
-      entry->set_value(valued_position.first.first);
+      entry->set_value(CapSub(valued_position.first.first, penalty));
       pickup_to_entries->at(valued_position.second.first).insert(entry);
       if (valued_position.second.first != valued_position.second.second) {
         delivery_to_entries->at(valued_position.second.second).insert(entry);
@@ -1799,7 +1821,13 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
         evaluator_->Run(pair_entry->delivery_to_insert(),
                         delivery_insert_before, vehicle) -
         evaluator_->Run(delivery_insert_after, delivery_insert_before, vehicle);
-    pair_entry->set_value(pickup_value + delivery_value);
+    const int64 penalty =
+        FLAGS_routing_shift_insertion_cost_by_penalty
+            ? CapAdd(GetUnperformedValue(pair_entry->pickup_to_insert()),
+                     GetUnperformedValue(pair_entry->delivery_to_insert()))
+            : 0;
+    pair_entry->set_value(
+        CapSub(CapAdd(pickup_value, delivery_value), penalty));
     if (priority_queue->Contains(pair_entry)) {
       priority_queue->NoteChangedPriority(pair_entry);
     } else {
@@ -1889,7 +1917,13 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
         evaluator_->Run(pair_entry->delivery_to_insert(),
                         delivery_insert_before, vehicle) -
         old_delivery_value;
-    pair_entry->set_value(pickup_value + delivery_value);
+    const int64 penalty =
+        FLAGS_routing_shift_insertion_cost_by_penalty
+            ? CapAdd(GetUnperformedValue(pair_entry->pickup_to_insert()),
+                     GetUnperformedValue(pair_entry->delivery_to_insert()))
+            : 0;
+    pair_entry->set_value(
+        CapSub(CapAdd(pickup_value, delivery_value), penalty));
     if (priority_queue->Contains(pair_entry)) {
       priority_queue->NoteChangedPriority(pair_entry);
     } else {
@@ -1928,6 +1962,22 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePositions(
     if (Contains(node)) {
       continue;
     }
+    const int64 node_penalty = GetUnperformedValue(node);
+    int64 penalty =
+        FLAGS_routing_shift_insertion_cost_by_penalty ? kint64max : 0;
+    // Add insertion entry making node unperformed.
+    if (node_penalty != kint64max) {
+      NodeEntry* const node_entry = new NodeEntry(node, -1, -1);
+      if (FLAGS_routing_shift_insertion_cost_by_penalty) {
+        node_entry->set_value(0);
+        penalty = node_penalty;
+      } else {
+        node_entry->set_value(node_penalty);
+        penalty = 0;
+      }
+      priority_queue->Add(node_entry);
+    }
+    // Add all insertion entries making node performed.
     for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
       std::vector<ValuedPosition> valued_positions;
       const int64 start = model()->Start(vehicle);
@@ -1936,7 +1986,7 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePositions(
       for (const std::pair<int64, int64>& valued_position : valued_positions) {
         NodeEntry* const node_entry =
             new NodeEntry(node, valued_position.second, vehicle);
-        node_entry->set_value(valued_position.first);
+        node_entry->set_value(CapSub(valued_position.first, penalty));
         position_to_node_entries->at(valued_position.second)
             .insert(node_entry);
         priority_queue->Add(node_entry);
@@ -1991,7 +2041,11 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePositions(
         evaluator_->Run(insert_after, node_entry->node_to_insert(), vehicle) +
         evaluator_->Run(node_entry->node_to_insert(), insert_before, vehicle) -
         old_value;
-    node_entry->set_value(value);
+    const int64 penalty =
+        FLAGS_routing_shift_insertion_cost_by_penalty
+            ? GetUnperformedValue(node_entry->node_to_insert())
+            : 0;
+    node_entry->set_value(CapSub(value, penalty));
     if (update) {
       priority_queue->NoteChangedPriority(node_entry);
     } else {
@@ -2006,8 +2060,10 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::DeleteNodeEntry(
       GlobalCheapestInsertionFilteredDecisionBuilder::NodeEntry>*
     priority_queue,
     std::vector<NodeEntries>* node_entries) {
-  node_entries->at(entry->insert_after()).erase(entry);
   priority_queue->Remove(entry);
+  if (entry->insert_after() != -1) {
+    node_entries->at(entry->insert_after()).erase(entry);
+  }
   delete entry;
 }
 
