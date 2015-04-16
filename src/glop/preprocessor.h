@@ -220,9 +220,9 @@ class RowDeletionHelper {
 class EmptyColumnPreprocessor : public Preprocessor {
  public:
   EmptyColumnPreprocessor() {}
-  virtual ~EmptyColumnPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~EmptyColumnPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   ColumnDeletionHelper column_deletion_helper_;
@@ -245,10 +245,10 @@ class EmptyColumnPreprocessor : public Preprocessor {
 class ProportionalColumnPreprocessor : public Preprocessor {
  public:
   ProportionalColumnPreprocessor() {}
-  virtual ~ProportionalColumnPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
-  virtual void UseInMipContext() { LOG(FATAL) << "Not implemented."; }
+  ~ProportionalColumnPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
+  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   // Postsolve information about proportional columns with the same scaled cost
@@ -283,9 +283,9 @@ class ProportionalColumnPreprocessor : public Preprocessor {
 class ProportionalRowPreprocessor : public Preprocessor {
  public:
   ProportionalRowPreprocessor() {}
-  virtual ~ProportionalRowPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~ProportionalRowPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   // Informations about proportional rows, only filled for such rows.
@@ -376,10 +376,10 @@ class SingletonUndo {
 class SingletonPreprocessor : public Preprocessor {
  public:
   SingletonPreprocessor() {}
-  virtual ~SingletonPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
-  virtual void UseInMipContext() { LOG(FATAL) << "Not implemented."; }
+  ~SingletonPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
+  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   // Returns the MatrixEntry of the given singleton row or column, taking into
@@ -451,9 +451,9 @@ class SingletonPreprocessor : public Preprocessor {
 class FixedVariablePreprocessor : public Preprocessor {
  public:
   FixedVariablePreprocessor() {}
-  virtual ~FixedVariablePreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~FixedVariablePreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   ColumnDeletionHelper column_deletion_helper_;
@@ -483,9 +483,9 @@ class FixedVariablePreprocessor : public Preprocessor {
 class ForcingAndImpliedFreeConstraintPreprocessor : public Preprocessor {
  public:
   ForcingAndImpliedFreeConstraintPreprocessor() {}
-  virtual ~ForcingAndImpliedFreeConstraintPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~ForcingAndImpliedFreeConstraintPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   bool lp_is_maximization_problem_;
@@ -525,10 +525,10 @@ class ForcingAndImpliedFreeConstraintPreprocessor : public Preprocessor {
 class ImpliedFreePreprocessor : public Preprocessor {
  public:
   ImpliedFreePreprocessor() {}
-  virtual ~ImpliedFreePreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
-  virtual void UseInMipContext() { LOG(FATAL) << "Not implemented."; }
+  ~ImpliedFreePreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
+  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   // This preprocessor adds fixed offsets to some variables. We remember those
@@ -571,10 +571,10 @@ class ImpliedFreePreprocessor : public Preprocessor {
 class DoubletonFreeColumnPreprocessor : public Preprocessor {
  public:
   DoubletonFreeColumnPreprocessor() {}
-  virtual ~DoubletonFreeColumnPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
-  virtual void UseInMipContext() { LOG(FATAL) << "Not implemented."; }
+  ~DoubletonFreeColumnPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
+  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   enum RowChoice {
@@ -616,9 +616,9 @@ class DoubletonFreeColumnPreprocessor : public Preprocessor {
 class UnconstrainedVariablePreprocessor : public Preprocessor {
  public:
   UnconstrainedVariablePreprocessor() {}
-  virtual ~UnconstrainedVariablePreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~UnconstrainedVariablePreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
   // Removes the given variable and all the rows in which it appears: If a
   // variable is unconstrained with a zero cost, then all the constraints in
@@ -654,9 +654,9 @@ class UnconstrainedVariablePreprocessor : public Preprocessor {
 class FreeConstraintPreprocessor : public Preprocessor {
  public:
   FreeConstraintPreprocessor() {}
-  virtual ~FreeConstraintPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~FreeConstraintPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   RowDeletionHelper row_deletion_helper_;
@@ -670,9 +670,9 @@ class FreeConstraintPreprocessor : public Preprocessor {
 class EmptyConstraintPreprocessor : public Preprocessor {
  public:
   EmptyConstraintPreprocessor() {}
-  virtual ~EmptyConstraintPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~EmptyConstraintPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   RowDeletionHelper row_deletion_helper_;
@@ -688,9 +688,9 @@ class EmptyConstraintPreprocessor : public Preprocessor {
 class RemoveNearZeroEntriesPreprocessor : public Preprocessor {
  public:
   RemoveNearZeroEntriesPreprocessor() {}
-  virtual ~RemoveNearZeroEntriesPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~RemoveNearZeroEntriesPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(RemoveNearZeroEntriesPreprocessor);
@@ -706,9 +706,9 @@ class RemoveNearZeroEntriesPreprocessor : public Preprocessor {
 class SingletonColumnSignPreprocessor : public Preprocessor {
  public:
   SingletonColumnSignPreprocessor() {}
-  virtual ~SingletonColumnSignPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~SingletonColumnSignPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   std::vector<ColIndex> changed_columns_;
@@ -724,10 +724,10 @@ class SingletonColumnSignPreprocessor : public Preprocessor {
 class DoubletonEqualityRowPreprocessor : public Preprocessor {
  public:
   DoubletonEqualityRowPreprocessor() {}
-  virtual ~DoubletonEqualityRowPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
-  virtual void UseInMipContext() { LOG(FATAL) << "Not implemented."; }
+  ~DoubletonEqualityRowPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
+  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   enum ColChoice {
@@ -789,10 +789,10 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
 class DualizerPreprocessor : public Preprocessor {
  public:
   DualizerPreprocessor() {}
-  virtual ~DualizerPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
-  virtual void UseInMipContext() {
+  ~DualizerPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
+  void UseInMipContext() final {
     LOG(FATAL) << "In the presence of integer variables, "
                << "there is no notion of a dual problem.";
   }
@@ -846,9 +846,9 @@ class DualizerPreprocessor : public Preprocessor {
 class ShiftVariableBoundsPreprocessor : public Preprocessor {
  public:
   ShiftVariableBoundsPreprocessor() {}
-  virtual ~ShiftVariableBoundsPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
+  ~ShiftVariableBoundsPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
 
  private:
   // Contains for each variable by how much its bounds where shifted during
@@ -870,10 +870,10 @@ class ShiftVariableBoundsPreprocessor : public Preprocessor {
 class ScalingPreprocessor : public Preprocessor {
  public:
   ScalingPreprocessor() {}
-  virtual ~ScalingPreprocessor() {}
-  virtual bool Run(LinearProgram* linear_program);
-  virtual void StoreSolution(ProblemSolution* solution) const;
-  virtual void UseInMipContext() { LOG(FATAL) << "Not implemented."; }
+  ~ScalingPreprocessor() final {}
+  bool Run(LinearProgram* linear_program) final;
+  void StoreSolution(ProblemSolution* solution) const final;
+  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   DenseRow variable_lower_bounds_;
