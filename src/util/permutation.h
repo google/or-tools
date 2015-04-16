@@ -148,18 +148,18 @@ class ArrayIndexCycleHandler : public PermutationCycleHandler<IndexType> {
  public:
   explicit ArrayIndexCycleHandler(DataType* data) : data_(data) {}
 
-  virtual void SetTempFromIndex(IndexType source) { temp_ = data_[source]; }
-  virtual void SetIndexFromIndex(IndexType source,
-                                 IndexType destination) const {
+  void SetTempFromIndex(IndexType source) override { temp_ = data_[source]; }
+  void SetIndexFromIndex(IndexType source,
+                         IndexType destination) const override {
     data_[destination] = data_[source];
   }
-  virtual void SetIndexFromTemp(IndexType destination) const {
+  void SetIndexFromTemp(IndexType destination) const override {
     data_[destination] = temp_;
   }
-  virtual void SetSeen(IndexType* permutation_element) const {
+  void SetSeen(IndexType* permutation_element) const override {
     *permutation_element = -*permutation_element - 1;
   }
-  virtual bool Unseen(IndexType permutation_element) const {
+  bool Unseen(IndexType permutation_element) const override {
     return permutation_element >= 0;
   }
 

@@ -149,12 +149,12 @@ class DistributionStat : public Stat {
  public:
   explicit DistributionStat(const std::string& name);
   DistributionStat(const std::string& name, StatsGroup* group);
-  virtual ~DistributionStat() {}
-  virtual void Reset();
-  virtual bool WorthPrinting() const { return num_ != 0; }
+  ~DistributionStat() override {}
+  void Reset() override;
+  bool WorthPrinting() const override { return num_ != 0; }
 
   // Implemented by the subclasses.
-  virtual std::string ValueAsString() const = 0;
+  std::string ValueAsString() const override = 0;
 
   // Trivial statistics on all the values added so far.
   double Sum() const { return sum_; }
@@ -196,7 +196,7 @@ class TimeDistribution : public DistributionStat {
       : DistributionStat(name), timer_() {}
   TimeDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group), timer_() {}
-  virtual std::string ValueAsString() const;
+  std::string ValueAsString() const override;
 
   // Internaly the TimeDistribution stores cpu cycles (to do a bit less work
   // on each StopTimerAndAddElapsedTime()). Use this function to convert
@@ -233,7 +233,7 @@ class RatioDistribution : public DistributionStat {
   explicit RatioDistribution(const std::string& name) : DistributionStat(name) {}
   RatioDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
-  virtual std::string ValueAsString() const;
+  std::string ValueAsString() const override;
   void Add(double value);
 };
 
@@ -243,7 +243,7 @@ class DoubleDistribution : public DistributionStat {
   explicit DoubleDistribution(const std::string& name) : DistributionStat(name) {}
   DoubleDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
-  virtual std::string ValueAsString() const;
+  std::string ValueAsString() const override;
   void Add(double value);
 };
 
@@ -253,7 +253,7 @@ class IntegerDistribution : public DistributionStat {
   explicit IntegerDistribution(const std::string& name) : DistributionStat(name) {}
   IntegerDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group) {}
-  virtual std::string ValueAsString() const;
+  std::string ValueAsString() const override;
   void Add(int64 value);
 };
 
