@@ -12,9 +12,9 @@
 // limitations under the License.
 
 
+#include "glop/initial_basis.h"
 #include <queue>
 
-#include "glop/initial_basis.h"
 #include "glop/markowitz.h"
 #include "lp_data/lp_utils.h"
 
@@ -238,8 +238,8 @@ int InitialBasis::GetColumnCategory(ColIndex col) const {
     case VariableType::FIXED_VARIABLE:
       return 5;
     default:
-      LOG(DFATAL) << "Column " << col             // COV_NF_LINE
-                  << " has no meaningful type.";  // COV_NF_LINE
+      LOG(DFATAL) << "Column " << col
+                  << " has no meaningful type.";
       return 6;
   }
 }

@@ -548,8 +548,9 @@ bool LPSolver::IsProblemSolutionConsistent(
   if (solution.dual_values.size() != num_rows) return false;
   if (solution.status != ProblemStatus::OPTIMAL &&
       solution.status != ProblemStatus::PRIMAL_FEASIBLE &&
-      solution.status != ProblemStatus::DUAL_FEASIBLE)
+      solution.status != ProblemStatus::DUAL_FEASIBLE) {
     return true;
+  }
 
   // This checks that the variable statuses verify the properties described
   // in the VariableStatus declaration.

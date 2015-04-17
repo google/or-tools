@@ -486,8 +486,9 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
     for (++i; i < sorted_columns.size(); ++i) {
       if (sorted_columns[i].representative != target_representative) break;
       if (fabs(sorted_columns[i].scaled_cost - target_scaled_cost) >=
-          kTolerance)
+          kTolerance) {
         break;
+      }
       ++num_merged;
       const ColIndex col = sorted_columns[i].col;
       const Fractional lower_bound = lp->variable_lower_bounds()[col];
@@ -2372,12 +2373,10 @@ MatrixEntry SingletonPreprocessor::GetSingletonColumnMatrixEntry(
       return MatrixEntry(e.row(), col, e.coefficient());
     }
   }
-  // COV_NF_START
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a column that is supposed to have one.";
   status_ = ProblemStatus::ABNORMAL;
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
-  // COV_NF_END
 }
 
 MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
@@ -2389,12 +2388,10 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
       return MatrixEntry(row, col, e.coefficient());
     }
   }
-  // COV_NF_START
   // This shouldn't happen.
   LOG(DFATAL) << "No unmarked entry in a row that is supposed to have one.";
   status_ = ProblemStatus::ABNORMAL;
   return MatrixEntry(RowIndex(0), ColIndex(0), 0.0);
-  // COV_NF_END
 }
 
 // --------------------------------------------------------

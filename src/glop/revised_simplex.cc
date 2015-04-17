@@ -299,10 +299,12 @@ ConstraintStatus RevisedSimplex::GetConstraintStatus(RowIndex row) const {
   // The status of the given constraint is the same as the status of the
   // associated slack variable with a change of sign.
   const VariableStatus s = variables_info_.GetStatusRow()[SlackColIndex(row)];
-  if (s == VariableStatus::AT_LOWER_BOUND)
+  if (s == VariableStatus::AT_LOWER_BOUND) {
     return ConstraintStatus::AT_UPPER_BOUND;
-  if (s == VariableStatus::AT_UPPER_BOUND)
+  }
+  if (s == VariableStatus::AT_UPPER_BOUND) {
     return ConstraintStatus::AT_LOWER_BOUND;
+  }
   return VariableToConstraintStatus(s);
 }
 
@@ -361,8 +363,9 @@ void RevisedSimplex::SetVariableNames() {
 VariableStatus RevisedSimplex::ComputeDefaultVariableStatus(
     ColIndex col) const {
   DCHECK_COL_BOUNDS(col);
-  if (lower_bound_[col] == upper_bound_[col])
+  if (lower_bound_[col] == upper_bound_[col]) {
     return VariableStatus::FIXED_VALUE;
+  }
   if (lower_bound_[col] == -kInfinity && upper_bound_[col] == kInfinity) {
     return VariableStatus::FREE;
   }
@@ -373,10 +376,12 @@ VariableStatus RevisedSimplex::ComputeDefaultVariableStatus(
   if (parameters_.exploit_singleton_column_in_initial_basis() &&
       matrix_with_slack_.column(col).num_entries() == 1) {
     const Fractional objective = objective_[col];
-    if (objective > 0 && IsFinite(lower_bound_[col]))
+    if (objective > 0 && IsFinite(lower_bound_[col])) {
       return VariableStatus::AT_LOWER_BOUND;
-    if (objective < 0 && IsFinite(upper_bound_[col]))
+    }
+    if (objective < 0 && IsFinite(upper_bound_[col])) {
       return VariableStatus::AT_UPPER_BOUND;
+    }
   }
 
   // Returns the bound with the lowest magnitude. Note that it must be finite
@@ -941,7 +946,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
       if (solution_state_has_been_set_externally_) {
         // TODO(user): This is currently disabled since it seems to give bad
         // results, investigate.
-        if (false) {
+        if (/* DISABLES CODE */ (false)) {
           InitializeVariableStatusesForWarmStart(solution_state_);
           basis_.assign(num_rows_, kInvalidCol);
           RowIndex row(0);
@@ -1108,8 +1113,8 @@ void RevisedSimplex::CorrectErrorsOnVariableValues() {
   // the algorithm.
   //
   // TODO(user): This is currently disabled because the improvement is unclear.
-  if (false && !feasibility_phase_ &&
-      num_consecutive_degenerate_iterations_ >= 100) {
+  if (/* DISABLES CODE */ false &&
+      (!feasibility_phase_ && num_consecutive_degenerate_iterations_ >= 100)) {
     VLOG(1) << "Perturbing the problem.";
     const Fractional tolerance = parameters_.harris_tolerance_ratio() *
                                  parameters_.primal_feasibility_tolerance();
@@ -1364,7 +1369,7 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
     // Note(user): Testing the pivot at each iteration is useful for debugging
     // an LU factorization problem. Remove the false if you need to investigate
     // this, it makes sure that this will be compiled away.
-    if (false) {
+    if (/* DISABLES CODE */ (false)) {
       TestPivot(entering_col, *leaving_row);
     }
 
@@ -1407,7 +1412,8 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
       // TODO(user): in almost all cases, testing the pivot is not useful
       // because the two countermeasures above will be enough. Investigate
       // more. The false makes sure that this will just be compiled away.
-      if (false && !TestPivot(entering_col, *leaving_row)) {
+      if (/* DISABLES CODE */ (false) &&
+          /* DISABLES CODE */ (!TestPivot(entering_col, *leaving_row))) {
         SkipVariableForRatioTest(*leaving_row);
         continue;
       }
@@ -1995,8 +2001,9 @@ bool RevisedSimplex::NeedsBasisRefactorization(bool refactorize) {
     if (dual_edge_norms_.NeedsBasisRefactorization()) return true;
   } else {
     if (pricing_rule == GlopParameters::STEEPEST_EDGE &&
-        primal_edge_norms_.NeedsBasisRefactorization())
+        primal_edge_norms_.NeedsBasisRefactorization()) {
       return true;
+    }
   }
   return refactorize;
 }
@@ -2703,9 +2710,9 @@ void RevisedSimplex::DisplayVariableBounds() {
                 << StringifyWithFlags(lower_bound_[col]) << ";";
         break;
       default:                           // This should never happen.
-        LOG(DFATAL) << "Column " << col  // COV_NF_LINE
-                    << " has no meaningful status.";  // COV_NF_LINE
-        break;                                        // COV_NF_LINE
+        LOG(DFATAL) << "Column " << col
+                    << " has no meaningful status.";
+        break;
     }
   }
 }

@@ -709,7 +709,7 @@ void MatrixNonZeroPattern::Update(RowIndex pivot_row, ColIndex pivot_col,
       RemoveDeletedColumnsFromRow(row);
     }
     // TODO(user): Special case if row_non_zero_[pivot_row].size() == 1?
-    if (true) {
+    if (/* DISABLES CODE */ (true)) {
       MergeInto(pivot_row, row);
     } else {
       // This is currently not used, but kept as an alternative algorithm to
