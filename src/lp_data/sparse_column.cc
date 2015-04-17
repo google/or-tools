@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "lp_data/sparse_column.h"
 #include <algorithm>
 
 #include "base/stringprintf.h"
 #include "lp_data/lp_types.h"
-#include "lp_data/sparse_column.h"
 
 namespace operations_research {
 namespace glop {

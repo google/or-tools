@@ -156,10 +156,15 @@ class SatSolver {
   // queue operations if there is millions of variables.
   void SetAssignmentPreference(Literal literal, double weight);
 
+  // Returns the vector of the current assignment preferences.
+  std::vector<std::pair<Literal, double>> AllPreferences() const;
+
   // Reinitializes the decision heuristics (which variables to choose with which
   // polarity) according to the current parameters. Note that this also resets
   // the activity of the variables to 0.
   void ResetDecisionHeuristic();
+  void ResetDecisionHeuristicAndSetAllPreferences(
+      const std::vector<std::pair<Literal, double>>& prefs);
 
   // Solves the problem and returns its status.
   //
@@ -167,7 +172,7 @@ class SatSolver {
   // counting from the time it is called.
   //
   // This will restart from the current solver configuration. If a previous call
-  // to Solve() was interupted by a conflict or time limit, calling this again
+  // to Solve() was interrupted by a conflict or time limit, calling this again
   // will resume the search exactly as it would have continued.
   //
   // Note that if a time limit has been defined earlier, using the SAT
@@ -211,6 +216,12 @@ class SatSolver {
   // treated as assumptions by the next Solve(). Note that this may impact some
   // heuristics, like the LBD value of a clause.
   void SetAssumptionLevel(int assumption_level);
+
+  // Returns the current assumption level. Note that if a solve was done since
+  // the last SetAssumptionLevel(), then the returned level may be lower than
+  // the one that was set. This is because some assumptions may now be
+  // consequences of others before them due to the newly learned clauses.
+  int AssumptionLevel() const { return assumption_level_; }
 
   // This can be called just after SolveWithAssumptions() returned
   // ASSUMPTION_UNSAT or after EnqueueDecisionAndBacktrackOnConflict() leaded
@@ -275,6 +286,18 @@ class SatSolver {
   // this will be cleared. Calling this with 0 will revert all the decisions and
   // only the fixed variables will be left on the trail.
   void Backtrack(int target_level);
+
+  // Advanced usage. This is meant to restore the solver to a "proper" state
+  // after a solve was interupted due to a limit reached.
+  //
+  // Without assumption (i.e. if AssumptionLevel() is 0), this will revert all
+  // decisions and make sure that all the fixed literals are propagated. In
+  // presence of assumptions, this will either backtrack to the assumption level
+  // or re-enqueue any assumptions that may have been backtracked over due to
+  // conflits resolution. In both cases, the propagation is finished.
+  //
+  // Note that this may prove the model to be UNSAT (check IsModelUnsat()).
+  void RestoreSolverToAssumptionLevel();
 
   // Extract the current problem clauses. The Output type must support the two
   // functions:

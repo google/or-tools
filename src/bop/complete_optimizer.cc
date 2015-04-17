@@ -14,85 +14,20 @@
 #include "bop/complete_optimizer.h"
 
 #include "bop/bop_util.h"
-#include "sat/optimization.h"
 #include "sat/boolean_problem.h"
+#include "sat/optimization.h"
 
 namespace operations_research {
 namespace bop {
-
-SatLinearScanOptimizer::SatLinearScanOptimizer(const std::string& name)
-    : BopOptimizerBase(name),
-      state_update_stamp_(ProblemState::kInitialStampValue),
-      initial_solution_cost_(kint64max) {}
-
-SatLinearScanOptimizer::~SatLinearScanOptimizer() {}
-
-BopOptimizerBase::Status SatLinearScanOptimizer::SynchronizeIfNeeded(
-    const ProblemState& problem_state) {
-  SCOPED_TIME_STAT(&stats_);
-  if (state_update_stamp_ == problem_state.update_stamp()) {
-    return BopOptimizerBase::CONTINUE;
-  }
-  state_update_stamp_ = problem_state.update_stamp();
-
-  const BopOptimizerBase::Status status =
-      LoadStateProblemToSatSolver(problem_state, &solver_);
-  if (status != BopOptimizerBase::CONTINUE) return status;
-
-  UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
-                                         &solver_);
-
-  initial_solution_cost_ = problem_state.solution().GetCost();
-  solver_.Backtrack(0);
-  AddObjectiveConstraint(
-      problem_state.original_problem(), false, sat::Coefficient(0), true,
-      sat::Coefficient(initial_solution_cost_) - 1, &solver_);
-  return BopOptimizerBase::CONTINUE;
-}
-
-BopOptimizerBase::Status SatLinearScanOptimizer::Optimize(
-    const BopParameters& parameters, const ProblemState& problem_state,
-    LearnedInfo* learned_info, TimeLimit* time_limit) {
-  SCOPED_TIME_STAT(&stats_);
-  CHECK(learned_info != nullptr);
-  CHECK(time_limit != nullptr);
-  learned_info->Clear();
-
-  const BopOptimizerBase::Status sync_status =
-      SynchronizeIfNeeded(problem_state);
-  if (sync_status != BopOptimizerBase::CONTINUE) {
-    return sync_status;
-  }
-
-  sat::SatParameters sat_params = solver_.parameters();
-  sat_params.set_max_number_of_conflicts(
-      parameters.max_number_of_conflicts_in_random_lns());
-  solver_.SetParameters(sat_params);
-  const sat::SatSolver::Status sat_status =
-      solver_.SolveWithTimeLimit(time_limit);
-  ExtractLearnedInfoFromSatSolver(&solver_, learned_info);
-
-  CHECK_NE(sat_status, sat::SatSolver::ASSUMPTIONS_UNSAT);
-  if (sat_status == sat::SatSolver::MODEL_UNSAT) {
-    learned_info->lower_bound = initial_solution_cost_;
-    return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
-  }
-  if (sat_status == sat::SatSolver::MODEL_SAT) {
-    SatAssignmentToBopSolution(solver_.Assignment(), &learned_info->solution);
-    return BopOptimizerBase::SOLUTION_FOUND;
-  }
-  return BopOptimizerBase::CONTINUE;
-}
 
 SatCoreBasedOptimizer::SatCoreBasedOptimizer(const std::string& name)
     : BopOptimizerBase(name),
       state_update_stamp_(ProblemState::kInitialStampValue),
       initialized_(false),
-      initial_solution_(),
       assumptions_already_added_(false) {
   // This is in term of number of variables not at their minimal value.
   lower_bound_ = sat::Coefficient(0);
-  upper_bound_ = sat::Coefficient(kint64max);
+  upper_bound_ = sat::kCoefficientMax;
 }
 
 SatCoreBasedOptimizer::~SatCoreBasedOptimizer() {}
@@ -104,6 +39,8 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
   }
   state_update_stamp_ = problem_state.update_stamp();
 
+  // Note that if the solver is not empty, this only load the newly learned
+  // information.
   const BopOptimizerBase::Status status =
       LoadStateProblemToSatSolver(problem_state, &solver_);
   if (status != BopOptimizerBase::CONTINUE) return status;
@@ -120,11 +57,11 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
       stratified_lower_bound_ = std::max(stratified_lower_bound_, n->weight());
     }
   }
-  initial_solution_.reset(new BopSolution(problem_state.solution()));
 
   // Extract the new upper bound.
-  upper_bound_ = initial_solution_->GetCost() + offset_;
-
+  if (problem_state.solution().IsFeasible()) {
+    upper_bound_ = problem_state.solution().GetCost() + offset_;
+  }
   return BopOptimizerBase::CONTINUE;
 }
 
@@ -135,7 +72,14 @@ sat::SatSolver::Status SatCoreBasedOptimizer::SolveWithAssumptions() {
   }
   if (upper_bound_ != sat::kCoefficientMax) {
     const sat::Coefficient gap = upper_bound_ - lower_bound_;
-    if (gap == 0) return sat::SatSolver::MODEL_SAT;
+    if (gap <= 0) {
+      // The lower bound is proved to equal the upper bound, the upper bound
+      // corresponding to the current solution value from the problem_state.
+      // As the optimizer is looking for a better solution (see
+      // LoadStateProblemToSatSolver), that means the current model is UNSAT
+      // and so the synchronized solution is optimal.
+      return sat::SatSolver::MODEL_UNSAT;
+    }
     for (sat::EncodingNode* n : nodes_) {
       n->ApplyUpperBound((gap / n->weight()).value(), &solver_);
     }
@@ -158,6 +102,12 @@ sat::SatSolver::Status SatCoreBasedOptimizer::SolveWithAssumptions() {
   return solver_.ResetAndSolveWithGivenAssumptions(assumptions);
 }
 
+// Only run this if there is an objective.
+bool SatCoreBasedOptimizer::ShouldBeRun(
+    const ProblemState& problem_state) const {
+  return problem_state.original_problem().objective().literals_size() > 0;
+}
+
 BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     const BopParameters& parameters, const ProblemState& problem_state,
     LearnedInfo* learned_info, TimeLimit* time_limit) {
@@ -172,13 +122,17 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     return sync_status;
   }
 
+  // We want to check both the local time limit and the global time limit.
+  TimeLimit local_time_limit(LocalTimeLimitInSeconds(time_limit),
+                             LocalDeterministicTimeLimit(time_limit));
+
   int64 conflict_limit = parameters.max_number_of_conflicts_in_random_lns();
   double deterministic_time_at_last_sync = solver_.deterministic_time();
-  while (true) {
+  while (!local_time_limit.LimitReached()) {
     sat::SatParameters sat_params = solver_.parameters();
-    sat_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
+    sat_params.set_max_time_in_seconds(local_time_limit.GetTimeLeft());
     sat_params.set_max_deterministic_time(
-        time_limit->GetDeterministicTimeLeft());
+        local_time_limit.GetDeterministicTimeLeft());
     sat_params.set_max_number_of_conflicts(conflict_limit);
     solver_.SetParameters(sat_params);
 
@@ -192,14 +146,15 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     assumptions_already_added_ = true;
     conflict_limit -= solver_.num_failures() - old_num_conflicts;
     learned_info->lower_bound = lower_bound_.value() - offset_.value();
-    ExtractLearnedInfoFromSatSolver(&solver_, learned_info);
 
     // This is possible because we over-constrain the objective.
     if (sat_status == sat::SatSolver::MODEL_UNSAT) {
-      learned_info->solution = *initial_solution_;
-      learned_info->lower_bound = learned_info->solution.GetCost();
-      return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+      return problem_state.solution().IsFeasible()
+                 ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
+                 : BopOptimizerBase::INFEASIBLE;
     }
+
+    ExtractLearnedInfoFromSatSolver(&solver_, learned_info);
     if (sat_status == sat::SatSolver::LIMIT_REACHED || conflict_limit < 0) {
       return BopOptimizerBase::CONTINUE;
     }
@@ -213,27 +168,13 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
           }
         }
       }
+
+      // We found a better solution!
+      SatAssignmentToBopSolution(solver_.Assignment(), &learned_info->solution);
       if (stratified_lower_bound_ < old_lower_bound) {
         assumptions_already_added_ = false;
-        BopSolution new_solution = *initial_solution_;
-        SatAssignmentToBopSolution(solver_.Assignment(), &new_solution);
-        if (new_solution.GetCost() < initial_solution_->GetCost()) {
-          learned_info->solution = new_solution;
-          return BopOptimizerBase::SOLUTION_FOUND;
-        } else {
-          continue;
-        }
+        return BopOptimizerBase::SOLUTION_FOUND;
       }
-
-      if (upper_bound_ == lower_bound_) {
-        // The initial solution is proved optimal thanks to the bounds.
-        // Note that the SAT solver might not have a current valid solution.
-        learned_info->solution = *initial_solution_;
-      } else {
-        SatAssignmentToBopSolution(solver_.Assignment(),
-                                   &learned_info->solution);
-      }
-      learned_info->lower_bound = learned_info->solution.GetCost();
       return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
     }
 
@@ -297,6 +238,7 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
       CHECK(solver_.AddUnitClause(nodes_.back()->literal(0)));
     }
   }
+  return BopOptimizerBase::CONTINUE;
 }
 
 }  // namespace bop

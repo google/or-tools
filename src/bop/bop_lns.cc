@@ -19,6 +19,7 @@
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
 #include "google/protobuf/text_format.h"
+#include "base/cleanup.h"
 #include "base/stl_util.h"
 #include "glop/lp_solver.h"
 #include "lp_data/lp_print_utils.h"
@@ -38,363 +39,77 @@ using operations_research::LinearObjective;
 
 namespace operations_research {
 namespace bop {
-namespace {
-// Creates and solves a LP model which enforces a solution with a better cost,
-// and minimizes the distance to the initial solution.
-void CreateLinearProgramFromCurrentBopSolution(
-    const LinearBooleanProblem& problem, const BopSolution& initial_solution,
-    glop::LinearProgram* lp) {
-  const int64 initial_cost = initial_solution.GetCost();
-
-  lp->Clear();
-  for (int i = 0; i < 2 * problem.num_variables(); ++i) {
-    const glop::ColIndex col = lp->CreateNewVariable();
-    lp->SetVariableBounds(col, 0.0, 1.0);
-  }
-  glop::RowIndex constraint_index(0);
-  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
-    double sum = 0.0;
-    for (int i = 0; i < constraint.literals_size(); ++i) {
-      const int literal = constraint.literals(i);
-      const double coeff = constraint.coefficients(i);
-      const glop::ColIndex variable_index = glop::ColIndex(abs(literal) - 1);
-      if (literal < 0) {
-        sum += coeff;
-        lp->SetCoefficient(constraint_index, variable_index, -coeff);
-      } else {
-        lp->SetCoefficient(constraint_index, variable_index, coeff);
-      }
-    }
-    lp->SetConstraintBounds(
-        constraint_index,
-        constraint.has_lower_bound() ? constraint.lower_bound() - sum
-                                     : -glop::kInfinity,
-        constraint.has_upper_bound() ? constraint.upper_bound() - sum
-                                     : glop::kInfinity);
-    ++constraint_index;
-  }
-
-  const LinearObjective& objective = problem.objective();
-  double offset = objective.offset();
-  for (int i = 0; i < objective.literals_size(); ++i) {
-    const int literal = objective.literals(i);
-    const double coeff = objective.coefficients(i);
-    const glop::ColIndex variable_index = glop::ColIndex(abs(literal) - 1);
-    if (literal < 0) {
-      offset += coeff;
-      lp->SetCoefficient(constraint_index, variable_index, -coeff);
-    } else {
-      lp->SetCoefficient(constraint_index, variable_index, coeff);
-    }
-  }
-  const int64 objective_bound = initial_cost - offset - 1;
-  lp->SetConstraintBounds(constraint_index, -glop::kInfinity, objective_bound);
-  ++constraint_index;
-
-  // Add constraint for each new variable.
-  for (glop::ColIndex var_id(problem.num_variables());
-       var_id < 2 * problem.num_variables(); ++var_id) {
-    const glop::ColIndex lp_var_id(var_id - problem.num_variables());
-    const VariableIndex bop_var_id(lp_var_id.value());
-    const bool solution_value = initial_solution.Value(bop_var_id);
-    if (solution_value) {
-      lp->SetCoefficient(constraint_index, lp_var_id, 1);
-      lp->SetCoefficient(constraint_index, var_id, -1);
-      lp->SetConstraintBounds(constraint_index, 0, 0);
-    } else {
-      lp->SetCoefficient(constraint_index, lp_var_id, 1);
-      lp->SetCoefficient(constraint_index, var_id, 1);
-      lp->SetConstraintBounds(constraint_index, 1, 1);
-    }
-    ++constraint_index;
-  }
-
-  // Objective
-  for (glop::ColIndex var_id(problem.num_variables());
-       var_id < 2 * problem.num_variables(); ++var_id) {
-    lp->SetObjectiveCoefficient(var_id, 1);
-  }
-
-  lp->SetMaximizationProblem(true);
-}
-
-void ComputeVariablesToFixFromToRelax(
-    const BopSolution& initial_solution,
-    const ITIVector<SparseIndex, BopConstraintTerm>& objective_terms,
-    const SparseBitset<VariableIndex>& to_relax, std::vector<sat::Literal>* output) {
-  output->clear();
-  for (BopConstraintTerm term : objective_terms) {
-    if (!to_relax[term.var_id] &&
-        ((initial_solution.Value(term.var_id) && term.weight < 0) ||
-         (!initial_solution.Value(term.var_id) && term.weight > 0))) {
-      output->push_back(sat::Literal(sat::VariableIndex(term.var_id.value()),
-                                     initial_solution.Value(term.var_id)));
-    }
-  }
-}
-
-enum DifficultyType {
-  OK,
-  NOTHING_FIXED,
-  EVERYTHING_FIXED,
-  UNSAT,
-};
-
-DifficultyType ComputeVariablesToFixFromSat(
-    const std::vector<bool>& is_in_random_order,
-    const std::vector<sat::Literal>& random_order, double target_difficulty,
-    sat::SatSolver* sat_solver, std::vector<sat::Literal>* output) {
-  // We will use the sat_solver_ to fix some variables of 'random_order'
-  // as long as the number_of propagated variable in is_in_random_order is lower
-  // than what we want to relax.
-  sat_solver->Backtrack(0);
-  int num_relaxed_variables = random_order.size();
-  const int target_num_relaxed_variables =
-      round(target_difficulty * random_order.size());
-  if (target_num_relaxed_variables == 0) {
-    return DifficultyType::EVERYTHING_FIXED;
-  }
-
-  // Remove fixed variables from the picture.
-  for (int i = 0; i < sat_solver->LiteralTrail().Index(); ++i) {
-    if (is_in_random_order[sat_solver->LiteralTrail()[i].Variable().value()]) {
-      --num_relaxed_variables;
-    }
-  }
-
-  for (int i = 0; i < random_order.size(); ++i) {
-    if (sat_solver->Assignment().IsVariableAssigned(
-            random_order[i].Variable())) {
-      continue;
-    }
-
-    // Note that since we only enqueue variable from a feasible solution,
-    // they can only lead to a conflict because of the new objective
-    // constraint...
-    const int current_decision_level = sat_solver->CurrentDecisionLevel();
-    int first_trail_index =
-        sat_solver->EnqueueDecisionAndBackjumpOnConflict(random_order[i]);
-    if (first_trail_index == sat::kUnsatTrailIndex) {
-      return DifficultyType::UNSAT;
-    }
-    if (sat_solver->CurrentDecisionLevel() <= current_decision_level) {
-      // there was a conflict, continue.
-      // Note that we need to recompute num_relaxed_variables from scratch.
-      num_relaxed_variables = random_order.size();
-      first_trail_index = 0;
-    }
-    for (int index = first_trail_index;
-         index < sat_solver->LiteralTrail().Index(); ++index) {
-      if (is_in_random_order
-              [sat_solver->LiteralTrail()[index].Variable().value()]) {
-        --num_relaxed_variables;
-      }
-    }
-    if (num_relaxed_variables == target_num_relaxed_variables) break;
-    if (num_relaxed_variables < target_num_relaxed_variables) {
-      sat_solver->Backtrack(std::max(0, sat_solver->CurrentDecisionLevel() - 1));
-      break;
-    }
-  }
-  // When the SAT decision level is zero it means that we didn't fix any
-  // variables. This happens when the target_difficulty is too high.
-  if (sat_solver->CurrentDecisionLevel() == 0) {
-    sat_solver->Backtrack(0);
-    return DifficultyType::NOTHING_FIXED;
-  }
-
-  output->clear();
-  for (int i = 0; i < sat_solver->LiteralTrail().Index(); ++i) {
-    output->push_back(sat_solver->LiteralTrail()[i]);
-  }
-  sat_solver->Backtrack(0);
-  return DifficultyType::OK;
-}
-
-BopOptimizerBase::Status SolveLNSProblem(
-    const LinearBooleanProblem& problem, const BopSolution& initial_solution,
-    const BopParameters& bop_parameters,
-    const std::vector<sat::Literal>& fixed_variables, BopSolution* solution,
-    TimeLimit* time_limit, int* num_conflicts_used) {
-  CHECK(solution != nullptr);
-  CHECK(time_limit != nullptr);
-
-  const int64 initial_cost = initial_solution.GetCost();
-  sat::SatParameters sat_parameters;
-  sat_parameters.set_max_number_of_conflicts(
-      bop_parameters.max_number_of_conflicts_in_random_lns());
-
-  sat::SatSolver sat_solver;
-  sat_parameters.set_max_time_in_seconds(time_limit->GetTimeLeft());
-  sat_parameters.set_max_deterministic_time(
-      time_limit->GetDeterministicTimeLeft());
-  sat_solver.SetParameters(sat_parameters);
-
-  // Starts by adding the unit clauses to fix the variables.
-  sat_solver.SetNumVariables(problem.num_variables());
-  for (sat::Literal literal : fixed_variables) {
-    CHECK(sat_solver.AddUnitClause(literal));
-  }
-
-  // Then load the rest of the problem. Since we fixed variables from a
-  // feasible assignment, this should always be true.
-  if (!LoadBooleanProblem(problem, &sat_solver)) {
-    return BopOptimizerBase::INFEASIBLE;
-  }
-  UseObjectiveForSatAssignmentPreference(problem, &sat_solver);
-
-  // Add the objective constraint and solve the problem. Note that it is
-  // possible that the problem is detected to be unsat as soon as this
-  // constraint is added.
-  sat::SatSolver::Status sat_status = sat::SatSolver::MODEL_UNSAT;
-  if (AddObjectiveUpperBound(problem, sat::Coefficient(initial_cost) - 1,
-                             &sat_solver)) {
-    sat_status = sat_solver.Solve();
-  }
-  if (sat_status == sat::SatSolver::MODEL_SAT) {
-    SatAssignmentToBopSolution(sat_solver.Assignment(), solution);
-  }
-  *num_conflicts_used = sat_solver.num_failures();
-
-  time_limit->AdvanceDeterministicTime(sat_solver.deterministic_time());
-  return sat_status == sat::SatSolver::MODEL_SAT
-             ? BopOptimizerBase::SOLUTION_FOUND
-             : BopOptimizerBase::LIMIT_REACHED;
-}
-
-BopOptimizerBase::Status SolveLNSProblemWithSatPropagator(
-    const std::vector<sat::Literal>& fixed_variables, bool setup_already_done,
-    const BopParameters& bop_parameters, sat::SatSolver* sat_solver,
-    BopSolution* solution, TimeLimit* time_limit, int* num_conflicts_used) {
-  const sat::SatParameters old_parameters = sat_solver->parameters();
-  sat::SatParameters new_parameters = old_parameters;
-  new_parameters.set_max_number_of_conflicts(
-      bop_parameters.max_number_of_conflicts_in_random_lns());
-  new_parameters.set_max_time_in_seconds(time_limit->GetTimeLeft());
-  new_parameters.set_max_deterministic_time(
-      time_limit->GetDeterministicTimeLeft());
-  sat_solver->SetParameters(new_parameters);
-
-  if (!setup_already_done) {
-    // Adds the assumptions before the Solve().
-    sat_solver->Backtrack(0);
-    for (sat::Literal literal : fixed_variables) {
-      if (!sat_solver->Assignment().IsVariableAssigned(literal.Variable())) {
-        const int current_decision_level = sat_solver->CurrentDecisionLevel();
-        sat_solver->EnqueueDecisionAndBackjumpOnConflict(literal);
-        CHECK_GT(sat_solver->CurrentDecisionLevel(), current_decision_level);
-      }
-    }
-  }
-
-  // Solve it.
-  const int old_num_conflicts = sat_solver->num_failures();
-  sat_solver->SetAssumptionLevel(sat_solver->CurrentDecisionLevel());
-  sat::SatSolver::Status sat_status = sat_solver->Solve();
-  sat_solver->SetAssumptionLevel(0);
-  if (sat_status == sat::SatSolver::MODEL_SAT) {
-    SatAssignmentToBopSolution(sat_solver->Assignment(), solution);
-  }
-
-  *num_conflicts_used = sat_solver->num_failures() - old_num_conflicts;
-  sat_solver->SetParameters(old_parameters);
-  return sat_status == sat::SatSolver::MODEL_SAT
-             ? BopOptimizerBase::SOLUTION_FOUND
-             : BopOptimizerBase::LIMIT_REACHED;
-}
-}  // anonymous namespace.
-
-//------------------------------------------------------------------------------
-// SatPropagator
-//------------------------------------------------------------------------------
-SatPropagator::SatPropagator(const LinearBooleanProblem& problem)
-    : problem_(problem),
-      sat_solver_(),
-      solution_cost_(kint64max),
-      symmetries_generators_(),
-      propagated_by_(problem_.num_variables()) {}
-
-bool SatPropagator::OverConstrainObjective(
-    const BopSolution& current_solution) {
-  if (!sat_solver_) {
-    // Save the solution cost to use it as an upper bound when the SAT solver
-    // is created.
-    solution_cost_ = current_solution.GetCost();
-    return true;
-  }
-
-  if (sat_solver_->CurrentDecisionLevel() > 0) {
-    sat_solver_->Backtrack(0);
-  }
-  return AddObjectiveUpperBound(
-      problem_, sat::Coefficient(current_solution.GetCost() - 1),
-      sat_solver_.get());
-}
-
-void SatPropagator::AddPropagationRelation(sat::Literal decision_literal,
-                                           VariableIndex var_id) {
-  const std::vector<sat::Literal>::iterator& iter =
-      std::lower_bound(propagated_by_[var_id].begin(),
-                       propagated_by_[var_id].end(), decision_literal);
-  if (iter == propagated_by_[var_id].end()) {
-    // Add the variable at the end as all variables are smaller.
-    propagated_by_[var_id].push_back(decision_literal);
-  } else if (iter->Index() != decision_literal.Index()) {
-    propagated_by_[var_id].insert(iter, decision_literal);
-  }
-}
-
-void SatPropagator::AddSymmetries(
-    std::vector<std::unique_ptr<SparsePermutation>>* generators) {
-  if (!sat_solver_) {
-    // Delay the symmetries assignment.
-    std::move(generators->begin(), generators->end(),
-              std::back_inserter(symmetries_generators_));
-  } else {
-    sat_solver_->AddSymmetries(generators);
-  }
-}
-
-sat::SatSolver* SatPropagator::GetSatSolver() {
-  if (!sat_solver_) {
-    sat_solver_.reset(new sat::SatSolver());
-    sat::LoadBooleanProblem(problem_, sat_solver_.get());
-    UseObjectiveForSatAssignmentPreference(problem_, sat_solver_.get());
-    if (solution_cost_ != kint64max) {
-      AddObjectiveUpperBound(problem_, sat::Coefficient(solution_cost_ - 1),
-                             sat_solver_.get());
-    }
-    if (!symmetries_generators_.empty()) {
-      sat_solver_->AddSymmetries(&symmetries_generators_);
-      symmetries_generators_.clear();
-    }
-  }
-  return sat_solver_.get();
-}
 
 //------------------------------------------------------------------------------
 // BopCompleteLNSOptimizer
 //------------------------------------------------------------------------------
+
+namespace {
+void UseBopSolutionForSatAssignmentPreference(const BopSolution& solution,
+                                              sat::SatSolver* solver) {
+  for (int i = 0; i < solution.Size(); ++i) {
+    solver->SetAssignmentPreference(
+        sat::Literal(sat::VariableIndex(i), solution.Value(VariableIndex(i))),
+        1.0);
+  }
+}
+}  // namespace
+
 BopCompleteLNSOptimizer::BopCompleteLNSOptimizer(
     const std::string& name, const BopConstraintTerms& objective_terms)
     : BopOptimizerBase(name),
       state_update_stamp_(ProblemState::kInitialStampValue),
-      problem_(),
-      initial_solution_(),
       objective_terms_(objective_terms) {}
 
 BopCompleteLNSOptimizer::~BopCompleteLNSOptimizer() {}
 
 BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
-    const ProblemState& problem_state) {
+    const ProblemState& problem_state, int num_relaxed_vars) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
   state_update_stamp_ = problem_state.update_stamp();
 
-  problem_ = problem_state.original_problem();
-  initial_solution_.reset(new BopSolution(problem_state.solution()));
+  // Load the current problem to the solver.
+  sat_solver_.reset(new sat::SatSolver());
+  const BopOptimizerBase::Status status =
+      LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
+  if (status != BopOptimizerBase::CONTINUE) return status;
+
+  // Add the constraint that forces the solver to look for a solution
+  // at a distance <= num_relaxed_vars from the curent one. Note that not all
+  // the terms appear in this constraint.
+  //
+  // TODO(user): if the current solution didn't change, there is no need to
+  // re-run this optimizer if we already proved UNSAT.
+  std::vector<sat::LiteralWithCoeff> cst;
+  for (BopConstraintTerm term : objective_terms_) {
+    if (problem_state.solution().Value(term.var_id) && term.weight < 0) {
+      cst.push_back(sat::LiteralWithCoeff(
+          sat::Literal(sat::VariableIndex(term.var_id.value()), false), 1.0));
+    } else if (!problem_state.solution().Value(term.var_id) &&
+               term.weight > 0) {
+      cst.push_back(sat::LiteralWithCoeff(
+          sat::Literal(sat::VariableIndex(term.var_id.value()), true), 1.0));
+    }
+  }
+  sat_solver_->AddLinearConstraint(
+      /*use_lower_bound=*/false, sat::Coefficient(0),
+      /*use_upper_bound=*/true, sat::Coefficient(num_relaxed_vars), &cst);
+
+  if (sat_solver_->IsModelUnsat()) return BopOptimizerBase::ABORT;
+
+  // It sounds like a good idea to force the solver to find a similar solution
+  // from the current one. On another side, this is already somewhat enforced by
+  // the constraint above, so it will need more investigation.
+  UseBopSolutionForSatAssignmentPreference(problem_state.solution(),
+                                           sat_solver_.get());
   return BopOptimizerBase::CONTINUE;
+}
+
+bool BopCompleteLNSOptimizer::ShouldBeRun(
+    const ProblemState& problem_state) const {
+  return problem_state.solution().IsFeasible();
 }
 
 BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
@@ -406,150 +121,105 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
   learned_info->Clear();
 
   const BopOptimizerBase::Status sync_status =
-      SynchronizeIfNeeded(problem_state);
+      SynchronizeIfNeeded(problem_state, parameters.num_relaxed_vars());
   if (sync_status != BopOptimizerBase::CONTINUE) {
     return sync_status;
   }
 
-  LinearBooleanConstraint* constraint = problem_.add_constraints();
-  for (BopConstraintTerm term : objective_terms_) {
-    if (initial_solution_->Value(term.var_id) && term.weight < 0) {
-      constraint->add_literals(term.var_id.value() + 1);
-      constraint->add_coefficients(1);
-    } else if (!initial_solution_->Value(term.var_id) && term.weight > 0) {
-      constraint->add_literals(-(term.var_id.value() + 1));
-      constraint->add_coefficients(1);
-    }
+  // Set the parameters for this run.
+  // TODO(user): Because of this, we actually loose the perfect continuity
+  // between runs, and the restart policy is resetted... Fix this.
+  sat::SatParameters sat_params;
+  sat_params.set_max_number_of_conflicts(
+      parameters.max_number_of_conflicts_in_random_lns());
+  sat_params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
+  sat_params.set_max_deterministic_time(
+      LocalDeterministicTimeLimit(time_limit));
+
+  sat_solver_->SetParameters(sat_params);
+  const sat::SatSolver::Status sat_status = sat_solver_->Solve();
+  if (sat_status == sat::SatSolver::MODEL_SAT) {
+    SatAssignmentToBopSolution(sat_solver_->Assignment(),
+                               &learned_info->solution);
+    return BopOptimizerBase::SOLUTION_FOUND;
   }
-  constraint->set_lower_bound(constraint->literals_size() -
-                              parameters.num_relaxed_vars());
-
-  // Relax all variables of the objective.
-  std::vector<sat::Literal> fixed_variables;
-  int num_conflicts_used = 0;
-  return SolveLNSProblem(problem_, *initial_solution_, parameters,
-                         fixed_variables, &learned_info->solution, time_limit,
-                         &num_conflicts_used);
-}
-
-//------------------------------------------------------------------------------
-// BopRandomLNSOptimizer
-//------------------------------------------------------------------------------
-BopRandomLNSOptimizer::BopRandomLNSOptimizer(
-    const std::string& name, const BopConstraintTerms& objective_terms,
-    int random_seed, bool use_sat_to_choose_lns_neighbourhood,
-    SatPropagator* sat_propagator)
-    : BopOptimizerBase(name),
-      state_update_stamp_(ProblemState::kInitialStampValue),
-      problem_(nullptr),
-      initial_solution_(),
-      use_sat_to_choose_lns_neighbourhood_(use_sat_to_choose_lns_neighbourhood),
-      sat_propagator_(sat_propagator),
-      objective_terms_(objective_terms),
-      random_(random_seed),
-      adaptive_difficulty_(),
-      to_relax_() {
-  CHECK(sat_propagator != nullptr);
-}
-
-BopRandomLNSOptimizer::~BopRandomLNSOptimizer() {}
-
-BopOptimizerBase::Status BopRandomLNSOptimizer::SynchronizeIfNeeded(
-    const ProblemState& problem_state) {
-  if (state_update_stamp_ == problem_state.update_stamp()) {
+  if (sat_status == sat::SatSolver::LIMIT_REACHED) {
     return BopOptimizerBase::CONTINUE;
   }
-  state_update_stamp_ = problem_state.update_stamp();
 
-  problem_ = &problem_state.original_problem();
-  initial_solution_.reset(new BopSolution(problem_state.solution()));
-
-  literals_.clear();
-  is_in_literals_.assign(initial_solution_->Size(), false);
-  for (BopConstraintTerm term : objective_terms_) {
-    if ((initial_solution_->Value(term.var_id) && term.weight < 0) ||
-        (!initial_solution_->Value(term.var_id) && term.weight > 0)) {
-      is_in_literals_[term.var_id.value()] = true;
-      literals_.push_back(sat::Literal(sat::VariableIndex(term.var_id.value()),
-                                       initial_solution_->Value(term.var_id)));
-    }
-  }
-
-  adaptive_difficulty_.Reset();
-  return BopOptimizerBase::CONTINUE;
-}
-
-BopOptimizerBase::Status BopRandomLNSOptimizer::GenerateProblemUsingSat(
-    const BopSolution& initial_solution, double target_difficulty,
-    TimeLimit* time_limit, BopParameters* parameters, BopSolution* solution,
-    std::vector<sat::Literal>* fixed_variables) {
-  sat::SatSolver* sat_solver = sat_propagator_->GetSatSolver();
-  const DifficultyType type = ComputeVariablesToFixFromSat(
-      is_in_literals_, literals_, target_difficulty, sat_solver,
-      fixed_variables);
-  VLOG(1) << "num_decisions: " << sat_solver->CurrentDecisionLevel();
-
-  switch (type) {
-    case DifficultyType::NOTHING_FIXED:
-      // Our adaptative parameters strategy resulted in an LNS problem where
-      // nothing is fixed. Better to abort the LNS and use the full SAT solver
-      // with no conflicts limit.
-      VLOG(1) << "Aborting LNS.";
-      return BopOptimizerBase::ABORT;
-    case DifficultyType::EVERYTHING_FIXED:
-      // We can't solve anything. In this case we double the base number of
-      // conflicts. This heuristic allows to solve "protfold.mps" to optimality.
-      if (adaptive_difficulty_.BoostLuby()) {
-        VLOG(1) << "Aborting LNS (boost too high).";
-        return BopOptimizerBase::ABORT;
-      }
-      return BopOptimizerBase::CONTINUE;
-    case DifficultyType::UNSAT:
-      VLOG(1) << "Aborting LNS (the current problem has been proved UNSAT).";
-      return initial_solution.IsFeasible()
-                 ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
-                 : BopOptimizerBase::INFEASIBLE;
-    case DifficultyType::OK:
-      // Since everything is already set-up, we try the sat_solver with
-      // a really low conflict limit. This allow to quickly skip over UNSAT
-      // cases without the costly new problem setup.
-      int num_conflicts_used = 0;
-      parameters->set_max_number_of_conflicts_in_random_lns(
-          parameters->max_number_of_conflicts_for_quick_check());
-      return SolveLNSProblemWithSatPropagator(
-          *fixed_variables, /*setup_already_done=*/true, *parameters,
-          sat_solver, solution, time_limit, &num_conflicts_used);
-  }
-
-  // Not supposed to be here as the switch is exhaustive.
+  // Because of the "LNS" constraint, we can't deduce anything about the problem
+  // in this case.
   return BopOptimizerBase::ABORT;
 }
 
-BopOptimizerBase::Status BopRandomLNSOptimizer::GenerateProblem(
-    const BopSolution& initial_solution, double target_difficulty,
-    TimeLimit* time_limit, std::vector<sat::Literal>* fixed_variables) {
-  const int target_parameter = round(target_difficulty * literals_.size());
-  if (target_parameter == literals_.size()) {
-    VLOG(1) << "Aborting LNS.";
-    return BopOptimizerBase::ABORT;
-  } else if (target_parameter == 0) {
-    if (adaptive_difficulty_.BoostLuby()) {
-      VLOG(1) << "Aborting LNS (boost too high).";
-      return BopOptimizerBase::ABORT;
-    }
-    return BopOptimizerBase::CONTINUE;
+//------------------------------------------------------------------------------
+// BopAdaptiveLNSOptimizer
+//------------------------------------------------------------------------------
+
+namespace {
+// Returns false if the limit is reached while solving the LP.
+bool UseLinearRelaxationForSatAssignmentPreference(
+    const LinearBooleanProblem& problem, double local_time_limit_in_seconds,
+    double local_deterministic_time_limit, sat::SatSolver* sat_solver) {
+  // TODO(user): Re-use the lp_model and lp_solver or build a model with only
+  //              needed constraints and variables.
+  glop::LinearProgram lp_model;
+  sat::ConvertBooleanProblemToLinearProgram(problem, &lp_model);
+
+  // Set bounds of variables fixed by the sat_solver.
+  const sat::Trail& propagation_trail = sat_solver->LiteralTrail();
+  for (int trail_index = 0; trail_index < propagation_trail.Index();
+       ++trail_index) {
+    const sat::Literal fixed_literal = propagation_trail[trail_index];
+    const glop::Fractional value = fixed_literal.IsPositive() ? 1.0 : 0.0;
+    lp_model.SetVariableBounds(ColIndex(fixed_literal.Variable().value()),
+                               value, value);
   }
-  to_relax_.ClearAndResize(VariableIndex(initial_solution.Size()));
-  for (int i = 0; i < target_parameter; ++i) {
-    const VariableIndex var(literals_[i].Variable().value());
-    RelaxVariable(var, initial_solution);
+
+  glop::LPSolver lp_solver;
+  glop::GlopParameters params;
+  params.set_max_time_in_seconds(local_time_limit_in_seconds);
+  params.set_max_deterministic_time(local_deterministic_time_limit);
+  lp_solver.SetParameters(params);
+  const glop::ProblemStatus lp_status = lp_solver.Solve(lp_model);
+  if (lp_status != glop::ProblemStatus::OPTIMAL &&
+      lp_status != glop::ProblemStatus::PRIMAL_FEASIBLE &&
+      lp_status != glop::ProblemStatus::IMPRECISE) {
+    // We have no useful information from the LP, we will abort this LNS.
+    return false;
   }
-  ComputeVariablesToFixFromToRelax(initial_solution, objective_terms_,
-                                   to_relax_, fixed_variables);
-  return BopOptimizerBase::LIMIT_REACHED;
+
+  // Set preferences based on the solution of the relaxation.
+  for (ColIndex col(0); col < lp_solver.variable_values().size(); ++col) {
+    const double value = lp_solver.variable_values()[col];
+    sat_solver->SetAssignmentPreference(
+        sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
+        1 - fabs(value - round(value)));
+  }
+  return true;
+}
+}  // namespace
+
+BopAdaptiveLNSOptimizer::BopAdaptiveLNSOptimizer(
+    const std::string& name, bool use_lp_to_guide_sat,
+    NeighborhoodGenerator* neighborhood_generator,
+    sat::SatSolver* sat_propagator)
+    : BopOptimizerBase(name),
+      use_lp_to_guide_sat_(use_lp_to_guide_sat),
+      neighborhood_generator_(neighborhood_generator),
+      sat_propagator_(sat_propagator),
+      adaptive_difficulty_() {
+  CHECK(sat_propagator != nullptr);
 }
 
-BopOptimizerBase::Status BopRandomLNSOptimizer::Optimize(
+BopAdaptiveLNSOptimizer::~BopAdaptiveLNSOptimizer() {}
+
+bool BopAdaptiveLNSOptimizer::ShouldBeRun(
+    const ProblemState& problem_state) const {
+  return problem_state.solution().IsFeasible();
+}
+
+BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     const BopParameters& parameters, const ProblemState& problem_state,
     LearnedInfo* learned_info, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
@@ -557,179 +227,261 @@ BopOptimizerBase::Status BopRandomLNSOptimizer::Optimize(
   CHECK(time_limit != nullptr);
   learned_info->Clear();
 
-  const BopOptimizerBase::Status sync_status =
-      SynchronizeIfNeeded(problem_state);
-  if (sync_status != BopOptimizerBase::CONTINUE) {
-    return sync_status;
-  }
+  // Set-up a sat_propagator_ cleanup task to catch all the exit cases.
+  const double initial_dt = sat_propagator_->deterministic_time();
+  auto sat_propagator_cleanup = ::operations_research::util::MakeCleanup(
+      [initial_dt, this, &learned_info, &time_limit]() {
+        sat_propagator_->SetAssumptionLevel(0);
+        sat_propagator_->RestoreSolverToAssumptionLevel();
+        ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
+        time_limit->AdvanceDeterministicTime(
+            sat_propagator_->deterministic_time() - initial_dt);
+      });
 
   // For the SAT conflicts limit of each LNS, we follow a luby sequence times
   // the base number of conflicts (num_conflicts_). Note that the numbers of the
   // Luby sequence are always power of two.
   //
-  // We dynamically change the size of the neighbourhood depending on the
+  // We dynamically change the size of the neighborhood depending on the
   // difficulty of the problem. There is one "target" difficulty for each
   // different numbers in the Luby sequence. Note that the initial value is
   // reused from the last run.
   BopParameters local_parameters = parameters;
-  const int default_num_conflicts =
-      parameters.max_number_of_conflicts_in_random_lns();
-  sat::SatSolver* const sat_solver = sat_propagator_->GetSatSolver();
-  int num_tries = 0;
+  int num_tries = 0;  // TODO(user): remove? our limit is 1 by default.
   while (!time_limit->LimitReached() &&
          num_tries < local_parameters.num_random_lns_tries()) {
-    ++num_tries;
-    std::random_shuffle(literals_.begin(), literals_.end(), random_);
-
-    // Compute the target problem difficulty.
+    // Compute the target problem difficulty and generate the neighborhood.
     adaptive_difficulty_.UpdateLuby();
     const double difficulty = adaptive_difficulty_.GetParameterValue();
-    std::vector<sat::Literal> fixed_variables;
-    const double initial_deterministic_time = sat_solver->deterministic_time();
-    BopOptimizerBase::Status status =
-        use_sat_to_choose_lns_neighbourhood_
-            ? GenerateProblemUsingSat(*initial_solution_, difficulty,
-                                      time_limit, &local_parameters,
-                                      &learned_info->solution, &fixed_variables)
-            : GenerateProblem(*initial_solution_, difficulty, time_limit,
-                              &fixed_variables);
-    time_limit->AdvanceDeterministicTime(sat_solver->deterministic_time() -
-                                         initial_deterministic_time);
-    if (status == BopOptimizerBase::CONTINUE) {
-      continue;
-    } else if (status == BopOptimizerBase::ABORT ||
-               status == BopOptimizerBase::INFEASIBLE) {
-      return status;
-    }
+    neighborhood_generator_->GenerateNeighborhood(problem_state, difficulty,
+                                                  sat_propagator_);
 
-    bool used_long_limit = false;
-    int num_conflicts_used = 0;
-    if (status == BopOptimizerBase::LIMIT_REACHED) {
-      used_long_limit = true;
-      const int new_num_conflicts =
-          adaptive_difficulty_.luby_value() * default_num_conflicts;
-      local_parameters.set_max_number_of_conflicts_in_random_lns(
-          new_num_conflicts);
-      status = SolveLNSProblem(*problem_, *initial_solution_, local_parameters,
-                               fixed_variables, &learned_info->solution,
-                               time_limit, &num_conflicts_used);
-      if (num_conflicts_used < new_num_conflicts / 2) {
-        adaptive_difficulty_.IncreaseParameter();
-      } else {
+    ++num_tries;
+    VLOG(1) << num_tries << "  difficulty:" << difficulty
+            << "  luby:" << adaptive_difficulty_.luby_value()
+            << "  fixed:" << sat_propagator_->LiteralTrail().Index() << "/"
+            << problem_state.original_problem().num_variables();
+
+    // Special case if the difficulty is too high.
+    if (!sat_propagator_->IsModelUnsat()) {
+      if (sat_propagator_->CurrentDecisionLevel() == 0) {
+        VLOG(1) << "Nothing fixed!";
         adaptive_difficulty_.DecreaseParameter();
+        continue;
       }
     }
 
-    VLOG(1) << num_tries << " size (" << literals_.size() << ", "
-            << objective_terms_.size() << ", " << initial_solution_->Size()
-            << ")"
-            << " " << difficulty << " fixed (" << fixed_variables.size() << ") "
-            << num_conflicts_used << (used_long_limit ? " *" : "");
+    // Since everything is already set-up, we try the sat_propagator_ with
+    // a really low conflict limit. This allow to quickly skip over UNSAT
+    // cases without the costly new problem setup.
+    if (!sat_propagator_->IsModelUnsat()) {
+      sat::SatParameters params;
+      params.set_max_number_of_conflicts(
+          local_parameters.max_number_of_conflicts_for_quick_check());
+      params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
+      params.set_max_deterministic_time(
+          LocalDeterministicTimeLimit(time_limit));
+      sat_propagator_->SetParameters(params);
+      sat_propagator_->SetAssumptionLevel(
+          sat_propagator_->CurrentDecisionLevel());
 
-    if (status == BopOptimizerBase::SOLUTION_FOUND) {
+      const sat::SatSolver::Status status = sat_propagator_->Solve();
+      if (status == sat::SatSolver::MODEL_SAT) {
+        adaptive_difficulty_.IncreaseParameter();
+        return BopOptimizerBase::SOLUTION_FOUND;
+      } else if (status == sat::SatSolver::ASSUMPTIONS_UNSAT) {
+        // Local problem is infeasible.
+        adaptive_difficulty_.IncreaseParameter();
+        continue;
+      }
+    }
+    if (sat_propagator_->IsModelUnsat()) {
+      return problem_state.solution().IsFeasible()
+                 ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
+                 : BopOptimizerBase::INFEASIBLE;
+    } else {
+      // This is call is important since all the fixed variable in the
+      // propagator_ will be used to construct the local problem below.
+      sat_propagator_->RestoreSolverToAssumptionLevel();
+    }
+
+    // Construct and Solve the LNS subproblem.
+    //
+    // Note that we don't use the sat_propagator_ all the way because using a
+    // clean solver on a really small problem is usually a lot faster (even we
+    // the time to create the subproblem) that running a long solve under
+    // assumption (like we did above with a really low conflit limit).
+    const int conflict_limit =
+        adaptive_difficulty_.luby_value() *
+        parameters.max_number_of_conflicts_in_random_lns();
+
+    sat::SatParameters params;
+    params.set_max_number_of_conflicts(conflict_limit);
+    params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
+    params.set_max_deterministic_time(LocalDeterministicTimeLimit(time_limit));
+
+    sat::SatSolver sat_solver;
+    sat_solver.SetParameters(params);
+
+    // Starts by adding the unit clauses to fix the variables.
+    const LinearBooleanProblem& problem = problem_state.original_problem();
+    sat_solver.SetNumVariables(problem.num_variables());
+    for (int i = 0; i < sat_propagator_->LiteralTrail().Index(); ++i) {
+      CHECK(sat_solver.AddUnitClause(sat_propagator_->LiteralTrail()[i]));
+    }
+
+    // Load the rest of the problem. This will automatically create the small
+    // local subproblem using the already fixed variable.
+    //
+    // TODO(user): modify LoadStateProblemToSatSolver() so that we can call it
+    // instead and don't need to over constraint the objective below. As a
+    // bonus we will also have the learned binary clauses.
+    if (!LoadBooleanProblem(problem, &sat_solver)) {
+      // The local problem is infeasible.
+      adaptive_difficulty_.IncreaseParameter();
+      continue;
+    }
+
+    if (use_lp_to_guide_sat_) {
+      // Note that we use a lower time limit for the relaxation so that we
+      // still have some time to exploit what this is returning.
+      const double ratio = 0.5;
+      if (!UseLinearRelaxationForSatAssignmentPreference(
+              problem, ratio * LocalTimeLimitInSeconds(time_limit),
+              ratio * LocalDeterministicTimeLimit(time_limit), &sat_solver)) {
+        return BopOptimizerBase::LIMIT_REACHED;
+      }
+    } else {
+      UseObjectiveForSatAssignmentPreference(problem, &sat_solver);
+    }
+
+    if (!AddObjectiveUpperBound(
+            problem, sat::Coefficient(problem_state.solution().GetCost()) - 1,
+            &sat_solver)) {
+      // The local problem is infeasible.
+      adaptive_difficulty_.IncreaseParameter();
+      continue;
+    }
+
+    // Solve the local problem.
+    const sat::SatSolver::Status status = sat_solver.Solve();
+    if (status == sat::SatSolver::MODEL_SAT) {
+      // We found a solution! abort now.
+      SatAssignmentToBopSolution(sat_solver.Assignment(),
+                                 &learned_info->solution);
       return BopOptimizerBase::SOLUTION_FOUND;
+    }
+
+    // Adapt the difficulty.
+    if (sat_solver.num_failures() < 0.5 * conflict_limit) {
+      adaptive_difficulty_.IncreaseParameter();
+    } else if (sat_solver.num_failures() > 0.95 * conflict_limit) {
+      adaptive_difficulty_.DecreaseParameter();
     }
   }
 
-  return BopOptimizerBase::LIMIT_REACHED;
-}
-
-void BopRandomLNSOptimizer::RelaxVariable(VariableIndex var_id,
-                                          const BopSolution& solution) {
-  to_relax_.Set(var_id);
-  // Relax all variables that might set vars[i] which should be relaxed.
-  for (const sat::Literal propagator_literal :
-       sat_propagator_->propagated_by(var_id)) {
-    const VariableIndex propagator_var_id(
-        propagator_literal.Variable().value());
-    to_relax_.Set(propagator_var_id);
-  }
-}
-
-//------------------------------------------------------------------------------
-// BopRandomConstraintLNSOptimizer
-//------------------------------------------------------------------------------
-BopRandomConstraintLNSOptimizer::BopRandomConstraintLNSOptimizer(
-    const std::string& name, const BopConstraintTerms& objective_terms,
-    int random_seed)
-    : BopOptimizerBase(name),
-      state_update_stamp_(ProblemState::kInitialStampValue),
-      problem_(nullptr),
-      initial_solution_(),
-      objective_terms_(objective_terms),
-      random_(random_seed),
-      to_relax_() {}
-
-BopRandomConstraintLNSOptimizer::~BopRandomConstraintLNSOptimizer() {}
-
-BopOptimizerBase::Status BopRandomConstraintLNSOptimizer::SynchronizeIfNeeded(
-    const ProblemState& problem_state) {
-  if (state_update_stamp_ == problem_state.update_stamp()) {
-    return BopOptimizerBase::CONTINUE;
-  }
-  state_update_stamp_ = problem_state.update_stamp();
-
-  problem_ = &problem_state.original_problem();
-  initial_solution_.reset(new BopSolution(problem_state.solution()));
   return BopOptimizerBase::CONTINUE;
 }
 
-BopOptimizerBase::Status BopRandomConstraintLNSOptimizer::Optimize(
-    const BopParameters& parameters, const ProblemState& problem_state,
-    LearnedInfo* learned_info, TimeLimit* time_limit) {
-  SCOPED_TIME_STAT(&stats_);
-  CHECK(learned_info != nullptr);
-  CHECK(time_limit != nullptr);
-  learned_info->Clear();
+//------------------------------------------------------------------------------
+// Neighborhood generators.
+//------------------------------------------------------------------------------
 
-  const BopOptimizerBase::Status sync_status =
-      SynchronizeIfNeeded(problem_state);
-  if (sync_status != BopOptimizerBase::CONTINUE) {
-    return sync_status;
-  }
+namespace {
 
-  std::vector<int> ct_ids(problem_->constraints_size(), 0);
-  for (int ct_id = 0; ct_id < problem_->constraints_size(); ++ct_id) {
-    ct_ids[ct_id] = ct_id;
-  }
-
-  int num_tries = 0;
-  while (!time_limit->LimitReached() &&
-         num_tries < parameters.num_random_lns_tries()) {
-    std::random_shuffle(ct_ids.begin(), ct_ids.end(), random_);
-    ++num_tries;
-
-    to_relax_.ClearAndResize(VariableIndex(initial_solution_->Size()));
-    for (int i = 0; i < ct_ids.size(); ++i) {
-      const LinearBooleanConstraint& constraint =
-          problem_->constraints(ct_ids[i]);
-      for (int j = 0; j < constraint.literals_size(); ++j) {
-        const VariableIndex var_id(constraint.literals(j) - 1);
-        to_relax_.Set(var_id);
-      }
-
-      // TODO(user): Use the auto-adaptative code of the RandomLNS instead of
-      //              this hard-coded 10% logic.
-      const double kHardCodedTenPercent = 0.1;
-      if (to_relax_.PositionsSetAtLeastOnce().size() >
-          initial_solution_->Size() * kHardCodedTenPercent) {
-        break;
-      }
-    }
-
-    std::vector<sat::Literal> fixed_variables;
-    ComputeVariablesToFixFromToRelax(*initial_solution_, objective_terms_,
-                                     to_relax_, &fixed_variables);
-    int num_conflicts_used;
-    const BopOptimizerBase::Status status = SolveLNSProblem(
-        *problem_, *initial_solution_, parameters, fixed_variables,
-        &learned_info->solution, time_limit, &num_conflicts_used);
-
-    if (status == BopOptimizerBase::SOLUTION_FOUND) {
-      return BopOptimizerBase::SOLUTION_FOUND;
+std::vector<sat::Literal> ObjectiveVariablesAssignedTheirLowCostValue(
+    const ProblemState& problem_state,
+    const BopConstraintTerms& objective_terms) {
+  std::vector<sat::Literal> result;
+  DCHECK(problem_state.solution().IsFeasible());
+  for (const BopConstraintTerm& term : objective_terms) {
+    if (((problem_state.solution().Value(term.var_id) && term.weight < 0) ||
+         (!problem_state.solution().Value(term.var_id) && term.weight > 0))) {
+      result.push_back(
+          sat::Literal(sat::VariableIndex(term.var_id.value()),
+                       problem_state.solution().Value(term.var_id)));
     }
   }
-  return BopOptimizerBase::LIMIT_REACHED;
+  return result;
 }
+
+}  // namespace
+
+void ObjectiveBasedNeighborhood::GenerateNeighborhood(
+    const ProblemState& problem_state, double difficulty,
+    sat::SatSolver* sat_propagator) {
+  // Generate the set of variable we may fix and randomize their order.
+  std::vector<sat::Literal> candidates = ObjectiveVariablesAssignedTheirLowCostValue(
+      problem_state, objective_terms_);
+  std::random_shuffle(candidates.begin(), candidates.end(), *random_);
+
+  // We will use the sat_propagator to fix some variables as long as the number
+  // of propagated variables in the solver is under our target.
+  const int num_variables = sat_propagator->NumVariables();
+  const int target = round((1.0 - difficulty) * num_variables);
+
+  sat_propagator->Backtrack(0);
+  for (const sat::Literal literal : candidates) {
+    if (sat_propagator->LiteralTrail().Index() == target) break;
+    if (sat_propagator->LiteralTrail().Index() > target) {
+      // We prefer to error on the large neighborhood side, so we backtrack the
+      // last enqueued literal.
+      sat_propagator->Backtrack(
+          std::max(0, sat_propagator->CurrentDecisionLevel() - 1));
+      break;
+    }
+    sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal);
+    if (sat_propagator->IsModelUnsat()) return;
+  }
+}
+
+void ConstraintBasedNeighborhood::GenerateNeighborhood(
+    const ProblemState& problem_state, double difficulty,
+    sat::SatSolver* sat_propagator) {
+  // Randomize the set of constraint
+  const LinearBooleanProblem& problem = problem_state.original_problem();
+  const int num_constraints = problem.constraints_size();
+  std::vector<int> ct_ids(num_constraints, 0);
+  for (int ct_id = 0; ct_id < num_constraints; ++ct_id) ct_ids[ct_id] = ct_id;
+  std::random_shuffle(ct_ids.begin(), ct_ids.end(), *random_);
+
+  // Mark that we want to relax all the variables of these constraints as long
+  // as the number of relaxed variable is lower than our difficulty target.
+  const int num_variables = sat_propagator->NumVariables();
+  const int target = round(difficulty * num_variables);
+  int num_relaxed = 0;
+  std::vector<bool> relaxed_variables(problem.num_variables(), false);
+  for (int i = 0; i < ct_ids.size(); ++i) {
+    if (num_relaxed >= target) break;
+    const LinearBooleanConstraint& constraint = problem.constraints(ct_ids[i]);
+
+    // We exclude really large constraints since they are probably note helpful
+    // in picking a nice neighborhood.
+    if (constraint.literals_size() > 0.7 * num_variables) continue;
+
+    for (int j = 0; j < constraint.literals_size(); ++j) {
+      const VariableIndex var_id(constraint.literals(j) - 1);
+      if (!relaxed_variables[var_id.value()]) {
+        ++num_relaxed;
+        relaxed_variables[var_id.value()] = true;
+      }
+    }
+  }
+
+  // Basic version: simply fix all the "to_fix" variable that are not relaxed.
+  //
+  // TODO(user): Not fixing anything that propagates a variable in
+  // relaxed_variables may be better. To investigate.
+  sat_propagator->Backtrack(0);
+  const std::vector<sat::Literal> to_fix =
+      ObjectiveVariablesAssignedTheirLowCostValue(problem_state,
+                                                  objective_terms_);
+  for (const sat::Literal literal : to_fix) {
+    if (relaxed_variables[literal.Variable().value()]) continue;
+    sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal);
+    if (sat_propagator->IsModelUnsat()) return;
+  }
+}
+
 }  // namespace bop
 }  // namespace operations_research

@@ -22,8 +22,8 @@
 #include "base/logging.h"
 #include "base/sysinfo.h"
 #include "base/join.h"
-#include "util/saturated_arithmetic.h"
 #include "base/stl_util.h"
+#include "util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
@@ -102,7 +102,7 @@ void SatSolver::SetNumVariables(int num_variables) {
   queue_elements_.resize(num_variables);
 
   // Only reset the polarity of the new variables.
-  ResetPolarity(VariableIndex(polarity_.size()));
+  ResetPolarity(/*from=*/VariableIndex(polarity_.size()));
 
   // Important: Because there is new variables, we need to recompute the
   // priority queue. Note that this will not reset the activity, it will however
@@ -351,8 +351,9 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
   if (use_upper_bound) {
     const Coefficient rhs =
         ComputeCanonicalRhs(upper_bound, bound_shift, max_value);
-    if (!AddLinearConstraintInternal(*cst, rhs, max_value))
+    if (!AddLinearConstraintInternal(*cst, rhs, max_value)) {
       return SetModelUnsat();
+    }
   }
   if (use_lower_bound) {
     // We transform the constraint into an upper-bounded one.
@@ -361,8 +362,9 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
     }
     const Coefficient rhs =
         ComputeNegatedCanonicalRhs(lower_bound, bound_shift, max_value);
-    if (!AddLinearConstraintInternal(*cst, rhs, max_value))
+    if (!AddLinearConstraintInternal(*cst, rhs, max_value)) {
       return SetModelUnsat();
+    }
   }
   ++num_constraints_;
   if (!Propagate()) return SetModelUnsat();
@@ -456,8 +458,9 @@ bool SatSolver::PBConstraintIsValidUnderDebugAssignment(
     const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const {
   Coefficient sum(0.0);
   for (LiteralWithCoeff term : cst) {
-    if (term.literal.Variable() >= debug_assignment_.NumberOfVariables())
+    if (term.literal.Variable() >= debug_assignment_.NumberOfVariables()) {
       continue;
+    }
     if (debug_assignment_.IsLiteralTrue(term.literal)) {
       sum += term.coefficient;
     }
@@ -482,13 +485,32 @@ bool ClauseSubsumption(const std::vector<Literal>& a, SatClause* b) {
 
 int SatSolver::EnqueueDecisionAndBackjumpOnConflict(Literal true_literal) {
   SCOPED_TIME_STAT(&stats_);
-  CHECK_EQ(propagation_trail_index_, trail_.Index());
   if (is_model_unsat_) return kUnsatTrailIndex;
+  CHECK_EQ(propagation_trail_index_, trail_.Index());
   EnqueueNewDecision(true_literal);
   while (!PropagateAndStopAfterOneConflictResolution()) {
     if (is_model_unsat_) return kUnsatTrailIndex;
   }
+  CHECK_EQ(propagation_trail_index_, trail_.Index());
   return last_decision_or_backtrack_trail_index_;
+}
+
+void SatSolver::RestoreSolverToAssumptionLevel() {
+  CHECK(!is_model_unsat_);
+  if (CurrentDecisionLevel() > assumption_level_) {
+    Backtrack(assumption_level_);
+  } else {
+    // Finish current propagation.
+    while (!PropagateAndStopAfterOneConflictResolution()) {
+      if (is_model_unsat_) break;
+    }
+    // Reapply any assumption that was backtracked over.
+    if (CurrentDecisionLevel() < assumption_level_) {
+      int unused = 0;
+      ReapplyDecisionsUpTo(assumption_level_ - 1, &unused);
+      assumption_level_ = CurrentDecisionLevel();
+    }
+  }
 }
 
 bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
@@ -868,22 +890,6 @@ int NextMultipleOf(int64 value, int64 interval) {
   return interval * (1 + value / interval);
 }
 }  // namespace
-
-void SatSolver::SetAssignmentPreference(Literal literal, double weight) {
-  SCOPED_TIME_STAT(&stats_);
-  DCHECK(!is_model_unsat_);
-  if (!is_decision_heuristic_initialized_) ResetDecisionHeuristic();
-  if (!parameters_.use_optimization_hints()) return;
-  DCHECK_GE(weight, 0.0);
-  DCHECK_LE(weight, 1.0);
-  polarity_[literal.Variable()].value = literal.IsPositive();
-  polarity_[literal.Variable()].use_phase_saving = false;
-
-  // The tie_breaker is changed, so we need to reinitialize the priority queue.
-  // Note that this doesn't change the activity though.
-  queue_elements_[literal.Variable()].tie_breaker = weight;
-  is_var_ordering_initialized_ = false;
-}
 
 SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
     const std::vector<Literal>& assumptions) {
@@ -1738,6 +1744,35 @@ void SatSolver::InitializeVariableOrdering() {
   is_var_ordering_initialized_ = true;
 }
 
+void SatSolver::SetAssignmentPreference(Literal literal, double weight) {
+  SCOPED_TIME_STAT(&stats_);
+  DCHECK(!is_model_unsat_);
+  if (!is_decision_heuristic_initialized_) ResetDecisionHeuristic();
+  if (!parameters_.use_optimization_hints()) return;
+  DCHECK_GE(weight, 0.0);
+  DCHECK_LE(weight, 1.0);
+  polarity_[literal.Variable()].value = literal.IsPositive();
+  polarity_[literal.Variable()].use_phase_saving = false;
+
+  // The tie_breaker is changed, so we need to reinitialize the priority queue.
+  // Note that this doesn't change the activity though.
+  queue_elements_[literal.Variable()].tie_breaker = weight;
+  is_var_ordering_initialized_ = false;
+}
+
+std::vector<std::pair<Literal, double>> SatSolver::AllPreferences() const {
+  std::vector<std::pair<Literal, double>> prefs;
+  for (VariableIndex var(0); var < polarity_.size(); ++var) {
+    // TODO(user): we currently assume that if the tie_breaker is zero then
+    // no preference was set (which is not 100% correct). Fix that.
+    if (queue_elements_[var].tie_breaker > 0.0) {
+      prefs.push_back(std::make_pair(Literal(var, polarity_[var].value),
+                                     queue_elements_[var].tie_breaker));
+    }
+  }
+  return prefs;
+}
+
 void SatSolver::ResetDecisionHeuristic() {
   DCHECK(!is_model_unsat_);
 
@@ -1745,7 +1780,7 @@ void SatSolver::ResetDecisionHeuristic() {
   is_decision_heuristic_initialized_ = true;
 
   // Reset the polarity heurisitic.
-  ResetPolarity(VariableIndex(0));
+  ResetPolarity(/*from=*/VariableIndex(0));
 
   // Reset the branching variable heuristic.
   activities_.assign(num_variables_.value(), 0.0);
@@ -1754,6 +1789,14 @@ void SatSolver::ResetDecisionHeuristic() {
   // Reset the tie breaking.
   for (VariableIndex var(0); var < num_variables_; ++var) {
     queue_elements_[var].tie_breaker = 0.0;
+  }
+}
+
+void SatSolver::ResetDecisionHeuristicAndSetAllPreferences(
+    const std::vector<std::pair<Literal, double>>& prefs) {
+  ResetDecisionHeuristic();
+  for (const std::pair<Literal, double> p : prefs) {
+    SetAssignmentPreference(p.first, p.second);
   }
 }
 

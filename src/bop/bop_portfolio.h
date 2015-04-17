@@ -48,13 +48,14 @@ class PortfolioOptimizer : public BopOptimizerBase {
                               const BopParameters& parameters,
                               const BopSolverOptimizerSet& optimizer_set,
                               const std::string& name);
-  virtual ~PortfolioOptimizer();
+  ~PortfolioOptimizer() override;
 
-  virtual bool RunOncePerSolution() const { return false; }
-  virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
+  bool ShouldBeRun(const ProblemState& problem_state) const override {
+    return true;
+  }
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) override;
 
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
@@ -66,15 +67,21 @@ class PortfolioOptimizer : public BopOptimizerBase {
                         const BopParameters& parameters,
                         const BopSolverOptimizerSet& optimizer_set);
 
+  std::unique_ptr<MTRandom> random_;
   int64 state_update_stamp_;
   BopConstraintTerms objective_terms_;
   std::unique_ptr<AdaptativeItemSelector> selector_;
   std::vector<std::unique_ptr<BopOptimizerBase>> optimizers_;
   std::vector<double> optimizer_initial_scores_;
-  SatPropagator sat_propagator_;
-  bool feasible_solution_;
+  sat::SatSolver sat_propagator_;
   double lower_bound_;
   double upper_bound_;
+
+  // Simple counts of:
+  // - the number of time each optimizer improved the current solution.
+  // - the number of time each optimizer was called.
+  std::map<std::string, int> stats_num_solutions_by_optimizer_;
+  std::map<std::string, int> stats_num_calls_by_optimizer_;
 };
 
 // This class provides a way to iteratively select an item among n items in
@@ -82,7 +89,8 @@ class PortfolioOptimizer : public BopOptimizerBase {
 // TODO(user): Document and move to util?
 class AdaptativeItemSelector {
  public:
-  AdaptativeItemSelector(int random_seed, const std::vector<double>& initial_scores);
+  AdaptativeItemSelector(const std::vector<double>& initial_scores,
+                         MTRandom* random);
 
   static const int kNoSelection;
   static const double kErosion;
@@ -101,6 +109,8 @@ class AdaptativeItemSelector {
 
   void MarkItemNonSelectable(int item);
 
+  double CurrentScore(int item) const { return items_[item].current_score; }
+
  private:
   struct Item {
     explicit Item(double initial_score)
@@ -117,7 +127,7 @@ class AdaptativeItemSelector {
     int num_successes;
   };
 
-  MTRandom random_;
+  MTRandom* random_;
   int selected_item_id_;
   std::vector<Item> items_;
 };

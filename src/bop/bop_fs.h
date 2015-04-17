@@ -34,88 +34,73 @@
 
 namespace operations_research {
 namespace bop {
-class BopSatObjectiveFirstSolutionGenerator : public BopOptimizerBase {
- public:
-  BopSatObjectiveFirstSolutionGenerator(const std::string& name,
-                                        double time_limit_ratio);
-  virtual ~BopSatObjectiveFirstSolutionGenerator();
 
-  virtual bool RunOncePerSolution() const { return false; }
-  virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
+// Tries to find a first solution using SAT and a given assignment preference.
+// This optimizer will never run again once it has found a solution except if
+// the policy is kNotGuided in which case it will be ran again.
+class GuidedSatFirstSolutionGenerator : public BopOptimizerBase {
+ public:
+  // The different guiding heuristics
+  enum class Policy {
+    kNotGuided,        // The default SAT solver.
+    kLpGuided,         // Guided by the values of the linear relaxation.
+    kObjectiveGuided,  // Guided by the objective coefficient.
+    kUserGuided,       // Guided by the problem assignment_preference().
+  };
+  GuidedSatFirstSolutionGenerator(const std::string& name, Policy policy);
+  ~GuidedSatFirstSolutionGenerator() override;
+
+  bool ShouldBeRun(const ProblemState& problem_state) const override;
+
+  // Note that if the last call to Optimize() returned CONTINUE and if the
+  // problem didn't change, calling this will resume the solve from its last
+  // position.
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) override;
 
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
       const ProblemState& problem_state);
 
+  const Policy policy_;
+  bool abort_;
   int64 state_update_stamp_;
-  double time_limit_ratio_;
-  bool first_solve_;
   std::unique_ptr<sat::SatSolver> sat_solver_;
-  int64 lower_bound_;
-  int64 upper_bound_;
-  bool problem_already_solved_;
-};
-
-class BopSatLpFirstSolutionGenerator : public BopOptimizerBase {
- public:
-  BopSatLpFirstSolutionGenerator(const std::string& name, double time_limit_ratio);
-  virtual ~BopSatLpFirstSolutionGenerator();
-
-  virtual bool RunOncePerSolution() const { return false; }
-  virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
-
- private:
-  BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState& problem_state);
-
-  int64 state_update_stamp_;
-  double time_limit_ratio_;
-  bool first_solve_;
-  std::unique_ptr<sat::SatSolver> sat_solver_;
-  int64 lower_bound_;
-  int64 upper_bound_;
-  glop::DenseRow lp_values_;
 };
 
 
-// This class implements an optimizer that looks for a better solution than the
-// initial solution, if any, by randomly generating new solutions using the
-// SAT solver.
-// It can be used to both generate a first solution and improve an existing one.
-// TODO(user): Coupled with some Local Search it might be use to diversify
+// This class implements an optimizer that tries various random search
+// strategies, each with a really low conflict limit. It can be used to generate
+// a first solution or to improve an existing one.
+//
+// By opposition to all the other optimizers, this one doesn't return right away
+// when a new solution is found. Instead, it continues to improve it as long as
+// it has time.
+//
+// TODO(user): Coupled with some Local Search it might be used to diversify
 //              the solutions. To try.
 class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
  public:
-  BopRandomFirstSolutionGenerator(int random_seed, const std::string& name,
-                                  double time_limit_ratio);
-  virtual ~BopRandomFirstSolutionGenerator();
+  BopRandomFirstSolutionGenerator(const std::string& name,
+                                  sat::SatSolver* sat_propagator,
+                                  MTRandom* random);
+  ~BopRandomFirstSolutionGenerator() override;
 
-  virtual bool RunOncePerSolution() const { return false; }
-  virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
+  bool ShouldBeRun(const ProblemState& problem_state) const override;
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) override;
 
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
       const ProblemState& problem_state);
 
-  int64 state_update_stamp_;
-  double time_limit_ratio_;
-  const LinearBooleanProblem* problem_;
-  std::unique_ptr<BopSolution> initial_solution_;
-  glop::DenseRow lp_values_;
+  bool first_time_;
   int random_seed_;
-  std::unique_ptr<MTRandom> random_;
-  std::unique_ptr<sat::SatSolver> sat_solver_;
+  MTRandom* random_;
+  sat::SatSolver* sat_propagator_;
   uint32 sat_seed_;
-  bool first_solve_;
 };
 
 // This class computes the linear relaxation of the state problem.
@@ -124,15 +109,13 @@ class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
 // and the lower bound.
 class LinearRelaxation : public BopOptimizerBase {
  public:
-  LinearRelaxation(const BopParameters& parameters, const std::string& name,
-                   double time_limit_ratio);
-  virtual ~LinearRelaxation();
+  LinearRelaxation(const BopParameters& parameters, const std::string& name);
+  ~LinearRelaxation() override;
 
-  virtual bool RunOncePerSolution() const { return false; }
-  virtual bool NeedAFeasibleSolution() const { return false; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
+  bool ShouldBeRun(const ProblemState& problem_state) const override;
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) override;
 
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
@@ -157,7 +140,6 @@ class LinearRelaxation : public BopOptimizerBase {
   bool CostIsWorseThanSolution(double scaled_cost, double tolerance) const;
 
   const BopParameters parameters_;
-  const double time_limit_ratio_;
   int64 state_update_stamp_;
   bool lp_model_loaded_;
   glop::LinearProgram lp_model_;

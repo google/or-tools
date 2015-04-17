@@ -98,6 +98,7 @@ inline std::ostream& operator<<(std::ostream& os, Literal literal) {
 class VariablesAssignment {
  public:
   VariablesAssignment() {}
+  explicit VariablesAssignment(int num_variables) { Resize(num_variables); }
   void Resize(int num_variables) {
     assignment_.Resize(LiteralIndex(num_variables << 1));
   }

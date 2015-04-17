@@ -50,19 +50,32 @@ PortfolioOptimizer::PortfolioOptimizer(
     const ProblemState& problem_state, const BopParameters& parameters,
     const BopSolverOptimizerSet& optimizer_set, const std::string& name)
     : BopOptimizerBase(name),
+      random_(),
       state_update_stamp_(ProblemState::kInitialStampValue),
       objective_terms_(),
       selector_(),
       optimizers_(),
       optimizer_initial_scores_(),
-      sat_propagator_(problem_state.original_problem()),
-      feasible_solution_(false),
+      sat_propagator_(),
       lower_bound_(-glop::kInfinity),
       upper_bound_(glop::kInfinity) {
   CreateOptimizers(problem_state.original_problem(), parameters, optimizer_set);
 }
 
-PortfolioOptimizer::~PortfolioOptimizer() {}
+PortfolioOptimizer::~PortfolioOptimizer() {
+  if (VLOG_IS_ON(1)) {
+    std::string stats_string;
+    for (int i = 0; i < optimizers_.size(); ++i) {
+      const std::string& name = optimizers_[i]->name();
+      const int a = stats_num_solutions_by_optimizer_[name];
+      const int b = stats_num_calls_by_optimizer_[name];
+      stats_string += StringPrintf(
+          "    %40s : %3d/%-3d  (%6.2f%%)  score: %f\n", name.c_str(), a, b,
+          100.0 * a / b, selector_->CurrentScore(i));
+    }
+    VLOG(1) << "Stats. #new_solutions/#calls by optimizer:\n" + stats_string;
+  }
+}
 
 BopOptimizerBase::Status PortfolioOptimizer::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
@@ -71,18 +84,22 @@ BopOptimizerBase::Status PortfolioOptimizer::SynchronizeIfNeeded(
   }
   state_update_stamp_ = problem_state.update_stamp();
 
-  // Set a new constraint on the objective cost to only look for better
-  // solutions.
-  if (problem_state.solution().IsFeasible() &&
-      !sat_propagator_.OverConstrainObjective(problem_state.solution())) {
-    // Stop optimization as SAT proved optimality.
-    return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+  // Load any new information into the sat_propagator_.
+  const bool first_time = (sat_propagator_.NumVariables() == 0);
+  const BopOptimizerBase::Status status =
+      LoadStateProblemToSatSolver(problem_state, &sat_propagator_);
+  if (status != BopOptimizerBase::CONTINUE) return status;
+  if (first_time) {
+    // We configure the sat_propagator_ to use the objective as an assignment
+    // preference
+    UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
+                                           &sat_propagator_);
   }
 
-  feasible_solution_ = problem_state.solution().IsFeasible();
   lower_bound_ = problem_state.GetScaledLowerBound();
-  upper_bound_ = feasible_solution_ ? problem_state.solution().GetScaledCost()
-                                    : glop::kInfinity;
+  upper_bound_ = problem_state.solution().IsFeasible()
+                     ? problem_state.solution().GetScaledCost()
+                     : glop::kInfinity;
   return BopOptimizerBase::CONTINUE;
 }
 
@@ -99,12 +116,10 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
     return sync_status;
   }
 
-  if (!feasible_solution_) {
-    // Mark optimizers that can't run because they need an initial solution.
-    for (int i = 0; i < optimizers_.size(); ++i) {
-      if (optimizers_[i]->NeedAFeasibleSolution()) {
-        selector_->MarkItemNonSelectable(i);
-      }
+  // Mark optimizers that can't run.
+  for (int i = 0; i < optimizers_.size(); ++i) {
+    if (!optimizers_[i]->ShouldBeRun(problem_state)) {
+      selector_->MarkItemNonSelectable(i);
     }
   }
 
@@ -115,25 +130,36 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
   const int selected_optimizer_id = selector_->selected_item_id();
   const std::unique_ptr<BopOptimizerBase>& selected_optimizer =
       optimizers_[selected_optimizer_id];
-  VLOG(1) << "      " << lower_bound_ << " .. " << upper_bound_ << " " << name()
-          << " - " << selected_optimizer->name()
-          << ". Time limit: " << time_limit->GetTimeLeft() << " -- "
-          << time_limit->GetDeterministicTimeLeft();
+  if (parameters.log_search_progress() || VLOG_IS_ON(1)) {
+    LOG(INFO) << "      " << lower_bound_ << " .. " << upper_bound_ << " "
+              << name() << " - " << selected_optimizer->name()
+              << ". Time limit: " << time_limit->GetTimeLeft() << " -- "
+              << time_limit->GetDeterministicTimeLeft();
+  }
   const BopOptimizerBase::Status optimization_status =
       selected_optimizer->Optimize(parameters, problem_state, learned_info,
                                    time_limit);
+
+  // Statistics.
+  stats_num_calls_by_optimizer_[selected_optimizer->name()]++;
+  if (optimization_status == BopOptimizerBase::OPTIMAL_SOLUTION_FOUND ||
+      optimization_status == BopOptimizerBase::SOLUTION_FOUND) {
+    stats_num_solutions_by_optimizer_[selected_optimizer->name()]++;
+  }
 
   if (optimization_status == BopOptimizerBase::INFEASIBLE ||
       optimization_status == BopOptimizerBase::OPTIMAL_SOLUTION_FOUND) {
     return optimization_status;
   }
 
+  // TODO(user): don't penalize the SatCoreBasedOptimizer or the
+  // LinearRelaxation when they improve the lower bound.
   selector_->UpdateSelectedItem(
-      optimization_status == BopOptimizerBase::SOLUTION_FOUND,
-      !selected_optimizer->RunOncePerSolution() &&
-          optimization_status != BopOptimizerBase::ABORT);
+      /*success=*/optimization_status == BopOptimizerBase::SOLUTION_FOUND,
+      /*can_still_be_selected=*/optimization_status != BopOptimizerBase::ABORT);
 
-  if (optimization_status == BopOptimizerBase::SOLUTION_FOUND) {
+  if (optimization_status == BopOptimizerBase::SOLUTION_FOUND ||
+      optimization_status == BopOptimizerBase::INFORMATION_FOUND) {
     selector_->StartNewRoundOfSelections();
   }
 
@@ -148,53 +174,78 @@ void PortfolioOptimizer::AddOptimizer(
       optimizers_.emplace_back(
           new SatCoreBasedOptimizer("SatCoreBasedOptimizer"));
       break;
+    case BopOptimizerMethod::SAT_LINEAR_SEARCH:
+      optimizers_.emplace_back(new GuidedSatFirstSolutionGenerator(
+          "SatOptimizer", GuidedSatFirstSolutionGenerator::Policy::kNotGuided));
+      break;
     case BopOptimizerMethod::LINEAR_RELAXATION:
-      optimizers_.emplace_back(new LinearRelaxation(
-          parameters, "LinearRelaxation", optimizer_method.time_limit_ratio()));
+      optimizers_.emplace_back(
+          new LinearRelaxation(parameters, "LinearRelaxation"));
       break;
     case BopOptimizerMethod::LOCAL_SEARCH: {
       double initial_local_search_score = optimizer_method.initial_score();
       for (int i = 1; i <= parameters.max_num_decisions(); ++i) {
-        optimizers_.emplace_back(
-            new LocalSearchOptimizer(StringPrintf("LS_%d", i), i));
+        optimizers_.emplace_back(new LocalSearchOptimizer(
+            StringPrintf("LS_%d", i), i, &sat_propagator_));
         optimizer_initial_scores_.push_back(initial_local_search_score);
         initial_local_search_score /= 2.0;
       }
     } break;
     case BopOptimizerMethod::RANDOM_FIRST_SOLUTION:
       optimizers_.emplace_back(new BopRandomFirstSolutionGenerator(
-          parameters.random_seed(), "SATRandomFirstSolution",
-          optimizer_method.time_limit_ratio()));
+          "SATRandomFirstSolution", &sat_propagator_, random_.get()));
+      break;
+    case BopOptimizerMethod::RANDOM_VARIABLE_LNS:
+      BuildObjectiveTerms(problem, &objective_terms_);
+      optimizers_.emplace_back(new BopAdaptiveLNSOptimizer(
+          "RandomVariableLns",
+          /*use_lp_to_guide_sat=*/false,
+          new ObjectiveBasedNeighborhood(&objective_terms_, random_.get()),
+          &sat_propagator_));
+      break;
+    case BopOptimizerMethod::RANDOM_VARIABLE_LNS_GUIDED_BY_LP:
+      BuildObjectiveTerms(problem, &objective_terms_);
+      optimizers_.emplace_back(new BopAdaptiveLNSOptimizer(
+          "RandomVariableLnsWithLp",
+          /*use_lp_to_guide_sat=*/true,
+          new ObjectiveBasedNeighborhood(&objective_terms_, random_.get()),
+          &sat_propagator_));
       break;
     case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
-      optimizers_.emplace_back(new BopRandomConstraintLNSOptimizer(
-          "Random_Constraint_LNS", objective_terms_, parameters.random_seed()));
+      optimizers_.emplace_back(new BopAdaptiveLNSOptimizer(
+          "RandomConstraintLns",
+          /*use_lp_to_guide_sat=*/false,
+          new ConstraintBasedNeighborhood(&objective_terms_, random_.get()),
+          &sat_propagator_));
       break;
-    case BopOptimizerMethod::RANDOM_LNS_PROPAGATION:
+    case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP:
       BuildObjectiveTerms(problem, &objective_terms_);
-      optimizers_.emplace_back(new BopRandomLNSOptimizer(
-          "Random_LNS_Using_Variables_Connections", objective_terms_,
-          parameters.random_seed(), false, &sat_propagator_));
-      break;
-    case BopOptimizerMethod::RANDOM_LNS_SAT:
-      BuildObjectiveTerms(problem, &objective_terms_);
-      optimizers_.emplace_back(new BopRandomLNSOptimizer(
-          "Random_LNS_Using_SAT", objective_terms_, parameters.random_seed(),
-          true, &sat_propagator_));
+      optimizers_.emplace_back(new BopAdaptiveLNSOptimizer(
+          "RandomConstraintLnsWithLp",
+          /*use_lp_to_guide_sat=*/true,
+          new ConstraintBasedNeighborhood(&objective_terms_, random_.get()),
+          &sat_propagator_));
       break;
     case BopOptimizerMethod::COMPLETE_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
       optimizers_.emplace_back(
           new BopCompleteLNSOptimizer("LNS", objective_terms_));
       break;
+    case BopOptimizerMethod::USER_GUIDED_FIRST_SOLUTION:
+      optimizers_.emplace_back(new GuidedSatFirstSolutionGenerator(
+          "SATUserGuidedFirstSolution",
+          GuidedSatFirstSolutionGenerator::Policy::kUserGuided));
+      break;
     case BopOptimizerMethod::LP_FIRST_SOLUTION:
-      optimizers_.emplace_back(new BopSatLpFirstSolutionGenerator(
-          "SATLPFirstSolution", optimizer_method.time_limit_ratio()));
+      optimizers_.emplace_back(new GuidedSatFirstSolutionGenerator(
+          "SATLPFirstSolution",
+          GuidedSatFirstSolutionGenerator::Policy::kLpGuided));
       break;
     case BopOptimizerMethod::OBJECTIVE_FIRST_SOLUTION:
-      optimizers_.emplace_back(new BopSatObjectiveFirstSolutionGenerator(
-          "SATObjectiveFirstSolution", optimizer_method.time_limit_ratio()));
+      optimizers_.emplace_back(new GuidedSatFirstSolutionGenerator(
+          "SATObjectiveFirstSolution",
+          GuidedSatFirstSolutionGenerator::Policy::kObjectiveGuided));
       break;
     default:
       LOG(FATAL) << "Unknown optimizer type.";
@@ -208,6 +259,8 @@ void PortfolioOptimizer::AddOptimizer(
 void PortfolioOptimizer::CreateOptimizers(
     const LinearBooleanProblem& problem, const BopParameters& parameters,
     const BopSolverOptimizerSet& optimizer_set) {
+  random_.reset(new MTRandom(parameters.random_seed()));
+
   if (parameters.use_symmetry()) {
     VLOG(1) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;
@@ -220,10 +273,23 @@ void PortfolioOptimizer::CreateOptimizers(
   optimizers_.reserve(max_num_optimizers);
   optimizer_initial_scores_.reserve(max_num_optimizers);
   for (const BopOptimizerMethod& optimizer_method : optimizer_set.methods()) {
+    const int old_size = optimizers_.size();
     AddOptimizer(problem, parameters, optimizer_method);
+
+    // Set the local time limits of the newly added optimizers.
+    //
+    // TODO(user): Find a way to make the behavior deterministic independently
+    // of the overall time limit. For instance, only use deterministic time and
+    // make that independent of the overall time limit.
+    const double ratio = optimizer_method.time_limit_ratio();
+    for (int i = old_size; i < optimizers_.size(); ++i) {
+      optimizers_[i]->SetLocalTimeLimits(
+          ratio * parameters.max_time_in_seconds(),
+          ratio * parameters.max_deterministic_time());
+    }
   }
-  selector_.reset(new AdaptativeItemSelector(parameters.random_seed(),
-                                             optimizer_initial_scores_));
+  selector_.reset(
+      new AdaptativeItemSelector(optimizer_initial_scores_, random_.get()));
 }
 
 //------------------------------------------------------------------------------
@@ -231,8 +297,8 @@ void PortfolioOptimizer::CreateOptimizers(
 //------------------------------------------------------------------------------
 
 AdaptativeItemSelector::AdaptativeItemSelector(
-    int random_seed, const std::vector<double>& initial_scores)
-    : random_(random_seed), selected_item_id_(kNoSelection), items_() {
+    const std::vector<double>& initial_scores, MTRandom* random)
+    : random_(random), selected_item_id_(kNoSelection), items_() {
   items_.reserve(initial_scores.size());
   for (const double score : initial_scores) {
     items_.push_back(Item(score));
@@ -268,7 +334,7 @@ bool AdaptativeItemSelector::SelectItem() {
   }
 
   // Select item.
-  const double selected_score_sum = random_.UniformDouble(score_sum);
+  const double selected_score_sum = random_->UniformDouble(score_sum);
   double selection_sum = 0.0;
   selected_item_id_ = kNoSelection;
   for (int item_id = 0; item_id < items_.size(); ++item_id) {

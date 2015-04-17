@@ -36,125 +36,127 @@
 
 namespace operations_research {
 namespace bop {
-// TODO(user): Remove this class.
-class SatPropagator {
- public:
-  explicit SatPropagator(const LinearBooleanProblem& problem);
 
-  bool LoadBooleanProblem();
-  bool OverConstrainObjective(const BopSolution& current_solution);
-
-  void AddPropagationRelation(sat::Literal decision_literal,
-                              VariableIndex var_id);
-
-  void AddSymmetries(std::vector<std::unique_ptr<SparsePermutation>>* generators);
-  sat::SatSolver* GetSatSolver();
-
-  const std::vector<sat::Literal>& propagated_by(VariableIndex var_id) const {
-    return propagated_by_[var_id];
-  }
-
- private:
-  const LinearBooleanProblem& problem_;
-  std::unique_ptr<sat::SatSolver> sat_solver_;
-  int64 solution_cost_;
-  std::vector<std::unique_ptr<SparsePermutation>> symmetries_generators_;
-  ITIVector<VariableIndex, std::vector<sat::Literal> > propagated_by_;
-};
-
+// Uses SAT to solve the full problem under the constraint that the new solution
+// should be under a given Hamming distance of the current solution.
 class BopCompleteLNSOptimizer : public BopOptimizerBase {
  public:
-  explicit BopCompleteLNSOptimizer(const std::string& name,
-                                   const BopConstraintTerms& objective_terms);
+  BopCompleteLNSOptimizer(const std::string& name,
+                          const BopConstraintTerms& objective_terms);
+  ~BopCompleteLNSOptimizer() final;
 
-  virtual ~BopCompleteLNSOptimizer();
-
- protected:
-  virtual bool RunOncePerSolution() const { return true; }
-  virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
+ private:
+  bool ShouldBeRun(const ProblemState& problem_state) const final;
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) final;
 
   BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState& problem_state);
+      const ProblemState& problem_state, int num_relaxed_vars);
 
   int64 state_update_stamp_;
-  LinearBooleanProblem problem_;
-  std::unique_ptr<BopSolution> initial_solution_;
+  std::unique_ptr<sat::SatSolver> sat_solver_;
   const BopConstraintTerms& objective_terms_;
 };
 
-class BopRandomLNSOptimizer : public BopOptimizerBase {
+// Interface of the different LNS neighborhood generation algorithm.
+//
+// NOTE(user): Using a sat_propagator as the output of the algorithm allows for
+// a really simple and efficient interface for the generator that relies on it.
+// However, if a generator don't rely on it at all, it may slow down a bit the
+// code (to investigate). If this happens, we will probably need another
+// function here and a way to select between which one to call.
+class NeighborhoodGenerator {
  public:
-  explicit BopRandomLNSOptimizer(const std::string& name,
-                                 const BopConstraintTerms& objective_terms,
-                                 int random_seed,
-                                 bool use_sat_to_choose_lns_neighbourhood,
-                                 SatPropagator* sat_propagator);
-  virtual ~BopRandomLNSOptimizer();
+  NeighborhoodGenerator() {}
+  virtual ~NeighborhoodGenerator() {}
+
+  // Interface for the neighborhood generation.
+  //
+  // The difficulty will be in [0, 1] and is related to the asked neighborhood
+  // size (and thus local problem difficulty). A difficulty of 0.0 means empty
+  // neighborhood and a difficulty of 1.0 means the full problem. The algorithm
+  // should try to generate an neighborhood according to this difficulty, which
+  // will be dynamically adjusted depending on whether or not we can solve the
+  // subproblem.
+  //
+  // The given sat_propagator will be reset and then configured so that all the
+  // variables propagated on its trail should be fixed. That is, the
+  // neighborhood will correspond to the unassigned variables in the
+  // sat_propagator. Note that sat_propagator_.IsModelUnsat() will be checked
+  // after this is called so it is okay to abort if this happens.
+  //
+  // Preconditions:
+  // - The given sat_propagator_ should have the current problem loaded (with
+  //   the constraint to find a better solution that any current solution).
+  // - The problem state must contains a feasible solution.
+  virtual void GenerateNeighborhood(const ProblemState& problem_state,
+                                    double difficulty,
+                                    sat::SatSolver* sat_propagator) = 0;
+};
+
+// A generic LNS optimizer which generates neighborhoods according to the given
+// NeighborhoodGenerator and automatically adapt the neighborhood size depending
+// on how easy it is to solve the associated problem.
+class BopAdaptiveLNSOptimizer : public BopOptimizerBase {
+ public:
+  // Takes ownership of the given neighborhood_generator.
+  // The sat_propagator is assumed to contains the current problem.
+  BopAdaptiveLNSOptimizer(const std::string& name, bool use_lp_to_guide_sat,
+                          NeighborhoodGenerator* neighborhood_generator,
+                          sat::SatSolver* sat_propagator);
+  ~BopAdaptiveLNSOptimizer() final;
 
  private:
-  virtual bool RunOncePerSolution() const { return false; }
-  virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
-  Status GenerateProblemUsingSat(const BopSolution& initial_solution,
-                                 double target_difficulty,
-                                 TimeLimit* time_limit,
-                                 BopParameters* parameters,
-                                 BopSolution* solution,
-                                 std::vector<sat::Literal>* fixed_variables);
-  Status GenerateProblem(const BopSolution& initial_solution,
-                         double target_difficulty, TimeLimit* time_limit,
-                         std::vector<sat::Literal>* fixed_variables);
+  bool ShouldBeRun(const ProblemState& problem_state) const final;
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) final;
 
-  void RelaxVariable(VariableIndex var_id, const BopSolution& solution);
+  const bool use_lp_to_guide_sat_;
+  std::unique_ptr<NeighborhoodGenerator> neighborhood_generator_;
+  sat::SatSolver* const sat_propagator_;
 
-  BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState& problem_state);
-
-  int64 state_update_stamp_;
-  const LinearBooleanProblem* problem_;
-  std::unique_ptr<BopSolution> initial_solution_;
-  const bool use_sat_to_choose_lns_neighbourhood_;
-  SatPropagator* const sat_propagator_;
-  const BopConstraintTerms& objective_terms_;
-  MTRandom random_;
-
-  // RandomLNS parameter whose values are kept from one run to the next.
-  std::vector<sat::Literal> literals_;
-  std::vector<bool> is_in_literals_;
+  // Adaptive neighborhood size logic.
+  // The values are kept from one run to the next.
   LubyAdaptiveParameterValue adaptive_difficulty_;
-
-  SparseBitset<VariableIndex> to_relax_;
 };
 
-class BopRandomConstraintLNSOptimizer : public BopOptimizerBase {
+// Generates a neighborhood by randomly fixing a subset of the objective
+// variables that are currently at their lower cost.
+class ObjectiveBasedNeighborhood : public NeighborhoodGenerator {
  public:
-  explicit BopRandomConstraintLNSOptimizer(
-      const std::string& name, const BopConstraintTerms& objective_terms,
-      int random_seed);
-  virtual ~BopRandomConstraintLNSOptimizer();
+  ObjectiveBasedNeighborhood(const BopConstraintTerms* objective_terms,
+                             MTRandom* random)
+      : objective_terms_(*objective_terms), random_(random) {}
+  ~ObjectiveBasedNeighborhood() final {}
 
  private:
-  virtual bool RunOncePerSolution() const { return false; }
-  virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
-
-  BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState& problem_state);
-
-  int64 state_update_stamp_;
-  const LinearBooleanProblem* problem_;
-  std::unique_ptr<BopSolution> initial_solution_;
+  void GenerateNeighborhood(const ProblemState& problem_state,
+                            double difficulty,
+                            sat::SatSolver* sat_propagator) final;
   const BopConstraintTerms& objective_terms_;
-  MTRandom random_;
-  SparseBitset<VariableIndex> to_relax_;
+  MTRandom* random_;
 };
+
+// Generates a neighborhood by randomly selecting a subset of constraints and
+// fixing the objective variables that are currently at their lower cost and
+// not in the given subset of constraints.
+class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
+ public:
+  ConstraintBasedNeighborhood(const BopConstraintTerms* objective_terms,
+                              MTRandom* random)
+      : objective_terms_(*objective_terms), random_(random) {}
+  ~ConstraintBasedNeighborhood() final {}
+
+ private:
+  void GenerateNeighborhood(const ProblemState& problem_state,
+                            double difficulty,
+                            sat::SatSolver* sat_propagator) final;
+  const BopConstraintTerms& objective_terms_;
+  MTRandom* random_;
+};
+
 }  // namespace bop
 }  // namespace operations_research
 #endif  // OR_TOOLS_BOP_BOP_LNS_H_

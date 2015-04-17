@@ -372,8 +372,7 @@ util::Status GraphSymmetryFinder::FindSymmetries(
   VLOG(4) << "Base partition: "
           << base_partition.DebugString(DynamicPartition::SORT_BY_PART);
 
-  MergingPartition node_equivalence_classes;
-  node_equivalence_classes.Reset(NumNodes());
+  MergingPartition node_equivalence_classes(NumNodes());
   std::vector<std::vector<int>> permutations_displacing_node(NumNodes());
   std::vector<int> potential_root_image_nodes;
   IF_STATS_ENABLED(stats_.initialization_time.StopTimerAndAddElapsedTime());
@@ -491,7 +490,7 @@ util::Status GraphSymmetryFinder::FindSymmetries(
                                      &base_partition, &image_partition,
                                      *generators, permutations_displacing_node);
 
-      if (permutation.get() != nullptr) {
+      if (permutation != nullptr) {
         ScopedTimeDistributionUpdater u(&stats_.permutation_output_time);
         // We found a permutation. We store it in the list of generators, and
         // further prune out the remaining 'root' image candidates, taking into

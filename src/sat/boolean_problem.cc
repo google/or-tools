@@ -56,22 +56,26 @@ std::string ValidateLinearTerms(const LinearTerms& terms,
   const int max_num_errs = 100;
   for (int i = 0; i < terms.literals_size(); ++i) {
     if (terms.literals(i) == 0) {
-      if (++num_errs <= max_num_errs)
+      if (++num_errs <= max_num_errs) {
         err_str += StringPrintf("Zero literal at position %d\n", i);
+      }
     }
     if (terms.coefficients(i) == 0) {
-      if (++num_errs <= max_num_errs)
+      if (++num_errs <= max_num_errs) {
         err_str += StringPrintf("Literal %d has a zero coefficient\n",
                                 terms.literals(i));
+      }
     }
     const int var = Literal(terms.literals(i)).Variable().value();
     if (var >= variable_seen->size()) {
-      if (++num_errs <= max_num_errs)
+      if (++num_errs <= max_num_errs) {
         err_str += StringPrintf("Out of bound variable %d\n", var);
+      }
     }
     if ((*variable_seen)[var]) {
-      if (++num_errs <= max_num_errs)
+      if (++num_errs <= max_num_errs) {
         err_str += StringPrintf("Duplicated variable %d\n", var);
+      }
     }
     (*variable_seen)[var] = true;
   }
@@ -96,6 +100,7 @@ std::string ValidateLinearTerms(const LinearTerms& terms,
 template <typename ProtoFormat>
 std::vector<LiteralWithCoeff> ConvertLinearExpression(const ProtoFormat& input) {
   std::vector<LiteralWithCoeff> cst;
+  cst.reserve(input.literals_size());
   for (int i = 0; i < input.literals_size(); ++i) {
     const Literal literal(input.literals(i));
     cst.push_back(LiteralWithCoeff(literal, input.coefficients(i)));
@@ -399,7 +404,7 @@ void StoreAssignment(const VariablesAssignment& assignment,
 void ExtractSubproblem(const LinearBooleanProblem& problem,
                        const std::vector<int>& constraint_indices,
                        LinearBooleanProblem* subproblem) {
-  subproblem->CopyFrom(problem);
+  *subproblem = problem;
   subproblem->set_name("Subproblem of " + problem.name());
   subproblem->clear_constraints();
   for (int index : constraint_indices) {
@@ -612,11 +617,11 @@ void FindLinearBooleanProblemSymmetries(
         /*directed=*/false, class_size);
     if (!status.ok()) {
       LOG(DFATAL) << "Error when writing the symmetry graph to file: "
-                  << status.ToString();
+                  << status;
     }
   }
-  GraphSymmetryFinder symmetry_finder(*graph.get(),
-                                      /*graph_is_undirected=*/true);
+  GraphSymmetryFinder symmetry_finder(*graph,
+                                      /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;
   // TODO(user): inject the appropriate time limit here.
   CHECK_OK(symmetry_finder.FindSymmetries(

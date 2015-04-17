@@ -28,19 +28,16 @@ namespace glop {
 LPDecomposer::LPDecomposer()
     : original_problem_(nullptr),
       clusters_(),
-      local_to_global_vars_(),
       mutex_() {}
 
 void LPDecomposer::Decompose(const LinearProgram* linear_problem) {
   MutexLock mutex_lock(&mutex_);
   original_problem_ = linear_problem;
   clusters_.clear();
-  local_to_global_vars_.clear();
 
   const SparseMatrix& transposed_matrix =
       original_problem_->GetTransposeSparseMatrix();
-  MergingPartition partition;
-  partition.Reset(original_problem_->num_variables().value());
+  MergingPartition partition(original_problem_->num_variables().value());
 
   // Iterate on all constraints, and merge all variables of each constraint.
   const ColIndex num_ct = RowToColIndex(original_problem_->num_constraints());
@@ -64,7 +61,6 @@ void LPDecomposer::Decompose(const LinearProgram* linear_problem) {
   for (int i = 0; i < num_classes; ++i) {
     std::sort(clusters_[i].begin(), clusters_[i].end());
   }
-  local_to_global_vars_.resize(clusters_.size());
 }
 
 int LPDecomposer::GetNumberOfProblems() const {
@@ -77,20 +73,19 @@ const LinearProgram& LPDecomposer::original_problem() const {
   return *original_problem_;
 }
 
-void LPDecomposer::BuildProblem(int problem_index, LinearProgram* lp) {
+void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram* lp) {
   CHECK(lp != nullptr);
   CHECK_GE(problem_index, 0);
   CHECK_LT(problem_index, clusters_.size());
 
   lp->Clear();
 
+  MutexLock mutex_lock(&mutex_);
   const std::vector<ColIndex>& cluster = clusters_[problem_index];
-  StrictITIVector<ColIndex, ColIndex> global_to_local_vars(
+  StrictITIVector<ColIndex, ColIndex> global_to_local(
       original_problem_->num_variables(), kInvalidCol);
   SparseBitset<RowIndex> constraints_to_use(
       original_problem_->num_constraints());
-  StrictITIVector<ColIndex, ColIndex> local_to_global(ColIndex(cluster.size()),
-                                                      kInvalidCol);
   lp->SetMaximizationProblem(original_problem_->IsMaximizationProblem());
 
   // Create variables and get all constraints of the cluster.
@@ -100,12 +95,11 @@ void LPDecomposer::BuildProblem(int problem_index, LinearProgram* lp) {
   for (int i = 0; i < cluster.size(); ++i) {
     const ColIndex global_col = cluster[i];
     const ColIndex local_col = lp->CreateNewVariable();
-    CHECK(global_to_local_vars[global_col] == kInvalidCol ||
-          global_to_local_vars[global_col] == local_col)
+    CHECK_EQ(local_col, ColIndex(i));
+    CHECK(global_to_local[global_col] == kInvalidCol ||
+          global_to_local[global_col] == local_col)
         << "If the mapping is already assigned it has to be the same.";
-    global_to_local_vars[global_col] = local_col;
-    CHECK_EQ(kInvalidCol, local_to_global[local_col]);
-    local_to_global[local_col] = global_col;
+    global_to_local[global_col] = local_col;
 
     lp->SetVariableName(local_col,
                         original_problem_->GetVariableName(global_col));
@@ -134,32 +128,44 @@ void LPDecomposer::BuildProblem(int problem_index, LinearProgram* lp) {
     for (const SparseColumn::Entry e :
          transposed_matrix.column(RowToColIndex(global_row))) {
       const ColIndex global_col = RowToColIndex(e.row());
-      const ColIndex local_col = global_to_local_vars[global_col];
+      const ColIndex local_col = global_to_local[global_col];
       lp->SetCoefficient(local_row, local_col, e.coefficient());
     }
   }
-
-  MutexLock mutex_lock(&mutex_);
-  local_to_global_vars_[problem_index] = local_to_global;
 }
 
 DenseRow LPDecomposer::AggregateAssignments(
     const std::vector<DenseRow>& assignments) const {
-  CHECK_EQ(assignments.size(), local_to_global_vars_.size());
+  CHECK_EQ(assignments.size(), clusters_.size());
 
   MutexLock mutex_lock(&mutex_);
-  DenseRow values(original_problem_->num_variables(), Fractional(0.0));
+  DenseRow global_assignment(original_problem_->num_variables(),
+                             Fractional(0.0));
   for (int problem = 0; problem < assignments.size(); ++problem) {
-    const DenseRow& assignment = assignments[problem];
-    const StrictITIVector<ColIndex, ColIndex>& local_to_global =
-        local_to_global_vars_[problem];
-    for (ColIndex local_col(0); local_col < assignment.size(); ++local_col) {
-      const ColIndex global_col = local_to_global[local_col];
-      const Fractional value = assignment[local_col];
-      values[global_col] = value;
+    const DenseRow& local_assignment = assignments[problem];
+    const std::vector<ColIndex>& cluster = clusters_[problem];
+    for (int i = 0; i < local_assignment.size(); ++i) {
+      const ColIndex global_col = cluster[i];
+      global_assignment[global_col] = local_assignment[ColIndex(i)];
     }
   }
-  return values;
+  return global_assignment;
+}
+
+DenseRow LPDecomposer::ExtractLocalAssignment(int problem_index,
+                                              const DenseRow& assignment) {
+  CHECK_GE(problem_index, 0);
+  CHECK_LT(problem_index, clusters_.size());
+  CHECK_EQ(assignment.size(), original_problem_->num_variables());
+
+  MutexLock mutex_lock(&mutex_);
+  const std::vector<ColIndex>& cluster = clusters_[problem_index];
+  DenseRow local_assignment(ColIndex(cluster.size()), Fractional(0.0));
+  for (int i = 0; i < cluster.size(); ++i) {
+    const ColIndex global_col = cluster[i];
+    local_assignment[ColIndex(i)] = assignment[global_col];
+  }
+  return local_assignment;
 }
 
 }  // namespace glop

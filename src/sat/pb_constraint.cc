@@ -53,12 +53,15 @@ bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* 
     if (representative != nullptr &&
         current.literal.Variable() == representative->literal.Variable()) {
       if (current.literal == representative->literal) {
-        if (!SafeAddInto(current.coefficient, &(representative->coefficient)))
+        if (!SafeAddInto(current.coefficient, &(representative->coefficient))) {
           return false;
+        }
       } else {
         // Here current_literal is equal to (1 - representative).
-        if (!SafeAddInto(-current.coefficient, &(representative->coefficient)))
+        if (!SafeAddInto(-current.coefficient,
+                         &(representative->coefficient))) {
           return false;
+        }
         if (!SafeAddInto(-current.coefficient, bound_shift)) return false;
       }
     } else {
@@ -390,9 +393,25 @@ UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
   DCHECK(!cst.empty());
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
   literals_.reserve(cst.size());
+
+  // Reserve the space for coeffs_ and starts_ (it is slightly more efficient).
+  {
+    int size = 0;
+    Coefficient prev(0);  // Ignore initial zeros.
+    for (LiteralWithCoeff term : cst) {
+      if (term.coefficient != prev) {
+        prev = term.coefficient;
+        ++size;
+      }
+    }
+    coeffs_.reserve(size);
+    starts_.reserve(size + 1);
+  }
+
+  Coefficient prev(0);
   for (LiteralWithCoeff term : cst) {
-    if (term.coefficient == 0) continue;
-    if (coeffs_.empty() || term.coefficient != coeffs_.back()) {
+    if (term.coefficient != prev) {
+      prev = term.coefficient;
       coeffs_.push_back(term.coefficient);
       starts_.push_back(literals_.size());
     }
@@ -1056,8 +1075,7 @@ void PbConstraints::DeleteConstraintMarkedForDeletion() {
     if (!constraints_[i.value()]->is_marked_for_deletion()) {
       index_mapping[i] = new_index;
       if (new_index < i) {
-        constraints_[new_index.value()].reset(
-            constraints_[i.value()].release());
+        constraints_[new_index.value()] = std::move(constraints_[i.value()]);
         thresholds_[new_index] = thresholds_[i];
       }
       ++new_index;

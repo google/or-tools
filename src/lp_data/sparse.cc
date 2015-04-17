@@ -12,12 +12,12 @@
 // limitations under the License.
 
 
+#include "lp_data/sparse.h"
 #include <algorithm>
 
 #include "base/stringprintf.h"
 #include "base/join.h"
 #include "lp_data/lp_data.h"
-#include "lp_data/sparse.h"
 #include "util/return_macros.h"
 
 namespace operations_research {
@@ -295,6 +295,20 @@ void SparseMatrix::DeleteRows(RowIndex new_num_rows,
     columns_[col].ApplyPartialRowPermutation(permutation);
   }
   SetNumRows(new_num_rows);
+}
+
+bool SparseMatrix::AppendRowsFromSparseMatrix(const SparseMatrix& matrix) {
+  const ColIndex end = num_cols();
+  if (end != matrix.num_cols()) {
+    return false;
+  }
+  const RowIndex offset = num_rows();
+  for (ColIndex col(0); col < end; ++col) {
+    const SparseColumn& source_column = matrix.columns_[col];
+    columns_[col].AppendEntriesWithOffset(source_column, offset);
+  }
+  SetNumRows(offset + matrix.num_rows());
+  return true;
 }
 
 void SparseMatrix::ApplyRowPermutation(const RowPermutation& row_perm) {

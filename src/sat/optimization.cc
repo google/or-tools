@@ -60,7 +60,7 @@ struct LiteralWithCoreIndex {
 // increasing order. The order of the non-deleted entries in the vector is
 // preserved.
 template <typename Vector>
-void DeleteVectorIndices(const std::vector<int> indices, Vector* v) {
+void DeleteVectorIndices(const std::vector<int>& indices, Vector* v) {
   int new_size = 0;
   int indices_index = 0;
   for (int i = 0; i < v->size(); ++i) {
@@ -195,16 +195,18 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
   // the assumptions are unsat with unit propagation only. This is just a
   // convenient way to remove assumptions that are propagated by the one before
   // them.
-  if (solver->ResetAndSolveWithGivenAssumptions(temp) !=
-      SatSolver::ASSUMPTIONS_UNSAT) {
-    // This should almost never happen, but it is not impossible. The reason is
-    // that the solver may delete some learned clauses required by the unit
-    // propagation to show that the core is unsat.
-    LOG(WARNING) << "This should only happen rarely! otherwise, investigate";
+  const SatSolver::Status status =
+      solver->ResetAndSolveWithGivenAssumptions(temp);
+  if (status != SatSolver::ASSUMPTIONS_UNSAT) {
+    if (status != SatSolver::LIMIT_REACHED) {
+      // This should almost never happen, but it is not impossible. The reason
+      // is that the solver may delete some learned clauses required by the unit
+      // propagation to show that the core is unsat.
+      LOG(WARNING) << "This should only happen rarely! otherwise, investigate. "
+                   << "Returned status is " << SatStatusString(status);
+    }
     return;
   }
-  CHECK_EQ(solver->ResetAndSolveWithGivenAssumptions(temp),
-           SatSolver::ASSUMPTIONS_UNSAT);
   temp = solver->GetLastIncompatibleDecisions();
   if (temp.size() < core->size()) {
     VLOG(1) << "old core size " << core->size();
@@ -308,8 +310,9 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
       CHECK_LT(index, assumptions.size());
 
       // Fix it. We also fix all the associated blocking variables if any.
-      if (!solver->AddUnitClause(core[0].Negated()))
+      if (!solver->AddUnitClause(core[0].Negated())) {
         return SatSolver::MODEL_UNSAT;
+      }
       for (Literal b : blocking_clauses[index]) {
         if (!solver->AddUnitClause(b.Negated())) return SatSolver::MODEL_UNSAT;
       }
@@ -401,7 +404,9 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
       // TODO(user): The algorithm does not really need the >= 1 side of this
       // constraint. Initial investigation shows that it doesn't really help,
       // but investigate more.
-      if (false) ok &= solver->AddProblemClause(at_least_one_constraint);
+      if (/* DISABLES CODE */ (false)) {
+        ok &= solver->AddProblemClause(at_least_one_constraint);
+      }
 
       if (!ok) {
         LOG(INFO) << "Unsat while adding a clause.";

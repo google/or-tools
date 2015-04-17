@@ -93,7 +93,7 @@ int64 UpperBoundOfRatio(int64 numerator_1, int64 numerator_2,
   }
 }
 
-}  // local namespace
+}  // namespace
 
 // ----- KnapsackSearchNode -----
 KnapsackSearchNode::KnapsackSearchNode(const KnapsackSearchNode* const parent,

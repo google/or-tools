@@ -136,8 +136,9 @@ ColMapping FindProportionalColumns(const SparseMatrix& matrix,
       // TODO(user): Derive precise bounds on what this tolerance should be so
       // that no proportional columns are missed.
       if (!AreProportionalCandidates(fingerprints[i], fingerprints[j],
-                                     tolerance))
+                                     tolerance)) {
         break;
+      }
       if (AreColumnsProportional(matrix.column(col_a), matrix.column(col_b),
                                  tolerance)) {
         mapping[col_b] = col_a;

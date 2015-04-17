@@ -47,8 +47,9 @@ void DebugCheckBoundsValid(Fractional lower_bound, Fractional upper_bound) {
 bool AreBoundsFreeOrBoxed(Fractional lower_bound, Fractional upper_bound) {
   if (lower_bound == -kInfinity && upper_bound == kInfinity) return true;
   if (lower_bound != -kInfinity && upper_bound != kInfinity &&
-      lower_bound != upper_bound)
+      lower_bound != upper_bound) {
     return true;
+  }
   return false;
 }
 
@@ -252,7 +253,6 @@ const std::vector<ColIndex>& LinearProgram::NonBinaryVariablesList() const {
   return non_binary_variables_list_;
 }
 
-
 bool LinearProgram::IsVariableBinary(ColIndex col) const {
   // TODO(user, bdb): bounds of binary variables (and of integer ones) should
   // be integer. Add a preprocessor for that.
@@ -382,8 +382,9 @@ bool LinearProgram::IsSolutionFeasible(
   for (ColIndex col = ColIndex(0); col < num_cols; ++col) {
     const Fractional lb_error = variable_lower_bounds()[col] - solution[col];
     const Fractional ub_error = solution[col] - variable_upper_bounds()[col];
-    if (lb_error > absolute_tolerance || ub_error > absolute_tolerance)
+    if (lb_error > absolute_tolerance || ub_error > absolute_tolerance) {
       return false;
+    }
   }
   const SparseMatrix& transpose = GetTransposeSparseMatrix();
   const RowIndex num_rows = num_constraints();
@@ -395,8 +396,9 @@ bool LinearProgram::IsSolutionFeasible(
     if (isnan(sum)) return false;
     const Fractional lb_error = constraint_lower_bounds()[row] - sum;
     const Fractional ub_error = sum - constraint_upper_bounds()[row];
-    if (lb_error > absolute_tolerance || ub_error > absolute_tolerance)
+    if (lb_error > absolute_tolerance || ub_error > absolute_tolerance) {
       return false;
+    }
   }
   return true;
 }
@@ -638,7 +640,7 @@ void LinearProgram::PopulateFromDual(const LinearProgram& dual,
 }
 
 void LinearProgram::PopulateFromLinearProgram(
-    const LinearProgram& linear_program, bool keep_table_names) {
+    const LinearProgram& linear_program, bool keep_id_tables) {
   matrix_.PopulateFromSparseMatrix(linear_program.matrix_);
   if (linear_program.transpose_matrix_is_consistent_) {
     transpose_matrix_is_consistent_ = true;
@@ -648,28 +650,52 @@ void LinearProgram::PopulateFromLinearProgram(
     transpose_matrix_is_consistent_ = false;
     transpose_matrix_.Clear();
   }
-  integer_variables_list_is_consistent_ =
-      linear_program.integer_variables_list_is_consistent_;
 
   constraint_lower_bounds_ = linear_program.constraint_lower_bounds_;
   constraint_upper_bounds_ = linear_program.constraint_upper_bounds_;
   constraint_names_ = linear_program.constraint_names_;
+  if (keep_id_tables) {
+    constraint_table_ = linear_program.constraint_table_;
+  } else {
+    constraint_table_.clear();
+  }
 
+  PopulateNameObjectiveAndVariablesFromLinearProgram(linear_program,
+                                                     keep_id_tables);
+}
+
+void LinearProgram::PopulateFromLinearProgramVariables(
+    const LinearProgram& linear_program, bool keep_id_tables) {
+  matrix_.PopulateFromZero(RowIndex(0), linear_program.num_variables());
+  transpose_matrix_is_consistent_ = false;
+  transpose_matrix_.Clear();
+
+  constraint_lower_bounds_.clear();
+  constraint_upper_bounds_.clear();
+  constraint_names_.clear();
+  constraint_table_.clear();
+
+  PopulateNameObjectiveAndVariablesFromLinearProgram(linear_program,
+                                                     keep_id_tables);
+}
+
+void LinearProgram::PopulateNameObjectiveAndVariablesFromLinearProgram(
+    const LinearProgram& linear_program, bool keep_id_table) {
   objective_coefficients_ = linear_program.objective_coefficients_;
   variable_lower_bounds_ = linear_program.variable_lower_bounds_;
   variable_upper_bounds_ = linear_program.variable_upper_bounds_;
   variable_names_ = linear_program.variable_names_;
   is_variable_integer_ = linear_program.is_variable_integer_;
+  integer_variables_list_is_consistent_ =
+      linear_program.integer_variables_list_is_consistent_;
   integer_variables_list_ = linear_program.integer_variables_list_;
   binary_variables_list_ = linear_program.binary_variables_list_;
   non_binary_variables_list_ = linear_program.non_binary_variables_list_;
 
-  if (keep_table_names) {
+  if (keep_id_table) {
     variable_table_ = linear_program.variable_table_;
-    constraint_table_ = linear_program.constraint_table_;
   } else {
     variable_table_.clear();
-    constraint_table_.clear();
   }
 
   maximize_ = linear_program.maximize_;
@@ -677,6 +703,56 @@ void LinearProgram::PopulateFromLinearProgram(
   columns_are_known_to_be_clean_ =
       linear_program.columns_are_known_to_be_clean_;
   name_ = linear_program.name_;
+}
+
+void LinearProgram::AddConstraints(
+    const SparseMatrix& coefficients, const DenseColumn& left_hand_sides,
+    const DenseColumn& right_hand_sides,
+    const StrictITIVector<RowIndex, std::string>& names) {
+  const RowIndex num_new_constraints = coefficients.num_rows();
+  DCHECK_EQ(num_variables(), coefficients.num_cols());
+  DCHECK_EQ(num_new_constraints, left_hand_sides.size());
+  DCHECK_EQ(num_new_constraints, right_hand_sides.size());
+  DCHECK_EQ(num_new_constraints, names.size());
+
+  matrix_.AppendRowsFromSparseMatrix(coefficients);
+  transpose_matrix_is_consistent_ = false;
+  transpose_matrix_.Clear();
+  columns_are_known_to_be_clean_ = false;
+
+  // Copy constraint bounds and names from linear_program.
+  constraint_lower_bounds_.insert(constraint_lower_bounds_.end(),
+                                  left_hand_sides.begin(),
+                                  left_hand_sides.end());
+  constraint_upper_bounds_.insert(constraint_upper_bounds_.end(),
+                                  right_hand_sides.begin(),
+                                  right_hand_sides.end());
+  constraint_names_.insert(constraint_names_.end(), names.begin(), names.end());
+}
+
+bool LinearProgram::UpdateVariableBoundsToIntersection(
+    const DenseRow& variable_lower_bounds,
+    const DenseRow& variable_upper_bounds) {
+  const ColIndex num_vars = num_variables();
+  DCHECK_EQ(variable_lower_bounds.size(), num_vars);
+  DCHECK_EQ(variable_upper_bounds.size(), num_vars);
+
+  DenseRow new_lower_bounds(num_vars, 0);
+  DenseRow new_upper_bounds(num_vars, 0);
+  for (ColIndex i(0); i < num_vars; ++i) {
+    const Fractional new_lower_bound =
+        std::max(variable_lower_bounds[i], variable_lower_bounds_[i]);
+    const Fractional new_upper_bound =
+        std::min(variable_upper_bounds[i], variable_upper_bounds_[i]);
+    if (new_lower_bound > new_upper_bound) {
+      return false;
+    }
+    new_lower_bounds[i] = new_lower_bound;
+    new_upper_bounds[i] = new_upper_bound;
+  }
+  variable_lower_bounds_.swap(new_lower_bounds);
+  variable_upper_bounds_.swap(new_upper_bounds);
+  return true;
 }
 
 void LinearProgram::Swap(LinearProgram* linear_program) {
@@ -830,8 +906,9 @@ bool LinearProgram::IsValid() const {
       if (!IsFinite(e.coefficient())) return false;
     }
   }
-  if (constraint_upper_bounds_.size() != constraint_lower_bounds_.size())
+  if (constraint_upper_bounds_.size() != constraint_lower_bounds_.size()) {
     return false;
+  }
   for (RowIndex row(0); row < constraint_lower_bounds_.size(); ++row) {
     if (!AreBoundsValid(constraint_lower_bounds()[row],
                         constraint_upper_bounds()[row])) {
@@ -915,8 +992,8 @@ std::string LinearProgram::ProblemStatFormatter(const char* format) const {
   const int num_integer_variables = IntegerVariablesList().size();
   const int num_binary_variables = BinaryVariablesList().size();
   const int num_non_binary_variables = NonBinaryVariablesList().size();
-  const int num_continuous_variables = ColToIntIndex(num_variables()) -
-                                       num_integer_variables;
+  const int num_continuous_variables =
+      ColToIntIndex(num_variables()) - num_integer_variables;
   return StringPrintf(
       format, RowToIntIndex(num_constraints()), ColToIntIndex(num_variables()),
       matrix_.num_entries().value(), num_objective_non_zeros, num_rhs_non_zeros,

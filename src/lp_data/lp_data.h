@@ -331,10 +331,31 @@ class LinearProgram {
                         RowToColMapping* duplicated_rows);
 
   // Populates the calling object with the given LinearProgram. If
-  // keep_table_names is false, we do not keep the column/row name mappings
-  // which are mainly useful when constructing a program (this is a bit faster).
+  // keep_id_tables is false, we do not keep the column/row id mappings which
+  // are only useful when constructing a program (this is a bit faster).
   void PopulateFromLinearProgram(const LinearProgram& linear_program,
-                                 bool keep_table_names);
+                                 bool keep_id_tables);
+
+  // Populates the calling object with the variables of the given LinearProgram.
+  // The function preserves the bounds, the integrality, the names of the
+  // variables and their objective coefficients. No constraints are copied (the
+  // matrix in the destination has 0 rows). If keep_id_tables is false, we do
+  // not keep the column/row id mappings which are only useful when constructing
+  // a program (this is a bit faster).
+  void PopulateFromLinearProgramVariables(const LinearProgram& linear_program,
+                                          bool keep_id_tables);
+
+  // Adds constraints to the linear program. The constraints are specified using
+  // a sparse matrix of the coefficients, and vectors that represent the
+  // left-hand side and the right-hand side of the constraints, i.e.
+  // left_hand_sides <= coefficients * variables <= right_hand_sides.
+  // The sizes of the columns and the names must be the same as the number of
+  // rows of the sparse matrix; the number of columns of the matrix must be
+  // equal to the number of variables of the linear program.
+  void AddConstraints(const SparseMatrix& coefficients,
+                      const DenseColumn& left_hand_sides,
+                      const DenseColumn& right_hand_sides,
+                      const StrictITIVector<RowIndex, std::string>& names);
 
   // Swaps the content of this LinearProgram with the one passed as argument.
   // Works in O(1).
@@ -358,6 +379,14 @@ class LinearProgram {
   // SetXXX() function above.
   bool IsValid() const;
 
+  // Updates the bounds of the variables to the intersection of their original
+  // bounds and the bounds specified by variable_lower_bounds and
+  // variable_upper_bounds. If the new bounds of all variables are non-empty,
+  // returns true; otherwise, returns false.
+  bool UpdateVariableBoundsToIntersection(
+      const DenseRow& variable_lower_bounds,
+      const DenseRow& variable_upper_bounds);
+
  private:
   // A helper function that updates the vectors integer_variables_list_,
   // binary_variables_list_, and non_binary_variables_list_.
@@ -373,6 +402,12 @@ class LinearProgram {
 
   // Resizes all row vectors to include index 'row'.
   void ResizeRowsIfNeeded(RowIndex row);
+
+  // Populates the definitions of variables, name and objective in the calling
+  // linear program with the data from the given linear program. The method does
+  // not touch the data structures for storing constraints.
+  void PopulateNameObjectiveAndVariablesFromLinearProgram(
+      const LinearProgram& linear_program, bool keep_id_table);
 
   // Stores the linear program coefficients.
   SparseMatrix matrix_;

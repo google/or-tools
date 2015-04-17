@@ -12,6 +12,7 @@
 // limitations under the License.
 
 
+#include "lp_data/lp_print_utils.h"
 #include <cmath>
 #include <cstdio>
 #include <limits>
@@ -19,7 +20,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/join.h"
-#include "lp_data/lp_print_utils.h"
 #include "lp_data/lp_types.h"
 #include "util/rational_approximation.h"
 

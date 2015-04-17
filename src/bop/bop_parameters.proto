@@ -16,18 +16,23 @@ syntax = "proto2";
 package operations_research.bop;
 
 // Method used to optimize a solution in Bop and its associated initial score.
+//
+// NEXT TAG: 16
 message BopOptimizerMethod {
   enum OptimizerType {
     SAT_CORE_BASED = 0;
+    SAT_LINEAR_SEARCH = 15;
     LINEAR_RELAXATION = 1;
     LOCAL_SEARCH = 2;
     RANDOM_FIRST_SOLUTION = 3;
     RANDOM_CONSTRAINT_LNS = 4;
-    RANDOM_LNS_PROPAGATION = 5;
-    RANDOM_LNS_SAT = 6;
+    RANDOM_VARIABLE_LNS = 5;
     COMPLETE_LNS = 7;
     LP_FIRST_SOLUTION = 8;
     OBJECTIVE_FIRST_SOLUTION = 9;
+    USER_GUIDED_FIRST_SOLUTION = 14;
+    RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP = 11;
+    RANDOM_VARIABLE_LNS_GUIDED_BY_LP = 12;
   }
   optional OptimizerType type = 1;
 
@@ -38,8 +43,13 @@ message BopOptimizerMethod {
   // The ratio is used to compute the max time the method might spend to look
   // for a solution. For instance, with a ratio of 0.05 and a time limit of
   // 300 seconds, the method can spend up to 15 seconds.
-  // Note that this is only used by *_FIRST_SOLUTION optimizers in the
-  // current implementation.
+  //
+  // Note that the LOCAL_SEARCH optimizer doesn't respect this and that some
+  // optimizers have a conflicts and/or iterations limit which usually result in
+  // running times a lot lower than this bound.
+  //
+  // TODO(user): This is a big source of undeterminism in the solver. Find a
+  // deterministic way to have a similar behavior.
   optional double time_limit_ratio = 3 [default = 0.05];
 }
 
@@ -53,7 +63,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 33
+// NEXT TAG: 19
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -76,6 +86,9 @@ message BopParameters {
   // Maximum number of cascading decisions the solver might use to repair the
   // current solution in the LS.
   optional int32 max_num_decisions = 2 [default = 4];
+
+  // Whether the solver should log the search progress to LOG(INFO).
+  optional bool log_search_progress = 14 [default = false];
 
   // Compute estimated impact at each iteration when true; only once when false.
   optional bool compute_estimated_impact = 3 [default = true];
@@ -100,8 +113,7 @@ message BopParameters {
   // subproblem.
   optional int32 max_number_of_conflicts_in_random_lns = 9 [default = 2500];
 
-  // Number of tries in the random lns before calling the SAT solver on the
-  // full problem.
+  // Number of tries in the random lns.
   optional int32 num_random_lns_tries = 10 [default = 1];
 
   // Maximum number of backtracks times the number of variables in Local Search,
@@ -135,7 +147,7 @@ message BopParameters {
   // it will not restart from scratch but will iterate on the next
   // max_number_of_explored_assignments_per_try_in_ls assignments.
   optional int64 max_number_of_explored_assignments_per_try_in_ls = 21
-      [default = 2500];
+      [default = 50000];
 
   // Whether we use an hash set during the LS to avoid exploring more than once
   // the "same" state. Note that because the underlying SAT solver may learn
@@ -195,20 +207,34 @@ message BopParameters {
   // List of set of optimizers to be run by the solvers.
   // Note that the i_th solver will run the
   // min(i, solver_optimizer_sets_size())_th optimizer set.
-  // The default is (only one set):
-  //   {
-  //     type:LINEAR_RELAXATION initial_score:1.0 time_limit_ratio:0.15
-  //     type:LP_FIRST_SOLUTION               initial_score:0.1
-  //     type:OBJECTIVE_FIRST_SOLUTION        initial_score:0.1
-  //     type:RANDOM_FIRST_SOLUTION           initial_score:0.1
-  //     type:SAT_CORE_BASED                  initial_score:1.0
-  //     type:LOCAL_SEARCH                    initial_score:2.0
-  //     type:RANDOM_CONSTRAINT_LNS           initial_score:0.1
-  //     type:RANDOM_LNS_PROPAGATION          initial_score:1.0
-  //     type:RANDOM_LNS_SAT                  initial_score:1.0
-  //     type:COMPLETE_LNS                    initial_score:0.1
-  //   }
+  // The default is defined by default_solver_optimizer_sets (only one set).
   repeated BopSolverOptimizerSet solver_optimizer_sets = 26;
+  optional string default_solver_optimizer_sets = 33
+      [default =
+           "methods:{type:LINEAR_RELAXATION time_limit_ratio:0.15 "
+           "         initial_score:1.0}                           "
+           "methods:{type:SAT_CORE_BASED                          "
+           "         initial_score:1.0}                           "
+           "methods:{type:LP_FIRST_SOLUTION                       "
+           "         initial_score:1.0}                           "
+           "methods:{type:OBJECTIVE_FIRST_SOLUTION                "
+           "         initial_score:1.0}                           "
+           "methods:{type:USER_GUIDED_FIRST_SOLUTION              "
+           "         initial_score:1.0}                           "
+           "methods:{type:RANDOM_FIRST_SOLUTION                   "
+           "         initial_score:1.0}                           "
+           "methods:{type:LOCAL_SEARCH                            "
+           "         initial_score:2.0}                           "
+           "methods:{type:RANDOM_CONSTRAINT_LNS                   "
+           "         initial_score:0.1}                           "
+           "methods:{type:RANDOM_VARIABLE_LNS                     "
+           "         initial_score:1.0}                           "
+           "methods:{type:RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP      "
+           "         initial_score:0.1}                           "
+           "methods:{type:RANDOM_VARIABLE_LNS_GUIDED_BY_LP        "
+           "         initial_score:1.0}                           "
+           "methods:{type:COMPLETE_LNS                            "
+           "         initial_score:0.1}"];
 
   // Use strong branching in the linear relaxation optimizer.
   // The strong branching is a what-if analysis on each variable v, i.e.
@@ -230,4 +256,9 @@ message BopParameters {
   // TODO(user): Merge this with the number_of_solvers parameter.
   optional int32 num_bop_solvers_used_by_decomposition = 31 [default = 1];
 
+
+  // The first solutions based on guided SAT will work in chunk of that many
+  // conflicts at the time. This allows to simulate parallelism between the
+  // different guiding strategy on a single core.
+  optional int32 guided_sat_conflicts_chunk = 34 [default = 1000];
 }

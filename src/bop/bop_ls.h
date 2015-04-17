@@ -28,7 +28,6 @@
 #define OR_TOOLS_BOP_BOP_LS_H_
 
 #include <array>
-
 #include "base/hash.h"
 
 #include "base/hash.h"
@@ -40,6 +39,61 @@
 
 namespace operations_research {
 namespace bop {
+
+// This class is used to ease the connection with the SAT solver.
+//
+// TODO(user): remove? the meat of the logic is used in just one place, so I am
+// not sure having this extra layer improve the readability.
+class SatWrapper {
+ public:
+  explicit SatWrapper(sat::SatSolver* sat_solver);
+
+  // Returns the current state of the solver propagation trail.
+  std::vector<sat::Literal> FullSatTrail() const;
+
+  // Returns true if the problem is UNSAT.
+  // Note that an UNSAT problem might not be marked as UNSAT at first because
+  // the SAT solver is not able to prove it; After some decisions / learned
+  // conflicts, the SAT solver might be able to prove UNSAT and so this will
+  // return true.
+  bool IsModelUnsat() const { return sat_solver_->IsModelUnsat(); }
+
+  // Return the current solver VariablesAssignment.
+  const sat::VariablesAssignment& SatAssignment() const {
+    return sat_solver_->Assignment();
+  }
+
+  // Applies the decision that makes the given literal true and returns the
+  // number of decisions to backtrack due to conflicts if any.
+  // Two cases:
+  //   - No conflicts: Returns 0 and fills the propagated_literals with the
+  //     literals that have been propagated due to the decision including the
+  //     the decision itself.
+  //   - Conflicts: Returns the number of decisions to backtrack (the current
+  //     decision included, i.e. returned value > 0) and fills the
+  //     propagated_literals with the literals that the conflicts propagated.
+  // Note that the decision variable should not be already assigned in SAT.
+  int ApplyDecision(sat::Literal decision_literal,
+                    std::vector<sat::Literal>* propagated_literals);
+
+  // Backtracks the last decision if any.
+  void BacktrackOneLevel();
+
+  // Bactracks all the decisions.
+  void BacktrackAll();
+
+  // Extracts any new information learned during the search.
+  void ExtractLearnedInfo(LearnedInfo* info);
+
+  // Returns a deterministic number that should be correlated with the time
+  // spent in the SAT wrapper. The order of magnitude should be close to the
+  // time in seconds.
+  double deterministic_time() const;
+
+ private:
+  sat::SatSolver* sat_solver_;
+  DISALLOW_COPY_AND_ASSIGN(SatWrapper);
+};
 
 // Forward declaration.
 class LocalSearchAssignmentIterator;
@@ -56,18 +110,15 @@ class LocalSearchAssignmentIterator;
 // in the new solution can be greater than max_num_decisions.
 class LocalSearchOptimizer : public BopOptimizerBase {
  public:
-  explicit LocalSearchOptimizer(const std::string& name, int max_num_decisions);
-  virtual ~LocalSearchOptimizer();
+  LocalSearchOptimizer(const std::string& name, int max_num_decisions,
+                       sat::SatSolver* sat_propagator);
+  ~LocalSearchOptimizer() override;
 
  private:
-  virtual bool RunOncePerSolution() const { return false; }
-  virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
-
-  BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState& problem_state);
+  bool ShouldBeRun(const ProblemState& problem_state) const override;
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) override;
 
   int64 state_update_stamp_;
 
@@ -75,6 +126,9 @@ class LocalSearchOptimizer : public BopOptimizerBase {
   // Note that there is no limit on the number of changed variables due to
   // propagation.
   const int max_num_decisions_;
+
+  // A wrapper around the given sat_propagator.
+  SatWrapper sat_wrapper_;
 
   // Iterator on all reachable assignments.
   // Note that this iterator is only reset when Synchronize() is called, i.e.
@@ -149,7 +203,7 @@ class BacktrackableIntegerSet {
 //
 // The assignment can be accessed at any time using Assignment().
 // The set of infeasible constraints can be accessed at any time using
-// InfeasibleConstraints().
+// PossiblyInfeasibleConstraints().
 //
 // Note that this class is reversible, i.e. it is possible to backtrack to
 // previously added backtracking levels.
@@ -164,20 +218,23 @@ class BacktrackableIntegerSet {
 //   7- BacktrackOneLevel()
 class AssignmentAndConstraintFeasibilityMaintainer {
  public:
-  AssignmentAndConstraintFeasibilityMaintainer(
+  // Note that the constraint indices used in this class are not the same as
+  // the one used in the given LinearBooleanProblem here.
+  explicit AssignmentAndConstraintFeasibilityMaintainer(
       const LinearBooleanProblem& problem);
 
+  // When we construct the problem, we treat the objective as one constraint.
+  // This is the index of this special "objective" constraint.
   static const ConstraintIndex kObjectiveConstraint;
 
   // Sets a new reference solution and reverts all internal structures to their
-  // initial state, e.g. is_assigned_[i] == false.
-  // Note that the reference solution has to be feasible.
+  // initial state. Note that the reference solution has to be feasible.
   void SetReferenceSolution(const BopSolution& reference_solution);
 
-  // Over-constraints the objective cost by delta. Note that calling this method
-  // right after setting the reference solution, i.e. no calls to Assign(), will
-  // break the objective constraint.
-  void OverConstrainObjective(int64 delta);
+  // Behaves exactly like SetReferenceSolution() where the passed reference
+  // is the current assignment held by this class. Note that the current
+  // assignment must be feasible (i.e. IsFeasible() is true).
+  void UseCurrentStateAsReference();
 
   // Assigns all literals. That updates the assignment, the constraint values,
   // and the infeasible constraints.
@@ -196,12 +253,17 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // before the previous call to AddBacktrackingLevel().
   // Note that backtracking the initial state has no effect.
   void BacktrackOneLevel();
-
-  // Returns true when the variable var has been set by Assign().
-  bool IsAssigned(VariableIndex var) const { return is_assigned_[var]; }
+  void BacktrackAll();
 
   // Returns true if there is no infeasible constraint in the current state.
   bool IsFeasible() const { return infeasible_constraint_set_.size() == 0; }
+
+  // Returns the *exact* number of infeasible constraints.
+  // Note that PossiblyInfeasibleConstraints() will potentially return a larger
+  // number of constraints.
+  int NumInfeasibleConstraints() const {
+    return infeasible_constraint_set_.size();
+  }
 
   // Returns a superset of all the infeasible constraints in the current state.
   const std::vector<ConstraintIndex>& PossiblyInfeasibleConstraints() const {
@@ -218,9 +280,8 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // the value of the variable in the reference solution.
   bool Assignment(VariableIndex var) const { return assignment_.Value(var); }
 
-  // Returns the assignment as a BopSolution. Note that the resulting solution
-  // might not be feasible.
-  const BopSolution& assignment() const { return assignment_; }
+  // Returns the current assignment.
+  const BopSolution& reference() const { return reference_; }
 
   // Returns the lower bound of the constraint.
   int64 ConstraintLowerBound(ConstraintIndex constraint) const {
@@ -233,9 +294,8 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   }
 
   // Returns the value of the constraint. The value is computed using the
-  // variable values in the assignment.
-  // Note that a constraint is feasible iff its value is between its two bounds
-  // (inclusive).
+  // variable values in the assignment. Note that a constraint is feasible iff
+  // its value is between its two bounds (inclusive).
   int64 ConstraintValue(ConstraintIndex constraint) const {
     return constraint_values_[constraint];
   }
@@ -250,6 +310,10 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   std::string DebugString() const;
 
  private:
+  // Over constrains the objective cost by the given delta. This should only be
+  // called on a feasible reference solution and a fully backtracked state.
+  void MakeObjectiveConstraintInfeasible(int delta);
+
   // Local structure to represent the sparse matrix by variable used for fast
   // update of the contraint values.
   struct ConstraintEntry {
@@ -258,18 +322,22 @@ class AssignmentAndConstraintFeasibilityMaintainer {
     int64 weight;
   };
 
-  ITIVector<VariableIndex, ITIVector<EntryIndex, ConstraintEntry> >
+  ITIVector<VariableIndex, ITIVector<EntryIndex, ConstraintEntry>>
       by_variable_matrix_;
   ITIVector<ConstraintIndex, int64> constraint_lower_bounds_;
   ITIVector<ConstraintIndex, int64> constraint_upper_bounds_;
-  BopSolution reference_solution_;
 
   BopSolution assignment_;
-  ITIVector<VariableIndex, bool> is_assigned_;
-  ITIVector<ConstraintIndex, int64> constraint_values_;
+  BopSolution reference_;
 
-  std::vector<std::vector<sat::Literal> > literals_applied_stack_;
+  ITIVector<ConstraintIndex, int64> constraint_values_;
   BacktrackableIntegerSet<ConstraintIndex> infeasible_constraint_set_;
+
+  // This contains the list of variable flipped in assignment_.
+  // flipped_var_trail_backtrack_levels_[i-1] is the index in flipped_var_trail_
+  // of the first variable flipped after the i-th AddBacktrackingLevel() call.
+  std::vector<int> flipped_var_trail_backtrack_levels_;
+  std::vector<VariableIndex> flipped_var_trail_;
 
   DISALLOW_COPY_AND_ASSIGN(AssignmentAndConstraintFeasibilityMaintainer);
 };
@@ -288,20 +356,27 @@ class AssignmentAndConstraintFeasibilityMaintainer {
 // TermIndex term_index refers to the position of the term in the vector.
 class OneFlipConstraintRepairer {
  public:
+  // Note that the constraint indices used in this class follow the same
+  // convention as the one used in the
+  // AssignmentAndConstraintFeasibilityMaintainer.
+  //
+  // TODO(user): maybe merge the two classes? maintaining this implicit indices
+  // convention between the two classes sounds like a bad idea.
   OneFlipConstraintRepairer(
       const LinearBooleanProblem& problem,
-      const AssignmentAndConstraintFeasibilityMaintainer& maintainer);
+      const AssignmentAndConstraintFeasibilityMaintainer& maintainer,
+      const sat::VariablesAssignment& sat_assignment);
 
   static const ConstraintIndex kInvalidConstraint;
   static const TermIndex kInitTerm;
   static const TermIndex kInvalidTerm;
 
-  // Returns the index of a constraint to repair. Returns kInvalidConstraint if
-  // no constraint can be repaired with only one flip.
-  // Note that indices follows the convention in
-  // AssignmentAndConstraintFeasibilityMaintainer, i.e. '0' corresponds to the
-  // objective constraint and 'i' corresponds to the 'i - 1' constraint in
-  // the problem.
+  // Returns the index of a constraint to repair. This will always return the
+  // index of a constraint that can be repaired in one flip if there is one.
+  // Note however that if there is only one possible candidate, it will be
+  // returned without checking that it can indeed be repaired in one flip.
+  // This is because the later check can be expensive, and is not needed in our
+  // context.
   ConstraintIndex ConstraintToRepair() const;
 
   // Returns the index of the next term which repairs the constraint when the
@@ -317,8 +392,13 @@ class OneFlipConstraintRepairer {
                               TermIndex init_term_index,
                               TermIndex start_term_index) const;
 
-  // Returns the literal corresponding to the term_index in the constraint.
-  sat::Literal Literal(ConstraintIndex constraint, TermIndex term_index) const;
+  // Returns true if the constraint is infeasible and if flipping the variable
+  // at the given index will repair it.
+  bool RepairIsValid(ConstraintIndex constraint, TermIndex term_index) const;
+
+  // Returns the literal formed by the variable at the given constraint term and
+  // assigned to the opposite value of this variable in the current assignment.
+  sat::Literal GetFlip(ConstraintIndex constraint, TermIndex term_index) const;
 
   // Local structure to represent the sparse matrix by constraint used for fast
   // lookups.
@@ -329,75 +409,16 @@ class OneFlipConstraintRepairer {
   };
 
  private:
-  // Sorts the terms of each constraints to iterate on most promising variables
-  // first.
-  void SortTerms(int num_variables);
+  // Sorts the terms of each constraints in the by_constraint_matrix_ to iterate
+  // on most promising variables first.
+  void SortTermsOfEachConstraints(int num_variables);
 
   ITIVector<ConstraintIndex, ITIVector<TermIndex, ConstraintTerm> >
       by_constraint_matrix_;
   const AssignmentAndConstraintFeasibilityMaintainer& maintainer_;
+  const sat::VariablesAssignment& sat_assignment_;
 
   DISALLOW_COPY_AND_ASSIGN(OneFlipConstraintRepairer);
-};
-
-// This class is used to ease the connection with the SAT solver.
-// TODO(user): Consider a tightener integration where more objects of the SAT
-//              solver are shared, e.g. the trail stack, the assignment...
-class SatWrapper {
- public:
-  explicit SatWrapper(const ProblemState& problem_state);
-
-  // Backtracks the SAT solver to its root level and resets internal structure,
-  // and synchronizes with the problem state (e.g. new fixed variables).
-  void Synchronize(const ProblemState& problem_state);
-
-  // Constrains the underlying SAT solver to find a solution with a cost better
-  // than the given reference_cost by at least delta.
-  // Returns the newly propagated literals.
-  // In other words, in case of minimization the objective is constrained to be
-  // smaller than or equal to 'reference_cost - delta', and in case of
-  // maximisation the objective is constrained to be greater than
-  // reference_cost + delta.
-  std::vector<sat::Literal> OverConstrainObjective(int64 reference_cost,
-                                              int64 delta);
-
-  // Returns true if the problem is UNSAT.
-  // Note that an UNSAT problem might not be marked as UNSAT at first because
-  // the SAT solver is not able to prove it; After some decisions / learned
-  // conflicts, the SAT solver might be able to prove UNSAT and so this will
-  // return true.
-  bool unsat() const { return unsat_; }
-
-  // Applies the decision that makes the given literal true and returns the
-  // number of decisions to backtrack due to conflicts if any.
-  // Two cases:
-  //   - No conflicts: Returns 0 and fills the propagated_literals with the
-  //     literals that have been propagated due to the decision including the
-  //     the decision itself.
-  //   - Conflicts: Returns the number of decisions to backtrack (the current
-  //     decision included, i.e. returned value > 0) and fills the
-  //     propagated_literals with the literals that the conflicts propagated.
-  // Note that the decision variable should not be already assigned in SAT.
-  int ApplyDecision(sat::Literal decision_literal,
-                    std::vector<sat::Literal>* propagated_literals);
-
-  // Backtracks the last decision if any.
-  void BacktrackOneLevel();
-
-  // Extracts any new information learned during the search.
-  void ExtractLearnedInfo(LearnedInfo* info);
-
-  // Returns a deterministic number that should be correlated with the time
-  // spent in the SAT wrapper. The order of magnitude should be close to the
-  // time in seconds.
-  double deterministic_time() const;
-
- private:
-  const LinearBooleanProblem& problem_;
-  sat::SatSolver sat_solver_;
-  bool unsat_;
-
-  DISALLOW_COPY_AND_ASSIGN(SatWrapper);
 };
 
 // This class is used to iterate on all assignments that can be obtained by
@@ -408,37 +429,34 @@ class SatWrapper {
 class LocalSearchAssignmentIterator {
  public:
   LocalSearchAssignmentIterator(const ProblemState& problem_state,
-                                int max_num_decisions);
+                                int max_num_decisions, SatWrapper* sat_wrapper);
 
   // Sets whether or not a transposition table is used.
   void UseTranspositionTable(bool v) { use_transposition_table_ = v; }
 
   // Synchronizes the iterator with the problem state, e.g. set fixed variables,
-  // set the reference solution.
-  // Note that the iteration will continue where it stopped.
+  // set the reference solution. Call this only when a new solution has been
+  // found. This will restart the LS.
   void Synchronize(const ProblemState& problem_state);
 
-  // Constrains to look for a feasible solution than improves the objective
-  // cost by at least delta.
-  void OverConstrainObjective(int64 reference_cost, int64 delta);
+  // Synchronize the SatWrapper with our current search state. This needs to be
+  // called before calls to NextAssignment() if the underlying SatWrapper was
+  // used by someone else than this class.
+  void SynchronizeSatWrapper();
 
   // Move to the next assignment. Returns false when the search is finished.
   bool NextAssignment();
 
-  // Returns true if the current assignment corresponds to a feasible solution
-  // with a better objective cost than the reference solution.
-  bool AssignmentIsFeasible() const {
-    // TODO(user): change the second term in a DCHECK(), it shouldn't be needed.
-    return maintainer_.IsFeasible() && maintainer_.assignment().IsFeasible();
+  // Returns the last feasible assignment.
+  const BopSolution& LastReferenceAssignment() const {
+    return maintainer_.reference();
   }
 
-  // Returns the current assignment.
-  // Note that this assignment is a feasible solution only when the method
-  // IsFeasibleAssignment() returns true.
-  const BopSolution& Assignment() const { return maintainer_.assignment(); }
-
-  // Extracts any new informations learned during the search.
-  void ExtractLearnedInfo(LearnedInfo* info);
+  // Returns true if the current assignment has a better solution than the one
+  // passed to the last Synchronize() call.
+  bool BetterSolutionHasBeenFound() const {
+    return better_solution_has_been_found_;
+  }
 
   // Returns a deterministic number that should be correlated with the time
   // spent in the iterator. The order of magnitude should be close to the time
@@ -481,7 +499,7 @@ class LocalSearchAssignmentIterator {
 
   // Initializes the given array with the current decisions in search_nodes_ and
   // by filling the other positions with 0.
-  void InitializeTranspostionTableKey(
+  void InitializeTranspositionTableKey(
       std::array<int32, kStoredMaxDecisions>* a);
 
   // Looks for the next repairing term in the given constraints while skipping
@@ -491,11 +509,15 @@ class LocalSearchAssignmentIterator {
                                      TermIndex index);
 
   const int max_num_decisions_;
+  bool better_solution_has_been_found_;
   AssignmentAndConstraintFeasibilityMaintainer maintainer_;
-  SatWrapper sat_wrapper_;
+  SatWrapper* const sat_wrapper_;
   OneFlipConstraintRepairer repairer_;
   std::vector<SearchNode> search_nodes_;
   ITIVector<ConstraintIndex, TermIndex> initial_term_index_;
+
+  // Temporary vector used by ApplyDecision().
+  std::vector<sat::Literal> tmp_propagated_literals_;
 
   // For each set of explored decisions, we store it in this table so that we
   // don't explore decisions (a, b) and later (b, a) for instance. The decisions

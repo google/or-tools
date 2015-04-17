@@ -23,8 +23,8 @@
 #include "base/logging.h"
 #include "base/sysinfo.h"
 #include "base/join.h"
-#include "util/time_limit.h"
 #include "base/stl_util.h"
+#include "util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -474,8 +474,9 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
       if (is_marked_[implied.Index()]) {
         DCHECK_LE(lit_level, trail.Info(implied.Variable()).level);
         if (lit_level == trail.Info(implied.Variable()).level &&
-            is_removed_[implied.Index()])
+            is_removed_[implied.Index()]) {
           continue;
+        }
         keep_literal = false;
         break;
       }

@@ -14,12 +14,8 @@
 #ifndef OR_TOOLS_BOP_INTEGRAL_SOLVER_H_
 #define OR_TOOLS_BOP_INTEGRAL_SOLVER_H_
 
-#include <map>
-#include <vector>
-
-#include "bop/bop_base.h"
+#include "base/port.h"
 #include "bop/bop_parameters.pb.h"
-#include "bop/bop_solution.h"
 #include "bop/bop_types.h"
 #include "lp_data/lp_data.h"
 
@@ -28,11 +24,10 @@ namespace bop {
 // This class implements an Integer Programming solver, i.e. the solver solves
 // problems with both integral and boolean variables, linear constraint and
 // linear objective function.
-// Note that the current implementation is limited to integral coefficients.
-// TODO(user): Add scaling to deal with any coefficient.
 class IntegralSolver {
  public:
   IntegralSolver();
+  ~IntegralSolver() {}
 
   // Sets the solver parameters.
   // See the proto for an extensive documentation.
@@ -41,9 +36,12 @@ class IntegralSolver {
   }
   BopParameters parameters() const { return parameters_; }
 
-  // Solves the given linear program and returns the solve status.
+  // Solves the given linear program and returns the solve status. The second
+  // version starts from the given solution which must be feasible.
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem)
       MUST_USE_RESULT;
+  BopSolveStatus Solve(const glop::LinearProgram& linear_problem,
+                       const glop::DenseRow& initial_solution) MUST_USE_RESULT;
 
   // Returns the objective value of the solution with its offset.
   glop::Fractional objective_value() const { return objective_value_; }
@@ -55,11 +53,19 @@ class IntegralSolver {
   // solution is found.
   const glop::DenseRow& variable_values() const { return variable_values_; }
 
+  // Interrupts the current Solve() execution.
+  // Note that the Solve() call may still linger for a while depending on the
+  // conditions.
+  void InterruptSolve() { interrupt_solve_ = true; }
+
  private:
   BopParameters parameters_;
   glop::DenseRow variable_values_;
   glop::Fractional objective_value_;
   glop::Fractional best_bound_;
+  bool interrupt_solve_;
+
+  DISALLOW_COPY_AND_ASSIGN(IntegralSolver);
 };
 }  // namespace bop
 }  // namespace operations_research

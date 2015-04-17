@@ -293,8 +293,9 @@ bool SolveLpAndUseSolutionForSatAssignmentPreference(
   const glop::ProblemStatus& status = solver.Solve(lp);
   if (status != glop::ProblemStatus::OPTIMAL &&
       status != glop::ProblemStatus::IMPRECISE &&
-      status != glop::ProblemStatus::PRIMAL_FEASIBLE)
+      status != glop::ProblemStatus::PRIMAL_FEASIBLE) {
     return false;
+  }
   for (ColIndex col(0); col < lp.num_variables(); ++col) {
     const Fractional& value = solver.variable_values()[col];
     sat_solver->SetAssignmentPreference(

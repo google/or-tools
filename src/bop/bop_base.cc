@@ -13,6 +13,7 @@
 
 #include "bop/bop_base.h"
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,58 @@ using operations_research::LinearBooleanProblem;
 
 namespace operations_research {
 namespace bop {
+
+BopOptimizerBase::BopOptimizerBase(const std::string& name)
+    : name_(name),
+      local_time_limit_in_seconds_(std::numeric_limits<double>::infinity()),
+      local_deterministic_time_limit_(std::numeric_limits<double>::infinity()),
+      stats_(name) {
+  SCOPED_TIME_STAT(&stats_);
+}
+
+BopOptimizerBase::~BopOptimizerBase() {
+  IF_STATS_ENABLED(VLOG(1) << stats_.StatString());
+}
+
+std::string BopOptimizerBase::GetStatusString(Status status) {
+  switch (status) {
+    case OPTIMAL_SOLUTION_FOUND:
+      return "OPTIMAL_SOLUTION_FOUND";
+    case SOLUTION_FOUND:
+      return "SOLUTION_FOUND";
+    case INFEASIBLE:
+      return "INFEASIBLE";
+    case LIMIT_REACHED:
+      return "LIMIT_REACHED";
+    case INFORMATION_FOUND:
+      return "INFORMATION_FOUND";
+    case CONTINUE:
+      return "CONTINUE";
+    case ABORT:
+      return "ABORT";
+  }
+  // Fallback. We don't use "default:" so the compiler will return an error
+  // if we forgot one enum case above.
+  LOG(DFATAL) << "Invalid Status " << static_cast<int>(status);
+  return "UNKNOWN Status";
+}
+
+void BopOptimizerBase::SetLocalTimeLimits(double in_seconds,
+                                          double deterministic) {
+  local_time_limit_in_seconds_ = in_seconds;
+  local_deterministic_time_limit_ = deterministic;
+}
+
+double BopOptimizerBase::LocalTimeLimitInSeconds(TimeLimit* time_limit) const {
+  return std::min(time_limit->GetTimeLeft(), local_time_limit_in_seconds_);
+}
+
+double BopOptimizerBase::LocalDeterministicTimeLimit(
+    TimeLimit* time_limit) const {
+  return std::min(time_limit->GetDeterministicTimeLeft(),
+                  local_deterministic_time_limit_);
+}
+
 //------------------------------------------------------------------------------
 // ProblemState
 //------------------------------------------------------------------------------
@@ -35,6 +88,7 @@ ProblemState::ProblemState(const LinearBooleanProblem& problem)
       fixed_values_(problem.num_variables(), false),
       lp_values_(),
       solution_(problem, "AllZero"),
+      assignment_preference_(),
       lower_bound_(kint64min),
       upper_bound_(kint64max) {
   // TODO(user): Extract to a function used by all solvers.
@@ -42,6 +96,7 @@ ProblemState::ProblemState(const LinearBooleanProblem& problem)
   const LinearObjective& objective = problem.objective();
   lower_bound_ = 0;
   for (int i = 0; i < objective.coefficients_size(); ++i) {
+    // Fix template version for or-tools.
     lower_bound_ += std::min<int64>(0LL, objective.coefficients(i));
   }
   upper_bound_ = solution_.IsFeasible() ? solution_.GetCost() : kint64max;
@@ -198,104 +253,6 @@ const std::vector<sat::BinaryClause>& ProblemState::NewlyAddedBinaryClauses() co
 
 void ProblemState::SynchronizationDone() {
   binary_clause_manager_.ClearNewlyAdded();
-}
-
-//------------------------------------------------------------------------------
-// StampedLearnedInfo
-//------------------------------------------------------------------------------
-StampedLearnedInfo::StampedLearnedInfo()
-    : learned_infos_(), last_stamp_reached_(false), mutex_() {}
-
-void StampedLearnedInfo::AddLearnedInfo(SolverTimeStamp stamp,
-                                        const LearnedInfo& learned_info) {
-  // MutexLock mutex_lock(&mutex_);
-  CHECK_EQ(stamp, learned_infos_.size());
-  learned_infos_.push_back(learned_info);
-}
-
-bool StampedLearnedInfo::GetLearnedInfo(SolverTimeStamp stamp,
-                                        LearnedInfo* learned_info) {
-  CHECK_LE(0, stamp);
-  CHECK(nullptr != learned_info);
-
-  learned_info->Clear();
-
-  {
-    // MutexLock mutex_lock(&mutex_);
-    if (ContainsStamp(stamp)) {
-      *learned_info = learned_infos_[stamp];
-      return true;
-    }
-    if (LastStampReached()) {
-      return false;
-    }
-  }
-  // MutexConditionInfo m(this, stamp);
-  // mutex_.LockWhen(Condition(&SatisfiesStampCondition, &m));
-  // mutex_.AssertHeld();
-  if (LastStampReached()) {
-    // mutex_.Unlock();
-    return false;
-  }
-
-  CHECK(ContainsStamp(stamp));
-  *learned_info = learned_infos_[stamp];
-  // mutex_.Unlock();
-  return true;
-}
-
-void StampedLearnedInfo::MarkLastStampReached() {
-  // MutexLock mutex_lock(&mutex_);
-  last_stamp_reached_ = true;
-}
-
-bool StampedLearnedInfo::LastStampReached() const {
-  // mutex_.AssertHeld();
-  return last_stamp_reached_;
-}
-
-bool StampedLearnedInfo::ContainsStamp(SolverTimeStamp stamp) const {
-  // mutex_.AssertHeld();
-  return stamp < learned_infos_.size();
-}
-
-bool StampedLearnedInfo::SatisfiesStampCondition(MutexConditionInfo* m) {
-  CHECK(nullptr != m);
-  return m->learned_infos->ContainsStamp(m->stamp) ||
-         m->learned_infos->LastStampReached();
-}
-
-//------------------------------------------------------------------------------
-// BopOptimizerBase
-//------------------------------------------------------------------------------
-BopOptimizerBase::BopOptimizerBase(const std::string& name)
-    : name_(name), stats_(name) {
-  SCOPED_TIME_STAT(&stats_);
-}
-
-BopOptimizerBase::~BopOptimizerBase() {
-  IF_STATS_ENABLED(VLOG(1) << stats_.StatString());
-}
-
-std::string BopOptimizerBase::GetStatusString(Status status) {
-  switch (status) {
-    case OPTIMAL_SOLUTION_FOUND:
-      return "OPTIMAL_SOLUTION_FOUND";
-    case SOLUTION_FOUND:
-      return "SOLUTION_FOUND";
-    case INFEASIBLE:
-      return "INFEASIBLE";
-    case LIMIT_REACHED:
-      return "LIMIT_REACHED";
-    case CONTINUE:
-      return "CONTINUE";
-    case ABORT:
-      return "ABORT";
-  }
-  // Fallback. We don't use "default:" so the compiler will return an error
-  // if we forgot one enum case above.
-  LOG(DFATAL) << "Invalid Status " << static_cast<int>(status);
-  return "UNKNOWN Status";
 }
 
 }  // namespace bop

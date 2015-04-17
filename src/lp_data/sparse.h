@@ -63,7 +63,7 @@ class SparseMatrix {
   //    {4, 5, 6},
   //    {7, 8, 9}};
 #if !defined(__ANDROID__) && (!defined(_MSC_VER) || _MSC_VER >= 1800)
-  explicit SparseMatrix(
+  SparseMatrix(
       std::initializer_list<std::initializer_list<Fractional>> init_list);
 #endif
   // Clears internal data structure, i.e. erases all the columns and set
@@ -143,6 +143,13 @@ class SparseMatrix {
   // permutation[row] is kInvalidRow. Sets the new number of rows to num_rows.
   // This runs in O(num_entries).
   void DeleteRows(RowIndex num_rows, const RowPermutation& permutation);
+
+  // Appends all rows from the given matrix to the calling object after the last
+  // row of the calling object. Both matrices must have the same number of
+  // columns. The method returns true if the rows were added successfully and
+  // false if it can't add the rows because the number of columns of the
+  // matrices are different.
+  bool AppendRowsFromSparseMatrix(const SparseMatrix& matrix);
 
   // Applies the row permutation.
   void ApplyRowPermutation(const RowPermutation& row_perm);

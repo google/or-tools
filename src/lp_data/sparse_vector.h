@@ -127,6 +127,14 @@ class SparseVector {
   // Runs in O(num_indices_in_dense_vector).
   void PopulateFromDenseVector(const DenseVector& dense_vector);
 
+  // Appends all entries from sparse_vector to the current vector; the indices
+  // of the appended entries are increased by offset. If the current vector
+  // already has a value at an index changed by this method, this value is
+  // overwritten with the value from sparse_vector.
+  // Note that while offset may be negative itself, the indices of all entries
+  // after applying the offset must be non-negative.
+  void AppendEntriesWithOffset(const SparseVector& sparse_vector, Index offset);
+
   // Returns true when the vector contains no duplicates. Runs in
   // O(max_index + num_entries), max_index being the largest index in entry.
   // This method allocates (and deletes) a Boolean array of size max_index.
@@ -437,6 +445,18 @@ void SparseVector<IndexType>::PopulateFromDenseVector(
     }
   }
   may_contain_duplicates_ = false;
+}
+
+template <typename IndexType>
+void SparseVector<IndexType>::AppendEntriesWithOffset(
+    const SparseVector& sparse_vector, Index offset) {
+  for (const EntryIndex i : sparse_vector.AllEntryIndices()) {
+    const InternalEntry& entry = sparse_vector.entry_[i];
+    const Index new_index = offset + entry.index;
+    DCHECK_GE(new_index, 0);
+    entry_.push_back(InternalEntry(new_index, entry.coefficient));
+  }
+  may_contain_duplicates_ = true;
 }
 
 template <typename IndexType>

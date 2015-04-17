@@ -198,6 +198,7 @@ class MergingPartition {
  public:
   // At first, all nodes are in their own singleton part.
   MergingPartition() { Reset(0); }
+  explicit MergingPartition(int num_nodes) { Reset(num_nodes); }
   void Reset(int num_nodes);
 
   int NumNodes() const { return parent_.size(); }

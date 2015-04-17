@@ -76,6 +76,8 @@ DECLARE_bool(log_prefix);
 #define VLOG(x) \
   if ((x) <= FLAGS_log_level) LOG_INFO.stream()
 
+#define VLOG_IS_ON(x) ((x) <= FLAGS_log_level)
+
 #define LOG(severity) LOG_##severity.stream()
 #define LG LOG_INFO.stream()
 #define LOG_IF(severity, condition) \

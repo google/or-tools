@@ -17,7 +17,6 @@
 #include <string>
 
 #include "base/basictypes.h"
-#include "base/mutex.h"
 #include "bop/bop_parameters.pb.h"
 #include "bop/bop_solution.h"
 #include "lp_data/lp_types.h"
@@ -42,13 +41,20 @@ class BopOptimizerBase {
   explicit BopOptimizerBase(const std::string& name);
   virtual ~BopOptimizerBase();
 
-  // Returns true if it's useless to run the optimizer several times on the
-  // same solution.
-  virtual bool RunOncePerSolution() const = 0;
+  // Returns the name given at construction.
+  const std::string& name() const { return name_; }
 
-  // Returns true if the optimizer needs a feasible solution to run.
-  virtual bool NeedAFeasibleSolution() const = 0;
+  // Returns true if this optimizer should be run on the given problem state.
+  // Some optimizer requires a feasible solution to run for instance.
+  //
+  // Note that a similar effect can be achieved if Optimize() returns ABORT
+  // right away. However, doing the later will lower the chance of this
+  // optimizer to be called again since it will count as a failure to improve
+  // the current state.
+  virtual bool ShouldBeRun(const ProblemState& problem_state) const = 0;
 
+  // Return status of the Optimize() function below.
+  //
   // TODO(user): To redesign, some are not needed anymore thanks to the
   //              problem state, e.g. IsOptimal().
   enum Status {
@@ -56,7 +62,19 @@ class BopOptimizerBase {
     SOLUTION_FOUND,
     INFEASIBLE,
     LIMIT_REACHED,
+
+    // Some information was learned and the problem state will need to be
+    // updated. This will trigger a new optimization round.
+    //
+    // TODO(user): replace by learned_info->IsEmpty()? but we will need to clear
+    // the BopSolution there first.
+    INFORMATION_FOUND,
+
+    // This optimizer didn't learn any information yet but can be called again
+    // on the same problem state to resume its work.
     CONTINUE,
+
+    // There is no need to call this optimizer again on the same problem state.
     ABORT
   };
 
@@ -66,17 +84,29 @@ class BopOptimizerBase {
   // found before a time limit.
   // The learned information is cleared and the filled with any new information
   // about the problem, e.g. a new lower bound.
+  //
+  // Preconditions: ShouldBeRun() must returns true.
   virtual Status Optimize(const BopParameters& parameters,
                           const ProblemState& problem_state,
                           LearnedInfo* learned_info, TimeLimit* time_limit) = 0;
 
-  std::string name() const { return name_; }
-
   // Returns a std::string describing the status.
   static std::string GetStatusString(Status status);
 
+  // Sets the local time limits for each call to Optimize(). If the TimeLimit
+  // passed to Optimize() is lower than that, then it will be used instead. Note
+  // that the later always represents the global problem time limit.
+  void SetLocalTimeLimits(double in_seconds, double deterministic);
+
  protected:
+  // Utility functions that return the min between the local limits and the
+  // corresponding time left in the passed TimeLimit object.
+  double LocalTimeLimitInSeconds(TimeLimit* time_limit) const;
+  double LocalDeterministicTimeLimit(TimeLimit* time_limit) const;
+
   const std::string name_;
+  double local_time_limit_in_seconds_;
+  double local_deterministic_time_limit_;
 
   mutable StatsGroup stats_;
 };
@@ -96,6 +126,15 @@ class ProblemState {
   // Sets parameters, used for instance to get the tolerance, the gap limit...
   void SetParameters(const BopParameters& parameters) {
     parameters_ = parameters;
+  }
+
+  // Sets an assignment preference for each variable.
+  // This is only used for warm start.
+  void set_assignment_preference(const std::vector<bool>& a) {
+    assignment_preference_ = a;
+  }
+  const std::vector<bool> assignment_preference() const {
+    return assignment_preference_;
   }
 
   // Merges the learned information with the current problem state. For
@@ -195,6 +234,7 @@ class ProblemState {
   ITIVector<VariableIndex, bool> fixed_values_;
   glop::DenseRow lp_values_;
   BopSolution solution_;
+  std::vector<bool> assignment_preference_;
 
   int64 lower_bound_;
   int64 upper_bound_;
@@ -243,58 +283,6 @@ struct LearnedInfo {
 
   // New binary clauses.
   std::vector<sat::BinaryClause> binary_clauses;
-};
-
-// Thread-safe storage of LearnedInfo for each stamp. This class is used in
-// a multi-threading context to synchronize learned information between solvers.
-class StampedLearnedInfo {
- public:
-  StampedLearnedInfo();
-
-  // Adds the learned_info at position stamp.
-  // Requires the learned_infos to be added sequentially, i.e. the stamp should
-  // not already exist, and should be +1 of the current hightest stored stamp.
-  void AddLearnedInfo(SolverTimeStamp stamp, const LearnedInfo& learned_info)
-      LOCKS_EXCLUDED(mutex_);
-
-  // Gets the learned_info corresponding to the given stamp.
-  // Returns false when the info doesn't and won't exist because the search
-  // was stopped.
-  // Note that when the search is not marked as stopped, this method will wait
-  // for the given stamp to be added.
-  bool GetLearnedInfo(SolverTimeStamp stamp, LearnedInfo* learned_info)
-      LOCKS_EXCLUDED(mutex_);
-
-  // Marks the search as stopped, the last stamp is reached.
-  void MarkLastStampReached() LOCKS_EXCLUDED(mutex_);
-
- private:
-  // Returns true when the last stamp has been reached, i.e. no more stamps
-  // will be stored. This might be due to a reached time limit.
-  // The caller must hold the mutex_ (Asserted).
-  bool LastStampReached() const EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-
-  // The caller must hold the mutex_ (Asserted).
-  bool ContainsStamp(SolverTimeStamp stamp) const
-      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-
-  struct MutexConditionInfo {
-    MutexConditionInfo(StampedLearnedInfo* i, SolverTimeStamp s)
-        : learned_infos(i), stamp(s) {}
-    const StampedLearnedInfo* learned_infos;
-    SolverTimeStamp stamp;
-  };
-
-  // Static function used as a Condition to wait for available info at a given
-  // stamp.
-  // Returns true when the info is available.
-  static bool SatisfiesStampCondition(MutexConditionInfo* const m)
-      NO_THREAD_SAFETY_ANALYSIS;
-
-  ITIVector<SolverTimeStamp, LearnedInfo> learned_infos_ GUARDED_BY(mutex_);
-  bool last_stamp_reached_ GUARDED_BY(mutex_);
-  // TODO(user): Use ReadMutex and WriteMutex?
-  mutable Mutex mutex_;
 };
 
 }  // namespace bop

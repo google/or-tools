@@ -61,13 +61,13 @@ class TimeLimit {
   // The deterministic time has to be manually advanced using the method
   // AdvanceDeterministicTime().
   // Use an infinite limit value to ignore a limit.
-  TimeLimit(
+  explicit TimeLimit(
       double limit_in_seconds,
       double deterministic_limit = std::numeric_limits<double>::infinity());
 
-  // Returns true when the deterministic time is over the deterministic limit or
-  // if the next time LimitReached() is called is likely to be over the time
-  // limit. See toplevel comment.
+  // Returns true when the external limit is true, or the deterministic time is
+  // over the deterministic limit or if the next time LimitReached() is called
+  // is likely to be over the time limit. See toplevel comment.
   // Once it has returned true, it is guaranteed to always return true.
   bool LimitReached();
 
@@ -112,6 +112,20 @@ class TimeLimit {
     return elapsed_deterministic_time_;
   }
 
+  // Registers the external Boolean to check when LimitReached() is called.
+  // This is used to mark the limit as reached through an external Boolean,
+  // i.e. LimitReached() returns true when the value of
+  // external_boolean_as_limit is true whatever the time limits are.
+  //
+  // Note that external_boolean_as_limit is not protected by a mutex; This
+  // should not prevent usage in a mutli-threading environment because the
+  // change is atomic and it is usually not critical to wrongly return false in
+  // LimitReached() once in case of race between the change of the Boolean and
+  // the check of the limit.
+  void RegisterExternalBooleanAsLimit(const bool* external_boolean_as_limit) {
+    external_boolean_as_limit_ = external_boolean_as_limit;
+  }
+
  private:
   const int64 start_ns_;
   int64 last_ns_;
@@ -125,6 +139,8 @@ class TimeLimit {
 
   double deterministic_limit_;
   double elapsed_deterministic_time_;
+
+  const bool* external_boolean_as_limit_;
 
   DISALLOW_COPY_AND_ASSIGN(TimeLimit);
 };
@@ -140,7 +156,8 @@ inline TimeLimit::TimeLimit(double limit_in_seconds, double deterministic_limit)
       safety_buffer_ns_(static_cast<int64>(kSafetyBufferSeconds * 1e9)),
       running_max_(kHistorySize),
       deterministic_limit_(deterministic_limit),
-      elapsed_deterministic_time_(0.0) {
+      elapsed_deterministic_time_(0.0),
+      external_boolean_as_limit_(nullptr) {
   if (FLAGS_time_limit_use_usertime) {
     user_timer_.Start();
     limit_in_seconds_ = limit_in_seconds;
@@ -148,6 +165,10 @@ inline TimeLimit::TimeLimit(double limit_in_seconds, double deterministic_limit)
 }
 
 inline bool TimeLimit::LimitReached() {
+  if (external_boolean_as_limit_ != nullptr && *external_boolean_as_limit_) {
+    return true;
+  }
+
   if (GetDeterministicTimeLeft() <= 0.0) {
     return true;
   }

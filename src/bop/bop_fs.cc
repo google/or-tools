@@ -70,34 +70,27 @@ void DenseRowToBopSolution(const DenseRow& values, BopSolution* solution) {
   }
 }
 }  // anonymous namespace
+
 //------------------------------------------------------------------------------
-// BopSatObjectiveFirstSolutionGenerator
+// GuidedSatFirstSolutionGenerator
 //------------------------------------------------------------------------------
-BopSatObjectiveFirstSolutionGenerator::BopSatObjectiveFirstSolutionGenerator(
-    const std::string& name, double time_limit_ratio)
+
+GuidedSatFirstSolutionGenerator::GuidedSatFirstSolutionGenerator(
+    const std::string& name, Policy policy)
     : BopOptimizerBase(name),
+      policy_(policy),
+      abort_(false),
       state_update_stamp_(ProblemState::kInitialStampValue),
-      time_limit_ratio_(time_limit_ratio),
-      first_solve_(true),
-      sat_solver_(),
-      lower_bound_(kint64min),
-      upper_bound_(kint64max) {}
+      sat_solver_() {}
 
-BopSatObjectiveFirstSolutionGenerator::
-    ~BopSatObjectiveFirstSolutionGenerator() {}
+GuidedSatFirstSolutionGenerator::~GuidedSatFirstSolutionGenerator() {}
 
-BopOptimizerBase::Status
-BopSatObjectiveFirstSolutionGenerator::SynchronizeIfNeeded(
+BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
     const ProblemState& problem_state) {
   if (state_update_stamp_ == problem_state.update_stamp()) {
     return BopOptimizerBase::CONTINUE;
   }
   state_update_stamp_ = problem_state.update_stamp();
-
-  if (!problem_state.solution().IsFeasible()) {
-    first_solve_ = true;
-  }
-  if (!first_solve_) return BopOptimizerBase::ABORT;
 
   // Create the sat_solver if not already done.
   if (!sat_solver_) sat_solver_.reset(new sat::SatSolver());
@@ -105,14 +98,48 @@ BopSatObjectiveFirstSolutionGenerator::SynchronizeIfNeeded(
   const BopOptimizerBase::Status load_status =
       LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
   if (load_status != BopOptimizerBase::CONTINUE) return load_status;
-  UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
-                                         sat_solver_.get());
-  lower_bound_ = problem_state.lower_bound();
-  upper_bound_ = problem_state.upper_bound();
+
+  switch (policy_) {
+    case Policy::kNotGuided:
+      break;
+    case Policy::kLpGuided:
+      for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
+        const double value = problem_state.lp_values()[col];
+        sat_solver_->SetAssignmentPreference(
+            sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
+            1 - fabs(value - round(value)));
+      }
+      break;
+    case Policy::kObjectiveGuided:
+      UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
+                                             sat_solver_.get());
+      break;
+    case Policy::kUserGuided:
+      for (int i = 0; i < problem_state.assignment_preference().size(); ++i) {
+        sat_solver_->SetAssignmentPreference(
+            sat::Literal(sat::VariableIndex(i),
+                         problem_state.assignment_preference()[i]),
+            1.0);
+      }
+      break;
+  }
   return BopOptimizerBase::CONTINUE;
 }
 
-BopOptimizerBase::Status BopSatObjectiveFirstSolutionGenerator::Optimize(
+bool GuidedSatFirstSolutionGenerator::ShouldBeRun(
+    const ProblemState& problem_state) const {
+  if (abort_) return false;
+  if (policy_ == Policy::kLpGuided && problem_state.lp_values().empty()) {
+    return false;
+  }
+  if (policy_ == Policy::kUserGuided &&
+      problem_state.assignment_preference().empty()) {
+    return false;
+  }
+  return true;
+}
+
+BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
     const BopParameters& parameters, const ProblemState& problem_state,
     LearnedInfo* learned_info, TimeLimit* time_limit) {
   CHECK(learned_info != nullptr);
@@ -121,149 +148,46 @@ BopOptimizerBase::Status BopSatObjectiveFirstSolutionGenerator::Optimize(
 
   const BopOptimizerBase::Status sync_status =
       SynchronizeIfNeeded(problem_state);
-  if (sync_status != BopOptimizerBase::CONTINUE) {
-    return sync_status;
-  }
+  if (sync_status != BopOptimizerBase::CONTINUE) return sync_status;
 
-  if (!first_solve_) return BopOptimizerBase::ABORT;
-  first_solve_ = false;
+  sat::SatParameters sat_params;
+  sat_params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
+  sat_params.set_max_deterministic_time(
+      LocalDeterministicTimeLimit(time_limit));
+
+  // We use a relatively small conflict limit so that other optimizer get a
+  // chance to run if this one is slow. Note that if this limit is reached, we
+  // will return BopOptimizerBase::CONTINUE so that Optimize() will be called
+  // again later to resume the current work.
+  sat_params.set_max_number_of_conflicts(
+      parameters.guided_sat_conflicts_chunk());
+  sat_solver_->SetParameters(sat_params);
 
   const double initial_deterministic_time = sat_solver_->deterministic_time();
-  sat::SatParameters sat_parameters;
-  sat_parameters.set_max_time_in_seconds(
-      std::min(time_limit->GetTimeLeft(),
-          time_limit_ratio_ * time_limit->GetTimeLeft()));
-  sat_parameters.set_max_deterministic_time(
-      std::min(time_limit->GetDeterministicTimeLeft(),
-          time_limit_ratio_ * time_limit->GetDeterministicTimeLeft()));
-  sat_solver_->SetParameters(sat_parameters);
-
-  // Doubling the time limit for the next call to Optimize().
-  if (first_solve_) time_limit_ratio_ *= 2.0;
-
   const sat::SatSolver::Status sat_status = sat_solver_->Solve();
   time_limit->AdvanceDeterministicTime(sat_solver_->deterministic_time() -
                                        initial_deterministic_time);
 
   if (sat_status == sat::SatSolver::MODEL_UNSAT) {
-    if (upper_bound_ != kint64max) {
+    if (policy_ != Policy::kNotGuided) abort_ = true;
+    if (problem_state.upper_bound() != kint64max) {
       // As the solution in the state problem is feasible, it is proved optimal.
-      learned_info->lower_bound = upper_bound_;
+      learned_info->lower_bound = problem_state.upper_bound();
       return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
     }
     // The problem is proved infeasible
     return BopOptimizerBase::INFEASIBLE;
   }
+
+  ExtractLearnedInfoFromSatSolver(sat_solver_.get(), learned_info);
   if (sat_status == sat::SatSolver::MODEL_SAT) {
-    ExtractLearnedInfoFromSatSolver(sat_solver_.get(), learned_info);
+    if (policy_ != Policy::kNotGuided) abort_ = true;
     SatAssignmentToBopSolution(sat_solver_->Assignment(),
                                &learned_info->solution);
-    return SolutionStatus(learned_info->solution, lower_bound_);
+    return SolutionStatus(learned_info->solution, problem_state.lower_bound());
   }
 
-  return BopOptimizerBase::LIMIT_REACHED;
-}
-
-//------------------------------------------------------------------------------
-// BopSatLpFirstSolutionGenerator
-//------------------------------------------------------------------------------
-BopSatLpFirstSolutionGenerator::BopSatLpFirstSolutionGenerator(
-    const std::string& name, double time_limit_ratio)
-    : BopOptimizerBase(name),
-      state_update_stamp_(ProblemState::kInitialStampValue),
-      time_limit_ratio_(time_limit_ratio),
-      first_solve_(true),
-      sat_solver_(),
-      lower_bound_(kint64min),
-      upper_bound_(kint64max),
-      lp_values_() {}
-
-BopSatLpFirstSolutionGenerator::~BopSatLpFirstSolutionGenerator() {}
-
-BopOptimizerBase::Status BopSatLpFirstSolutionGenerator::SynchronizeIfNeeded(
-    const ProblemState& problem_state) {
-  if (state_update_stamp_ == problem_state.update_stamp()) {
-    return BopOptimizerBase::CONTINUE;
-  }
-  state_update_stamp_ = problem_state.update_stamp();
-
-  if (!problem_state.solution().IsFeasible()) {
-    first_solve_ = true;
-  }
-  if (!first_solve_ || problem_state.lp_values().empty()) {
-    return BopOptimizerBase::ABORT;
-  }
-
-  lower_bound_ = problem_state.lower_bound();
-  upper_bound_ = problem_state.upper_bound();
-  lp_values_ = problem_state.lp_values();
-
-  // Create the sat_solver if not already done.
-  if (!sat_solver_) sat_solver_.reset(new sat::SatSolver());
-
-  const BopOptimizerBase::Status load_status =
-      LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
-  if (load_status != BopOptimizerBase::CONTINUE) return load_status;
-
-  // Assign SAT preferences based on the LP solution.
-  for (ColIndex col(0); col < lp_values_.size(); ++col) {
-    const double value = lp_values_[col];
-    sat_solver_->SetAssignmentPreference(
-        sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
-        1 - fabs(value - round(value)));
-  }
   return BopOptimizerBase::CONTINUE;
-}
-
-BopOptimizerBase::Status BopSatLpFirstSolutionGenerator::Optimize(
-    const BopParameters& parameters, const ProblemState& problem_state,
-    LearnedInfo* learned_info, TimeLimit* time_limit) {
-  CHECK(learned_info != nullptr);
-  CHECK(time_limit != nullptr);
-  learned_info->Clear();
-
-  const BopOptimizerBase::Status sync_status =
-      SynchronizeIfNeeded(problem_state);
-  if (sync_status != BopOptimizerBase::CONTINUE) {
-    return sync_status;
-  }
-
-  if (!first_solve_ || lp_values_.empty()) return BopOptimizerBase::ABORT;
-  first_solve_ = false;
-
-  const double sat_deterministic_time = sat_solver_->deterministic_time();
-  sat::SatParameters sat_parameters;
-  sat_parameters.set_max_time_in_seconds(
-      std::min(time_limit->GetTimeLeft(),
-          time_limit_ratio_ * time_limit->GetTimeLeft()));
-  sat_parameters.set_max_deterministic_time(
-      std::min(time_limit->GetDeterministicTimeLeft(),
-          time_limit_ratio_ * time_limit->GetDeterministicTimeLeft()));
-  sat_solver_->SetParameters(sat_parameters);
-
-  // Doubling the time limit for the next call to Optimize().
-  if (first_solve_) time_limit_ratio_ *= 2.0;
-
-  const sat::SatSolver::Status sat_status = sat_solver_->Solve();
-  time_limit->AdvanceDeterministicTime(sat_solver_->deterministic_time() -
-                                       sat_deterministic_time);
-  if (sat_status == sat::SatSolver::MODEL_UNSAT) {
-    if (upper_bound_ != kint64max) {
-      // As the solution in the state problem is feasible,it is proved optimal.
-      learned_info->lower_bound = upper_bound_;
-      return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
-    }
-    // The problem is proved infeasible
-    return BopOptimizerBase::INFEASIBLE;
-  }
-  if (sat_status == sat::SatSolver::MODEL_SAT) {
-    ExtractLearnedInfoFromSatSolver(sat_solver_.get(), learned_info);
-    SatAssignmentToBopSolution(sat_solver_->Assignment(),
-                               &learned_info->solution);
-    return SolutionStatus(learned_info->solution, lower_bound_);
-  }
-
-  return BopOptimizerBase::LIMIT_REACHED;
 }
 
 
@@ -271,44 +195,19 @@ BopOptimizerBase::Status BopSatLpFirstSolutionGenerator::Optimize(
 // BopRandomFirstSolutionGenerator
 //------------------------------------------------------------------------------
 BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
-    int random_seed, const std::string& name, double time_limit_ratio)
+    const std::string& name, sat::SatSolver* sat_propagator, MTRandom* random)
     : BopOptimizerBase(name),
-      state_update_stamp_(ProblemState::kInitialStampValue),
-      time_limit_ratio_(time_limit_ratio),
-      problem_(nullptr),
-      initial_solution_(),
-      random_seed_(random_seed),
-      random_(),
-      sat_solver_(),
-      sat_seed_(0),
-      first_solve_(true) {}
+      first_time_(true),
+      random_(random),
+      sat_propagator_(sat_propagator),
+      sat_seed_(0) {}
 
 BopRandomFirstSolutionGenerator::~BopRandomFirstSolutionGenerator() {}
 
-BopOptimizerBase::Status BopRandomFirstSolutionGenerator::SynchronizeIfNeeded(
-    const ProblemState& problem_state) {
-  if (state_update_stamp_ == problem_state.update_stamp()) {
-    return BopOptimizerBase::CONTINUE;
-  }
-  state_update_stamp_ = problem_state.update_stamp();
-
-  // Create the random generator if not already done.
-  if (!random_) random_.reset(new MTRandom(random_seed_));
-
-  // Create the sat_solver if not already done.
-  if (!sat_solver_) sat_solver_.reset(new sat::SatSolver());
-
-  const BopOptimizerBase::Status load_status =
-      LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
-  if (load_status != BopOptimizerBase::CONTINUE) return load_status;
-
-  problem_ = &problem_state.original_problem();
-  initial_solution_.reset(new BopSolution(problem_state.solution()));
-  lp_values_ = problem_state.lp_values();
-  if (!problem_state.solution().IsFeasible()) {
-    first_solve_ = true;
-  }
-  return BopOptimizerBase::CONTINUE;
+// Only run the RandomFirstSolution when there is an objective to minimize.
+bool BopRandomFirstSolutionGenerator::ShouldBeRun(
+    const ProblemState& problem_state) const {
+  return problem_state.original_problem().objective().literals_size() > 0;
 }
 
 BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
@@ -318,77 +217,65 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   CHECK(time_limit != nullptr);
   learned_info->Clear();
 
-  // Only run the RandomFirstSolution when there is an objective to minimize.
-  if (problem_state.original_problem().objective().literals_size() == 0) {
-    return BopOptimizerBase::ABORT;
-  }
-
-  const BopOptimizerBase::Status sync_status =
-      SynchronizeIfNeeded(problem_state);
-  if (sync_status != BopOptimizerBase::CONTINUE) {
-    return sync_status;
-  }
+  // Save the current solver heuristics.
+  const sat::SatParameters saved_params = sat_propagator_->parameters();
+  const std::vector<std::pair<sat::Literal, double>> saved_prefs =
+      sat_propagator_->AllPreferences();
 
   // We want to check both the local time limit and the global time limit, as
   // during first solution phase the local time limit can be more restrictive.
-  TimeLimit local_time_limit(
-      std::min(time_limit->GetTimeLeft(),
-          time_limit_ratio_ * time_limit->GetTimeLeft()),
-      std::min(time_limit->GetDeterministicTimeLeft(),
-          time_limit_ratio_ * time_limit->GetDeterministicTimeLeft()));
-
+  TimeLimit local_time_limit(LocalTimeLimitInSeconds(time_limit),
+                             LocalDeterministicTimeLimit(time_limit));
   const int kMaxNumConflicts = 10;
-  learned_info->solution = *initial_solution_;
-  learned_info->solution.set_name(
-      initial_solution_->IsFeasible()
-          ? StringPrintf("RandomFirstSolutionFrom_%lld",
-                         initial_solution_->GetCost())
-          : "RandomFirstSolution");
-  int64 best_cost = initial_solution_->IsFeasible()
-                        ? initial_solution_->GetCost()
+  int64 best_cost = problem_state.solution().IsFeasible()
+                        ? problem_state.solution().GetCost()
                         : kint64max;
+
   int64 remaining_num_conflicts =
-      first_solve_
+      first_time_
           ? kint64max
           : parameters.max_number_of_conflicts_in_random_solution_generation();
-  first_solve_ = false;
+  first_time_ = false;
   int64 old_num_failures = 0;
 
+  bool solution_found = false;
   while (remaining_num_conflicts > 0 && !local_time_limit.LimitReached()) {
     ++sat_seed_;
-    sat_solver_->Backtrack(0);
-    old_num_failures = sat_solver_->num_failures();
+    sat_propagator_->Backtrack(0);
+    old_num_failures = sat_propagator_->num_failures();
 
-    sat::SatParameters sat_parameters;
-    sat::RandomizeDecisionHeuristic(random_.get(), &sat_parameters);
-    sat_parameters.set_max_number_of_conflicts(kMaxNumConflicts);
-    sat_parameters.set_random_seed(sat_seed_);
-    sat_solver_->SetParameters(sat_parameters);
-    sat_solver_->ResetDecisionHeuristic();
+    sat::SatParameters sat_params = saved_params;
+    sat::RandomizeDecisionHeuristic(random_, &sat_params);
+    sat_params.set_max_number_of_conflicts(kMaxNumConflicts);
+    sat_params.set_random_seed(sat_seed_);
+    sat_propagator_->SetParameters(sat_params);
+    sat_propagator_->ResetDecisionHeuristic();
 
     // Constrain the solution to be better than the current one.
     if (best_cost == kint64max ||
-        AddObjectiveConstraint(*problem_, false, sat::Coefficient(0), true,
-                               sat::Coefficient(best_cost) - 1,
-                               sat_solver_.get())) {
+        AddObjectiveConstraint(
+            problem_state.original_problem(), false, sat::Coefficient(0), true,
+            sat::Coefficient(best_cost) - 1, sat_propagator_)) {
       // Special assignment preference parameters.
       const int preference = random_->Uniform(4);
       if (preference == 0) {
-        UseObjectiveForSatAssignmentPreference(*problem_, sat_solver_.get());
-      } else if (preference == 1 && !lp_values_.empty()) {
+        UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
+                                               sat_propagator_);
+      } else if (preference == 1 && !problem_state.lp_values().empty()) {
         // Assign SAT assignment preference based on the LP solution.
-        for (ColIndex col(0); col < lp_values_.size(); ++col) {
-          const double value = lp_values_[col];
-          sat_solver_->SetAssignmentPreference(
+        for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
+          const double value = problem_state.lp_values()[col];
+          sat_propagator_->SetAssignmentPreference(
               sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
               1 - fabs(value - round(value)));
         }
       }
 
       const sat::SatSolver::Status sat_status =
-          sat_solver_->SolveWithTimeLimit(&local_time_limit);
+          sat_propagator_->SolveWithTimeLimit(&local_time_limit);
       if (sat_status == sat::SatSolver::MODEL_SAT) {
-        SatAssignmentToBopSolution(sat_solver_->Assignment(),
+        solution_found = true;
+        SatAssignmentToBopSolution(sat_propagator_->Assignment(),
                                    &learned_info->solution);
         CHECK_LT(learned_info->solution.GetCost(), best_cost);
         best_cost = learned_info->solution.GetCost();
@@ -408,28 +295,43 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
 
     // The number of failure is a good approximation of the number of conflicts.
     // Note that the number of failures of the SAT solver is not reinitialized.
-    remaining_num_conflicts -= sat_solver_->num_failures() - old_num_failures;
+    remaining_num_conflicts -=
+        sat_propagator_->num_failures() - old_num_failures;
   }
 
-  ExtractLearnedInfoFromSatSolver(sat_solver_.get(), learned_info);
+  // Restore sat_propagator_ to its original state.
+  // Note that if the function is aborted before that, it means we solved the
+  // problem to optimality (or proven it to be infeasible), so we don't need
+  // to do any extra work in these cases since the sat_propagator_ will not be
+  // used anymore.
+  CHECK_EQ(0, sat_propagator_->AssumptionLevel());
+  sat_propagator_->RestoreSolverToAssumptionLevel();
+  sat_propagator_->SetParameters(saved_params);
+  sat_propagator_->ResetDecisionHeuristicAndSetAllPreferences(saved_prefs);
+
+  // This can be proved during the call to RestoreSolverToAssumptionLevel().
+  if (sat_propagator_->IsModelUnsat()) {
+    // The solution is proved optimal (if any).
+    learned_info->lower_bound = best_cost;
+    return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE
+                                  : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
+  }
+
+  ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
   time_limit->AdvanceDeterministicTime(
       local_time_limit.GetElapsedDeterministicTime());
-  return learned_info->solution.IsFeasible() &&
-                 (!initial_solution_->IsFeasible() ||
-                  learned_info->solution.GetCost() <
-                      initial_solution_->GetCost())
-             ? BopOptimizerBase::SOLUTION_FOUND
-             : BopOptimizerBase::LIMIT_REACHED;
+
+  return solution_found ? BopOptimizerBase::SOLUTION_FOUND
+                        : BopOptimizerBase::LIMIT_REACHED;
 }
 
 //------------------------------------------------------------------------------
 // LinearRelaxation
 //------------------------------------------------------------------------------
 LinearRelaxation::LinearRelaxation(const BopParameters& parameters,
-                                   const std::string& name, double time_limit_ratio)
+                                   const std::string& name)
     : BopOptimizerBase(name),
       parameters_(parameters),
-      time_limit_ratio_(time_limit_ratio),
       state_update_stamp_(ProblemState::kInitialStampValue),
       lp_model_loaded_(false),
       lp_model_(),
@@ -510,17 +412,18 @@ BopOptimizerBase::Status LinearRelaxation::SynchronizeIfNeeded(
   return BopOptimizerBase::CONTINUE;
 }
 
+// Only run the LP solver when there is an objective to minimize.
+// TODO(user): also deal with problem_already_solved_
+bool LinearRelaxation::ShouldBeRun(const ProblemState& problem_state) const {
+  return problem_state.original_problem().objective().literals_size() > 0;
+}
+
 BopOptimizerBase::Status LinearRelaxation::Optimize(
     const BopParameters& parameters, const ProblemState& problem_state,
     LearnedInfo* learned_info, TimeLimit* time_limit) {
   CHECK(learned_info != nullptr);
   CHECK(time_limit != nullptr);
   learned_info->Clear();
-
-  // Only run the LP solver when there is an objective to minimize.
-  if (problem_state.original_problem().objective().literals_size() == 0) {
-    return BopOptimizerBase::ABORT;
-  }
 
   const BopOptimizerBase::Status sync_status =
       SynchronizeIfNeeded(problem_state);
@@ -570,6 +473,7 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
       CHECK(learned_info->solution.IsFeasible());
       return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
     }
+    return BopOptimizerBase::INFORMATION_FOUND;
   }
 
   return BopOptimizerBase::LIMIT_REACHED;
@@ -581,19 +485,17 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
 //              best bound is computed.
 glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
                                             TimeLimit* time_limit) {
-  GlopParameters glop_parameters;
+  GlopParameters glop_params;
   if (incremental_solve) {
-    glop_parameters.set_use_dual_simplex(true);
-    glop_parameters.set_allow_simplex_algorithm_change(true);
-    glop_parameters.set_use_preprocessing(false);
+    glop_params.set_use_dual_simplex(true);
+    glop_params.set_allow_simplex_algorithm_change(true);
+    glop_params.set_use_preprocessing(false);
   }
-  glop_parameters.set_max_time_in_seconds(
-      std::min(time_limit->GetTimeLeft(),
-          time_limit_ratio_ * time_limit->GetTimeLeft()));
-  glop_parameters.set_max_deterministic_time(
-      std::min(time_limit->GetDeterministicTimeLeft(),
-          time_limit_ratio_ * time_limit->GetDeterministicTimeLeft()));
-  lp_solver_.SetParameters(glop_parameters);
+  glop_params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
+  glop_params.set_max_deterministic_time(
+      LocalDeterministicTimeLimit(time_limit));
+  lp_solver_.SetParameters(glop_params);
+
   const double initial_deterministic_time = lp_solver_.DeterministicTime();
   const glop::ProblemStatus lp_status = lp_solver_.Solve(lp_model_);
   time_limit->AdvanceDeterministicTime(lp_solver_.DeterministicTime() -

@@ -33,15 +33,31 @@ static const int kMaxBoost = 30;
 // Returns false when the problem is proved UNSAT.
 bool InternalLoadStateProblemToSatSolver(const ProblemState& problem_state,
                                          sat::SatSolver* sat_solver) {
+  const bool first_time = (sat_solver->NumVariables() == 0);
+  if (first_time) {
+    sat_solver->SetNumVariables(
+        problem_state.original_problem().num_variables());
+  } else {
+    // Backtrack the solver to be able to add new constraints.
+    sat_solver->Backtrack(0);
+  }
+
+  // Set the fixed variables first so that loading the problem will be faster.
+  for (VariableIndex var(0); var < problem_state.is_fixed().size(); ++var) {
+    if (problem_state.is_fixed()[var]) {
+      if (!sat_solver->AddUnitClause(
+              sat::Literal(sat::VariableIndex(var.value()),
+                           problem_state.fixed_values()[var]))) {
+        return false;
+      }
+    }
+  }
+
   // Load the problem if not done yet.
-  if (sat_solver->NumVariables() == 0 &&
+  if (first_time &&
       !LoadBooleanProblem(problem_state.original_problem(), sat_solver)) {
     return false;
   }
-
-  // Backtrack the solver to be able to add new constraints.
-  sat_solver->Backtrack(0);
-  sat_solver->TrackBinaryClauses(true);
 
   // Constrain the objective cost to be greater or equal to the lower bound,
   // and to be smaller than the upper bound. If enforcing the strictier upper
@@ -57,18 +73,8 @@ bool InternalLoadStateProblemToSatSolver(const ProblemState& problem_state,
     return false;
   }
 
-  // Set fixed variables.
-  for (VariableIndex var(0); var < problem_state.is_fixed().size(); ++var) {
-    if (problem_state.is_fixed()[var]) {
-      if (!sat_solver->AddUnitClause(
-              sat::Literal(sat::VariableIndex(var.value()),
-                           problem_state.fixed_values()[var]))) {
-        return false;
-      }
-    }
-  }
-
   // Adds the new binary clauses.
+  sat_solver->TrackBinaryClauses(true);
   if (!sat_solver->AddBinaryClauses(problem_state.NewlyAddedBinaryClauses())) {
     return false;
   }
@@ -93,6 +99,9 @@ void ExtractLearnedInfoFromSatSolver(sat::SatSolver* solver,
                                      LearnedInfo* info) {
   CHECK(nullptr != solver);
   CHECK(nullptr != info);
+
+  // This should never be called if the problem is UNSAT.
+  CHECK(!solver->IsModelUnsat());
 
   // Fixed variables.
   info->fixed_literals.clear();
@@ -150,7 +159,7 @@ LubyAdaptiveParameterValue::LubyAdaptiveParameterValue()
     : luby_id_(0),
       luby_boost_(0),
       luby_value_(0),
-      difficulties_(kMaxLubyIndex, AdaptiveParameterValue(0.5)) {
+      difficulties_(kMaxLubyIndex, AdaptiveParameterValue(0.25)) {
   Reset();
 }
 

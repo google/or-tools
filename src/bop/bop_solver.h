@@ -83,6 +83,11 @@ class BopSolver {
   double GetScaledBestBound() const;
   double GetScaledGap() const;
 
+  // Sets an external limit to stop the search when the Boolean value becomes
+  // true. Note that the Solve() call may still linger for a while depending on
+  // the conditions.
+  void RegisterExternalBooleanAsLimit(const bool* external_boolean_as_limit);
+
  private:
   void UpdateParameters();
   BopSolveStatus InternalMonothreadSolver();
@@ -91,6 +96,8 @@ class BopSolver {
   const LinearBooleanProblem& problem_;
   ProblemState problem_state_;
   BopParameters parameters_;
+  const bool* external_boolean_as_limit_;
+
   mutable StatsGroup stats_;
 };
 }  // namespace bop

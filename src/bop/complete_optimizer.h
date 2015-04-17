@@ -19,6 +19,10 @@
 // The idea is that it is worthwhile spending some time in these algorithms,
 // because in some situation they can improve the current upper/lower bound or
 // even solve the problem to optimality.
+//
+// Note(user): The GuidedSatFirstSolutionGenerator can also be used as a
+// complete SAT solver provided that we keep running it after it has found a
+// first solution. This is the default behavior of the kNotGuided policy.
 
 #ifndef OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
 #define OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_
@@ -35,51 +39,25 @@
 namespace operations_research {
 namespace bop {
 
-class SatLinearScanOptimizer : public BopOptimizerBase {
- public:
-  // TODO(user): change api to deal with error when loading the problem?
-  explicit SatLinearScanOptimizer(const std::string& name);
-  virtual ~SatLinearScanOptimizer();
-
- protected:
-  virtual bool RunOncePerSolution() const { return false; }
-  // TODO(user): The scan optimizer doesn't need a solution.
-  virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
-
- private:
-  BopOptimizerBase::Status SynchronizeIfNeeded(
-      const ProblemState& problem_state);
-
-  int64 state_update_stamp_;
-  int64 initial_solution_cost_;
-  sat::SatSolver solver_;
-};
-
 // TODO(user): Merge this with the code in sat/optimization.cc
 class SatCoreBasedOptimizer : public BopOptimizerBase {
  public:
   explicit SatCoreBasedOptimizer(const std::string& name);
-  virtual ~SatCoreBasedOptimizer();
+  ~SatCoreBasedOptimizer() override;
 
  protected:
-  virtual bool RunOncePerSolution() const { return false; }
-  // TODO(user): The core based optimizer doesn't need a solution.
-  virtual bool NeedAFeasibleSolution() const { return true; }
-  virtual Status Optimize(const BopParameters& parameters,
-                          const ProblemState& problem_state,
-                          LearnedInfo* learned_info, TimeLimit* time_limit);
+  bool ShouldBeRun(const ProblemState& problem_state) const override;
+  Status Optimize(const BopParameters& parameters,
+                  const ProblemState& problem_state, LearnedInfo* learned_info,
+                  TimeLimit* time_limit) override;
 
  private:
   BopOptimizerBase::Status SynchronizeIfNeeded(
       const ProblemState& problem_state);
+  sat::SatSolver::Status SolveWithAssumptions();
 
   int64 state_update_stamp_;
   bool initialized_;
-  std::unique_ptr<BopSolution> initial_solution_;
-  sat::SatSolver::Status SolveWithAssumptions();
   bool assumptions_already_added_;
   sat::SatSolver solver_;
   sat::Coefficient offset_;
