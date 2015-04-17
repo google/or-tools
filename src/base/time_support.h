@@ -35,9 +35,14 @@ namespace base {
 // http://en.wikipedia.org/wiki/Time_Stamp_Counter#Use.
 int64 GetCurrentTimeNanos();
 
+inline int64 Now() { return GetCurrentTimeNanos(); }
+
 inline double WallTime_Now() { return base::GetCurrentTimeNanos() * 1e-9; }
 
 }  // namespace base
+
+inline double ToWallTime(int64 nanos) { return 1e-9 * nanos; }
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_TIME_SUPPORT_H_
