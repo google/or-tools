@@ -308,12 +308,10 @@ util::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
       }
     }
   }
-  // COV_NF_START
   if (fclose(f) != 0) {
     return util::Status(util::error::INTERNAL,
                         "Could not close file '" + filename + "'");
   }
-  // COV_NF_END
   return util::Status::OK;
 }
 
