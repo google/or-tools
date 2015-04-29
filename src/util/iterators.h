@@ -26,7 +26,7 @@ namespace operations_research {
 //
 // BeginEndWrapper<OutgoingArcIterator> Graph::OutgoingArcs(NodeInde node)
 //      const {
-//   return BeginEndWrapper<OutgoingArcIterator>(
+//   return BeginEndRange(
 //       OutgoingArcIterator(*this, node, /*at_end=*/false),
 //       OutgoingArcIterator(*this, node, /*at_end=*/true));
 // }
@@ -44,6 +44,33 @@ class BeginEndWrapper {
   const Iterator begin_;
   const Iterator end_;
 };
+
+// Inline wrapper methods, to make the client code even simpler.
+// The harm of overloading is probably less than the benefit of the nice,
+// compact name, in this special case.
+template <typename Iterator>
+inline BeginEndWrapper<Iterator> BeginEndRange(Iterator begin, Iterator end) {
+  return BeginEndWrapper<Iterator>(begin, end);
+}
+template <typename Iterator>
+inline BeginEndWrapper<Iterator> BeginEndRange(
+    std::pair<Iterator, Iterator> begin_end) {
+  return BeginEndWrapper<Iterator>(begin_end.first, begin_end.second);
+}
+
+// Shortcut for BeginEndRange(multimap::equal_range(key)).
+// TODO(user): go further and expose only the values, not the pairs (key,
+// values) since the caller already knows the key.
+template <typename MultiMap>
+inline BeginEndWrapper<typename MultiMap::iterator> EqualRange(
+    MultiMap& multi_map, const typename MultiMap::key_type& key) {
+  return BeginEndRange(multi_map.equal_range(key));
+}
+template <typename MultiMap>
+inline BeginEndWrapper<typename MultiMap::const_iterator> EqualRange(
+    const MultiMap& multi_map, const typename MultiMap::key_type& key) {
+  return BeginEndRange(multi_map.equal_range(key));
+}
 
 // The Reverse() function allows to reverse the iteration order of a range-based
 // for loop over a container that support STL reverse iterators.
