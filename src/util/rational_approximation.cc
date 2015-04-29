@@ -11,11 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "util/rational_approximation.h"
 #include <cmath>
 #include <limits>
 
 #include "base/logging.h"
-#include "util/rational_approximation.h"
 
 namespace operations_research {
 
@@ -47,8 +47,9 @@ Fraction RationalApproximation(const double x, const double precision) {
     denominator = new_denominator;
     long double numerator_approximation = abs_x * denominator;
     if (std::abs(numerator_approximation - numerator) <=
-        precision * numerator_approximation)
+        precision * numerator_approximation) {
       break;
+    }
     y = 1 / (y - term);
   }
   return Fraction((x < 0) ? -numerator : numerator, denominator);
