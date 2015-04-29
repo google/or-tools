@@ -89,11 +89,14 @@ DECLARE_bool(log_prefix);
 #define DLOG(severity) true ? (void)0 : LogMessageVoidify() & LOG(severity)
 #define DLOG_IF(severity, condition) \
   (true || !(condition)) ? (void)0 : LogMessageVoidify() & LOG(severity)
+#define DVLOG(x) \
+  while (false && VLOG_IS_ON(x)) LogMessageVoidify() & LOG_INFO.stream()
 #else
 #define LOG_DFATAL LOG_FATAL
 #define DFATAL FATAL
 #define DLOG(severity) LOG(severity)
 #define DLOG_IF(severity, condition) LOG_IF(severity, condition)
+#define DVLOG VLOG
 #endif
 
 // Poor man version of LOG_EVERY_N
