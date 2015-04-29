@@ -556,9 +556,8 @@ class CallMethod1 : public Demon {
   void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
 
   std::string DebugString() const override {
-    return StrCat(StrCat("CallMethod_", name_),
-                  StrCat("(", constraint_->DebugString(), ", "),
-                  StrCat(param1_, ")"));
+    return StrCat("CallMethod_", name_, "(", constraint_->DebugString(), ", ",
+                  param1_, ")");
   }
 
  private:
@@ -711,9 +710,8 @@ class DelayedCallMethod1 : public Demon {
   }
 
   std::string DebugString() const override {
-    return StrCat(StrCat("DelayedCallMethod_", name_),
-                  StrCat("(", constraint_->DebugString(), ", "),
-                  StrCat(param1_, ")"));
+    return StrCat("DelayedCallMethod_", name_, "(", constraint_->DebugString(),
+                  ", ", param1_, ")");
   }
 
  private:

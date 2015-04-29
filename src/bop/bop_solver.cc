@@ -138,6 +138,7 @@ BopSolveStatus BopSolver::Solve(const BopSolution& first_solution) {
   SCOPED_TIME_STAT(&stats_);
 
   if (first_solution.IsFeasible()) {
+    VLOG(1) << "First solution is feasible.";
     LearnedInfo learned_info(problem_);
     learned_info.solution = first_solution;
     if (problem_state_.MergeLearnedInfo(learned_info,
@@ -146,6 +147,8 @@ BopSolveStatus BopSolver::Solve(const BopSolution& first_solution) {
       return BopSolveStatus::OPTIMAL_SOLUTION_FOUND;
     }
   } else {
+    VLOG(1)
+        << "First solution is infeasible. Using it as assignment preference.";
     std::vector<bool> assignment_preference;
     for (int i = 0; i < first_solution.Size(); ++i) {
       assignment_preference.push_back(first_solution.Value(VariableIndex(i)));

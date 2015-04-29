@@ -37,7 +37,7 @@ class IntegralSolver {
   BopParameters parameters() const { return parameters_; }
 
   // Solves the given linear program and returns the solve status. The second
-  // version starts from the given solution which must be feasible.
+  // version starts from the given solution.
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem)
       MUST_USE_RESULT;
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem,
