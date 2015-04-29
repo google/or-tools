@@ -47,7 +47,7 @@ void RoutingLocalSearchFilter::InjectObjectiveValue(int64 objective_value) {
 }
 
 void RoutingLocalSearchFilter::PropagateObjectiveValue(int64 objective_value) {
-  if (objective_callback_.get() != nullptr) {
+  if (objective_callback_ != nullptr) {
     objective_callback_->Run(objective_value);
   }
 }

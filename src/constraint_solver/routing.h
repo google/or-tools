@@ -193,7 +193,6 @@ DEFINE_INT_TYPE(_RoutingModel_DimensionIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DisjunctionIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_VehicleClassIndex, int);
 
-
 // This class stores solver parameters.
 struct RoutingParameters {
   RoutingParameters() {
@@ -1846,7 +1845,7 @@ class CheapestAdditionFilteredDecisionBuilder
  private:
   class PartialRoutesAndLargeVehicleIndicesFirst {
    public:
-    PartialRoutesAndLargeVehicleIndicesFirst(
+    explicit PartialRoutesAndLargeVehicleIndicesFirst(
         const CheapestAdditionFilteredDecisionBuilder& builder)
         : builder_(builder) {}
     bool operator()(int vehicle1, int vehicle2) const;
