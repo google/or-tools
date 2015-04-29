@@ -276,9 +276,11 @@ class SatTableConstraint : public Constraint {
   DISALLOW_COPY_AND_ASSIGN(SatTableConstraint);
 };
 
-Constraint* BuildSatTableConstraint(Solver* solver,
-                                    const std::vector<IntVar*>& vars,
-                                    const IntTupleSet& tuples);
+inline Constraint* BuildSatTableConstraint(Solver* solver,
+                                           const std::vector<IntVar*>& vars,
+                                           const IntTupleSet& tuples) {
+  return solver->RevAlloc(new SatTableConstraint(solver, vars, tuples));
+}
 
 }  // namespace operations_research
 

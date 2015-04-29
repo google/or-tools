@@ -617,7 +617,8 @@ class ModelStatisticsVisitor : public ModelVisitor {
 
 class VariableDegreeVisitor : public ModelVisitor {
  public:
-  VariableDegreeVisitor(hash_map<const IntVar*, int>* const map) : map_(map) {}
+  explicit VariableDegreeVisitor(hash_map<const IntVar*, int>* const map)
+      : map_(map) {}
 
   ~VariableDegreeVisitor() override {}
 

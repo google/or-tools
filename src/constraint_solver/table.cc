@@ -28,6 +28,7 @@
 #include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "constraint_solver/sat_constraint.h"
 #include "util/bitset.h"
 #include "util/string_array.h"
 #include "util/tuple_set.h"

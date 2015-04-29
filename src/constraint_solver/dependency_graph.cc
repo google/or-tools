@@ -135,7 +135,7 @@ class NonReversibleDependencyGraph : public DependencyGraph {
   };
 
   explicit NonReversibleDependencyGraph(Solver* const solver)
-      : solver_(solver), in_process_(0) {}
+      : solver_(solver), in_process_(0), fail_stamp_(solver_->fail_stamp()) {}
 
   ~NonReversibleDependencyGraph() override {}
 

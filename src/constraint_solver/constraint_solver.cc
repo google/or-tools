@@ -18,9 +18,9 @@
 #include "constraint_solver/constraint_solver.h"
 
 #include <csetjmp>
-#include <string>
 #include <iosfwd>
 #include "base/unique_ptr.h"
+#include <string>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"

@@ -702,7 +702,7 @@ IntExpr* Solver::MakeElement(ResultCallback1<int64, int64>* values,
 namespace {
 class OppositeCallback : public BaseObject {
  public:
-  OppositeCallback(ResultCallback1<int64, int64>* const values)
+  explicit OppositeCallback(ResultCallback1<int64, int64>* const values)
       : values_(values) {
     CHECK(values_ != nullptr);
     values_->CheckIsRepeatable();
@@ -1377,8 +1377,7 @@ Constraint* Solver::MakeIfThenElseCt(IntVar* const condition,
       new IfThenElseCt(this, condition, then_expr, else_expr, target_var));
 }
 
-IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars,
-                             IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
   if (index->Bound()) {
     return vars[index->Min()];
   }
