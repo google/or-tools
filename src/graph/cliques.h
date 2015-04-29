@@ -25,8 +25,8 @@
 #define OR_TOOLS_GRAPH_CLIQUES_H_
 
 #include <functional>
-#include <numeric>
 #include "base/hash.h"
+#include <numeric>
 #include <vector>
 
 #include "base/callback.h"
