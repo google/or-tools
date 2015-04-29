@@ -1811,7 +1811,6 @@ class Solver {
                                             IntVar* const performed_var,
                                             const std::string& name);
 
-
   // This method fills the vector with 'count' interval var built with
   // the corresponding start variables.
   void MakeFixedDurationIntervalVarArray(const std::vector<IntVar*>& start_variables,
@@ -1833,19 +1832,17 @@ class Solver {
 
   // This method fills the vector with interval variables built with
   // the corresponding start and performed variables.
-  void MakeFixedDurationIntervalVarArray(const std::vector<IntVar*>& start_variables,
-                                         const std::vector<int64>& durations,
-                                         const std::vector<IntVar*>& performed_variables,
-                                         const std::string& name,
-                                         std::vector<IntervalVar*>* const array);
+  void MakeFixedDurationIntervalVarArray(
+      const std::vector<IntVar*>& start_variables, const std::vector<int64>& durations,
+      const std::vector<IntVar*>& performed_variables, const std::string& name,
+      std::vector<IntervalVar*>* const array);
 
   // This method fills the vector with interval variables built with
   // the corresponding start and performed variables.
-  void MakeFixedDurationIntervalVarArray(const std::vector<IntVar*>& start_variables,
-                                         const std::vector<int>& durations,
-                                         const std::vector<IntVar*>& performed_variables,
-                                         const std::string& name,
-                                         std::vector<IntervalVar*>* const array);
+  void MakeFixedDurationIntervalVarArray(
+      const std::vector<IntVar*>& start_variables, const std::vector<int>& durations,
+      const std::vector<IntVar*>& performed_variables, const std::string& name,
+      std::vector<IntervalVar*>* const array);
 
   // Creates a fixed and performed interval.
   IntervalVar* MakeFixedInterval(int64 start, int64 duration,
@@ -2016,7 +2013,7 @@ class Solver {
                              const std::vector<int>& demands, IntVar* const capacity,
                              const std::string& name);
 
-  // This constraint forces that, for any integer t, the sum of the demands
+  // This constraint enforces that, for any integer t, the sum of demands
   // corresponding to an interval containing t does not exceed the given
   // capacity.
   //
@@ -2024,10 +2021,10 @@ class Solver {
   //
   // Demands should be positive.
   Constraint* MakeCumulative(const std::vector<IntervalVar*>& intervals,
-                             const std::vector<IntVar*>& demands,
-                             int64 capacity, const std::string& name);
+                             const std::vector<IntVar*>& demands, int64 capacity,
+                             const std::string& name);
 
-  // This constraint forces that, for any integer t, the sum of the demands
+  // This constraint enforces that, for any integer t, the sum of demands
   // corresponding to an interval containing t does not exceed the given
   // capacity.
   //
@@ -5134,7 +5131,7 @@ class DisjunctiveConstraint : public Constraint {
 
   // Add a transition time between intervals.  It forces the distance between
   // the end of interval a and start of interval b that follows it to be at
-  // least transit_evaluator->Run(a, b). This evaluator must always returns
+  // least transit_evaluator->Run(a, b). This evaluator must always return
   // a positive or null value.
   // This method takes ownership of the evaluator.
   void SetTransitionTime(Solver::IndexEvaluator2* transit_evaluator) {
