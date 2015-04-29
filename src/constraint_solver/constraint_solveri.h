@@ -1327,7 +1327,15 @@ class PathOperator : public IntVarLocalSearchOperator {
   // Returns true if two nodes are on the same path in the current assignment.
   bool OnSamePath(int64 node1, int64 node2) const;
 
-  bool CheckEnds() const;
+  bool CheckEnds() const {
+    const int base_node_size = base_nodes_.size();
+    for (int i = base_node_size - 1; i >= 0; --i) {
+      if (base_nodes_[i] != end_nodes_[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
   bool IncrementPosition();
   void InitializePathStarts();
   void InitializeInactives();

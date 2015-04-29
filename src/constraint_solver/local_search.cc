@@ -443,16 +443,6 @@ bool PathOperator::MakeChainInactive(int64 before_chain, int64 chain_end) {
   return false;
 }
 
-bool PathOperator::CheckEnds() const {
-  const int base_node_size = base_nodes_.size();
-  for (int i = 0; i < base_node_size; ++i) {
-    if (base_nodes_[i] != end_nodes_[i]) {
-      return true;
-    }
-  }
-  return false;
-}
-
 bool PathOperator::IncrementPosition() {
   const int base_node_size = base_nodes_.size();
   if (!just_started_) {
@@ -1914,9 +1904,10 @@ LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
     }
     case Solver::OROPT: {
       std::vector<LocalSearchOperator*> operators;
-      for (int i = 1; i < 4; ++i)
+      for (int i = 1; i < 4; ++i) {
         operators.push_back(
             RevAlloc(new Relocate(vars, secondary_vars, nullptr, i, true)));
+      }
       result = ConcatenateOperators(operators);
       break;
     }
@@ -1968,7 +1959,7 @@ LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
       result = RevAlloc(new PathLNS(vars, secondary_vars,
                                     /*number_of_chunks=*/1,
                                     /*chunk_size=*/0,
-                                    /*unactive_fragment=*/true));
+                                    /*unactive_fragments=*/true));
       break;
     }
     case Solver::UNACTIVELNS: {
