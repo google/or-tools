@@ -28,11 +28,13 @@ namespace operations_research {
 template <typename IntegerType>
 bool SafeAddInto(IntegerType a, IntegerType* b) {
   if (a > 0) {
-    if (*b > std::numeric_limits<typename IntegerType::ValueType>::max() - a)
+    if (*b > std::numeric_limits<typename IntegerType::ValueType>::max() - a) {
       return false;
+    }
   } else {
-    if (*b < std::numeric_limits<typename IntegerType::ValueType>::min() - a)
+    if (*b < std::numeric_limits<typename IntegerType::ValueType>::min() - a) {
       return false;
+    }
   }
   *b += a;
   return true;
