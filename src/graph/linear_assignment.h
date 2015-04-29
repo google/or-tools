@@ -16,47 +16,72 @@
 // assignment problem (minimum-cost perfect bipartite matching), from
 // the paper of Goldberg and Kennedy (1995).
 //
+//
 // This implementation finds the minimum-cost perfect assignment in
 // the given graph with integral edge weights set through the
 // SetArcCost method.
 //
+// The running time is O(n*m*log(nC)) where n is the number of nodes,
+// m is the number of edges, and C is the largest magnitude of an edge cost.
+// In principle it can be worse than the Hungarian algorithm but we don't know
+// of any class of problems where that actually happens. An additional sqrt(n)
+// factor could be shaved off the running time bound using the technique
+// described in http://dx.doi.org/10.1137/S0895480194281185
+// (see also http://theory.stanford.edu/~robert/papers/glob_upd.ps)
+// but in the practical implementation jimbob@ could never get that approach to
+// yield faster code.
+//
 // Example usage:
 //
-// #include "graph/ebert_graph.h"
-// #include "graph/linear_assignment.h"
-// ...
-// ::operations_research::NodeIndex num_nodes = ...;
-// ::operations_research::NodeIndex num_left_nodes = num_nodes / 2;
-// // Define a num_nodes/2 by num_nodes/2 assignment problem:
-// ::operations_research::ArcIndex num_forward_arcs = ...;
-// ::operations_research::ForwardStarGraph g(num_nodes, num_arcs);
-// ::operations_research::LinearSumAssignment<
-//     ::operations_research::ForwardStarGraph> a(g, num_left_nodes);
-// for (int i = 0; i < num_forward_arcs; ++i) {
-//   ::operations_research::NodeIndex this_arc_head = ...;
-//   ::operations_research::NodeIndex this_arc_tail = ...;
-//   ::operations_research::CostValue this_arc_cost = ...;
-//   ::operations_research::ArcIndex this_arc_index =
-//       g.AddArc(this_arc_tail, this_arc_head);
-//   a.SetArcCost(this_arc_index, this_arc_cost);
-//  }
-//  // Compute the optimum assignment.
-//  bool success = a.ComputeAssignment();
-//  // Retrieve the cost of the optimum assignment.
-//  CostValue optimum_cost = a.GetCost();
-//  // Retrieve the node-node correspondence of the optimum assignment and the
-//  // cost of each node pairing.
-//  for (::operations_research::LinearSumAssignment<
-//           ForwardStarGraph>::BipartiteLeftNodeIterator
-//         node_it(a);
-//       node_it.Ok();
-//       node_it.Next()) {
-//    ::operations_research::NodeIndex left_node = node_it.Index();
-//    ::operations_research::NodeIndex right_node = a.GetMate(left_node);
-//    ::operations_research::CostValue node_pair_cost =
-//        a.GetAssignmentCost(left_node);
-//    ...
-//  }
+//   #include "graph/graph.h"
+//   #include "graph/linear_assignment.h"
+//
+//   // Choose a graph implementation (we recommend StaticGraph<>).
+//   typedef operations_research::StaticGraph<> Graph;
+//
+//   // Define a num_nodes / 2 by num_nodes / 2 assignment problem:
+//   const int num_nodes = ...
+//   const int num_arcs = ...
+//   const int num_left_nodes = num_nodes / 2;
+//   Graph graph(num_nodes, num_arcs);
+//   std::vector<operations_research::CostValue> arc_costs(num_arcs);
+//   for (int arc = 0; arc < num_arcs; ++arc) {
+//     const int arc_tail = ...   // must be in [0, num_left_nodes)
+//     const int arc_head = ...   // must be in [num_left_nodes, num_nodes)
+//     graph.AddArc(arc_tail, arc_head);
+//     arc_costs[arc] = ...
+//   }
+//
+//   // Build the StaticGraph. You can skip this step by using a ListGraph<>
+//   // instead, but then the ComputeAssignment() below will be slower. It is
+//   // okay if your graph is small and performance is not critical though.
+//   {
+//     std::vector<typename GraphType::ArcIndex> arc_permutation;
+//     graph->get()->Build(&arc_permutation);
+//     operations_research::Permute(arc_permutation, &arc_costs);
+//   }
+//
+//   // Construct the LinearSumAssignment.
+//   ::operations_research::LinearSumAssignment<Graph> a(graph, num_left_nodes);
+//   for (int arc = 0; arc < num_arcs; ++arc) {
+//      // You can also replace 'arc_costs[arc]' by something like
+//      //   ComputeArcCost(permutation.empty() ? arc : permutation[arc])
+//      // if you don't want to store the costs in arc_costs to save memory.
+//      a.SetArcCost(arc, arc_costs[arc]);
+//   }
+//
+//   // Compute the optimum assignment.
+//   bool success = a.ComputeAssignment();
+//   // Retrieve the cost of the optimum assignment.
+//   operations_research::CostValue optimum_cost = a.GetCost();
+//   // Retrieve the node-node correspondence of the optimum assignment and the
+//   // cost of each node pairing.
+//   for (int left_node = 0; left_node < num_left_nodes; ++left_node) {
+//     const int right_node = a.GetMate(left_node);
+//     operations_research::CostValue node_pair_cost =
+//         a.GetAssignmentCost(left_node);
+//     ...
+//   }
 //
 // In the following, we consider a bipartite graph
 //   G = (V = X union Y, E subset XxY),
@@ -187,6 +212,7 @@
 #include "base/stringprintf.h"
 #include "graph/ebert_graph.h"
 #include "util/permutation.h"
+#include "util/zvector.h"
 
 #ifndef SWIG
 DECLARE_int64(assignment_alpha);
@@ -200,6 +226,9 @@ namespace operations_research {
 template <typename GraphType>
 class LinearSumAssignment {
  public:
+  typedef typename GraphType::NodeIndex NodeIndex;
+  typedef typename GraphType::ArcIndex ArcIndex;
+
   // Constructor for the case in which we will build the graph
   // incrementally as we discover arc costs, as might be done with any
   // of the dynamic graph representations such as StarGraph or ForwardStarGraph.
@@ -211,13 +240,13 @@ class LinearSumAssignment {
   // us later via the SetGraph() method, below.
   LinearSumAssignment(NodeIndex num_left_nodes, ArcIndex num_arcs);
 
-  virtual ~LinearSumAssignment() {}
+  ~LinearSumAssignment() {}
 
   // Sets the graph used by the LinearSumAssignment instance, for use
   // when the graph layout can be determined only after arc costs are
   // set. This happens, for example, when we use a ForwardStarStaticGraph.
   void SetGraph(const GraphType* graph) {
-    DCHECK(graph_ == NULL);
+    DCHECK(graph_ == nullptr);
     graph_ = graph;
   }
 
@@ -260,13 +289,13 @@ class LinearSumAssignment {
 
   // Returns the original arc cost for use by a client that's
   // iterating over the optimum assignment.
-  virtual CostValue ArcCost(ArcIndex arc) const {
+  CostValue ArcCost(ArcIndex arc) const {
     DCHECK_EQ(0, scaled_arc_cost_[arc] % cost_scaling_factor_);
     return scaled_arc_cost_[arc] / cost_scaling_factor_;
   }
 
   // Sets the cost of an arc already present in the given graph.
-  virtual void SetArcCost(ArcIndex arc, CostValue cost);
+  void SetArcCost(ArcIndex arc, CostValue cost);
 
   // Completes initialization after the problem is fully specified.
   // Returns true if we successfully prove that arithmetic
@@ -280,20 +309,20 @@ class LinearSumAssignment {
   // overflow is not ruled out.
   //
   // FinalizeSetup() is idempotent.
-  virtual bool FinalizeSetup();
+  bool FinalizeSetup();
 
   // Computes the optimum assignment. Returns true on success. Return
   // value of false implies the given problem is infeasible.
-  virtual bool ComputeAssignment();
+  bool ComputeAssignment();
 
   // Returns the cost of the minimum-cost perfect matching.
   // Precondition: success_ == true, signifying that we computed the
   // optimum assignment for a feasible problem.
-  virtual CostValue GetCost() const;
+  CostValue GetCost() const;
 
   // Returns the total number of nodes in the given problem.
-  virtual NodeIndex NumNodes() const {
-    if (graph_ == NULL) {
+  NodeIndex NumNodes() const {
+    if (graph_ == nullptr) {
       // Return a guess that must be true if ultimately we are given a
       // feasible problem to solve.
       return 2 * NumLeftNodes();
@@ -304,7 +333,7 @@ class LinearSumAssignment {
 
   // Returns the number of nodes on the left side of the given
   // problem.
-  virtual NodeIndex NumLeftNodes() const { return num_left_nodes_; }
+  NodeIndex NumLeftNodes() const { return num_left_nodes_; }
 
   // Returns the arc through which the given node is matched.
   inline ArcIndex GetAssignmentArc(NodeIndex left_node) const {
@@ -331,23 +360,20 @@ class LinearSumAssignment {
   class BipartiteLeftNodeIterator {
    public:
     BipartiteLeftNodeIterator(const GraphType& graph, NodeIndex num_left_nodes)
-        : num_left_nodes_(num_left_nodes), node_iterator_(graph) {}
+        : num_left_nodes_(num_left_nodes), node_iterator_(0) {}
 
     explicit BipartiteLeftNodeIterator(const LinearSumAssignment& assignment)
-        : num_left_nodes_(assignment.NumLeftNodes()),
-          node_iterator_(assignment.Graph()) {}
+        : num_left_nodes_(assignment.NumLeftNodes()), node_iterator_(0) {}
 
-    NodeIndex Index() const { return node_iterator_.Index(); }
+    NodeIndex Index() const { return node_iterator_; }
 
-    bool Ok() const {
-      return node_iterator_.Ok() && (node_iterator_.Index() < num_left_nodes_);
-    }
+    bool Ok() const { return node_iterator_ < num_left_nodes_; }
 
-    void Next() { node_iterator_.Next(); }
+    void Next() { ++node_iterator_; }
 
    private:
     const NodeIndex num_left_nodes_;
-    typename GraphType::NodeIterator node_iterator_;
+    typename GraphType::NodeIndex node_iterator_;
   };
 
  private:
@@ -864,7 +890,7 @@ class LinearSumAssignment {
         static_cast<double>(std::numeric_limits<CostValue>::max());
     if (result > limit) {
       // Our integer computations could overflow.
-      if (in_range != NULL) *in_range = false;
+      if (in_range != nullptr) *in_range = false;
       return std::numeric_limits<CostValue>::max();
     } else {
       // Don't touch *in_range; other computations could already have
@@ -894,23 +920,29 @@ class LinearSumAssignment {
 
   // Indexed by node index, the price_ values are maintained only for
   // right-side nodes.
-  CostArray price_;
+  //
+  // Note: We use a ZVector to only allocate a vector of size num_left_nodes_
+  // instead of 2*num_left_nodes_ since the right-side node indices start at
+  // num_left_nodes_.
+  ZVector<CostValue> price_;
 
   // Indexed by left-side node index, the matched_arc_ array gives the
   // arc index of the arc matching any given left-side node, or
   // GraphType::kNilArc if the node is unmatched.
-  ArcIndexArray matched_arc_;
+  std::vector<ArcIndex> matched_arc_;
 
   // Indexed by right-side node index, the matched_node_ array gives
   // the node index of the left-side node matching any given
   // right-side node, or GraphType::kNilNode if the right-side node is
   // unmatched.
-  NodeIndexArray matched_node_;
+  //
+  // Note: We use a ZVector for the same reason as for price_.
+  ZVector<NodeIndex> matched_node_;
 
   // The array of arc costs as given in the problem definition, except
   // that they are scaled up by the number of nodes in the graph so we
   // can use integer arithmetic throughout.
-  CostArray scaled_arc_cost_;
+  std::vector<CostValue> scaled_arc_cost_;
 
   // The container of active nodes (i.e., unmatched nodes). This can
   // be switched easily between ActiveNodeStack and ActiveNodeQueue
@@ -947,10 +979,10 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       slack_relabeling_price_(0),
       largest_scaled_cost_magnitude_(0),
       total_excess_(0),
-      price_(num_left_nodes + GraphType::kFirstNode, 2 * num_left_nodes - 1),
-      matched_arc_(GraphType::kFirstNode, num_left_nodes - 1),
+      price_(num_left_nodes, 2 * num_left_nodes - 1),
+      matched_arc_(num_left_nodes, 0),
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
-      scaled_arc_cost_(GraphType::kFirstArc, graph.max_end_arc_index() - 1),
+      scaled_arc_cost_(graph.max_end_arc_index(), 0),
       active_nodes_(FLAGS_assignment_stack_order
                         ? static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeStack())
@@ -960,7 +992,7 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
 template <typename GraphType>
 LinearSumAssignment<GraphType>::LinearSumAssignment(
     const NodeIndex num_left_nodes, const ArcIndex num_arcs)
-    : graph_(NULL),
+    : graph_(nullptr),
       num_left_nodes_(num_left_nodes),
       success_(false),
       cost_scaling_factor_(1 + num_left_nodes),
@@ -970,12 +1002,10 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
       slack_relabeling_price_(0),
       largest_scaled_cost_magnitude_(0),
       total_excess_(0),
-      price_(num_left_nodes + GraphType::kFirstNode, 2 * num_left_nodes - 1),
-      matched_arc_(GraphType::kFirstNode,
-                   GraphType::kFirstNode + num_left_nodes - 1),
+      price_(num_left_nodes, 2 * num_left_nodes - 1),
+      matched_arc_(num_left_nodes, 0),
       matched_node_(num_left_nodes, 2 * num_left_nodes - 1),
-      scaled_arc_cost_(GraphType::kFirstArc,
-                       GraphType::kFirstArc + num_arcs - 1),
+      scaled_arc_cost_(num_arcs, 0),
       active_nodes_(FLAGS_assignment_stack_order
                         ? static_cast<ActiveNodeContainerInterface*>(
                               new ActiveNodeStack())
@@ -984,8 +1014,9 @@ LinearSumAssignment<GraphType>::LinearSumAssignment(
 
 template <typename GraphType>
 void LinearSumAssignment<GraphType>::SetArcCost(ArcIndex arc, CostValue cost) {
-  DCHECK(graph_ == NULL || graph_->CheckArcValidity(arc));
-  if (graph_ != NULL) {
+  if (graph_ != nullptr) {
+    DCHECK_GE(arc, 0);
+    DCHECK_LT(arc, graph_->num_arcs());
     NodeIndex head = Head(arc);
     DCHECK_LE(num_left_nodes_, head);
   }
@@ -993,33 +1024,33 @@ void LinearSumAssignment<GraphType>::SetArcCost(ArcIndex arc, CostValue cost) {
   const CostValue cost_magnitude = std::abs(cost);
   largest_scaled_cost_magnitude_ =
       std::max(largest_scaled_cost_magnitude_, cost_magnitude);
-  scaled_arc_cost_.Set(arc, cost);
+  scaled_arc_cost_[arc] = cost;
 }
 
 template <typename ArcIndexType>
 class CostValueCycleHandler : public PermutationCycleHandler<ArcIndexType> {
  public:
-  explicit CostValueCycleHandler(CostArray* cost) : temp_(0), cost_(cost) {}
+  explicit CostValueCycleHandler(std::vector<CostValue>* cost)
+      : temp_(0), cost_(cost) {}
 
   void SetTempFromIndex(ArcIndexType source) override {
-    temp_ = cost_->Value(source);
+    temp_ = (*cost_)[source];
   }
 
   void SetIndexFromIndex(ArcIndexType source,
                          ArcIndexType destination) const override {
-    cost_->Set(destination, cost_->Value(source));
+    (*cost_)[destination] = (*cost_)[source];
   }
 
   void SetIndexFromTemp(ArcIndexType destination) const override {
-    cost_->Set(destination, temp_);
+    (*cost_)[destination] = temp_;
   }
 
   ~CostValueCycleHandler() override {}
 
  private:
   CostValue temp_;
-
-  CostArray* cost_;
+  std::vector<CostValue>* const cost_;
 
   DISALLOW_COPY_AND_ASSIGN(CostValueCycleHandler);
 };
@@ -1037,7 +1068,8 @@ class ArcIndexOrderingByTailNode {
   // Says ArcIndex a is less than ArcIndex b if arc a's tail is less
   // than arc b's tail. If their tails are equal, orders according to
   // heads.
-  bool operator()(ArcIndex a, ArcIndex b) const {
+  bool operator()(typename GraphType::ArcIndex a,
+                  typename GraphType::ArcIndex b) const {
     return ((graph_.Tail(a) < graph_.Tail(b)) ||
             ((graph_.Tail(a) == graph_.Tail(b)) &&
              (graph_.Head(a) < graph_.Head(b))));
@@ -1083,7 +1115,7 @@ CostValue LinearSumAssignment<GraphType>::NewEpsilon(
 template <typename GraphType>
 bool LinearSumAssignment<GraphType>::UpdateEpsilon() {
   CostValue new_epsilon = NewEpsilon(epsilon_);
-  slack_relabeling_price_ = PriceChangeBound(epsilon_, new_epsilon, NULL);
+  slack_relabeling_price_ = PriceChangeBound(epsilon_, new_epsilon, nullptr);
   epsilon_ = new_epsilon;
   VLOG(3) << "Updated: epsilon_ == " << epsilon_;
   VLOG(4) << "slack_relabeling_price_ == " << slack_relabeling_price_;
@@ -1151,8 +1183,8 @@ void LinearSumAssignment<GraphType>::SaturateNegativeArcs() {
       // We're about to create a unit of excess by unmatching these nodes.
       total_excess_ += 1;
       const NodeIndex mate = GetMate(node);
-      matched_arc_.Set(node, GraphType::kNilArc);
-      matched_node_.Set(mate, GraphType::kNilNode);
+      matched_arc_[node] = GraphType::kNilArc;
+      matched_node_[mate] = GraphType::kNilNode;
     }
   }
 }
@@ -1177,7 +1209,7 @@ bool LinearSumAssignment<GraphType>::DoublePush(NodeIndex source) {
   if (to_unmatch != GraphType::kNilNode) {
     // Unmatch new_mate from its current mate, pushing the unit of
     // flow back to a node on the left side as a unit of excess.
-    matched_arc_.Set(to_unmatch, GraphType::kNilArc);
+    matched_arc_[to_unmatch] = GraphType::kNilArc;
     active_nodes_->Add(to_unmatch);
     // This counts as a double push.
     iteration_stats_.double_pushes_ += 1;
@@ -1187,12 +1219,12 @@ bool LinearSumAssignment<GraphType>::DoublePush(NodeIndex source) {
     // This counts as a single push.
     iteration_stats_.pushes_ += 1;
   }
-  matched_arc_.Set(source, best_arc);
-  matched_node_.Set(new_mate, source);
+  matched_arc_[source] = best_arc;
+  matched_node_[new_mate] = source;
   // Finally, relabel new_mate.
   iteration_stats_.relabelings_ += 1;
-  CostValue new_price = price_[new_mate] - gap - epsilon_;
-  price_.Set(new_mate, new_price);
+  const CostValue new_price = price_[new_mate] - gap - epsilon_;
+  price_[new_mate] = new_price;
   return new_price >= price_lower_bound_;
 }
 
@@ -1305,9 +1337,8 @@ inline CostValue LinearSumAssignment<GraphType>::ImplicitPrice(
 // Only for debugging.
 template <typename GraphType>
 bool LinearSumAssignment<GraphType>::AllMatched() const {
-  for (typename GraphType::NodeIterator node_it(*graph_); node_it.Ok();
-       node_it.Next()) {
-    if (IsActiveForDebugging(node_it.Index())) {
+  for (NodeIndex node = 0; node < graph_->num_nodes(); ++node) {
+    if (IsActiveForDebugging(node)) {
       return false;
     }
   }
@@ -1361,13 +1392,8 @@ bool LinearSumAssignment<GraphType>::FinalizeSetup() {
           << largest_scaled_cost_magnitude_ / cost_scaling_factor_;
   // Initialize left-side node-indexed arrays and check incidence
   // precondition.
-  typename GraphType::NodeIterator node_it(*graph_);
-  for (; node_it.Ok(); node_it.Next()) {
-    const NodeIndex node = node_it.Index();
-    if (node >= num_left_nodes_) {
-      break;
-    }
-    matched_arc_.Set(node, GraphType::kNilArc);
+  for (NodeIndex node = 0; node < num_left_nodes_; ++node) {
+    matched_arc_[node] = GraphType::kNilArc;
     typename GraphType::OutgoingArcIterator arc_it(*graph_, node);
     if (!arc_it.Ok()) {
       incidence_precondition_satisfied_ = false;
@@ -1375,10 +1401,9 @@ bool LinearSumAssignment<GraphType>::FinalizeSetup() {
   }
   // Initialize right-side node-indexed arrays. Example: prices are
   // stored only for right-side nodes.
-  for (; node_it.Ok(); node_it.Next()) {
-    const NodeIndex node = node_it.Index();
-    price_.Set(node, 0);
-    matched_node_.Set(node, GraphType::kNilNode);
+  for (NodeIndex node = num_left_nodes_; node < graph_->num_nodes(); ++node) {
+    price_[node] = 0;
+    matched_node_[node] = GraphType::kNilNode;
   }
   bool in_range = true;
   double double_price_lower_bound = 0.0;
