@@ -59,7 +59,7 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
     // Update factor_exponent which is the min of all the candidates.
     if (is_first_value || candidate < factor_exponent) {
       is_first_value = false;
-      abs_sum >>= std::min(64, factor_exponent - candidate);
+      abs_sum >>= std::max(0, std::min(63, factor_exponent - candidate));
       factor_exponent = candidate;
     }
 
