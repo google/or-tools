@@ -25,6 +25,7 @@
 #define OR_TOOLS_GRAPH_CLIQUES_H_
 
 #include <functional>
+#include <numeric>
 #include "base/hash.h"
 #include <vector>
 
@@ -359,7 +360,7 @@ void BronKerboschAlgorithm<NodeIndex>::Initialize() {
   State* const root_state = &states_.back();
   root_state->first_candidate_index = 0;
   root_state->candidates.resize(num_nodes_, 0);
-  iota(root_state->candidates.begin(), root_state->candidates.end(), 0);
+  std::iota(root_state->candidates.begin(), root_state->candidates.end(), 0);
   root_state->num_remaining_candidates = num_nodes_;
   InitializeState(root_state);
 
