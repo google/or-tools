@@ -22,8 +22,8 @@
 #include "base/file.h"
 #include "google/protobuf/text_format.h"
 #include "base/hash.h"
-#include "bop/integral_solver.h"
 #include "bop/bop_parameters.pb.h"
+#include "bop/integral_solver.h"
 #include "linear_solver/linear_solver.h"
 
 #if defined(USE_BOP)
@@ -140,6 +140,7 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
     parameters_.set_max_time_in_seconds(
         static_cast<double>(solver_->time_limit()) / 1000.0);
   }
+  parameters_.set_log_search_progress(!quiet());
 
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
@@ -258,6 +259,11 @@ bool BopInterface::IsMIP() const { return true; }
 std::string BopInterface::SolverVersion() const {
   // TODO(user): Decide how to version bop.
   return "Bop-0.0";
+}
+
+bool BopInterface::InterruptSolve() {
+  bop_solver_.InterruptSolve();
+  return true;
 }
 
 void* BopInterface::underlying_solver() { return &bop_solver_; }

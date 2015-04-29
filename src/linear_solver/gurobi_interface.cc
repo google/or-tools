@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(USE_GUROBI)
+
 #include <cmath>
 #include <cstddef>
 #include "base/hash.h"
@@ -28,8 +30,6 @@
 #include "base/map_util.h"
 #include "linear_solver/linear_solver.h"
 
-
-#if defined(USE_GUROBI)
 extern "C" {
 #include "gurobi_c.h"
 }
@@ -221,8 +221,9 @@ void GurobiInterface::SetVariableInteger(int index, bool integer) {
 
   if ((integer &&
        (current_type == GRB_INTEGER || current_type == GRB_BINARY)) ||
-      (!integer && current_type == GRB_CONTINUOUS))
+      (!integer && current_type == GRB_CONTINUOUS)) {
     return;
+  }
 
   InvalidateSolutionSynchronization();
   if (sync_status_ == MODEL_SYNCHRONIZED) {

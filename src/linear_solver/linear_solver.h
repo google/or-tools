@@ -296,13 +296,13 @@ class MPSolver {
   // ----- Objective -----
   // Note that the objective is owned by the solver, and is initialized to
   // its default value (see the MPObjective class below) at construction.
-  const MPObjective& Objective() const { return *objective_.get(); }
+  const MPObjective& Objective() const { return *objective_; }
   MPObjective* MutableObjective() { return objective_.get(); }
 
   // ----- Solve -----
 
-  // The status of solving the problem. The straightfowrad translation to
-  // homonym enum values of MPSolutionResponse::Status
+  // The status of solving the problem. The straightforward translation to
+  // homonymous enum values of MPSolutionResponse::Status
   // (see ./linear_solver2.proto) is guaranteed by ./enum_consistency_test.cc,
   // you may rely on it.
   // TODO(user): Figure out once and for all what the status of

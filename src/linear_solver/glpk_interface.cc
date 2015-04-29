@@ -13,6 +13,8 @@
 
 //
 
+#if defined(USE_GLPK)
+
 #include <cmath>
 #include <cstddef>
 #include "base/hash.h"
@@ -29,9 +31,6 @@
 #include "base/timer.h"
 #include "base/hash.h"
 #include "linear_solver/linear_solver.h"
-
-
-#if defined(USE_GLPK)
 
 extern "C" {
 #include "glpk.h"
@@ -665,8 +664,9 @@ MPSolver::BasisStatus GLPKInterface::TransformGLPKBasisStatus(
 
 int64 GLPKInterface::iterations() const {
 #if GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION < 49
-  if (!mip_ && CheckSolutionIsSynchronized())
+  if (!mip_ && CheckSolutionIsSynchronized()) {
     return lpx_get_int_parm(lp_, LPX_K_ITCNT);
+  }
 #elif GLP_MAJOR_VERSION == 4 && GLP_MINOR_VERSION >= 53
   if (!mip_ && CheckSolutionIsSynchronized()) {
     return glp_get_it_cnt(lp_);

@@ -97,6 +97,9 @@ class File {
 
   // Deletes a file.
   static bool Delete(const char* const name);
+  static bool Delete(const std::string& name) {
+    return Delete(name.c_str());
+  }
 
   // Tests if a file exists.
   static bool Exists(const char* const name);

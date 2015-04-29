@@ -13,6 +13,8 @@
 
 //
 
+#if defined(USE_SCIP)
+
 #include <stddef.h>
 #include "base/hash.h"
 #include "base/unique_ptr.h"
@@ -24,13 +26,10 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
-#include "base/hash.h"
-#include "linear_solver/linear_solver.h"
-
-#if defined(USE_SCIP)
-
 #include "scip/scip.h"
 #include "scip/scipdefplugins.h"
+#include "base/hash.h"
+#include "linear_solver/linear_solver.h"
 
 // Our own version of SCIP_CALL to do error management.
 // TODO(user): The error management could be improved, especially

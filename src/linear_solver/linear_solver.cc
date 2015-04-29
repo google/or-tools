@@ -39,7 +39,6 @@
 #include "util/fp_utils.h"
 #include "util/proto_tools.h"
 
-
 DEFINE_bool(verify_solution, false,
             "Systematically verify the solution when calling Solve()"
             ", and change the return value of Solve() to ABNORMAL if"
@@ -304,7 +303,7 @@ bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters
     no_error_so_far = interface_->ReadParameterFile(filename);
     // We need to clean up the file even if ReadParameterFile() returned
     // false. In production we can continue even if the deletion failed.
-    if (!File::Delete(filename.c_str())) {
+    if (!File::Delete(filename)) {
       LOG(DFATAL) << "Couldn't delete temporary parameters file: " << filename;
     }
   }
