@@ -173,10 +173,12 @@ class LightFunctionElementConstraint : public Constraint {
  public:
   LightFunctionElementConstraint(Solver* const solver, IntVar* const var,
                                  IntVar* const index,
-                                 ResultCallback1<int64, int64>* const values)
-      : Constraint(solver), var_(var), index_(index), values_(values) {
+                                 std::function<int64(int64)> values)
+      : Constraint(solver),
+        var_(var),
+        index_(index),
+        values_(std::move(values)) {
     CHECK(values_ != nullptr);
-    values_->CheckIsRepeatable();
   }
   ~LightFunctionElementConstraint() override {}
 
@@ -203,18 +205,18 @@ class LightFunctionElementConstraint : public Constraint {
   }
 
  private:
-  void IndexBound() { var_->SetValue(values_->Run(index_->Value())); }
+  void IndexBound() { var_->SetValue(values_(index_->Min())); }
 
   IntVar* const var_;
   IntVar* const index_;
-  std::unique_ptr<ResultCallback1<int64, int64>> values_;
+  std::function<int64(int64)> values_;
 };
 
 Constraint* MakeLightElement(Solver* const solver, IntVar* const var,
                              IntVar* const index,
-                             ResultCallback1<int64, int64>* const values) {
-  return solver->RevAlloc(
-      new LightFunctionElementConstraint(solver, var, index, values));
+                             std::function<int64(int64)> values) {
+  return solver->RevAlloc(new LightFunctionElementConstraint(
+      solver, var, index, std::move(values)));
 }
 
 // Light two-dimension function-based element constraint ensuring:
@@ -224,16 +226,15 @@ Constraint* MakeLightElement(Solver* const solver, IntVar* const var,
 // Ownership of the 'values' callback is taken by the constraint.
 class LightFunctionElement2Constraint : public Constraint {
  public:
-  LightFunctionElement2Constraint(
-      Solver* const solver, IntVar* const var, IntVar* const index1,
-      IntVar* const index2, ResultCallback2<int64, int64, int64>* const values)
+  LightFunctionElement2Constraint(Solver* const solver, IntVar* const var,
+                                  IntVar* const index1, IntVar* const index2,
+                                  std::function<int64(int64, int64)> values)
       : Constraint(solver),
         var_(var),
         index1_(index1),
         index2_(index2),
-        values_(values) {
+        values_(std::move(values)) {
     CHECK(values_ != nullptr);
-    values_->CheckIsRepeatable();
   }
   ~LightFunctionElement2Constraint() override {}
   void Post() override {
@@ -257,21 +258,21 @@ class LightFunctionElement2Constraint : public Constraint {
  private:
   void IndexBound() {
     if (index1_->Bound() && index2_->Bound()) {
-      var_->SetValue(values_->Run(index1_->Value(), index2_->Value()));
+      var_->SetValue(values_(index1_->Min(), index2_->Min()));
     }
   }
 
   IntVar* const var_;
   IntVar* const index1_;
   IntVar* const index2_;
-  std::unique_ptr<ResultCallback2<int64, int64, int64>> values_;
+  std::function<int64(int64, int64)> values_;
 };
 
-Constraint* MakeLightElement2(
-    Solver* const solver, IntVar* const var, IntVar* const index1,
-    IntVar* const index2, ResultCallback2<int64, int64, int64>* const values) {
-  return solver->RevAlloc(
-      new LightFunctionElement2Constraint(solver, var, index1, index2, values));
+Constraint* MakeLightElement2(Solver* const solver, IntVar* const var,
+                              IntVar* const index1, IntVar* const index2,
+                              std::function<int64(int64, int64)> values) {
+  return solver->RevAlloc(new LightFunctionElement2Constraint(
+      solver, var, index1, index2, std::move(values)));
 }
 
 // Relocate neighborhood which moves chains of neighbors.
@@ -1488,19 +1489,23 @@ void RoutingModel::SetStartEnd(
 void RoutingModel::AppendHomogeneousArcCosts(int node_index,
                                              std::vector<IntVar*>* cost_elements) {
   CHECK(cost_elements != nullptr);
-  Solver::IndexEvaluator1* arc_cost_evaluator = NewPermanentCallback(
-      this, &RoutingModel::GetHomogeneousCost, static_cast<int64>(node_index));
   if (UsesLightPropagation()) {
     // Only supporting positive costs.
     // TODO(user): Detect why changing lower bound to kint64min stalls
     // the search in GLS in some cases (Solomon instances for instance).
     IntVar* const base_cost_var = solver_->MakeIntVar(0, kint64max);
-    solver_->AddConstraint(MakeLightElement(
-        solver_.get(), base_cost_var, nexts_[node_index], arc_cost_evaluator));
+    solver_->AddConstraint(
+        MakeLightElement(solver_.get(), base_cost_var, nexts_[node_index],
+                         [this, node_index](int64 next_index) {
+                           return GetHomogeneousCost(node_index, next_index);
+                         }));
     IntVar* const var =
         solver_->MakeProd(base_cost_var, active_[node_index])->Var();
     cost_elements->push_back(var);
   } else {
+    Solver::IndexEvaluator1* arc_cost_evaluator =
+        NewPermanentCallback(this, &RoutingModel::GetHomogeneousCost,
+                             static_cast<int64>(node_index));
     IntExpr* const expr =
         solver_->MakeElement(arc_cost_evaluator, nexts_[node_index]);
     IntVar* const var = solver_->MakeProd(expr, active_[node_index])->Var();
@@ -1519,9 +1524,9 @@ void RoutingModel::AppendArcCosts(int node_index,
     IntVar* const base_cost_var = solver_->MakeIntVar(0, kint64max);
     solver_->AddConstraint(MakeLightElement2(
         solver_.get(), base_cost_var, nexts_[node_index],
-        vehicle_vars_[node_index],
-        NewPermanentCallback(this, &RoutingModel::GetArcCostForVehicle,
-                             static_cast<int64>(node_index))));
+        vehicle_vars_[node_index], [this, node_index](int64 to, int64 vehicle) {
+          return GetArcCostForVehicle(node_index, to, vehicle);
+        }));
     IntVar* const var =
         solver_->MakeProd(base_cost_var, active_[node_index])->Var();
     cost_elements->push_back(var);
@@ -4468,7 +4473,9 @@ void RoutingDimension::InitializeCumuls(
         capacity_var = solver->MakeIntVar(0, kint64max);
         solver->AddConstraint(MakeLightElement(
             solver, capacity_var, model_->VehicleVar(i),
-            NewPermanentCallback(&WrappedVehicleEvaluator, vehicle_capacity)));
+            [vehicle_capacity](int64 vehicle) {
+              return vehicle >= 0 ? vehicle_capacity->Run(vehicle) : kint64max;
+            }));
       } else {
         capacity_var =
             solver->MakeElement(NewPermanentCallback(&WrappedVehicleEvaluator,
@@ -4547,18 +4554,23 @@ void RoutingDimension::InitializeTransits(
     if (model_->UsesLightPropagation()) {
       if (class_evaluators_.size() == 1) {
         fixed_transit = solver->MakeIntVar(kint64min, kint64max);
-        solver->AddConstraint(
-            MakeLightElement(solver, fixed_transit, model_->NextVar(i),
-                             NewPermanentCallback(&WrappedEvaluator, model_,
-                                                  transit_evaluators[0],
-                                                  static_cast<int64>(i))));
+        RoutingModel::NodeEvaluator2* const transit_evaluator =
+            transit_evaluators[0];
+        solver->AddConstraint(MakeLightElement(
+            solver, fixed_transit, model_->NextVar(i),
+            [this, transit_evaluator, i](int64 to) {
+              return transit_evaluator->Run(model_->IndexToNode(i),
+                                            model_->IndexToNode(to));
+            }));
       } else {
         fixed_transit = solver->MakeIntVar(kint64min, kint64max);
         solver->AddConstraint(MakeLightElement2(
             solver, fixed_transit, model_->NextVar(i), model_->VehicleVar(i),
-            NewPermanentCallback(
-                &IthEvaluatorValueOrValue<Solver::IndexEvaluator2*, 0LL>,
-                &transit_evaluators_, static_cast<int64>(i))));
+            [this, i](int64 to, int64 eval_index) {
+              return eval_index >= 0
+                         ? transit_evaluators_[eval_index]->Run(i, to)
+                         : 0LL;
+            }));
       }
     } else {
       if (class_evaluators_.size() == 1) {
