@@ -787,12 +787,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 %exception Method {
   operations_research::Solver* const solver = GetSolver;
   FailureProtect protect;
-  Closure* const intercept = NewCallback<>(&protect, &FailureProtect::JumpBack);
-  solver->set_fail_intercept(intercept);
+  solver->set_fail_intercept([&protect]() { protect.JumpBack(); });
   if (setjmp(protect.exception_buffer) == 0) {
     $action
     solver->clear_fail_intercept();
-    delete intercept;
   } else {
     solver->clear_fail_intercept();
     // IMPORTANT: the type and message of the exception raised matter,

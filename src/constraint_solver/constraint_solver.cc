@@ -2436,7 +2436,7 @@ bool Solver::SolveAndCommit(DecisionBuilder* const db,
 
 void Solver::Fail() {
   if (fail_intercept_) {
-    fail_intercept_->Run();
+    fail_intercept_();
     return;
   }
   ConstraintSolverFailsHere();

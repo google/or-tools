@@ -61,6 +61,7 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 
+#include <functional>
 #include "base/hash.h"
 #include "base/hash.h"
 #include <iosfwd>
@@ -2844,8 +2845,9 @@ class Solver {
   Decision* balancing_decision() const { return balancing_decision_.get(); }
 
   // Internal
-  // set_fail_intercept does not take ownership of the closure.
-  void set_fail_intercept(Closure* const c) { fail_intercept_ = c; }
+  void set_fail_intercept(std::function<void()> fail_intercept) {
+    fail_intercept_ = fail_intercept;
+  }
   void clear_fail_intercept() { fail_intercept_ = nullptr; }
   // Access to demon profiler.
   DemonProfiler* demon_profiler() const { return demon_profiler_; }
@@ -3054,7 +3056,7 @@ class Solver {
   uint64 fail_stamp_;
   std::unique_ptr<Decision> balancing_decision_;
   // intercept failures
-  Closure* fail_intercept_;
+  std::function<void()> fail_intercept_;
   // Demon monitor
   DemonProfiler* const demon_profiler_;
 
