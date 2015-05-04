@@ -326,7 +326,7 @@ int main(int argc, char** argv) {
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_data_file.empty()) {
-    LOG(FATAL) << "Please supply a data file with --datafile=";
+    LOG(FATAL) << "Please supply a data file with --data_file=";
   }
   operations_research::MultiDimKnapsackData data;
   data.Load(FLAGS_data_file);

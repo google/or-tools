@@ -38,7 +38,7 @@
 using operations_research::Assignment;
 using operations_research::RoutingModel;
 using operations_research::ACMRandom;
-using operations_research::StrCat;
+using operations_research::StrAppend;
 
 DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(tsp_use_random_matrix, true, "Use random cost matrix.");
@@ -149,11 +149,11 @@ int main(int argc, char** argv) {
       std::string route;
       for (int64 node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {
-        route = StrCat(route, routing.IndexToNode(node).value(), " (", node,
-                       ") -> ");
+        StrAppend(&route, routing.IndexToNode(node).value(), " (", node,
+                  ") -> ");
       }
       const int64 end = routing.End(route_number);
-      route = StrCat(route, routing.IndexToNode(end).value(), " (", end, ")");
+      StrAppend(&route, routing.IndexToNode(end).value(), " (", end, ")");
       LOG(INFO) << route;
     } else {
       LOG(INFO) << "No solution found.";
