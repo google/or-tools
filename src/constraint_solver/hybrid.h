@@ -21,9 +21,9 @@ class MPSolver;
 
 // ----- Simplex Connection -----
 SearchMonitor* MakeSimplexConnection(Solver* const solver,
-                                     Callback1<MPSolver*>* const builder,
-                                     Callback1<MPSolver*>* const modifier,
-                                     Callback1<MPSolver*>* const runner,
+                                     std::function<void(MPSolver*)> builder,
+                                     std::function<void(MPSolver*)> modifier,
+                                     std::function<void(MPSolver*)> runner,
                                      int simplex_frequency);
 
 // ----- Linear Relaxation Constraint -----

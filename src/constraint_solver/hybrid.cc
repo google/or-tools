@@ -15,6 +15,7 @@
 #include "constraint_solver/hybrid.h"
 
 #include <math.h>
+#include <functional>
 #include "base/hash.h"
 #include "base/unique_ptr.h"
 #include "base/callback.h"
@@ -50,25 +51,18 @@ inline MPSolver::OptimizationProblemType LpSolverForCp() {
 
 class SimplexConnection : public SearchMonitor {
  public:
-  SimplexConnection(Solver* const solver, Callback1<MPSolver*>* const builder,
-                    Callback1<MPSolver*>* const modifier,
-                    Callback1<MPSolver*>* const runner, int simplex_frequency)
+  SimplexConnection(Solver* const solver,
+                    std::function<void(MPSolver*)> builder,
+                    std::function<void(MPSolver*)> modifier,
+                    std::function<void(MPSolver*)> runner,
+                    int simplex_frequency)
       : SearchMonitor(solver),
-        builder_(builder),
-        modifier_(modifier),
-        runner_(runner),
+        builder_(std::move(builder)),
+        modifier_(std::move(modifier)),
+        runner_(std::move(runner)),
         mp_solver_("InSearchSimplex", LpSolverForCp()),
         counter_(0LL),
         simplex_frequency_(simplex_frequency) {
-    if (builder != nullptr) {
-      builder->CheckIsRepeatable();
-    }
-    if (modifier != nullptr) {
-      modifier->CheckIsRepeatable();
-    }
-    if (runner != nullptr) {
-      runner->CheckIsRepeatable();
-    }
     if (!FLAGS_verbose_simplex_call) {
       mp_solver_.SuppressOutput();
     }
@@ -76,8 +70,8 @@ class SimplexConnection : public SearchMonitor {
 
   void EndInitialPropagation() override {
     mp_solver_.Clear();
-    if (builder_.get() != nullptr) {
-      builder_->Run(&mp_solver_);
+    if (builder_) {
+      builder_(&mp_solver_);
     }
     RunOptim();
   }
@@ -87,8 +81,8 @@ class SimplexConnection : public SearchMonitor {
       const int cleanup = FLAGS_simplex_cleanup_frequency * simplex_frequency_;
       if (FLAGS_simplex_cleanup_frequency != 0 && counter_ % cleanup == 0) {
         mp_solver_.Clear();
-        if (builder_.get() != nullptr) {
-          builder_->Run(&mp_solver_);
+        if (builder_) {
+          builder_(&mp_solver_);
         }
       }
       RunOptim();
@@ -96,20 +90,20 @@ class SimplexConnection : public SearchMonitor {
   }
 
   void RunOptim() {
-    if (modifier_.get() != nullptr) {
-      modifier_->Run(&mp_solver_);
+    if (modifier_) {
+      modifier_(&mp_solver_);
     }
-    if (runner_.get() != nullptr) {
-      runner_->Run(&mp_solver_);
+    if (runner_) {
+      runner_(&mp_solver_);
     }
   }
 
   std::string DebugString() const override { return "SimplexConnection"; }
 
  private:
-  std::unique_ptr<Callback1<MPSolver*> > builder_;
-  std::unique_ptr<Callback1<MPSolver*> > modifier_;
-  std::unique_ptr<Callback1<MPSolver*> > runner_;
+  std::function<void(MPSolver*)> builder_;
+  std::function<void(MPSolver*)> modifier_;
+  std::function<void(MPSolver*)> runner_;
   MPSolver mp_solver_;
   int64 counter_;
   const int simplex_frequency_;
@@ -605,12 +599,13 @@ class AutomaticLinearization : public SearchMonitor {
 // ---------- API ----------
 
 SearchMonitor* MakeSimplexConnection(Solver* const solver,
-                                     Callback1<MPSolver*>* const builder,
-                                     Callback1<MPSolver*>* const modifier,
-                                     Callback1<MPSolver*>* const runner,
+                                     std::function<void(MPSolver*)> builder,
+                                     std::function<void(MPSolver*)> modifier,
+                                     std::function<void(MPSolver*)> runner,
                                      int frequency) {
-  return solver->RevAlloc(
-      new SimplexConnection(solver, builder, modifier, runner, frequency));
+  return solver->RevAlloc(new SimplexConnection(solver, std::move(builder),
+                                                std::move(modifier),
+                                                std::move(runner), frequency));
 }
 
 SearchMonitor* MakeSimplexConstraint(Solver* const solver,
