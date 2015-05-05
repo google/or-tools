@@ -13,13 +13,13 @@
 
 
 #include <cstddef>
+#include <functional>
 #include "base/hash.h"
 #include <limits>
 #include "base/unique_ptr.h"
 #include <string>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -144,9 +144,8 @@ class InitVarImpacts : public DecisionBuilder {
         new_start_(false),
         var_index_(0),
         value_index_(-1),
-        update_impact_closure_(
-            NewPermanentCallback(this, &InitVarImpacts::UpdateImpacts)),
-        updater_(update_impact_closure_.get()) {
+        update_impact_closure_([this]() { UpdateImpacts(); }),
+        updater_(update_impact_closure_) {
     CHECK(update_impact_closure_ != nullptr);
   }
 
@@ -154,7 +153,7 @@ class InitVarImpacts : public DecisionBuilder {
 
   void UpdateImpacts() {
     // the Min is always the value we just set.
-    update_impact_callback_->Run(var_index_, var_->Min());
+    update_impact_callback_(var_index_, var_->Min());
   }
 
   void Init(IntVar* const var, IntVarIterator* const iterator, int var_index) {
@@ -184,15 +183,15 @@ class InitVarImpacts : public DecisionBuilder {
     return &updater_;
   }
 
-  void set_update_impact_callback(Callback2<int, int64>* const callback) {
-    update_impact_callback_ = callback;
+  void set_update_impact_callback(std::function<void(int, int64)> callback) {
+    update_impact_callback_ = std::move(callback);
   }
 
  private:
   // ----- helper decision -----
   class AssignCallFail : public Decision {
    public:
-    explicit AssignCallFail(Closure* const update_impact_closure)
+    explicit AssignCallFail(const std::function<void()>& update_impact_closure)
         : var_(nullptr),
           value_(0),
           update_impact_closure_(update_impact_closure) {
@@ -203,7 +202,7 @@ class InitVarImpacts : public DecisionBuilder {
       CHECK(var_ != nullptr);
       var_->SetValue(value_);
       // We call the closure on the part that cannot fail.
-      update_impact_closure_->Run();
+      update_impact_closure_();
       solver->Fail();
     }
     void Refute(Solver* const solver) override {}
@@ -212,18 +211,18 @@ class InitVarImpacts : public DecisionBuilder {
     int64 value_;
 
    private:
-    Closure* const update_impact_closure_;
+    const std::function<void()>& update_impact_closure_;
     DISALLOW_COPY_AND_ASSIGN(AssignCallFail);
   };
 
   IntVar* var_;
-  Callback2<int, int64>* update_impact_callback_;
+  std::function<void(int, int64)> update_impact_callback_;
   bool new_start_;
   IntVarIterator* iterator_;
   int var_index_;
   std::vector<int64> active_values_;
   int value_index_;
-  const std::unique_ptr<Closure> update_impact_closure_;
+  std::function<void()> update_impact_closure_;
   AssignCallFail updater_;
 };
 
@@ -235,7 +234,8 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   // ----- helper decision -----
   class AssignIntervalCallFail : public Decision {
    public:
-    explicit AssignIntervalCallFail(Closure* const update_impact_closure)
+    explicit AssignIntervalCallFail(
+        const std::function<void()>& update_impact_closure)
         : var_(nullptr),
           value_min_(0),
           value_max_(0),
@@ -247,7 +247,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
       CHECK(var_ != nullptr);
       var_->SetRange(value_min_, value_max_);
       // We call the closure on the part that cannot fail.
-      update_impact_closure_->Run();
+      update_impact_closure_();
       solver->Fail();
     }
     void Refute(Solver* const solver) override {}
@@ -258,7 +258,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     int64 value_max_;
 
    private:
-    Closure* const update_impact_closure_;
+    const std::function<void()>& update_impact_closure_;
     DISALLOW_COPY_AND_ASSIGN(AssignIntervalCallFail);
   };
 
@@ -273,9 +273,8 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
         max_value_(0),
         split_size_(split_size),
         split_index_(-1),
-        update_impact_closure_(NewPermanentCallback(
-            this, &InitVarImpactsWithSplits::UpdateImpacts)),
-        updater_(update_impact_closure_.get()) {
+        update_impact_closure_([this]() { UpdateImpacts(); }),
+        updater_(update_impact_closure_) {
     CHECK(update_impact_closure_ != nullptr);
   }
 
@@ -283,7 +282,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
 
   void UpdateImpacts() {
     for (const int64 value : InitAndGetValues(iterator_)) {
-      update_impact_callback_->Run(var_index_, value);
+      update_impact_callback_(var_index_, value);
     }
   }
 
@@ -320,13 +319,13 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
     return &updater_;
   }
 
-  void set_update_impact_callback(Callback2<int, int64>* const callback) {
+  void set_update_impact_callback(std::function<void(int, int64)> callback) {
     update_impact_callback_ = callback;
   }
 
  private:
   IntVar* var_;
-  Callback2<int, int64>* update_impact_callback_;
+  std::function<void(int, int64)> update_impact_callback_;
   bool new_start_;
   IntVarIterator* iterator_;
   int var_index_;
@@ -334,7 +333,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   int64 max_value_;
   const int split_size_;
   int split_index_;
-  std::unique_ptr<Closure> update_impact_closure_;
+  std::function<void()> update_impact_closure_;
   AssignIntervalCallFail updater_;
 };
 
@@ -581,13 +580,15 @@ class ImpactRecorder : public SearchMonitor {
   class FirstRunVariableContainers : public BaseObject {
    public:
     FirstRunVariableContainers(ImpactRecorder* impact_recorder, int64 splits)
-        : update_impact_callback_(NewPermanentCallback(
-              impact_recorder, &ImpactRecorder::InitImpact)),
+        : update_impact_callback_(
+              [impact_recorder](int var_index, int64 value) {
+                impact_recorder->InitImpact(var_index, value);
+              }),
           removed_values_(),
           without_splits_(),
           with_splits_(splits) {}
-    Callback2<int, int64>* update_impact_callback() {
-      return update_impact_callback_.get();
+    std::function<void(int, int64)> update_impact_callback() const {
+      return update_impact_callback_;
     }
     void PushBackRemovedValue(int64 value) { removed_values_.push_back(value); }
     bool HasRemovedValues() const { return !removed_values_.empty(); }
@@ -600,7 +601,7 @@ class ImpactRecorder : public SearchMonitor {
     std::string DebugString() const override { return "FirstRunVariableContainers"; }
 
    private:
-    std::unique_ptr<Callback2<int, int64> > update_impact_callback_;
+    const std::function<void(int, int64)> update_impact_callback_;
     std::vector<int64> removed_values_;
     InitVarImpacts without_splits_;
     InitVarImpactsWithSplits with_splits_;
