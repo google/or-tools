@@ -232,15 +232,12 @@ struct DefaultPhaseParameters {
 
   enum DisplayLevel { NONE = 0, NORMAL = 1, VERBOSE = 2 };
 
-  enum LnsControl { NO_LNS = 0, MINIMIZE = 1, MAXIMIZE = 2 };
-
   static const int kDefaultNumberOfSplits;
   static const int kDefaultHeuristicPeriod;
   static const int kDefaultHeuristicNumFailuresLimit;
   static const int kDefaultSeed;
   static const double kDefaultRestartLogSize;
   static const bool kDefaultUseNoGoods;
-  static const LnsControl kDefaultLnsControl;
 
   DefaultPhaseParameters()
       : var_selection_schema(CHOOSE_MAX_SUM_IMPACT),
@@ -254,8 +251,7 @@ struct DefaultPhaseParameters {
         restart_log_size(kDefaultRestartLogSize),
         display_level(NORMAL),
         use_no_goods(kDefaultUseNoGoods),
-        decision_builder(nullptr),
-        lns(kDefaultLnsControl) {}
+        decision_builder(nullptr) {}
 
   // This parameter describes how the next variable to instantiate
   // will be chosen.
@@ -308,9 +304,6 @@ struct DefaultPhaseParameters {
 
   // When defined, this override the default impact based decision builder.
   DecisionBuilder* decision_builder;
-
-  // Control the LNS parameter.
-  LnsControl lns;
 };
 
 /////////////////////////////////////////////////////////////////////
