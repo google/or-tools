@@ -432,7 +432,7 @@ class TreeNode {
         tree_writer->AddAttribute("value", "0");
       } else {
         // Use the original size of the first child if available
-        const DomainMap& domain = parent_ && parent_->children_.size()
+        const DomainMap& domain = parent_ && !parent_->children_.empty()
                                       ? parent_->children_[0]->domain()
                                       : domain_;
 

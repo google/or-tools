@@ -380,7 +380,7 @@ class DemonProfiler : public PropagationMonitor {
       runtimes.push_back(demon_time);
     }
     // Compute mean.
-    if (runtimes.size()) {
+    if (!runtimes.empty()) {
       *mean_demon_runtime = (1.0L * *total_demon_runtime) / runtimes.size();
 
       // Compute median.

@@ -2356,7 +2356,8 @@ class PositiveBooleanScalProdEqCst : public Constraint {
 
 class ExprLinearizer : public ModelParser {
  public:
-  ExprLinearizer(hash_map<IntVar*, int64>* const variables_to_coefficients)
+  explicit ExprLinearizer(
+      hash_map<IntVar*, int64>* const variables_to_coefficients)
       : variables_to_coefficients_(variables_to_coefficients), constant_(0) {}
 
   ~ExprLinearizer() override {}
@@ -3042,7 +3043,7 @@ IntExpr* MakeSumArrayAux(Solver* const solver, const std::vector<IntVar*>& vars,
   }
 }
 
-IntExpr* MakeSumAux(Solver* const solver, const std::vector<IntVar*> vars,
+IntExpr* MakeSumAux(Solver* const solver, const std::vector<IntVar*>& vars,
                     int64 constant) {
   const int size = vars.size();
   if (size == 0) {
