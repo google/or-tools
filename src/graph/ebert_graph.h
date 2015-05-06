@@ -1914,14 +1914,14 @@ class TailArrayManager {
 
   bool BuildTailArrayFromAdjacencyListsIfForwardGraph() const {
     or_internal::TailArrayBuilder<GraphType,
-                               graph_traits<GraphType>::has_reverse_arcs>
+                                  graph_traits<GraphType>::has_reverse_arcs>
         tail_array_builder(graph_);
     return tail_array_builder.BuildTailArray();
   }
 
   void ReleaseTailArrayIfForwardGraph() const {
     or_internal::TailArrayReleaser<GraphType,
-                                graph_traits<GraphType>::has_reverse_arcs>
+                                   graph_traits<GraphType>::has_reverse_arcs>
         tail_array_releaser(graph_);
     tail_array_releaser.ReleaseTailArray();
   }
@@ -2062,9 +2062,9 @@ class AnnotatedGraphBuildManager
   AnnotatedGraphBuildManager(typename GraphType::NodeIndex num_nodes,
                              typename GraphType::ArcIndex num_arcs,
                              bool sort_arcs)
-      : or_internal::GraphBuilderFromArcs<
-            GraphType, graph_traits<GraphType>::is_dynamic>(num_nodes, num_arcs,
-                                                            sort_arcs) {}
+      : or_internal::GraphBuilderFromArcs<GraphType,
+                                          graph_traits<GraphType>::is_dynamic>(
+            num_nodes, num_arcs, sort_arcs) {}
 };
 
 // Builds a directed line graph for 'graph' (see "directed line graph" in

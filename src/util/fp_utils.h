@@ -58,6 +58,7 @@ namespace operations_research {
 // on FPE exception if ARCH_K8 is not defined.
 //
 // TODO(user): Make it work on 32 bits.
+// TODO(user): Make it work on msvc, currently calls to _controlfp crash.
 
 class ScopedFloatingPointEnv {
  public:
@@ -95,7 +96,7 @@ class ScopedFloatingPointEnv {
 
  private:
 #if defined(_MSC_VER)
-  // int saved_control_;
+  // unsigned int saved_control_;
 #elif defined(ARCH_K8)
   fenv_t fenv_;
   mutable fenv_t saved_fenv_;
