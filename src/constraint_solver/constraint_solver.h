@@ -334,17 +334,15 @@ class Solver {
   typedef ResultCallback2<int64, int64, int64> IndexEvaluator2;
   typedef ResultCallback3<int64, int64, int64, int64> IndexEvaluator3;
 #ifndef SWIG
-  typedef ResultCallback2<IntExpr*, CPModelLoader*,
-                          const CPIntegerExpressionProto&>
+  typedef std::function<IntExpr*(CPModelLoader*,
+                                 const CPIntegerExpressionProto&)>
       IntegerExpressionBuilder;
-  typedef ResultCallback2<Constraint*, CPModelLoader*, const CPConstraintProto&>
+  typedef std::function<Constraint*(CPModelLoader*, const CPConstraintProto&)>
       ConstraintBuilder;
-  typedef ResultCallback2<IntervalVar*, CPModelLoader*,
-                          const CPIntervalVariableProto&>
-      IntervalVariableBuilder;
-  typedef ResultCallback2<SequenceVar*, CPModelLoader*,
-                          const CPSequenceVariableProto&>
-      SequenceVariableBuilder;
+  typedef std::function<IntervalVar*(
+      CPModelLoader*, const CPIntervalVariableProto&)> IntervalVariableBuilder;
+  typedef std::function<SequenceVar*(
+      CPModelLoader*, const CPSequenceVariableProto&)> SequenceVariableBuilder;
 
   // Holds semantic information stating that the 'expression' has been
   // cast into 'variable' using the Var() method, and that
@@ -1079,23 +1077,10 @@ class Solver {
       std::vector<SequenceVar*>* const sequence_variables,
       std::vector<IntervalVar*>* const interval_variables);
 
-  // Registers a constraint builder. Ownership is passed to the solver.
-  void RegisterBuilder(const std::string& tag, ConstraintBuilder* const builder);
-  // Registers an integer expression builder. Ownership is passed to the solver.
-  void RegisterBuilder(const std::string& tag,
-                       IntegerExpressionBuilder* const builder);
-  // Registers an interval variable builder. Ownership is passed to the solver.
-  void RegisterBuilder(const std::string& tag,
-                       IntervalVariableBuilder* const builder);
-  // Registers a sequence variable builder. Ownership is passed to the solver.
-  void RegisterBuilder(const std::string& tag,
-                       SequenceVariableBuilder* const builder);
-
-  ConstraintBuilder* GetConstraintBuilder(const std::string& tag) const;
-  IntegerExpressionBuilder* GetIntegerExpressionBuilder(
-      const std::string& tag) const;
-  IntervalVariableBuilder* GetIntervalVariableBuilder(const std::string& tag) const;
-  SequenceVariableBuilder* GetSequenceVariableBuilder(const std::string& tag) const;
+  ConstraintBuilder GetConstraintBuilder(const std::string& tag) const;
+  IntegerExpressionBuilder GetIntegerExpressionBuilder(const std::string& tag) const;
+  IntervalVariableBuilder GetIntervalVariableBuilder(const std::string& tag) const;
+  SequenceVariableBuilder GetSequenceVariableBuilder(const std::string& tag) const;
 #endif  // SWIG
 
   // When SaveValue() is not the best way to go, one can create a reversible
@@ -2995,6 +2980,14 @@ class Solver {
   void InitCachedIntConstants();
   void InitCachedConstraint();
   void InitBuilders();
+  // Registers a constraint builder.
+  void RegisterBuilder(const std::string& tag, ConstraintBuilder builder);
+  // Registers an integer expression builder.
+  void RegisterBuilder(const std::string& tag, IntegerExpressionBuilder builder);
+  // Registers an interval variable builder.
+  void RegisterBuilder(const std::string& tag, IntervalVariableBuilder builder);
+  // Registers a sequence variable builder.
+  void RegisterBuilder(const std::string& tag, SequenceVariableBuilder builder);
   void DeleteBuilders();
 
   // Returns the Search object that is at the bottom of the search stack. This
@@ -3067,10 +3060,10 @@ class Solver {
   int num_int_vars_;
 
   // Support for model loading.
-  hash_map<std::string, IntegerExpressionBuilder*> expression_builders_;
-  hash_map<std::string, ConstraintBuilder*> constraint_builders_;
-  hash_map<std::string, IntervalVariableBuilder*> interval_builders_;
-  hash_map<std::string, SequenceVariableBuilder*> sequence_builders_;
+  hash_map<std::string, IntegerExpressionBuilder> expression_builders_;
+  hash_map<std::string, ConstraintBuilder> constraint_builders_;
+  hash_map<std::string, IntervalVariableBuilder> interval_builders_;
+  hash_map<std::string, SequenceVariableBuilder> sequence_builders_;
 
   std::unique_ptr<ModelCache> model_cache_;
   std::unique_ptr<DependencyGraph> dependency_graph_;

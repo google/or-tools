@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <functional>
 #include "base/hash.h"
 #include "base/unique_ptr.h"
 #include <string>
@@ -2284,13 +2285,13 @@ Constraint* BuildVarBoundWatcher(CPModelLoader* const builder,
 bool CPModelLoader::BuildFromProto(const CPIntegerExpressionProto& proto) {
   const int index = proto.index();
   const int tag_index = proto.type_index();
-  Solver::IntegerExpressionBuilder* const builder =
+  Solver::IntegerExpressionBuilder builder =
       solver_->GetIntegerExpressionBuilder(tags_.Element(tag_index));
   if (!builder) {
     LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
     return false;
   }
-  IntExpr* const built = builder->Run(this, proto);
+  IntExpr* const built = builder(this, proto);
   if (!built) {
     return false;
   }
@@ -2301,26 +2302,26 @@ bool CPModelLoader::BuildFromProto(const CPIntegerExpressionProto& proto) {
 
 Constraint* CPModelLoader::BuildFromProto(const CPConstraintProto& proto) {
   const int tag_index = proto.type_index();
-  Solver::ConstraintBuilder* const builder =
+  Solver::ConstraintBuilder builder =
       solver_->GetConstraintBuilder(tags_.Element(tag_index));
   if (!builder) {
     LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
     return nullptr;
   }
-  Constraint* const built = builder->Run(this, proto);
+  Constraint* const built = builder(this, proto);
   return built;
 }
 
 bool CPModelLoader::BuildFromProto(const CPIntervalVariableProto& proto) {
   const int index = proto.index();
   const int tag_index = proto.type_index();
-  Solver::IntervalVariableBuilder* const builder =
+  Solver::IntervalVariableBuilder builder =
       solver_->GetIntervalVariableBuilder(tags_.Element(tag_index));
   if (!builder) {
     LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
     return false;
   }
-  IntervalVar* const built = builder->Run(this, proto);
+  IntervalVar* const built = builder(this, proto);
   if (!built) {
     return false;
   }
@@ -2332,13 +2333,13 @@ bool CPModelLoader::BuildFromProto(const CPIntervalVariableProto& proto) {
 bool CPModelLoader::BuildFromProto(const CPSequenceVariableProto& proto) {
   const int index = proto.index();
   const int tag_index = proto.type_index();
-  Solver::SequenceVariableBuilder* const builder =
+  Solver::SequenceVariableBuilder builder =
       solver_->GetSequenceVariableBuilder(tags_.Element(tag_index));
   if (!builder) {
     LOG(WARNING) << "Tag " << tags_.Element(tag_index) << " was not found";
     return false;
   }
-  SequenceVar* const built = builder->Run(this, proto);
+  SequenceVar* const built = builder(this, proto);
   if (!built) {
     return false;
   }
@@ -2598,54 +2599,52 @@ bool Solver::UpgradeModel(CPModelProto* const proto) {
   return true;
 }
 
-void Solver::RegisterBuilder(const std::string& tag,
-                             ConstraintBuilder* const builder) {
+void Solver::RegisterBuilder(const std::string& tag, ConstraintBuilder builder) {
   InsertOrDie(&constraint_builders_, tag, builder);
 }
 
 void Solver::RegisterBuilder(const std::string& tag,
-                             IntegerExpressionBuilder* const builder) {
+                             IntegerExpressionBuilder builder) {
   InsertOrDie(&expression_builders_, tag, builder);
 }
 
 void Solver::RegisterBuilder(const std::string& tag,
-                             IntervalVariableBuilder* const builder) {
+                             IntervalVariableBuilder builder) {
   InsertOrDie(&interval_builders_, tag, builder);
 }
 
 void Solver::RegisterBuilder(const std::string& tag,
-                             SequenceVariableBuilder* const builder) {
+                             SequenceVariableBuilder builder) {
   InsertOrDie(&sequence_builders_, tag, builder);
 }
 
-Solver::ConstraintBuilder* Solver::GetConstraintBuilder(const std::string& tag)
-    const {
-  return FindPtrOrNull(constraint_builders_, tag);
+Solver::ConstraintBuilder Solver::GetConstraintBuilder(
+    const std::string& tag) const {
+  return FindWithDefault(constraint_builders_, tag, nullptr);
 }
 
-Solver::IntegerExpressionBuilder* Solver::GetIntegerExpressionBuilder(
+Solver::IntegerExpressionBuilder Solver::GetIntegerExpressionBuilder(
     const std::string& tag) const {
-  return FindPtrOrNull(expression_builders_, tag);
+  return FindWithDefault(expression_builders_, tag, nullptr);
 }
 
-Solver::IntervalVariableBuilder* Solver::GetIntervalVariableBuilder(
+Solver::IntervalVariableBuilder Solver::GetIntervalVariableBuilder(
     const std::string& tag) const {
-  IntervalVariableBuilder* const builder =
-      FindPtrOrNull(interval_builders_, tag);
+  IntervalVariableBuilder builder =
+      FindWithDefault(interval_builders_, tag, nullptr);
   return builder;
 }
 
-Solver::SequenceVariableBuilder* Solver::GetSequenceVariableBuilder(
+Solver::SequenceVariableBuilder Solver::GetSequenceVariableBuilder(
     const std::string& tag) const {
-  SequenceVariableBuilder* const builder =
-      FindPtrOrNull(sequence_builders_, tag);
+  SequenceVariableBuilder builder =
+      FindWithDefault(sequence_builders_, tag, nullptr);
   return builder;
 }
 
 // ----- Manage builders -----
 
-#define REGISTER(tag, func) \
-  RegisterBuilder(ModelVisitor::tag, NewPermanentCallback(&func))
+#define REGISTER(tag, func) RegisterBuilder(ModelVisitor::tag, func)
 
 void Solver::InitBuilders() {
   REGISTER(kAbs, BuildAbs);
@@ -2725,9 +2724,9 @@ void Solver::InitBuilders() {
 #undef REGISTER
 
 void Solver::DeleteBuilders() {
-  STLDeleteValues(&expression_builders_);
-  STLDeleteValues(&constraint_builders_);
-  STLDeleteValues(&interval_builders_);
-  STLDeleteValues(&sequence_builders_);
+  expression_builders_.clear();
+  constraint_builders_.clear();
+  interval_builders_.clear();
+  sequence_builders_.clear();
 }
 }  // namespace operations_research
