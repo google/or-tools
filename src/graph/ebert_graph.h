@@ -78,8 +78,8 @@
 //  * head_[-i-1] contains the start-node of arc i.
 // Note that in two's-complement arithmetic, -i-1 = ~i.
 // Consequently:
-//  * head_[~i] contains the start-node of the arc reverse to arc i,
-//  * head_[i] contains the end-node of the arc reverse to arc i.
+//  * head_[~i] contains the end-node of the arc reverse to arc i,
+//  * head_[i] contains the start-node of the arc reverse to arc i.
 //  Note that if arc (u, v) is defined, then the data structure also stores
 //  (v, u).
 //  Arc ~i thus denotes the arc reverse to arc i.
