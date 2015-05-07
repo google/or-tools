@@ -36,10 +36,13 @@ class IntegralSolver {
   }
   BopParameters parameters() const { return parameters_; }
 
-  // Solves the given linear program and returns the solve status. The second
-  // version starts from the given solution.
+  // Solves the given linear program and returns the solve status.
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem)
       MUST_USE_RESULT;
+
+  // Same as Solve() but starts from the given solution.
+  // TODO(user): Change the API to accept a partial solution instead since the
+  // underlying solver supports it.
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem,
                        const glop::DenseRow& initial_solution) MUST_USE_RESULT;
 
