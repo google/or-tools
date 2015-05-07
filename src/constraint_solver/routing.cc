@@ -1553,6 +1553,26 @@ int RoutingModel::GetVehicleStartClass(int64 start_index) const {
   return kUnassigned;
 }
 
+bool RoutingModel::ValidateSearchParameters() {
+  bool valid = true;
+  const RoutingStrategy first_solution_strategy =
+      GetSelectedFirstSolutionStrategy();
+  if (GetFirstSolutionDecisionBuilder() == nullptr) {
+    LOG(ERROR) << "Undefined first solution strategy: "
+               << first_solution_strategy;
+    valid = false;
+  }
+  if (first_solution_strategy == ROUTING_SWEEP && sweep_arranger() == nullptr) {
+    LOG(ERROR) << "Undefined sweep arranger for ROUTING_SWEEP strategy.";
+    valid = false;
+  }
+  if (!valid) {
+    status_ = ROUTING_INVALID;
+    return false;
+  }
+  return true;
+}
+
 void RoutingModel::CloseModel() {
   if (closed_) {
     LOG(WARNING) << "Model already closed";
@@ -1654,6 +1674,9 @@ void RoutingModel::CloseModel() {
   // parameters.
   CreateNeighborhoodOperators();
   CreateFirstSolutionDecisionBuilders();
+  if (!ValidateSearchParameters()) {
+    return;
+  }
   SetupSearch();
 }
 
@@ -2656,6 +2679,9 @@ const Assignment* RoutingModel::SolveWithParameters(
 
 const Assignment* RoutingModel::Solve(const Assignment* assignment) {
   QuietCloseModel();
+  if (status_ == ROUTING_INVALID) {
+    return nullptr;
+  }
   const int64 start_time_ms = solver_->wall_time();
   if (nullptr == assignment) {
     solver_->Solve(solve_db_, monitors_);
@@ -3076,6 +3102,9 @@ Assignment* RoutingModel::RestoreAssignment(const Assignment& solution) {
 }
 
 Assignment* RoutingModel::DoRestoreAssignment() {
+  if (status_ == ROUTING_INVALID) {
+    return nullptr;
+  }
   solver_->Solve(restore_assignment_, monitors_);
   if (collect_assignments_->solution_count() == 1) {
     status_ = ROUTING_SUCCESS;
@@ -4048,9 +4077,13 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
 DecisionBuilder* RoutingModel::GetFirstSolutionDecisionBuilder() const {
   const RoutingStrategy first_solution_strategy =
       GetSelectedFirstSolutionStrategy();
-  VLOG(1) << "Using first solution strategy: "
-          << RoutingStrategyName(first_solution_strategy);
-  return first_solution_decision_builders_[first_solution_strategy];
+  if (first_solution_strategy < first_solution_decision_builders_.size()) {
+    VLOG(1) << "Using first solution strategy: "
+            << RoutingStrategyName(first_solution_strategy);
+    return first_solution_decision_builders_[first_solution_strategy];
+  } else {
+    return nullptr;
+  }
 }
 
 IntVarFilteredDecisionBuilder*

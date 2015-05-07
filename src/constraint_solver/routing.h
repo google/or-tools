@@ -392,7 +392,9 @@ class RoutingModel {
     // No solution found to the problem after calling RoutingModel::Solve().
     ROUTING_FAIL,
     // Time limit reached before finding a solution with RoutingModel::Solve().
-    ROUTING_FAIL_TIMEOUT
+    ROUTING_FAIL_TIMEOUT,
+    // Model, model parameters or flags are not valid.
+    ROUTING_INVALID
   };
 
   typedef _RoutingModel_NodeIndex NodeIndex;
@@ -1173,6 +1175,9 @@ class RoutingModel {
       CloseModel();
     }
   }
+  // Check that current search parameters are valid. If not, the status of the
+  // solver is set to ROUTING_INVALID.
+  bool ValidateSearchParameters();
   // Sets up search objects, such as decision builders and monitors.
   void SetupSearch();
   // Set of auxiliary methods used to setup the search.
