@@ -231,9 +231,11 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
   const double initial_dt = sat_propagator_->deterministic_time();
   auto sat_propagator_cleanup = ::operations_research::util::MakeCleanup(
       [initial_dt, this, &learned_info, &time_limit]() {
-        sat_propagator_->SetAssumptionLevel(0);
-        sat_propagator_->RestoreSolverToAssumptionLevel();
-        ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
+        if (!sat_propagator_->IsModelUnsat()) {
+          sat_propagator_->SetAssumptionLevel(0);
+          sat_propagator_->RestoreSolverToAssumptionLevel();
+          ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
+        }
         time_limit->AdvanceDeterministicTime(
             sat_propagator_->deterministic_time() - initial_dt);
       });
@@ -288,6 +290,8 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
       const sat::SatSolver::Status status = sat_propagator_->Solve();
       if (status == sat::SatSolver::MODEL_SAT) {
         adaptive_difficulty_.IncreaseParameter();
+        SatAssignmentToBopSolution(sat_propagator_->Assignment(),
+                                   &learned_info->solution);
         return BopOptimizerBase::SOLUTION_FOUND;
       } else if (status == sat::SatSolver::ASSUMPTIONS_UNSAT) {
         // Local problem is infeasible.
