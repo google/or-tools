@@ -102,6 +102,8 @@ ProblemState::ProblemState(const LinearBooleanProblem& problem)
   upper_bound_ = solution_.IsFeasible() ? solution_.GetCost() : kint64max;
 }
 
+// TODO(user): refactor this to not rely on the optimization status.
+// All the information can be encoded in the learned_info bounds.
 bool ProblemState::MergeLearnedInfo(
     const LearnedInfo& learned_info,
     BopOptimizerBase::Status optimization_status) {
@@ -191,9 +193,21 @@ bool ProblemState::MergeLearnedInfo(
     VLOG(1) << kIndent << num_newly_fixed_variables
             << " newly fixed variables (" << num_fixed_variables << " / "
             << is_fixed_.size() << ").";
-    if (num_fixed_variables == is_fixed_.size() && solution_.IsFeasible()) {
-      MarkAsOptimal();
-      VLOG(1) << kIndent << "Optimal";
+    if (num_fixed_variables == is_fixed_.size()) {
+      // Set the solution to the fixed variables.
+      BopSolution fixed_solution = solution_;
+      for (VariableIndex var(0); var < is_fixed_.size(); ++var) {
+        fixed_solution.SetValue(var, fixed_values_[var]);
+      }
+      if (fixed_solution.IsFeasible()) {
+        solution_ = fixed_solution;
+      }
+      if (solution_.IsFeasible()) {
+        MarkAsOptimal();
+        VLOG(1) << kIndent << "Optimal";
+      } else {
+        MarkAsInfeasible();
+      }
     }
   }
 
