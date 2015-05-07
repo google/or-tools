@@ -2647,6 +2647,7 @@ Solver::SequenceVariableBuilder Solver::GetSequenceVariableBuilder(
 #define REGISTER(tag, func) RegisterBuilder(ModelVisitor::tag, func)
 
 void Solver::InitBuilders() {
+  // Explicit casting required by MSV compiler.
   REGISTER(kAbs, IntegerExpressionBuilder(BuildAbs));
   REGISTER(kAbsEqual, ConstraintBuilder(BuildAbsEqual));
   REGISTER(kAllDifferent, ConstraintBuilder(BuildAllDifferent));
