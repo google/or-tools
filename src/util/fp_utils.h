@@ -31,6 +31,7 @@
 #if !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER)
 #include <fpu_control.h>
 #endif
+
 #ifdef __SSE__
 #include <xmmintrin.h>
 #endif
@@ -112,7 +113,8 @@ class ScopedFloatingPointEnv {
 #define TOUCH(var)
 #endif
 
-#if (defined(__i386__) || defined(__x86_64__)) && defined(__linux__)
+#if (defined(__i386__) || defined(__x86_64__)) && defined(__linux__) && \
+    !defined(__ANDROID__)
 inline fpu_control_t GetFPPrecision() {
   fpu_control_t status;
   _FPU_GETCW(status);
@@ -131,7 +133,8 @@ inline void SetFPPrecision(fpu_control_t precision) {
   _FPU_SETCW(status);
   DCHECK_EQ(precision, GetFPPrecision());
 }
-#endif  // (defined(__i386__) || defined(__x86_64__)) && defined(__linux__)
+#endif  // (defined(__i386__) || defined(__x86_64__)) && defined(__linux__) && \
+        // !defined(__ANDROID__)
 
 #undef TOUCH
 

@@ -215,9 +215,13 @@ class TimeDistribution : public DistributionStat {
   // Adds the elapsed time since the last StartTimer() to the distribution and
   // returns this time in cpu cycles.
   inline double StopTimerAndAddElapsedTime() {
+#ifdef ANDROID_JNI
+    return 0.0;
+#else
     const double cycles = static_cast<double>(timer_.GetCycles());
     AddToDistribution(cycles);
     return cycles;
+#endif
   }
 
  private:

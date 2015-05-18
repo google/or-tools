@@ -17,11 +17,15 @@
 #include <cmath>
 #include "base/stringprintf.h"
 #include "base/sysinfo.h"
+
 #include "base/encodingutils.h"
+
+
 #include "base/stl_util.h"
 
 namespace operations_research {
 
+#ifndef ANDROID_JNI
 std::string MemoryUsage() {
   static const int64 kDisplayThreshold = 2;
     static const int64 kKiloByte = 1024;
@@ -41,6 +45,7 @@ std::string MemoryUsage() {
       return StringPrintf("%" GG_LL_FORMAT "d", memory_usage);
     }
 }
+#endif
 
 Stat::Stat(const std::string& name, StatsGroup* group) : name_(name) {
   group->Register(this);
@@ -74,7 +79,11 @@ std::string StatsGroup::StatString() const {
   for (int i = 0; i < stats_.size(); ++i) {
     if (!stats_[i]->WorthPrinting()) continue;
     // We support UTF8 characters in the stat names.
+#ifdef ANDROID_JNI
+    const int size = stats_[i]->Name().length();
+#else
     const int size = EncodingUtils::UTF8StrLen(stats_[i]->Name());
+#endif
     longest_name_size = std::max(longest_name_size, size);
     sorted_stats.push_back(stats_[i]);
   }
@@ -89,7 +98,11 @@ std::string StatsGroup::StatString() const {
     result += "  ";
     result += sorted_stats[i]->Name();
     result.append(
+#ifdef ANDROID_JNI
+        longest_name_size - sorted_stats[i]->Name().length(),
+#else
         longest_name_size - EncodingUtils::UTF8StrLen(sorted_stats[i]->Name()),
+#endif
         ' ');
     result += " : " + sorted_stats[i]->ValueAsString();
   }
