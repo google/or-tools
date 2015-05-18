@@ -737,32 +737,32 @@ class Solver {
   // This enum is used in Solver::MakeIntervalVarRelation to specify the
   // temporal relation between the two intervals t1 and t2.
   enum BinaryIntervalRelation {
-    // t1 ends after t2 end, i.e. End(t1) >= End(t2).
+    // t1 ends after t2 end, i.e. End(t1) >= End(t2) + delay.
     ENDS_AFTER_END,
 
-    // t1 ends after t2 start, i.e. End(t1) >= Start(t2).
+    // t1 ends after t2 start, i.e. End(t1) >= Start(t2) + delay.
     ENDS_AFTER_START,
 
-    // t1 ends at t2 end, i.e. End(t1) == End(t2).
+    // t1 ends at t2 end, i.e. End(t1) == End(t2) + delay.
     ENDS_AT_END,
 
-    // t1 ends at t2 start, i.e. End(t1) == Start(t2).
+    // t1 ends at t2 start, i.e. End(t1) == Start(t2) + delay.
     ENDS_AT_START,
 
-    // t1 starts after t2 end, i.e. Start(t1) >= End(t2).
+    // t1 starts after t2 end, i.e. Start(t1) >= End(t2) + delay.
     STARTS_AFTER_END,
 
-    // t1 starts after t2 start, i.e. Start(t1) >= Start(t2).
+    // t1 starts after t2 start, i.e. Start(t1) >= Start(t2) + delay.
     STARTS_AFTER_START,
 
-    // t1 starts at t2 end, i.e. Start(t1) == End(t2).
+    // t1 starts at t2 end, i.e. Start(t1) == End(t2) + delay.
     STARTS_AT_END,
 
-    // t1 starts at t2 start, i.e. Start(t1) == Start(t2).
+    // t1 starts at t2 start, i.e. Start(t1) == Start(t2) + delay.
     STARTS_AT_START,
 
     // STARTS_AT_START and ENDS_AT_END at the same time.
-    // t1 starts at t2 start, i.e. Start(t1) == Start(t2).
+    // t1 starts at t2 start, i.e. Start(t1) == Start(t2) + delay.
     // t1 ends at t2 end, i.e. End(t1) == End(t2).
     STAYS_IN_SYNC
   };
