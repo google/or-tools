@@ -729,6 +729,7 @@ void MPSolver::Clear() {
   constraints_.clear();
   constraint_name_to_index_.clear();
   interface_->Reset();
+  solution_hint_.clear();
 }
 
 void MPSolver::Reset() { interface_->Reset(); }

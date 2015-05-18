@@ -142,10 +142,27 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
   }
   parameters_.set_log_search_progress(!quiet());
 
+  glop::DenseRow initial_solution;
+  if (!solver_->solution_hint_.empty()) {
+    const int num_vars = solver_->variables_.size();
+    if (solver_->solution_hint_.size() != num_vars) {
+      LOG(WARNING) << "Bop currently doesn't handle partial solution hints. "
+                   << "Filling the missing positions with zeros...";
+    }
+    initial_solution.assign(glop::ColIndex(num_vars), glop::Fractional(0.0));
+    for (const std::pair<MPVariable*, double>& p : solver_->solution_hint_) {
+      initial_solution[glop::ColIndex(p.first->index())] =
+          glop::Fractional(p.second);
+    }
+  }
+
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
   bop_solver_.SetParameters(parameters_);
-  const bop::BopSolveStatus status = bop_solver_.Solve(linear_program_);
+  const bop::BopSolveStatus status =
+      initial_solution.empty()
+          ? bop_solver_.Solve(linear_program_)
+          : bop_solver_.Solve(linear_program_, initial_solution);
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;

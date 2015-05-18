@@ -573,6 +573,12 @@ class MPSolver {
   // The linear objective function.
   std::unique_ptr<MPObjective> objective_;
 
+  // Initial values for all or some of the problem variables that can be
+  // exploited as a starting hint by a solver.
+  //
+  // Note(user): as of 05/05/2015, we can't use >> because of some SWIG errors.
+  std::vector<std::pair<MPVariable*, double> > solution_hint_;
+
   // Time limit in milliseconds (0 = no limit).
   int64 time_limit_;
 

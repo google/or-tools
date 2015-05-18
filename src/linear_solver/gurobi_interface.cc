@@ -419,7 +419,7 @@ void GurobiInterface::ExtractNewVariables() {
         last_variable_index_ == solver_->variables_.size());
   CHECK(last_constraint_index_ == 0 ||
         last_constraint_index_ == solver_->constraints_.size());
-  int total_num_vars = solver_->variables_.size();
+  const int total_num_vars = solver_->variables_.size();
   if (total_num_vars > last_variable_index_) {
     int num_new_variables = total_num_vars - last_variable_index_;
     std::unique_ptr<double[]> obj_coefs(new double[num_new_variables]);
@@ -609,8 +609,13 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
   ExtractModel();
   // Sync solver.
   CHECKED_GUROBI_CALL(GRBupdatemodel(model_));
+  VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
 
-  VLOG(1) << StringPrintf("Model build in %.3f seconds.", timer.Get());
+  // Set solution hints if any.
+  for (const std::pair<MPVariable*, double>& p : solver_->solution_hint_) {
+    CHECKED_GUROBI_CALL(
+        GRBsetdblattrelement(model_, "Start", p.first->index(), p.second));
+  }
 
   // Time limit.
   if (solver_->time_limit() != 0) {
