@@ -17,10 +17,19 @@
 #include <queue>
 
 #include "base/timer.h"
+#include "base/numbers.h"
 #include "lp_data/lp_utils.h"
 
 namespace operations_research {
 namespace glop {
+
+#ifdef ANDROID_JNI
+// Enum -> std::string conversions are not present in MessageLite that is being used
+// on Android.
+std::string GlopParameters_PricingRule_Name(int rule) {
+  return SimpleItoa(rule);
+}
+#endif  // ANDROID_JNI
 
 EnteringVariable::EnteringVariable(const VariablesInfo& variables_info,
                                    RandomBase* random,
@@ -80,7 +89,7 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
       return Status::OK;
   }
   LOG(DFATAL) << "Unknown pricing rule: "
-              << GlopParameters::PricingRule_Name(rule_)
+              << GlopParameters_PricingRule_Name(rule_)
               << ". Using steepest edge.";
   NormalizedChooseEnteringColumn<kSteepest>(entering_col);
   return Status::OK;

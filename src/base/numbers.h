@@ -16,6 +16,7 @@
 
 #include <string>
 #include "base/integral_types.h"
+#include "base/join.h"
 
 namespace operations_research {
 // Convert strings to numerical values.
@@ -26,6 +27,8 @@ bool safe_strtod(const char* str, double* value);
 bool safe_strtof(const std::string& str, float* value);
 bool safe_strtod(const std::string& str, double* value);
 bool safe_strto64(const std::string& str, int64* value);
+// Converting int to std::string.
+inline std::string SimpleItoa(int i) { return StrCat(i); }
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_NUMBERS_H_
