@@ -77,9 +77,8 @@ class IntervalVarStartAdapter : public DependencyGraphNode {
       : DependencyGraphNode(graph), interval_var_(var) {
     CHECK(graph != nullptr);
     CHECK(var != nullptr);
-    Demon* const demon =
-        interval_var_->solver()->MakeCallbackDemon(NewPermanentCallback(
-            this, &IntervalVarStartAdapter::WhenIntervalChanged));
+    Demon* const demon = interval_var_->solver()->MakeCallbackDemon(
+        [this]() { WhenIntervalChanged(); });
     interval_var_->WhenAnything(demon);
   }
 

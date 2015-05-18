@@ -1463,9 +1463,9 @@ class Solver {
   // low priority.
   Demon* MakeDelayedConstraintInitialPropagateCallback(Constraint* const ct);
   // Creates a demon from a callback.
-  Demon* MakeCallbackDemon(Callback1<Solver*>* const callback);
+  Demon* MakeCallbackDemon(std::function<void(Solver*)> callback);
   // Creates a demon from a closure.
-  Demon* MakeCallbackDemon(Closure* const closure);
+  Demon* MakeCallbackDemon(std::function<void()> closure);
 
   // (l <= b <= u)
   Constraint* MakeBetweenCt(IntExpr* const v, int64 l, int64 u);

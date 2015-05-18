@@ -43,32 +43,30 @@ namespace {
 class Callback1Demon : public Demon {
  public:
   // Ownership of the callback is transfered to the demon.
-  explicit Callback1Demon(Callback1<Solver*>* const callback)
+  explicit Callback1Demon(std::function<void(Solver*)> callback)
       : callback_(callback) {
     CHECK(callback != nullptr);
-    callback_->CheckIsRepeatable();
   }
   ~Callback1Demon() override {}
 
-  void Run(Solver* const solver) override { callback_->Run(solver); }
+  void Run(Solver* const solver) override { callback_(solver); }
 
  private:
-  std::unique_ptr<Callback1<Solver*> > callback_;
+  std::function<void(Solver*)> callback_;
 };
 
 class ClosureDemon : public Demon {
  public:
   // Ownership of the callback is transfered to the demon.
-  explicit ClosureDemon(Closure* const callback) : callback_(callback) {
+  explicit ClosureDemon(std::function<void()> callback) : callback_(callback) {
     CHECK(callback != nullptr);
-    callback_->CheckIsRepeatable();
   }
   ~ClosureDemon() override {}
 
-  void Run(Solver* const solver) override { callback_->Run(); }
+  void Run(Solver* const solver) override { callback_(); }
 
  private:
-  std::unique_ptr<Closure> callback_;
+  std::function<void()> callback_;
 };
 
 // ----- True and False Constraint -----
@@ -434,11 +432,11 @@ class InversePermutationConstraint : public Constraint {
 
 // ----- API -----
 
-Demon* Solver::MakeCallbackDemon(Callback1<Solver*>* const callback) {
+Demon* Solver::MakeCallbackDemon(std::function<void(Solver*)> callback) {
   return RevAlloc(new Callback1Demon(callback));
 }
 
-Demon* Solver::MakeCallbackDemon(Closure* const callback) {
+Demon* Solver::MakeCallbackDemon(std::function<void()> callback) {
   return RevAlloc(new ClosureDemon(callback));
 }
 
