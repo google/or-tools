@@ -18,11 +18,19 @@
 #include <fstream>
 
 #include "base/commandlineflags.h"
+
+#ifndef ANDROID_JNI
 #include "base/commandlineflags.h"
+#endif
+
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+
+#ifndef ANDROID_JNI
 #include "base/file.h"
+#endif
+
 #include "google/protobuf/text_format.h"
 #include "base/hash.h"
 #include "glop/lp_solver.h"
@@ -457,6 +465,9 @@ void GLOPInterface::SetLpAlgorithm(int value) {
 }
 
 bool GLOPInterface::ReadParameterFile(const std::string& filename) {
+#ifdef ANDROID_JNI
+  return false;
+#else
   std::string params;
   if (!file::GetContents(filename, &params, file::Defaults()).ok()) {
     return false;
@@ -464,6 +475,7 @@ bool GLOPInterface::ReadParameterFile(const std::string& filename) {
   const bool ok = google::protobuf::TextFormat::MergeFromString(params, &parameters_);
   lp_solver_.SetParameters(parameters_);
   return ok;
+#endif
 }
 
 void GLOPInterface::NonIncrementalChange() {
