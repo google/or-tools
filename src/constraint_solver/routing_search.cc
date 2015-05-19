@@ -985,9 +985,9 @@ bool PathCumulFilter::FinalizeAcceptPath() {
   delta_path_transits_.Clear();
   lns_detected_ = false;
   // Filtering on objective value, including the injected part of it.
-  const int64 new_objective_value =
-      injected_objective_value_ + cumul_cost_delta_ +
-      global_span_cost_coefficient_ * (new_max_end - new_min_start);
+  const int64 new_objective_value = CapAdd(
+      CapAdd(injected_objective_value_, cumul_cost_delta_),
+      global_span_cost_coefficient_ * CapSub(new_max_end, new_min_start));
   PropagateObjectiveValue(new_objective_value);
   // Only compare to max as a cost lower bound is computed.
   return new_objective_value <= cost_var_->Max();
@@ -1429,9 +1429,9 @@ void CheapestInsertionFilteredDecisionBuilder::AppendEvaluatedPositionsAfter(
     const int64 insert_before =
         (insert_after == start) ? next_after_start : Value(insert_after);
     valued_positions->push_back(std::make_pair(
-        evaluator_->Run(insert_after, node_to_insert, vehicle) +
-            evaluator_->Run(node_to_insert, insert_before, vehicle) -
-            evaluator_->Run(insert_after, insert_before, vehicle),
+        CapAdd(evaluator_->Run(insert_after, node_to_insert, vehicle),
+               CapSub(evaluator_->Run(node_to_insert, insert_before, vehicle),
+                      evaluator_->Run(insert_after, insert_before, vehicle))),
         insert_after));
     insert_after = insert_before;
   }
@@ -1712,9 +1712,9 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePairPositions(
         for (const ValuedPosition& valued_delivery_position :
              valued_delivery_positions) {
           valued_positions.push_back(std::make_pair(
-              std::make_pair(
-                  valued_pickup_position.first + valued_delivery_position.first,
-                  vehicle),
+              std::make_pair(CapAdd(valued_pickup_position.first,
+                                    valued_delivery_position.first),
+                             vehicle),
               std::make_pair(pickup_position,
                              valued_delivery_position.second)));
         }
