@@ -1924,6 +1924,15 @@ class Solver {
                                       BinaryIntervalRelation r,
                                       IntervalVar* const t2);
 
+  // This method creates a relation between two interval vars.
+  // The given delay is added to the second interval.
+  // i.e.: t1 STARTS_AFTER_END of t2 with a delay of 2
+  // means t1 will start at least two units of time after the end of t2.
+  Constraint* MakeIntervalVarRelationWithDelay(IntervalVar* const t1,
+                                               BinaryIntervalRelation r,
+                                               IntervalVar* const t2,
+                                               int64 delay);
+
   // This constraint implements a temporal disjunction between two
   // interval vars t1 and t2. 'alt' indicates which alternative was
   // chosen (alt == 0 is equivalent to t1 before t2).
