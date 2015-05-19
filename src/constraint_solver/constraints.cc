@@ -436,8 +436,8 @@ Demon* Solver::MakeCallbackDemon(std::function<void(Solver*)> callback) {
   return RevAlloc(new Callback1Demon(callback));
 }
 
-Demon* Solver::MakeCallbackDemon(std::function<void()> callback) {
-  return RevAlloc(new ClosureDemon(callback));
+Demon* Solver::MakeClosureDemon(std::function<void()> closure) {
+  return RevAlloc(new ClosureDemon(closure));
 }
 
 Constraint* Solver::MakeTrueConstraint() {

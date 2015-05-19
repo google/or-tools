@@ -1465,7 +1465,7 @@ class Solver {
   // Creates a demon from a callback.
   Demon* MakeCallbackDemon(std::function<void(Solver*)> callback);
   // Creates a demon from a closure.
-  Demon* MakeCallbackDemon(std::function<void()> closure);
+  Demon* MakeClosureDemon(std::function<void()> closure);
 
   // (l <= b <= u)
   Constraint* MakeBetweenCt(IntExpr* const v, int64 l, int64 u);

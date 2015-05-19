@@ -1255,6 +1255,7 @@ namespace operations_research {
 // - MakeBoolVarArray()
 //
 // - MakeCallbackDemon()
+// - MakeClosureDemon()
 //
 // - MakeFixedDurationIntervalVarArray()
 // - MakeIntervalVarArray()
