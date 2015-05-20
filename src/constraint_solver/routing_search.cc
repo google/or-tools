@@ -94,7 +94,8 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
         }
       }
     }
-    int64 new_objective_value = injected_objective_value_ + penalty_value_;
+    int64 new_objective_value =
+        CapAdd(injected_objective_value_, penalty_value_);
     for (const std::pair<RoutingModel::DisjunctionIndex, int>
              disjunction_active_delta : disjunction_active_deltas) {
       const int active_nodes =
@@ -112,10 +113,10 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
             PropagateObjectiveValue(0);
             return false;
           } else {
-            new_objective_value += penalty;
+            new_objective_value = CapAdd(new_objective_value, penalty);
           }
         } else if (disjunction_active_delta.second > 0) {
-          new_objective_value -= penalty;
+          new_objective_value = CapSub(new_objective_value, penalty);
         }
       }
     }
@@ -148,10 +149,10 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
       }
       const int64 penalty = routing_model_.GetDisjunctionPenalty(i);
       if (active_per_disjunction_[i] == 0 && penalty > 0 && all_nodes_synced) {
-        penalty_value_ += penalty;
+        penalty_value_ = CapAdd(penalty_value_, penalty);
       }
     }
-    PropagateObjectiveValue(injected_objective_value_ + penalty_value_);
+    PropagateObjectiveValue(CapAdd(injected_objective_value_, penalty_value_));
   }
 
   const RoutingModel& routing_model_;
@@ -457,7 +458,7 @@ void ChainCumulFilter::OnSynchronizePathFromStart(int64 start) {
       old_vehicles_[node] = vehicle;
       current_transits_[node] = evaluator->Run(node, next);
     }
-    cumul += current_transits_[node];
+    cumul = CapAdd(cumul, current_transits_[node]);
     cumul = std::max(cumuls_[next]->Min(), cumul);
     node = next;
   }
@@ -485,9 +486,9 @@ bool ChainCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
     const int64 next = GetNext(node);
     if (IsVarSynced(node) && next == Value(node) &&
         vehicle == old_vehicles_[node]) {
-      cumul += current_transits_[node];
+      cumul = CapAdd(cumul, current_transits_[node]);
     } else {
-      cumul += evaluator->Run(node, next);
+      cumul = CapAdd(cumul, evaluator->Run(node, next));
     }
     cumul = std::max(cumuls_[next]->Min(), cumul);
     if (cumul > capacity) return false;
@@ -495,12 +496,12 @@ bool ChainCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   }
   const int64 end = start_to_end_[path_start];
   const int64 end_cumul_delta =
-      current_path_cumul_mins_[end] - current_path_cumul_mins_[node];
+      CapSub(current_path_cumul_mins_[end], current_path_cumul_mins_[node]);
   const int64 after_chain_cumul_delta =
-      current_max_of_path_end_cumul_mins_[node] -
-      current_path_cumul_mins_[node];
-  return cumul + after_chain_cumul_delta <= capacity &&
-         cumul + end_cumul_delta <= cumuls_[end]->Max();
+      CapSub(current_max_of_path_end_cumul_mins_[node],
+             current_path_cumul_mins_[node]);
+  return CapAdd(cumul, after_chain_cumul_delta) <= capacity &&
+         CapAdd(cumul, end_cumul_delta) <= cumuls_[end]->Max();
 }
 
 // PathCumul filter.
@@ -735,7 +736,7 @@ int64 PathCumulFilter::GetCumulSoftCost(int64 node, int64 cumul_value) const {
     const int64 bound = cumul_soft_bounds_[node].bound;
     const int64 coefficient = cumul_soft_bounds_[node].coefficient;
     if (coefficient > 0 && bound < cumul_value) {
-      return (cumul_value - bound) * coefficient;
+      return CapProd(CapSub(cumul_value, bound), coefficient);
     }
   }
   return 0;
@@ -747,7 +748,7 @@ int64 PathCumulFilter::GetCumulSoftLowerBoundCost(int64 node,
     const int64 bound = cumul_soft_lower_bounds_[node].bound;
     const int64 coefficient = cumul_soft_lower_bounds_[node].coefficient;
     if (coefficient > 0 && bound > cumul_value) {
-      return (bound - cumul_value) * coefficient;
+      return CapProd(CapSub(bound, cumul_value), coefficient);
     }
   }
   return 0;
@@ -760,9 +761,10 @@ int64 PathCumulFilter::GetPathCumulSoftLowerBoundCost(
   int64 current_cumul_cost_value = GetCumulSoftLowerBoundCost(node, cumul);
   for (int i = path_transits.PathSize(path) - 2; i >= 0; --i) {
     node = path_transits.Node(path, i);
-    cumul -= path_transits.Transit(path, i);
+    cumul = CapSub(cumul, path_transits.Transit(path, i));
     cumul = std::min(cumuls_[node]->Max(), cumul);
-    current_cumul_cost_value += GetCumulSoftLowerBoundCost(node, cumul);
+    current_cumul_cost_value = CapAdd(current_cumul_cost_value,
+                                      GetCumulSoftLowerBoundCost(node, cumul));
   }
   return current_cumul_cost_value;
 }
@@ -798,23 +800,27 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
       while (node < Size()) {
         const int64 next = Value(node);
         const int64 transit = evaluator->Run(node, next);
-        total_transit += transit;
-        const int64 transit_slack = transit + slacks_[node]->Min();
+        total_transit = CapAdd(total_transit, transit);
+        const int64 transit_slack = CapAdd(transit, slacks_[node]->Min());
         current_path_transits_.PushTransit(r, node, next, transit_slack);
-        cumul += transit_slack;
+        cumul = CapAdd(cumul, transit_slack);
         cumul = std::max(cumuls_[next]->Min(), cumul);
         node = next;
-        current_cumul_cost_value += GetCumulSoftCost(node, cumul);
+        current_cumul_cost_value =
+            CapAdd(current_cumul_cost_value, GetCumulSoftCost(node, cumul));
       }
       if (FilterSlackCost()) {
         const int64 start =
             ComputePathMaxStartFromEndCumul(current_path_transits_, r, cumul);
-        current_cumul_cost_value += vehicle_span_cost_coefficients_[vehicle] *
-                                    (cumul - start - total_transit);
+        current_cumul_cost_value =
+            CapAdd(current_cumul_cost_value,
+                   CapProd(vehicle_span_cost_coefficients_[vehicle],
+                           CapSub(CapSub(cumul, start), total_transit)));
       }
       if (FilterCumulSoftLowerBounds()) {
-        current_cumul_cost_value +=
-            GetPathCumulSoftLowerBoundCost(current_path_transits_, r);
+        current_cumul_cost_value =
+            CapAdd(current_cumul_cost_value,
+                   GetPathCumulSoftLowerBoundCost(current_path_transits_, r));
       }
       current_cumul_cost_values_[Start(r)] = current_cumul_cost_value;
       current_max_end_.path_values[r] = cumul;
@@ -822,7 +828,8 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         current_max_end_.cumul_value = cumul;
         current_max_end_.cumul_value_support = r;
       }
-      total_current_cumul_cost_value_ += current_cumul_cost_value;
+      total_current_cumul_cost_value_ =
+          CapAdd(total_current_cumul_cost_value_, current_cumul_cost_value);
     }
     // Use the max of the path end cumul mins to compute the corresponding
     // maximum start cumul of each path; store the minimum of these.
@@ -840,10 +847,11 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
   delta_max_end_cumul_ = kint64min;
   lns_detected_ = false;
   if (CanPropagateObjectiveValue()) {
-    const int64 new_objective_value =
-        injected_objective_value_ + total_current_cumul_cost_value_ +
-        global_span_cost_coefficient_ *
-            (current_max_end_.cumul_value - current_min_start_.cumul_value);
+    const int64 new_objective_value = CapAdd(
+        CapAdd(injected_objective_value_, total_current_cumul_cost_value_),
+        CapProd(global_span_cost_coefficient_,
+                CapSub(current_max_end_.cumul_value,
+                       current_min_start_.cumul_value)));
     PropagateObjectiveValue(new_objective_value);
   }
 }
@@ -852,7 +860,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
                                  int64 chain_end) {
   int64 node = path_start;
   int64 cumul = cumuls_[node]->Min();
-  cumul_cost_delta_ += GetCumulSoftCost(node, cumul);
+  cumul_cost_delta_ = CapAdd(cumul_cost_delta_, GetCumulSoftCost(node, cumul));
   int64 total_transit = 0;
   const int path = delta_path_transits_.AddPaths(1);
   const int vehicle = start_to_vehicle_[path_start];
@@ -882,36 +890,40 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   while (node < Size()) {
     const int64 next = GetNext(node);
     const int64 transit = evaluator->Run(node, next);
-    total_transit += transit;
-    const int64 transit_slack = transit + slacks_[node]->Min();
+    total_transit = CapAdd(total_transit, transit);
+    const int64 transit_slack = CapAdd(transit, slacks_[node]->Min());
     delta_path_transits_.PushTransit(path, node, next, transit_slack);
-    cumul += transit_slack;
+    cumul = CapAdd(cumul, transit_slack);
     if (cumul > std::min(capacity, cumuls_[next]->Max())) {
       return false;
     }
     cumul = std::max(cumuls_[next]->Min(), cumul);
     node = next;
-    cumul_cost_delta_ += GetCumulSoftCost(node, cumul);
+    cumul_cost_delta_ =
+        CapAdd(cumul_cost_delta_, GetCumulSoftCost(node, cumul));
   }
   if (FilterSlackCost()) {
     const int64 start =
         ComputePathMaxStartFromEndCumul(delta_path_transits_, path, cumul);
-    const int64 path_cumul_range = cumul - start;
+    const int64 path_cumul_range = CapSub(cumul, start);
     if (path_cumul_range > vehicle_span_upper_bounds_[vehicle]) {
       return false;
     }
-    cumul_cost_delta_ += vehicle_span_cost_coefficients_[vehicle] *
-                         (path_cumul_range - total_transit);
+    cumul_cost_delta_ = CapAdd(
+        cumul_cost_delta_, CapProd(vehicle_span_cost_coefficients_[vehicle],
+                                   CapSub(path_cumul_range, total_transit)));
   }
   if (FilterCumulSoftLowerBounds()) {
-    cumul_cost_delta_ +=
-        GetPathCumulSoftLowerBoundCost(delta_path_transits_, path);
+    cumul_cost_delta_ =
+        CapAdd(cumul_cost_delta_,
+               GetPathCumulSoftLowerBoundCost(delta_path_transits_, path));
   }
   if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost() ||
       FilterCumulSoftLowerBounds()) {
     delta_paths_.insert(GetPath(path_start));
     delta_max_end_cumul_ = std::max(delta_max_end_cumul_, cumul);
-    cumul_cost_delta_ -= current_cumul_cost_values_[path_start];
+    cumul_cost_delta_ =
+        CapSub(cumul_cost_delta_, current_cumul_cost_values_[path_start]);
   }
   return true;
 }
@@ -985,9 +997,10 @@ bool PathCumulFilter::FinalizeAcceptPath() {
   delta_path_transits_.Clear();
   lns_detected_ = false;
   // Filtering on objective value, including the injected part of it.
-  const int64 new_objective_value = CapAdd(
-      CapAdd(injected_objective_value_, cumul_cost_delta_),
-      global_span_cost_coefficient_ * CapSub(new_max_end, new_min_start));
+  const int64 new_objective_value =
+      CapAdd(CapAdd(injected_objective_value_, cumul_cost_delta_),
+             CapProd(global_span_cost_coefficient_,
+                     CapSub(new_max_end, new_min_start)));
   PropagateObjectiveValue(new_objective_value);
   // Only compare to max as a cost lower bound is computed.
   return new_objective_value <= cost_var_->Max();
@@ -1004,7 +1017,7 @@ int64 PathCumulFilter::ComputePathMaxStartFromEndCumul(
     const PathTransits& path_transits, int path, int end_cumul) const {
   int64 cumul = end_cumul;
   for (int i = path_transits.PathSize(path) - 2; i >= 0; --i) {
-    cumul -= path_transits.Transit(path, i);
+    cumul = CapSub(cumul, path_transits.Transit(path, i));
     cumul = std::min(cumuls_[path_transits.Node(path, i)]->Max(), cumul);
   }
   return cumul;
@@ -1808,22 +1821,23 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
        pickup_to_entries->at(pickup_insert_after)) {
     DCHECK_EQ(pickup_insert_after, pair_entry->pickup_insert_after());
     const int64 pickup_value =
-        evaluator_->Run(pickup_insert_after, pair_entry->pickup_to_insert(),
-                        vehicle) +
-        evaluator_->Run(pair_entry->pickup_to_insert(), pickup_insert_before,
-                        vehicle) -
-        old_pickup_value;
+        CapSub(CapAdd(evaluator_->Run(pickup_insert_after,
+                                      pair_entry->pickup_to_insert(), vehicle),
+                      evaluator_->Run(pair_entry->pickup_to_insert(),
+                                      pickup_insert_before, vehicle)),
+               old_pickup_value);
     const int64 delivery_insert_after = pair_entry->delivery_insert_after();
     const int64 delivery_insert_before =
         (delivery_insert_after == pair_entry->pickup_to_insert())
             ? pickup_insert_before
             : Value(delivery_insert_after);
-    const int64 delivery_value =
-        evaluator_->Run(delivery_insert_after, pair_entry->delivery_to_insert(),
-                        vehicle) +
-        evaluator_->Run(pair_entry->delivery_to_insert(),
-                        delivery_insert_before, vehicle) -
-        evaluator_->Run(delivery_insert_after, delivery_insert_before, vehicle);
+    const int64 delivery_value = CapSub(
+        CapAdd(evaluator_->Run(delivery_insert_after,
+                               pair_entry->delivery_to_insert(), vehicle),
+               evaluator_->Run(pair_entry->delivery_to_insert(),
+                               delivery_insert_before, vehicle)),
+        evaluator_->Run(delivery_insert_after, delivery_insert_before,
+                        vehicle));
     const int64 penalty =
         FLAGS_routing_shift_insertion_cost_by_penalty
             ? CapAdd(GetUnperformedValue(pair_entry->pickup_to_insert()),
@@ -1907,19 +1921,20 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
   for (PairEntry* const pair_entry :
        delivery_to_entries->at(delivery_insert_after)) {
     DCHECK_EQ(delivery_insert_after, pair_entry->delivery_insert_after());
-    const int64 pickup_value =
+    const int64 pickup_value = CapSub(
+        CapAdd(
+            evaluator_->Run(pair_entry->pickup_insert_after(),
+                            pair_entry->pickup_to_insert(), vehicle),
+            evaluator_->Run(pair_entry->pickup_to_insert(),
+                            Value(pair_entry->pickup_insert_after()), vehicle)),
         evaluator_->Run(pair_entry->pickup_insert_after(),
-                        pair_entry->pickup_to_insert(), vehicle) +
-        evaluator_->Run(pair_entry->pickup_to_insert(),
-                        Value(pair_entry->pickup_insert_after()), vehicle) -
-        evaluator_->Run(pair_entry->pickup_insert_after(),
-                        Value(pair_entry->pickup_insert_after()), vehicle);
-    const int64 delivery_value =
-        evaluator_->Run(delivery_insert_after, pair_entry->delivery_to_insert(),
-                        vehicle) +
-        evaluator_->Run(pair_entry->delivery_to_insert(),
-                        delivery_insert_before, vehicle) -
-        old_delivery_value;
+                        Value(pair_entry->pickup_insert_after()), vehicle));
+    const int64 delivery_value = CapSub(
+        CapAdd(evaluator_->Run(delivery_insert_after,
+                               pair_entry->delivery_to_insert(), vehicle),
+               evaluator_->Run(pair_entry->delivery_to_insert(),
+                               delivery_insert_before, vehicle)),
+        old_delivery_value);
     const int64 penalty =
         FLAGS_routing_shift_insertion_cost_by_penalty
             ? CapAdd(GetUnperformedValue(pair_entry->pickup_to_insert()),
@@ -2041,9 +2056,11 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePositions(
   for (NodeEntry* const node_entry : node_entries->at(insert_after)) {
     DCHECK_EQ(node_entry->insert_after(), insert_after);
     const int64 value =
-        evaluator_->Run(insert_after, node_entry->node_to_insert(), vehicle) +
-        evaluator_->Run(node_entry->node_to_insert(), insert_before, vehicle) -
-        old_value;
+        CapSub(CapAdd(evaluator_->Run(insert_after,
+                                      node_entry->node_to_insert(), vehicle),
+                      evaluator_->Run(node_entry->node_to_insert(),
+                                      insert_before, vehicle)),
+               old_value);
     const int64 penalty =
         FLAGS_routing_shift_insertion_cost_by_penalty
             ? GetUnperformedValue(node_entry->node_to_insert())
@@ -2210,37 +2227,53 @@ bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
   // Neighbors of the node currently being extended.
   std::vector<int64> neighbors;
   for (const int vehicle : sorted_vehicles) {
-    int64 index = GetStartChainEnd(vehicle);
-    int64 end = model()->End(vehicle);
-    bool found = true;
-    // Extend the route of the current vehicle while it's possible.
-    while (found && !model()->IsEnd(index)) {
-      found = false;
-      SortPossibleNexts(index, &neighbors);
-      for (const int64 next : neighbors) {
-        if (model()->IsEnd(next) && next != end) {
-          continue;
-        }
-        // Insert "next" after "index", and before "end" if it is not the end
-        // already.
-        SetValue(index, next);
-        const int delivery = next < Size() ? deliveries[next] : kUnassigned;
-        if (!model()->IsEnd(next)) {
-          SetValue(next, end);
-          MakeDisjunctionNodesUnperformed(next);
-          if (delivery != kUnassigned) {
-            SetValue(next, delivery);
-            SetValue(delivery, end);
-            MakeDisjunctionNodesUnperformed(delivery);
+    int64 last_node = GetStartChainEnd(vehicle);
+    bool extend_route = true;
+    // Extend the route of the current vehicle while it's possible. We can
+    // iterate more than once if pickup and delivery pairs have been inserted
+    // in the last iteration (see comment below); the new iteration will try to
+    // extend the route after the last delivery on the route.
+    while (extend_route) {
+      extend_route = false;
+      bool found = true;
+      int64 index = last_node;
+      int64 end = model()->End(vehicle);
+      // Extend the route until either the end node of the vehicle is reached
+      // or no node or node pair can be added. Deliveries in pickup and
+      // delivery pairs are added at the end of the route in reverse order
+      // of the pickups.
+      while (found && !model()->IsEnd(index)) {
+        found = false;
+        SortPossibleNexts(index, &neighbors);
+        for (const int64 next : neighbors) {
+          if (model()->IsEnd(next) && next != end) {
+            continue;
           }
-        }
-        if (Commit()) {
-          index = next;
-          found = true;
-          if (delivery != kUnassigned) {
-            end = delivery;
+          // Insert "next" after "index", and before "end" if it is not the end
+          // already.
+          SetValue(index, next);
+          const int delivery = next < Size() ? deliveries[next] : kUnassigned;
+          if (!model()->IsEnd(next)) {
+            SetValue(next, end);
+            MakeDisjunctionNodesUnperformed(next);
+            if (delivery != kUnassigned) {
+              SetValue(next, delivery);
+              SetValue(delivery, end);
+              MakeDisjunctionNodesUnperformed(delivery);
+            }
           }
-          break;
+          if (Commit()) {
+            index = next;
+            found = true;
+            if (delivery != kUnassigned) {
+              if (model()->IsEnd(end) && last_node != delivery) {
+                last_node = delivery;
+                extend_route = true;
+              }
+              end = delivery;
+            }
+            break;
+          }
         }
       }
     }
@@ -2488,10 +2521,10 @@ SavingsFilteredDecisionBuilder::ComputeSavings() const {
             costed_after_nodes.resize(saving_neighbors);
           }
           for (const auto& after_node : costed_after_nodes) {
-            const int64 saving = in_saving +
-                                 model()->GetArcCostForClass(
-                                     start, after_node.second, cost_class) -
-                                 after_node.first;
+            const int64 saving = CapSub(
+                CapAdd(in_saving, model()->GetArcCostForClass(
+                                      start, after_node.second, cost_class)),
+                after_node.first);
             savings.push_back(BuildSaving(-saving, cost_class, before_node,
                                           after_node.second));
           }
