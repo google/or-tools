@@ -23,21 +23,30 @@
 namespace operations_research {
 // ---------- Overflow utility functions ----------
 
-// Performs *b += a and returns false iff the addition overflow or underflow.
-// This function only works for typed integer type (IntType<>).
-template <typename IntegerType>
-bool SafeAddInto(IntegerType a, IntegerType* b) {
-  if (a > 0) {
-    if (*b > std::numeric_limits<typename IntegerType::ValueType>::max() - a) {
-      return false;
-    }
-  } else {
-    if (*b < std::numeric_limits<typename IntegerType::ValueType>::min() - a) {
-      return false;
-    }
-  }
-  *b += a;
-  return true;
+// Implement two's complement addition and subtraction on int64s.
+//
+// The C and C++ standards specify that the overflow of signed integers is
+// undefined. This is because of the different possible representations that may
+// be used for signed integers (one's complement, two's complement, sign and
+// magnitude). Such overflows are detected by Address Sanitizer with
+// -fsanitize=signed-integer-overflow.
+//
+// Simple, portable overflow detection on current machines relies on
+// these two functions. For example, if the sign of the sum of two positive
+// integers is negative, there has been an overflow.
+//
+// Note that the static assert will break if the code is compiled on machines
+// which do not use two's complement.
+inline int64 TwosComplementAddition(int64 x, int64 y) {
+  static_assert(static_cast<uint64>(-1LL) == ~0ULL,
+                "The target architecture does not use two's complement.");
+  return static_cast<int64>(static_cast<uint64>(x) + static_cast<uint64>(y));
+}
+
+inline int64 TwosComplementSubtraction(int64 x, int64 y) {
+  static_assert(static_cast<uint64>(-1LL) == ~0ULL,
+                "The target architecture does not use two's complement.");
+  return static_cast<int64>(static_cast<uint64>(x) - static_cast<uint64>(y));
 }
 
 // A note on overflow treatment.
@@ -50,11 +59,30 @@ bool SafeAddInto(IntegerType a, IntegerType* b) {
 // not, but make an explicit choice throughout.
 
 inline bool AddOverflows(int64 left, int64 right) {
-  return right > 0 && left > kint64max - right;
+  return right > 0 && left > TwosComplementSubtraction(kint64max, right);
 }
 
 inline bool AddUnderflows(int64 left, int64 right) {
-  return right < 0 && left < kint64min - right;
+  return right < 0 && left < TwosComplementSubtraction(kint64min, right);
+}
+
+// Performs *b += a and returns false iff the addition overflow or underflow.
+// This function only works for typed integer type (IntType<>).
+template <typename IntegerType>
+bool SafeAddInto(IntegerType a, IntegerType* b) {
+  const int64 x = a.value();
+  const int64 y = b->value();
+  const int64 result = TwosComplementAddition(x, y);
+  // Overflow cannot occur if operands have different signs.
+  // It can only occur if sign(x) == sign(y) and sign(result) != sign(x),
+  // which is equivalent to: sign(x) != sign(result) && sign(y) != sign(result).
+  // This is captured when 'negative_if_overflow' below is negative.
+  const int64 negative_if_overflow = (x ^ result) & (y ^ result);
+  if (negative_if_overflow < 0) {
+    return false;
+  }
+  *b += a;
+  return true;
 }
 
 // Returns kint64max if x >= 0 and kint64min if x < 0.
@@ -62,11 +90,11 @@ inline int64 CapWithSignOf(int64 x) {
   // sign_bit is 1 when x < 0, 0 otherwise.
   const int64 sign_bit = static_cast<uint64>(x) >> 63;
   // return kint64max if x >= 0 or kint64max + 1 (== kint64min) if x < 0.
-  return sign_bit + kint64max;
+  return TwosComplementAddition(kint64max, sign_bit);
 }
 
 inline int64 CapAddGeneric(int64 x, int64 y) {
-  const int64 result = x + y;
+  const int64 result = TwosComplementAddition(x, y);
   // Overflow cannot occur if operands have different signs.
   // It can only occur if sign(x) == sign(y) and sign(result) != sign(x),
   // which is equivalent to: sign(x) != sign(result) && sign(y) != sign(result).
@@ -101,15 +129,15 @@ inline int64 CapAdd(int64 x, int64 y) {
 }
 
 inline bool SubOverflows(int64 left, int64 right) {
-  return right < 0 && left > kint64max + right;
+  return right < 0 && left > TwosComplementAddition(kint64max, right);
 }
 
 inline bool SubUnderflows(int64 left, int64 right) {
-  return right > 0 && left < kint64min + right;
+  return right > 0 && left < TwosComplementAddition(kint64min, right);
 }
 
 inline int64 CapSubGeneric(int64 x, int64 y) {
-  const int64 result = x - y;
+  const int64 result = TwosComplementSubtraction(x, y);
   // This is the same reasoning as for CapAdd. We have x = result + y.
   // The formula is the same, with 'x' and result exchanged.
   const int64 negative_if_overflow = (x ^ result) & (x ^ y);
