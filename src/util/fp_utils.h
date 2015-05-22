@@ -108,7 +108,7 @@ class ScopedFloatingPointEnv {
 // being modified. This can be used to avoid wrong over-optimizations by gcc.
 // See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=47617 for an explanation.
 #ifdef NDEBUG
-#define TOUCH(var) asm("" : "+X"(var))
+#define TOUCH(var) asm volatile("" : "+X"(var))
 #else
 #define TOUCH(var)
 #endif
@@ -116,7 +116,7 @@ class ScopedFloatingPointEnv {
 #if (defined(__i386__) || defined(__x86_64__)) && defined(__linux__) && \
     !defined(__ANDROID__)
 inline fpu_control_t GetFPPrecision() {
-  fpu_control_t status;
+  fpu_control_t status = 0;  // Initialized to zero to please memory sanitizer.
   _FPU_GETCW(status);
   return status & (_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE);
 }
@@ -125,7 +125,7 @@ inline fpu_control_t GetFPPrecision() {
 // CPU precision control. Parameters can be:
 // _FPU_EXTENDED, _FPU_DOUBLE or _FPU_SINGLE.
 inline void SetFPPrecision(fpu_control_t precision) {
-  fpu_control_t status;
+  fpu_control_t status = 0;  // Initialized to zero to please memory sanitizer.
   _FPU_GETCW(status);
   TOUCH(status);
   status &= ~(_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE);
