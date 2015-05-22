@@ -14,6 +14,7 @@
 
 #include "glop/lp_solver.h"
 
+#include <cmath>
 #include <stack>
 #include <vector>
 
@@ -792,32 +793,35 @@ double LPSolver::ComputeDualObjective(const LinearProgram& lp) {
     const Fractional lower_bound = lp.variable_lower_bounds()[col];
     const Fractional upper_bound = lp.variable_upper_bounds()[col];
 
-    // We correct the reduced cost, so we have a minimization problem and
-    // thus the dual objective will be a lower bound of the primal objective.
+    // Correct the reduced cost, so as to have a minimization problem and
+    // thus a dual objective that is a lower bound of the primal objective.
     const Fractional reduced_cost = optimization_sign * reduced_costs_[col];
+
     Fractional correction = 0.0;
-    if (upper_bound == kInfinity) {
-      if (lower_bound != -kInfinity) {
-        // Note that we do not do any correction if the reduced cost is
-        // 'infeasible', which is the same as computing the objective of the
-        // perturbed problem.
-        if (reduced_cost > 0.0) {
-          correction = reduced_cost * lower_bound;
-        }
-      }
-    } else {
-      if (lower_bound == -kInfinity) {
-        // Same note as above.
-        if (reduced_cost < 0.0) {
-          correction = reduced_cost * upper_bound;
-        }
-      } else {
-        correction =
-            reduced_cost * (reduced_cost > 0 ? lower_bound : upper_bound);
-      }
+    if (lower_bound != -kInfinity && reduced_cost > 0.0) {
+      // Do not do any correction if the reduced cost is 'infeasible', which is
+      // the same as computing the objective of the perturbed problem.
+      correction = reduced_cost * lower_bound;
+    } else if (
+        upper_bound != kInfinity && reduced_cost < 0.0
+#ifdef MEMORY_SANITIZER
+        // Note(user): The redundant condition with isfinite() below is a
+        // workaround for Memory Sanitizer breaking the code and triggering a
+        // SIGFPE. The SIGFPE disappears if the data are printed. This condition
+        // seems to bring the data "back into sight" for Memory Sanitizer. This
+        // workaround is brittle as any change in the code itself. For example,
+        // changing the code a bit makes it necessary to change the variable to
+        // pass to isfinite(). (!)
+        // TODO(user): Remove this when Memory Sanitizer matures.
+        &&
+        std::isfinite(upper_bound)
+#endif
+            ) {
+      // Same note as above.
+      correction = reduced_cost * upper_bound;
     }
 
-    // We now need to apply the correction in the good direction!
+    // Now apply the correction in the right direction!
     dual_objective.Add(optimization_sign * correction);
   }
   return dual_objective.Value();
