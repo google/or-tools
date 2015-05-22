@@ -198,7 +198,7 @@ python_archive: python
 	$(COPY) tools$SREADME.python temp$Sor-tools.$(PORT)$SREADME
 	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
 	$(COPY) tools$Ssetup.py temp$Sor-tools.$(PORT)
-	$(COPY) tools$Sdummy_ortools_dependency.cc temp$Sortools.$(PORT)$Sdummy
+	$(COPY) tools$Sdummy_ortools_dependency.cc temp$Sor-tools.$(PORT)$Sdummy
 	$(SED) -i -e 's/VVVV/$(GIT_REVISION)/' temp$Sor-tools.$(PORT)$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
