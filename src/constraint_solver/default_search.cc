@@ -36,15 +36,33 @@ DEFINE_int32(cp_impact_divider, 10, "Divider for continuous update.");
 
 namespace operations_research {
 
-// Default constants for search phase parameters.
-const int DefaultPhaseParameters::kDefaultNumberOfSplits = 100;
-const int DefaultPhaseParameters::kDefaultHeuristicPeriod = 100;
-const int DefaultPhaseParameters::kDefaultHeuristicNumFailuresLimit = 30;
-const int DefaultPhaseParameters::kDefaultSeed = 0;
-const double DefaultPhaseParameters::kDefaultRestartLogSize = -1.0;
-const bool DefaultPhaseParameters::kDefaultUseNoGoods = true;
-
 class NoGoodManager;
+
+namespace {
+// Default constants for search phase parameters.
+const int kDefaultNumberOfSplits = 100;
+const int kDefaultHeuristicPeriod = 100;
+const int kDefaultHeuristicNumFailuresLimit = 30;
+const int kDefaultSeed = 0;
+const double kDefaultRestartLogSize = -1.0;
+const bool kDefaultUseNoGoods = true;
+const bool kDefaultUseLastConflict = true;
+}  // namespace
+
+DefaultPhaseParameters::DefaultPhaseParameters()
+    : var_selection_schema(DefaultPhaseParameters::CHOOSE_MAX_SUM_IMPACT),
+      value_selection_schema(DefaultPhaseParameters::SELECT_MIN_IMPACT),
+      initialization_splits(kDefaultNumberOfSplits),
+      run_all_heuristics(true),
+      heuristic_period(kDefaultHeuristicPeriod),
+      heuristic_num_failures_limit(kDefaultHeuristicNumFailuresLimit),
+      persistent_impact(true),
+      random_seed(kDefaultSeed),
+      restart_log_size(kDefaultRestartLogSize),
+      display_level(DefaultPhaseParameters::NORMAL),
+      use_no_goods(kDefaultUseNoGoods),
+      use_last_conflict(kDefaultUseLastConflict),
+      decision_builder(nullptr) {}
 
 namespace {
 // ----- DomainWatcher -----
@@ -1072,6 +1090,9 @@ class DefaultIntegerSearch : public DecisionBuilder {
                     parameters_.heuristic_period,
                     parameters_.heuristic_num_failures_limit),
         restart_monitor_(solver, parameters_, &domain_watcher_),
+        find_var_(),
+        last_int_var_(nullptr),
+        last_int_value_(0),
         init_done_(false) {}
 
   ~DefaultIntegerSearch() override {}
@@ -1083,9 +1104,31 @@ class DefaultIntegerSearch : public DecisionBuilder {
       return &heuristics_;
     }
 
-    return parameters_.decision_builder != nullptr
-               ? parameters_.decision_builder->Next(solver)
-               : ImpactNext(solver);
+    if (parameters_.use_last_conflict &&
+        last_int_var_ != nullptr &&
+        !last_int_var_->Bound() &&
+        last_int_var_->Contains(last_int_value_)) {
+      Decision* const assign_last =
+          solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
+      last_int_var_ = nullptr;
+      last_int_value_ = 0;
+      return assign_last;
+    }
+
+    Decision* const decision = parameters_.decision_builder != nullptr
+        ? parameters_.decision_builder->Next(solver)
+        : ImpactNext(solver);
+
+    if (parameters_.use_last_conflict && decision != nullptr) {
+      // Store the last decision to replay it upon failure.
+      decision->Accept(&find_var_);
+      if (find_var_.valid()) {
+        last_int_var_ = find_var_.var();
+        last_int_value_ = find_var_.value();
+      }
+    }
+
+    return decision;
   }
 
   void AppendMonitors(Solver* const solver,
@@ -1212,6 +1255,9 @@ class DefaultIntegerSearch : public DecisionBuilder {
   ImpactRecorder impact_recorder_;
   RunHeuristicsAsDives heuristics_;
   RestartMonitor restart_monitor_;
+  FindVar find_var_;
+  IntVar* last_int_var_;
+  int64 last_int_value_;
   bool init_done_;
 };
 

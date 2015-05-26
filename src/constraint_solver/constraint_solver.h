@@ -232,27 +232,6 @@ struct DefaultPhaseParameters {
 
   enum DisplayLevel { NONE = 0, NORMAL = 1, VERBOSE = 2 };
 
-  static const int kDefaultNumberOfSplits;
-  static const int kDefaultHeuristicPeriod;
-  static const int kDefaultHeuristicNumFailuresLimit;
-  static const int kDefaultSeed;
-  static const double kDefaultRestartLogSize;
-  static const bool kDefaultUseNoGoods;
-
-  DefaultPhaseParameters()
-      : var_selection_schema(CHOOSE_MAX_SUM_IMPACT),
-        value_selection_schema(SELECT_MIN_IMPACT),
-        initialization_splits(kDefaultNumberOfSplits),
-        run_all_heuristics(true),
-        heuristic_period(kDefaultHeuristicPeriod),
-        heuristic_num_failures_limit(kDefaultHeuristicNumFailuresLimit),
-        persistent_impact(true),
-        random_seed(kDefaultSeed),
-        restart_log_size(kDefaultRestartLogSize),
-        display_level(NORMAL),
-        use_no_goods(kDefaultUseNoGoods),
-        decision_builder(nullptr) {}
-
   // This parameter describes how the next variable to instantiate
   // will be chosen.
   VariableSelection var_selection_schema;
@@ -302,8 +281,13 @@ struct DefaultPhaseParameters {
   // Should we use Nogoods when restarting. The default is false.
   bool use_no_goods;
 
+  // Should we use last conflict method. The default is false.
+  bool use_last_conflict;
+
   // When defined, this override the default impact based decision builder.
   DecisionBuilder* decision_builder;
+
+  DefaultPhaseParameters();
 };
 
 /////////////////////////////////////////////////////////////////////

@@ -37,6 +37,7 @@
 DEFINE_int32(log_period, 10000000, "Search log period");
 DEFINE_bool(all, false, "Search for all solutions");
 DEFINE_bool(free, false, "Ignore search annotations");
+DEFINE_bool(last_conflict, false, "Use last conflict search hints");
 DEFINE_int32(num_solutions, 0, "Number of solution to search for");
 DEFINE_int32(time_limit, 0, "time limit in ms");
 DEFINE_int32(workers, 0, "Number of workers");
@@ -67,6 +68,7 @@ void SequentialRun(const FzModel* model) {
   FzSolverParameters parameters;
   parameters.all_solutions = FLAGS_all;
   parameters.free_search = FLAGS_free;
+  parameters.last_conflict = FLAGS_last_conflict;
   parameters.heuristic_period = FLAGS_heuristic_period;
   parameters.ignore_unknown = false;
   parameters.log_period = FLAGS_log_period;
@@ -104,12 +106,14 @@ void ParallelRun(const FzModel* const model, int worker_id,
   switch (worker_id) {
     case 0: {
       parameters.free_search = false;
+      parameters.last_conflict = false;
       parameters.search_type = operations_research::FzSolverParameters::DEFAULT;
       parameters.restart_log_size = -1.0;
       break;
     }
     case 1: {
       parameters.free_search = true;
+      parameters.last_conflict = false;
       parameters.search_type =
           operations_research::FzSolverParameters::MIN_SIZE;
       parameters.restart_log_size = -1.0;
@@ -117,12 +121,14 @@ void ParallelRun(const FzModel* const model, int worker_id,
     }
     case 2: {
       parameters.free_search = true;
+      parameters.last_conflict = false;
       parameters.search_type = operations_research::FzSolverParameters::IBS;
       parameters.restart_log_size = FLAGS_restart_log_size;
       break;
     }
     case 3: {
       parameters.free_search = true;
+      parameters.last_conflict = false;
       parameters.search_type =
           operations_research::FzSolverParameters::FIRST_UNBOUND;
       parameters.restart_log_size = -1.0;
@@ -131,6 +137,7 @@ void ParallelRun(const FzModel* const model, int worker_id,
     }
     case 4: {
       parameters.free_search = true;
+      parameters.last_conflict = false;
       parameters.search_type = operations_research::FzSolverParameters::DEFAULT;
       parameters.restart_log_size = -1.0;
       parameters.heuristic_period = 30;
@@ -139,6 +146,7 @@ void ParallelRun(const FzModel* const model, int worker_id,
     }
     default: {
       parameters.free_search = true;
+      parameters.last_conflict = false;
       parameters.search_type =
           worker_id % 2 == 0
               ? operations_research::FzSolverParameters::RANDOM_MIN

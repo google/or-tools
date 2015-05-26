@@ -31,6 +31,7 @@ struct FzSolverParameters {
 
   bool all_solutions;
   bool free_search;
+  bool last_conflict;
   bool ignore_annotations;
   bool ignore_unknown;
   bool use_log;

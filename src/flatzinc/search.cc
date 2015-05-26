@@ -145,6 +145,7 @@ std::string FzMemoryUsage() {
 FzSolverParameters::FzSolverParameters()
     : all_solutions(false),
       free_search(false),
+      last_conflict(false),
       ignore_annotations(false),
       ignore_unknown(true),
       use_log(false),
@@ -269,7 +270,7 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
     FlattenAnnotations(ann, &flat_annotations);
   }
 
-  FZLOG << "  - using search annotations" << std::endl;
+  FZLOG << "  - parsing search annotations" << std::endl;
   hash_set<IntVar*> added;
   for (const FzAnnotation& ann : flat_annotations) {
     FZLOG << "  - parse " << ann.DebugString() << FZENDL;
@@ -445,7 +446,8 @@ void FzSolver::AddCompletionDecisionBuilders(
 
 DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
                                                   SearchLimit* limit) {
-  FZLOG << "Defining search" << std::endl;
+  FZLOG << "Defining search" << (p.free_search ? "  (free)" : "  (fixed)")
+        << std::endl;
   // Fill builders_ with predefined search.
   std::vector<DecisionBuilder*> defined;
   std::vector<IntVar*> defined_variables;
@@ -507,6 +509,7 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
             defined_variables, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MAX_VALUE);
       }
     }
+    parameters.use_last_conflict = p.last_conflict;
     parameters.run_all_heuristics = p.run_all_heuristics;
     parameters.heuristic_period =
         model_.objective() != nullptr ||
@@ -627,7 +630,12 @@ void FzSolver::Solve(FzSolverParameters p,
   }
 
   if (p.luby_restart > 0) {
+    FZLOG << "  - using luby restart with a factor of " << p.luby_restart
+          << std::endl;
     monitors.push_back(solver()->MakeLubyRestart(p.luby_restart));
+  }
+  if (p.last_conflict && p.free_search) {
+    FZLOG << "  - using last conflict search hints" << std::endl;
   }
 
   bool breaked = false;
