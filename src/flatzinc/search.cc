@@ -743,8 +743,10 @@ void FzSolver::Solve(FzSolverParameters p,
     if (default_phase_ != nullptr) {
       const std::string default_search_stats =
           DefaultPhaseStatString(default_phase_);
-      final_output.append(StringPrintf("%%%%  free search stats:    %s\n",
-                                       default_search_stats.c_str()));
+      if (!default_search_stats.empty()) {
+        final_output.append(StringPrintf("%%%%  free search stats:    %s\n",
+                                         default_search_stats.c_str()));
+      }
     }
 
     const bool no_solutions = num_solutions == 0;
