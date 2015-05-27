@@ -779,6 +779,8 @@ class RestartMonitor : public SearchMonitor {
     }
   }
 
+  int num_restarts() const { return num_restarts_; }
+
   std::string DebugString() const override { return "RestartMonitor"; }
 
  private:
@@ -949,7 +951,8 @@ class RunHeuristicsAsDives : public Decision {
         run_all_heuristics_(run_all_heuristics),
         random_(random_seed),
         heuristic_period_(heuristic_period),
-        heuristic_branch_count_(0) {
+        heuristic_branch_count_(0),
+        heuristic_runs_(0) {
     Init(solver, vars, heuristic_num_failures_limit);
   }
 
@@ -973,6 +976,7 @@ class RunHeuristicsAsDives : public Decision {
 
   bool RunOneHeuristic(Solver* const solver, int index) {
     HeuristicWrapper* const wrapper = heuristics_[index];
+    heuristic_runs_++;
 
     const bool result =
         solver->SolveAndCommit(wrapper->phase, heuristic_limit_);
@@ -1043,6 +1047,8 @@ class RunHeuristicsAsDives : public Decision {
                           kint64max);                    // solutions.
   }
 
+  int heuristic_runs() const { return heuristic_runs_; }
+
  private:
   // This class wraps one heuristic with extra information: name and
   // number of runs.
@@ -1072,6 +1078,7 @@ class RunHeuristicsAsDives : public Decision {
   ACMRandom random_;
   const int heuristic_period_;
   int heuristic_branch_count_;
+  int heuristic_runs_;
 };
 
 // ---------- DefaultIntegerSearch ----------
@@ -1097,6 +1104,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
         last_int_var_(nullptr),
         last_int_value_(0),
         last_operation_(FindVar::NONE),
+        last_conflict_count_(0),
         init_done_(false) {}
 
   ~DefaultIntegerSearch() override {}
@@ -1142,6 +1150,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
             Decision* const assign =
                 solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
             ClearLastDecision();
+            last_conflict_count_++;
             return assign;
           }
           break;
@@ -1153,6 +1162,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
                 solver->MakeVariableLessOrEqualValue(last_int_var_,
                                                      last_int_value_);
             ClearLastDecision();
+            last_conflict_count_++;
             return split;
           }
           break;
@@ -1164,6 +1174,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
                 solver->MakeVariableGreaterOrEqualValue(last_int_var_,
                                                         last_int_value_);
             ClearLastDecision();
+            last_conflict_count_++;
             return split;
           }
           break;
@@ -1224,6 +1235,39 @@ class DefaultIntegerSearch : public DecisionBuilder {
     out.append(JoinDebugStringPtr(vars_, ", "));
     out.append(")");
     return out;
+  }
+
+  std::string StatString() const {
+    const int restarts = restart_monitor_.num_restarts();
+    const int runs = heuristics_.heuristic_runs();
+    std::string result;
+    if (restarts == 1) {
+      result.append("1 restart");
+    } else if (restarts > 1) {
+      StringAppendF(&result, "%d restarts", restarts);
+    }
+
+    if (runs > 0) {
+      if (!result.empty()) {
+        result.append(", ");
+      }
+      if (runs == 1) {
+        StringAppendF(&result, "1 heuristic run");
+      } else {
+        StringAppendF(&result, "%d heuristic runs", runs);
+      }
+    }
+    if (last_conflict_count_ > 0) {
+      if (!result.empty()) {
+        result.append(", ");
+      }
+      if (last_conflict_count_ == 1) {
+        StringAppendF(&result, "1 last conflict hint");
+      } else {
+        StringAppendF(&result, "%d last conflict hints", last_conflict_count_);
+      }
+    }
+    return result;
   }
 
  private:
@@ -1321,6 +1365,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
   IntVar* last_int_var_;
   int64 last_int_value_;
   FindVar::Operation last_operation_;
+  int last_conflict_count_;
   bool init_done_;
 };
 
@@ -1328,6 +1373,11 @@ const double DefaultIntegerSearch::kSmallSearchSpaceLimit = 10.0;
 }  // namespace
 
 // ---------- API ----------
+
+std::string DefaultPhaseStatString(DecisionBuilder* db) {
+  DefaultIntegerSearch* const dis = dynamic_cast<DefaultIntegerSearch*>(db);
+  return dis != nullptr ? dis->StatString() : "";
+}
 
 DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
   DefaultPhaseParameters parameters;

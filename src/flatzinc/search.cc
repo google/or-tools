@@ -30,6 +30,8 @@ DECLARE_bool(fz_logging);
 DECLARE_bool(fz_verbose);
 
 namespace operations_research {
+extern std::string DefaultPhaseStatString(DecisionBuilder* db);
+
 namespace {
 // The Flatzinc SearchLog is just like a regular SearchLog, except
 // that it uses stdout instead of LOG(INFO).
@@ -466,6 +468,7 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
   std::vector<DecisionBuilder*> builders;
   if (!p.free_search && !defined.empty()) {
     builders = defined;
+    default_phase_ = nullptr;
   } else {
     if (defined_variables.empty()) {
       CHECK(defined.empty());
@@ -533,9 +536,10 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
     } else {
       parameters.decision_builder = inner_builder;
     }
-    builders.push_back(
-        solver()->MakeDefaultPhase(defined_variables, parameters));
+    default_phase_ = solver()->MakeDefaultPhase(defined_variables, parameters);
+    builders.push_back(default_phase_);
   }
+
   // Add the objective decision builder.
   if (obj_db != nullptr) {
     builders.push_back(obj_db);
@@ -735,6 +739,14 @@ void FzSolver::Solve(FzSolverParameters p,
                          best, (proven ? " (proven)" : "")));
       }
     }
+
+    if (default_phase_ != nullptr) {
+      const std::string default_search_stats =
+          DefaultPhaseStatString(default_phase_);
+      final_output.append(StringPrintf("%%%%  free search stats:    %s\n",
+                                       default_search_stats.c_str()));
+    }
+
     const bool no_solutions = num_solutions == 0;
     const std::string status_string =
         (no_solutions ? (timeout ? "**timeout**" : "**unsat**")

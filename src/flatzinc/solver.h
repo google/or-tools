@@ -29,7 +29,8 @@ class FzSolver {
       : model_(model),
         statistics_(model),
         solver_(model.name()),
-        sat_(nullptr) {}
+        sat_(nullptr),
+        default_phase_(nullptr) {}
 
   // Search for for solutions in the model passed at construction
   // time.  The exact search context (search for optimal solution, for
@@ -93,6 +94,8 @@ class FzSolver {
            std::vector<std::vector<FzIntegerVariable*> > > alldiffs_;
   // Sat constraint.
   SatPropagator* sat_;
+  // Default Search Phase (to get stats).
+  DecisionBuilder* default_phase_;
 };
 }  // namespace operations_research
 
