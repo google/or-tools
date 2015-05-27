@@ -95,56 +95,59 @@ class DomainWatcher {
 
 class FindVar : public DecisionVisitor {
  public:
-  FindVar() : var_(nullptr), value_(0), valid_(false) {}
+  enum Operation { NONE, ASSIGN, SPLIT_LOW, SPLIT_HIGH };
+
+  FindVar() : var_(nullptr), value_(0), operation_(NONE) {}
 
   ~FindVar() override {}
 
   void VisitSetVariableValue(IntVar* const var, int64 value) override {
     var_ = var;
     value_ = value;
-    valid_ = true;
+    operation_ = ASSIGN;
   }
 
   void VisitSplitVariableDomain(IntVar* const var, int64 value,
                                 bool start_with_lower_half) override {
-    valid_ = false;
+    var_ = var;
+    value_ = value;
+    operation_ = start_with_lower_half ? SPLIT_LOW : SPLIT_HIGH;
   }
 
   void VisitScheduleOrPostpone(IntervalVar* const var, int64 est) override {
-    valid_ = false;
+    operation_ = NONE;
   }
 
   virtual void VisitTryRankFirst(SequenceVar* const sequence, int index) {
-    valid_ = false;
+    operation_ = NONE;
   }
 
   virtual void VisitTryRankLast(SequenceVar* const sequence, int index) {
-    valid_ = false;
+    operation_ = NONE;
   }
 
-  void VisitUnknownDecision() override { valid_ = false; }
-
-  // Indicates whether var() and value() can be called.
-  bool valid() { return valid_; }
+  void VisitUnknownDecision() override { operation_ = NONE; }
 
   // Returns the current variable.
   IntVar* const var() const {
-    CHECK(valid_);
+    CHECK_NE(operation_, NONE);
     return var_;
   }
 
   // Returns the value of the current variable.
-  int64 value() {
-    CHECK(valid_);
+  int64 value() const {
+    CHECK_NE(operation_, NONE);
     return value_;
   }
+
+  Operation operation() const { return operation_; }
 
   std::string DebugString() const override { return "FindVar decision visitor"; }
 
  private:
   IntVar* var_;
   int64 value_;
-  bool valid_;
+  Operation operation_;
 };
 
 // ----- Auxilliary decision builders to init impacts -----
@@ -392,7 +395,7 @@ class ImpactRecorder : public SearchMonitor {
       return;
     }
     d->Accept(&find_var_);
-    if (find_var_.valid()) {
+    if (find_var_.operation() == FindVar::ASSIGN) {
       current_var_ = var_map_[find_var_.var()];
       current_value_ = find_var_.value();
       current_log_space_ = domain_watcher_->LogSearchSpaceSize();
@@ -709,7 +712,7 @@ class RestartMonitor : public SearchMonitor {
     Solver* const s = solver();
     branches_between_restarts_++;
     d->Accept(&find_var_);
-    if (find_var_.valid()) {
+    if (find_var_.operation() == FindVar::ASSIGN) {
       choices_.Push(solver(),
                     ChoiceInfo(find_var_.var(), find_var_.value(), true));
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
@@ -724,7 +727,7 @@ class RestartMonitor : public SearchMonitor {
     Solver* const s = solver();
     branches_between_restarts_++;
     d->Accept(&find_var_);
-    if (find_var_.valid()) {
+    if (find_var_.operation() == FindVar::ASSIGN) {
       choices_.Push(solver(),
                     ChoiceInfo(find_var_.var(), find_var_.value(), false));
       if (parameters_.display_level == DefaultPhaseParameters::VERBOSE) {
@@ -1093,6 +1096,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
         find_var_(),
         last_int_var_(nullptr),
         last_int_value_(0),
+        last_operation_(FindVar::NONE),
         init_done_(false) {}
 
   ~DefaultIntegerSearch() override {}
@@ -1104,15 +1108,50 @@ class DefaultIntegerSearch : public DecisionBuilder {
       return &heuristics_;
     }
 
-    if (parameters_.use_last_conflict &&
-        last_int_var_ != nullptr &&
-        !last_int_var_->Bound() &&
-        last_int_var_->Contains(last_int_value_)) {
-      Decision* const assign_last =
-          solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
-      last_int_var_ = nullptr;
-      last_int_value_ = 0;
-      return assign_last;
+    if (parameters_.use_last_conflict && last_int_var_ != nullptr &&
+        !last_int_var_->Bound()) {
+      switch (last_operation_) {
+        case FindVar::ASSIGN: {
+          if (last_int_var_->Contains(last_int_value_)) {
+            Decision* const assign =
+                solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
+            last_int_var_ = nullptr;
+            last_int_value_ = 0;
+            last_operation_ = FindVar::NONE;
+            return assign;
+          }
+          break;
+        }
+        case FindVar::SPLIT_LOW: {
+          if (last_int_var_->Max() > last_int_value_ &&
+              last_int_var_->Min() <= last_int_value_) {
+            Decision* const split =
+                solver->MakeVariableLessOrEqualValue(last_int_var_,
+                                                     last_int_value_);
+            last_int_var_ = nullptr;
+            last_int_value_ = 0;
+            last_operation_ = FindVar::NONE;
+            return split;
+          }
+          break;
+        }
+        case FindVar::SPLIT_HIGH: {
+          if (last_int_var_->Min() < last_int_value_ &&
+              last_int_var_->Max() >= last_int_value_) {
+            Decision* const split =
+                solver->MakeVariableGreaterOrEqualValue(last_int_var_,
+                                                        last_int_value_);
+            last_int_var_ = nullptr;
+            last_int_value_ = 0;
+            last_operation_ = FindVar::NONE;
+            return split;
+          }
+          break;
+        }
+        default: {
+          break;
+        }
+      }
     }
 
     Decision* const decision = parameters_.decision_builder != nullptr
@@ -1122,9 +1161,10 @@ class DefaultIntegerSearch : public DecisionBuilder {
     if (parameters_.use_last_conflict && decision != nullptr) {
       // Store the last decision to replay it upon failure.
       decision->Accept(&find_var_);
-      if (find_var_.valid()) {
+      if (find_var_.operation() != FindVar::NONE) {
         last_int_var_ = find_var_.var();
         last_int_value_ = find_var_.value();
+        last_operation_ = find_var_.operation();
       }
     }
 
@@ -1258,6 +1298,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
   FindVar find_var_;
   IntVar* last_int_var_;
   int64 last_int_value_;
+  FindVar::Operation last_operation_;
   bool init_done_;
 };
 
