@@ -1108,16 +1108,40 @@ class DefaultIntegerSearch : public DecisionBuilder {
       return &heuristics_;
     }
 
+    Decision* const decision = parameters_.decision_builder != nullptr
+        ? parameters_.decision_builder->Next(solver)
+        : ImpactNext(solver);
+
+    // Returns early if the search tree is finished anyway.
+    if (decision == nullptr) {
+      ClearLastDecision();
+      return nullptr;
+    }
+
+    // The main goal of last conflict is to branch on a decision
+    // variable different from the one being evaluated. We need to
+    // retrieve first the variable in the current decision.
+    decision->Accept(&find_var_);
+    IntVar* const decision_var =
+        find_var_.operation() != FindVar::NONE ? find_var_.var() : nullptr;
+
+    // We will hijack the search heuristics if
+    //  - we use last conflict
+    //  - we have stored the last decision from the search heuristics
+    //  - the variable stored is different from the variable of the current
+    //    decision
+    //  - this variable is not bound already
+    // Furthermore, each case will also verify that the stored decision is
+    // compatible with the current domain variable.
     if (parameters_.use_last_conflict && last_int_var_ != nullptr &&
-        !last_int_var_->Bound()) {
+        !last_int_var_->Bound() &&
+        (decision_var == nullptr || decision_var != last_int_var_)) {
       switch (last_operation_) {
         case FindVar::ASSIGN: {
           if (last_int_var_->Contains(last_int_value_)) {
             Decision* const assign =
                 solver->MakeAssignVariableValue(last_int_var_, last_int_value_);
-            last_int_var_ = nullptr;
-            last_int_value_ = 0;
-            last_operation_ = FindVar::NONE;
+            ClearLastDecision();
             return assign;
           }
           break;
@@ -1128,9 +1152,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
             Decision* const split =
                 solver->MakeVariableLessOrEqualValue(last_int_var_,
                                                      last_int_value_);
-            last_int_var_ = nullptr;
-            last_int_value_ = 0;
-            last_operation_ = FindVar::NONE;
+            ClearLastDecision();
             return split;
           }
           break;
@@ -1141,9 +1163,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
             Decision* const split =
                 solver->MakeVariableGreaterOrEqualValue(last_int_var_,
                                                         last_int_value_);
-            last_int_var_ = nullptr;
-            last_int_value_ = 0;
-            last_operation_ = FindVar::NONE;
+            ClearLastDecision();
             return split;
           }
           break;
@@ -1154,11 +1174,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
       }
     }
 
-    Decision* const decision = parameters_.decision_builder != nullptr
-        ? parameters_.decision_builder->Next(solver)
-        : ImpactNext(solver);
-
-    if (parameters_.use_last_conflict && decision != nullptr) {
+    if (parameters_.use_last_conflict) {
       // Store the last decision to replay it upon failure.
       decision->Accept(&find_var_);
       if (find_var_.operation() != FindVar::NONE) {
@@ -1169,6 +1185,12 @@ class DefaultIntegerSearch : public DecisionBuilder {
     }
 
     return decision;
+  }
+
+  void ClearLastDecision() {
+    last_int_var_ = nullptr;
+    last_int_value_ = 0;
+    last_operation_ = FindVar::NONE;
   }
 
   void AppendMonitors(Solver* const solver,
