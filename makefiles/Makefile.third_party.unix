@@ -269,10 +269,10 @@ dependencies/archives/protobuf-$(PROTOBUF_TAG).tar.gz:
 	cd dependencies/archives && curl -OL https://protobuf.googlecode.com/svn/rc/protobuf-$(PROTOBUF_TAG).tar.gz
 
 # Intall Google Apputils Python.
-install_google_apputils: dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)/README
+install_google_apputils: dependencies/sources/google-apputils/README
 
-dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)/README:
-	svn co http://google-apputils-python.googlecode.com/svn/trunk/ -r $(GOOGLE_APPUTILS_TAG) dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG)
+dependencies/sources/google-apputils/README:
+	cd dependencies/sources && git clone https://github.com/google/google-apputils
 
 # Install sparsehash.
 install_sparsehash: dependencies/install/include/google/dense_hash_map
@@ -492,7 +492,7 @@ makefile_third_party: Makefile.local
 
 # Install python modules
 install_python_modules:
-	cd dependencies/sources/google_apputils_python-$(GOOGLE_APPUTILS_TAG) && python$(PYTHON_VERSION) setup.py install --user
+	cd dependencies/sources/google-apputils && python$(PYTHON_VERSION) setup.py install --user
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/python && python$(PYTHON_VERSION) setup.py build
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/python && python$(PYTHON_VERSION) setup.py install --user
 
