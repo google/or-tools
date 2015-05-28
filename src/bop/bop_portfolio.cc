@@ -57,13 +57,14 @@ PortfolioOptimizer::PortfolioOptimizer(
       optimizers_(),
       optimizer_initial_scores_(),
       sat_propagator_(),
+      parameters_(parameters),
       lower_bound_(-glop::kInfinity),
       upper_bound_(glop::kInfinity) {
   CreateOptimizers(problem_state.original_problem(), parameters, optimizer_set);
 }
 
 PortfolioOptimizer::~PortfolioOptimizer() {
-  if (VLOG_IS_ON(1)) {
+  if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
     std::string stats_string;
     for (int i = 0; i < optimizers_.size(); ++i) {
       const std::string& name = optimizers_[i]->name();
@@ -73,7 +74,7 @@ PortfolioOptimizer::~PortfolioOptimizer() {
           "    %40s : %3d/%-3d  (%6.2f%%)  score: %f\n", name.c_str(), a, b,
           100.0 * a / b, selector_->CurrentScore(i));
     }
-    VLOG(1) << "Stats. #new_solutions/#calls by optimizer:\n" + stats_string;
+    LOG(INFO) << "Stats. #new_solutions/#calls by optimizer:\n" + stats_string;
   }
 }
 

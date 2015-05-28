@@ -74,6 +74,9 @@ class MPSReader {
   // Returns the name of the last loaded problem as defined in the NAME line.
   std::string GetProblemName() const;
 
+  // See log_errors_ (the default is true).
+  void set_log_errors(bool v) { log_errors_ = v; }
+
  private:
   // Number of fields in one line of MPS file
   static const int kNumFields;
@@ -236,6 +239,11 @@ class MPSReader {
   // the user because other solvers usually ignore them and we don't (they will
   // be removed in the preprocessor).
   int num_unconstrained_rows_;
+
+  // Whether to log errors to LOG(ERROR) or not. Sometimes we just want to use
+  // this class to detect a valid .mps file, and encountering errors is
+  // expected.
+  bool log_errors_;
 
   DISALLOW_COPY_AND_ASSIGN(MPSReader);
 };

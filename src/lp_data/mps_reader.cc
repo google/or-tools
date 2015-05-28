@@ -58,7 +58,8 @@ MPSReader::MPSReader()
       line_(),
       has_lazy_constraints_(false),
       in_integer_section_(false),
-      num_unconstrained_rows_(0) {
+      num_unconstrained_rows_(0),
+      log_errors_(true) {
   section_name_to_id_map_["*"] = COMMENT;
   section_name_to_id_map_["NAME"] = NAME;
   section_name_to_id_map_["ROWS"] = ROWS;
@@ -211,8 +212,11 @@ void MPSReader::ProcessLine(char* line) {
     section_ =
         FindWithDefault(section_name_to_id_map_, section, UNKNOWN_SECTION);
     if (section_ == UNKNOWN_SECTION) {
-      LOG(ERROR) << "At line " << line_num_ << ": Unknown section: " << section
-                 << ". (Line contents: " << line_ << ").";
+      if (log_errors_) {
+        LOG(ERROR) << "At line " << line_num_
+                   << ": Unknown section: " << section
+                   << ". (Line contents: " << line_ << ").";
+      }
       parse_success_ = false;
       return;
     }
@@ -236,8 +240,10 @@ void MPSReader::ProcessLine(char* line) {
   SplitLineIntoFields();
   switch (section_) {
     case NAME:
-      LOG(ERROR) << "At line " << line_num_ << ": Second NAME field"
-                 << ". (Line contents: " << line_ << ").";
+      if (log_errors_) {
+        LOG(ERROR) << "At line " << line_num_ << ": Second NAME field"
+                   << ". (Line contents: " << line_ << ").";
+      }
       parse_success_ = false;
       break;
     case ROWS:
@@ -269,8 +275,11 @@ void MPSReader::ProcessLine(char* line) {
     case ENDATA:  // Do nothing.
       break;
     default:
-      LOG(ERROR) << "At line " << line_num_ << ": Unknown section: " << section
-                 << ". (Line contents: " << line_ << ").";
+      if (log_errors_) {
+        LOG(ERROR) << "At line " << line_num_
+                   << ": Unknown section: " << section
+                   << ". (Line contents: " << line_ << ").";
+      }
       parse_success_ = false;
       break;
   }
@@ -279,10 +288,12 @@ void MPSReader::ProcessLine(char* line) {
 double MPSReader::GetDoubleFromString(const std::string& param) {
   double result;
   if (!safe_strtod(param, &result)) {
-    LOG(ERROR) << "At line " << line_num_
-               << ": Failed to convert std::string to double. String = " << param
-               << ". (Line contents = '" << line_ << "')."
-               << " free_form_ = " << free_form_;
+    if (log_errors_) {
+      LOG(ERROR) << "At line " << line_num_
+                 << ": Failed to convert std::string to double. String = " << param
+                 << ". (Line contents = '" << line_ << "')."
+                 << " free_form_ = " << free_form_;
+    }
     parse_success_ = false;
   }
   return result;
@@ -294,8 +305,10 @@ void MPSReader::ProcessRowsSection() {
   MPSRowType row_type =
       FindWithDefault(row_name_to_id_map_, row_type_name, UNKNOWN_ROW_TYPE);
   if (row_type == UNKNOWN_ROW_TYPE) {
-    LOG(ERROR) << "At line " << line_num_ << ": Unknown row type "
-               << row_type_name << ". (Line contents = " << line_ << ").";
+    if (log_errors_) {
+      LOG(ERROR) << "At line " << line_num_ << ": Unknown row type "
+                 << row_type_name << ". (Line contents = " << line_ << ").";
+    }
     parse_success_ = false;
     return;
   }
@@ -478,8 +491,11 @@ void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
       bound_name_to_id_map_, bound_type_mnemonic, UNKNOWN_BOUND_TYPE);
   if (bound_type_id == UNKNOWN_BOUND_TYPE) {
     parse_success_ = false;
-    LOG(ERROR) << "At line " << line_num_ << ": Unknown bound type "
-               << bound_type_mnemonic << ". (Line contents = " << line_ << ").";
+    if (log_errors_) {
+      LOG(ERROR) << "At line " << line_num_ << ": Unknown bound type "
+                 << bound_type_mnemonic << ". (Line contents = " << line_
+                 << ").";
+    }
     return;
   }
   const ColIndex col = data_->FindOrCreateVariable(column_name);
@@ -531,10 +547,12 @@ void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
       break;
     case UNKNOWN_BOUND_TYPE:
     default:
-      LOG(ERROR) << "At line " << line_num_
-                 << "Serious error: unknown bound type " << column_name << " "
-                 << bound_type_mnemonic << " " << bound_value
-                 << ". (Line contents: " << line_ << ").";
+      if (log_errors_) {
+        LOG(ERROR) << "At line " << line_num_
+                   << "Serious error: unknown bound type " << column_name << " "
+                   << bound_type_mnemonic << " " << bound_value
+                   << ". (Line contents: " << line_ << ").";
+      }
       parse_success_ = false;
   }
   is_binary_by_default_[col] = false;

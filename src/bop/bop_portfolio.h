@@ -74,6 +74,7 @@ class PortfolioOptimizer : public BopOptimizerBase {
   std::vector<std::unique_ptr<BopOptimizerBase>> optimizers_;
   std::vector<double> optimizer_initial_scores_;
   sat::SatSolver sat_propagator_;
+  BopParameters parameters_;
   double lower_bound_;
   double upper_bound_;
 
