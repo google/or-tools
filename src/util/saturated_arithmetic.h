@@ -49,6 +49,24 @@ inline int64 TwosComplementSubtraction(int64 x, int64 y) {
   return static_cast<int64>(static_cast<uint64>(x) - static_cast<uint64>(y));
 }
 
+// Helper function that returns true if an overflow has occured in computing
+// sum = x + y. sum is expected to be computed elsewhere.
+inline bool AddHadOverflow(int64 x, int64 y, int64 sum) {
+  // Overflow cannot occur if operands have different signs.
+  // It can only occur if sign(x) == sign(y) and sign(sum) != sign(x),
+  // which is equivalent to: sign(x) != sign(sum) && sign(y) != sign(sum).
+  // This is captured when the expression below is negative.
+  DCHECK_EQ(sum, TwosComplementAddition(x, y));
+  return ((x ^ sum) & (y ^ sum)) < 0;
+}
+
+inline bool SubHadOverflow(int64 x, int64 y, int64 diff) {
+  // This is the same reasoning as for AddHadOverflow. We have x = diff + y.
+  // The formula is the same, with 'x' and diff exchanged.
+  DCHECK_EQ(diff, TwosComplementSubtraction(x, y));
+  return AddHadOverflow(diff, y, x);
+}
+
 // A note on overflow treatment.
 // kint64min and kint64max are treated as infinity.
 // Thus if the computation overflows, the result is always kint64m(ax/in).
@@ -57,13 +75,12 @@ inline int64 TwosComplementSubtraction(int64 x, int64 y) {
 // and B is finite, then A-B won't be kint64max: overflows aren't sticky.
 // TODO(user): consider making some operations overflow-sticky, some others
 // not, but make an explicit choice throughout.
-
-inline bool AddOverflows(int64 left, int64 right) {
-  return right > 0 && left > TwosComplementSubtraction(kint64max, right);
+inline bool AddOverflows(int64 x, int64 y) {
+  return AddHadOverflow(x, y, TwosComplementAddition(x, y));
 }
 
-inline bool AddUnderflows(int64 left, int64 right) {
-  return right < 0 && left < TwosComplementSubtraction(kint64min, right);
+inline int64 SubOverflows(int64 x, int64 y) {
+  return SubHadOverflow(x, y, TwosComplementSubtraction(x, y));
 }
 
 // Performs *b += a and returns false iff the addition overflow or underflow.
@@ -72,35 +89,21 @@ template <typename IntegerType>
 bool SafeAddInto(IntegerType a, IntegerType* b) {
   const int64 x = a.value();
   const int64 y = b->value();
-  const int64 result = TwosComplementAddition(x, y);
-  // Overflow cannot occur if operands have different signs.
-  // It can only occur if sign(x) == sign(y) and sign(result) != sign(x),
-  // which is equivalent to: sign(x) != sign(result) && sign(y) != sign(result).
-  // This is captured when 'negative_if_overflow' below is negative.
-  const int64 negative_if_overflow = (x ^ result) & (y ^ result);
-  if (negative_if_overflow < 0) {
-    return false;
-  }
-  *b += a;
+  const int64 sum = TwosComplementAddition(x, y);
+  if (AddHadOverflow(x, y, sum)) return false;
+  *b = sum;
   return true;
 }
 
 // Returns kint64max if x >= 0 and kint64min if x < 0.
 inline int64 CapWithSignOf(int64 x) {
-  // sign_bit is 1 when x < 0, 0 otherwise.
-  const int64 sign_bit = static_cast<uint64>(x) >> 63;
   // return kint64max if x >= 0 or kint64max + 1 (== kint64min) if x < 0.
-  return TwosComplementAddition(kint64max, sign_bit);
+  return TwosComplementAddition(kint64max, static_cast<int64>(x < 0));
 }
 
 inline int64 CapAddGeneric(int64 x, int64 y) {
   const int64 result = TwosComplementAddition(x, y);
-  // Overflow cannot occur if operands have different signs.
-  // It can only occur if sign(x) == sign(y) and sign(result) != sign(x),
-  // which is equivalent to: sign(x) != sign(result) && sign(y) != sign(result).
-  // This is captured when 'negative_if_overflow' below is negative.
-  const int64 negative_if_overflow = (x ^ result) & (y ^ result);
-  return negative_if_overflow < 0 ? CapWithSignOf(x) : result;
+  return AddHadOverflow(x, y, result) ? CapWithSignOf(x) : result;
 }
 
 #if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
@@ -120,28 +123,17 @@ inline int64 CapAddFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapAdd(int64 x, int64 y) {
-#if !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER) && \
-    defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__) && \
+    !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER)
   return CapAddFast(x, y);
 #else
   return CapAddGeneric(x, y);
 #endif
 }
 
-inline bool SubOverflows(int64 left, int64 right) {
-  return right < 0 && left > TwosComplementAddition(kint64max, right);
-}
-
-inline bool SubUnderflows(int64 left, int64 right) {
-  return right > 0 && left < TwosComplementAddition(kint64min, right);
-}
-
 inline int64 CapSubGeneric(int64 x, int64 y) {
   const int64 result = TwosComplementSubtraction(x, y);
-  // This is the same reasoning as for CapAdd. We have x = result + y.
-  // The formula is the same, with 'x' and result exchanged.
-  const int64 negative_if_overflow = (x ^ result) & (x ^ y);
-  return negative_if_overflow < 0 ? CapWithSignOf(x) : result;
+  return SubHadOverflow(x, y, result) ? CapWithSignOf(x) : result;
 }
 
 #if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
@@ -161,8 +153,8 @@ inline int64 CapSubFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapSub(int64 x, int64 y) {
-#if !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER) && \
-    defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__) && \
+    !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER)
   return CapSubFast(x, y);
 #else
   return CapSubGeneric(x, y);
@@ -170,8 +162,8 @@ inline int64 CapSub(int64 x, int64 y) {
 }
 
 inline int64 CapOpp(int64 v) {
-  // Note: -kint64min != kint64max.
-  return v == kint64min ? kint64max : -v;
+  // Note: -kint64min != kint64max, but kint64max == ~kint64min.
+  return v == kint64min ? ~v : -v;
 }
 
 // For an inspiration of the function below, see Henry S. Warren, Hacker's
@@ -242,8 +234,8 @@ inline int64 CapProdFast(int64 x, int64 y) {
 #endif
 
 inline int64 CapProd(int64 x, int64 y) {
-#if !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER) && \
-    defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__) && \
+    !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER)
   return CapProdFast(x, y);
 #else
   return CapProdUsingDoubles(x, y);
