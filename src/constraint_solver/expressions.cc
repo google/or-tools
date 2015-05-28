@@ -3703,12 +3703,8 @@ class SafePlusIntExpr : public BaseIntExpr {
   int64 Max() const override { return CapAdd(left_->Max(), right_->Max()); }
 
   void SetMax(int64 m) override {
-    if (!SubOverflows(m, right_->Min())) {
-      left_->SetMax(CapSub(m, right_->Min()));
-    }
-    if (!SubOverflows(m, left_->Min())) {
-      right_->SetMax(CapSub(m, left_->Min()));
-    }
+    left_->SetMax(CapSub(m, right_->Min()));
+    right_->SetMax(CapSub(m, left_->Min()));
   }
 
   bool Bound() const override { return (left_->Bound() && right_->Bound()); }
@@ -3781,7 +3777,7 @@ IntVar* PlusIntCstExpr::CastToVar() {
   IntVar* const var = expr_->Var();
   IntVar* cast = nullptr;
   if (AddOverflows(value_, expr_->Max()) ||
-      AddUnderflows(value_, expr_->Min())) {
+      AddOverflows(value_, expr_->Min())) {
     return BaseIntExpr::CastToVar();
   }
   switch (var->VarType()) {
@@ -3955,7 +3951,7 @@ class SubIntCstExpr : public BaseIntExpr {
 
 IntVar* SubIntCstExpr::CastToVar() {
   if (SubOverflows(value_, expr_->Min()) ||
-      SubUnderflows(value_, expr_->Max())) {
+      SubOverflows(value_, expr_->Max())) {
     return BaseIntExpr::CastToVar();
   }
   Solver* const s = solver();
@@ -6438,7 +6434,7 @@ IntVar* Solver::MakeIntVar(int64 min, int64 max, const std::string& name) {
   }
   if (min == 0 && max == 1) {
     return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, name)));
-  } else if (max - min == 1) {
+  } else if (CapSub(max, min) == 1) {
     const std::string inner_name = "inner_" + name;
     return RegisterIntVar(
         MakeSum(RevAlloc(new ConcreteBooleanVar(this, inner_name)), min)
@@ -6627,7 +6623,7 @@ IntExpr* Solver::MakeSum(IntExpr* const l, IntExpr* const r) {
     return cache;
   } else {
     IntExpr* const result =
-        AddOverflows(l->Max(), r->Max()) || AddUnderflows(l->Min(), r->Min())
+        AddOverflows(l->Max(), r->Max()) || AddOverflows(l->Min(), r->Min())
             ? RegisterIntExpr(RevAlloc(new SafePlusIntExpr(this, l, r)))
             : RegisterIntExpr(RevAlloc(new PlusIntExpr(this, l, r)));
     model_cache_->InsertExprExprExpression(result, l, r,
@@ -6648,7 +6644,7 @@ IntExpr* Solver::MakeSum(IntExpr* const e, int64 v) {
       Cache()->FindExprConstantExpression(e, v, ModelCache::EXPR_CONSTANT_SUM);
   if (result == nullptr) {
     if (e->IsVar() && !AddOverflows(v, e->Max()) &&
-        !AddUnderflows(v, e->Min())) {
+        !AddOverflows(v, e->Min())) {
       IntVar* const var = e->Var();
       switch (var->VarType()) {
         case DOMAIN_INT_VAR: {
@@ -6734,9 +6730,7 @@ IntExpr* Solver::MakeDifference(IntExpr* const l, IntExpr* const r) {
       Cache()->FindExprExprExpression(l, r, ModelCache::EXPR_EXPR_DIFFERENCE);
   if (result == nullptr) {
     if (!SubOverflows(l->Min(), r->Max()) &&
-        !SubUnderflows(l->Min(), r->Max()) &&
-        !SubOverflows(l->Max(), r->Min()) &&
-        !SubUnderflows(l->Max(), r->Min())) {
+        !SubOverflows(l->Max(), r->Min())) {
       result = RegisterIntExpr(RevAlloc(new SubIntExpr(this, l, r)));
     } else {
       result = RegisterIntExpr(RevAlloc(new SafeSubIntExpr(this, l, r)));
@@ -6760,7 +6754,7 @@ IntExpr* Solver::MakeDifference(int64 v, IntExpr* const e) {
       e, v, ModelCache::EXPR_CONSTANT_DIFFERENCE);
   if (result == nullptr) {
     if (e->IsVar() && e->Min() != kint64min && !SubOverflows(v, e->Min()) &&
-        !SubUnderflows(v, e->Max())) {
+        !SubOverflows(v, e->Max())) {
       IntVar* const var = e->Var();
       switch (var->VarType()) {
         case VAR_ADD_CST: {
