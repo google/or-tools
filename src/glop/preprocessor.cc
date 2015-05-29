@@ -3110,20 +3110,45 @@ void ShiftVariableBoundsPreprocessor::StoreSolution(
 // ScalingPreprocessor
 // --------------------------------------------------------
 
-bool ScalingPreprocessor::Run(LinearProgram* linear_program) {
-  RETURN_VALUE_IF_NULL(linear_program, false);
+bool ScalingPreprocessor::Run(LinearProgram* lp) {
+  RETURN_VALUE_IF_NULL(lp, false);
   if (!parameters_.use_scaling()) return false;
 
   // Save the linear program bounds before scaling them.
-  const ColIndex num_cols = linear_program->num_variables();
+  const ColIndex num_cols = lp->num_variables();
   variable_lower_bounds_.assign(num_cols, 0.0);
   variable_upper_bounds_.assign(num_cols, 0.0);
   for (ColIndex col(0); col < num_cols; ++col) {
-    variable_lower_bounds_[col] = linear_program->variable_lower_bounds()[col];
-    variable_upper_bounds_[col] = linear_program->variable_upper_bounds()[col];
+    variable_lower_bounds_[col] = lp->variable_lower_bounds()[col];
+    variable_upper_bounds_[col] = lp->variable_upper_bounds()[col];
   }
 
-  linear_program->Scale(&scaler_);
+  lp->Scale(&scaler_);
+
+  // We scale the costs to always have a maximum cost magnitude of 1.0. Note
+  // that this makes a lot of sense since internally we use absolute tolerances.
+  // We don't want to have a completely different behavior just because the user
+  // changed the units in the objective for instance.
+  cost_scaling_factor_ = 0.0;
+  for (ColIndex col(0); col < num_cols; ++col) {
+    cost_scaling_factor_ = std::max(
+        cost_scaling_factor_, std::abs(lp->objective_coefficients()[col]));
+  }
+  VLOG(1) << "Objective stats (before objective scaling): "
+          << lp->GetObjectiveStatsString();
+  if (cost_scaling_factor_ == 0.0) {
+    // This is needed for pure feasibility problems.
+    cost_scaling_factor_ = 1.0;
+  } else {
+    for (ColIndex col(0); col < num_cols; ++col) {
+      lp->SetObjectiveCoefficient(
+          col, lp->objective_coefficients()[col] / cost_scaling_factor_);
+    }
+  }
+  VLOG(1) << "Objective stats: " << lp->GetObjectiveStatsString();
+  lp->SetObjectiveScalingFactor(lp->objective_scaling_factor() *
+                                cost_scaling_factor_);
+  lp->SetObjectiveOffset(lp->objective_offset() / cost_scaling_factor_);
   return true;
 }
 
@@ -3131,6 +3156,9 @@ void ScalingPreprocessor::StoreSolution(ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   scaler_.ScaleRowVector(false, &(solution->primal_values));
   scaler_.ScaleColumnVector(false, &(solution->dual_values));
+  for (RowIndex row(0); row < solution->dual_values.size(); ++row) {
+    solution->dual_values[row] *= cost_scaling_factor_;
+  }
 
   // Make sure the variable are at they exact bounds according to their status.
   // This just remove a really low error (about 1e-15) but allows to keep the

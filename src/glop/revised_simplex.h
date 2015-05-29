@@ -271,7 +271,8 @@ class RevisedSimplex {
   Fractional ComputeObjectiveValue() const;
 
   // Returns the current objective of the linear program given to Solve() using
-  // the initial costs, maximization direction and objective offset.
+  // the initial costs, maximization direction, objective offset and objective
+  // scaling factor.
   Fractional ComputeInitialProblemObjectiveValue() const;
 
   // Assigns names to variables. Variables in the input will be named
@@ -564,12 +565,11 @@ class RevisedSimplex {
   // Indexed by column number. Used in Phase-II.
   DenseRow objective_;
 
-  // Objective offset and optimization direction of the linear program given to
-  // Solve(). This is used to display the correct objective values in the logs
-  // (see ComputeInitialProblemObjectiveValue()) and to compute the correct
-  // objective_limit_ (see InitializeObjectiveLimit()).
+  // Objective offset and scaling factor of the linear program given to Solve().
+  // This is used to display the correct objective values in the logs with
+  // ComputeInitialProblemObjectiveValue().
   Fractional objective_offset_;
-  bool is_maximization_problem_;
+  Fractional objective_scaling_factor_;
 
   // Array of values representing variable bounds. Indexed by column number.
   DenseRow lower_bound_;

@@ -672,31 +672,39 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
     }
     objective_[col] = 0.0;
   }
+
+  // Sets the members needed to display the objective correctly.
   objective_offset_ = lp.objective_offset();
-  is_maximization_problem_ = lp.IsMaximizationProblem();
+  objective_scaling_factor_ = lp.objective_scaling_factor();
+  if (lp.IsMaximizationProblem()) {
+    objective_offset_ = -objective_offset_;
+    objective_scaling_factor_ = -objective_scaling_factor_;
+  }
   return is_objective_unchanged;
 }
 
 void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
   const Fractional shifted_lower_limit =
-      parameters_.objective_lower_limit() - objective_offset_;
+      parameters_.objective_lower_limit() / lp.objective_scaling_factor() -
+      lp.objective_offset();
   const Fractional shifted_upper_limit =
-      parameters_.objective_upper_limit() - objective_offset_;
+      parameters_.objective_upper_limit() / lp.objective_scaling_factor() -
+      lp.objective_offset();
   if (lp.IsMaximizationProblem()) {
     if (parameters_.use_dual_simplex()) {
       objective_limit_ = -shifted_lower_limit *
-                         (1.0 + parameters_.solution_objective_gap_tolerance());
+                         (1.0 + parameters_.solution_feasibility_tolerance());
     } else {
       objective_limit_ = -shifted_upper_limit *
-                         (1.0 - parameters_.solution_objective_gap_tolerance());
+                         (1.0 - parameters_.solution_feasibility_tolerance());
     }
   } else {
     if (parameters_.use_dual_simplex()) {
       objective_limit_ = shifted_upper_limit *
-                         (1.0 + parameters_.solution_objective_gap_tolerance());
+                         (1.0 + parameters_.solution_feasibility_tolerance());
     } else {
       objective_limit_ = shifted_lower_limit *
-                         (1.0 - parameters_.solution_objective_gap_tolerance());
+                         (1.0 - parameters_.solution_feasibility_tolerance());
     }
   }
 }
@@ -2588,7 +2596,7 @@ Fractional RevisedSimplex::ComputeInitialProblemObjectiveValue() const {
   SCOPED_TIME_STAT(&function_stats_);
   const Fractional sum = PreciseScalarProduct(
       objective_, Transpose(variable_values_.GetDenseRow()));
-  return (is_maximization_problem_ ? -sum : sum) + objective_offset_;
+  return objective_scaling_factor_ * (sum + objective_offset_);
 }
 
 void RevisedSimplex::SetParameters(const GlopParameters& parameters) {

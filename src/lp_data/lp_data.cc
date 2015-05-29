@@ -120,6 +120,7 @@ LinearProgram::LinearProgram()
       variable_table_(),
       constraint_table_(),
       objective_offset_(0.0),
+      objective_scaling_factor_(1.0),
       maximize_(false),
       columns_are_known_to_be_clean_(true),
       transpose_matrix_is_consistent_(true),
@@ -146,6 +147,7 @@ void LinearProgram::Clear() {
 
   maximize_ = false;
   objective_offset_ = 0.0;
+  objective_scaling_factor_ = 1.0;
   columns_are_known_to_be_clean_ = true;
   transpose_matrix_is_consistent_ = true;
   integer_variables_list_is_consistent_ = true;
@@ -290,6 +292,13 @@ void LinearProgram::SetObjectiveOffset(Fractional objective_offset) {
   objective_offset_ = objective_offset;
 }
 
+void LinearProgram::SetObjectiveScalingFactor(
+    Fractional objective_scaling_factor) {
+  DCHECK(IsFinite(objective_scaling_factor));
+  DCHECK_LT(0.0, objective_scaling_factor);
+  objective_scaling_factor_ = objective_scaling_factor;
+}
+
 void LinearProgram::SetMaximizationProblem(bool maximize) {
   maximize_ = maximize;
 }
@@ -372,6 +381,25 @@ std::string LinearProgram::GetDimensionString() const {
   return StringPrintf("%d rows, %d columns, %lld entries",
                       num_constraints().value(), num_variables().value(),
                       num_entries().value());
+}
+
+std::string LinearProgram::GetObjectiveStatsString() const {
+  int64 num_non_zeros = 0;
+  Fractional min_value = +kInfinity;
+  Fractional max_value = -kInfinity;
+  for (ColIndex col(0); col < objective_coefficients_.size(); ++col) {
+    const Fractional value = objective_coefficients_[col];
+    if (value == 0) continue;
+    min_value = std::min(min_value, value);
+    max_value = std::max(max_value, value);
+    ++num_non_zeros;
+  }
+  if (num_non_zeros == 0) {
+    return "No objective term. This is a pure feasibility problem.";
+  } else {
+    return StringPrintf("%lld non-zeros, range [%e, %e]", num_non_zeros,
+                        min_value, max_value);
+  }
 }
 
 bool LinearProgram::IsSolutionFeasible(
@@ -554,8 +582,10 @@ void LinearProgram::PopulateFromDual(const LinearProgram& dual,
   // be a maximization problem.
   SetMaximizationProblem(true);
 
-  // The objective offset is the same.
+  // Taking the dual does not change the offset nor the objective scaling
+  // factor.
   SetObjectiveOffset(dual.objective_offset());
+  SetObjectiveScalingFactor(dual.objective_scaling_factor());
 
   // Create the dual variables y, with bounds depending on the type
   // of constraints in the primal.
@@ -700,6 +730,7 @@ void LinearProgram::PopulateNameObjectiveAndVariablesFromLinearProgram(
 
   maximize_ = linear_program.maximize_;
   objective_offset_ = linear_program.objective_offset_;
+  objective_scaling_factor_ = linear_program.objective_scaling_factor_;
   columns_are_known_to_be_clean_ =
       linear_program.columns_are_known_to_be_clean_;
   name_ = linear_program.name_;
@@ -777,6 +808,8 @@ void LinearProgram::Swap(LinearProgram* linear_program) {
 
   std::swap(maximize_, linear_program->maximize_);
   std::swap(objective_offset_, linear_program->objective_offset_);
+  std::swap(objective_scaling_factor_,
+            linear_program->objective_scaling_factor_);
   std::swap(columns_are_known_to_be_clean_,
             linear_program->columns_are_known_to_be_clean_);
   std::swap(transpose_matrix_is_consistent_,
@@ -893,6 +926,8 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {
 
 bool LinearProgram::IsValid() const {
   if (!IsFinite(objective_offset_)) return false;
+  if (!IsFinite(objective_scaling_factor_)) return false;
+  if (objective_scaling_factor_ <= 0.0) return false;
   const ColIndex num_cols = num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
     if (!AreBoundsValid(variable_lower_bounds()[col],

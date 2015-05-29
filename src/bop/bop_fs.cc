@@ -438,6 +438,9 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
 
   problem_already_solved_ = true;
 
+  if (lp_status == glop::ProblemStatus::INIT) {
+    return BopOptimizerBase::LIMIT_REACHED;
+  }
   if (lp_status != glop::ProblemStatus::OPTIMAL &&
       lp_status != glop::ProblemStatus::IMPRECISE &&
       lp_status != glop::ProblemStatus::PRIMAL_FEASIBLE) {
@@ -473,10 +476,9 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
       CHECK(learned_info->solution.IsFeasible());
       return BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
     }
-    return BopOptimizerBase::INFORMATION_FOUND;
   }
 
-  return BopOptimizerBase::LIMIT_REACHED;
+  return BopOptimizerBase::INFORMATION_FOUND;
 }
 
 // TODO(user): It is possible to stop the search earlier using the glop

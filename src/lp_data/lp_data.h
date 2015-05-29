@@ -111,8 +111,11 @@ class LinearProgram {
   // It is set to 0.0 by default.
   void SetObjectiveCoefficient(ColIndex col, Fractional value);
 
-  // Defines the objective offset. It is 0.0 by default.
+  // Define the objective offset (0.0 by default) and scaling factor (positive
+  // and equal to 1.0 by default). This is mainly used for displaying purpose
+  // and the real objective is factor * (objective + offset).
   void SetObjectiveOffset(Fractional objective_offset);
+  void SetObjectiveScalingFactor(Fractional objective_scaling_factor);
 
   // Defines the optimization direction. When maximize is true (resp. false),
   // the objective is maximized (resp. minimized). The default is false.
@@ -222,9 +225,11 @@ class LinearProgram {
   // maximization problem.
   Fractional GetObjectiveCoefficientForMinimizationVersion(ColIndex col) const;
 
-  // Returns the objective offset, i.e. value of the objective when all
-  // variables are set to zero.
+  // Returns the objective offset and scaling factor.
   Fractional objective_offset() const { return objective_offset_; }
+  Fractional objective_scaling_factor() const {
+    return objective_scaling_factor_;
+  }
 
   // Tests if the solution is LP-feasible within the given tolerance,
   // i.e., satisfies all linear constraints within the absolute tolerance level.
@@ -236,6 +241,9 @@ class LinearProgram {
 
   // A short std::string with the problem dimension.
   std::string GetDimensionString() const;
+
+  // A short line with some stats on the objective coefficients.
+  std::string GetObjectiveStatsString() const;
 
   // Returns a stringified LinearProgram. We use the LP file format used by
   // lp_solve (see http://lpsolve.sourceforge.net/5.1/index.htm).
@@ -450,6 +458,7 @@ class LinearProgram {
   // Offset of the objective, i.e. value of the objective when all variables
   // are set to zero.
   Fractional objective_offset_;
+  Fractional objective_scaling_factor_;
 
   // Boolean true (resp. false) when the problem is a maximization
   // (resp. minimization) problem.

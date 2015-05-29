@@ -353,12 +353,12 @@ void ReducedCosts::ComputeReducedCosts() {
 
   // It is not resonable to have a dual tolerance lower than the current
   // dual_residual_error, otherwise we may never terminate (This is happening on
-  // dfl001.mps with a high dual_feasibility_tolerance). Note that since we
+  // dfl001.mps with a low dual_feasibility_tolerance). Note that since we
   // recompute the reduced costs with maximum precision before really exiting,
   // it is fine to do a couple of iterations with a high zero tolerance.
   dual_feasibility_tolerance_ = parameters_.dual_feasibility_tolerance();
   if (dual_residual_error > dual_feasibility_tolerance_) {
-    VLOG(1) << "Changing dual_feasibility_tolerance to " << dual_residual_error;
+    VLOG(2) << "Changing dual_feasibility_tolerance to " << dual_residual_error;
     dual_feasibility_tolerance_ = dual_residual_error;
   }
 }

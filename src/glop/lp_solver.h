@@ -70,7 +70,7 @@ class LPSolver {
   ProblemStatus LoadAndVerifySolution(const LinearProgram& lp,
                                       const ProblemSolution& solution);
 
-  // Returns the objective value of the solution with its offset.
+  // Returns the objective value of the solution with its offset and scaling.
   Fractional GetObjectiveValue() const;
 
   // Accessors to information related to variables.
@@ -83,6 +83,9 @@ class LPSolver {
   // Accessors to information related to constraints. The activity of a
   // constraint is the sum of its linear terms evaluated with variables taking
   // their values at the current solution.
+  //
+  // Note that the dual_values() do not take into account an eventual objective
+  // scaling of the solved LinearProgram.
   const DenseColumn& dual_values() const { return dual_values_; }
   const DenseColumn& constraint_activities() const {
     return constraint_activities_;
@@ -166,24 +169,6 @@ class LPSolver {
   //   its bounds (a.x = r or a.x = l) and has its dual value close to zero.
   bool IsOptimalSolutionOnFacet(const LinearProgram& lp);
 
-  // For each variable, either moves it to one of its bounds or computes by how
-  // much the cost on this variable needs to change to enforce optimality of the
-  // solution. Returns the infinity norm of the cost perturbation.
-  // This requires that:
-  // - The primal variable are within their bounds.
-  // - The dual variable are within their bounds.
-  // Once the primal variable values have been perturbed, we need to compute by
-  // how much the right hand side needs to be perturbed to get a FEASIBLE primal
-  // solution.
-  //
-  // If we perturb the cost by the first perturbation and the right hand side by
-  // the second perturbation, then the pair (primal values, dual values) is an
-  // OPTIMAL solution of the perturbed problem.
-  //
-  // TODO(user): Now that we have the correct status information, we no longer
-  // need that. We also need to revisit how we compute the infeasibilities.
-  Fractional GetMaxCostPerturbationToEnforceOptimality(const LinearProgram& lp);
-
   // Computes derived quantities from the solution.
   void ComputeReducedCosts(const LinearProgram& lp);
   void ComputeConstraintActivities(const LinearProgram& lp);
@@ -193,13 +178,46 @@ class LPSolver {
   double ComputeObjective(const LinearProgram& lp);
   double ComputeDualObjective(const LinearProgram& lp);
 
+  // Given a relative precision on the primal values of up to
+  // solution_feasibility_tolerance(), this returns an upper bound on the
+  // expected precision of the objective.
+  double ComputeMaxExpectedObjectiveError(const LinearProgram& lp);
+
+  // Returns the max absolute cost pertubation (resp. rhs perturbation) so that
+  // the pair (primal values, dual values) is an EXACT optimal solution to the
+  // perturbed problem. Note that this assumes that
+  // MovePrimalValuesWithinBounds() and MoveDualValuesWithinBounds() have
+  // already been called. The Boolean is_too_large is set to true if any of the
+  // perturbation exceed the tolerance (which depends of the coordinate).
+  //
+  // These bounds are computed using the variable and constraint statuses by
+  // enforcing the complementary slackness optimal conditions. Note that they
+  // are almost the same as ComputeActivityInfeasibility() and
+  // ComputeReducedCostInfeasibility() but looks for optimality rather than just
+  // feasibility.
+  //
+  // Note(user): We could get EXACT bounds on these perturbations by changing
+  // the rounding mode appropriately during these computations. But this is
+  // probably not needed.
+  Fractional ComputeMaxCostPerturbationToEnforceOptimality(
+      const LinearProgram& lp, bool* is_too_large);
+  Fractional ComputeMaxRhsPerturbationToEnforceOptimality(
+      const LinearProgram& lp, bool* is_too_large);
+
   // Computes the maximum of the infeasibilities associated with each values.
   // The returned infeasibilities are the maximum of the "absolute" errors of
   // each vector coefficients.
-  double ComputePrimalValueInfeasibility(const LinearProgram& lp);
-  double ComputeActivityInfeasibility(const LinearProgram& lp);
-  double ComputeDualValueInfeasibility(const LinearProgram& lp);
-  double ComputeReducedCostInfeasibility(const LinearProgram& lp);
+  //
+  // These function also set is_too_large to true if any infeasibility is
+  // greater than the tolerance (which depends of the coordinate).
+  double ComputePrimalValueInfeasibility(const LinearProgram& lp,
+                                         bool* is_too_large);
+  double ComputeActivityInfeasibility(const LinearProgram& lp,
+                                      bool* is_too_large);
+  double ComputeDualValueInfeasibility(const LinearProgram& lp,
+                                       bool* is_too_large);
+  double ComputeReducedCostInfeasibility(const LinearProgram& lp,
+                                         bool* is_too_large);
 
   // Dimension of the linear program given to the last Solve().
   // This is used for displaying purpose only.
@@ -232,7 +250,7 @@ class LPSolver {
   // Quantities computed from the solution and the linear program.
   DenseRow reduced_costs_;
   DenseColumn constraint_activities_;
-  Fractional objective_value_with_offset_;
+  Fractional problem_objective_value_;
   bool may_have_multiple_solutions_;
   Fractional max_absolute_primal_infeasibility_;
   Fractional max_absolute_dual_infeasibility_;

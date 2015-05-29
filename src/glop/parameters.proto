@@ -124,10 +124,11 @@ message GlopParameters {
   //
   // Note that this value can temporarily increase during the execution of the
   // algorithm if the estimated precision of the reduced costs is higher than
-  // this tolerance.
+  // this tolerance. Note also that we always scale the costs so that the
+  // maximum cost magnitude is 1.0 (in the presolve step).
   //
   // This is also known as the optimality tolerance in other solvers.
-  optional double dual_feasibility_tolerance = 11 [default = 1e-8];
+  optional double dual_feasibility_tolerance = 11 [default = 1e-10];
 
   // During the primal simplex (resp. dual simplex), the coefficients of the
   // direction (resp. update row) with a magnitude lower than this threshold are
@@ -188,31 +189,34 @@ message GlopParameters {
   // of variables.
   optional double dualizer_threshold = 21 [default = 1.5];
 
-  // When the problem status is OPTIMAL, we check the infeasibility of the
-  // solution and change the status to ABNORMAL_BASIS if the primal/dual max
-  // absolute infeasibility is greater than the solution_feasibility_tolerance
-  // or if the relative difference between the primal/dual objective is greater
-  // than the solution_objective_gap_tolerance.
+  // When the problem status is OPTIMAL, we check the optimality using this
+  // relative tolerance and change the status to IMPRECISE if an issue is
+  // detected.
+  //
+  // The tolerance is "relative" in the sense that our thresholds are:
+  // - tolerance * max(1.0, abs(bound)) for crossing a given bound.
+  // - tolerance * max(1.0, abs(cost)) for an infeasible reduced cost.
+  // - tolerance for an infeasible dual value.
   optional double solution_feasibility_tolerance = 22 [default = 1e-6];
-  optional double solution_objective_gap_tolerance = 23 [default = 1e-6];
 
   // If true, then when the solver returns a solution with an OPTIMAL status,
   // we can guarantee that:
   // - The primal variable are in their bounds.
   // - The dual variable are in their bounds.
-  // - If we modify each component of the right-hand side by at most epsilon,
-  //   and each component of the objective function by at most epsilon, then
-  //   the pair (primal values, dual values) is an EXACT optimal solution of
-  //   the perturbed problem.
-  // - The epsilon above is smaller than solution_feasibility_tolerance (*).
+  // - If we modify each component of the right-hand side a bit and each
+  //   component of the objective function a bit, then the pair (primal values,
+  //   dual values) is an EXACT optimal solution of the perturbed problem.
+  // - The modifications above are smaller than the associated tolerances as
+  //   defined in the comment for solution_feasibility_tolerance (*).
   //
   // (*): This is the only place where the guarantee is not tight since we
   // compute the upper bounds with scalar product of the primal/dual
   // solution and the initial problem coefficients with only double precision.
   //
   // Note that whether or not this option is true, we still check the
-  // primal/dual infeasibility and objective gap as explained in the comment of
-  // solution_feasibility_tolerance and solution_objective_gap_tolerance.
+  // primal/dual infeasibility and objective gap. However if it is false, we
+  // don't move the primal/dual values within their bounds and leave them
+  // untouched.
   optional bool provide_strong_optimal_guarantee = 24 [default = true];
 
   // Threshold for LU-factorization: for stability reasons, the magnitude of the
