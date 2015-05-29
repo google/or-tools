@@ -906,6 +906,10 @@ class SatSolver {
 
 // Returns a std::string representation of a SatSolver::Status.
 std::string SatStatusString(SatSolver::Status status);
+inline std::ostream& operator<<(std::ostream& os, SatSolver::Status status) {
+  os << SatStatusString(status);
+  return os;
+}
 
 // Returns the ith element of the strategy S^univ proposed by M. Luby et al. in
 // Optimal Speedup of Las Vegas Algorithms, Information Processing Letters 1993.
