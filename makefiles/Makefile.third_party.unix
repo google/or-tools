@@ -1,12 +1,12 @@
 # SVN tags of dependencies to checkout.
 
-GFLAGS_TAG = 2.1.1
+GFLAGS_TAG = 2.1.2
 PROTOBUF_TAG = 2.6.0
 # 0.4.0
 GOOGLE_APPUTILS_TAG = 14
 # 2.0.2
 SPARSEHASH_TAG = 116
-CBC_TAG = 2.9.2
+CBC_TAG = 2.9.4
 SWIG_TAG = 3.0.5
 # version 8.33
 PCRE_TAG = 1336
