@@ -106,25 +106,25 @@ inline int64 CapAddGeneric(int64 x, int64 y) {
   return AddHadOverflow(x, y, result) ? CapWithSignOf(x) : result;
 }
 
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if defined(__GNUC__) && defined(ARCH_K8)
 // TODO(user): port this to other architectures.
 inline int64 CapAddFast(int64 x, int64 y) {
   const int64 cap = CapWithSignOf(x);
-  int64 result;
+  int64 result = x;
+  // clang-format off
   asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
-      "\t"   "movq %[x],%[result]"
-      "\n\t" "addq %[y],%[result]"
+      "\t" "addq %[y],%[result]"
       "\n\t" "cmovoq %[cap],%[result]"  // Conditional move if overflow.
-      : [result] "=r&"(result)  // Output: don't use an input register ('&').
-      : [x] "r"(x), [y] "r"(y), [cap] "r"(cap)  // Input.
+      : [result] "=r"(result)  // Output
+      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
       : "cc"  /* Clobbered registers */  );
+  // clang-format on
   return result;
 }
 #endif
 
 inline int64 CapAdd(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__) && \
-    !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER)
+#if defined(__GNUC__) && defined(ARCH_K8)
   return CapAddFast(x, y);
 #else
   return CapAddGeneric(x, y);
@@ -136,25 +136,25 @@ inline int64 CapSubGeneric(int64 x, int64 y) {
   return SubHadOverflow(x, y, result) ? CapWithSignOf(x) : result;
 }
 
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if defined(__GNUC__) && defined(ARCH_K8)
 // TODO(user): port this to other architectures.
 inline int64 CapSubFast(int64 x, int64 y) {
   const int64 cap = CapWithSignOf(x);
-  int64 result;
+  int64 result = x;
+  // clang-format off
   asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
-      "\t"   "movq %[x],%[result]"
-      "\n\t" "subq %[y],%[result]"
+      "\t" "subq %[y],%[result]"
       "\n\t" "cmovoq %[cap],%[result]"  // Conditional move if overflow.
-      : [result] "=r&"(result)  // Output: don't use an input register ('&').
-      : [x] "r"(x), [y] "r"(y), [cap] "r"(cap)  // Input.
+      : [result] "=r"(result)  // Output
+      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
       : "cc"  /* Clobbered registers */  );
+  // clang-format on
   return result;
 }
 #endif
 
 inline int64 CapSub(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__) && \
-    !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER)
+#if defined(__GNUC__) && defined(ARCH_K8)
   return CapSubFast(x, y);
 #else
   return CapSubGeneric(x, y);
@@ -170,6 +170,7 @@ inline int64 CapOpp(int64 v) {
 // Delight second edition, Addison-Wesley Professional, 2012, p.32,
 // section 2-13.
 // http://www.amazon.com/Hackers-Delight-Edition-Henry-Warren/dp/0321842685
+#if !defined(__llvm__)
 inline int64 CapProdGeneric(int64 x, int64 y) {
   // Early return. This would have to be tested later on to avoid division
   // by zero.
@@ -178,7 +179,9 @@ inline int64 CapProdGeneric(int64 x, int64 y) {
   // Note: the following test on the most significant bit position brings a 20%
   // improvement on a Nehalem machine using g++. Your mileage may vary.
   if (MostSignificantBitPosition64(std::abs(x)) +
-      MostSignificantBitPosition64(std::abs(y)) < 62) return z;
+          MostSignificantBitPosition64(std::abs(y)) <
+      62)
+    return z;
   // Catch x = kint64min separately. When y = -1, z = kint64min, and z / -1
   // produces a Division Exception (on x86-64) as the positive result does not
   // fit in a signed 64-bit integer. (This is the only problematic case.)
@@ -188,6 +191,7 @@ inline int64 CapProdGeneric(int64 x, int64 y) {
   if (z / y == x) return z;
   return CapWithSignOf(x ^ y);
 }
+#endif
 
 inline int64 CapProdUsingDoubles(int64 a, int64 b) {
   // This is the same algorithm as used in the Python intobject.c file.
@@ -208,34 +212,35 @@ inline int64 CapProdUsingDoubles(int64 a, int64 b) {
   return cap;
 }
 
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__)
+#if defined(__GNUC__) && defined(ARCH_K8)
 // TODO(user): port this to other architectures.
 inline int64 CapProdFast(int64 x, int64 y) {
   // cap = kint64max if x and y have the same sign, cap = kint64min
   // otherwise.
   const int64 cap = CapWithSignOf(x ^ y);
-  int64 result;
+  int64 result = x;
   // Here, we use the fact that imul of two signed 64-integers returns a 128-bit
   // result -- we care about the lower 64 bits. More importantly, imul also sets
   // the carry flag if 64 bits were not enough.
   // We then use cmovc to return cap if the carry was set.
   // TODO(user): remove the two 'movq' by setting the right constraints on
   // input and output registers.
+  // clang-format off
   asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
-      "\t"   "movq %[x],%%rax"
+      "\t"   "movq %[result],%%rax"
       "\n\t" "imulq %[y]"
       "\n\t" "cmovc %[cap],%%rax"  // Conditional move if carry.
       "\n\t" "movq %%rax,%[result]"
-      : [result] "=r&"(result)  // Output: don't use an input register ('&').
-      : [x] "r"(x), [y] "r"(y), [cap] "r"(cap)  // Input.
+      : [result] "=r"(result)  // Output
+      : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
       : "cc", "%rax", "%rdx" /* Clobbered registers */);
+  // clang-format on
   return result;
 }
 #endif
 
 inline int64 CapProd(int64 x, int64 y) {
-#if defined(__GNUC__) && defined(ARCH_K8) && !defined(__APPLE__) && \
-    !defined(MEMORY_SANITIZER) && !defined(ADDRESS_SANITIZER)
+#if defined(__GNUC__) && defined(ARCH_K8)
   return CapProdFast(x, y);
 #else
   return CapProdUsingDoubles(x, y);
