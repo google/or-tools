@@ -116,9 +116,9 @@ def main(set_partition=1):
   for j in range(num_objects):
     if set_partition == 1:
       solver.Add(
-          solver.SumGreaterOrEqual([x[i] * a[i][j]
-                                    for i in range(num_alternatives)],
-                                   1))
+          solver.SumEquality([x[i] * a[i][j]
+                              for i in range(num_alternatives)],
+                             1))
     else:
       solver.Add(
           solver.SumGreaterOrEqual([x[i] * a[i][j]
