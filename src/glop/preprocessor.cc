@@ -34,22 +34,6 @@ double trunc(double d) { return d > 0 ? floor(d) : ceil(d); }
 #endif
 }  // namespace
 
-std::string ProblemSolution::DebugString() const {
-  std::string s = "Problem status: " + GetProblemStatusString(status);
-  for (ColIndex col(0); col < primal_values.size(); ++col) {
-    StringAppendF(&s, "\n  Var #%d: %s %g", col.value(),
-                  GetVariableStatusString(variable_statuses[col]).c_str(),
-                  primal_values[col]);
-  }
-  s += "\n------------------------------";
-  for (RowIndex row(0); row < dual_values.size(); ++row) {
-    StringAppendF(&s, "\n  Constraint #%d: %s %g", row.value(),
-                  GetConstraintStatusString(constraint_statuses[row]).c_str(),
-                  dual_values[row]);
-  }
-  return s;
-}
-
 // --------------------------------------------------------
 // Preprocessor
 // --------------------------------------------------------

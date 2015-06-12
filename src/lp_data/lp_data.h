@@ -481,6 +481,44 @@ class LinearProgram {
   DISALLOW_COPY_AND_ASSIGN(LinearProgram);
 };
 
+// --------------------------------------------------------
+// ProblemSolution
+// --------------------------------------------------------
+// Contains the solution of a LinearProgram as returned by a preprocessor.
+struct ProblemSolution {
+  ProblemSolution(RowIndex num_rows, ColIndex num_cols)
+      : status(ProblemStatus::OPTIMAL),
+        primal_values(num_cols, 0.0),
+        dual_values(num_rows, 0.0),
+        variable_statuses(num_cols, VariableStatus::FREE),
+        constraint_statuses(num_rows, ConstraintStatus::FREE) {}
+  // The solution status.
+  ProblemStatus status;
+
+  // The actual primal/dual solution values. This is what most clients will
+  // need, and this is enough for LPSolver to easily check the optimality.
+  DenseRow primal_values;
+  DenseColumn dual_values;
+
+  // The status of the variables and constraints which is difficult to
+  // reconstruct from the solution values alone. Some remarks:
+  //  - From this information alone, by factorizing the basis, it is easy to
+  //    reconstruct the primal and dual values.
+  //  - The main difficulty to construct this from the solution values is to
+  //    reconstruct the optimal basis if some basic variables are exactly at
+  //    one of their bounds (and their reduced costs are close to zero).
+  //  - The non-basic information (VariableStatus::FIXED_VALUE,
+  //    VariableStatus::AT_LOWER_BOUND, VariableStatus::AT_UPPER_BOUND,
+  //    VariableStatus::FREE) is easy to construct for variables (because
+  //    they are at their exact bounds). They can be guessed for constraints
+  //    (here a small precision error is unavoidable). However, it is useful to
+  //    carry this exact information during post-solve.
+  VariableStatusRow variable_statuses;
+  ConstraintStatusColumn constraint_statuses;
+
+  std::string DebugString() const;
+};
+
 // Helper function to check the bounds of the SetVariableBounds() and
 // SetConstraintBounds() functions.
 inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
