@@ -64,32 +64,22 @@ inline uint64 LeastSignificantBitWord64(uint64 n) { return n & ~(n - 1); }
 inline uint32 LeastSignificantBitWord32(uint32 n) { return n & ~(n - 1); }
 
 // Returns the least significant bit position in n.
-// Discussions around lsb computation.
-// bsr/bsf assembly instruction are quite slow, but still a little
-// win on PIII. On k8, bsf is much slower than the C-equivalent!
-// Using inline assembly code yields a 10% performance gain.
-// Use de Bruijn hashing instead of bsf is always a win, on both P3 and K8.
-#define USE_DEBRUIJN true  // if true, use de Bruijn bit forward scanner
-#if defined(ARCH_K8) || defined(ARCH_PIII)
-#define USE_ASM_LEAST_SIGNIFICANT_BIT true  // if true, use assembly lsb
+// Discussion around lsb computation:
+// De Bruijn is almost as fast as the bsr/bsf-instruction-based intrinsics.
+// Both are always much faster than the Default algorithm.
+#define USE_DEBRUIJN true  // if true, use de Bruijn bit forward scanner.
+#if defined(__GNUC__) || defined(__llvm__)
+#define USE_FAST_LEAST_SIGNIFICANT_BIT true  // if true, use fast lsb.
 #endif
 
-#if defined(USE_ASM_LEAST_SIGNIFICANT_BIT)
-inline int LeastSignificantBitPosition64Asm(uint64 n) {
-#ifdef ARCH_K8
-  int64 pos;
-  __asm__("bsfq %1, %0\n" : "=r"(pos) : "r"(n));
-  return pos;
-#else
-  int pos;
-  if (n & GG_ULONGLONG(0xFFFFFFFF)) {
-    __asm__("bsfl %1, %0\n" : "=r"(pos) : "r"(n));
-  } else {
-    __asm__("bsfl %1, %0\n" : "=r"(pos) : "r"(n >> 32));
-    pos += 32;
-  }
-  return pos;
-#endif
+#if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
+inline int LeastSignificantBitPosition64Fast(uint64 n) {
+  // Note(user): Do not change the order of instructions. Other patterns were
+  // tried, and the second best was:
+  // return n == 0 ? 0 : __builtin_ctzll(n) which results in an 2x increase of
+  // computation time.
+  const int lsb = __builtin_ctzll(n);
+  return n == 0 ? 0 : lsb;
 }
 #endif
 
@@ -105,6 +95,7 @@ inline int LeastSignificantBitPosition64DeBruijn(uint64 n) {
 }
 
 inline int LeastSignificantBitPosition64Default(uint64 n) {
+  if (n == 0) return 0;
   int pos = 63;
   if (n & 0x00000000FFFFFFFFLL) {
     pos -= 32;
@@ -139,8 +130,8 @@ inline int LeastSignificantBitPosition64Default(uint64 n) {
 
 inline int LeastSignificantBitPosition64(uint64 n) {
   DCHECK_NE(n, 0);
-#ifdef USE_ASM_LEAST_SIGNIFICANT_BIT
-  return LeastSignificantBitPosition64Asm(n);
+#ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
+  return LeastSignificantBitPosition64Fast(n);
 #elif defined(USE_DEBRUIJN)
   return LeastSignificantBitPosition64DeBruijn(n);
 #else
@@ -148,11 +139,10 @@ inline int LeastSignificantBitPosition64(uint64 n) {
 #endif
 }
 
-#if defined(USE_ASM_LEAST_SIGNIFICANT_BIT)
-inline int LeastSignificantBitPosition32Asm(uint32 n) {
-  int pos;
-  __asm__("bsfl %1, %0\n" : "=r"(pos) : "r"(n));
-  return pos;
+#if defined(USE_FAST_LEAST_SIGNIFICANT_BIT)
+inline int LeastSignificantBitPosition32Fast(uint32 n) {
+  const int lsb = __builtin_ctzl(n);
+  return n == 0 ? 0 : lsb;
 }
 #endif
 
@@ -166,6 +156,7 @@ inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
 }
 
 inline int LeastSignificantBitPosition32Default(uint32 n) {
+  if (n == 0) return 0;
   int pos = 31;
   if (n & 0x0000FFFFL) {
     pos -= 16;
@@ -195,8 +186,8 @@ inline int LeastSignificantBitPosition32Default(uint32 n) {
 
 inline int LeastSignificantBitPosition32(uint32 n) {
   DCHECK_NE(n, 0);
-#ifdef USE_ASM_LEAST_SIGNIFICANT_BIT
-  return LeastSignificantBitPosition32Asm(n);
+#ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
+  return LeastSignificantBitPosition32Fast(n);
 #elif defined(USE_DEBRUIJN)
   return LeastSignificantBitPosition32DeBruijn(n);
 #else
@@ -205,24 +196,17 @@ inline int LeastSignificantBitPosition32(uint32 n) {
 }
 
 // Returns the most significant bit position in n.
-
-inline int MostSignificantBitPosition64(uint64 n) {
-#if USE_ASM_LEAST_SIGNIFICANT_BIT
-#ifndef ARCH_K8
-  int pos;
-  if (n & GG_ULONGLONG(0xFFFFFFFF00000000)) {
-    __asm__("bsrl %1, %0\n" : "=r"(pos) : "ro"(n >> 32) : "cc");
-    pos += 32;
-  } else {
-    __asm__("bsrl %1, %0\n" : "=r"(pos) : "ro"(n) : "cc");
-  }
-  return pos;
-#else
-  int64 pos;
-  __asm__("bsrq  %1, %0\n" : "=r"(pos) : "ro"(n) : "cc");
-  return pos;
+#if USE_FAST_LEAST_SIGNIFICANT_BIT
+inline int MostSignificantBitPosition64Fast(uint64 n) {
+  // __builtin_clzll(1) should always return 63. There is no penalty in
+  // using offset, and the code looks more like its uint32 counterpart.
+  const int offset = __builtin_clzll(1);
+  const int msb = offset - __builtin_clzll(n);
+  return n == 0 ? 0 : msb;
+}
 #endif
-#else
+
+inline int MostSignificantBitPosition64Default(uint64 n) {
   int b = 0;
   if (0 != (n & (kAllBits64 << (1 << 5)))) {
     b |= (1 << 5);
@@ -248,15 +232,28 @@ inline int MostSignificantBitPosition64(uint64 n) {
     b |= (1 << 0);
   }
   return b;
+}
+
+inline int MostSignificantBitPosition64(uint64 n) {
+#ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
+  return MostSignificantBitPosition64Fast(n);
+#else
+  return MostSignificantBitPosition64Default(n);
 #endif
 }
 
-inline int MostSignificantBitPosition32(uint32 n) {
-#if USE_ASM_LEAST_SIGNIFICANT_BIT
-  int pos;
-  __asm__("bsrl %1, %0\n" : "=r"(pos) : "ro"(n) : "cc");
-  return pos;
-#else
+#if USE_FAST_LEAST_SIGNIFICANT_BIT
+inline int MostSignificantBitPosition32Fast(uint32 n) {
+  // The constant here depends on whether we are on a 32-bit or 64-bit machine.
+  // __builtin_clzl(1) returns 63 on a 64-bit machine and 31 on a 32-bit
+  // machine.
+  const int offset = __builtin_clzl(1);
+  const int msb = offset - __builtin_clzl(n);
+  return n == 0 ? 0 : msb;
+}
+#endif
+
+inline int MostSignificantBitPosition32Default(uint32 n) {
   int b = 0;
   if (0 != (n & (kAllBits32 << (1 << 4)))) {
     b |= (1 << 4);
@@ -278,11 +275,18 @@ inline int MostSignificantBitPosition32(uint32 n) {
     b |= (1 << 0);
   }
   return b;
+}
+
+inline int MostSignificantBitPosition32(uint32 n) {
+#ifdef USE_FAST_LEAST_SIGNIFICANT_BIT
+  return MostSignificantBitPosition32Fast(n);
+#else
+  return MostSignificantBitPosition32Default(n);
 #endif
 }
 
 #undef USE_DEBRUIJN
-#undef USE_ASM_LEAST_SIGNIFICANT_BIT
+#undef USE_FAST_LEAST_SIGNIFICANT_BIT
 
 // Returns a word with bits from s to e set.
 inline uint64 OneRange64(uint64 s, uint64 e) {
