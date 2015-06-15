@@ -107,6 +107,21 @@ void BuildBooleanProblemWithIntegralConstraints(
     }
   }
 
+  // Add the unit constraints to fix the variables since the variable bounds
+  // are always [0, 1] in a BooleanLinearProblem.
+  for (ColIndex col(0); col < matrix.num_cols(); ++col) {
+    // TODO(user): double check the rounding, and add unit test for this.
+    const int lb = std::round(linear_problem.variable_lower_bounds()[col]);
+    const int ub = std::round(linear_problem.variable_upper_bounds()[col]);
+    if (lb == ub) {
+      LinearBooleanConstraint* ct = boolean_problem->add_constraints();
+      ct->set_lower_bound(ub);
+      ct->set_upper_bound(ub);
+      ct->add_literals(col.value() + 1);
+      ct->add_coefficients(1.0);
+    }
+  }
+
   // Create the minimization objective.
   std::vector<double> coefficients;
   for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {

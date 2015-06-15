@@ -157,6 +157,26 @@ class ConstraintBasedNeighborhood : public NeighborhoodGenerator {
   MTRandom* random_;
 };
 
+// Generates a neighborhood by taking a random local neighborhood in an
+// undirected graph where the nodes are the variables and two nodes are linked
+// if they appear in the same constraint.
+class RelationGraphBasedNeighborhood : public NeighborhoodGenerator {
+ public:
+  RelationGraphBasedNeighborhood(const LinearBooleanProblem& problem,
+                                 MTRandom* random);
+  ~RelationGraphBasedNeighborhood() final {}
+
+ private:
+  void GenerateNeighborhood(const ProblemState& problem_state,
+                            double difficulty,
+                            sat::SatSolver* sat_propagator) final;
+
+  // TODO(user): reuse by_variable_matrix_ from the LS? Note however than we
+  // don't need the coefficients here.
+  ITIVector<VariableIndex, std::vector<ConstraintIndex>> columns_;
+  MTRandom* random_;
+};
+
 }  // namespace bop
 }  // namespace operations_research
 #endif  // OR_TOOLS_BOP_BOP_LNS_H_

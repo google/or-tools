@@ -155,11 +155,11 @@ void AdaptiveParameterValue::Decrease() {
 //------------------------------------------------------------------------------
 // LubyAdaptiveParameterValue
 //------------------------------------------------------------------------------
-LubyAdaptiveParameterValue::LubyAdaptiveParameterValue()
+LubyAdaptiveParameterValue::LubyAdaptiveParameterValue(double initial_value)
     : luby_id_(0),
       luby_boost_(0),
       luby_value_(0),
-      difficulties_(kMaxLubyIndex, AdaptiveParameterValue(0.25)) {
+      difficulties_(kMaxLubyIndex, AdaptiveParameterValue(initial_value)) {
   Reset();
 }
 

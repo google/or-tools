@@ -27,27 +27,41 @@
 
 namespace operations_research {
 namespace bop {
+
+DEFINE_INT_TYPE(OptimizerIndex, int);
+
 // Forward declaration.
-class AdaptativeItemSelector;
+class OptimizerSelector;
 
 // This class implements a portfolio optimizer.
 // The portfolio currently includes all the following optimizers:
-//   - SatCoreBasedOptimizer
-//   - LinearRelaxation
-//   - LocalSearchOptimizer
-//   - BopRandomFirstSolutionGenerator
-//   - BopRandomConstraintLNSOptimizer
-//   - BopRandomLNSOptimizer.
+//   - SAT_CORE_BASED
+//   - SAT_LINEAR_SEARCH
+//   - LINEAR_RELAXATION
+//   - LOCAL_SEARCH
+//   - RANDOM_FIRST_SOLUTION
+//   - RANDOM_CONSTRAINT_LNS
+//   - RANDOM_VARIABLE_LNS
+//   - COMPLETE_LNS
+//   - LP_FIRST_SOLUTION
+//   - OBJECTIVE_FIRST_SOLUTION
+//   - USER_GUIDED_FIRST_SOLUTION
+//   - FEASIBILITY_PUMP_FIRST_SOLUTION
+//   - RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP
+//   - RANDOM_VARIABLE_LNS_GUIDED_BY_LP
+//   - RELATION_GRAPH_LNS
+//   - RELATION_GRAPH_LNS_GUIDED_BY_LP
+//
 // At each call of Optimize(), the portfolio optimizer selects the next
 // optimizer to run and runs it. The selection is auto-adaptative, meaning that
 // optimizers that succeeded more in the previous calls to Optimizer() are more
 // likely to be selected.
 class PortfolioOptimizer : public BopOptimizerBase {
  public:
-  explicit PortfolioOptimizer(const ProblemState& problem_state,
-                              const BopParameters& parameters,
-                              const BopSolverOptimizerSet& optimizer_set,
-                              const std::string& name);
+  PortfolioOptimizer(const ProblemState& problem_state,
+                     const BopParameters& parameters,
+                     const BopSolverOptimizerSet& optimizer_set,
+                     const std::string& name);
   ~PortfolioOptimizer() override;
 
   bool ShouldBeRun(const ProblemState& problem_state) const override {
@@ -70,69 +84,111 @@ class PortfolioOptimizer : public BopOptimizerBase {
   std::unique_ptr<MTRandom> random_;
   int64 state_update_stamp_;
   BopConstraintTerms objective_terms_;
-  std::unique_ptr<AdaptativeItemSelector> selector_;
-  std::vector<std::unique_ptr<BopOptimizerBase>> optimizers_;
-  std::vector<double> optimizer_initial_scores_;
+  std::unique_ptr<OptimizerSelector> selector_;
+  ITIVector<OptimizerIndex, BopOptimizerBase*> optimizers_;
   sat::SatSolver sat_propagator_;
   BopParameters parameters_;
   double lower_bound_;
   double upper_bound_;
-
-  // Simple counts of:
-  // - the number of time each optimizer improved the current solution.
-  // - the number of time each optimizer was called.
-  std::map<std::string, int> stats_num_solutions_by_optimizer_;
-  std::map<std::string, int> stats_num_calls_by_optimizer_;
 };
 
-// This class provides a way to iteratively select an item among n items in
-// an adaptative way.
-// TODO(user): Document and move to util?
-class AdaptativeItemSelector {
+// This class is providing an adaptative selector for optimizers based on
+// their past successes and deterministic time spent.
+class OptimizerSelector {
  public:
-  AdaptativeItemSelector(const std::vector<double>& initial_scores,
-                         MTRandom* random);
+  // Note that the list of optimizers is only used to get the names for
+  // debug purposes, the ownership of the optimizers is not transfered.
+  explicit OptimizerSelector(
+      const ITIVector<OptimizerIndex, BopOptimizerBase*>& optimizers);
 
-  static const int kNoSelection;
-  static const double kErosion;
-  static const double kScoreMin;
+  // Selects the next optimizer to run based on the user defined order and
+  // history of success.
+  //
+  // The optimizer is selected using the following algorithm (L being the
+  // sorted list of optimizers, and l the position of the last selected
+  // optimizer):
+  //   a- If a new solution has been found by optimizer l, select the first
+  //     optimizer l' in L, l' >= 0, that can run.
+  //   b- If optimizer l didn't find a new solution, select the first
+  //      optimizer l', with l' > l, such that its deterministic time spent
+  //      since last solution is smaller than the deterministic time spent
+  //      by any runnable optimizer in 1..l since last solution.
+  //      If no such optimizer is available, go to option a.
+  OptimizerIndex SelectOptimizer();
 
-  void StartNewRoundOfSelections();
+  // Updates the internal metrics to decide which optimizer to select.
+  // This method should be called each time the selected optimizer is run.
+  //
+  // The gain corresponds to the reward to assign to the solver; It could for
+  // instance be the difference in cost between the last and the current
+  // solution.
+  // The time spent corresponds to the time the optimizer spent; To make the
+  // behavior deterministic, it is recommanded to use the deterministic time
+  // instead of the elapsed time.
+  //
+  // The optimizers are sorted based on their score each time a new solution is
+  // found.
+  void UpdateScore(int64 gain, double time_spent);
 
-  bool SelectItem();
+  // Marks the selected optimizer as not selectable because the optimizer
+  // ABORTed last time it ran on the current solution. This will be reverted
+  // as soon as a new solution is found.
+  void MarkSelectedAborted();
 
-  bool has_selected_element() const {
-    return selected_item_id_ != kNoSelection;
-  }
-  int selected_item_id() const { return selected_item_id_; }
+  // Marks the selected optimizer as not selectable because the optimizer can't
+  // be called.
+  // Note that contrary to MarkSelectedAborted(), this will not be reverted when
+  // a new solution is found.
+  void MarkOptimizerSelectable(OptimizerIndex optimizer_index, bool selectable);
 
-  void UpdateSelectedItem(bool success, bool can_still_be_selected);
+  // Returns statistics about the given optimizer.
+  std::string PrintStats(OptimizerIndex optimizer_index) const;
 
-  void MarkItemNonSelectable(int item);
-
-  double CurrentScore(int item) const { return items_[item].current_score; }
+  // Prints some debug information. Should not be used in production.
+  void DebugPrint() const;
 
  private:
-  struct Item {
-    explicit Item(double initial_score)
-        : round_score(std::max(kScoreMin, initial_score)),
-          current_score(std::max(kScoreMin, initial_score)),
-          can_be_selected(true),
-          num_selections(0),
-          num_successes(0) {}
+  static const int kNoSelection;
 
-    double round_score;
-    double current_score;
-    bool can_be_selected;
-    int num_selections;
+  // Updates internals when a solution has been found using the selected
+  // optimizer.
+  void NewSolutionFound(int64 gain);
+
+  // Updates the deterministic time spent by the selected optimizer.
+  void UpdateDeterministicTime(double time_spent);
+
+  // Sorts optimizers based on their scores.
+  void UpdateOrder();
+
+  struct RunInfo {
+    RunInfo(OptimizerIndex i, const std::string& n)
+        : optimizer_index(i),
+          name(n),
+          num_successes(0),
+          num_calls(0),
+          total_gain(0),
+          time_spent(0.0),
+          time_spent_since_last_solution(0),
+          selectable(true),
+          aborted(false),
+          score(0.0) {}
+
+    OptimizerIndex optimizer_index;
+    std::string name;
     int num_successes;
+    int num_calls;
+    int64 total_gain;
+    double time_spent;
+    double time_spent_since_last_solution;
+    bool selectable;
+    bool aborted;
+    double score;
   };
 
-  MTRandom* random_;
-  int selected_item_id_;
-  std::vector<Item> items_;
+  std::vector<RunInfo> run_infos_;
+  ITIVector<OptimizerIndex, int> info_positions_;
+  int selected_index_;
 };
-
 }  // namespace bop
 }  // namespace operations_research
 #endif  // OR_TOOLS_BOP_BOP_PORTFOLIO_H_

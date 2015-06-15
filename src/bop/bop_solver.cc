@@ -78,7 +78,7 @@ BopSolver::BopSolver(const LinearBooleanProblem& problem)
       external_boolean_as_limit_(nullptr),
       stats_("BopSolver") {
   SCOPED_TIME_STAT(&stats_);
-  CHECK(sat::ValidateBooleanProblem(problem).ok());
+  CHECK_OK(sat::ValidateBooleanProblem(problem));
 }
 
 BopSolver::~BopSolver() { IF_STATS_ENABLED(VLOG(1) << stats_.StatString()); }

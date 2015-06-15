@@ -15,7 +15,7 @@ syntax = "proto2";
 
 package operations_research.bop;
 
-// Method used to optimize a solution in Bop and its associated initial score.
+// Method used to optimize a solution in Bop.
 //
 // NEXT TAG: 16
 message BopOptimizerMethod {
@@ -33,12 +33,11 @@ message BopOptimizerMethod {
     USER_GUIDED_FIRST_SOLUTION = 14;
     RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP = 11;
     RANDOM_VARIABLE_LNS_GUIDED_BY_LP = 12;
+
+    RELATION_GRAPH_LNS = 16;
+    RELATION_GRAPH_LNS_GUIDED_BY_LP = 17;
   }
   optional OptimizerType type = 1;
-
-  // The score is used as an initial input to the adaptative optimizer selector
-  // (see PortfolioOptimizer).
-  optional double initial_score = 2 [default = 0.1];
 
   // The ratio is used to compute the max time the method might spend to look
   // for a solution. For instance, with a ratio of 0.05 and a time limit of
@@ -147,7 +146,7 @@ message BopParameters {
   // it will not restart from scratch but will iterate on the next
   // max_number_of_explored_assignments_per_try_in_ls assignments.
   optional int64 max_number_of_explored_assignments_per_try_in_ls = 21
-      [default = 50000];
+      [default = 10000];
 
   // Whether we use an hash set during the LS to avoid exploring more than once
   // the "same" state. Note that because the underlying SAT solver may learn
@@ -211,30 +210,20 @@ message BopParameters {
   repeated BopSolverOptimizerSet solver_optimizer_sets = 26;
   optional string default_solver_optimizer_sets = 33
       [default =
-           "methods:{type:LINEAR_RELAXATION time_limit_ratio:0.15 "
-           "         initial_score:1.0}                           "
-           "methods:{type:SAT_CORE_BASED                          "
-           "         initial_score:1.0}                           "
-           "methods:{type:LP_FIRST_SOLUTION                       "
-           "         initial_score:1.0}                           "
-           "methods:{type:OBJECTIVE_FIRST_SOLUTION                "
-           "         initial_score:1.0}                           "
-           "methods:{type:USER_GUIDED_FIRST_SOLUTION              "
-           "         initial_score:1.0}                           "
-           "methods:{type:RANDOM_FIRST_SOLUTION                   "
-           "         initial_score:1.0}                           "
-           "methods:{type:LOCAL_SEARCH                            "
-           "         initial_score:2.0}                           "
-           "methods:{type:RANDOM_CONSTRAINT_LNS                   "
-           "         initial_score:0.1}                           "
-           "methods:{type:RANDOM_VARIABLE_LNS                     "
-           "         initial_score:1.0}                           "
-           "methods:{type:RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP      "
-           "         initial_score:0.1}                           "
-           "methods:{type:RANDOM_VARIABLE_LNS_GUIDED_BY_LP        "
-           "         initial_score:1.0}                           "
-           "methods:{type:COMPLETE_LNS                            "
-           "         initial_score:0.1}"];
+           "methods:{type:LOCAL_SEARCH }                            "
+           "methods:{type:RANDOM_FIRST_SOLUTION }                   "
+           "methods:{type:LINEAR_RELAXATION time_limit_ratio:0.15 } "
+           "methods:{type:LP_FIRST_SOLUTION }                       "
+           "methods:{type:OBJECTIVE_FIRST_SOLUTION }                "
+           "methods:{type:USER_GUIDED_FIRST_SOLUTION }              "
+           "methods:{type:RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP }      "
+           "methods:{type:RANDOM_VARIABLE_LNS_GUIDED_BY_LP }        "
+           "methods:{type:RELATION_GRAPH_LNS }                      "
+           "methods:{type:RELATION_GRAPH_LNS_GUIDED_BY_LP }         "
+           "methods:{type:RANDOM_CONSTRAINT_LNS }                   "
+           "methods:{type:RANDOM_VARIABLE_LNS }                     "
+           "methods:{type:SAT_CORE_BASED }                          "
+           "methods:{type:COMPLETE_LNS }                            "];
 
   // Use strong branching in the linear relaxation optimizer.
   // The strong branching is a what-if analysis on each variable v, i.e.

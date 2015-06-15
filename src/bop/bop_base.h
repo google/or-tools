@@ -215,8 +215,8 @@ class ProblemState {
 
   // Returns the scaled lower bound of the original problem.
   double GetScaledLowerBound() const {
-    return lower_bound() * original_problem_.objective().scaling_factor() +
-           original_problem_.objective().offset();
+    return (lower_bound() + original_problem_.objective().offset()) *
+           original_problem_.objective().scaling_factor();
   }
 
   // Returns the newly added binary clause since the last SynchronizationDone().

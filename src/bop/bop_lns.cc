@@ -15,6 +15,7 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"
@@ -120,6 +121,13 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
   CHECK(time_limit != nullptr);
   learned_info->Clear();
 
+  const double initial_dt =
+      sat_solver_ == nullptr ? 0.0 : sat_solver_->deterministic_time();
+  auto advance_dt = ::operations_research::util::MakeCleanup([initial_dt, this, &time_limit]() {
+    time_limit->AdvanceDeterministicTime(sat_solver_->deterministic_time() -
+                                         initial_dt);
+  });
+
   const BopOptimizerBase::Status sync_status =
       SynchronizeIfNeeded(problem_state, parameters.num_relaxed_vars());
   if (sync_status != BopOptimizerBase::CONTINUE) {
@@ -200,6 +208,10 @@ bool UseLinearRelaxationForSatAssignmentPreference(
 }
 }  // namespace
 
+// Note(user): We prefer to start with a really low difficulty as this works
+// better for large problem, and for small ones, it will be really quickly
+// increased anyway. Maybe a better appproach is to start by relaxing something
+// like 10 variables instead of having a fixed percentage.
 BopAdaptiveLNSOptimizer::BopAdaptiveLNSOptimizer(
     const std::string& name, bool use_lp_to_guide_sat,
     NeighborhoodGenerator* neighborhood_generator,
@@ -208,7 +220,7 @@ BopAdaptiveLNSOptimizer::BopAdaptiveLNSOptimizer(
       use_lp_to_guide_sat_(use_lp_to_guide_sat),
       neighborhood_generator_(neighborhood_generator),
       sat_propagator_(sat_propagator),
-      adaptive_difficulty_() {
+      adaptive_difficulty_(0.001) {
   CHECK(sat_propagator != nullptr);
 }
 
@@ -229,15 +241,17 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
   // Set-up a sat_propagator_ cleanup task to catch all the exit cases.
   const double initial_dt = sat_propagator_->deterministic_time();
+  double local_sat_solver_dt = 0.0;
   auto sat_propagator_cleanup = ::operations_research::util::MakeCleanup(
-      [initial_dt, this, &learned_info, &time_limit]() {
+      [initial_dt, this, &learned_info, &time_limit, &local_sat_solver_dt]() {
         if (!sat_propagator_->IsModelUnsat()) {
           sat_propagator_->SetAssumptionLevel(0);
           sat_propagator_->RestoreSolverToAssumptionLevel();
           ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
         }
         time_limit->AdvanceDeterministicTime(
-            sat_propagator_->deterministic_time() - initial_dt);
+            local_sat_solver_dt + sat_propagator_->deterministic_time() -
+            initial_dt);
       });
 
   // For the SAT conflicts limit of each LNS, we follow a luby sequence times
@@ -259,7 +273,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
                                                   sat_propagator_);
 
     ++num_tries;
-    VLOG(1) << num_tries << "  difficulty:" << difficulty
+    VLOG(2) << num_tries << "  difficulty:" << difficulty
             << "  luby:" << adaptive_difficulty_.luby_value()
             << "  fixed:" << sat_propagator_->LiteralTrail().Index() << "/"
             << problem_state.original_problem().num_variables();
@@ -267,7 +281,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     // Special case if the difficulty is too high.
     if (!sat_propagator_->IsModelUnsat()) {
       if (sat_propagator_->CurrentDecisionLevel() == 0) {
-        VLOG(1) << "Nothing fixed!";
+        VLOG(2) << "Nothing fixed!";
         adaptive_difficulty_.DecreaseParameter();
         continue;
       }
@@ -369,6 +383,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
     // Solve the local problem.
     const sat::SatSolver::Status status = sat_solver.Solve();
+    local_sat_solver_dt += sat_solver.deterministic_time();
     if (status == sat::SatSolver::MODEL_SAT) {
       // We found a solution! abort now.
       SatAssignmentToBopSolution(sat_solver.Assignment(),
@@ -393,7 +408,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
 namespace {
 
-std::vector<sat::Literal> ObjectiveVariablesAssignedTheirLowCostValue(
+std::vector<sat::Literal> ObjectiveVariablesAssignedToTheirLowCostValue(
     const ProblemState& problem_state,
     const BopConstraintTerms& objective_terms) {
   std::vector<sat::Literal> result;
@@ -415,8 +430,9 @@ void ObjectiveBasedNeighborhood::GenerateNeighborhood(
     const ProblemState& problem_state, double difficulty,
     sat::SatSolver* sat_propagator) {
   // Generate the set of variable we may fix and randomize their order.
-  std::vector<sat::Literal> candidates = ObjectiveVariablesAssignedTheirLowCostValue(
-      problem_state, objective_terms_);
+  std::vector<sat::Literal> candidates =
+      ObjectiveVariablesAssignedToTheirLowCostValue(problem_state,
+                                                    objective_terms_);
   std::random_shuffle(candidates.begin(), candidates.end(), *random_);
 
   // We will use the sat_propagator to fix some variables as long as the number
@@ -454,7 +470,7 @@ void ConstraintBasedNeighborhood::GenerateNeighborhood(
   const int num_variables = sat_propagator->NumVariables();
   const int target = round(difficulty * num_variables);
   int num_relaxed = 0;
-  std::vector<bool> relaxed_variables(problem.num_variables(), false);
+  std::vector<bool> variable_is_relaxed(problem.num_variables(), false);
   for (int i = 0; i < ct_ids.size(); ++i) {
     if (num_relaxed >= target) break;
     const LinearBooleanConstraint& constraint = problem.constraints(ct_ids[i]);
@@ -465,9 +481,9 @@ void ConstraintBasedNeighborhood::GenerateNeighborhood(
 
     for (int j = 0; j < constraint.literals_size(); ++j) {
       const VariableIndex var_id(constraint.literals(j) - 1);
-      if (!relaxed_variables[var_id.value()]) {
+      if (!variable_is_relaxed[var_id.value()]) {
         ++num_relaxed;
-        relaxed_variables[var_id.value()] = true;
+        variable_is_relaxed[var_id.value()] = true;
       }
     }
   }
@@ -475,16 +491,99 @@ void ConstraintBasedNeighborhood::GenerateNeighborhood(
   // Basic version: simply fix all the "to_fix" variable that are not relaxed.
   //
   // TODO(user): Not fixing anything that propagates a variable in
-  // relaxed_variables may be better. To investigate.
+  // variable_is_relaxed may be better. It is actually a lot better in the
+  // RelationGraphBasedNeighborhood. To investigate.
   sat_propagator->Backtrack(0);
   const std::vector<sat::Literal> to_fix =
-      ObjectiveVariablesAssignedTheirLowCostValue(problem_state,
-                                                  objective_terms_);
+      ObjectiveVariablesAssignedToTheirLowCostValue(problem_state,
+                                                    objective_terms_);
   for (const sat::Literal literal : to_fix) {
-    if (relaxed_variables[literal.Variable().value()]) continue;
+    if (variable_is_relaxed[literal.Variable().value()]) continue;
     sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal);
     if (sat_propagator->IsModelUnsat()) return;
   }
+}
+
+RelationGraphBasedNeighborhood::RelationGraphBasedNeighborhood(
+    const LinearBooleanProblem& problem, MTRandom* random)
+    : random_(random) {
+  const int num_variables = problem.num_variables();
+  columns_.resize(num_variables);
+
+  // We will ignore constraints that have more variables than this percentage of
+  // the total number of variables in this neighborhood computation.
+  //
+  // TODO(user): Factor this out with the similar factor in
+  // ConstraintBasedNeighborhood? also maybe a better approach is to order the
+  // constraint, and stop the neighborhood extension without considering all of
+  // them.
+  const double kSizeThreshold = 0.1;
+  for (int i = 0; i < problem.constraints_size(); ++i) {
+    const LinearBooleanConstraint& constraint = problem.constraints(i);
+    if (constraint.literals_size() > kSizeThreshold * num_variables) continue;
+    for (int j = 0; j < constraint.literals_size(); ++j) {
+      const sat::Literal literal(constraint.literals(j));
+      columns_[VariableIndex(literal.Variable().value())].push_back(
+          ConstraintIndex(i));
+    }
+  }
+}
+
+void RelationGraphBasedNeighborhood::GenerateNeighborhood(
+    const ProblemState& problem_state, double difficulty,
+    sat::SatSolver* sat_propagator) {
+  // Simply walk the graph until enough variable are relaxed.
+  const int num_variables = sat_propagator->NumVariables();
+  const int target = round(difficulty * num_variables);
+  int num_relaxed = 1;
+  std::vector<bool> variable_is_relaxed(num_variables, false);
+  std::deque<int> queue;
+
+  // TODO(user): If one plan to try of lot of different LNS, maybe it will be
+  // better to try to bias the distribution of "center" to be as spread as
+  // possible.
+  queue.push_back(random_->Uniform(num_variables));
+  variable_is_relaxed[queue.back()] = true;
+  while (!queue.empty() && num_relaxed < target) {
+    const int var = queue.front();
+    queue.pop_front();
+    for (ConstraintIndex ct_index : columns_[VariableIndex(var)]) {
+      const LinearBooleanConstraint& constraint =
+          problem_state.original_problem().constraints(ct_index.value());
+      for (int i = 0; i < constraint.literals_size(); ++i) {
+        const sat::Literal literal(constraint.literals(i));
+        const int next_var = literal.Variable().value();
+        if (!variable_is_relaxed[next_var]) {
+          ++num_relaxed;
+          variable_is_relaxed[next_var] = true;
+          queue.push_back(next_var);
+        }
+      }
+    }
+  }
+
+  // Loops over all the variables in order and only fix the ones that don't
+  // propagate any relaxed variables.
+  DCHECK(problem_state.solution().IsFeasible());
+  sat_propagator->Backtrack(0);
+  for (sat::VariableIndex var(0); var < num_variables; ++var) {
+    const sat::Literal literal(
+        var, problem_state.solution().Value(VariableIndex(var.value())));
+    if (variable_is_relaxed[literal.Variable().value()]) continue;
+    const int index =
+        sat_propagator->EnqueueDecisionAndBacktrackOnConflict(literal);
+    if (sat_propagator->CurrentDecisionLevel() > 0) {
+      for (int i = index; i < sat_propagator->LiteralTrail().Index(); ++i) {
+        if (variable_is_relaxed
+                [sat_propagator->LiteralTrail()[i].Variable().value()]) {
+          sat_propagator->Backtrack(sat_propagator->CurrentDecisionLevel() - 1);
+        }
+      }
+    }
+    if (sat_propagator->IsModelUnsat()) return;
+  }
+  VLOG(1) << "target:" << target << " relaxed:" << num_relaxed << " actual:"
+          << num_variables - sat_propagator->LiteralTrail().Index();
 }
 
 }  // namespace bop

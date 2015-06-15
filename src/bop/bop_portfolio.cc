@@ -13,6 +13,7 @@
 
 #include "bop/bop_portfolio.h"
 
+#include "base/stl_util.h"
 #include "bop/bop_fs.h"
 #include "bop/bop_lns.h"
 #include "bop/bop_ls.h"
@@ -55,7 +56,6 @@ PortfolioOptimizer::PortfolioOptimizer(
       objective_terms_(),
       selector_(),
       optimizers_(),
-      optimizer_initial_scores_(),
       sat_propagator_(),
       parameters_(parameters),
       lower_bound_(-glop::kInfinity),
@@ -66,16 +66,15 @@ PortfolioOptimizer::PortfolioOptimizer(
 PortfolioOptimizer::~PortfolioOptimizer() {
   if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
     std::string stats_string;
-    for (int i = 0; i < optimizers_.size(); ++i) {
-      const std::string& name = optimizers_[i]->name();
-      const int a = stats_num_solutions_by_optimizer_[name];
-      const int b = stats_num_calls_by_optimizer_[name];
-      stats_string += StringPrintf(
-          "    %40s : %3d/%-3d  (%6.2f%%)  score: %f\n", name.c_str(), a, b,
-          100.0 * a / b, selector_->CurrentScore(i));
+    for (OptimizerIndex i(0); i < optimizers_.size(); ++i) {
+      stats_string += selector_->PrintStats(i);
     }
     LOG(INFO) << "Stats. #new_solutions/#calls by optimizer:\n" + stats_string;
   }
+
+  // Note that unique pointers are not used due to unsupported emplace_back
+  // in ITIVectors.
+  STLDeleteElements(&optimizers_);
 }
 
 BopOptimizerBase::Status PortfolioOptimizer::SynchronizeIfNeeded(
@@ -118,18 +117,19 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
   }
 
   // Mark optimizers that can't run.
-  for (int i = 0; i < optimizers_.size(); ++i) {
-    if (!optimizers_[i]->ShouldBeRun(problem_state)) {
-      selector_->MarkItemNonSelectable(i);
-    }
+  for (OptimizerIndex i(0); i < optimizers_.size(); ++i) {
+    selector_->MarkOptimizerSelectable(
+        i, optimizers_[i]->ShouldBeRun(problem_state));
   }
 
-  if (!selector_->SelectItem()) {
-    return BopOptimizerBase::ABORT;
-  }
+  const int64 init_cost = problem_state.solution().IsFeasible()
+                              ? problem_state.solution().GetCost()
+                              : kint64max;
+  const double init_deterministic_time =
+      time_limit->GetElapsedDeterministicTime();
 
-  const int selected_optimizer_id = selector_->selected_item_id();
-  const std::unique_ptr<BopOptimizerBase>& selected_optimizer =
+  const OptimizerIndex selected_optimizer_id = selector_->SelectOptimizer();
+  BopOptimizerBase* const selected_optimizer =
       optimizers_[selected_optimizer_id];
   if (parameters.log_search_progress() || VLOG_IS_ON(1)) {
     LOG(INFO) << "      " << lower_bound_ << " .. " << upper_bound_ << " "
@@ -141,12 +141,21 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
       selected_optimizer->Optimize(parameters, problem_state, learned_info,
                                    time_limit);
 
-  // Statistics.
-  stats_num_calls_by_optimizer_[selected_optimizer->name()]++;
-  if (optimization_status == BopOptimizerBase::OPTIMAL_SOLUTION_FOUND ||
-      optimization_status == BopOptimizerBase::SOLUTION_FOUND) {
-    stats_num_solutions_by_optimizer_[selected_optimizer->name()]++;
+  if (optimization_status == BopOptimizerBase::ABORT) {
+    selector_->MarkSelectedAborted();
   }
+
+  // The gain is defined as 1 for the first solution.
+  // TODO(user): Is 1 the right value? It might be better to use a percentage
+  //              of the gap, or use the same gain as for the second solution.
+  const int64 gain = optimization_status == BopOptimizerBase::SOLUTION_FOUND
+                         ? (init_cost == kint64max
+                                ? 1
+                                : init_cost - learned_info->solution.GetCost())
+                         : 0;
+  const double spent_deterministic_time =
+      time_limit->GetElapsedDeterministicTime() - init_deterministic_time;
+  selector_->UpdateScore(gain, spent_deterministic_time);
 
   if (optimization_status == BopOptimizerBase::INFEASIBLE ||
       optimization_status == BopOptimizerBase::OPTIMAL_SOLUTION_FOUND) {
@@ -155,15 +164,8 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
 
   // TODO(user): don't penalize the SatCoreBasedOptimizer or the
   // LinearRelaxation when they improve the lower bound.
-  selector_->UpdateSelectedItem(
-      /*success=*/optimization_status == BopOptimizerBase::SOLUTION_FOUND,
-      /*can_still_be_selected=*/optimization_status != BopOptimizerBase::ABORT);
-
-  if (optimization_status == BopOptimizerBase::SOLUTION_FOUND ||
-      optimization_status == BopOptimizerBase::INFORMATION_FOUND) {
-    selector_->StartNewRoundOfSelections();
-  }
-
+  // TODO(user): Do we want to re-order the optimizers in the selector when
+  //              the status is BopOptimizerBase::INFORMATION_FOUND?
   return BopOptimizerBase::CONTINUE;
 }
 
@@ -172,33 +174,29 @@ void PortfolioOptimizer::AddOptimizer(
     const BopOptimizerMethod& optimizer_method) {
   switch (optimizer_method.type()) {
     case BopOptimizerMethod::SAT_CORE_BASED:
-      optimizers_.emplace_back(
-          new SatCoreBasedOptimizer("SatCoreBasedOptimizer"));
+      optimizers_.push_back(new SatCoreBasedOptimizer("SatCoreBasedOptimizer"));
       break;
     case BopOptimizerMethod::SAT_LINEAR_SEARCH:
-      optimizers_.emplace_back(new GuidedSatFirstSolutionGenerator(
+      optimizers_.push_back(new GuidedSatFirstSolutionGenerator(
           "SatOptimizer", GuidedSatFirstSolutionGenerator::Policy::kNotGuided));
       break;
     case BopOptimizerMethod::LINEAR_RELAXATION:
-      optimizers_.emplace_back(
+      optimizers_.push_back(
           new LinearRelaxation(parameters, "LinearRelaxation"));
       break;
     case BopOptimizerMethod::LOCAL_SEARCH: {
-      double initial_local_search_score = optimizer_method.initial_score();
       for (int i = 1; i <= parameters.max_num_decisions(); ++i) {
-        optimizers_.emplace_back(new LocalSearchOptimizer(
-            StringPrintf("LS_%d", i), i, &sat_propagator_));
-        optimizer_initial_scores_.push_back(initial_local_search_score);
-        initial_local_search_score /= 2.0;
+        optimizers_.push_back(new LocalSearchOptimizer(StringPrintf("LS_%d", i),
+                                                       i, &sat_propagator_));
       }
     } break;
     case BopOptimizerMethod::RANDOM_FIRST_SOLUTION:
-      optimizers_.emplace_back(new BopRandomFirstSolutionGenerator(
+      optimizers_.push_back(new BopRandomFirstSolutionGenerator(
           "SATRandomFirstSolution", &sat_propagator_, random_.get()));
       break;
     case BopOptimizerMethod::RANDOM_VARIABLE_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
-      optimizers_.emplace_back(new BopAdaptiveLNSOptimizer(
+      optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RandomVariableLns",
           /*use_lp_to_guide_sat=*/false,
           new ObjectiveBasedNeighborhood(&objective_terms_, random_.get()),
@@ -206,7 +204,7 @@ void PortfolioOptimizer::AddOptimizer(
       break;
     case BopOptimizerMethod::RANDOM_VARIABLE_LNS_GUIDED_BY_LP:
       BuildObjectiveTerms(problem, &objective_terms_);
-      optimizers_.emplace_back(new BopAdaptiveLNSOptimizer(
+      optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RandomVariableLnsWithLp",
           /*use_lp_to_guide_sat=*/true,
           new ObjectiveBasedNeighborhood(&objective_terms_, random_.get()),
@@ -214,7 +212,7 @@ void PortfolioOptimizer::AddOptimizer(
       break;
     case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
-      optimizers_.emplace_back(new BopAdaptiveLNSOptimizer(
+      optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RandomConstraintLns",
           /*use_lp_to_guide_sat=*/false,
           new ConstraintBasedNeighborhood(&objective_terms_, random_.get()),
@@ -222,38 +220,50 @@ void PortfolioOptimizer::AddOptimizer(
       break;
     case BopOptimizerMethod::RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP:
       BuildObjectiveTerms(problem, &objective_terms_);
-      optimizers_.emplace_back(new BopAdaptiveLNSOptimizer(
+      optimizers_.push_back(new BopAdaptiveLNSOptimizer(
           "RandomConstraintLnsWithLp",
           /*use_lp_to_guide_sat=*/true,
           new ConstraintBasedNeighborhood(&objective_terms_, random_.get()),
           &sat_propagator_));
       break;
+    case BopOptimizerMethod::RELATION_GRAPH_LNS:
+      BuildObjectiveTerms(problem, &objective_terms_);
+      optimizers_.push_back(new BopAdaptiveLNSOptimizer(
+          "RelationGraphLns",
+          /*use_lp_to_guide_sat=*/false,
+          new RelationGraphBasedNeighborhood(problem, random_.get()),
+          &sat_propagator_));
+      break;
+    case BopOptimizerMethod::RELATION_GRAPH_LNS_GUIDED_BY_LP:
+      BuildObjectiveTerms(problem, &objective_terms_);
+      optimizers_.push_back(new BopAdaptiveLNSOptimizer(
+          "RelationGraphLnsWithLp",
+          /*use_lp_to_guide_sat=*/true,
+          new RelationGraphBasedNeighborhood(problem, random_.get()),
+          &sat_propagator_));
+      break;
     case BopOptimizerMethod::COMPLETE_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
-      optimizers_.emplace_back(
+      optimizers_.push_back(
           new BopCompleteLNSOptimizer("LNS", objective_terms_));
       break;
     case BopOptimizerMethod::USER_GUIDED_FIRST_SOLUTION:
-      optimizers_.emplace_back(new GuidedSatFirstSolutionGenerator(
+      optimizers_.push_back(new GuidedSatFirstSolutionGenerator(
           "SATUserGuidedFirstSolution",
           GuidedSatFirstSolutionGenerator::Policy::kUserGuided));
       break;
     case BopOptimizerMethod::LP_FIRST_SOLUTION:
-      optimizers_.emplace_back(new GuidedSatFirstSolutionGenerator(
+      optimizers_.push_back(new GuidedSatFirstSolutionGenerator(
           "SATLPFirstSolution",
           GuidedSatFirstSolutionGenerator::Policy::kLpGuided));
       break;
     case BopOptimizerMethod::OBJECTIVE_FIRST_SOLUTION:
-      optimizers_.emplace_back(new GuidedSatFirstSolutionGenerator(
+      optimizers_.push_back(new GuidedSatFirstSolutionGenerator(
           "SATObjectiveFirstSolution",
           GuidedSatFirstSolutionGenerator::Policy::kObjectiveGuided));
       break;
     default:
       LOG(FATAL) << "Unknown optimizer type.";
-  }
-
-  if (optimizer_method.type() != BopOptimizerMethod::LOCAL_SEARCH) {
-    optimizer_initial_scores_.push_back(optimizer_method.initial_score());
   }
 }
 
@@ -272,102 +282,163 @@ void PortfolioOptimizer::CreateOptimizers(
   const int max_num_optimizers =
       optimizer_set.methods_size() + parameters.max_num_decisions() - 1;
   optimizers_.reserve(max_num_optimizers);
-  optimizer_initial_scores_.reserve(max_num_optimizers);
   for (const BopOptimizerMethod& optimizer_method : optimizer_set.methods()) {
-    const int old_size = optimizers_.size();
+    const OptimizerIndex old_size(optimizers_.size());
     AddOptimizer(problem, parameters, optimizer_method);
 
     // Set the local time limits of the newly added optimizers.
-    //
-    // TODO(user): Find a way to make the behavior deterministic independently
-    // of the overall time limit. For instance, only use deterministic time and
-    // make that independent of the overall time limit.
+    // TODO(user): Remove these local time limits.
     const double ratio = optimizer_method.time_limit_ratio();
-    for (int i = old_size; i < optimizers_.size(); ++i) {
+    for (OptimizerIndex i = old_size; i < optimizers_.size(); ++i) {
       optimizers_[i]->SetLocalTimeLimits(
           ratio * parameters.max_time_in_seconds(),
           ratio * parameters.max_deterministic_time());
     }
   }
-  selector_.reset(
-      new AdaptativeItemSelector(optimizer_initial_scores_, random_.get()));
+
+  selector_.reset(new OptimizerSelector(optimizers_));
 }
 
 //------------------------------------------------------------------------------
-// AdaptativeItemSelector
+// OptimizerSelector
 //------------------------------------------------------------------------------
-
-AdaptativeItemSelector::AdaptativeItemSelector(
-    const std::vector<double>& initial_scores, MTRandom* random)
-    : random_(random), selected_item_id_(kNoSelection), items_() {
-  items_.reserve(initial_scores.size());
-  for (const double score : initial_scores) {
-    items_.push_back(Item(score));
-  }
-  StartNewRoundOfSelections();
-}
-
-const int AdaptativeItemSelector::kNoSelection(-1);
-const double AdaptativeItemSelector::kErosion(0.2);
-const double AdaptativeItemSelector::kScoreMin(1e-10);
-
-void AdaptativeItemSelector::StartNewRoundOfSelections() {
-  for (int item_id = 0; item_id < items_.size(); ++item_id) {
-    Item& item = items_[item_id];
-    if (item.num_selections > 0) {
-      item.round_score = std::max(kScoreMin, (1 - kErosion) * item.round_score +
-                                            kErosion * item.num_successes);
-    }
-    item.current_score = item.round_score;
-    item.can_be_selected = true;
-    item.num_selections = 0;
-    item.num_successes = 0;
+OptimizerSelector::OptimizerSelector(
+    const ITIVector<OptimizerIndex, BopOptimizerBase*>& optimizers)
+    : run_infos_(), selected_index_(optimizers.size()) {
+  for (OptimizerIndex i(0); i < optimizers.size(); ++i) {
+    info_positions_.push_back(run_infos_.size());
+    run_infos_.push_back(RunInfo(i, optimizers[i]->name()));
   }
 }
 
-bool AdaptativeItemSelector::SelectItem() {
-  // Compute the sum score of selectable items.
-  double score_sum = 0.0;
-  for (const Item& item : items_) {
-    if (item.can_be_selected) {
-      score_sum += item.current_score;
-    }
-  }
+const int OptimizerSelector::kNoSelection(-1);
 
-  // Select item.
-  const double selected_score_sum = random_->UniformDouble(score_sum);
-  double selection_sum = 0.0;
-  selected_item_id_ = kNoSelection;
-  for (int item_id = 0; item_id < items_.size(); ++item_id) {
-    const Item& item = items_[item_id];
-    if (item.can_be_selected) {
-      selection_sum += item.current_score;
+OptimizerIndex OptimizerSelector::SelectOptimizer() {
+  CHECK_GE(selected_index_, 0);
+
+  do {
+    ++selected_index_;
+  } while (selected_index_ < run_infos_.size() &&
+           !run_infos_[selected_index_].selectable);
+
+  if (selected_index_ >= run_infos_.size()) {
+    // Select the first possible optimizer.
+    selected_index_ = kNoSelection;
+    for (int i = 0; i < run_infos_.size(); ++i) {
+      if (run_infos_[i].selectable) {
+        selected_index_ = i;
+        break;
+      }
     }
-    if (selection_sum > selected_score_sum) {
-      selected_item_id_ = item_id;
-      break;
+    CHECK_NE(selected_index_, kNoSelection);
+  } else {
+    // Select the next possible optimizer. If none, select the first one.
+    // Check that the time is smaller than all previous optimizers which are
+    // selectable.
+    bool too_much_time_spent = false;
+    const double time_spent =
+        run_infos_[selected_index_].time_spent_since_last_solution;
+    for (int i = 0; i < selected_index_; ++i) {
+      const RunInfo& info = run_infos_[i];
+      if (info.selectable && !info.aborted &&
+          info.time_spent_since_last_solution < time_spent) {
+        too_much_time_spent = true;
+        break;
+      }
+    }
+    if (too_much_time_spent) {
+      // TODO(user): Remove this reccursive call, even if in practice it's
+      //              safe because the max depth is the number of optimizers.
+      return SelectOptimizer();
     }
   }
 
-  if (selected_item_id_ != kNoSelection) {
-    items_[selected_item_id_].num_selections++;
-    return true;
+  // Select the optimizer.
+  ++run_infos_[selected_index_].num_calls;
+  return run_infos_[selected_index_].optimizer_index;
+}
+
+void OptimizerSelector::UpdateScore(int64 gain, double time_spent) {
+  const bool new_solution_found = gain != 0;
+  if (new_solution_found) NewSolutionFound(gain);
+  UpdateDeterministicTime(time_spent);
+
+  const double new_score = time_spent == 0.0 ? 0.0 : gain / time_spent;
+  const double kErosion = 0.2;
+  const double kMinScore = 1E-6;
+
+  RunInfo& info = run_infos_[selected_index_];
+  const double old_score = info.score;
+  info.score =
+      std::max(kMinScore, old_score * (1 - kErosion) + kErosion * new_score);
+
+  if (new_solution_found) {  // Solution found
+    UpdateOrder();
+    selected_index_ = run_infos_.size();
   }
-
-  return false;
 }
 
-void AdaptativeItemSelector::UpdateSelectedItem(bool success,
-                                                bool can_still_be_selected) {
-  Item& item = items_[selected_item_id_];
-  item.num_successes += success ? 1 : 0;
-  item.can_be_selected = can_still_be_selected;
-  item.current_score = std::max(kScoreMin, (1 - kErosion) * item.current_score +
-                                          (success ? kErosion : 0));
+void OptimizerSelector::MarkSelectedAborted() {
+  run_infos_[selected_index_].selectable = false;
+  run_infos_[selected_index_].aborted = true;
 }
 
-void AdaptativeItemSelector::MarkItemNonSelectable(int item) {
-  items_[item].can_be_selected = false;
+void OptimizerSelector::MarkOptimizerSelectable(OptimizerIndex optimizer_index,
+                                                bool selectable) {
+  run_infos_[info_positions_[optimizer_index]].selectable =
+      !run_infos_[info_positions_[optimizer_index]].aborted && selectable;
 }
+
+std::string OptimizerSelector::PrintStats(OptimizerIndex optimizer_index) const {
+  const RunInfo& info = run_infos_[info_positions_[optimizer_index]];
+  return StringPrintf(
+      "    %40s : %3d/%-3d  (%6.2f%%)  Total gain: %6lld  Total Dtime: %0.3f "
+      "score: %f\n",
+      info.name.c_str(), info.num_successes, info.num_calls,
+      100.0 * info.num_successes / info.num_calls, info.total_gain,
+      info.time_spent, info.score);
+}
+
+void OptimizerSelector::DebugPrint() const {
+  std::string str;
+  for (int i = 0; i < run_infos_.size(); ++i) {
+    const RunInfo& info = run_infos_[i];
+    LOG(INFO) << "               " << info.name << "  " << info.total_gain
+              << " /  " << info.time_spent << " = " << info.score << "   "
+              << info.selectable << "  " << info.time_spent_since_last_solution;
+  }
+}
+
+void OptimizerSelector::NewSolutionFound(int64 gain) {
+  run_infos_[selected_index_].num_successes++;
+  run_infos_[selected_index_].total_gain += gain;
+
+  for (int i = 0; i < run_infos_.size(); ++i) {
+    run_infos_[i].time_spent_since_last_solution = 0;
+    run_infos_[i].selectable = true;
+    run_infos_[i].aborted = false;
+  }
+}
+
+void OptimizerSelector::UpdateDeterministicTime(double time_spent) {
+  run_infos_[selected_index_].time_spent += time_spent;
+  run_infos_[selected_index_].time_spent_since_last_solution += time_spent;
+}
+
+void OptimizerSelector::UpdateOrder() {
+  // Re-sort optimizers.
+  std::stable_sort(run_infos_.begin(), run_infos_.end(),
+              [](const RunInfo& a, const RunInfo& b) -> bool {
+                if (a.total_gain == 0 && b.total_gain == 0)
+                  return a.time_spent < b.time_spent;
+                return a.score > b.score;
+              });
+
+  // Update the positions.
+  for (int i = 0; i < run_infos_.size(); ++i) {
+    info_positions_[run_infos_[i].optimizer_index] = i;
+  }
+}
+
 }  // namespace bop
 }  // namespace operations_research

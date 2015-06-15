@@ -96,7 +96,6 @@ class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
   BopOptimizerBase::Status SynchronizeIfNeeded(
       const ProblemState& problem_state);
 
-  bool first_time_;
   int random_seed_;
   MTRandom* random_;
   sat::SatSolver* sat_propagator_;

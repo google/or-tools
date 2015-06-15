@@ -181,7 +181,6 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 
   ExtractLearnedInfoFromSatSolver(sat_solver_.get(), learned_info);
   if (sat_status == sat::SatSolver::MODEL_SAT) {
-    if (policy_ != Policy::kNotGuided) abort_ = true;
     SatAssignmentToBopSolution(sat_solver_->Assignment(),
                                &learned_info->solution);
     return SolutionStatus(learned_info->solution, problem_state.lower_bound());
@@ -197,7 +196,6 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
     const std::string& name, sat::SatSolver* sat_propagator, MTRandom* random)
     : BopOptimizerBase(name),
-      first_time_(true),
       random_(random),
       sat_propagator_(sat_propagator),
       sat_seed_(0) {}
@@ -230,12 +228,8 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   int64 best_cost = problem_state.solution().IsFeasible()
                         ? problem_state.solution().GetCost()
                         : kint64max;
-
   int64 remaining_num_conflicts =
-      first_time_
-          ? kint64max
-          : parameters.max_number_of_conflicts_in_random_solution_generation();
-  first_time_ = false;
+      parameters.max_number_of_conflicts_in_random_solution_generation();
   int64 old_num_failures = 0;
 
   bool solution_found = false;

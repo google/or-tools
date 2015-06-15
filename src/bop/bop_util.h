@@ -64,7 +64,8 @@ class AdaptiveParameterValue {
 
 class LubyAdaptiveParameterValue {
  public:
-  LubyAdaptiveParameterValue();
+  // Initial value is in [0..1].
+  explicit LubyAdaptiveParameterValue(double initial_value);
 
   void Reset();
 
