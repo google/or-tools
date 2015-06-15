@@ -14,10 +14,9 @@
 #ifndef OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 #define OR_TOOLS_UTIL_SATURATED_ARITHMETIC_H_
 
-#include <cmath>
-#include <limits>
-
+#include "base/casts.h"
 #include "base/integral_types.h"
+
 #include "util/bitset.h"
 
 namespace operations_research {
@@ -40,13 +39,13 @@ namespace operations_research {
 inline int64 TwosComplementAddition(int64 x, int64 y) {
   static_assert(static_cast<uint64>(-1LL) == ~0ULL,
                 "The target architecture does not use two's complement.");
-  return static_cast<int64>(static_cast<uint64>(x) + static_cast<uint64>(y));
+  return bit_cast<int64>(static_cast<uint64>(x) + static_cast<uint64>(y));
 }
 
 inline int64 TwosComplementSubtraction(int64 x, int64 y) {
   static_assert(static_cast<uint64>(-1LL) == ~0ULL,
                 "The target architecture does not use two's complement.");
-  return static_cast<int64>(static_cast<uint64>(x) - static_cast<uint64>(y));
+  return bit_cast<int64>(static_cast<uint64>(x) - static_cast<uint64>(y));
 }
 
 // Helper function that returns true if an overflow has occured in computing
@@ -161,55 +160,50 @@ inline int64 CapSub(int64 x, int64 y) {
 #endif
 }
 
-inline int64 CapOpp(int64 v) {
-  // Note: -kint64min != kint64max, but kint64max == ~kint64min.
-  return v == kint64min ? ~v : -v;
-}
+// Note(user): -kint64min != kint64max, but kint64max == ~kint64min.
+inline int64 CapOpp(int64 v) { return v == kint64min ? ~v : -v; }
 
-// For an inspiration of the function below, see Henry S. Warren, Hacker's
-// Delight second edition, Addison-Wesley Professional, 2012, p.32,
-// section 2-13.
-// http://www.amazon.com/Hackers-Delight-Edition-Henry-Warren/dp/0321842685
-#if !defined(__llvm__)
+namespace cap_prod_util {
+// Returns an unsigned int equal to the absolute value of n, in a way that
+// will not produce overflows.
+inline uint64 uint_abs(int64 n) {
+  return n < 0 ? ~static_cast<uint64>(n) + 1 : static_cast<uint64>(n);
+}
+}  // namespace cap_prod_util
+
+// The generic algorithm computes a bound on the number of bits necessary to
+// store the result. For this it uses the position of the most significant bits
+// of each of the arguments.
+// If the result needs at least 64 bits, then return a capped value.
+// If the result needs at most 63 bits, then return the product.
+// Otherwise, the result may use 63 or 64 bits: compute the product
+// as a uint64, and cap it if necessary.
 inline int64 CapProdGeneric(int64 x, int64 y) {
-  // Early return. This would have to be tested later on to avoid division
-  // by zero.
-  if (y == 0) return 0;
-  const int64 z = x * y;
-  // Note: the following test on the most significant bit position brings a 20%
-  // improvement on a Nehalem machine using g++. Your mileage may vary.
-  if (MostSignificantBitPosition64(std::abs(x)) +
-          MostSignificantBitPosition64(std::abs(y)) <
-      62)
-    return z;
-  // Catch x = kint64min separately. When y = -1, z = kint64min, and z / -1
-  // produces a Division Exception (on x86-64) as the positive result does not
-  // fit in a signed 64-bit integer. (This is the only problematic case.)
-  if (x == kint64min) return CapWithSignOf(x ^ y);
-  // We know that at this point y != 0 and x != kint64min, so it is safe to
-  // divide z by y.
-  if (z / y == x) return z;
-  return CapWithSignOf(x ^ y);
-}
-#endif
-
-inline int64 CapProdUsingDoubles(int64 a, int64 b) {
-  // This is the same algorithm as used in the Python intobject.c file.
-  const double double_prod = static_cast<double>(a) * static_cast<double>(b);
-  const int64 int_prod = a * b;
-  // It's faster to compute this before now as it can be done in parallel with
-  // the computations on doubles (product, conversion from int), and the integer
-  // product.
-  const int64 cap = CapWithSignOf(a ^ b);
-  const double int_prod_as_double = static_cast<double>(int_prod);
-  if (int_prod_as_double == double_prod) {
-    return int_prod;
-  }
-  const double diff = std::abs(int_prod_as_double - double_prod);
-  if (32.0 * diff <= std::abs(double_prod)) {
-    return int_prod;
-  }
-  return cap;
+  const uint64 a = cap_prod_util::uint_abs(x);
+  const uint64 b = cap_prod_util::uint_abs(y);
+  // Let MSB(x) denote the most significant bit of x. We have:
+  // MSB(x) + MSB(y) <= MSB(x * y) <= MSB(x) + MSB(y) + 1
+  const int msb_sum =
+      MostSignificantBitPosition64(a) + MostSignificantBitPosition64(b);
+  const int kMaxBitIndexInInt64 = 63;
+  if (msb_sum <= kMaxBitIndexInInt64 - 2) return x * y;
+  // Catch a == 0 or b == 0 now, as MostSignificantBitPosition64(0) == 0.
+  // TODO(user): avoid this by writing function Log2(a) with Log2(0) == -1.
+  if (a == 0 || b == 0) return 0;
+  const int64 cap = CapWithSignOf(x ^ y);
+  if (msb_sum >= kMaxBitIndexInInt64) return cap;
+  // The corner case is when msb_sum == 62, i.e. at least 63 bits will be
+  // needed to store the product. The following product will never overflow
+  // on uint64, since msb_sum == 62.
+  const uint64 u_prod = a * b;
+  // The overflow cases are captured by one of the following conditions:
+  // (cap >= 0 && u_prod >= static_cast<uint64>(kint64max) or
+  // (cap < 0 && u_prod >= static_cast<uint64>(kint64min)).
+  // These can be optimized as follows (and if the condition is false, it is
+  // safe to compute x * y.
+  if (u_prod >= static_cast<uint64>(cap)) return cap;
+  const int64 abs_result = bit_cast<int64>(u_prod);
+  return cap < 0 ? -abs_result : abs_result;
 }
 
 #if defined(__GNUC__) && defined(ARCH_K8)
@@ -227,13 +221,11 @@ inline int64 CapProdFast(int64 x, int64 y) {
   // input and output registers.
   // clang-format off
   asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
-      "\t"   "movq %[result],%%rax"
-      "\n\t" "imulq %[y]"
-      "\n\t" "cmovc %[cap],%%rax"  // Conditional move if carry.
-      "\n\t" "movq %%rax,%[result]"
+      "\n\t" "imulq %[y],%[result]"
+      "\n\t" "cmovc %[cap],%[result]"  // Conditional move if carry.
       : [result] "=r"(result)  // Output
       : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
-      : "cc", "%rax", "%rdx" /* Clobbered registers */);
+      : "cc" /* Clobbered registers */);
   // clang-format on
   return result;
 }
@@ -243,7 +235,7 @@ inline int64 CapProd(int64 x, int64 y) {
 #if defined(__GNUC__) && defined(ARCH_K8)
   return CapProdFast(x, y);
 #else
-  return CapProdUsingDoubles(x, y);
+  return CapProdGeneric(x, y);
 #endif
 }
 }  // namespace operations_research

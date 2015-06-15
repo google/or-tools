@@ -16,6 +16,8 @@
 #ifndef OR_TOOLS_BASE_CASTS_H_
 #define OR_TOOLS_BASE_CASTS_H_
 
+#include <cstring>
+
 template <class Dest, class Source>
 inline Dest bit_cast(const Source& source) {
   COMPILE_ASSERT(sizeof(Dest) == sizeof(Source),
