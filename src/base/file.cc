@@ -144,7 +144,8 @@ util::Status GetContents(const std::string& filename, std::string* output, int f
 
 util::Status WriteString(File* file, const std::string& contents, int flags) {
   if (flags == Defaults() && file != NULL &&
-      file->Write(contents.c_str(), contents.size()) == contents.size()) {
+      file->Write(contents.c_str(), contents.size()) == contents.size() &&
+      file->Close()) {
     return util::Status::OK;
   }
   return util::Status(util::error::INVALID_ARGUMENT,
