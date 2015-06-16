@@ -62,13 +62,6 @@ message MPVariableProto {
 
   // The name of the variable.
   optional string name = 5 [default = ""];
-
-  // [Advanced feature.]
-  // When the variable can also take zero as its value, even if zero is not
-  // within [lower_bound, upper_bound].
-  // This is only supported if lower_bound and upper_bound are set and finite.
-  // Ignored if MPModelProto::solver_type is *LINEAR_PROGRAMMING*.
-  optional bool can_also_be_zero = 6 [default = false];
 }
 
 // A linear constraint is always of the form:
