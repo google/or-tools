@@ -381,7 +381,9 @@ clean_cc:
 	-$(DEL) $(LPBINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
+	-$(DEL) $(GEN_DIR)$Sgraph$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sbop$S*.pb.*
+	-$(DEL) $(GEN_DIR)$Sflatzinc$Sparser.*
 	-$(DEL) $(GEN_DIR)$Sglop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.tab.*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.yy.*
