@@ -17,7 +17,7 @@
 #define OR_TOOLS_SAT_LP_UTILS_H_
 
 #include "sat/boolean_problem.pb.h"
-#include "linear_solver/linear_solver2.pb.h"
+#include "linear_solver/linear_solver.pb.h"
 #include "lp_data/lp_data.h"
 #include "sat/sat_solver.h"
 
@@ -28,8 +28,8 @@ namespace sat {
 // optimization problem. Returns false if the problem didn't contains only
 // binary integer variable, or if the coefficients couldn't be converted to
 // integer with a good enough precision.
-bool ConvertBinaryMPModelProtoToBooleanProblem(
-    const new_proto::MPModelProto& mp_model, LinearBooleanProblem* problem);
+bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
+                                               LinearBooleanProblem* problem);
 
 // Converts a Boolean optimization problem to its lp formulation.
 void ConvertBooleanProblemToLinearProgram(const LinearBooleanProblem& problem,

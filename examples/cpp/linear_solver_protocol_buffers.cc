@@ -17,7 +17,7 @@
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver2.pb.h"
+#include "linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
 void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
@@ -34,12 +34,12 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
   const double kConstraintUb[] = {100.0, 600.0, 300.0};
 
   const double infinity = MPSolver::infinity();
-  new_proto::MPModelProto model_proto;
+  MPModelProto model_proto;
   model_proto.set_name("Max_Example");
 
   // Create variables and objective function
   for (int j = 0; j < numVars; ++j) {
-    new_proto::MPVariableProto* x = model_proto.add_variable();
+    MPVariableProto* x = model_proto.add_variable();
     x->set_name(kVarName[j]);  // Could be skipped (optional).
     x->set_lower_bound(0.0);
     x->set_upper_bound(infinity);  // Could be skipped (default value).
@@ -50,8 +50,7 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
 
   // Create constraints
   for (int i = 0; i < kNumConstraints; ++i) {
-    new_proto::MPConstraintProto* constraint_proto =
-        model_proto.add_constraint();
+    MPConstraintProto* constraint_proto = model_proto.add_constraint();
     constraint_proto->set_name(kConstraintName[i]);  // Could be skipped.
     constraint_proto->set_lower_bound(-infinity);    // Could be skipped.
     constraint_proto->set_upper_bound(kConstraintUb[i]);
@@ -62,26 +61,24 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
     }
   }
 
-  new_proto::MPModelRequest model_request;
-  model_request.mutable_model()->CopyFrom(model_proto);
+  MPModelRequest model_request;
+  *model_request.mutable_model() = model_proto;
   #if defined(USE_GLOP)
   if (type == MPSolver::GLOP_LINEAR_PROGRAMMING) {
-    model_request.set_solver_type(
-        new_proto::MPModelRequest::GLOP_LINEAR_PROGRAMMING);
+    model_request.set_solver_type(MPModelRequest::GLOP_LINEAR_PROGRAMMING);
   }
   #endif  // USE_GLOP
   #if defined(USE_CLP)
   if (type == MPSolver::CLP_LINEAR_PROGRAMMING) {
-    model_request.set_solver_type(
-        new_proto::MPModelRequest::CLP_LINEAR_PROGRAMMING);
+    model_request.set_solver_type(MPModelRequest::CLP_LINEAR_PROGRAMMING);
   }
   #endif  // USE_CLP
 
-  new_proto::MPSolutionResponse solution_response;
+  MPSolutionResponse solution_response;
   MPSolver::SolveWithProto(model_request, &solution_response);
 
   // The problem has an optimal solution.
-  CHECK_EQ(new_proto::MPSolutionResponse::OPTIMAL, solution_response.status());
+  CHECK_EQ(MPSolutionResponse::OPTIMAL, solution_response.status());
 
   LOG(INFO) << "objective = " << solution_response.objective_value();
   for (int j = 0; j < numVars; ++j) {

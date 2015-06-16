@@ -34,7 +34,7 @@
 #include "base/stl_util.h"
 #include "base/hash.h"
 #include "base/accurate_sum.h"
-#include "linear_solver/linear_solver2.pb.h"
+#include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/model_exporter.h"
 #include "util/fp_utils.h"
 #include "util/proto_tools.h"
@@ -57,10 +57,6 @@ DEFINE_bool(linear_solver_enable_verbose_output, false,
 // operations_research namespace in open_source/base).
 namespace operations_research {
 
-using new_proto::Error;
-using new_proto::MPModelProto;
-using new_proto::MPModelRequest;
-using new_proto::MPSolutionResponse;
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
@@ -486,10 +482,10 @@ MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_nam
 // ----- Methods using protocol buffers -----
 
 MPSolver::LoadStatus MPSolver::LoadModelFromProto(
-    const new_proto::MPModelProto& input_model) {
+    const MPModelProto& input_model) {
   MPObjective* const objective = MutableObjective();
   for (int i = 0; i < input_model.variable_size(); ++i) {
-    const new_proto::MPVariableProto& var_proto = input_model.variable(i);
+    const MPVariableProto& var_proto = input_model.variable(i);
 
     // TODO(user): The variable name var_proto.name() is lost at this point.
     // This is because MPSolver has no notion of name, just of ids, and these
@@ -505,7 +501,7 @@ MPSolver::LoadStatus MPSolver::LoadModelFromProto(
   }
 
   for (int i = 0; i < input_model.constraint_size(); ++i) {
-    const new_proto::MPConstraintProto& ct_proto = input_model.constraint(i);
+    const MPConstraintProto& ct_proto = input_model.constraint(i);
     MPConstraint* const ct = MakeRowConstraint(
         ct_proto.lower_bound(), ct_proto.upper_bound(), ct_proto.name());
     ct->set_is_lazy(ct_proto.is_lazy());
@@ -537,27 +533,26 @@ MPSolver::LoadStatus MPSolver::LoadModelFromProto(
 }
 
 namespace {
-new_proto::MPSolutionResponse::Status ResultStatusToMPSolutionResponse(
+MPSolutionResponse::Status ResultStatusToMPSolutionResponse(
     MPSolver::ResultStatus status) {
   switch (status) {
     case MPSolver::OPTIMAL:
-      return new_proto::MPSolutionResponse::OPTIMAL;
+      return MPSolutionResponse::OPTIMAL;
     case MPSolver::FEASIBLE:
-      return new_proto::MPSolutionResponse::FEASIBLE;
+      return MPSolutionResponse::FEASIBLE;
     case MPSolver::INFEASIBLE:
-      return new_proto::MPSolutionResponse::INFEASIBLE;
+      return MPSolutionResponse::INFEASIBLE;
     case MPSolver::UNBOUNDED:
-      return new_proto::MPSolutionResponse::UNBOUNDED;
+      return MPSolutionResponse::UNBOUNDED;
     case MPSolver::ABNORMAL:
-      return new_proto::MPSolutionResponse::ABNORMAL;
+      return MPSolutionResponse::ABNORMAL;
     default:
-      return new_proto::MPSolutionResponse::UNKNOWN;
+      return MPSolutionResponse::UNKNOWN;
   }
 }
 }  // namespace
 
-void MPSolver::FillSolutionResponseProto(
-    new_proto::MPSolutionResponse* response) const {
+void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
   CHECK_NOTNULL(response);
   response->Clear();
   response->set_status(
@@ -576,10 +571,10 @@ void MPSolver::FillSolutionResponseProto(
 }
 
 // static
-void MPSolver::SolveWithProto(const new_proto::MPModelRequest& model_request,
-                              new_proto::MPSolutionResponse* response) {
+void MPSolver::SolveWithProto(const MPModelRequest& model_request,
+                              MPSolutionResponse* response) {
   CHECK_NOTNULL(response);
-  const new_proto::MPModelProto& model = model_request.model();
+  const MPModelProto& model = model_request.model();
   MPSolver solver(model.name(), static_cast<MPSolver::OptimizationProblemType>(
                                     model_request.solver_type()));
   const MPSolver::LoadStatus loadStatus = solver.LoadModelFromProto(model);
@@ -588,7 +583,7 @@ void MPSolver::SolveWithProto(const new_proto::MPModelRequest& model_request,
                  << "load status = "
                  << Error::Code_Name(static_cast<Error::Code>(loadStatus))
                  << " (" << loadStatus << ")";
-    response->set_status(new_proto::MPSolutionResponse::ABNORMAL);
+    response->set_status(MPSolutionResponse::ABNORMAL);
     return;
   }
   if (model_request.has_solver_time_limit_seconds()) {
@@ -601,8 +596,7 @@ void MPSolver::SolveWithProto(const new_proto::MPModelRequest& model_request,
   solver.FillSolutionResponseProto(response);
 }
 
-void MPSolver::ExportModelToNewProto(new_proto::MPModelProto* output_model)
-    const {
+void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   DCHECK(output_model != NULL);
   output_model->Clear();
   // Name
@@ -610,8 +604,7 @@ void MPSolver::ExportModelToNewProto(new_proto::MPModelProto* output_model)
   // Variables
   for (int j = 0; j < variables_.size(); ++j) {
     const MPVariable* const var = variables_[j];
-    new_proto::MPVariableProto* const variable_proto =
-        output_model->add_variable();
+    MPVariableProto* const variable_proto = output_model->add_variable();
     // TODO(user): Add option to avoid filling the var name to avoid overly
     // large protocol buffers.
     variable_proto->set_name(var->name());
@@ -638,8 +631,7 @@ void MPSolver::ExportModelToNewProto(new_proto::MPModelProto* output_model)
   // Constraints
   for (int i = 0; i < constraints_.size(); ++i) {
     MPConstraint* const constraint = constraints_[i];
-    new_proto::MPConstraintProto* const constraint_proto =
-        output_model->add_constraint();
+    MPConstraintProto* const constraint_proto = output_model->add_constraint();
     constraint_proto->set_name(constraint->name());
     constraint_proto->set_lower_bound(constraint->lb());
     constraint_proto->set_upper_bound(constraint->ub());
@@ -667,11 +659,10 @@ void MPSolver::ExportModelToNewProto(new_proto::MPModelProto* output_model)
   output_model->set_objective_offset(Objective().offset());
 }
 
-bool MPSolver::LoadSolutionFromNewProto(
-    const new_proto::MPSolutionResponse& response) {
+bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
   interface_->result_status_ = static_cast<ResultStatus>(response.status());
-  if (response.status() != new_proto::MPSolutionResponse::OPTIMAL &&
-      response.status() != new_proto::MPSolutionResponse::FEASIBLE) {
+  if (response.status() != MPSolutionResponse::OPTIMAL &&
+      response.status() != MPSolutionResponse::FEASIBLE) {
     LOG(ERROR)
         << "Cannot load a solution unless its status is OPTIMAL or FEASIBLE.";
     return false;
@@ -1102,7 +1093,7 @@ bool MPSolver::OwnsVariable(const MPVariable* var) const {
 
 bool MPSolver::ExportModelAsLpFormat(bool obfuscate, std::string* output) {
   MPModelProto proto;
-  ExportModelToNewProto(&proto);
+  ExportModelToProto(&proto);
   MPModelProtoExporter exporter(proto);
   return exporter.ExportModelAsLpFormat(obfuscate, output);
 }
@@ -1110,7 +1101,7 @@ bool MPSolver::ExportModelAsLpFormat(bool obfuscate, std::string* output) {
 bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
                                       std::string* output) {
   MPModelProto proto;
-  ExportModelToNewProto(&proto);
+  ExportModelToProto(&proto);
   MPModelProtoExporter exporter(proto);
   return exporter.ExportModelAsMpsFormat(fixed_format, obfuscate, output);
 }

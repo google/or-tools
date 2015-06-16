@@ -24,7 +24,7 @@
 #include "base/strutil.h"
 #include "glop/proto_utils.h"
 #include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver2.pb.h"
+#include "linear_solver/linear_solver.pb.h"
 #include "lp_data/mps_reader.h"
 #include "util/proto_tools.h"
 
@@ -43,7 +43,7 @@ static const char kUsageStr[] =
     "  - an MPModelProto (binary or text, possibly gzipped),\n"
     "  - an MPModelRequest (binary or text, possibly gzipped).\n"
     "MPModelProto and MPModelRequest files can comply with either the "
-    "linear_solver.proto or the linear_solver2.proto format.";
+    "linear_solver.proto or the linear_solver.proto format.";
 
 namespace operations_research {
 namespace {
@@ -106,14 +106,13 @@ void Run() {
     CHECK(solver.SetSolverSpecificParametersAsString(FLAGS_params))
         << "Wrong --params format.";
   }
-  printf("%-12s: %s\n", "Solver",
-         new_proto::MPModelRequest::SolverType_Name(
-             static_cast<new_proto::MPModelRequest::SolverType>(
-                 solver.ProblemType())).c_str());
+  printf("%-12s: %s\n", "Solver", MPModelRequest::SolverType_Name(
+                                      static_cast<MPModelRequest::SolverType>(
+                                          solver.ProblemType())).c_str());
 
   // Load the problem into an MPModelProto.
-  new_proto::MPModelProto model_proto;
-  new_proto::MPModelRequest request_proto;
+  MPModelProto model_proto;
+  MPModelRequest request_proto;
   if (HasSuffixString(FLAGS_input, ".mps") ||
       HasSuffixString(FLAGS_input, ".mps.gz")) {
     glop::LinearProgram linear_program_fixed;
@@ -178,8 +177,8 @@ void Run() {
   }
 
   printf("%-12s: %s\n", "Status",
-         new_proto::MPSolutionResponse::Status_Name(
-             static_cast<new_proto::MPSolutionResponse::Status>(solve_status))
+         MPSolutionResponse::Status_Name(
+             static_cast<MPSolutionResponse::Status>(solve_status))
              .c_str());
   printf("%-12s: %15.15e\n", "Objective", solver.Objective().Value());
   printf("%-12s: %-6.4g\n", "Time", solving_time_in_sec);

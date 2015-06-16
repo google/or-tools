@@ -32,7 +32,7 @@
 #include "util/gzip/gzipstring.h"
 #include "glop/lp_solver.h"
 #include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver2.pb.h"
+#include "linear_solver/linear_solver.pb.h"
 #include "util/fp_utils.h"
 #include "util/stats.h"
 #include "base/status.h"
@@ -79,7 +79,7 @@ void Solve(MPSolver::OptimizationProblemType type, const std::string& file_name,
   if (!GunzipString(raw_data, &uncompressed)) {
     uncompressed = raw_data;
   }
-  new_proto::MPModelProto proto;
+  MPModelProto proto;
   {
     ScopedWallTime timer(&(result->parsing_time_in_sec));
     if (!proto.ParseFromString(uncompressed)) {

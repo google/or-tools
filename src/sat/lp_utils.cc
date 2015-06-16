@@ -26,12 +26,12 @@ using glop::Fractional;
 using glop::RowIndex;
 using glop::kInfinity;
 
-using operations_research::new_proto::MPConstraintProto;
-using operations_research::new_proto::MPModelProto;
-using operations_research::new_proto::MPVariableProto;
+using operations_research::MPConstraintProto;
+using operations_research::MPModelProto;
+using operations_research::MPVariableProto;
 
-bool ConvertBinaryMPModelProtoToBooleanProblem(
-    const new_proto::MPModelProto& mp_model, LinearBooleanProblem* problem) {
+bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
+                                               LinearBooleanProblem* problem) {
   CHECK(problem != nullptr);
   problem->Clear();
   problem->set_name(mp_model.name());

@@ -14,7 +14,7 @@
 
 import types
 
-from ortools.linear_solver import linear_solver2_pb2
+from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver import pywraplp
 
 from google.protobuf import text_format
@@ -50,7 +50,7 @@ model <
 
 
 def test_proto():
-  input_proto = linear_solver2_pb2.MPModelRequest()
+  input_proto = linear_solver_pb2.MPModelRequest()
   text_format.Merge(text_model, input_proto)
   solver = pywraplp.Solver('solveFromProto',
                            pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
@@ -60,7 +60,7 @@ def test_proto():
   solver.EnableOutput()
   solver.Solve()
   # Fill solution
-  solution = linear_solver2_pb2.MPSolutionResponse()
+  solution = linear_solver_pb2.MPSolutionResponse()
   solver.FillSolutionResponseProto(solution)
   print solution
 

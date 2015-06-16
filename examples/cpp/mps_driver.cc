@@ -13,7 +13,7 @@
 
 
 // Driver for reading and solving files in the MPS format and in
-// the linear_solver2.proto format.
+// the linear_solver.proto format.
 
 #include <stdio.h>
 #include <string>
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < file_list.size(); ++i) {
     const std::string& file_name = file_list[i];
     MPSReader mps_reader;
-    operations_research::new_proto::MPModelProto model_proto;
+    operations_research::MPModelProto model_proto;
     if (HasSuffixString(file_name, ".mps") ||
         HasSuffixString(file_name, ".mps.gz")) {
       if (!mps_reader.LoadFileAndTryFreeFormOnFail(file_name,

@@ -51,7 +51,7 @@ DYNAMIC_GRAPH_DEPS = $(DYNAMIC_GRAPH_LIBS) \
 	$(DYNAMIC_BASE_DEPS)
 
 DYNAMIC_LP_DEPS = \
-	$(GEN_DIR)/linear_solver/linear_solver2.pb.h \
+	$(GEN_DIR)/linear_solver/linear_solver.pb.h \
 	$(DYNAMIC_LP_LIBS) \
 	$(DYNAMIC_SAT_LIBS) \
 	$(DYNAMIC_SPLIT_LIBS) \
@@ -83,8 +83,8 @@ DYNAMIC_FLATZINC_DEPS = $(DYNAMIC_FLATZINC_LIBS) \
 DYNAMIC_DIMACS_DEPS = $(DYNAMIC_DIMACS_LIBS) \
         $(DYNAMIC_BASE_DEPS) \
         $(DYNAMIC_GRAPH_DEPS) \
-        $(DYNAMIC_ALGORITHMS_DEPS) \
-        $(DYNAMIC_LP_DEPS)
+        $(DYNAMIC_LP_DEPS) \
+        $(DYNAMIC_ALGORITHMS_DEPS)
 
 DYNAMIC_FAP_DEPS = $(DYNAMIC_FAP_LIBS) \
         $(DYNAMIC_BASE_DEPS) \
@@ -634,7 +634,7 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/linear_solver/glpk_interface.$O \
 	$(OBJ_DIR)/linear_solver/gurobi_interface.$O \
 	$(OBJ_DIR)/linear_solver/linear_solver.$O \
-	$(OBJ_DIR)/linear_solver/linear_solver2.pb.$O \
+	$(OBJ_DIR)/linear_solver/linear_solver.pb.$O \
 	$(OBJ_DIR)/linear_solver/model_exporter.$O \
 	$(OBJ_DIR)/linear_solver/scip_interface.$O \
 	$(OBJ_DIR)/linear_solver/sulum_interface.$O
@@ -661,18 +661,18 @@ $(OBJ_DIR)/linear_solver/glpk_interface.$O:$(SRC_DIR)/linear_solver/glpk_interfa
 $(OBJ_DIR)/linear_solver/gurobi_interface.$O:$(SRC_DIR)/linear_solver/gurobi_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sgurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_interface.$O
 
-$(OBJ_DIR)/linear_solver/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h $(GEN_DIR)/glop/parameters.pb.h
+$(OBJ_DIR)/linear_solver/linear_solver.$O:$(SRC_DIR)/linear_solver/linear_solver.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h $(GEN_DIR)/glop/parameters.pb.h $(GEN_DIR)/bop/bop_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Slinear_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver.$O
 
-$(OBJ_DIR)/linear_solver/linear_solver2.pb.$O:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Slinear_solver$Slinear_solver2.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver2.pb.$O
+$(OBJ_DIR)/linear_solver/linear_solver.pb.$O:$(GEN_DIR)/linear_solver/linear_solver.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Slinear_solver$Slinear_solver.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_solver.pb.$O
 
-$(GEN_DIR)/linear_solver/linear_solver2.pb.cc:$(SRC_DIR)/linear_solver/linear_solver2.proto
-	$(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Slinear_solver$Slinear_solver2.proto
+$(GEN_DIR)/linear_solver/linear_solver.pb.cc:$(SRC_DIR)/linear_solver/linear_solver.proto
+	$(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Slinear_solver$Slinear_solver.proto
 
-$(GEN_DIR)/linear_solver/linear_solver2.pb.h:$(GEN_DIR)/linear_solver/linear_solver2.pb.cc
+$(GEN_DIR)/linear_solver/linear_solver.pb.h:$(GEN_DIR)/linear_solver/linear_solver.pb.cc
 
-$(OBJ_DIR)/linear_solver/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+$(OBJ_DIR)/linear_solver/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Smodel_exporter.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Smodel_exporter.$O
 
 $(OBJ_DIR)/linear_solver/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
@@ -718,7 +718,7 @@ $(OBJ_DIR)/util/graph_export.$O:$(SRC_DIR)/util/graph_export.cc
 $(OBJ_DIR)/util/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_function.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/piecewise_linear_function.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Spiecewise_linear_function.$O
 
-$(OBJ_DIR)/util/proto_tools.$O:$(SRC_DIR)/util/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+$(OBJ_DIR)/util/proto_tools.$O:$(SRC_DIR)/util/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sutil$Sproto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sproto_tools.$O
 
 $(OBJ_DIR)/util/rational_approximation.$O:$(SRC_DIR)/util/rational_approximation.cc
@@ -1031,7 +1031,7 @@ $(OBJ_DIR)/glop/entering_variable.$O:$(SRC_DIR)/glop/entering_variable.cc
 $(OBJ_DIR)/glop/initial_basis.$O:$(SRC_DIR)/glop/initial_basis.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Sinitial_basis.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sinitial_basis.$O
 
-$(OBJ_DIR)/glop/lp_solver.$O:$(SRC_DIR)/glop/lp_solver.cc  $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+$(OBJ_DIR)/glop/lp_solver.$O:$(SRC_DIR)/glop/lp_solver.cc  $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Sglop$Slp_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_solver.$O
 
 $(OBJ_DIR)/glop/lu_factorization.$O:$(SRC_DIR)/glop/lu_factorization.cc
@@ -1087,7 +1087,7 @@ $(OBJ_DIR)/glop/mps_driver.$O:$(EX_DIR)/cpp/mps_driver.cc $(GEN_DIR)/glop/parame
 $(BIN_DIR)/mps_driver$E: $(OBJ_DIR)/glop/mps_driver.$O $(STATIC_LP_DEPS)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Smps_driver.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smps_driver$E
 
-$(OBJ_DIR)/glop/solve.$O:$(EX_DIR)/cpp/solve.cc $(GEN_DIR)/glop/parameters.pb.h $(GEN_DIR)/linear_solver/linear_solver2.pb.h
+$(OBJ_DIR)/glop/solve.$O:$(EX_DIR)/cpp/solve.cc $(GEN_DIR)/glop/parameters.pb.h $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssolve.$O
 
 $(BIN_DIR)/solve$E: $(OBJ_DIR)/glop/solve.$O $(STATIC_LP_DEPS)

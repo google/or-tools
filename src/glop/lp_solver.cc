@@ -78,7 +78,7 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
       FLAGS_lp_dump_file_number >= 0 ? FLAGS_lp_dump_file_number : num;
   StringAppendF(&filename, "-%06d.pb", file_num);
   const std::string filespec = StrCat(FLAGS_lp_dump_dir, "/", filename);
-  new_proto::MPModelProto proto;
+  MPModelProto proto;
   LinearProgramToMPModelProto(linear_program, &proto);
   if (!WriteProtoToFile(filespec, proto, FLAGS_lp_dump_binary_file,
                         FLAGS_lp_dump_compressed_file)) {

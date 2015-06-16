@@ -134,7 +134,7 @@ $(GEN_DIR)/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/linear_solver/csharp/linear_solver.swig \
 	$(SRC_DIR)/base/base.swig $(SRC_DIR)/util/csharp/data.swig \
 	$(SRC_DIR)/linear_solver/linear_solver.h \
-	$(GEN_DIR)/linear_solver/linear_solver2.pb.h
+	$(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research_linear_solver -namespace $(CLR_DLL_NAME).LinearSolver -dllimport "$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)/linear_solver$Scsharp$Slinear_solver.swig
 
 $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O: $(GEN_DIR)/linear_solver/linear_solver_csharp_wrap.cc

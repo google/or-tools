@@ -16,7 +16,7 @@
 
 from google.apputils import app
 
-from ortools.linear_solver import linear_solver2_pb2
+from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver import pywraplp
 
 
@@ -114,7 +114,7 @@ def SolveAndPrint(solver, variable_list, constraint_list):
 
 def main(unused_argv):
   all_names_and_problem_types = (
-      linear_solver2_pb2.MPModelRequest.SolverType.items())
+      linear_solver_pb2.MPModelRequest.SolverType.items())
   for name, problem_type in all_names_and_problem_types:
     # Skip non-LP problem types.
     if not name.endswith('LINEAR_PROGRAMMING'):

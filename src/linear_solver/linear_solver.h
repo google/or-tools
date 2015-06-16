@@ -153,13 +153,10 @@ class MPSolverInterface;
 class MPSolverParameters;
 class MPVariable;
 
-// The new MP protocol buffer format. New clients that want to work with
-// protocol buffers should use this.
-namespace new_proto {
+// Forward declarations needed by SWIG. See java/linear_solver.swig for details.
 class MPModelProto;
 class MPModelRequest;
 class MPSolutionResponse;
-}  // namespace new_proto
 
 // This mathematical programming (MP) solver class is the main class
 // though which users build and solve problems.
@@ -303,7 +300,7 @@ class MPSolver {
 
   // The status of solving the problem. The straightforward translation to
   // homonymous enum values of MPSolutionResponse::Status
-  // (see ./linear_solver2.proto) is guaranteed by ./enum_consistency_test.cc,
+  // (see ./linear_solver.proto) is guaranteed by ./enum_consistency_test.cc,
   // you may rely on it.
   // TODO(user): Figure out once and for all what the status of
   // underlying solvers exactly mean, especially for feasible and
@@ -363,12 +360,12 @@ class MPSolver {
   };
 
   // Loads model from protocol buffer.
-  LoadStatus LoadModelFromProto(const new_proto::MPModelProto& input_model);
+  LoadStatus LoadModelFromProto(const MPModelProto& input_model);
 
   // Encodes the current solution in a solution response protocol buffer.
   // Only nonzero variable values are stored in order to reduce the
   // size of the MPSolutionResponse protocol buffer.
-  void FillSolutionResponseProto(new_proto::MPSolutionResponse* response) const;
+  void FillSolutionResponseProto(MPSolutionResponse* response) const;
 
   // Solves the model encoded by a MPModelRequest protocol buffer and
   // fills the solution encoded as a MPSolutionResponse.
@@ -376,12 +373,13 @@ class MPSolver {
   // end. If you want to keep the MPSolver alive (for debugging, or for
   // incremental solving), you should write another version of this function
   // that creates the MPSolver object on the heap and returns it.
-  static void SolveWithProto(const new_proto::MPModelRequest& model_request,
-                             new_proto::MPSolutionResponse* response);
+  //
+  // TODO(user): populate an error message in the response.
+  static void SolveWithProto(const MPModelRequest& model_request,
+                             MPSolutionResponse* response);
 
   // Exports model to protocol buffer.
-  // TODO(user): rename to ExportModelToProto when possible.
-  void ExportModelToNewProto(new_proto::MPModelProto* output_model) const;
+  void ExportModelToProto(MPModelProto* output_model) const;
 
   // Load a solution encoded in a protocol buffer onto this solver for easy
   // access via the MPSolver interface.
@@ -390,13 +388,13 @@ class MPSolver {
   // following this example:
   //   MPSolver my_solver;
   //   ... add variables and constraints ...
-  //   new_proto::MPModelProto model_proto;
-  //   my_solver.ExportModelToNewProto(&model_proto);
-  //   new_proto::MPSolutionResponse solver_response;
+  //   MPModelProto model_proto;
+  //   my_solver.ExportModelToProto(&model_proto);
+  //   MPSolutionResponse solver_response;
   //   // This can be replaced by a stubby call to the linear solver server.
   //   MPSolver::SolveWithProto(model_proto, &solver_response);
   //   if (solver_response.result_status() == MPSolutionResponse::OPTIMAL) {
-  //     CHECK(my_solver.LoadSolutionFromNewProto(solver_response));
+  //     CHECK(my_solver.LoadSolutionFromProto(solver_response));
   //     ... inspect the solution using the usual API: solution_value(), etc...
   //   }
   //
@@ -412,13 +410,12 @@ class MPSolver {
   // - loading a solution with a status other than OPTIMAL / FEASIBLE.
   // Note: the variable and objective values aren't checked. You can use
   // VerifySolution() for that.
-  // TODO(user): rename to LoadSolutionFromProto when possible.
-  bool LoadSolutionFromNewProto(const new_proto::MPSolutionResponse& response);
+  bool LoadSolutionFromProto(const MPSolutionResponse& response);
 
   // ----- Export model to files or strings -----
 
   // Shortcuts to the homonymous MPModelProtoExporter methods, via
-  // exporting to a MPModelProto with ExportModelToNewProto() (see above).
+  // exporting to a MPModelProto with ExportModelToProto() (see above).
   bool ExportModelAsLpFormat(bool obfuscated, std::string* model_str);
   bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscated,
                               std::string* model_str);

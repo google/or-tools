@@ -23,7 +23,7 @@
 #include "base/join.h"
 #include "base/strutil.h"
 #include "base/map_util.h"
-#include "linear_solver/linear_solver2.pb.h"
+#include "linear_solver/linear_solver.pb.h"
 #include "util/fp_utils.h"
 
 DEFINE_bool(lp_shows_unused_variables, false,
@@ -38,10 +38,6 @@ DEFINE_bool(lp_log_invalid_name, false,
             "Whether to log invalid variable and contraint names.");
 
 namespace operations_research {
-
-using new_proto::MPConstraintProto;
-using new_proto::MPModelProto;
-using new_proto::MPVariableProto;
 
 MPModelProtoExporter::MPModelProtoExporter(const MPModelProto& proto)
     : proto_(proto),
@@ -91,7 +87,7 @@ bool MPModelProtoExporter::CheckNameValidity(const std::string& name) {
 }
 
 std::string MPModelProtoExporter::GetVariableName(int var_index) const {
-  const new_proto::MPVariableProto& var_proto = proto_.variable(var_index);
+  const MPVariableProto& var_proto = proto_.variable(var_index);
   if (use_obfuscated_names_ || !var_proto.has_name()) {
     return StringPrintf("V%0*d", num_digits_for_variables_, var_index);
   } else {
@@ -173,7 +169,7 @@ void LineBreaker::Append(const std::string& s) {
 }  // namespace
 
 bool MPModelProtoExporter::WriteLpTerm(int var_index, double coefficient,
-                                      std::string* output) const {
+                                       std::string* output) const {
   output->clear();
   if (var_index < 0 || var_index >= proto_.variable_size()) {
     LOG(DFATAL) << "Reference to out-of-bounds variable index # " << var_index;

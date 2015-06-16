@@ -27,11 +27,11 @@
 //
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
-%include base/base.swig
+%include "base/base.swig"
 
 
 %{
-#include "linear_solver/linear_solver2.pb.h"
+#include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/linear_solver.h"
 %}
 
@@ -48,10 +48,10 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 
 %extend MPVariable {
   std::string __str__() {
-    return self->name();
+    return $self->name();
   }
   std::string __repr__() {
-    return self->name();
+    return $self->name();
   }
 
   // Note(user): the 74 lines below are a pure duplication of code from
