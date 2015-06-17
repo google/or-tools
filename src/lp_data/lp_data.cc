@@ -378,9 +378,11 @@ Fractional LinearProgram::GetObjectiveCoefficientForMinimizationVersion(
 }
 
 std::string LinearProgram::GetDimensionString() const {
-  return StringPrintf("%d rows, %d columns, %lld entries",
-                      num_constraints().value(), num_variables().value(),
-                      num_entries().value());
+  return StringPrintf(
+      "%d rows, %d columns, %lld entries", num_constraints().value(),
+      num_variables().value(),
+      // static_cast<int64> is needed because the Android port uses int32.
+      static_cast<int64>(num_entries().value()));
 }
 
 std::string LinearProgram::GetObjectiveStatsString() const {
