@@ -122,16 +122,6 @@ class SatClause {
   bool AttachAndEnqueuePotentialUnitPropagation(Trail* trail,
                                                 LiteralWatchers* demons);
 
-  // Modify and get the clause activity.
-  void IncreaseActivity(double increase) { activity_ += increase; }
-  void MultiplyActivity(double factor) { activity_ *= factor; }
-  double Activity() const { return activity_; }
-
-  // Set and get the clause LBD (Literal Blocks Distance). The LBD is not
-  // computed here. See ComputeClauseLbd() in SatSolver.
-  void SetLbd(int value) { lbd_ = value; }
-  int Lbd() const { return lbd_; }
-
   // Returns true if the clause is attached to a LiteralWatchers.
   bool IsAttached() const { return is_attached_; }
 
@@ -152,15 +142,13 @@ class SatClause {
   std::string DebugString() const;
 
  private:
-  // The data is packed so that only 16 bytes are used for these fields.
-  // Note that the max lbd is the maximum depth of the search tree (decision
-  // levels), so it should fit easily in 30 bits. Note that we can also upper
-  // bound it without hurting too much the clause cleaning heuristic.
+  // The data is packed so that only 4 bytes are used for these fields.
+  //
+  // TODO(user): It should be possible to remove one or both of the Booleans.
+  // That may speed up the code slightly.
   bool is_redundant_ : 1;
   bool is_attached_ : 1;
-  int lbd_ : 30;
-  int size_ : 32;
-  double activity_;
+  unsigned int size_ : 30;
 
 #ifdef SAT_ENABLE_RESOLUTION
   // This is only needed when the parameter unsat_proof() is true.

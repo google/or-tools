@@ -19,6 +19,7 @@
 #ifndef OR_TOOLS_SAT_SAT_SOLVER_H_
 #define OR_TOOLS_SAT_SAT_SOLVER_H_
 
+#include "base/hash.h"
 #include "base/unique_ptr.h"
 #include <queue>
 #include <string>
@@ -30,6 +31,7 @@
 #include "base/timer.h"
 #include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
+#include "base/map_util.h"
 #include "base/random.h"
 #include "sat/pb_constraint.h"
 #include "sat/clause.h"
@@ -462,9 +464,17 @@ class SatSolver {
 
   // Predicate used by CleanClauseDatabaseIfNeeded().
   bool ClauseShouldBeKept(SatClause* clause) const {
-    return !clause->IsRedundant() ||
-           clause->Lbd() <= parameters_.clause_cleanup_lbd_bound() ||
-           clause->Size() <= 2 || IsClauseUsedAsReason(clause);
+    return !clause->IsRedundant() || clause->Size() <= 2 ||
+           FindWithDefault(clauses_info_, clause, ClauseInfo()).lbd <=
+               parameters_.clause_cleanup_lbd_bound() ||
+           IsClauseUsedAsReason(clause);
+  }
+
+  // Same as ClauseShouldBeKept(), but take the lbd as a parameter and since we
+  // only used that for a new clause, we don't need the IsClauseUsedAsReason()
+  // or the IsRedundant() part.
+  bool NewLearnedClauseWillAlwaysBeKept(int lbd, SatClause* clause) const {
+    return lbd <= parameters_.clause_cleanup_lbd_bound() || clause->Size() <= 2;
   }
 
   // Add a problem clause. Not that the clause is assumed to be "cleaned", that
@@ -664,6 +674,14 @@ class SatSolver {
   // treat_binary_clauses_separately is true, the binary clause are not kept
   // here either.
   std::vector<SatClause*> clauses_;
+
+  // Clause information used for the clause database management.
+  // Note that only the clauses that can be removed need to appear here.
+  struct ClauseInfo {
+    double activity = 0.0;
+    int32 lbd = 0;
+  };
+  hash_map<SatClause*, ClauseInfo> clauses_info_;
 
   // Observers of literals.
   LiteralWatchers watched_clauses_;

@@ -392,17 +392,26 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     CleanClauseDatabaseIfNeeded();
     SatClause* clause = SatClause::Create(literals, is_redundant, node);
     clauses_.emplace_back(clause);
-    BumpClauseActivity(clause);
 
     // Important: Even though the only literal at the last decision level has
     // been unassigned, its level was not modified, so ComputeLbd() works.
-    clause->SetLbd(ComputeLbd(*clause));
-    if (!ClauseShouldBeKept(clause)) {
+    const int lbd = ComputeLbd(*clause);
+    if (!NewLearnedClauseWillAlwaysBeKept(lbd, clause)) {
       --num_learned_clause_before_cleanup_;
     }
 
+    // BumpClauseActivity() must be called after clauses_info_[clause] has been
+    // created or it will have no effect.
+    //
+    // TODO(user): It must be better to move these two line in the if {} block
+    // just above. But experiment seems to show otherwise? To investigate more,
+    // this should only change the rate at which the clause activity is rescaled
+    // down. So maybe scaling them down often is good?
+    clauses_info_[clause].lbd = lbd;
+    BumpClauseActivity(clause);
+
     // Maintain the lbd average for the restart policy.
-    lbd_running_average_.Add(clause->Lbd());
+    lbd_running_average_.Add(lbd);
 
     CHECK(watched_clauses_.AttachAndPropagate(clause, &trail_));
   }
@@ -1126,10 +1135,12 @@ void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
     const VariableIndex var = literal.Variable();
     const int level = DecisionLevel(var);
     if (level == 0) continue;
-    if (level == CurrentDecisionLevel() &&
+    if (level == CurrentDecisionLevel() && bump_again_lbd_limit > 0 &&
         trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION &&
         trail_.Info(var).sat_clause->IsRedundant() &&
-        trail_.Info(var).sat_clause->Lbd() < bump_again_lbd_limit) {
+        FindWithDefault(clauses_info_, trail_.Info(var).sat_clause,
+                        ClauseInfo())
+                .lbd < bump_again_lbd_limit) {
       activities_[var] += variable_activity_increment_;
     }
     activities_[var] += variable_activity_increment_;
@@ -1159,8 +1170,15 @@ void SatSolver::BumpReasonActivities(const std::vector<Literal>& literals) {
 
 void SatSolver::BumpClauseActivity(SatClause* clause) {
   if (!clause->IsRedundant()) return;
-  clause->IncreaseActivity(clause_activity_increment_);
-  if (clause->Activity() > parameters_.max_clause_activity_value()) {
+
+  // We only bump the activity of the clauses that have some info. So if we know
+  // that we will keep a clause forever, we don't need to create its Info. More
+  // than the speed, this allows to limit as much as possible the activity
+  // rescaling.
+  auto it = clauses_info_.find(clause);
+  if (it == clauses_info_.end()) return;
+  const int activity = it->second.activity += clause_activity_increment_;
+  if (activity > parameters_.max_clause_activity_value()) {
     RescaleClauseActivities(1.0 / parameters_.max_clause_activity_value());
   }
 }
@@ -1189,8 +1207,8 @@ void SatSolver::RescaleVariableActivities(double scaling_factor) {
 void SatSolver::RescaleClauseActivities(double scaling_factor) {
   SCOPED_TIME_STAT(&stats_);
   clause_activity_increment_ *= scaling_factor;
-  for (SatClause* clause : clauses_) {
-    clause->MultiplyActivity(scaling_factor);
+  for (auto& entry : clauses_info_) {
+    entry.second.activity *= scaling_factor;
   }
 }
 
@@ -1435,6 +1453,9 @@ void SatSolver::DeleteDetachedClauses() {
     for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
       unsat_proof_.UnlockNode((*it)->ResolutionNodePointer());
     }
+  }
+  for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
+    clauses_info_.erase(*it);
   }
   STLDeleteContainerPointers(iter, clauses_.end());
   clauses_.erase(iter, clauses_.end());
@@ -2614,22 +2635,6 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
   conflict->erase(conflict->begin() + index, conflict->end());
 }
 
-namespace {
-
-// Order the clauses by decreasing activity.
-bool ActivityClauseOrder(SatClause* a, SatClause* b) {
-  return a->Activity() > b->Activity();
-}
-
-// Order the clause by increasing LBD (Literal Blocks Distance) first. For the
-// same LBD they are ordered by decreasing activity.
-bool LbdClauseOrder(SatClause* a, SatClause* b) {
-  if (a->Lbd() == b->Lbd()) return a->Activity() > b->Activity();
-  return a->Lbd() < b->Lbd();
-}
-
-}  // namespace
-
 void SatSolver::InitLearnedClauseLimit(int current_num_deletable) {
   target_number_of_learned_clauses_ =
       std::max(parameters_.clause_cleanup_min_target(),
@@ -2642,6 +2647,9 @@ void SatSolver::InitLearnedClauseLimit(int current_num_deletable) {
           << " conflicts.";
 }
 
+// TODO(user): Optimize this code if the need arise. Only the clauses from the
+// clauses_info_ map need to be inspected, and we can do so with a linear scan
+// rather than many hash lookup.
 void SatSolver::CleanClauseDatabaseIfNeeded() {
   if (num_learned_clause_before_cleanup_ > 0) return;
   SCOPED_TIME_STAT(&stats_);
@@ -2655,9 +2663,26 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
       clauses_.begin(), clauses_.end(),
       std::bind1st(std::mem_fun(&SatSolver::ClauseShouldBeKept), this));
   if (parameters_.clause_cleanup_ordering() == SatParameters::CLAUSE_LBD) {
-    std::sort(clause_to_keep_end, clauses_.end(), LbdClauseOrder);
+    // Order the clauses by increasing LBD (Literal Blocks Distance) first. For
+    // the same LBD they are ordered by decreasing activity.
+    std::sort(clause_to_keep_end, clauses_.end(),
+              [this](SatClause* a, SatClause* b) {
+                const ClauseInfo info_a =
+                    FindWithDefault(this->clauses_info_, a, ClauseInfo());
+                const ClauseInfo info_b =
+                    FindWithDefault(this->clauses_info_, b, ClauseInfo());
+                if (info_a.lbd == info_b.lbd) {
+                  return info_a.activity > info_b.activity;
+                }
+                return info_a.lbd < info_b.lbd;
+              });
   } else {
-    std::sort(clause_to_keep_end, clauses_.end(), ActivityClauseOrder);
+    // Order the clauses by decreasing activity.
+    std::sort(clause_to_keep_end, clauses_.end(), [this](SatClause* a,
+                                                         SatClause* b) {
+      return FindWithDefault(this->clauses_info_, a, ClauseInfo()).activity >
+             FindWithDefault(this->clauses_info_, b, ClauseInfo()).activity;
+    });
   }
 
   // Delete all the clause after first_clause_to_delete (if any).
