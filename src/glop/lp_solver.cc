@@ -523,8 +523,10 @@ void LPSolver::RunAndPushIfRelevant(std::unique_ptr<Preprocessor> preprocessor,
               .value(),
           current_linear_program_.num_variables().value(),
           (current_linear_program_.num_variables() - initial_num_cols_).value(),
-          new_num_entries.value(),
-          new_num_entries.value() - initial_num_entries_.value());
+          // static_cast<int64> is needed because the Android port uses int32.
+          static_cast<int64>(new_num_entries.value()),
+          static_cast<int64>(new_num_entries.value() -
+                             initial_num_entries_.value()));
       status_ = preprocessor->status();
       preprocessors_.push_back(std::move(preprocessor));
       return;
