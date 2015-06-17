@@ -162,8 +162,11 @@ void Run() {
   printf("%-12s: '%s'\n", "File", FLAGS_input.c_str());
 
   // Load the proto into the solver.
-  MPSolver::LoadStatus load_status = solver.LoadModelFromProto(model_proto);
-  CHECK(load_status == MPSolver::NO_ERROR);
+  std::string error_message;
+  const MPSolverResponseStatus status =
+      solver.LoadModelFromProto(model_proto, &error_message);
+  CHECK_EQ(MPSOLVER_MODEL_IS_VALID, status)
+      << MPSolverResponseStatus_Name(status) << ": " << error_message;
   printf("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
          solver.NumVariables());
 
@@ -177,9 +180,8 @@ void Run() {
   }
 
   printf("%-12s: %s\n", "Status",
-         MPSolutionResponse::Status_Name(
-             static_cast<MPSolutionResponse::Status>(solve_status))
-             .c_str());
+         MPSolverResponseStatus_Name(
+             static_cast<MPSolverResponseStatus>(solve_status)).c_str());
   printf("%-12s: %15.15e\n", "Objective", solver.Objective().Value());
   printf("%-12s: %-6.4g\n", "Time", solving_time_in_sec);
 }

@@ -29,7 +29,16 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
+
+#ifndef ANDROID_JNI
 #include "base/file.h"
+#endif
+
+
+#ifdef ANDROID_JNI
+#include "base/numbers.h"
+#endif  /// ANDROID_JNI
+
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
@@ -50,6 +59,11 @@ DEFINE_bool(linear_solver_enable_verbose_output, false,
             "If set, enables verbose output for the solver. Setting this flag"
             " is the same as calling MPSolver::EnableOutput().");
 
+DEFINE_bool(mpsolver_bypass_model_validation, false,
+            "If set, the user-provided Model won't be verified before Solve()."
+            " Invalid models will typically trigger various error responses"
+            " from the underlying solvers; sometimes crashes.");
+
 
 // To compile the open-source code, the anonymous namespace should be
 // inside the operations_research namespace (This is due to the
@@ -57,6 +71,17 @@ DEFINE_bool(linear_solver_enable_verbose_output, false,
 // operations_research namespace in open_source/base).
 namespace operations_research {
 
+#ifdef ANDROID_JNI
+// Enum -> std::string conversions are not present in MessageLite that is being used
+// on Android.
+std::string MPSolverResponseStatus_Name(int status) {
+  return SimpleItoa(status);
+}
+
+std::string MPModelRequest_SolverType_Name(int type) {
+  return SimpleItoa(type);
+}
+#endif  // ANDROID_JNI
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
@@ -268,6 +293,12 @@ void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 // ---- Solver-specific parameters ----
 
 bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters) {
+#ifdef ANDROID_JNI
+  // This is not implemented on Android because there is no default /tmp and a
+  // pointer to the Java environment is require to query for the application
+  // folder or the location of external storage (if any).
+  return false;
+#else
   if (parameters.empty()) return true;
   solver_specific_parameter_string_ = parameters;
 
@@ -310,6 +341,7 @@ bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters
                         static_cast<MPModelRequest::SolverType>(ProblemType()));
   }
   return no_error_so_far;
+#endif
 }
 
 // ----- Solver -----
@@ -343,7 +375,9 @@ extern MPSolverInterface* BuildGurobiInterface(bool mip,
 extern MPSolverInterface* BuildCplexInterface(bool mip,
                                               MPSolver* const solver);
 #endif
-
+#ifdef ANDROID_JNI
+extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
+#endif
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
@@ -481,19 +515,34 @@ MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_nam
 
 // ----- Methods using protocol buffers -----
 
-MPSolver::LoadStatus MPSolver::LoadModelFromProto(
-    const MPModelProto& input_model) {
+MPSolverResponseStatus MPSolver::LoadModelFromProto(
+    const MPModelProto& input_model, std::string* error_message) {
+  CHECK(error_message != nullptr);
+  const std::string error = "";
+  if (!error.empty()) {
+    *error_message = error;
+    LOG_IF(INFO, OutputIsEnabled())
+        << "Invalid model given to LoadModelFromProto(): " << error;
+    if (FLAGS_mpsolver_bypass_model_validation) {
+      LOG_IF(INFO, OutputIsEnabled())
+          << "Ignoring the model error(s) because of"
+          << " --mpsolver_bypass_model_validation.";
+    } else {
+      return error.find("Infeasible") == std::string::npos ? MPSOLVER_MODEL_INVALID
+                                                      : MPSOLVER_INFEASIBLE;
+    }
+  }
+
+  // The variable and constraint names are dropped, because we allow
+  // duplicate names in the proto (they're not considered as 'ids'),
+  // unlike the MPSolver C++ API which crashes if there are duplicate names.
+  // Passing empty names makes the MPSolver generate unique names.
+  //
+  // TODO(user): This limits the number of variables and constraints to 10^9:
+  // we should fix that.
   MPObjective* const objective = MutableObjective();
   for (int i = 0; i < input_model.variable_size(); ++i) {
     const MPVariableProto& var_proto = input_model.variable(i);
-
-    // TODO(user): The variable name var_proto.name() is lost at this point.
-    // This is because MPSolver has no notion of name, just of ids, and these
-    // must be unique which is not necessarily the case of names in the new
-    // proto. MakeNumVar() will just assign an automated variable id when the
-    // the given name argument is empty.
-    //
-    // Note(user): The auto assigned id limits the number of variables to 10^9.
     MPVariable* variable = MakeNumVar(var_proto.lower_bound(),
                                       var_proto.upper_bound(), /*name=*/"");
     variable->SetInteger(var_proto.is_integer());
@@ -503,24 +552,9 @@ MPSolver::LoadStatus MPSolver::LoadModelFromProto(
   for (int i = 0; i < input_model.constraint_size(); ++i) {
     const MPConstraintProto& ct_proto = input_model.constraint(i);
     MPConstraint* const ct = MakeRowConstraint(
-        ct_proto.lower_bound(), ct_proto.upper_bound(), ct_proto.name());
+        ct_proto.lower_bound(), ct_proto.upper_bound(), /*name=*/"");
     ct->set_is_lazy(ct_proto.is_lazy());
-    if (ct_proto.var_index_size() != ct_proto.coefficient_size()) {
-      LOG(ERROR) << "In constraint #" << i << " (name: '" << ct_proto.name()
-                 << "'):"
-                 << " var_index_size() != coefficient_size()"
-                 << ct_proto.DebugString();
-      // TODO(user): add new error type to MPSolver and return it here.
-      // TODO(user): add unit test of this error.
-      return MPSolver::UNKNOWN_VARIABLE_ID;
-    }
     for (int j = 0; j < ct_proto.var_index_size(); ++j) {
-      if (ct_proto.var_index(j) >= variables_.size() ||
-          ct_proto.var_index(j) < 0) {
-        LOG(ERROR) << "Variable index out of bound in constraint named "
-                   << ct_proto.name() << ".";
-        return MPSolver::UNKNOWN_VARIABLE_ID;
-      }
       ct->SetCoefficient(variables_[ct_proto.var_index(j)],
                          ct_proto.coefficient(j));
     }
@@ -529,26 +563,37 @@ MPSolver::LoadStatus MPSolver::LoadModelFromProto(
   if (input_model.has_objective_offset()) {
     objective->SetOffset(input_model.objective_offset());
   }
-  return MPSolver::NO_ERROR;
+
+  // Stores any hints about where to start the solve.
+  solution_hint_.clear();
+  for (int i = 0; i < input_model.solution_hint().var_index_size(); ++i) {
+    solution_hint_.push_back(
+        std::make_pair(variables_[input_model.solution_hint().var_index(i)],
+                       input_model.solution_hint().var_value(i)));
+  }
+  return MPSOLVER_MODEL_IS_VALID;
 }
 
 namespace {
-MPSolutionResponse::Status ResultStatusToMPSolutionResponse(
+MPSolverResponseStatus ResultStatusToMPSolverResponseStatus(
     MPSolver::ResultStatus status) {
   switch (status) {
     case MPSolver::OPTIMAL:
-      return MPSolutionResponse::OPTIMAL;
+      return MPSOLVER_OPTIMAL;
     case MPSolver::FEASIBLE:
-      return MPSolutionResponse::FEASIBLE;
+      return MPSOLVER_FEASIBLE;
     case MPSolver::INFEASIBLE:
-      return MPSolutionResponse::INFEASIBLE;
+      return MPSOLVER_INFEASIBLE;
     case MPSolver::UNBOUNDED:
-      return MPSolutionResponse::UNBOUNDED;
+      return MPSOLVER_UNBOUNDED;
     case MPSolver::ABNORMAL:
-      return MPSolutionResponse::ABNORMAL;
-    default:
-      return MPSolutionResponse::UNKNOWN;
+      return MPSOLVER_ABNORMAL;
+    case MPSolver::MODEL_INVALID:
+      return MPSOLVER_MODEL_INVALID;
+    case MPSolver::NOT_SOLVED:
+      return MPSOLVER_NOT_SOLVED;
   }
+  return MPSOLVER_UNKNOWN_STATUS;
 }
 }  // namespace
 
@@ -556,7 +601,7 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
   CHECK_NOTNULL(response);
   response->Clear();
   response->set_status(
-      ResultStatusToMPSolutionResponse(interface_->result_status_));
+      ResultStatusToMPSolverResponseStatus(interface_->result_status_));
   if (interface_->result_status_ == MPSolver::OPTIMAL ||
       interface_->result_status_ == MPSolver::FEASIBLE) {
     response->set_objective_value(Objective().Value());
@@ -577,13 +622,13 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
   const MPModelProto& model = model_request.model();
   MPSolver solver(model.name(), static_cast<MPSolver::OptimizationProblemType>(
                                     model_request.solver_type()));
-  const MPSolver::LoadStatus loadStatus = solver.LoadModelFromProto(model);
-  if (loadStatus != MPSolver::NO_ERROR) {
-    LOG(WARNING) << "Loading model from protocol buffer failed, "
-                 << "load status = "
-                 << Error::Code_Name(static_cast<Error::Code>(loadStatus))
-                 << " (" << loadStatus << ")";
-    response->set_status(MPSolutionResponse::ABNORMAL);
+  std::string error_message;
+  response->set_status(solver.LoadModelFromProto(model, &error_message));
+  if (response->status() != MPSOLVER_MODEL_IS_VALID) {
+    LOG_EVERY_N_SEC(WARNING, 1.0)
+        << "Loading model from protocol buffer failed, load status = "
+        << MPSolverResponseStatus_Name(response->status()) << " ("
+        << response->status() << "); Error: " << error_message;
     return;
   }
   if (model_request.has_solver_time_limit_seconds()) {
@@ -661,8 +706,8 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
 
 bool MPSolver::LoadSolutionFromProto(const MPSolutionResponse& response) {
   interface_->result_status_ = static_cast<ResultStatus>(response.status());
-  if (response.status() != MPSolutionResponse::OPTIMAL &&
-      response.status() != MPSolutionResponse::FEASIBLE) {
+  if (response.status() != MPSOLVER_OPTIMAL &&
+      response.status() != MPSOLVER_FEASIBLE) {
     LOG(ERROR)
         << "Cannot load a solution unless its status is OPTIMAL or FEASIBLE.";
     return false;
@@ -724,10 +769,6 @@ void MPSolver::Clear() {
 }
 
 void MPSolver::Reset() { interface_->Reset(); }
-
-void MPSolver::EnableOutput() { interface_->set_quiet(false); }
-
-void MPSolver::SuppressOutput() { interface_->set_quiet(true); }
 
 bool MPSolver::InterruptSolve() { return interface_->InterruptSolve(); }
 
@@ -854,6 +895,9 @@ MPSolver::ResultStatus MPSolver::Solve() {
 MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
   // Special case for infeasible constraints so that all solvers have
   // the same behavior.
+  // TODO(user): replace this by model extraction to proto + proto validation
+  // (the proto has very low overhead compared to the wrapper, both in
+  // performance and memory, so it's ok).
   if (HasInfeasibleConstraints()) {
     interface_->result_status_ = MPSolver::INFEASIBLE;
     return interface_->result_status_;
@@ -1072,6 +1116,12 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   return true;
 }
 
+bool MPSolver::OutputIsEnabled() const { return !interface_->quiet(); }
+
+void MPSolver::EnableOutput() { interface_->set_quiet(false); }
+
+void MPSolver::SuppressOutput() { interface_->set_quiet(false); }
+
 int64 MPSolver::iterations() const { return interface_->iterations(); }
 
 int64 MPSolver::nodes() const { return interface_->nodes(); }
@@ -1091,6 +1141,7 @@ bool MPSolver::OwnsVariable(const MPVariable* var) const {
   return variables_[var_index] == var;
 }
 
+#ifndef ANDROID_JNI
 bool MPSolver::ExportModelAsLpFormat(bool obfuscate, std::string* output) {
   MPModelProto proto;
   ExportModelToProto(&proto);
@@ -1105,6 +1156,7 @@ bool MPSolver::ExportModelAsMpsFormat(bool fixed_format, bool obfuscate,
   MPModelProtoExporter exporter(proto);
   return exporter.ExportModelAsMpsFormat(fixed_format, obfuscate, output);
 }
+#endif
 
 // ---------- MPSolverInterface ----------
 
@@ -1216,7 +1268,7 @@ void MPSolverInterface::InvalidateSolutionSynchronization() {
 double MPSolverInterface::ComputeExactConditionNumber() const {
   // Override this method in interfaces that actually support it.
   LOG(DFATAL) << "ComputeExactConditionNumber not implemented for "
-              << MPModelRequest::SolverType_Name(
+              << MPModelRequest_SolverType_Name(
                      static_cast<MPModelRequest::SolverType>(
                          solver_->ProblemType()));
   return 0.0;

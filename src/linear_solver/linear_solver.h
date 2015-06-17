@@ -138,11 +138,14 @@
 #include <map>
 #include "base/unique_ptr.h"
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/timer.h"
+#include "glop/parameters.pb.h"
+#include "linear_solver/linear_solver.pb.h"
 
 
 namespace operations_research {
@@ -306,12 +309,13 @@ class MPSolver {
   // underlying solvers exactly mean, especially for feasible and
   // infeasible.
   enum ResultStatus {
-    OPTIMAL,     // optimal.
-    FEASIBLE,    // feasible, or stopped by limit.
-    INFEASIBLE,  // proven infeasible.
-    UNBOUNDED,   // proven unbounded.
-    ABNORMAL,    // abnormal, i.e., error of some kind.
-    NOT_SOLVED   // not been solved yet.
+    OPTIMAL,        // optimal.
+    FEASIBLE,       // feasible, or stopped by limit.
+    INFEASIBLE,     // proven infeasible.
+    UNBOUNDED,      // proven unbounded.
+    ABNORMAL,       // abnormal, i.e., error of some kind.
+    MODEL_INVALID,  // the model is trivially invalid (NaN coefficients, etc).
+    NOT_SOLVED = 6  // not been solved yet.
   };
 
   // Solves the problem using default parameter values.
@@ -351,16 +355,12 @@ class MPSolver {
 
   // ----- Methods using protocol buffers -----
 
-  // The status of loading the problem from a protocol buffer.
-  enum LoadStatus {
-    NO_ERROR = 0,  // no error has been encountered.
-    // Skip value '1' to stay consistent with the .proto.
-    DUPLICATE_VARIABLE_ID = 2,  // error: two variables have the same id.
-    UNKNOWN_VARIABLE_ID = 3,    // error: a variable has an unknown id.
-  };
-
-  // Loads model from protocol buffer.
-  LoadStatus LoadModelFromProto(const MPModelProto& input_model);
+  // Loads model from protocol buffer. Returns MPSOLVER_MODEL_IS_VALID if the
+  // model is valid, and another status otherwise (currently only
+  // MPSOLVER_MODEL_INVALID and MPSOLVER_INFEASIBLE). If the model isn't
+  // valid, populate "error_message".
+  MPSolverResponseStatus LoadModelFromProto(const MPModelProto& input_model,
+                                            std::string* error_message);
 
   // Encodes the current solution in a solution response protocol buffer.
   // Only nonzero variable values are stored in order to reduce the
@@ -413,13 +413,13 @@ class MPSolver {
   bool LoadSolutionFromProto(const MPSolutionResponse& response);
 
   // ----- Export model to files or strings -----
-
+#ifndef ANDROID_JNI
   // Shortcuts to the homonymous MPModelProtoExporter methods, via
   // exporting to a MPModelProto with ExportModelToProto() (see above).
   bool ExportModelAsLpFormat(bool obfuscated, std::string* model_str);
   bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscated,
                               std::string* model_str);
-
+#endif
   // ----- Misc -----
 
   // Advanced usage: pass solver specific parameters in text format. The format
@@ -444,14 +444,15 @@ class MPSolver {
   // Infinity. You can use -MPSolver::infinity() for negative infinity.
   static double infinity() { return std::numeric_limits<double>::infinity(); }
 
-  // Suppresses all output from the underlying solver.
-  void SuppressOutput();
-
-  // Enables a reasonably verbose output from the underlying
-  // solver. The level of verbosity and the location of this output
-  // depends on the underlying solver. In most cases, it is sent to
-  // stdout.
+  // Controls (or queries) the amount of output produced by the underlying
+  // solver. The output can surface to LOGs, or to stdout or stderr, depending
+  // on the implementation. The amount of output will greatly vary with each
+  // implementation and each problem.
+  //
+  // Output is suppressed by default.
+  bool OutputIsEnabled() const;
   void EnableOutput();
+  void SuppressOutput();
 
   void set_time_limit(int64 time_limit_milliseconds) {
     DCHECK_GE(time_limit_milliseconds, 0);
@@ -591,7 +592,14 @@ class MPSolver {
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
 
-#if !defined(SWIG)
+#ifndef ANDROID_JNI
+inline std::ostream& operator<<(std::ostream& os,
+                                MPSolver::ResultStatus status) {
+  return os << MPSolverResponseStatus_Name(
+             static_cast<MPSolverResponseStatus>(status));
+}
+#endif
+
 // The data structure used to store the coefficients of the contraints and of
 // the objective. Also define a type to facilitate iteration over them with:
 //  for (CoeffEntry entry : coefficients_) { ... }
@@ -604,7 +612,6 @@ class CoeffMap : public hash_map<const MPVariable*, double> {
   {
   }
 };
-#endif  // SWIG
 
 typedef std::pair<const MPVariable*, double> CoeffEntry;
 

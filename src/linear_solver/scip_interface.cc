@@ -179,7 +179,8 @@ void SCIPInterface::CreateSCIP() {
   // Default clock type (1: CPU user seconds, 2: wall clock time). We use
   // wall clock time because getting CPU user seconds involves calling
   // times() which is very expensive.
-  ORTOOLS_SCIP_CALL(SCIPsetIntParam(scip_, "timing/clocktype", 2));
+  ORTOOLS_SCIP_CALL(SCIPsetIntParam(scip_, "timing/clocktype",
+                                    /* Wall clock time */ 2));
   ORTOOLS_SCIP_CALL(SCIPcreateProb(scip_, solver_->name_.c_str(), NULL, NULL,
                                    NULL, NULL, NULL, NULL, NULL));
   ORTOOLS_SCIP_CALL(SCIPsetObjsense(

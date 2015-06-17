@@ -78,7 +78,7 @@ void BuildLinearProgrammingMaxExample(MPSolver::OptimizationProblemType type) {
   MPSolver::SolveWithProto(model_request, &solution_response);
 
   // The problem has an optimal solution.
-  CHECK_EQ(MPSolutionResponse::OPTIMAL, solution_response.status());
+  CHECK_EQ(MPSOLVER_OPTIMAL, solution_response.status());
 
   LOG(INFO) << "objective = " << solution_response.objective_value();
   for (int j = 0; j < numVars; ++j) {

@@ -101,6 +101,7 @@ DECLARE_bool(log_prefix);
 
 // Poor man version of LOG_EVERY_N
 #define LOG_EVERY_N(severity, n) LOG(severity)
+#define LOG_EVERY_N_SEC(severity, n) LOG(severity)
 
 namespace operations_research {
 class DateLogger {

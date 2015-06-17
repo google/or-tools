@@ -52,6 +52,7 @@ DYNAMIC_GRAPH_DEPS = $(DYNAMIC_GRAPH_LIBS) \
 
 DYNAMIC_LP_DEPS = \
 	$(GEN_DIR)/linear_solver/linear_solver.pb.h \
+	$(GEN_DIR)/glop/parameters.pb.h \
 	$(DYNAMIC_LP_LIBS) \
 	$(DYNAMIC_SAT_LIBS) \
 	$(DYNAMIC_SPLIT_LIBS) \
@@ -202,6 +203,8 @@ STATIC_BOP_DEPS = $(STATIC_BOP_LIBS) \
 	$(STATIC_ALGORITHMS_LIBS)
 
 STATIC_LP_DEPS = $(STATIC_LP_LIBS) \
+	$(GEN_DIR)/linear_solver/linear_solver.pb.h \
+	$(GEN_DIR)/glop/parameters.pb.h \
 	$(STATIC_BOP_DEPS) \
 	$(STATIC_SPLIT_LIBS) \
 	$(STATIC_BASE_DEPS)
@@ -538,7 +541,7 @@ $(OBJ_DIR)/constraint_solver/gcc.$O:$(SRC_DIR)/constraint_solver/gcc.cc
 $(OBJ_DIR)/constraint_solver/graph_constraints.$O:$(SRC_DIR)/constraint_solver/graph_constraints.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/graph_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sgraph_constraints.$O
 
-$(OBJ_DIR)/constraint_solver/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc
+$(OBJ_DIR)/constraint_solver/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h $(GEN_DIR)/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/hybrid.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Shybrid.$O
 
 $(OBJ_DIR)/constraint_solver/interval.$O:$(SRC_DIR)/constraint_solver/interval.cc

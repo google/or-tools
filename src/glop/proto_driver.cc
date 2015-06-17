@@ -97,8 +97,11 @@ void Solve(MPSolver::OptimizationProblemType type, const std::string& file_name,
                         MPSolverParameters::SCALING_OFF);
   {
     ScopedWallTime timer(&(result->loading_time_in_sec));
-    const MPSolver::LoadStatus load_status = solver.LoadModelFromProto(proto);
-    CHECK(load_status == MPSolver::NO_ERROR);
+    std::string error_message;
+    const MPSolverResponseStatus load_status =
+        solver.LoadModelFromProto(proto, &error_message);
+    CHECK_EQ(MPSOLVER_MODEL_IS_VALID, load_status)
+        << MPSolverResponseStatus_Name(load_status) << ": " << error_message;
   }
   {
     ScopedWallTime timer(&(result->solving_time_in_sec));

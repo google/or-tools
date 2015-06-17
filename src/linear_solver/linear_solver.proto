@@ -97,12 +97,20 @@ message MPConstraintProto {
   optional bool is_lazy = 5 [default = false];
 }
 
+// This message encode a partial (or full) assignment of the variables of a
+// MPModelProto problem. The indices in var_index should be unique and valid
+// variable indices of the associated problem.
+message PartialVariableAssignment {
+  repeated int32 var_index = 1 [packed = true];
+  repeated double var_value = 2 [packed = true];
+}
+
 // MPModelProto contains all the information for a Linear Programming model.
 message MPModelProto {
   // True if the problem is a maximization problem. Minimize by default.
   optional bool maximize = 1 [default = false];
 
-  // Offset for the objective function.
+  // Offset for the objective function. Must be finite.
   optional double objective_offset = 2 [default = 0.0];
 
   // All the variables appearing in the model.
@@ -113,6 +121,19 @@ message MPModelProto {
 
   // Name of the model.
   optional string name = 5 [default = ""];
+
+  // Solution hint.
+  //
+  // If a feasible or almost-feasible solution to the problem is already known,
+  // it may be helpful to pass it to the solver so that it can be used. A solver
+  // that supports this feature will try to use this information to create its
+  // initial feasible solution.
+  //
+  // Note that it may not always be faster to give a hint like this to the
+  // solver. There is also no guarantee that the solver will use this hint or
+  // try to return a solution "close" to this assignment in case of multiple
+  // optimal solutions.
+  optional PartialVariableAssignment solution_hint = 6;
 }
 
 message MPModelRequest {
@@ -153,30 +174,91 @@ message MPModelRequest {
   optional double solver_time_limit_seconds = 3;
 }
 
+// Status returned by the solver. They follow a hierarchical nomenclature, to
+// allow us to add more enum values in the future. Clients should use
+// InCategory() to match these enums, with the following C++ pseudo-code:
+//
+// bool InCategory(MPSolverResponseStatus status, MPSolverResponseStatus cat) {
+//   if (cat == MPSOLVER_OPTIMAL) return status == MPSOLVER_OPTIMAL;
+//   while (status > cat) status <<= 4;
+//   return status == cat;
+// }
+enum MPSolverResponseStatus {
+  // Normal responses -- the model was valid, and the solver ran.
+  // These statuses should be "somewhat" repeatable, modulo the fact that the
+  // solver's time limit makes it undeterministic, and could change a FEASIBLE
+  // model to an OPTIMAL and vice-versa (the others, except NOT_SOLVED, should
+  // normally be deterministic). Also, the solver libraries can be buggy.
+
+  // The solver found the proven optimal solution. This is what should be
+  // returned in most cases.
+  //
+  // WARNING: for historical reason, the value is zero, which means that this
+  // value can't have any subcategories.
+  MPSOLVER_OPTIMAL = 0x0;
+
+  // The solver had enough time to find some solution that satisfies all
+  // constraints, but it did not prove optimality (which means it may or may
+  // not have reached the optimal).
+  //
+  // This can happen for large LP models (Linear Programming), and is a frequent
+  // response for time-limited MIPs (Mixed Integer Programming). In the MIP
+  // case, the difference between the solution 'objective_value' and
+  // 'best_objective_bound' fields of the MPSolutionResponse will give an
+  // indication of how far this solution is from the optimal one.
+  MPSOLVER_FEASIBLE = 0x1;
+
+  // The model does not have any solution, according to the solver (which
+  // "proved" it, with the caveat that numerical proofs aren't actual proofs),
+  // or based on trivial considerations (eg. a variable whose lower bound is
+  // strictly greater than its upper bound).
+  MPSOLVER_INFEASIBLE = 0x2;
+
+  // There exist solutions that make the magnitude of the objective value
+  // as large as wanted (i.e. -infinity (resp. +infinity) for a minimization
+  // (resp. maximization) problem.
+  MPSOLVER_UNBOUNDED = 0x3;
+
+  // An error (most probably numerical) occured.
+  // One likely cause for such errors is a large numerical range among variable
+  // coefficients (eg. 1e-16, 1e20), in which case one should try to shrink it.
+  MPSOLVER_ABNORMAL = 0x4;
+
+  // The solver did not have a chance to diagnose the model in one of the
+  // categories above.
+  MPSOLVER_NOT_SOLVED = 0x6;
+  // Like "NOT_SOLVED", but typically used by model validation functions
+  // returning a "model status", to enhance readability of the client code.
+  MPSOLVER_MODEL_IS_VALID = 0x61;
+  // Special value: the solver status could not be properly translated and is
+  // unknown.
+  MPSOLVER_UNKNOWN_STATUS = 0x63;
+
+  // Model errors. These are always deterministic and repeatable.
+  // They should be accompanied with a string description of the error.
+  MPSOLVER_MODEL_INVALID = 0x5;
+  // Something is wrong with the fields "solution_hint_var_index" and/or
+  // "solution_hint_var_value".
+  MPSOLVER_MODEL_INVALID_SOLUTION_HINT = 0x54;
+
+  // Implementation error: the requested solver implementation is not
+  // available (see MPModelRequest.solver_type).
+  // The linear solver binary was probably not linked with the required library,
+  // eg //linear_solver:linear_solver_scip for SCIP.
+  MPSOLVER_SOLVER_TYPE_UNAVAILABLE = 0x7;
+
+
+  // OBSOLETE: DO NOT USE.
+  // TODO(user): Remove those.
+  MPSOLVER_MODEL_INVALID_NUM_VARS_AND_NUM_COEFFS_DIFFER_IN_CONSTRAINT = 0x51;
+  MPSOLVER_MODEL_INVALID_VAR_INDEX_OUT_OF_RANGE_IN_CONSTRAINT = 0x52;
+  MPSOLVER_MODEL_INVALID_DUPLICATE_VAR_IN_CONSTRAINT = 0x53;
+};
+
 message MPSolutionResponse {
   // Result of the optimization.
-  enum Status {
-    // The solver found the proven optimal solution. This is what should be
-    // returned in most cases.
-    OPTIMAL = 0;
-    // The solver had enough time to find some solution that satisfied all
-    // constraints, but it did not reach the optimal.
-    FEASIBLE = 1;
-    // The model does not have any solution.
-    INFEASIBLE = 2;
-    // There exists solutions that make the magnitude of the objective value
-    // as large as wanted (i.e. -infinity (resp. +infinity) for a minimization
-    // (resp. maximization) problem.
-    UNBOUNDED = 3;
-    // An error occured.
-    ABNORMAL = 4;
-    // Problem was not solved because model was malformed.
-    MODEL_INVALID = 5;
-    // Unknown. As of 2013-02, this only happens when the solver did not
-    // have enough time to diagnose one of the above states.
-    UNKNOWN = 99;
-  }
-  optional Status status = 1 [default = UNKNOWN];
+  optional /*required*/ MPSolverResponseStatus status = 1
+      [default = MPSOLVER_UNKNOWN_STATUS];
 
   // Objective value corresponding to the "variable_value" below, taking into
   // account the source "objective_offset" and "objective_coefficient".
@@ -200,15 +282,4 @@ message MPSolutionResponse {
   // MPModelProto::constraint field. This is a dense representation.
   // These are set iff 'status' is OPTIMAL or FEASIBLE.
   repeated double dual_value = 4 [packed = true];
-}
-
-// Error codes used in some proto-based APIs.
-// TODO(user): tidy this up and unify it with MPSolutionResponse.Status.
-message Error {
-  enum Code {
-    NO_ERROR = 0;
-    INVALID_PROBLEM_TYPE = 1;
-    DUPLICATE_VARIABLE_ID = 2;
-    UNKNOWN_VARIABLE_ID = 3;
-  }
 }
