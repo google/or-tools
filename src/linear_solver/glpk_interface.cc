@@ -88,6 +88,11 @@ void GLPKGatherInformationCallback(glp_tree* tree, void* info) {
 
 // ----- GLPK Solver -----
 
+namespace {
+// GLPK indexes its variables and constraints starting at 1.
+int MPSolverIndexToGlpkIndex(int index) { return index + 1; }
+}  // namespace
+
 class GLPKInterface : public MPSolverInterface {
  public:
   // Constructor that takes a name for the underlying glpk solver.
@@ -106,9 +111,10 @@ class GLPKInterface : public MPSolverInterface {
   void Reset() override;
 
   // Modify bounds.
-  void SetVariableBounds(int var_index, double lb, double ub) override;
-  void SetVariableInteger(int var_index, bool integer) override;
-  void SetConstraintBounds(int row_index, double lb, double ub) override;
+  void SetVariableBounds(int mpsolver_var_index, double lb, double ub) override;
+  void SetVariableInteger(int mpsolver_var_index, bool integer) override;
+  void SetConstraintBounds(int mpsolver_constraint_index, double lb,
+                           double ub) override;
 
   // Add Constraint incrementally.
   void AddRowConstraint(MPConstraint* const ct) override;
@@ -241,67 +247,73 @@ void GLPKInterface::SetOptimizationDirection(bool maximize) {
   glp_set_obj_dir(lp_, maximize ? GLP_MAX : GLP_MIN);
 }
 
-void GLPKInterface::SetVariableBounds(int var_index, double lb, double ub) {
+void GLPKInterface::SetVariableBounds(int mpsolver_var_index, double lb,
+                                      double ub) {
   InvalidateSolutionSynchronization();
-  if (var_index != kNoIndex) {
-    // Not cached if the variable has been extracted.
-    DCHECK(lp_ != NULL);
-    const double infinity = solver_->infinity();
-    if (lb != -infinity) {
-      if (ub != infinity) {
-        if (lb == ub) {
-          glp_set_col_bnds(lp_, var_index, GLP_FX, lb, ub);
-        } else {
-          glp_set_col_bnds(lp_, var_index, GLP_DB, lb, ub);
-        }
-      } else {
-        glp_set_col_bnds(lp_, var_index, GLP_LO, lb, 0.0);
-      }
-    } else if (ub != infinity) {
-      glp_set_col_bnds(lp_, var_index, GLP_UP, 0.0, ub);
-    } else {
-      glp_set_col_bnds(lp_, var_index, GLP_FR, 0.0, 0.0);
-    }
-  } else {
+  if (!variable_is_extracted(mpsolver_var_index)) {
     sync_status_ = MUST_RELOAD;
+    return;
+  }
+  // Not cached if the variable has been extracted.
+  DCHECK(lp_ != NULL);
+  const double infinity = solver_->infinity();
+  const int glpk_var_index = MPSolverIndexToGlpkIndex(mpsolver_var_index);
+  if (lb != -infinity) {
+    if (ub != infinity) {
+      if (lb == ub) {
+        glp_set_col_bnds(lp_, glpk_var_index, GLP_FX, lb, ub);
+      } else {
+        glp_set_col_bnds(lp_, glpk_var_index, GLP_DB, lb, ub);
+      }
+    } else {
+      glp_set_col_bnds(lp_, glpk_var_index, GLP_LO, lb, 0.0);
+    }
+  } else if (ub != infinity) {
+    glp_set_col_bnds(lp_, glpk_var_index, GLP_UP, 0.0, ub);
+  } else {
+    glp_set_col_bnds(lp_, glpk_var_index, GLP_FR, 0.0, 0.0);
   }
 }
 
-void GLPKInterface::SetVariableInteger(int var_index, bool integer) {
+void GLPKInterface::SetVariableInteger(int mpsolver_var_index, bool integer) {
   InvalidateSolutionSynchronization();
   if (mip_) {
-    if (var_index != kNoIndex) {
+    if (variable_is_extracted(mpsolver_var_index)) {
       // Not cached if the variable has been extracted.
-      glp_set_col_kind(lp_, var_index, integer ? GLP_IV : GLP_CV);
+      glp_set_col_kind(lp_, MPSolverIndexToGlpkIndex(mpsolver_var_index),
+                       integer ? GLP_IV : GLP_CV);
     } else {
       sync_status_ = MUST_RELOAD;
     }
   }
 }
 
-void GLPKInterface::SetConstraintBounds(int index, double lb, double ub) {
+void GLPKInterface::SetConstraintBounds(int mpsolver_constraint_index,
+                                        double lb, double ub) {
   InvalidateSolutionSynchronization();
-  if (index != kNoIndex) {
-    // Not cached if the row has been extracted
-    DCHECK(lp_ != NULL);
-    const double infinity = solver_->infinity();
-    if (lb != -infinity) {
-      if (ub != infinity) {
-        if (lb == ub) {
-          glp_set_row_bnds(lp_, index, GLP_FX, lb, ub);
-        } else {
-          glp_set_row_bnds(lp_, index, GLP_DB, lb, ub);
-        }
-      } else {
-        glp_set_row_bnds(lp_, index, GLP_LO, lb, 0.0);
-      }
-    } else if (ub != infinity) {
-      glp_set_row_bnds(lp_, index, GLP_UP, 0.0, ub);
-    } else {
-      glp_set_row_bnds(lp_, index, GLP_FR, 0.0, 0.0);
-    }
-  } else {
+  if (!constraint_is_extracted(mpsolver_constraint_index)) {
     sync_status_ = MUST_RELOAD;
+    return;
+  }
+  // Not cached if the row has been extracted
+  const int glpk_constraint_index =
+      MPSolverIndexToGlpkIndex(mpsolver_constraint_index);
+  DCHECK(lp_ != NULL);
+  const double infinity = solver_->infinity();
+  if (lb != -infinity) {
+    if (ub != infinity) {
+      if (lb == ub) {
+        glp_set_row_bnds(lp_, glpk_constraint_index, GLP_FX, lb, ub);
+      } else {
+        glp_set_row_bnds(lp_, glpk_constraint_index, GLP_DB, lb, ub);
+      }
+    } else {
+      glp_set_row_bnds(lp_, glpk_constraint_index, GLP_LO, lb, 0.0);
+    }
+  } else if (ub != infinity) {
+    glp_set_row_bnds(lp_, glpk_constraint_index, GLP_UP, 0.0, ub);
+  } else {
+    glp_set_row_bnds(lp_, glpk_constraint_index, GLP_FR, 0.0, 0.0);
   }
 }
 
@@ -313,7 +325,7 @@ void GLPKInterface::SetCoefficient(MPConstraint* const constraint,
   // extract the whole constraint again, if it has been extracted
   // already and if it does not contain new variables. Otherwise, we
   // cache the modification.
-  if (constraint->index() != kNoIndex &&
+  if (constraint_is_extracted(constraint->index()) &&
       (sync_status_ == MODEL_SYNCHRONIZED ||
        !constraint->ContainsNewVariables())) {
     const int size = constraint->coefficients_.size();
@@ -326,10 +338,10 @@ void GLPKInterface::SetCoefficient(MPConstraint* const constraint,
 // Not cached
 void GLPKInterface::ClearConstraint(MPConstraint* const constraint) {
   InvalidateSolutionSynchronization();
-  const int constraint_index = constraint->index();
   // Constraint may have not been extracted yet.
-  if (constraint_index != kNoIndex) {
-    glp_set_mat_row(lp_, constraint_index, 0, NULL, NULL);
+  if (constraint_is_extracted(constraint->index())) {
+    glp_set_mat_row(lp_, MPSolverIndexToGlpkIndex(constraint->index()), 0, NULL,
+                    NULL);
   }
 }
 
@@ -348,12 +360,12 @@ void GLPKInterface::SetObjectiveOffset(double value) {
 void GLPKInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   for (CoeffEntry entry : solver_->objective_->coefficients_) {
-    const int var_index = entry.first->index();
+    const int mpsolver_var_index = entry.first->index();
     // Variable may have not been extracted yet.
-    if (var_index == kNoIndex) {
+    if (!variable_is_extracted(mpsolver_var_index)) {
       DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
     } else {
-      glp_set_obj_coef(lp_, var_index, 0.0);
+      glp_set_obj_coef(lp_, MPSolverIndexToGlpkIndex(mpsolver_var_index), 0.0);
     }
   }
   // Constant term.
@@ -375,18 +387,16 @@ void GLPKInterface::ExtractNewVariables() {
     glp_add_cols(lp_, total_num_vars - last_variable_index_);
     for (int j = last_variable_index_; j < solver_->variables_.size(); ++j) {
       MPVariable* const var = solver_->variables_[j];
-      // GLPK convention is to start indexing at 1.
-      const int var_index = j + 1;
-      var->set_index(var_index);
+      set_variable_as_extracted(j, true);
       if (!var->name().empty()) {
-        glp_set_col_name(lp_, var_index, var->name().c_str());
+        glp_set_col_name(lp_, MPSolverIndexToGlpkIndex(j), var->name().c_str());
       }
-      SetVariableBounds(var->index(), var->lb(), var->ub());
-      SetVariableInteger(var->index(), var->integer());
+      SetVariableBounds(/*mpsolver_var_index=*/j, var->lb(), var->ub());
+      SetVariableInteger(/*mpsolver_var_index=*/j, var->integer());
 
       // The true objective coefficient will be set later in ExtractObjective.
       double tmp_obj_coef = 0.0;
-      glp_set_obj_coef(lp_, var->index(), tmp_obj_coef);
+      glp_set_obj_coef(lp_, MPSolverIndexToGlpkIndex(j), tmp_obj_coef);
     }
     // Add new variables to the existing constraints.
     ExtractOldConstraints();
@@ -395,7 +405,7 @@ void GLPKInterface::ExtractNewVariables() {
 
 // Extract again existing constraints if they contain new variables.
 void GLPKInterface::ExtractOldConstraints() {
-  int max_constraint_size =
+  const int max_constraint_size =
       solver_->ComputeMaxConstraintSize(0, last_constraint_index_);
   // The first entry in the following arrays is dummy, to be
   // consistent with glpk API.
@@ -404,7 +414,7 @@ void GLPKInterface::ExtractOldConstraints() {
 
   for (int i = 0; i < last_constraint_index_; ++i) {
     MPConstraint* const ct = solver_->constraints_[i];
-    DCHECK_NE(kNoIndex, ct->index());
+    DCHECK(constraint_is_extracted(i));
     const int size = ct->coefficients_.size();
     if (size == 0) {
       continue;
@@ -425,13 +435,13 @@ void GLPKInterface::ExtractOneConstraint(MPConstraint* const constraint,
   // GLPK convention is to start indexing at 1.
   int k = 1;
   for (CoeffEntry entry : constraint->coefficients_) {
-    const int var_index = entry.first->index();
-    DCHECK_NE(kNoIndex, var_index);
-    indices[k] = var_index;
+    DCHECK(variable_is_extracted(entry.first->index()));
+    indices[k] = MPSolverIndexToGlpkIndex(entry.first->index());
     coefs[k] = entry.second;
     ++k;
   }
-  glp_set_mat_row(lp_, constraint->index(), k - 1, indices, coefs);
+  glp_set_mat_row(lp_, MPSolverIndexToGlpkIndex(constraint->index()), k - 1,
+                  indices, coefs);
 }
 
 // Define new constraints on old and new variables.
@@ -442,18 +452,16 @@ void GLPKInterface::ExtractNewConstraints() {
     glp_add_rows(lp_, total_num_rows - last_constraint_index_);
     int num_coefs = 0;
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
-      // GLPK convention is to start indexing at 1.
-      const int constraint_index = i + 1;
       MPConstraint* ct = solver_->constraints_[i];
-      ct->set_index(constraint_index);
+      set_constraint_as_extracted(i, true);
       if (ct->name().empty()) {
-        glp_set_row_name(lp_, constraint_index,
+        glp_set_row_name(lp_, MPSolverIndexToGlpkIndex(i),
                          StringPrintf("ct_%i", i).c_str());
       } else {
-        glp_set_row_name(lp_, constraint_index, ct->name().c_str());
+        glp_set_row_name(lp_, MPSolverIndexToGlpkIndex(i), ct->name().c_str());
       }
       // All constraints are set to be of the type <= limit_ .
-      SetConstraintBounds(constraint_index, ct->lb(), ct->ub());
+      SetConstraintBounds(/*mpsolver_constraint_index=*/i, ct->lb(), ct->ub());
       num_coefs += ct->coefficients_.size();
     }
 
@@ -472,9 +480,9 @@ void GLPKInterface::ExtractNewConstraints() {
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
         MPConstraint* ct = solver_->constraints_[i];
         for (CoeffEntry entry : ct->coefficients_) {
-          DCHECK_NE(kNoIndex, entry.first->index());
-          constraint_indices[k] = ct->index();
-          variable_indices[k] = entry.first->index();
+          DCHECK(variable_is_extracted(entry.first->index()));
+          constraint_indices[k] = MPSolverIndexToGlpkIndex(ct->index());
+          variable_indices[k] = MPSolverIndexToGlpkIndex(entry.first->index());
           coefs[k] = entry.second;
           ++k;
         }
@@ -502,7 +510,8 @@ void GLPKInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified).
   for (CoeffEntry entry : solver_->objective_->coefficients_) {
-    glp_set_obj_coef(lp_, entry.first->index(), entry.second);
+    glp_set_obj_coef(lp_, MPSolverIndexToGlpkIndex(entry.first->index()),
+                     entry.second);
   }
   // Constant term.
   glp_set_obj_coef(lp_, 0, solver_->Objective().offset());
@@ -567,15 +576,15 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
     MPVariable* const var = solver_->variables_[i];
     double val;
     if (mip_) {
-      val = glp_mip_col_val(lp_, var->index());
+      val = glp_mip_col_val(lp_, MPSolverIndexToGlpkIndex(i));
     } else {
-      val = glp_get_col_prim(lp_, var->index());
+      val = glp_get_col_prim(lp_, MPSolverIndexToGlpkIndex(i));
     }
     var->set_solution_value(val);
     VLOG(3) << var->name() << ": value =" << val;
     if (!mip_) {
       double reduced_cost;
-      reduced_cost = glp_get_col_dual(lp_, var->index());
+      reduced_cost = glp_get_col_dual(lp_, MPSolverIndexToGlpkIndex(i));
       var->set_reduced_cost(reduced_cost);
       VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
     }
@@ -583,15 +592,20 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   for (int i = 0; i < solver_->constraints_.size(); ++i) {
     MPConstraint* const ct = solver_->constraints_[i];
     if (mip_) {
-      const double row_activity = glp_mip_row_val(lp_, ct->index());
+      const double row_activity =
+          glp_mip_row_val(lp_, MPSolverIndexToGlpkIndex(i));
       ct->set_activity(row_activity);
-      VLOG(4) << "row " << ct->index() << ": activity = " << row_activity;
+      VLOG(4) << "row " << MPSolverIndexToGlpkIndex(i)
+              << ": activity = " << row_activity;
     } else {
-      const double row_activity = glp_get_row_prim(lp_, ct->index());
+      const double row_activity =
+          glp_get_row_prim(lp_, MPSolverIndexToGlpkIndex(i));
       ct->set_activity(row_activity);
-      const double dual_value = glp_get_row_dual(lp_, ct->index());
+      const double dual_value =
+          glp_get_row_dual(lp_, MPSolverIndexToGlpkIndex(i));
       ct->set_dual_value(dual_value);
-      VLOG(4) << "row " << ct->index() << ": activity = " << row_activity
+      VLOG(4) << "row " << MPSolverIndexToGlpkIndex(i)
+              << ": activity = " << row_activity
               << ": dual value = " << dual_value;
     }
   }
@@ -704,18 +718,18 @@ double GLPKInterface::best_objective_bound() const {
 }
 
 MPSolver::BasisStatus GLPKInterface::row_status(int constraint_index) const {
-  // + 1 because of GLPK indexing convention.
-  DCHECK_LE(1, constraint_index);
-  DCHECK_GT(last_constraint_index_ + 1, constraint_index);
-  const int glpk_basis_status = glp_get_row_stat(lp_, constraint_index);
+  DCHECK_GE(constraint_index, 0);
+  DCHECK_LT(constraint_index, last_constraint_index_);
+  const int glpk_basis_status =
+      glp_get_row_stat(lp_, MPSolverIndexToGlpkIndex(constraint_index));
   return TransformGLPKBasisStatus(glpk_basis_status);
 }
 
 MPSolver::BasisStatus GLPKInterface::column_status(int variable_index) const {
-  // + 1 because of GLPK indexing convention.
-  DCHECK_LE(1, variable_index);
-  DCHECK_GT(last_variable_index_ + 1, variable_index);
-  const int glpk_basis_status = glp_get_col_stat(lp_, variable_index);
+  DCHECK_GE(variable_index, 0);
+  DCHECK_LT(variable_index, last_variable_index_);
+  const int glpk_basis_status =
+      glp_get_col_stat(lp_, MPSolverIndexToGlpkIndex(variable_index));
   return TransformGLPKBasisStatus(glpk_basis_status);
 }
 

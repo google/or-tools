@@ -45,6 +45,7 @@
 #include "base/accurate_sum.h"
 #include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/model_exporter.h"
+#include "linear_solver/model_validator.h"
 #include "util/fp_utils.h"
 #include "util/proto_tools.h"
 
@@ -125,7 +126,7 @@ void MPConstraint::SetBounds(double lb, double ub) {
   const bool change = lb != lb_ || ub != ub_;
   lb_ = lb;
   ub_ = ub;
-  if (index_ != MPSolverInterface::kNoIndex && change) {
+  if (change && interface_->constraint_is_extracted(index_)) {
     interface_->SetConstraintBounds(index_, lb_, ub_);
   }
 }
@@ -161,7 +162,7 @@ bool MPConstraint::ContainsNewVariables() {
   for (CoeffEntry entry : coefficients_) {
     const int variable_index = entry.first->index();
     if (variable_index >= last_variable_index ||
-        variable_index == MPSolverInterface::kNoIndex) {
+        !interface_->variable_is_extracted(variable_index)) {
       return true;
     }
   }
@@ -268,7 +269,7 @@ void MPVariable::SetBounds(double lb, double ub) {
   const bool change = lb != lb_ || ub != ub_;
   lb_ = lb;
   ub_ = ub;
-  if (index_ != MPSolverInterface::kNoIndex && change) {
+  if (change && interface_->variable_is_extracted(index_)) {
     interface_->SetVariableBounds(index_, lb_, ub_);
   }
 }
@@ -276,7 +277,7 @@ void MPVariable::SetBounds(double lb, double ub) {
 void MPVariable::SetInteger(bool integer) {
   if (integer_ != integer) {
     integer_ = integer;
-    if (index_ != MPSolverInterface::kNoIndex) {
+    if (interface_->variable_is_extracted(index_)) {
       interface_->SetVariableInteger(index_, integer);
     }
   }
@@ -375,6 +376,8 @@ extern MPSolverInterface* BuildGurobiInterface(bool mip,
 extern MPSolverInterface* BuildCplexInterface(bool mip,
                                               MPSolver* const solver);
 #endif
+
+
 #ifdef ANDROID_JNI
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
@@ -454,8 +457,7 @@ MPSolver::MPSolver(const std::string& name, OptimizationProblemType problem_type
       variable_name_to_index_(1),
       constraint_name_to_index_(1),
 #endif
-      time_limit_(0.0),
-      var_and_constraint_names_allow_export_(true) {
+      time_limit_(0.0) {
   timer_.Restart();
   interface_.reset(BuildSolverInterface(this));
   if (FLAGS_linear_solver_enable_verbose_output) {
@@ -518,7 +520,7 @@ MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_nam
 MPSolverResponseStatus MPSolver::LoadModelFromProto(
     const MPModelProto& input_model, std::string* error_message) {
   CHECK(error_message != nullptr);
-  const std::string error = "";
+  const std::string error = FindErrorInMPModelProto(input_model);
   if (!error.empty()) {
     *error_message = error;
     LOG_IF(INFO, OutputIsEnabled())
@@ -762,8 +764,10 @@ void MPSolver::Clear() {
   STLDeleteElements(&constraints_);
   variables_.clear();
   variable_name_to_index_.clear();
+  variable_is_extracted_.clear();
   constraints_.clear();
   constraint_name_to_index_.clear();
+  constraint_is_extracted_.clear();
   interface_->Reset();
   solution_hint_.clear();
 }
@@ -777,13 +781,11 @@ MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
   const int var_index = NumVariables();
   const std::string fixed_name =
       name.empty() ? StringPrintf("auto_v_%09d", var_index) : name;
-  if (var_and_constraint_names_allow_export_) {
-    var_and_constraint_names_allow_export_ &=
-        MPModelProtoExporter::CheckNameValidity(fixed_name);
-  }
   InsertOrDie(&variable_name_to_index_, fixed_name, var_index);
-  MPVariable* v = new MPVariable(lb, ub, integer, fixed_name, interface_.get());
+  MPVariable* v =
+      new MPVariable(var_index, lb, ub, integer, fixed_name, interface_.get());
   variables_.push_back(v);
+  variable_is_extracted_.push_back(false);
   interface_->AddVariable(v);
   return v;
 }
@@ -843,14 +845,11 @@ MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
   const int constraint_index = NumConstraints();
   const std::string fixed_name =
       name.empty() ? StringPrintf("auto_c_%09d", constraint_index) : name;
-  if (var_and_constraint_names_allow_export_) {
-    var_and_constraint_names_allow_export_ &=
-        MPModelProtoExporter::CheckNameValidity(fixed_name);
-  }
   InsertOrDie(&constraint_name_to_index_, fixed_name, constraint_index);
   MPConstraint* const constraint =
-      new MPConstraint(lb, ub, fixed_name, interface_.get());
+      new MPConstraint(constraint_index, lb, ub, fixed_name, interface_.get());
   constraints_.push_back(constraint);
+  constraint_is_extracted_.push_back(false);
   interface_->AddRowConstraint(constraint);
   return constraint;
 }
@@ -1201,18 +1200,13 @@ void MPSolverInterface::ExtractModel() {
   }
 }
 
+// TODO(user): remove this method.
 void MPSolverInterface::ResetExtractionInformation() {
   sync_status_ = MUST_RELOAD;
   last_constraint_index_ = 0;
   last_variable_index_ = 0;
-  for (int j = 0; j < solver_->variables_.size(); ++j) {
-    MPVariable* const var = solver_->variables_[j];
-    var->set_index(kNoIndex);
-  }
-  for (int i = 0; i < solver_->constraints_.size(); ++i) {
-    MPConstraint* const ct = solver_->constraints_[i];
-    ct->set_index(kNoIndex);
-  }
+  solver_->variable_is_extracted_.assign(solver_->variables_.size(), false);
+  solver_->constraint_is_extracted_.assign(solver_->constraints_.size(), false);
 }
 
 bool MPSolverInterface::CheckSolutionIsSynchronized() const {

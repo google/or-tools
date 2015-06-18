@@ -641,6 +641,7 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/linear_solver/linear_solver.$O \
 	$(OBJ_DIR)/linear_solver/linear_solver.pb.$O \
 	$(OBJ_DIR)/linear_solver/model_exporter.$O \
+	$(OBJ_DIR)/linear_solver/model_validator.$O \
 	$(OBJ_DIR)/linear_solver/scip_interface.$O \
 	$(OBJ_DIR)/linear_solver/sulum_interface.$O
 
@@ -679,6 +680,9 @@ $(GEN_DIR)/linear_solver/linear_solver.pb.h:$(GEN_DIR)/linear_solver/linear_solv
 
 $(OBJ_DIR)/linear_solver/model_exporter.$O:$(SRC_DIR)/linear_solver/model_exporter.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Smodel_exporter.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Smodel_exporter.$O
+
+$(OBJ_DIR)/linear_solver/model_validator.$O:$(SRC_DIR)/linear_solver/model_validator.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Smodel_validator.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Smodel_validator.$O
 
 $(OBJ_DIR)/linear_solver/scip_interface.$O:$(SRC_DIR)/linear_solver/scip_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Slinear_solver$Sscip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_interface.$O

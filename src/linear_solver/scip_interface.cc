@@ -16,6 +16,7 @@
 #if defined(USE_SCIP)
 
 #include <stddef.h>
+#include <algorithm>
 #include "base/hash.h"
 #include "base/unique_ptr.h"
 #include <string>
@@ -148,6 +149,7 @@ class SCIPInterface : public MPSolverInterface {
   void DeleteSCIP();
 
   SCIP* scip_;
+  SCIP_VAR* objective_offset_variable_;
   std::vector<SCIP_VAR*> scip_variables_;
   std::vector<SCIP_CONS*> scip_constraints_;
 };
@@ -187,18 +189,18 @@ void SCIPInterface::CreateSCIP() {
       scip_, maximize_ ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE));
   // SCIPaddObjoffset cannot be used at the problem building stage. So
   // we handle the objective offset by creating a dummy variable.
-  SCIP_VAR* scip_var = NULL;
+  objective_offset_variable_ = NULL;
   // The true objective coefficient will be set in ExtractObjective.
   double dummy_obj_coef = 0.0;
-  ORTOOLS_SCIP_CALL(SCIPcreateVar(scip_, &scip_var, "dummy", 1.0, 1.0,
-                                  dummy_obj_coef, SCIP_VARTYPE_CONTINUOUS, true,
-                                  false, NULL, NULL, NULL, NULL, NULL));
-  ORTOOLS_SCIP_CALL(SCIPaddVar(scip_, scip_var));
-  scip_variables_.push_back(scip_var);
+  ORTOOLS_SCIP_CALL(SCIPcreateVar(
+      scip_, &objective_offset_variable_, "dummy", 1.0, 1.0, dummy_obj_coef,
+      SCIP_VARTYPE_CONTINUOUS, true, false, NULL, NULL, NULL, NULL, NULL));
+  ORTOOLS_SCIP_CALL(SCIPaddVar(scip_, objective_offset_variable_));
 }
 
 void SCIPInterface::DeleteSCIP() {
   CHECK_NOTNULL(scip_);
+  ORTOOLS_SCIP_CALL(SCIPreleaseVar(scip_, &objective_offset_variable_));
   for (int i = 0; i < scip_variables_.size(); ++i) {
     ORTOOLS_SCIP_CALL(SCIPreleaseVar(scip_, &scip_variables_[i]));
   }
@@ -223,9 +225,9 @@ void SCIPInterface::SetOptimizationDirection(bool maximize) {
 
 void SCIPInterface::SetVariableBounds(int var_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
-  if (var_index != kNoIndex) {
+  if (variable_is_extracted(var_index)) {
     // Not cached if the variable has been extracted
-    DCHECK_LE(var_index, last_variable_index_);
+    DCHECK_LT(var_index, last_variable_index_);
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     ORTOOLS_SCIP_CALL(SCIPchgVarLb(scip_, scip_variables_[var_index], lb));
     ORTOOLS_SCIP_CALL(SCIPchgVarUb(scip_, scip_variables_[var_index], ub));
@@ -236,7 +238,7 @@ void SCIPInterface::SetVariableBounds(int var_index, double lb, double ub) {
 
 void SCIPInterface::SetVariableInteger(int var_index, bool integer) {
   InvalidateSolutionSynchronization();
-  if (var_index != kNoIndex) {
+  if (variable_is_extracted(var_index)) {
     // Not cached if the variable has been extracted.
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
 #if (SCIP_VERSION >= 210)
@@ -256,9 +258,9 @@ void SCIPInterface::SetVariableInteger(int var_index, bool integer) {
 
 void SCIPInterface::SetConstraintBounds(int index, double lb, double ub) {
   InvalidateSolutionSynchronization();
-  if (index != kNoIndex) {
+  if (constraint_is_extracted(index)) {
     // Not cached if the row has been extracted
-    DCHECK_LE(index, last_constraint_index_);
+    DCHECK_LT(index, last_constraint_index_);
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     ORTOOLS_SCIP_CALL(SCIPchgLhsLinear(scip_, scip_constraints_[index], lb));
     ORTOOLS_SCIP_CALL(SCIPchgRhsLinear(scip_, scip_constraints_[index], ub));
@@ -271,19 +273,18 @@ void SCIPInterface::SetCoefficient(MPConstraint* const constraint,
                                    const MPVariable* const variable,
                                    double new_value, double old_value) {
   InvalidateSolutionSynchronization();
-  const int constraint_index = constraint->index();
-  const int variable_index = variable->index();
-  if (constraint_index != kNoIndex && variable_index != kNoIndex) {
+  if (variable_is_extracted(variable->index()) &&
+      constraint_is_extracted(constraint->index())) {
     // The modification of the coefficient for an extracted row and
     // variable is not cached.
-    DCHECK_LE(constraint_index, last_constraint_index_);
-    DCHECK_LE(variable_index, last_variable_index_);
+    DCHECK_LT(constraint->index(), last_constraint_index_);
+    DCHECK_LT(variable->index(), last_variable_index_);
     // SCIP does not allow to set a coefficient directly, so we add the
     // difference between the new and the old value instead.
     ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
     ORTOOLS_SCIP_CALL(SCIPaddCoefLinear(
-        scip_, scip_constraints_[constraint_index],
-        scip_variables_[variable_index], new_value - old_value));
+        scip_, scip_constraints_[constraint->index()],
+        scip_variables_[variable->index()], new_value - old_value));
   } else {
     // The modification of an unextracted row or variable is cached
     // and handled in ExtractModel.
@@ -296,17 +297,16 @@ void SCIPInterface::ClearConstraint(MPConstraint* const constraint) {
   InvalidateSolutionSynchronization();
   const int constraint_index = constraint->index();
   // Constraint may not have been extracted yet.
-  if (constraint_index != kNoIndex) {
-    for (CoeffEntry entry : constraint->coefficients_) {
-      const int var_index = entry.first->index();
-      const double old_coef_value = entry.second;
-      DCHECK_NE(kNoIndex, var_index);
-      ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
-      // Set coefficient to zero by substracting the old coefficient value.
-      ORTOOLS_SCIP_CALL(
-          SCIPaddCoefLinear(scip_, scip_constraints_[constraint_index],
-                            scip_variables_[var_index], -old_coef_value));
-    }
+  if (!constraint_is_extracted(constraint_index)) return;
+  for (CoeffEntry entry : constraint->coefficients_) {
+    const int var_index = entry.first->index();
+    const double old_coef_value = entry.second;
+    DCHECK(variable_is_extracted(var_index));
+    ORTOOLS_SCIP_CALL(SCIPfreeTransform(scip_));
+    // Set coefficient to zero by substracting the old coefficient value.
+    ORTOOLS_SCIP_CALL(
+        SCIPaddCoefLinear(scip_, scip_constraints_[constraint_index],
+                          scip_variables_[var_index], -old_coef_value));
   }
 }
 
@@ -329,14 +329,14 @@ void SCIPInterface::ClearObjective() {
   for (CoeffEntry entry : solver_->objective_->coefficients_) {
     const int var_index = entry.first->index();
     // Variable may have not been extracted yet.
-    if (var_index == kNoIndex) {
+    if (!variable_is_extracted(var_index)) {
       DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
     } else {
       ORTOOLS_SCIP_CALL(SCIPchgVarObj(scip_, scip_variables_[var_index], 0.0));
     }
   }
-  // Constant term: change objective coefficient of dummy variable.
-  ORTOOLS_SCIP_CALL(SCIPchgVarObj(scip_, scip_variables_[0], 0.0));
+  // Constant term: change objective offset variable.
+  ORTOOLS_SCIP_CALL(SCIPchgVarObj(scip_, objective_offset_variable_, 0.0));
 }
 
 void SCIPInterface::AddRowConstraint(MPConstraint* const ct) {
@@ -355,8 +355,8 @@ void SCIPInterface::ExtractNewVariables() {
     // Define new variables
     for (int j = last_variable_index_; j < total_num_vars; ++j) {
       MPVariable* const var = solver_->variables_[j];
-      DCHECK_EQ(kNoIndex, var->index());
-      var->set_index(j + 1);  // offset by 1 because of dummy variable.
+      DCHECK(!variable_is_extracted(j));
+      set_variable_as_extracted(j, true);
       SCIP_VAR* scip_var = NULL;
       // The true objective coefficient will be set later in ExtractObjective.
       double tmp_obj_coef = 0.0;
@@ -373,10 +373,9 @@ void SCIPInterface::ExtractNewVariables() {
       MPConstraint* const ct = solver_->constraints_[i];
       for (CoeffEntry entry : ct->coefficients_) {
         const int var_index = entry.first->index();
-        DCHECK_NE(kNoIndex, var_index);
-        if (var_index >= last_variable_index_ + 1) {
-          // The variable is new (index offset by 1 because of the
-          // dummy variable), so we know the previous coefficient
+        DCHECK(variable_is_extracted(var_index));
+        if (var_index >= last_variable_index_) {
+          // The variable is new, so we know the previous coefficient
           // value was 0 and we can directly add the coefficient.
           ORTOOLS_SCIP_CALL(SCIPaddCoefLinear(scip_, scip_constraints_[i],
                                               scip_variables_[var_index],
@@ -396,8 +395,8 @@ void SCIPInterface::ExtractNewConstraints() {
     int max_row_length = 0;
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
-      DCHECK_EQ(kNoIndex, ct->index());
-      ct->set_index(i);
+      DCHECK(!constraint_is_extracted(i));
+      set_constraint_as_extracted(i, true);
       if (ct->coefficients_.size() > max_row_length) {
         max_row_length = ct->coefficients_.size();
       }
@@ -407,13 +406,13 @@ void SCIPInterface::ExtractNewConstraints() {
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
-      DCHECK_NE(kNoIndex, ct->index());
+      DCHECK(constraint_is_extracted(i));
       int size = ct->coefficients_.size();
       int j = 0;
       for (CoeffEntry entry : ct->coefficients_) {
-        const int index = entry.first->index();
-        DCHECK_NE(kNoIndex, index);
-        vars[j] = scip_variables_[index];
+        const int var_index = entry.first->index();
+        DCHECK(variable_is_extracted(var_index));
+        vars[j] = scip_variables_[var_index];
         coefs[j] = entry.second;
         j++;
       }
@@ -452,9 +451,9 @@ void SCIPInterface::ExtractObjective() {
         SCIPchgVarObj(scip_, scip_variables_[var_index], obj_coef));
   }
 
-  // Constant term: change objective coefficient of dummy variable.
-  ORTOOLS_SCIP_CALL(
-      SCIPchgVarObj(scip_, scip_variables_[0], solver_->Objective().offset()));
+  // Constant term: change objective offset variable.
+  ORTOOLS_SCIP_CALL(SCIPchgVarObj(scip_, objective_offset_variable_,
+                                  solver_->Objective().offset()));
 }
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
@@ -496,6 +495,50 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
   SetParameters(param);
+
+  // Use the solution hint if any.
+  // Note that SCIP will only use this if it is a feasible solution.
+  if (!solver_->solution_hint_.empty()) {
+    const int num_vars = solver_->variables_.size();
+    if (solver_->solution_hint_.size() != num_vars) {
+      LOG(WARNING) << "SCIP currently doesn't handle partial solution hints. "
+                   << "Filling the missing positions with zeros...";
+    }
+
+    // We start by creating the all-zero solution.
+    SCIP_SOL* solution;
+    ORTOOLS_SCIP_CALL(SCIPcreateSol(scip_, &solution, nullptr));
+
+    // The variable representing the objective offset should always be one!!
+    // See CreateSCIP().
+    ORTOOLS_SCIP_CALL(
+        SCIPsetSolVal(scip_, solution, objective_offset_variable_, 1.0));
+
+    // Fill the other variables from the given solution hint.
+    for (const std::pair<MPVariable*, double>& p : solver_->solution_hint_) {
+      ORTOOLS_SCIP_CALL(SCIPsetSolVal(
+          scip_, solution, scip_variables_[p.first->index()], p.second));
+    }
+
+    SCIP_Bool is_feasible;
+    ORTOOLS_SCIP_CALL(SCIPcheckSol(
+        scip_, solution, /*printreason=*/FALSE, /*checkbounds=*/TRUE,
+        /*checkintegrality=*/TRUE, /*checklprows=*/TRUE, &is_feasible));
+    VLOG(1) << "Solution hint is " << (is_feasible ? "FEASIBLE" : "INFEASIBLE");
+
+    // TODO(user): I more or less copied this from the SCIPreadSol() code that
+    // reads a solution from a file. I am not sure what SCIPisTransformed() is
+    // or what is the difference between the try and add version. In any case
+    // this seems to always call SCIPaddSolFree() for now and it works.
+    SCIP_Bool is_stored;
+    if (SCIPisTransformed(scip_)) {
+      ORTOOLS_SCIP_CALL(SCIPtrySolFree(
+          scip_, &solution, /*printreason=*/FALSE, /*checkbounds=*/TRUE,
+          /*checkintegrality=*/TRUE, /*checklprows=*/TRUE, &is_stored));
+    } else {
+      ORTOOLS_SCIP_CALL(SCIPaddSolFree(scip_, &solution, &is_stored));
+    }
+  }
 
   // Solve.
   timer.Restart();

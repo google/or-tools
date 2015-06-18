@@ -344,7 +344,7 @@ void GLOPInterface::ExtractNewVariables() {
     const glop::ColIndex new_col =
         linear_program_.FindOrCreateVariable(var->name());
     DCHECK_EQ(new_col, col);
-    var->set_index(col.value());
+    set_variable_as_extracted(col.value(), true);
     linear_program_.SetVariableBounds(col, var->lb(), var->ub());
   }
 }
@@ -355,7 +355,7 @@ void GLOPInterface::ExtractNewConstraints() {
   const glop::RowIndex num_rows(solver_->constraints_.size());
   for (glop::RowIndex row(0); row < num_rows; ++row) {
     MPConstraint* const ct = solver_->constraints_[row.value()];
-    ct->set_index(row.value());
+    set_constraint_as_extracted(row.value(), true);
 
     const double lb = ct->lb();
     const double ub = ct->ub();
@@ -366,7 +366,7 @@ void GLOPInterface::ExtractNewConstraints() {
 
     for (CoeffEntry entry : ct->coefficients_) {
       const int var_index = entry.first->index();
-      DCHECK_NE(kNoIndex, var_index);
+      DCHECK(variable_is_extracted(var_index));
       const glop::ColIndex col(var_index);
       const double coeff = entry.second;
       linear_program_.SetCoefficient(row, col, coeff);

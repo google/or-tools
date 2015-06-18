@@ -306,7 +306,7 @@ namespace operations_research {
          InvalidateModelSynchronization();
       }
       else {
-         if ( var_index != kNoIndex ) {
+         if ( variable_is_extracted(var_index) ) {
             // Variable has already been extracted, so we must modify the
             // modeling object.
             DCHECK_LT(var_index, last_variable_index_);
@@ -327,7 +327,7 @@ namespace operations_research {
    void CplexInterface::SetVariableInteger(int var_index, bool integer)
    {
       InvalidateSolutionSynchronization();
-   
+
       // NOTE: The type of the model (continuous or mixed integer) is
       //       defined once and for all in the constructor. There are no
       //       dynamic changes to the model type.
@@ -345,7 +345,7 @@ namespace operations_research {
       }
       else {
          if ( mMip ) {
-            if ( var_index != kNoIndex ) {
+            if ( variable_is_extracted(var_index) ) {
                // Variable is extracted. Change the type immediately.
                // TODO: Should we check the current type and don't do anything
                //       in case the type does not change?
@@ -448,7 +448,7 @@ namespace operations_research {
          InvalidateModelSynchronization();
       }
       else {
-         if ( index != kNoIndex ) {
+        if ( constraint_is_extracted(index) ) {
             // Constraint is already extracted, so we must update its bounds
             // and its type.
             DCHECK(mLp != NULL);
@@ -510,7 +510,7 @@ namespace operations_research {
       else {
          int const row = constraint->index();
          int const col = variable->index();
-         if ( row != kNoIndex && col != kNoIndex ) {
+         if ( constraint_is_extracted(row) && variable_is_extracted(col) ) {
             // If row and column are both extracted then we can directly
             // update the modeling object
             DCHECK_LE(row, last_constraint_index_);
@@ -528,7 +528,7 @@ namespace operations_research {
    void CplexInterface::ClearConstraint(MPConstraint* const constraint)
    {
       CPXDIM const row = constraint->index();
-      if ( row == kNoIndex )
+      if ( !constraint_is_extracted(row) )
          // There is nothing to do if the constraint was not even extracted.
          return;
 
@@ -556,7 +556,7 @@ namespace operations_research {
               it != coeffs.end(); ++it)
          {
             CPXDIM const col = it->first->index();
-            if ( col != kNoIndex ) {
+            if ( variable_is_extracted(col) ) {
                rowind[j] = row;
                colind[j] = col;
                val[j] = 0.0;
@@ -573,7 +573,7 @@ namespace operations_research {
                                                 double coefficient)
    {
       CPXDIM const col = variable->index();
-      if ( col == kNoIndex )
+      if ( !variable_is_extracted(col) )
          // Nothing to do if variable was not even extracted
          return;
 
@@ -623,7 +623,7 @@ namespace operations_research {
          {
             CPXDIM const idx = it->first->index();
             // We only need to reset variables that have been extracted.
-            if ( idx != kNoIndex) {
+            if ( variable_is_extracted(idx) ) {
                DCHECK_LT(idx, cols);
                ind[j] = idx;
                zero[j] = 0.0;
@@ -808,8 +808,8 @@ namespace operations_research {
          // In case of error we just reset the indeces.
          std::vector<MPVariable*> const &variables = solver_->variables();
          for (int j = last_extracted; j < var_count; ++j) {
-            DCHECK_EQ(variables[j]->index(), kNoIndex);
-            variables[j]->set_index(j);
+            CHECK(!variable_is_extracted(variables[j]->index()));
+            set_variable_as_extracted(variables[j]->index(), true);
          }
 
          try {
@@ -832,13 +832,14 @@ namespace operations_research {
                //       intersect new variables?
                for (int i = 0; i < last_constraint_index_; ++i) {
                   MPConstraint const *const ct = solver_->constraints_[i];
-                  DCHECK_NE(ct->index(), kNoIndex);
+                  CHECK(constraint_is_extracted(ct->index()));
                   CoeffMap const &coeffs = ct->coefficients_;
                   for (CoeffMap::const_iterator it(coeffs.begin());
                        it != coeffs.end(); ++it)
                   {
                      int const idx = it->first->index();
-                     if ( idx != kNoIndex && idx > last_variable_index_ ) {
+                     if ( variable_is_extracted(idx) &&
+                          idx > last_variable_index_ ) {
                         collen[idx - last_variable_index_]++;
                         ++nonzeros;
                      }
@@ -878,7 +879,8 @@ namespace operations_research {
                           it != coeffs.end(); ++it)
                      {
                         int const idx = it->first->index();
-                        if ( idx != kNoIndex && idx > last_variable_index_ ) {
+                        if ( variable_is_extracted(idx) &&
+                             idx > last_variable_index_ ) {
                            CPXNNZ const nz = cmatbeg[idx]++;
                            cmatind[nz] = idx;
                            cmatval[nz] = it->second;
@@ -926,7 +928,7 @@ namespace operations_research {
             std::vector<MPVariable*> const &variables = solver_->variables();
             int const size = variables.size();
             for (int j = last_extracted; j < size; ++j)
-               variables[j]->set_index(kNoIndex);
+              set_variable_as_extracted(j, false);
             throw;
          }
       }
@@ -963,7 +965,7 @@ namespace operations_research {
          // Update indices of new constraints _before_ actually extracting
          // them. In case of error we will just reset the indices.
          for (CPXDIM c = offset; c < total; ++c)
-            solver_->constraints_[c]->set_index(c);
+            set_constraint_as_extracted(c, true);
 
          try {
             unique_ptr<CPXDIM[]> rmatind(new CPXDIM[cols]);
@@ -1005,7 +1007,7 @@ namespace operations_research {
                        it != coeffs.end(); ++it)
                   {
                      CPXDIM const idx = it->first->index();
-                     if ( idx != kNoIndex ) {
+                     if ( variable_is_extracted(idx) ) {
                         DCHECK_LT(nextNz, cols);
                         DCHECK_LT(idx, cols);
                         rmatind[nextNz] = idx;
@@ -1038,7 +1040,7 @@ namespace operations_research {
             std::vector<MPConstraint*> const &constraints = solver_->constraints();
             int const size = constraints.size();
             for (int i = offset; i < size; ++i)
-               constraints[i]->set_index(kNoIndex);
+              set_constraint_as_extracted(i, false);
             throw;
          }
       }
@@ -1064,7 +1066,7 @@ namespace operations_research {
       for (CoeffMap::const_iterator it = coeffs.begin(); it != coeffs.end(); ++it)
       {
          CPXDIM const idx = it->first->index();
-         if ( idx != kNoIndex ) {
+         if ( variable_is_extracted(idx) ) {
             DCHECK_LT(idx, cols);
             val[idx] = it->second;
          }
