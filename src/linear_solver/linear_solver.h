@@ -323,6 +323,12 @@ class MPSolver {
   // Solves the problem using the specified parameter values.
   ResultStatus Solve(const MPSolverParameters& param);
 
+  // Advanced usage: compute the "activities" of all constraints, which are the
+  // sums of their linear terms. The activities are returned in the same order
+  // as constraints(), which is the order in which constraints were added; but
+  // you can also use MPConstraint::index() to get a constraint's index.
+  std::vector<double> ComputeConstraintActivities() const;
+
   // Advanced usage:
   // Verifies the *correctness* of the solution: all variables must be within
   // their domains, all constraints must be satisfied, and the reported
@@ -817,10 +823,6 @@ class MPConstraint {
   // For more info see: http://tinyurl.com/lazy-constraints.
   void set_is_lazy(bool laziness) { is_lazy_ = laziness; }
 
-  // Returns the constraint's activity in the current solution:
-  // sum over all terms of (coefficient * variable value)
-  double activity() const;
-
   // Returns the index of the constraint in the MPSolver::constraints_.
   int index() const { return index_; }
 
@@ -858,10 +860,8 @@ class MPConstraint {
         name_(name),
         is_lazy_(false),
         dual_value_(0.0),
-        activity_(0.0),
         interface_(interface) {}
 
-  void set_activity(double activity) { activity_ = activity; }
   void set_dual_value(double dual_value) { dual_value_ = dual_value; }
 
  private:
@@ -888,7 +888,6 @@ class MPConstraint {
   // By default this parameter is 'false'.
   bool is_lazy_;
   double dual_value_;
-  double activity_;
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };

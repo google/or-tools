@@ -429,17 +429,6 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
     } else {
       VLOG(1) << "No feasible solution found.";
     }
-
-    const double* const row_activities = model.getRowActivity();
-    if (row_activities != NULL) {
-      for (int i = 0; i < solver_->constraints_.size(); ++i) {
-        MPConstraint* const ct = solver_->constraints_[i];
-        const int constraint_index = ct->index();
-        const double row_activity = row_activities[constraint_index];
-        ct->set_activity(row_activity);
-        VLOG(4) << "row " << ct->index() << ": activity = " << row_activity;
-      }
-    }
   }
 
   iterations_ = model.getIterationCount();

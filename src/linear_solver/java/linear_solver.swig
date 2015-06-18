@@ -165,9 +165,9 @@ import java.lang.reflect.*;
 %rename (suppressOutput) operations_research::MPSolver::SuppressOutput;  // no test
 %rename (lookupConstraintOrNull) operations_research::MPSolver::LookupConstraintOrNull;  // no test
 %rename (lookupVariableOrNull) operations_research::MPSolver::LookupVariableOrNull;  // no test
-%rename (solverVersion) operations_research::MPSolver::SolverVersion;  // no test
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
+%rename (computeConstraintActivities) operations_research::MPSolver::ComputeConstraintActivities;
 %rename (computeExactConditionNumber) operations_research::MPSolver::ComputeExactConditionNumber;
 %rename (nodes) operations_research::MPSolver::nodes;
 %rename (iterations) operations_research::MPSolver::iterations;
@@ -204,10 +204,10 @@ import java.lang.reflect.*;
 %rename (lb) operations_research::MPConstraint::lb;  // no test
 %rename (ub) operations_research::MPConstraint::ub;  // no test
 %rename (name) operations_research::MPConstraint::name;
-%rename (activity) operations_research::MPConstraint::activity;
 %rename (basisStatus) operations_research::MPConstraint::basis_status;
 %rename (dualValue) operations_research::MPConstraint::dual_value;  // For experts only.
 %rename (isLazy) operations_research::MPConstraint::is_lazy;  // For experts only.
+%rename (index) operations_research::MPConstraint::index;
 
 // MPObjective: writer API.
 %rename (setCoefficient) operations_research::MPObjective::SetCoefficient;
@@ -228,7 +228,6 @@ import java.lang.reflect.*;
 
 // MPSolverParameters API. For expert users only.
 // TODO(user): unit test all of it.
-%unignore operations_research::MPSolverParameters::MPSolverParameters;  // no test
 %unignore operations_research::MPSolverParameters::DoubleParam;  // no test
 %unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;  // no test
 %rename (getDoubleParam) operations_research::MPSolverParameters::GetDoubleParam;  // no test

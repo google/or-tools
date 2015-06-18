@@ -184,13 +184,9 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
       var->set_solution_value(static_cast<double>(solution_value));
     }
 
-    // TODO(user): Implement the row activity and row status.
+    // TODO(user): Implement the row status.
     const size_t num_constraints = solver_->constraints_.size();
     row_status_.resize(num_constraints, MPSolver::FREE);
-    for (int ct_id = 0; ct_id < num_constraints; ++ct_id) {
-      MPConstraint* const ct = solver_->constraints_[ct_id];
-      ct->set_activity(static_cast<double>(0));
-    }
   }
 
   return result_status_;

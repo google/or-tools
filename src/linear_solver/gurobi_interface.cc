@@ -682,18 +682,12 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
 
     std::unique_ptr<double[]> values(new double[total_num_cols]);
     std::unique_ptr<double[]> dual_values(new double[total_num_rows]);
-    std::unique_ptr<double[]> slacks(new double[total_num_rows]);
-    std::unique_ptr<double[]> rhs(new double[total_num_rows]);
     std::unique_ptr<double[]> reduced_costs(new double[total_num_cols]);
 
     CHECKED_GUROBI_CALL(
         GRBgetdblattr(model_, GRB_DBL_ATTR_OBJVAL, &objective_value_));
     CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_, GRB_DBL_ATTR_X, 0,
                                            total_num_cols, values.get()));
-    CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_, GRB_DBL_ATTR_SLACK, 0,
-                                           total_num_rows, slacks.get()));
-    CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_, GRB_DBL_ATTR_RHS, 0,
-                                           total_num_rows, rhs.get()));
     if (!mip_) {
       CHECKED_GUROBI_CALL(GRBgetdblattrarray(
           model_, GRB_DBL_ATTR_RC, 0, total_num_cols, reduced_costs.get()));
@@ -712,16 +706,11 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
       }
     }
 
-    for (int i = 0; i < solver_->constraints_.size(); ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
-      ct->set_activity(rhs[i] - slacks[i]);
-      if (mip_) {
-        VLOG(4) << "row " << ct->index() << ", slack = " << slacks[i]
-                << ", rhs = " << rhs[i];
-      } else {
+    if (!mip_) {
+      for (int i = 0; i < solver_->constraints_.size(); ++i) {
+        MPConstraint* const ct = solver_->constraints_[i];
         ct->set_dual_value(dual_values[i]);
-        VLOG(4) << "row " << ct->index() << ", slack = " << slacks[i]
-                << ", rhs = " << rhs[i] << ", dual value = " << dual_values[i];
+        VLOG(4) << "row " << ct->index() << ", dual value = " << dual_values[i];
       }
     }
   }

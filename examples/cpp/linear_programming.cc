@@ -82,12 +82,13 @@ void RunLinearProgrammingExample(
   LOG(INFO) << "x1: reduced cost = " << x1->reduced_cost();
   LOG(INFO) << "x2: reduced cost = " << x2->reduced_cost();
   LOG(INFO) << "x3: reduced cost = " << x3->reduced_cost();
+  const std::vector<double> activities = solver.ComputeConstraintActivities();
   LOG(INFO) << "c0: dual value = " << c0->dual_value()
-            << " activity = " << c0->activity();
+            << " activity = " << activities[c0->index()];
   LOG(INFO) << "c1: dual value = " << c1->dual_value()
-            << " activity = " << c1->activity();
+            << " activity = " << activities[c1->index()];
   LOG(INFO) << "c2: dual value = " << c2->dual_value()
-            << " activity = " << c2->activity();
+            << " activity = " << activities[c2->index()];
 }
 
 void RunAllExamples() {

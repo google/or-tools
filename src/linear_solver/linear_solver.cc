@@ -152,11 +152,6 @@ MPSolver::BasisStatus MPConstraint::basis_status() const {
   return interface_->row_status(index_);
 }
 
-double MPConstraint::activity() const {
-  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
-  return activity_;
-}
-
 bool MPConstraint::ContainsNewVariables() {
   const int last_variable_index = interface_->last_variable_index();
   for (CoeffEntry entry : coefficients_) {
@@ -979,6 +974,21 @@ std::string PrettyPrintConstraint(const MPConstraint& constraint) {
 }
 }  // namespace
 
+std::vector<double> MPSolver::ComputeConstraintActivities() const {
+  // TODO(user): test this failure case.
+  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return {};
+  std::vector<double> activities(constraints_.size(), 0.0);
+  for (int i = 0; i < constraints_.size(); ++i) {
+    const MPConstraint& constraint = *constraints_[i];
+    AccurateSum<double> sum;
+    for (CoeffEntry entry : constraint.coefficients_) {
+      sum.Add(entry.first->solution_value() * entry.second);
+    }
+    activities[i] = sum.Value();
+  }
+  return activities;
+}
+
 // TODO(user): split.
 bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   double max_observed_error = 0;
@@ -1027,17 +1037,15 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   }
 
   // Verify constraints.
+  const std::vector<double> activities = ComputeConstraintActivities();
   for (int i = 0; i < constraints_.size(); ++i) {
     const MPConstraint& constraint = *constraints_[i];
-    // Re-compute the actual activity with a safe summing algorithm.
-    AccurateSum<double> activity_sum;
-    double inaccurate_activity = 0;
+    const double activity = activities[i];
+    // Re-compute the activity with a inaccurate summing algorithm.
+    double inaccurate_activity = 0.0;
     for (CoeffEntry entry : constraint.coefficients_) {
-      const double term = entry.first->solution_value() * entry.second;
-      activity_sum.Add(term);
-      inaccurate_activity += term;
+      inaccurate_activity += entry.first->solution_value() * entry.second;
     }
-    const double activity = activity_sum.Value();
     // Catch NaNs.
     if (isnan(activity) || isnan(inaccurate_activity)) {
       ++num_errors;

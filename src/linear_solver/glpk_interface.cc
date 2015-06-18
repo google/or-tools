@@ -591,21 +591,11 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   }
   for (int i = 0; i < solver_->constraints_.size(); ++i) {
     MPConstraint* const ct = solver_->constraints_[i];
-    if (mip_) {
-      const double row_activity =
-          glp_mip_row_val(lp_, MPSolverIndexToGlpkIndex(i));
-      ct->set_activity(row_activity);
-      VLOG(4) << "row " << MPSolverIndexToGlpkIndex(i)
-              << ": activity = " << row_activity;
-    } else {
-      const double row_activity =
-          glp_get_row_prim(lp_, MPSolverIndexToGlpkIndex(i));
-      ct->set_activity(row_activity);
+    if (!mip_) {
       const double dual_value =
           glp_get_row_dual(lp_, MPSolverIndexToGlpkIndex(i));
       ct->set_dual_value(dual_value);
       VLOG(4) << "row " << MPSolverIndexToGlpkIndex(i)
-              << ": activity = " << row_activity
               << ": dual value = " << dual_value;
     }
   }

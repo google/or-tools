@@ -239,10 +239,6 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
         lp_solver_.dual_values()[lp_solver_ct_id];
     ct->set_dual_value(static_cast<double>(dual_value));
 
-    const glop::Fractional row_activity =
-        lp_solver_.constraint_activities()[lp_solver_ct_id];
-    ct->set_activity(static_cast<double>(row_activity));
-
     const glop::ConstraintStatus constraint_status =
         lp_solver_.constraint_statuses()[lp_solver_ct_id];
     row_status_.at(ct_id) = TranslateConstraintStatus(constraint_status);

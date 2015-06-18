@@ -493,16 +493,12 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
       VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
     }
     const double* const dual_values = clp_->getRowPrice();
-    const double* const row_activities = clp_->getRowActivity();
     for (int i = 0; i < solver_->constraints_.size(); ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
       const int constraint_index = ct->index();
-      const double row_activity = row_activities[constraint_index];
-      ct->set_activity(row_activity);
       const double dual_value = dual_values[constraint_index];
       ct->set_dual_value(dual_value);
-      VLOG(4) << "row " << ct->index() << ": activity = " << row_activity
-              << " dual value = " << dual_value;
+      VLOG(4) << "row " << ct->index() << " dual value = " << dual_value;
     }
   }
 

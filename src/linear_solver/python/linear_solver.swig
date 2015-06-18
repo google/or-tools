@@ -146,24 +146,32 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
   }  // %pythoncode
 }
 
-// See ../python/linear_programming.py for example on how to use the nice
-// extended python API provided below.
 %extend MPSolver {
+  // Change a (bool, std::string*) outputs to a python std::string (empty if bool=false).
   std::string ExportModelAsLpFormat(bool obfuscated) {
     std::string output;
-    if (!self->ExportModelAsLpFormat(obfuscated, &output)) return "";
+    if (!$self->ExportModelAsLpFormat(obfuscated, &output)) return "";
     return output;
   }
-
   std::string ExportModelAsMpsFormat(bool fixed_format, bool obfuscated) {
     std::string output;
-    if (!self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
+    if (!$self->ExportModelAsMpsFormat(fixed_format, obfuscated, &output)) {
       return "";
     }
     return output;
   }
 
+  // Change the API of LoadModelFromProto() to simply return the error message:
+  // it will always be empty iff the model was valid.
+  std::string LoadModelFromProto(const MPModelProto& input_model) {
+    std::string error_message;
+    $self->LoadModelFromProto(input_model, &error_message);
+    return error_message;
+  }
+
   %pythoncode {
+  # See ../python/linear_programming.py for example on how to use the nice
+  # extended python API provided below.
   def Add(self, constraint, name=''):
     if isinstance(constraint, bool):
       if constraint:
@@ -177,6 +185,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     result = SumArray(expr_array)
     return result
 
+  # Compatibility
   def RowConstraint(self, *args):
     return self.Constraint(*args)
 
@@ -252,6 +261,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 %unignore operations_research::MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::BOP_INTEGER_PROGRAMMING;
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
@@ -292,8 +302,10 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 %rename (LookupConstraint)
     operations_research::MPSolver::LookupConstraintOrNull;
 %rename (LookupVariable) operations_research::MPSolver::LookupVariableOrNull;
+%unignore operations_research::MPSolver::SetSolverSpecificParametersAsString;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
+%unignore operations_research::MPSolver::ComputeConstraintActivities;
 %unignore operations_research::MPSolver::ComputeExactConditionNumber;
 %unignore operations_research::MPSolver::nodes;
 %unignore operations_research::MPSolver::iterations;  // No unit test
@@ -308,7 +320,9 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 %unignore operations_research::MPVariable::solution_value;
 %unignore operations_research::MPVariable::lb;  // No unit test
 %unignore operations_research::MPVariable::ub;  // No unit test
+%unignore operations_research::MPVariable::integer;  // No unit test
 %unignore operations_research::MPVariable::name;  // No unit test
+%unignore operations_research::MPVariable::index;  // No unit test
 %unignore operations_research::MPVariable::basis_status;
 %unignore operations_research::MPVariable::reduced_cost;  // For experts only.
 
@@ -324,7 +338,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 %unignore operations_research::MPConstraint::lb;
 %unignore operations_research::MPConstraint::ub;
 %unignore operations_research::MPConstraint::name;
-%unignore operations_research::MPConstraint::activity;
+%unignore operations_research::MPConstraint::index;
 %unignore operations_research::MPConstraint::basis_status;
 %unignore operations_research::MPConstraint::dual_value;  // For experts only.
 

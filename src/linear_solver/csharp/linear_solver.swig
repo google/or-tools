@@ -101,6 +101,7 @@
 %unignore operations_research::MPSolver::LookupVariableOrNull;
 
 // Expose very advanced parts of the MPSolver API. For expert users only.
+%unignore operations_research::MPSolver::ComputeConstraintActivities;
 %unignore operations_research::MPSolver::ComputeExactConditionNumber;
 %rename (Nodes) operations_research::MPSolver::nodes;
 %rename (Iterations) operations_research::MPSolver::iterations;
@@ -156,7 +157,6 @@
 %rename (Lb) operations_research::MPConstraint::lb;
 %rename (Ub) operations_research::MPConstraint::ub;
 %rename (Name) operations_research::MPConstraint::name;
-%rename (Activity) operations_research::MPConstraint::activity;
 %rename (BasisStatus) operations_research::MPConstraint::basis_status;
 %rename (DualValue) operations_research::MPConstraint::dual_value;  // expert
 %rename (IsLazy) operations_research::MPConstraint::is_lazy;  // expert
@@ -179,7 +179,6 @@
 %unignore operations_research::MPObjective::BestBound;
 
 // MPSolverParameters API. For expert users only.
-%unignore operations_research::MPSolverParameters::MPSolverParameters;
 %unignore operations_research::MPSolverParameters::DoubleParam;
 %unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;
 %unignore operations_research::MPSolverParameters::GetDoubleParam;
