@@ -29,10 +29,14 @@
 
 %include "enums.swg"  // For native Java enum support.
 
+// We prefer our in-house vector wrapper to std_vector.i, because it
+// converts to and from native java arrays.
+%include "util/java/vector.swig"
+
 
 %{
-#include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver.pb.h"
+#include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver_ext.h"
 %}
 

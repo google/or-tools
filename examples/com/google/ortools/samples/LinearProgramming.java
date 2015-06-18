@@ -17,7 +17,6 @@ package com.google.ortools.samples;
 import com.google.ortools.linearsolver.MPConstraint;
 import com.google.ortools.linearsolver.MPObjective;
 import com.google.ortools.linearsolver.MPSolver;
-import com.google.ortools.linearsolver.MPSolverParameters;
 import com.google.ortools.linearsolver.MPVariable;
 
 /**
@@ -83,8 +82,7 @@ public class LinearProgramming {
       System.out.println(model);
     }
 
-    MPSolverParameters parameters = new MPSolverParameters();
-    final MPSolver.ResultStatus resultStatus = solver.solve(parameters);
+    final MPSolver.ResultStatus resultStatus = solver.solve();
 
     // Check that the problem has an optimal solution.
     if (resultStatus != MPSolver.ResultStatus.OPTIMAL) {
@@ -110,17 +108,19 @@ public class LinearProgramming {
     System.out.println("x2 = " + x2.solutionValue());
     System.out.println("x3 = " + x3.solutionValue());
 
+    final double[] activities = solver.computeConstraintActivities();
+
     System.out.println("Advanced usage:");
     System.out.println("Problem solved in " + solver.iterations() + " iterations");
     System.out.println("x1: reduced cost = " + x1.reducedCost());
     System.out.println("x2: reduced cost = " + x2.reducedCost());
     System.out.println("x3: reduced cost = " + x3.reducedCost());
     System.out.println("c0: dual value = " + c0.dualValue());
-    System.out.println("    activity = " + c0.activity());
+    System.out.println("    activity = " + activities[c0.index()]);
     System.out.println("c1: dual value = " + c1.dualValue());
-    System.out.println("    activity = " + c1.activity());
+    System.out.println("    activity = " + activities[c1.index()]);
     System.out.println("c2: dual value = " + c2.dualValue());
-    System.out.println("    activity = " + c2.activity());
+    System.out.println("    activity = " + activities[c2.index()]);
   }
 
   public static void main(String[] args) throws Exception {
