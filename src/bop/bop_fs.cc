@@ -232,6 +232,10 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
       parameters.max_number_of_conflicts_in_random_solution_generation();
   int64 old_num_failures = 0;
 
+  // Optimization: Since each Solve() is really fast, we want to limit as
+  // much as possible the work around one.
+  bool objective_need_to_be_overconstrained = (best_cost != kint64max);
+
   bool solution_found = false;
   while (remaining_num_conflicts > 0 && !local_time_limit.LimitReached()) {
     ++sat_seed_;
@@ -245,42 +249,44 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
     sat_propagator_->SetParameters(sat_params);
     sat_propagator_->ResetDecisionHeuristic();
 
-    // Constrain the solution to be better than the current one.
-    if (best_cost == kint64max ||
-        AddObjectiveConstraint(
-            problem_state.original_problem(), false, sat::Coefficient(0), true,
-            sat::Coefficient(best_cost) - 1, sat_propagator_)) {
-      // Special assignment preference parameters.
-      const int preference = random_->Uniform(4);
-      if (preference == 0) {
-        UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
-                                               sat_propagator_);
-      } else if (preference == 1 && !problem_state.lp_values().empty()) {
-        // Assign SAT assignment preference based on the LP solution.
-        for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
-          const double value = problem_state.lp_values()[col];
-          sat_propagator_->SetAssignmentPreference(
-              sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
-              1 - fabs(value - round(value)));
-        }
-      }
-
-      const sat::SatSolver::Status sat_status =
-          sat_propagator_->SolveWithTimeLimit(&local_time_limit);
-      if (sat_status == sat::SatSolver::MODEL_SAT) {
-        solution_found = true;
-        SatAssignmentToBopSolution(sat_propagator_->Assignment(),
-                                   &learned_info->solution);
-        CHECK_LT(learned_info->solution.GetCost(), best_cost);
-        best_cost = learned_info->solution.GetCost();
-      } else if (sat_status == sat::SatSolver::MODEL_UNSAT) {
+    if (objective_need_to_be_overconstrained) {
+      if (!AddObjectiveConstraint(
+              problem_state.original_problem(), false, sat::Coefficient(0),
+              true, sat::Coefficient(best_cost) - 1, sat_propagator_)) {
         // The solution is proved optimal (if any).
         learned_info->lower_bound = best_cost;
         return best_cost == kint64max
                    ? BopOptimizerBase::INFEASIBLE
                    : BopOptimizerBase::OPTIMAL_SOLUTION_FOUND;
       }
-    } else {
+      objective_need_to_be_overconstrained = false;
+    }
+
+    // Special assignment preference parameters.
+    const int preference = random_->Uniform(4);
+    if (preference == 0) {
+      UseObjectiveForSatAssignmentPreference(problem_state.original_problem(),
+                                             sat_propagator_);
+    } else if (preference == 1 && !problem_state.lp_values().empty()) {
+      // Assign SAT assignment preference based on the LP solution.
+      for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
+        const double value = problem_state.lp_values()[col];
+        sat_propagator_->SetAssignmentPreference(
+            sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
+            1 - fabs(value - round(value)));
+      }
+    }
+
+    const sat::SatSolver::Status sat_status =
+        sat_propagator_->SolveWithTimeLimit(&local_time_limit);
+    if (sat_status == sat::SatSolver::MODEL_SAT) {
+      objective_need_to_be_overconstrained = true;
+      solution_found = true;
+      SatAssignmentToBopSolution(sat_propagator_->Assignment(),
+                                 &learned_info->solution);
+      CHECK_LT(learned_info->solution.GetCost(), best_cost);
+      best_cost = learned_info->solution.GetCost();
+    } else if (sat_status == sat::SatSolver::MODEL_UNSAT) {
       // The solution is proved optimal (if any).
       learned_info->lower_bound = best_cost;
       return best_cost == kint64max ? BopOptimizerBase::INFEASIBLE

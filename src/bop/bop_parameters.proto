@@ -49,7 +49,7 @@ message BopOptimizerMethod {
   //
   // TODO(user): This is a big source of undeterminism in the solver. Find a
   // deterministic way to have a similar behavior.
-  optional double time_limit_ratio = 3 [default = 0.05];
+  optional double time_limit_ratio = 3 [default = 0.5];
 }
 
 // Set of optimizer methods to be run by an instance of the portfolio optimizer.
