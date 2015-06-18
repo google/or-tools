@@ -170,8 +170,6 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
   }
 
   %pythoncode {
-  # See ../python/linear_programming.py for example on how to use the nice
-  # extended python API provided below.
   def Add(self, constraint, name=''):
     if isinstance(constraint, bool):
       if constraint:
@@ -185,7 +183,6 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     result = SumArray(expr_array)
     return result
 
-  # Compatibility
   def RowConstraint(self, *args):
     return self.Constraint(*args)
 
