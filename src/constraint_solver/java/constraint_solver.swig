@@ -13,10 +13,11 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-%include enumsimple.swg
-%include exception.i
-%include util/java/data.swig
-%include util/java/tuple_set.swig
+%include "enumsimple.swg"
+%include "exception.i"
+%include "util/java/proto.swig"
+%include "util/java/tuple_set.swig"
+%include "util/java/vector.swig"
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .swig
@@ -72,8 +73,7 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // TODO(user): split out the callback code; it creates another file since
 // it uses a different module.
-%module(directors="1", allprotected="1") main
-#pragma SWIG nowarn=473
+%module(directors="1") main
 %feature("director") LongResultCallback1;
 %feature("director") LongResultCallback2;
 %feature("director") LongResultCallback3;
@@ -207,8 +207,6 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %feature("director") Action;
 %feature("director") LocalSearchOperator;
 %feature("director") PathOperator;
-%feature("director") SymmetryBreaker;
-
 %feature("director") BaseLns;
 %feature("director") IntVarLocalSearchOperator;
 %feature("director") SequenceVarLocalSearchOperator;
@@ -245,6 +243,8 @@ struct FailureProtect {
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
 
+%ignore operations_research::ToInt64Vector;
+
 %rename (nextWrap) operations_research::DecisionBuilder::Next;
 %rename (toString) *::DebugString;
 %rename (tryDecisions) operations_research::Solver::Try;
@@ -266,7 +266,8 @@ namespace operations_research {
   jmethodID method_id =
       jenv->GetStaticMethodID(object_class,
                               "getCPtr",
-                              "(Lcom/google/ortools/constraintsolver/type;)J");
+                              "(Lcom/google/ortools/"
+                              "constraintsolver/type;)J");
   assert(method_id != nullptr);
   for (int i = 0; i < jenv->GetArrayLength($input); i++) {
     jobject elem = jenv->GetObjectArrayElement($input, i);
@@ -275,26 +276,7 @@ namespace operations_research {
   }
   $1 = &result;
 }
-
-%typemap(out) const std::vector<type*>& {
-  jclass object_class =
-      jenv->FindClass("com/google/ortools/constraintsolver/type");
-  $result = jenv->NewObjectArray($1->size(), object_class, 0);
-  if (nullptr != object_class) {
-    jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
-    for (int i = 0; i < $1->size(); ++i) {
-      jlong obj_ptr = 0;
-      *((operations_research::type **)&obj_ptr) = (*$1)[i];
-      jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
-      jenv->SetObjectArrayElement($result, i, elem);
-    }
-  }
-}
-%typemap(javaout) const std::vector<type*> & {
-  return $jnicall;
-}
 %enddef
-
 CONVERT_VECTOR(IntVar);
 CONVERT_VECTOR(SearchMonitor);
 CONVERT_VECTOR(DecisionBuilder);
@@ -302,7 +284,6 @@ CONVERT_VECTOR(IntervalVar);
 CONVERT_VECTOR(SequenceVar);
 CONVERT_VECTOR(LocalSearchOperator);
 CONVERT_VECTOR(LocalSearchFilter);
-CONVERT_VECTOR(SymmetryBreaker);
 
 %typemap(javacode) Solver %{
   /**

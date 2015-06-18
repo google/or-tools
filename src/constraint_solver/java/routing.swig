@@ -38,7 +38,7 @@
 // Convert std::vector<RoutingModel::NodeIndex> to/from int arrays.
 VECTOR_AS_JAVA_ARRAY(operations_research::RoutingModel::NodeIndex, int, Int);
 
-// TODO(user): define a macro in util/java/data.swig for std::vector<std::vector<>> and
+// TODO(user): define a macro in util/java/vector.swig for std::vector<std::vector<>> and
 // reuse it here.
 %typemap(jni) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "jobjectArray"
 %typemap(jtype) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "int[][]"
@@ -77,8 +77,7 @@ VECTOR_AS_JAVA_ARRAY(operations_research::RoutingModel::NodeIndex, int, Int);
 // When created, instances of NodeEvaluator2 must be used in a context where
 // someone takes ownership of the C++ part of the NodeEvaluator2 and deletes
 // it when no longer needed. Otherwise, the object would remain on the heap
-// forever. See the comment for the LongResultCallback* classes in
-// ../util/java/data.swig for more details.
+// forever.
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
   NodeEvaluator2() : used_as_permanent_handler_(false) {}
