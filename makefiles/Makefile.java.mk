@@ -332,6 +332,18 @@ $(OBJ_DIR)/com/google/ortools/samples/IntegerProgramming.class: javaortools $(EX
 run_IntegerProgramming: compile_IntegerProgramming
 	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar com.google.ortools.samples.IntegerProgramming
 
+
+# Integer programming Coin-CBC section
+run_MultiThreadIntegerProgramming: compile_MultiThreadIntegerProgramming
+	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar com.google.ortools.samples.MultiThreadTest
+
+compile_MultiThreadIntegerProgramming: $(OBJ_DIR)/com/google/ortools/samples/MultiThreadTest.class
+
+$(OBJ_DIR)/com/google/ortools/samples/MultiThreadTest.class: javaortools $(EX_DIR)/com/google/ortools/samples/MultiThreadTest.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMultiThreadTest.java
+
+
+
 # Compile and Run CP java example:
 
 $(OBJ_DIR)/com/google/ortools/samples/$(EX).class: javaortools $(EX_DIR)/com/google/ortools/samples/$(EX).java
