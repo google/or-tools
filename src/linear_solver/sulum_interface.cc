@@ -414,7 +414,7 @@ void SLMInterface::ExtractNewVariables() {
     CheckReturnKey(SlmAddEmptyVars(model_,total_num_vars - last_variable_index_));
     for (int j = last_variable_index_; j < solver_->variables_.size(); ++j) {
       MPVariable* const var = solver_->variables_[j];
-      mark_variable_as_extracted(var->index());
+      set_variable_as_extracted(var->index(), true);
       if (!var->name().empty()) {
         CheckReturnKey(SlmSetNameVarsI(model_,j, var->name().c_str()));
       }
@@ -483,7 +483,7 @@ void SLMInterface::ExtractNewConstraints() {
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
       CHECK(!constraint_is_extracted(i));
-      mark_constraint_as_extracted(i);
+      set_constraint_as_extracted(i, true);
       if (ct->coefficients_.size() > max_row_length) {
         max_row_length = ct->coefficients_.size();
       }
