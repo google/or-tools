@@ -100,7 +100,7 @@ class OrderedLNS : public BaseLNS {
     }
   }
 
-  virtual bool NextFragment(std::vector<int>* const fragment) {
+  bool NextFragment(std::vector<int>* const fragment) override {
     int dim = Size();
     std::set<int> fragment_set;
 
@@ -146,7 +146,7 @@ class RandomLNS : public BaseLNS {
         free_elements_(free_elements),
         rand_(ACMRandom::HostnamePidTimeSeed()) {}
 
-  virtual bool NextFragment(std::vector<int>* const fragment) {
+  bool NextFragment(std::vector<int>* const fragment) override {
     std::vector<int> weighted_elements;
     std::vector<int64> values;
 

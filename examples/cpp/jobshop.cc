@@ -33,6 +33,7 @@
 //
 // Search will then be applied on the sequence constraints.
 
+#include "cpp/jobshop.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -43,7 +44,6 @@
 #include "base/stringprintf.h"
 #include "base/join.h"
 #include "constraint_solver/constraint_solver.h"
-#include "cpp/jobshop.h"
 
 DEFINE_string(
     data_file, "",

@@ -85,12 +85,12 @@ class SymbolsSharedByTwoCardsConstraint : public Constraint {
     }
   }
 
-  virtual ~SymbolsSharedByTwoCardsConstraint() {}
+  ~SymbolsSharedByTwoCardsConstraint() override {}
 
   // Adds observers (named Demon) to variable events. These demons are
   // responsible for implementing the propagation algorithm of the
   // constraint.
-  virtual void Post() {
+  void Post() override {
     // Create a demon 'global_demon' that will bind events on
     // variables to the calling of the 'InitialPropagate()' method. As
     // this method is expensive, 'global_demon' has a low priority. As
@@ -126,7 +126,7 @@ class SymbolsSharedByTwoCardsConstraint : public Constraint {
   // Conversely, if num_symbols_in_common_var->Min() ==
   // max_symbols_in_common, then all products that contribute to
   // max_symbols_in_common should be set to 1.
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     int max_symbols_in_common = 0;
     int min_symbols_in_common = 0;
     for (int i = 0; i < num_symbols_; ++i) {
@@ -250,13 +250,13 @@ class DobbleOperator : public IntVarLocalSearchOperator {
     }
   }
 
-  virtual ~DobbleOperator() {}
+  ~DobbleOperator() override {}
 
  protected:
   // OnStart() simply stores the current symbols per card in
   // symbols_per_card_, and defers further initialization to the
   // subclass's InitNeighborhoodSearch() method.
-  virtual void OnStart() {
+  void OnStart() override {
     for (int card = 0; card < num_cards_; ++card) {
       int found = 0;
       for (int symbol = 0; symbol < num_symbols_; ++symbol) {
@@ -309,10 +309,10 @@ class SwapSymbols : public DobbleOperator {
         current_symbol1_(-1),
         current_symbol2_(-1) {}
 
-  virtual ~SwapSymbols() {}
+  ~SwapSymbols() override {}
 
   // Finds the next swap, returns false when it has finished.
-  virtual bool MakeOneNeighbor() {
+  bool MakeOneNeighbor() override {
     if (!PickNextSwap()) {
       VLOG(1) << "finished neighborhood";
       return false;
@@ -326,7 +326,7 @@ class SwapSymbols : public DobbleOperator {
 
  private:
   // Reinit the exploration loop.
-  virtual void InitNeighborhoodSearch() {
+  void InitNeighborhoodSearch() override {
     current_card1_ = 0;
     current_card2_ = 1;
     current_symbol1_ = 0;
@@ -380,10 +380,10 @@ class SwapSymbolsOnCardPairs : public DobbleOperator {
     CHECK_GE(max_num_swaps, 2);
   }
 
-  virtual ~SwapSymbolsOnCardPairs() {}
+  ~SwapSymbolsOnCardPairs() override {}
 
  protected:
-  virtual bool MakeOneNeighbor() {
+  bool MakeOneNeighbor() override {
     const int num_swaps = rand_.Uniform(max_num_swaps_ - 1) + 2;
     for (int i = 0; i < num_swaps; ++i) {
       const int card_1 = rand_.Uniform(num_cards_);
@@ -397,7 +397,7 @@ class SwapSymbolsOnCardPairs : public DobbleOperator {
     return true;
   }
 
-  virtual void InitNeighborhoodSearch() {}
+  void InitNeighborhoodSearch() override {}
 
  private:
   ACMRandom rand_;
@@ -445,7 +445,7 @@ class DobbleFilter : public IntVarLocalSearchFilter {
 
   // We build the current bitmap and the matrix of violation cost
   // between any two cards.
-  virtual void OnSynchronize(const Assignment* delta) {
+  void OnSynchronize(const Assignment* delta) override {
     symbol_bitmask_per_card_.assign(num_cards_, 0);
     for (int card = 0; card < num_cards_; ++card) {
       for (int symbol = 0; symbol < num_symbols_; ++symbol) {
@@ -466,8 +466,8 @@ class DobbleFilter : public IntVarLocalSearchFilter {
   // The LocalSearchFilter::Accept() API also takes a deltadelta,
   // which is the difference between the current delta and the last
   // delta that was given to Accept() -- but we don't use it here.
-  virtual bool Accept(const Assignment* delta,
-                      const Assignment* unused_deltadelta) {
+  bool Accept(const Assignment* delta,
+              const Assignment* unused_deltadelta) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 

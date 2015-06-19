@@ -272,8 +272,7 @@ int main(int argc, char** argv) {
   const int64 kStopTime = 300;
   const int64 kHorizon = 24 * 3600;
   StopServiceTimePlusTransition time(
-      kStopTime,
-      locations,
+      kStopTime, locations,
       NewPermanentCallback(&locations, &LocationContainer::ManhattanTime));
   routing.AddDimension(
       NewPermanentCallback(&time, &StopServiceTimePlusTransition::Compute),
@@ -284,8 +283,7 @@ int main(int argc, char** argv) {
   const int64 kTWDuration = 5 * 3600;
   for (int stop = 0; stop < FLAGS_vrp_stops; ++stop) {
     const int64 start = randomizer.Uniform(kHorizon - kTWDuration);
-    for (int stop_order = 0;
-         stop_order < FLAGS_vrp_orders_per_stop;
+    for (int stop_order = 0; stop_order < FLAGS_vrp_orders_per_stop;
          ++stop_order) {
       const int order = stop * FLAGS_vrp_orders_per_stop + stop_order + 1;
       routing.CumulVar(order, kTime)->SetRange(start, start + kTWDuration);
@@ -297,21 +295,18 @@ int main(int argc, char** argv) {
   std::vector<IntervalVar*> intervals;
   for (int stop = 0; stop < FLAGS_vrp_stops; ++stop) {
     std::vector<IntervalVar*> stop_intervals;
-    for (int stop_order = 0;
-         stop_order < FLAGS_vrp_orders_per_stop;
+    for (int stop_order = 0; stop_order < FLAGS_vrp_orders_per_stop;
          ++stop_order) {
       const int order = stop * FLAGS_vrp_orders_per_stop + stop_order + 1;
-      IntervalVar* const interval =
-          solver->MakeFixedDurationIntervalVar(
-              0, kHorizon, kStopTime, true, StrCat("Order", order));
+      IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
+          0, kHorizon, kStopTime, true, StrCat("Order", order));
       intervals.push_back(interval);
       stop_intervals.push_back(interval);
       // Link order and interval.
       IntVar* const order_start = routing.CumulVar(order, kTime);
-      solver->AddConstraint(solver->MakeIsEqualCt(
-          interval->SafeStartExpr(0),
-          order_start,
-          interval->PerformedExpr()->Var()));
+      solver->AddConstraint(
+          solver->MakeIsEqualCt(interval->SafeStartExpr(0), order_start,
+                                interval->PerformedExpr()->Var()));
       // Make interval performed iff corresponding order has service time.
       // An order has no service time iff it is at the same location as the
       // next order on the route.
@@ -330,12 +325,11 @@ int main(int argc, char** argv) {
     }
     // Only one order can happen at the same time at a given location.
     std::vector<int64> location_usage(stop_intervals.size(), 1);
-    solver->AddConstraint(
-        solver->MakeCumulative(
-            stop_intervals, location_usage, 1, StrCat("Client", stop)));
+    solver->AddConstraint(solver->MakeCumulative(stop_intervals, location_usage,
+                                                 1, StrCat("Client", stop)));
   }
   // Minimizing route duration.
-  for (int vehicle = 0 ; vehicle < routing.vehicles(); ++vehicle) {
+  for (int vehicle = 0; vehicle < routing.vehicles(); ++vehicle) {
     routing.AddVariableMinimizedByFinalizer(
         routing.CumulVar(routing.End(vehicle), kTime));
   }
