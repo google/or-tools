@@ -1127,7 +1127,7 @@ bool MPSolver::OutputIsEnabled() const { return !interface_->quiet(); }
 
 void MPSolver::EnableOutput() { interface_->set_quiet(false); }
 
-void MPSolver::SuppressOutput() { interface_->set_quiet(false); }
+void MPSolver::SuppressOutput() { interface_->set_quiet(true); }
 
 int64 MPSolver::iterations() const { return interface_->iterations(); }
 
