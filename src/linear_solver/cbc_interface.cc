@@ -192,10 +192,15 @@ void CBCInterface::SetOptimizationDirection(bool maximize) {
   }
 }
 
+namespace {
+// CBC adds a "dummy" variable with index 0 to represent the objective offset.
+int MPSolverVarIndexToCbcVarIndex(int var_index) { return var_index + 1; }
+}  // namespace
+
 void CBCInterface::SetVariableBounds(int var_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
   if (sync_status_ == MODEL_SYNCHRONIZED) {
-    osi_.setColBounds(var_index, lb, ub);
+    osi_.setColBounds(MPSolverVarIndexToCbcVarIndex(var_index), lb, ub);
   } else {
     sync_status_ = MUST_RELOAD;
   }
@@ -206,9 +211,9 @@ void CBCInterface::SetVariableInteger(int var_index, bool integer) {
   // TODO(user) : Check if this is actually a change.
   if (sync_status_ == MODEL_SYNCHRONIZED) {
     if (integer) {
-      osi_.setInteger(var_index);
+      osi_.setInteger(MPSolverVarIndexToCbcVarIndex(var_index));
     } else {
-      osi_.setContinuous(var_index);
+      osi_.setContinuous(MPSolverVarIndexToCbcVarIndex(var_index));
     }
   } else {
     sync_status_ = MUST_RELOAD;
@@ -266,7 +271,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       const int nb_vars = solver_->variables_.size();
       for (int i = 0; i < nb_vars; ++i) {
         MPVariable* const var = solver_->variables_[i];
-        var->set_index(i + 1);  // offset by 1 because of dummy variable.
+        set_variable_as_extracted(i, true);
         const double obj_coeff = solver_->Objective().GetCoefficient(var);
         if (var->name().empty()) {
           build.addColumn(0, NULL, NULL, var->lb(), var->ub(), obj_coeff, NULL,
@@ -279,10 +284,9 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
 
       // Define constraints.
       int max_row_length = 0;
-      int constraint_index = 0;
       for (int i = 0; i < solver_->constraints_.size(); ++i) {
         MPConstraint* const ct = solver_->constraints_[i];
-        ct->set_index(constraint_index++);
+        set_constraint_as_extracted(i, true);
         if (ct->coefficients_.size() > max_row_length) {
           max_row_length = ct->coefficients_.size();
         }
@@ -295,8 +299,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
         const int size = ct->coefficients_.size();
         int j = 0;
         for (CoeffEntry entry : ct->coefficients_) {
-          const int index = entry.first->index();
-          DCHECK_NE(kNoIndex, index);
+          const int index = MPSolverVarIndexToCbcVarIndex(entry.first->index());
           indices[j] = index;
           coefs[j] = entry.second;
           j++;
@@ -418,24 +421,13 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       // if optimal or feasible solution is found.
       for (int i = 0; i < solver_->variables_.size(); ++i) {
         MPVariable* const var = solver_->variables_[i];
-        const int var_index = var->index();
+        const int var_index = MPSolverVarIndexToCbcVarIndex(var->index());
         const double val = values[var_index];
         var->set_solution_value(val);
         VLOG(3) << var->name() << "=" << val;
       }
     } else {
       VLOG(1) << "No feasible solution found.";
-    }
-
-    const double* const row_activities = model.getRowActivity();
-    if (row_activities != NULL) {
-      for (int i = 0; i < solver_->constraints_.size(); ++i) {
-        MPConstraint* const ct = solver_->constraints_[i];
-        const int constraint_index = ct->index();
-        const double row_activity = row_activities[constraint_index];
-        ct->set_activity(row_activity);
-        VLOG(4) << "row " << ct->index() << ": activity = " << row_activity;
-      }
     }
   }
 

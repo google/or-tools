@@ -2517,9 +2517,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     // TODO(user): this is pretty much the same in the primal or dual code.
     // We just need to know to what bound the leaving variable will be set to.
     // Factorize more common code?
-    DCHECK(AreWithinAbsoluteTolerance(entering_coeff, direction_[leaving_row],
-                                      1e-6))
-        << entering_coeff << " " << direction_[leaving_row];
+    //
     // During phase I, we do not need the basic variable values at all.
     Fractional primal_step = 0.0;
     if (feasibility_phase_) {

@@ -222,7 +222,7 @@ inline int64 CapProdFast(int64 x, int64 y) {
   // clang-format off
   asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
       "\n\t" "imulq %[y],%[result]"
-      "\n\t" "cmovc %[cap],%[result]"  // Conditional move if carry.
+      "\n\t" "cmovcq %[cap],%[result]"  // Conditional move if carry.
       : [result] "=r"(result)  // Output
       : "[result]" (result), [y] "r"(y), [cap] "r"(cap)  // Input.
       : "cc" /* Clobbered registers */);

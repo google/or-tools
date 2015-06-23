@@ -323,6 +323,12 @@ class MPSolver {
   // Solves the problem using the specified parameter values.
   ResultStatus Solve(const MPSolverParameters& param);
 
+  // Advanced usage: compute the "activities" of all constraints, which are the
+  // sums of their linear terms. The activities are returned in the same order
+  // as constraints(), which is the order in which constraints were added; but
+  // you can also use MPConstraint::index() to get a constraint's index.
+  std::vector<double> ComputeConstraintActivities() const;
+
   // Advanced usage:
   // Verifies the *correctness* of the solution: all variables must be within
   // their domains, all constraints must be satisfied, and the reported
@@ -479,13 +485,6 @@ class MPSolver {
   // discrete problems.
   int64 nodes() const;
 
-  // True iff all variable and constraint names allow exporting the model
-  // to a file (or as a proto).
-  // See MPModelProtoExporter::CheckNameValidity() in ./model_exporter.h.
-  bool var_and_constraint_names_allow_export() {
-    return var_and_constraint_names_allow_export_;
-  }
-
   // Returns a std::string describing the underlying solver and its version.
   std::string SolverVersion() const;
 
@@ -562,11 +561,15 @@ class MPSolver {
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
   hash_map<std::string, int> variable_name_to_index_;
+  // Whether constraints have been extracted to the underlying interface.
+  std::vector<bool> variable_is_extracted_;
 
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
   hash_map<std::string, int> constraint_name_to_index_;
+  // Whether constraints have been extracted to the underlying interface.
+  std::vector<bool> constraint_is_extracted_;
 
   // The linear objective function.
   std::unique_ptr<MPObjective> objective_;
@@ -579,9 +582,6 @@ class MPSolver {
 
   // Time limit in milliseconds (0 = no limit).
   int64 time_limit_;
-
-  // See the homonymous getter above.
-  bool var_and_constraint_names_allow_export_;
 
   WallTimer timer_;
 
@@ -756,27 +756,26 @@ class MPVariable {
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
   // several models.
-  MPVariable(double lb, double ub, bool integer, const std::string& name,
+  MPVariable(int index, double lb, double ub, bool integer, const std::string& name,
              MPSolverInterface* const interface)
-      : lb_(lb),
+      : index_(index),
+        lb_(lb),
         ub_(ub),
         integer_(integer),
         name_(name),
-        index_(-1),
         solution_value_(0.0),
         reduced_cost_(0.0),
         interface_(interface) {}
 
-  void set_index(int index) { index_ = index; }
   void set_solution_value(double value) { solution_value_ = value; }
   void set_reduced_cost(double reduced_cost) { reduced_cost_ = reduced_cost; }
 
  private:
+  const int index_;
   double lb_;
   double ub_;
   bool integer_;
   const std::string name_;
-  int index_;
   double solution_value_;
   double reduced_cost_;
   MPSolverInterface* const interface_;
@@ -824,12 +823,7 @@ class MPConstraint {
   // For more info see: http://tinyurl.com/lazy-constraints.
   void set_is_lazy(bool laziness) { is_lazy_ = laziness; }
 
-  // Returns the constraint's activity in the current solution:
-  // sum over all terms of (coefficient * variable value)
-  double activity() const;
-
   // Returns the index of the constraint in the MPSolver::constraints_.
-  // TODO(user): move to protected.
   int index() const { return index_; }
 
   // Advanced usage: returns the dual value of the constraint in the
@@ -857,20 +851,17 @@ class MPConstraint {
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong
   // to several models.
-  MPConstraint(double lb, double ub, const std::string& name,
+  MPConstraint(int index, double lb, double ub, const std::string& name,
                MPSolverInterface* const interface)
       : coefficients_(1),
+        index_(index),
         lb_(lb),
         ub_(ub),
         name_(name),
         is_lazy_(false),
-        index_(-1),
         dual_value_(0.0),
-        activity_(0.0),
         interface_(interface) {}
 
-  void set_index(int index) { index_ = index; }
-  void set_activity(double activity) { activity_ = activity; }
   void set_dual_value(double dual_value) { dual_value_ = dual_value; }
 
  private:
@@ -880,6 +871,8 @@ class MPConstraint {
 
   // Mapping var -> coefficient.
   CoeffMap coefficients_;
+
+  const int index_;  // See index().
 
   // The lower bound for the linear constraint.
   double lb_;
@@ -894,9 +887,7 @@ class MPConstraint {
   // underlying Linear Programming solver only if it is violated.
   // By default this parameter is 'false'.
   bool is_lazy_;
-  int index_;
   double dual_value_;
-  double activity_;
   MPSolverInterface* const interface_;
   DISALLOW_COPY_AND_ASSIGN(MPConstraint);
 };
@@ -1081,8 +1072,6 @@ class MPSolverInterface {
   // When the underlying solver does not provide the number of
   // branch-and-bound nodes.
   static const int64 kUnknownNumberOfNodes = -1;
-  // When the index of a variable or constraint has not been assigned yet.
-  static const int kNoIndex = -1;
 
   // Constructor. The user will access the MPSolverInterface through the
   // MPSolver passed as argument.
@@ -1185,6 +1174,19 @@ class MPSolverInterface {
 
   // Returns the index of the last variable extracted.
   int last_variable_index() const { return last_variable_index_; }
+
+  bool variable_is_extracted(int var_index) const {
+    return solver_->variable_is_extracted_[var_index];
+  }
+  void set_variable_as_extracted(int var_index, bool extracted) {
+    solver_->variable_is_extracted_[var_index] = extracted;
+  }
+  bool constraint_is_extracted(int ct_index) const {
+    return solver_->constraint_is_extracted_[ct_index];
+  }
+  void set_constraint_as_extracted(int ct_index, bool extracted) {
+    solver_->constraint_is_extracted_[ct_index] = extracted;
+  }
 
   // Returns the boolean indicating the verbosity of the solver output.
   bool quiet() const { return quiet_; }

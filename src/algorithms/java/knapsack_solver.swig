@@ -21,7 +21,7 @@
 %include "base/base.swig"
 %include "enums.swg"
 
-%import "util/java/data.swig"
+%import "util/java/vector.swig"
 
 %{
 #include "algorithms/knapsack_solver.h"

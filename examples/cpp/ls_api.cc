@@ -29,11 +29,11 @@ class OneVarLns : public BaseLNS {
  public:
   explicit OneVarLns(const std::vector<IntVar*>& vars) : BaseLNS(vars), index_(0) {}
 
-  ~OneVarLns() {}
+  ~OneVarLns() override {}
 
-  virtual void InitFragments() { index_ = 0; }
+  void InitFragments() override { index_ = 0; }
 
-  virtual bool NextFragment(std::vector<int>* fragment) {
+  bool NextFragment(std::vector<int>* fragment) override {
     const int size = Size();
     if (index_ < size) {
       fragment->push_back(index_);
@@ -55,11 +55,11 @@ class MoveOneVar : public IntVarLocalSearchOperator {
         variable_index_(0),
         move_up_(false) {}
 
-  virtual ~MoveOneVar() {}
+  ~MoveOneVar() override {}
 
  protected:
   // Make a neighbor assigning one variable to its target value.
-  virtual bool MakeOneNeighbor() {
+  bool MakeOneNeighbor() override {
     const int64 current_value = OldValue(variable_index_);
     if (move_up_) {
       SetValue(variable_index_, current_value + 1);
@@ -72,7 +72,7 @@ class MoveOneVar : public IntVarLocalSearchOperator {
   }
 
  private:
-  virtual void OnStart() {
+  void OnStart() override {
     CHECK_GE(variable_index_, 0);
     CHECK_LT(variable_index_, Size());
   }
@@ -88,17 +88,17 @@ class SumFilter : public IntVarLocalSearchFilter {
   explicit SumFilter(const std::vector<IntVar*>& vars)
       : IntVarLocalSearchFilter(vars), sum_(0) {}
 
-  ~SumFilter() {}
+  ~SumFilter() override {}
 
-  virtual void OnSynchronize(const Assignment* delta) {
+  void OnSynchronize(const Assignment* delta) override {
     sum_ = 0;
     for (int index = 0; index < Size(); ++index) {
       sum_ += Value(index);
     }
   }
 
-  virtual bool Accept(const Assignment* delta,
-                      const Assignment* unused_deltadelta) {
+  bool Accept(const Assignment* delta,
+              const Assignment* unused_deltadelta) override {
     const Assignment::IntContainer& solution_delta = delta->IntVarContainer();
     const int solution_delta_size = solution_delta.Size();
 

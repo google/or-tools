@@ -41,67 +41,104 @@ namespace operations_research {
 
 MPModelProtoExporter::MPModelProtoExporter(const MPModelProto& proto)
     : proto_(proto),
-      var_id_to_index_map_(),
       num_integer_variables_(0),
       num_binary_variables_(0),
       num_continuous_variables_(0),
-      num_digits_for_variables_(0),
-      num_digits_for_constraints_(0),
       current_mps_column_(0),
       use_fixed_mps_format_(false),
-      use_obfuscated_names_(false),
-      setup_done_(false) {}
+      use_obfuscated_names_(false) {}
 
-// Note(user): This method is static. It is also used by MPSolver.
-bool MPModelProtoExporter::CheckNameValidity(const std::string& name) {
-  if (name.empty()) {
-    LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
-        << "CheckNameValidity() should not be passed an empty name.";
-    return false;
+namespace {
+class NameManager {
+ public:
+  NameManager() : names_set_(), last_n_(1) {}
+  std::string MakeUniqueName(const std::string& name);
+
+ private:
+  hash_set<std::string> names_set_;
+  int last_n_;
+};
+
+std::string NameManager::MakeUniqueName(const std::string& name) {
+  std::string result = name;
+  // Find the 'n' so that "name_n" does not already exist.
+  int n = last_n_;
+  while (!names_set_.insert(result).second) {
+    result = StrCat(name, "_", n);
+    ++n;
   }
-  // Allow names that conform to the LP and MPS format.
-  const int kMaxNameLength = 255;
-  if (name.size() > kMaxNameLength) {
-    LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
-        << "Invalid name " << name << ": length > " << kMaxNameLength << "."
-        << " Will be unable to write model to file.";
-    return false;
-  }
-  const std::string kForbiddenChars = " +-*/<>=:\\";
-  if (name.find_first_of(kForbiddenChars) != std::string::npos) {
-    LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
-        << "Invalid name " << name
-        << " contains forbidden character: " << kForbiddenChars << " or space."
-        << " Will be unable to write model to file.";
-    return false;
-  }
+  // We keep the last n used to avoid a quadratic behavior in case
+  // all the names are the same initially.
+  last_n_ = n;
+  return result;
+}
+
+std::string MakeExportableName(const std::string& name, bool* found_forbidden_char) {
+  // Prepend with "_" all the names starting with a forbidden character.
   const std::string kForbiddenFirstChars = "$.0123456789";
-  if (kForbiddenFirstChars.find(name[0]) != std::string::npos) {
-    LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
-        << "Invalid name " << name
-        << ". First character is one of: " << kForbiddenFirstChars
-        << " Will be unable to write model to file.";
-    return false;
-  }
-  return true;
-}
+  *found_forbidden_char = kForbiddenFirstChars.find(name[0]) != std::string::npos;
+  std::string exportable_name = *found_forbidden_char ? StrCat("_", name) : name;
 
-std::string MPModelProtoExporter::GetVariableName(int var_index) const {
-  const MPVariableProto& var_proto = proto_.variable(var_index);
-  if (use_obfuscated_names_ || !var_proto.has_name()) {
-    return StringPrintf("V%0*d", num_digits_for_variables_, var_index);
-  } else {
-    return var_proto.name();
+  // Replace all the other forbidden characters with "_".
+  const std::string kForbiddenChars = " +-*/<>=:\\";
+  for (char& c : exportable_name) {
+    if (kForbiddenChars.find(c) != std::string::npos) {
+      c = '_';
+      *found_forbidden_char = true;
+    }
   }
+  return exportable_name;
 }
+}  // namespace
 
-std::string MPModelProtoExporter::GetConstraintName(int cst_index) const {
-  const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
-  if (use_obfuscated_names_ || !ct_proto.has_name()) {
-    return StringPrintf("C%0*d", num_digits_for_constraints_, cst_index);
-  } else {
-    return ct_proto.name();
+template <class ListOfProtosWithNameFields>
+std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
+    const ListOfProtosWithNameFields& proto, const std::string& prefix,
+    bool obfuscate) {
+  const int num_items = proto.size();
+  std::vector<std::string> result(num_items);
+  NameManager namer;
+  const int num_digits = StrCat(num_items).size();
+  int i = 0;
+  for (auto item : proto) {
+    const std::string obfuscated_name =
+        StringPrintf("%s%0*d", prefix.c_str(), num_digits, i);
+    if (obfuscate || !item.has_name()) {
+      result[i] = namer.MakeUniqueName(obfuscated_name);
+      LOG_IF(WARNING, FLAGS_lp_log_invalid_name && !item.has_name())
+          << "Empty name detected, created new name: " << result[i];
+    } else {
+      bool found_forbidden_char = false;
+      const std::string exportable_name =
+          MakeExportableName(item.name(), &found_forbidden_char);
+      result[i] = namer.MakeUniqueName(exportable_name);
+      LOG_IF(WARNING, FLAGS_lp_log_invalid_name && found_forbidden_char)
+          << "Invalid character detected in " << item.name() << ". Changed to "
+          << result[i];
+      // If the name is too long, use the obfuscated name that is guaranteed
+      // to fit. If ever we are able to solve problems with 2^64 variables,
+      // their obfuscated names would fit within 20 characters.
+      const int kMaxNameLength = 255;
+      // Take care of "_rhs" or "_lhs" that may be added in the case of
+      // constraints with both right-hand side and left-hand side.
+      const int kMargin = 4;
+      if (result[i].size() > kMaxNameLength - kMargin) {
+        const std::string old_name = std::move(result[i]);
+        result[i] = namer.MakeUniqueName(obfuscated_name);
+        LOG_IF(WARNING, FLAGS_lp_log_invalid_name)
+            << "Name is too long: " << old_name
+            << " exported as: " << result[i];
+      }
+    }
+    // Update whether we can use the names in a fixed-format MPS file.
+    const int kFixedMpsFieldSize = 8;
+    use_fixed_mps_format_ =
+        use_fixed_mps_format_ && (result[i].size() <= kFixedMpsFieldSize);
+
+    // Prepare for the next round.
+    ++i;
   }
+  return result;
 }
 
 void MPModelProtoExporter::AppendComments(const std::string& separator,
@@ -177,7 +214,7 @@ bool MPModelProtoExporter::WriteLpTerm(int var_index, double coefficient,
   }
   if (coefficient != 0.0) {
     *output = StringPrintf("%+.16G %-s ", coefficient,
-                           GetVariableName(var_index).c_str());
+                           exported_variable_names_[var_index].c_str());
   }
   return true;
 }
@@ -189,10 +226,7 @@ bool IsBoolean(const MPVariableProto& var) {
 }
 }  // namespace
 
-bool MPModelProtoExporter::Setup() {
-  num_digits_for_constraints_ =
-      StringPrintf("%d", proto_.constraint_size()).size();
-  num_digits_for_variables_ = StringPrintf("%d", proto_.variable_size()).size();
+void MPModelProtoExporter::Setup() {
   num_binary_variables_ = 0;
   num_integer_variables_ = 0;
   for (const MPVariableProto& var : proto_.variable()) {
@@ -206,36 +240,16 @@ bool MPModelProtoExporter::Setup() {
   }
   num_continuous_variables_ =
       proto_.variable_size() - num_binary_variables_ - num_integer_variables_;
-  return true;
-}
-
-bool MPModelProtoExporter::CheckAllNamesValidity() const {
-  // Note: CheckNameValidity() takes care of the logging.
-  for (int i = 0; i < proto_.variable_size(); ++i) {
-    if (!CheckNameValidity(GetVariableName(i))) return false;
-  }
-  for (int i = 0; i < proto_.constraint_size(); ++i) {
-    if (!CheckNameValidity(GetConstraintName(i))) return false;
-  }
-  return true;
 }
 
 bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
                                                  std::string* output) {
-  // TODO(user):
-  // - Sort constraints by category (implication, knapsack, logical or, etc...).
-
-  if (!obfuscated && !CheckAllNamesValidity()) {
-    return false;
-  }
-  if (!setup_done_) {
-    if (!Setup()) {
-      return false;
-    }
-  }
-  setup_done_ = true;
-  use_obfuscated_names_ = obfuscated;
   output->clear();
+  Setup();
+  exported_constraint_names_ =
+      ExtractAndProcessNames(proto_.constraint(), "C", obfuscated);
+  exported_variable_names_ =
+      ExtractAndProcessNames(proto_.variable(), "V", obfuscated);
 
   // Comments section.
   AppendComments("\\", output);
@@ -263,7 +277,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   StrAppend(output, obj_line_breaker.GetOutput(), "\nSubject to\n");
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
-    std::string name = GetConstraintName(cst_index);
+    const std::string& name = exported_constraint_names_[cst_index];
     LineBreaker line_breaker(FLAGS_lp_max_line_length);
     const int kNumFormattingChars = 10;  // Overevaluated.
     // Account for the size of the constraint name + possibly "_rhs" +
@@ -323,12 +337,12 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
     const double ub = var_proto.upper_bound();
     if (var_proto.is_integer() && lb == round(lb) && ub == round(ub)) {
       StringAppendF(output, " %.0f <= %s <= %.0f\n", lb,
-                    GetVariableName(var_index).c_str(), ub);
+                    exported_variable_names_[var_index].c_str(), ub);
     } else {
       if (lb != -std::numeric_limits<double>::infinity()) {
         StringAppendF(output, " %-.16G <= ", lb);
       }
-      StringAppendF(output, "%s", GetVariableName(var_index).c_str());
+      StringAppendF(output, "%s", exported_variable_names_[var_index].c_str());
       if (ub != std::numeric_limits<double>::infinity()) {
         StringAppendF(output, " <= %-.16G", ub);
       }
@@ -343,7 +357,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
       if (!show_variable[var_index]) continue;
       const MPVariableProto& var_proto = proto_.variable(var_index);
       if (IsBoolean(var_proto)) {
-        StringAppendF(output, " %s\n", GetVariableName(var_index).c_str());
+        StringAppendF(output, " %s\n",
+                      exported_variable_names_[var_index].c_str());
       }
     }
   }
@@ -355,7 +370,8 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
       if (!show_variable[var_index]) continue;
       const MPVariableProto& var_proto = proto_.variable(var_index);
       if (var_proto.is_integer() && !IsBoolean(var_proto)) {
-        StringAppendF(output, " %s\n", GetVariableName(var_index).c_str());
+        StringAppendF(output, " %s\n",
+                      exported_variable_names_[var_index].c_str());
       }
     }
   }
@@ -421,29 +437,13 @@ void MPModelProtoExporter::AppendNewLineIfTwoColumns(std::string* output) {
   }
 }
 
-// Decide whether to use fixed- or free-form MPS format.
-bool MPModelProtoExporter::CanUseFixedMpsFormat() const {
-  const int kMpsFieldSize = 8;
-  if (use_obfuscated_names_) {
-    return num_digits_for_constraints_ < kMpsFieldSize &&
-           num_digits_for_variables_ < kMpsFieldSize;
-  }
-  for (const MPConstraintProto& ct_proto : proto_.constraint()) {
-    if (ct_proto.name().size() > kMpsFieldSize) return false;
-  }
-  for (const MPVariableProto& var_proto : proto_.variable()) {
-    if (var_proto.name().size() > kMpsFieldSize) return false;
-  }
-  return true;
-}
-
 void MPModelProtoExporter::AppendMpsColumns(bool integrality,
     const std::vector<std::vector<std::pair<int, double>>>& transpose, std::string* output) {
   current_mps_column_ = 0;
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
     const MPVariableProto& var_proto = proto_.variable(var_index);
     if (var_proto.is_integer() != integrality) continue;
-    const std::string var_name = GetVariableName(var_index);
+    const std::string& var_name = exported_variable_names_[var_index];
     current_mps_column_ = 0;
     if (var_proto.objective_coefficient() != 0.0) {
       AppendMpsTermWithContext(var_name, "COST",
@@ -451,7 +451,8 @@ void MPModelProtoExporter::AppendMpsColumns(bool integrality,
                                output);
     }
     for (const std::pair<int, double> cst_index_and_coeff : transpose[var_index]) {
-      const std::string cst_name = GetConstraintName(cst_index_and_coeff.first);
+      const std::string& cst_name =
+          exported_constraint_names_[cst_index_and_coeff.first];
       AppendMpsTermWithContext(var_name, cst_name, cst_index_and_coeff.second,
                                output);
     }
@@ -462,23 +463,17 @@ void MPModelProtoExporter::AppendMpsColumns(bool integrality,
 bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
                                                   bool obfuscated,
                                                   std::string* output) {
-  if (!obfuscated && !CheckAllNamesValidity()) {
-    return false;
-  }
-  if (!setup_done_) {
-    if (!Setup()) {
-      return false;
-    }
-  }
-  setup_done_ = true;
-  use_obfuscated_names_ = obfuscated;
-  use_fixed_mps_format_ = fixed_format;
-  if (fixed_format && !CanUseFixedMpsFormat()) {
-    LOG(WARNING) << "Cannot use fixed format. Falling back to free format";
-    use_fixed_mps_format_ = false;
-  }
   output->clear();
+  Setup();
+  use_fixed_mps_format_ = fixed_format;
+  exported_constraint_names_ =
+      ExtractAndProcessNames(proto_.constraint(), "C", obfuscated);
+  exported_variable_names_ =
+      ExtractAndProcessNames(proto_.variable(), "V", obfuscated);
 
+  // use_fixed_mps_format_ was possibly modified by ExtractAndProcessNames().
+  LOG_IF(WARNING, fixed_format && !use_fixed_mps_format_)
+      << "Cannot use fixed format. Falling back to free format";
   // Comments.
   AppendComments("*", output);
 
@@ -493,7 +488,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     const double lb = ct_proto.lower_bound();
     const double ub = ct_proto.upper_bound();
-    const std::string cst_name = GetConstraintName(cst_index);
+    const std::string& cst_name = exported_constraint_names_[cst_index];
     if (lb == ub) {
       AppendMpsLineHeaderWithNewLine("E", cst_name, &rows_section);
     } else if (lb == -std::numeric_limits<double>::infinity()) {
@@ -509,8 +504,8 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   }
 
   // As the information regarding a column needs to be contiguous, we create
-  // a map associating a variable to a vector containing the indices of the
-  // constraints where this variable appears.
+  // a vector associating a variable index to a vector containing the indices
+  // of the constraints where this variable appears.
   std::vector<std::vector<std::pair<int, double>>> transpose(proto_.variable_size());
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
@@ -550,7 +545,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     const double lb = ct_proto.lower_bound();
     const double ub = ct_proto.upper_bound();
-    const std::string cst_name = GetConstraintName(cst_index);
+    const std::string& cst_name = exported_constraint_names_[cst_index];
     if (lb != -std::numeric_limits<double>::infinity()) {
       AppendMpsTermWithContext("RHS", cst_name, lb, &rhs_section);
     } else if (ub != +std::numeric_limits<double>::infinity()) {
@@ -569,7 +564,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     const double range = fabs(ct_proto.upper_bound() - ct_proto.lower_bound());
     if (range != 0.0 && range != +std::numeric_limits<double>::infinity()) {
-      const std::string cst_name = GetConstraintName(cst_index);
+      const std::string& cst_name = exported_constraint_names_[cst_index];
       AppendMpsTermWithContext("RANGE", cst_name, range, &ranges_section);
     }
   }
@@ -585,7 +580,7 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
     const MPVariableProto& var_proto = proto_.variable(var_index);
     const double lb = var_proto.lower_bound();
     const double ub = var_proto.upper_bound();
-    const std::string var_name = GetVariableName(var_index);
+    const std::string& var_name = exported_variable_names_[var_index];
     if (var_proto.is_integer()) {
       if (IsBoolean(var_proto)) {
         AppendMpsLineHeader("BV", "BOUND", &bounds_section);

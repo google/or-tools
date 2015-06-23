@@ -157,6 +157,12 @@ void CLPInterface::Reset() {
 
 // ------ Model modifications and extraction -----
 
+namespace {
+// Variable indices are shifted by 1 internally because of the dummy "objective
+// offset" variable (with internal index 0).
+int MPSolverVarIndexToClpVarIndex(int var_index) { return var_index + 1; }
+}  // namespace
+
 // Not cached
 void CLPInterface::SetOptimizationDirection(bool maximize) {
   InvalidateSolutionSynchronization();
@@ -165,10 +171,10 @@ void CLPInterface::SetOptimizationDirection(bool maximize) {
 
 void CLPInterface::SetVariableBounds(int var_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
-  if (var_index != kNoIndex) {
+  if (variable_is_extracted(var_index)) {
     // Not cached if the variable has been extracted
-    DCHECK_LE(var_index, last_variable_index_);
-    clp_->setColumnBounds(var_index, lb, ub);
+    DCHECK_LT(var_index, last_variable_index_);
+    clp_->setColumnBounds(MPSolverVarIndexToClpVarIndex(var_index), lb, ub);
   } else {
     sync_status_ = MUST_RELOAD;
   }
@@ -179,9 +185,9 @@ void CLPInterface::SetVariableInteger(int var_index, bool integer) {}
 
 void CLPInterface::SetConstraintBounds(int index, double lb, double ub) {
   InvalidateSolutionSynchronization();
-  if (index != kNoIndex) {
+  if (constraint_is_extracted(index)) {
     // Not cached if the row has been extracted
-    DCHECK_LE(index, last_constraint_index_);
+    DCHECK_LT(index, last_constraint_index_);
     clp_->setRowBounds(index, lb, ub);
   } else {
     sync_status_ = MUST_RELOAD;
@@ -192,14 +198,15 @@ void CLPInterface::SetCoefficient(MPConstraint* const constraint,
                                   const MPVariable* const variable,
                                   double new_value, double old_value) {
   InvalidateSolutionSynchronization();
-  const int constraint_index = constraint->index();
-  const int variable_index = variable->index();
-  if (constraint_index != kNoIndex && variable_index != kNoIndex) {
+  if (constraint_is_extracted(constraint->index()) &&
+      variable_is_extracted(variable->index())) {
     // The modification of the coefficient for an extracted row and
     // variable is not cached.
-    DCHECK_LE(constraint_index, last_constraint_index_);
-    DCHECK_LE(variable_index, last_variable_index_);
-    clp_->modifyCoefficient(constraint_index, variable_index, new_value);
+    DCHECK_LE(constraint->index(), last_constraint_index_);
+    DCHECK_LE(variable->index(), last_variable_index_);
+    clp_->modifyCoefficient(constraint->index(),
+                            MPSolverVarIndexToClpVarIndex(variable->index()),
+                            new_value);
   } else {
     // The modification of an unextracted row or variable is cached
     // and handled in ExtractModel.
@@ -210,14 +217,13 @@ void CLPInterface::SetCoefficient(MPConstraint* const constraint,
 // Not cached
 void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
   InvalidateSolutionSynchronization();
-  const int constraint_index = constraint->index();
   // Constraint may not have been extracted yet.
-  if (constraint_index != kNoIndex) {
-    for (CoeffEntry entry : constraint->coefficients_) {
-      const int var_index = entry.first->index();
-      DCHECK_NE(kNoIndex, var_index);
-      clp_->modifyCoefficient(constraint_index, var_index, 0.0);
-    }
+  if (!constraint_is_extracted(constraint->index())) return;
+  for (CoeffEntry entry : constraint->coefficients_) {
+    DCHECK(variable_is_extracted(entry.first->index()));
+    clp_->modifyCoefficient(constraint->index(),
+                            MPSolverVarIndexToClpVarIndex(entry.first->index()),
+                            0.0);
   }
 }
 
@@ -225,8 +231,9 @@ void CLPInterface::ClearConstraint(MPConstraint* const constraint) {
 void CLPInterface::SetObjectiveCoefficient(const MPVariable* const variable,
                                            double coefficient) {
   InvalidateSolutionSynchronization();
-  if (variable->index() != kNoIndex) {
-    clp_->setObjectiveCoefficient(variable->index(), coefficient);
+  if (variable_is_extracted(variable->index())) {
+    clp_->setObjectiveCoefficient(
+        MPSolverVarIndexToClpVarIndex(variable->index()), coefficient);
   } else {
     sync_status_ = MUST_RELOAD;
   }
@@ -245,12 +252,13 @@ void CLPInterface::ClearObjective() {
   InvalidateSolutionSynchronization();
   // Clear linear terms
   for (CoeffEntry entry : solver_->objective_->coefficients_) {
-    const int var_index = entry.first->index();
+    const int mpsolver_var_index = entry.first->index();
     // Variable may have not been extracted yet.
-    if (var_index == kNoIndex) {
+    if (!variable_is_extracted(mpsolver_var_index)) {
       DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
     } else {
-      clp_->setObjectiveCoefficient(var_index, 0.0);
+      clp_->setObjectiveCoefficient(
+          MPSolverVarIndexToClpVarIndex(mpsolver_var_index), 0.0);
     }
   }
   // Clear constant term.
@@ -286,13 +294,13 @@ void CLPInterface::ExtractNewVariables() {
       CreateDummyVariableForEmptyConstraints();
       for (int i = 0; i < total_num_vars; ++i) {
         MPVariable* const var = solver_->variables_[i];
-        int var_index = i + 1;  // offset by 1 because of dummy variable.
-        var->set_index(var_index);
+        set_variable_as_extracted(i, true);
         if (!var->name().empty()) {
           std::string name = var->name();
-          clp_->setColumnName(var_index, name);
+          clp_->setColumnName(MPSolverVarIndexToClpVarIndex(i), name);
         }
-        clp_->setColumnBounds(var_index, var->lb(), var->ub());
+        clp_->setColumnBounds(MPSolverVarIndexToClpVarIndex(i), var->lb(),
+                              var->ub());
       }
     } else {
       // TODO(user): This could perhaps be made slightly faster by
@@ -302,15 +310,14 @@ void CLPInterface::ExtractNewVariables() {
       // Create new variables.
       for (int j = last_variable_index_; j < total_num_vars; ++j) {
         MPVariable* const var = solver_->variables_[j];
-        DCHECK_EQ(kNoIndex, var->index());
-        int var_index = j + 1;  // offset by 1 because of dummy variable.
-        var->set_index(var_index);
+        DCHECK(!variable_is_extracted(j));
+        set_variable_as_extracted(j, true);
         // The true objective coefficient will be set later in ExtractObjective.
         double tmp_obj_coef = 0.0;
         clp_->addColumn(0, NULL, NULL, var->lb(), var->ub(), tmp_obj_coef);
         if (!var->name().empty()) {
           std::string name = var->name();
-          clp_->setColumnName(var_index, name);
+          clp_->setColumnName(MPSolverVarIndexToClpVarIndex(j), name);
         }
       }
       // Add new variables to existing constraints.
@@ -318,10 +325,12 @@ void CLPInterface::ExtractNewVariables() {
         MPConstraint* const ct = solver_->constraints_[i];
         const int ct_index = ct->index();
         for (CoeffEntry entry : ct->coefficients_) {
-          const int var_index = entry.first->index();
-          DCHECK_NE(kNoIndex, var_index);
-          if (var_index >= last_variable_index_ + 1) {  // + 1 because of dummy.
-            clp_->modifyCoefficient(ct_index, var_index, entry.second);
+          const int mpsolver_var_index = entry.first->index();
+          DCHECK(variable_is_extracted(mpsolver_var_index));
+          if (mpsolver_var_index >= last_variable_index_) {
+            clp_->modifyCoefficient(
+                ct_index, MPSolverVarIndexToClpVarIndex(mpsolver_var_index),
+                entry.second);
           }
         }
       }
@@ -337,8 +346,8 @@ void CLPInterface::ExtractNewConstraints() {
     int max_row_length = 0;
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
-      DCHECK_EQ(kNoIndex, ct->index());
-      ct->set_index(i);
+      DCHECK(!constraint_is_extracted(ct->index()));
+      set_constraint_as_extracted(ct->index(), true);
       if (ct->coefficients_.size() > max_row_length) {
         max_row_length = ct->coefficients_.size();
       }
@@ -351,7 +360,7 @@ void CLPInterface::ExtractNewConstraints() {
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
-      DCHECK_NE(kNoIndex, ct->index());
+      DCHECK(constraint_is_extracted(ct->index()));
       int size = ct->coefficients_.size();
       if (size == 0) {
         // Add dummy variable to be able to build the constraint.
@@ -361,9 +370,9 @@ void CLPInterface::ExtractNewConstraints() {
       }
       int j = 0;
       for (CoeffEntry entry : ct->coefficients_) {
-        const int index = entry.first->index();
-        DCHECK_NE(kNoIndex, index);
-        indices[j] = index;
+        const int mpsolver_var_index = entry.first->index();
+        DCHECK(variable_is_extracted(mpsolver_var_index));
+        indices[j] = MPSolverVarIndexToClpVarIndex(mpsolver_var_index);
         coefs[j] = entry.second;
         j++;
       }
@@ -385,7 +394,8 @@ void CLPInterface::ExtractObjective() {
   // Linear objective: set objective coefficients for all variables
   // (some might have been modified)
   for (CoeffEntry entry : solver_->objective_->coefficients_) {
-    clp_->setObjectiveCoefficient(entry.first->index(), entry.second);
+    clp_->setObjectiveCoefficient(
+        MPSolverVarIndexToClpVarIndex(entry.first->index()), entry.second);
   }
 
   // Constant term. Use -offset instead of +offset because CLP does
@@ -474,25 +484,21 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
     const double* const reduced_costs = clp_->getReducedCost();
     for (int i = 0; i < solver_->variables_.size(); ++i) {
       MPVariable* const var = solver_->variables_[i];
-      const int var_index = var->index();
-      double val = values[var_index];
+      const int clp_var_index = MPSolverVarIndexToClpVarIndex(var->index());
+      const double val = values[clp_var_index];
       var->set_solution_value(val);
       VLOG(3) << var->name() << ": value = " << val;
-      double reduced_cost = reduced_costs[var_index];
+      double reduced_cost = reduced_costs[clp_var_index];
       var->set_reduced_cost(reduced_cost);
       VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
     }
     const double* const dual_values = clp_->getRowPrice();
-    const double* const row_activities = clp_->getRowActivity();
     for (int i = 0; i < solver_->constraints_.size(); ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
       const int constraint_index = ct->index();
-      const double row_activity = row_activities[constraint_index];
-      ct->set_activity(row_activity);
       const double dual_value = dual_values[constraint_index];
       ct->set_dual_value(dual_value);
-      VLOG(4) << "row " << ct->index() << ": activity = " << row_activity
-              << " dual value = " << dual_value;
+      VLOG(4) << "row " << ct->index() << " dual value = " << dual_value;
     }
   }
 
@@ -549,10 +555,9 @@ MPSolver::BasisStatus CLPInterface::row_status(int constraint_index) const {
 
 MPSolver::BasisStatus CLPInterface::column_status(int variable_index) const {
   DCHECK_LE(0, variable_index);
-  // + 1 because of dummy variable.
-  DCHECK_GT(last_variable_index_ + 1, variable_index);
+  DCHECK_GT(last_variable_index_, variable_index);
   const ClpSimplex::Status clp_basis_status =
-      clp_->getColumnStatus(variable_index);
+      clp_->getColumnStatus(MPSolverVarIndexToClpVarIndex(variable_index));
   return TransformCLPBasisStatus(clp_basis_status);
 }
 

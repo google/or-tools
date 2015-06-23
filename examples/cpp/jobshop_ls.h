@@ -59,9 +59,9 @@ class SwapIntervals : public SequenceVarLocalSearchOperator {
         current_first_(-1),
         current_second_(-1) {}
 
-  virtual ~SwapIntervals() {}
+  ~SwapIntervals() override {}
 
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
     CHECK_NOTNULL(delta);
     while (true) {
       RevertChanges(true);
@@ -84,7 +84,7 @@ class SwapIntervals : public SequenceVarLocalSearchOperator {
   }
 
  protected:
-  virtual void OnStart() {
+  void OnStart() override {
     VLOG(1) << "start neighborhood";
     current_var_ = 0;
     current_first_ = 0;
@@ -121,9 +121,9 @@ class ShuffleIntervals : public SequenceVarLocalSearchOperator {
         current_index_(-1),
         current_length_(-1) {}
 
-  virtual ~ShuffleIntervals() {}
+  ~ShuffleIntervals() override {}
 
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
     CHECK_NOTNULL(delta);
     while (true) {
       RevertChanges(true);
@@ -150,7 +150,7 @@ class ShuffleIntervals : public SequenceVarLocalSearchOperator {
   }
 
  protected:
-  virtual void OnStart() {
+  void OnStart() override {
     VLOG(1) << "start neighborhood";
     current_var_ = 0;
     current_first_ = 0;
@@ -196,9 +196,9 @@ class SequenceLns : public SequenceVarLocalSearchOperator {
         random_(seed),
         max_length_(max_length) {}
 
-  virtual ~SequenceLns() {}
+  ~SequenceLns() override {}
 
-  virtual bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) {
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override {
     CHECK_NOTNULL(delta);
     while (true) {
       RevertChanges(true);

@@ -16,9 +16,7 @@
 
 %include "base/base.swig"
 
-// This .swig include provides a lot of typemap conversion tools.
-// TODO(user): see if we really need it.
-%include util/java/data.swig
+%include "util/java/vector.swig"
 
 %{
 // TODO(user): see if we can remove <vector>

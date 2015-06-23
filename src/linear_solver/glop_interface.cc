@@ -239,10 +239,6 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
         lp_solver_.dual_values()[lp_solver_ct_id];
     ct->set_dual_value(static_cast<double>(dual_value));
 
-    const glop::Fractional row_activity =
-        lp_solver_.constraint_activities()[lp_solver_ct_id];
-    ct->set_activity(static_cast<double>(row_activity));
-
     const glop::ConstraintStatus constraint_status =
         lp_solver_.constraint_statuses()[lp_solver_ct_id];
     row_status_.at(ct_id) = TranslateConstraintStatus(constraint_status);
@@ -344,7 +340,7 @@ void GLOPInterface::ExtractNewVariables() {
     const glop::ColIndex new_col =
         linear_program_.FindOrCreateVariable(var->name());
     DCHECK_EQ(new_col, col);
-    var->set_index(col.value());
+    set_variable_as_extracted(col.value(), true);
     linear_program_.SetVariableBounds(col, var->lb(), var->ub());
   }
 }
@@ -355,7 +351,7 @@ void GLOPInterface::ExtractNewConstraints() {
   const glop::RowIndex num_rows(solver_->constraints_.size());
   for (glop::RowIndex row(0); row < num_rows; ++row) {
     MPConstraint* const ct = solver_->constraints_[row.value()];
-    ct->set_index(row.value());
+    set_constraint_as_extracted(row.value(), true);
 
     const double lb = ct->lb();
     const double ub = ct->ub();
@@ -366,7 +362,7 @@ void GLOPInterface::ExtractNewConstraints() {
 
     for (CoeffEntry entry : ct->coefficients_) {
       const int var_index = entry.first->index();
-      DCHECK_NE(kNoIndex, var_index);
+      DCHECK(variable_is_extracted(var_index));
       const glop::ColIndex col(var_index);
       const double coeff = entry.second;
       linear_program_.SetCoefficient(row, col, coeff);

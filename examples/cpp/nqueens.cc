@@ -57,7 +57,7 @@ class NQueenSymmetry : public SymmetryBreaker {
       indices_[vars[i]] = i;
     }
   }
-  virtual ~NQueenSymmetry() {}
+  ~NQueenSymmetry() override {}
 
  protected:
   int Index(IntVar* const var) const {
@@ -83,9 +83,9 @@ class NQueenSymmetry : public SymmetryBreaker {
 class SX : public NQueenSymmetry {
  public:
   SX(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
-  virtual ~SX() {}
+  ~SX() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(index));
     AddIntegerVariableEqualValueClause(other_var, value);
@@ -96,9 +96,9 @@ class SX : public NQueenSymmetry {
 class SY : public NQueenSymmetry {
  public:
   SY(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
-  virtual ~SY() {}
+  ~SY() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     AddIntegerVariableEqualValueClause(var, symmetric(value));
   }
 };
@@ -107,9 +107,9 @@ class SY : public NQueenSymmetry {
 class SD1 : public NQueenSymmetry {
  public:
   SD1(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
-  virtual ~SD1() {}
+  ~SD1() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(value);
     AddIntegerVariableEqualValueClause(other_var, index);
@@ -120,9 +120,9 @@ class SD1 : public NQueenSymmetry {
 class SD2 : public NQueenSymmetry {
  public:
   SD2(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
-  virtual ~SD2() {}
+  ~SD2() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(value));
     AddIntegerVariableEqualValueClause(other_var, symmetric(index));
@@ -133,9 +133,9 @@ class SD2 : public NQueenSymmetry {
 class R90 : public NQueenSymmetry {
  public:
   R90(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
-  virtual ~R90() {}
+  ~R90() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(value);
     AddIntegerVariableEqualValueClause(other_var, symmetric(index));
@@ -147,9 +147,9 @@ class R180 : public NQueenSymmetry {
  public:
   R180(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  virtual ~R180() {}
+  ~R180() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(index));
     AddIntegerVariableEqualValueClause(other_var, symmetric(value));
@@ -161,9 +161,9 @@ class R270 : public NQueenSymmetry {
  public:
   R270(Solver* const s, const std::vector<IntVar*>& vars)
       : NQueenSymmetry(s, vars) {}
-  virtual ~R270() {}
+  ~R270() override {}
 
-  virtual void VisitSetVariableValue(IntVar* const var, int64 value) {
+  void VisitSetVariableValue(IntVar* const var, int64 value) override {
     const int index = Index(var);
     IntVar* const other_var = Var(symmetric(value));
     AddIntegerVariableEqualValueClause(other_var, index);

@@ -45,6 +45,7 @@
 #include "base/accurate_sum.h"
 #include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/model_exporter.h"
+#include "linear_solver/model_validator.h"
 #include "util/fp_utils.h"
 #include "util/proto_tools.h"
 
@@ -125,7 +126,7 @@ void MPConstraint::SetBounds(double lb, double ub) {
   const bool change = lb != lb_ || ub != ub_;
   lb_ = lb;
   ub_ = ub;
-  if (index_ != MPSolverInterface::kNoIndex && change) {
+  if (change && interface_->constraint_is_extracted(index_)) {
     interface_->SetConstraintBounds(index_, lb_, ub_);
   }
 }
@@ -151,17 +152,12 @@ MPSolver::BasisStatus MPConstraint::basis_status() const {
   return interface_->row_status(index_);
 }
 
-double MPConstraint::activity() const {
-  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
-  return activity_;
-}
-
 bool MPConstraint::ContainsNewVariables() {
   const int last_variable_index = interface_->last_variable_index();
   for (CoeffEntry entry : coefficients_) {
     const int variable_index = entry.first->index();
     if (variable_index >= last_variable_index ||
-        variable_index == MPSolverInterface::kNoIndex) {
+        !interface_->variable_is_extracted(variable_index)) {
       return true;
     }
   }
@@ -268,7 +264,7 @@ void MPVariable::SetBounds(double lb, double ub) {
   const bool change = lb != lb_ || ub != ub_;
   lb_ = lb;
   ub_ = ub;
-  if (index_ != MPSolverInterface::kNoIndex && change) {
+  if (change && interface_->variable_is_extracted(index_)) {
     interface_->SetVariableBounds(index_, lb_, ub_);
   }
 }
@@ -276,7 +272,7 @@ void MPVariable::SetBounds(double lb, double ub) {
 void MPVariable::SetInteger(bool integer) {
   if (integer_ != integer) {
     integer_ = integer;
-    if (index_ != MPSolverInterface::kNoIndex) {
+    if (interface_->variable_is_extracted(index_)) {
       interface_->SetVariableInteger(index_, integer);
     }
   }
@@ -375,6 +371,8 @@ extern MPSolverInterface* BuildGurobiInterface(bool mip,
 extern MPSolverInterface* BuildCplexInterface(bool mip,
                                               MPSolver* const solver);
 #endif
+
+
 #ifdef ANDROID_JNI
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 #endif
@@ -454,8 +452,7 @@ MPSolver::MPSolver(const std::string& name, OptimizationProblemType problem_type
       variable_name_to_index_(1),
       constraint_name_to_index_(1),
 #endif
-      time_limit_(0.0),
-      var_and_constraint_names_allow_export_(true) {
+      time_limit_(0.0) {
   timer_.Restart();
   interface_.reset(BuildSolverInterface(this));
   if (FLAGS_linear_solver_enable_verbose_output) {
@@ -518,7 +515,7 @@ MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_nam
 MPSolverResponseStatus MPSolver::LoadModelFromProto(
     const MPModelProto& input_model, std::string* error_message) {
   CHECK(error_message != nullptr);
-  const std::string error = "";
+  const std::string error = FindErrorInMPModelProto(input_model);
   if (!error.empty()) {
     *error_message = error;
     LOG_IF(INFO, OutputIsEnabled())
@@ -762,8 +759,10 @@ void MPSolver::Clear() {
   STLDeleteElements(&constraints_);
   variables_.clear();
   variable_name_to_index_.clear();
+  variable_is_extracted_.clear();
   constraints_.clear();
   constraint_name_to_index_.clear();
+  constraint_is_extracted_.clear();
   interface_->Reset();
   solution_hint_.clear();
 }
@@ -777,13 +776,11 @@ MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
   const int var_index = NumVariables();
   const std::string fixed_name =
       name.empty() ? StringPrintf("auto_v_%09d", var_index) : name;
-  if (var_and_constraint_names_allow_export_) {
-    var_and_constraint_names_allow_export_ &=
-        MPModelProtoExporter::CheckNameValidity(fixed_name);
-  }
   InsertOrDie(&variable_name_to_index_, fixed_name, var_index);
-  MPVariable* v = new MPVariable(lb, ub, integer, fixed_name, interface_.get());
+  MPVariable* v =
+      new MPVariable(var_index, lb, ub, integer, fixed_name, interface_.get());
   variables_.push_back(v);
+  variable_is_extracted_.push_back(false);
   interface_->AddVariable(v);
   return v;
 }
@@ -843,14 +840,11 @@ MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
   const int constraint_index = NumConstraints();
   const std::string fixed_name =
       name.empty() ? StringPrintf("auto_c_%09d", constraint_index) : name;
-  if (var_and_constraint_names_allow_export_) {
-    var_and_constraint_names_allow_export_ &=
-        MPModelProtoExporter::CheckNameValidity(fixed_name);
-  }
   InsertOrDie(&constraint_name_to_index_, fixed_name, constraint_index);
   MPConstraint* const constraint =
-      new MPConstraint(lb, ub, fixed_name, interface_.get());
+      new MPConstraint(constraint_index, lb, ub, fixed_name, interface_.get());
   constraints_.push_back(constraint);
+  constraint_is_extracted_.push_back(false);
   interface_->AddRowConstraint(constraint);
   return constraint;
 }
@@ -980,6 +974,21 @@ std::string PrettyPrintConstraint(const MPConstraint& constraint) {
 }
 }  // namespace
 
+std::vector<double> MPSolver::ComputeConstraintActivities() const {
+  // TODO(user): test this failure case.
+  if (!interface_->CheckSolutionIsSynchronizedAndExists()) return {};
+  std::vector<double> activities(constraints_.size(), 0.0);
+  for (int i = 0; i < constraints_.size(); ++i) {
+    const MPConstraint& constraint = *constraints_[i];
+    AccurateSum<double> sum;
+    for (CoeffEntry entry : constraint.coefficients_) {
+      sum.Add(entry.first->solution_value() * entry.second);
+    }
+    activities[i] = sum.Value();
+  }
+  return activities;
+}
+
 // TODO(user): split.
 bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   double max_observed_error = 0;
@@ -1028,17 +1037,15 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   }
 
   // Verify constraints.
+  const std::vector<double> activities = ComputeConstraintActivities();
   for (int i = 0; i < constraints_.size(); ++i) {
     const MPConstraint& constraint = *constraints_[i];
-    // Re-compute the actual activity with a safe summing algorithm.
-    AccurateSum<double> activity_sum;
-    double inaccurate_activity = 0;
+    const double activity = activities[i];
+    // Re-compute the activity with a inaccurate summing algorithm.
+    double inaccurate_activity = 0.0;
     for (CoeffEntry entry : constraint.coefficients_) {
-      const double term = entry.first->solution_value() * entry.second;
-      activity_sum.Add(term);
-      inaccurate_activity += term;
+      inaccurate_activity += entry.first->solution_value() * entry.second;
     }
-    const double activity = activity_sum.Value();
     // Catch NaNs.
     if (isnan(activity) || isnan(inaccurate_activity)) {
       ++num_errors;
@@ -1120,7 +1127,7 @@ bool MPSolver::OutputIsEnabled() const { return !interface_->quiet(); }
 
 void MPSolver::EnableOutput() { interface_->set_quiet(false); }
 
-void MPSolver::SuppressOutput() { interface_->set_quiet(false); }
+void MPSolver::SuppressOutput() { interface_->set_quiet(true); }
 
 int64 MPSolver::iterations() const { return interface_->iterations(); }
 
@@ -1201,18 +1208,13 @@ void MPSolverInterface::ExtractModel() {
   }
 }
 
+// TODO(user): remove this method.
 void MPSolverInterface::ResetExtractionInformation() {
   sync_status_ = MUST_RELOAD;
   last_constraint_index_ = 0;
   last_variable_index_ = 0;
-  for (int j = 0; j < solver_->variables_.size(); ++j) {
-    MPVariable* const var = solver_->variables_[j];
-    var->set_index(kNoIndex);
-  }
-  for (int i = 0; i < solver_->constraints_.size(); ++i) {
-    MPConstraint* const ct = solver_->constraints_[i];
-    ct->set_index(kNoIndex);
-  }
+  solver_->variable_is_extracted_.assign(solver_->variables_.size(), false);
+  solver_->constraint_is_extracted_.assign(solver_->constraints_.size(), false);
 }
 
 bool MPSolverInterface::CheckSolutionIsSynchronized() const {

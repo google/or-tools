@@ -42,7 +42,7 @@ class LinearSumAssignment;
 template <typename GraphType>
 class DimacsAssignmentParser {
  public:
-  explicit DimacsAssignmentParser(const std::string filename)
+  explicit DimacsAssignmentParser(const std::string& filename)
       : filename_(filename), graph_builder_(NULL), assignment_(NULL) {}
 
   // Reads an assignment problem description from the given file in

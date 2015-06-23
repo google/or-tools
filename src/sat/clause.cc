@@ -534,8 +534,6 @@ SatClause* SatClause::Create(const std::vector<Literal>& literals, bool is_redun
   }
   clause->is_redundant_ = is_redundant;
   clause->is_attached_ = false;
-  clause->activity_ = 0.0;
-  clause->lbd_ = 0;
 #ifdef SAT_ENABLE_RESOLUTION
   clause->resolution_node_ = node;
 #endif  // SAT_ENABLE_RESOLUTION

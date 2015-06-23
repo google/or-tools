@@ -431,7 +431,7 @@ void GurobiInterface::ExtractNewVariables() {
 
     for (int j = 0; j < num_new_variables; ++j) {
       MPVariable* const var = solver_->variables_[last_variable_index_ + j];
-      var->set_index(last_variable_index_ + j);
+      set_variable_as_extracted(var->index(), true);
       lb[j] = var->lb();
       ub[j] = var->ub();
       ctype.get()[j] = var->integer() && mip_ ? GRB_INTEGER : GRB_CONTINUOUS;
@@ -459,8 +459,8 @@ void GurobiInterface::ExtractNewConstraints() {
     int max_row_length = 0;
     for (int row = last_constraint_index_; row < total_num_rows; ++row) {
       MPConstraint* const ct = solver_->constraints_[row];
-      CHECK_EQ(kNoIndex, ct->index());
-      ct->set_index(row);
+      CHECK(!constraint_is_extracted(row));
+      set_constraint_as_extracted(row, true);
       if (ct->coefficients_.size() > max_row_length) {
         max_row_length = ct->coefficients_.size();
       }
@@ -473,13 +473,13 @@ void GurobiInterface::ExtractNewConstraints() {
     // Add each new constraint.
     for (int row = last_constraint_index_; row < total_num_rows; ++row) {
       MPConstraint* const ct = solver_->constraints_[row];
-      DCHECK_NE(kNoIndex, ct->index());
+      CHECK(constraint_is_extracted(row));
       const int size = ct->coefficients_.size();
       int col = 0;
       for (CoeffEntry entry : ct->coefficients_) {
-        const int index = entry.first->index();
-        DCHECK_NE(kNoIndex, index);
-        col_indices[col] = index;
+        const int var_index = entry.first->index();
+        CHECK(variable_is_extracted(var_index));
+        col_indices[col] = var_index;
         coefs[col] = entry.second;
         col++;
       }
@@ -682,18 +682,12 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
 
     std::unique_ptr<double[]> values(new double[total_num_cols]);
     std::unique_ptr<double[]> dual_values(new double[total_num_rows]);
-    std::unique_ptr<double[]> slacks(new double[total_num_rows]);
-    std::unique_ptr<double[]> rhs(new double[total_num_rows]);
     std::unique_ptr<double[]> reduced_costs(new double[total_num_cols]);
 
     CHECKED_GUROBI_CALL(
         GRBgetdblattr(model_, GRB_DBL_ATTR_OBJVAL, &objective_value_));
     CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_, GRB_DBL_ATTR_X, 0,
                                            total_num_cols, values.get()));
-    CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_, GRB_DBL_ATTR_SLACK, 0,
-                                           total_num_rows, slacks.get()));
-    CHECKED_GUROBI_CALL(GRBgetdblattrarray(model_, GRB_DBL_ATTR_RHS, 0,
-                                           total_num_rows, rhs.get()));
     if (!mip_) {
       CHECKED_GUROBI_CALL(GRBgetdblattrarray(
           model_, GRB_DBL_ATTR_RC, 0, total_num_cols, reduced_costs.get()));
@@ -712,16 +706,11 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
       }
     }
 
-    for (int i = 0; i < solver_->constraints_.size(); ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
-      ct->set_activity(rhs[i] - slacks[i]);
-      if (mip_) {
-        VLOG(4) << "row " << ct->index() << ", slack = " << slacks[i]
-                << ", rhs = " << rhs[i];
-      } else {
+    if (!mip_) {
+      for (int i = 0; i < solver_->constraints_.size(); ++i) {
+        MPConstraint* const ct = solver_->constraints_[i];
         ct->set_dual_value(dual_values[i]);
-        VLOG(4) << "row " << ct->index() << ", slack = " << slacks[i]
-                << ", rhs = " << rhs[i] << ", dual value = " << dual_values[i];
+        VLOG(4) << "row " << ct->index() << ", dual value = " << dual_values[i];
       }
     }
   }

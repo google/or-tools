@@ -37,7 +37,11 @@ class MPModelProtoExporter {
   // The LP file format is easily readable by a human.
   //
   // Returns false if some error has occurred during execution.
-  // If obfuscated is true, the variable and constraint names of proto_
+  // The validity of names is automatically checked. If a variable name or a
+  // constraint name is invalid or non-existent, a new valid name is
+  // automatically generated.
+  //
+  // If 'obfuscated' is true, the variable and constraint names of proto_
   // are not used.  Variable and constraint names of the form "V12345"
   // and "C12345" are used instead.
   //
@@ -59,9 +63,13 @@ class MPModelProtoExporter {
   // use of which is discouraged as coefficients are printed with less
   // precision). If it is not possible to use the fixed format, the method falls
   // back to the so-called "free format".
-  // If obfuscated is true, the variable and constraint names of proto_
-  // are not used.  Variable and constraint names of the form "V12345"
-  // and "C12345" are used instead.
+  //
+  // The validity of names is automatically checked. If a variable name or a
+  // constraint name is invalid or non-existent, a new valid name is
+  // automatically generated.
+  //
+  // Name validity and obfuscation works exactly as in ExportModelAsLpFormat().
+  //
   // For more information about the MPS format:
   // http://en.wikipedia.org/wiki/MPS_(format)
   // A close-to-original description coming from OSL:
@@ -75,41 +83,33 @@ class MPModelProtoExporter {
   bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscated,
                               std::string* model_str);
 
-  // Checks the validity of a variable or constraint name.
-  // Used by MPSolver::CheckAllNamesValidity and
-  // MPModelProtoExporter::CheckAllNamesValidity.
-  // Returns false if:
-  //  - name is empty.
-  //  - name contains more than 255 characters.
-  //  - the first character of name is one of "$.0123456789".
-  //  - name contains space or a character in "+-*/<>=:\".
-  // If name is empty, a message is issued to LOG(DFATAL). For all the other
-  // cases which return false, a message is issued to LOG(WARNING).
-  static bool CheckNameValidity(const std::string& name);
-
  private:
-  // This scans the Model proto and sets up all the internal data structures
-  // used for lookups.
-  // Return false if the Model proto is inconsistent (duplicate names for
-  // instance.)
-  // It is called by ExportModelAsLpFormat and ExportModelAsMpsFormat.
-  bool Setup();
+  // Computes the number of continuous, integer and binary variables.
+  // Called by ExportModelAsLpFormat() and ExportModelAsMpsFormat().
+  void Setup();
 
-  // Returns true if all constraint and variable names are valid according to
-  // the criteria of MPSolver::CheckNameValidity().
-  bool CheckAllNamesValidity() const;
-
-  // If obfuscated is false and the variable number var_index has a name,
-  // returns the variable name, otherwise returns a name in the form
-  // "V00123" where "00123" corresponds to the variable number. The format
-  // width of the number depends on the number of variables in the model.
-  std::string GetVariableName(int var_index) const;
-
-  // If use_obfuscated_names_ is false and the constraint number cst_index has
-  // a name, returns the constraint name, otherwise returns a name in the form
-  // "C00123" where "00123" corresponds to the constraint number. The format
-  // width of the number depends on the number of constraints in the model.
-  std::string GetConstraintName(int cst_index) const;
+  // Processes all the proto.name() fields and returns the result in a vector.
+  //
+  // If 'obfuscate' is true, none of names are actually used, and this just
+  // returns a vector of 'prefix' + proto index (1-based).
+  //
+  // If it is false, this tries to keep the original names, but:
+  // - if the first character is forbidden, '_' is added at the beginning of
+  //   name.
+  // - all the other forbidden characters are replaced by '_'.
+  // To avoid name conflicts, a '_' followed by an integer is appended to the
+  // result.
+  //
+  // If a name is longer than the maximum allowed name length, the obfuscated
+  // name is used.
+  //
+  // This method also sets use_fixed_mps_format_ to false if one name is too
+  // long.
+  //
+  // Therefore, a name "$20<=40" for proto #3 could be "_$20__40_1".
+  template <class ListOfProtosWithNameFields>
+  std::vector<std::string> ExtractAndProcessNames(const ListOfProtosWithNameFields& proto,
+                                        const std::string& prefix, bool obfuscate);
 
   // Returns true when the fixed MPS format can be used.
   // The fixed format is used when the variable and constraint names do not
@@ -169,8 +169,11 @@ class MPModelProtoExporter {
 
   const MPModelProto& proto_;
 
-  // Maps a variable id to its index in the protobuf.
-  hash_map<std::string, int> var_id_to_index_map_;
+  // Vector of variable names as they will be exported.
+  std::vector<std::string> exported_variable_names_;
+
+  // Vector of constraint names as they will be exported.
+  std::vector<std::string> exported_constraint_names_;
 
   // Number of integer variables in proto_.
   int num_integer_variables_;
@@ -181,12 +184,6 @@ class MPModelProtoExporter {
   // Number of continuous variables in proto_.
   int num_continuous_variables_;
 
-  // Number of decimal digits needed to print the largest variable number.
-  int num_digits_for_variables_;
-
-  // Number of decimal digits needed to print the largest constraint number.
-  int num_digits_for_constraints_;
-
   // Current MPS file column number.
   int current_mps_column_;
 
@@ -195,9 +192,6 @@ class MPModelProtoExporter {
 
   // True if the variable and constraint names will be obfuscated.
   bool use_obfuscated_names_;
-
-  // True if Setup was called on the current proto_.
-  bool setup_done_;
 
   DISALLOW_COPY_AND_ASSIGN(MPModelProtoExporter);
 };

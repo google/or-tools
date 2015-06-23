@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "graph/ebert_graph.h"
@@ -22,7 +23,7 @@ namespace operations_research {
 // http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
 // modified so the optimum solution is unique.
 void AssignmentOn4x4Matrix() {
-  LOG(INFO) << "Assignment on 4x4 matrix";
+  LOG(INFO) << "Assignment on 4x4 Matrix";
   const int kNumSources = 4;
   const int kNumTargets = 4;
   const CostValue kCost[kNumSources][kNumTargets] = {{90, 76, 75, 80},

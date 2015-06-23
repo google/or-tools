@@ -246,7 +246,7 @@ void SLMInterface::SetOptimizationDirection(bool maximize) {
 
 void SLMInterface::SetVariableBounds(int var_index, double lb, double ub) {
   InvalidateSolutionSynchronization();
-  if (var_index != kNoIndex) {
+  if (variable_is_extracted(var_index)) {
     // Not cached if the variable has been extracted.
     DCHECK(model_ != NULL);
     const double infinity = solver_->infinity();
@@ -286,7 +286,7 @@ void SLMInterface::SetVariableBounds(int var_index, double lb, double ub) {
 void SLMInterface::SetVariableInteger(int var_index, bool integer) {
   InvalidateSolutionSynchronization();
   if (mip_) {
-    if (var_index != kNoIndex) {
+    if (variable_is_extracted(var_index)) {
       // Not cached if the variable has been extracted.
       SlmVarType type;
       CheckReturnKey(SlmGetTypeVarsI(model_,var_index,&type));
@@ -305,7 +305,7 @@ void SLMInterface::SetVariableInteger(int var_index, bool integer) {
 
 void SLMInterface::SetConstraintBounds(int index, double lb, double ub) {
   InvalidateSolutionSynchronization();
-  if (index != kNoIndex) {
+  if (constraint_is_extracted(index)) {
     // Not cached if the row has been extracted
     DCHECK(model_ != NULL);
     const double infinity = solver_->infinity();
@@ -342,13 +342,14 @@ void SLMInterface::SetConstraintBounds(int index, double lb, double ub) {
 }
 
 void SLMInterface::SetCoefficient(MPConstraint* const constraint,
-                                   const MPVariable* const variable,
-                                   double new_value,
-                                   double old_value) {
+                                  const MPVariable* const variable,
+                                  double new_value,
+                                  double old_value) {
   InvalidateSolutionSynchronization();
   const int constraint_index = constraint->index();
   const int variable_index = variable->index();
-  if (constraint_index != kNoIndex && variable_index != kNoIndex) {
+  if (constraint_is_extracted(constraint_index) &&
+      variable_is_extracted(variable_index)) {
     // The modification of the coefficient for an extracted row and
     // variable is not cached.
     DCHECK_LE(constraint_index, last_constraint_index_);
@@ -366,14 +367,14 @@ void SLMInterface::ClearConstraint(MPConstraint* const constraint) {
   InvalidateSolutionSynchronization();
   const int constraint_index = constraint->index();
   // Constraint may not have been extracted yet.
-  if (constraint_index != kNoIndex) {
-    CheckReturnKey(SlmSetAConsI(model_,constraint_index, 0, NULL, NULL));
+  if (constraint_is_extracted(constraint_index)) {
+    CheckReturnKey(SlmSetAConsI(model_, constraint_index, 0, NULL, NULL));
   }
 }
 
 // Cached
 void SLMInterface::SetObjectiveCoefficient(const MPVariable* const variable,
-                                            double coefficient) {
+                                           double coefficient) {
   sync_status_ = MUST_RELOAD;
 }
 
@@ -388,7 +389,7 @@ void SLMInterface::ClearObjective() {
   for (const auto& it : solver_->objective_->coefficients_) {
     const int var_index = it.first->index();
     // Variable may have not been extracted yet.
-    if (var_index == kNoIndex) {
+    if (!variable_is_extracted(var_index)) {
       DCHECK_NE(MODEL_SYNCHRONIZED, sync_status_);
     } else {
       CheckReturnKey(SlmSetObjVarsI(model_,var_index, 0.0));
@@ -413,7 +414,7 @@ void SLMInterface::ExtractNewVariables() {
     CheckReturnKey(SlmAddEmptyVars(model_,total_num_vars - last_variable_index_));
     for (int j = last_variable_index_; j < solver_->variables_.size(); ++j) {
       MPVariable* const var = solver_->variables_[j];
-      var->set_index(j);
+      set_variable_as_extracted(var->index(), true);
       if (!var->name().empty()) {
         CheckReturnKey(SlmSetNameVarsI(model_,j, var->name().c_str()));
       }
@@ -440,7 +441,7 @@ void SLMInterface::ExtractOldConstraints() {
 
   for (int i = 0; i < last_constraint_index_; ++i) {
     MPConstraint* const  ct = solver_->constraints_[i];
-    DCHECK_NE(kNoIndex, ct->index());
+    CHECK(constraint_is_extracted(i));
     const int size = ct->coefficients_.size();
     if (size == 0) {
       continue;
@@ -461,7 +462,7 @@ void SLMInterface::ExtractOneConstraint(MPConstraint* const constraint,
   int k = 0;
   for (const auto& it : constraint->coefficients_) {
     const int var_index = it.first->index();
-    DCHECK_NE(kNoIndex, var_index);
+    CHECK(variable_is_extracted(var_index));
     indices[k] = var_index;
     coefs[k] = it.second;
     ++k;
@@ -481,8 +482,8 @@ void SLMInterface::ExtractNewConstraints() {
     int max_row_length = 0;
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const ct = solver_->constraints_[i];
-      DCHECK_EQ(kNoIndex, ct->index());
-      ct->set_index(i);
+      CHECK(!constraint_is_extracted(i));
+      set_constraint_as_extracted(i, true);
       if (ct->coefficients_.size() > max_row_length) {
         max_row_length = ct->coefficients_.size();
       }
@@ -505,13 +506,13 @@ void SLMInterface::ExtractNewConstraints() {
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
       MPConstraint* const  ct = solver_->constraints_[i];
-      DCHECK_NE(kNoIndex, ct->index());
+      CHECK(constraint_is_extracted(i));
       int size = ct->coefficients_.size();
       int j = 0;
       for (const auto& it : ct->coefficients_) {
-        const int index = it.first->index();
-        DCHECK_NE(kNoIndex, index);
-        indices[j] = index;
+        const int var_index = it.first->index();
+        CHECK(variable_is_extracted(var_index));
+        indices[j] = var_index;
         coefs[j] = it.second;
         j++;
       }

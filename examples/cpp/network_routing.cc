@@ -117,14 +117,15 @@ class NetworkRoutingData {
 
   // Returns the capacity of an arc, and 0 if the arc is not defined.
   int Capacity(int node1, int node2) const {
-    return FindWithDefault(all_arcs_,
-                           std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
+    return FindWithDefault(
+        all_arcs_, std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
   }
 
   // Returns the demand between the source and the destination, and 0 if
   // there are no demands between the source and the destination.
   int Demand(int source, int destination) const {
-    return FindWithDefault(all_demands_, std::make_pair(source, destination), 0);
+    return FindWithDefault(all_demands_, std::make_pair(source, destination),
+                           0);
   }
 
   // External building API.
@@ -571,8 +572,9 @@ class NetworkRoutingSolver {
                             IntVar** const traffic) {
     std::vector<IntVar*> terms;
     for (int i = 0; i < path_vars.size(); ++i) {
-      terms.push_back(solver->MakeProd(path_vars[i][arc_index],
-                                       demands_array_[i].traffic)->Var());
+      terms.push_back(
+          solver->MakeProd(path_vars[i][arc_index], demands_array_[i].traffic)
+              ->Var());
     }
     *traffic = solver->MakeSum(terms)->Var();
   }
@@ -777,7 +779,8 @@ class NetworkRoutingSolver {
           2 * arc_index, 0)][arcs_data_.Value(2 * arc_index, 1)];
       IntVar* const usage_cost =
           solver.MakeDiv(solver.MakeProd(vtraffic[arc_index], kOneThousand),
-                         capacity)->Var();
+                         capacity)
+              ->Var();
       usage_costs.push_back(usage_cost);
       IntVar* const comfort_cost = solver.MakeIsGreaterCstVar(
           vtraffic[arc_index], capacity * FLAGS_comfort_zone / kOneThousand);
@@ -927,7 +930,7 @@ int main(int argc, char** argv) {
       FLAGS_fixed_charge_cost, FLAGS_seed, &data);
   operations_research::NetworkRoutingSolver solver;
   solver.Init(data, FLAGS_extra_hops, FLAGS_max_paths);
-  LOG(INFO) << "Final cost = " << solver.LnsSolve(FLAGS_time_limit,
-                                                  FLAGS_fail_limit);
+  LOG(INFO) << "Final cost = "
+            << solver.LnsSolve(FLAGS_time_limit, FLAGS_fail_limit);
   return 0;
 }
