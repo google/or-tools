@@ -6,7 +6,7 @@ PROTOBUF_TAG = 2.6.0
 GOOGLE_APPUTILS_TAG = 14
 # 2.0.2
 SPARSEHASH_TAG = 116
-CBC_TAG = 2.9.4
+CBC_TAG = 2.9.5
 SWIG_TAG = 3.0.5
 # version 8.33
 PCRE_TAG = 1336
@@ -14,7 +14,7 @@ PCRE_TAG = 1336
 MONO_TAG = 4.0.1
 # BISON, FLEX
 BISON_TAG = 3.0.4
-FLEX_TAG = 2.5.37
+FLEX_TAG = 2.5.39
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
 # Autoconf support
@@ -297,7 +297,7 @@ dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile $(ACL
 	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) make install
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic --CXXFLAGS="$(CXXFLAGS) -DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT"
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT"
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
