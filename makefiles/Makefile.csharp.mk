@@ -191,6 +191,7 @@ $(BIN_DIR)/$(CLR_DLL_NAME).dll: \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/NetDecisionBuilder.cs \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/SolverHelper.cs \
 	$(SRC_DIR)/com/google/ortools/constraintsolver/ValCstPair.cs \
+	$(SRC_DIR)/com/google/ortools/linearsolver/DoubleArrayHelper.cs \
 	$(SRC_DIR)/com/google/ortools/linearsolver/LinearExpr.cs \
 	$(SRC_DIR)/com/google/ortools/linearsolver/LinearConstraint.cs \
 	$(SRC_DIR)/com/google/ortools/linearsolver/SolverHelper.cs \

@@ -19,8 +19,8 @@ using System.Runtime.InteropServices;
 using System.Collections;
 %}
 
-%include exception.i
-%include std_vector.i
+%include "exception.i"
+%include "std_vector.i"
 %include "util/csharp/tuple_set.swig"
 
 %module(directors="1", allprotected="1") operations_research;
@@ -437,8 +437,8 @@ class LocalSearchPhaseParameters {
 }  // namespace operations_research
 
 // Wrap cp includes
-%include constraint_solver/constraint_solver.h
-%include constraint_solver/constraint_solveri.h
+%include "constraint_solver/constraint_solver.h"
+%include "constraint_solver/constraint_solveri.h"
 
 namespace operations_research {
 %template(RevInteger) Rev<int64>;

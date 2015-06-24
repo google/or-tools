@@ -78,17 +78,19 @@ public class CsLinearProgramming
     Console.WriteLine("x3 = " + x3.SolutionValue());
 
     Console.WriteLine("Advanced usage:");
+    double[] activities = solver.ComputeConstraintActivities();
+
     Console.WriteLine("Problem solved in " + solver.Iterations() +
                        " iterations");
     Console.WriteLine("x1: reduced cost = " + x1.ReducedCost());
     Console.WriteLine("x2: reduced cost = " + x2.ReducedCost());
     Console.WriteLine("x3: reduced cost = " + x3.ReducedCost());
     Console.WriteLine("c0: dual value = " + c0.DualValue());
-    Console.WriteLine("    activity = " + c0.Activity());
+    Console.WriteLine("    activity = " + activities[c0.Index()]);
     Console.WriteLine("c1: dual value = " + c1.DualValue());
-    Console.WriteLine("    activity = " + c1.Activity());
+    Console.WriteLine("    activity = " + activities[c1.Index()]);
     Console.WriteLine("c2: dual value = " + c2.DualValue());
-    Console.WriteLine("    activity = " + c2.Activity());
+    Console.WriteLine("    activity = " + activities[c2.Index()]);
   }
 
   private static void RunLinearProgrammingExampleNaturalApi(
@@ -139,17 +141,18 @@ public class CsLinearProgramming
     Console.WriteLine("x3 = " + x3.SolutionValue());
 
     Console.WriteLine("Advanced usage:");
+    double[] activities = solver.ComputeConstraintActivities();
     Console.WriteLine("Problem solved in " + solver.Iterations() +
                        " iterations");
     Console.WriteLine("x1: reduced cost = " + x1.ReducedCost());
     Console.WriteLine("x2: reduced cost = " + x2.ReducedCost());
     Console.WriteLine("x3: reduced cost = " + x3.ReducedCost());
     Console.WriteLine("c0: dual value = " + c0.DualValue());
-    Console.WriteLine("    activity = " + c0.Activity());
+    Console.WriteLine("    activity = " + activities[c0.Index()]);
     Console.WriteLine("c1: dual value = " + c1.DualValue());
-    Console.WriteLine("    activity = " + c1.Activity());
+    Console.WriteLine("    activity = " + activities[c1.Index()]);
     Console.WriteLine("c2: dual value = " + c2.DualValue());
-    Console.WriteLine("    activity = " + c2.Activity());
+    Console.WriteLine("    activity = " + activities[c2.Index()]);
   }
 
   static void Main()

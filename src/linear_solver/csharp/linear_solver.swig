@@ -27,7 +27,8 @@
 // - examples/csharp/cslinearprogramming.cs
 // - examples/csharp/csintegerprogramming.cs
 
-%include base/base.swig
+%include "base/base.swig"
+%include "std_vector.i"
 
 %{
 #include "linear_solver/linear_solver.h"
@@ -37,8 +38,13 @@
 
 // Allow partial C# classes. That way, we can put our C# code extension in C#
 // files instead of using typemap(cscode).
+/* allow partial c# classes */
+%typemap(csclassmodifiers) SWIGTYPE "public partial class"
+
 %typemap(csclassmodifiers) operations_research::MPVariable "public partial class"
 %typemap(csclassmodifiers) operations_research::MPSolver "public partial class"
+
+%template(MpDoubleVector) std::vector<double>;
 
 %ignoreall
 
@@ -150,6 +156,7 @@
 %rename (SetLb) operations_research::MPConstraint::SetLB;
 %rename (SetUb) operations_research::MPConstraint::SetUB;
 %unignore operations_research::MPConstraint::SetBounds;
+%rename (Index) operations_research::MPConstraint::index;
 %rename (SetIsLazy) operations_research::MPConstraint::set_is_lazy;
 
 // MPConstraint: reader API.
