@@ -20,13 +20,12 @@ public class MultiThreadTest {
 
   static { System.loadLibrary("jniortools"); }
 
-  private final static boolean verboseOutput = false; //true;
+  private final static boolean verboseOutput = false; // To enable Cbc logging
 
 
   public static void main(String[] args) throws Exception {
     launchProtocol(10, 8, true);
-    launchProtocol(10, 8, false);
-    System.out.println("We are done!");
+    System.out.println("Cbc multi thread test successful");
     return;
   }
 
@@ -48,7 +47,7 @@ public class MultiThreadTest {
       ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
 
       if (runInParallel) {
-          System.out.println("Launching thread pool");
+        System.out.println("Launching thread pool");
         executor.invokeAll(threadList);
         for( SolverThread thread : threadList ) {
             System.out.println(thread.getStatusSolver().toString());
@@ -58,7 +57,7 @@ public class MultiThreadTest {
         for (SolverThread thread : threadList) {
           System.out.println("Launching single thread");
           executor.invokeAll( Arrays.asList(thread) );
-            System.out.println(thread.getStatusSolver().toString());
+          System.out.println(thread.getStatusSolver().toString());
         }
       }
 
@@ -67,7 +66,7 @@ public class MultiThreadTest {
 
     }
 
-    System.out.println("Now exiting");
+    System.out.println("Now exiting multi thread execution");
 
   }
 
