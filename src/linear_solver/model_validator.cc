@@ -30,7 +30,7 @@ std::string DebugString(const Proto& proto) {
 #endif  // ANDROID_JNI
 }
 
-static constexpr double kInfinity = std::numeric_limits<double>::infinity();
+static const double kInfinity = std::numeric_limits<double>::infinity();
 
 // Internal method to detect errors in a single variable.
 std::string FindErrorInMPVariable(const MPVariableProto& variable) {
