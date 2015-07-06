@@ -81,7 +81,9 @@
 
 #include <math.h>
 #include <stddef.h>
+
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include "base/unique_ptr.h"
 #include <type_traits>
