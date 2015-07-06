@@ -18,7 +18,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 68
+// NEXT TAG: 72
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -126,27 +126,32 @@ message SatParameters {
   // Clause database management
   // ==========================================================================
 
-  // During a cleanup, we will always keep that number of "deletable" clauses.
-  // Note that this only influences the start of the search if
-  // clause_cleanup_increment is not zero.
-  optional int32 clause_cleanup_min_target = 58 [default = 15000];
+  // Trigger a cleanup when this number of "deletable" clauses is learned.
+  optional int32 clause_cleanup_period = 11 [default = 10000];
 
-  // Each time the learned clause database is cleaned, we want to keep this
-  // number of extra "deletable" clauses after the next cleaning.
-  optional int32 clause_cleanup_increment = 11 [default = 0];
+  // During a cleanup, we will always keep that number of "deletable" clauses.
+  // Note that this doesn't include the "protected" clauses.
+  optional int32 clause_cleanup_target = 13 [default = 10000];
+
+  // Each time a clause activity is bumped, the clause has a chance to be
+  // protected during the next cleanup phase. Note that clauses used as a reason
+  // are always protected.
+  enum ClauseProtection {
+    PROTECTION_NONE = 0;    // No protection.
+    PROTECTION_ALWAYS = 1;  // Protect all clauses whose activity is bumped.
+    PROTECTION_LBD = 2;     // Only protect clause with a better LBD.
+  }
+  optional ClauseProtection clause_cleanup_protection = 58
+      [default = PROTECTION_NONE];
 
   // All the clauses with a LBD (literal blocks distance) lower or equal to this
   // parameters will always be kept.
   optional int32 clause_cleanup_lbd_bound = 59 [default = 5];
 
-  // The next cleanup phase will happen when the number of new "deletable"
-  // clause goes over 1 / ratio times the target number.
-  optional double clause_cleanup_ratio = 13 [default = 0.5];
-
   // The clauses that will be kept during a cleanup are the ones that come
-  // first under this order.
+  // first under this order. We always keep or exclude ties together.
   enum ClauseOrdering {
-    // Order clause by decreasing activity.
+    // Order clause by decreasing activity, then by increasing LBD.
     CLAUSE_ACTIVITY = 0;
     // Order clause by increasing LBD, then by decreasing activity.
     CLAUSE_LBD = 1;
@@ -155,7 +160,7 @@ message SatParameters {
       [default = CLAUSE_ACTIVITY];
 
   // Same as for the clauses, but for the learned pseudo-Boolean constraints.
-  optional double pb_cleanup_increment = 46 [default = 200];
+  optional int32 pb_cleanup_increment = 46 [default = 200];
   optional double pb_cleanup_ratio = 47 [default = 0.5];
 
   // ==========================================================================
@@ -180,7 +185,7 @@ message SatParameters {
   // http://edacc4.informatik.uni-ulm.de/SC13/solver-description-download/136
   optional double glucose_max_decay = 22 [default = 0.95];
   optional double glucose_decay_increment = 23 [default = 0.01];
-  optional double glucose_decay_increment_period = 24 [default = 5000];
+  optional int32 glucose_decay_increment_period = 24 [default = 5000];
 
   // Clause activity parameters (same effect as the one on the variables).
   optional double clause_activity_decay = 17 [default = 0.999];
@@ -213,8 +218,16 @@ message SatParameters {
     // Moving average restart based on the LBD of conflicts.
     LBD_MOVING_AVERAGE_RESTART = 3;
   }
-  optional RestartAlgorithm restart_algorithm = 61
-      [default = DL_MOVING_AVERAGE_RESTART];
+
+  // The restart strategy alternates according to the parity of the
+  // strategy_counter (which starts at 0 and increments from there, see
+  // num_conflicts_before_strategy_changes). The idea of switching of search
+  // strategy tailored for SAT/UNSAT comes from Chanseok Oh with his COMiniSatPS
+  // solver, see http://cs.nyu.edu/~chanseok/.
+  optional RestartAlgorithm restart_algorithm_even = 61
+      [default = LUBY_RESTART];
+  optional RestartAlgorithm restart_algorithm_odd = 70
+      [default = LBD_MOVING_AVERAGE_RESTART];
 
   // Multiplier for the LUBY_RESTART algorithm.
   optional int32 luby_restart_period = 30 [default = 100];
@@ -224,7 +237,8 @@ message SatParameters {
 
   // In the moving average restart algorithms, a restart is triggered if the
   // window average times this ratio is greater that the global average.
-  optional double restart_average_ratio = 63 [default = 1.0];
+  optional double restart_dl_average_ratio = 63 [default = 1.0];
+  optional double restart_lbd_average_ratio = 71 [default = 0.8];
 
   // Block a moving restart algorithm if the trail size of the current conflict
   // is greater than the multiplier times the moving average of the trail size
@@ -232,6 +246,15 @@ message SatParameters {
   optional bool use_blocking_restart = 64 [default = false];
   optional int32 blocking_restart_window_size = 65 [default = 5000];
   optional double blocking_restart_multiplier = 66 [default = 1.4];
+
+  // After each restart, if the number of conflict since the last strategy
+  // change is greater that this, then we increment a "strategy_counter" that
+  // can be use to change the search strategy used by the following restarts.
+  optional int32 num_conflicts_before_strategy_changes = 68 [default = 10000];
+
+  // The parameter num_conflicts_before_strategy_changes is increased by that
+  // much after each strategy change.
+  optional double strategy_change_increase_ratio = 69 [default = 0.1];
 
   // ==========================================================================
   // Limits
@@ -257,7 +280,7 @@ message SatParameters {
   // solver will abort as soon as it detects that this limit is crossed. As a
   // result, this limit is approximative, but usually the solver will not go too
   // much over.
-  optional int64 max_memory_in_mb = 40 [default = 6000];
+  optional int64 max_memory_in_mb = 40 [default = 10000];
 
   // ==========================================================================
   // Other parameters

@@ -42,9 +42,8 @@ class SatPostsolver {
 
   // The postsolver will process the Add() calls in reverse order. If the given
   // clause has all its literals at false, it simply sets the literal x to true.
-  // Note that x must be a literal of the given clause, and that the clause will
-  // be cleared.
-  void Add(Literal x, std::vector<Literal>* clause);
+  // Note that x must be a literal of the given clause.
+  void Add(Literal x, const std::vector<Literal>& clause);
 
   // Tells the postsolver that the given literal must be true in any solution.
   // We currently check that the variable is not already fixed.
@@ -71,8 +70,10 @@ class SatPostsolver {
   Literal ApplyReverseMapping(Literal l);
   void Postsolve(VariablesAssignment* assignment) const;
 
-  // Stores the arguments of the Add() calls.
-  std::vector<std::vector<Literal>> clauses_;
+  // Stores the arguments of the Add() calls: clauses_start_[i] is the index of
+  // the first literal of the clause #i in the clauses_literals_ deque.
+  std::vector<int> clauses_start_;
+  std::deque<Literal> clauses_literals_;
   std::vector<Literal> associated_literal_;
 
   // All the added clauses will be mapped back to the initial variables using
@@ -133,15 +134,9 @@ class SatPresolver {
   int NumClauses() const { return clauses_.size(); }
   const std::vector<Literal>& Clause(ClauseIndex ci) const { return clauses_[ci]; }
 
-  // Allow to iterate over the clauses managed by this class.
-  std::vector<std::vector<Literal>>::const_iterator begin() const {
-    return clauses_.begin();
-  }
-  std::vector<std::vector<Literal>>::const_iterator end() const { return clauses_.end(); }
-
   // The number of variables. This is computed automatically from the clauses
   // added to the SatPresolver.
-  int NumVariables() const { return literal_to_clauses_.size() / 2; }
+  int NumVariables() const { return literal_to_clause_sizes_.size() / 2; }
 
   // After presolving, Some variables in [0, NumVariables()) have no longer any
   // clause pointing to them. This return a mapping that maps this interval to
@@ -152,7 +147,11 @@ class SatPresolver {
   // Loads the current presolved problem in to the given sat solver.
   // Note that the variables will be re-indexed according to the mapping given
   // by GetMapping() so that they form a dense set.
-  void LoadProblemIntoSatSolver(SatSolver* solver) const;
+  //
+  // IMPORTANT: This is not const because it deletes the presolver clauses as
+  // they are added to the SatSolver in order to save memory. After this is
+  // called, only VariableMapping() will still works.
+  void LoadProblemIntoSatSolver(SatSolver* solver);
 
   // Visible for Testing. Takes a given clause index and looks for clause that
   // can be subsumed or strengthened using this clause. Returns false if the
@@ -267,6 +266,11 @@ bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
 // distribution.
 bool ComputeResolvant(Literal x, const std::vector<Literal>& a,
                       const std::vector<Literal>& b, std::vector<Literal>* out);
+
+// Same as ComputeResolvant() but just returns the resolvant size.
+// Returns -1 when ComputeResolvant() returns false.
+int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
+                         const std::vector<Literal>& b);
 
 // Presolver that does literals probing and finds equivalent literals by
 // computing the strongly connected components of the graph:

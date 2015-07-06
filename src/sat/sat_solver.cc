@@ -47,9 +47,11 @@ SatSolver::SatSolver()
       clause_activity_increment_(1.0),
       is_decision_heuristic_initialized_(false),
       num_learned_clause_before_cleanup_(0),
-      target_number_of_learned_clauses_(0),
       conflicts_until_next_restart_(0),
       restart_count_(0),
+      luby_count_(0),
+      conflicts_until_next_strategy_change_(0),
+      strategy_counter_(0),
       same_reason_identifier_(trail_),
       is_relevant_for_core_computation_(true),
       time_limit_(new TimeLimit(std::numeric_limits<double>::infinity(),
@@ -396,22 +398,17 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     // Important: Even though the only literal at the last decision level has
     // been unassigned, its level was not modified, so ComputeLbd() works.
     const int lbd = ComputeLbd(*clause);
-    if (!NewLearnedClauseWillAlwaysBeKept(lbd, clause)) {
-      --num_learned_clause_before_cleanup_;
-    }
-
-    // BumpClauseActivity() must be called after clauses_info_[clause] has been
-    // created or it will have no effect.
-    //
-    // TODO(user): It must be better to move these two line in the if {} block
-    // just above. But experiment seems to show otherwise? To investigate more,
-    // this should only change the rate at which the clause activity is rescaled
-    // down. So maybe scaling them down often is good?
-    clauses_info_[clause].lbd = lbd;
-    BumpClauseActivity(clause);
-
-    // Maintain the lbd average for the restart policy.
     lbd_running_average_.Add(lbd);
+
+    if (is_redundant && lbd > parameters_.clause_cleanup_lbd_bound()) {
+      --num_learned_clause_before_cleanup_;
+
+      // BumpClauseActivity() must be called after clauses_info_[clause] has
+      // been created or it will have no effect.
+      DCHECK(clauses_info_.find(clause) == clauses_info_.end());
+      clauses_info_[clause].lbd = lbd;
+      BumpClauseActivity(clause);
+    }
 
     CHECK(watched_clauses_.AttachAndPropagate(clause, &trail_));
   }
@@ -588,6 +585,9 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // Decrement the restart counter if needed.
   if (conflicts_until_next_restart_ > 0) {
     --conflicts_until_next_restart_;
+  }
+  if (conflicts_until_next_strategy_change_ > 0) {
+    --conflicts_until_next_strategy_change_;
   }
 
   // Hack from Glucose that seems to perform well.
@@ -1038,38 +1038,52 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
 
       // Restart?
       bool restart = false;
-      switch (parameters_.restart_algorithm()) {
+      switch (strategy_counter_ % 2 == 0
+                  ? parameters_.restart_algorithm_even()
+                  : parameters_.restart_algorithm_odd()) {
         case SatParameters::NO_RESTART:
           break;
         case SatParameters::LUBY_RESTART:
           if (conflicts_until_next_restart_ == 0) {
+            ++luby_count_;
             restart = true;
-            conflicts_until_next_restart_ =
-                parameters_.luby_restart_period() * SUniv(restart_count_ + 1);
           }
           break;
         case SatParameters::DL_MOVING_AVERAGE_RESTART:
           if (dl_running_average_.IsWindowFull() &&
               dl_running_average_.GlobalAverage() <
-                  parameters_.restart_average_ratio() *
+                  parameters_.restart_dl_average_ratio() *
                       dl_running_average_.WindowAverage()) {
             restart = true;
-            dl_running_average_.ClearWindow();
           }
           break;
         case SatParameters::LBD_MOVING_AVERAGE_RESTART:
           if (lbd_running_average_.IsWindowFull() &&
               lbd_running_average_.GlobalAverage() <
-                  parameters_.restart_average_ratio() *
+                  parameters_.restart_lbd_average_ratio() *
                       lbd_running_average_.WindowAverage()) {
             restart = true;
-            lbd_running_average_.ClearWindow();
           }
           break;
       }
       if (restart) {
         restart_count_++;
         Backtrack(assumption_level_);
+
+        // Strategy switch?
+        if (conflicts_until_next_strategy_change_ == 0) {
+          strategy_change_conflicts_ +=
+              parameters_.strategy_change_increase_ratio() *
+              strategy_change_conflicts_;
+          conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
+          strategy_counter_++;
+        }
+
+        // Reset the various restart strategies.
+        dl_running_average_.ClearWindow();
+        lbd_running_average_.ClearWindow();
+        conflicts_until_next_restart_ =
+            parameters_.luby_restart_period() * SUniv(luby_count_ + 1);
       }
 
       DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
@@ -1177,7 +1191,35 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
   // rescaling.
   auto it = clauses_info_.find(clause);
   if (it == clauses_info_.end()) return;
-  const int activity = it->second.activity += clause_activity_increment_;
+
+  // Check if the new clause LBD is below our threshold to keep this clause
+  // indefinitely.
+  const int new_lbd = ComputeLbd(*clause);
+  if (new_lbd <= parameters_.clause_cleanup_lbd_bound()) {
+    clauses_info_.erase(clause);
+    return;
+  }
+
+  // Eventually protect this clause for the next cleanup phase.
+  switch (parameters_.clause_cleanup_protection()) {
+    case SatParameters::PROTECTION_NONE:
+      break;
+    case SatParameters::PROTECTION_ALWAYS:
+      it->second.protected_during_next_cleanup = true;
+      break;
+    case SatParameters::PROTECTION_LBD:
+      // This one is similar to the one used by the Glucose SAT solver.
+      //
+      // TODO(user): why the +1? one reason may be that the LBD of a conflict
+      // decrease by 1 just afer the backjump...
+      if (new_lbd + 1 < it->second.lbd) {
+        it->second.protected_during_next_cleanup = true;
+        it->second.lbd = new_lbd;
+      }
+  }
+
+  // Increase the activity.
+  const double activity = it->second.activity += clause_activity_increment_;
   if (activity > parameters_.max_clause_activity_value()) {
     RescaleClauseActivities(1.0 / parameters_.max_clause_activity_value());
   }
@@ -1345,12 +1387,14 @@ std::string SatSolver::StatusString(Status status) const {
 
 std::string SatSolver::RunningStatisticsString() const {
   const double time_in_s = timer_.Get();
-  return StringPrintf("%6.2lfs, mem:%s, fails:%" GG_LL_FORMAT
-                      "d, "
-                      "depth:%d, clauses:%lu, restarts:%d, vars:%d",
-                      time_in_s, MemoryUsage().c_str(), counters_.num_failures,
-                      CurrentDecisionLevel(), clauses_.size(), restart_count_,
-                      num_variables_.value() - num_processed_fixed_variables_);
+  return StringPrintf(
+      "%6.2lfs, mem:%s, fails:%" GG_LL_FORMAT
+      "d, "
+      "depth:%d, clauses:%lu, tmp:%lu, bin:%llu, restarts:%d, vars:%d",
+      time_in_s, MemoryUsage().c_str(), counters_.num_failures,
+      CurrentDecisionLevel(), clauses_.size() - clauses_info_.size(),
+      clauses_info_.size(), binary_implication_graph_.NumberOfImplications(),
+      restart_count_, num_variables_.value() - num_processed_fixed_variables_);
 }
 
 void SatSolver::ProcessNewlyFixedVariableResolutionNodes() {
@@ -1428,37 +1472,18 @@ void SatSolver::ProcessNewlyFixedVariables() {
     }
   }
 
+  // Note that we will only delete the clauses during the next database cleanup.
   watched_clauses_.CleanUpWatchers();
-  if (num_detached_clauses > 0) {
+  if (num_detached_clauses > 0 || num_binary > 0) {
     VLOG(1) << trail_.Index() << " fixed variables at level 0. "
             << "Detached " << num_detached_clauses << " clauses. " << num_binary
             << " converted to binary.";
-    DeleteDetachedClauses();
   }
 
   // We also clean the binary implication graph.
   binary_implication_graph_.RemoveFixedVariables(num_processed_fixed_variables_,
                                                  trail_);
   num_processed_fixed_variables_ = trail_.Index();
-}
-
-namespace {
-bool IsClauseAttached(SatClause* a) { return a->IsAttached(); }
-}  // namespace
-
-void SatSolver::DeleteDetachedClauses() {
-  std::vector<SatClause*>::iterator iter =
-      std::partition(clauses_.begin(), clauses_.end(), IsClauseAttached);
-  if (parameters_.unsat_proof()) {
-    for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
-      unsat_proof_.UnlockNode((*it)->ResolutionNodePointer());
-    }
-  }
-  for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
-    clauses_info_.erase(*it);
-  }
-  STLDeleteContainerPointers(iter, clauses_.end());
-  clauses_.erase(iter, clauses_.end());
 }
 
 bool SatSolver::Propagate() {
@@ -1661,8 +1686,9 @@ Literal SatSolver::NextBranch() {
     while (true) {
       // TODO(user): This may not be super efficient if almost all the
       // variables are assigned.
-      var = (*var_ordering_.Raw())[random_.Uniform(var_ordering_.Raw()->size())]
-                ->variable;
+      var = VariableIndex(
+          (*var_ordering_.Raw())[random_.Uniform(var_ordering_.Raw()->size())] -
+          &queue_elements_.front());
       if (!trail_.Assignment().IsVariableAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       var_ordering_.Remove(&queue_elements_[var]);
@@ -1670,12 +1696,12 @@ Literal SatSolver::NextBranch() {
   } else {
     // The loop is done this way in order to leave the final choice in the heap.
     DCHECK(!var_ordering_.IsEmpty());
-    var = var_ordering_.Top()->variable;
+    var = VariableIndex(var_ordering_.Top() - &queue_elements_.front());
     while (trail_.Assignment().IsVariableAssigned(var)) {
       var_ordering_.Pop();
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       DCHECK(!var_ordering_.IsEmpty());
-      var = var_ordering_.Top()->variable;
+      var = VariableIndex(var_ordering_.Top() - &queue_elements_.front());
     }
   }
 
@@ -1724,7 +1750,6 @@ void SatSolver::InitializeVariableOrdering() {
   // priority queue.
   std::vector<VariableIndex> variables;
   for (VariableIndex var(0); var < num_variables_; ++var) {
-    queue_elements_[var].variable = var;  // May not be yet initialized.
     if (!trail_.Assignment().IsVariableAssigned(var)) {
       if (activities_[var] > 0) {
         queue_elements_[var].weight = activities_[var];
@@ -2635,84 +2660,104 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
   conflict->erase(conflict->begin() + index, conflict->end());
 }
 
-void SatSolver::InitLearnedClauseLimit(int current_num_deletable) {
-  target_number_of_learned_clauses_ =
-      std::max(parameters_.clause_cleanup_min_target(),
-               current_num_deletable + parameters_.clause_cleanup_increment());
-  num_learned_clause_before_cleanup_ =
-      target_number_of_learned_clauses_ / parameters_.clause_cleanup_ratio() -
-      current_num_deletable;
-  VLOG(1) << "reduced learned database to " << current_num_deletable
-          << " clauses. Next cleanup in " << num_learned_clause_before_cleanup_
-          << " conflicts.";
+void SatSolver::DeleteDetachedClauses() {
+  std::vector<SatClause*>::iterator iter =
+      std::stable_partition(clauses_.begin(), clauses_.end(),
+                            [](SatClause* a) { return a->IsAttached(); });
+  if (parameters_.unsat_proof()) {
+    for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
+      unsat_proof_.UnlockNode((*it)->ResolutionNodePointer());
+    }
+  }
+  for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
+    clauses_info_.erase(*it);
+  }
+  STLDeleteContainerPointers(iter, clauses_.end());
+  clauses_.erase(iter, clauses_.end());
 }
 
-// TODO(user): Optimize this code if the need arise. Only the clauses from the
-// clauses_info_ map need to be inspected, and we can do so with a linear scan
-// rather than many hash lookup.
 void SatSolver::CleanClauseDatabaseIfNeeded() {
   if (num_learned_clause_before_cleanup_ > 0) return;
   SCOPED_TIME_STAT(&stats_);
 
-  // Start by removing all the detached clauses (if any).
-  DeleteDetachedClauses();
+  // Creates a list of clauses that can be deleted. Note that only the clauses
+  // that appear in clauses_info_ can potentially be removed.
+  typedef std::pair<SatClause*, ClauseInfo> Entry;
+  std::vector<Entry> entries;
+  for (auto& entry : clauses_info_) {
+    if (ClauseIsUsedAsReason(entry.first)) continue;
+    if (entry.second.protected_during_next_cleanup) {
+      entry.second.protected_during_next_cleanup = false;
+      continue;
+    }
+    entries.push_back(entry);
+  }
+  const int num_protected_clauses = clauses_info_.size() - entries.size();
 
-  // Move the clause that should be kept at the beginning and sort the other
-  // using the specified clause ordering.
-  std::vector<SatClause*>::iterator clause_to_keep_end = std::partition(
-      clauses_.begin(), clauses_.end(),
-      std::bind1st(std::mem_fun(&SatSolver::ClauseShouldBeKept), this));
   if (parameters_.clause_cleanup_ordering() == SatParameters::CLAUSE_LBD) {
-    // Order the clauses by increasing LBD (Literal Blocks Distance) first. For
-    // the same LBD they are ordered by decreasing activity.
-    std::sort(clause_to_keep_end, clauses_.end(),
-              [this](SatClause* a, SatClause* b) {
-                const ClauseInfo info_a =
-                    FindWithDefault(this->clauses_info_, a, ClauseInfo());
-                const ClauseInfo info_b =
-                    FindWithDefault(this->clauses_info_, b, ClauseInfo());
-                if (info_a.lbd == info_b.lbd) {
-                  return info_a.activity > info_b.activity;
+    // Order the clauses by decreasing LBD and then increasing activity.
+    std::sort(entries.begin(), entries.end(),
+              [](const Entry& a, const Entry& b) {
+                if (a.second.lbd == b.second.lbd) {
+                  return a.second.activity < b.second.activity;
                 }
-                return info_a.lbd < info_b.lbd;
+                return a.second.lbd > b.second.lbd;
               });
   } else {
-    // Order the clauses by decreasing activity.
-    std::sort(clause_to_keep_end, clauses_.end(), [this](SatClause* a,
-                                                         SatClause* b) {
-      return FindWithDefault(this->clauses_info_, a, ClauseInfo()).activity >
-             FindWithDefault(this->clauses_info_, b, ClauseInfo()).activity;
-    });
+    // Order the clauses by increasing activity and then decreasing LBD.
+    std::sort(entries.begin(), entries.end(),
+              [](const Entry& a, const Entry& b) {
+                if (a.second.activity == b.second.activity) {
+                  return a.second.lbd > b.second.lbd;
+                }
+                return a.second.activity < b.second.activity;
+              });
   }
 
-  // Delete all the clause after first_clause_to_delete (if any).
-  std::vector<SatClause*>::iterator first_clause_to_delete =
-      clause_to_keep_end + target_number_of_learned_clauses_;
-  if (first_clause_to_delete < clauses_.end()) {
-    for (auto iter = first_clause_to_delete; iter < clauses_.end(); ++iter) {
-      SatClause* clause = *iter;
+  // The clause we want to keep are at the end of the vector.
+  int num_kept_clauses = std::min(static_cast<int>(entries.size()),
+                                  parameters_.clause_cleanup_target());
+  int num_deleted_clauses = entries.size() - num_kept_clauses;
+
+  // Tricky: Because the order of the clauses_info_ iteration is NOT
+  // deterministic (pointer keys), we also keep all the clauses wich have the
+  // same LBD and activity as the last one so the behavior is deterministic.
+  while (num_deleted_clauses > 0) {
+    const ClauseInfo& a = entries[num_deleted_clauses].second;
+    const ClauseInfo& b = entries[num_deleted_clauses - 1].second;
+    if (a.activity != b.activity || a.lbd != b.lbd) break;
+    --num_deleted_clauses;
+    ++num_kept_clauses;
+  }
+  if (num_deleted_clauses > 0) {
+    entries.resize(num_deleted_clauses);
+    for (const Entry& entry : entries) {
+      SatClause* clause = entry.first;
       counters_.num_literals_forgotten += clause->Size();
       watched_clauses_.LazyDetach(clause);
-      if (clause->ResolutionNodePointer() != nullptr) {
-        unsat_proof_.UnlockNode(clause->ResolutionNodePointer());
-      }
     }
     watched_clauses_.CleanUpWatchers();
-    STLDeleteContainerPointers(first_clause_to_delete, clauses_.end());
-    clauses_.erase(first_clause_to_delete, clauses_.end());
+
+    // TODO(user): If the need arise, we could avoid this linear scan on the
+    // full list of clauses by not keeping the clauses from clauses_info_ there.
+    DeleteDetachedClauses();
   }
-  InitLearnedClauseLimit(clauses_.end() - clause_to_keep_end);
+
+  num_learned_clause_before_cleanup_ = parameters_.clause_cleanup_period();
+  VLOG(1) << "Database cleanup, #protected:" << num_protected_clauses
+          << " #kept:" << num_kept_clauses
+          << " #deleted:" << num_deleted_clauses;
 }
 
 void SatSolver::InitRestart() {
   SCOPED_TIME_STAT(&stats_);
   restart_count_ = 0;
-  if (parameters_.restart_algorithm() == SatParameters::NO_RESTART) {
-    conflicts_until_next_restart_ = -1;
-  } else if (parameters_.restart_algorithm() == SatParameters::LUBY_RESTART) {
-    DCHECK_EQ(SUniv(1), 1);
-    conflicts_until_next_restart_ = parameters_.luby_restart_period();
-  }
+  luby_count_ = 0;
+  strategy_counter_ = 0;
+  strategy_change_conflicts_ =
+      parameters_.num_conflicts_before_strategy_changes();
+  conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
+  conflicts_until_next_restart_ = parameters_.luby_restart_period();
 }
 
 std::string SatStatusString(SatSolver::Status status) {

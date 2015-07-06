@@ -317,6 +317,7 @@ class SatSolver {
       ProcessNewlyFixedVariableResolutionNodes();
       ProcessNewlyFixedVariables();
     }
+    DeleteDetachedClauses();
 
     // Note(user): Putting the binary clauses first help because the presolver
     // currently process the clauses in order.
@@ -456,25 +457,10 @@ class SatSolver {
   // like a good idea to keep clauses that were used as a reason even if the
   // variable is currently not assigned. This way, even if the clause cleaning
   // happen just after a restart, the logic will not change.
-  bool IsClauseUsedAsReason(SatClause* clause) const {
+  bool ClauseIsUsedAsReason(SatClause* clause) const {
     const VariableIndex var = clause->PropagatedLiteral().Variable();
     return trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION &&
            trail_.Info(var).sat_clause == clause;
-  }
-
-  // Predicate used by CleanClauseDatabaseIfNeeded().
-  bool ClauseShouldBeKept(SatClause* clause) const {
-    return !clause->IsRedundant() || clause->Size() <= 2 ||
-           FindWithDefault(clauses_info_, clause, ClauseInfo()).lbd <=
-               parameters_.clause_cleanup_lbd_bound() ||
-           IsClauseUsedAsReason(clause);
-  }
-
-  // Same as ClauseShouldBeKept(), but take the lbd as a parameter and since we
-  // only used that for a new clause, we don't need the IsClauseUsedAsReason()
-  // or the IsRedundant() part.
-  bool NewLearnedClauseWillAlwaysBeKept(int lbd, SatClause* clause) const {
-    return lbd <= parameters_.clause_cleanup_lbd_bound() || clause->Size() <= 2;
   }
 
   // Add a problem clause. Not that the clause is assumed to be "cleaned", that
@@ -607,22 +593,24 @@ class SatSolver {
   int ComputeBacktrackLevel(const std::vector<Literal>& literals);
 
   // The LBD (Literal Blocks Distance) is the number of different decision
-  // levels at which the literals of the clause were assigned. This can only be
-  // computed if all the literals of the clause are assigned. Note that we
+  // levels at which the literals of the clause were assigned. Note that we
   // ignore the decision level 0 whereas the definition in the paper below
-  // don't:
+  // doesn't:
   //
   // G. Audemard, L. Simon, "Predicting Learnt Clauses Quality in Modern SAT
   // Solver" in Twenty-first International Joint Conference on Artificial
   // Intelligence (IJCAI'09), july 2009.
   // http://www.ijcai.org/papers09/Papers/IJCAI09-074.pdf
+  //
+  // IMPORTANT: All the literals of the clause must be assigned, and the first
+  // literal must be of the highest decision level. This will be the case for
+  // all the reason clauses.
   template <typename LiteralList>
   int ComputeLbd(const LiteralList& literals);
 
   // Checks if we need to reduce the number of learned clauses and do
-  // it if needed. The second function updates the learned clause limit.
+  // it if needed. Also updates the learned clause limit for the next cleanup.
   void CleanClauseDatabaseIfNeeded();
-  void InitLearnedClauseLimit(int current_num_learned);
 
   // Bumps the activity of all variables appearing in the conflict.
   // See VSIDS decision heuristic: Chaff: Engineering an Efficient SAT Solver.
@@ -680,6 +668,7 @@ class SatSolver {
   struct ClauseInfo {
     double activity = 0.0;
     int32 lbd = 0;
+    bool protected_during_next_cleanup = false;
   };
   hash_map<SatClause*, ClauseInfo> clauses_info_;
 
@@ -765,12 +754,10 @@ class SatSolver {
   // Parameters.
   SatParameters parameters_;
 
-  // Variable ordering (priority will be adjusted dynamically). The variable in
-  // the queue are said to be active. queue_elements_ holds the elements used by
-  // var_ordering_ (it uses pointers).
+  // Variable ordering (priority will be adjusted dynamically). queue_elements_
+  // holds the elements used by var_ordering_ (it uses pointers).
   struct WeightedVarQueueElement {
-    WeightedVarQueueElement()
-        : heap_index(-1), variable(-1), weight(0.0), tie_breaker(0.0) {}
+    WeightedVarQueueElement() : heap_index(-1), tie_breaker(0.0), weight(0.0) {}
 
     // Interface for the AdjustablePriorityQueue.
     void SetHeapIndex(int h) { heap_index = h; }
@@ -796,19 +783,15 @@ class SatSolver {
              (weight == other.weight && (tie_breaker < other.tie_breaker));
     }
 
-    int heap_index;
-    VariableIndex variable;
+    int32 heap_index;
+    float tie_breaker;
 
     // TODO(user): Experiment with float. In the rest of the code, we use
     // double, but maybe we don't need that much precision. Using float here may
     // save memory and make the PQ operations faster.
     double weight;
-    double tie_breaker;
   };
-
-  // Note that we use <= because on 32 bits architecture, the size will actually
-  // be smaller than 24 bytes.
-  COMPILE_ASSERT(sizeof(WeightedVarQueueElement) <= 24,
+  COMPILE_ASSERT(sizeof(WeightedVarQueueElement) == 16,
                  ERROR_WeightedVarQueueElement_is_not_well_compacted);
 
   bool is_var_ordering_initialized_;
@@ -845,16 +828,19 @@ class SatSolver {
   // If true, leave the initial variable activities to their current value.
   bool leave_initial_activities_unchanged_;
 
-  // This counter is decremented each time we learn a clause. When it reaches
-  // zero, a clause cleanup is triggered. Note that only the clauses added to
-  // learned_clauses_ are counted, so we exclude binary clauses if
-  // parameters_.treat_binary_clauses_separately() is true.
+  // This counter is decremented each time we learn a clause that can be
+  // deleted. When it reaches zero, a clause cleanup is triggered.
   int num_learned_clause_before_cleanup_;
-  int target_number_of_learned_clauses_;
 
   // Conflicts credit to create until the next restart.
   int conflicts_until_next_restart_;
   int restart_count_;
+  int luby_count_;
+
+  // Conflicts credit until the next strategy change.
+  int conflicts_until_next_strategy_change_;
+  int strategy_change_conflicts_;
+  int strategy_counter_;
 
   // Temporary members used during conflict analysis.
   SparseBitset<VariableIndex> is_marked_;

@@ -424,7 +424,7 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
 
   // The curent lower_bound on the cost.
   // It will be correct after the initialization.
-  Coefficient lower_bound(problem.objective().offset());
+  Coefficient lower_bound(static_cast<int64>(problem.objective().offset()));
   Coefficient upper_bound(kint64max);
 
   // The assumption literals and their associated cost.
@@ -524,10 +524,12 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
 
       ExtractAssignment(problem, *solver, solution);
       DCHECK(IsAssignmentValid(problem, *solution));
-      Coefficient objective = ComputeObjectiveValue(problem, *solution);
-      if (objective + problem.objective().offset() < upper_bound) {
+      const Coefficient objective_offset(
+          static_cast<int64>(problem.objective().offset()));
+      const Coefficient objective = ComputeObjectiveValue(problem, *solution);
+      if (objective + objective_offset < upper_bound) {
         logger.Log(CnfObjectiveLine(problem, objective));
-        upper_bound = objective + problem.objective().offset();
+        upper_bound = objective + objective_offset;
       }
 
       if (stratified_lower_bound < old_lower_bound) continue;

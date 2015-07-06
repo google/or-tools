@@ -14,6 +14,7 @@
 #include "sat/simplification.h"
 
 #include "base/timer.h"
+#include "base/stl_util.h"
 #include "algorithms/dynamic_partition.h"
 
 namespace operations_research {
@@ -27,14 +28,13 @@ SatPostsolver::SatPostsolver(int num_variables) {
   assignment_.Resize(num_variables);
 }
 
-void SatPostsolver::Add(Literal x, std::vector<Literal>* clause) {
-  CHECK(!clause->empty());
-  DCHECK(std::find(clause->begin(), clause->end(), x) != clause->end());
-  clauses_.push_back(std::vector<Literal>());
-  clauses_.back().swap(*clause);
+void SatPostsolver::Add(Literal x, const std::vector<Literal>& clause) {
+  CHECK(!clause.empty());
+  DCHECK(std::find(clause.begin(), clause.end(), x) != clause.end());
   associated_literal_.push_back(ApplyReverseMapping(x));
-  for (Literal& l_ref : clauses_.back()) {
-    l_ref = ApplyReverseMapping(l_ref);
+  clauses_start_.push_back(clauses_literals_.size());
+  for (const Literal& l : clause) {
+    clauses_literals_.push_back(ApplyReverseMapping(l));
   }
 }
 
@@ -75,13 +75,17 @@ void SatPostsolver::Postsolve(VariablesAssignment* assignment) const {
     }
   }
 
-  for (int i = clauses_.size() - 1; i >= 0; --i) {
+  int previous_start = clauses_literals_.size();
+  for (int i = static_cast<int>(clauses_start_.size()) - 1; i >= 0; --i) {
     bool set_associated_var = true;
-    for (const Literal l : clauses_[i]) {
-      if (assignment->IsLiteralFalse(l)) continue;
-      set_associated_var = false;
-      break;
+    const int new_start = clauses_start_[i];
+    for (int j = new_start; j < previous_start; ++j) {
+      if (assignment->IsLiteralTrue(clauses_literals_[j])) {
+        set_associated_var = false;
+        break;
+      }
     }
+    previous_start = new_start;
     if (set_associated_var) {
       // Note(user): The VariablesAssignment interface is a bit weird in this
       // context, because we can only assign an unassigned literal.
@@ -196,9 +200,16 @@ ITIVector<VariableIndex, VariableIndex> SatPresolver::VariableMapping() const {
   return result;
 }
 
-void SatPresolver::LoadProblemIntoSatSolver(SatSolver* solver) const {
-  const ITIVector<VariableIndex, VariableIndex> mapping = VariableMapping();
+void SatPresolver::LoadProblemIntoSatSolver(SatSolver* solver) {
+  // Cleanup some memory that is not needed anymore. Note that we do need
+  // literal_to_clause_sizes_ for VariableMapping() to work.
+  var_pq_.Clear();
+  var_pq_elements_.clear();
+  in_clause_to_process_.clear();
+  clause_to_process_.clear();
+  literal_to_clauses_.clear();
 
+  const ITIVector<VariableIndex, VariableIndex> mapping = VariableMapping();
   int new_size = 0;
   for (VariableIndex index : mapping) {
     if (index != VariableIndex(-1)) ++new_size;
@@ -206,13 +217,14 @@ void SatPresolver::LoadProblemIntoSatSolver(SatSolver* solver) const {
 
   std::vector<Literal> temp;
   solver->SetNumVariables(new_size);
-  for (const std::vector<Literal>& clause : *this) {
+  for (std::vector<Literal>& clause_ref : clauses_) {
     temp.clear();
-    for (Literal l : clause) {
+    for (Literal l : clause_ref) {
       CHECK_NE(mapping[l.Variable()], VariableIndex(-1));
       temp.push_back(Literal(mapping[l.Variable()], l.IsPositive()));
     }
     if (!temp.empty()) solver->AddProblemClause(temp);
+    STLClearObject(&clause_ref);
   }
 }
 
@@ -342,7 +354,7 @@ void SatPresolver::RemoveAndRegisterForPostsolveAllClauseContaining(Literal x) {
   for (ClauseIndex i : literal_to_clauses_[x.Index()]) {
     if (!clauses_[i].empty()) RemoveAndRegisterForPostsolve(i, x);
   }
-  literal_to_clauses_[x.Index()].clear();
+  STLClearObject(&literal_to_clauses_[x.Index()]);
   literal_to_clause_sizes_[x.Index()] = 0;
 }
 
@@ -379,17 +391,15 @@ bool SatPresolver::CrossProduct(Literal x) {
 
   // Test whether we should remove the x.Variable().
   int size = 0;
-  std::vector<Literal> temp;
   for (ClauseIndex i : literal_to_clauses_[x.Index()]) {
     if (clauses_[i].empty()) continue;
     bool no_resolvant = true;
     for (ClauseIndex j : literal_to_clauses_[x.NegatedIndex()]) {
       if (clauses_[j].empty()) continue;
-
-      // TODO(user): The output temp is not needed here. Optimize.
-      if (ComputeResolvant(x, clauses_[i], clauses_[j], &temp)) {
+      const int rs = ComputeResolvantSize(x, clauses_[i], clauses_[j]);
+      if (rs >= 0) {
         no_resolvant = false;
-        size += clause_weight + temp.size();
+        size += clause_weight + rs;
 
         // Abort early if the "size" become too big.
         if (size > threshold) return false;
@@ -415,6 +425,7 @@ bool SatPresolver::CrossProduct(Literal x) {
   // Add all the resolvant clauses.
   // Note that the variable priority queue will only be updated during the
   // deletion.
+  std::vector<Literal> temp;
   for (ClauseIndex i : literal_to_clauses_[x.Index()]) {
     if (clauses_[i].empty()) continue;
     for (ClauseIndex j : literal_to_clauses_[x.NegatedIndex()]) {
@@ -442,7 +453,7 @@ void SatPresolver::Remove(ClauseIndex ci) {
     literal_to_clause_sizes_[e.Index()]--;
     UpdatePriorityQueue(e.Variable());
   }
-  clauses_[ci].clear();
+  STLClearObject(&clauses_[ci]);
 }
 
 void SatPresolver::RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x) {
@@ -450,15 +461,15 @@ void SatPresolver::RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x) {
     literal_to_clause_sizes_[e.Index()]--;
     UpdatePriorityQueue(e.Variable());
   }
-  // This will copy and clear the clause.
-  postsolver_->Add(x, &clauses_[ci]);
+  postsolver_->Add(x, clauses_[ci]);
+  STLClearObject(&clauses_[ci]);
 }
 
 Literal SatPresolver::FindLiteralWithShortestOccurenceList(
     const std::vector<Literal>& clause) {
   CHECK(!clause.empty());
   Literal result = clause.front();
-  for (Literal l : clause) {
+  for (const Literal l : clause) {
     if (literal_to_clause_sizes_[l.Index()] <
         literal_to_clause_sizes_[result.Index()]) {
       result = l;
@@ -598,6 +609,35 @@ bool ComputeResolvant(Literal x, const std::vector<Literal>& a,
   out->insert(out->end(), ia, a.end());
   out->insert(out->end(), ib, b.end());
   return true;
+}
+
+// Note that this function takes a big chunk of the presolve running time.
+int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
+                         const std::vector<Literal>& b) {
+  DCHECK(std::is_sorted(a.begin(), a.end()));
+  DCHECK(std::is_sorted(b.begin(), b.end()));
+
+  int size = static_cast<int>(a.size() + b.size()) - 2;
+  std::vector<Literal>::const_iterator ia = a.begin();
+  std::vector<Literal>::const_iterator ib = b.begin();
+  while ((ia != a.end()) && (ib != b.end())) {
+    if (*ia == *ib) {
+      --size;
+      ++ia;
+      ++ib;
+    } else if (*ia == ib->Negated()) {
+      if (*ia != x) return -1;  // Trivially true.
+      DCHECK_EQ(*ib, x.Negated());
+      ++ia;
+      ++ib;
+    } else if (*ia < *ib) {
+      ++ia;
+    } else {  // *ia > *ib
+      ++ib;
+    }
+  }
+  DCHECK_GE(size, 0);
+  return size;
 }
 
 // A simple graph where the nodes are the literals and the nodes adjacent to a

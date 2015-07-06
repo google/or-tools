@@ -971,7 +971,8 @@ void PbConstraints::ComputeNewLearnedConstraintLimit() {
   target_number_of_learned_constraint_ =
       num_constraints + parameters_.pb_cleanup_increment();
   num_learned_constraint_before_cleanup_ =
-      target_number_of_learned_constraint_ / parameters_.pb_cleanup_ratio() -
+      static_cast<int>(target_number_of_learned_constraint_ /
+                       parameters_.pb_cleanup_ratio()) -
       num_constraints;
 }
 
