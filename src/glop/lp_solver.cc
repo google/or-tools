@@ -143,7 +143,7 @@ ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   initial_num_entries_ = lp.num_entries();
   initial_num_rows_ = lp.num_constraints();
   initial_num_cols_ = lp.num_variables();
-  current_linear_program_.PopulateFromLinearProgram(lp, /*keep_names=*/false);
+  current_linear_program_.PopulateFromLinearProgram(lp);
 
   // Preprocess.
   status_ = ProblemStatus::INIT;
@@ -441,7 +441,6 @@ void LPSolver::ResizeSolution(RowIndex num_rows, ColIndex num_cols) {
 void LPSolver::RunPreprocessors(const TimeLimit& time_limit) {
   if (parameters_.use_preprocessing()) {
     RUN_PREPROCESSOR(ShiftVariableBoundsPreprocessor);
-    RUN_PREPROCESSOR(RemoveNearZeroEntriesPreprocessor);
 
     // We run it a few times because running one preprocessor may allow another
     // one to remove more stuff.

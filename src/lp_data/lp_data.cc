@@ -672,7 +672,7 @@ void LinearProgram::PopulateFromDual(const LinearProgram& dual,
 }
 
 void LinearProgram::PopulateFromLinearProgram(
-    const LinearProgram& linear_program, bool keep_id_tables) {
+    const LinearProgram& linear_program) {
   matrix_.PopulateFromSparseMatrix(linear_program.matrix_);
   if (linear_program.transpose_matrix_is_consistent_) {
     transpose_matrix_is_consistent_ = true;
@@ -686,18 +686,13 @@ void LinearProgram::PopulateFromLinearProgram(
   constraint_lower_bounds_ = linear_program.constraint_lower_bounds_;
   constraint_upper_bounds_ = linear_program.constraint_upper_bounds_;
   constraint_names_ = linear_program.constraint_names_;
-  if (keep_id_tables) {
-    constraint_table_ = linear_program.constraint_table_;
-  } else {
-    constraint_table_.clear();
-  }
+  constraint_table_.clear();
 
-  PopulateNameObjectiveAndVariablesFromLinearProgram(linear_program,
-                                                     keep_id_tables);
+  PopulateNameObjectiveAndVariablesFromLinearProgram(linear_program);
 }
 
 void LinearProgram::PopulateFromLinearProgramVariables(
-    const LinearProgram& linear_program, bool keep_id_tables) {
+    const LinearProgram& linear_program) {
   matrix_.PopulateFromZero(RowIndex(0), linear_program.num_variables());
   transpose_matrix_is_consistent_ = false;
   transpose_matrix_.Clear();
@@ -707,12 +702,11 @@ void LinearProgram::PopulateFromLinearProgramVariables(
   constraint_names_.clear();
   constraint_table_.clear();
 
-  PopulateNameObjectiveAndVariablesFromLinearProgram(linear_program,
-                                                     keep_id_tables);
+  PopulateNameObjectiveAndVariablesFromLinearProgram(linear_program);
 }
 
 void LinearProgram::PopulateNameObjectiveAndVariablesFromLinearProgram(
-    const LinearProgram& linear_program, bool keep_id_table) {
+    const LinearProgram& linear_program) {
   objective_coefficients_ = linear_program.objective_coefficients_;
   variable_lower_bounds_ = linear_program.variable_lower_bounds_;
   variable_upper_bounds_ = linear_program.variable_upper_bounds_;
@@ -723,12 +717,7 @@ void LinearProgram::PopulateNameObjectiveAndVariablesFromLinearProgram(
   integer_variables_list_ = linear_program.integer_variables_list_;
   binary_variables_list_ = linear_program.binary_variables_list_;
   non_binary_variables_list_ = linear_program.non_binary_variables_list_;
-
-  if (keep_id_table) {
-    variable_table_ = linear_program.variable_table_;
-  } else {
-    variable_table_.clear();
-  }
+  variable_table_.clear();
 
   maximize_ = linear_program.maximize_;
   objective_offset_ = linear_program.objective_offset_;

@@ -73,6 +73,13 @@ class LinearProgram {
   // immutable id to the variable or constraint so they can be retrieved later.
   // By default, the name is also set to this id, but it can be changed later
   // without changing the id.
+  //
+  // Note that these ids are NOT copied over by the Populate*() functions.
+  //
+  // TODO(user): Move these and the two corresponding hash_table into a new
+  // LinearProgramBuilder class to simplify the code of some functions like
+  // DeleteColumns() here and make the behavior on copy clear? or simply remove
+  // them as it is almost as easy to maintain a hash_table on the client side.
   ColIndex FindOrCreateVariable(const std::string& variable_id);
   RowIndex FindOrCreateConstraint(const std::string& constraint_id);
 
@@ -338,20 +345,14 @@ class LinearProgram {
   void PopulateFromDual(const LinearProgram& linear_program,
                         RowToColMapping* duplicated_rows);
 
-  // Populates the calling object with the given LinearProgram. If
-  // keep_id_tables is false, we do not keep the column/row id mappings which
-  // are only useful when constructing a program (this is a bit faster).
-  void PopulateFromLinearProgram(const LinearProgram& linear_program,
-                                 bool keep_id_tables);
+  // Populates the calling object with the given LinearProgram.
+  void PopulateFromLinearProgram(const LinearProgram& linear_program);
 
   // Populates the calling object with the variables of the given LinearProgram.
   // The function preserves the bounds, the integrality, the names of the
   // variables and their objective coefficients. No constraints are copied (the
-  // matrix in the destination has 0 rows). If keep_id_tables is false, we do
-  // not keep the column/row id mappings which are only useful when constructing
-  // a program (this is a bit faster).
-  void PopulateFromLinearProgramVariables(const LinearProgram& linear_program,
-                                          bool keep_id_tables);
+  // matrix in the destination has 0 rows).
+  void PopulateFromLinearProgramVariables(const LinearProgram& linear_program);
 
   // Adds constraints to the linear program. The constraints are specified using
   // a sparse matrix of the coefficients, and vectors that represent the
@@ -415,7 +416,7 @@ class LinearProgram {
   // linear program with the data from the given linear program. The method does
   // not touch the data structures for storing constraints.
   void PopulateNameObjectiveAndVariablesFromLinearProgram(
-      const LinearProgram& linear_program, bool keep_id_table);
+      const LinearProgram& linear_program);
 
   // Stores the linear program coefficients.
   SparseMatrix matrix_;

@@ -31,8 +31,9 @@
 #include <algorithm>
 #include <string>
 
-#include "base/logging.h"  // for CHECK*
 #include "base/integral_types.h"
+#include "base/logging.h"  // for CHECK*
+#include "base/stringprintf.h"
 #include "lp_data/lp_types.h"
 #include "lp_data/permutation.h"
 #include "util/iterators.h"

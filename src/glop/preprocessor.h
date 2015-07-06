@@ -398,6 +398,12 @@ class SingletonPreprocessor : public Preprocessor {
   RowDeletionHelper row_deletion_helper_;
   std::vector<SingletonUndo> undo_stack_;
 
+  // This is used as a "cache" by MakeConstraintAnEqualityIfPossible() to avoid
+  // scanning more than once each row. See the code to see how this is used.
+  ITIVector<RowIndex, bool> row_sum_is_cached_;
+  ITIVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> row_lb_sum_;
+  ITIVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> row_ub_sum_;
+
   // The columns that are deleted by this preprocessor.
   SparseMatrix deleted_columns_;
   // The transpose of the rows that are deleted by this preprocessor.
@@ -648,6 +654,10 @@ class EmptyConstraintPreprocessor : public Preprocessor {
 // Removes matrix entries that have only a negligible impact on the solution.
 // Using the variable bounds, we derive a maximum possible impact, and remove
 // the entries whose impact is under a given tolerance.
+//
+// TODO(user): This preprocessor doesn't work well on badly scaled problems. In
+// particular, it will set the objective to zero if all the objective
+// coefficients are small! Run it after ScalingPreprocessor or fix the code.
 class RemoveNearZeroEntriesPreprocessor : public Preprocessor {
  public:
   RemoveNearZeroEntriesPreprocessor() {}

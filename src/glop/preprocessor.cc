@@ -2140,32 +2140,61 @@ void SingletonUndo::MakeConstraintAnEqualityUndo(
 
 bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
     const SparseMatrix& transpose, MatrixEntry e, LinearProgram* lp) {
+  // TODO(user): We could skip early if the relevant constraint bound is
+  // infinity.
   const Fractional cst_lower_bound = lp->constraint_lower_bounds()[e.row];
   const Fractional cst_upper_bound = lp->constraint_upper_bounds()[e.row];
   if (cst_lower_bound == cst_upper_bound) return true;
 
-  // Compute the implied bounds on the variable from this constraint and
-  // the other variables.
-  Fractional lb = cst_lower_bound;
-  Fractional ub = cst_upper_bound;
-  for (const SparseColumn::Entry entry :
-       transpose.column(RowToColIndex(e.row))) {
-    const ColIndex row_as_col = RowToColIndex(entry.row());
-    if (row_as_col == e.col) continue;
-    if (column_deletion_helper_.IsColumnMarked(row_as_col)) continue;
-    if (entry.coefficient() > 0.0) {
-      lb -= entry.coefficient() * lp->variable_upper_bounds()[row_as_col];
-      ub -= entry.coefficient() * lp->variable_lower_bounds()[row_as_col];
-    } else {
-      lb -= entry.coefficient() * lp->variable_lower_bounds()[row_as_col];
-      ub -= entry.coefficient() * lp->variable_upper_bounds()[row_as_col];
+  // To be efficient, we only process a row once and cache the domain that an
+  // "artificial" extra variable x with coefficient 1.0 could take while still
+  // making the constraint feasible. The domain bounds for the constraint e.row
+  // will be stored in row_lb_sum_[e.row] and row_ub_sum_[e.row].
+  const DenseRow& variable_ubs = lp->variable_upper_bounds();
+  const DenseRow& variable_lbs = lp->variable_lower_bounds();
+  if (e.row >= row_sum_is_cached_.size() || !row_sum_is_cached_[e.row]) {
+    if (e.row >= row_sum_is_cached_.size()) {
+      const int new_size = e.row.value() + 1;
+      row_sum_is_cached_.resize(new_size);
+      row_lb_sum_.resize(new_size);
+      row_ub_sum_.resize(new_size);
+    }
+    row_sum_is_cached_[e.row] = true;
+    row_lb_sum_[e.row].Add(cst_lower_bound);
+    row_ub_sum_[e.row].Add(cst_upper_bound);
+    for (const SparseColumn::Entry entry :
+         transpose.column(RowToColIndex(e.row))) {
+      const ColIndex row_as_col = RowToColIndex(entry.row());
+
+      // Tricky: Even if later more columns are deleted, these "cached" sums
+      // will actually still be valid because we only delete columns in a
+      // compatible way.
+      //
+      // TODO(user): Find a more robust way? it seems easy to add new deletion
+      // rules that may break this assumption.
+      if (column_deletion_helper_.IsColumnMarked(row_as_col)) continue;
+      if (entry.coefficient() > 0.0) {
+        row_lb_sum_[e.row].Add(-entry.coefficient() * variable_ubs[row_as_col]);
+        row_ub_sum_[e.row].Add(-entry.coefficient() * variable_lbs[row_as_col]);
+      } else {
+        row_lb_sum_[e.row].Add(-entry.coefficient() * variable_lbs[row_as_col]);
+        row_ub_sum_[e.row].Add(-entry.coefficient() * variable_ubs[row_as_col]);
+      }
+
+      // TODO(user): Abort early if both sums contain more than 1 infinity?
     }
   }
-  lb /= e.coeff;
-  ub /= e.coeff;
-  if (e.coeff < 0.0) {
-    std::swap(lb, ub);
-  }
+
+  // Now that the lb/ub sum for the row is cached, we can use it to compute the
+  // implied bounds on the variable from this constraint and the other
+  // variables.
+  const Fractional c = e.coeff;
+  const Fractional lb =
+      c > 0.0 ? row_lb_sum_[e.row].SumWithout(-c * variable_ubs[e.col]) / c
+              : row_ub_sum_[e.row].SumWithout(-c * variable_ubs[e.col]) / c;
+  const Fractional ub =
+      c > 0.0 ? row_ub_sum_[e.row].SumWithout(-c * variable_lbs[e.col]) / c
+              : row_lb_sum_[e.row].SumWithout(-c * variable_lbs[e.col]) / c;
 
   // Note that we could do the same for singleton variables with a cost of
   // 0.0, but such variable are already dealt with by
@@ -2297,6 +2326,8 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
       if (column_degree[col] <= 0) continue;
       const MatrixEntry e = GetSingletonColumnMatrixEntry(col, matrix);
 
+      // TODO(user): It seems better to process all the singleton columns with
+      // a cost of zero first.
       if (lp->objective_coefficients()[col] == 0.0) {
         DeleteZeroCostSingletonColumn(transpose, e, lp);
       } else if (MakeConstraintAnEqualityIfPossible(transpose, e, lp)) {
