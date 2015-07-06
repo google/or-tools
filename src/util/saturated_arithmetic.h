@@ -216,9 +216,7 @@ inline int64 CapProdFast(int64 x, int64 y) {
   // Here, we use the fact that imul of two signed 64-integers returns a 128-bit
   // result -- we care about the lower 64 bits. More importantly, imul also sets
   // the carry flag if 64 bits were not enough.
-  // We then use cmovc to return cap if the carry was set.
-  // TODO(user): remove the two 'movq' by setting the right constraints on
-  // input and output registers.
+  // We therefore use cmovc to return cap if the carry was set.
   // clang-format off
   asm volatile(  // 'volatile': ask compiler optimizer "keep as is".
       "\n\t" "imulq %[y],%[result]"
