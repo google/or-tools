@@ -90,6 +90,7 @@ class PortfolioOptimizer : public BopOptimizerBase {
   BopParameters parameters_;
   double lower_bound_;
   double upper_bound_;
+  int number_of_consecutive_failing_optimizers_;
 };
 
 // This class is providing an adaptative selector for optimizers based on

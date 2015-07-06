@@ -59,7 +59,8 @@ PortfolioOptimizer::PortfolioOptimizer(
       sat_propagator_(),
       parameters_(parameters),
       lower_bound_(-glop::kInfinity),
-      upper_bound_(glop::kInfinity) {
+      upper_bound_(glop::kInfinity),
+      number_of_consecutive_failing_optimizers_(0) {
   CreateOptimizers(problem_state.original_problem(), parameters, optimizer_set);
 }
 
@@ -160,6 +161,19 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
   if (optimization_status == BopOptimizerBase::INFEASIBLE ||
       optimization_status == BopOptimizerBase::OPTIMAL_SOLUTION_FOUND) {
     return optimization_status;
+  }
+
+  // Stop the portfolio optimizer after too many unsuccessful calls.
+  if (parameters.has_max_number_of_consecutive_failing_optimizer_calls() &&
+      problem_state.solution().IsFeasible()) {
+    number_of_consecutive_failing_optimizers_ =
+        optimization_status == BopOptimizerBase::SOLUTION_FOUND
+            ? 0
+            : number_of_consecutive_failing_optimizers_ + 1;
+    if (number_of_consecutive_failing_optimizers_ >
+        parameters.max_number_of_consecutive_failing_optimizer_calls()) {
+      return BopOptimizerBase::ABORT;
+    }
   }
 
   // TODO(user): don't penalize the SatCoreBasedOptimizer or the

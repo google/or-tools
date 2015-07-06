@@ -62,7 +62,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 19
+// NEXT TAG: 36
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -74,6 +74,13 @@ message BopParameters {
   // The counter will starts as soon as SetParameters() or SolveWithTimeLimit()
   // is called.
   optional double max_deterministic_time = 27 [default = inf];
+
+  // Maximum number of consecutive optimizer calls without improving the
+  // current solution. If this number is reached, the search will be aborted.
+  // Note that this parameter only applies when an initial solution has been
+  // found or is provided. Also note that there is no limit to the number of
+  // calls, when the parameter is not set.
+  optional int32 max_number_of_consecutive_failing_optimizer_calls = 35;
 
   // Limit used to stop the optimization as soon as the relative gap is smaller
   // than the given value.

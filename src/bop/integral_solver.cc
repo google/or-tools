@@ -1037,10 +1037,13 @@ BopSolveStatus IntegralSolver::Solve(const LinearProgram& linear_problem) {
   return Solve(linear_problem, DenseRow());
 }
 
-BopSolveStatus IntegralSolver::Solve(const LinearProgram& linear_problem,
-                                     const DenseRow& initial_solution) {
+BopSolveStatus IntegralSolver::Solve(
+    const LinearProgram& linear_problem,
+    const DenseRow& user_provided_intial_solution) {
   interrupt_solve_ = false;
 
+  // We make a copy so that we can clear it if the presolve is active.
+  DenseRow initial_solution = user_provided_intial_solution;
   if (initial_solution.size() > 0) {
     CHECK_EQ(initial_solution.size(), linear_problem.num_variables())
         << "The initial solution should have the same number of variables as "
