@@ -66,6 +66,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
+#include "util/time_limit.h"
 
 namespace operations_research {
 
@@ -135,10 +136,18 @@ class KnapsackSolver {
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool BestSolutionContains(int item_id) const;
+  // Returns true if the solution was proven optimal.
+  bool IsSolutionOptimal() const { return is_solution_optimal_; }
   std::string GetName() const;
 
   bool use_reduction() const { return use_reduction_; }
   void set_use_reduction(bool use_reduction) { use_reduction_ = use_reduction; }
+
+  // Time limit in seconds. When a finite time limit is set the solution
+  // obtained might not be optimal if the limit is reached.
+  void set_time_limit(double time_limit_seconds) {
+    time_limit_seconds_ = time_limit_seconds;
+  }
 
  private:
   int ReduceProblem(int num_items);
@@ -150,10 +159,13 @@ class KnapsackSolver {
   std::unique_ptr<BaseKnapsackSolver> solver_;
   std::vector<bool> known_value_;
   std::vector<bool> best_solution_;
+  bool is_solution_optimal_ = false;
   std::vector<int> mapping_reduced_item_id_;
   bool is_problem_solved_;
   int64 additional_profit_;
   bool use_reduction_;
+  double time_limit_seconds_;
+  std::unique_ptr<TimeLimit> time_limit_;
 
   DISALLOW_COPY_AND_ASSIGN(KnapsackSolver);
 };
@@ -477,7 +489,7 @@ class BaseKnapsackSolver {
                                              int64* upper_bound);
 
   // Solves the problem and returns the profit of the optimal solution.
-  virtual int64 Solve() = 0;
+  virtual int64 Solve(TimeLimit* time_limit, bool* is_solution_optimal) = 0;
 
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   virtual bool best_solution(int item_id) const = 0;
@@ -518,7 +530,7 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
   }
 
   // Solves the problem and returns the profit of the optimal solution.
-  int64 Solve() override;
+  int64 Solve(TimeLimit* time_limit, bool* is_solution_optimal) override;
   // Returns true if the item 'item_id' is packed in the optimal knapsack.
   bool best_solution(int item_id) const override {
     return best_solution_.at(item_id);
