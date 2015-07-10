@@ -318,15 +318,19 @@ void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
-  for (FzIntegerVariable* const var : ct->Arg(1).variables) {
-    variables.push_back(solver->MakeDifference(1, fzsolver->Extract(var)->Var())
-                            ->Var());
+  std::vector<IntVar*> positive_variables =
+      fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> negative_variables =
+      fzsolver->GetVariableArray(ct->Arg(0));
+  for (IntVar* const var : negative_variables) {
+    positive_variables.push_back(solver->MakeDifference(1, var)->Var());
   }
-  if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), variables)) {
+  if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(),
+                                               positive_variables)) {
     FZVLOG << "  - posted to sat";
   } else {
-    Constraint* const constraint = solver->MakeSumGreaterOrEqual(variables, 1);
+    Constraint* const constraint =
+        solver->MakeSumGreaterOrEqual(positive_variables, 1);
     AddConstraint(solver, ct, constraint);
   }
 }

@@ -46,7 +46,7 @@ class FzPresolver {
   // (defining_constraint, target_variable) for boolean constraints.
   void CleanUpModelForTheCpSolver(FzModel* model, bool use_sat);
 
- private:
+private:
   // This struct stores the affine mapping of one variable:
   // it represents new_var = var * coefficient + offset. It also stores the
   // constraint that defines this mapping.

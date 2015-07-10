@@ -1880,9 +1880,52 @@ void CheckRegroupStart(FzConstraint* ct, FzConstraint** start,
     carry_over->back()->defining_constraint = nullptr;
   }
 }
+
+// Weight:
+//  - *_reif: arity
+//  - otherwise arity + 100.
+int SortWeight(FzConstraint* ct) {
+  int arity = HasSuffixString(ct->type, "_reif") ? 0 : 100;
+  for (const FzArgument& arg : ct->arguments) {
+    arity += arg.variables.size();
+  }
+  return arity;
+}
+
+void CleanUpVariableWithMultipleDefiningConstraints(FzModel* model) {
+  hash_map<FzIntegerVariable*, std::vector<FzConstraint*>> ct_var_map;
+  for (FzConstraint* const ct : model->constraints()) {
+    if (ct->target_variable != nullptr) {
+      ct_var_map[ct->target_variable].push_back(ct);
+    }
+  }
+
+  for (auto& ct_list : ct_var_map) {
+    if (ct_list.second.size() > 1) {
+      // Sort by number of variables in the constraint. Prefer smaller ones.
+      std::sort(ct_list.second.begin(),
+                ct_list.second.end(),
+                [](FzConstraint* c1, FzConstraint* c2) {
+                  return SortWeight(c1) < SortWeight(c2);
+                });
+      // Keep the first constraint as the defining one.
+      for (int pos = 1; pos < ct_list.second.size(); ++pos) {
+        FzConstraint* const ct = ct_list.second[pos];
+        FZVLOG << "Remove duplicate target from " << ct->DebugString()
+               << FZENDL;
+        ct_list.first->defining_constraint = ct;
+        ct_list.second[pos]->RemoveTargetVariable();
+      }
+      // Reset the defining constraint.
+      ct_list.first->defining_constraint = ct_list.second[0];
+    }
+  }
+}
 }  // namespace
 
 void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
+  // Clean up variables with multiple defining constraints.
+  CleanUpVariableWithMultipleDefiningConstraints(model);
   // First pass.
   for (FzConstraint* const ct : model->constraints()) {
     const std::string& id = ct->type;
@@ -1912,6 +1955,20 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
       }
 
     }
+    if (id == "array_var_int_element") {
+      if (ct->target_variable != nullptr) {
+        hash_set<FzIntegerVariable*> variables_in_array;
+        for (FzIntegerVariable* const var : ct->Arg(1).variables) {
+          variables_in_array.insert(var);
+        }
+        if (ContainsKey(variables_in_array, ct->target_variable)) {
+          FZVLOG << "Remove target variable from " << ct->DebugString()
+                 << " as it appears in the array of variables" << FZENDL;
+          ct->RemoveTargetVariable();
+        }
+      }
+    }
+
     // Remove target variables from constraints passed to SAT.
     if (use_sat && ct->target_variable != nullptr &&
         (id == "array_bool_and" || id == "array_bool_or" ||

@@ -81,7 +81,7 @@ class FzSolver {
   const FzModel& model_;
   FzModelStatistics statistics_;
   Solver solver_;
-  hash_map<FzIntegerVariable*, IntExpr*> extrated_map_;
+  hash_map<FzIntegerVariable*, IntExpr*> extracted_map_;
   std::vector<IntVar*> active_variables_;
   hash_map<IntVar*, int> extracted_occurrences_;
   hash_set<FzIntegerVariable*> implied_variables_;

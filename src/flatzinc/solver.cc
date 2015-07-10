@@ -58,7 +58,7 @@ std::vector<IntVar*> FzSolver::GetVariableArray(const FzArgument& arg) {
 }
 
 IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
-  IntExpr* result = FindPtrOrNull(extrated_map_, var);
+  IntExpr* result = FindPtrOrNull(extracted_map_, var);
   if (result != nullptr) {
     return result;
   }
@@ -75,21 +75,21 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   }
   FZVLOG << "Extract " << var->DebugString() << FZENDL;
   FZVLOG << "  - created " << result->DebugString() << FZENDL;
-  extrated_map_[var] = result;
+  extracted_map_[var] = result;
   return result;
 }
 
 void FzSolver::SetExtracted(FzIntegerVariable* fz_var, IntExpr* expr) {
-  CHECK(!ContainsKey(extrated_map_, fz_var));
+  CHECK(!ContainsKey(extracted_map_, fz_var));
   if (!expr->IsVar() && !fz_var->domain.is_interval) {
     FZVLOG << "  - lift to var" << FZENDL;
     expr = expr->Var();
   }
-  extrated_map_[fz_var] = expr;
+  extracted_map_[fz_var] = expr;
 }
 
 int64 FzSolver::SolutionValue(FzIntegerVariable* var) {
-  IntExpr* const result = FindPtrOrNull(extrated_map_, var);
+  IntExpr* const result = FindPtrOrNull(extracted_map_, var);
   if (result != nullptr) {
     if (result->IsVar()) {
       return result->Var()->Value();
