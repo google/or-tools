@@ -32,12 +32,12 @@ DECLARE_bool(fz_verbose);
 //  - k-dimensional diffn
 //  - geost
 //  - network_flow
-//  - regular with NFAs
 // Not necessary?:
 //  - knapsack
 // Done:
 //  - symmetric all different
 //  - disjunctive:
+//  - regular with NFAs
 // Later:
 // optional scheduling constraints: alternative, span, disjunctive, cumulative
 // functional versions of many global constraints
@@ -2242,11 +2242,65 @@ void ExtractRegular(FzSolver* fzsolver, FzConstraint* ct) {
   const std::vector<int64>& array_transitions = ct->Arg(3).values;
   IntTupleSet tuples(3);
   int count = 0;
-  for (int q = 1; q <= num_states; ++q) {
-    for (int s = 1; s <= num_values; ++s) {
+  for (int64 q = 1; q <= num_states; ++q) {
+    for (int64 s = 1; s <= num_values; ++s) {
       const int64 next = array_transitions[count++];
       if (next != 0) {
         tuples.Insert3(q, s, next);
+      }
+    }
+  }
+
+  const int64 initial_state = ct->Arg(4).Value();
+
+  std::vector<int64> final_states;
+  switch (ct->Arg(5).type) {
+    case FzArgument::INT_VALUE: {
+      final_states.push_back(ct->Arg(5).values[0]);
+      break;
+    }
+    case FzArgument::INT_INTERVAL: {
+      for (int v = ct->Arg(5).values[0]; v <= ct->Arg(5).values[1]; ++v) {
+        final_states.push_back(v);
+      }
+      break;
+    }
+    case FzArgument::INT_LIST: {
+      final_states = ct->Arg(5).values;
+      break;
+    }
+    default: { LOG(FATAL) << "Wrong constraint " << ct->DebugString(); }
+  }
+  Constraint* const constraint = solver->MakeTransitionConstraint(
+      variables, tuples, initial_state, final_states);
+  AddConstraint(solver, ct, constraint);
+}
+
+void ExtractRegularNfa(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const int64 num_states = ct->Arg(1).Value();
+  const int64 num_values = ct->Arg(2).Value();
+
+  const std::vector<FzDomain>& array_transitions = ct->Arg(3).domains;
+  IntTupleSet tuples(3);
+  int count = 0;
+  for (int64 q = 1; q <= num_states; ++q) {
+    for (int64 s = 1; s <= num_values; ++s) {
+      const FzDomain& next = array_transitions[count++];
+      if (next.is_interval) {
+        for (int64 v = next.values[0]; v <= next.values[1]; ++v) {
+          if (v != 0) {
+            tuples.Insert3(q, s, v);
+          }
+        }
+      } else {
+        for (int64 v : next.values) {
+          if (v != 0) {
+            tuples.Insert3(q, s, v);
+          }
+        }
       }
     }
   }
@@ -2574,6 +2628,8 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractNvalue(this, ct);
   } else if (type == "regular") {
     ExtractRegular(this, ct);
+  } else if (type == "regular_nfa") {
+    ExtractRegularNfa(this, ct);
   } else if (type == "set_in" || type == "int_in") {
     ExtractSetIn(this, ct);
   } else if (type == "set_in_reif") {

@@ -245,6 +245,13 @@ FzArgument FzArgument::IntegerList(std::vector<int64>* values) {
   return result;
 }
 
+FzArgument FzArgument::DomainList(const std::vector<FzDomain>& domains) {
+  FzArgument result;
+  result.type = DOMAIN_LIST;
+  result.domains = domains;
+  return result;
+}
+
 FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   FzArgument result;
   result.type = INT_VAR_REF;
@@ -287,6 +294,8 @@ std::string FzArgument::DebugString() const {
                           values[1]);
     case INT_LIST:
       return StringPrintf("[%s]", strings::Join(values, ", ").c_str());
+    case DOMAIN_LIST:
+      return StringPrintf("[%s]", JoinDebugString(domains, ", ").c_str());
     case INT_VAR_REF:
       return variables[0]->name;
     case INT_VAR_REF_ARRAY: {

@@ -598,10 +598,14 @@ argument:
     $$ = FzArgument::IntVarRef(FindOrDie(context->variable_map, id));
   } else if (ContainsKey(context->variable_array_map, id)) {
     $$ = FzArgument::IntVarRefArray(FindOrDie(context->variable_array_map, id));
-  } else {
-    CHECK(ContainsKey(context->domain_map, id)) << "Unknown identifier: " << id;
+  } else if (ContainsKey(context->domain_map, id)) {
     const FzDomain& d = FindOrDie(context->domain_map, id);
     $$ = FzArgument::FromDomain(d);
+  } else {
+    CHECK(ContainsKey(context->domain_array_map, id)) << "Unknown identifier: "
+                                                      << id;
+    const std::vector<FzDomain>& d = FindOrDie(context->domain_array_map, id);
+    $$ = FzArgument::DomainList(d);
   }
 }
 | IDENTIFIER '[' IVALUE ']' {

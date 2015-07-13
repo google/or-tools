@@ -133,6 +133,7 @@ struct FzArgument {
     INT_VALUE,
     INT_INTERVAL,
     INT_LIST,
+    DOMAIN_LIST,
     INT_VAR_REF,
     INT_VAR_REF_ARRAY,
     VOID_ARGUMENT,
@@ -142,6 +143,7 @@ struct FzArgument {
   static FzArgument Interval(int64 imin, int64 imax);
   static FzArgument IntegerList(const std::vector<int64>& values);
   static FzArgument IntegerList(std::vector<int64>* values);
+  static FzArgument DomainList(const std::vector<FzDomain>& domains);
   static FzArgument IntVarRef(FzIntegerVariable* const var);
   static FzArgument IntVarRefArray(const std::vector<FzIntegerVariable*>& vars);
   static FzArgument VoidArgument();
@@ -152,6 +154,7 @@ struct FzArgument {
   Type type;
   std::vector<int64> values;
   std::vector<FzIntegerVariable*> variables;
+  std::vector<FzDomain> domains;
 
   // Helpers
 
