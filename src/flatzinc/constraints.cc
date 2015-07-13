@@ -25,6 +25,23 @@
 DECLARE_bool(use_sat);
 DECLARE_bool(fz_verbose);
 
+
+// TODO:
+//  - arg_max, arg_min
+//  - arg_sort
+//  - k-dimensional diffn
+//  - geost
+//  - network_flow
+//  - regular with NFAs
+// Not necessary?:
+//  - knapsack
+// Done:
+//  - symmetric all different
+//  - disjunctive:
+// Later:
+// optional scheduling constraints: alternative, span, disjunctive, cumulative
+// functional versions of many global constraints
+
 namespace operations_research {
 namespace {
 void AddConstraint(Solver* s, FzConstraint* ct, Constraint* cte) {
@@ -760,6 +777,59 @@ void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
     AddConstraint(solver, ct, constraint);
   }
 }
+
+void ExtractDisjunctive(FzSolver* fzsolver, FzConstraint* ct) {
+  // This constraint has many possible translation into the CP library.
+  // First we parse the arguments.
+  Solver* const solver = fzsolver->solver();
+  // Parse start variables.
+  const std::vector<IntVar*> start_variables =
+      fzsolver->GetVariableArray(ct->Arg(0));
+
+  // Parse durations.
+  std::vector<int64> fixed_durations;
+  std::vector<IntVar*> variable_durations;
+  if (ct->Arg(1).type == FzArgument::INT_LIST) {
+    fixed_durations = ct->Arg(1).values;
+  } else {
+    variable_durations = fzsolver->GetVariableArray(ct->Arg(1));
+    if (AreAllBound(variable_durations)) {
+      FillValues(variable_durations, &fixed_durations);
+      variable_durations.clear();
+    }
+  }
+
+  // Special case. We will not create the interval variables.
+  if (!fixed_durations.empty() && AreAllOnes(fixed_durations)) {
+    // Hidden all different.
+    Constraint* const constraint =
+        solver->MakeAllDifferent(start_variables);
+    AddConstraint(solver, ct, constraint);
+    return;
+  }
+
+  // Back to regular case. Let's create the interval variables.
+  std::vector<IntervalVar*> intervals;
+  if (!fixed_durations.empty()) {
+    for (int i = 0; i < start_variables.size(); ++i) {
+      IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
+          start_variables[i], fixed_durations[i], start_variables[i]->name());
+      intervals.push_back(interval);
+    }
+  } else {
+    for (int i = 0; i < start_variables.size(); ++i) {
+      IntVar* const start = start_variables[i];
+      IntVar* const duration = variable_durations[i];
+      IntervalVar* const interval =
+          MakePerformedIntervalVar(solver, start, duration, start->name());
+      intervals.push_back(interval);
+    }
+  }
+  Constraint* const constraint =
+      solver->MakeDisjunctiveConstraint(intervals, "");
+  AddConstraint(solver, ct, constraint);
+}
+
 
 void ExtractGlobalCardinality(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
@@ -2322,6 +2392,15 @@ void ExtractTableInt(FzSolver* fzsolver, FzConstraint* ct) {
   AddConstraint(solver, ct, constraint);
 }
 
+void ExtractSymmetricAllDifferent(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const s = fzsolver->solver();
+  const std::vector<IntVar*> vars = fzsolver->GetVariableArray(ct->Arg(0));
+  Constraint* const constraint =
+      s->MakeInversePermutationConstraint(vars, vars);
+  AddConstraint(s, ct, constraint);
+}
+
+
 void ExtractTrueConstraint(FzSolver* fzsolver, FzConstraint* ct) {}
 }  // namespace
 
@@ -2411,6 +2490,8 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractCumulative(this, ct);
   } else if (type == "diffn") {
     ExtractDiffn(this, ct);
+  } else if (type == "disjunctive") {
+    ExtractDisjunctive(this, ct);
   } else if (type == "global_cardinality") {
     ExtractGlobalCardinality(this, ct);
   } else if (type == "global_cardinality_closed") {
@@ -2503,6 +2584,8 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractSort(this, ct);
   } else if (type == "subcircuit") {
     ExtractSubCircuit(this, ct);
+  } else if (type == "symmetric_all_different") {
+    ExtractSymmetricAllDifferent(this, ct);
   } else if (type == "table_bool" || type == "table_int") {
     ExtractTableInt(this, ct);
   } else if (type == "true_constraint") {
