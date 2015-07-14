@@ -43,22 +43,26 @@ class FzSolver {
 
   // Extraction support.
   bool Extract();
+#if !defined(SWIG)
   IntExpr* GetExpression(const FzArgument& argument);
   std::vector<IntVar*> GetVariableArray(const FzArgument& argument);
   IntExpr* Extract(FzIntegerVariable* var);
   void SetExtracted(FzIntegerVariable* var, IntExpr* expr);
   bool IsAllDifferent(const std::vector<FzIntegerVariable*>& diffs) const;
+#endif
 
   // Output support.
   std::string SolutionString(const FzOnSolutionOutput& output);
 
   int64 SolutionValue(FzIntegerVariable* var);
 
+#if !defined(SWIG)
   // Returns the cp solver.
   Solver* solver() { return &solver_; }
 
   // Returns the sat constraint.
   SatPropagator* Sat() const { return sat_; }
+#endif
 
  private:
   void ExtractConstraint(FzConstraint* ct);

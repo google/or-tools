@@ -74,15 +74,21 @@ clean_csharp:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME)*.pdb
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME)*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME)*.netmodule
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc*.lib
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc*.pdb
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc*.exp
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc*.netmodule
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Salgorithms$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Sgraph$S*csharp_wrap*
+	-$(DEL) $(GEN_DIR)$Sflatzinc$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs
 	-$(DEL) $(OBJ_DIR)$Sswig$S*csharp_wrap.$O
 	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
@@ -303,6 +309,39 @@ ccs: $(BIN_DIR)/$(CLR_DLL_NAME).dll $(EX_DIR)/csharp/$(EX).cs
 
 rcs: ccs
 	$(MONO) $(BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe $(ARGS)
+
+# C# Fz support
+
+csharpfz: \
+	$(BIN_DIR)/Google.OrTools.Flatzinc.dll \
+	$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe
+
+$(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc: \
+	$(SRC_DIR)/flatzinc/csharp/flatzinc.swig \
+	$(SRC_DIR)/base/base.swig $(SRC_DIR)/util/csharp/data.swig
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace Google.OrTools.Flatzinc -dllimport "Google.OrTools.Flatzinc.$(DYNAMIC_SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)/flatzinc$Scsharp$Sflatzinc.swig
+
+$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O
+
+$(BIN_DIR)/Google.OrTools.Flatzinc.dll: \
+	$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O \
+	$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs \
+	$(STATIC_FLATZINC_DEPS)
+ifeq ($(SYSTEM),win)
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$SGoogle.OrTools.Flatzinc.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc.netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(STATIC_FLATZINC_LNK) $(STATIC_LD_FLAGS)
+else
+	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.Flatzinc.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/flatzinc/*.cs $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc.$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O $(STATIC_FLATZINC_LNK) $(STATIC_LD_FLAGS)
+endif
+
+$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/Google.OrTools.Flatzinc.dll $(EX_DIR)/csharp/csfz.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.Flatzinc.dll $(EX_DIR)$Scsharp$Scsfz.cs
+
+rcsfz: $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe
+	$(MONO) $(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX).exe $(ARGS)
+
 
 # Build archive.
 

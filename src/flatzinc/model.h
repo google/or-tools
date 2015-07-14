@@ -142,7 +142,9 @@ struct FzArgument {
   static FzArgument IntegerValue(int64 value);
   static FzArgument Interval(int64 imin, int64 imax);
   static FzArgument IntegerList(const std::vector<int64>& values);
+#if !defined(SWIG)
   static FzArgument IntegerList(std::vector<int64>* values);
+#endif
   static FzArgument DomainList(const std::vector<FzDomain>& domains);
   static FzArgument IntVarRef(FzIntegerVariable* const var);
   static FzArgument IntVarRefArray(const std::vector<FzIntegerVariable*>& vars);
@@ -219,7 +221,9 @@ struct FzConstraint {
   void RemoveTargetVariable();
 
   const FzArgument& Arg(int arg_pos) const { return arguments[arg_pos]; }
+#if !defined(SWIG)
   FzArgument* MutableArg(int arg_pos) { return &arguments[arg_pos]; }
+#endif
 };
 
 // An annotation is a set of information. It has two use cases. One during
@@ -338,13 +342,17 @@ class FzModel {
   const std::vector<FzAnnotation>& search_annotations() const {
     return search_annotations_;
   }
+#if !defined(SWIG)
   MutableVectorIteration<FzAnnotation> mutable_search_annotations() {
     return MutableVectorIteration<FzAnnotation>(&search_annotations_);
   }
+#endif
   const std::vector<FzOnSolutionOutput>& output() const { return output_; }
+#if !defined(SWIG)
   MutableVectorIteration<FzOnSolutionOutput> mutable_output() {
     return MutableVectorIteration<FzOnSolutionOutput>(&output_);
   }
+#endif
   bool maximize() const { return maximize_; }
   FzIntegerVariable* objective() const { return objective_; }
 

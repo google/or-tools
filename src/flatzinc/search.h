@@ -89,6 +89,7 @@ class FzParallelSupportInterface {
   virtual void EndSearch(int worker_id, bool interrupted) = 0;
   // Returns the value of the best solution found during search.
   virtual int64 BestSolution() const = 0;
+#if !defined(SWIG)
   // Creates a dedicated search monitor for the objective.
   virtual OptimizeVar* Objective(Solver* s, bool maximize, IntVar* var,
                                  int64 step, int worker_id) = 0;
@@ -96,6 +97,7 @@ class FzParallelSupportInterface {
   virtual SearchLimit* Limit(Solver* s, int worker_id) = 0;
   // Creates a dedicated search log.
   virtual void Log(int worker_id, const std::string& message) = 0;
+#endif
   // Returns if the search was interrupted, usually by a time or
   // solution limit.
   virtual bool Interrupted() const = 0;
