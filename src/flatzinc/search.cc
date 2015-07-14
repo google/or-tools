@@ -650,8 +650,9 @@ void FzSolver::Solve(FzSolverParameters p,
     if (!parallel_support->ShouldFinish()) {
       solution_string.clear();
       if (!model_.output().empty()) {
+        stored_values_.resize(stored_values_.size() + 1);
         for (const FzOnSolutionOutput& output : model_.output()) {
-          solution_string.append(SolutionString(output));
+          solution_string.append(SolutionString(output, p.store_all_solutions));
           solution_string.append("\n");
         }
       }

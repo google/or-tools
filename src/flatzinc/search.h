@@ -47,6 +47,7 @@ struct FzSolverParameters {
   int worker_id;
   int64 time_limit_in_ms;
   SearchType search_type;
+  bool store_all_solutions;
 };
 
 // This class is used to abstract the interface to parallelism from

@@ -25,23 +25,45 @@ public class CsFz
   {
     FzModel model = new FzModel(filename);
     model.LoadFromFile(filename);
-    Console.WriteLine(model.ToString());
-    model.PresolveForCp(/*use_sat=*/true);
+    // Uncomment to see the model.
+    // Console.WriteLine(model.ToString());
+    model.PresolveForCp();
     model.PrintStatistics();
 
     FzSolverParameters parameters = new FzSolverParameters();
-    FzParallelSupportInterface support =
-        operations_research_flatzinc.MakeSequentialSupport(
-            /*all_solutions=*/false, /*num_solutions=*/0);
-    FzSolver solver = new FzSolver(model);
-    solver.Extract();
-    solver.Solve(parameters, support);
+    // Initialize to default values as in the C++ runner.
+    parameters.all_solutions = false;
+    parameters.free_search = false;
+    parameters.last_conflict = false;
+    parameters.heuristic_period = 100;
+    parameters.ignore_unknown = false;
+    parameters.log_period = 10000000;
+    parameters.luby_restart = -1;
+    parameters.num_solutions = 0;
+    parameters.restart_log_size = -1;
+    parameters.threads = 0;
+    parameters.time_limit_in_ms = 10000;
+    parameters.use_log = true;
+    parameters.verbose_impact = false;
+    parameters.worker_id = -1;
+    parameters.search_type = FzSolverParameters.DEFAULT;
+    // Critical to retrieve solutions.
+    parameters.store_all_solutions = true;
 
-    FzOnSolutionOutputVector output_vector = model.output();
-    foreach (FzOnSolutionOutput output in output_vector) {
-      if (output.variable != null) {
-        FzIntegerVariable var = output.variable;
-        Console.WriteLine(var.name +  " = " + solver.SolutionValue(var));
+    FzSolver solver = new FzSolver(model);
+    solver.SequentialSolve(parameters);
+
+    int last = solver.NumStoredSolutions() - 1;
+    if (last >= 0) {
+      FzOnSolutionOutputVector output_vector = model.output();
+      foreach (FzOnSolutionOutput output in output_vector) {
+        if (output.variable != null) {
+          FzIntegerVariable var = output.variable;
+          Console.WriteLine(var.name +  " = " + solver.StoredValue(last, var));
+        }
+        foreach (FzIntegerVariable var in output.flat_variables) {
+          Console.WriteLine(var.name +  " = " + solver.StoredValue(last, var));
+        }
       }
     }
   }

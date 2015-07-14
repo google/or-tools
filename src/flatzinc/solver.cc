@@ -108,9 +108,13 @@ int64 FzSolver::SolutionValue(FzIntegerVariable* var) {
 }
 
 // The format is fixed in the flatzinc specification.
-std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
+std::string FzSolver::SolutionString(const FzOnSolutionOutput& output,
+                                     bool store) {
   if (output.variable != nullptr) {
     const int64 value = SolutionValue(output.variable);
+    if (store) {
+      stored_values_.back()[output.variable] = value;
+    }
     if (output.is_boolean) {
       return StringPrintf("%s = %s;", output.name.c_str(),
                           value == 1 ? "true" : "false");
@@ -130,6 +134,7 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
       const int64 value = SolutionValue(output.flat_variables[i]);
+      FzIntegerVariable* const var = output.flat_variables[i];
       if (output.is_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {
@@ -137,6 +142,9 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output) {
       }
       if (i != output.flat_variables.size() - 1) {
         result.append(", ");
+      }
+      if (store) {
+        stored_values_.back()[var] = value;
       }
     }
     result.append("]);");

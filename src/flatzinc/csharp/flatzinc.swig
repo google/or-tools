@@ -22,6 +22,8 @@
 #include "flatzinc/presolve.h"
 #include "flatzinc/search.h"
 #include "flatzinc/solver.h"
+
+DECLARE_bool(fz_logging);
 %}
 
 %include "std_vector.i"
@@ -35,16 +37,30 @@
 
 %extend operations_research::FzModel {
   bool LoadFromFile(const std::string& filename) {
-    return ParseFlatzincFile(filename, $self);
+    return operations_research::ParseFlatzincFile(filename, $self);
   }
-  void PresolveForCp(bool use_sat) {
+  void PresolveForCp() {
     operations_research::FzPresolver presolve;
-    presolve.CleanUpModelForTheCpSolver($self, use_sat);
+    presolve.CleanUpModelForTheCpSolver($self, true);
     presolve.Run($self);
   }
   void PrintStatistics() {
+    const bool log = FLAGS_fz_logging;
+    FLAGS_fz_logging = true;
     operations_research::FzModelStatistics stats(*$self);
     stats.PrintStatistics();
+    FLAGS_fz_logging = log;
+  }
+}
+
+%extend operations_research::FzSolver {
+  void SequentialSolve(const operations_research::FzSolverParameters& params) {
+    std::unique_ptr<operations_research::FzParallelSupportInterface>
+        parallel_support(operations_research::MakeSequentialSupport(
+            params.all_solutions, params.num_solutions));
+    if ($self->Extract()) {
+      $self->Solve(params, parallel_support.get());
+    }
   }
 }
 

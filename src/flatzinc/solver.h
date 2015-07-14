@@ -52,7 +52,7 @@ class FzSolver {
 #endif
 
   // Output support.
-  std::string SolutionString(const FzOnSolutionOutput& output);
+  std::string SolutionString(const FzOnSolutionOutput& output, bool store);
 
   int64 SolutionValue(FzIntegerVariable* var);
 
@@ -63,6 +63,14 @@ class FzSolver {
   // Returns the sat constraint.
   SatPropagator* Sat() const { return sat_; }
 #endif
+
+  int NumStoredSolutions() const { return stored_values_.size(); }
+  int64 StoredValue(int solution_index, FzIntegerVariable* var) {
+    CHECK_GE(solution_index, 0);
+    CHECK_LT(solution_index, stored_values_.size());
+    CHECK(ContainsKey(stored_values_[solution_index], var));
+    return stored_values_[solution_index][var];
+  }
 
  private:
   void ExtractConstraint(FzConstraint* ct);
@@ -100,6 +108,9 @@ class FzSolver {
   SatPropagator* sat_;
   // Default Search Phase (to get stats).
   DecisionBuilder* default_phase_;
+  // Stored solutions.
+  std::vector<hash_map<FzIntegerVariable*, int64>> stored_values_;
+
 };
 }  // namespace operations_research
 
