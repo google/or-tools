@@ -17,9 +17,7 @@ using Google.OrTools.Flatzinc;
 public class CsFz
 {
   /**
-   * Solves the rabbits + pheasants problem.  We are seing 20 heads
-   * and 56 legs. How many rabbits and how many pheasants are we thus
-   * seeing?
+   * Loads a flatzinc file (passed as the first argument) and solves it.
    */
   private static void Solve(String filename)
   {
@@ -27,7 +25,9 @@ public class CsFz
     model.LoadFromFile(filename);
     // Uncomment to see the model.
     // Console.WriteLine(model.ToString());
+    // This is mandatory.
     model.PresolveForCp();
+    // Display basic statistics on the model.
     model.PrintStatistics();
 
     FzSolverParameters parameters = new FzSolverParameters();
@@ -47,7 +47,7 @@ public class CsFz
     parameters.verbose_impact = false;
     parameters.worker_id = -1;
     parameters.search_type = FzSolverParameters.DEFAULT;
-    // Critical to retrieve solutions.
+    // Mandatory to retrieve solutions.
     parameters.store_all_solutions = true;
 
     FzSolver solver = new FzSolver(model);
