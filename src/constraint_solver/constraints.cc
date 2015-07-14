@@ -428,6 +428,73 @@ class InversePermutationConstraint : public Constraint {
   // used only in PropagateDomain().
   std::vector<int64> tmp_removed_values_;
 };
+
+// Index of first Max Value
+
+class IndexOfFirstMaxValue : public Constraint {
+ public:
+  IndexOfFirstMaxValue(Solver* solver, IntVar* index,
+                       const std::vector<IntVar*>& vars)
+      : Constraint(solver), index_(index), vars_(vars) {}
+
+  ~IndexOfFirstMaxValue() override {}
+
+  void Post() override {
+    Demon* const demon =
+        solver()->MakeDelayedConstraintInitialPropagateCallback(this);
+    index_->WhenRange(demon);
+    for (IntVar* const var : vars_) {
+      var->WhenRange(demon);
+    }
+  }
+
+  void InitialPropagate() {
+    const int64 vsize = vars_.size();
+    const int64 imin = std::max(0LL, index_->Min());
+    const int64 imax = std::min(vsize - 1, index_->Max());
+    int64 max_max = kint64min;
+    int64 max_min = kint64min;
+
+    // Compute min and max value in the current interval covered by index_.
+    for (int i = imin; i <= imax; ++i) {
+      max_max = std::max(max_max, vars_[i]->Max());
+      max_min = std::max(max_min, vars_[i]->Min());
+    }
+
+    // Propagate the fact that the first maximum value belongs to the
+    // [imin..imax].
+    for (int i = 0; i < imin; ++i) {
+      vars_[i]->SetMax(max_max - 1);
+    }
+    for (int i = imax + 1; i < vsize; ++i) {
+      vars_[i]->SetMax(max_max);
+    }
+
+    // Shave bounds for index_.
+    int64 min_index = imin;
+    while (vars_[min_index]->Max() < max_min) {
+      min_index++;
+    }
+    int64 max_index = imax;
+    while (vars_[max_index]->Max() < max_min) {
+      max_index--;
+    }
+    index_->SetRange(min_index, max_index);
+  }
+
+  std::string DebugString() const override {
+    return StringPrintf("IndexMax(%s, [%s])", index_->DebugString().c_str(),
+                        JoinDebugStringPtr(vars_, ", ").c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    // TODO(lperron): Implement me.
+  }
+
+ private:
+  IntVar* const index_;
+  const std::vector<IntVar*> vars_;
+};
 }  // namespace
 
 // ----- API -----
@@ -478,5 +545,19 @@ Constraint* Solver::MakeLexicalLessOrEqual(const std::vector<IntVar*>& left,
 Constraint* Solver::MakeInversePermutationConstraint(
     const std::vector<IntVar*>& left, const std::vector<IntVar*>& right) {
   return RevAlloc(new InversePermutationConstraint(this, left, right));
+}
+
+Constraint* Solver::MakeIndexOfFirstMaxValueConstraint(
+    IntVar* index, const vector<IntVar*>& vars) {
+  return RevAlloc(new IndexOfFirstMaxValue(this, index, vars));
+}
+
+Constraint* Solver::MakeIndexOfFirstMinValueConstraint(
+    IntVar* index, const vector<IntVar*>& vars) {
+  vector<IntVar*> opp_vars(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    opp_vars[i] = MakeOpposite(vars[i])->Var();
+  }
+  return RevAlloc(new IndexOfFirstMaxValue(this, index, opp_vars));
 }
 }  // namespace operations_research

@@ -27,17 +27,17 @@ DECLARE_bool(fz_verbose);
 
 
 // TODO:
-//  - arg_max, arg_min
 //  - arg_sort
-//  - k-dimensional diffn
 //  - geost
+//  - k-dimensional diffn
 //  - network_flow
 // Not necessary?:
 //  - knapsack
 // Done:
-//  - symmetric all different
+//  - arg_max, arg_min
 //  - disjunctive:
 //  - regular with NFAs
+//  - symmetric all different
 // Later:
 // optional scheduling constraints: alternative, span, disjunctive, cumulative
 // functional versions of many global constraints
@@ -2116,11 +2116,29 @@ void ExtractLexLesseqInt(FzSolver* fzsolver, FzConstraint* ct) {
   AddConstraint(solver, ct, constraint);
 }
 
+void ExtractMaximumArgInt(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  IntVar* const index = fzsolver->GetExpression(ct->Arg(1))->Var();
+  Constraint* const constraint =
+      solver->MakeIndexOfFirstMaxValueConstraint(index, variables);
+  AddConstraint(solver, ct, constraint);
+}
+
 void ExtractMaximumInt(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   IntVar* const target = fzsolver->GetExpression(ct->Arg(0))->Var();
   const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(1));
   Constraint* const constraint = solver->MakeMaxEquality(variables, target);
+  AddConstraint(solver, ct, constraint);
+}
+
+void ExtractMinimumArgInt(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
+  IntVar* const index = fzsolver->GetExpression(ct->Arg(1))->Var();
+  Constraint* const constraint =
+      solver->MakeIndexOfFirstMinValueConstraint(index, variables);
   AddConstraint(solver, ct, constraint);
 }
 
@@ -2620,8 +2638,12 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractLexLessInt(this, ct);
   } else if (type == "lex_lesseq_bool" || type == "lex_lesseq_int") {
     ExtractLexLesseqInt(this, ct);
+  } else if (type == "maximum_arg_int") {
+    ExtractMaximumArgInt(this, ct);
   } else if (type == "maximum_int") {
     ExtractMaximumInt(this, ct);
+  } else if (type == "minimum_arg_int") {
+    ExtractMinimumArgInt(this, ct);
   } else if (type == "minimum_int") {
     ExtractMinimumInt(this, ct);
   } else if (type == "nvalue") {

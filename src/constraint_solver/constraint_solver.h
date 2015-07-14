@@ -1580,6 +1580,16 @@ class Solver {
   Constraint* MakeInversePermutationConstraint(const std::vector<IntVar*>& left,
                                                const std::vector<IntVar*>& right);
 
+  // Creates that constraint that binds the index variable to the index of the
+  // first variable with the maximum value.
+  Constraint* MakeIndexOfFirstMaxValueConstraint(IntVar* index,
+                                                 const std::vector<IntVar*>& vars);
+
+  // Creates that constraint that binds the index variable to the index of the
+  // first variable with the minimum value.
+  Constraint* MakeIndexOfFirstMinValueConstraint(IntVar* index,
+                                                 const std::vector<IntVar*>& vars);
+
   // Creates a constraints that states that all variables in the first
   // vector are different from all variables from the second
   // group. Thus the set of values in the first vector does not
