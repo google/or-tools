@@ -92,6 +92,12 @@ endif
 ifeq ($(UNIX_SCIP_TAG),3.1.0)
   SCIP_30 = TRUE
 endif
+ifeq ($(UNIX_SCIP_TAG),3.1.1)
+  SCIP_30 = TRUE
+endif
+ifeq ($(UNIX_SCIP_TAG),3.2.0)
+  SCIP_30 = TRUE
+endif
 
 SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(SLM_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG) -DUSE_GLOP -DUSE_BOP
 
