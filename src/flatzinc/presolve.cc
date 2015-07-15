@@ -1351,7 +1351,6 @@ bool FzPresolver::PresolveBoolClause(FzConstraint* ct) {
     ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
     ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
     ct->type = "bool_le";
-    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
     return true;
   }
   return false;
