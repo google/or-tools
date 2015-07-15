@@ -549,7 +549,7 @@ std::string FzAnnotation::DebugString() const {
     case INT_VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
-        result.append(variables[i]->name);
+        result.append(variables[i]->DebugString());
         result.append(i != variables.size() - 1 ? ", " : "]");
       }
       return result;

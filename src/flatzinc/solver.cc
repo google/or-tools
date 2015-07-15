@@ -219,12 +219,17 @@ bool FzSolver::Extract() {
   // Extract variables.
   FZLOG << "Extract variables" << FZENDL;
   int extracted_variables = 0;
+  int extracted_constants = 0;
   int skipped_variables = 0;
   hash_set<FzIntegerVariable*> defined_variables;
   for (FzIntegerVariable* const var : model_.variables()) {
     if (var->defining_constraint == nullptr && var->active) {
       Extract(var);
-      extracted_variables++;
+      if (var->domain.IsSingleton()) {
+        extracted_constants++;
+      } else {
+        extracted_variables++;
+      }
     } else {
       FZVLOG << "Skip " << var->DebugString() << FZENDL;
       if (var->defining_constraint != nullptr) {
@@ -236,6 +241,7 @@ bool FzSolver::Extract() {
     }
   }
   FZLOG << "  - " << extracted_variables << " variables created" << FZENDL;
+  FZLOG << "  - " << extracted_constants << " constants created" << FZENDL;
   FZLOG << "  - " << skipped_variables << " variables skipped" << FZENDL;
   // Parse model to store info.
   FZLOG << "Extract constraints" << FZENDL;
