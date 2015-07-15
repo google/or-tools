@@ -1338,6 +1338,24 @@ bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
   return false;
 }
 
+// Simplify bool_clause
+//
+// Rule 1:
+// Input: bool_clause([b1][b2])
+// Output: bool_le(b2, b1)
+bool FzPresolver::PresolveBoolClause(FzConstraint* ct) {
+  // Rule 1.
+  if (ct->Arg(0).variables.size() == 1 && ct->Arg(1).variables.size() == 1) {
+    FZVLOG << "Simplify " << ct->DebugString() << " to bool_le()" << FZENDL;
+    std::swap(ct->MutableArg(0)->variables[0], ct->MutableArg(1)->variables[0]);
+    ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+    ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+    ct->type = "bool_le";
+    return true;
+  }
+  return false;
+}
+
 // Simplify boolean formula: int_lin_eq
 //
 // Rule 1:
@@ -1511,6 +1529,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   }
   if (id == "bool_not") {
     changed |= PresolveBoolNot(ct);
+  }
+  if (id == "bool_clause") {
+    changed |= PresolveBoolClause(ct);
   }
   if (id == "int_div") changed |= PresolveIntDiv(ct);
   if (id == "int_times") changed |= PresolveIntTimes(ct);

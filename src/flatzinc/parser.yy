@@ -21,6 +21,7 @@
 #if !defined(OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_)
 #define OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
 #include "base/map_util.h"
+#include "base/strutil.h"
 #include "flatzinc/model.h"
 
 namespace operations_research {
@@ -336,7 +337,8 @@ variable_or_constant_declaration:
   const std::string& identifier = $4;
   std::vector<FzAnnotation>* const annotations = $5;
   const VariableRefOrValue& assignment = $6;
-  const bool introduced = ContainsId(annotations, "var_is_introduced");
+  const bool introduced = ContainsId(annotations, "var_is_introduced") ||
+      HasPrefixString(identifier, "X_INTRODUCED");
   FzIntegerVariable* var = nullptr;
   if (!assignment.defined) {
     var = model->AddVariable(identifier, domain, introduced);
