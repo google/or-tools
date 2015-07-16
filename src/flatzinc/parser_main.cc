@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // This binary reads an input file in the flatzinc format (see
 // http://www.minizinc.org/), parses it, and spits out the model it
 // has built.
@@ -43,7 +44,7 @@ void ParseFile(const std::string& filename, bool presolve) {
   CHECK(ParseFlatzincFile(filename, &model));
   if (presolve) {
     FzPresolver presolve;
-    presolve.CleanUpModelForTheCpSolver(&model, true);
+    presolve.CleanUpModelForTheCpSolver(&model, /*use_sat=*/true);
     presolve.Run(&model);
   }
   if (FLAGS_statistics) {
@@ -59,7 +60,11 @@ void ParseFile(const std::string& filename, bool presolve) {
 
 int main(int argc, char** argv) {
   FLAGS_log_prefix = false;
-  gflags::ParseCommandLineFlags(&argc, &argv, /*remove_flags=*/ true);
+  const char kUsage[] =
+      "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
+      "human-readable format";
+  gflags::SetUsageMessage(kUsage);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::ParseFile(FLAGS_file, FLAGS_presolve);
   return 0;
 }

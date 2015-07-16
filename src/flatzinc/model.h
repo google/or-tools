@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #ifndef OR_TOOLS_FLATZINC_MODEL_H_
 #define OR_TOOLS_FLATZINC_MODEL_H_
 
@@ -39,7 +40,9 @@ class FzIntegerVariable;
 #define FZDLOG \
   if (FLAGS_fz_debug) std::cout << "%%%%%% "
 
-// A domain represents the possible values of a variable.
+// A domain represents the possible values of a variable, and its type
+// (which carries display information, i.e. a boolean will be displayed
+// differently than an integer with domain {0, 1}).
 // It can be:
 //  - an explicit list of all possible values, in which case is_interval is
 //    false.
@@ -47,12 +50,14 @@ class FzIntegerVariable;
 //    and the interval is [values[0], values[1]].
 //  - all integers, in which case values is empty, and is_interval is true.
 // Note that semi-infinite intervals aren't supported.
+// - A boolean domain({ 0, 1 } with boolean display tag).
 struct FzDomain {
-  static FzDomain IntegerList(const std::vector<int64>& values);
+  static FzDomain IntegerList(std::vector<int64>* values);
   static FzDomain AllInt64();
   static FzDomain Singleton(int64 value);
   static FzDomain Interval(int64 included_min, int64 included_max);
   static FzDomain Boolean();
+  static FzDomain EmptyDomain();
 
   bool IsSingleton() const;
   void IntersectWithFzDomain(const FzDomain& domain);
@@ -63,9 +68,10 @@ struct FzDomain {
   bool RemoveValue(int64 value);
   std::string DebugString() const;
 
-  bool is_interval : 1;
-  bool is_boolean : 1;
   std::vector<int64> values;
+  bool is_interval;
+
+  bool display_as_boolean;
   // TODO(user): Rework domains, all int64 should be kintmin..kint64max.
   // Empty should means invalid.
 };
@@ -175,8 +181,7 @@ struct FzArgument {
 // A constraint has a type, some arguments, and a few tags. Typically, a
 // FzConstraint is on the heap, and owned by the global FzModel object.
 struct FzConstraint {
-  FzConstraint(const std::string& type_,
-               const std::vector<FzArgument>& arguments_,
+  FzConstraint(const std::string& type_, const std::vector<FzArgument>& arguments_,
                bool strong_propagation_,
                FzIntegerVariable* const target_variable_)
       : type(type_),
@@ -260,8 +265,7 @@ struct FzAnnotation {
   // Copy all the variable references contained in this annotation (and its
   // children). Depending on the type of this annotation, there can be zero,
   // one, or several.
-  void GetAllIntegerVariables(
-      std::vector<FzIntegerVariable*>* const vars) const;
+  void GetAllIntegerVariables(std::vector<FzIntegerVariable*>* const vars) const;
 
   Type type;
   int64 interval_min;
@@ -286,13 +290,14 @@ struct FzOnSolutionOutput {
   // Will output: name = <variable value>.
   static FzOnSolutionOutput SingleVariable(const std::string& name,
                                            FzIntegerVariable* const variable,
-                                           bool is_boolean);
+                                           bool display_as_boolean);
   // Will output (for example):
   //     name = array2d(min1..max1, min2..max2, [list of variable values])
   // for a 2d array (bounds.size() == 2).
   static FzOnSolutionOutput MultiDimensionalArray(
       const std::string& name, const std::vector<Bounds>& bounds,
-      const std::vector<FzIntegerVariable*>& flat_variables, bool is_boolean);
+      const std::vector<FzIntegerVariable*>& flat_variables,
+      bool display_as_boolean);
   // Empty output.
   static FzOnSolutionOutput VoidOutput();
 
@@ -304,7 +309,7 @@ struct FzOnSolutionOutput {
   // These are the starts and ends of intervals for displaying (potentially
   // multi-dimensional) arrays.
   std::vector<Bounds> bounds;
-  bool is_boolean;
+  bool display_as_boolean;
 };
 
 class FzModel {
@@ -317,11 +322,10 @@ class FzModel {
 
   // The objects returned by AddVariable() and AddConstraint() are owned by the
   // FzModel and will remain live for its lifetime.
-  FzIntegerVariable* AddVariable(const std::string& name,
-                                 const FzDomain& domain, bool temporary);
-  void AddConstraint(const std::string& type,
-                     const std::vector<FzArgument>& arguments, bool is_domain,
-                     FzIntegerVariable* const target_variable);
+  FzIntegerVariable* AddVariable(const std::string& name, const FzDomain& domain,
+                                 bool temporary);
+  void AddConstraint(const std::string& type, const std::vector<FzArgument>& arguments,
+                     bool is_domain, FzIntegerVariable* const target_variable);
   void AddOutput(const FzOnSolutionOutput& output);
 
   // Set the search annotations and the objective: either simply satisfy the
@@ -335,9 +339,7 @@ class FzModel {
 
   // ----- Accessors and mutators -----
 
-  const std::vector<FzIntegerVariable*>& variables() const {
-    return variables_;
-  }
+  const std::vector<FzIntegerVariable*>& variables() const { return variables_; }
   const std::vector<FzConstraint*>& constraints() const { return constraints_; }
   const std::vector<FzAnnotation>& search_annotations() const {
     return search_annotations_;
@@ -387,8 +389,7 @@ class FzModelStatistics {
 
  private:
   const FzModel& model_;
-  hash_map<const std::string, std::vector<FzConstraint*> >
-      constraints_per_type_;
+  hash_map<const std::string, std::vector<FzConstraint*> > constraints_per_type_;
   hash_map<const FzIntegerVariable*, std::vector<FzConstraint*> >
       constraints_per_variables_;
 };

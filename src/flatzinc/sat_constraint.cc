@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include "flatzinc/sat_constraint.h"
 
 #include <algorithm>
@@ -66,7 +67,7 @@ class SatPropagator : public Constraint {
     CHECK(solver()->IsBooleanVar(expr, &expr_var, &expr_negated));
 #ifdef SAT_DEBUG
     FZDLOG << "  - SAT: Parse " << expr->DebugString() << " to "
-            << expr_var->DebugString() << "/" << expr_negated << FZENDL;
+           << expr_var->DebugString() << "/" << expr_negated << FZENDL;
 #endif
     if (ContainsKey(indices_, expr_var)) {
       return sat::Literal(indices_[expr_var], !expr_negated);
@@ -107,8 +108,9 @@ class SatPropagator : public Constraint {
     if (sat_decision_level_.Value() < sat_.CurrentDecisionLevel()) {
 #ifdef SAT_DEBUG
       FZDLOG << "After failure, sat_decision_level = "
-             << sat_decision_level_.Value() << ", sat decision level = "
-             << sat_.CurrentDecisionLevel() << FZENDL;
+             << sat_decision_level_.Value()
+             << ", sat decision level = " << sat_.CurrentDecisionLevel()
+             << FZENDL;
 #endif
       sat_.Backtrack(sat_decision_level_.Value());
       DCHECK_EQ(sat_decision_level_.Value(), sat_.CurrentDecisionLevel());
@@ -123,14 +125,14 @@ class SatPropagator : public Constraint {
     if (sat_.Assignment().IsVariableAssigned(var)) {
       if (new_value == sat_.Assignment().IsLiteralTrue(literal)) {
 #ifdef SAT_DEBUG
-      FZDLOG << " - literal = " << literal.value() << " already processed"
-             << FZENDL;
+        FZDLOG << " - literal = " << literal.value() << " already processed"
+               << FZENDL;
 #endif
-      return;
+        return;
       } else {
 #ifdef SAT_DEBUG
-      FZDLOG << " - literal = " << literal.value() << " assign opposite value"
-             << FZENDL;
+        FZDLOG << " - literal = " << literal.value() << " assign opposite value"
+               << FZENDL;
 #endif
         solver()->Fail();
       }
@@ -238,8 +240,7 @@ bool AddBoolNot(SatPropagator* sat, IntExpr* left, IntExpr* right) {
 
 bool AddBoolOrArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                          IntExpr* target) {
-  if (!sat->AllVariablesBoolean(vars) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
   sat::Literal target_literal = sat->Literal(target);
@@ -258,8 +259,7 @@ bool AddBoolOrArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
 
 bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                           IntExpr* target) {
-  if (!sat->AllVariablesBoolean(vars) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
   sat::Literal target_literal = sat->Literal(target);
@@ -277,10 +277,8 @@ bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
 }
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
-                                 const std::vector<IntVar*>& vars,
-                                 IntExpr* target) {
-  if (!sat->AllVariablesBoolean(vars) ||
-      !sat->IsExpressionBoolean(target)) {
+                                 const std::vector<IntVar*>& vars, IntExpr* target) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
   sat::Literal target_literal = sat->Literal(target);
@@ -293,11 +291,9 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
   return true;
 }
 
-bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
-                              const std::vector<IntVar*>& vars,
+bool AddMaxBoolArrayLessEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                               IntExpr* target) {
-  if (!sat->AllVariablesBoolean(vars) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
   const sat::Literal target_literal = sat->Literal(target);
@@ -308,14 +304,12 @@ bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
   return true;
 }
 
-bool AddSumBoolArrayLessEqKVar(SatPropagator* sat,
-                               const std::vector<IntVar*>& vars,
+bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                                IntExpr* target) {
   if (vars.size() == 1) {
     return AddBoolLe(sat, vars[0], target);
   }
-  if (!sat->AllVariablesBoolean(vars) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
   IntVar* const extra = target->solver()->MakeBoolVar();
@@ -421,8 +415,7 @@ bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
   return true;
 }
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
-                             const std::vector<IntVar*>& vars) {
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars) {
   if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }
@@ -527,10 +520,9 @@ bool AddSumInRange(SatPropagator* sat, const std::vector<IntVar*>& vars,
     const sat::Literal lit = sat->Literal(vars[i]);
     terms[i] = sat::LiteralWithCoeff(lit, 1);
   }
-  sat->sat()->AddLinearConstraint(
-      range_min > 0, sat::Coefficient(range_min),
-      range_max < vars.size(), sat::Coefficient(range_max),
-      &terms);
+  sat->sat()->AddLinearConstraint(range_min > 0, sat::Coefficient(range_min),
+                                  range_max < vars.size(),
+                                  sat::Coefficient(range_max), &terms);
   return true;
 }
 
@@ -571,7 +563,7 @@ static const Boolean kUndefined = Boolean(2);
 
 inline Boolean MakeBoolean(bool x) { return Boolean(!x); }
 inline Boolean Xor(Boolean a, bool b) {
-  return Boolean((uint8)(a.value() ^ (uint8) b));
+  return Boolean((uint8)(a.value() ^ (uint8)b));
 }
 inline std::string ToString(Boolean b) {
   switch (b.value()) {
@@ -666,9 +658,7 @@ class Solver {
   void ClearTouchedVariables() { touched_variables_.clear(); }
 
   // List of touched variables since last propagate.
-  const std::vector<Literal>& TouchedVariables() const {
-    return touched_variables_;
-  }
+  const std::vector<Literal>& TouchedVariables() const { return touched_variables_; }
 
   // Backtrack until a certain level.
   void BacktrackTo(int level) {
@@ -742,11 +732,11 @@ class Solver {
   std::vector<Clause*> clauses_;
   // 'watches_[literal]' is a list of clauses watching 'literal'(will go
   // there if literal becomes true).
-  ITIVector<Literal, std::vector<Watcher>> watches_;
+  ITIVector<Literal, std::vector<Watcher> > watches_;
 
   // implies_[literal] is a list of literals to set to true if
   // 'literal' becomes true.
-  ITIVector<Literal, std::vector<Literal>> implies_;
+  ITIVector<Literal, std::vector<Literal> > implies_;
   // The current assignments.
   ITIVector<Variable, Boolean> assignment_;
   // Assignment stack; stores all assigments made in the order they
@@ -939,7 +929,7 @@ class SatPropagator : public Constraint {
     }
 #ifdef SAT_DEBUG
     FZDLOG << "  - SAT: Parse " << expr->DebugString() << " to "
-            << expr_var->DebugString() << "/" << expr_negated;
+           << expr_var->DebugString() << "/" << expr_negated;
 #endif
     if (ContainsKey(indices_, expr_var)) {
       return Sat::MakeLiteral(indices_[expr_var], !expr_negated);
@@ -951,7 +941,7 @@ class SatPropagator : public Constraint {
       Sat::Literal literal = Sat::MakeLiteral(var, !expr_negated);
 #ifdef SAT_DEBUG
       FZDLOG << "    - created var = " << var.value()
-              << ", literal = " << literal.value();
+             << ", literal = " << literal.value();
 #endif
       return literal;
     }
@@ -963,7 +953,7 @@ class SatPropagator : public Constraint {
     if (sat_trail_.Value() < sat_.CurrentDecisionLevel()) {
 #ifdef SAT_DEBUG
       FZDLOG << "After failure, sat_trail = " << sat_trail_.Value()
-              << ", sat decision level = " << sat_.CurrentDecisionLevel();
+             << ", sat decision level = " << sat_.CurrentDecisionLevel();
 #endif
       sat_.BacktrackTo(sat_trail_.Value());
       DCHECK_EQ(sat_trail_.Value(), sat_.CurrentDecisionLevel());
@@ -971,13 +961,13 @@ class SatPropagator : public Constraint {
     const Sat::Variable var = Sat::Variable(index);
 #ifdef SAT_DEBUG
     FZDLOG << "VariableBound: " << vars_[index]->DebugString()
-            << " with sat variable " << var;
+           << " with sat variable " << var;
 #endif
     const bool new_value = vars_[index]->Value() != 0;
     Sat::Literal literal = Sat::MakeLiteral(var, new_value);
 #ifdef SAT_DEBUG
     FZDLOG << " - enqueue literal = " << literal.value() << " at depth "
-            << sat_trail_.Value();
+           << sat_trail_.Value();
 #endif
     if (!sat_.PropagateOneLiteral(literal)) {
 #ifdef SAT_DEBUG
@@ -991,7 +981,7 @@ class SatPropagator : public Constraint {
         const bool assigned_bool = Sat::Sign(literal);
 #ifdef SAT_DEBUG
         FZDLOG << " - var " << var << " was assigned to " << assigned_bool
-                << " from literal " << literal.value();
+               << " from literal " << literal.value();
 #endif
         demons_[var.value()]->inhibit(solver());
         vars_[var.value()]->SetValue(assigned_bool);
@@ -1081,8 +1071,8 @@ class SatPropagator : public Constraint {
       const bool assigned_bool = Sat::Sign(literal);
 #ifdef SAT_DEBUG
       FZDLOG << " - var " << var << " (" << vars_[var.value()]->DebugString()
-              << ") was early assigned to " << assigned_bool << " from literal "
-              << literal.value();
+             << ") was early assigned to " << assigned_bool << " from literal "
+             << literal.value();
 #endif
       demons_[var.value()]->inhibit(solver());
       vars_[var.value()]->SetValue(assigned_bool);
@@ -1172,8 +1162,7 @@ bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
 }
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
-                                 const std::vector<IntVar*>& vars,
-                                 IntExpr* target) {
+                                 const std::vector<IntVar*>& vars, IntExpr* target) {
   if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
   }
@@ -1187,8 +1176,7 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
   return true;
 }
 
-bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
-                              const std::vector<IntVar*>& vars,
+bool AddMaxBoolArrayLessEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                               IntExpr* target) {
   if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
     return false;
@@ -1201,8 +1189,7 @@ bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
   return true;
 }
 
-bool AddSumBoolArrayLessEqKVar(SatPropagator* sat,
-                               const std::vector<IntVar*>& vars,
+bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                                IntExpr* target) {
   if (vars.size() == 1) {
     return AddBoolLe(sat, vars[0], target);
@@ -1304,8 +1291,7 @@ bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
   return true;
 }
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
-                             const std::vector<IntVar*>& vars) {
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars) {
   if (!sat->AllVariablesBoolean(vars)) {
     return false;
   }
@@ -1406,8 +1392,6 @@ SatPropagator* MakeSatPropagator(Solver* solver) {
   return solver->RevAlloc(new SatPropagator(solver));
 }
 
-int NumSatConstraints(SatPropagator* sat) {
-  return sat->sat()->NumClauses();
-}
+int NumSatConstraints(SatPropagator* sat) { return sat->sat()->NumClauses(); }
 }  // namespace operations_research
 #endif

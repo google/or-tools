@@ -10,9 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#include <cstdio>
-#include "base/file.h"
+
 #include "flatzinc/parser.h"
+#include <cstdio>
 #include "flatzinc/parser.tab.hh"
 
 // Declare external functions in the flatzinc.tab.cc generated file.

@@ -82,6 +82,7 @@ struct VariableRefOrValueArray {
 };
 
 // Class needed to pass information from the lexer to the parser.
+// TODO(lperron): Use std::unique_ptr<std::vector< >> to ease memory management.
 struct LexerInfo {
   int64 integer_value;
   double double_value;
@@ -298,7 +299,7 @@ variable_or_constant_declaration:
   // Declaration of a (named) constant array. See rule right above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
   const int64 num_constants = $5;
-  CHECK_EQ($5, 0) << "Empty arrays should have a size of 0";
+  CHECK_EQ(num_constants, 0) << "Empty arrays should have a size of 0";
   const std::string& identifier = $10;
   context->integer_array_map[identifier] = std::vector<int64>();
   delete annotations;
@@ -356,7 +357,8 @@ variable_or_constant_declaration:
   context->variable_map[identifier] = var;
   if (ContainsId(annotations, "output_var")) {
     model->AddOutput(
-        FzOnSolutionOutput::SingleVariable(identifier, var, domain.is_boolean));
+        FzOnSolutionOutput::SingleVariable(identifier, var,
+                                           domain.display_as_boolean));
   }
   delete annotations;
 }
@@ -421,7 +423,7 @@ variable_or_constant_declaration:
         // We add the output information.
         model->AddOutput(
             FzOnSolutionOutput::MultiDimensionalArray(identifier, bounds, vars,
-      domain.is_boolean));
+      domain.display_as_boolean));
       }
     }
     delete annotations;
@@ -484,7 +486,7 @@ int_domain:
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
 | '{' integers '}' {
   CHECK($2 != nullptr);
-  $$ = FzDomain::IntegerList(*$2);
+  $$ = FzDomain::IntegerList($2);
   delete $2;
 }
 
@@ -494,7 +496,7 @@ set_domain:
 | SET OF IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($3, $5); }
 | SET OF '{' integers '}' {
   CHECK($4 != nullptr);
-  $$ = FzDomain::IntegerList(*$4);
+  $$ = FzDomain::IntegerList($4);
   delete $4;
 }
 
@@ -524,10 +526,10 @@ const_literal:
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
 | '{' integers '}' {
   CHECK($2 != nullptr);
-  $$ = FzDomain::IntegerList(*$2);
+  $$ = FzDomain::IntegerList($2);
   delete $2;
 }
-| '{' '}' { $$ = FzDomain::IntegerList(std::vector<int64>()); }
+| '{' '}' { $$ = FzDomain::EmptyDomain(); }
 | DVALUE { $$ = FzDomain::AllInt64(); }  // TODO(lperron): floats.
 | IDENTIFIER { $$ = FzDomain::Singleton(FindOrDie(context->integer_map, $1)); }
 | IDENTIFIER '[' IVALUE ']' {
@@ -552,7 +554,8 @@ constraints: constraints constraint ';'
 constraint :
   CONSTRAINT IDENTIFIER '(' arguments ')' annotations {
   const std::string& identifier = $2;
-  const std::vector<FzArgument>* const arguments = $4;
+  CHECK($4 != nullptr) << "Missing argument in constraint";
+  const std::vector<FzArgument>& arguments = *$4;
   std::vector<FzAnnotation>* const annotations = $6;
 
   // Does the constraint has a defines_var annotation?
@@ -569,11 +572,10 @@ constraint :
     }
   }
 
-  CHECK(arguments != nullptr);
-  model->AddConstraint(identifier, *arguments,
+  model->AddConstraint(identifier, arguments,
                        ContainsId(annotations, "domain"), defines_var);
   delete annotations;
-  delete arguments;
+  delete $4;
 }
 
 arguments:
@@ -587,7 +589,7 @@ argument:
 | IVALUE DOTDOT IVALUE { $$ = FzArgument::Interval($1, $3); }
 | '{' integers '}' {
   CHECK($2 != nullptr);
-  $$ = FzArgument::IntegerList(*$2);
+  $$ = FzArgument::IntegerList($2);
   delete $2;
 }
 | IDENTIFIER {
@@ -651,6 +653,7 @@ argument:
   } else {
     $$ = FzArgument::IntegerList(arguments->values);
   }
+  delete arguments;
 }
 
 //---------------------------------------------------------------------------

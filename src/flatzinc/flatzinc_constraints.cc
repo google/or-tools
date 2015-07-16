@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include "flatzinc/flatzinc_constraints.h"
 
 #include "base/commandlineflags.h"
@@ -304,10 +305,10 @@ class IsBooleanSumInRange : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf(
-        "Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d] == %s",
-        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_, range_max_,
-        target_->DebugString().c_str());
+    return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
+                        "d] == %s",
+                        JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
+                        range_max_, target_->DebugString().c_str());
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
@@ -464,9 +465,8 @@ class BooleanSumInRange : public Constraint {
 
 class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
  public:
-  StartVarDurationVarPerformedIntervalVar(Solver* const s,
-                                          IntVar* const start,
-                                          IntVar* const  duration,
+  StartVarDurationVarPerformedIntervalVar(Solver* const s, IntVar* const start,
+                                          IntVar* const duration,
                                           const std::string& name);
   virtual ~StartVarDurationVarPerformedIntervalVar() {}
 
@@ -519,9 +519,7 @@ class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
 
   virtual IntExpr* StartExpr() { return start_; }
   virtual IntExpr* DurationExpr() { return duration_; }
-  virtual IntExpr* EndExpr() {
-    return solver()->MakeSum(start_, duration_);
-  }
+  virtual IntExpr* EndExpr() { return solver()->MakeSum(start_, duration_); }
   virtual IntExpr* PerformedExpr() { return solver()->MakeIntConst(1); }
   virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
     return StartExpr();
@@ -542,10 +540,9 @@ class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
 
 // TODO(user): Take care of overflows.
 StartVarDurationVarPerformedIntervalVar::
-StartVarDurationVarPerformedIntervalVar(Solver* const s,
-                                        IntVar* const var,
-                                        IntVar* const duration,
-                                        const std::string& name)
+    StartVarDurationVarPerformedIntervalVar(Solver* const s, IntVar* const var,
+                                            IntVar* const duration,
+                                            const std::string& name)
     : IntervalVar(s, name), start_(var), duration_(duration) {}
 
 int64 StartVarDurationVarPerformedIntervalVar::StartMin() const {
@@ -564,7 +561,8 @@ void StartVarDurationVarPerformedIntervalVar::SetStartMax(int64 m) {
   start_->SetMax(m);
 }
 
-void StartVarDurationVarPerformedIntervalVar::SetStartRange(int64 mi, int64 ma) {
+void StartVarDurationVarPerformedIntervalVar::SetStartRange(int64 mi,
+                                                            int64 ma) {
   start_->SetRange(mi, ma);
 }
 
@@ -584,8 +582,8 @@ void StartVarDurationVarPerformedIntervalVar::SetDurationMax(int64 m) {
   duration_->SetMax(m);
 }
 
-void StartVarDurationVarPerformedIntervalVar::SetDurationRange(
-    int64 mi, int64 ma) {
+void StartVarDurationVarPerformedIntervalVar::SetDurationRange(int64 mi,
+                                                               int64 ma) {
   duration_->SetRange(mi, ma);
 }
 
@@ -705,8 +703,8 @@ Constraint* MakeBoundModulo(Solver* const s, IntVar* const var,
 }
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables,
-                           int64 range_min, int64 range_max) {
+                           const std::vector<IntVar*>& variables, int64 range_min,
+                           int64 range_max) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -752,8 +750,8 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables,
-                             int64 range_min, int64 range_max, IntVar* target) {
+                             const std::vector<IntVar*>& variables, int64 range_min,
+                             int64 range_max, IntVar* target) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -792,8 +790,8 @@ void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
-                               const std::vector<IntVar*>& variables,
-                               int64 value, IntVar* target) {
+                               const std::vector<IntVar*>& variables, int64 value,
+                               IntVar* target) {
   const int64 size = variables.size();
   if (value == 0) {
     PostIsBooleanSumInRange(sat, solver, variables, 1, size, target);
@@ -807,10 +805,8 @@ void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
   }
 }
 
-IntervalVar* MakePerformedIntervalVar(Solver* const solver,
-                                      IntVar* const start,
-                                      IntVar* const duration,
-                                      const std::string& n) {
+IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
+                                      IntVar* const duration, const std::string& n) {
   CHECK(start != nullptr);
   CHECK(duration != nullptr);
   return solver->RegisterIntervalVar(solver->RevAlloc(

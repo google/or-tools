@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include <string>
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -21,10 +22,10 @@
 #include "flatzinc/solver.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/string_array.h"
 
 DECLARE_bool(use_sat);
 DECLARE_bool(fz_verbose);
-
 
 // TODO:
 //  - arg_sort
@@ -217,8 +218,7 @@ void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
     IntExpr* const index = fzsolver->GetExpression(ct->Arg(0));
     const std::vector<int64>& values = ct->Arg(1).values;
     const int64 imin = std::max(index->Min(), 1LL);
-    const int64 imax =
-        std::min(index->Max(), static_cast<int64>(values.size()));
+    const int64 imax = std::min<int64>(index->Max(), values.size());
     IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
     const int64 size = imax - imin + 1;
     std::vector<int64> coefficients(size);
@@ -335,15 +335,14 @@ void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  std::vector<IntVar*> positive_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
+  std::vector<IntVar*> positive_variables = fzsolver->GetVariableArray(ct->Arg(0));
   const std::vector<IntVar*> negative_variables =
       fzsolver->GetVariableArray(ct->Arg(0));
   for (IntVar* const var : negative_variables) {
     positive_variables.push_back(solver->MakeDifference(1, var)->Var());
   }
-  if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(),
-                                               positive_variables)) {
+  if (FLAGS_use_sat &&
+      AddBoolOrArrayEqualTrue(fzsolver->Sat(), positive_variables)) {
     FZVLOG << "  - posted to sat";
   } else {
     Constraint* const constraint =
@@ -673,8 +672,7 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
       AreAllOnes(fixed_durations) && variable_capacity == nullptr &&
       AreAllGreaterOrEqual(fixed_demands, fixed_capacity / 2 + 1)) {
     // Hidden all different.
-    Constraint* const constraint =
-        solver->MakeAllDifferent(start_variables);
+    Constraint* const constraint = solver->MakeAllDifferent(start_variables);
     AddConstraint(solver, ct, constraint);
     return;
   }
@@ -686,8 +684,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
       IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
       variable_capacity == nullptr && fixed_capacity == 1) {
     std::vector<IntVar*> performed_variables;
-    ExtractPerformedAndDemands(
-        solver, variable_demands, &performed_variables, &fixed_demands);
+    ExtractPerformedAndDemands(solver, variable_demands, &performed_variables,
+                               &fixed_demands);
     std::vector<IntervalVar*> intervals;
     intervals.reserve(start_variables.size());
     for (int i = 0; i < start_variables.size(); ++i) {
@@ -727,21 +725,21 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
   if (!fixed_demands.empty()) {
     // Demands are fixed.
     if (variable_capacity == nullptr) {
-      constraint =
-          AreAllGreaterOrEqual(fixed_demands, fixed_capacity / 2 + 1) ?
-          solver->MakeDisjunctiveConstraint(intervals, "") :
-          solver->MakeCumulative(intervals, fixed_demands, fixed_capacity , "");
+      constraint = AreAllGreaterOrEqual(fixed_demands, fixed_capacity / 2 + 1)
+                       ? solver->MakeDisjunctiveConstraint(intervals, "")
+                       : solver->MakeCumulative(intervals, fixed_demands,
+                                                fixed_capacity, "");
     } else {
       // Capacity is variable.
-      constraint = solver->MakeCumulative(
-          intervals, fixed_demands, variable_capacity, "");
+      constraint = solver->MakeCumulative(intervals, fixed_demands,
+                                          variable_capacity, "");
     }
   } else {
     // Demands are variables.
     if (variable_capacity == nullptr) {
       // Capacity is fixed.
-      constraint = solver->MakeCumulative(
-          intervals, variable_demands, fixed_capacity, "");
+      constraint = solver->MakeCumulative(intervals, variable_demands,
+                                          fixed_capacity, "");
     } else {
       // Capacity is variable.
       // Constraint* const constraint2 = MakeVariableCumulative(
@@ -749,8 +747,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
       //     variable_capacity);
       // AddConstraint(solver, ct, constraint2);
 
-      constraint = solver->MakeCumulative(
-          intervals, variable_demands, variable_capacity, "");
+      constraint = solver->MakeCumulative(intervals, variable_demands,
+                                          variable_capacity, "");
     }
   }
   AddConstraint(solver, ct, constraint);
@@ -758,10 +756,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<IntVar*> x_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
-  const std::vector<IntVar*> y_variables =
-      fzsolver->GetVariableArray(ct->Arg(1));
+  const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
   if (ct->Arg(2).type == FzArgument::INT_LIST &&
       ct->Arg(3).type == FzArgument::INT_LIST) {
     const std::vector<int64>& x_sizes = ct->Arg(2).values;
@@ -802,8 +798,7 @@ void ExtractDisjunctive(FzSolver* fzsolver, FzConstraint* ct) {
   // Special case. We will not create the interval variables.
   if (!fixed_durations.empty() && AreAllOnes(fixed_durations)) {
     // Hidden all different.
-    Constraint* const constraint =
-        solver->MakeAllDifferent(start_variables);
+    Constraint* const constraint = solver->MakeAllDifferent(start_variables);
     AddConstraint(solver, ct, constraint);
     return;
   }
@@ -829,7 +824,6 @@ void ExtractDisjunctive(FzSolver* fzsolver, FzConstraint* ct) {
       solver->MakeDisjunctiveConstraint(intervals, "");
   AddConstraint(solver, ct, constraint);
 }
-
 
 void ExtractGlobalCardinality(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
@@ -1311,8 +1305,7 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
 }
 
 void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
-                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs,
-                     int64* rhs) {
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
   CHECK(vars != nullptr);
   CHECK(coeffs != nullptr);
   CHECK(rhs != nullptr);
@@ -1335,8 +1328,8 @@ void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
   }
 }
 
-bool AreAllExtractedAsVariables(
-    FzSolver* const fzsolver, const std::vector<FzIntegerVariable*>& fz_vars) {
+bool AreAllExtractedAsVariables(FzSolver* const fzsolver,
+                                const std::vector<FzIntegerVariable*>& fz_vars) {
   for (FzIntegerVariable* const fz_var : fz_vars) {
     IntExpr* const expr = fzsolver->Extract(fz_var);
     if (!expr->IsVar()) {
@@ -1576,8 +1569,7 @@ void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
   }
 }
 
-bool PostHiddenClause(SatPropagator* const sat,
-                      const std::vector<int64>& coeffs,
+bool PostHiddenClause(SatPropagator* const sat, const std::vector<int64>& coeffs,
                       const std::vector<IntVar*>& vars) {
   std::vector<IntVar*> others;
   others.reserve(vars.size() - 1);
@@ -2471,7 +2463,6 @@ void ExtractSymmetricAllDifferent(FzSolver* fzsolver, FzConstraint* ct) {
       s->MakeInversePermutationConstraint(vars, vars);
   AddConstraint(s, ct, constraint);
 }
-
 
 void ExtractTrueConstraint(FzSolver* fzsolver, FzConstraint* ct) {}
 }  // namespace

@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_FLATZINC2_FLATZINC_CONSTRAINTS_H_
-#define OR_TOOLS_FLATZINC2_FLATZINC_CONSTRAINTS_H_
+#ifndef OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_
+#define OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_
 
 #include "constraint_solver/constraint_solver.h"
 
@@ -42,20 +42,18 @@ Constraint* MakeBoundModulo(Solver* const s, IntVar* const var,
                             IntVar* const mod, int64 residual);
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables,
-                             int64 range_min, int64 range_max, IntVar* target);
+                             const std::vector<IntVar*>& variables, int64 range_min,
+                             int64 range_max, IntVar* target);
 
 void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
-                               const std::vector<IntVar*>& variables,
-                               int64 value, IntVar* target);
+                               const std::vector<IntVar*>& variables, int64 value,
+                               IntVar* target);
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables,
-                           int64 range_min, int64 range_max);
+                           const std::vector<IntVar*>& variables, int64 range_min,
+                           int64 range_max);
 
-IntervalVar* MakePerformedIntervalVar(Solver* const solver,
-                                      IntVar* const start,
-                                      IntVar* const duration,
-                                      const std::string& n);
-}       // namespace operations_research
-#endif  // OR_TOOLS_FLATZINC2_FLATZINC_CONSTRAINTS_H_
+IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
+                                      IntVar* const duration, const std::string& n);
+}  // namespace operations_research
+#endif  // OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_
