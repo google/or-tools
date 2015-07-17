@@ -548,13 +548,13 @@ Constraint* Solver::MakeInversePermutationConstraint(
 }
 
 Constraint* Solver::MakeIndexOfFirstMaxValueConstraint(
-    IntVar* index, const vector<IntVar*>& vars) {
+    IntVar* index, const std::vector<IntVar*>& vars) {
   return RevAlloc(new IndexOfFirstMaxValue(this, index, vars));
 }
 
 Constraint* Solver::MakeIndexOfFirstMinValueConstraint(
-    IntVar* index, const vector<IntVar*>& vars) {
-  vector<IntVar*> opp_vars(vars.size());
+    IntVar* index, const std::vector<IntVar*>& vars) {
+  std::vector<IntVar*> opp_vars(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
     opp_vars[i] = MakeOpposite(vars[i])->Var();
   }
