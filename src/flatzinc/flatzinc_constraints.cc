@@ -637,6 +637,224 @@ std::string StartVarDurationVarPerformedIntervalVar::DebugString() const {
                 duration_->DebugString().c_str());
   return out;
 }
+
+// k - Diffn
+
+class KDiffn : public Constraint {
+ public:
+  KDiffn(Solver* const solver, const std::vector<std::vector<IntVar*>>& x,
+         const std::vector<std::vector<IntVar*>>& dx)
+      : Constraint(solver),
+        x_(x),
+        dx_(dx),
+        num_boxes_(x.size()),
+        num_dims_(x[0].size()),
+        fail_stamp_(0) {}
+
+  ~KDiffn() override {}
+
+  void Post() override {
+    Solver* const s = solver();
+    for (int box = 0; box < num_boxes_; ++box) {
+      Demon* const demon = MakeConstraintDemon1(
+          s, this, &KDiffn::OnBoxRangeChange, "OnBoxRangeChange", box);
+      for (int dim = 0; dim < num_dims_; ++dim) {
+        x_[box][dim]->WhenRange(demon);
+        dx_[box][dim]->WhenRange(demon);
+      }
+    }
+    delayed_demon_ = MakeDelayedConstraintDemon0(s, this, &KDiffn::PropagateAll,
+                                                 "PropagateAll");
+  }
+
+  void InitialPropagate() override {
+    // All sizes should be > 0.
+    for (int box = 0; box < num_boxes_; ++box) {
+      for (int dim = 0; dim < num_dims_; ++dim) {
+        dx_[box][dim]->SetMin(1);
+      }
+    }
+
+    // Force propagation on all boxes.
+    to_propagate_.clear();
+    for (int i = 0; i < num_boxes_; i++) {
+      to_propagate_.insert(i);
+    }
+    PropagateAll();
+  }
+
+  std::string DebugString() const override {
+    return "KDiffn()";
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kDisjunctive, this);
+    visitor->EndVisitConstraint(ModelVisitor::kDisjunctive, this);
+  }
+
+ private:
+  void PropagateAll() {
+    for (const int box : to_propagate_) {
+      FillNeighbors(box);
+      FailWhenEnergyIsTooLarge(box);
+      PushOverlappingBoxes(box);
+    }
+    to_propagate_.clear();
+    fail_stamp_ = solver()->fail_stamp();
+  }
+
+  void OnBoxRangeChange(int box) {
+    if (solver()->fail_stamp() > fail_stamp_ && !to_propagate_.empty()) {
+      // We have failed in the last propagation and the to_propagate_
+      // was not cleared.
+      fail_stamp_ = solver()->fail_stamp();
+      to_propagate_.clear();
+    }
+    to_propagate_.insert(box);
+    EnqueueDelayedDemon(delayed_demon_);
+  }
+
+  bool CanBoxedOverlap(int box1, int box2) const {
+    for (int dim = 0; dim < num_dims_; ++dim) {
+      if (AreBoxedDisjointInOneDimensionForSure(dim, box1, box2)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool AreBoxedDisjointInOneDimensionForSure(int dim, int i, int j) const {
+    return (x_[i][dim]->Min() >= x_[j][dim]->Max() + dx_[j][dim]->Max()) ||
+           (x_[j][dim]->Min() >= x_[i][dim]->Max() + dx_[i][dim]->Max());
+  }
+
+  // Fill neighbors_ with all boxes that can overlap the given box.
+  void FillNeighbors(int box) {
+    // TODO(user): We could maintain a non reversible list of
+    // neighbors and clean it after each failure.
+    neighbors_.clear();
+    for (int other = 0; other < num_boxes_; ++other) {
+      if (other != box && CanBoxedOverlap(other, box)) {
+        neighbors_.push_back(other);
+      }
+    }
+  }
+
+  // Fails if the minimum area of the given box plus the area of its neighbors
+  // (that must already be computed in neighbors_) is greater than the area of a
+  // bounding box that necessarily contains all these boxes.
+  void FailWhenEnergyIsTooLarge(int box) {
+    vector<int64> starts(num_dims_);
+    vector<int64> ends(num_dims_);
+
+    int64 box_volume = 1;
+    for (int dim = 0; dim < num_dims_; ++dim) {
+      starts[dim] = x_[box][dim]->Min();
+      ends[dim] = x_[box][dim]->Max() + dx_[box][dim]->Max();
+      box_volume *=dx_[box][dim]->Min();
+    }
+    int64 sum_of_volumes = box_volume;
+
+    // TODO(user): Is there a better order, maybe sort by distance
+    // with the current box.
+    for (int i = 0; i < neighbors_.size(); ++i) {
+      const int other = neighbors_[i];
+      int64 other_volume = 1;
+      int64 bounding_volume = 1;
+      for (int dim = 0; dim < num_dims_; ++dim) {
+        IntVar* const x = x_[other][dim];
+        IntVar* const dx = dx_[other][dim];
+        starts[dim] = std::min(starts[dim], x->Min());
+        ends[dim] = std::max(ends[dim], x->Max() + dx->Max());
+        other_volume *= dx->Min();
+        bounding_volume *= ends[dim] - starts[dim];
+      }
+      // Update sum of volumes.
+      sum_of_volumes += other_volume;
+      if (sum_of_volumes > bounding_volume) {
+        solver()->Fail();
+      }
+    }
+  }
+
+  // Changes the domain of all the neighbors of a given box (that must
+  // already be computed in neighbors_) so that they can't overlap the
+  // mandatory part of the given box.
+  void PushOverlappingBoxes(int box) {
+    for (int i = 0; i < neighbors_.size(); ++i) {
+      TryPushOneBox(box, neighbors_[i]);
+    }
+  }
+
+  // Changes the domain of the two given box by excluding the value that
+  // make them overlap for sure. Note that this function is symmetric in
+  // the sense that its argument can be swapped for the same result.
+  void TryPushOneBox(int b1, int b2) {
+    int b1_after_b2 = -1;
+    int b2_after_b1 = -1;
+    bool already_inserted = false;
+    for (int dim = 0; dim < num_dims_; ++dim) {
+      IntVar* const x1 = x_[b1][dim];
+      IntVar* const x2 = x_[b2][dim];
+      IntVar* const dx1 = dx_[b1][dim];
+      IntVar* const dx2 = dx_[b2][dim];
+      if (x1->Min() + dx1->Min() <= x2->Max()) {
+        if (already_inserted) {  // Too much freedom degrees, we can exit.
+          return;
+        } else {
+          already_inserted = true;
+        }
+        b2_after_b1 = dim;
+      }
+      if (x2->Min() + dx2->Min() <= x1->Max()) {
+        if (already_inserted) {  // Too much freedom degrees, we can exit.
+          return;
+        } else {
+          already_inserted = true;
+        }
+        b1_after_b2 = dim;
+      }
+    }
+    if (b1_after_b2 == -1 && b2_after_b1 == -1) {
+      // Stuck in an overlapping position. We can fail.
+      solver()->Fail();
+    }
+    // We verify the exclusion.
+    CHECK((b2_after_b1 == -1 && b1_after_b2 != -1) ||
+          (b1_after_b2 == -1 && b2_after_b1 != -1));
+
+    if (b1_after_b2 != -1) {
+      // We need to push b1 after b2, and restrict b2 to be before b1.
+      IntVar* const x1 = x_[b1][b1_after_b2];
+      IntVar* const x2 = x_[b2][b1_after_b2];
+      IntVar* const dx1 = dx_[b1][b1_after_b2];
+      IntVar* const dx2 = dx_[b2][b1_after_b2];
+      x1->SetMin(x2->Min() + dx2->Min());
+      x2->SetMax(x1->Max() - dx2->Min());
+      dx2->SetMax(x1->Max() - x2->Min());
+    }
+
+    if (b2_after_b1 != -1) {
+      // We need to push b2 after b1, and restrict b1 to be before b2.
+      IntVar* const x1 = x_[b1][b2_after_b1];
+      IntVar* const x2 = x_[b2][b2_after_b1];
+      IntVar* const dx1 = dx_[b1][b2_after_b1];
+      IntVar* const dx2 = dx_[b2][b2_after_b1];
+      x2->SetMin(x1->Min() + dx1->Min());
+      x1->SetMax(x2->Max() - dx1->Min());
+      dx1->SetMax(x2->Max() - x1->Min());
+    }
+  }
+
+  std::vector<std::vector<IntVar*>> x_;
+  std::vector<std::vector<IntVar*>> dx_;
+  const int64 num_boxes_;
+  const int64 num_dims_;
+  Demon* delayed_demon_;
+  hash_set<int> to_propagate_;
+  std::vector<int> neighbors_;
+  uint64 fail_stamp_;
+};
 }  // namespace
 
 Constraint* MakeIsBooleanSumInRange(Solver* const solver,

@@ -31,9 +31,10 @@ DECLARE_bool(fz_verbose);
 //  - arg_sort
 //  - geost
 //  - k-dimensional diffn
-//  - network_flow
+//  - strict diffn, kdiffn, strict disjunctive,
 // Not necessary?:
 //  - knapsack
+//  - network_flow
 // Done:
 //  - arg_max, arg_min
 //  - disjunctive:
