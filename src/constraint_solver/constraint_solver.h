@@ -1964,8 +1964,13 @@ class Solver {
                                       IntervalVar* const t2);
 
   // This constraint forces all interval vars into an non overlapping
-  // sequence.
+  // sequence. Intervals with zero duration can be scheduled anywhere.
   DisjunctiveConstraint* MakeDisjunctiveConstraint(
+      const std::vector<IntervalVar*>& intervals, const std::string& name);
+
+  // This constraint forces all interval vars into an non overlapping
+  // sequence. Intervals with zero durations cannot overlap with over intervals.
+  DisjunctiveConstraint* MakeStrictDisjunctiveConstraint(
       const std::vector<IntervalVar*>& intervals, const std::string& name);
 
   // This constraint forces that, for any integer t, the sum of the demands
