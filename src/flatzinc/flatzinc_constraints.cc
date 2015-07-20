@@ -643,10 +643,11 @@ std::string StartVarDurationVarPerformedIntervalVar::DebugString() const {
 class KDiffn : public Constraint {
  public:
   KDiffn(Solver* const solver, const std::vector<std::vector<IntVar*>>& x,
-         const std::vector<std::vector<IntVar*>>& dx)
+         const std::vector<std::vector<IntVar*>>& dx, bool strict)
       : Constraint(solver),
         x_(x),
         dx_(dx),
+        strict_(strict),
         num_boxes_(x.size()),
         num_dims_(x[0].size()),
         fail_stamp_(0) {}
@@ -714,7 +715,7 @@ class KDiffn : public Constraint {
     EnqueueDelayedDemon(delayed_demon_);
   }
 
-  bool CanBoxedOverlap(int box1, int box2) const {
+  bool CanBoxesOverlap(int box1, int box2) const {
     for (int dim = 0; dim < num_dims_; ++dim) {
       if (AreBoxedDisjointInOneDimensionForSure(dim, box1, box2)) {
         return false;
@@ -725,7 +726,8 @@ class KDiffn : public Constraint {
 
   bool AreBoxedDisjointInOneDimensionForSure(int dim, int i, int j) const {
     return (x_[i][dim]->Min() >= x_[j][dim]->Max() + dx_[j][dim]->Max()) ||
-           (x_[j][dim]->Min() >= x_[i][dim]->Max() + dx_[i][dim]->Max());
+           (x_[j][dim]->Min() >= x_[i][dim]->Max() + dx_[i][dim]->Max()) ||
+        (!strict_ && (dx_[i][dim]->Min() == 0 || dx_[j][dim]->Min() == 0));
   }
 
   // Fill neighbors_ with all boxes that can overlap the given box.
@@ -734,7 +736,7 @@ class KDiffn : public Constraint {
     // neighbors and clean it after each failure.
     neighbors_.clear();
     for (int other = 0; other < num_boxes_; ++other) {
-      if (other != box && CanBoxedOverlap(other, box)) {
+      if (other != box && CanBoxesOverlap(other, box)) {
         neighbors_.push_back(other);
       }
     }
@@ -798,6 +800,8 @@ class KDiffn : public Constraint {
       IntVar* const x2 = x_[b2][dim];
       IntVar* const dx1 = dx_[b1][dim];
       IntVar* const dx2 = dx_[b2][dim];
+      DCHECK(strict_ || dx1->Min() > 0);
+      DCHECK(strict_ || dx2->Min() > 0);
       if (x1->Min() + dx1->Min() <= x2->Max()) {
         if (already_inserted) {  // Too much freedom degrees, we can exit.
           return;
@@ -848,6 +852,7 @@ class KDiffn : public Constraint {
 
   std::vector<std::vector<IntVar*>> x_;
   std::vector<std::vector<IntVar*>> dx_;
+  const bool strict_;
   const int64 num_boxes_;
   const int64 num_dims_;
   Demon* delayed_demon_;
@@ -1029,6 +1034,14 @@ IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
   CHECK(duration != nullptr);
   return solver->RegisterIntervalVar(solver->RevAlloc(
       new StartVarDurationVarPerformedIntervalVar(solver, start, duration, n)));
+}
+
+Constraint* MakeKDiffn(
+    Solver* solver,
+    const std::vector<std::vector<IntVar*>>& x,
+    const std::vector<std::vector<IntVar*>>& dx,
+    bool strict) {
+  return solver->RevAlloc(new KDiffn(solver, x, dx, strict));
 }
 
 }  // namespace operations_research
