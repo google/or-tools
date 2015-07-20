@@ -2621,11 +2621,11 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractCumulative(this, ct);
   } else if (type == "diffn") {
     ExtractDiffn(this, ct);
-  } else if (type == "diffn_k") {
+  } else if (type == "diffn_k_with_sizes") {
     ExtractDiffnK(this, ct);
   } else if (type == "diffn_nonstrict") {
     ExtractDiffnNonStrict(this, ct);
-  } else if (type == "diffn_nonstrict_k") {
+  } else if (type == "diffn_nonstrict_k_with_sizes") {
     ExtractDiffnNonStrictK(this, ct);
   } else if (type == "disjunctive") {
     ExtractDisjunctive(this, ct);
