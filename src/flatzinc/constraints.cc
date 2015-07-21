@@ -68,9 +68,9 @@ void ExtractAlldifferentExcept0(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractAmong(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> tmp_sum;
-  for (FzIntegerVariable* const fzvar : ct->Arg(1).variables) {
-    IntVar* const var = fzsolver->Extract(fzvar)->Var();
-    const FzArgument& arg = ct->Arg(1);
+  const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(1));
+  for (IntVar* const var : tmp_vars) {
+    const FzArgument& arg = ct->Arg(2);
     switch (arg.type) {
       case FzArgument::INT_VALUE: {
         tmp_sum.push_back(solver->MakeIsEqualCstVar(var, arg.values[0]));
@@ -105,8 +105,8 @@ void ExtractArrayBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables;
   hash_set<IntExpr*> added;
-  for (FzIntegerVariable* var : ct->Arg(0).variables) {
-    IntVar* const to_add = fzsolver->Extract(var)->Var();
+  const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
+  for (IntVar* const to_add : tmp_vars) {
     if (!ContainsKey(added, to_add) && to_add->Min() != 1) {
       variables.push_back(to_add);
       added.insert(to_add);
@@ -156,8 +156,8 @@ void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   std::vector<IntVar*> variables;
   hash_set<IntExpr*> added;
-  for (FzIntegerVariable* var : ct->Arg(0).variables) {
-    IntVar* const to_add = fzsolver->Extract(var)->Var();
+  const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
+  for (IntVar* const to_add : tmp_vars) {
     if (!ContainsKey(added, to_add) && to_add->Max() != 0) {
       variables.push_back(to_add);
       added.insert(to_add);
@@ -420,13 +420,12 @@ void ExtractBoolXor(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractCircuit(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<FzIntegerVariable*>& array_variables = ct->Arg(0).variables;
-  const int size = array_variables.size();
+  const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
+  const int size = tmp_vars.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     // Create variables. Account for 1-based array indexing.
-    variables[i] =
-        solver->MakeSum(fzsolver->Extract(array_variables[i]), -1)->Var();
+    variables[i] = solver->MakeSum(tmp_vars[i], -1)->Var();
   }
   Constraint* const constraint = solver->MakeCircuit(variables);
   AddConstraint(solver, ct, constraint);
@@ -949,8 +948,8 @@ void ExtractGlobalCardinality(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<int64> values = ct->Arg(1).values;
   std::vector<IntVar*> variables;
-  for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
-    IntVar* const var = fzsolver->Extract(fzvar)->Var();
+  const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
+  for (IntVar* const var : tmp_vars) {
     for (int v = 0; v < values.size(); ++v) {
       if (var->Contains(values[v])) {
         variables.push_back(var);
@@ -990,8 +989,8 @@ void ExtractGlobalCardinalityLowUp(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<int64> values = ct->Arg(1).values;
   std::vector<IntVar*> variables;
-  for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
-    IntVar* const var = fzsolver->Extract(fzvar)->Var();
+  const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
+  for (IntVar* const var : tmp_vars) {
     for (int v = 0; v < values.size(); ++v) {
       if (var->Contains(values[v])) {
         variables.push_back(var);
@@ -2197,16 +2196,15 @@ void ExtractInverse(FzSolver* fzsolver, FzConstraint* ct) {
   std::vector<IntVar*> left;
   // Account for 1 based arrays.
   left.push_back(solver->MakeIntConst(0));
-  for (FzIntegerVariable* const fzvar : ct->Arg(0).variables) {
-    left.push_back(fzsolver->Extract(fzvar)->Var());
-  }
+  std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
+  left.insert(left.end(), tmp_vars.begin(), tmp_vars.end());
 
   std::vector<IntVar*> right;
   // Account for 1 based arrays.
   right.push_back(solver->MakeIntConst(0));
-  for (FzIntegerVariable* const fzvar : ct->Arg(1).variables) {
-    right.push_back(fzsolver->Extract(fzvar)->Var());
-  }
+  tmp_vars = fzsolver->GetVariableArray(ct->Arg(1));
+  right.insert(right.end(), tmp_vars.begin(), tmp_vars.end());
+
   Constraint* const constraint =
       solver->MakeInversePermutationConstraint(left, right);
   AddConstraint(solver, ct, constraint);
@@ -2543,13 +2541,12 @@ void ExtractSort(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractSubCircuit(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<FzIntegerVariable*>& array_variables = ct->Arg(0).variables;
-  const int size = array_variables.size();
+  const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
+  const int size = tmp_vars.size();
   std::vector<IntVar*> variables(size);
   for (int i = 0; i < size; ++i) {
     // Create variables. Account for 1-based array indexing.
-    variables[i] =
-        solver->MakeSum(fzsolver->Extract(array_variables[i]), -1)->Var();
+    variables[i] = solver->MakeSum(tmp_vars[i], -1)->Var();
   }
   Constraint* const constraint = solver->MakeSubCircuit(variables);
   AddConstraint(solver, ct, constraint);
