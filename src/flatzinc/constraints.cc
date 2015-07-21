@@ -27,7 +27,7 @@
 DECLARE_bool(use_sat);
 DECLARE_bool(fz_verbose);
 
-// TODO:
+// TODO (minizinc 2.0 support):
 //  - arg_sort
 //  - geost
 // Not necessary?:
