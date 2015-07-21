@@ -337,9 +337,10 @@ void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  std::vector<IntVar*> positive_variables = fzsolver->GetVariableArray(ct->Arg(0));
-  const std::vector<IntVar*> negative_variables =
+  std::vector<IntVar*> positive_variables =
       fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> negative_variables =
+      fzsolver->GetVariableArray(ct->Arg(1));
   for (IntVar* const var : negative_variables) {
     positive_variables.push_back(solver->MakeDifference(1, var)->Var());
   }
