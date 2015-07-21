@@ -440,7 +440,7 @@ class CumulativeLambdaThetaTree : public MonoidOperationTree<LambdaThetaNode> {
 class NotLast {
  public:
   NotLast(Solver* const solver, const std::vector<IntervalVar*>& intervals,
-          bool mirror);
+          bool mirror, bool strict);
 
   ~NotLast() { STLDeleteElements(&by_start_min_); }
 
@@ -452,15 +452,17 @@ class NotLast {
   std::vector<DisjunctiveTask*> by_end_max_;
   std::vector<DisjunctiveTask*> by_start_max_;
   std::vector<int64> new_lct_;
+  const bool strict_;
 };
 
 NotLast::NotLast(Solver* const solver, const std::vector<IntervalVar*>& intervals,
-                 bool mirror)
+                 bool mirror, bool strict)
     : theta_tree_(intervals.size()),
       by_start_min_(intervals.size()),
       by_end_max_(intervals.size()),
       by_start_max_(intervals.size()),
-      new_lct_(intervals.size(), -1LL) {
+      new_lct_(intervals.size(), -1LL),
+      strict_(strict) {
   // Populate the different vectors.
   for (int i = 0; i < intervals.size(); ++i) {
     IntervalVar* const underlying =
@@ -520,9 +522,10 @@ bool NotLast::Propagate() {
   // Apply modifications
   bool modified = false;
   for (int i = 0; i < by_start_min_.size(); ++i) {
-    if (by_start_min_[i]->interval->EndMax() > new_lct_[i]) {
+    IntervalVar* const var = by_start_min_[i]->interval;
+    if ((strict_ || var->DurationMin() > 0 ) && var->EndMax() > new_lct_[i]) {
       modified = true;
-      by_start_min_[i]->interval->SetEndMax(new_lct_[i]);
+      var->SetEndMax(new_lct_[i]);
     }
   }
   return modified;
@@ -537,7 +540,7 @@ class EdgeFinderAndDetectablePrecedences {
  public:
   EdgeFinderAndDetectablePrecedences(Solver* const solver,
                                      const std::vector<IntervalVar*>& intervals,
-                                     bool mirror);
+                                     bool mirror, bool strict);
   ~EdgeFinderAndDetectablePrecedences() { STLDeleteElements(&by_start_min_); }
   int64 size() const { return by_start_min_.size(); }
   IntervalVar* interval(int index) { return by_start_min_[index]->interval; }
@@ -568,13 +571,15 @@ class EdgeFinderAndDetectablePrecedences {
   // new_lct_[i] is the new end max for interval est_[i]->interval.
   std::vector<int64> new_lct_;
   DisjunctiveLambdaThetaTree lt_tree_;
+  const bool strict_;
 };
 
 EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
-    Solver* const solver, const std::vector<IntervalVar*>& intervals, bool mirror)
+    Solver* const solver, const std::vector<IntervalVar*>& intervals, bool mirror, bool strict)
     : solver_(solver),
       theta_tree_(intervals.size()),
-      lt_tree_(intervals.size()) {
+      lt_tree_(intervals.size()),
+      strict_(strict) {
   // Populate of the array of intervals
   for (IntervalVar* const interval : intervals) {
     IntervalVar* const underlying =
@@ -653,7 +658,8 @@ bool EdgeFinderAndDetectablePrecedences::DetectablePrecedences() {
   // Apply modifications
   bool modified = false;
   for (int i = 0; i < size(); ++i) {
-    if (new_est_[i] != kint64min) {
+    IntervalVar* const var = by_start_min_[i]->interval;
+    if (new_est_[i] != kint64min && (strict_ || var->DurationMin() > 0)) {
       modified = true;
       by_start_min_[i]->interval->SetStartMin(new_est_[i]);
     }
@@ -694,9 +700,10 @@ bool EdgeFinderAndDetectablePrecedences::EdgeFinder() {
   // Apply modifications.
   bool modified = false;
   for (int i = 0; i < size(); ++i) {
-    if (by_start_min_[i]->interval->StartMin() < new_est_[i]) {
+    IntervalVar* const var = by_start_min_[i]->interval;
+    if (var->StartMin() < new_est_[i] && (strict_ || var->DurationMin() > 0)) {
       modified = true;
-      by_start_min_[i]->interval->SetStartMin(new_est_[i]);
+      var->SetStartMin(new_est_[i]);
     }
   }
   return modified;
@@ -923,13 +930,14 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
  public:
   FullDisjunctiveConstraint(Solver* const s,
                             const std::vector<IntervalVar*>& intervals,
-                            const std::string& name)
+                            const std::string& name, bool strict)
       : DisjunctiveConstraint(s, intervals, name),
         sequence_var_(nullptr),
-        straight_(s, intervals, false),
-        mirror_(s, intervals, true),
-        straight_not_last_(s, intervals, false),
-        mirror_not_last_(s, intervals, true) {}
+        straight_(s, intervals, false, strict),
+        mirror_(s, intervals, true, strict),
+        straight_not_last_(s, intervals, false, strict),
+        mirror_not_last_(s, intervals, true, strict),
+        strict_(strict) {}
 
   ~FullDisjunctiveConstraint() override {}
 
@@ -1046,8 +1054,8 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("FullDisjunctiveConstraint([%s])",
-                        JoinDebugStringPtr(intervals_, ", ").c_str());
+    return StringPrintf("FullDisjunctiveConstraint([%s], %i)",
+                        JoinDebugStringPtr(intervals_, ", ").c_str(), strict_);
   }
 
   const std::vector<IntVar*>& nexts() const override { return nexts_; }
@@ -1149,6 +1157,7 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
   std::vector<IntVar*> time_slacks_;
   std::vector<IntervalVar*> performed_;
   std::vector<IntervalVar*> optional_;
+  const bool strict_;
   DISALLOW_COPY_AND_ASSIGN(FullDisjunctiveConstraint);
 };
 
@@ -2118,8 +2127,9 @@ class VariableDemandCumulativeConstraint : public Constraint {
         // If there are less than 2 such intervals, the constraint would do
         // nothing
         const std::string seq_name = StrCat(name(), "-HighDemandSequence");
-        constraint = solver()->MakeDisjunctiveConstraint(high_demand_intervals,
-                                                         seq_name);
+        constraint =
+            solver()->MakeStrictDisjunctiveConstraint(high_demand_intervals,
+                                                      seq_name);
       }
     }
     if (constraint != nullptr) {
@@ -2214,7 +2224,12 @@ DisjunctiveConstraint::~DisjunctiveConstraint() {}
 
 DisjunctiveConstraint* Solver::MakeDisjunctiveConstraint(
     const std::vector<IntervalVar*>& intervals, const std::string& name) {
-  return RevAlloc(new FullDisjunctiveConstraint(this, intervals, name));
+  return RevAlloc(new FullDisjunctiveConstraint(this, intervals, name, false));
+}
+
+DisjunctiveConstraint* Solver::MakeStrictDisjunctiveConstraint(
+    const std::vector<IntervalVar*>& intervals, const std::string& name) {
+  return RevAlloc(new FullDisjunctiveConstraint(this, intervals, name, true));
 }
 
 // Demands are constant

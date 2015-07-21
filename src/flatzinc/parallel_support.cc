@@ -10,12 +10,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include <iostream>  // NOLINT
 #include <string>
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/mutex.h"
 #include "base/stringprintf.h"
+#include "base/synchronization.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "flatzinc/model.h"

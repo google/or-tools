@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #ifndef OR_TOOLS_FLATZINC_PRESOLVE_H_
 #define OR_TOOLS_FLATZINC_PRESOLVE_H_
 
@@ -39,14 +40,14 @@ class FzPresolver {
   // TODO(user): Returns the number of rules applied instead.
   bool Run(FzModel* model);
 
-  // TODO(user): Error direct reporting of unfeasible models.
+  // TODO(user): Error reporting of unfeasible models.
 
   // Cleans the model for the CP solver.
   // In particular, it knows about the sat connection and will remove the link
   // (defining_constraint, target_variable) for boolean constraints.
   void CleanUpModelForTheCpSolver(FzModel* model, bool use_sat);
 
-private:
+ private:
   // This struct stores the affine mapping of one variable:
   // it represents new_var = var * coefficient + offset. It also stores the
   // constraint that defines this mapping.
@@ -62,24 +63,26 @@ private:
         : variable(v), coefficient(c), offset(o), constraint(ct) {}
   };
 
-  // This struct stores the flattening mapping of two variables onto
-  // one: it represents new_var = var1 * coefficient + var2 + offset. It also
-  // stores the constraint that defines this mapping.
-  struct FlatteningMapping {
+  // This struct stores the mapping of two index variables (of a 2D array; not
+  // included here) onto a single index variable (of the flattened 1D array).
+  // The original 2D array could be trimmed in the process; so we also need an
+  // offset.
+  // Eg. new_index_var = index_var1 * int_coeff + index_var2 + int_offset
+  struct Array2DIndexMapping {
     FzIntegerVariable* variable1;
     int64 coefficient;
     FzIntegerVariable* variable2;
     int64 offset;
     FzConstraint* constraint;
 
-    FlatteningMapping()
+    Array2DIndexMapping()
         : variable1(nullptr),
           coefficient(0),
           variable2(nullptr),
           offset(0),
           constraint(nullptr) {}
-    FlatteningMapping(FzIntegerVariable* v1, int64 c, FzIntegerVariable* v2,
-                      int64 o, FzConstraint* ct)
+    Array2DIndexMapping(FzIntegerVariable* v1, int64 c, FzIntegerVariable* v2,
+                        int64 o, FzConstraint* ct)
         : variable1(v1),
           coefficient(c),
           variable2(v2),
@@ -90,6 +93,9 @@ private:
   // First pass of model scanning. Useful to get information that will
   // prevent some destructive modifications of the model.
   void FirstPassModelScan(FzModel* model);
+  // This rule is applied globally in the first pass because maintaining the
+  // associated data structures w.r.t. variable substitutions would be
+  // expensive.
   void MergeIntEqNe(FzModel* model);
 
   // First pass scan helpers.
@@ -135,14 +141,15 @@ private:
   bool PresolveBoolClause(FzConstraint* ct);
 
   // Helpers.
-  void IntersectDomainWith(FzDomain* domain, const FzArgument& arg);
+  void IntersectDomainWith(const FzArgument& arg, FzDomain* domain);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same
   // logical model]. We will store them here, using a Union-find data structure.
   // See http://en.wikipedia.org/wiki/Disjoint-set_data_structure.
-  void MarkVariablesAsEquivalent(FzIntegerVariable* from,
-                                 FzIntegerVariable* to);
+  // Note that the equivalence is directed. We prefer to replace all instances
+  // of 'from' with 'to', rather than the opposite.
+  void AddVariableSubstition(FzIntegerVariable* from, FzIntegerVariable* to);
   FzIntegerVariable* FindRepresentativeOfVar(FzIntegerVariable* var);
   hash_map<const FzIntegerVariable*, FzIntegerVariable*>
       var_representative_map_;
@@ -153,19 +160,19 @@ private:
   // Stores affine_map_[x] = a * y + b.
   hash_map<const FzIntegerVariable*, AffineMapping> affine_map_;
 
-  // Stores flatten_map_[z] = a * x + y + b.
-  hash_map<const FzIntegerVariable*, FlatteningMapping> flatten_map_;
+  // Stores array2d_index_map_[z] = a * x + y + b.
+  hash_map<const FzIntegerVariable*, Array2DIndexMapping> array2d_index_map_;
 
   // Stores x == (y - z).
   hash_map<const FzIntegerVariable*,
-           std::pair<FzIntegerVariable*, FzIntegerVariable*> > difference_map_;
+           std::pair<FzIntegerVariable*, FzIntegerVariable*>> difference_map_;
 
   // Stores all variables defined in the search annotations.
   hash_set<FzIntegerVariable*> decision_variables_;
 
-  // Stores all constraints containing a variable.
-  hash_map<const FzIntegerVariable*,
-           hash_set<FzConstraint*>> var_to_constraints_;
+  // For all variables, stores all constraints it appears in.
+  hash_map<const FzIntegerVariable*, hash_set<FzConstraint*>>
+      var_to_constraints_;
 };
 }  // namespace operations_research
 

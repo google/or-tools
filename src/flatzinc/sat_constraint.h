@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #ifndef OR_TOOLS_FLATZINC_SAT_CONSTRAINT_H_
 #define OR_TOOLS_FLATZINC_SAT_CONSTRAINT_H_
 
@@ -35,15 +36,12 @@ bool AddBoolOrArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                          IntExpr* target);
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
-                                 const std::vector<IntVar*>& vars,
-                                 IntExpr* target);
+                                 const std::vector<IntVar*>& vars, IntExpr* target);
 
-bool AddSumBoolArrayLessEqKVar(SatPropagator* sat,
-                               const std::vector<IntVar*>& vars,
+bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                                IntExpr* target);
 
-bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
-                              const std::vector<IntVar*>& vars,
+bool AddMaxBoolArrayLessEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                               IntExpr* target);
 
 bool AddBoolAndEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
@@ -61,11 +59,9 @@ bool AddBoolOrEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
 bool AddBoolIsEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
                     IntExpr* target);
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
-                             const std::vector<IntVar*>& vars);
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
-bool AddBoolAndArrayEqualFalse(SatPropagator* sat,
-                               const std::vector<IntVar*>& vars);
+bool AddBoolAndArrayEqualFalse(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
 bool AddAtMostOne(SatPropagator* sat, const std::vector<IntVar*>& vars);
 
@@ -82,5 +78,5 @@ bool AddSumInRange(SatPropagator* sat, const std::vector<IntVar*>& vars,
                    int64 range_min, int64 range_max);
 
 void DeclareVariable(SatPropagator* sat, IntVar* var);
-}       // namespace operations_research
+}  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_SAT_CONSTRAINT_H_

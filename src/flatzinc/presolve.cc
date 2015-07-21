@@ -1,34 +1,32 @@
 // Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in comÏpliance with the License.
+// you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS% IS" BASIS,
+// distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include "flatzinc/presolve.h"
-
-#include <algorithm>
-#include "base/hash.h"
-
-#include "base/map_util.h"
+#include "util/saturated_arithmetic.h"
 #include "base/strutil.h"
+#include "base/map_util.h"
 
 DECLARE_bool(fz_logging);
 DECLARE_bool(fz_verbose);
-
 namespace operations_research {
 
 namespace {
-bool IsBooleanVar(FzIntegerVariable* var) {
+// TODO(user): accept variables fixed to 0 or 1.
+bool Has01Values(FzIntegerVariable* var) {
   return var->Min() == 0 && var->Max() == 1;
 }
 
-bool IsBooleanValue(int64 value) { return value == 0 || value == 1; }
+bool Is0Or1(int64 value) { return !(value & 0xfffffffffffffffe); }
 }  // namespace
 
 // For the author's reference, here is an indicative list of presolve rules
@@ -57,17 +55,24 @@ bool IsBooleanValue(int64 value) { return value == 0 || value == 1; }
 // Arguments are listed in order.
 
 // Propagates cast constraint.
-// Input : bool2int(b, x) => x
-// Action: replace all instances of x by b in the model.
-// Output: inactive constraint.
+// Rule 1:
+// Input: bool2int(b, c) or bool2int(t, x)
+// Output: int_eq(...)
+//
+// Rule 2:
+// Input: bool2int(b, x)
+// Action: Replace all instances of x by b.
+// Output: inactive constraint
 bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
   if (ct->Arg(0).HasOneValue() || ct->Arg(1).HasOneValue()) {
-    FZVLOG << "Change bound bool2int into int_eq";
+    // Rule 1.
+    FZVLOG << "Changing bound bool2int into int_eq";
     ct->type = "int_eq";
     return true;
   } else {
+    // Rule 2.
     ct->MarkAsInactive();
-    MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
+    AddVariableSubstition(ct->Arg(1).Var(), ct->Arg(0).Var());
     return true;
   }
 }
@@ -85,7 +90,10 @@ bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
 //
 // Rule 3:
 // Input : int_eq(x1, x2)
-// Action: Pick x1 or x2, and replace all occurrences by the other.
+// Action: Pick x1 or x2, and replace all occurrences by the other. The prefered
+//         direction is replace x2 by x1, unless x2 is already the target
+//         variable of another constraint, because a variable cannot be the
+//         target of 2 constraints.
 // Output: inactive constraint.
 //
 // Rule 4:
@@ -95,7 +103,8 @@ bool FzPresolver::PresolveBool2Int(FzConstraint* ct) {
 //
 // Rule 5:
 // Input : int_eq(c1, c2)
-// Output: inactive constraint if c1 == c2
+// Output: inactive constraint if c1 == c2, and do nothing if c1 != c2.
+// TODO(user): reorder rules?
 bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
   // Rule 1
   if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
@@ -125,7 +134,7 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
     } else if (ct->Arg(1).IsVariable()) {
       // Rule 3.
       ct->MarkAsInactive();
-      MarkVariablesAsEquivalent(ct->Arg(0).Var(), ct->Arg(1).Var());
+      AddVariableSubstition(ct->Arg(0).Var(), ct->Arg(1).Var());
       return true;
     }
   } else if (ct->Arg(0).HasOneValue()) {  // Arg0 is an integer value.
@@ -149,7 +158,8 @@ bool FzPresolver::PresolveIntEq(FzConstraint* ct) {
 // Propagates inequality constraint.
 // Input : int_ne(x, c) or int_ne(c, x)
 // Action: remove c from the domain of x.
-// Output: inactive constraint if the removal was successful.
+// Output: inactive constraint if the removal was successful
+//         (domain is not too large to remove a value).
 bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
   if (ct->presolve_propagation_done) {
     return false;
@@ -160,7 +170,6 @@ bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
        ct->Arg(1).Var()->domain.RemoveValue(ct->Arg(0).Value()))) {
     FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
     ct->MarkAsInactive();
-    ct->presolve_propagation_done = true;
     return true;
   }
   return false;
@@ -177,10 +186,11 @@ bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
 // Rule 2:
 // Input : int_xx(x, y) or bool_xx(x, y) with xx == lt, le, gt, ge.
 // Action: Reduce domain of x and y.
+// Output: constraint is still active.
 bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
   const std::string& id = ct->type;
   if (ct->Arg(0).IsVariable() && ct->Arg(1).HasOneValue()) {
-    // Rule 1.
+    // Rule 1 where the 'var' is the left operand, eg. var <= 5
     FzIntegerVariable* const var = ct->Arg(0).Var();
     const int64 value = ct->Arg(1).Value();
     if (id == "int_le" || id == "bool_le") {
@@ -195,7 +205,7 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
     ct->MarkAsInactive();
     return true;
   } else if (ct->Arg(0).HasOneValue() && ct->Arg(1).IsVariable()) {
-    // Rule 1.
+    // Rule 1 where the 'var' is the right operand, eg 5 <= var
     FzIntegerVariable* const var = ct->Arg(1).Var();
     const int64 value = ct->Arg(0).Value();
     if (id == "int_le" || id == "bool_le") {
@@ -249,15 +259,15 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
 // Output: int_xx(arg1, arg2) or int_lin_xx(arg1, arg2, c)
 //
 // Rule 2:
-// Input : int_xx_reif(arg1, arg2, falsee) or
+// Input : int_xx_reif(arg1, arg2, false) or
 //         int_lin_xx_reif(arg1, arg2, c, false)
 //         with xx = eq, ne, le, lt, ge, gt
 // Output: int_yy(arg1, arg2) or int_lin_yy(arg1, arg2, c)
 //         with yy = opposite(xx). i.e. eq -> ne, le -> gt...
 void FzPresolver::Unreify(FzConstraint* ct) {
-  const std::string& id = ct->type;
   const int last_argument = ct->arguments.size() - 1;
-  ct->type.resize(id.size() - 5);
+  DCHECK(HasSuffixString(ct->type, "_reif")) << ct->DebugString();
+  ct->type.resize(ct->type.size() - 5);
   ct->RemoveTargetVariable();
   if (ct->Arg(last_argument).Value() == 1) {
     // Rule 1.
@@ -269,42 +279,27 @@ void FzPresolver::Unreify(FzConstraint* ct) {
     FZVLOG << "Unreify and inverse " << ct->DebugString() << FZENDL;
     ct->RemoveTargetVariable();
     ct->arguments.pop_back();
-    if (id == "int_eq")
-      ct->type = "int_ne";
-    else if (id == "int_ne")
-      ct->type = "int_eq";
-    else if (id == "int_ge")
-      ct->type = "int_lt";
-    else if (id == "int_gt")
-      ct->type = "int_le";
-    else if (id == "int_le")
-      ct->type = "int_gt";
-    else if (id == "int_lt")
-      ct->type = "int_ge";
-    else if (id == "int_lin_eq")
-      ct->type = "int_lin_ne";
-    else if (id == "int_lin_ne")
-      ct->type = "int_lin_eq";
-    else if (id == "int_lin_ge")
-      ct->type = "int_lin_lt";
-    else if (id == "int_lin_gt")
-      ct->type = "int_lin_le";
-    else if (id == "int_lin_le")
-      ct->type = "int_lin_gt";
-    else if (id == "int_lin_lt")
-      ct->type = "int_lin_ge";
-    else if (id == "bool_eq")
-      ct->type = "bool_ne";
-    else if (id == "bool_ne")
-      ct->type = "bool_eq";
-    else if (id == "bool_ge")
-      ct->type = "bool_lt";
-    else if (id == "bool_gt")
-      ct->type = "bool_le";
-    else if (id == "bool_le")
-      ct->type = "bool_gt";
-    else if (id == "bool_lt")
-      ct->type = "bool_ge";
+    // Extract the 'operation' suffix of ct->type ("le", "eq", ...); i.e. the
+    // last two characters.
+    DCHECK_GT(ct->type.size(), 3);
+    const std::string op = ct->type.substr(ct->type.size() - 2);
+    ct->type.resize(ct->type.size() - 2);
+    DCHECK(ct->type == "int_" || ct->type == "bool_" || ct->type == "int_lin_")
+        << ct->type;
+    // Now, change "op" to the inverse operation. The prefix of ct->type is
+    // unchanged.
+    if (op == "ne")
+      ct->type += "eq";
+    else if (op == "eq")
+      ct->type += "ne";
+    else if (op == "le")
+      ct->type += "gt";
+    else if (op == "lt")
+      ct->type += "ge";
+    else if (op == "ge")
+      ct->type += "lt";
+    else if (op == "gt")
+      ct->type += "le";
   }
 }
 
@@ -312,10 +307,13 @@ void FzPresolver::Unreify(FzConstraint* ct) {
 // Input : set_in(x, [c1..c2]) or set_in(x, {c1, .., cn})
 // Action: Intersect the domain of x with the set of values.
 // Output: inactive constraint.
+// note: set_in(x1, {x2, ...}) is plain illegal so we don't bother with it.
 bool FzPresolver::PresolveSetIn(FzConstraint* ct) {
   if (ct->Arg(0).IsVariable()) {
+    // IntersectDomainWith() will DCHECK that the second argument is a set
+    // of constant values.
     FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
-    IntersectDomainWith(&ct->Arg(0).Var()->domain, ct->Arg(1));
+    IntersectDomainWith(ct->Arg(1), &ct->Arg(0).Var()->domain);
     ct->MarkAsInactive();
     // TODO(user): Returns true iff the intersection yielded some domain
     // reduction.
@@ -333,23 +331,34 @@ bool FzPresolver::PresolveIntTimes(FzConstraint* ct) {
       ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
     FZVLOG << " Propagate " << ct->DebugString() << FZENDL;
     const int64 value = ct->Arg(0).Value() * ct->Arg(1).Value();
-    ct->presolve_propagation_done = true;
-    if (ct->Arg(2).Var()->domain.Contains(value)) {
-      ct->Arg(2).Var()->domain.IntersectWithInterval(value, value);
-      ct->MarkAsInactive();
-      return true;
+    const int64 safe_value = CapProd(ct->Arg(0).Value(), ct->Arg(1).Value());
+    if (value == safe_value) {
+      ct->presolve_propagation_done = true;
+      if (ct->Arg(2).Var()->domain.Contains(value)) {
+        ct->Arg(2).Var()->domain.IntersectWithInterval(value, value);
+        ct->MarkAsInactive();
+        return true;
+      } else {
+        FZVLOG << "  - product is not compatible with variable domain, "
+               << "ignoring presolve" << FZENDL;
+        // TODO(user): Treat failure correctly.
+      }
+    } else {
+      FZVLOG << "  - product overflows, ignoring presolve" << FZENDL;
+      // TODO(user): Treat overflow correctly.
     }
   }
   return false;
 }
 
-// Propagates bound product.
-// Input : int_div(c1, c2, x)
+// Propagates bound division.
+// Input : int_div(c1, c2, x) (c2 != 0)
 // Action: reduce domain of x to {c1 / c2}
 // Output: inactive constraint.
 bool FzPresolver::PresolveIntDiv(FzConstraint* ct) {
   if (ct->Arg(0).HasOneValue() && ct->Arg(1).HasOneValue() &&
-      ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
+      ct->Arg(2).IsVariable() && !ct->presolve_propagation_done &&
+      ct->Arg(1).Value() != 0) {
     FZVLOG << " Propagate " << ct->DebugString() << FZENDL;
     const int64 value = ct->Arg(0).Value() / ct->Arg(1).Value();
     ct->presolve_propagation_done = true;
@@ -357,8 +366,13 @@ bool FzPresolver::PresolveIntDiv(FzConstraint* ct) {
       ct->Arg(2).Var()->domain.IntersectWithInterval(value, value);
       ct->MarkAsInactive();
       return true;
+    } else {
+      FZVLOG << "  - division is not compatible with variable domain, "
+             << "ignoring presolve" << FZENDL;
+      // TODO(user): Treat failure correctly.
     }
   }
+  // TODO(user): Catch c2 = 0 case and set the model to invalid.
   return false;
 }
 
@@ -369,26 +383,26 @@ bool FzPresolver::PresolveIntDiv(FzConstraint* ct) {
 // Output: bool_eq(b1, b2)
 //
 // Rule 2:
-// Input : array_bool_or(b1, .., bn], false) or
-//         array_bool_or(b1, .., bn], b0) with b0 assigned to false
+// Input : array_bool_or([b1, .., bn], false) or
+//         array_bool_or([b1, .., bn], b0) with b0 assigned to false
 // Action: Assign false to b1, .., bn
 // Output: inactive constraint.
 //
 // Rule 3:
-// Input : array_bool_or(b1, .., true, .., bn], b0)
+// Input : array_bool_or([b1, .., true, .., bn], b0)
 // Action: Assign b0 to true
 // Output: inactive constraint.
 //
 // Rule 4:
-// Input : array_bool_or(false, .., false], b0)
+// Input : array_bool_or([false, .., false], b0), the array can be empty.
 // Action: Assign b0 to false
 // Output: inactive constraint.
 //
 // Rule 5:
-// Input : array_bool_or(b1, .., false, bn], b0) or
-//         array_bool_or(b1, .., bi, .., bn], b0) with bi assigned to false
-// Action: Remove bi or the false value
-// Output: array_bool_or(b1, .., bi-1, bi+1, .., bn], b0)
+// Input : array_bool_or([b1, .., false, bn], b0) or
+//         array_bool_or([b1, .., bi, .., bn], b0) with bi assigned to false
+// Action: Remove variables assigned to false values, or false constants.
+// Output: array_bool_or([b1, .., bi-1, bi+1, .., bn], b0)
 bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
   if (ct->Arg(0).variables.size() == 1) {
     // Rule 1.
@@ -400,6 +414,7 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
   if (!ct->presolve_propagation_done && ct->Arg(1).HasOneValue() &&
       ct->Arg(1).Value() == 0) {
     // Rule 2.
+    // TODO(user): Support empty domains correctly, and remove this test.
     for (const FzIntegerVariable* const var : ct->Arg(0).variables) {
       if (!var->domain.Contains(0)) {
         return false;
@@ -412,19 +427,16 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
     ct->MarkAsInactive();
     return true;
   }
-  int num_fixed_to_true = 0;
+  bool has_bound_true_value = false;
   std::vector<FzIntegerVariable*> unbound;
   for (FzIntegerVariable* const var : ct->Arg(0).variables) {
     if (var->HasOneValue()) {
-      const int64 value = var->Min();
-      if (value == 1) {
-        num_fixed_to_true++;
-      }
+      has_bound_true_value |= var->Min() == 1;
     } else {
       unbound.push_back(var);
     }
   }
-  if (num_fixed_to_true > 0) {
+  if (has_bound_true_value) {
     // Rule 3.
     if (!ct->Arg(1).HasOneValue()) {
       FZVLOG << "Propagate boolvar to true in " << ct->DebugString() << FZENDL;
@@ -436,16 +448,20 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
       return true;
     }
     return false;
-  } else if (unbound.empty()) {
+    // TODO(user): Simplify code once we support empty domains.
+  }
+  if (unbound.empty()) {
     // Rule 4.
     if (!ct->Arg(1).HasOneValue()) {
+      // TODO(user): Simplify code once we support empty domains.
       FZVLOG << "Propagate boolvar to false in " << ct->DebugString() << FZENDL;
       ct->Arg(1).variables[0]->domain.IntersectWithInterval(0, 0);
       ct->MarkAsInactive();
       return true;
     }
     return false;
-  } else if (unbound.size() < ct->Arg(0).variables.size()) {
+  }
+  if (unbound.size() < ct->Arg(0).variables.size()) {
     // Rule 5.
     FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
     ct->MutableArg(0)->variables.swap(unbound);
@@ -461,26 +477,24 @@ bool FzPresolver::PresolveArrayBoolOr(FzConstraint* ct) {
 // Output: bool_eq(b1, b2)
 //
 // Rule 2:
-// Input : array_bool_and(b1, .., bn], true) or
-//         array_bool_and(b1, .., bn], b0) with b0 assigned to true
+// Input : array_bool_and([b1, .., bn], true)
 // Action: Assign b1, .., bn to true
 // Output: inactive constraint.
 //
 // Rule 3:
-// Input : array_bool_and(b1, .., false, .., bn], b0)
+// Input : array_bool_and([b1, .., false, .., bn], b0)
 // Action: Assign b0 to false
 // Output: inactive constraint.
 //
 // Rule 4:
-// Input : array_bool_and(true, .., true], b0)
+// Input : array_bool_and([true, .., true], b0)
 // Action: Assign b0 to true
 // Output: inactive constraint.
 //
 // Rule 5:
-// Input : array_bool_and(b1, .., true, bn], b0) or
-//         array_bool_and(b1, .., bi, .., bn], b0) with bi assigned to true
-// Action: Remove bi or the true value
-// Output: array_bool_and(b1, .., bi-1, bi+1, .., bn], b0)
+// Input : array_bool_and([b1, .., true, bn], b0)
+// Action: Remove all the true values.
+// Output: array_bool_and([b1, .., bi-1, bi+1, .., bn], b0)
 bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   if (ct->Arg(0).variables.size() == 1) {
     // Rule 1.
@@ -492,6 +506,7 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   if (!ct->presolve_propagation_done && ct->Arg(1).HasOneValue() &&
       ct->Arg(1).Value() == 1) {
     // Rule 2.
+    // TODO(user): Simplify the code once we support empty domains.
     for (const FzIntegerVariable* const var : ct->Arg(0).variables) {
       if (!var->domain.Contains(1)) {
         return false;
@@ -505,19 +520,17 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
     ct->MarkAsInactive();
     return true;
   }
-  int num_fixed_to_false = 0;
+  int has_bound_false_value = 0;
   std::vector<FzIntegerVariable*> unbound;
   for (FzIntegerVariable* const var : ct->Arg(0).variables) {
     if (var->HasOneValue()) {
-      const int64 value = var->Min();
-      if (value == 0) {
-        num_fixed_to_false++;
-      }
+      has_bound_false_value |= var->Max() == 0;
     } else {
       unbound.push_back(var);
     }
   }
-  if (num_fixed_to_false > 0) {
+  if (has_bound_false_value) {
+    // TODO(user): Simplify the code once we support empty domains.
     if (!ct->Arg(1).HasOneValue()) {
       // Rule 3.
       FZVLOG << "Propagate boolvar to false in " << ct->DebugString() << FZENDL;
@@ -529,7 +542,8 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
       return true;
     }
     return false;
-  } else if (unbound.empty()) {
+  }
+  if (unbound.empty()) {
     // Rule 4.
     if (!ct->Arg(1).HasOneValue()) {
       FZVLOG << "Propagate boolvar to true in " << ct->DebugString() << FZENDL;
@@ -538,7 +552,8 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
       return true;
     }
     return false;
-  } else if (unbound.size() < ct->Arg(0).variables.size()) {
+  }
+  if (unbound.size() < ct->Arg(0).variables.size()) {
     FZVLOG << "Reduce array on " << ct->DebugString() << FZENDL;
     ct->MutableArg(0)->variables.swap(unbound);
     return true;
@@ -546,12 +561,12 @@ bool FzPresolver::PresolveArrayBoolAnd(FzConstraint* ct) {
   return false;
 }
 
-// Presolves : bool_eq_reif, bool_ne_reif
-//   - rewrites int_eq_reif(b1, true, b2) into bool_eq(b1, b2)
-//   - rewrites int_eq_reif(b1, false, b2) into bool_not(b1, b2)
-//   - rewrites int_ne_reif(b1, true, b2) into bool_bot(b1, b2)
-//   - rewrites int_ne_reif(b1, false, b2) into bool_eq(b1, b2)
+// Simplifies bool_XX_reif(b1, b2, b3)  (which means b3 = (b1 XX b2)) when the
+// middle value is bound.
+// Input: bool_XX_reif(b1, t, b2), where XX is "eq" or "ne".
+// Output: bool_YY(b1, b2) where YY is "eq" or "not" depending on XX and t.
 bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
+  DCHECK(ct->type == "bool_eq_reif" || ct->type == "bool_ne_reif");
   if (ct->Arg(1).HasOneValue()) {
     FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
     const int64 value = ct->Arg(1).Value();
@@ -568,15 +583,22 @@ bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
   return false;
 }
 
-// Transform int_lin_gt into int_lin_ge.
+// Transform int_lin_gt (which means ScalProd(arg1[], arg2[]) > c) into
+// int_lin_ge.
 // Input : int_lin_gt(arg1, arg2, c)
 // Output: int_lin_ge(arg1, arg2, c + 1)
 bool FzPresolver::PresolveIntLinGt(FzConstraint* ct) {
   FZVLOG << "Transform " << ct->DebugString() << " into int_lin_ge" << FZENDL;
   CHECK_EQ(FzArgument::INT_VALUE, ct->Arg(2).type);
-  ct->MutableArg(2)->values[0]++;
-  ct->type = "int_lin_ge";
-  return true;
+  if (ct->Arg(2).Value() != kint64max) {
+    ct->MutableArg(2)->values[0]++;
+    ct->type = "int_lin_ge";
+    return true;
+  }
+  // TODO(user): fail (the model is impossible: a * b > kint64max can be
+  // considered as impossible; because it would imply an overflow; which we
+  // reject.
+  return false;
 }
 
 // Transform int_lin_lt into int_lin_le.
@@ -585,20 +607,31 @@ bool FzPresolver::PresolveIntLinGt(FzConstraint* ct) {
 bool FzPresolver::PresolveIntLinLt(FzConstraint* ct) {
   FZVLOG << "Transform " << ct->DebugString() << " into int_lin_le" << FZENDL;
   CHECK_EQ(FzArgument::INT_VALUE, ct->Arg(2).type);
-  ct->MutableArg(2)->values[0]--;
-  ct->type = "int_lin_le";
-  return true;
+  if (ct->Arg(2).Value() != kint64min) {
+    ct->MutableArg(2)->values[0]--;
+    ct->type = "int_lin_le";
+    return true;
+  }
+  // TODO(user): fail (the model is impossible: a * b < kint64min can be
+  // considered as impossible; because it would imply an overflow; which we
+  // reject.
+  return false;
 }
 
-// Simplifies linear equations of size 1.
-// Input : int_lin_xx([x], [c1], c2) and int_lin_xx_reif([x], [c1], c2, b)
+// Simplifies linear equations of size 1, i.e. c1 * x = c2.
+// Input : int_lin_xx([c1], [x], c2) and int_lin_xx_reif([c1], [x], c2, b)
 //         with (c1 == 1 or c2 % c1 == 0) and xx = eq, ne, lt, le, gt, ge
-// Output: int_xx(x, c2) and int_xx_reif(x, c2, b)
+// Output: int_xx(x, c2 / c1) and int_xx_reif(x, c2 / c1, b)
 bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
   const int64 coefficient = ct->Arg(0).values[0];
   const int64 rhs = ct->Arg(2).Value();
   if (ct->Arg(0).values.size() == 1 &&
-      (coefficient == 1 || (coefficient != 0 && rhs % coefficient == 0))) {
+      (coefficient == 1 || (coefficient > 0 && rhs % coefficient == 0))) {
+    // TODO(user): Support coefficient = 0.
+    // TODO(user): Support coefficient < 0 (and reverse the inequalities).
+    // TODO(user): Support rhs % coefficient != 0, and no the correct
+    // rounding in the case of inequalities, of false model in the case of
+    // equalities.
     FZVLOG << "Remove linear part in " << ct->DebugString() << FZENDL;
     // transform arguments.
     ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
@@ -608,10 +641,12 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
     ct->MutableArg(1)->variables.clear();
     ct->MutableArg(1)->values.push_back(rhs / coefficient);
     if (ct->arguments.size() == 4) {
+      DCHECK(HasSuffixString(ct->type, "_reif"));
       ct->arguments[2] = ct->Arg(3);
     }
     ct->arguments.pop_back();
     // Change type (remove "_lin" part).
+    DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
     ct->type.erase(3, 4);
     FZVLOG << "  - " << ct->DebugString() << FZENDL;
     return true;
@@ -620,91 +655,97 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
 }
 
 // Returns false if an overflow occured.
-bool ComputeLinBounds(FzConstraint* ct, int64* lb, int64* ub) {
+// Used by CheckIntLinReifBounds() below: compute the bounds of the scalar
+// product. If an integer overflow occurs the method returns false.
+namespace {
+bool ComputeLinBounds(const std::vector<int64>& coefficients,
+                      const std::vector<FzIntegerVariable*>& variables, int64* lb,
+                      int64* ub) {
+  CHECK_EQ(coefficients.size(), variables.size()) << "Wrong constraint";
   *lb = 0;
   *ub = 0;
-  for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
-    const FzIntegerVariable* const var = ct->Arg(1).variables[i];
-    const int64 coef = ct->Arg(0).values[i];
+  for (int i = 0; i < coefficients.size(); ++i) {
+    const FzIntegerVariable* const var = variables[i];
+    const int64 coef = coefficients[i];
     if (coef == 0) continue;
     if (var->Min() == kint64min || var->Max() == kint64max) {
       return false;
     }
     const int64 vmin = var->Min();
     const int64 vmax = var->Max();
-    // TODO(user): use saturated arithmetic.
-    if (coef > 0) {
-      *lb += vmin * coef;
-      *ub += vmax * coef;
-    } else {
-      *lb += vmax * coef;
-      *ub += vmin * coef;
+    const int64 min_delta =
+        coef > 0 ? CapProd(vmin, coef) : CapProd(vmax, coef);
+    const int64 max_delta =
+        coef > 0 ? CapProd(vmax, coef) : CapProd(vmin, coef);
+    *lb = CapAdd(*lb, min_delta);
+    *ub = CapAdd(*ub, max_delta);
+    if (*lb == kint64min || min_delta == kint64min || min_delta == kint64max ||
+        max_delta == kint64min || max_delta == kint64max || *ub == kint64max) {
+      // Overflow
+      return false;
     }
   }
   return true;
 }
+}  // namespace
 
 // Presolve: Check bounds of int_lin_eq_reif w.r.t. the boolean variable.
-// Input : int_lin_eq_reif([x1, .., xn], [c1, .., cn], c0, b)
+// Input : int_lin_eq_reif([c1, .., cn], [x1, .., xn], c0, b)
 // Action: compute min and max of sum(x1 * c2) and
-//         assign true to b is min and max == c0, or
-//         assign false to b if min > c0 or max < c0
+//         assign true to b is min == max == c0, or
+//         assign false to b if min > c0 or max < c0,
+//         or do nothing and keep the constraint active.
 bool FzPresolver::CheckIntLinReifBounds(FzConstraint* ct) {
+  DCHECK_EQ(ct->type, "int_lin_eq_reif");
   int64 lb = 0;
   int64 ub = 0;
-  if (!ComputeLinBounds(ct, &lb, &ub)) {
+  if (!ComputeLinBounds(ct->Arg(0).values, ct->Arg(1).variables, &lb, &ub)) {
+    FZVLOG << "Overflow found when presolving " << ct->DebugString() << FZENDL;
     return false;
   }
   const int64 value = ct->Arg(2).Value();
-  if (ct->type == "int_lin_eq_reif") {
-    if (value < lb || value > ub) {
-      FZVLOG << "Assign boolean to false in " << ct->DebugString() << FZENDL;
-      ct->Arg(3).Var()->domain.IntersectWithInterval(0, 0);
-      ct->MarkAsInactive();
-      return true;
-    } else if (value == lb && value == ub) {
-      FZVLOG << "Assign boolean to true in " << ct->DebugString() << FZENDL;
-      ct->Arg(3).Var()->domain.IntersectWithInterval(1, 1);
-      ct->MarkAsInactive();
-      return true;
-    }
+  if (value < lb || value > ub) {
+    FZVLOG << "Assign boolean to false in " << ct->DebugString() << FZENDL;
+    ct->Arg(3).Var()->domain.IntersectWithInterval(0, 0);
+    ct->MarkAsInactive();
+    return true;
+  } else if (value == lb && value == ub) {
+    FZVLOG << "Assign boolean to true in " << ct->DebugString() << FZENDL;
+    ct->Arg(3).Var()->domain.IntersectWithInterval(1, 1);
+    ct->MarkAsInactive();
+    return true;
   }
   return false;
 }
 
 // Marks target variable: int_lin_eq
+// On two-variable linear equality constraints of the form -x + c0 * y = c1;
+// mark x as the "target" of the constraint, i.e. the variable that is "defined"
+// by the constraint. We do that only if the constraint doesn't already have a
+// target variable and if x doesn't have a defining constraint.
 //
 // Rule 1:
-// Input : int_lin_eq([x1, x2], [-1, c2], c0)
-// Output: int_lin_eq([x1, x2], [-1, c2], c0) => x1
+// Input : int_lin_eq([[-1, c2], x1, x2], c0)
+// Output: int_lin_eq([-1, c2], [x1, x2], c0) => x1, mark x1.
 //
 // Rule 2:
-// Input : int_lin_eq([x1, x2], [c1, -1], c0)
-// Output: int_lin_eq([x1, x2], [c1, -1], c0) => x2
+// Input : int_lin_eq([c1, -1], [x1, x2], c0)
+// Output: int_lin_eq([c1, -1], [x1, x2], c0) => x2, mark x2.
 bool FzPresolver::CreateLinearTarget(FzConstraint* ct) {
   if (ct->target_variable != nullptr) return false;
 
-  if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[0] == -1 &&
-      ct->Arg(1).variables[0]->defining_constraint == nullptr &&
-      !ct->Arg(1).variables[0]->HasOneValue()) {
-    // Rule 1.
-    FZVLOG << "Mark first variable of " << ct->DebugString() << " as target"
-           << FZENDL;
-    FzIntegerVariable* const var = ct->Arg(1).variables[0];
-    var->defining_constraint = ct;
-    ct->target_variable = var;
-    return true;
-  }
-  if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[1] == -1 &&
-      ct->Arg(1).variables[1]->defining_constraint == nullptr &&
-      !ct->Arg(1).variables[1]->HasOneValue()) {
-    // Rule 2.
-    FZVLOG << "Mark second variable of " << ct->DebugString() << " as target"
-           << FZENDL;
-    FzIntegerVariable* const var = ct->Arg(1).variables[1];
-    var->defining_constraint = ct;
-    ct->target_variable = var;
-    return true;
+  for (const int var_index : {0, 1}) {
+    if (ct->Arg(0).values.size() == 2 && ct->Arg(0).values[var_index] == -1 &&
+        ct->Arg(1).variables[var_index]->defining_constraint == nullptr &&
+        !ct->Arg(1).variables[var_index]->HasOneValue()) {
+      // Rule 1.
+      FZVLOG << "Mark variable " << var_index << " of " << ct->DebugString()
+             << " as target" << FZENDL;
+      FzIntegerVariable* const var = ct->Arg(1).variables[var_index];
+      var->defining_constraint = ct;
+      ct->target_variable = var;
+      return true;
+    }
   }
   return false;
 }
@@ -722,11 +763,11 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->Arg(0).variables.size() == 1) {
     if (!ct->Arg(0).HasOneValue()) {
       // Rule 1.
-      const int64 target_min =
-          ct->Arg(2).HasOneValue() ? ct->Arg(2).Value()
+      const int64 target_min = ct->Arg(2).HasOneValue()
+                                   ? ct->Arg(2).Value()
                                    : ct->Arg(2).Var()->Min();
-      const int64 target_max =
-          ct->Arg(2).HasOneValue() ? ct->Arg(2).Value()
+      const int64 target_max = ct->Arg(2).HasOneValue()
+                                   ? ct->Arg(2).Value()
                                    : ct->Arg(2).Var()->Max();
 
       int64 current_index = ct->Arg(1).values.size();
@@ -753,7 +794,7 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
   if (ct->Arg(2).IsVariable() && !ct->presolve_propagation_done) {
     // Rule 2.
     FZVLOG << "Propagate domain on " << ct->DebugString() << FZENDL;
-    IntersectDomainWith(&ct->Arg(2).Var()->domain, ct->Arg(1));
+    IntersectDomainWith(ct->Arg(1), &ct->Arg(2).Var()->domain);
     ct->presolve_propagation_done = true;
     return true;
   }
@@ -789,18 +830,17 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
     coef *= -1;
   }
   ct->MutableArg(2)->values[0] *= -1;
-  const std::string& id = ct->type;
-  if (id == "int_lin_le") {
+  if (ct->type == "int_lin_le") {
     ct->type = "int_lin_ge";
-  } else if (id == "int_lin_lt") {
+  } else if (ct->type == "int_lin_lt") {
     ct->type = "int_lin_gt";
-  } else if (id == "int_lin_le") {
+  } else if (ct->type == "int_lin_le") {
     ct->type = "int_lin_ge";
-  } else if (id == "int_lin_lt") {
+  } else if (ct->type == "int_lin_lt") {
     ct->type = "int_lin_gt";
-  } else if (id == "int_lin_le_reif") {
+  } else if (ct->type == "int_lin_le_reif") {
     ct->type = "int_lin_ge_reif";
-  } else if (id == "int_lin_ge_reif") {
+  } else if (ct->type == "int_lin_ge_reif") {
     ct->type = "int_lin_le_reif";
   }
   return true;
@@ -837,9 +877,15 @@ bool FzPresolver::RegroupLinear(FzConstraint* ct) {
 }
 
 // Bound propagation: int_lin_eq, int_lin_le, int_lin_ge
-//   - If a scalar product only contains positive constant and variables, then
-//   we can propagate an upper bound on all variables.
-//   - If a scalar product has one term, we can also propagate a lower bound.
+//
+// Rule 1:
+// Input : int_lin_xx([c1, .., cn], [x1, .., xn],  c0) with ci >= 0 and
+//         xi are variables with positive domain.
+// Action: if xx = eq or le, intersect the domain of xi with [0, c0 / ci]
+//
+// Rule 2:
+// Input : int_lin_xx([c1], [x1], c0) with c1 >= 0, and xx = eq, ge.
+// Action: intersect the domain of x1 with [c0/c1, kint64max]
 bool FzPresolver::PropagatePositiveLinear(FzConstraint* ct, bool upper) {
   const int64 rhs = ct->Arg(2).Value();
   if (ct->presolve_propagation_done || rhs < 0) {
@@ -857,6 +903,7 @@ bool FzPresolver::PropagatePositiveLinear(FzConstraint* ct, bool upper) {
   }
   bool modified = false;
   if (upper) {
+    // Rule 1.
     FZVLOG << "Bound propagation on " << ct->DebugString() << FZENDL;
     for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
       const int64 coef = ct->Arg(0).values[i];
@@ -872,6 +919,7 @@ bool FzPresolver::PropagatePositiveLinear(FzConstraint* ct, bool upper) {
       }
     }
   } else if (ct->Arg(0).values.size() == 1 && ct->Arg(0).values[0] > 0) {
+    // Rule 2.
     const int64 coef = ct->Arg(0).values[0];
     FzIntegerVariable* const var = ct->Arg(1).variables[0];
     const int64 bound = (rhs + coef - 1) / coef;
@@ -890,6 +938,8 @@ bool FzPresolver::PropagatePositiveLinear(FzConstraint* ct, bool upper) {
 // Minizinc flattens 2d element constraints (x = A[y][z]) into 1d element
 // constraint with an affine mapping between y, z and the new index.
 // This rule stores the mapping to reconstruct the 2d element constraint.
+// This mapping can involve 1 or 2 variables dependening if y or z in A[y][z]
+// is a constant in the model).
 bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
   if (ct->Arg(0).values.size() == 2 &&
       ct->Arg(1).variables[0] == ct->target_variable &&
@@ -904,22 +954,22 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
   if (ct->Arg(0).values.size() == 3 &&
       ct->Arg(1).variables[0] == ct->target_variable &&
       ct->Arg(0).values[0] == -1 && ct->Arg(0).values[2] == 1 &&
-      !ContainsKey(flatten_map_, ct->target_variable) &&
+      !ContainsKey(array2d_index_map_, ct->target_variable) &&
       ct->strong_propagation) {
-    flatten_map_[ct->target_variable] =
-        FlatteningMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
-                          ct->Arg(1).variables[2], -ct->Arg(2).Value(), ct);
+    array2d_index_map_[ct->target_variable] =
+        Array2DIndexMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
+                            ct->Arg(1).variables[2], -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
     //    ct->MarkAsInactive();
     return true;
   } else if (ct->Arg(0).values.size() == 3 &&
              ct->Arg(1).variables[0] == ct->target_variable &&
              ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1 &&
-             !ContainsKey(flatten_map_, ct->target_variable) &&
+             !ContainsKey(array2d_index_map_, ct->target_variable) &&
              ct->strong_propagation) {
-    flatten_map_[ct->target_variable] =
-        FlatteningMapping(ct->Arg(1).variables[2], ct->Arg(0).values[2],
-                          ct->Arg(1).variables[1], -ct->Arg(2).Value(), ct);
+    array2d_index_map_[ct->target_variable] =
+        Array2DIndexMapping(ct->Arg(1).variables[2], ct->Arg(0).values[2],
+                            ct->Arg(1).variables[1], -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
     //    ct->MarkAsInactive();
     return true;
@@ -939,19 +989,29 @@ bool IsIncreasingContiguous(const std::vector<int64>& values) {
 }  // namespace
 
 // Rewrite array element: array_int_element:
-//   - If the index var is an affine mapping: do the inverse affine
-//     transformation on the array of values.
-//   - If the index var is the result of the flattening of 2 variables into 1,
-//     the create the table constraints that maps the values, with the 2
-//     variables, removing the need to the intermediate index variable.
-//   - If the values are increasing and contiguous, rewrite into a simple
-//     translation.
+//
+// Rule1:
+// Input : array_int_element(x0, [c1, .., cn], y) with x0 = a * x + b
+// Output: array_int_element(x, [c_a1, .., c_am], b) with a * i = b = ai
+//
+// Rule 2:
+// Input : array_int_element(x, [c1, .., cn], y) with x = a * x1 + x2 + b
+// Output: array_int_element([x1, x2], [c_a1, .., c_am], b, [a, b])
+//         to be interpreted by the extraction process.
+// Rule3:
+// Input : array_int_element(x, [c1, .., cn], y) with x fixed one value.
+// Output: int_eq(b, c_x.Value())
+//
+// Rule 4:
+// Input : array_int_element(x, [c1, .., cn], y) with x0 ci = c0 + i
+// Output: int_lin_eq([-1, 1], [y, x], 1 - c)  (e.g. y = x + c - 1)
 bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
   if (ct->Arg(0).variables.size() > 1) {
     return false;
   }
   FzIntegerVariable* const index_var = ct->Arg(0).Var();
   if (ContainsKey(affine_map_, index_var)) {
+    // Rule 1.
     const AffineMapping& mapping = affine_map_[index_var];
     const FzDomain& domain = mapping.variable->domain;
     if (domain.is_interval && domain.values.empty()) {
@@ -990,8 +1050,8 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
       // Rewrite constraint.
       FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
       ct->MutableArg(0)->variables[0] = mapping.variable;
-      ct->Arg(0).variables[0]->domain
-          .IntersectWithInterval(1, new_values.size());
+      ct->Arg(0).variables[0]->domain.IntersectWithInterval(1,
+                                                            new_values.size());
       // TODO(user): Encapsulate argument setters.
       ct->MutableArg(1)->values.swap(new_values);
       if (ct->Arg(1).values.size() == 1) {
@@ -1006,9 +1066,9 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
       return true;
     }
   }
-  if (ContainsKey(flatten_map_, index_var)) {
+  if (ContainsKey(array2d_index_map_, index_var)) {
     FZVLOG << "Rewrite " << ct->DebugString() << " as a 2d element" << FZENDL;
-    const FlatteningMapping& mapping = flatten_map_[index_var];
+    const Array2DIndexMapping& mapping = array2d_index_map_[index_var];
     // Rewrite constraint.
     ct->MutableArg(0)->variables[0] = mapping.variable1;
     ct->MutableArg(0)->variables.push_back(mapping.variable2);
@@ -1027,6 +1087,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     return true;
   }
   if (index_var->HasOneValue()) {
+    // Rule 3.
     FZVLOG << "Rewrite " << ct->DebugString() << FZENDL;
     const int64 index = index_var->domain.values[0] - 1;
     const int64 value = ct->Arg(1).values[index];
@@ -1049,6 +1110,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     return true;
   }
   if (IsIncreasingContiguous(ct->Arg(1).values)) {
+    // Rule 4.
     const int64 start = ct->Arg(1).values.front();
     FzIntegerVariable* const index = ct->Arg(0).Var();
     FzIntegerVariable* const target = ct->Arg(2).Var();
@@ -1081,9 +1143,15 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
 }
 
 // Simplifies array_var_int_element
-//   - Reconstructs the 2d element constraint in case the mapping only
-//   contains 1 variable. (e.g. x = A[2][y]).
-//   - Change to array_int_element if all variables are bound.
+//
+// Rule1:
+// Input : array_var_int_element(x0, [x1, .., xn], y) with xi(1..n) having one
+//         value
+// Output: array_int_element(x0, [x1.Value(), .., xn.Value()], y)
+//
+// Rule2:
+// Input : array_var_int_element(x0, [x1, .., xn], y) with x0 = a * x + b
+// Output: array_var_int_element(x, [x_a1, .., x_an], b) with a * i = b = ai
 bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
   bool all_integers = true;
   for (FzIntegerVariable* const var : ct->Arg(1).variables) {
@@ -1093,6 +1161,7 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     }
   }
   if (all_integers) {
+    // Rule 1:
     FZVLOG << "Change " << ct->DebugString() << " to array_int_element"
            << FZENDL;
     ct->type = "array_int_element";
@@ -1105,6 +1174,7 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
   }
   FzIntegerVariable* const index_var = ct->Arg(0).Var();
   if (index_var->HasOneValue()) {
+    // Rule 2.
     // Arrays are 1 based.
     const int64 position = index_var->Min() - 1;
     FzIntegerVariable* const expr = ct->Arg(1).variables[position];
@@ -1383,8 +1453,8 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
     FzIntegerVariable* const left = ct->Arg(1).variables[0];
     FzIntegerVariable* const right = ct->Arg(1).variables[1];
     FzIntegerVariable* const target = ct->Arg(3).Var();
-    if (IsBooleanVar(ct->Arg(1).variables[0]) &&
-        IsBooleanVar(ct->Arg(1).variables[1])) {
+    if (Has01Values(ct->Arg(1).variables[0]) &&
+        Has01Values(ct->Arg(1).variables[1])) {
       // Rule 1.
       FZVLOG << "Rewrite " << ct->DebugString() << " to bool_ne_reif" << FZENDL;
       ct->type = "bool_ne_reif";
@@ -1401,8 +1471,7 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
       FZVLOG << " -> " << ct->DebugString() << FZENDL;
       return true;
     }
-    if (IsBooleanVar(right) && left->HasOneValue() &&
-        IsBooleanValue(left->Min())) {
+    if (Has01Values(right) && left->HasOneValue() && Is0Or1(left->Min())) {
       if (left->Min() == 0) {
         // Rule 2.
         FZVLOG << "Rewrite " << ct->DebugString() << " to bool_eq" << FZENDL;
@@ -1432,8 +1501,8 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
         FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       }
-    } else if (IsBooleanVar(left) && right->HasOneValue() &&
-               IsBooleanValue(right->Min())) {
+    } else if (Has01Values(left) && right->HasOneValue() &&
+               Is0Or1(right->Min())) {
       if (right->Min() == 0) {
         // Rule 4.
         FZVLOG << "Rewrite " << ct->DebugString() << " to bool_eq" << FZENDL;
@@ -1583,6 +1652,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   return changed;
 }
 
+// Stores all pairs of variables appearing in an int_ne(x, y) constraint.
 void FzPresolver::StoreDifference(FzConstraint* ct) {
   if (ct->Arg(2).Value() == 0 && ct->Arg(0).values.size() == 3) {
     // Looking for a difference var.
@@ -1600,10 +1670,10 @@ void FzPresolver::StoreDifference(FzConstraint* ct) {
 }
 
 void FzPresolver::MergeIntEqNe(FzModel* model) {
-  hash_map<const FzIntegerVariable*,
-           hash_map<int64, FzIntegerVariable*>> int_eq_reif_map;
-  hash_map<const FzIntegerVariable*,
-           hash_map<int64, FzIntegerVariable*>> int_ne_reif_map;
+  hash_map<const FzIntegerVariable*, hash_map<int64, FzIntegerVariable*>>
+      int_eq_reif_map;
+  hash_map<const FzIntegerVariable*, hash_map<int64, FzIntegerVariable*>>
+      int_ne_reif_map;
   for (FzConstraint* const ct : model->constraints()) {
     if (!ct->active) continue;
     if (ct->type == "int_eq_reif" && ct->Arg(2).values.empty()) {
@@ -1677,6 +1747,17 @@ void FzPresolver::FirstPassModelScan(FzModel* model) {
 }
 
 bool FzPresolver::Run(FzModel* model) {
+  // Rebuild var_constraint map if empty.
+  if (var_to_constraints_.empty()) {
+    for (FzConstraint* const ct : model->constraints()) {
+      for (const FzArgument& arg : ct->arguments) {
+        for (FzIntegerVariable* const var : arg.variables) {
+          var_to_constraints_[var].insert(ct);
+        }
+      }
+    }
+  }
+
   FirstPassModelScan(model);
 
   MergeIntEqNe(model);
@@ -1721,8 +1802,8 @@ bool FzPresolver::Run(FzModel* model) {
 
 // ----- Substitution support -----
 
-void FzPresolver::MarkVariablesAsEquivalent(FzIntegerVariable* from,
-                                            FzIntegerVariable* to) {
+void FzPresolver::AddVariableSubstition(FzIntegerVariable* from,
+                                        FzIntegerVariable* to) {
   CHECK(from != nullptr);
   CHECK(to != nullptr);
   // Apply the substitutions, if any.
@@ -1846,7 +1927,7 @@ void FzPresolver::SubstituteAnnotation(FzAnnotation* ann) {
 
 // ----- Helpers -----
 
-void FzPresolver::IntersectDomainWith(FzDomain* domain, const FzArgument& arg) {
+void FzPresolver::IntersectDomainWith(const FzArgument& arg, FzDomain* domain) {
   switch (arg.type) {
     case FzArgument::INT_VALUE: {
       const int64 value = arg.Value();
@@ -1924,11 +2005,10 @@ void CleanUpVariableWithMultipleDefiningConstraints(FzModel* model) {
   for (auto& ct_list : ct_var_map) {
     if (ct_list.second.size() > 1) {
       // Sort by number of variables in the constraint. Prefer smaller ones.
-      std::sort(ct_list.second.begin(),
-                ct_list.second.end(),
-                [](FzConstraint* c1, FzConstraint* c2) {
-                  return SortWeight(c1) < SortWeight(c2);
-                });
+      std::sort(ct_list.second.begin(), ct_list.second.end(),
+           [](FzConstraint* c1, FzConstraint* c2) {
+             return SortWeight(c1) < SortWeight(c2);
+           });
       // Keep the first constraint as the defining one.
       for (int pos = 1; pos < ct_list.second.size(); ++pos) {
         FzConstraint* const ct = ct_list.second[pos];
@@ -1965,7 +2045,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
           if (ct->Arg(0).values[i] == -1) {
             break;
           } else if (ct->Arg(0).values[i] == 1) {
-          FZVLOG << "Reverse " << ct->DebugString() << FZENDL;
+            FZVLOG << "Reverse " << ct->DebugString() << FZENDL;
             ct->MutableArg(2)->values[0] *= -1;
             for (int j = 0; j < ct->Arg(0).values.size(); ++j) {
               ct->MutableArg(0)->values[j] *= -1;
@@ -1974,7 +2054,6 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
           }
         }
       }
-
     }
     if (id == "array_var_int_element") {
       if (ct->target_variable != nullptr) {
@@ -1994,8 +2073,8 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
     if (use_sat && ct->target_variable != nullptr &&
         (id == "array_bool_and" || id == "array_bool_or" ||
          ((id == "bool_eq_reif" || id == "bool_ne_reif") &&
-          !ct->Arg(1).HasOneValue()) || id == "bool_le_reif" ||
-         id == "bool_ge_reif")) {
+          !ct->Arg(1).HasOneValue()) ||
+         id == "bool_le_reif" || id == "bool_ge_reif")) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from constraints that will not implement it.

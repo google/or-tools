@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #ifndef OR_TOOLS_FLATZINC_SEARCH_H_
 #define OR_TOOLS_FLATZINC_SEARCH_H_
 
@@ -74,8 +75,7 @@ class FzParallelSupportInterface {
   virtual void StartSearch(int worker_id, Type type) = 0;
   // Worker 'worker_id' notifies a new solution in a satisfaction
   // problem. 'solution_string' is the solution to display if needed.
-  virtual void SatSolution(int worker_id,
-                           const std::string& solution_string) = 0;
+  virtual void SatSolution(int worker_id, const std::string& solution_string) = 0;
   // Worker 'worker_id' notifies a new solution in an optimization
   // problem. 'solution_string' is the solution to display if needed.
   virtual void OptimizeSolution(int worker_id, int64 value,

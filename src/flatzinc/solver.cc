@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include <string>
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -29,8 +30,12 @@ DEFINE_bool(use_sat, true, "Use a sat solver for propagating on booleans.");
 namespace operations_research {
 IntExpr* FzSolver::GetExpression(const FzArgument& arg) {
   switch (arg.type) {
-    case FzArgument::INT_VALUE: { return solver_.MakeIntConst(arg.Value()); }
-    case FzArgument::INT_VAR_REF: { return Extract(arg.variables[0]); }
+    case FzArgument::INT_VALUE: {
+      return solver_.MakeIntConst(arg.Value());
+    }
+    case FzArgument::INT_VAR_REF: {
+      return Extract(arg.variables[0]);
+    }
     default: {
       LOG(FATAL) << "Cannot extract " << arg.DebugString() << " as a variable";
       return nullptr;
@@ -108,14 +113,13 @@ int64 FzSolver::SolutionValue(FzIntegerVariable* var) {
 }
 
 // The format is fixed in the flatzinc specification.
-std::string FzSolver::SolutionString(const FzOnSolutionOutput& output,
-                                     bool store) {
+std::string FzSolver::SolutionString(const FzOnSolutionOutput& output, bool store) {
   if (output.variable != nullptr) {
     const int64 value = SolutionValue(output.variable);
     if (store) {
       stored_values_.back()[output.variable] = value;
     }
-    if (output.is_boolean) {
+    if (output.display_as_boolean) {
       return StringPrintf("%s = %s;", output.name.c_str(),
                           value == 1 ? "true" : "false");
     } else {
@@ -127,15 +131,15 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output,
     std::string result =
         StringPrintf("%s = array%dd(", output.name.c_str(), bound_size);
     for (int i = 0; i < bound_size; ++i) {
-      result.append(
-          StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
-                       output.bounds[i].min_value, output.bounds[i].max_value));
+      result.append(StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
+                                 output.bounds[i].min_value,
+                                 output.bounds[i].max_value));
     }
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
       const int64 value = SolutionValue(output.flat_variables[i]);
       FzIntegerVariable* const var = output.flat_variables[i];
-      if (output.is_boolean) {
+      if (output.display_as_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {
         result.append(StringPrintf("%" GG_LL_FORMAT "d", value));
@@ -255,8 +259,7 @@ bool FzSolver::Extract() {
   int index = 0;
   std::vector<ConstraintWithIo*> to_sort;
   std::vector<FzConstraint*> sorted;
-  hash_map<const FzIntegerVariable*, std::vector<ConstraintWithIo*>>
-      dependencies;
+  hash_map<const FzIntegerVariable*, std::vector<ConstraintWithIo*>> dependencies;
   for (FzConstraint* ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
       ConstraintWithIo* const ctio =
@@ -320,10 +323,10 @@ bool FzSolver::Extract() {
   const int num_cp_constraints = solver_.constraints();
   if (num_cp_constraints <= 1) {
     FZLOG << "  - " << num_cp_constraints
-                    << " constraint added to the CP solver" << FZENDL;
+          << " constraint added to the CP solver" << FZENDL;
   } else {
     FZLOG << "  - " << num_cp_constraints
-                    << " constraints added to the CP solver" << FZENDL;
+          << " constraints added to the CP solver" << FZENDL;
   }
   const int num_sat_constraints = FLAGS_use_sat ? NumSatConstraints(sat_) : 0;
   if (num_sat_constraints > 0) {
@@ -396,8 +399,7 @@ bool EqualVector(const std::vector<T>& v1, const std::vector<T>& v2) {
 }
 }  // namespace
 
-bool FzSolver::IsAllDifferent(
-    const std::vector<FzIntegerVariable*>& diffs) const {
+bool FzSolver::IsAllDifferent(const std::vector<FzIntegerVariable*>& diffs) const {
   std::vector<FzIntegerVariable*> local(diffs);
   std::sort(local.begin(), local.end());
   const FzIntegerVariable* const start = local.front();

@@ -10,6 +10,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+#include "flatzinc/model.h"
+
 #include "base/hash.h"
 #include <iostream>  // NOLINT
 #include <set>
@@ -18,7 +21,6 @@
 #include "base/join.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
-#include "flatzinc/model.h"
 
 DEFINE_bool(fz_logging, false,
             "Print logging information from the flatzinc interpreter.");
@@ -27,20 +29,29 @@ DEFINE_bool(fz_verbose, false,
 DEFINE_bool(fz_debug, false,
             "Print debug logging information from the flatzinc interpreter.");
 
+
 namespace operations_research {
 // ----- FzDomain -----
 
-FzDomain FzDomain::IntegerList(const std::vector<int64>& values) {
+FzDomain FzDomain::IntegerList(std::vector<int64>* values) {
   FzDomain result;
   result.is_interval = false;
-  result.values = values;
+  result.values.swap(*values);
+  result.display_as_boolean = false;
+  return result;
+}
+
+FzDomain FzDomain::EmptyDomain() {
+  FzDomain result;
+  result.is_interval = false;
+  result.display_as_boolean = false;
   return result;
 }
 
 FzDomain FzDomain::AllInt64() {
   FzDomain result;
   result.is_interval = true;
-  result.is_boolean = false;
+  result.display_as_boolean = false;
   return result;
 }
 
@@ -48,14 +59,14 @@ FzDomain FzDomain::Singleton(int64 value) {
   FzDomain result;
   result.is_interval = false;
   result.values.push_back(value);
-  result.is_boolean = false;
+  result.display_as_boolean = false;
   return result;
 }
 
 FzDomain FzDomain::Interval(int64 included_min, int64 included_max) {
   FzDomain result;
   result.is_interval = true;
-  result.is_boolean = false;
+  result.display_as_boolean = false;
   result.values.push_back(included_min);
   result.values.push_back(included_max);
   return result;
@@ -64,7 +75,7 @@ FzDomain FzDomain::Interval(int64 included_min, int64 included_max) {
 FzDomain FzDomain::Boolean() {
   FzDomain result;
   result.is_interval = false;
-  result.is_boolean = true;
+  result.display_as_boolean = true;
   result.values.push_back(0);
   result.values.push_back(1);
   return result;
@@ -74,11 +85,10 @@ void FzDomain::IntersectWithFzDomain(const FzDomain& other) {
   if (other.is_interval) {
     if (!other.values.empty()) {
       IntersectWithInterval(other.values[0], other.values[1]);
-      return;
-    } else {  // nothing to do.
-      return;
     }
-  } else if (is_interval) {
+    return;
+  }
+  if (is_interval) {
     is_interval = false;  // Other is not an interval.
     if (values.empty()) {
       values = other.values;
@@ -122,11 +132,13 @@ void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
     const int64 dmin = values.empty() ? kint64min : values[0];
     const int64 dmax = values.empty() ? kint64max : values[1];
     values.clear();
-    for (const int64 v : ovalues)
+    for (const int64 v : ovalues) {
       if (v >= dmin && v <= dmax) values.push_back(v);
+    }
     STLSortAndRemoveDuplicates(&values);
-    if (!values.empty() && values.back() - values.front() ==
-                               values.size() - 1 && values.size() >= 2) {
+    if (!values.empty() &&
+        values.back() - values.front() == values.size() - 1 &&
+        values.size() >= 2) {
       if (values.size() > 2) {
         // Contiguous case.
         const int64 last = values.back();
@@ -259,8 +271,7 @@ FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   return result;
 }
 
-FzArgument FzArgument::IntVarRefArray(
-    const std::vector<FzIntegerVariable*>& vars) {
+FzArgument FzArgument::IntVarRefArray(const std::vector<FzIntegerVariable*>& vars) {
   FzArgument result;
   result.type = INT_VAR_REF_ARRAY;
   result.variables = vars;
@@ -320,17 +331,17 @@ bool FzArgument::HasOneValue() const {
 }
 
 int64 FzArgument::Value() const {
-  DCHECK(HasOneValue())
-      << "Value() called on unbound FzArgument: " << DebugString();
+  DCHECK(HasOneValue()) << "Value() called on unbound FzArgument: "
+                        << DebugString();
   switch (type) {
     case INT_VALUE:
     case INT_INTERVAL:
     case INT_LIST:
       return values[0];
-    case INT_VAR_REF: { return variables[0]->domain.values[0]; }
-    default: {
-      return 0;
-    }  // Should fail anyway.
+    case INT_VAR_REF: {
+      return variables[0]->domain.values[0];
+    }
+    default: { return 0; }  // Should fail anyway.
   }
 }
 
@@ -443,8 +454,7 @@ FzAnnotation FzAnnotation::Empty() {
   return result;
 }
 
-FzAnnotation FzAnnotation::AnnotationList(
-    std::vector<FzAnnotation>* list) {
+FzAnnotation FzAnnotation::AnnotationList(std::vector<FzAnnotation>* list) {
   FzAnnotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
@@ -535,7 +545,9 @@ std::string FzAnnotation::DebugString() const {
     case ANNOTATION_LIST: {
       return StringPrintf("[%s]", JoinDebugString(annotations, ", ").c_str());
     }
-    case IDENTIFIER: { return id; }
+    case IDENTIFIER: {
+      return id;
+    }
     case FUNCTION_CALL: {
       return StringPrintf("%s(%s)", id.c_str(),
                           JoinDebugString(annotations, ", ").c_str());
@@ -544,8 +556,12 @@ std::string FzAnnotation::DebugString() const {
       return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d",
                           interval_min, interval_max);
     }
-    case INT_VALUE: { return StringPrintf("%" GG_LL_FORMAT "d", interval_min); }
-    case INT_VAR_REF: { return variables.front()->name; }
+    case INT_VALUE: {
+      return StringPrintf("%" GG_LL_FORMAT "d", interval_min);
+    }
+    case INT_VAR_REF: {
+      return variables.front()->name;
+    }
     case INT_VAR_REF_ARRAY: {
       std::string result = "[";
       for (int i = 0; i < variables.size(); ++i) {
@@ -554,7 +570,9 @@ std::string FzAnnotation::DebugString() const {
       }
       return result;
     }
-    case STRING_VALUE: { return StringPrintf("\"%s\"", string_value_.c_str()); }
+    case STRING_VALUE: {
+      return StringPrintf("\"%s\"", string_value_.c_str());
+    }
   }
 }
 
@@ -567,30 +585,30 @@ std::string FzOnSolutionOutput::Bounds::DebugString() const {
 
 FzOnSolutionOutput FzOnSolutionOutput::SingleVariable(
     const std::string& name, FzIntegerVariable* const variable,
-    bool is_boolean) {
+    bool display_as_boolean) {
   FzOnSolutionOutput result;
   result.name = name;
   result.variable = variable;
-  result.is_boolean = is_boolean;
+  result.display_as_boolean = display_as_boolean;
   return result;
 }
 
 FzOnSolutionOutput FzOnSolutionOutput::MultiDimensionalArray(
     const std::string& name, const std::vector<Bounds>& bounds,
-    const std::vector<FzIntegerVariable*>& flat_variables, bool is_boolean) {
+    const std::vector<FzIntegerVariable*>& flat_variables, bool display_as_boolean) {
   FzOnSolutionOutput result;
   result.variable = nullptr;
   result.name = name;
   result.bounds = bounds;
   result.flat_variables = flat_variables;
-  result.is_boolean = is_boolean;
+  result.display_as_boolean = display_as_boolean;
   return result;
 }
 
 FzOnSolutionOutput FzOnSolutionOutput::VoidOutput() {
   FzOnSolutionOutput result;
   result.variable = nullptr;
-  result.is_boolean = false;
+  result.display_as_boolean = false;
   return result;
 }
 
@@ -619,8 +637,8 @@ FzIntegerVariable* FzModel::AddVariable(const std::string& name,
 }
 
 void FzModel::AddConstraint(const std::string& id,
-                            const std::vector<FzArgument>& arguments,
-                            bool is_domain, FzIntegerVariable* const defines) {
+                            const std::vector<FzArgument>& arguments, bool is_domain,
+                            FzIntegerVariable* const defines) {
   FzConstraint* const constraint =
       new FzConstraint(id, arguments, is_domain, defines);
   constraints_.push_back(constraint);

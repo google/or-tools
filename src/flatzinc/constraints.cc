@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #include <string>
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -21,26 +22,28 @@
 #include "flatzinc/solver.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/string_array.h"
 
 DECLARE_bool(use_sat);
 DECLARE_bool(fz_verbose);
 
-
 // TODO:
 //  - arg_sort
 //  - geost
-//  - k-dimensional diffn
-//  - network_flow
 // Not necessary?:
 //  - knapsack
+//  - network_flow
 // Done:
 //  - arg_max, arg_min
 //  - disjunctive:
 //  - regular with NFAs
 //  - symmetric all different
+//  - strict diffn, kdiffn, strict disjunctive,
+//  - k-dimensional diffn
 // Later:
-// optional scheduling constraints: alternative, span, disjunctive, cumulative
-// functional versions of many global constraints
+//   - optional scheduling constraints: alternative, span, disjunctive,
+//     cumulative
+//   - functional versions of many global constraints
 
 namespace operations_research {
 namespace {
@@ -217,8 +220,7 @@ void ExtractArrayIntElement(FzSolver* fzsolver, FzConstraint* ct) {
     IntExpr* const index = fzsolver->GetExpression(ct->Arg(0));
     const std::vector<int64>& values = ct->Arg(1).values;
     const int64 imin = std::max(index->Min(), 1LL);
-    const int64 imax =
-        std::min(index->Max(), static_cast<int64>(values.size()));
+    const int64 imax = std::min<int64>(index->Max(), values.size());
     IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
     const int64 size = imax - imin + 1;
     std::vector<int64> coefficients(size);
@@ -335,15 +337,14 @@ void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  std::vector<IntVar*> positive_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
+  std::vector<IntVar*> positive_variables = fzsolver->GetVariableArray(ct->Arg(0));
   const std::vector<IntVar*> negative_variables =
       fzsolver->GetVariableArray(ct->Arg(0));
   for (IntVar* const var : negative_variables) {
     positive_variables.push_back(solver->MakeDifference(1, var)->Var());
   }
-  if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(),
-                                               positive_variables)) {
+  if (FLAGS_use_sat &&
+      AddBoolOrArrayEqualTrue(fzsolver->Sat(), positive_variables)) {
     FZVLOG << "  - posted to sat";
   } else {
     Constraint* const constraint =
@@ -673,8 +674,7 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
       AreAllOnes(fixed_durations) && variable_capacity == nullptr &&
       AreAllGreaterOrEqual(fixed_demands, fixed_capacity / 2 + 1)) {
     // Hidden all different.
-    Constraint* const constraint =
-        solver->MakeAllDifferent(start_variables);
+    Constraint* const constraint = solver->MakeAllDifferent(start_variables);
     AddConstraint(solver, ct, constraint);
     return;
   }
@@ -686,8 +686,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
       IsHiddenPerformed(fzsolver, ct->Arg(2).variables) &&
       variable_capacity == nullptr && fixed_capacity == 1) {
     std::vector<IntVar*> performed_variables;
-    ExtractPerformedAndDemands(
-        solver, variable_demands, &performed_variables, &fixed_demands);
+    ExtractPerformedAndDemands(solver, variable_demands, &performed_variables,
+                               &fixed_demands);
     std::vector<IntervalVar*> intervals;
     intervals.reserve(start_variables.size());
     for (int i = 0; i < start_variables.size(); ++i) {
@@ -727,21 +727,21 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
   if (!fixed_demands.empty()) {
     // Demands are fixed.
     if (variable_capacity == nullptr) {
-      constraint =
-          AreAllGreaterOrEqual(fixed_demands, fixed_capacity / 2 + 1) ?
-          solver->MakeDisjunctiveConstraint(intervals, "") :
-          solver->MakeCumulative(intervals, fixed_demands, fixed_capacity , "");
+      constraint = AreAllGreaterOrEqual(fixed_demands, fixed_capacity / 2 + 1)
+                       ? solver->MakeDisjunctiveConstraint(intervals, "")
+                       : solver->MakeCumulative(intervals, fixed_demands,
+                                                fixed_capacity, "");
     } else {
       // Capacity is variable.
-      constraint = solver->MakeCumulative(
-          intervals, fixed_demands, variable_capacity, "");
+      constraint = solver->MakeCumulative(intervals, fixed_demands,
+                                          variable_capacity, "");
     }
   } else {
     // Demands are variables.
     if (variable_capacity == nullptr) {
       // Capacity is fixed.
-      constraint = solver->MakeCumulative(
-          intervals, variable_demands, fixed_capacity, "");
+      constraint = solver->MakeCumulative(intervals, variable_demands,
+                                          fixed_capacity, "");
     } else {
       // Capacity is variable.
       // Constraint* const constraint2 = MakeVariableCumulative(
@@ -749,8 +749,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
       //     variable_capacity);
       // AddConstraint(solver, ct, constraint2);
 
-      constraint = solver->MakeCumulative(
-          intervals, variable_demands, variable_capacity, "");
+      constraint = solver->MakeCumulative(intervals, variable_demands,
+                                          variable_capacity, "");
     }
   }
   AddConstraint(solver, ct, constraint);
@@ -758,24 +758,88 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<IntVar*> x_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
-  const std::vector<IntVar*> y_variables =
-      fzsolver->GetVariableArray(ct->Arg(1));
+  const vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
   if (ct->Arg(2).type == FzArgument::INT_LIST &&
       ct->Arg(3).type == FzArgument::INT_LIST) {
-    const std::vector<int64>& x_sizes = ct->Arg(2).values;
-    const std::vector<int64>& y_sizes = ct->Arg(3).values;
+    const vector<int64>& x_sizes = ct->Arg(2).values;
+    const vector<int64>& y_sizes = ct->Arg(3).values;
     Constraint* const constraint = solver->MakeNonOverlappingBoxesConstraint(
         x_variables, y_variables, x_sizes, y_sizes);
     AddConstraint(solver, ct, constraint);
   } else {
-    const std::vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
-    const std::vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
+    const vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
+    const vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
     Constraint* const constraint = solver->MakeNonOverlappingBoxesConstraint(
         x_variables, y_variables, x_sizes, y_sizes);
     AddConstraint(solver, ct, constraint);
   }
+}
+
+void ExtractDiffnK(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> flat_x = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> flat_dx = fzsolver->GetVariableArray(ct->Arg(1));
+  const int num_boxes = ct->Arg(2).Value();
+  const int num_dims = ct->Arg(3).Value();
+  std::vector<std::vector<IntVar*>> x(num_boxes);
+  std::vector<std::vector<IntVar*>> dx(num_boxes);
+  int count = 0;
+  for (int b = 0; b < num_boxes; ++b) {
+    x[b].resize(num_dims);
+    dx[b].resize(num_dims);
+    for (int d = 0; d < num_dims; ++d) {
+      x[b][d] = flat_x[count];
+      dx[b][d] = flat_dx[count];
+      count++;
+    }
+  }
+  Constraint* const constraint = MakeKDiffn(solver, x, dx, true);
+  AddConstraint(solver, ct, constraint);
+}
+
+void ExtractDiffnNonStrict(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  const vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
+  if (ct->Arg(2).type == FzArgument::INT_LIST &&
+      ct->Arg(3).type == FzArgument::INT_LIST) {
+    const vector<int64>& x_sizes = ct->Arg(2).values;
+    const vector<int64>& y_sizes = ct->Arg(3).values;
+    Constraint* const constraint =
+        solver->MakeNonOverlappingNonStrictBoxesConstraint(
+            x_variables, y_variables, x_sizes, y_sizes);
+    AddConstraint(solver, ct, constraint);
+  } else {
+    const vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
+    const vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
+    Constraint* const constraint =
+        solver->MakeNonOverlappingNonStrictBoxesConstraint(
+            x_variables, y_variables, x_sizes, y_sizes);
+    AddConstraint(solver, ct, constraint);
+  }
+}
+
+void ExtractDiffnNonStrictK(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  const std::vector<IntVar*> flat_x = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> flat_dx = fzsolver->GetVariableArray(ct->Arg(1));
+  const int num_boxes = ct->Arg(2).Value();
+  const int num_dims = ct->Arg(3).Value();
+  std::vector<std::vector<IntVar*>> x(num_boxes);
+  std::vector<std::vector<IntVar*>> dx(num_boxes);
+  int count = 0;
+  for (int b = 0; b < num_boxes; ++b) {
+    x[b].resize(num_dims);
+    dx[b].resize(num_dims);
+    for (int d = 0; d < num_dims; ++d) {
+      x[b][d] = flat_x[count];
+      dx[b][d] = flat_dx[count];
+      count++;
+    }
+  }
+  Constraint* const constraint = MakeKDiffn(solver, x, dx, false);
+  AddConstraint(solver, ct, constraint);
 }
 
 void ExtractDisjunctive(FzSolver* fzsolver, FzConstraint* ct) {
@@ -802,8 +866,7 @@ void ExtractDisjunctive(FzSolver* fzsolver, FzConstraint* ct) {
   // Special case. We will not create the interval variables.
   if (!fixed_durations.empty() && AreAllOnes(fixed_durations)) {
     // Hidden all different.
-    Constraint* const constraint =
-        solver->MakeAllDifferent(start_variables);
+    Constraint* const constraint = solver->MakeAllDifferent(start_variables);
     AddConstraint(solver, ct, constraint);
     return;
   }
@@ -830,6 +893,56 @@ void ExtractDisjunctive(FzSolver* fzsolver, FzConstraint* ct) {
   AddConstraint(solver, ct, constraint);
 }
 
+void ExtractDisjunctiveStrict(FzSolver* fzsolver, FzConstraint* ct) {
+  // This constraint has many possible translation into the CP library.
+  // First we parse the arguments.
+  Solver* const solver = fzsolver->solver();
+  // Parse start variables.
+  const std::vector<IntVar*> start_variables =
+      fzsolver->GetVariableArray(ct->Arg(0));
+
+  // Parse durations.
+  std::vector<int64> fixed_durations;
+  std::vector<IntVar*> variable_durations;
+  if (ct->Arg(1).type == FzArgument::INT_LIST) {
+    fixed_durations = ct->Arg(1).values;
+  } else {
+    variable_durations = fzsolver->GetVariableArray(ct->Arg(1));
+    if (AreAllBound(variable_durations)) {
+      FillValues(variable_durations, &fixed_durations);
+      variable_durations.clear();
+    }
+  }
+
+  // Special case. We will not create the interval variables.
+  if (!fixed_durations.empty() && AreAllOnes(fixed_durations)) {
+    // Hidden all different.
+    Constraint* const constraint = solver->MakeAllDifferent(start_variables);
+    AddConstraint(solver, ct, constraint);
+    return;
+  }
+
+  // Back to regular case. Let's create the interval variables.
+  std::vector<IntervalVar*> intervals;
+  if (!fixed_durations.empty()) {
+    for (int i = 0; i < start_variables.size(); ++i) {
+      IntervalVar* const interval = solver->MakeFixedDurationIntervalVar(
+          start_variables[i], fixed_durations[i], start_variables[i]->name());
+      intervals.push_back(interval);
+    }
+  } else {
+    for (int i = 0; i < start_variables.size(); ++i) {
+      IntVar* const start = start_variables[i];
+      IntVar* const duration = variable_durations[i];
+      IntervalVar* const interval =
+          MakePerformedIntervalVar(solver, start, duration, start->name());
+      intervals.push_back(interval);
+    }
+  }
+  Constraint* const constraint =
+      solver->MakeStrictDisjunctiveConstraint(intervals, "");
+  AddConstraint(solver, ct, constraint);
+}
 
 void ExtractGlobalCardinality(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
@@ -1311,8 +1424,7 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
 }
 
 void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
-                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs,
-                     int64* rhs) {
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
   CHECK(vars != nullptr);
   CHECK(coeffs != nullptr);
   CHECK(rhs != nullptr);
@@ -1335,8 +1447,8 @@ void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
   }
 }
 
-bool AreAllExtractedAsVariables(
-    FzSolver* const fzsolver, const std::vector<FzIntegerVariable*>& fz_vars) {
+bool AreAllExtractedAsVariables(FzSolver* const fzsolver,
+                                const std::vector<FzIntegerVariable*>& fz_vars) {
   for (FzIntegerVariable* const fz_var : fz_vars) {
     IntExpr* const expr = fzsolver->Extract(fz_var);
     if (!expr->IsVar()) {
@@ -1576,8 +1688,7 @@ void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
   }
 }
 
-bool PostHiddenClause(SatPropagator* const sat,
-                      const std::vector<int64>& coeffs,
+bool PostHiddenClause(SatPropagator* const sat, const std::vector<int64>& coeffs,
                       const std::vector<IntVar*>& vars) {
   std::vector<IntVar*> others;
   others.reserve(vars.size() - 1);
@@ -2472,7 +2583,6 @@ void ExtractSymmetricAllDifferent(FzSolver* fzsolver, FzConstraint* ct) {
   AddConstraint(s, ct, constraint);
 }
 
-
 void ExtractTrueConstraint(FzSolver* fzsolver, FzConstraint* ct) {}
 }  // namespace
 
@@ -2562,8 +2672,16 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractCumulative(this, ct);
   } else if (type == "diffn") {
     ExtractDiffn(this, ct);
+  } else if (type == "diffn_k_with_sizes") {
+    ExtractDiffnK(this, ct);
+  } else if (type == "diffn_nonstrict") {
+    ExtractDiffnNonStrict(this, ct);
+  } else if (type == "diffn_nonstrict_k_with_sizes") {
+    ExtractDiffnNonStrictK(this, ct);
   } else if (type == "disjunctive") {
     ExtractDisjunctive(this, ct);
+  } else if (type == "disjunctive_strict") {
+    ExtractDisjunctiveStrict(this, ct);
   } else if (type == "global_cardinality") {
     ExtractGlobalCardinality(this, ct);
   } else if (type == "global_cardinality_closed") {

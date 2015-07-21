@@ -36,12 +36,13 @@ class Diffn : public Constraint {
  public:
   Diffn(Solver* const solver, const std::vector<IntVar*>& x_vars,
         const std::vector<IntVar*>& y_vars, const std::vector<IntVar*>& x_size,
-        const std::vector<IntVar*>& y_size)
+        const std::vector<IntVar*>& y_size, bool strict)
       : Constraint(solver),
         x_(x_vars),
         y_(y_vars),
         dx_(x_size),
         dy_(y_size),
+        strict_(strict),
         size_(x_vars.size()),
         fail_stamp_(0) {
     CHECK_EQ(x_vars.size(), y_vars.size());
@@ -103,10 +104,10 @@ class Diffn : public Constraint {
   }
 
   void InitialPropagate() override {
-    // All sizes should be > 0.
+    // All sizes should be >= 0.
     for (int i = 0; i < size_; ++i) {
-      dx_[i]->SetMin(1);
-      dy_[i]->SetMin(1);
+      dx_[i]->SetMin(0);
+      dy_[i]->SetMin(0);
     }
 
     // Force propagation on all boxes.
@@ -170,12 +171,14 @@ class Diffn : public Constraint {
 
   bool AreBoxedDisjoingHorizontallyForSure(int i, int j) const {
     return (x_[i]->Min() >= x_[j]->Max() + dx_[j]->Max()) ||
-           (x_[j]->Min() >= x_[i]->Max() + dx_[i]->Max());
+           (x_[j]->Min() >= x_[i]->Max() + dx_[i]->Max()) ||
+           (!strict_ && (dx_[i]->Min() == 0 || dx_[j]->Min() == 0));
   }
 
   bool AreBoxedDisjoingVerticallyForSure(int i, int j) const {
     return (y_[i]->Min() >= y_[j]->Max() + dy_[j]->Max()) ||
            (y_[j]->Min() >= y_[i]->Max() + dy_[i]->Max());
+           (!strict_ && (dy_[i]->Min() == 0 || dy_[j]->Min() == 0));
   }
 
   // Fill neighbors_ with all boxes that can overlap the given box.
@@ -285,6 +288,7 @@ class Diffn : public Constraint {
   std::vector<IntVar*> y_;
   std::vector<IntVar*> dx_;
   std::vector<IntVar*> dy_;
+  const bool strict_;
   const int64 size_;
   Demon* delayed_demon_;
   hash_set<int> to_propagate_;
@@ -296,7 +300,7 @@ class Diffn : public Constraint {
 Constraint* Solver::MakeNonOverlappingBoxesConstraint(
     const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
     const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size) {
-  return RevAlloc(new Diffn(this, x_vars, y_vars, x_size, y_size));
+  return RevAlloc(new Diffn(this, x_vars, y_vars, x_size, y_size, true));
 }
 
 Constraint* Solver::MakeNonOverlappingBoxesConstraint(
@@ -308,7 +312,7 @@ Constraint* Solver::MakeNonOverlappingBoxesConstraint(
     dx[i] = MakeIntConst(x_size[i]);
     dy[i] = MakeIntConst(y_size[i]);
   }
-  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy));
+  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, true));
 }
 
 Constraint* Solver::MakeNonOverlappingBoxesConstraint(
@@ -320,6 +324,36 @@ Constraint* Solver::MakeNonOverlappingBoxesConstraint(
     dx[i] = MakeIntConst(x_size[i]);
     dy[i] = MakeIntConst(y_size[i]);
   }
-  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy));
+  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, true));
+}
+
+Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    const std::vector<IntVar*>& x_size, const std::vector<IntVar*>& y_size) {
+  return RevAlloc(new Diffn(this, x_vars, y_vars, x_size, y_size, false));
+}
+
+Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    const std::vector<int64>& x_size, const std::vector<int64>& y_size) {
+  std::vector<IntVar*> dx(x_size.size());
+  std::vector<IntVar*> dy(y_size.size());
+  for (int i = 0; i < x_size.size(); ++i) {
+    dx[i] = MakeIntConst(x_size[i]);
+    dy[i] = MakeIntConst(y_size[i]);
+  }
+  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, false));
+}
+
+Constraint* Solver::MakeNonOverlappingNonStrictBoxesConstraint(
+    const std::vector<IntVar*>& x_vars, const std::vector<IntVar*>& y_vars,
+    const std::vector<int>& x_size, const std::vector<int>& y_size) {
+  std::vector<IntVar*> dx(x_size.size());
+  std::vector<IntVar*> dy(y_size.size());
+  for (int i = 0; i < x_size.size(); ++i) {
+    dx[i] = MakeIntConst(x_size[i]);
+    dy[i] = MakeIntConst(y_size[i]);
+  }
+  return RevAlloc(new Diffn(this, x_vars, y_vars, dx, dy, false));
 }
 }  // namespace operations_research

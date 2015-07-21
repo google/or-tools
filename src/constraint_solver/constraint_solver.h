@@ -1732,7 +1732,8 @@ class Solver {
   //   (x_vars[i], y_vars[i] + y_size[i]),
   //   (x_vars[i] + x_size[i], y_vars[i]),
   //   (x_vars[i] + x_size[i], y_vars[i] + y_size[i]).
-  // The sizes must be strictly positive.
+  // The sizes must be non negative. Boxes with one zero dimension can be pushed
+  // like any box.
   Constraint* MakeNonOverlappingBoxesConstraint(const std::vector<IntVar*>& x_vars,
                                                 const std::vector<IntVar*>& y_vars,
                                                 const std::vector<IntVar*>& x_size,
@@ -1745,6 +1746,30 @@ class Solver {
                                                 const std::vector<IntVar*>& y_vars,
                                                 const std::vector<int>& x_size,
                                                 const std::vector<int>& y_size);
+
+  // This constraint states that all the boxes must not overlap.
+  // The coordinates of box i are :
+  //   (x_vars[i], y_vars[i]),
+  //   (x_vars[i], y_vars[i] + y_size[i]),
+  //   (x_vars[i] + x_size[i], y_vars[i]),
+  //   (x_vars[i] + x_size[i], y_vars[i] + y_size[i]).
+  // The sizes must be positive.
+  // Boxes with one zero dimensions can be placed anywhere.
+  Constraint* MakeNonOverlappingNonStrictBoxesConstraint(
+      const std::vector<IntVar*>& x_vars,
+      const std::vector<IntVar*>& y_vars,
+      const std::vector<IntVar*>& x_size,
+      const std::vector<IntVar*>& y_size);
+  Constraint* MakeNonOverlappingNonStrictBoxesConstraint(
+      const std::vector<IntVar*>& x_vars,
+      const std::vector<IntVar*>& y_vars,
+      const std::vector<int64>& x_size,
+      const std::vector<int64>& y_size);
+  Constraint* MakeNonOverlappingNonStrictBoxesConstraint(
+      const std::vector<IntVar*>& x_vars,
+      const std::vector<IntVar*>& y_vars,
+      const std::vector<int>& x_size,
+      const std::vector<int>& y_size);
 
   // ----- Packing constraint -----
 
@@ -1939,8 +1964,13 @@ class Solver {
                                       IntervalVar* const t2);
 
   // This constraint forces all interval vars into an non overlapping
-  // sequence.
+  // sequence. Intervals with zero duration can be scheduled anywhere.
   DisjunctiveConstraint* MakeDisjunctiveConstraint(
+      const std::vector<IntervalVar*>& intervals, const std::string& name);
+
+  // This constraint forces all interval vars into an non overlapping
+  // sequence. Intervals with zero durations cannot overlap with over intervals.
+  DisjunctiveConstraint* MakeStrictDisjunctiveConstraint(
       const std::vector<IntervalVar*>& intervals, const std::string& name);
 
   // This constraint forces that, for any integer t, the sum of the demands
