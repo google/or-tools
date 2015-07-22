@@ -117,6 +117,10 @@ namespace file {
 inline int Defaults() { return 0xBABA; }
 
 // As of 2014-06, these methods can only be used with flags = file::Defaults().
+util::Status SetTextProto(const std::string& filename, const google::protobuf::Message& proto,
+                          int flags);
+util::Status SetBinaryProto(const std::string& filename,
+                            const google::protobuf::Message& proto, int flags);
 util::Status SetContents(const std::string& filename, const std::string& contents,
                          int flags);
 util::Status GetContents(const std::string& filename, std::string* output, int flags);

@@ -227,6 +227,24 @@ void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
   CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
 }
 
+util::Status SetTextProto(const std::string& filename, const google::protobuf::Message& proto,
+                          int flags) {
+  if (flags == Defaults()) {
+    if (WriteProtoToASCIIFile(proto, filename)) return util::Status::OK;
+  }
+  return util::Status(util::error::INVALID_ARGUMENT,
+                      StrCat("Could not write proto to '", filename, "'."));
+}
+
+util::Status SetBinaryProto(const std::string& filename,
+                            const google::protobuf::Message& proto, int flags) {
+  if (flags == Defaults()) {
+    if (WriteProtoToFile(proto, filename)) return util::Status::OK;
+  }
+  return util::Status(util::error::INVALID_ARGUMENT,
+                      StrCat("Could not write proto to '", filename, "'."));
+}
+
 }  // namespace file
 
 }  // namespace operations_research
