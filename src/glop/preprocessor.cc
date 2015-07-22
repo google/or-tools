@@ -1008,7 +1008,7 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
       const Fractional lower = lp->variable_lower_bounds()[col];
       const Fractional upper = lp->variable_upper_bounds()[col];
       bool is_forced = false;
-      Fractional target_bound;
+      Fractional target_bound = 0.0;
       for (const SparseColumn::Entry e : column) {
         if (is_forcing_down[e.row()]) {
           const Fractional candidate = e.coefficient() < 0.0 ? lower : upper;
