@@ -2151,7 +2151,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
       }
       // Add to the useful_task vector if it may be performed and that it
       // actually consumes some of the resource.
-      if (interval->MayBePerformed() && original_task.demand > 0) {
+      if (interval->MayBePerformed() && *original_task.demand > 0) {
         Solver* const s = solver();
         IntervalVar* const original_interval = original_task.interval;
         IntervalVar* const interval =
