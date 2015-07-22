@@ -150,6 +150,12 @@ class KnapsackSolver {
   }
 
  private:
+  // Trivial reduction of capacity constraints when the capacity is higher than
+  // the sum of the weights of the items. Returns the number of reduced items.
+  int ReduceCapacities(int num_items, const std::vector<std::vector<int64> >& weights,
+                       const std::vector<int64>& capacities,
+                       std::vector<std::vector<int64> >* reduced_weights,
+                       std::vector<int64>* reduced_capacities);
   int ReduceProblem(int num_items);
   void ComputeAdditionalProfit(const std::vector<int64>& profits);
   void InitReducedProblem(const std::vector<int64>& profits,

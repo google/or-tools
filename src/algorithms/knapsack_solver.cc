@@ -1157,22 +1157,80 @@ void KnapsackSolver::Init(const std::vector<int64>& profits,
   additional_profit_ = 0LL;
   is_problem_solved_ = false;
 
-  solver_->Init(profits, weights, capacities);
+  const int num_items = profits.size();
+  std::vector<std::vector<int64>> reduced_weights;
+  std::vector<int64> reduced_capacities;
   if (use_reduction_) {
-    const int num_items = profits.size();
-    const int num_reduced_items = ReduceProblem(num_items);
-
+    const int num_reduced_items = ReduceCapacities(
+        num_items, weights, capacities, &reduced_weights, &reduced_capacities);
     if (num_reduced_items > 0) {
       ComputeAdditionalProfit(profits);
     }
+  } else {
+    reduced_weights = weights;
+    reduced_capacities = capacities;
+  }
+  if (!is_problem_solved_) {
+    solver_->Init(profits, reduced_weights, reduced_capacities);
+    if (use_reduction_) {
+      const int num_reduced_items = ReduceProblem(num_items);
 
-    if (num_reduced_items > 0 && num_reduced_items < num_items) {
-      InitReducedProblem(profits, weights, capacities);
+      if (num_reduced_items > 0) {
+        ComputeAdditionalProfit(profits);
+      }
+
+      if (num_reduced_items > 0 && num_reduced_items < num_items) {
+        InitReducedProblem(profits, reduced_weights, reduced_capacities);
+      }
     }
   }
   if (is_problem_solved_) {
     is_solution_optimal_ = true;
   }
+}
+
+int KnapsackSolver::ReduceCapacities(int num_items,
+                                     const std::vector<std::vector<int64>>& weights,
+                                     const std::vector<int64>& capacities,
+                                     std::vector<std::vector<int64>>* reduced_weights,
+                                     std::vector<int64>* reduced_capacities) {
+  known_value_.assign(num_items, false);
+  best_solution_.assign(num_items, false);
+  mapping_reduced_item_id_.assign(num_items, 0);
+  std::vector<bool> active_capacities(weights.size(), true);
+  int number_of_active_capacities = 0;
+  for (int i = 0; i < weights.size(); ++i) {
+    int64 max_weight = 0;
+    for (int64 weight : weights[i]) {
+      max_weight += weight;
+    }
+    if (max_weight <= capacities[i]) {
+      active_capacities[i] = false;
+    } else {
+      ++number_of_active_capacities;
+    }
+  }
+  reduced_weights->reserve(number_of_active_capacities);
+  reduced_capacities->reserve(number_of_active_capacities);
+  for (int i = 0; i < weights.size(); ++i) {
+    if (active_capacities[i]) {
+      reduced_weights->push_back(weights[i]);
+      reduced_capacities->push_back(capacities[i]);
+    }
+  }
+  if (reduced_capacities->empty()) {
+    // There are no capacity constraints in the problem so we can reduce all
+    // items and just add them to the best solution.
+    for (int item_id = 0; item_id < num_items; ++item_id) {
+      known_value_[item_id] = true;
+      best_solution_[item_id] = true;
+    }
+    is_problem_solved_ = true;
+    // All items are reduced.
+    return num_items;
+  }
+  // There are still capacity constraints so no item reduction is done.
+  return 0;
 }
 
 int KnapsackSolver::ReduceProblem(int num_items) {
