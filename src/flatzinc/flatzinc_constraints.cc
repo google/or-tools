@@ -684,9 +684,7 @@ class KDiffn : public Constraint {
     PropagateAll();
   }
 
-  std::string DebugString() const override {
-    return "KDiffn()";
-  }
+  std::string DebugString() const override { return "KDiffn()"; }
 
   void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kDisjunctive, this);
@@ -727,7 +725,7 @@ class KDiffn : public Constraint {
   bool AreBoxedDisjointInOneDimensionForSure(int dim, int i, int j) const {
     return (x_[i][dim]->Min() >= x_[j][dim]->Max() + dx_[j][dim]->Max()) ||
            (x_[j][dim]->Min() >= x_[i][dim]->Max() + dx_[i][dim]->Max()) ||
-        (!strict_ && (dx_[i][dim]->Min() == 0 || dx_[j][dim]->Min() == 0));
+           (!strict_ && (dx_[i][dim]->Min() == 0 || dx_[j][dim]->Min() == 0));
   }
 
   // Fill neighbors_ with all boxes that can overlap the given box.
@@ -746,14 +744,14 @@ class KDiffn : public Constraint {
   // (that must already be computed in neighbors_) is greater than the area of a
   // bounding box that necessarily contains all these boxes.
   void FailWhenEnergyIsTooLarge(int box) {
-    vector<int64> starts(num_dims_);
-    vector<int64> ends(num_dims_);
+    std::vector<int64> starts(num_dims_);
+    std::vector<int64> ends(num_dims_);
 
     int64 box_volume = 1;
     for (int dim = 0; dim < num_dims_; ++dim) {
       starts[dim] = x_[box][dim]->Min();
       ends[dim] = x_[box][dim]->Max() + dx_[box][dim]->Max();
-      box_volume *=dx_[box][dim]->Min();
+      box_volume *= dx_[box][dim]->Min();
     }
     int64 sum_of_volumes = box_volume;
 
@@ -831,7 +829,6 @@ class KDiffn : public Constraint {
       // We need to push b1 after b2, and restrict b2 to be before b1.
       IntVar* const x1 = x_[b1][b1_after_b2];
       IntVar* const x2 = x_[b2][b1_after_b2];
-      IntVar* const dx1 = dx_[b1][b1_after_b2];
       IntVar* const dx2 = dx_[b2][b1_after_b2];
       x1->SetMin(x2->Min() + dx2->Min());
       x2->SetMax(x1->Max() - dx2->Min());
@@ -843,7 +840,6 @@ class KDiffn : public Constraint {
       IntVar* const x1 = x_[b1][b2_after_b1];
       IntVar* const x2 = x_[b2][b2_after_b1];
       IntVar* const dx1 = dx_[b1][b2_after_b1];
-      IntVar* const dx2 = dx_[b2][b2_after_b1];
       x2->SetMin(x1->Min() + dx1->Min());
       x1->SetMax(x2->Max() - dx1->Min());
       dx1->SetMax(x2->Max() - x1->Min());
@@ -1036,11 +1032,8 @@ IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
       new StartVarDurationVarPerformedIntervalVar(solver, start, duration, n)));
 }
 
-Constraint* MakeKDiffn(
-    Solver* solver,
-    const std::vector<std::vector<IntVar*>>& x,
-    const std::vector<std::vector<IntVar*>>& dx,
-    bool strict) {
+Constraint* MakeKDiffn(Solver* solver, const std::vector<std::vector<IntVar*>>& x,
+                       const std::vector<std::vector<IntVar*>>& dx, bool strict) {
   return solver->RevAlloc(new KDiffn(solver, x, dx, strict));
 }
 

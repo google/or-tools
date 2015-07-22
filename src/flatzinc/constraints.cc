@@ -337,8 +337,7 @@ void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  std::vector<IntVar*> positive_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
+  std::vector<IntVar*> positive_variables = fzsolver->GetVariableArray(ct->Arg(0));
   const std::vector<IntVar*> negative_variables =
       fzsolver->GetVariableArray(ct->Arg(1));
   std::vector<IntVar*> vars;
@@ -770,18 +769,18 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
-  const vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
+  const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
   if (ct->Arg(2).type == FzArgument::INT_LIST &&
       ct->Arg(3).type == FzArgument::INT_LIST) {
-    const vector<int64>& x_sizes = ct->Arg(2).values;
-    const vector<int64>& y_sizes = ct->Arg(3).values;
+    const std::vector<int64>& x_sizes = ct->Arg(2).values;
+    const std::vector<int64>& y_sizes = ct->Arg(3).values;
     Constraint* const constraint = solver->MakeNonOverlappingBoxesConstraint(
         x_variables, y_variables, x_sizes, y_sizes);
     AddConstraint(solver, ct, constraint);
   } else {
-    const vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
-    const vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
+    const std::vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
+    const std::vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
     Constraint* const constraint = solver->MakeNonOverlappingBoxesConstraint(
         x_variables, y_variables, x_sizes, y_sizes);
     AddConstraint(solver, ct, constraint);
@@ -812,19 +811,19 @@ void ExtractDiffnK(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffnNonStrict(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
-  const vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
+  const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
   if (ct->Arg(2).type == FzArgument::INT_LIST &&
       ct->Arg(3).type == FzArgument::INT_LIST) {
-    const vector<int64>& x_sizes = ct->Arg(2).values;
-    const vector<int64>& y_sizes = ct->Arg(3).values;
+    const std::vector<int64>& x_sizes = ct->Arg(2).values;
+    const std::vector<int64>& y_sizes = ct->Arg(3).values;
     Constraint* const constraint =
         solver->MakeNonOverlappingNonStrictBoxesConstraint(
             x_variables, y_variables, x_sizes, y_sizes);
     AddConstraint(solver, ct, constraint);
   } else {
-    const vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
-    const vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
+    const std::vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
+    const std::vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
     Constraint* const constraint =
         solver->MakeNonOverlappingNonStrictBoxesConstraint(
             x_variables, y_variables, x_sizes, y_sizes);

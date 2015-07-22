@@ -834,46 +834,46 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
       } else {
         ct->type = "false_constraint";
       }
-    } else if (ct->type =="int_lin_eq_reif") {
+    } else if (ct->type == "int_lin_eq_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(FzArgument::IntegerValue(scalprod == rhs));
-    } else if (ct->type =="int_lin_ge") {
+    } else if (ct->type == "int_lin_ge") {
       if (scalprod >= rhs) {
         ct->MarkAsInactive();
       } else {
         ct->type = "false_constraint";
       }
-    } else if (ct->type =="int_lin_ge_reif") {
+    } else if (ct->type == "int_lin_ge_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(FzArgument::IntegerValue(scalprod >= rhs));
-    } else if (ct->type =="int_lin_le") {
+    } else if (ct->type == "int_lin_le") {
       if (scalprod <= rhs) {
         ct->MarkAsInactive();
       } else {
         ct->type = "false_constraint";
       }
-    } else if (ct->type =="int_lin_le_reif") {
+    } else if (ct->type == "int_lin_le_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(FzArgument::IntegerValue(scalprod <= rhs));
-    } else if (ct->type =="int_lin_ne") {
+    } else if (ct->type == "int_lin_ne") {
       if (scalprod != rhs) {
         ct->MarkAsInactive();
       } else {
         ct->type = "false_constraint";
       }
-    } else if (ct->type =="int_lin_ne_reif") {
+    } else if (ct->type == "int_lin_ne_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(FzArgument::IntegerValue(scalprod != rhs));
     }
-    FZVLOG << "  - into " << ct->DebugString() <<FZENDL;
+    FZVLOG << "  - into " << ct->DebugString() << FZENDL;
     return true;
   }
 
@@ -2130,9 +2130,9 @@ void CleanUpVariableWithMultipleDefiningConstraints(FzModel* model) {
     if (ct_list.second.size() > 1) {
       // Sort by number of variables in the constraint. Prefer smaller ones.
       std::sort(ct_list.second.begin(), ct_list.second.end(),
-           [](FzConstraint* c1, FzConstraint* c2) {
-             return SortWeight(c1) < SortWeight(c2);
-           });
+                [](FzConstraint* c1, FzConstraint* c2) {
+                  return SortWeight(c1) < SortWeight(c2);
+                });
       // Keep the first constraint as the defining one.
       for (int pos = 1; pos < ct_list.second.size(); ++pos) {
         FzConstraint* const ct = ct_list.second[pos];

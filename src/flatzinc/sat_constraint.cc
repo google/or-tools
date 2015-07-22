@@ -100,7 +100,7 @@ class SatPropagator : public Constraint {
       FZDLOG << " - var " << var << " was assigned to " << assigned_bool
              << " from literal " << literal.SignedValue() << FZENDL;
 #endif
-      demons_[var.value()]->inhibit(solver() );
+      demons_[var.value()]->inhibit(solver());
       vars_[var.value()]->SetValue(assigned_bool);
     }
   }
@@ -128,14 +128,14 @@ class SatPropagator : public Constraint {
     if (sat_.Assignment().IsVariableAssigned(var)) {
       if (sat_.Assignment().IsLiteralTrue(literal)) {
 #ifdef SAT_DEBUG
-        FZDLOG << " - literal = " << literal.SignedValue() << " already processed"
-               << FZENDL;
+        FZDLOG << " - literal = " << literal.SignedValue()
+               << " already processed" << FZENDL;
 #endif
         return;
       } else {
 #ifdef SAT_DEBUG
-        FZDLOG << " - literal = " << literal.SignedValue() << " assign opposite value"
-               << FZENDL;
+        FZDLOG << " - literal = " << literal.SignedValue()
+               << " assign opposite value" << FZENDL;
 #endif
         solver()->Fail();
       }

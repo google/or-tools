@@ -56,11 +56,8 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
 IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
                                       IntVar* const duration, const std::string& n);
 
-Constraint* MakeKDiffn(
-    Solver* solver,
-    const std::vector<std::vector<IntVar*>>& x,
-    const std::vector<std::vector<IntVar*>>& dx,
-    bool strict);
+Constraint* MakeKDiffn(Solver* solver, const std::vector<std::vector<IntVar*>>& x,
+                       const std::vector<std::vector<IntVar*>>& dx, bool strict);
 
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_
