@@ -802,6 +802,7 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
 }
 
 // Reverses a linear constraint: with negative coefficients.
+// Rule 1:
 // Input : int_lin_xxx([-c1, .., -cn], [x1, .., xn], c0) or
 //         int_lin_xxx_reif([-c1, .., -cn], [x1, .., xn], c0, b) or
 //         with c1, cn > 0
@@ -809,10 +810,74 @@ bool FzPresolver::PresolveArrayIntElement(FzConstraint* ct) {
 //         int_lin_yyy_reif([c1, .., cn], [c1, .., cn], c0, b)
 //         with yyy is the opposite of xxx (eq -> eq, ne -> ne, le -> ge,
 //                                          lt -> gt, ge -> le, gt -> lt)
+//
+// Rule 2:
+// Input: int_lin_xxx[[c1, .., cn], [c'1, .., c'n], c0]  (no variables)
+// Output: inactive or false constraint.
 bool FzPresolver::PresolveLinear(FzConstraint* ct) {
   if (ct->Arg(0).values.empty()) {
     return false;
   }
+  // Rule 2.
+  if (ct->Arg(1).variables.empty()) {
+    FZVLOG << "Rewrite constant linear equation " << ct->DebugString()
+           << FZENDL;
+    CHECK(!ct->Arg(1).values.empty());
+    int64 scalprod = 0;
+    for (int i = 0; i < ct->Arg(0).values.size(); ++i) {
+      scalprod += ct->Arg(0).values[i] * ct->Arg(1).values[i];
+    }
+    const int64 rhs = ct->Arg(2).Value();
+    if (ct->type == "int_lin_eq") {
+      if (scalprod == rhs) {
+        ct->MarkAsInactive();
+      } else {
+        ct->type = "false_constraint";
+      }
+    } else if (ct->type =="int_lin_eq_reif") {
+      ct->type = "bool_eq";
+      ct->arguments[0] = ct->arguments[3];
+      ct->arguments.resize(1);
+      ct->arguments.push_back(FzArgument::IntegerValue(scalprod == rhs));
+    } else if (ct->type =="int_lin_ge") {
+      if (scalprod >= rhs) {
+        ct->MarkAsInactive();
+      } else {
+        ct->type = "false_constraint";
+      }
+    } else if (ct->type =="int_lin_ge_reif") {
+      ct->type = "bool_eq";
+      ct->arguments[0] = ct->arguments[3];
+      ct->arguments.resize(1);
+      ct->arguments.push_back(FzArgument::IntegerValue(scalprod >= rhs));
+    } else if (ct->type =="int_lin_le") {
+      if (scalprod <= rhs) {
+        ct->MarkAsInactive();
+      } else {
+        ct->type = "false_constraint";
+      }
+    } else if (ct->type =="int_lin_le_reif") {
+      ct->type = "bool_eq";
+      ct->arguments[0] = ct->arguments[3];
+      ct->arguments.resize(1);
+      ct->arguments.push_back(FzArgument::IntegerValue(scalprod <= rhs));
+    } else if (ct->type =="int_lin_ne") {
+      if (scalprod != rhs) {
+        ct->MarkAsInactive();
+      } else {
+        ct->type = "false_constraint";
+      }
+    } else if (ct->type =="int_lin_ne_reif") {
+      ct->type = "bool_eq";
+      ct->arguments[0] = ct->arguments[3];
+      ct->arguments.resize(1);
+      ct->arguments.push_back(FzArgument::IntegerValue(scalprod != rhs));
+    }
+    FZVLOG << "  - into " << ct->DebugString() <<FZENDL;
+    return true;
+  }
+
+  // Rule 1.
   for (const int64 coef : ct->Arg(0).values) {
     if (coef > 0) {
       return false;
@@ -850,6 +915,10 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
 // Input : int_lin_xxx([c1, .., cn], [x1, .., xn], c0) with xi = xj
 // Output: int_lin_xxx([c1, .., ci + cj, .., cn], [x1, .., xi, .., xn], c0)
 bool FzPresolver::RegroupLinear(FzConstraint* ct) {
+  if (ct->Arg(1).variables.empty()) {
+    // Only constants, or size == 0.
+    return false;
+  }
   hash_map<const FzIntegerVariable*, int64> coefficients;
   const int original_size = ct->Arg(0).values.size();
   for (int i = 0; i < original_size; ++i) {
@@ -1660,6 +1729,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id == "int_lin_lt") changed |= PresolveIntLinLt(ct);
   if (HasPrefixString(id, "int_lin_")) {
     changed |= PresolveLinear(ct);
+  }
+  // type can have changed after the presolve.
+  if (HasPrefixString(id, "int_lin_")) {
     changed |= RegroupLinear(ct);
     changed |= SimplifyUnaryLinear(ct);
   }

@@ -956,6 +956,12 @@ void ExtractDisjunctiveStrict(FzSolver* fzsolver, FzConstraint* ct) {
   AddConstraint(solver, ct, constraint);
 }
 
+void ExtractFalseConstraint(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  Constraint* const constraint = solver->MakeFalseConstraint();
+  AddConstraint(solver, ct, constraint);
+}
+
 void ExtractGlobalCardinality(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<int64> values = ct->Arg(1).values;
@@ -2692,6 +2698,8 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractDisjunctive(this, ct);
   } else if (type == "disjunctive_strict") {
     ExtractDisjunctiveStrict(this, ct);
+  } else if (type == "false_constraint") {
+    ExtractFalseConstraint(this, ct);
   } else if (type == "global_cardinality") {
     ExtractGlobalCardinality(this, ct);
   } else if (type == "global_cardinality_closed") {
