@@ -1413,15 +1413,68 @@ bool FzPresolver::PresolveBoolNot(FzConstraint* ct) {
 // Rule 1:
 // Input: bool_clause([b1][b2])
 // Output: bool_le(b2, b1)
+//
+// Rule 2:
+// Input: bool_clause([t][b])
+// Output: Mark constraint as inactive if t is true.
+//         bool_eq(b, false) if t is false.
+//
+// Rule 3:
+// Input: bool_clause([b1, .., bn][t])
+// Output: Mark constraint as inactive if t is false.
+//         array_array_or([b1, .. ,bn]) if t is true.
 bool FzPresolver::PresolveBoolClause(FzConstraint* ct) {
   // Rule 1.
   if (ct->Arg(0).variables.size() == 1 && ct->Arg(1).variables.size() == 1) {
-    FZVLOG << "Simplify " << ct->DebugString() << " to bool_le()" << FZENDL;
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
     std::swap(ct->MutableArg(0)->variables[0], ct->MutableArg(1)->variables[0]);
     ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
     ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
     ct->type = "bool_le";
+    FZVLOG << "  to " << ct->DebugString() << FZENDL;
     return true;
+  }
+  // Rule 2.
+  if (ct->Arg(0).variables.size() == 0 && ct->Arg(0).values.size() == 1 &&
+      ct->Arg(1).variables.size() == 1) {
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
+    const int64 value = ct->Arg(0).values.front();
+    if (value) {
+      ct->MarkAsInactive();
+      return true;
+    } else {
+      ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+      ct->MutableArg(0)->variables = ct->Arg(1).variables;
+      ct->MutableArg(0)->values.clear();
+      ct->MutableArg(1)->type = FzArgument::INT_VALUE;
+      ct->MutableArg(1)->variables.clear();
+      ct->MutableArg(1)->values.push_back(0);
+      ct->type = "bool_eq";
+      FZVLOG << "  to " << ct->DebugString() << FZENDL;
+      return true;
+    }
+  }
+  // Rule 3.
+  if (ct->Arg(1).variables.size() == 0 && ct->Arg(1).values.size() == 1) {
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
+    const int64 value = ct->Arg(1).values.front();
+    if (value) {
+      if (ct->Arg(0).variables.size() > 1) {
+        ct->arguments.pop_back();
+        ct->type = "array_bool_or";
+        FZVLOG << "  to " << ct->DebugString() << FZENDL;
+        return true;
+      } else if (ct->Arg(0).variables.size() == 1) {
+        ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(1)->type = FzArgument::INT_VALUE;
+        ct->type = "bool_eq";
+        FZVLOG << "  to " << ct->DebugString() << FZENDL;
+        return true;
+      }
+    } else {
+      ct->MarkAsInactive();
+      return true;
+    }
   }
   return false;
 }
