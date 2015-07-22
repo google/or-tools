@@ -1460,7 +1460,6 @@ bool FzPresolver::PresolveBoolClause(FzConstraint* ct) {
     const int64 value = ct->Arg(1).values.front();
     if (value) {
       if (ct->Arg(0).variables.size() > 1) {
-        ct->arguments.pop_back();
         ct->type = "array_bool_or";
         FZVLOG << "  to " << ct->DebugString() << FZENDL;
         return true;
