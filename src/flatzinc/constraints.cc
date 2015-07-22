@@ -341,15 +341,27 @@ void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
       fzsolver->GetVariableArray(ct->Arg(0));
   const std::vector<IntVar*> negative_variables =
       fzsolver->GetVariableArray(ct->Arg(1));
-  for (IntVar* const var : negative_variables) {
-    positive_variables.push_back(solver->MakeDifference(1, var)->Var());
+  std::vector<IntVar*> vars;
+  for (IntVar* const var : positive_variables) {
+    if (var->Bound() && var->Min() == 1) {  // True constraint
+      AddConstraint(solver, ct, solver->MakeTrueConstraint());
+      return;
+    } else if (!var->Bound()) {
+      vars.push_back(var);
+    }
   }
-  if (FLAGS_use_sat &&
-      AddBoolOrArrayEqualTrue(fzsolver->Sat(), positive_variables)) {
+  for (IntVar* const var : negative_variables) {
+    if (var->Bound() && var->Max() == 0) {  // True constraint
+      AddConstraint(solver, ct, solver->MakeTrueConstraint());
+      return;
+    } else if (!var->Bound()) {
+      vars.push_back(solver->MakeDifference(1, var)->Var());
+    }
+  }
+  if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(fzsolver->Sat(), vars)) {
     FZVLOG << "  - posted to sat";
   } else {
-    Constraint* const constraint =
-        solver->MakeSumGreaterOrEqual(positive_variables, 1);
+    Constraint* const constraint = solver->MakeSumGreaterOrEqual(vars, 1);
     AddConstraint(solver, ct, constraint);
   }
 }
