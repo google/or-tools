@@ -655,6 +655,9 @@ argument:
   }
   delete arguments;
 }
+| '[' ']' {
+  $$ = FzArgument::VoidArgument();
+}
 
 //---------------------------------------------------------------------------
 // Parsing annotations

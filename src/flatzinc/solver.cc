@@ -55,6 +55,8 @@ std::vector<IntVar*> FzSolver::GetVariableArray(const FzArgument& arg) {
     for (int i = 0; i < arg.values.size(); ++i) {
       result[i] = solver_.MakeIntConst(arg.values[i]);
     }
+  } else if (arg.type == FzArgument::VOID_ARGUMENT) {
+    // Nothing to do.
   } else {
     LOG(FATAL) << "Cannot extract " << arg.DebugString()
                << " as a variable array";
