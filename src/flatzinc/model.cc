@@ -319,6 +319,9 @@ std::string FzArgument::DebugString() const {
     }
     case VOID_ARGUMENT:
       return "VoidArgument";
+    default:
+      LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
+      return "";
   }
 }
 
@@ -572,6 +575,10 @@ std::string FzAnnotation::DebugString() const {
     }
     case STRING_VALUE: {
       return StringPrintf("\"%s\"", string_value_.c_str());
+    }
+    default: {
+      LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
+      return "";
     }
   }
 }
