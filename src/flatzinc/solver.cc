@@ -372,8 +372,12 @@ bool FzSolver::Extract() {
       }
     }
   }
-  FZLOG << "  - " << domain_constraints << " domain constraints added"
-        << FZENDL;
+  if (domain_constraints == 1) {
+    FZLOG << "  - 1 domain constraint added" << FZENDL;
+  } else if (domain_constraints > 1) {
+    FZLOG << "  - " << domain_constraints << " domain constraints added"
+          << FZENDL;
+  }
 
   return true;
 }
