@@ -319,6 +319,9 @@ std::string FzArgument::DebugString() const {
     }
     case VOID_ARGUMENT:
       return "VoidArgument";
+    default:
+      LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
+      return "";
   }
 }
 
