@@ -421,7 +421,7 @@ std::string FzIntegerVariable::DebugString() const {
 // ----- FzConstraint -----
 
 std::string FzConstraint::DebugString() const {
-  const std::string strong = strong_propagation ? ", strong propagation" : "";
+  const std::string strong = strong_propagation ? "strong propagation" : "";
   const std::string presolve_status_str =
       active ? "" : (presolve_propagation_done ? "[propagated during presolve]"
                                                : "[removed during presolve]");
@@ -429,9 +429,9 @@ std::string FzConstraint::DebugString() const {
       target_variable != nullptr
           ? StringPrintf(" => %s", target_variable->name.c_str())
           : "";
-  return StringPrintf("%s([%s]%s)%s %s", type.c_str(),
-                      JoinDebugString(arguments, ", ").c_str(), strong.c_str(),
-                      target.c_str(), presolve_status_str.c_str());
+  return StringPrintf("%s(%s)%s %s %s", type.c_str(),
+                      JoinDebugString(arguments, ", ").c_str(), target.c_str(),
+                      strong.c_str(), presolve_status_str.c_str());
 }
 
 void FzConstraint::MarkAsInactive() {
