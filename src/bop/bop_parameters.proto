@@ -62,7 +62,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 36
+// NEXT TAG: 37
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -251,6 +251,12 @@ message BopParameters {
   // solver to solve a decomposed problem.
   // TODO(user): Merge this with the number_of_solvers parameter.
   optional int32 num_bop_solvers_used_by_decomposition = 31 [default = 1];
+
+  // HACK. To avoid spending too little time on small problems, spend at least
+  // this time solving each of the decomposed sub-problem. This only make sense
+  // if num_bop_solvers_used_by_decomposition is greater than 1 so that the
+  // overhead can be "absorbed" by the other threads.
+  optional double decomposed_problem_min_time_in_seconds = 36 [default = 0.0];
 
 
   // The first solutions based on guided SAT will work in chunk of that many

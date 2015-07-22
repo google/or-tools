@@ -1016,8 +1016,9 @@ void RunOneBop(const BopParameters& parameters, int problem_index,
   const int local_num_variables = std::max(1, problem.num_variables().value());
 
   BopParameters local_parameters = parameters;
-  local_parameters.set_max_time_in_seconds(time_per_variable *
-                                           local_num_variables);
+  local_parameters.set_max_time_in_seconds(
+      std::max(time_per_variable * local_num_variables,
+               parameters.decomposed_problem_min_time_in_seconds()));
   local_parameters.set_max_deterministic_time(deterministic_time_per_variable *
                                               local_num_variables);
 
