@@ -41,7 +41,8 @@ int main(int argc, char* argv[]) {
   CHECK(!FLAGS_png_file.empty());
   if (mps_reader.LoadFile(FLAGS_mps_file, &linear_program)) {
     std::string output = DumpConstraintMatrixToPng(linear_program);
-    CHECK_OK(file::SetContents(FLAGS_png_file, output, file::Defaults()));
+    CHECK_OK(operations_research::file::SetContents(
+        FLAGS_png_file, output, operations_research::file::Defaults()));
   } else {
     LOG(INFO) << "Parse error for " << FLAGS_mps_file;
   }
