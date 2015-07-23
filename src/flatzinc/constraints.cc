@@ -205,12 +205,57 @@ void ExtractArrayBoolOr(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractArrayBoolXor(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(0));
-  if (FLAGS_use_sat && AddArrayXor(fzsolver->Sat(), variables)) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else {
-    Constraint* const constraint = MakeBooleanSumOdd(solver, variables);
-    AddConstraint(solver, ct, constraint);
+  std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
+  std::vector<IntVar*> variables;
+  bool even = true;
+  for (IntVar* const var : tmp_vars) {
+    if (var->Max() == 1) {
+      if (var->Min() == 1) {
+        even = !even;
+      } else {
+        variables.push_back(var);
+      }
+    }
+  }
+  switch (variables.size()) {
+    case 0: {
+      Constraint* const constraint = even ?
+          solver->MakeFalseConstraint() : solver->MakeTrueConstraint();
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    case 1: {
+      Constraint* const constraint =
+          solver->MakeEquality(variables.front(), even);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    case 2: {
+      if (even) {
+        if (FLAGS_use_sat &&
+            AddBoolNot(fzsolver->Sat(), variables[0], variables[1])) {
+          FZVLOG << "  - posted to sat" << FZENDL;
+        } else {
+          PostBooleanSumInRange(fzsolver->Sat(), solver, variables, 1, 1);
+        }
+      } else {
+        if (FLAGS_use_sat &&
+            AddBoolEq(fzsolver->Sat(), variables[0], variables[1])) {
+          FZVLOG << "  - posted to sat" << FZENDL;
+        } else {
+          variables.push_back(solver->MakeIntConst(1));
+          Constraint* const constraint = MakeBooleanSumOdd(solver, variables);
+          AddConstraint(solver, ct, constraint);
+        }
+      }
+    }
+    default: {
+      if (!even) {
+        variables.push_back(solver->MakeIntConst(1));
+      }
+      Constraint* const constraint = MakeBooleanSumOdd(solver, variables);
+      AddConstraint(solver, ct, constraint);
+    }
   }
 }
 

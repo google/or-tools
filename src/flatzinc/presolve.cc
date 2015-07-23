@@ -1425,6 +1425,53 @@ bool FzPresolver::RemoveAbsFromIntLinReif(FzConstraint* ct) {
   }
 }
 
+// Propagate bool_xor
+// Rule 1:
+// Input : bool_xor(t, b1, b2)
+// Action: bool_not(b1, b2) if t = true, bool_eq(b1, b2) if t = false.
+//
+// Rule 2:
+// Input : bool_xor(b1, t, b2)
+// Action: bool_not(b1, b2) if t = true, bool_eq(b1, b2) if t = false.
+//
+// Rule 3:
+// Input : bool_xor(b1, b2, t)
+// Action: bool_not(b1, b2) if t = true, bool_eq(b1, b2) if t = false.
+
+bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
+  if (ct->Arg(0).HasOneValue()) {
+    // Rule 1.
+    const int64 value = ct->Arg(0).Value();
+    FZVLOG << "Simplifty " << ct->DebugString() << FZENDL;
+    ct->arguments[0] = ct->arguments[1];
+    ct->arguments[1] = ct->arguments[2];
+    ct->arguments.pop_back();
+    ct->type = value == 1 ? "bool_not" : "bool_eq";
+    FZVLOG << "   -> " << ct->DebugString();
+    return true;
+  }
+  if (ct->Arg(1).HasOneValue()) {
+    // Rule 2.
+    const int64 value = ct->Arg(1).Value();
+    FZVLOG << "Simplifty " << ct->DebugString() << FZENDL;
+    ct->arguments[1] = ct->arguments[2];
+    ct->arguments.pop_back();
+    ct->type = value == 1 ? "bool_not" : "bool_eq";
+    FZVLOG << "   -> " << ct->DebugString();
+    return true;
+  }
+  if (ct->Arg(2).HasOneValue()) {
+    // Rule 3.
+    const int64 value = ct->Arg(1).Value();
+    FZVLOG << "Simplifty " << ct->DebugString() << FZENDL;
+    ct->arguments.pop_back();
+    ct->type = value == 1 ? "bool_not" : "bool_eq";
+    FZVLOG << "   -> " << ct->DebugString();
+    return true;
+  }
+  return false;
+}
+
 // Propagates bool_not
 //
 // Rule 1:
@@ -1716,6 +1763,9 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (id == "array_bool_or") changed |= PresolveArrayBoolOr(ct);
   if (id == "bool_eq_reif" || id == "bool_ne_reif") {
     changed |= PresolveBoolEqNeReif(ct);
+  }
+  if (id == "bool_xor") {
+    changed |= PresolveBoolXor(ct);
   }
   if (id == "bool_not") {
     changed |= PresolveBoolNot(ct);

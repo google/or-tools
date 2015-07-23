@@ -136,6 +136,7 @@ class FzPresolver {
   bool CheckIntLinReifBounds(FzConstraint* ct);
   bool CreateLinearTarget(FzConstraint* ct);
   bool PresolveBoolNot(FzConstraint* ct);
+  bool PresolveBoolXor(FzConstraint* ct);
   bool SimplifyIntLinEqReif(FzConstraint* ct);
   bool PresolveIntMod(FzConstraint* ct);
   bool PresolveBoolClause(FzConstraint* ct);
