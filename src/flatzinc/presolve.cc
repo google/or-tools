@@ -1447,7 +1447,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
     ct->arguments[1] = ct->arguments[2];
     ct->arguments.pop_back();
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    FZVLOG << "   -> " << ct->DebugString();
+    FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
   }
   if (ct->Arg(1).HasOneValue()) {
@@ -1457,7 +1457,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
     ct->arguments[1] = ct->arguments[2];
     ct->arguments.pop_back();
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    FZVLOG << "   -> " << ct->DebugString();
+    FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
   }
   if (ct->Arg(2).HasOneValue()) {
@@ -1466,7 +1466,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
     FZVLOG << "Simplifty " << ct->DebugString() << FZENDL;
     ct->arguments.pop_back();
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    FZVLOG << "   -> " << ct->DebugString();
+    FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
   }
   return false;
