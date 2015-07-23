@@ -1579,14 +1579,10 @@ ClauseRef SatSolver::Reason(VariableIndex var) {
       return Reason(info.reference_var);
     case AssignmentInfo::CACHED_REASON:
       return trail_.CachedReason(var);
-#if defined(_MSC_VER)
-    default: {
-      LOG(FATAL) << "Unhandled case in SatSolver::Reason: "
-          << static_cast<int>(info.type);
-      return ClauseRef();
-    }
-#endif
   }
+  LOG(FATAL) << "Unhandled case in SatSolver::Reason: "
+             << static_cast<int>(info.type);
+  return ClauseRef();
 }
 
 SatClause* SatSolver::ReasonClauseOrNull(VariableIndex var) const {

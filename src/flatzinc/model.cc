@@ -319,13 +319,9 @@ std::string FzArgument::DebugString() const {
     }
     case VOID_ARGUMENT:
       return "VoidArgument";
-#if defined(_MSC_VER)
-    default: {
-      LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
-      return "";
-    }
-#endif
   }
+  LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
+  return "";
 }
 
 bool FzArgument::IsVariable() const { return type == INT_VAR_REF; }
@@ -579,13 +575,9 @@ std::string FzAnnotation::DebugString() const {
     case STRING_VALUE: {
       return StringPrintf("\"%s\"", string_value_.c_str());
     }
-#if defined(_MSC_VER)
-    default: {
-      LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
-      return "";
-    }
-#endif
   }
+  LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
+  return "";
 }
 
 // ----- FzOnSolutionOutput -----
