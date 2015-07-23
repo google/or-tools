@@ -375,7 +375,8 @@ variable_or_constant_declaration:
   VariableRefOrValueArray* const assignments = $13;
   CHECK(assignments == nullptr || assignments->variables.size() == num_vars);
   CHECK(assignments == nullptr || assignments->values.size() == num_vars);
-  const bool introduced = ContainsId(annotations, "introduced");
+  const bool introduced = ContainsId(annotations, "var_is_introduced") ||
+      HasPrefixString(identifier, "X_INTRODUCED");
 
   std::vector<FzIntegerVariable*> vars(num_vars, nullptr);
 
