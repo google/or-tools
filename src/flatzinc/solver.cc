@@ -177,12 +177,15 @@ struct ConstraintWithIo {
       }
     }
   }
+
+  std::string DebugString() const {
+    return StringPrintf("Ctio(%s, %d, deps_size = %i)",
+                        ct->type.c_str(), index, required.size());
+  }
 };
 
 int ComputeWeight(const ConstraintWithIo& ctio) {
-  if (ctio.required.empty()) return 0;
-  if (ctio.ct->target_variable != nullptr) return 1;
-  return 2;
+  return ctio.required.size() * 2 + (ctio.ct->target_variable == nullptr);
 }
 
 // Comparator to sort constraints based on numbers of required
@@ -191,22 +194,7 @@ struct ConstraintWithIoComparator {
   bool operator()(ConstraintWithIo* a, ConstraintWithIo* b) const {
     const int a_weight = ComputeWeight(*a);
     const int b_weight = ComputeWeight(*b);
-    if (a_weight > b_weight) {
-      return true;
-    }
-    if (a_weight < b_weight) {
-      return false;
-    }
-    if (a_weight != 1) {
-      return a->index > b->index;
-    }
-    if (ContainsKey(a->required, b->ct->target_variable)) {
-      return true;
-    }
-    if (ContainsKey(b->required, a->ct->target_variable)) {
-      return false;
-    }
-    return false;
+    return a_weight > b_weight || (a_weight == b_weight && a->index > b->index);
   }
 };
 }  // namespace
@@ -274,6 +262,9 @@ bool FzSolver::Extract() {
   }
   // Sort a first time.
   std::sort(to_sort.begin(), to_sort.end(), ConstraintWithIoComparator());
+  for (ConstraintWithIo* const ctio : to_sort) {
+    CHECK(ctio != nullptr);
+  }
   // Topological sort.
   while (!to_sort.empty()) {
     if (!to_sort.back()->required.empty()) {
@@ -282,22 +273,16 @@ bool FzSolver::Extract() {
     }
     ConstraintWithIo* const ctio = to_sort.back();
     if (!ctio->required.empty()) {
-      // Recovery.
-      FzIntegerVariable* fz_var = nullptr;
-      if (ctio->required.size() == 1) {
-        fz_var = *ctio->required.begin();  // Pick the only one.
-      } else if (ctio->ct->target_variable != nullptr) {
-        // We prefer to remove the target variable of the constraint.
-        fz_var = ctio->ct->target_variable;
-      } else {
-        fz_var = *ctio->required.begin();  // Pick one.
-      }
-      if (fz_var->defining_constraint != nullptr) {
-        fz_var->defining_constraint->target_variable = nullptr;
-        fz_var->defining_constraint = nullptr;
-      }
-      if (fz_var != nullptr && ContainsKey(dependencies, fz_var)) {
+      // Recovery. We pick the last constraint (min number of required variable)
+      // And we clean all of them (mark as non target).
+      std::vector<FzIntegerVariable*> required_vars(ctio->required.begin(),
+                                                    ctio->required.end());
+      for (FzIntegerVariable* const fz_var : required_vars) {
         FZDLOG << "  - clean " << fz_var->DebugString() << FZENDL;
+        if (fz_var->defining_constraint != nullptr) {
+          fz_var->defining_constraint->target_variable = nullptr;
+          fz_var->defining_constraint = nullptr;
+        }
         for (ConstraintWithIo* const to_clean : dependencies[fz_var]) {
           to_clean->required.erase(fz_var);
         }
