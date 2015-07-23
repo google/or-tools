@@ -1485,6 +1485,30 @@ bool AreAllFzVariablesBoolean(FzSolver* fzsolver, FzConstraint* ct) {
   return true;
 }
 
+bool ExtractLinAsShort(FzSolver* fzsolver, FzConstraint* ct) {
+  const int size = ct->Arg(0).values.size();
+  if (ct->Arg(1).variables.empty()) {
+    return false;
+  }
+  switch (size) {
+    case 0: return true;
+    case 1: return true;
+    case 2:
+    case 3: {
+      if (AreAllOnes(ct->Arg(0).values) &&
+          AreAllExtractedAsVariables(fzsolver, ct->Arg(1).variables) &&
+          AreAllFzVariablesBoolean(fzsolver, ct)) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+    default: {
+      return false;
+    }
+  }
+}
+
 void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<FzIntegerVariable*>& fzvars = ct->Arg(1).variables;
@@ -1536,8 +1560,7 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
     }
   } else {
     Constraint* constraint = nullptr;
-    if (size <= 3 &&
-        !AreAllExtractedAsVariables(fzsolver, ct->Arg(1).variables)) {
+    if (ExtractLinAsShort(fzsolver, ct)) {
       IntExpr* left = nullptr;
       IntExpr* right = nullptr;
       ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1560,8 +1583,7 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinEqReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  const bool all_booleans = AreAllFzVariablesBoolean(fzsolver, ct);
-  if (size <= 3 && !all_booleans) {
+  if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1613,7 +1635,7 @@ void ExtractIntLinEqReif(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinGe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  if (size <= 3) {
+  if (ExtractLinAsShort(fzsolver, ct)) {
     // Checks if it is not a hidden or.
     if (ct->Arg(2).Value() == 1 && AreAllOnes(ct->Arg(0).values)) {
       // Good candidate.
@@ -1655,8 +1677,7 @@ void ExtractIntLinGe(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  const bool all_booleans = AreAllFzVariablesBoolean(fzsolver, ct);
-  if (size <= 3 && !all_booleans) {
+  if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1740,7 +1761,7 @@ bool PostHiddenLeMax(SatPropagator* const sat, const std::vector<int64>& coeffs,
 void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  if (size <= 3) {
+  if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1768,8 +1789,7 @@ void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  const bool all_booleans = AreAllFzVariablesBoolean(fzsolver, ct);
-  if (size <= 3 && !all_booleans) {
+  if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1827,7 +1847,7 @@ void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinNe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  if (size <= 3) {
+  if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
@@ -1849,7 +1869,7 @@ void ExtractIntLinNe(FzSolver* fzsolver, FzConstraint* ct) {
 void ExtractIntLinNeReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const int size = ct->Arg(0).values.size();
-  if (size <= 3) {
+  if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
     ParseShortIntLin(fzsolver, ct, &left, &right);
