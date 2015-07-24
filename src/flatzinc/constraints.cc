@@ -1331,9 +1331,9 @@ void ExtractIntGe(FzSolver* fzsolver, FzConstraint* ct) {
     if (constraint != nullptr) {                                            \
       AddConstraint(solver, ct, constraint);                                \
     } else {                                                                \
-      FZVLOG << "  - creating and linking " << boolvar->DebugString()       \
-             << FZENDL;                                                     \
       IntVar* const previous = fzsolver->GetExpression(ct->Arg(2))->Var();  \
+      FZVLOG << "  - creating and linking " << boolvar->DebugString()       \
+             << " to " << previous->DebugString() << FZENDL;                \
       if (FLAGS_use_sat && AddBoolEq(fzsolver->Sat(), boolvar, previous)) { \
         FZVLOG << "  - posted to sat" << FZENDL;                            \
       } else {                                                              \
