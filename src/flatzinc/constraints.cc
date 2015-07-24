@@ -1253,7 +1253,11 @@ void ExtractIntGe(FzSolver* fzsolver, FzConstraint* ct) {
     IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
     if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
       IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
-      AddConstraint(s, ct, s->MakeGreaterOrEqual(left, right));
+      if (FLAGS_use_sat && AddBoolLe(fzsolver->Sat(), right, left)) {
+        FZVLOG << "  - posted to sat" << FZENDL;
+      } else {
+        AddConstraint(s, ct, s->MakeGreaterOrEqual(left, right));
+      }
     } else {
       const int64 right = ct->Arg(1).Value();
       AddConstraint(s, ct, s->MakeGreaterOrEqual(left, right));
@@ -1272,26 +1276,70 @@ void ExtractIntGe(FzSolver* fzsolver, FzConstraint* ct) {
   }
 }
 
-void ExtractIntGeReif(FzSolver* fzsolver, FzConstraint* ct) {
-  Solver* const solver = fzsolver->solver();
-  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
-  if (ct->target_variable != nullptr) {
-    CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
-    IntVar* const boolvar =
-        ct->Arg(1).HasOneValue()
-            ? solver->MakeIsGreaterOrEqualCstVar(left, ct->Arg(1).Value())
-            : solver->MakeIsGreaterOrEqualVar(
-                  left, fzsolver->GetExpression(ct->Arg(1)));
-    FZVLOG << "  - creating " << ct->target_variable->DebugString()
-           << " := " << boolvar->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, boolvar);
-  } else {
-    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1))->Var();
-    IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(2))->Var();
-    Constraint* const constraint =
-        solver->MakeIsGreaterOrEqualCt(left, right, boolvar);
-    AddConstraint(solver, ct, constraint);
+#define EXTRACT_INT_XX_REIF(Op, Rev) \
+  Solver* const solver = fzsolver->solver(); \
+  if (ct->target_variable != nullptr) { \
+    IntVar* boolvar = nullptr; \
+    if (ct->Arg(0).HasOneValue()) { \
+      const int64 left = ct->Arg(0).Value(); \
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1)); \
+      boolvar = solver->MakeIs ## Rev ## CstVar(right, left); \
+    } else if (ct->Arg(1).HasOneValue()) { \
+      IntExpr* const left = fzsolver->GetExpression(ct->Arg(0)); \
+      const int64 right = ct->Arg(1).Value(); \
+      boolvar = solver->MakeIs ## Op ## CstVar(left, right); \
+    } else { \
+      IntExpr* const left = fzsolver->GetExpression(ct->Arg(0)); \
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1)); \
+      boolvar = solver->MakeIs ## Op ## Var(left, right); \
+    } \
+    FZVLOG << "  - creating " << ct->target_variable->DebugString() \
+           << " := " << boolvar->DebugString() << FZENDL; \
+    fzsolver->SetExtracted(ct->target_variable, boolvar); \
+  } else { \
+    IntVar* boolvar = nullptr; \
+    Constraint* constraint = nullptr; \
+    if (ct->Arg(0).HasOneValue()) { \
+      const int64 left = ct->Arg(0).Value(); \
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1)); \
+      if (right->IsVar()) { \
+        boolvar = solver->MakeIs ## Rev ## CstVar(right, left); \
+      } else { \
+        boolvar = fzsolver->GetExpression(ct->Arg(2))->Var(); \
+        constraint = solver->MakeIs ## Rev ## CstCt(right, left, boolvar); \
+      } \
+    } else if (ct->Arg(1).HasOneValue()) { \
+      IntExpr* const left = fzsolver->GetExpression(ct->Arg(0)); \
+      const int64 right = ct->Arg(1).Value(); \
+      if (left->IsVar()) { \
+        boolvar = solver->MakeIs ## Op ## CstVar(left, right); \
+      } else { \
+        boolvar = fzsolver->GetExpression(ct->Arg(2))->Var(); \
+        constraint = solver->MakeIs ## Op ## CstCt(left, right, boolvar); \
+      } \
+    } else { \
+      IntExpr* const left = fzsolver->GetExpression(ct->Arg(0)); \
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1)); \
+      boolvar = fzsolver->GetExpression(ct->Arg(2))->Var(); \
+      constraint = solver->MakeIs ## Op ## Ct(left, right, boolvar); \
+    } \
+    if (constraint != nullptr) { \
+      AddConstraint(solver, ct, constraint); \
+    } else { \
+      FZVLOG << "  - creating and linking " << boolvar->DebugString() \
+             << FZENDL;                                                 \
+      IntVar* const previous = fzsolver->GetExpression(ct->Arg(2))->Var(); \
+      if (FLAGS_use_sat && AddBoolEq(fzsolver->Sat(), boolvar, previous)) { \
+        FZVLOG << "  - posted to sat" << FZENDL; \
+      } else { \
+        Constraint* const constraint = solver->MakeEquality(boolvar, previous); \
+        AddConstraint(solver, ct, constraint); \
+      } \
+    } \
   }
+
+void ExtractIntGeReif(FzSolver* fzsolver, FzConstraint* ct) {
+  EXTRACT_INT_XX_REIF(GreaterOrEqual, LessOrEqual)
 }
 
 void ExtractIntGt(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1320,25 +1368,7 @@ void ExtractIntGt(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntGtReif(FzSolver* fzsolver, FzConstraint* ct) {
-  Solver* const solver = fzsolver->solver();
-  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
-  if (ct->target_variable != nullptr) {
-    CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
-    IntVar* const boolvar =
-        ct->Arg(1).HasOneValue()
-            ? solver->MakeIsGreaterCstVar(left, ct->Arg(1).Value())
-            : solver->MakeIsGreaterVar(left,
-                                       fzsolver->GetExpression(ct->Arg(1)));
-    FZVLOG << "  - creating " << ct->target_variable->DebugString()
-           << " := " << boolvar->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, boolvar);
-  } else {
-    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1))->Var();
-    IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(2))->Var();
-    Constraint* const constraint =
-        solver->MakeIsGreaterCt(left, right, boolvar);
-    AddConstraint(solver, ct, constraint);
-  }
+  EXTRACT_INT_XX_REIF(Greater, Less);
 }
 
 void ExtractIntLe(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1371,25 +1401,36 @@ void ExtractIntLe(FzSolver* fzsolver, FzConstraint* ct) {
 }
 
 void ExtractIntLeReif(FzSolver* fzsolver, FzConstraint* ct) {
-  Solver* const solver = fzsolver->solver();
-  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
-  if (ct->target_variable != nullptr) {
-    CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
-    IntVar* const boolvar =
-        ct->Arg(1).HasOneValue()
-            ? solver->MakeIsLessOrEqualCstVar(left, ct->Arg(1).Value())
-            : solver->MakeIsLessOrEqualVar(left,
-                                           fzsolver->GetExpression(ct->Arg(1)));
-    FZVLOG << "  - creating " << ct->target_variable->DebugString()
-           << " := " << boolvar->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, boolvar);
+  EXTRACT_INT_XX_REIF(LessOrEqual, GreaterOrEqual)
+}
+
+void ExtractIntLt(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const s = fzsolver->solver();
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
+    IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+      AddConstraint(s, ct, s->MakeLess(left, right));
+    } else {
+      const int64 right = ct->Arg(1).Value();
+      AddConstraint(s, ct, s->MakeLess(left, right));
+    }
   } else {
-    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1))->Var();
-    IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(2))->Var();
-    Constraint* const constraint =
-        solver->MakeIsLessOrEqualCt(left, right, boolvar);
-    AddConstraint(solver, ct, constraint);
+    const int64 left = ct->Arg(0).Value();
+    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
+      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
+      AddConstraint(s, ct, s->MakeGreater(right, left));
+    } else {
+      const int64 right = ct->Arg(1).Value();
+      if (left >= right) {
+        AddConstraint(s, ct, s->MakeFalseConstraint());
+      }
+    }
   }
+}
+
+void ExtractIntLtReif(FzSolver* fzsolver, FzConstraint* ct) {
+  EXTRACT_INT_XX_REIF(Less, Greater)
 }
 
 void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
@@ -1960,51 +2001,6 @@ void ExtractIntLinNeReif(FzSolver* fzsolver, FzConstraint* ct) {
         AddConstraint(solver, ct, constraint);
       }
     }
-  }
-}
-
-void ExtractIntLt(FzSolver* fzsolver, FzConstraint* ct) {
-  Solver* const s = fzsolver->solver();
-  if (ct->Arg(0).type == FzArgument::INT_VAR_REF) {
-    IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
-    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
-      AddConstraint(s, ct, s->MakeLess(left, right));
-    } else {
-      const int64 right = ct->Arg(1).Value();
-      AddConstraint(s, ct, s->MakeLess(left, right));
-    }
-  } else {
-    const int64 left = ct->Arg(0).Value();
-    if (ct->Arg(1).type == FzArgument::INT_VAR_REF) {
-      IntExpr* const right = fzsolver->GetExpression(ct->Arg(1));
-      AddConstraint(s, ct, s->MakeGreater(right, left));
-    } else {
-      const int64 right = ct->Arg(1).Value();
-      if (left >= right) {
-        AddConstraint(s, ct, s->MakeFalseConstraint());
-      }
-    }
-  }
-}
-
-void ExtractIntLtReif(FzSolver* fzsolver, FzConstraint* ct) {
-  Solver* const solver = fzsolver->solver();
-  IntExpr* const left = fzsolver->GetExpression(ct->Arg(0));
-  if (ct->target_variable != nullptr) {
-    CHECK_EQ(ct->target_variable, ct->Arg(2).Var());
-    IntVar* const boolvar =
-        ct->Arg(1).HasOneValue()
-            ? solver->MakeIsLessCstVar(left, ct->Arg(1).Value())
-            : solver->MakeIsLessVar(left, fzsolver->GetExpression(ct->Arg(1)));
-    FZVLOG << "  - creating " << ct->target_variable->DebugString()
-           << " := " << boolvar->DebugString() << FZENDL;
-    fzsolver->SetExtracted(ct->target_variable, boolvar);
-  } else {
-    IntExpr* const right = fzsolver->GetExpression(ct->Arg(1))->Var();
-    IntVar* const boolvar = fzsolver->GetExpression(ct->Arg(2))->Var();
-    Constraint* const constraint = solver->MakeIsLessCt(left, right, boolvar);
-    AddConstraint(solver, ct, constraint);
   }
 }
 
