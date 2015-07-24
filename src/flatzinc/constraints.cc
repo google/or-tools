@@ -1743,7 +1743,8 @@ void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
     int64 rhs = 0;
     ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
     if (ct->target_variable != nullptr) {
-      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+      if (AreAllBooleans(vars) &&
+          (AreAllOnes(coeffs) || (rhs == 1 && AreAllPositive(coeffs)))) {
         IntVar* const boolvar = solver->MakeBoolVar();
         PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size,
                                 boolvar);
@@ -1855,7 +1856,8 @@ void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
     int64 rhs = 0;
     ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
     if (ct->target_variable != nullptr) {
-      if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
+      if (AreAllBooleans(vars) &&
+          (AreAllOnes(coeffs) || (rhs == 0 && AreAllPositive(coeffs)))) {
         IntVar* const boolvar = solver->MakeBoolVar();
         PostIsBooleanSumInRange(fzsolver->Sat(), solver, vars, 0, rhs, boolvar);
         FZVLOG << "  - creating " << ct->target_variable->DebugString()
