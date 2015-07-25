@@ -2199,8 +2199,6 @@ void CleanUpVariableWithMultipleDefiningConstraints(FzModel* model) {
 }  // namespace
 
 void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
-  // Clean up variables with multiple defining constraints.
-  CleanUpVariableWithMultipleDefiningConstraints(model);
   // First pass.
   for (FzConstraint* const ct : model->constraints()) {
     const std::string& id = ct->type;
@@ -2255,7 +2253,15 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
     if (id == "count_reif" || id == "set_in_reif") {
       ct->RemoveTargetVariable();
     }
+    // Remove target variables from element constraint.
+    if (id == "array_int_element" || id == "array_var_int_element") {
+      ct->RemoveTargetVariable();
+    }
   }
+
+  // Clean up variables with multiple defining constraints.
+  CleanUpVariableWithMultipleDefiningConstraints(model);
+
   // Second pass.
   for (FzConstraint* const ct : model->constraints()) {
     const std::string& id = ct->type;
