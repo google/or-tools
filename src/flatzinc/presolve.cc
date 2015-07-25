@@ -2196,6 +2196,28 @@ void CleanUpVariableWithMultipleDefiningConstraints(FzModel* model) {
     }
   }
 }
+
+bool AreOnesFollowedByMinusOne(const std::vector<int64>& coeffs) {
+  for (int i = 0; i < coeffs.size() - 1; ++i) {
+    if (coeffs[i] != 1) {
+      return false;
+    }
+  }
+  return coeffs.back() == -1;
+}
+
+template <class T>
+bool IsStrictPrefix(const std::vector<T>& v1, const std::vector<T>& v2) {
+  if (v1.size() >= v2.size()) {
+    return false;
+  }
+  for (int i = 0; i < v1.size(); ++i) {
+    if (v1[i] != v2[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
 void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
@@ -2323,6 +2345,53 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
   // Checks left over from the loop.
   if (start != nullptr) {
     Regroup(start, chain, carry_over);
+  }
+
+  // Regroup increasing sequence of int_lin_eq([1,..,1,-1], [x1, ..., xn])
+  // into sequence of int_plus.
+  vector<FzIntegerVariable*> current_variables;
+  FzIntegerVariable* target_variable = nullptr;
+  for (FzConstraint* const ct : model->constraints()) {
+    if (target_variable == nullptr) {
+      if (ct->type == "int_lin_eq" && ct->Arg(0).values.size() == 3 &&
+          AreOnesFollowedByMinusOne(ct->Arg(0).values) &&
+          ct->Arg(1).values.empty() && ct->Arg(2).Value() == 0) {
+        FZVLOG << "Recognize assignment " << ct->DebugString() << FZENDL;
+        current_variables = ct->Arg(1).variables;
+        target_variable = current_variables.back();
+        current_variables.pop_back();
+        ct->RemoveTargetVariable();
+      }
+    } else {
+      if (ct->type == "int_lin_eq" &&
+          AreOnesFollowedByMinusOne(ct->Arg(0).values) &&
+          ct->Arg(0).values.size() == current_variables.size() + 2 &&
+          IsStrictPrefix(current_variables, ct->Arg(1).variables)) {
+        FZVLOG << "Recognize int_plus " << ct->DebugString() << FZENDL;
+        current_variables = ct->Arg(1).variables;
+        // Rewrite ct into int_plus.
+        ct->type = "int_plus";
+        ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(0)->values.clear();
+        ct->MutableArg(0)->variables.push_back(target_variable);
+        ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(1)->variables.clear();
+        ct->MutableArg(1)->variables.push_back(
+            current_variables[current_variables.size() - 2]);
+        ct->MutableArg(2)->type = FzArgument::INT_VAR_REF;
+        ct->MutableArg(2)->values.clear();
+        ct->MutableArg(2)->variables.push_back(current_variables.back());
+        target_variable = current_variables.back();
+        current_variables.pop_back();
+        // We remove the target variable to force the variable to be created
+        // To break the linear sweep during propagation.
+        ct->RemoveTargetVariable();
+        FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+      } else {
+        current_variables.clear();
+        target_variable = nullptr;
+      }
+    }
   }
 }
 }  // namespace operations_research
