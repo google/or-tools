@@ -2347,8 +2347,8 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
     Regroup(start, chain, carry_over);
   }
 
-  // Regroup increasing sequence of int_lin_eq([1,..,1,-1], [x1, ..., xn])
-  // into sequence of int_plus.
+  // Regroup increasing sequence of int_lin_eq([1,..,1,-1], [x1, ..., xn, yn])
+  // into sequence of int_plus(x1, x2, y2), int_plus(y2, x3, y3)...
   vector<FzIntegerVariable*> current_variables;
   FzIntegerVariable* target_variable = nullptr;
   for (FzConstraint* const ct : model->constraints()) {
