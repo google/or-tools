@@ -2351,6 +2351,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
   // into sequence of int_plus(x1, x2, y2), int_plus(y2, x3, y3)...
   vector<FzIntegerVariable*> current_variables;
   FzIntegerVariable* target_variable = nullptr;
+  FzConstraint* first_constraint = nullptr;
   for (FzConstraint* const ct : model->constraints()) {
     if (target_variable == nullptr) {
       if (ct->type == "int_lin_eq" && ct->Arg(0).values.size() == 3 &&
@@ -2360,14 +2361,14 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
         current_variables = ct->Arg(1).variables;
         target_variable = current_variables.back();
         current_variables.pop_back();
-        ct->RemoveTargetVariable();
+        first_constraint = ct;
       }
     } else {
       if (ct->type == "int_lin_eq" &&
           AreOnesFollowedByMinusOne(ct->Arg(0).values) &&
           ct->Arg(0).values.size() == current_variables.size() + 2 &&
           IsStrictPrefix(current_variables, ct->Arg(1).variables)) {
-        FZVLOG << "Recognize int_plus " << ct->DebugString() << FZENDL;
+        FZVLOG << "Recognize hidden int_plus " << ct->DebugString() << FZENDL;
         current_variables = ct->Arg(1).variables;
         // Rewrite ct into int_plus.
         ct->type = "int_plus";
@@ -2387,6 +2388,11 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
         // To break the linear sweep during propagation.
         ct->RemoveTargetVariable();
         FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+        // We clean the first constraint too.
+        if (first_constraint != nullptr) {
+          first_constraint->RemoveTargetVariable();
+          first_constraint = nullptr;
+        }
       } else {
         current_variables.clear();
         target_variable = nullptr;
