@@ -133,6 +133,7 @@ class FzPresolver {
   bool PropagateReifiedComparisons(FzConstraint* ct);
   bool RemoveAbsFromIntLinReif(FzConstraint* ct);
   bool SimplifyUnaryLinear(FzConstraint* ct);
+  bool SimplifyBinaryLinear(FzConstraint* ct);
   bool CheckIntLinReifBounds(FzConstraint* ct);
   bool CreateLinearTarget(FzConstraint* ct);
   bool PresolveBoolNot(FzConstraint* ct);
