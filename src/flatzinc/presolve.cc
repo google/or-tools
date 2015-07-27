@@ -1462,7 +1462,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
   }
   if (ct->Arg(2).HasOneValue()) {
     // Rule 3.
-    const int64 value = ct->Arg(1).Value();
+    const int64 value = ct->Arg(2).Value();
     FZVLOG << "Simplifty " << ct->DebugString() << FZENDL;
     ct->arguments.pop_back();
     ct->type = value == 1 ? "bool_not" : "bool_eq";

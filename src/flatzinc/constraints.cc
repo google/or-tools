@@ -479,10 +479,25 @@ void ExtractCircuit(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
   const int size = tmp_vars.size();
-  std::vector<IntVar*> variables(size);
-  for (int i = 0; i < size; ++i) {
-    // Create variables. Account for 1-based array indexing.
-    variables[i] = solver->MakeSum(tmp_vars[i], -1)->Var();
+  bool found_zero = false;
+  bool found_size= false;
+  for (IntVar* const var : tmp_vars) {
+    if (var->Min() == 0) {
+      found_zero = true;
+    }
+    if (var->Max() == size) {
+      found_size = true;
+    }
+  }
+  std::vector<IntVar*> variables;
+  if (found_zero && !found_size) {  // Variables values are 0 based.
+    variables = tmp_vars;
+  } else {  // Variables values are 1 based.
+    variables.resize(size);
+    for (int i = 0; i < size; ++i) {
+      // Create variables. Account for 1-based array indexing.
+      variables[i] = solver->MakeSum(tmp_vars[i], -1)->Var();
+    }
   }
   Constraint* const constraint = solver->MakeCircuit(variables);
   AddConstraint(solver, ct, constraint);
@@ -2632,10 +2647,25 @@ void ExtractSubCircuit(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
   const int size = tmp_vars.size();
-  std::vector<IntVar*> variables(size);
-  for (int i = 0; i < size; ++i) {
-    // Create variables. Account for 1-based array indexing.
-    variables[i] = solver->MakeSum(tmp_vars[i], -1)->Var();
+  bool found_zero = false;
+  bool found_size= false;
+  for (IntVar* const var : tmp_vars) {
+    if (var->Min() == 0) {
+      found_zero = true;
+    }
+    if (var->Max() == size) {
+      found_size = true;
+    }
+  }
+  std::vector<IntVar*> variables;
+  if (found_zero && !found_size) {  // Variables values are 0 based.
+    variables = tmp_vars;
+  } else {  // Variables values are 1 based.
+    variables.resize(size);
+    for (int i = 0; i < size; ++i) {
+      // Create variables. Account for 1-based array indexing.
+      variables[i] = solver->MakeSum(tmp_vars[i], -1)->Var();
+    }
   }
   Constraint* const constraint = solver->MakeSubCircuit(variables);
   AddConstraint(solver, ct, constraint);
