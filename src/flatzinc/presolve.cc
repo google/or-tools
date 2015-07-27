@@ -1066,8 +1066,7 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
   if (ct->Arg(0).values.size() == 2 &&
       ct->Arg(1).variables[1] == ct->target_variable &&
       ct->Arg(0).values[1] == -1 &&
-      !ContainsKey(affine_map_, ct->target_variable) &&
-      ct->strong_propagation) {
+      !ContainsKey(affine_map_, ct->target_variable)) {
     affine_map_[ct->target_variable] = AffineMapping(
         ct->Arg(1).variables[0], ct->Arg(0).values[0], -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
@@ -1174,11 +1173,11 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
       index_var->domain.values[0] -= offset;
       index_var->domain.values[1] -= offset;
       return true;
-    } else if (mapping.offset + mapping.coefficient > 0 &&
-               domain.values[0] == 1) {
+    } else  if (mapping.offset + mapping.coefficient > 0 &&
+                domain.values[0] > 0) {
       const std::vector<int64>& values = ct->Arg(1).values;
       std::vector<int64> new_values;
-      for (int64 i = domain.values.front(); i <= domain.values.back(); ++i) {
+      for (int64 i = 1; i <= domain.values.back(); ++i) {
         const int64 index = i * mapping.coefficient + mapping.offset - 1;
         if (index < 0) {
           return false;
