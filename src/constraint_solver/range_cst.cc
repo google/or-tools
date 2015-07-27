@@ -701,24 +701,39 @@ IntVar* Solver::MakeIsEqualVar(IntExpr* const v1, IntExpr* const v2) {
   } else if (v2->Bound()) {
     return MakeIsEqualCstVar(v1, v2->Min());
   }
-  IntExpr* const cache = model_cache_->FindExprExprExpression(
+  IntExpr* cache = model_cache_->FindExprExprExpression(
       v1, v2, ModelCache::EXPR_EXPR_IS_EQUAL);
+  if (cache == nullptr) {
+    cache = model_cache_->FindExprExprExpression(
+        v2, v1, ModelCache::EXPR_EXPR_IS_EQUAL);
+  }
   if (cache != nullptr) {
     return cache->Var();
   } else {
-    std::string name1 = v1->name();
-    if (name1.empty()) {
-      name1 = v1->DebugString();
+    IntVar* boolvar = nullptr;
+    IntExpr* reverse_cache = model_cache_->FindExprExprExpression(
+        v1, v2, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
+    if (reverse_cache == nullptr) {
+      reverse_cache = model_cache_->FindExprExprExpression(
+          v2, v1, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
     }
-    std::string name2 = v2->name();
-    if (name2.empty()) {
-      name2 = v2->DebugString();
+    if (reverse_cache != nullptr) {
+      boolvar = MakeDifference(1, reverse_cache)->Var();
+    } else {
+      std::string name1 = v1->name();
+      if (name1.empty()) {
+        name1 = v1->DebugString();
+      }
+      std::string name2 = v2->name();
+      if (name2.empty()) {
+        name2 = v2->DebugString();
+      }
+      boolvar = MakeBoolVar(
+          StringPrintf("IsEqualVar(%s, %s)", name1.c_str(), name2.c_str()));
+      AddConstraint(MakeIsEqualCt(v1, v2, boolvar));
+      model_cache_->InsertExprExprExpression(boolvar, v1, v2,
+                                             ModelCache::EXPR_EXPR_IS_EQUAL);
     }
-    IntVar* const boolvar = MakeBoolVar(
-        StringPrintf("IsEqualVar(%s, %s)", name1.c_str(), name2.c_str()));
-    AddConstraint(MakeIsEqualCt(v1, v2, boolvar));
-    model_cache_->InsertExprExprExpression(boolvar, v1, v2,
-                                           ModelCache::EXPR_EXPR_IS_EQUAL);
     return boolvar;
   }
 }
