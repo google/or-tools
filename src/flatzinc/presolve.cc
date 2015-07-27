@@ -1475,6 +1475,45 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
   return false;
 }
 
+bool FzPresolver::StoreIntEqReif(FzConstraint* ct) {
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(1).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(2).type == FzArgument::INT_VAR_REF) {
+    FzIntegerVariable* const first = ct->Arg(0).Var();
+    FzIntegerVariable* const second = ct->Arg(1).Var();
+    FzIntegerVariable* const boolvar = ct->Arg(2).Var();
+    if (ContainsKey(int_eq_reif_map_, first) &&
+        ContainsKey(int_eq_reif_map_[first], second)) {
+      return false;
+    }
+    FZVLOG << "Store eq_var info for " << ct->DebugString() << FZENDL;
+    int_eq_reif_map_[first][second] = boolvar;
+    int_eq_reif_map_[second][first] = boolvar;
+    return true;
+  }
+  return false;
+}
+
+bool FzPresolver::SimplifyIntNeReif(FzConstraint* ct) {
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(1).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(2).type == FzArgument::INT_VAR_REF &&
+      ContainsKey(int_eq_reif_map_, ct->Arg(0).Var()) &&
+      ContainsKey(int_eq_reif_map_[ct->Arg(0).Var()], ct->Arg(1).Var())) {
+    FZVLOG << "Merge " << ct->DebugString() << " with opposite constraint"
+           << FZENDL;
+    FzIntegerVariable* const opposite =
+        int_eq_reif_map_[ct->Arg(0).Var()][ct->Arg(1).Var()];
+    ct->MutableArg(0)->variables[0] = opposite;
+    ct->MutableArg(1)->variables[0] = ct->Arg(2).Var();
+    ct->arguments.pop_back();
+    ct->type = "bool_not";
+    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+    return true;
+  }
+  return false;
+}
+
 // Remove abs from int_le_reif.
 // Input : int_le_reif(x, 0, b) or int_le_reif(x,c, b) with x == abs(y)
 // Output: int_eq_reif(y, 0, b) or set_in_reif(y, [-c, c], b)
@@ -1812,6 +1851,12 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
     FZVLOG << "Stores abs map for " << ct->DebugString() << FZENDL;
     abs_map_[ct->Arg(1).Var()] = ct->Arg(0).Var();
     changed = true;
+  }
+  if (id == "int_eq_reif") {
+    changed |= StoreIntEqReif(ct);
+  }
+  if (id == "int_ne_reif") {
+    changed |= SimplifyIntNeReif(ct);
   }
   if ((id == "int_eq_reif" || id == "int_ne_reif" || id == "int_ne") &&
       ct->Arg(1).HasOneValue() && ct->Arg(1).Value() == 0 &&

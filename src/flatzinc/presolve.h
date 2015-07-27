@@ -141,6 +141,8 @@ class FzPresolver {
   bool SimplifyIntLinEqReif(FzConstraint* ct);
   bool PresolveIntMod(FzConstraint* ct);
   bool PresolveBoolClause(FzConstraint* ct);
+  bool StoreIntEqReif(FzConstraint* ct);
+  bool SimplifyIntNeReif(FzConstraint* ct);
 
   // Helpers.
   void IntersectDomainWith(const FzArgument& arg, FzDomain* domain);
@@ -168,6 +170,10 @@ class FzPresolver {
   // Stores x == (y - z).
   hash_map<const FzIntegerVariable*,
            std::pair<FzIntegerVariable*, FzIntegerVariable*>> difference_map_;
+
+  // Stores (x == y) == b
+  hash_map<FzIntegerVariable*,
+           hash_map<FzIntegerVariable*, FzIntegerVariable*>> int_eq_reif_map_;
 
   // Stores all variables defined in the search annotations.
   hash_set<FzIntegerVariable*> decision_variables_;
