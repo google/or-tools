@@ -1601,6 +1601,10 @@ ClauseRef SatSolver::Reason(VariableIndex var) {
     case AssignmentInfo::CACHED_REASON:
       return trail_.CachedReason(var);
   }
+  // Fallback. We don't use "default:" so the compiler will return an error
+  // if we forgot one enum case above.
+  LOG(FATAL) << "Invalid AssignmentInfo::Type " << info.type;
+  return ClauseRef();
 }
 
 SatClause* SatSolver::ReasonClauseOrNull(VariableIndex var) const {
