@@ -1129,7 +1129,7 @@ void ExtractIntAbs(FzSolver* fzsolver, FzConstraint* ct) {
   } else {
     IntExpr* const target = fzsolver->GetExpression(ct->Arg(1));
     Constraint* const constraint =
-        solver->MakeEquality(solver->MakeAbs(left), target);
+        solver->MakeAbsEquality(left->Var(), target->Var());
     AddConstraint(solver, ct, constraint);
   }
 }
