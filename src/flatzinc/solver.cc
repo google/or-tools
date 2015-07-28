@@ -179,7 +179,7 @@ struct ConstraintWithIo {
   }
 
   std::string DebugString() const {
-    return StringPrintf("Ctio(%s, %d, deps_size = %i)",
+    return StringPrintf("Ctio(%s, %d, deps_size = %lu)",
                         ct->type.c_str(), index, required.size());
   }
 };

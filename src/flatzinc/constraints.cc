@@ -248,6 +248,7 @@ void ExtractArrayBoolXor(FzSolver* fzsolver, FzConstraint* ct) {
           AddConstraint(solver, ct, constraint);
         }
       }
+      break;
     }
     default: {
       if (!even) {
@@ -1690,7 +1691,6 @@ void ExtractIntLinEq(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractIntLinEqReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const int size = ct->Arg(0).values.size();
   if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
@@ -1870,7 +1870,6 @@ bool PostHiddenLeMax(SatPropagator* const sat, const std::vector<int64>& coeffs,
 
 void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const int size = ct->Arg(0).values.size();
   if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
@@ -1898,7 +1897,6 @@ void ExtractIntLinLe(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractIntLinLeReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const int size = ct->Arg(0).values.size();
   if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
@@ -1979,7 +1977,6 @@ void ExtractIntLinNe(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractIntLinNeReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const int size = ct->Arg(0).values.size();
   if (ExtractLinAsShort(fzsolver, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
