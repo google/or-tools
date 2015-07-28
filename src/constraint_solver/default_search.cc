@@ -483,7 +483,8 @@ class ImpactRecorder : public SearchMonitor {
       }
       IntVarIterator* const iterator = domain_iterators_[var_index];
       DecisionBuilder* init_decision_builder = nullptr;
-      if (var->Max() - var->Min() < splits) {
+      bool no_split = var->Size() < splits;
+      if (no_split) {
         // The domain is small enough, we scan it completely.
         container->without_split()->set_update_impact_callback(
             container->update_impact_callback());
@@ -505,7 +506,7 @@ class ImpactRecorder : public SearchMonitor {
       // If we have not initialized all values, then they can be removed.
       // As the iterator is not stable w.r.t. deletion, we need to store
       // removed values in an intermediate vector.
-      if (init_count_ != var->Size()) {
+      if (init_count_ != var->Size() && no_split) {
         container->ClearRemovedValues();
         for (const int64 value : InitAndGetValues(iterator)) {
           const int64 value_index = value - original_min_[var_index];

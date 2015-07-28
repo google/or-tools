@@ -439,10 +439,14 @@ void FzConstraint::MarkAsInactive() {
 
 void FzConstraint::RemoveTargetVariable() {
   if (target_variable != nullptr) {
-    DCHECK_EQ(target_variable->defining_constraint, this);
-    FZVLOG << "  - remove target_variable from " << DebugString() << FZENDL;
-    target_variable->defining_constraint = nullptr;
-    target_variable = nullptr;
+    if (target_variable->defining_constraint == this) {
+      FZVLOG << "  - remove target_variable from " << DebugString() << FZENDL;
+      target_variable->defining_constraint = nullptr;
+      target_variable = nullptr;
+    } else {
+      FZVLOG << "  - asymmetric relation " << DebugString() << FZENDL;
+      target_variable = nullptr;
+    }
   }
 }
 

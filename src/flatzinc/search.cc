@@ -699,7 +699,8 @@ void FzSolver::Solve(FzSolverParameters p,
     } else if (!breaked && num_solutions == 0 &&
                !parallel_support->Interrupted() && !ControlC) {
       final_output.append("=====UNSATISFIABLE=====\n");
-    } else if (!breaked && !parallel_support->Interrupted() && !ControlC) {
+    } else if (!breaked && !parallel_support->Interrupted() && !ControlC &&
+               (model_.objective() != nullptr || p.all_solutions)) {
       final_output.append("==========\n");
       proven = true;
     }

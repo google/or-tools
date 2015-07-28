@@ -654,6 +654,49 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
   return false;
 }
 
+// Simplifies linear equations of size 2, i.e. x - y = 0.
+// Input : int_lin_xx([1, -1], [x1, x2], 0) and
+//         int_lin_xx_reif([1, -1], [x1, x2], 0, b)
+//         xx = eq, ne, lt, le, gt, ge
+// Output: int_xx(x1, x2) and int_xx_reif(x, x2, b)
+bool FzPresolver::SimplifyBinaryLinear(FzConstraint* ct) {
+  const int64 rhs = ct->Arg(2).Value();
+  if (ct->Arg(0).values.size() != 2 || rhs != 0 ||
+      ct->Arg(1).variables.size() == 0) {
+    return false;
+  }
+
+  FzIntegerVariable* first = nullptr;
+  FzIntegerVariable* second = nullptr;
+  if (ct->Arg(0).values[0] == 1 && ct->Arg(0).values[1] == -1) {
+    first = ct->Arg(1).variables[0];
+    second = ct->Arg(1).variables[1];
+  } else if (ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1) {
+    first = ct->Arg(1).variables[1];
+    second = ct->Arg(1).variables[0];
+  } else {
+    return false;
+  }
+
+  FZVLOG << "Remove linear part in " << ct->DebugString() << FZENDL;
+  ct->MutableArg(0)->type = FzArgument::INT_VAR_REF;
+  ct->MutableArg(0)->values.clear();
+  ct->MutableArg(0)->variables.push_back(first);
+  ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
+  ct->MutableArg(1)->variables.clear();
+  ct->MutableArg(1)->variables.push_back(second);
+  if (ct->arguments.size() == 4) {
+    DCHECK(HasSuffixString(ct->type, "_reif"));
+    ct->arguments[2] = ct->Arg(3);
+  }
+  ct->arguments.pop_back();
+  // Change type (remove "_lin" part).
+  DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
+  ct->type.erase(3, 4);
+  FZVLOG << "  - " << ct->DebugString() << FZENDL;
+  return true;
+}
+
 // Returns false if an overflow occured.
 // Used by CheckIntLinReifBounds() below: compute the bounds of the scalar
 // product. If an integer overflow occurs the method returns false.
@@ -1020,6 +1063,15 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
     return true;
   }
+  if (ct->Arg(0).values.size() == 2 &&
+      ct->Arg(1).variables[1] == ct->target_variable &&
+      ct->Arg(0).values[1] == -1 &&
+      !ContainsKey(affine_map_, ct->target_variable)) {
+    affine_map_[ct->target_variable] = AffineMapping(
+        ct->Arg(1).variables[0], ct->Arg(0).values[0], -ct->Arg(2).Value(), ct);
+    FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
+    return true;
+  }
   if (ct->Arg(0).values.size() == 3 &&
       ct->Arg(1).variables[0] == ct->target_variable &&
       ct->Arg(0).values[0] == -1 && ct->Arg(0).values[2] == 1 &&
@@ -1029,9 +1081,9 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
         Array2DIndexMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
                             ct->Arg(1).variables[2], -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
-    //    ct->MarkAsInactive();
     return true;
-  } else if (ct->Arg(0).values.size() == 3 &&
+  }
+  if (ct->Arg(0).values.size() == 3 &&
              ct->Arg(1).variables[0] == ct->target_variable &&
              ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1 &&
              !ContainsKey(array2d_index_map_, ct->target_variable) &&
@@ -1040,7 +1092,26 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
         Array2DIndexMapping(ct->Arg(1).variables[2], ct->Arg(0).values[2],
                             ct->Arg(1).variables[1], -ct->Arg(2).Value(), ct);
     FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
-    //    ct->MarkAsInactive();
+    return true;
+  }
+  if (ct->Arg(0).values.size() == 3 &&
+      ct->Arg(1).variables[2] == ct->target_variable &&
+      ct->Arg(0).values[2] == -1 && ct->Arg(0).values[1] == 1 &&
+      !ContainsKey(array2d_index_map_, ct->target_variable)) {
+    array2d_index_map_[ct->target_variable] =
+        Array2DIndexMapping(ct->Arg(1).variables[0], ct->Arg(0).values[0],
+                            ct->Arg(1).variables[1], -ct->Arg(2).Value(), ct);
+    FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
+    return true;
+  }
+  if (ct->Arg(0).values.size() == 3 &&
+             ct->Arg(1).variables[2] == ct->target_variable &&
+             ct->Arg(0).values[2] == -1 && ct->Arg(0).values[0] == 1 &&
+             !ContainsKey(array2d_index_map_, ct->target_variable)) {
+    array2d_index_map_[ct->target_variable] =
+        Array2DIndexMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
+                            ct->Arg(1).variables[0], -ct->Arg(2).Value(), ct);
+    FZVLOG << "Store affine mapping info for " << ct->DebugString() << FZENDL;
     return true;
   }
   return false;
@@ -1102,11 +1173,11 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
       index_var->domain.values[0] -= offset;
       index_var->domain.values[1] -= offset;
       return true;
-    } else if (mapping.offset + mapping.coefficient > 0 &&
-               domain.values[0] == 1) {
+    } else  if (mapping.offset + mapping.coefficient > 0 &&
+                domain.values[0] > 0) {
       const std::vector<int64>& values = ct->Arg(1).values;
       std::vector<int64> new_values;
-      for (int64 i = domain.values.front(); i <= domain.values.back(); ++i) {
+      for (int64 i = 1; i <= domain.values.back(); ++i) {
         const int64 index = i * mapping.coefficient + mapping.offset - 1;
         if (index < 0) {
           return false;
@@ -1404,6 +1475,45 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
   return false;
 }
 
+bool FzPresolver::StoreIntEqReif(FzConstraint* ct) {
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(1).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(2).type == FzArgument::INT_VAR_REF) {
+    FzIntegerVariable* const first = ct->Arg(0).Var();
+    FzIntegerVariable* const second = ct->Arg(1).Var();
+    FzIntegerVariable* const boolvar = ct->Arg(2).Var();
+    if (ContainsKey(int_eq_reif_map_, first) &&
+        ContainsKey(int_eq_reif_map_[first], second)) {
+      return false;
+    }
+    FZVLOG << "Store eq_var info for " << ct->DebugString() << FZENDL;
+    int_eq_reif_map_[first][second] = boolvar;
+    int_eq_reif_map_[second][first] = boolvar;
+    return true;
+  }
+  return false;
+}
+
+bool FzPresolver::SimplifyIntNeReif(FzConstraint* ct) {
+  if (ct->Arg(0).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(1).type == FzArgument::INT_VAR_REF &&
+      ct->Arg(2).type == FzArgument::INT_VAR_REF &&
+      ContainsKey(int_eq_reif_map_, ct->Arg(0).Var()) &&
+      ContainsKey(int_eq_reif_map_[ct->Arg(0).Var()], ct->Arg(1).Var())) {
+    FZVLOG << "Merge " << ct->DebugString() << " with opposite constraint"
+           << FZENDL;
+    FzIntegerVariable* const opposite =
+        int_eq_reif_map_[ct->Arg(0).Var()][ct->Arg(1).Var()];
+    ct->MutableArg(0)->variables[0] = opposite;
+    ct->MutableArg(1)->variables[0] = ct->Arg(2).Var();
+    ct->arguments.pop_back();
+    ct->type = "bool_not";
+    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+    return true;
+  }
+  return false;
+}
+
 // Remove abs from int_le_reif.
 // Input : int_le_reif(x, 0, b) or int_le_reif(x,c, b) with x == abs(y)
 // Output: int_eq_reif(y, 0, b) or set_in_reif(y, [-c, c], b)
@@ -1442,7 +1552,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
   if (ct->Arg(0).HasOneValue()) {
     // Rule 1.
     const int64 value = ct->Arg(0).Value();
-    FZVLOG << "Simplifty " << ct->DebugString() << FZENDL;
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
     ct->arguments[0] = ct->arguments[1];
     ct->arguments[1] = ct->arguments[2];
     ct->arguments.pop_back();
@@ -1453,7 +1563,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
   if (ct->Arg(1).HasOneValue()) {
     // Rule 2.
     const int64 value = ct->Arg(1).Value();
-    FZVLOG << "Simplifty " << ct->DebugString() << FZENDL;
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
     ct->arguments[1] = ct->arguments[2];
     ct->arguments.pop_back();
     ct->type = value == 1 ? "bool_not" : "bool_eq";
@@ -1462,8 +1572,8 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
   }
   if (ct->Arg(2).HasOneValue()) {
     // Rule 3.
-    const int64 value = ct->Arg(1).Value();
-    FZVLOG << "Simplifty " << ct->DebugString() << FZENDL;
+    const int64 value = ct->Arg(2).Value();
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
     ct->arguments.pop_back();
     ct->type = value == 1 ? "bool_not" : "bool_eq";
     FZVLOG << "   -> " << ct->DebugString() << FZENDL;
@@ -1742,6 +1852,12 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
     abs_map_[ct->Arg(1).Var()] = ct->Arg(0).Var();
     changed = true;
   }
+  if (id == "int_eq_reif") {
+    changed |= StoreIntEqReif(ct);
+  }
+  if (id == "int_ne_reif") {
+    changed |= SimplifyIntNeReif(ct);
+  }
   if ((id == "int_eq_reif" || id == "int_ne_reif" || id == "int_ne") &&
       ct->Arg(1).HasOneValue() && ct->Arg(1).Value() == 0 &&
       ContainsKey(abs_map_, ct->Arg(0).Var())) {
@@ -1784,6 +1900,7 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (HasPrefixString(id, "int_lin_")) {
     changed |= RegroupLinear(ct);
     changed |= SimplifyUnaryLinear(ct);
+    changed |= SimplifyBinaryLinear(ct);
   }
   if (id == "int_lin_eq" || id == "int_lin_le" || id == "int_lin_ge") {
     const bool upper = !(id == "int_lin_ge");
