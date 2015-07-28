@@ -28,8 +28,10 @@
 
 namespace operations_research {
 
+#ifndef _MSC_VER
 static_assert(StarGraph::kFirstNode == 0,
               "StarGraph::kFirstNode should be equal to 0.");
+#endif
 
 // Template class implementing a Union-Find algorithm with path compression for
 // maintaining the connected components of a graph.
