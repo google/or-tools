@@ -14,6 +14,7 @@
 #include "sat/simplification.h"
 
 #include "base/timer.h"
+#include "base/strongly_connected_components.h"
 #include "base/stl_util.h"
 #include "algorithms/dynamic_partition.h"
 
@@ -700,8 +701,86 @@ void ProbeAndFindEquivalentLiteral(
   mapping->clear();
   const int num_already_fixed_vars = solver->LiteralTrail().Index();
 
-  // Currently, this is not supported in the open-source version because we
-  // need to open source the strongly connected component algo first.
+  PropagationGraph graph(
+      solver->parameters().presolve_probing_deterministic_time_limit(), solver);
+  const int32 size = solver->NumVariables() * 2;
+  std::vector<std::vector<int32>> scc;
+  FindStronglyConnectedComponents(size, graph, &scc);
+
+  // We have no guarantee that the cycle of x and not(x) touch the same
+  // variables. This is because we may have more info for the literal probed
+  // later or the propagation may go only in one direction. For instance if we
+  // have two clauses (not(x1) v x2) and (not(x1) v not(x2) v x3) then x1
+  // implies x2 and x3 but not(x3) doesn't imply anything by unit propagation.
+  //
+  // TODO(user): Add some constraint so that it does?
+  //
+  // Because of this, we "merge" the cycles.
+  MergingPartition partition(size);
+  for (const std::vector<int32>& component : scc) {
+    if (component.size() > 1) {
+      if (mapping->empty()) mapping->resize(size, LiteralIndex(-1));
+      const Literal representative((LiteralIndex(component[0])));
+      for (int i = 1; i < component.size(); ++i) {
+        const Literal l((LiteralIndex(component[i])));
+        // TODO(user): check compatibility? if x ~ not(x) => unsat.
+        // but probably, the solver would have found this too? not sure...
+        partition.MergePartsOf(representative.Index().value(),
+                               l.Index().value());
+        partition.MergePartsOf(representative.NegatedIndex().value(),
+                               l.NegatedIndex().value());
+      }
+
+      // We rely on the fact that the representative of a literal x and the one
+      // of its negation are the same variable.
+      CHECK_EQ(Literal(LiteralIndex(partition.GetRootAndCompressPath(
+                   representative.Index().value()))),
+               Literal(LiteralIndex(partition.GetRootAndCompressPath(
+                           representative.NegatedIndex().value()))).Negated());
+    }
+  }
+
+  solver->Backtrack(0);
+  int num_equiv = 0;
+  std::vector<Literal> temp;
+  if (!mapping->empty()) {
+    // If a variable in a cycle is fixed. We want to fix all of them.
+    const VariablesAssignment& assignment = solver->Assignment();
+    for (LiteralIndex i(0); i < size; ++i) {
+      const LiteralIndex rep(partition.GetRootAndCompressPath(i.value()));
+      if (assignment.IsLiteralAssigned(Literal(i)) &&
+          !assignment.IsLiteralAssigned(Literal(rep))) {
+        solver->AddUnitClause(assignment.IsLiteralTrue(Literal(i))
+                                  ? Literal(rep)
+                                  : Literal(rep).Negated());
+      }
+    }
+
+    for (LiteralIndex i(0); i < size; ++i) {
+      const LiteralIndex rep(partition.GetRootAndCompressPath(i.value()));
+      (*mapping)[i] = rep;
+      if (assignment.IsLiteralAssigned(Literal(rep))) {
+        if (!assignment.IsLiteralAssigned(Literal(i))) {
+          solver->AddUnitClause(assignment.IsLiteralTrue(Literal(rep))
+                                    ? Literal(Literal(i))
+                                    : Literal(i).Negated());
+        }
+      } else if (rep != i) {
+        CHECK(!solver->Assignment().IsLiteralAssigned(Literal(i)));
+        CHECK(!solver->Assignment().IsLiteralAssigned(Literal(rep)));
+        ++num_equiv;
+        temp.clear();
+        temp.push_back(Literal(i));
+        temp.push_back(Literal(rep).Negated());
+        postsolver->Add(Literal(i), temp);
+      }
+    }
+  }
+
+  LOG(INFO) << "Probing. fixed " << num_already_fixed_vars << " + "
+            << solver->LiteralTrail().Index() - num_already_fixed_vars
+            << " equiv " << num_equiv / 2 << " total "
+            << solver->NumVariables();
 }
 
 }  // namespace sat

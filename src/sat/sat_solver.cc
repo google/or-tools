@@ -21,6 +21,8 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/sysinfo.h"
+#include "google/protobuf/text_format.h"
+#include "base/split.h"
 #include "base/join.h"
 #include "base/stl_util.h"
 #include "util/saturated_arithmetic.h"
@@ -40,6 +42,7 @@ SatSolver::SatSolver()
       propagation_trail_index_(0),
       binary_propagation_trail_index_(0),
       num_processed_fixed_variables_(0),
+      deterministic_time_of_last_fixed_variables_cleanup_(0.0),
       counters_(),
       is_model_unsat_(false),
       is_var_ordering_initialized_(false),
@@ -476,14 +479,14 @@ bool SatSolver::PBConstraintIsValidUnderDebugAssignment(
 
 namespace {
 
-// Returns true iff 'b' is subsumed by a (i.e 'a' is included in 'b').
+// Returns true iff 'b' is subsumed by 'a' (i.e 'a' is included in 'b').
 // This is slow and only meant to be used in DCHECKs.
 bool ClauseSubsumption(const std::vector<Literal>& a, SatClause* b) {
   std::vector<Literal> superset(b->begin(), b->end());
   std::vector<Literal> subset(a.begin(), a.end());
   std::sort(superset.begin(), superset.end());
   std::sort(subset.begin(), subset.end());
-  return std::includes(superset.begin(), subset.end(), subset.begin(),
+  return std::includes(superset.begin(), superset.end(), subset.begin(),
                        subset.end());
 }
 
@@ -972,6 +975,25 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
           ? std::numeric_limits<int64>::max()
           : counters_.num_failures + parameters_.max_number_of_conflicts();
 
+  // Compute the repeated field of restart algorithms using the std::string default
+  // if empty.
+  auto restart_algorithms = parameters_.restart_algorithms();
+  if (restart_algorithms.empty()) {
+    SatParameters::RestartAlgorithm tmp;
+    const std::vector<std::string> string_values = strings::Split(
+        parameters_.default_restart_algorithms(), ",", strings::SkipEmpty());
+    for (const std::string& string_value : string_values) {
+      if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
+        LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
+                     << string_value << "'.";
+      }
+      restart_algorithms.Add(tmp);
+    }
+    if (restart_algorithms.empty()) {
+      restart_algorithms.Add(SatParameters::NO_RESTART);
+    }
+  }
+
   // Starts search.
   for (;;) {
     // Test if a limit is reached.
@@ -1038,9 +1060,8 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
 
       // Restart?
       bool restart = false;
-      switch (strategy_counter_ % 2 == 0
-                  ? parameters_.restart_algorithm_even()
-                  : parameters_.restart_algorithm_odd()) {
+      switch (restart_algorithms.Get(strategy_counter_ %
+                                     restart_algorithms.size())) {
         case SatParameters::NO_RESTART:
           break;
         case SatParameters::LUBY_RESTART:
@@ -1072,11 +1093,11 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
 
         // Strategy switch?
         if (conflicts_until_next_strategy_change_ == 0) {
+          strategy_counter_++;
           strategy_change_conflicts_ +=
               parameters_.strategy_change_increase_ratio() *
               strategy_change_conflicts_;
           conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
-          strategy_counter_++;
         }
 
         // Reset the various restart strategies.
@@ -1193,9 +1214,10 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
   if (it == clauses_info_.end()) return;
 
   // Check if the new clause LBD is below our threshold to keep this clause
-  // indefinitely.
+  // indefinitely. Note that we use a +1 here because the LBD of a newly learned
+  // clause decrease by 1 just after the backjump.
   const int new_lbd = ComputeLbd(*clause);
-  if (new_lbd <= parameters_.clause_cleanup_lbd_bound()) {
+  if (new_lbd + 1 <= parameters_.clause_cleanup_lbd_bound()) {
     clauses_info_.erase(clause);
     return;
   }
@@ -1451,11 +1473,9 @@ void SatSolver::ProcessNewlyFixedVariables() {
       } else if (!removed_literals.empty()) {
         if (clause->Size() == 2 &&
             parameters_.treat_binary_clauses_separately()) {
-          // The clause is now a binary clause, treat it separately. Note that
-          // if it was used as a reason for a variable x, the variable must not
-          // be unassigned (since we are at level 0, and the clause is of size >
-          // 1). So this it is okay to delete the clause completely (it will be
-          // done at the end of the function).
+          // This clause is now a binary clause, treat it separately. Note that
+          // it is safe to do that because this clause can't be used as a reason
+          // since we are at level zero and the clause is not satisfied.
           AddBinaryClauseInternal(clause->FirstLiteral(),
                                   clause->SecondLiteral());
           watched_clauses_.LazyDetach(clause);
@@ -1484,6 +1504,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   binary_implication_graph_.RemoveFixedVariables(num_processed_fixed_variables_,
                                                  trail_);
   num_processed_fixed_variables_ = trail_.Index();
+  deterministic_time_of_last_fixed_variables_cleanup_ = deterministic_time();
 }
 
 bool SatSolver::Propagate() {
@@ -1580,9 +1601,6 @@ ClauseRef SatSolver::Reason(VariableIndex var) {
     case AssignmentInfo::CACHED_REASON:
       return trail_.CachedReason(var);
   }
-  LOG(FATAL) << "Unhandled case in SatSolver::Reason: "
-             << static_cast<int>(info.type);
-  return ClauseRef();
 }
 
 SatClause* SatSolver::ReasonClauseOrNull(VariableIndex var) const {
@@ -1654,12 +1672,15 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
   // We are back at level 0. This can happen because of a restart, or because
   // we proved that some variables must take a given value in any satisfiable
   // assignment. Trigger a simplification of the clauses if there is new fixed
-  // variables.
+  // variables. Note that for efficiency reason, we don't do that too often.
   //
-  // TODO(user): Do not trigger it all the time if it takes too much time.
   // TODO(user): Do more advanced preprocessing?
   if (CurrentDecisionLevel() == 0) {
-    if (num_processed_fixed_variables_ < trail_.Index()) {
+    const double kMinDeterministicTimeBetweenCleanups = 1.0;
+    if (num_processed_fixed_variables_ < trail_.Index() &&
+        deterministic_time() >
+            deterministic_time_of_last_fixed_variables_cleanup_ +
+                kMinDeterministicTimeBetweenCleanups) {
       ProcessNewlyFixedVariableResolutionNodes();
       ProcessNewlyFixedVariables();
     }
@@ -2052,16 +2073,19 @@ void SatSolver::ComputeFirstUIPConflict(
   DCHECK(!clause_to_expand.IsEmpty());
   int num_literal_at_highest_level_that_needs_to_be_processed = 0;
   while (true) {
-    int num_new_vars = 0;
+    int num_new_vars_at_positive_level = 0;
+    int num_vars_at_positive_level_in_clause_to_expand = 0;
     for (const Literal literal : clause_to_expand) {
       const VariableIndex var = literal.Variable();
+      const int level = DecisionLevel(var);
+      if (level > 0) ++num_vars_at_positive_level_in_clause_to_expand;
       if (!is_marked_[var]) {
-        ++num_new_vars;
         is_marked_.Set(var);
-        const int level = DecisionLevel(var);
         if (level == highest_level) {
+          ++num_new_vars_at_positive_level;
           ++num_literal_at_highest_level_that_needs_to_be_processed;
         } else if (level > 0) {
+          ++num_new_vars_at_positive_level;
           // Note that all these literals are currently false since the clause
           // to expand was used to infer the value of a literal at this level.
           DCHECK(trail_.Assignment().IsLiteralFalse(literal));
@@ -2074,7 +2098,7 @@ void SatSolver::ComputeFirstUIPConflict(
 
     // If there is new variables, then all the previously subsumed clauses are
     // not subsumed anymore.
-    if (num_new_vars > 0) {
+    if (num_new_vars_at_positive_level > 0) {
       // TODO(user): We could still replace all these clauses with the current
       // conflict.
       subsumed_clauses->clear();
@@ -2085,7 +2109,7 @@ void SatSolver::ComputeFirstUIPConflict(
     // is true, then the current conflict subsumes the reason whose underlying
     // clause is given by sat_clause.
     if (sat_clause != nullptr &&
-        clause_to_expand.size() ==
+        num_vars_at_positive_level_in_clause_to_expand ==
             conflict->size() +
                 num_literal_at_highest_level_that_needs_to_be_processed) {
       subsumed_clauses->push_back(sat_clause);

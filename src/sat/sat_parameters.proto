@@ -219,18 +219,22 @@ message SatParameters {
     LBD_MOVING_AVERAGE_RESTART = 3;
   }
 
-  // The restart strategy alternates according to the parity of the
-  // strategy_counter (which starts at 0 and increments from there, see
-  // num_conflicts_before_strategy_changes). The idea of switching of search
-  // strategy tailored for SAT/UNSAT comes from Chanseok Oh with his COMiniSatPS
-  // solver, see http://cs.nyu.edu/~chanseok/.
-  optional RestartAlgorithm restart_algorithm_even = 61
-      [default = LUBY_RESTART];
-  optional RestartAlgorithm restart_algorithm_odd = 70
-      [default = LBD_MOVING_AVERAGE_RESTART];
+  // The restart strategies will change each time the strategy_counter is
+  // increased. The current strategy will simply be the one at index
+  // strategy_counter modulo the number of strategy. Note that if this list
+  // includes a NO_RESTART, nothing will change when it is reached because the
+  // strategy_counter will only increment after a restart.
+  //
+  // The idea of switching of search strategy tailored for SAT/UNSAT comes from
+  // Chanseok Oh with his COMiniSatPS solver, see http://cs.nyu.edu/~chanseok/.
+  // But more generally, it seems REALLY beneficial to try different strategy.
+  repeated RestartAlgorithm restart_algorithms = 61;
+  optional string default_restart_algorithms = 70
+      [default =
+           "LUBY_RESTART,LBD_MOVING_AVERAGE_RESTART,DL_MOVING_AVERAGE_RESTART"];
 
   // Multiplier for the LUBY_RESTART algorithm.
-  optional int32 luby_restart_period = 30 [default = 100];
+  optional int32 luby_restart_period = 30 [default = 50];
 
   // Size of the window for the moving average restarts.
   optional int32 restart_running_window_size = 62 [default = 50];
@@ -250,11 +254,11 @@ message SatParameters {
   // After each restart, if the number of conflict since the last strategy
   // change is greater that this, then we increment a "strategy_counter" that
   // can be use to change the search strategy used by the following restarts.
-  optional int32 num_conflicts_before_strategy_changes = 68 [default = 10000];
+  optional int32 num_conflicts_before_strategy_changes = 68 [default = 0];
 
   // The parameter num_conflicts_before_strategy_changes is increased by that
   // much after each strategy change.
-  optional double strategy_change_increase_ratio = 69 [default = 0.1];
+  optional double strategy_change_increase_ratio = 69 [default = 0.0];
 
   // ==========================================================================
   // Limits
@@ -346,7 +350,7 @@ message SatParameters {
   optional int32 presolve_bve_clause_weight = 55 [default = 3];
 
   // The "deterministic" time limit to spend in probing.
-  optional double presolve_probing_deterministic_time_limit = 57 [default = 10];
+  optional double presolve_probing_deterministic_time_limit = 57 [default = 30];
 
   // ==========================================================================
   // Max-sat parameters

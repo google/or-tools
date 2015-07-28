@@ -309,6 +309,7 @@ class SatSolver {
   // TODO(user): also copy the learned clauses?
   template <typename Output>
   void ExtractClauses(Output* out) {
+    CHECK(!IsModelUnsat());
     Backtrack(0);
 
     // It is important to process the newly fixed variables, so they are not
@@ -712,6 +713,7 @@ class SatSolver {
   // Note that the trail contains only fixed literals (that is literals of
   // decision levels 0) before this point.
   int num_processed_fixed_variables_;
+  double deterministic_time_of_last_fixed_variables_cleanup_;
 
   // Tracks various information about the solver progress.
   struct Counters {

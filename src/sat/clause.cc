@@ -541,7 +541,7 @@ SatClause* SatClause::Create(const std::vector<Literal>& literals, bool is_redun
 }
 
 // Note that for an attached clause, removing fixed literal is okay because if
-// any of them is assigned, then the clause is necessary true.
+// any of the watched literal is assigned, then the clause is necessarily true.
 bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
     const VariablesAssignment& assignment, std::vector<Literal>* removed_literals) {
   removed_literals->clear();
@@ -552,7 +552,10 @@ bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
     return true;
   }
   int j = 2;
-  for (int i = 2; i < size_; ++i) {
+  while (j < size_ && !assignment.IsVariableAssigned(literals_[j].Variable())) {
+    ++j;
+  }
+  for (int i = j; i < size_; ++i) {
     if (assignment.IsVariableAssigned(literals_[i].Variable())) {
       if (assignment.IsLiteralTrue(literals_[i])) return true;
       removed_literals->push_back(literals_[i]);
