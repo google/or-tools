@@ -42,6 +42,132 @@ Preprocessor::Preprocessor()
 Preprocessor::~Preprocessor() {}
 
 // --------------------------------------------------------
+// MainLpPreprocessor
+// --------------------------------------------------------
+
+#define RUN_PREPROCESSOR(name)                                           \
+  RunAndPushIfRelevant(std::unique_ptr<Preprocessor>(new name()), #name, \
+                       &time_limit, lp)
+
+bool MainLpPreprocessor::Run(LinearProgram* lp) {
+  RETURN_VALUE_IF_NULL(lp, false);
+  TimeLimit time_limit(parameters_.max_time_in_seconds());
+  initial_num_rows_ = lp->num_constraints();
+  initial_num_cols_ = lp->num_variables();
+  initial_num_entries_ = lp->num_entries();
+  if (parameters_.use_preprocessing()) {
+    RUN_PREPROCESSOR(ShiftVariableBoundsPreprocessor);
+
+    // We run it a few times because running one preprocessor may allow another
+    // one to remove more stuff.
+    const int kMaxNumPasses = 20;
+    for (int i = 0; i < kMaxNumPasses; ++i) {
+      const int old_stack_size = preprocessors_.size();
+      RUN_PREPROCESSOR(FixedVariablePreprocessor);
+      RUN_PREPROCESSOR(SingletonPreprocessor);
+      RUN_PREPROCESSOR(ForcingAndImpliedFreeConstraintPreprocessor);
+      RUN_PREPROCESSOR(FreeConstraintPreprocessor);
+      RUN_PREPROCESSOR(UnconstrainedVariablePreprocessor);
+      RUN_PREPROCESSOR(DoubletonEqualityRowPreprocessor);
+      RUN_PREPROCESSOR(ImpliedFreePreprocessor);
+      RUN_PREPROCESSOR(DoubletonFreeColumnPreprocessor);
+
+      // Abort early if none of the preprocessors did something. Technically
+      // this is true if none of the preprocessors above needs postsolving,
+      // which has exactly the same meaning for these particular preprocessors.
+      if (preprocessors_.size() == old_stack_size) {
+        // We use i here because the last pass did nothing.
+        VLOG(1) << "Reached fixed point after presolve pass #" << i;
+        break;
+      }
+    }
+    RUN_PREPROCESSOR(EmptyColumnPreprocessor);
+    RUN_PREPROCESSOR(EmptyConstraintPreprocessor);
+
+    // TODO(user): Run them in the loop above if the effect on the running time
+    // is good. This needs more investigation.
+    RUN_PREPROCESSOR(ProportionalColumnPreprocessor);
+    RUN_PREPROCESSOR(ProportionalRowPreprocessor);
+
+    // If DualizerPreprocessor was run, we need to do some extra preprocessing.
+    // This is because it currently adds a lot of zero-cost singleton columns.
+    const int old_stack_size = preprocessors_.size();
+
+    // TODO(user): We probably want to scale the costs before and after this
+    // preprocessor so that the rhs/objective of the dual are with a good
+    // magnitude.
+    RUN_PREPROCESSOR(DualizerPreprocessor);
+    if (old_stack_size != preprocessors_.size()) {
+      RUN_PREPROCESSOR(SingletonPreprocessor);
+      RUN_PREPROCESSOR(FreeConstraintPreprocessor);
+      RUN_PREPROCESSOR(UnconstrainedVariablePreprocessor);
+      RUN_PREPROCESSOR(EmptyColumnPreprocessor);
+      RUN_PREPROCESSOR(EmptyConstraintPreprocessor);
+    }
+  }
+
+  // These are implemented as preprocessors, but are not controlled by the
+  // use_preprocessing() parameter.
+  RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
+  RUN_PREPROCESSOR(ScalingPreprocessor);
+
+  return !preprocessors_.empty();
+}
+
+#undef RUN_PREPROCESSOR
+
+void MainLpPreprocessor::RunAndPushIfRelevant(
+    std::unique_ptr<Preprocessor> preprocessor, const std::string& name,
+    TimeLimit* time_limit, LinearProgram* lp) {
+  RETURN_IF_NULL(preprocessor);
+  if (status_ != ProblemStatus::INIT || time_limit->LimitReached()) return;
+
+  WallTimer timer;
+  timer.Start();
+  parameters_.set_max_time_in_seconds(time_limit->GetTimeLeft());
+  preprocessor->SetParameters(parameters_);
+
+  // No need to run the preprocessor if the lp is empty.
+  // TODO(user): without this test, the code is failing as of 2013-03-18.
+  if (lp->num_variables() == 0 && lp->num_constraints() == 0) {
+    status_ = ProblemStatus::OPTIMAL;
+    return;
+  }
+
+  if (preprocessor->Run(lp)) {
+    const EntryIndex new_num_entries = lp->num_entries();
+    VLOG(1) << StringPrintf(
+        "%s(%fs): %d(%d) rows, %d(%d) columns, %lld(%lld) entries.",
+        name.c_str(), timer.Get(), lp->num_constraints().value(),
+        (lp->num_constraints() - initial_num_rows_).value(),
+        lp->num_variables().value(),
+        (lp->num_variables() - initial_num_cols_).value(),
+        // static_cast<int64> is needed because the Android port uses int32.
+        static_cast<int64>(new_num_entries.value()),
+        static_cast<int64>(new_num_entries.value() -
+                           initial_num_entries_.value()));
+    status_ = preprocessor->status();
+    preprocessors_.push_back(std::move(preprocessor));
+    return;
+  } else {
+    // Even if a preprocessor returns false (i.e. no need for postsolve), it
+    // can detect an issue with the problem.
+    status_ = preprocessor->status();
+    if (status_ != ProblemStatus::INIT) {
+      VLOG(1) << name << " detected that the problem is "
+              << GetProblemStatusString(status_);
+    }
+  }
+}
+
+void MainLpPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+  while (!preprocessors_.empty()) {
+    preprocessors_.back()->RecoverSolution(solution);
+    preprocessors_.pop_back();
+  }
+}
+
+// --------------------------------------------------------
 // ColumnDeletionHelper
 // --------------------------------------------------------
 
@@ -249,7 +375,7 @@ bool EmptyColumnPreprocessor::Run(LinearProgram* linear_program) {
   return !column_deletion_helper_.IsEmpty();
 }
 
-void EmptyColumnPreprocessor::StoreSolution(ProblemSolution* solution) const {
+void EmptyColumnPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
 }
@@ -530,7 +656,7 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
   return !column_deletion_helper_.IsEmpty();
 }
 
-void ProportionalColumnPreprocessor::StoreSolution(
+void ProportionalColumnPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -818,7 +944,7 @@ bool ProportionalRowPreprocessor::Run(LinearProgram* lp) {
   return !row_deletion_helper_.IsEmpty();
 }
 
-void ProportionalRowPreprocessor::StoreSolution(
+void ProportionalRowPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
@@ -912,7 +1038,8 @@ bool FixedVariablePreprocessor::Run(LinearProgram* lp) {
   return !column_deletion_helper_.IsEmpty();
 }
 
-void FixedVariablePreprocessor::StoreSolution(ProblemSolution* solution) const {
+void FixedVariablePreprocessor::RecoverSolution(
+    ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
 }
@@ -1058,7 +1185,7 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
   return !column_deletion_helper_.IsEmpty();
 }
 
-void ForcingAndImpliedFreeConstraintPreprocessor::StoreSolution(
+void ForcingAndImpliedFreeConstraintPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -1325,7 +1452,7 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   return num_implied_free_variables > 0;
 }
 
-void ImpliedFreePreprocessor::StoreSolution(ProblemSolution* solution) const {
+void ImpliedFreePreprocessor::RecoverSolution(ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   const ColIndex num_cols = solution->variable_statuses.size();
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -1454,7 +1581,7 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
   return false;
 }
 
-void DoubletonFreeColumnPreprocessor::StoreSolution(
+void DoubletonFreeColumnPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   row_deletion_helper_.RestoreDeletedRows(solution);
   for (const RestoreInfo& r : Reverse(restore_stack_)) {
@@ -1627,7 +1754,7 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
           return false;
         } else {
           // We can remove this column and all its constraints! We just need to
-          // choose a variable value during the call to StoreSolution() that
+          // choose a variable value during the call to RecoverSolution() that
           // makes all the constraint satisfiable. Test this on bnl2.mps.
           if (!in_mip_context_) {
             // TODO(user): this also works if the variable is integer, but we
@@ -1663,7 +1790,7 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
   return !column_deletion_helper_.IsEmpty() || !row_deletion_helper_.IsEmpty();
 }
 
-void UnconstrainedVariablePreprocessor::StoreSolution(
+void UnconstrainedVariablePreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -1746,7 +1873,7 @@ bool FreeConstraintPreprocessor::Run(LinearProgram* linear_program) {
   return !row_deletion_helper_.IsEmpty();
 }
 
-void FreeConstraintPreprocessor::StoreSolution(
+void FreeConstraintPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
@@ -1791,7 +1918,7 @@ bool EmptyConstraintPreprocessor::Run(LinearProgram* lp) {
   return !row_deletion_helper_.IsEmpty();
 }
 
-void EmptyConstraintPreprocessor::StoreSolution(
+void EmptyConstraintPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
@@ -2361,7 +2488,7 @@ bool SingletonPreprocessor::Run(LinearProgram* lp) {
   return !column_deletion_helper_.IsEmpty() || !row_deletion_helper_.IsEmpty();
 }
 
-void SingletonPreprocessor::StoreSolution(ProblemSolution* solution) const {
+void SingletonPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
 
   // Note that the two deletion helpers must restore 0.0 values in the positions
@@ -2482,7 +2609,7 @@ bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp) {
   return false;
 }
 
-void RemoveNearZeroEntriesPreprocessor::StoreSolution(
+void RemoveNearZeroEntriesPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {}
 
 // --------------------------------------------------------
@@ -2517,7 +2644,7 @@ bool SingletonColumnSignPreprocessor::Run(LinearProgram* linear_program) {
   return !changed_columns_.empty();
 }
 
-void SingletonColumnSignPreprocessor::StoreSolution(
+void SingletonColumnSignPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   for (int i = 0; i < changed_columns_.size(); ++i) {
@@ -2700,7 +2827,7 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
   return !column_deletion_helper_.IsEmpty();
 }
 
-void DoubletonEqualityRowPreprocessor::StoreSolution(
+void DoubletonEqualityRowPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   column_deletion_helper_.RestoreDeletedColumns(solution);
@@ -2894,7 +3021,7 @@ bool DualizerPreprocessor::Run(LinearProgram* lp) {
 // Note(user): This assumes that LinearProgram.PopulateFromDual() uses
 // the first ColIndex and RowIndex for the rows and columns of the given
 // problem.
-void DualizerPreprocessor::StoreSolution(ProblemSolution* solution) const {
+void DualizerPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
 
   DenseRow new_primal_values(primal_num_cols_, 0.0);
@@ -3094,7 +3221,7 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
   return true;
 }
 
-void ShiftVariableBoundsPreprocessor::StoreSolution(
+void ShiftVariableBoundsPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   const ColIndex num_cols = solution->variable_statuses.size();
@@ -3167,7 +3294,7 @@ bool ScalingPreprocessor::Run(LinearProgram* lp) {
   return true;
 }
 
-void ScalingPreprocessor::StoreSolution(ProblemSolution* solution) const {
+void ScalingPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   RETURN_IF_NULL(solution);
   scaler_.ScaleRowVector(false, &(solution->primal_values));
   scaler_.ScaleColumnVector(false, &(solution->dual_values));

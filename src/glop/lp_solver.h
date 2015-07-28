@@ -138,21 +138,9 @@ class LPSolver {
   void MovePrimalValuesWithinBounds(const LinearProgram& lp);
   void MoveDualValuesWithinBounds(const LinearProgram& lp);
 
-  // Runs all preprocessors in sequence.
-  void RunPreprocessors(const TimeLimit& time_limit);
-
-  // Runs the given preprocessor and pushes it when relevant (i.e. when it did
-  // something) on the preprocessors_ stack.
-  void RunAndPushIfRelevant(std::unique_ptr<Preprocessor> preprocessor,
-                            const std::string& name, const TimeLimit& time_limit);
-
   // Runs the revised simplex algorithm if needed (i.e. if the program was not
   // already solved by the preprocessors).
   void RunRevisedSimplexIfNeeded(ProblemSolution* solution);
-
-  // Postprocess the solution by calling the StoreSolution() of the
-  // preprocessors in the reverse order in which their where applied.
-  void PostprocessSolution(ProblemSolution* solution);
 
   // Checks that the returned solution values and statuses are consistent.
   // Returns true if this is the case. See the code for the exact check
@@ -219,19 +207,15 @@ class LPSolver {
   double ComputeReducedCostInfeasibility(const LinearProgram& lp,
                                          bool* is_too_large);
 
-  // Dimension of the linear program given to the last Solve().
-  // This is used for displaying purpose only.
-  EntryIndex initial_num_entries_;
-  RowIndex initial_num_rows_;
-  ColIndex initial_num_cols_;
-
   // On a call to Solve(), this is initialized to an exact copy of the given
   // linear program. It is later modified by the preprocessors and then solved
   // by the revised simplex.
+  //
+  // This is not efficient memory-wise but allows to check optimality with
+  // respect to the given LinearProgram that is guaranteed to not have been
+  // modified. It also allows for a nicer Solve() API with a const
+  // LinearProgram& input.
   LinearProgram current_linear_program_;
-
-  // Stack of preprocessors currently applied to the current linear program.
-  std::vector<std::unique_ptr<Preprocessor>> preprocessors_;
 
   // The revised simplex solver.
   std::unique_ptr<RevisedSimplex> revised_simplex_;
@@ -241,7 +225,6 @@ class LPSolver {
 
   // The current ProblemSolution.
   // TODO(user): use a ProblemSolution directly?
-  ProblemStatus status_;
   DenseRow primal_values_;
   DenseColumn dual_values_;
   VariableStatusRow variable_statuses_;

@@ -21,12 +21,13 @@
 #ifndef OR_TOOLS_GLOP_PREPROCESSOR_H_
 #define OR_TOOLS_GLOP_PREPROCESSOR_H_
 
+#include "base/unique_ptr.h"
+
 #include "glop/parameters.pb.h"
 #include "glop/revised_simplex.h"
 #include "lp_data/lp_data.h"
 #include "lp_data/lp_types.h"
 #include "lp_data/matrix_scaler.h"
-
 
 namespace operations_research {
 namespace glop {
@@ -44,7 +45,7 @@ class Preprocessor {
   virtual ~Preprocessor();
 
   // Runs the preprocessor by modifying the given linear program. Returns true
-  // if a postsolve step will be needed (i.e. StoreSolution() is not the
+  // if a postsolve step will be needed (i.e. RecoverSolution() is not the
   // identity function). Also updates status_ to something different from
   // ProblemStatus::INIT if the problem was solved (including bad statuses
   // like ProblemStatus::ABNORMAL, ProblemStatus::INFEASIBLE, etc.).
@@ -53,7 +54,7 @@ class Preprocessor {
   // Stores the optimal solution of the linear program that was passed to
   // Run(). The given solution needs to be set to the optimal solution of the
   // linear program "modified" by Run().
-  virtual void StoreSolution(ProblemSolution* solution) const = 0;
+  virtual void RecoverSolution(ProblemSolution* solution) const = 0;
 
   // Returns the status of the preprocessor.
   // A status different from ProblemStatus::INIT means that the problem is
@@ -80,6 +81,40 @@ class Preprocessor {
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Preprocessor);
+};
+
+// --------------------------------------------------------
+// MainLpPreprocessor
+// --------------------------------------------------------
+// This is the main LP preprocessor responsible for calling all the other
+// preprocessors in this file, possibly more than once.
+class MainLpPreprocessor : public Preprocessor {
+ public:
+  MainLpPreprocessor() {}
+  ~MainLpPreprocessor() override {}
+  bool Run(LinearProgram* linear_program) override;
+  void RecoverSolution(ProblemSolution* solution) const override;
+
+ private:
+  // Runs the given preprocessor and push it on preprocessors_ for the postsolve
+  // step when needed.
+  void RunAndPushIfRelevant(std::unique_ptr<Preprocessor> preprocessor,
+                            const std::string& name, TimeLimit* time_limit,
+                            LinearProgram* lp);
+
+  // Stack of preprocessors currently applied to the lp that needs postsolve.
+  //
+  // TODO(user): This is mutable so that the preprocessor can be freed as soon
+  // as their RecoverSolution() is called. Make RecoverSolution() non-const or
+  // remove this optimization?
+  mutable std::vector<std::unique_ptr<Preprocessor>> preprocessors_;
+
+  // Initial dimension of the lp given to Run(), for displaying purpose.
+  EntryIndex initial_num_entries_;
+  RowIndex initial_num_rows_;
+  ColIndex initial_num_cols_;
+
+  DISALLOW_COPY_AND_ASSIGN(MainLpPreprocessor);
 };
 
 // --------------------------------------------------------
@@ -185,7 +220,7 @@ class EmptyColumnPreprocessor : public Preprocessor {
   EmptyColumnPreprocessor() {}
   ~EmptyColumnPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   ColumnDeletionHelper column_deletion_helper_;
@@ -210,7 +245,7 @@ class ProportionalColumnPreprocessor : public Preprocessor {
   ProportionalColumnPreprocessor() {}
   ~ProportionalColumnPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
@@ -248,7 +283,7 @@ class ProportionalRowPreprocessor : public Preprocessor {
   ProportionalRowPreprocessor() {}
   ~ProportionalRowPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   // Informations about proportional rows, only filled for such rows.
@@ -341,7 +376,7 @@ class SingletonPreprocessor : public Preprocessor {
   SingletonPreprocessor() {}
   ~SingletonPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
@@ -422,7 +457,7 @@ class FixedVariablePreprocessor : public Preprocessor {
   FixedVariablePreprocessor() {}
   ~FixedVariablePreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   ColumnDeletionHelper column_deletion_helper_;
@@ -454,7 +489,7 @@ class ForcingAndImpliedFreeConstraintPreprocessor : public Preprocessor {
   ForcingAndImpliedFreeConstraintPreprocessor() {}
   ~ForcingAndImpliedFreeConstraintPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   bool lp_is_maximization_problem_;
@@ -496,12 +531,12 @@ class ImpliedFreePreprocessor : public Preprocessor {
   ImpliedFreePreprocessor() {}
   ~ImpliedFreePreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   // This preprocessor adds fixed offsets to some variables. We remember those
-  // here to un-offset them in StoreSolution().
+  // here to un-offset them in RecoverSolution().
   DenseRow variable_offsets_;
 
   // This preprocessor causes some variables who would normally be
@@ -542,7 +577,7 @@ class DoubletonFreeColumnPreprocessor : public Preprocessor {
   DoubletonFreeColumnPreprocessor() {}
   ~DoubletonFreeColumnPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
@@ -587,7 +622,7 @@ class UnconstrainedVariablePreprocessor : public Preprocessor {
   UnconstrainedVariablePreprocessor() {}
   ~UnconstrainedVariablePreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
   // Removes the given variable and all the rows in which it appears: If a
   // variable is unconstrained with a zero cost, then all the constraints in
@@ -625,7 +660,7 @@ class FreeConstraintPreprocessor : public Preprocessor {
   FreeConstraintPreprocessor() {}
   ~FreeConstraintPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   RowDeletionHelper row_deletion_helper_;
@@ -641,7 +676,7 @@ class EmptyConstraintPreprocessor : public Preprocessor {
   EmptyConstraintPreprocessor() {}
   ~EmptyConstraintPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   RowDeletionHelper row_deletion_helper_;
@@ -663,7 +698,7 @@ class RemoveNearZeroEntriesPreprocessor : public Preprocessor {
   RemoveNearZeroEntriesPreprocessor() {}
   ~RemoveNearZeroEntriesPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(RemoveNearZeroEntriesPreprocessor);
@@ -681,7 +716,7 @@ class SingletonColumnSignPreprocessor : public Preprocessor {
   SingletonColumnSignPreprocessor() {}
   ~SingletonColumnSignPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   std::vector<ColIndex> changed_columns_;
@@ -699,7 +734,7 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
   DoubletonEqualityRowPreprocessor() {}
   ~DoubletonEqualityRowPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
@@ -764,7 +799,7 @@ class DualizerPreprocessor : public Preprocessor {
   DualizerPreprocessor() {}
   ~DualizerPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final {
     LOG(FATAL) << "In the presence of integer variables, "
                << "there is no notion of a dual problem.";
@@ -821,7 +856,7 @@ class ShiftVariableBoundsPreprocessor : public Preprocessor {
   ShiftVariableBoundsPreprocessor() {}
   ~ShiftVariableBoundsPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
   // Contains for each variable by how much its bounds where shifted during
@@ -845,7 +880,7 @@ class ScalingPreprocessor : public Preprocessor {
   ScalingPreprocessor() {}
   ~ScalingPreprocessor() final {}
   bool Run(LinearProgram* linear_program) final;
-  void StoreSolution(ProblemSolution* solution) const final;
+  void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:

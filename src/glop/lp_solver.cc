@@ -140,28 +140,30 @@ ProblemStatus LPSolver::Solve(const LinearProgram& lp) {
   // Make an internal copy of the problem for the preprocessing.
   VLOG(1) << "Initial problem: " << lp.GetDimensionString();
   VLOG(1) << "Objective stats: " << lp.GetObjectiveStatsString();
-  initial_num_entries_ = lp.num_entries();
-  initial_num_rows_ = lp.num_constraints();
-  initial_num_cols_ = lp.num_variables();
   current_linear_program_.PopulateFromLinearProgram(lp);
 
   // Preprocess.
-  status_ = ProblemStatus::INIT;
-  RunPreprocessors(time_limit);
+  MainLpPreprocessor preprocessor;
+  parameters_.set_max_time_in_seconds(time_limit.GetTimeLeft());
+  preprocessor.SetParameters(parameters_);
+  const bool postsolve_is_needed = preprocessor.Run(&current_linear_program_);
 
   // At this point, we need to initialize a ProblemSolution with the correct
   // size and status.
   ProblemSolution solution(current_linear_program_.num_constraints(),
                            current_linear_program_.num_variables());
-  solution.status = status_;
+  solution.status = preprocessor.status();
+
+  // TODO(user): find a cleaner way to pass around the time left.
+  parameters_.set_max_time_in_seconds(time_limit.GetTimeLeft());
   RunRevisedSimplexIfNeeded(&solution);
-  PostprocessSolution(&solution);
+
+  if (postsolve_is_needed) preprocessor.RecoverSolution(&solution);
   return LoadAndVerifySolution(lp, solution);
 }
 
 void LPSolver::Clear() {
   ResizeSolution(RowIndex(0), ColIndex(0));
-  preprocessors_.clear();
   revised_simplex_.reset(nullptr);
 }
 
@@ -194,7 +196,7 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   dual_values_ = solution.dual_values;
   variable_statuses_ = solution.variable_statuses;
   constraint_statuses_ = solution.constraint_statuses;
-  status_ = solution.status;
+  ProblemStatus status = solution.status;
 
   // Objective before eventually moving the primal/dual values inside their
   // bounds.
@@ -209,7 +211,7 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
                           ProblemObjectiveValue(lp, dual_objective_value));
 
   // Eventually move the primal/dual values inside their bounds.
-  if (status_ == ProblemStatus::OPTIMAL &&
+  if (status == ProblemStatus::OPTIMAL &&
       parameters_.provide_strong_optimal_guarantee()) {
     MovePrimalValuesWithinBounds(lp);
     MoveDualValuesWithinBounds(lp);
@@ -269,7 +271,7 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
   const double objective_error_ub = ComputeMaxExpectedObjectiveError(lp);
   VLOG(1) << "Objective error <= " << objective_error_ub;
 
-  if (status_ == ProblemStatus::OPTIMAL &&
+  if (status == ProblemStatus::OPTIMAL &&
       parameters_.provide_strong_optimal_guarantee()) {
     // If the primal/dual values were moved to the bounds, then the primal/dual
     // infeasibilities should be exactly zero (but not the residuals).
@@ -283,41 +285,40 @@ ProblemStatus LPSolver::LoadAndVerifySolution(const LinearProgram& lp,
     }
     if (rhs_perturbation_is_too_large) {
       VLOG(1) << "The needed rhs perturbation is too large !!";
-      status_ = ProblemStatus::IMPRECISE;
+      status = ProblemStatus::IMPRECISE;
     }
     if (cost_perturbation_is_too_large) {
       VLOG(1) << "The needed cost perturbation is too large !!";
-      status_ = ProblemStatus::IMPRECISE;
+      status = ProblemStatus::IMPRECISE;
     }
   }
 
   // Note that we compare the values without offset nor scaling. We also need to
   // compare them before we move the primal/dual values, otherwise we lose some
   // precision since the values are modified independently of each other.
-  if (status_ == ProblemStatus::OPTIMAL) {
+  if (status == ProblemStatus::OPTIMAL) {
     if (std::abs(primal_objective_value - dual_objective_value) >
         objective_error_ub) {
       VLOG(1) << "The objective gap of the final solution is too large.";
-      status_ = ProblemStatus::IMPRECISE;
+      status = ProblemStatus::IMPRECISE;
     }
   }
-  if ((status_ == ProblemStatus::OPTIMAL ||
-       status_ == ProblemStatus::PRIMAL_FEASIBLE) &&
+  if ((status == ProblemStatus::OPTIMAL ||
+       status == ProblemStatus::PRIMAL_FEASIBLE) &&
       (primal_residual_is_too_large || primal_infeasibility_is_too_large)) {
     VLOG(1) << "The primal infeasibility of the final solution is too large.";
-    status_ = ProblemStatus::IMPRECISE;
+    status = ProblemStatus::IMPRECISE;
   }
-  if ((status_ == ProblemStatus::OPTIMAL ||
-       status_ == ProblemStatus::DUAL_FEASIBLE) &&
+  if ((status == ProblemStatus::OPTIMAL ||
+       status == ProblemStatus::DUAL_FEASIBLE) &&
       (dual_residual_is_too_large || dual_infeasibility_is_too_large)) {
     VLOG(1) << "The dual infeasibility of the final solution is too large.";
-    status_ = ProblemStatus::IMPRECISE;
+    status = ProblemStatus::IMPRECISE;
   }
 
   may_have_multiple_solutions_ =
-      (status_ == ProblemStatus::OPTIMAL) ?
-          IsOptimalSolutionOnFacet(lp) : false;
-  return status_;
+      (status == ProblemStatus::OPTIMAL) ? IsOptimalSolutionOnFacet(lp) : false;
+  return status;
 }
 
 bool LPSolver::IsOptimalSolutionOnFacet(const LinearProgram& lp) {
@@ -432,115 +433,6 @@ void LPSolver::ResizeSolution(RowIndex num_rows, ColIndex num_cols) {
   constraint_statuses_.resize(num_rows, ConstraintStatus::FREE);
 }
 
-#define RUN_PREPROCESSOR(name)                                           \
-  RunAndPushIfRelevant(std::unique_ptr<Preprocessor>(new name()), #name, \
-                       time_limit)
-
-// TODO(user): This should probably be moved to a MainLpPreprocessor class so it
-// can be used in other places.
-void LPSolver::RunPreprocessors(const TimeLimit& time_limit) {
-  if (parameters_.use_preprocessing()) {
-    RUN_PREPROCESSOR(ShiftVariableBoundsPreprocessor);
-
-    // We run it a few times because running one preprocessor may allow another
-    // one to remove more stuff.
-    const int kMaxNumPasses = 20;
-    for (int i = 0; i < kMaxNumPasses; ++i) {
-      const int old_stack_size = preprocessors_.size();
-      RUN_PREPROCESSOR(FixedVariablePreprocessor);
-      RUN_PREPROCESSOR(SingletonPreprocessor);
-      RUN_PREPROCESSOR(ForcingAndImpliedFreeConstraintPreprocessor);
-      RUN_PREPROCESSOR(FreeConstraintPreprocessor);
-      RUN_PREPROCESSOR(UnconstrainedVariablePreprocessor);
-      RUN_PREPROCESSOR(DoubletonEqualityRowPreprocessor);
-      RUN_PREPROCESSOR(ImpliedFreePreprocessor);
-      RUN_PREPROCESSOR(DoubletonFreeColumnPreprocessor);
-
-      // Abort early if none of the preprocessors did something. Technically
-      // this is true if none of the preprocessors above needs postsolving,
-      // which has exactly the same meaning for these particular preprocessors.
-      if (preprocessors_.size() == old_stack_size) {
-        // We use i here because the last pass did nothing.
-        VLOG(1) << "Reached fixed point after presolve pass #" << i;
-        break;
-      }
-    }
-    RUN_PREPROCESSOR(EmptyColumnPreprocessor);
-    RUN_PREPROCESSOR(EmptyConstraintPreprocessor);
-
-    // TODO(user): Run them in the loop above if the effect on the running time
-    // is good. This needs more investigation.
-    RUN_PREPROCESSOR(ProportionalColumnPreprocessor);
-    RUN_PREPROCESSOR(ProportionalRowPreprocessor);
-
-    // If DualizerPreprocessor was run, we need to do some extra preprocessing.
-    // This is because it currently adds a lot of zero-cost singleton columns.
-    const int old_stack_size = preprocessors_.size();
-
-    // TODO(user): We probably want to scale the costs before and after this
-    // preprocessor so that the rhs/objective of the dual are with a good
-    // magnitude.
-    RUN_PREPROCESSOR(DualizerPreprocessor);
-    if (old_stack_size != preprocessors_.size()) {
-      RUN_PREPROCESSOR(SingletonPreprocessor);
-      RUN_PREPROCESSOR(FreeConstraintPreprocessor);
-      RUN_PREPROCESSOR(UnconstrainedVariablePreprocessor);
-      RUN_PREPROCESSOR(EmptyColumnPreprocessor);
-      RUN_PREPROCESSOR(EmptyConstraintPreprocessor);
-    }
-  }
-
-  // These are implemented as preprocessors, but are not controlled by the
-  // use_preprocessing() parameter.
-  RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
-  RUN_PREPROCESSOR(ScalingPreprocessor);
-}
-
-#undef RUN_PREPROCESSOR
-
-void LPSolver::RunAndPushIfRelevant(std::unique_ptr<Preprocessor> preprocessor,
-                                    const std::string& name,
-                                    const TimeLimit& time_limit) {
-  RETURN_IF_NULL(preprocessor);
-  WallTimer timer;
-  timer.Start();
-  parameters_.set_max_time_in_seconds(time_limit.GetTimeLeft());
-  preprocessor->SetParameters(parameters_);
-  if (status_ == ProblemStatus::INIT) {
-    // No need to run the preprocessor if current_linear_program_ is empty.
-    // TODO(user): without this test, the code is failing as of 2013-03-18.
-    if (current_linear_program_.num_variables() == 0 &&
-        current_linear_program_.num_constraints() == 0) {
-      status_ = ProblemStatus::OPTIMAL;
-    } else if (preprocessor->Run(&current_linear_program_)) {
-      const EntryIndex new_num_entries = current_linear_program_.num_entries();
-      VLOG(1) << StringPrintf(
-          "%s(%fs): %d(%d) rows, %d(%d) columns, %lld(%lld) entries.",
-          name.c_str(), timer.Get(),
-          current_linear_program_.num_constraints().value(),
-          (current_linear_program_.num_constraints() - initial_num_rows_)
-              .value(),
-          current_linear_program_.num_variables().value(),
-          (current_linear_program_.num_variables() - initial_num_cols_).value(),
-          // static_cast<int64> is needed because the Android port uses int32.
-          static_cast<int64>(new_num_entries.value()),
-          static_cast<int64>(new_num_entries.value() -
-                             initial_num_entries_.value()));
-      status_ = preprocessor->status();
-      preprocessors_.push_back(std::move(preprocessor));
-      return;
-    } else {
-      // Even if a preprocessor returns false (i.e. no need for postsolve), it
-      // can detect an issue with the problem.
-      status_ = preprocessor->status();
-      if (status_ != ProblemStatus::INIT) {
-        VLOG(1) << name << " detected that the problem is "
-                << GetProblemStatusString(status_);
-      }
-    }
-  }
-}
-
 void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution) {
   // Note that the transpose matrix is no longer needed at this point.
   // This helps reduce the peak memory usage of the solver.
@@ -572,13 +464,6 @@ void LPSolver::RunRevisedSimplexIfNeeded(ProblemSolution* solution) {
   } else {
     VLOG(1) << "Error during the revised simplex algorithm.";
     solution->status = ProblemStatus::ABNORMAL;
-  }
-}
-
-void LPSolver::PostprocessSolution(ProblemSolution* solution) {
-  while (!preprocessors_.empty()) {
-    preprocessors_.back()->StoreSolution(solution);
-    preprocessors_.pop_back();
   }
 }
 
