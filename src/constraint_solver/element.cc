@@ -1358,13 +1358,35 @@ Constraint* MakeElementEqualityFunc(Solver* const solver,
     } else {
       return solver->MakeEquality(target, vals[val]);
     }
-  } else {
-    if (IsIncreasingContiguous(vals)) {
-      return solver->MakeEquality(target, solver->MakeSum(index, vals[0]));
-    } else {
-      return solver->RevAlloc(
-          new IntElementConstraint(solver, vals, index, target));
+  } else if (IsArrayBoolean(vals)) {
+    std::vector<int64> ones;
+    int first_zero = -1;
+    for (int i = 0; i < vals.size(); ++i) {
+      if (vals[i] == 1LL) {
+        ones.push_back(i);
+      } else {
+        first_zero = i;
+      }
     }
+    if (ones.size() == 1) {
+      DCHECK_EQ(1LL, vals[ones.back()]);
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, vals.size() - 1));
+      return solver->MakeIsEqualCstCt(index, ones.back(), target);
+    } else if (ones.size() == vals.size() - 1) {
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, vals.size() - 1));
+      return solver->MakeIsDifferentCstCt(index, first_zero, target);
+    } else if (ones.size() == ones.back() - ones.front() + 1) {  // contiguous.
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, vals.size() - 1));
+      return solver->MakeIsBetweenCt(index, ones.front(), ones.back(), target);
+    } else {
+      solver->AddConstraint(solver->MakeBetweenCt(index, 0, vals.size() - 1));
+      return solver->MakeIsMemberCt(index, ones, target);
+    }
+  } else if (IsIncreasingContiguous(vals)) {
+    return solver->MakeEquality(target, solver->MakeSum(index, vals[0]));
+  } else {
+    return solver->RevAlloc(
+        new IntElementConstraint(solver, vals, index, target));
   }
 }
 }  // namespace

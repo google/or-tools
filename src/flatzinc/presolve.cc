@@ -27,6 +27,33 @@ bool Has01Values(FzIntegerVariable* var) {
 }
 
 bool Is0Or1(int64 value) { return !(value & 0xfffffffffffffffe); }
+
+template <class T>
+bool IsArrayBoolean(const std::vector<T>& values) {
+  for (int i = 0; i < values.size(); ++i) {
+    if (values[i] != 0 && values[i] != 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <class T>
+bool OnlyOne0OrOnlyOne1(const std::vector<T>& values) {
+  int num_zero = 0;
+  int num_one = 0;
+  for (T val : values) {
+    if (val) {
+      num_one++;
+    } else {
+      num_zero++;
+    }
+    if (num_one > 1 && num_zero > 1) {
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace
 
 // For the author's reference, here is an indicative list of presolve rules
@@ -2406,7 +2433,10 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
       ct->RemoveTargetVariable();
     }
     // Remove target variables from element constraint.
-    if (id == "array_int_element" || id == "array_var_int_element") {
+    if ((id == "array_int_element" &&
+         (!IsArrayBoolean(ct->Arg(1).values) ||
+          !OnlyOne0OrOnlyOne1(ct->Arg(1).values))) ||
+        id == "array_var_int_element") {
       ct->RemoveTargetVariable();
     }
   }
