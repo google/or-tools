@@ -28,6 +28,9 @@
 
 namespace operations_research {
 
+static_assert(StarGraph::kFirstNode == 0,
+              "StarGraph::kFirstNode should be equal to 0.");
+
 // Template class implementing a Union-Find algorithm with path compression for
 // maintaining the connected components of a graph.
 // See Cormen et al. 2nd Edition. MIT Press, 2001. ISBN 0-262-03293-7.
@@ -68,17 +71,10 @@ namespace operations_research {
 
 class ConnectedComponents {
  public:
-  ConnectedComponents()
-      : min_index_(0),
-        max_index_(StarGraph::kMaxNumNodes),
-        max_seen_index_(0),
-        class_(),
-        class_size_() {}
-
-  ~ConnectedComponents() {}
+  ConnectedComponents() : num_nodes_(0), class_(), class_size_() {}
 
   // Reserves memory for num_nodes and resets the data structures.
-  void Init(NodeIndex num_nodes) { Init(0, num_nodes - 1); }
+  void Init(NodeIndex num_nodes);
 
   // Adds the information that NodeIndex tail and NodeIndex head are connected.
   void AddArc(NodeIndex tail, NodeIndex head);
@@ -102,18 +98,8 @@ class ConnectedComponents {
   void MergeClasses(NodeIndex node1, NodeIndex node2);
 
  private:
-  // Initializes the object and allocates memory.
-  void Init(NodeIndex min_index, NodeIndex max_index);
-
-  // The minimum index for nodes in the graph.
-  NodeIndex min_index_;
-
   // The exact number of nodes in the graph.
-  NodeIndex max_index_;
-
-  // The maximum node index seen during AddArc. (set to Graph::num_nodes() by
-  // AddGraph.)
-  NodeIndex max_seen_index_;
+  NodeIndex num_nodes_;
 
   // The equivalence class representative for each node.
   NodeIndexArray class_;

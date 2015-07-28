@@ -21,55 +21,51 @@
 
 namespace operations_research {
 
-void ConnectedComponents::Init(NodeIndex min_index, NodeIndex max_index) {
-  CHECK_LT(1, max_index - min_index);
-  CHECK_LE(0, min_index);
-  min_index_ = min_index;
-  max_index_ = max_index;
-  class_.Reserve(min_index, max_index);
-  class_size_.Reserve(min_index, max_index);
-  for (NodeIndex node = min_index; node <= max_index; ++node) {
+#define DCHECK_NODE_BOUNDS(node_index, num_nodes) \
+  do {                                            \
+    DCHECK_LE(0, node_index);                     \
+    DCHECK_LT(node_index, num_nodes);             \
+  } while (false)
+
+void ConnectedComponents::Init(NodeIndex num_nodes) {
+  CHECK_GE(num_nodes, 0);
+  num_nodes_ = num_nodes;
+  class_.Reserve(0, num_nodes_ - 1);
+  class_size_.Reserve(0, num_nodes_ - 1);
+  for (NodeIndex node = 0; node < num_nodes_; ++node) {
     class_.Set(node, node);
   }
   class_size_.SetAll(1);
 }
 
 void ConnectedComponents::AddArc(NodeIndex tail, NodeIndex head) {
-  max_seen_index_ = std::max(max_seen_index_, tail);
-  max_seen_index_ = std::max(max_seen_index_, head);
-  NodeIndex tail_class = CompressPath(tail);
-  NodeIndex head_class = CompressPath(head);
+  const NodeIndex tail_class = CompressPath(tail);
+  const NodeIndex head_class = CompressPath(head);
   if (tail_class != head_class) {
     MergeClasses(tail_class, head_class);
   }
 }
 
 void ConnectedComponents::AddGraph(const StarGraph& graph) {
-  Init(StarGraph::kFirstNode, graph.num_nodes());
+  Init(graph.max_num_nodes());
   for (StarGraph::ArcIterator arc_it(graph); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     AddArc(graph.Tail(arc), graph.Head(arc));
   }
-  max_seen_index_ = graph.num_nodes() - 1;
 }
 
 NodeIndex ConnectedComponents::CompressPath(NodeIndex node) {
-  DCHECK_LE(min_index_, node);
-  DCHECK_GE(max_index_, node);
+  DCHECK_NODE_BOUNDS(node, num_nodes_);
   while (node != class_[node]) {
-    DCHECK_LE(min_index_, class_[node]);
-    DCHECK_GE(max_index_, class_[node]);
-    DCHECK_LE(min_index_, class_[class_[node]]);
-    DCHECK_GE(max_index_, class_[class_[node]]);
-    class_.Set(node, class_[class_[node]]);
+    DCHECK_NODE_BOUNDS(class_[node], num_nodes_);
+    DCHECK_NODE_BOUNDS(class_[class_[node]], num_nodes_);
     node = class_[node];
   }
   return node;
 }
 
 NodeIndex ConnectedComponents::GetClassRepresentative(NodeIndex node) {
-  DCHECK_LE(min_index_, node);
-  DCHECK_GE(max_index_, node);
+  DCHECK_NODE_BOUNDS(node, num_nodes_);
   NodeIndex representative = node;
   while (class_[representative] != representative) {
     representative = class_[representative];
@@ -82,9 +78,9 @@ NodeIndex ConnectedComponents::GetClassRepresentative(NodeIndex node) {
 }
 
 NodeIndex ConnectedComponents::GetNumberOfConnectedComponents() {
-  std::vector<bool> seen(max_index_);
+  std::vector<bool> seen(num_nodes_, false);
   NodeIndex number = 0;
-  for (NodeIndex node = min_index_; node <= max_seen_index_; ++node) {
+  for (NodeIndex node = 0; node < num_nodes_; ++node) {
     NodeIndex representative = GetClassRepresentative(node);
     if (!seen[representative]) {
       seen[representative] = true;
@@ -97,15 +93,15 @@ NodeIndex ConnectedComponents::GetNumberOfConnectedComponents() {
 void ConnectedComponents::MergeClasses(NodeIndex node1, NodeIndex node2) {
   // It's faster (~10%) to swap the two values and have a single piece of
   // code for merging the classes.
-  DCHECK_LE(min_index_, node1);
-  DCHECK_GE(max_index_, node1);
-  DCHECK_LE(min_index_, node2);
-  DCHECK_GE(max_index_, node2);
+  DCHECK_NODE_BOUNDS(node1, num_nodes_);
+  DCHECK_NODE_BOUNDS(node2, num_nodes_);
   if (class_size_[node1] < class_size_[node2]) {
     std::swap(node1, node2);
   }
   class_.Set(node2, node1);
   class_size_.Set(node1, class_size_[node1] + class_size_[node2]);
 }
+
+#undef DCHECK_NODE_BOUNDS
 
 }  // namespace operations_research
