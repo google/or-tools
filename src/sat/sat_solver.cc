@@ -978,7 +978,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   // Compute the repeated field of restart algorithms using the std::string default
   // if empty.
   auto restart_algorithms = parameters_.restart_algorithms();
-  if (restart_algorithms.empty()) {
+  if (restart_algorithms.size() == 0) {
     SatParameters::RestartAlgorithm tmp;
     const std::vector<std::string> string_values = strings::Split(
         parameters_.default_restart_algorithms(), ",", strings::SkipEmpty());
@@ -989,7 +989,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
       }
       restart_algorithms.Add(tmp);
     }
-    if (restart_algorithms.empty()) {
+    if (restart_algorithms.size() == 0) {
       restart_algorithms.Add(SatParameters::NO_RESTART);
     }
   }
