@@ -2274,6 +2274,19 @@ void CheckRegroupStart(FzConstraint* ct, FzConstraint** start,
   }
 }
 
+void CheckRegroupStart2(FzConstraint* ct, FzConstraint** start,
+                        std::vector<FzIntegerVariable*>* chain,
+                        std::vector<FzIntegerVariable*>* carry_over) {
+  if (ct->type == "int_min" || ct->type == "int_max") {
+    // This is the start of the chain.
+    *start = ct;
+    chain->push_back(ct->Arg(0).Var());
+    chain->push_back(ct->Arg(1).Var());
+    carry_over->push_back(ct->Arg(2).Var());
+    //    carry_over->back()->defining_constraint = nullptr;
+  }
+}
+
 // Weight:
 //  - *_reif: arity
 //  - otherwise arity + 100.
@@ -2438,6 +2451,9 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
       }
     }
   }
+
+  // First version. The start is recognized by the double var in the max.
+  //   tmp1 = std::max(v1, v1)
   for (FzConstraint* const ct : model->constraints()) {
     if (start == nullptr) {
       CheckRegroupStart(ct, &start, &chain, &carry_over);
@@ -2463,6 +2479,42 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
   if (start != nullptr) {
     Regroup(start, chain, carry_over);
   }
+
+  // 2nd version of int_min and int_max regrouping.
+  // The expanded code now looks like:
+  //   tmp1 = std::max(v1, v2)
+  //   tmp2 = std::max(v3, tmp1)
+  //   tmp3 = std::max(v3, tmp2)
+  start = nullptr;
+  chain.clear();
+  carry_over.clear();
+  for (FzConstraint* const ct : model->constraints()) {
+    if (start == nullptr) {
+      CheckRegroupStart2(ct, &start, &chain, &carry_over);
+    } else if (ct->type == start->type &&
+               ct->Arg(1).Var() == carry_over.back() &&
+               var_to_constraints_[ct->Arg(0).Var()].size() <= 2) {
+      chain.push_back(ct->Arg(0).Var());
+      carry_over.push_back(ct->Arg(2).Var());
+      ct->active = false;
+      ct->target_variable = nullptr;
+      carry_over.back()->defining_constraint = nullptr;
+    } else {
+      Regroup(start, chain, carry_over);
+      // Clean
+      start = nullptr;
+      chain.clear();
+      carry_over.clear();
+      // Check again ct.
+      CheckRegroupStart2(ct, &start, &chain, &carry_over);
+    }
+  }
+  // Checks left over from the loop.
+  if (start != nullptr) {
+    Regroup(start, chain, carry_over);
+  }
+
+
 
   // Regroup increasing sequence of int_lin_eq([1,..,1,-1], [x1, ..., xn, yn])
   // into sequence of int_plus(x1, x2, y2), int_plus(y2, x3, y3)...

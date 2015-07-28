@@ -57,6 +57,9 @@ DEFINE_bool(cp_use_all_possible_disjunctions, true,
             "Post temporal disjunctions for all pairs of tasks sharing a "
             "cumulative resource and that cannot overlap because the sum of "
             "their demand exceeds the capacity.");
+DEFINE_int32(cp_max_edge_finder_size, 50,
+             "Do not post the edge finder in the cumulative constraints if "
+             "it contains more than this number of tasks");
 
 namespace operations_research {
 namespace {
@@ -1993,8 +1996,10 @@ class CumulativeConstraint : public Constraint {
     } else {
       Solver* const s = solver();
       if (edge_finder) {
-        return s->RevAlloc(
-            new EdgeFinder<CumulativeTask>(s, useful_tasks, capacity_));
+        return useful_tasks.size() < FLAGS_cp_max_edge_finder_size ?
+            s->RevAlloc(
+                new EdgeFinder<CumulativeTask>(s, useful_tasks, capacity_)) :
+             nullptr;
       } else {
         return s->RevAlloc(new CumulativeTimeTable<CumulativeTask>(
             s, useful_tasks, capacity_));
