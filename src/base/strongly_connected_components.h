@@ -128,7 +128,7 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
   // - Once they have been processed and outputted to components, they are said
   //   to be settled, and their index become kSettledIndex.
   std::vector<NodeIndex> node_index(num_nodes, 0);
-  constexpr NodeIndex kSettledIndex = std::numeric_limits<NodeIndex>::max();
+  const NodeIndex kSettledIndex = std::numeric_limits<NodeIndex>::max();
 
   // This is a well known way to do an efficient iterative DFS. Each time a node
   // is explored, all its adjacent nodes are pushed on this stack. The iterative
