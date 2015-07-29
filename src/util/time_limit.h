@@ -17,7 +17,10 @@
 #include <algorithm>
 #include <cstdlib>
 #include <limits>
-#include <vector>
+#include <string>
+#ifndef NDEBUG
+#include <unordered_map>
+#endif
 
 #include "base/commandlineflags.h"
 #include "base/logging.h"
@@ -51,6 +54,36 @@ namespace operations_research {
 // calls (so that we only consider "recent" history).
 // This is made so that the probability of actually exceeding the time limit is
 // small, without aborting too early.
+//
+// The deterministic time limit can be logged at a more granular level: the
+// method TimeLimit::AdvanceDeterministicTime takes an optional std::string argument:
+// the name of a counter. In debug mode, the time limit object computes also the
+// elapsed time for each named counter separately, and these values can be used
+// to determine the coefficients for computing the deterministic duration from
+// the number of operations. The values of the counters can be printed using
+// TimeLimit::DebugString(). There is no API to access the values of the
+// counters directly, because they do not exist in optimized mode.
+//
+// The basic steps for determining coefficients for the deterministic time are:
+// 1. Run the code in debug mode to collect the values of the deterministic time
+//    counters. Unless the algorithm is different in optimized mode, the values
+//    of the deterministic counters in debug mode will be the same as in
+//    optimized mode.
+// 2. Run the code in optimized mode to measure the real (CPU) time of the whole
+//    benchmark.
+// 3. Determine the coefficients for deterministic time from the real time and
+//    the values of the deterministic counters, e. g. by solving the equations
+//    C_1*c_1 + C_2*c_2 + ... + C_N*c_N + Err = T
+//    where C_1 is the unknown coefficient for counter c_1, Err is the random
+//    measurement error and T is the measured real time. The equation can be
+//    solved e.g. using the least squares method.
+//
+// Note that in optimized mode, the counters are disabled for performance
+// reasons, and calling AdvanceDeterministicTime(duration, counter_name) is
+// equivalent to calling AdvanceDeterministicTime(duration).
+//
+// TODO(user): The expression "deterministic time" should be replaced with
+//                 "number of operations" to avoid confusion with "real" time.
 class TimeLimit {
  public:
   static const double kSafetyBufferSeconds;  // See the .cc for the value.
@@ -92,17 +125,32 @@ class TimeLimit {
     return std::max(0.0, deterministic_limit_ - elapsed_deterministic_time_);
   }
 
-  // Advances the deterministic time. For reproductibility reasons, the
+  // Advances the deterministic time. For reproducibility reasons, the
   // deterministic time doesn't advance automatically as the regular elasped
   // time does.
-  void AdvanceDeterministicTime(double deterministic_duration) {
+  inline void AdvanceDeterministicTime(double deterministic_duration) {
     DCHECK_LE(0.0, deterministic_duration);
     elapsed_deterministic_time_ += deterministic_duration;
   }
 
+  // Advances the deterministic time. For reproducibility reasons, the
+  // deterministic time doesn't advance automatically as the regular elasped
+  // time does.
+  //
+  // In debug mode, this method also updates the deterministic time counter with
+  // the given name. In optimized mode, this method is equivalent to
+  // AdvanceDeterministicTime(double).
+  inline void AdvanceDeterministicTime(double deterministic_duration,
+                                       const char* counter_name) {
+    AdvanceDeterministicTime(deterministic_duration);
+#ifndef NDEBUG
+    deterministic_counters_[counter_name] += deterministic_duration;
+#endif
+  }
+
   // Returns the time elapsed in seconds since the construction of this object.
   double GetElapsedTime() const {
-    return 1e-9 * (base::GetCurrentTimeNanos() - start_ns_);
+return 1e-9 * (base::GetCurrentTimeNanos() - start_ns_);
   }
 
   // Returns the elapsed deterministic time since the construction of this
@@ -126,6 +174,9 @@ class TimeLimit {
     external_boolean_as_limit_ = external_boolean_as_limit;
   }
 
+  // Returns information about the time limit object in a human-readable form.
+  std::string DebugString() const;
+
  private:
   const int64 start_ns_;
   int64 last_ns_;
@@ -133,7 +184,7 @@ class TimeLimit {
   const int64 safety_buffer_ns_;
   RunningMax<int64> running_max_;
 
-  // Only used when FLAGS_time_limit_use_usertime is true.
+// Only used when FLAGS_time_limit_use_usertime is true.
 #ifndef ANDROID_JNI
   UserTimer user_timer_;
 #endif
@@ -144,13 +195,18 @@ class TimeLimit {
 
   const bool* external_boolean_as_limit_;
 
+#ifndef NDEBUG
+  // Contains the values of the deterministic time counters.
+  std::unordered_map<std::string, double> deterministic_counters_;
+#endif
+
   DISALLOW_COPY_AND_ASSIGN(TimeLimit);
 };
 
 // ################## Implementations below #####################
 
 inline TimeLimit::TimeLimit(double limit_in_seconds, double deterministic_limit)
-    : start_ns_(base::GetCurrentTimeNanos()),
+: start_ns_(base::GetCurrentTimeNanos()),
       last_ns_(start_ns_),
       limit_ns_(limit_in_seconds >= 1e-9 * (kint64max - start_ns_)
                     ? kint64max
