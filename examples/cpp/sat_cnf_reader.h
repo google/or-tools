@@ -129,7 +129,8 @@ class SatCnfReader {
           hard_weight_ = (words_.size() > 4) ? StringPieceAtoi(words_[4]) : 0;
         }
       } else {
-        LOG(FATAL) << "Unknow file type: " << words_[1];
+        // TODO(user): The ToString() is only required for the open source. Fix.
+        LOG(FATAL) << "Unknown file type: " << words_[1].ToString();
       }
     } else {
       // In the cnf file format, the last words should always be 0.
@@ -195,13 +196,16 @@ class SatCnfReader {
           if (FLAGS_wcnf_use_strong_slack) {
             // Add the binary implications slack_literal true => all the other
             // clause literals are false.
+            LinearBooleanConstraint base_constraint;
+            base_constraint.set_lower_bound(1);
+            base_constraint.add_coefficients(1);
+            base_constraint.add_coefficients(1);
+            base_constraint.add_literals(-slack_literal);
+            base_constraint.add_literals(-slack_literal);
             for (int i = 0; i + 1 < constraint->literals_size(); ++i) {
               LinearBooleanConstraint* bc = problem->add_constraints();
-              bc->set_lower_bound(1);
-              bc->add_literals(-slack_literal);
-              bc->add_literals(-constraint->literals(i));
-              bc->add_coefficients(1);
-              bc->add_coefficients(1);
+              *bc = base_constraint;
+              bc->mutable_literals()->Set(1, -constraint->literals(i));
               ++num_slack_binary_clauses_;
             }
           }

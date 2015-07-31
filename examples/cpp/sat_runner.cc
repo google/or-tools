@@ -25,16 +25,16 @@
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
 #include "base/strutil.h"
-// TODO(user): Move sat_cnf_reader.h and sat_runner.cc to examples?
-#include "cpp/opb_reader.h"
-#include "cpp/sat_cnf_reader.h"
-#include "base/random.h"
+#include "algorithms/sparse_permutation.h"
 #include "sat/boolean_problem.h"
+#include "cpp/opb_reader.h"
 #include "sat/optimization.h"
+#include "cpp/sat_cnf_reader.h"
 #include "sat/sat_solver.h"
 #include "sat/simplification.h"
 #include "util/time_limit.h"
-#include "algorithms/sparse_permutation.h"
+#include "base/random.h"
+#include "base/status.h"
 
 DEFINE_string(
     input, "",
@@ -52,11 +52,6 @@ DEFINE_string(
 DEFINE_bool(output_cnf_solution, false,
             "If true and the problem was solved to optimality, this output "
             "the solution to stdout in cnf form.\n");
-
-DEFINE_string(
-    expected_result, "undefined",
-    "Checks the result against expected. Possible values are undefined, "
-    "sat, unsat");
 
 DEFINE_string(params, "",
               "Parameters for the sat solver in a text format of the "
@@ -109,6 +104,11 @@ DEFINE_bool(refine_core, false,
             "If true, turn on the unsat_proof parameters and if the problem is "
             "UNSAT, refine as much as possible its UNSAT core in order to get "
             "a small one.");
+
+DEFINE_bool(reduce_memory_usage, false,
+            "If true, do not keep a copy of the original problem in memory."
+            "This reduce the memory usage, but disable the solution cheking at "
+            "the end.");
 
 namespace operations_research {
 namespace sat {
@@ -216,8 +216,14 @@ int Run() {
   }
 
   // Load the problem into the solver.
-  if (!LoadBooleanProblem(problem, solver.get())) {
-    LOG(INFO) << "UNSAT when loading the problem.";
+  if (FLAGS_reduce_memory_usage) {
+    if (!LoadAndConsumeBooleanProblem(&problem, solver.get())) {
+      LOG(INFO) << "UNSAT when loading the problem.";
+    }
+  } else {
+    if (!LoadBooleanProblem(problem, solver.get())) {
+      LOG(INFO) << "UNSAT when loading the problem.";
+    }
   }
   if (!AddObjectiveConstraint(
           problem, !FLAGS_lower_bound.empty(),
@@ -228,6 +234,7 @@ int Run() {
 
   // Symmetries!
   if (FLAGS_use_symmetry) {
+    CHECK(!FLAGS_reduce_memory_usage) << "incompatible";
     LOG(INFO) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     FindLinearBooleanProblemSymmetries(problem, &generators);
@@ -240,6 +247,7 @@ int Run() {
   if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_qmaxsat ||
       FLAGS_core_enc) {
     if (FLAGS_randomize > 0 && (FLAGS_linear_scan || FLAGS_qmaxsat)) {
+      CHECK(!FLAGS_reduce_memory_usage) << "incompatible";
       result = SolveWithRandomParameters(STDOUT_LOG, problem, FLAGS_randomize,
                                          solver.get(), &solution);
     }
@@ -282,6 +290,11 @@ int Run() {
         // Probe + find equivalent literals.
         ITIVector<LiteralIndex, LiteralIndex> equiv_map;
         ProbeAndFindEquivalentLiteral(solver.get(), &postsolver, &equiv_map);
+        if (solver->IsModelUnsat()) {
+          printf("c unsat during probing!\n");
+          result = SatSolver::MODEL_UNSAT;
+          break;
+        }
 
         // Register the fixed variables with the presolver.
         // TODO(user): Find a better place for this?
@@ -321,75 +334,50 @@ int Run() {
 
       // Recover the solution.
       if (result == SatSolver::MODEL_SAT) {
-        solution = postsolver.ExtractAndPostsolveSolution(*solver.get());
+        solution = postsolver.ExtractAndPostsolveSolution(*solver);
+        CHECK(IsAssignmentValid(problem, solution));
+      }
+    } else {
+      result = solver->Solve();
+      if (result == SatSolver::MODEL_SAT) {
+        ExtractAssignment(problem, *solver, &solution);
         CHECK(IsAssignmentValid(problem, solution));
       }
 
-      // Statistics of the solver on the presolved problem.
-      printf("c status: %s\n", SatStatusString(result).c_str());
-      printf("c conflicts: %lld\n", solver->num_failures());
-      printf("c branches: %lld\n", solver->num_branches());
-      printf("c propagations: %lld\n", solver->num_propagations());
+      // Unsat with verification.
+      // Note(user): For now we just compute an UNSAT core and check it.
+      if (result == SatSolver::MODEL_UNSAT && parameters.unsat_proof()) {
+        CHECK(!FLAGS_reduce_memory_usage) << "incompatible";
+        std::vector<int> core;
+        solver->ComputeUnsatCore(&core);
+        LOG(INFO) << "UNSAT. Identified a core of " << core.size()
+                  << " constraints.";
 
-      // Overall time.
-      printf("c walltime: %f\n", wall_timer.Get());
-      printf("c usertime: %f\n", user_timer.Get());
-      return EXIT_SUCCESS;
-    }
-
-    result = solver->Solve();
-    if (result == SatSolver::MODEL_SAT) {
-      ExtractAssignment(problem, *solver, &solution);
-      CHECK(IsAssignmentValid(problem, solution));
-    }
-
-    // Unsat with verification.
-    // Note(user): For now we just compute an UNSAT core and check it.
-    if (result == SatSolver::MODEL_UNSAT && parameters.unsat_proof()) {
-      std::vector<int> core;
-      solver->ComputeUnsatCore(&core);
-      LOG(INFO) << "UNSAT. Identified a core of " << core.size()
-                << " constraints.";
-
-      // The following block is mainly for testing the UNSAT core feature.
-      if (FLAGS_refine_core) {
-        int old_core_size = core.size();
-        LinearBooleanProblem old_problem;
-        LinearBooleanProblem core_unsat_problem;
-        old_problem.CopyFrom(problem);
-        int i = 1;
-        do {
-          ExtractSubproblem(old_problem, core, &core_unsat_problem);
-          core_unsat_problem.set_name(StringPrintf("Subproblem #%d", i));
-          old_core_size = core.size();
-          old_problem.CopyFrom(core_unsat_problem);
-          SatSolver new_solver;
-          new_solver.SetParameters(parameters);
-          CHECK(LoadBooleanProblem(core_unsat_problem, &new_solver));
-          CHECK_EQ(new_solver.Solve(), SatSolver::MODEL_UNSAT) << "Wrong core!";
-          new_solver.ComputeUnsatCore(&core);
-          LOG(INFO) << "Core #" << i << " checked, next size is "
-                    << core.size();
-          ++i;
-        } while (core.size() != old_core_size);
+        // The following block is mainly for testing the UNSAT core feature.
+        if (FLAGS_refine_core) {
+          int old_core_size = core.size();
+          LinearBooleanProblem old_problem;
+          LinearBooleanProblem core_unsat_problem;
+          old_problem = problem;
+          int i = 1;
+          do {
+            ExtractSubproblem(old_problem, core, &core_unsat_problem);
+            core_unsat_problem.set_name(StringPrintf("Subproblem #%d", i));
+            old_core_size = core.size();
+            old_problem = core_unsat_problem;
+            SatSolver new_solver;
+            new_solver.SetParameters(parameters);
+            CHECK(LoadBooleanProblem(core_unsat_problem, &new_solver));
+            CHECK_EQ(new_solver.Solve(), SatSolver::MODEL_UNSAT)
+                << "Wrong core!";
+            new_solver.ComputeUnsatCore(&core);
+            LOG(INFO) << "Core #" << i << " checked, next size is "
+                      << core.size();
+            ++i;
+          } while (core.size() != old_core_size);
+        }
       }
     }
-
-    if (!FLAGS_output.empty()) {
-      if (result == SatSolver::MODEL_SAT) {
-        StoreAssignment(solver->Assignment(), problem.mutable_assignment());
-      }
-      if (HasSuffixString(FLAGS_output, ".txt")) {
-        file::WriteProtoToASCIIFileOrDie(problem, FLAGS_output);
-      } else {
-        file::WriteProtoToFileOrDie(problem, FLAGS_output);
-      }
-    }
-
-    CHECK(
-        FLAGS_expected_result == "undefined" ||
-        (FLAGS_expected_result == "sat" && result == SatSolver::MODEL_SAT) ||
-        (FLAGS_expected_result == "unsat" && result == SatSolver::MODEL_UNSAT));
   }
 
   // Print the solution status.
@@ -406,27 +394,39 @@ int Run() {
         problem = original_problem;
       }
     } else {
-      printf("s SAT\n");
+      printf("s SATISFIABLE\n");
     }
-  }
-  if (result == SatSolver::MODEL_UNSAT) {
-    printf("s UNSAT\n");
-  }
 
-  // Check the solution if it is non-empty.
-  if (!solution.empty()) {
+    // Check and output the solution.
     CHECK(IsAssignmentValid(problem, solution));
     if (FLAGS_output_cnf_solution) {
       printf("v %s\n", SolutionString(problem, solution).c_str());
     }
-    if (problem.objective().coefficients_size() > 0) {
-      const Coefficient objective = ComputeObjectiveValue(problem, solution);
-      printf("c objective: %.16g\n",
-             AddOffsetAndScaleObjectiveValue(problem, objective));
-      printf("c best bound: %.16g\n", scaled_best_bound);
+    if (!FLAGS_output.empty()) {
+      CHECK(!FLAGS_reduce_memory_usage) << "incompatible";
+      if (result == SatSolver::MODEL_SAT) {
+        StoreAssignment(solver->Assignment(), problem.mutable_assignment());
+      }
+      if (HasSuffixString(FLAGS_output, ".txt")) {
+        CHECK_OK(file::SetTextProto(FLAGS_output, problem, file::Defaults()));
+      } else {
+        CHECK_OK(file::SetBinaryProto(FLAGS_output, problem, file::Defaults()));
+      }
     }
-  } else {
+  }
+  if (result == SatSolver::MODEL_UNSAT) {
+    printf("s UNSATISFIABLE\n");
+  }
+
+  // Print objective value.
+  if (solution.empty()) {
     printf("c objective: na\n");
+    printf("c best bound: na\n");
+  } else {
+    const Coefficient objective = ComputeObjectiveValue(problem, solution);
+    printf("c objective: %.16g\n",
+           AddOffsetAndScaleObjectiveValue(problem, objective));
+    printf("c best bound: %.16g\n", scaled_best_bound);
   }
 
   // Print final statistics.
@@ -437,7 +437,12 @@ int Run() {
   printf("c walltime: %f\n", wall_timer.Get());
   printf("c usertime: %f\n", user_timer.Get());
   printf("c deterministic time: %f\n", solver->deterministic_time());
-  return EXIT_SUCCESS;
+
+  // The SAT competition requires a particular exit code and since we don't
+  // really use it for any other purpose, we comply.
+  if (result == SatSolver::MODEL_SAT) return 10;
+  if (result == SatSolver::MODEL_UNSAT) return 20;
+  return 0;
 }
 
 }  // namespace
