@@ -169,8 +169,9 @@ class StopServiceTimePlusTransition {
         transition_time_(transition_time) {}
   int64 Compute(RoutingModel::NodeIndex from,
                 RoutingModel::NodeIndex to) const {
-    return location_container_.SameLocation(from, to) ? 0
-        : stop_time_ + transition_time_->Run(from, to);
+    return location_container_.SameLocation(from, to)
+               ? 0
+               : stop_time_ + transition_time_->Run(from, to);
   }
 
  private:

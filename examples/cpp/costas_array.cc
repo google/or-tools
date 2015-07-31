@@ -201,11 +201,11 @@ class Evaluator {
   explicit Evaluator(const std::vector<IntVar*>& vars) : vars_(vars) {}
 
   // Prefer the value with the smallest domain
-  int64 VarEvaluator(int64 index) { return vars_[index]->Size(); }
+  int64 VarEvaluator(int64 index) const { return vars_[index]->Size(); }
 
   // Penalize for each time the value appears in a different domain,
   // as values have to be unique
-  int64 ValueEvaluator(int64 id, int64 value) {
+  int64 ValueEvaluator(int64 id, int64 value) const {
     int appearance = 0;
 
     for (int i = 0; i < vars_.size(); ++i) {
@@ -266,8 +266,9 @@ void CostasSoft(const int dim) {
   // Here we only consider the elements from 1 to dim.
   for (int64 j = dim + 1; j <= 2 * dim; ++j) {
     // Penalize if an element occurs more than once.
-    vars[index] = solver.MakeSemiContinuousExpr(
-                             solver.MakeSum(matrix_count[j], -1), 0, 1)->Var();
+    vars[index] =
+        solver.MakeSemiContinuousExpr(solver.MakeSum(matrix_count[j], -1), 0, 1)
+            ->Var();
 
     occurences.push_back(vars[index++]);
   }
@@ -290,9 +291,9 @@ void CostasSoft(const int dim) {
 
     // Penalize occurrences of more than one
     for (int64 j = 0; j <= 2 * dim; ++j) {
-      vars[index] =
-          solver.MakeSemiContinuousExpr(solver.MakeSum(domain_count[j], -1), 0,
-                                        dim - i)->Var();
+      vars[index] = solver.MakeSemiContinuousExpr(
+                              solver.MakeSum(domain_count[j], -1), 0, dim - i)
+                        ->Var();
 
       occurences.push_back(vars[index++]);
     }

@@ -121,13 +121,13 @@ int main(int argc, char* argv[]) {
     ProblemStatus solve_status = ProblemStatus::INIT;
 
 
-    const char* status_string;
+    std::string status_string;
     double objective_value;
     double solving_time_in_sec = 0;
     if (FLAGS_mps_solve) {
       ScopedWallTime timer(&solving_time_in_sec);
       solve_status = solver.Solve(linear_program);
-      status_string = GetProblemStatusString(solve_status).c_str();
+      status_string = GetProblemStatusString(solve_status);
       objective_value = ToDouble(solver.GetObjectiveValue());
     }
 
@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
       }
       printf("%s,", mps_reader.GetProblemName().c_str());
       if (FLAGS_mps_solve) {
-        printf("%15.15e,%s,%-6.4g,", objective_value, status_string,
+        printf("%15.15e,%s,%-6.4g,", objective_value, status_string.c_str(),
                solving_time_in_sec);
       }
       printf("%s,%s\n", linear_program.GetProblemStats().c_str(),
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
              mps_reader.GetProblemName().c_str());
       if (FLAGS_mps_solve) {
         printf("%-45s: %15.15e\n", "Objective value", objective_value);
-        printf("%-45s: %s\n", "Problem status", status_string);
+        printf("%-45s: %s\n", "Problem status", status_string.c_str());
         printf("%-45s: %-6.4g\n", "Solving time", solving_time_in_sec);
       }
       printf("%s%s", linear_program.GetPrettyProblemStats().c_str(),

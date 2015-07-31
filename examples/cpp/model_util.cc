@@ -25,6 +25,7 @@
 #include "constraint_solver/model.pb.h"
 #include "util/graph_export.h"
 #include "util/string_array.h"
+#include "base/status.h"
 
 DEFINE_string(input, "", "Input file of the problem.");
 DEFINE_string(output, "", "Output file when doing modifications.");
