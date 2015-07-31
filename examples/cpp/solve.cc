@@ -34,8 +34,18 @@ DEFINE_string(solver, "glop",
               "cbc, clp, cplex, cplex_mip, glop, glpk_lp, glpk_mip,"
 	          " gurobi_lp, gurobi_mip, scip.");
 DEFINE_string(params, "", "Solver specific parameters");
+DEFINE_int64(time_limit_ms, 0,
+             "If stricitly positive, specifies a limit in ms on the solving"
+             " time.");
 DEFINE_string(forced_mps_format, "",
               "Set to force the mps format to use: free, fixed");
+
+DEFINE_string(output, "",
+              "If non-empty, write the MPSolverResponse there. "
+              "The format will be binary except if the name end with '.txt'.");
+DEFINE_string(output_csv, "",
+              "If non-empty, write the returned solution in csv format with "
+              "each line formed by a variable name and its value.");
 
 static const char kUsageStr[] =
     "Run MPSolver on the given input file. Many formats are supported: \n"
@@ -165,6 +175,9 @@ void Run() {
   std::string error_message;
   const MPSolverResponseStatus status =
       solver.LoadModelFromProto(model_proto, &error_message);
+  if (FLAGS_time_limit_ms >= 0) {
+    solver.set_time_limit(FLAGS_time_limit_ms);
+  }
   CHECK_EQ(MPSOLVER_MODEL_IS_VALID, status)
       << MPSolverResponseStatus_Name(status) << ": " << error_message;
   printf("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
@@ -177,6 +190,28 @@ void Run() {
   {
     ScopedWallTime timer(&solving_time_in_sec);
     solve_status = solver.Solve(param);
+  }
+
+  // If requested, get the solver result and output it.
+  if (!FLAGS_output.empty()) {
+    operations_research::MPSolutionResponse result;
+    solver.FillSolutionResponseProto(&result);
+    if (HasSuffixString(FLAGS_output, ".txt")) {
+      CHECK_OK(file::SetTextProto(FLAGS_output, result, file::Defaults()));
+    } else {
+      CHECK_OK(file::SetBinaryProto(FLAGS_output, result, file::Defaults()));
+    }
+  }
+  if (!FLAGS_output_csv.empty()) {
+    operations_research::MPSolutionResponse result;
+    solver.FillSolutionResponseProto(&result);
+    std::string csv_file;
+    for (int i = 0; i < result.variable_value_size(); ++i) {
+      csv_file +=
+          StringPrintf("%s,%e\n", model_proto.variable(i).name().c_str(),
+                       result.variable_value(i));
+    }
+    CHECK_OK(file::SetContents(FLAGS_output_csv, csv_file, file::Defaults()));
   }
 
   printf("%-12s: %s\n", "Status",
