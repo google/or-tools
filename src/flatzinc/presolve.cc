@@ -1431,8 +1431,9 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
     const bool value =
         (id == "int_eq_reif" || id == "int_ge_reif" || id == "int_le_reif" ||
          id == "bool_eq_reif" || id == "bool_ge_reif" || id == "bool_le_reif");
-    if ((ct->Arg(2).HasOneValue() && ct->Arg(2).Value() == value) ||
-        !ct->Arg(2).HasOneValue()) {
+    if ((ct->Arg(2).HasOneValue() && 
+	 ct->Arg(2).Value() == static_cast<int64>(value)) ||
+	!ct->Arg(2).HasOneValue()) {
       FZVLOG << "Propagate boolvar from " << ct->DebugString() << " to "
              << value << FZENDL;
       CHECK_EQ(FzArgument::INT_VAR_REF, ct->Arg(2).type);
@@ -2559,7 +2560,7 @@ void FzPresolver::CleanUpModelForTheCpSolver(FzModel* model, bool use_sat) {
 
   // Regroup increasing sequence of int_lin_eq([1,..,1,-1], [x1, ..., xn, yn])
   // into sequence of int_plus(x1, x2, y2), int_plus(y2, x3, y3)...
-  vector<FzIntegerVariable*> current_variables;
+  std::vector<FzIntegerVariable*> current_variables;
   FzIntegerVariable* target_variable = nullptr;
   FzConstraint* first_constraint = nullptr;
   for (FzConstraint* const ct : model->constraints()) {
