@@ -389,9 +389,12 @@ dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GL
 install_scip: $(SCIP_TARGET)
 
 dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz
-	cd dependencies\install && ..\..\tools\gzip -dc ..\archives\scipoptsuite-$(SCIP_TAG).tgz | ..\..\tools\tar.exe xvmf -
+#	cd dependencies\install && ..\..\tools\gzip -dc ..\archives\scipoptsuite-$(SCIP_TAG).tgz | ..\..\tools\tar.exe xvmf -
+	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\archives\scipoptsuite-$(SCIP_TAG).tgz
 	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc soplex-$(SOPLEX_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
-	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
+#	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
+	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -d scip-$(SCIP_TAG).tgz
+	- cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\tar.exe xvmf scip-$(SCIP_TAG).tar
 ifeq ("$(VisualStudioVersion)", "12.0")
 	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
 	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
