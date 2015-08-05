@@ -13,7 +13,7 @@
 
 #include "sat/pb_constraint.h"
 
-#include "base/fingerprint2011.h"
+#include "base/thorough_hash.h"
 #include "util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -421,8 +421,8 @@ UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
   // Sentinel.
   starts_.push_back(literals_.size());
 
-  hash_ = Fingerprint2011(reinterpret_cast<const char*>(cst.data()),
-                          cst.size() * sizeof(LiteralWithCoeff));
+  hash_ = ThoroughHash(reinterpret_cast<const char*>(cst.data()),
+                       cst.size() * sizeof(LiteralWithCoeff));
 }
 
 void UpperBoundedLinearConstraint::AddToConflict(

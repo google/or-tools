@@ -11,12 +11,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_FINGERPRINT2011_H_
-#define OR_TOOLS_BASE_FINGERPRINT2011_H_
+#ifndef OR_TOOLS_BASE_THOROUGH_HASH_H_
+#define OR_TOOLS_BASE_THOROUGH_HASH_H_
 
 #include "base/integral_types.h"
 
-inline uint64 FingerprintCat2011(uint64 fp1, uint64 fp2) {
+namespace operations_research {
+inline uint64 MixTwoUInt64(uint64 fp1, uint64 fp2) {
   // Two big prime numbers.
   const uint64 kMul1 = 0xc6a4a7935bd1e995ULL;
   const uint64 kMul2 = 0x228876a7198b743ULL;
@@ -29,12 +30,12 @@ inline uint64 FingerprintCat2011(uint64 fp1, uint64 fp2) {
 
 // This should be better (collision-wise) than the default hash<std::string>, without
 // being much slower. It never returns 0 or 1.
-inline uint64 Fingerprint2011(const char* bytes, size_t len) {
+inline uint64 ThoroughHash(const char* bytes, size_t len) {
   // Some big prime numer.
   uint64 fp = 0xa5b85c5e198ed849ULL;
   const char* end = bytes + len;
   while (bytes + 8 <= end) {
-    fp = FingerprintCat2011(fp, *(reinterpret_cast<const uint64*>(bytes)));
+    fp = MixTwoUInt64(fp, *(reinterpret_cast<const uint64*>(bytes)));
     bytes += 8;
   }
   // Note: we don't care about "consistency" (little or big endian) between
@@ -45,7 +46,8 @@ inline uint64 Fingerprint2011(const char* bytes, size_t len) {
     last_bytes <<= 8;
     bytes++;
   }
-  return FingerprintCat2011(fp, last_bytes);
+  return MixTwoUInt64(fp, last_bytes);
 }
+}  // namespace operations_research
 
-#endif  // OR_TOOLS_BASE_FINGERPRINT2011_H_
+#endif  // OR_TOOLS_BASE_THOROUGH_HASH_H_

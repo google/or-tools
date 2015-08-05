@@ -70,53 +70,50 @@
 
 // std::string
 
-namespace std {
-  class std::string;
+class std::string;
 
-  %typemap(typecheck) std::string = char *;
-  %typemap(typecheck) const std::string & = char *;
+%typemap(typecheck) std::string = char *;
+%typemap(typecheck) const std::string & = char *;
 
-  %typemap(in) std::string {
-    char * buf;
-    Py_ssize_t len;
-    if (PyString_AsStringAndSize($input, &buf, &len) == -1)
-      return NULL;
-    $1 = std::string(buf, len);
-  }
+%typemap(in) std::string {
+  char * buf;
+  Py_ssize_t len;
+  if (PyString_AsStringAndSize($input, &buf, &len) == -1)
+    return NULL;
+  $1 = std::string(buf, len);
+ }
 
-  %typemap(in) const std::string & (std::string temp) {
-    char * buf;
-    Py_ssize_t len;
-    if (PyString_AsStringAndSize($input, &buf, &len) == -1)
-      return NULL;
-    temp = std::string(buf, len);
-    $1 = &temp;
-  }
+%typemap(in) const std::string & (std::string temp) {
+  char * buf;
+  Py_ssize_t len;
+  if (PyString_AsStringAndSize($input, &buf, &len) == -1)
+    return NULL;
+  temp = std::string(buf, len);
+  $1 = &temp;
+ }
 
-  %typemap(out) std::string {
-    $result = PyString_FromStringAndSize($1.data(), $1.size());
-  }
+%typemap(out) std::string {
+  $result = PyString_FromStringAndSize($1.data(), $1.size());
+ }
 
-  %typemap(out) const std::string & {
-    $result = PyString_FromStringAndSize($1->data(), $1->size());
-  }
+%typemap(out) const std::string & {
+  $result = PyString_FromStringAndSize($1->data(), $1->size());
+ }
 
-  %typemap(in, numinputs = 0) std::string * OUTPUT (std::string temp) {
-    temp = std::string();
-    $1 = &temp;
-  }
+%typemap(in, numinputs = 0) std::string * OUTPUT (std::string temp) {
+  temp = std::string();
+  $1 = &temp;
+ }
 
-  %typemap(argout, fragment = "t_output_helper") std::string * OUTPUT {
-    $result = t_output_helper(
+%typemap(argout, fragment = "t_output_helper") std::string * OUTPUT {
+  $result = t_output_helper(
       $result,
       PyString_FromStringAndSize($1->data(), $1->length()));
-  }
+ }
 
-  %typemap(varout) std::string {
-    $result = PyString_FromStringAndSize($1.data(), $1.size());
-  }
-
-}
+%typemap(varout) std::string {
+  $result = PyString_FromStringAndSize($1.data(), $1.size());
+ }
 
 %apply const std::string & {std::string &};
 %apply const std::string & {std::string *};

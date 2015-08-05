@@ -29,7 +29,7 @@
 #include "base/logging.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
-#include "base/fingerprint2011.h"
+#include "base/thorough_hash.h"
 #include "base/hash.h"
 #include "graph/linear_assignment.h"
 #include "util/saturated_arithmetic.h"
@@ -1124,7 +1124,7 @@ uint64 RoutingModel::GetFingerprintOfEvaluator(
     return bit_cast<uint64>(evaluator);
   }
   // Fingerprinting by matrix row seems to be the good combination to
-  // make Fingerprint2011 run fast and avoid using too much memory.
+  // make ThoroughHash run fast and avoid using too much memory.
   uint64 evaluator_fprint = 0;
   const int max_row_size = Size() + vehicles_;
   std::unique_ptr<int64[]> row(new int64[max_row_size]);
@@ -1141,11 +1141,11 @@ uint64 RoutingModel::GetFingerprintOfEvaluator(
       }
     }
     const int row_num_bytes = row_size * sizeof(int64);
-    const uint64 fprint = Fingerprint2011(
+    const uint64 fprint = ThoroughHash(
         reinterpret_cast<const char*>(row.get()), row_num_bytes);
-    // FingerprintCat2011 never returns 0.
+    // ThoroughHash never returns 0.
     evaluator_fprint = evaluator_fprint != 0
-        ? FingerprintCat2011(evaluator_fprint, fprint)
+        ? MixTwoUInt64(evaluator_fprint, fprint)
         : fprint;
   }
   return evaluator_fprint;
@@ -1336,7 +1336,7 @@ void RoutingModel::ComputeVehicleClasses() {
                                                           << (index % CHAR_BIT);
       }
     }
-    vehicle_class.unvisitable_nodes_fprint = Fingerprint2011(
+    vehicle_class.unvisitable_nodes_fprint = ThoroughHash(
         nodes_unvisitability_bitmask.get(), nodes_unvisitability_num_bytes);
     const VehicleClassIndex num_vehicle_classes(vehicle_classes_.size());
     const VehicleClassIndex vehicle_class_index =
