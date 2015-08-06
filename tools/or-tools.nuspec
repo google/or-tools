@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Google.OrTools</id>
-    <version>1.0.VVVV</version>
+    <version>2.0.VVVV</version>
     <authors>Google</authors>
     <licenseUrl>http://code.google.com/p/or-tools/source/browse/trunk/LICENSE-2.0.txt</licenseUrl>
     <projectUrl>http://code.google.com/p/or-tools</projectUrl>
