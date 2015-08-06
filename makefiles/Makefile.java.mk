@@ -365,14 +365,10 @@ ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp\or-tools.$(PORT)\examples\com
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\constraintsolver
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\linearsolver
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\graph
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\algorithms
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\constraintsolver
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\graph
+	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\linearsolver
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	tools\mkdir temp\or-tools.$(PORT)\data
 	tools\mkdir temp\or-tools.$(PORT)\data\discrete_tomography
@@ -397,13 +393,10 @@ else
 	mkdir temp/or-tools.$(PORT)/examples/com
 	mkdir temp/or-tools.$(PORT)/examples/com/google
 	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/constraintsolver
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/linearsolver
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/graph
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/algorithms
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/constraintsolver
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/graph
+	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/linearsolver
 	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	mkdir temp/or-tools.$(PORT)/data
 	mkdir temp/or-tools.$(PORT)/data/discrete_tomography
