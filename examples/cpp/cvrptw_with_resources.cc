@@ -21,7 +21,7 @@
 // empty routes; fix this when we have an API on the cumulative constraints
 // with variable demands.
 
-#include "base/unique_ptr.h"
+#include <memory>
 #include <vector>
 
 #include "base/callback.h"

@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_GLOP_LP_SOLVER_H_
 #define OR_TOOLS_GLOP_LP_SOLVER_H_
 
-#include "base/unique_ptr.h"
+#include <memory>
 
 #include "glop/parameters.pb.h"
 #include "glop/preprocessor.h"

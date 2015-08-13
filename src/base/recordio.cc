@@ -12,10 +12,10 @@
 // limitations under the License.
 
 #include <zlib.h>
+#include <memory>
 #include <string>
 #include "base/logging.h"
 #include "base/recordio.h"
-#include "base/unique_ptr.h"
 
 namespace operations_research {
 const int RecordWriter::kMagicNumber = 0x3ed7230a;

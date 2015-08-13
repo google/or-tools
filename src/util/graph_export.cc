@@ -14,7 +14,7 @@
 
 #include "util/graph_export.h"
 
-#include "base/unique_ptr.h"
+#include <memory>
 
 #include "base/logging.h"
 #include "base/macros.h"

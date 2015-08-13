@@ -180,7 +180,8 @@ struct ThetaNode {
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
     total_processing = left.total_processing + right.total_processing;
-    total_ect = std::max(left.total_ect + right.total_processing, right.total_ect);
+    total_ect =
+        std::max(left.total_ect + right.total_processing, right.total_ect);
   }
 
   bool IsIdentity() const {
@@ -312,8 +313,8 @@ struct LambdaThetaNode {
   // associated with such sets.
   void Compute(const LambdaThetaNode& left, const LambdaThetaNode& right) {
     energy = left.energy + right.energy;
-    energetic_end_min =
-        std::max(right.energetic_end_min, left.energetic_end_min + right.energy);
+    energetic_end_min = std::max(right.energetic_end_min,
+                                 left.energetic_end_min + right.energy);
     const int64 energy_left_opt = left.energy_opt + right.energy;
     const int64 energy_right_opt = left.energy + right.energy_opt;
     if (energy_left_opt > energy_right_opt) {
@@ -526,7 +527,7 @@ bool NotLast::Propagate() {
   bool modified = false;
   for (int i = 0; i < by_start_min_.size(); ++i) {
     IntervalVar* const var = by_start_min_[i]->interval;
-    if ((strict_ || var->DurationMin() > 0 ) && var->EndMax() > new_lct_[i]) {
+    if ((strict_ || var->DurationMin() > 0) && var->EndMax() > new_lct_[i]) {
       modified = true;
       var->SetEndMax(new_lct_[i]);
     }
@@ -578,7 +579,8 @@ class EdgeFinderAndDetectablePrecedences {
 };
 
 EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
-    Solver* const solver, const std::vector<IntervalVar*>& intervals, bool mirror, bool strict)
+    Solver* const solver, const std::vector<IntervalVar*>& intervals, bool mirror,
+    bool strict)
     : solver_(solver),
       theta_tree_(intervals.size()),
       lt_tree_(intervals.size()),
@@ -1071,11 +1073,11 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
  private:
   int64 Distance(int64 activity_plus_one, int64 next_activity_plus_one) {
-    return (transition_time_.get() == nullptr || activity_plus_one == 0 ||
+    return (activity_plus_one == 0 ||
             next_activity_plus_one > intervals_.size())
                ? 0
-               : transition_time_->Run(activity_plus_one - 1,
-                                       next_activity_plus_one - 1);
+               : transition_time_(activity_plus_one - 1,
+                                  next_activity_plus_one - 1);
   }
 
   void BuildNextModelIfNeeded() {
@@ -1140,9 +1142,9 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
     }
     // TODO(user): Find a better UB for the last time cumul.
     time_cumuls_[num_nodes] = s->MakeIntVar(0, 2 * horizon, ct_name + "_ect");
-    s->AddConstraint(s->MakePathCumul(
-        nexts_, actives_, time_cumuls_, time_slacks_,
-        NewPermanentCallback(this, &FullDisjunctiveConstraint::Distance)));
+    s->AddConstraint(
+        s->MakePathCumul(nexts_, actives_, time_cumuls_, time_slacks_,
+                         [this](int64 x, int64 y) { return Distance(x, y); }));
 
     std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1, time_slacks_.end());
     s->AddConstraint(s->RevAlloc(
@@ -1205,11 +1207,11 @@ struct DualCapacityThetaNode {
   void Compute(const DualCapacityThetaNode& left,
                const DualCapacityThetaNode& right) {
     energy = left.energy + right.energy;
-    energetic_end_min =
-        std::max(left.energetic_end_min + right.energy, right.energetic_end_min);
+    energetic_end_min = std::max(left.energetic_end_min + right.energy,
+                                 right.energetic_end_min);
     residual_energetic_end_min =
         std::max(left.residual_energetic_end_min + right.energy,
-            right.residual_energetic_end_min);
+                 right.residual_energetic_end_min);
   }
 
   // Amount of resource consumed by the Theta set, in units of demand X time.
@@ -1520,8 +1522,8 @@ class EdgeFinder : public Constraint {
       const int64 end_min = task->interval->EndMin();
       while (end_max_index < by_start_min_.size() &&
              by_end_max_[end_max_index]->interval->EndMax() <= end_min) {
-        max_start_min = std::max(max_start_min,
-                            by_end_max_[end_max_index]->interval->StartMin());
+        max_start_min = std::max(
+            max_start_min, by_end_max_[end_max_index]->interval->StartMin());
         ++end_max_index;
       }
       if (end_max_index > 0 && task->interval->StartMin() <= max_start_min &&
@@ -1762,8 +1764,9 @@ class CumulativeTimeTable : public Constraint {
     for (const Task* const task : by_start_min_) {
       const IntervalVar* const interval = task->interval;
       if (interval->StartMin() == interval->StartMax() &&
-          interval->EndMin() == interval->EndMax())
+          interval->EndMin() == interval->EndMax()) {
         continue;
+      }
       while (interval->StartMin() > profile_unique_time_[profile_index].time) {
         DCHECK(profile_index < profile_unique_time_.size());
         ++profile_index;
@@ -1996,10 +1999,10 @@ class CumulativeConstraint : public Constraint {
     } else {
       Solver* const s = solver();
       if (edge_finder) {
-        return useful_tasks.size() < FLAGS_cp_max_edge_finder_size ?
-            s->RevAlloc(
-                new EdgeFinder<CumulativeTask>(s, useful_tasks, capacity_)) :
-             nullptr;
+        return useful_tasks.size() < FLAGS_cp_max_edge_finder_size
+                   ? s->RevAlloc(new EdgeFinder<CumulativeTask>(s, useful_tasks,
+                                                                capacity_))
+                   : nullptr;
       } else {
         return s->RevAlloc(new CumulativeTimeTable<CumulativeTask>(
             s, useful_tasks, capacity_));
@@ -2132,9 +2135,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
         // If there are less than 2 such intervals, the constraint would do
         // nothing
         const std::string seq_name = StrCat(name(), "-HighDemandSequence");
-        constraint =
-            solver()->MakeStrictDisjunctiveConstraint(high_demand_intervals,
-                                                      seq_name);
+        constraint = solver()->MakeStrictDisjunctiveConstraint(
+            high_demand_intervals, seq_name);
       }
     }
     if (constraint != nullptr) {
@@ -2155,7 +2157,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
         interval->SetPerformed(false);
       }
       // Add to the useful_task vector if it may be performed and that it
-      // actually consumes some of the resource.
+      // may actually consume some of the resource.
       if (interval->MayBePerformed() && original_task.demand->Max() > 0) {
         Solver* const s = solver();
         IntervalVar* const original_interval = original_task.interval;
@@ -2221,9 +2223,19 @@ DisjunctiveConstraint::DisjunctiveConstraint(
   if (!name.empty()) {
     set_name(name);
   }
+  transition_time_ = [](int64 x, int64 y) { return 0; };
 }
 
 DisjunctiveConstraint::~DisjunctiveConstraint() {}
+
+void DisjunctiveConstraint::SetTransitionTime(
+    std::function<int64(int64, int64)> transition_time) {
+  if (transition_time != nullptr) {
+    transition_time_ = transition_time;
+  } else {
+    transition_time_ = [](int64 x, int64 y) { return 0; };
+  }
+}
 
 // ---------- Factory methods ----------
 

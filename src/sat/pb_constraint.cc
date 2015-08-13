@@ -422,7 +422,7 @@ UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
   starts_.push_back(literals_.size());
 
   hash_ = ThoroughHash(reinterpret_cast<const char*>(cst.data()),
-                       cst.size() * sizeof(LiteralWithCoeff));
+                          cst.size() * sizeof(LiteralWithCoeff));
 }
 
 void UpperBoundedLinearConstraint::AddToConflict(

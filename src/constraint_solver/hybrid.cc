@@ -17,7 +17,7 @@
 #include <math.h>
 #include <functional>
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"

@@ -14,11 +14,11 @@
 #include "base/filelinereader.h"
 
 #include <cstring>
+#include <memory>
 #include <string>
 
 #include "base/file.h"
 #include "base/logging.h"
-#include "base/unique_ptr.h"
 
 namespace operations_research {
 FileLineReader::FileLineReader(const char* const filename)

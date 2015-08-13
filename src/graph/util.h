@@ -17,7 +17,7 @@
 #define OR_TOOLS_GRAPH_UTIL_H_
 
 #include <algorithm>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <numeric>
 #include <string>
 

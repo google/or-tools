@@ -13,14 +13,14 @@
 
 
 #include <algorithm>
+#include <functional>
 #include "base/hash.h"
 #include <list>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/casts.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
@@ -51,7 +51,7 @@ namespace operations_research {
 // ---------- Search Log ---------
 
 SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-                     ResultCallback<std::string>* display_callback, int period)
+                     std::function<std::string()> display_callback, int period)
     : SearchMonitor(s),
       period_(period),
       timer_(new WallTimer),
@@ -68,9 +68,6 @@ SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
       sliding_max_depth_(0) {
   CHECK(obj == nullptr || var == nullptr)
       << "Either var or obj need to be nullptr.";
-  if (display_callback_ != nullptr) {
-    display_callback_->CheckIsRepeatable();
-  }
 }
 
 SearchLog::~SearchLog() {}
@@ -151,8 +148,8 @@ bool SearchLog::AtSolution() {
   }
   log.append(")");
   OutputLine(log);
-  if (display_callback_.get() != nullptr) {
-    LOG(INFO) << display_callback_->Run();
+  if (display_callback_) {
+    LOG(INFO) << display_callback_();
   }
   return false;
 }
@@ -273,13 +270,13 @@ SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const var) {
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period,
-                                     ResultCallback<std::string>* display_callback) {
+                                     std::function<std::string()> display_callback) {
   return RevAlloc(
       new SearchLog(this, nullptr, nullptr, display_callback, period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const var,
-                                     ResultCallback<std::string>* display_callback) {
+                                     std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, nullptr, var, display_callback, period));
 }
 
@@ -288,7 +285,7 @@ SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj) {
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj,
-                                     ResultCallback<std::string>* display_callback) {
+                                     std::function<std::string()> display_callback) {
   return RevAlloc(new SearchLog(this, obj, nullptr, display_callback, period));
 }
 
@@ -618,23 +615,39 @@ DecisionBuilder* Solver::Try(const std::vector<DecisionBuilder*>& dbs) {
 namespace {
 class BaseVariableAssignmentSelector : public BaseObject {
  public:
-  BaseVariableAssignmentSelector() {}
+  BaseVariableAssignmentSelector(Solver* solver, const std::vector<IntVar*>& vars)
+      : solver_(solver),
+        vars_(vars),
+        first_unbound_(0),
+        last_unbound_(vars.size() - 1) {}
+
   ~BaseVariableAssignmentSelector() override {}
-  virtual int64 SelectValue(const IntVar* const v, int64 id) = 0;
-  virtual IntVar* SelectVariable(Solver* const s, int64* id) = 0;
-  virtual void Accept(ModelVisitor* const visitor) const = 0;
-};
 
-// ----- Variable selector -----
+  virtual int64 SelectValue(const IntVar* v, int64 id) = 0;
 
-class VariableSelector : public BaseObject {
- public:
-  explicit VariableSelector(const std::vector<IntVar*>& vars) : vars_(vars) {}
-  ~VariableSelector() override {}
-  virtual IntVar* Select(Solver* const s, int64* id) = 0;
-  std::string VarDebugString() const {
-    return StringPrintf("(%s)", JoinDebugStringPtr(vars_, ", ").c_str());
+  // Returns -1 if no variable are suitable.
+  virtual int64 ChooseVariable() = 0;
+
+  int64 ChooseVariableWrapper() {
+    int64 i;
+    for (i = first_unbound_.Value(); i <= last_unbound_.Value(); ++i) {
+      if (!vars_[i]->Bound()) {
+        break;
+      }
+    }
+    first_unbound_.SetValue(solver_, i);
+    if (i > last_unbound_.Value()) {
+      return -1;
+    }
+    for (i = last_unbound_.Value(); i >= first_unbound_.Value(); --i) {
+      if (!vars_[i]->Bound()) {
+        break;
+      }
+    }
+    last_unbound_.SetValue(solver_, i);
+    return ChooseVariable();
   }
+
   void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
@@ -642,341 +655,201 @@ class VariableSelector : public BaseObject {
     visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
   }
 
+  const std::vector<IntVar*>& vars() const { return vars_; }
+
  protected:
-  const std::vector<IntVar*> vars_;
+  Solver* const solver_;
+  std::vector<IntVar*> vars_;
+  Rev<int64> first_unbound_;
+  Rev<int64> last_unbound_;
 };
 
 // ----- Choose first unbound --
 
-class FirstUnboundSelector : public VariableSelector {
- public:
-  explicit FirstUnboundSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars), first_(0) {}
-  ~FirstUnboundSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "ChooseFirstUnbound"; }
-
- private:
-  int first_;
-};
-
-IntVar* FirstUnboundSelector::Select(Solver* const s, int64* id) {
-  for (int i = first_; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
-    if (!var->Bound()) {
-      s->SaveAndSetValue(&first_, i);
-      *id = i;
-      return var;
+int64 ChooseFirstUnbound(Solver* solver, const std::vector<IntVar*>& vars,
+                         int64 first_unbound, int64 last_unbound) {
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    if (!vars[i]->Bound()) {
+      return i;
     }
   }
-  s->SaveAndSetValue(&first_, static_cast<int>(vars_.size()));
-  *id = vars_.size();
-  return nullptr;
+  return -1;
 }
 
 // ----- Choose Min Size Lowest Min -----
 
-class MinSizeLowestMinSelector : public VariableSelector {
- public:
-  explicit MinSizeLowestMinSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~MinSizeLowestMinSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "MinSizeLowestMinSelector"; }
-};
-
-IntVar* MinSizeLowestMinSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
+int64 ChooseMinSizeLowestMin(Solver* solver, const std::vector<IntVar*>& vars,
+                             int64 first_unbound, int64 last_unbound) {
   uint64 best_size = kuint64max;
   int64 best_min = kint64max;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+  int64 best_index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
       if (var->Size() < best_size ||
           (var->Size() == best_size && var->Min() < best_min)) {
         best_size = var->Size();
         best_min = var->Min();
-        index = i;
-        result = var;
+        best_index = i;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return best_index;
 }
 
 // ----- Choose Min Size Highest Min -----
 
-class MinSizeHighestMinSelector : public VariableSelector {
- public:
-  explicit MinSizeHighestMinSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~MinSizeHighestMinSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "MinSizeHighestMinSelector"; }
-};
-
-IntVar* MinSizeHighestMinSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
-  uint64 best_size = kint64max;
+int64 ChooseMinSizeHighestMin(Solver* solver, const std::vector<IntVar*>& vars,
+                              int64 first_unbound, int64 last_unbound) {
+  uint64 best_size = kuint64max;
   int64 best_min = kint64min;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+  int64 best_index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
       if (var->Size() < best_size ||
           (var->Size() == best_size && var->Min() > best_min)) {
         best_size = var->Size();
         best_min = var->Min();
-        index = i;
-        result = var;
+        best_index = i;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return best_index;
 }
 
 // ----- Choose Min Size Lowest Max -----
 
-class MinSizeLowestMaxSelector : public VariableSelector {
- public:
-  explicit MinSizeLowestMaxSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~MinSizeLowestMaxSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "MinSizeLowestMaxSelector"; }
-};
-
-IntVar* MinSizeLowestMaxSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
-  uint64 best_size = kint64max;
+int64 ChooseMinSizeLowestMax(Solver* solver, const std::vector<IntVar*>& vars,
+                             int64 first_unbound, int64 last_unbound) {
+  uint64 best_size = kuint64max;
   int64 best_max = kint64max;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+  int64 best_index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
       if (var->Size() < best_size ||
           (var->Size() == best_size && var->Max() < best_max)) {
         best_size = var->Size();
         best_max = var->Max();
-        index = i;
-        result = var;
+        best_index = i;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return best_index;
 }
 
 // ----- Choose Min Size Highest Max -----
 
-class MinSizeHighestMaxSelector : public VariableSelector {
- public:
-  explicit MinSizeHighestMaxSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~MinSizeHighestMaxSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "MinSizeHighestMaxSelector"; }
-};
-
-IntVar* MinSizeHighestMaxSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
-  uint64 best_size = kint64max;
+int64 ChooseMinSizeHighestMax(Solver* solver, const std::vector<IntVar*>& vars,
+                              int64 first_unbound, int64 last_unbound) {
+  uint64 best_size = kuint64max;
   int64 best_max = kint64min;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+  int64 best_index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
       if (var->Size() < best_size ||
           (var->Size() == best_size && var->Max() > best_max)) {
         best_size = var->Size();
         best_max = var->Max();
-        index = i;
-        result = var;
+        best_index = i;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return best_index;
 }
 
 // ----- Choose Lowest Min --
 
-class LowestMinSelector : public VariableSelector {
- public:
-  explicit LowestMinSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~LowestMinSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "LowestMinSelector"; }
-};
-
-IntVar* LowestMinSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
+int64 ChooseLowestMin(Solver* solver, const std::vector<IntVar*>& vars,
+                      int64 first_unbound, int64 last_unbound) {
   int64 best_min = kint64max;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+  int64 best_index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
       if (var->Min() < best_min) {
         best_min = var->Min();
-        index = i;
-        result = var;
+        best_index = i;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return best_index;
 }
 
 // ----- Choose Highest Max -----
 
-class HighestMaxSelector : public VariableSelector {
- public:
-  explicit HighestMaxSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~HighestMaxSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "HighestMaxSelector"; }
-};
-
-IntVar* HighestMaxSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
+int64 ChooseHighestMax(Solver* solver, const std::vector<IntVar*>& vars,
+                       int64 first_unbound, int64 last_unbound) {
   int64 best_max = kint64min;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+  int64 best_index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
-      if (var->Max() > best_max) {
+      if (var->Max() < best_max) {
         best_max = var->Max();
-        index = i;
-        result = var;
+        best_index = i;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return best_index;
 }
 
 // ----- Choose Lowest Size --
 
-class LowestSizeSelector : public VariableSelector {
- public:
-  explicit LowestSizeSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~LowestSizeSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "MinSizeSelector"; }
-};
-
-IntVar* LowestSizeSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
-  uint64 best_size = kint64max;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+int64 ChooseMinSize(Solver* solver, const std::vector<IntVar*>& vars,
+                    int64 first_unbound, int64 last_unbound) {
+  uint64 best_size = kuint64max;
+  int64 best_index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
-      const uint64 size = var->Size();
-      if (size < best_size) {
-        best_size = size;
-        index = i;
-        result = var;
+      if (var->Size() < best_size) {
+        best_size = var->Size();
+        best_index = i;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return best_index;
 }
 
 // ----- Choose Highest Size -----
 
-class HighestSizeSelector : public VariableSelector {
- public:
-  explicit HighestSizeSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~HighestSizeSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "MaxSizeSelector"; }
-};
-
-IntVar* HighestSizeSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
+int64 ChooseMaxSize(Solver* solver, const std::vector<IntVar*>& vars,
+                    int64 first_unbound, int64 last_unbound) {
   uint64 best_size = 0;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+  int64 best_index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
-      const uint64 size = var->Size();
-      if (size > best_size) {
-        best_size = size;
-        index = i;
-        result = var;
+      if (var->Size() > best_size) {
+        best_size = var->Size();
+        best_index = i;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return best_index;
 }
 
 // ----- Choose Highest Regret -----
 
-class HighestRegretSelectorOnMin : public VariableSelector {
+class HighestRegretSelectorOnMin : public BaseObject {
  public:
   explicit HighestRegretSelectorOnMin(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars), iterators_(vars_.size()) {
-    for (int i = 0; i < vars_.size(); ++i) {
+      : iterators_(vars.size()) {
+    for (int64 i = 0; i < vars.size(); ++i) {
       iterators_[i] = vars[i]->MakeDomainIterator(true);
     }
   }
   ~HighestRegretSelectorOnMin() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
+  int64 Choose(Solver* const s, const std::vector<IntVar*>& vars,
+               int64 first_unbound, int64 last_unbound);
   std::string DebugString() const override { return "MaxRegretSelector"; }
 
-  int64 ComputeRegret(int index) const {
-    DCHECK(!vars_[index]->Bound());
-    const int64 vmin = vars_[index]->Min();
+  int64 ComputeRegret(IntVar* var, int64 index) const {
+    DCHECK(!var->Bound());
+    const int64 vmin = var->Min();
     IntVarIterator* const iterator = iterators_[index];
     iterator->Init();
     iterator->Next();
@@ -987,136 +860,115 @@ class HighestRegretSelectorOnMin : public VariableSelector {
   std::vector<IntVarIterator*> iterators_;
 };
 
-IntVar* HighestRegretSelectorOnMin::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
+int64 HighestRegretSelectorOnMin::Choose(Solver* const s,
+                                         const std::vector<IntVar*>& vars,
+                                         int64 first_unbound,
+                                         int64 last_unbound) {
   int64 best_regret = 0;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
+  int64 index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    IntVar* const var = vars[i];
     if (!var->Bound()) {
-      const int64 regret = ComputeRegret(i);
+      const int64 regret = ComputeRegret(var, i);
       if (regret > best_regret) {
         best_regret = regret;
         index = i;
-        result = var;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return index;
 }
 
 // ----- Choose random unbound --
 
-class RandomSelector : public VariableSelector {
- public:
-  explicit RandomSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars) {}
-  ~RandomSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
-  std::string DebugString() const override { return "RandomSelector"; }
-};
-
-IntVar* RandomSelector::Select(Solver* const s, int64* id) {
-  const int shift = s->Rand32(vars_.size());
-  for (int i = 0; i < vars_.size(); ++i) {
-    const int index = (i + shift) % vars_.size();
-    IntVar* const var = vars_[index];
-    if (!var->Bound()) {
-      *id = index;
-      return var;
+int64 ChooseRandom(Solver* solver, const std::vector<IntVar*>& vars,
+                   int64 first_unbound, int64 last_unbound) {
+  const int64 span = last_unbound - first_unbound + 1;
+  const int64 shift = solver->Rand32(span);
+  for (int64 i = 0; i < span; ++i) {
+    const int64 index = (i + shift) % span + first_unbound;
+    if (!vars[index]->Bound()) {
+      return index;
     }
   }
-  *id = vars_.size();
-  return nullptr;
+  return -1;
 }
 
 // ----- Choose min eval -----
 
-class CheapestVarSelector : public VariableSelector {
+class CheapestVarSelector : public BaseObject {
  public:
-  CheapestVarSelector(const std::vector<IntVar*>& vars,
-                      ResultCallback1<int64, int64>* var_eval)
-      : VariableSelector(vars), var_evaluator_(var_eval) {}
+  explicit CheapestVarSelector(std::function<int64(int64)> var_evaluator)
+      : var_evaluator_(std::move(var_evaluator)) {}
   ~CheapestVarSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
+  int64 Choose(Solver* const s, const std::vector<IntVar*>& vars,
+               int64 first_unbound, int64 last_unbound);
   std::string DebugString() const override { return "CheapestVarSelector"; }
 
  private:
-  std::unique_ptr<ResultCallback1<int64, int64> > var_evaluator_;
+  std::function<int64(int64)> var_evaluator_;
 };
 
-IntVar* CheapestVarSelector::Select(Solver* const s, int64* id) {
-  IntVar* result = nullptr;
+int64 CheapestVarSelector::Choose(Solver* const s, const std::vector<IntVar*>& vars,
+                                  int64 first_unbound, int64 last_unbound) {
   int64 best_eval = kint64max;
-  int index = -1;
-  for (int i = 0; i < vars_.size(); ++i) {
-    IntVar* const var = vars_[i];
-    if (!var->Bound()) {
-      const int64 eval = var_evaluator_->Run(i);
+  int64 index = -1;
+  for (int64 i = first_unbound; i <= last_unbound; ++i) {
+    if (!vars[i]->Bound()) {
+      const int64 eval = var_evaluator_(i);
       if (eval < best_eval) {
         best_eval = eval;
         index = i;
-        result = var;
       }
     }
   }
-  if (index == -1) {
-    *id = vars_.size();
-    return nullptr;
-  } else {
-    *id = index;
-    return result;
-  }
+  return index;
 }
 
 // ----- Path selector -----
 // Follow path, where var[i] is represents the next of i
 
-class PathSelector : public VariableSelector {
+class PathSelector : public BaseObject {
  public:
-  explicit PathSelector(const std::vector<IntVar*>& vars)
-      : VariableSelector(vars), first_(kint64max) {}
+  PathSelector() : first_(kint64max) {}
   ~PathSelector() override {}
-  IntVar* Select(Solver* const s, int64* id) override;
+  int64 Choose(Solver* const s, const std::vector<IntVar*>& vars,
+               int64 first_unbound, int64 last_unbound);
   std::string DebugString() const override { return "ChooseNextOnPath"; }
 
  private:
-  bool UpdateIndex(int64* index) const;
-  bool FindPathStart(int64* index) const;
+  bool UpdateIndex(const std::vector<IntVar*>& vars, int64* index) const;
+  bool FindPathStart(const std::vector<IntVar*>& vars, int64* index) const;
 
-  int64 first_;
+  Rev<int64> first_;
 };
 
-IntVar* PathSelector::Select(Solver* const s, int64* id) {
-  *id = first_;
-  if (!UpdateIndex(id)) {
-    return nullptr;
+int64 PathSelector::Choose(Solver* const s, const std::vector<IntVar*>& vars,
+                           int64 first_unbound, int64 last_unbound) {
+  int64 index = first_.Value();
+  if (!UpdateIndex(vars, &index)) {
+    return -1;
   }
-  int count = 0;
-  while (vars_[*id]->Bound()) {
-    *id = vars_[*id]->Value();
-    if (!UpdateIndex(id)) {
-      return nullptr;
+  int64 count = 0;
+  while (vars[index]->Bound()) {
+    index = vars[index]->Value();
+    if (!UpdateIndex(vars, &index)) {
+      return -1;
     }
     ++count;
-    if (count >= vars_.size() && !FindPathStart(id)) {  // Cycle detected
-      return nullptr;
+    if (count >= vars.size() &&
+        !FindPathStart(vars, &index)) {  // Cycle detected
+      return -1;
     }
   }
-  IntVar* const var = vars_[*id];
-  s->SaveAndSetValue(&first_, *id);
-  return var;
+  first_.SetValue(s, index);
+  return index;
 }
 
-bool PathSelector::UpdateIndex(int64* index) const {
-  if (*index >= vars_.size()) {
-    if (!FindPathStart(index)) {
+bool PathSelector::UpdateIndex(const std::vector<IntVar*>& vars,
+                               int64* index) const {
+  if (*index >= vars.size()) {
+    if (!FindPathStart(vars, index)) {
       return false;
     }
   }
@@ -1129,23 +981,24 @@ bool PathSelector::UpdateIndex(int64* index) const {
 //  2. If no such road is found, try to find a start node of a route: look for
 //     an unbound variable, to which no other variable can point.
 //  3. If everything else fails, pick the first unbound variable.
-bool PathSelector::FindPathStart(int64* index) const {
+bool PathSelector::FindPathStart(const std::vector<IntVar*>& vars,
+                                 int64* index) const {
   // Try to extend an existing path
-  for (int i = vars_.size() - 1; i >= 0; --i) {
-    if (vars_[i]->Bound()) {
-      const int next = vars_[i]->Value();
-      if (next < vars_.size() && !vars_[next]->Bound()) {
+  for (int64 i = vars.size() - 1; i >= 0; --i) {
+    if (vars[i]->Bound()) {
+      const int64 next = vars[i]->Value();
+      if (next < vars.size() && !vars[next]->Bound()) {
         *index = next;
         return true;
       }
     }
   }
   // Pick path start
-  for (int i = vars_.size() - 1; i >= 0; --i) {
-    if (!vars_[i]->Bound()) {
+  for (int64 i = vars.size() - 1; i >= 0; --i) {
+    if (!vars[i]->Bound()) {
       bool has_possible_prev = false;
-      for (int j = 0; j < vars_.size(); ++j) {
-        if (vars_[j]->Contains(i)) {
+      for (int64 j = 0; j < vars.size(); ++j) {
+        if (vars[j]->Contains(i)) {
           has_possible_prev = true;
           break;
         }
@@ -1157,8 +1010,8 @@ bool PathSelector::FindPathStart(int64* index) const {
     }
   }
   // Pick first unbound
-  for (int i = 0; i < vars_.size(); ++i) {
-    if (!vars_[i]->Bound()) {
+  for (int64 i = 0; i < vars.size(); ++i) {
+    if (!vars[i]->Bound()) {
       *index = i;
       return true;
     }
@@ -1166,46 +1019,17 @@ bool PathSelector::FindPathStart(int64* index) const {
   return false;
 }
 
-// ----- Value selector -----
-
-class ValueSelector : public BaseObject {
- public:
-  ValueSelector() {}
-  ~ValueSelector() override {}
-  virtual int64 Select(const IntVar* const v, int64 id) = 0;
-};
-
 // ----- Select min -----
 
-class MinValueSelector : public ValueSelector {
- public:
-  MinValueSelector() {}
-  ~MinValueSelector() override {}
-  int64 Select(const IntVar* const v, int64 id) override { return v->Min(); }
-  std::string DebugString() const override { return "AssignMin"; }
-};
+int64 SelectMinValue(const IntVar* v, int64 id) { return v->Min(); }
 
 // ----- Select max -----
 
-class MaxValueSelector : public ValueSelector {
- public:
-  MaxValueSelector() {}
-  ~MaxValueSelector() override {}
-  int64 Select(const IntVar* const v, int64 id) override { return v->Max(); }
-  std::string DebugString() const override { return "AssignMax"; }
-};
+int64 SelectMaxValue(const IntVar* v, int64 id) { return v->Max(); }
 
 // ----- Select random -----
 
-class RandomValueSelector : public ValueSelector {
- public:
-  RandomValueSelector() {}
-  ~RandomValueSelector() override {}
-  int64 Select(const IntVar* const v, int64 id) override;
-  std::string DebugString() const override { return "AssignRandom"; }
-};
-
-int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
+int64 SelectRandomValue(const IntVar* v, int64 id) {
   const uint64 span = v->Max() - v->Min() + 1;
   if (span > FLAGS_cp_large_domain_no_splitting_limit) {
     // Do not create holes in large domains.
@@ -1248,15 +1072,7 @@ int64 RandomValueSelector::Select(const IntVar* const v, int64 id) {
 
 // ----- Select center -----
 
-class CenterValueSelector : public ValueSelector {
- public:
-  CenterValueSelector() {}
-  ~CenterValueSelector() override {}
-  int64 Select(const IntVar* const v, int64 id) override;
-  std::string DebugString() const override { return "AssignCenter"; }
-};
-
-int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
+int64 SelectCenterValue(const IntVar* v, int64 id) {
   const int64 vmin = v->Min();
   const int64 vmax = v->Max();
   if (vmax - vmin > FLAGS_cp_large_domain_no_splitting_limit) {
@@ -1281,18 +1097,7 @@ int64 CenterValueSelector::Select(const IntVar* const v, int64 id) {
 
 // ----- Select center -----
 
-class SplitValueSelector : public ValueSelector {
- public:
-  explicit SplitValueSelector(const std::string& name) : name_(name) {}
-  ~SplitValueSelector() override {}
-  int64 Select(const IntVar* const v, int64 id) override;
-  std::string DebugString() const override { return name_; }
-
- private:
-  const std::string name_;
-};
-
-int64 SplitValueSelector::Select(const IntVar* const v, int64 id) {
+int64 SelectSplitValue(const IntVar* v, int64 id) {
   const int64 vmin = v->Min();
   const int64 vmax = v->Max();
   const uint64 delta = vmax - vmin;
@@ -1302,27 +1107,27 @@ int64 SplitValueSelector::Select(const IntVar* const v, int64 id) {
 
 // ----- Select the value yielding the cheapest "eval" for a var -----
 
-class CheapestValueSelector : public ValueSelector {
+class CheapestValueSelector : public BaseObject {
  public:
-  CheapestValueSelector(ResultCallback2<int64, int64, int64>* eval,
-                        ResultCallback1<int64, int64>* tie_breaker)
+  CheapestValueSelector(std::function<int64(int64, int64)> eval,
+                        std::function<int64(int64)> tie_breaker)
       : eval_(eval), tie_breaker_(tie_breaker) {}
   ~CheapestValueSelector() override {}
-  int64 Select(const IntVar* const v, int64 id) override;
+  int64 Select(const IntVar* v, int64 id);
   std::string DebugString() const override { return "CheapestValue"; }
 
  private:
-  std::unique_ptr<ResultCallback2<int64, int64, int64> > eval_;
-  std::unique_ptr<ResultCallback1<int64, int64> > tie_breaker_;
+  std::function<int64(int64, int64)> eval_;
+  std::function<int64(int64)> tie_breaker_;
   std::vector<int64> cache_;
 };
 
-int64 CheapestValueSelector::Select(const IntVar* const v, int64 id) {
+int64 CheapestValueSelector::Select(const IntVar* v, int64 id) {
   cache_.clear();
   int64 best = kint64max;
   std::unique_ptr<IntVarIterator> it(v->MakeDomainIterator(false));
   for (const int64 i : InitAndGetValues(it.get())) {
-    int64 eval = eval_->Run(id, i);
+    int64 eval = eval_(id, i);
     if (eval < best) {
       best = eval;
       cache_.clear();
@@ -1332,10 +1137,10 @@ int64 CheapestValueSelector::Select(const IntVar* const v, int64 id) {
     }
   }
   DCHECK_GT(cache_.size(), 0);
-  if (tie_breaker_.get() == nullptr || cache_.size() == 1) {
+  if (tie_breaker_ == nullptr || cache_.size() == 1) {
     return cache_.back();
   } else {
-    return cache_[tie_breaker_->Run(cache_.size())];
+    return cache_[tie_breaker_(cache_.size())];
   }
 }
 
@@ -1347,31 +1152,29 @@ int64 CheapestValueSelector::Select(const IntVar* const v, int64 id) {
 // the lowest value wins.
 // comparator(var_id, val1, val2) == true means than val1 should be preferred
 // over val2 for variable var_id.
-class BestValueByComparisonSelector : public ValueSelector {
+class BestValueByComparisonSelector : public BaseObject {
  public:
   explicit BestValueByComparisonSelector(
-      // Takes ownership.
-      ResultCallback3<bool, /*var id*/ int64,
-                      /*value1*/ int64, /*value2*/ int64>* comparator)
+      Solver::VariableValueComparator comparator)
       : comparator_(comparator) {}
   ~BestValueByComparisonSelector() override {}
-  int64 Select(const IntVar* const v, int64 id) override;
+  int64 Select(const IntVar* v, int64 id);
   std::string DebugString() const override {
     return "BestValueByComparisonSelector";
   }
 
  private:
-  std::unique_ptr<ResultCallback3<bool, int64, int64, int64> > comparator_;
+  Solver::VariableValueComparator comparator_;
 };
 
-int64 BestValueByComparisonSelector::Select(const IntVar* const v, int64 id) {
+int64 BestValueByComparisonSelector::Select(const IntVar* v, int64 id) {
   std::unique_ptr<IntVarIterator> it(v->MakeDomainIterator(false));
   it->Init();
   DCHECK(it->Ok());  // At least one value.
   int64 best_value = it->Value();
   for (it->Next(); it->Ok(); it->Next()) {
-    const int candidate_value = it->Value();
-    if (comparator_->Run(id, candidate_value, best_value)) {
+    const int64 candidate_value = it->Value();
+    if (comparator_(id, candidate_value, best_value)) {
       best_value = candidate_value;
     }
   }
@@ -1382,52 +1185,48 @@ int64 BestValueByComparisonSelector::Select(const IntVar* const v, int64 id) {
 
 class VariableAssignmentSelector : public BaseVariableAssignmentSelector {
  public:
-  VariableAssignmentSelector(VariableSelector* const var_selector,
-                             ValueSelector* const value_selector)
-      : var_selector_(var_selector), value_selector_(value_selector) {}
+  VariableAssignmentSelector(Solver* solver, const std::vector<IntVar*>& vars,
+                             Solver::VariableIndexSelector var_selector,
+                             Solver::VariableValueSelector value_selector,
+                             const std::string& name)
+      : BaseVariableAssignmentSelector(solver, vars),
+        var_selector_(var_selector),
+        value_selector_(value_selector),
+        name_(name) {}
   ~VariableAssignmentSelector() override {}
-  int64 SelectValue(const IntVar* const var, int64 id) override {
-    return value_selector_->Select(var, id);
+  int64 SelectValue(const IntVar* var, int64 id) override {
+    return value_selector_(var, id);
   }
-  IntVar* SelectVariable(Solver* const s, int64* id) override {
-    return var_selector_->Select(s, id);
+  int64 ChooseVariable() override {
+    return var_selector_(solver_, vars_, first_unbound_.Value(),
+                         last_unbound_.Value());
   }
   std::string DebugString() const override;
 
-  void Accept(ModelVisitor* const visitor) const override {
-    var_selector_->Accept(visitor);
-  }
-
  private:
-  VariableSelector* const var_selector_;
-  ValueSelector* const value_selector_;
+  Solver::VariableIndexSelector var_selector_;
+  Solver::VariableValueSelector value_selector_;
+  const std::string name_;
 };
 
 std::string VariableAssignmentSelector::DebugString() const {
-  return var_selector_->DebugString() + "_" + value_selector_->DebugString() +
-         var_selector_->VarDebugString();
+  return StringPrintf("%s(%s)", name_.c_str(),
+                      JoinDebugStringPtr(vars_, ", ").c_str());
 }
 
 // ----- Base Global Evaluator-based selector -----
 
 class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
  public:
-  BaseEvaluatorSelector(const std::vector<IntVar*>& vars,
-                        ResultCallback2<int64, int64, int64>* evaluator);
+  BaseEvaluatorSelector(Solver* solver, const std::vector<IntVar*>& vars,
+                        std::function<int64(int64, int64)> evaluator);
   ~BaseEvaluatorSelector() override {}
-
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitExtension(ModelVisitor::kVariableGroupExtension);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_);
-    visitor->EndVisitExtension(ModelVisitor::kVariableGroupExtension);
-  }
 
  protected:
   struct Element {
     Element() : var(0), value(0) {}
-    Element(int i, int64 j) : var(i), value(j) {}
-    int var;
+    Element(int64 i, int64 j) : var(i), value(j) {}
+    int64 var;
     int64 value;
   };
 
@@ -1436,76 +1235,74 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
                         JoinDebugStringPtr(vars_, ", ").c_str());
   }
 
-  const std::vector<IntVar*> vars_;
-  std::unique_ptr<ResultCallback2<int64, int64, int64> > evaluator_;
+  std::function<int64(int64, int64)> evaluator_;
 };
 
 BaseEvaluatorSelector::BaseEvaluatorSelector(
-    const std::vector<IntVar*>& vars,
-    ResultCallback2<int64, int64, int64>* evaluator)
-    : vars_(vars), evaluator_(evaluator) {}
+    Solver* solver, const std::vector<IntVar*>& vars,
+    std::function<int64(int64, int64)> evaluator)
+    : BaseVariableAssignmentSelector(solver, vars), evaluator_(evaluator) {}
 
 // ----- Global Dynamic Evaluator-based selector -----
 
 class DynamicEvaluatorSelector : public BaseEvaluatorSelector {
  public:
-  DynamicEvaluatorSelector(const std::vector<IntVar*>& vars,
-                           ResultCallback2<int64, int64, int64>* evaluator,
-                           ResultCallback1<int64, int64>* tie_breaker);
+  DynamicEvaluatorSelector(Solver* solver, const std::vector<IntVar*>& vars,
+                           std::function<int64(int64, int64)> evaluator,
+                           std::function<int64(int64)> tie_breaker);
   ~DynamicEvaluatorSelector() override {}
-  int64 SelectValue(const IntVar* const var, int64 id) override;
-  IntVar* SelectVariable(Solver* const s, int64* id) override;
+  int64 SelectValue(const IntVar* var, int64 id) override;
+  int64 ChooseVariable() override;
   std::string DebugString() const override;
 
  private:
-  int first_;
-  std::unique_ptr<ResultCallback1<int64, int64> > tie_breaker_;
+  int64 first_;
+  std::function<int64(int64)> tie_breaker_;
   std::vector<Element> cache_;
 };
 
 DynamicEvaluatorSelector::DynamicEvaluatorSelector(
-    const std::vector<IntVar*>& vars,
-    ResultCallback2<int64, int64, int64>* evaluator,
-    ResultCallback1<int64, int64>* tie_breaker)
-    : BaseEvaluatorSelector(vars, evaluator),
+    Solver* solver, const std::vector<IntVar*>& vars,
+    std::function<int64(int64, int64)> evaluator,
+    std::function<int64(int64)> tie_breaker)
+    : BaseEvaluatorSelector(solver, vars, evaluator),
       first_(-1),
       tie_breaker_(tie_breaker) {}
 
-int64 DynamicEvaluatorSelector::SelectValue(const IntVar* const var, int64 id) {
+int64 DynamicEvaluatorSelector::SelectValue(const IntVar* var, int64 id) {
   return cache_[first_].value;
 }
 
-IntVar* DynamicEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
+int64 DynamicEvaluatorSelector::ChooseVariable() {
   int64 best_evaluation = kint64max;
   cache_.clear();
-  for (int i = 0; i < vars_.size(); ++i) {
+  for (int64 i = 0; i < vars_.size(); ++i) {
     const IntVar* const var = vars_[i];
     if (!var->Bound()) {
       std::unique_ptr<IntVarIterator> it(var->MakeDomainIterator(false));
       for (const int64 j : InitAndGetValues(it.get())) {
-        const int64 value = evaluator_->Run(i, j);
+        const int64 value = evaluator_(i, j);
         if (value < best_evaluation) {
           best_evaluation = value;
           cache_.clear();
           cache_.push_back(Element(i, j));
-        } else if (value == best_evaluation && tie_breaker_.get() != nullptr) {
+        } else if (value == best_evaluation && tie_breaker_) {
           cache_.push_back(Element(i, j));
         }
       }
     }
   }
+
   if (cache_.size() == 0) {
-    *id = kint64max;
-    return nullptr;
+    return -1;
   }
-  if (tie_breaker_.get() == nullptr || cache_.size() == 1) {
-    *id = cache_[0].var;
+
+  if (tie_breaker_ == nullptr || cache_.size() == 1) {
     first_ = 0;
-    return vars_[*id];
+    return cache_.front().var;
   } else {
-    first_ = tie_breaker_->Run(cache_.size());
-    *id = cache_[first_].var;
-    return vars_[*id];
+    first_ = tie_breaker_(cache_.size());
+    return cache_[first_].var;
   }
 }
 
@@ -1517,17 +1314,17 @@ std::string DynamicEvaluatorSelector::DebugString() const {
 
 class StaticEvaluatorSelector : public BaseEvaluatorSelector {
  public:
-  StaticEvaluatorSelector(const std::vector<IntVar*>& vars,
-                          ResultCallback2<int64, int64, int64>* evaluator);
+  StaticEvaluatorSelector(Solver* solver, const std::vector<IntVar*>& vars,
+                          std::function<int64(int64, int64)> evaluator);
   ~StaticEvaluatorSelector() override {}
-  int64 SelectValue(const IntVar* const var, int64 id) override;
-  IntVar* SelectVariable(Solver* const s, int64* id) override;
+  int64 SelectValue(const IntVar* var, int64 id) override;
+  int64 ChooseVariable() override;
   std::string DebugString() const override;
 
  private:
   class Compare {
    public:
-    explicit Compare(ResultCallback2<int64, int64, int64>* evaluator)
+    explicit Compare(std::function<int64(int64, int64)> evaluator)
         : evaluator_(evaluator) {}
     bool operator()(const Element& lhs, const Element& rhs) const {
       const int64 value_lhs = Value(lhs);
@@ -1538,32 +1335,34 @@ class StaticEvaluatorSelector : public BaseEvaluatorSelector {
                (lhs.var == rhs.var && lhs.value < rhs.value)));
     }
     int64 Value(const Element& element) const {
-      return evaluator_->Run(element.var, element.value);
+      return evaluator_(element.var, element.value);
     }
 
    private:
-    ResultCallback2<int64, int64, int64>* evaluator_;
+    std::function<int64(int64, int64)> evaluator_;
   };
 
   Compare comp_;
   std::vector<Element> elements_;
-  int first_;
+  int64 first_;
 };
 
 StaticEvaluatorSelector::StaticEvaluatorSelector(
-    const std::vector<IntVar*>& vars,
-    ResultCallback2<int64, int64, int64>* evaluator)
-    : BaseEvaluatorSelector(vars, evaluator), comp_(evaluator), first_(-1) {}
+    Solver* solver, const std::vector<IntVar*>& vars,
+    std::function<int64(int64, int64)> evaluator)
+    : BaseEvaluatorSelector(solver, vars, evaluator),
+      comp_(evaluator),
+      first_(-1) {}
 
-int64 StaticEvaluatorSelector::SelectValue(const IntVar* const var, int64 id) {
+int64 StaticEvaluatorSelector::SelectValue(const IntVar* var, int64 id) {
   return elements_[first_].value;
 }
 
-IntVar* StaticEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
+int64 StaticEvaluatorSelector::ChooseVariable() {
   if (first_ == -1) {  // first call to select. update assignment costs
     // Two phases: compute size then filland sort
-    int element_size = 0;
-    for (int i = 0; i < vars_.size(); ++i) {
+    int64 element_size = 0;
+    for (int64 i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         element_size += vars_[i]->Size();
       }
@@ -1581,20 +1380,18 @@ IntVar* StaticEvaluatorSelector::SelectVariable(Solver* const s, int64* id) {
     }
     // Sort is stable here given the tie-breaking rules in comp_.
     std::sort(elements_.begin(), elements_.end(), comp_);
-    s->SaveAndSetValue(&first_, 0);
+    solver_->SaveAndSetValue(&first_, 0LL);
   }
-  for (int i = first_; i < elements_.size(); ++i) {
+  for (int64 i = first_; i < elements_.size(); ++i) {
     const Element& element = elements_[i];
     IntVar* const var = vars_[element.var];
     if (!var->Bound() && var->Contains(element.value)) {
-      s->SaveAndSetValue(&first_, i);
-      *id = element.var;
-      return var;
+      solver_->SaveAndSetValue(&first_, i);
+      return element.var;
     }
   }
-  s->SaveAndSetValue(&first_, static_cast<int>(elements_.size()));
-  *id = vars_.size();
-  return nullptr;
+  solver_->SaveAndSetValue(&first_, static_cast<int64>(elements_.size()));
+  return -1;
 }
 
 std::string StaticEvaluatorSelector::DebugString() const {
@@ -1818,96 +1615,86 @@ class BaseAssignVariables : public DecisionBuilder {
     SPLIT_UPPER,
   };
 
-  explicit BaseAssignVariables(BaseVariableAssignmentSelector* const selector,
-                               Mode mode)
+  BaseAssignVariables(BaseVariableAssignmentSelector* const selector, Mode mode)
       : selector_(selector), mode_(mode) {}
+
   ~BaseAssignVariables() override;
   Decision* Next(Solver* const s) override;
   std::string DebugString() const override;
-  static BaseAssignVariables* MakePhase(Solver* const s,
-                                        const std::vector<IntVar*>& vars,
-                                        VariableSelector* const var_selector,
-                                        ValueSelector* const value_selector,
-                                        BaseAssignVariables::Mode mode);
-  static VariableSelector* MakeVariableSelector(Solver* const s,
-                                                const std::vector<IntVar*>& vars,
-                                                Solver::IntVarStrategy str) {
-    VariableSelector* var_selector = nullptr;
+  static BaseAssignVariables* MakePhase(
+      Solver* const s, const std::vector<IntVar*>& vars,
+      Solver::VariableIndexSelector var_selector,
+      Solver::VariableValueSelector value_selector,
+      const std::string& value_selector_name, BaseAssignVariables::Mode mode);
+
+  static Solver::VariableIndexSelector MakeVariableSelector(
+      Solver* const s, const std::vector<IntVar*>& vars,
+      Solver::IntVarStrategy str) {
     switch (str) {
       case Solver::INT_VAR_DEFAULT:
       case Solver::INT_VAR_SIMPLE:
       case Solver::CHOOSE_FIRST_UNBOUND:
-        var_selector = s->RevAlloc(new FirstUnboundSelector(vars));
-        break;
+        return ChooseFirstUnbound;
       case Solver::CHOOSE_RANDOM:
-        var_selector = s->RevAlloc(new RandomSelector(vars));
-        break;
+        return ChooseRandom;
       case Solver::CHOOSE_MIN_SIZE_LOWEST_MIN:
-        var_selector = s->RevAlloc(new MinSizeLowestMinSelector(vars));
-        break;
+        return ChooseMinSizeLowestMin;
       case Solver::CHOOSE_MIN_SIZE_HIGHEST_MIN:
-        var_selector = s->RevAlloc(new MinSizeHighestMinSelector(vars));
-        break;
+        return ChooseMinSizeHighestMin;
       case Solver::CHOOSE_MIN_SIZE_LOWEST_MAX:
-        var_selector = s->RevAlloc(new MinSizeLowestMaxSelector(vars));
-        break;
+        return ChooseMinSizeLowestMax;
       case Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX:
-        var_selector = s->RevAlloc(new MinSizeHighestMaxSelector(vars));
-        break;
+        return ChooseMinSizeHighestMax;
       case Solver::CHOOSE_LOWEST_MIN:
-        var_selector = s->RevAlloc(new LowestMinSelector(vars));
-        break;
+        return ChooseLowestMin;
       case Solver::CHOOSE_HIGHEST_MAX:
-        var_selector = s->RevAlloc(new HighestMaxSelector(vars));
-        break;
+        return ChooseHighestMax;
       case Solver::CHOOSE_MIN_SIZE:
-        var_selector = s->RevAlloc(new LowestSizeSelector(vars));
-        break;
+        return ChooseMinSize;
       case Solver::CHOOSE_MAX_SIZE:
-        var_selector = s->RevAlloc(new HighestSizeSelector(vars));
-        break;
-      case Solver::CHOOSE_MAX_REGRET_ON_MIN:
-        var_selector = s->RevAlloc(new HighestRegretSelectorOnMin(vars));
-        break;
-      case Solver::CHOOSE_PATH:
-        var_selector = s->RevAlloc(new PathSelector(vars));
-        break;
+        return ChooseMaxSize;
+      case Solver::CHOOSE_MAX_REGRET_ON_MIN: {
+        HighestRegretSelectorOnMin* const selector =
+            s->RevAlloc(new HighestRegretSelectorOnMin(vars));
+        return [selector](Solver* solver, const std::vector<IntVar*>& vars,
+                          int first_unbound, int last_unbound) {
+          return selector->Choose(solver, vars, first_unbound, last_unbound);
+        };
+      }
+      case Solver::CHOOSE_PATH: {
+        PathSelector* const selector = s->RevAlloc(new PathSelector());
+        return [selector](Solver* solver, const std::vector<IntVar*>& vars,
+                          int first_unbound, int last_unbound) {
+          return selector->Choose(solver, vars, first_unbound, last_unbound);
+        };
+      }
       default:
         LOG(FATAL) << "Unknown int var strategy " << str;
-        break;
+        return nullptr;
     }
-    return var_selector;
   }
 
-  static ValueSelector* MakeValueSelector(Solver* const s,
-                                          Solver::IntValueStrategy val_str) {
-    ValueSelector* value_selector = nullptr;
+  static Solver::VariableValueSelector MakeValueSelector(
+      Solver* const s, Solver::IntValueStrategy val_str) {
     switch (val_str) {
       case Solver::INT_VALUE_DEFAULT:
       case Solver::INT_VALUE_SIMPLE:
       case Solver::ASSIGN_MIN_VALUE:
-        value_selector = s->RevAlloc(new MinValueSelector);
-        break;
+        return SelectMinValue;
       case Solver::ASSIGN_MAX_VALUE:
-        value_selector = s->RevAlloc(new MaxValueSelector);
-        break;
+        return SelectMaxValue;
       case Solver::ASSIGN_RANDOM_VALUE:
-        value_selector = s->RevAlloc(new RandomValueSelector);
-        break;
+        return SelectRandomValue;
       case Solver::ASSIGN_CENTER_VALUE:
-        value_selector = s->RevAlloc(new CenterValueSelector());
-        break;
+        return SelectCenterValue;
       case Solver::SPLIT_LOWER_HALF:
-        value_selector = s->RevAlloc(new SplitValueSelector("SplitLower"));
-        break;
+        return SelectSplitValue;
       case Solver::SPLIT_UPPER_HALF:
-        value_selector = s->RevAlloc(new SplitValueSelector("SplitUpper"));
-        break;
+        return SelectSplitValue;
       default:
         LOG(FATAL) << "Unknown int value strategy " << val_str;
-        break;
+        return nullptr;
     }
-    return value_selector;
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1922,9 +1709,10 @@ class BaseAssignVariables : public DecisionBuilder {
 BaseAssignVariables::~BaseAssignVariables() {}
 
 Decision* BaseAssignVariables::Next(Solver* const s) {
-  int64 id = 0;
-  IntVar* const var = selector_->SelectVariable(s, &id);
-  if (nullptr != var) {
+  const std::vector<IntVar*>& vars = selector_->vars();
+  int id = selector_->ChooseVariableWrapper();
+  if (id >= 0 && id < vars.size()) {
+    IntVar* const var = vars[id];
     const int64 value = selector_->SelectValue(var, id);
     switch (mode_) {
       case ASSIGN:
@@ -1944,11 +1732,74 @@ std::string BaseAssignVariables::DebugString() const {
 
 BaseAssignVariables* BaseAssignVariables::MakePhase(
     Solver* const s, const std::vector<IntVar*>& vars,
-    VariableSelector* const var_selector, ValueSelector* const value_selector,
-    BaseAssignVariables::Mode mode) {
-  BaseVariableAssignmentSelector* selector =
-      s->RevAlloc(new VariableAssignmentSelector(var_selector, value_selector));
+    Solver::VariableIndexSelector var_selector,
+    Solver::VariableValueSelector value_selector,
+    const std::string& value_selector_name, BaseAssignVariables::Mode mode) {
+  BaseVariableAssignmentSelector* const selector =
+      s->RevAlloc(new VariableAssignmentSelector(
+          s, vars, var_selector, value_selector, value_selector_name));
   return s->RevAlloc(new BaseAssignVariables(selector, mode));
+}
+
+std::string ChooseVariableName(Solver::IntVarStrategy var_str) {
+  switch (var_str) {
+    case Solver::INT_VAR_DEFAULT:
+    case Solver::INT_VAR_SIMPLE:
+    case Solver::CHOOSE_FIRST_UNBOUND:
+      return "ChooseFirstUnbound";
+    case Solver::CHOOSE_RANDOM:
+      return "ChooseRandom";
+    case Solver::CHOOSE_MIN_SIZE_LOWEST_MIN:
+      return "ChooseMinSizeLowestMin";
+    case Solver::CHOOSE_MIN_SIZE_HIGHEST_MIN:
+      return "ChooseMinSizeHighestMin";
+    case Solver::CHOOSE_MIN_SIZE_LOWEST_MAX:
+      return "ChooseMinSizeLowestMax";
+    case Solver::CHOOSE_MIN_SIZE_HIGHEST_MAX:
+      return "ChooseMinSizeHighestMax";
+    case Solver::CHOOSE_LOWEST_MIN:
+      return "ChooseLowestMin";
+    case Solver::CHOOSE_HIGHEST_MAX:
+      return "ChooseHighestMax";
+    case Solver::CHOOSE_MIN_SIZE:
+      return "ChooseMinSize";
+    case Solver::CHOOSE_MAX_SIZE:
+      return "ChooseMaxSize;";
+    case Solver::CHOOSE_MAX_REGRET_ON_MIN:
+      return "HighestRegretSelectorOnMin";
+    case Solver::CHOOSE_PATH:
+      return "PathSelector";
+    default:
+      LOG(FATAL) << "Unknown int var strategy " << var_str;
+      return "";
+  }
+}
+
+std::string SelectValueName(Solver::IntValueStrategy val_str) {
+  switch (val_str) {
+    case Solver::INT_VALUE_DEFAULT:
+    case Solver::INT_VALUE_SIMPLE:
+    case Solver::ASSIGN_MIN_VALUE:
+      return "SelectMinValue";
+    case Solver::ASSIGN_MAX_VALUE:
+      return "SelectMaxValue";
+    case Solver::ASSIGN_RANDOM_VALUE:
+      return "SelectRandomValue";
+    case Solver::ASSIGN_CENTER_VALUE:
+      return "SelectCenterValue";
+    case Solver::SPLIT_LOWER_HALF:
+      return "SelectSplitValue";
+    case Solver::SPLIT_UPPER_HALF:
+      return "SelectSplitValue";
+    default:
+      LOG(FATAL) << "Unknown int value strategy " << val_str;
+      return "";
+  }
+}
+
+std::string BuildHeuristicsName(Solver::IntVarStrategy var_str,
+                           Solver::IntValueStrategy val_str) {
+  return ChooseVariableName(var_str) + "_" + SelectValueName(val_str);
 }
 }  // namespace
 
@@ -2005,114 +1856,136 @@ BaseAssignVariables::Mode ChooseMode(Solver::IntValueStrategy val_str) {
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IntVarStrategy var_str,
                                    Solver::IntValueStrategy val_str) {
-  VariableSelector* const var_selector =
+  Solver::VariableIndexSelector var_selector =
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
-  ValueSelector* const value_selector =
+  Solver::VariableValueSelector value_selector =
       BaseAssignVariables::MakeValueSelector(this, val_str);
-  return BaseAssignVariables::MakePhase(this, vars, var_selector,
-                                        value_selector, ChooseMode(val_str));
+  const std::string name = BuildHeuristicsName(var_str, val_str);
+  return BaseAssignVariables::MakePhase(
+      this, vars, var_selector, value_selector, name, ChooseMode(val_str));
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
-                                   ResultCallback1<int64, int64>* var_evaluator,
+                                   Solver::IndexEvaluator1 var_evaluator,
                                    Solver::IntValueStrategy val_str) {
-  var_evaluator->CheckIsRepeatable();
-  VariableSelector* const var_selector =
-      RevAlloc(new CheapestVarSelector(vars, var_evaluator));
-  ValueSelector* const value_selector =
+  CHECK(var_evaluator != nullptr);
+  CheapestVarSelector* const var_selector =
+      RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
+  Solver::VariableIndexSelector choose_variable = [var_selector](
+      Solver* solver, const std::vector<IntVar*>& vars, int first_unbound,
+      int last_unbound) {
+    return var_selector->Choose(solver, vars, first_unbound, last_unbound);
+  };
+  Solver::VariableValueSelector select_value =
       BaseAssignVariables::MakeValueSelector(this, val_str);
-  return BaseAssignVariables::MakePhase(this, vars, var_selector,
-                                        value_selector, ChooseMode(val_str));
+  const std::string name = "ChooseCheapestVariable_" + SelectValueName(val_str);
+  return BaseAssignVariables::MakePhase(
+      this, vars, choose_variable, select_value, name, ChooseMode(val_str));
 }
 
-DecisionBuilder* Solver::MakePhase(
-    const std::vector<IntVar*>& vars, Solver::IntVarStrategy var_str,
-    ResultCallback2<int64, int64, int64>* value_evaluator) {
-  VariableSelector* const var_selector =
+DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
+                                   Solver::IntVarStrategy var_str,
+                                   Solver::IndexEvaluator2 value_evaluator) {
+  Solver::VariableIndexSelector choose_variable =
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
-  value_evaluator->CheckIsRepeatable();
-  ValueSelector* value_selector =
+  CheapestValueSelector* const value_selector =
       RevAlloc(new CheapestValueSelector(value_evaluator, nullptr));
-  return BaseAssignVariables::MakePhase(
-      this, vars, var_selector, value_selector, BaseAssignVariables::ASSIGN);
+  Solver::VariableValueSelector select_value = [value_selector](
+      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  const std::string name = ChooseVariableName(var_str) + "_SelectCheapestValue";
+  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
+                                        select_value, name,
+                                        BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(
     const std::vector<IntVar*>& vars, IntVarStrategy var_str,
-    ResultCallback3<bool, int64, int64, int64>* var_val1_val2_comparator) {
-  VariableSelector* const var_selector =
+    VariableValueComparator var_val1_val2_comparator) {
+  Solver::VariableIndexSelector choose_variable =
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
-  var_val1_val2_comparator->CheckIsRepeatable();
-  ValueSelector* value_selector =
+  BestValueByComparisonSelector* const value_selector =
       RevAlloc(new BestValueByComparisonSelector(var_val1_val2_comparator));
-  return BaseAssignVariables::MakePhase(
-      this, vars, var_selector, value_selector, BaseAssignVariables::ASSIGN);
-}
-
-DecisionBuilder* Solver::MakePhase(
-    const std::vector<IntVar*>& vars, ResultCallback1<int64, int64>* var_evaluator,
-    ResultCallback2<int64, int64, int64>* value_evaluator) {
-  var_evaluator->CheckIsRepeatable();
-  VariableSelector* const var_selector =
-      RevAlloc(new CheapestVarSelector(vars, var_evaluator));
-  value_evaluator->CheckIsRepeatable();
-  ValueSelector* value_selector =
-      RevAlloc(new CheapestValueSelector(value_evaluator, nullptr));
-  return BaseAssignVariables::MakePhase(
-      this, vars, var_selector, value_selector, BaseAssignVariables::ASSIGN);
-}
-
-DecisionBuilder* Solver::MakePhase(
-    const std::vector<IntVar*>& vars, Solver::IntVarStrategy var_str,
-    ResultCallback2<int64, int64, int64>* value_evaluator,
-    ResultCallback1<int64, int64>* tie_breaker) {
-  VariableSelector* const var_selector =
-      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
-  value_evaluator->CheckIsRepeatable();
-  ValueSelector* value_selector =
-      RevAlloc(new CheapestValueSelector(value_evaluator, tie_breaker));
-  return BaseAssignVariables::MakePhase(
-      this, vars, var_selector, value_selector, BaseAssignVariables::ASSIGN);
-}
-
-DecisionBuilder* Solver::MakePhase(
-    const std::vector<IntVar*>& vars, ResultCallback1<int64, int64>* var_evaluator,
-    ResultCallback2<int64, int64, int64>* value_evaluator,
-    ResultCallback1<int64, int64>* tie_breaker) {
-  var_evaluator->CheckIsRepeatable();
-  VariableSelector* const var_selector =
-      RevAlloc(new CheapestVarSelector(vars, var_evaluator));
-  value_evaluator->CheckIsRepeatable();
-  ValueSelector* value_selector =
-      RevAlloc(new CheapestValueSelector(value_evaluator, tie_breaker));
-  return BaseAssignVariables::MakePhase(
-      this, vars, var_selector, value_selector, BaseAssignVariables::ASSIGN);
+  Solver::VariableValueSelector select_value = [value_selector](
+      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
+                                        select_value, "CheapestValue",
+                                        BaseAssignVariables::ASSIGN);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
-                                   ResultCallback2<int64, int64, int64>* eval,
+                                   Solver::IndexEvaluator1 var_evaluator,
+                                   Solver::IndexEvaluator2 value_evaluator) {
+  CheapestVarSelector* const var_selector =
+      RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
+  Solver::VariableIndexSelector choose_variable = [var_selector](
+      Solver* solver, const std::vector<IntVar*>& vars, int first_unbound,
+      int last_unbound) {
+    return var_selector->Choose(solver, vars, first_unbound, last_unbound);
+  };
+  CheapestValueSelector* value_selector =
+      RevAlloc(new CheapestValueSelector(value_evaluator, nullptr));
+  Solver::VariableValueSelector select_value = [value_selector](
+      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
+                                        select_value, "CheapestValue",
+                                        BaseAssignVariables::ASSIGN);
+}
+
+DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
+                                   Solver::IntVarStrategy var_str,
+                                   Solver::IndexEvaluator2 value_evaluator,
+                                   Solver::IndexEvaluator1 tie_breaker) {
+  Solver::VariableIndexSelector choose_variable =
+      BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
+  CheapestValueSelector* value_selector =
+      RevAlloc(new CheapestValueSelector(value_evaluator, tie_breaker));
+  Solver::VariableValueSelector select_value = [value_selector](
+      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
+                                        select_value, "CheapestValue",
+                                        BaseAssignVariables::ASSIGN);
+}
+
+DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
+                                   Solver::IndexEvaluator1 var_evaluator,
+                                   Solver::IndexEvaluator2 value_evaluator,
+                                   Solver::IndexEvaluator1 tie_breaker) {
+  CheapestVarSelector* const var_selector =
+      RevAlloc(new CheapestVarSelector(std::move(var_evaluator)));
+  Solver::VariableIndexSelector choose_variable = [var_selector](
+      Solver* solver, const std::vector<IntVar*>& vars, int first_unbound,
+      int last_unbound) {
+    return var_selector->Choose(solver, vars, first_unbound, last_unbound);
+  };
+  CheapestValueSelector* value_selector =
+      RevAlloc(new CheapestValueSelector(value_evaluator, tie_breaker));
+  Solver::VariableValueSelector select_value = [value_selector](
+      const IntVar* var, int64 id) { return value_selector->Select(var, id); };
+  return BaseAssignVariables::MakePhase(this, vars, choose_variable,
+                                        select_value, "CheapestValue",
+                                        BaseAssignVariables::ASSIGN);
+}
+
+DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
+                                   Solver::IndexEvaluator2 eval,
                                    Solver::EvaluatorStrategy str) {
   return MakePhase(vars, eval, nullptr, str);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
-                                   ResultCallback2<int64, int64, int64>* eval,
-                                   ResultCallback1<int64, int64>* tie_breaker,
+                                   Solver::IndexEvaluator2 eval,
+                                   Solver::IndexEvaluator1 tie_breaker,
                                    Solver::EvaluatorStrategy str) {
-  eval->CheckIsRepeatable();
-  if (tie_breaker) {
-    tie_breaker->CheckIsRepeatable();
-  }
   BaseVariableAssignmentSelector* selector = nullptr;
   switch (str) {
     case Solver::CHOOSE_STATIC_GLOBAL_BEST: {
       // TODO(user): support tie breaker
-      selector = RevAlloc(new StaticEvaluatorSelector(vars, eval));
+      selector = RevAlloc(new StaticEvaluatorSelector(this, vars, eval));
       break;
     }
     case Solver::CHOOSE_DYNAMIC_GLOBAL_BEST: {
       selector =
-          RevAlloc(new DynamicEvaluatorSelector(vars, eval, tie_breaker));
+          RevAlloc(new DynamicEvaluatorSelector(this, vars, eval, tie_breaker));
       break;
     }
   }
@@ -2180,43 +2053,43 @@ SolutionCollector::~SolutionCollector() {
 }
 
 void SolutionCollector::Add(IntVar* const var) {
-  if (prototype_.get() != nullptr) {
+  if (prototype_ != nullptr) {
     prototype_->Add(var);
   }
 }
 
 void SolutionCollector::Add(const std::vector<IntVar*>& vars) {
-  if (prototype_.get() != nullptr) {
+  if (prototype_ != nullptr) {
     prototype_->Add(vars);
   }
 }
 
 void SolutionCollector::Add(IntervalVar* const var) {
-  if (prototype_.get() != nullptr) {
+  if (prototype_ != nullptr) {
     prototype_->Add(var);
   }
 }
 
 void SolutionCollector::Add(const std::vector<IntervalVar*>& vars) {
-  if (prototype_.get() != nullptr) {
+  if (prototype_ != nullptr) {
     prototype_->Add(vars);
   }
 }
 
 void SolutionCollector::Add(SequenceVar* const var) {
-  if (prototype_.get() != nullptr) {
+  if (prototype_ != nullptr) {
     prototype_->Add(var);
   }
 }
 
 void SolutionCollector::Add(const std::vector<SequenceVar*>& vars) {
-  if (prototype_.get() != nullptr) {
+  if (prototype_ != nullptr) {
     prototype_->Add(vars);
   }
 }
 
 void SolutionCollector::AddObjective(IntVar* const objective) {
-  if (prototype_.get() != nullptr && objective != nullptr) {
+  if (prototype_ != nullptr && objective != nullptr) {
     prototype_->AddObjective(objective);
   }
 }
@@ -2234,7 +2107,7 @@ void SolutionCollector::EnterSearch() {
 
 void SolutionCollector::PushSolution() {
   Assignment* new_sol = nullptr;
-  if (prototype_.get() != nullptr) {
+  if (prototype_ != nullptr) {
     if (!recycle_solutions_.empty()) {
       new_sol = recycle_solutions_.back();
       DCHECK(new_sol != nullptr);
@@ -2382,7 +2255,7 @@ bool FirstSolutionCollector::AtSolution() {
 }
 
 std::string FirstSolutionCollector::DebugString() const {
-  if (prototype_.get() == nullptr) {
+  if (prototype_ == nullptr) {
     return "FirstSolutionCollector()";
   } else {
     return "FirstSolutionCollector(" + prototype_->DebugString() + ")";
@@ -2428,7 +2301,7 @@ bool LastSolutionCollector::AtSolution() {
 }
 
 std::string LastSolutionCollector::DebugString() const {
-  if (prototype_.get() == nullptr) {
+  if (prototype_ == nullptr) {
     return "LastSolutionCollector()";
   } else {
     return "LastSolutionCollector(" + prototype_->DebugString() + ")";
@@ -2481,7 +2354,7 @@ void BestValueSolutionCollector::EnterSearch() {
 }
 
 bool BestValueSolutionCollector::AtSolution() {
-  if (prototype_.get() != nullptr) {
+  if (prototype_ != nullptr) {
     const IntVar* objective = prototype_->Objective();
     if (objective != nullptr) {
       if (maximize_ && objective->Max() > best_) {
@@ -2499,7 +2372,7 @@ bool BestValueSolutionCollector::AtSolution() {
 }
 
 std::string BestValueSolutionCollector::DebugString() const {
-  if (prototype_.get() == nullptr) {
+  if (prototype_ == nullptr) {
     return "BestValueSolutionCollector()";
   } else {
     return "BestValueSolutionCollector(" + prototype_->DebugString() + ")";
@@ -2544,7 +2417,7 @@ bool AllSolutionCollector::AtSolution() {
 }
 
 std::string AllSolutionCollector::DebugString() const {
-  if (prototype_.get() == nullptr) {
+  if (prototype_ == nullptr) {
     return "AllSolutionCollector()";
   } else {
     return "AllSolutionCollector(" + prototype_->DebugString() + ")";
@@ -2889,21 +2762,21 @@ void TabuSearch::ApplyDecision(Decision* const d) {
   // allowed, a factor of 0 means all violations allowed.
   std::vector<IntVar*> tabu_vars;
   for (const VarValue& vv : keep_tabu_list_) {
-    IntVar* tabu_var = s->MakeBoolVar();
-    Constraint* keep_cst =
+    IntVar* const tabu_var = s->MakeBoolVar();
+    Constraint* const keep_cst =
         s->MakeIsEqualCstCt(vv.var_, vv.value_, tabu_var);
     s->AddConstraint(keep_cst);
     tabu_vars.push_back(tabu_var);
   }
   for (const VarValue& vv : forbid_tabu_list_) {
     IntVar* tabu_var = s->MakeBoolVar();
-    Constraint* forbid_cst =
+    Constraint* const forbid_cst =
         s->MakeIsDifferentCstCt(vv.var_, vv.value_, tabu_var);
     s->AddConstraint(forbid_cst);
     tabu_vars.push_back(tabu_var);
   }
   if (tabu_vars.size() > 0) {
-    IntVar* tabu = s->MakeBoolVar();
+    IntVar* const tabu = s->MakeBoolVar();
     s->AddConstraint(s->MakeIsGreaterOrEqualCstCt(
         s->MakeSum(tabu_vars)->Var(), tabu_vars.size() * tabu_factor_, tabu));
     s->AddConstraint(s->MakeGreaterOrEqual(s->MakeSum(aspiration, tabu), 1LL));
@@ -3214,7 +3087,8 @@ class GuidedLocalSearch : public Metaheuristic {
 
  protected:
   struct Comparator {
-    bool operator()(const std::pair<Arc, double>& i, const std::pair<Arc, double>& j) {
+    bool operator()(const std::pair<Arc, double>& i,
+                    const std::pair<Arc, double>& j) {
       return i.second > j.second;
     }
   };
@@ -3368,11 +3242,11 @@ bool GuidedLocalSearch::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
       if (maximize_) {
         delta->SetObjectiveMin(
             std::max(std::min(current_ + step_ - penalty, best_ + step_),
-                delta->ObjectiveMin()));
+                     delta->ObjectiveMin()));
       } else {
         delta->SetObjectiveMax(
             std::min(std::max(current_ - step_ - penalty, best_ - step_),
-                delta->ObjectiveMax()));
+                     delta->ObjectiveMax()));
       }
     }
   }
@@ -3439,7 +3313,7 @@ bool GuidedLocalSearch::LocalOptimum() {
 class BinaryGuidedLocalSearch : public GuidedLocalSearch {
  public:
   BinaryGuidedLocalSearch(Solver* const solver, IntVar* const objective,
-                          Solver::IndexEvaluator2* objective_function,
+                          std::function<int64(int64, int64)> objective_function,
                           bool maximize, int64 step,
                           const std::vector<IntVar*>& vars, double penalty_factor);
   ~BinaryGuidedLocalSearch() override {}
@@ -3454,24 +3328,21 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch {
 
  private:
   int64 PenalizedValue(int64 i, int64 j);
-  std::unique_ptr<Solver::IndexEvaluator2> objective_function_;
+  std::function<int64(int64, int64)> objective_function_;
 };
 
 BinaryGuidedLocalSearch::BinaryGuidedLocalSearch(
     Solver* const solver, IntVar* const objective,
-    Solver::IndexEvaluator2* objective_function, bool maximize, int64 step,
-    const std::vector<IntVar*>& vars, double penalty_factor)
+    std::function<int64(int64, int64)> objective_function, bool maximize,
+    int64 step, const std::vector<IntVar*>& vars, double penalty_factor)
     : GuidedLocalSearch(solver, objective, maximize, step, vars,
                         penalty_factor),
-      objective_function_(objective_function) {
-  objective_function_->CheckIsRepeatable();
-}
+      objective_function_(objective_function) {}
 
 IntExpr* BinaryGuidedLocalSearch::MakeElementPenalty(int index) {
-  return solver()->MakeElement(
-      NewPermanentCallback(this, &BinaryGuidedLocalSearch::PenalizedValue,
-                           static_cast<int64>(index)),
-      vars_[index]);
+  return solver()->MakeElement([this, index](int64 i) {
+    return PenalizedValue(index, i);
+  }, vars_[index]);
 }
 
 int64 BinaryGuidedLocalSearch::AssignmentElementPenalty(
@@ -3481,7 +3352,7 @@ int64 BinaryGuidedLocalSearch::AssignmentElementPenalty(
 
 int64 BinaryGuidedLocalSearch::AssignmentPenalty(const Assignment& assignment,
                                                  int index, int64 next) {
-  return objective_function_->Run(index, next);
+  return objective_function_(index, next);
 }
 
 bool BinaryGuidedLocalSearch::EvaluateElementValue(
@@ -3501,7 +3372,7 @@ int64 BinaryGuidedLocalSearch::PenalizedValue(int64 i, int64 j) {
   const int64 penalty = penalties_->Value(arc);
   if (penalty != 0) {  // objective_function_->Run(i, j) can be costly
     const int64 penalized_value =
-        penalty_factor_ * penalty * objective_function_->Run(i, j);
+        penalty_factor_ * penalty * objective_function_(i, j);
     if (maximize_) {
       return -penalized_value;
     } else {
@@ -3514,12 +3385,11 @@ int64 BinaryGuidedLocalSearch::PenalizedValue(int64 i, int64 j) {
 
 class TernaryGuidedLocalSearch : public GuidedLocalSearch {
  public:
-  TernaryGuidedLocalSearch(Solver* const solver, IntVar* const objective,
-                           Solver::IndexEvaluator3* objective_function,
-                           bool maximize, int64 step,
-                           const std::vector<IntVar*>& vars,
-                           const std::vector<IntVar*>& secondary_vars,
-                           double penalty_factor);
+  TernaryGuidedLocalSearch(
+      Solver* const solver, IntVar* const objective,
+      std::function<int64(int64, int64, int64)> objective_function,
+      bool maximize, int64 step, const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars, double penalty_factor);
   ~TernaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
   int64 AssignmentElementPenalty(const Assignment& assignment,
@@ -3536,29 +3406,27 @@ class TernaryGuidedLocalSearch : public GuidedLocalSearch {
                                     int index, int* container_index) const;
 
   const std::vector<IntVar*> secondary_vars_;
-  std::unique_ptr<Solver::IndexEvaluator3> objective_function_;
+  std::function<int64(int64, int64, int64)> objective_function_;
 };
 
 TernaryGuidedLocalSearch::TernaryGuidedLocalSearch(
     Solver* const solver, IntVar* const objective,
-    Solver::IndexEvaluator3* objective_function, bool maximize, int64 step,
-    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-    double penalty_factor)
+    std::function<int64(int64, int64, int64)> objective_function, bool maximize,
+    int64 step, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars, double penalty_factor)
     : GuidedLocalSearch(solver, objective, maximize, step, vars,
                         penalty_factor),
       secondary_vars_(secondary_vars),
       objective_function_(objective_function) {
-  objective_function_->CheckIsRepeatable();
   if (!secondary_vars.empty()) {
     assignment_.Add(secondary_vars);
   }
 }
 
 IntExpr* TernaryGuidedLocalSearch::MakeElementPenalty(int index) {
-  return solver()->MakeElement(
-      NewPermanentCallback(this, &TernaryGuidedLocalSearch::PenalizedValue,
-                           static_cast<int64>(index)),
-      vars_[index], secondary_vars_[index]);
+  return solver()->MakeElement([this, index](int64 i, int64 j) {
+    return PenalizedValue(index, i, j);
+  }, vars_[index], secondary_vars_[index]);
 }
 
 int64 TernaryGuidedLocalSearch::AssignmentElementPenalty(
@@ -3569,8 +3437,8 @@ int64 TernaryGuidedLocalSearch::AssignmentElementPenalty(
 
 int64 TernaryGuidedLocalSearch::AssignmentPenalty(const Assignment& assignment,
                                                   int index, int64 next) {
-  return objective_function_->Run(index, next,
-                                  assignment.Value(secondary_vars_[index]));
+  return objective_function_(index, next,
+                             assignment.Value(secondary_vars_[index]));
 }
 
 bool TernaryGuidedLocalSearch::EvaluateElementValue(
@@ -3590,9 +3458,9 @@ bool TernaryGuidedLocalSearch::EvaluateElementValue(
 int64 TernaryGuidedLocalSearch::PenalizedValue(int64 i, int64 j, int64 k) {
   const Arc arc(i, j);
   const int64 penalty = penalties_->Value(arc);
-  if (penalty != 0) {  // objective_function_->Run(i, j, k) can be costly
+  if (penalty != 0) {  // objective_function_(i, j, k) can be costly
     const int64 penalized_value =
-        penalty_factor_ * penalty * objective_function_->Run(i, j, k);
+        penalty_factor_ * penalty * objective_function_(i, j, k);
     if (maximize_) {
       return -penalized_value;
     } else {
@@ -3620,7 +3488,7 @@ int64 TernaryGuidedLocalSearch::GetAssignmentSecondaryValue(
 
 SearchMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
-    ResultCallback2<int64, int64, int64>* objective_function, int64 step,
+    Solver::IndexEvaluator2 objective_function, int64 step,
     const std::vector<IntVar*>& vars, double penalty_factor) {
   return RevAlloc(new BinaryGuidedLocalSearch(this, objective,
                                               objective_function, maximize,
@@ -3629,7 +3497,7 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
 
 SearchMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
-    ResultCallback3<int64, int64, int64, int64>* objective_function, int64 step,
+    Solver::IndexEvaluator3 objective_function, int64 step,
     const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
     double penalty_factor) {
   return RevAlloc(new TernaryGuidedLocalSearch(
@@ -3786,10 +3654,10 @@ bool RegularLimit::Check() {
 int RegularLimit::ProgressPercent() {
   Solver* const s = solver();
   int64 progress = GetPercent(s->branches(), branches_offset_, branches_);
-  progress =
-      std::max(progress, GetPercent(s->failures(), failures_offset_, failures_));
-  progress =
-      std::max(progress, GetPercent(s->solutions(), solutions_offset_, solutions_));
+  progress = std::max(progress,
+                      GetPercent(s->failures(), failures_offset_, failures_));
+  progress = std::max(
+      progress, GetPercent(s->solutions(), solutions_offset_, solutions_));
   if (wall_time_ < kint64max) {
     progress = std::max(progress, (100 * TimeDelta()) / wall_time_);
   }
@@ -3976,48 +3844,39 @@ int64 Solver::GetTime(SearchLimit* limit) {
 namespace {
 class CustomLimit : public SearchLimit {
  public:
-  CustomLimit(Solver* const s, ResultCallback<bool>* limiter, bool del);
-  ~CustomLimit() override;
+  CustomLimit(Solver* const s, std::function<bool()> limiter);
   bool Check() override;
   void Init() override;
   void Copy(const SearchLimit* const limit) override;
   SearchLimit* MakeClone() const override;
 
  private:
-  ResultCallback<bool>* limiter_;
-  bool delete_;
+  std::function<bool()> limiter_;
 };
 
-CustomLimit::CustomLimit(Solver* const s, ResultCallback<bool>* limiter,
-                         bool del)
-    : SearchLimit(s), limiter_(limiter), delete_(del) {
-  limiter_->CheckIsRepeatable();
-}
+CustomLimit::CustomLimit(Solver* const s, std::function<bool()> limiter)
+    : SearchLimit(s), limiter_(limiter) {}
 
-CustomLimit::~CustomLimit() {
-  if (delete_) {
-    delete limiter_;
-  }
+bool CustomLimit::Check() {
+  if (limiter_) return limiter_();
+  return false;
 }
-
-bool CustomLimit::Check() { return limiter_->Run(); }
 
 void CustomLimit::Init() {}
 
 void CustomLimit::Copy(const SearchLimit* const limit) {
-  const CustomLimit* const custom = reinterpret_cast<const CustomLimit* const>(limit);
-  CHECK(!delete_) << "Cannot copy to non-cloned custom limit";
+  const CustomLimit* const custom =
+      reinterpret_cast<const CustomLimit* const>(limit);
   limiter_ = custom->limiter_;
 }
 
 SearchLimit* CustomLimit::MakeClone() const {
-  Solver* const s = solver();
-  return s->RevAlloc(new CustomLimit(s, limiter_, false));
+  return solver()->RevAlloc(new CustomLimit(solver(), limiter_));
 }
 }  // namespace
 
-SearchLimit* Solver::MakeCustomLimit(ResultCallback<bool>* limiter) {
-  return RevAlloc(new CustomLimit(this, limiter, true));
+SearchLimit* Solver::MakeCustomLimit(std::function<bool()> limiter) {
+  return RevAlloc(new CustomLimit(this, limiter));
 }
 
 // ---------- SolveOnce ----------

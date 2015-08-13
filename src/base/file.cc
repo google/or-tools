@@ -22,11 +22,11 @@
 #endif
 
 #include <cstring>
+#include <memory>
 #include <string>
 
 #include "base/file.h"
 #include "base/logging.h"
-#include "base/unique_ptr.h"
 #include "base/join.h"
 
 namespace operations_research {

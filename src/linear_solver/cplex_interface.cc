@@ -14,8 +14,8 @@
 // Initial version of this code was written by Daniel Junglas (IBM)
 
 #include <limits>
+#include <memory>
 
-#include "base/unique_ptr.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"

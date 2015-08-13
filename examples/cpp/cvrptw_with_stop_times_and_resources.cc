@@ -19,7 +19,7 @@
 // limits the number of vehicles which can simultaneously leave or enter a node
 // to one.
 
-#include "base/unique_ptr.h"
+#include <memory>
 #include <vector>
 
 #include "base/callback.h"
@@ -312,13 +312,11 @@ int main(int argc, char** argv) {
       // An order has no service time iff it is at the same location as the
       // next order on the route.
       IntVar* const is_null_duration =
-          solver->MakeElement(
-              NewPermanentCallback(&locations,
-                                   &LocationContainer::SameLocationFromIndex,
-                                   order),
-              routing.NextVar(order))->Var();
-      solver->AddConstraint(solver->MakeNonEquality(interval->PerformedExpr(),
-                                                    is_null_duration));
+          solver->MakeElement([&locations, order](int64 index) {
+                  return locations.SameLocationFromIndex(order, index);
+                }, routing.NextVar(order))->Var();
+      solver->AddConstraint(
+          solver->MakeNonEquality(interval->PerformedExpr(), is_null_duration));
       routing.AddIntervalToAssignment(interval);
       // We are minimizing route durations by minimizing route ends; so we can
       // maximize order starts to pack them together.

@@ -151,6 +151,7 @@ $(GEN_DIR)/constraint_solver/constraint_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/constraint_solver/csharp/constraint_solver.swig \
 	$(SRC_DIR)/base/base.swig \
 	$(SRC_DIR)/util/csharp/data.swig \
+	$(SRC_DIR)/util/csharp/functions.swig \
 	$(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research_constraint_solver -namespace $(CLR_DLL_NAME).ConstraintSolver -dllimport "$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)$Sconstraint_solver$Scsharp$Srouting.swig
 	$(SED) -i -e 's/CSharp_new_Solver/CSharp_new_CpSolver/g' $(GEN_DIR)/com/google/ortools/constraintsolver/*cs $(GEN_DIR)/constraint_solver/constraint_solver_csharp_wrap.*

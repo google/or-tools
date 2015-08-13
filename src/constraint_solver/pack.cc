@@ -16,7 +16,7 @@
 
 #include <algorithm>
 #include <cstddef>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -530,10 +530,10 @@ void SortIndexByWeight(std::vector<int>* const indices,
 }
 
 void SortIndexByWeight(std::vector<int>* const indices,
-                       Pack::ItemUsageEvaluator* weights) {
+                       Solver::IndexEvaluator1 weights) {
   std::vector<WeightContainer> to_sort;
   for (int index = 0; index < indices->size(); ++index) {
-    const int w = weights->Run(index);
+    const int w = weights(index);
     if (w != 0) {
       to_sort.push_back(WeightContainer((*indices)[index], w));
     }
@@ -542,10 +542,10 @@ void SortIndexByWeight(std::vector<int>* const indices,
 }
 
 void SortIndexByWeight(std::vector<int>* const indices,
-                       Pack::ItemUsagePerBinEvaluator* weights, int bin_index) {
+                       Solver::IndexEvaluator2 weights, int bin_index) {
   std::vector<WeightContainer> to_sort;
   for (int index = 0; index < indices->size(); ++index) {
-    const int w = weights->Run(index, bin_index);
+    const int w = weights(index, bin_index);
     if (w != 0) {
       to_sort.push_back(WeightContainer((*indices)[index], w));
     }
@@ -652,7 +652,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
  public:
   // Ownership is taken by the class. The callback has to be permanent.
   DimensionSumCallbackLessThanConstant(Solver* const s, Pack* const p,
-                                       Pack::ItemUsageEvaluator* weights,
+                                       Solver::IndexEvaluator1 weights,
                                        int vars_count,
                                        const std::vector<int64>& upper_bounds)
       : Dimension(s, p),
@@ -665,11 +665,10 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
         ranked_(vars_count_) {
     DCHECK(weights);
     DCHECK_GT(vars_count, 0);
-    weights->CheckIsRepeatable();
     for (int i = 0; i < vars_count_; ++i) {
       ranked_[i] = i;
     }
-    SortIndexByWeight(&ranked_, weights_.get());
+    SortIndexByWeight(&ranked_, weights_);
   }
 
   ~DimensionSumCallbackLessThanConstant() override {}
@@ -686,7 +685,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
     for (; last_unbound >= 0; --last_unbound) {
       const int var_index = ranked_[last_unbound];
       if (IsUndecided(var_index, bin_index)) {
-        if (weights_->Run(var_index) > slack) {
+        if (weights_(var_index) > slack) {
           SetImpossible(var_index, bin_index);
         } else {
           break;
@@ -701,7 +700,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
     Solver* const s = solver();
     int64 sum = 0LL;
     for (const int value : forced) {
-      sum += weights_->Run(value);
+      sum += weights_(value);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
     first_unbound_backward_vector_.SetValue(s, bin_index, ranked_.size() - 1);
@@ -716,7 +715,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
       for (const int value : forced) {
-        sum += weights_->Run(value);
+        sum += weights_(value);
       }
       sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
       PushFromTop(bin_index);
@@ -741,7 +740,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
 
  private:
   const int vars_count_;
-  std::unique_ptr<Pack::ItemUsageEvaluator> weights_;
+  Solver::IndexEvaluator1 weights_;
   const int bins_count_;
   const std::vector<int64> upper_bounds_;
   RevArray<int> first_unbound_backward_vector_;
@@ -753,7 +752,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
  public:
   // Ownership is taken by the class. The callback has to be permanent.
   DimensionLessThanConstantCallback2(Solver* const s, Pack* const p,
-                                     Pack::ItemUsagePerBinEvaluator* weights,
+                                     Solver::IndexEvaluator2 weights,
                                      int vars_count,
                                      const std::vector<int64>& upper_bounds)
       : Dimension(s, p),
@@ -766,13 +765,12 @@ class DimensionLessThanConstantCallback2 : public Dimension {
         ranked_(bins_count_) {
     DCHECK(weights);
     DCHECK_GT(vars_count, 0);
-    weights->CheckIsRepeatable();
     for (int b = 0; b < bins_count_; ++b) {
       ranked_[b].resize(vars_count);
       for (int i = 0; i < vars_count_; ++i) {
         ranked_[b][i] = i;
       }
-      SortIndexByWeight(&ranked_[b], weights_.get(), b);
+      SortIndexByWeight(&ranked_[b], weights_, b);
     }
   }
 
@@ -790,7 +788,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
     for (; last_unbound >= 0; --last_unbound) {
       const int var_index = ranked_[bin_index][last_unbound];
       if (IsUndecided(var_index, bin_index)) {
-        if (weights_->Run(var_index, bin_index) > slack) {
+        if (weights_(var_index, bin_index) > slack) {
           SetImpossible(var_index, bin_index);
         } else {
           break;
@@ -805,7 +803,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
     Solver* const s = solver();
     int64 sum = 0LL;
     for (const int value : forced) {
-      sum += weights_->Run(value, bin_index);
+      sum += weights_(value, bin_index);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
     first_unbound_backward_vector_.SetValue(s, bin_index,
@@ -821,7 +819,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
       for (const int value : forced) {
-        sum += weights_->Run(value, bin_index);
+        sum += weights_(value, bin_index);
       }
       sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
       PushFromTop(bin_index);
@@ -846,7 +844,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
 
  private:
   const int vars_count_;
-  std::unique_ptr<Pack::ItemUsagePerBinEvaluator> weights_;
+  Solver::IndexEvaluator2 weights_;
   const int bins_count_;
   const std::vector<int64> upper_bounds_;
   RevArray<int> first_unbound_backward_vector_;
@@ -1002,7 +1000,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
   };
 
   DimensionWeightedCallback2SumEqVar(Solver* const s, Pack* const p,
-                                     Pack::ItemUsagePerBinEvaluator* weights,
+                                     Solver::IndexEvaluator2 weights,
                                      int vars_count,
                                      const std::vector<IntVar*>& loads)
       : Dimension(s, p),
@@ -1017,13 +1015,12 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     DCHECK(weights);
     DCHECK_GT(vars_count_, 0);
     DCHECK_GT(bins_count_, 0);
-    weights->CheckIsRepeatable();
     for (int b = 0; b < bins_count_; ++b) {
       ranked_[b].resize(vars_count);
       for (int i = 0; i < vars_count_; ++i) {
         ranked_[b][i] = i;
       }
-      SortIndexByWeight(&ranked_[b], weights_.get(), b);
+      SortIndexByWeight(&ranked_[b], weights_, b);
     }
   }
 
@@ -1052,7 +1049,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     int last_unbound = first_unbound_backward_vector_[bin_index];
     for (; last_unbound >= 0; --last_unbound) {
       const int var_index = ranked_[bin_index][last_unbound];
-      const int64 weight = weights_->Run(var_index, bin_index);
+      const int64 weight = weights_(var_index, bin_index);
       if (IsUndecided(var_index, bin_index)) {
         if (weight > slack_up) {
           SetImpossible(var_index, bin_index);
@@ -1071,11 +1068,11 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     Solver* const s = solver();
     int64 sum = 0LL;
     for (const int value : forced) {
-      sum += weights_->Run(value, bin_index);
+      sum += weights_(value, bin_index);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, sum);
     for (const int value : undecided) {
-      sum += weights_->Run(value, bin_index);
+      sum += weights_(value, bin_index);
     }
     sum_of_all_variables_vector_.SetValue(s, bin_index, sum);
     first_unbound_backward_vector_.SetValue(s, bin_index,
@@ -1090,12 +1087,12 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     Solver* const s = solver();
     int64 down = sum_of_bound_variables_vector_[bin_index];
     for (const int value : forced) {
-      down += weights_->Run(value, bin_index);
+      down += weights_(value, bin_index);
     }
     sum_of_bound_variables_vector_.SetValue(s, bin_index, down);
     int64 up = sum_of_all_variables_vector_[bin_index];
     for (const int value : removed) {
-      up -= weights_->Run(value, bin_index);
+      up -= weights_(value, bin_index);
     }
     sum_of_all_variables_vector_.SetValue(s, bin_index, up);
     PushFromTop(bin_index);
@@ -1119,7 +1116,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
 
  private:
   const int vars_count_;
-  std::unique_ptr<Pack::ItemUsagePerBinEvaluator> weights_;
+  Solver::IndexEvaluator2 weights_;
   const int bins_count_;
   const std::vector<IntVar*> loads_;
   RevArray<int> first_unbound_backward_vector_;
@@ -1530,7 +1527,7 @@ void Pack::AddWeightedSumLessOrEqualConstantDimension(
 }
 
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
-    ItemUsageEvaluator* weights, const std::vector<int64>& bounds) {
+    Solver::IndexEvaluator1 weights, const std::vector<int64>& bounds) {
   CHECK(weights != nullptr);
   CHECK_EQ(bounds.size(), bins_);
   Solver* const s = solver();
@@ -1540,7 +1537,7 @@ void Pack::AddWeightedSumLessOrEqualConstantDimension(
 }
 
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
-    ItemUsagePerBinEvaluator* weights, const std::vector<int64>& bounds) {
+    Solver::IndexEvaluator2 weights, const std::vector<int64>& bounds) {
   CHECK(weights != nullptr);
   CHECK_EQ(bounds.size(), bins_);
   Solver* const s = solver();
@@ -1559,7 +1556,7 @@ void Pack::AddWeightedSumEqualVarDimension(const std::vector<int64>& weights,
   dims_.push_back(dim);
 }
 
-void Pack::AddWeightedSumEqualVarDimension(ItemUsagePerBinEvaluator* weights,
+void Pack::AddWeightedSumEqualVarDimension(Solver::IndexEvaluator2 weights,
                                            const std::vector<IntVar*>& loads) {
   CHECK(weights != nullptr);
   CHECK_EQ(loads.size(), bins_);

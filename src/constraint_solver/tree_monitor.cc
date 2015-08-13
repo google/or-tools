@@ -16,7 +16,7 @@
 #include "base/hash.h"
 #include <limits>
 #include <map>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -761,7 +761,7 @@ std::string TreeMonitor::StripSpecialCharacters(std::string attribute) {
 
   for (int i = 0; i < attribute.length(); ++i) {
     if (character_set.find(attribute[i]) == character_set.end()) {
-      attribute.replace(i,1,"_");
+      attribute.replace(i, 1, "_");
     }
   }
 

@@ -38,18 +38,6 @@ message BopOptimizerMethod {
     RELATION_GRAPH_LNS_GUIDED_BY_LP = 17;
   }
   optional OptimizerType type = 1;
-
-  // The ratio is used to compute the max time the method might spend to look
-  // for a solution. For instance, with a ratio of 0.05 and a time limit of
-  // 300 seconds, the method can spend up to 15 seconds.
-  //
-  // Note that the LOCAL_SEARCH optimizer doesn't respect this and that some
-  // optimizers have a conflicts and/or iterations limit which usually result in
-  // running times a lot lower than this bound.
-  //
-  // TODO(user): This is a big source of undeterminism in the solver. Find a
-  // deterministic way to have a similar behavior.
-  optional double time_limit_ratio = 3 [default = 0.5];
 }
 
 // Set of optimizer methods to be run by an instance of the portfolio optimizer.
@@ -62,7 +50,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 37
+// NEXT TAG: 38
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -74,6 +62,11 @@ message BopParameters {
   // The counter will starts as soon as SetParameters() or SolveWithTimeLimit()
   // is called.
   optional double max_deterministic_time = 27 [default = inf];
+
+  // Maximum time allowed in deterministic time to solve the LP relaxation at
+  // first. Note that the time allowed to solve the LP relaxation might increase
+  // during the search, especially when no solutions have been found.
+  optional double initial_lp_max_deterministic_time = 37 [default = 1.0];
 
   // Maximum number of consecutive optimizer calls without improving the
   // current solution. If this number is reached, the search will be aborted.
@@ -217,20 +210,20 @@ message BopParameters {
   repeated BopSolverOptimizerSet solver_optimizer_sets = 26;
   optional string default_solver_optimizer_sets = 33
       [default =
-           "methods:{type:LOCAL_SEARCH }                            "
-           "methods:{type:RANDOM_FIRST_SOLUTION }                   "
-           "methods:{type:LINEAR_RELAXATION time_limit_ratio:0.15 } "
-           "methods:{type:LP_FIRST_SOLUTION }                       "
-           "methods:{type:OBJECTIVE_FIRST_SOLUTION }                "
-           "methods:{type:USER_GUIDED_FIRST_SOLUTION }              "
-           "methods:{type:RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP }      "
-           "methods:{type:RANDOM_VARIABLE_LNS_GUIDED_BY_LP }        "
-           "methods:{type:RELATION_GRAPH_LNS }                      "
-           "methods:{type:RELATION_GRAPH_LNS_GUIDED_BY_LP }         "
-           "methods:{type:RANDOM_CONSTRAINT_LNS }                   "
-           "methods:{type:RANDOM_VARIABLE_LNS }                     "
-           "methods:{type:SAT_CORE_BASED }                          "
-           "methods:{type:COMPLETE_LNS }                            "];
+           "methods:{type:LOCAL_SEARCH }                       "
+           "methods:{type:RANDOM_FIRST_SOLUTION }              "
+           "methods:{type:LINEAR_RELAXATION }                  "
+           "methods:{type:LP_FIRST_SOLUTION }                  "
+           "methods:{type:OBJECTIVE_FIRST_SOLUTION }           "
+           "methods:{type:USER_GUIDED_FIRST_SOLUTION }         "
+           "methods:{type:RANDOM_CONSTRAINT_LNS_GUIDED_BY_LP } "
+           "methods:{type:RANDOM_VARIABLE_LNS_GUIDED_BY_LP }   "
+           "methods:{type:RELATION_GRAPH_LNS }                 "
+           "methods:{type:RELATION_GRAPH_LNS_GUIDED_BY_LP }    "
+           "methods:{type:RANDOM_CONSTRAINT_LNS }              "
+           "methods:{type:RANDOM_VARIABLE_LNS }                "
+           "methods:{type:SAT_CORE_BASED }                     "
+           "methods:{type:COMPLETE_LNS }                       "];
 
   // Use strong branching in the linear relaxation optimizer.
   // The strong branching is a what-if analysis on each variable v, i.e.

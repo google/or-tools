@@ -15,7 +15,7 @@
 
 #include <algorithm>
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 

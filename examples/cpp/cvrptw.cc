@@ -21,7 +21,8 @@
 // distances are computed using the Manhattan distance. Distances are assumed
 // to be in meters and times in seconds.
 
-#include "base/unique_ptr.h"
+#include <memory>
+#include <set>
 #include <vector>
 
 #include "base/callback.h"
@@ -49,9 +50,13 @@ DEFINE_int32(vrp_orders, 100, "Nodes in the problem.");
 DEFINE_int32(vrp_vehicles, 20, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(vrp_use_deterministic_random_seed, false,
             "Use deterministic random seeds.");
+DEFINE_bool(vrp_use_same_vehicle_costs, false,
+            "Use same vehicle costs in the routing model");
 
 const char* kTime = "Time";
 const char* kCapacity = "Capacity";
+const int kMaxNodesPerGroup = 10;
+const int64 kSameVehicleCost = 1000;
 
 // Random seed generator.
 int32 GetSeed() {
@@ -177,6 +182,30 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
     plan_output += "Dropped orders:" + dropped + "\n";
   }
 
+  if (FLAGS_vrp_use_same_vehicle_costs) {
+    int group_size = 0;
+    int64 same_vehicle_cost = 0;
+    std::set<int> visited;
+    const RoutingModel::NodeIndex kFirstNodeAfterDepot(1);
+    for (RoutingModel::NodeIndex order = kFirstNodeAfterDepot;
+         order < routing.nodes(); ++order) {
+      ++group_size;
+      visited.insert(
+          plan.Value(routing.VehicleVar(routing.NodeToIndex(order))));
+      if (group_size == kMaxNodesPerGroup) {
+        if (visited.size() > 1) {
+          same_vehicle_cost += (visited.size() - 1) * kSameVehicleCost;
+        }
+        group_size = 0;
+        visited.clear();
+      }
+    }
+    if (visited.size() > 1) {
+      same_vehicle_cost += (visited.size() - 1) * kSameVehicleCost;
+    }
+    LOG(INFO) << "Same vehicle costs: " << same_vehicle_cost;
+  }
+
   // Display actual output for each vehicle.
   const RoutingDimension& capacity_dimension =
       routing.GetDimensionOrDie(kCapacity);
@@ -197,6 +226,7 @@ void DisplayPlan(const RoutingModel& routing, const Assignment& plan) {
         if (routing.IsEnd(order)) break;
         order = plan.Value(routing.NextVar(order));
       }
+      plan_output += "\n";
     }
   }
   LOG(INFO) << plan_output;
@@ -258,12 +288,28 @@ int main(int argc, char** argv) {
   }
 
   // Adding penalty costs to allow skipping orders.
-  const int64 kPenalty = 100000;
+  const int64 kPenalty = 10000000;
   const RoutingModel::NodeIndex kFirstNodeAfterDepot(1);
   for (RoutingModel::NodeIndex order = kFirstNodeAfterDepot;
        order < routing.nodes(); ++order) {
     std::vector<RoutingModel::NodeIndex> orders(1, order);
     routing.AddDisjunction(orders, kPenalty);
+  }
+
+  // Adding same vehicle constraint costs for consecutive nodes.
+  if (FLAGS_vrp_use_same_vehicle_costs) {
+    std::vector<RoutingModel::NodeIndex> group;
+    for (RoutingModel::NodeIndex order = kFirstNodeAfterDepot;
+         order < routing.nodes(); ++order) {
+      group.push_back(order);
+      if (group.size() == kMaxNodesPerGroup) {
+        routing.AddSoftSameVehicleConstraint(group, kSameVehicleCost);
+        group.clear();
+      }
+    }
+    if (!group.empty()) {
+      routing.AddSoftSameVehicleConstraint(group, kSameVehicleCost);
+    }
   }
 
   // Solve, returns a solution if any (owned by RoutingModel).

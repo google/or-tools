@@ -122,17 +122,13 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     return sync_status;
   }
 
-  // We want to check both the local time limit and the global time limit.
-  TimeLimit local_time_limit(LocalTimeLimitInSeconds(time_limit),
-                             LocalDeterministicTimeLimit(time_limit));
-
   int64 conflict_limit = parameters.max_number_of_conflicts_in_random_lns();
   double deterministic_time_at_last_sync = solver_.deterministic_time();
-  while (!local_time_limit.LimitReached()) {
+  while (!time_limit->LimitReached()) {
     sat::SatParameters sat_params = solver_.parameters();
-    sat_params.set_max_time_in_seconds(local_time_limit.GetTimeLeft());
+    sat_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
     sat_params.set_max_deterministic_time(
-        local_time_limit.GetDeterministicTimeLeft());
+        time_limit->GetDeterministicTimeLeft());
     sat_params.set_max_number_of_conflicts(conflict_limit);
     solver_.SetParameters(sat_params);
 

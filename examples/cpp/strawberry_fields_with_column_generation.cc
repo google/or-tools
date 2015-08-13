@@ -55,7 +55,7 @@
 #include <cstdio>
 #include <cstring>  // strlen
 #include <map>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>

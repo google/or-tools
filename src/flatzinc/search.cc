@@ -585,7 +585,7 @@ void FzSolver::Solve(FzSolverParameters p,
   SearchLimit* const shadow =
       limit == nullptr ? nullptr
                        : solver()->MakeCustomLimit(
-                             NewPermanentCallback(limit, &SearchLimit::Check));
+                             [limit]() { return limit->Check(); });
   DecisionBuilder* const db = CreateDecisionBuilders(p, shadow);
   std::vector<SearchMonitor*> monitors;
   if (model_.objective() != nullptr) {

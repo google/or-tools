@@ -24,7 +24,7 @@
 #include <climits>
 #include <cstdio>
 #include <limits>
-#include "base/unique_ptr.h"
+#include <memory>
 
 #include "base/integral_types.h"
 #include "base/logging.h"

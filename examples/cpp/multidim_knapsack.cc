@@ -252,14 +252,14 @@ class MultiDimKnapsackData {
   int problem_type_;  // -1 = undefined, 0 = original, 1 = new format
 };
 
-int64 EvaluateItem(MultiDimKnapsackData* const data, int64 var, int64 val) {
+int64 EvaluateItem(const MultiDimKnapsackData& data, int64 var, int64 val) {
   if (val == 0) {
     return 0LL;
   }
-  const int profit = data->profit(var);
+  const int profit = data.profit(var);
   int max_weight = 0;
-  for (int i = 0; i < data->dims(); ++i) {
-    const int weight = data->weight(i, var);
+  for (int i = 0; i < data.dims(); ++i) {
+    const int weight = data.weight(i, var);
     if (weight > max_weight) {
       max_weight = weight;
     }
@@ -297,8 +297,9 @@ void SolveKnapsack(MultiDimKnapsackData* const data) {
     monitors.push_back(search_log);
   }
   DecisionBuilder* const db =
-      solver.MakePhase(assign, NewPermanentCallback(&EvaluateItem, data),
-                       Solver::CHOOSE_STATIC_GLOBAL_BEST);
+      solver.MakePhase(assign, [data](int64 var, int64 value) {
+        return EvaluateItem(*data, var, value);
+      }, Solver::CHOOSE_STATIC_GLOBAL_BEST);
   if (FLAGS_time_limit_in_ms != 0) {
     LOG(INFO) << "adding time limit of " << FLAGS_time_limit_in_ms << " ms";
     SearchLimit* const limit = solver.MakeLimit(

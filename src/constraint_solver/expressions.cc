@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <cmath>
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -2496,8 +2496,9 @@ std::string DomainIntVar::DebugString() const {
   if (min_.Value() == max_.Value()) {
     StringAppendF(&out, "%" GG_LL_FORMAT "d", min_.Value());
   } else if (bits_ != nullptr) {
-    StringAppendF(&out, "%s", bits_->pretty_DebugString(min_.Value(),
-                                                        max_.Value()).c_str());
+    StringAppendF(
+        &out, "%s",
+        bits_->pretty_DebugString(min_.Value(), max_.Value()).c_str());
   } else {
     StringAppendF(&out, "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min_.Value(),
                   max_.Value());
@@ -4290,7 +4291,7 @@ class TimesIntExpr : public BaseIntExpr {
     const int64 rmin = right_->Min();
     const int64 rmax = right_->Max();
     return std::min(std::min(CapProd(lmin, rmin), CapProd(lmax, rmax)),
-               std::min(CapProd(lmax, rmin), CapProd(lmin, rmax)));
+                    std::min(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
   void SetMin(int64 m) override;
   int64 Max() const override {
@@ -4299,7 +4300,7 @@ class TimesIntExpr : public BaseIntExpr {
     const int64 rmin = right_->Min();
     const int64 rmax = right_->Max();
     return std::max(std::max(CapProd(lmin, rmin), CapProd(lmax, rmax)),
-               std::max(CapProd(lmax, rmin), CapProd(lmin, rmax)));
+                    std::max(CapProd(lmax, rmin), CapProd(lmin, rmax)));
   }
   void SetMax(int64 m) override;
   bool Bound() const override;
@@ -4554,8 +4555,12 @@ class TimesBooleanIntExpr : public BaseIntExpr {
   ~TimesBooleanIntExpr() override {}
   int64 Min() const override {
     switch (boolvar_->RawValue()) {
-      case 0: { return 0LL; }
-      case 1: { return expr_->Min(); }
+      case 0: {
+        return 0LL;
+      }
+      case 1: {
+        return expr_->Min();
+      }
       default: {
         DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
         return std::min(0LL, expr_->Min());
@@ -4565,8 +4570,12 @@ class TimesBooleanIntExpr : public BaseIntExpr {
   void SetMin(int64 m) override;
   int64 Max() const override {
     switch (boolvar_->RawValue()) {
-      case 0: { return 0LL; }
-      case 1: { return expr_->Max(); }
+      case 0: {
+        return 0LL;
+      }
+      case 1: {
+        return expr_->Max();
+      }
       default: {
         DCHECK_EQ(BooleanVar::kUnboundBooleanVarValue, boolvar_->RawValue());
         return std::max(0LL, expr_->Max());
@@ -6566,7 +6575,7 @@ void Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
 
 IntVar** Solver::MakeIntVarArray(int var_count, int64 vmin, int64 vmax,
                                  const std::string& name) {
-  IntVar** vars = new IntVar* [var_count];
+  IntVar** vars = new IntVar*[var_count];
   for (int i = 0; i < var_count; ++i) {
     vars[i] = MakeIntVar(vmin, vmax, IndexedName(name, i, var_count));
   }
@@ -6587,7 +6596,7 @@ void Solver::MakeBoolVarArray(int var_count, std::vector<IntVar*>* vars) {
 }
 
 IntVar** Solver::MakeBoolVarArray(int var_count, const std::string& name) {
-  IntVar** vars = new IntVar* [var_count];
+  IntVar** vars = new IntVar*[var_count];
   for (int i = 0; i < var_count; ++i) {
     vars[i] = MakeBoolVar(IndexedName(name, i, var_count));
   }
@@ -7273,7 +7282,9 @@ void IntVar::RemoveValues(const std::vector<int64>& values) {
   const int size = values.size();
   DCHECK_GE(size, 0);
   switch (size) {
-    case 0: { return; }
+    case 0: {
+      return;
+    }
     case 1: {
       RemoveValue(values[0]);
       return;

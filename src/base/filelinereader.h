@@ -16,12 +16,12 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <memory>
 #include <string>
 
 #include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/file.h"
-#include "base/unique_ptr.h"
 
 namespace operations_research {
 // The FileLineReader class will read a text file specified by

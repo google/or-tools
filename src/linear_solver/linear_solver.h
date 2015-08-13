@@ -136,7 +136,7 @@
 #include "base/hash.h"
 #include <limits>
 #include <map>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -209,7 +209,7 @@ class MPSolver {
     #if defined(USE_CPLEX)
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11,
     #endif
- #if defined(USE_BOP)
+    #if defined(USE_BOP)
     BOP_INTEGER_PROGRAMMING = 12,
     #endif
   };
@@ -534,6 +534,7 @@ class MPSolver {
   friend class MPSolverInterface;
   friend class GLOPInterface;
   friend class BopInterface;
+  friend class KnapsackInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
   bool OwnsVariable(const MPVariable* var) const;
@@ -678,6 +679,7 @@ class MPObjective {
   friend class CplexInterface;
   friend class GLOPInterface;
   friend class BopInterface;
+  friend class KnapsackInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
   // that is specified in the constructor. An objective cannot belong
@@ -752,6 +754,7 @@ class MPVariable {
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
   friend class BopInterface;
+  friend class KnapsackInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
   // is specified in the constructor. A variable cannot belong to
@@ -847,6 +850,7 @@ class MPConstraint {
   friend class CplexInterface;
   friend class GLOPInterface;
   friend class BopInterface;
+  friend class KnapsackInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface
   // that is specified in the constructor. A constraint cannot belong

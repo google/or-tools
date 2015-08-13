@@ -368,10 +368,8 @@ extern MPSolverInterface* BuildGurobiInterface(bool mip,
                                                MPSolver* const solver);
 #endif
 #if defined(USE_CPLEX)
-extern MPSolverInterface* BuildCplexInterface(bool mip,
-                                              MPSolver* const solver);
+extern MPSolverInterface* BuildCplexInterface(bool mip, MPSolver* const solver);
 #endif
-
 
 #ifdef ANDROID_JNI
 extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
@@ -619,6 +617,9 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
   const MPModelProto& model = model_request.model();
   MPSolver solver(model.name(), static_cast<MPSolver::OptimizationProblemType>(
                                     model_request.solver_type()));
+  if (model_request.enable_internal_solver_output()) {
+    solver.EnableOutput();
+  }
   std::string error_message;
   response->set_status(solver.LoadModelFromProto(model, &error_message));
   if (response->status() != MPSOLVER_MODEL_IS_VALID) {
@@ -1099,8 +1100,8 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
   if (!AreWithinAbsoluteOrRelativeTolerances(
            objective.Value(), actual_objective_value, tolerance, tolerance)) {
     ++num_errors;
-    max_observed_error = std::max(max_observed_error,
-                             fabs(actual_objective_value - objective.Value()));
+    max_observed_error = std::max(
+        max_observed_error, fabs(actual_objective_value - objective.Value()));
     LOG_IF(ERROR, log_errors) << "Objective value " << objective.Value()
                               << " isn't accurate"
                               << ", it should be " << actual_objective_value

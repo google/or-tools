@@ -64,8 +64,7 @@ class Diffn : public Constraint {
     }
     delayed_demon_ = MakeDelayedConstraintDemon0(s, this, &Diffn::PropagateAll,
                                                  "PropagateAll");
-    if (FLAGS_cp_diffn_use_cumulative &&
-        IsArrayInRange(x_, 0LL, kint64max) &&
+    if (FLAGS_cp_diffn_use_cumulative && IsArrayInRange(x_, 0LL, kint64max) &&
         IsArrayInRange(y_, 0LL, kint64max)) {
       Constraint* ct1 = nullptr;
       Constraint* ct2 = nullptr;
@@ -84,14 +83,14 @@ class Diffn : public Constraint {
         if (AreAllBound(dx_)) {
           std::vector<int64> size_x;
           FillValues(dx_, &size_x);
-          ct1 = MakeCumulativeConstraint(
-              x_, size_x, dy_, max_size_y + max_y - min_y);
+          ct1 = MakeCumulativeConstraint(x_, size_x, dy_,
+                                         max_size_y + max_y - min_y);
         }
         if (AreAllBound(dy_)) {
           std::vector<int64> size_y;
           FillValues(dy_, &size_y);
-          ct2 = MakeCumulativeConstraint(
-               y_, size_y, dx_, max_size_x + max_x - min_x);
+          ct2 = MakeCumulativeConstraint(y_, size_y, dx_,
+                                         max_size_x + max_x - min_x);
         }
       }
       if (ct1 != nullptr) {
@@ -177,7 +176,7 @@ class Diffn : public Constraint {
 
   bool AreBoxedDisjoingVerticallyForSure(int i, int j) const {
     return (y_[i]->Min() >= y_[j]->Max() + dy_[j]->Max()) ||
-           (y_[j]->Min() >= y_[i]->Max() + dy_[i]->Max());
+           (y_[j]->Min() >= y_[i]->Max() + dy_[i]->Max()) ||
            (!strict_ && (dy_[i]->Min() == 0 || dy_[j]->Min() == 0));
   }
 

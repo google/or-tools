@@ -19,7 +19,7 @@
 
 #include <csetjmp>
 #include <iosfwd>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 
 #include "base/callback.h"
@@ -680,8 +680,8 @@ class CompressedTrail {
   const int block_size_;
   Block* blocks_;
   Block* free_blocks_;
-  std::unique_ptr<addrval<T> []> data_;
-  std::unique_ptr<addrval<T> []> buffer_;
+  std::unique_ptr<addrval<T>[]> data_;
+  std::unique_ptr<addrval<T>[]> buffer_;
   bool buffer_used_;
   int current_;
   int size_;
@@ -993,8 +993,7 @@ class Search {
   void set_created_by_solve(bool c) { created_by_solve_ = c; }
   bool created_by_solve() const { return created_by_solve_; }
   Solver::DecisionModification ModifyDecision();
-  void SetBranchSelector(
-      ResultCallback1<Solver::DecisionModification, Solver*>* const s);
+  void SetBranchSelector(Solver::BranchSelector s);
   void LeftMove() {
     search_depth_++;
     left_search_depth_++;
@@ -1036,8 +1035,7 @@ class Search {
   int64 solution_counter_;
   DecisionBuilder* decision_builder_;
   bool created_by_solve_;
-  std::unique_ptr<ResultCallback1<Solver::DecisionModification, Solver*> >
-      selector_;
+  Solver::BranchSelector selector_;
   int search_depth_;
   int left_search_depth_;
   bool should_restart_;
@@ -1108,9 +1106,7 @@ class UndoBranchSelector : public Action {
 
 class ApplyBranchSelector : public DecisionBuilder {
  public:
-  explicit ApplyBranchSelector(
-      ResultCallback1<Solver::DecisionModification, Solver*>* const bs)
-      : selector_(bs) {}
+  explicit ApplyBranchSelector(Solver::BranchSelector bs) : selector_(bs) {}
   ~ApplyBranchSelector() override {}
 
   Decision* Next(Solver* const s) override {
@@ -1121,21 +1117,13 @@ class ApplyBranchSelector : public DecisionBuilder {
   std::string DebugString() const override { return "Apply(BranchSelector)"; }
 
  private:
-  ResultCallback1<Solver::DecisionModification, Solver*>* const selector_;
+  Solver::BranchSelector const selector_;
 };
 }  // namespace
 
-void Search::SetBranchSelector(
-    ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
-  CHECK(bs == selector_.get() || selector_ == nullptr || bs == nullptr);
-  if (selector_.get() != bs) {
-    selector_.reset(bs);
-  }
-}
+void Search::SetBranchSelector(Solver::BranchSelector bs) { selector_ = bs; }
 
-void Solver::SetBranchSelector(
-    ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
-  bs->CheckIsRepeatable();
+void Solver::SetBranchSelector(BranchSelector bs) {
   // We cannot use the trail as the search can be nested and thus
   // deleted upon backtrack. Thus we guard the undo action by a
   // check on the number of nesting of solve().
@@ -1143,8 +1131,7 @@ void Solver::SetBranchSelector(
   searches_.back()->SetBranchSelector(bs);
 }
 
-DecisionBuilder* Solver::MakeApplyBranchSelector(
-    ResultCallback1<Solver::DecisionModification, Solver*>* const bs) {
+DecisionBuilder* Solver::MakeApplyBranchSelector(BranchSelector bs) {
   return RevAlloc(new ApplyBranchSelector(bs));
 }
 
@@ -1160,7 +1147,7 @@ int Solver::SearchLeftDepth() const {
 
 Solver::DecisionModification Search::ModifyDecision() {
   if (selector_ != nullptr) {
-    return selector_->Run(solver_);
+    return selector_();
   }
   return Solver::NO_CHANGE;
 }
@@ -1175,7 +1162,7 @@ void Search::Clear() {
   monitors_.clear();
   search_depth_ = 0;
   left_search_depth_ = 0;
-  selector_.reset(nullptr);
+  selector_ = nullptr;
   backtrack_at_the_end_of_the_search_ = true;
 }
 
@@ -2231,7 +2218,9 @@ bool Solver::NextSolution() {
               search->AfterDecision(d, false);
               break;
             }
-            case KILL_BOTH: { Fail(); }
+            case KILL_BOTH: {
+              Fail();
+            }
           }
         } else {
           break;
@@ -2515,8 +2504,7 @@ std::ostream& operator<<(std::ostream& out, const Solver* const s) {
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out,
-                         const BaseObject* const o) {
+std::ostream& operator<<(std::ostream& out, const BaseObject* const o) {
   out << o->DebugString();
   return out;
 }
@@ -2836,31 +2824,27 @@ void ModelVisitor::VisitSequenceArrayArgument(
 
 // ----- Helpers -----
 
-void ModelVisitor::VisitInt64ToBoolExtension(
-    ResultCallback1<bool, int64>* const callback, int64 index_min,
-    int64 index_max) {
-  if (callback == nullptr) {
-    return;
+void ModelVisitor::VisitInt64ToBoolExtension(Solver::IndexFilter1 filter,
+                                             int64 index_min, int64 index_max) {
+  if (filter != nullptr) {
+    std::vector<int64> cached_results;
+    for (int i = index_min; i <= index_max; ++i) {
+      cached_results.push_back(filter(i));
+    }
+    BeginVisitExtension(kInt64ToBoolExtension);
+    VisitIntegerArgument(kMinArgument, index_min);
+    VisitIntegerArgument(kMaxArgument, index_max);
+    VisitIntegerArrayArgument(kValuesArgument, cached_results);
+    EndVisitExtension(kInt64ToBoolExtension);
   }
-  std::vector<int64> cached_results;
-  for (int i = index_min; i <= index_max; ++i) {
-    cached_results.push_back(callback->Run(i));
-  }
-  BeginVisitExtension(kInt64ToBoolExtension);
-  VisitIntegerArgument(kMinArgument, index_min);
-  VisitIntegerArgument(kMaxArgument, index_max);
-  VisitIntegerArrayArgument(kValuesArgument, cached_results);
-  EndVisitExtension(kInt64ToBoolExtension);
 }
 
 void ModelVisitor::VisitInt64ToInt64Extension(
-    Solver::IndexEvaluator1* const callback, int64 index_min, int64 index_max) {
-  if (callback == nullptr) {
-    return;
-  }
+    const Solver::IndexEvaluator1& eval, int64 index_min, int64 index_max) {
+  CHECK(eval != nullptr);
   std::vector<int64> cached_results;
   for (int i = index_min; i <= index_max; ++i) {
-    cached_results.push_back(callback->Run(i));
+    cached_results.push_back(eval(i));
   }
   BeginVisitExtension(kInt64ToInt64Extension);
   VisitIntegerArgument(kMinArgument, index_min);
@@ -2869,15 +2853,13 @@ void ModelVisitor::VisitInt64ToInt64Extension(
   EndVisitExtension(kInt64ToInt64Extension);
 }
 
-void ModelVisitor::VisitInt64ToInt64AsArray(
-    Solver::IndexEvaluator1* const callback, const std::string& arg_name,
-    int64 index_max) {
-  if (callback == nullptr) {
-    return;
-  }
+void ModelVisitor::VisitInt64ToInt64AsArray(const Solver::IndexEvaluator1& eval,
+                                            const std::string& arg_name,
+                                            int64 index_max) {
+  CHECK(eval != nullptr);
   std::vector<int64> cached_results;
   for (int i = 0; i <= index_max; ++i) {
-    cached_results.push_back(callback->Run(i));
+    cached_results.push_back(eval(i));
   }
   VisitIntegerArrayArgument(arg_name, cached_results);
 }

@@ -14,7 +14,7 @@
 
 #include <string.h>
 #include <algorithm>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -131,7 +131,7 @@ class MapDomain : public Constraint {
         MakeConstraintDemon0(solver(), this, &MapDomain::VarBound, "VarBound");
     var_->WhenBound(vb);
     std::unique_ptr<IntVarIterator> domain_it(
-        var_->MakeDomainIterator(/*reversible=*/ false));
+        var_->MakeDomainIterator(/*reversible=*/false));
     for (const int64 index : InitAndGetValues(domain_it.get())) {
       if (index >= 0 && index < actives_.size() && !actives_[index]->Bound()) {
         Demon* d = MakeConstraintDemon1(
@@ -181,7 +181,8 @@ class MapDomain : public Constraint {
         actives_[j]->SetValue(0);
       }
     }
-    for (int64 j = std::max(vmax + 1LL, 0LL); j <= std::min(oldmax, size - 1LL); ++j) {
+    for (int64 j = std::max(vmax + 1LL, 0LL); j <= std::min(oldmax, size - 1LL);
+         ++j) {
       actives_[j]->SetValue(0LL);
     }
   }
@@ -339,9 +340,9 @@ class InversePermutationConstraint : public Constraint {
       right_[i]->WhenDomain(right_demon);
     }
     solver()->AddConstraint(
-        solver()->MakeAllDifferent(left_, /*stronger_propagation=*/ false));
+        solver()->MakeAllDifferent(left_, /*stronger_propagation=*/false));
     solver()->AddConstraint(
-        solver()->MakeAllDifferent(right_, /*stronger_propagation=*/ false));
+        solver()->MakeAllDifferent(right_, /*stronger_propagation=*/false));
   }
 
   void InitialPropagate() override {
@@ -448,7 +449,7 @@ class IndexOfFirstMaxValue : public Constraint {
     }
   }
 
-  void InitialPropagate() {
+  void InitialPropagate() override {
     const int64 vsize = vars_.size();
     const int64 imin = std::max(0LL, index_->Min());
     const int64 imax = std::min(vsize - 1, index_->Max());
@@ -488,7 +489,7 @@ class IndexOfFirstMaxValue : public Constraint {
   }
 
   void Accept(ModelVisitor* const visitor) const override {
-    // TODO(lperron): Implement me.
+    // TODO(user): Implement me.
   }
 
  private:

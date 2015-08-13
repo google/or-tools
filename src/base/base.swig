@@ -81,7 +81,7 @@ class std::string;
   if (PyString_AsStringAndSize($input, &buf, &len) == -1)
     return NULL;
   $1 = std::string(buf, len);
- }
+}
 
 %typemap(in) const std::string & (std::string temp) {
   char * buf;
@@ -90,30 +90,30 @@ class std::string;
     return NULL;
   temp = std::string(buf, len);
   $1 = &temp;
- }
+}
 
 %typemap(out) std::string {
   $result = PyString_FromStringAndSize($1.data(), $1.size());
- }
+}
 
 %typemap(out) const std::string & {
   $result = PyString_FromStringAndSize($1->data(), $1->size());
- }
+}
 
 %typemap(in, numinputs = 0) std::string * OUTPUT (std::string temp) {
   temp = std::string();
   $1 = &temp;
- }
+}
 
 %typemap(argout, fragment = "t_output_helper") std::string * OUTPUT {
   $result = t_output_helper(
       $result,
       PyString_FromStringAndSize($1->data(), $1->length()));
- }
+}
 
 %typemap(varout) std::string {
   $result = PyString_FromStringAndSize($1.data(), $1.size());
- }
+}
 
 %apply const std::string & {std::string &};
 %apply const std::string & {std::string *};

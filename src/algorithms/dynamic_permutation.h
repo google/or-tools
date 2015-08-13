@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_ALGORITHMS_DYNAMIC_PERMUTATION_H_
 #define OR_TOOLS_ALGORITHMS_DYNAMIC_PERMUTATION_H_
 
-#include "base/unique_ptr.h"
+#include <memory>
 #include <set>  // TODO(user): remove when no longer used.
 #include <vector>
 

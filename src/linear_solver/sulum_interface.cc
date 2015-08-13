@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include "base/hash.h"
 #include <limits>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -27,7 +28,6 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
-#include "base/unique_ptr.h"
 #include "base/hash.h"
 #include "linear_solver/linear_solver.h"
 

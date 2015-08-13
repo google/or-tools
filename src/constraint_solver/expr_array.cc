@@ -306,7 +306,8 @@ class SmallSumConstraint : public Constraint {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const demon = MakeConstraintDemon1(
-            solver(), this, &SmallSumConstraint::VarChanged, "VarChanged", i);
+            solver(), this, &SmallSumConstraint::VarChanged, "VarChanged",
+            vars_[i]);
         vars_[i]->WhenRange(demon);
       }
     }
@@ -371,8 +372,7 @@ class SmallSumConstraint : public Constraint {
     }
   }
 
-  void VarChanged(int term_index) {
-    IntVar* const var = vars_[term_index];
+  void VarChanged(IntVar* var) {
     const int64 delta_min = var->Min() - var->OldMin();
     const int64 delta_max = var->OldMax() - var->Max();
     computed_min_.Add(solver(), delta_min);
@@ -793,7 +793,8 @@ class SmallMinConstraint : public Constraint {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const demon = MakeConstraintDemon1(
-            solver(), this, &SmallMinConstraint::VarChanged, "VarChanged", i);
+            solver(), this, &SmallMinConstraint::VarChanged, "VarChanged",
+            vars_[i]);
         vars_[i]->WhenRange(demon);
       }
     }
@@ -834,8 +835,7 @@ class SmallMinConstraint : public Constraint {
   }
 
  private:
-  void VarChanged(int index) {
-    IntVar* const var = vars_[index];
+  void VarChanged(IntVar* var) {
     const int64 old_min = var->OldMin();
     const int64 var_min = var->Min();
     const int64 var_max = var->Max();
@@ -1071,7 +1071,8 @@ class SmallMaxConstraint : public Constraint {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const demon = MakeConstraintDemon1(
-            solver(), this, &SmallMaxConstraint::VarChanged, "VarChanged", i);
+            solver(), this, &SmallMaxConstraint::VarChanged, "VarChanged",
+            vars_[i]);
         vars_[i]->WhenRange(demon);
       }
     }
@@ -1112,8 +1113,7 @@ class SmallMaxConstraint : public Constraint {
   }
 
  private:
-  void VarChanged(int index) {
-    IntVar* const var = vars_[index];
+  void VarChanged(IntVar* var) {
     const int64 old_max = var->OldMax();
     const int64 var_min = var->Min();
     const int64 var_max = var->Max();
@@ -1195,8 +1195,9 @@ class ArrayBoolAndEq : public CastConstraint {
   void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
-        demons_[i] = MakeConstraintDemon1(
-            solver(), this, &ArrayBoolAndEq::PropagateVar, "PropagateVar", i);
+        demons_[i] =
+            MakeConstraintDemon1(solver(), this, &ArrayBoolAndEq::PropagateVar,
+                                 "PropagateVar", vars_[i]);
         vars_[i]->WhenBound(demons_[i]);
       }
     }
@@ -1241,8 +1242,8 @@ class ArrayBoolAndEq : public CastConstraint {
     }
   }
 
-  void PropagateVar(int index) {
-    if (vars_[index]->Min() == 1) {
+  void PropagateVar(IntVar* var) {
+    if (var->Min() == 1) {
       unbounded_.Decr(solver());
       if (unbounded_.Value() == 0 && !decided_.Switched()) {
         target_var_->SetMin(1);
@@ -1324,8 +1325,9 @@ class ArrayBoolOrEq : public CastConstraint {
   void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
-        demons_[i] = MakeConstraintDemon1(
-            solver(), this, &ArrayBoolOrEq::PropagateVar, "PropagateVar", i);
+        demons_[i] =
+            MakeConstraintDemon1(solver(), this, &ArrayBoolOrEq::PropagateVar,
+                                 "PropagateVar", vars_[i]);
         vars_[i]->WhenBound(demons_[i]);
       }
     }
@@ -1370,8 +1372,8 @@ class ArrayBoolOrEq : public CastConstraint {
     }
   }
 
-  void PropagateVar(int index) {
-    if (vars_[index]->Min() == 0) {
+  void PropagateVar(IntVar* var) {
+    if (var->Min() == 0) {
       unbounded_.Decr(solver());
       if (unbounded_.Value() == 0 && !decided_.Switched()) {
         target_var_->SetMax(0);
@@ -1470,8 +1472,9 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
   void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
-        Demon* u = MakeConstraintDemon1(
-            solver(), this, &SumBooleanLessOrEqualToOne::Update, "Update", i);
+        Demon* u = MakeConstraintDemon1(solver(), this,
+                                        &SumBooleanLessOrEqualToOne::Update,
+                                        "Update", vars_[i]);
         vars_[i]->WhenBound(u);
       }
     }
@@ -1480,26 +1483,27 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
   void InitialPropagate() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Min() == 1) {
-        PushAllToZeroExcept(i);
+        PushAllToZeroExcept(vars_[i]);
         return;
       }
     }
   }
 
-  void Update(int index) {
+  void Update(IntVar* var) {
     if (!inactive_.Switched()) {
-      DCHECK(vars_[index]->Bound());
-      if (vars_[index]->Min() == 1) {
-        PushAllToZeroExcept(index);
+      DCHECK(var->Bound());
+      if (var->Min() == 1) {
+        PushAllToZeroExcept(var);
       }
     }
   }
 
-  void PushAllToZeroExcept(int index) {
+  void PushAllToZeroExcept(IntVar* var) {
     inactive_.Switch(solver());
     for (int i = 0; i < vars_.size(); ++i) {
-      if (i != index && vars_[i]->Max() != 0) {
-        vars_[i]->SetMax(0);
+      IntVar* const other = vars_[i];
+      if (other != var && other->Max() != 0) {
+        other->SetMax(0);
       }
     }
   }
@@ -3091,8 +3095,9 @@ IntExpr* MakeScalProdAux(Solver* solver, const std::vector<IntVar*>& vars,
         if (vars.size() > 8) {
           return solver->MakeSum(
               solver->RegisterIntExpr(
-                          solver->RevAlloc(new PositiveBooleanScalProd(
-                              solver, vars, coefs)))->Var(),
+                        solver->RevAlloc(
+                            new PositiveBooleanScalProd(solver, vars, coefs)))
+                  ->Var(),
               constant);
         } else {
           return solver->MakeSum(

@@ -151,9 +151,8 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
   if (sync_status != BopOptimizerBase::CONTINUE) return sync_status;
 
   sat::SatParameters sat_params;
-  sat_params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
-  sat_params.set_max_deterministic_time(
-      LocalDeterministicTimeLimit(time_limit));
+  sat_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
+  sat_params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
 
   // We use a relatively small conflict limit so that other optimizer get a
   // chance to run if this one is slow. Note that if this limit is reached, we
@@ -220,10 +219,6 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   const std::vector<std::pair<sat::Literal, double>> saved_prefs =
       sat_propagator_->AllPreferences();
 
-  // We want to check both the local time limit and the global time limit, as
-  // during first solution phase the local time limit can be more restrictive.
-  TimeLimit local_time_limit(LocalTimeLimitInSeconds(time_limit),
-                             LocalDeterministicTimeLimit(time_limit));
   const int kMaxNumConflicts = 10;
   int64 best_cost = problem_state.solution().IsFeasible()
                         ? problem_state.solution().GetCost()
@@ -237,7 +232,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   bool objective_need_to_be_overconstrained = (best_cost != kint64max);
 
   bool solution_found = false;
-  while (remaining_num_conflicts > 0 && !local_time_limit.LimitReached()) {
+  while (remaining_num_conflicts > 0 && !time_limit->LimitReached()) {
     ++sat_seed_;
     sat_propagator_->Backtrack(0);
     old_num_failures = sat_propagator_->num_failures();
@@ -278,7 +273,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
     }
 
     const sat::SatSolver::Status sat_status =
-        sat_propagator_->SolveWithTimeLimit(&local_time_limit);
+        sat_propagator_->SolveWithTimeLimit(time_limit);
     if (sat_status == sat::SatSolver::MODEL_SAT) {
       objective_need_to_be_overconstrained = true;
       solution_found = true;
@@ -318,8 +313,6 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
   }
 
   ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
-  time_limit->AdvanceDeterministicTime(
-      local_time_limit.GetElapsedDeterministicTime());
 
   return solution_found ? BopOptimizerBase::SOLUTION_FOUND
                         : BopOptimizerBase::LIMIT_REACHED;
@@ -340,7 +333,9 @@ LinearRelaxation::LinearRelaxation(const BopParameters& parameters,
       offset_(0),
       num_fixed_variables_(-1),
       problem_already_solved_(false),
-      scaled_solution_cost_(glop::kInfinity) {}
+      scaled_solution_cost_(glop::kInfinity),
+      deterministic_time_limit_(
+          parameters.initial_lp_max_deterministic_time()) {}
 
 LinearRelaxation::~LinearRelaxation() {}
 
@@ -493,15 +488,29 @@ glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
     glop_params.set_allow_simplex_algorithm_change(true);
     glop_params.set_use_preprocessing(false);
   }
-  glop_params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
+  // Due to the way the deterministic time works in Glop, an existing lp_solver
+  // might have an initial non zero deterministic time even when a new problem
+  // is loaded.
+  const double initial_deterministic_time = lp_solver_.DeterministicTime();
+  glop_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
   glop_params.set_max_deterministic_time(
-      LocalDeterministicTimeLimit(time_limit));
+      initial_deterministic_time +
+      std::min(time_limit->GetDeterministicTimeLeft(),
+               deterministic_time_limit_));
   lp_solver_.SetParameters(glop_params);
 
-  const double initial_deterministic_time = lp_solver_.DeterministicTime();
   const glop::ProblemStatus lp_status = lp_solver_.Solve(lp_model_);
-  time_limit->AdvanceDeterministicTime(lp_solver_.DeterministicTime() -
-                                       initial_deterministic_time);
+  const double elapsed_deterministic_time =
+      lp_solver_.DeterministicTime() - initial_deterministic_time;
+  time_limit->AdvanceDeterministicTime(elapsed_deterministic_time);
+
+  // Double the deterministic time limit at each iteration until an optimal
+  // solution is found.
+  if (lp_status != glop::ProblemStatus::OPTIMAL &&
+      deterministic_time_limit_ <= elapsed_deterministic_time) {
+    deterministic_time_limit_ *= 2.0;
+  }
+
   return lp_status;
 }
 

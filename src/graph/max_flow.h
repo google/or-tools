@@ -115,7 +115,7 @@
 #define OR_TOOLS_GRAPH_MAX_FLOW_H_
 
 #include <algorithm>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 

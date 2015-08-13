@@ -15,7 +15,7 @@
 //  AllDifferent constraints
 
 #include <algorithm>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 

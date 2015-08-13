@@ -159,6 +159,7 @@ message MPModelRequest {
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a valid license.
     BOP_INTEGER_PROGRAMMING = 12;
 
+    KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13;
   }
   optional SolverType solver_type = 2;
 
@@ -172,6 +173,12 @@ message MPModelRequest {
   //
   // If not specified, the time limit on the solver is the RPC's deadline_left.
   optional double solver_time_limit_seconds = 3;
+
+  // If this is set, then EnableOutput() will be set on the internal MPSolver
+  // that solves the model.
+  // WARNING: if you set this on a request to prod servers, it will be rejected
+  // and yield the RPC Application Error code MPSOLVER_SOLVER_TYPE_UNAVAILABLE.
+  optional bool enable_internal_solver_output = 4 [default = false];
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to

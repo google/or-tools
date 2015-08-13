@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_LP_DATA_LP_DECOMPOSER_H_
 #define OR_TOOLS_LP_DATA_LP_DECOMPOSER_H_
 
-#include "base/unique_ptr.h"
+#include <memory>
 #include <vector>
 
 #include "base/mutex.h"

@@ -21,7 +21,7 @@
 #ifndef OR_TOOLS_GLOP_PREPROCESSOR_H_
 #define OR_TOOLS_GLOP_PREPROCESSOR_H_
 
-#include "base/unique_ptr.h"
+#include <memory>
 
 #include "glop/parameters.pb.h"
 #include "glop/revised_simplex.h"

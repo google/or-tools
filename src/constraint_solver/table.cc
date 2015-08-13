@@ -16,7 +16,7 @@
 
 #include <algorithm>
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -871,7 +871,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     if (mask) {
       const int start =
           std::max(first_active_.Value(), starts_[var_index][value_index]);
-      const int end = std::min(ends_[var_index][value_index], last_active_.Value());
+      const int end =
+          std::min(ends_[var_index][value_index], last_active_.Value());
       for (int offset = start; offset <= end; ++offset) {
         temp_mask_[offset] |= mask[offset];
       }
@@ -1319,10 +1320,12 @@ class TransitionConstraint : public Constraint {
     int64 state_max = kint64min;
     const int nb_vars = vars_.size();
     for (int i = 0; i < transition_table_.NumTuples(); ++i) {
-      state_max = std::max(state_max, transition_table_.Value(i, kStatePosition));
+      state_max =
+          std::max(state_max, transition_table_.Value(i, kStatePosition));
       state_max =
           std::max(state_max, transition_table_.Value(i, kNextStatePosition));
-      state_min = std::min(state_min, transition_table_.Value(i, kStatePosition));
+      state_min =
+          std::min(state_min, transition_table_.Value(i, kStatePosition));
       state_min =
           std::min(state_min, transition_table_.Value(i, kNextStatePosition));
     }

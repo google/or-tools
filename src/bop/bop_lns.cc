@@ -140,9 +140,8 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
   sat::SatParameters sat_params;
   sat_params.set_max_number_of_conflicts(
       parameters.max_number_of_conflicts_in_random_lns());
-  sat_params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
-  sat_params.set_max_deterministic_time(
-      LocalDeterministicTimeLimit(time_limit));
+  sat_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
+  sat_params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
 
   sat_solver_->SetParameters(sat_params);
   const sat::SatSolver::Status sat_status = sat_solver_->Solve();
@@ -167,8 +166,8 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
 namespace {
 // Returns false if the limit is reached while solving the LP.
 bool UseLinearRelaxationForSatAssignmentPreference(
-    const LinearBooleanProblem& problem, double local_time_limit_in_seconds,
-    double local_deterministic_time_limit, sat::SatSolver* sat_solver) {
+    const BopParameters& parameters, const LinearBooleanProblem& problem,
+    sat::SatSolver* sat_solver, TimeLimit* time_limit) {
   // TODO(user): Re-use the lp_model and lp_solver or build a model with only
   //              needed constraints and variables.
   glop::LinearProgram lp_model;
@@ -186,10 +185,14 @@ bool UseLinearRelaxationForSatAssignmentPreference(
 
   glop::LPSolver lp_solver;
   glop::GlopParameters params;
-  params.set_max_time_in_seconds(local_time_limit_in_seconds);
-  params.set_max_deterministic_time(local_deterministic_time_limit);
+  params.set_max_time_in_seconds(time_limit->GetTimeLeft());
+  params.set_max_deterministic_time(
+      std::min(time_limit->GetDeterministicTimeLeft(),
+               parameters.initial_lp_max_deterministic_time()));
   lp_solver.SetParameters(params);
   const glop::ProblemStatus lp_status = lp_solver.Solve(lp_model);
+  time_limit->AdvanceDeterministicTime(lp_solver.DeterministicTime());
+
   if (lp_status != glop::ProblemStatus::OPTIMAL &&
       lp_status != glop::ProblemStatus::PRIMAL_FEASIBLE &&
       lp_status != glop::ProblemStatus::IMPRECISE) {
@@ -241,17 +244,15 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
   // Set-up a sat_propagator_ cleanup task to catch all the exit cases.
   const double initial_dt = sat_propagator_->deterministic_time();
-  double local_sat_solver_dt = 0.0;
   auto sat_propagator_cleanup = ::operations_research::util::MakeCleanup(
-      [initial_dt, this, &learned_info, &time_limit, &local_sat_solver_dt]() {
+      [initial_dt, this, &learned_info, &time_limit]() {
         if (!sat_propagator_->IsModelUnsat()) {
           sat_propagator_->SetAssumptionLevel(0);
           sat_propagator_->RestoreSolverToAssumptionLevel();
           ExtractLearnedInfoFromSatSolver(sat_propagator_, learned_info);
         }
         time_limit->AdvanceDeterministicTime(
-            local_sat_solver_dt + sat_propagator_->deterministic_time() -
-            initial_dt);
+            sat_propagator_->deterministic_time() - initial_dt);
       });
 
   // For the SAT conflicts limit of each LNS, we follow a luby sequence times
@@ -294,9 +295,8 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
       sat::SatParameters params;
       params.set_max_number_of_conflicts(
           local_parameters.max_number_of_conflicts_for_quick_check());
-      params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
-      params.set_max_deterministic_time(
-          LocalDeterministicTimeLimit(time_limit));
+      params.set_max_time_in_seconds(time_limit->GetTimeLeft());
+      params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
       sat_propagator_->SetParameters(params);
       sat_propagator_->SetAssumptionLevel(
           sat_propagator_->CurrentDecisionLevel());
@@ -335,8 +335,8 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
     sat::SatParameters params;
     params.set_max_number_of_conflicts(conflict_limit);
-    params.set_max_time_in_seconds(LocalTimeLimitInSeconds(time_limit));
-    params.set_max_deterministic_time(LocalDeterministicTimeLimit(time_limit));
+    params.set_max_time_in_seconds(time_limit->GetTimeLeft());
+    params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
 
     sat::SatSolver sat_solver;
     sat_solver.SetParameters(params);
@@ -361,12 +361,8 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     }
 
     if (use_lp_to_guide_sat_) {
-      // Note that we use a lower time limit for the relaxation so that we
-      // still have some time to exploit what this is returning.
-      const double ratio = 0.5;
       if (!UseLinearRelaxationForSatAssignmentPreference(
-              problem, ratio * LocalTimeLimitInSeconds(time_limit),
-              ratio * LocalDeterministicTimeLimit(time_limit), &sat_solver)) {
+              parameters, problem, &sat_solver, time_limit)) {
         return BopOptimizerBase::LIMIT_REACHED;
       }
     } else {
@@ -383,7 +379,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
     // Solve the local problem.
     const sat::SatSolver::Status status = sat_solver.Solve();
-    local_sat_solver_dt += sat_solver.deterministic_time();
+    time_limit->AdvanceDeterministicTime(sat_solver.deterministic_time());
     if (status == sat::SatSolver::MODEL_SAT) {
       // We found a solution! abort now.
       SatAssignmentToBopSolution(sat_solver.Assignment(),
@@ -582,7 +578,7 @@ void RelationGraphBasedNeighborhood::GenerateNeighborhood(
     }
     if (sat_propagator->IsModelUnsat()) return;
   }
-  VLOG(1) << "target:" << target << " relaxed:" << num_relaxed << " actual:"
+  VLOG(2) << "target:" << target << " relaxed:" << num_relaxed << " actual:"
           << num_variables - sat_propagator->LiteralTrail().Index();
 }
 

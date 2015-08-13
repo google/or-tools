@@ -299,15 +299,6 @@ void PortfolioOptimizer::CreateOptimizers(
   for (const BopOptimizerMethod& optimizer_method : optimizer_set.methods()) {
     const OptimizerIndex old_size(optimizers_.size());
     AddOptimizer(problem, parameters, optimizer_method);
-
-    // Set the local time limits of the newly added optimizers.
-    // TODO(user): Remove these local time limits.
-    const double ratio = optimizer_method.time_limit_ratio();
-    for (OptimizerIndex i = old_size; i < optimizers_.size(); ++i) {
-      optimizers_[i]->SetLocalTimeLimits(
-          ratio * parameters.max_time_in_seconds(),
-          ratio * parameters.max_deterministic_time());
-    }
   }
 
   selector_.reset(new OptimizerSelector(optimizers_));

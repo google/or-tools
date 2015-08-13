@@ -113,7 +113,8 @@ class BooleanVariableManager {
   // A Boolean variable associated to an IntVar value means (var == value) if
   // it is true. This returns the IntVar and the value. If the pointer is
   // nullptr, then this variable index wasn't created by this class.
-  std::pair<IntVar*, int64> BooleanVariableMeaning(sat::VariableIndex var) const {
+  std::pair<IntVar*, int64> BooleanVariableMeaning(
+      sat::VariableIndex var) const {
     DCHECK_GE(var, 0);
     // This test is necessary because the SAT solver may know of variables not
     // registered by this class.
@@ -173,7 +174,8 @@ class SatConstraint : public Constraint {
       const sat::Literal literal = trail[propagated_trail_index_];
       const sat::VariableIndex var = literal.Variable();
       if (trail.Info(var).type != sat::AssignmentInfo::SEARCH_DECISION) {
-        std::pair<IntVar*, int64> p = variable_manager_.BooleanVariableMeaning(var);
+        std::pair<IntVar*, int64> p =
+            variable_manager_.BooleanVariableMeaning(var);
         IntVar* int_var = p.first;
         const int64 value = p.second;
         if (int_var != nullptr) {

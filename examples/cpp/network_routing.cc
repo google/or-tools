@@ -675,13 +675,13 @@ class NetworkRoutingSolver {
 
   static const int kOneThousand = 1000;
 
-  int64 EvaluateMarginalCost(std::vector<IntVar*>* path_costs, int64 var,
+  int64 EvaluateMarginalCost(const std::vector<IntVar*>& path_costs, int64 var,
                              int64 val) {
     int64 best_cost = 0;
     const int64 traffic = demands_array_[var].traffic;
     const OnePath& path = all_paths_[var][val];
     for (const int arc : path) {
-      const int64 current_percent = (*path_costs)[arc]->Min();
+      const int64 current_percent = path_costs[arc]->Min();
       const int64 current_capacity = arc_capacity_[arc];
       const int64 expected_percent =
           current_percent + traffic * kOneThousand / current_capacity;
@@ -706,8 +706,7 @@ class NetworkRoutingSolver {
     virtual ~ApplyMaxDiscrepancy() {}
 
     virtual Decision* Next(Solver* const solver) {
-      solver->SetBranchSelector(
-          NewPermanentCallback(&NetworkRoutingSolver::MaxDiscrepancy1));
+      solver->SetBranchSelector([solver]() { return MaxDiscrepancy1(solver); });
       return NULL;
     }
 
@@ -802,10 +801,11 @@ class NetworkRoutingSolver {
     }
 
     // DecisionBuilder.
-    DecisionBuilder* const db = solver.MakePhase(
-        decision_vars, Solver::CHOOSE_RANDOM,
-        NewPermanentCallback(this, &NetworkRoutingSolver::EvaluateMarginalCost,
-                             &usage_costs));
+    DecisionBuilder* const db =
+        solver.MakePhase(decision_vars, Solver::CHOOSE_RANDOM,
+                         [this, &usage_costs](int64 var, int64 value) {
+                           return EvaluateMarginalCost(usage_costs, var, value);
+                         });
 
     // Limits.
     if (time_limit != 0 || fail_limit != 0) {
@@ -832,10 +832,11 @@ class NetworkRoutingSolver {
                          actual_usage_costs));
     SearchLimit* const lns_limit =
         solver.MakeLimit(kint64max, kint64max, FLAGS_lns_limit, kint64max);
-    DecisionBuilder* const inner_db = solver.MakePhase(
-        decision_vars, Solver::CHOOSE_RANDOM,
-        NewPermanentCallback(this, &NetworkRoutingSolver::EvaluateMarginalCost,
-                             &usage_costs));
+    DecisionBuilder* const inner_db =
+        solver.MakePhase(decision_vars, Solver::CHOOSE_RANDOM,
+                         [this, &usage_costs](int64 var, int64 value) {
+                           return EvaluateMarginalCost(usage_costs, var, value);
+                         });
 
     DecisionBuilder* const apply = solver.RevAlloc(new ApplyMaxDiscrepancy);
     DecisionBuilder* const max_discrepency_db = solver.Compose(apply, inner_db);

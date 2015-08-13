@@ -16,7 +16,7 @@
 #ifndef OR_TOOLS_SAT_SAT_BASE_H_
 #define OR_TOOLS_SAT_SAT_BASE_H_
 
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 

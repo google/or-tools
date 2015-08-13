@@ -20,7 +20,7 @@
 #define OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
 
 #include <algorithm>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 

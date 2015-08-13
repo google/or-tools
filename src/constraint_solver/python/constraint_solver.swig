@@ -33,6 +33,7 @@
 %include "base/base.swig"
 
 %import "util/python/data.swig"
+%include "util/python/functions.swig"
 
 // Callback wrapping. See base/python/callbacks.swig.
 #define FATAL_CALLBACK_EXCEPTION
@@ -192,116 +193,6 @@ PY_CONVERT(LocalSearchOperator);
 PY_CONVERT(LocalSearchFilter);
 #undef PY_CONVERT
 
-// Create input mapping for Solver::IndexEvaluator1
-%{
-static int64 PyCallbackIndexEvaluator1(
-    PyObject* pyfunc,
-    int64 i) {
-  int64 result = 0;
-  // Cast to int needed, no int64 support
-  PyObject* arglist = Py_BuildValue("l", i);
-  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-  Py_DECREF(arglist);
-  if (pyresult) {
-    result = PyInt_AsLong(pyresult);
-  }
-  Py_XDECREF(pyresult);
-  return result;
-}
-%}
-%typemap(in) operations_research::Solver::IndexEvaluator1* {
-  if (!PyCallable_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-    SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallbackIndexEvaluator1, $input);
-}
-// Create conversion of vectors of Solver::IndexEvaluator1
-%{
-template<>
-bool PyObjAs(PyObject* py_obj,
-             operations_research::Solver::IndexEvaluator1** b) {
-  if (!PyCallable_Check(py_obj)) {
-    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-    return false;
-  }
-  *b = NewPermanentCallback(&PyCallbackIndexEvaluator1, py_obj);
-  return true;
-}
-%}
-
-// Create input mapping for Solver::IndexEvaluator2
-%{
-static int64 PyCallbackIndexEvaluator2(PyObject* pyfunc, int64 i, int64 j) {
-  int64 result = 0;
-  // Cast to int needed, no int64 support
-  PyObject* arglist = Py_BuildValue("ll", i, j);
-  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-  Py_DECREF(arglist);
-  if (pyresult) {
-    result = PyInt_AsLong(pyresult);
-  }
-  Py_XDECREF(pyresult);
-  return result;
-}
-%}
-%typemap(in) operations_research::Solver::IndexEvaluator2* {
-  if (!PyCallable_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-    SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallbackIndexEvaluator2, $input);
-}
-// Create conversion of vectors of Solver::IndexEvaluator2
-%{
-template<>
-bool PyObjAs(PyObject* py_obj,
-             operations_research::Solver::IndexEvaluator2** b) {
-  if (!PyCallable_Check(py_obj)) {
-    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-    return false;
-  }
-  *b = NewPermanentCallback(&PyCallbackIndexEvaluator2, py_obj);
-  return true;
-}
-%}
-
-// Create input mapping for Solver::IndexEvaluator2
-%{
-static int64 PyCallbackIndexEvaluator3(PyObject* pyfunc, int64 i, int64 j,
-                                       int64 k) {
-  int64 result = 0;
-  // Cast to int needed, no int64 support
-  PyObject* arglist = Py_BuildValue("lll", i, j, k);
-  PyObject* pyresult = PyEval_CallObject(pyfunc, arglist);
-  Py_DECREF(arglist);
-  if (pyresult) {
-    result = PyInt_AsLong(pyresult);
-  }
-  Py_XDECREF(pyresult);
-  return result;
-}
-%}
-%typemap(in) operations_research::Solver::IndexEvaluator3* {
-  if (!PyCallable_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-    SWIG_fail;
-  }
-  $1 = NewPermanentCallback(&PyCallbackIndexEvaluator3, $input);
-}
-// Create conversion of vectors of Solver::IndexEvaluator3
-%{
-template<>
-bool PyObjAs(PyObject* py_obj,
-             operations_research::Solver::IndexEvaluator3** b) {
-  if (!PyCallable_Check(py_obj)) {
-    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
-    return false;
-  }
-  *b = NewPermanentCallback(&PyCallbackIndexEvaluator3, py_obj);
-  return true;
-}
-%}
 
 // ============= Extensions ==============
 
@@ -323,6 +214,11 @@ bool PyObjAs(PyObject* py_obj,
 Constraint* PythonMethodName(IntervalVar* other) {
   return $self->solver()->MakeIntervalVarRelation(
       $self, operations_research::Solver::CppEnumName, other);
+}
+
+Constraint* PythonMethodName##WithDelay(IntervalVar* other, int64 delay) {
+  return $self->solver()->MakeIntervalVarRelationWithDelay(
+      $self, operations_research::Solver::CppEnumName, other, delay);
 }
 %enddef
 %define SCHEDULING_CONSTRAINT(PythonMethodName, CppEnumName)
@@ -377,16 +273,16 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 %extend operations_research::Solver {
   Constraint* TreeNoCycle(const std::vector<IntVar*>& nexts,
                           const std::vector<IntVar*>& active,
-                          ResultCallback1<bool, int64>* callback = nullptr) {
+                          Solver::IndexFilter1 callback = nullptr) {
     return $self->MakeNoCycle(nexts, active, callback, false);
   }
 
   SearchMonitor* SearchLogWithCallback(int period,
-                                       ResultCallback<std::string>* callback) {
+                                       std::function<std::string()> callback) {
     return $self->MakeSearchLog(period, callback);
   }
 
-  IntExpr* ElementFunction(ResultCallback1<int64, int64>* values,
+  IntExpr* ElementFunction(std::function<int64(int64)> values,
                            IntVar* const index) {
     return $self->MakeElement(values, index);
   }
@@ -403,7 +299,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 
   DecisionBuilder* VarEvalValStrPhase(
       const std::vector<IntVar*>& vars,
-      ResultCallback1<int64, int64>* var_evaluator,
+      std::function<int64(int64)> var_evaluator,
       operations_research::Solver::IntValueStrategy val_str) {
     return $self->MakePhase(vars, var_evaluator, val_str);
   }
@@ -411,44 +307,44 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   DecisionBuilder* VarStrValEvalPhase(
       const std::vector<IntVar*>& vars,
       operations_research::Solver::IntVarStrategy var_str,
-      ResultCallback2<int64, int64, int64>* val_eval) {
+      Solver::IndexEvaluator2 val_eval) {
     return $self->MakePhase(vars, var_str, val_eval);
   }
 
   DecisionBuilder* VarEvalValEvalPhase(
       const std::vector<IntVar*>& vars,
-      ResultCallback1<int64, int64>* var_eval,
-      ResultCallback2<int64, int64, int64>* val_eval) {
+      std::function<int64(int64)> var_eval,
+      Solver::IndexEvaluator2 val_eval) {
     return $self->MakePhase(vars, var_eval, val_eval);
   }
 
   DecisionBuilder* VarStrValEvalTieBreakPhase(
       const std::vector<IntVar*>& vars,
       operations_research::Solver::IntVarStrategy var_str,
-      ResultCallback2<int64, int64, int64>* val_eval,
-      ResultCallback1<int64, int64>* tie_breaker) {
+      Solver::IndexEvaluator2 val_eval,
+      std::function<int64(int64)> tie_breaker) {
     return $self->MakePhase(vars, var_str, val_eval, tie_breaker);
   }
 
   DecisionBuilder* VarEvalValEvalTieBreakPhase(
       const std::vector<IntVar*>& vars,
-      ResultCallback1<int64, int64>* var_eval,
-      ResultCallback2<int64, int64, int64>* val_eval,
-      ResultCallback1<int64, int64>* tie_breaker) {
+      std::function<int64(int64)> var_eval,
+      Solver::IndexEvaluator2 val_eval,
+      std::function<int64(int64)> tie_breaker) {
     return $self->MakePhase(vars, var_eval, val_eval, tie_breaker);
   }
 
   DecisionBuilder* EvalEvalStrPhase(
       const std::vector<IntVar*>& vars,
-      ResultCallback2<int64, int64, int64>* evaluator,
+      Solver::IndexEvaluator2 evaluator,
       operations_research::Solver::EvaluatorStrategy str) {
     return $self->MakePhase(vars, evaluator, str);
   }
 
   DecisionBuilder* EvalEvalStrTieBreakPhase(
       const std::vector<IntVar*>& vars,
-      ResultCallback2<int64, int64, int64>* evaluator,
-      ResultCallback1<int64, int64>* tie_breaker,
+      Solver::IndexEvaluator2 evaluator,
+      Solver::IndexEvaluator1 tie_breaker,
       operations_research::Solver::EvaluatorStrategy str) {
     return $self->MakePhase(vars, evaluator, tie_breaker, str);
   }
@@ -456,7 +352,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   SearchMonitor* GuidedLocalSearch(
       bool maximize,
       IntVar* const objective,
-      ResultCallback2<int64, int64, int64>* objective_function,
+      Solver::IndexEvaluator2 objective_function,
       int64 step,
       const std::vector<IntVar*>& vars,
       double penalty_factor) {
@@ -470,7 +366,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
 
   LocalSearchFilter* LocalSearchObjectiveFilter(
       const std::vector<IntVar*>& vars,
-      ResultCallback2<int64, int64, int64>* values,
+      Solver::IndexEvaluator2 values,
       IntVar* const objective,
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum) {
@@ -835,8 +731,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 // We "convert" the C++ flags to python gflags. We also need to actually
 // pass the value from the python flags to the C++ ones, upon the Solver
 // construction.
-// TODO(user): cp_trace_propagation is set too late to be useful. Investigate
-// and fix it.
 // Phase 1: declare the C++ flags.
 %import "base/commandlineflags.h"
 %{
@@ -1494,23 +1388,41 @@ namespace operations_research {
 %unignore SearchMonitor::SearchMonitor;
 %unignore SearchMonitor::~SearchMonitor;
 %unignore SearchMonitor::EnterSearch;
+%feature("director") SearchMonitor::EnterSearch;
 %unignore SearchMonitor::RestartSearch;
+%feature("director") SearchMonitor::RestartSearch;
 %unignore SearchMonitor::ExitSearch;
+%feature("director") SearchMonitor::ExitSearch;
 %unignore SearchMonitor::BeginNextDecision;
+%feature("director") SearchMonitor::BeginNextDecision;
 %unignore SearchMonitor::EndNextDecision;
+%feature("director") SearchMonitor::EndNextDecision;
 %unignore SearchMonitor::ApplyDecision;
+%feature("director") SearchMonitor::ApplyDecision;
 %unignore SearchMonitor::RefuteDecision;
+%feature("director") SearchMonitor::RefuteDecision;
 %unignore SearchMonitor::AfterDecision;
+%feature("director") SearchMonitor::AfterDecision;
 %unignore SearchMonitor::BeginFail;
+%feature("director") SearchMonitor::BeginFail;
 %unignore SearchMonitor::EndFail;
+%feature("director") SearchMonitor::EndFail;
 %unignore SearchMonitor::BeginInitialPropagation;
+%feature("director") SearchMonitor::BeginInitialPropagation;
 %unignore SearchMonitor::EndInitialPropagation;
+%feature("director") SearchMonitor::EndInitialPropagation;
 %unignore SearchMonitor::AcceptSolution;
+%feature("director") SearchMonitor::AcceptSolution;
 %unignore SearchMonitor::AtSolution;
+%feature("director") SearchMonitor::AtSolution;
 %unignore SearchMonitor::NoMoreSolutions;
+%feature("director") SearchMonitor::NoMoreSolutions;
 %unignore SearchMonitor::LocalOptimum;
+%feature("director") SearchMonitor::LocalOptimum;
 %unignore SearchMonitor::AcceptDelta;
+%feature("director") SearchMonitor::AcceptDelta;
 %unignore SearchMonitor::AcceptNeighbor;
+%feature("director") SearchMonitor::AcceptNeighbor;
 %rename (solver) SearchMonitor::solver;
 %feature("nodirector") SearchMonitor::solver;
 
@@ -2308,3 +2220,4 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
+

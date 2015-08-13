@@ -45,35 +45,93 @@ VECTOR_AS_JAVA_ARRAY(operations_research::RoutingModel::NodeIndex, int, Int);
 %typemap(jstype) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "int[][]"
 %typemap(javain) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "$javainput"
 
-%typemap(in) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&
-(std::vector<std::vector<operations_research::RoutingModel::NodeIndex> > temp) {
-  if ($input) {
-    const int size = jenv->GetArrayLength($input);
-    temp.clear();
-    temp.resize(size);
-    for (int i = 0; i < size; ++i) {
-      jintArray values =
-          (jintArray)jenv->GetObjectArrayElement((jobjectArray)$input, i);
-      const int inner_size = jenv->GetArrayLength(values);
-      jint* inner_values = jenv->GetIntArrayElements(values, nullptr);
-      for (int j = 0; j < inner_size; ++j) {
-        const int value = inner_values[j];
-        temp[i].push_back(operations_research::RoutingModel::NodeIndex(value));
-      }
-      jenv->ReleaseIntArrayElements(values, inner_values, 0);
-      jenv->DeleteLocalRef(values);
-    }
-    $1 = &temp;
-  } else {
-    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
-    return $null;
-  }
-}
-
-// Create input mapping for NodeEvaluator2
-%module(directors="1") main
+// Useful directors.
+%feature("director") LongResultCallback1;
+%feature("director") LongResultCallback2;
+%feature("director") LongResultCallback3;
 %feature("director") NodeEvaluator2;
+
+%include "std_vector.i"
+
 %{
+#include <vector>
+#include "base/callback.h"
+#include "base/integral_types.h"
+
+// When a director is created for a class with SWIG, the C++ part of the
+// director keeps a JNI global reference to the Java part. This global reference
+// only gets deleted in the destructor of the C++ part, but by default, this
+// only happens when the Java part is processed by the GC (however, this never
+// happens, because there is the JNI global reference...).
+//
+// To break the cycle, it is necessary to delete the C++ part manually. For the
+// callback classes, this is done by deriving them from the respective C++
+// ResultCallback classes. When the java callback class is asked for a C++
+// callback class, it hands over its C++ part. It is expected, that whoever
+// receives the C++ callback class, owns it and destroys it after they no longer
+// need it. But by destroying it, they also break the reference cycle and the
+// Java part may be processed by the GC.
+//
+// However, this behavior also means that the callback class can only be used
+// in one context and that if its C++ callback class is not received by someone
+// who destroys it in the end, it will stay in memory forever.
+class LongResultCallback1 : private ResultCallback1<int64, int64> {
+ public:
+  LongResultCallback1() : used_as_permanent_handler_(false) {}
+  virtual int64 run(int64) = 0;
+  ResultCallback1<int64, int64>* getPermanentCallback() {
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
+  }
+  virtual ~LongResultCallback1() {}
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  virtual int64 Run(int64 i) {
+    return run(i);
+  }
+  bool used_as_permanent_handler_;
+};
+
+class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
+ public:
+  LongResultCallback2() : used_as_permanent_handler_(false) {}
+  virtual ~LongResultCallback2() {}
+  virtual int64 run(int64, int64) = 0;
+  ResultCallback2<int64, int64, int64>* getPermanentCallback() {
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
+  }
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  virtual int64 Run(int64 i, int64 j) {
+    return run(i, j);
+  }
+  bool used_as_permanent_handler_;
+};
+
+class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
+ public:
+  LongResultCallback3() : used_as_permanent_handler_(false) {}
+  virtual ~LongResultCallback3() {}
+  virtual int64 run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* getPermanentCallback() {
+    CHECK(!used_as_permanent_handler_);
+    used_as_permanent_handler_ = true;
+    return this;
+  }
+ private:
+  virtual bool IsRepeatable() const { return true; }
+
+  virtual int64 Run(int64 i, int64 j, int64 k) {
+    return run(i, j, k);
+  }
+  bool used_as_permanent_handler_;
+};
+
 // When created, instances of NodeEvaluator2 must be used in a context where
 // someone takes ownership of the C++ part of the NodeEvaluator2 and deletes
 // it when no longer needed. Otherwise, the object would remain on the heap
@@ -99,6 +157,40 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 };
 %}
 
+class LongResultCallback1 : private ResultCallback1<int64, int64> {
+ public:
+  virtual int64 run(int64) = 0;
+  ResultCallback1<int64, int64>* getPermanentCallback();
+  virtual ~LongResultCallback1();
+
+ private:
+  virtual bool IsRepeatable() const;
+  virtual int64 Run(int64 i);
+  bool used_as_permanent_handler_;
+};
+class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
+ public:
+  virtual int64 run(int64, int64) = 0;
+  ResultCallback2<int64, int64, int64>* getPermanentCallback();
+  virtual ~LongResultCallback2();
+
+ private:
+  virtual bool IsRepeatable() const;
+  virtual int64 Run(int64 i, int64 j);
+  bool used_as_permanent_handler_;
+};
+class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
+ public:
+  virtual int64 run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* getPermanentCallback();
+  virtual ~LongResultCallback3();
+
+ private:
+  virtual bool IsRepeatable() const;
+  virtual int64 Run(int64 i, int64 j, int64 k);
+  bool used_as_permanent_handler_;
+};
+
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
   NodeEvaluator2() : used_as_permanent_handler_(false) {}
@@ -119,8 +211,43 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
   bool used_as_permanent_handler_;
 };
 
+// Typemaps for callbacks in java.
+%typemap(jstype) ResultCallback1<int64, int64>* "LongResultCallback1";
+%typemap(javain) ResultCallback1<int64, int64>* "$descriptor(ResultCallback1<int64, int64>*).getCPtr($javainput.getPermanentCallback())";
+
+%typemap(jstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
+%typemap(javain) ResultCallback2<int64, int64, int64>* "$descriptor(ResultCallback2<int64, int64, int64>*).getCPtr($javainput.getPermanentCallback())";
+
+%typemap(jstype) ResultCallback3<int64, int64, int64, int64>* "LongResultCallback3";
+%typemap(javain) ResultCallback3<int64, int64, int64, int64>* "$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($javainput.getPermanentCallback())";
+
 %typemap(jstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
 %typemap(javain) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($javainput.getPermanentCallback())";
+
+%typemap(in) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&
+(std::vector<std::vector<operations_research::RoutingModel::NodeIndex> > temp) {
+  if ($input) {
+    const int size = jenv->GetArrayLength($input);
+    temp.clear();
+    temp.resize(size);
+    for (int i = 0; i < size; ++i) {
+      jintArray values =
+          (jintArray)jenv->GetObjectArrayElement((jobjectArray)$input, i);
+      const int inner_size = jenv->GetArrayLength(values);
+      jint* inner_values = jenv->GetIntArrayElements(values, nullptr);
+      for (int j = 0; j < inner_size; ++j) {
+        const int value = inner_values[j];
+        temp[i].push_back(operations_research::RoutingModel::NodeIndex(value));
+      }
+      jenv->ReleaseIntArrayElements(values, inner_values, 0);
+      jenv->DeleteLocalRef(values);
+    }
+    $1 = &temp;
+  } else {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null table");
+    return $null;
+  }
+}
 
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,
@@ -137,14 +264,11 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
                           int64 capacity,
                           bool fix_start_cumul_to_zero,
                           const std::string& name) {
-    DCHECK_EQ(values.size(), self->nodes());
-    self->AddVectorDimension(values.data(), capacity,
-                             fix_start_cumul_to_zero, name);
+    DCHECK_EQ(values.size(), $self->nodes());
+    $self->AddVectorDimension(values.data(), capacity,
+                              fix_start_cumul_to_zero, name);
   }
 }
-
-%ignore operations_research::RoutingModel::WrapIndexEvaluator(
-    Solver::IndexEvaluator2* evaluator);
 
 %ignore operations_research::RoutingModel::RoutingModel(
     int nodes, int vehicles,
@@ -216,4 +340,4 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 
 
 // Wrap cp includes
-%include constraint_solver/routing.h
+%include "constraint_solver/routing.h"

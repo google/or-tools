@@ -179,8 +179,8 @@ struct ConstraintWithIo {
   }
 
   std::string DebugString() const {
-    return StringPrintf("Ctio(%s, %d, deps_size = %lu)",
-                        ct->type.c_str(), index, required.size());
+    return StringPrintf("Ctio(%s, %d, deps_size = %lu)", ct->type.c_str(),
+                        index, required.size());
   }
 };
 
@@ -276,7 +276,7 @@ bool FzSolver::Extract() {
       // Recovery. We pick the last constraint (min number of required variable)
       // And we clean all of them (mark as non target).
       std::vector<FzIntegerVariable*> required_vars(ctio->required.begin(),
-                                                    ctio->required.end());
+                                               ctio->required.end());
       for (FzIntegerVariable* const fz_var : required_vars) {
         FZDLOG << "  - clean " << fz_var->DebugString() << FZENDL;
         if (fz_var->defining_constraint != nullptr) {

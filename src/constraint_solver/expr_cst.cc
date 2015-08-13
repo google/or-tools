@@ -1083,8 +1083,7 @@ class NotMemberCt : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeMemberCt(IntExpr* expr,
-                                 const std::vector<int64>& values) {
+Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values) {
   const int64 coeff = ExtractExprProductCoeff(&expr);
   if (coeff == 0) {
     return std::find(values.begin(), values.end(), 0) == values.end()

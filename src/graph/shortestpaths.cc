@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <cstring>
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include <utility>
 
 #include "base/callback.h"

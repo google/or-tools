@@ -113,8 +113,8 @@ class TreeArrayConstraint : public Constraint {
     tree_[depth][position].start_max.SetValue(solver(), start_max);
     tree_[depth][position].end_min.SetValue(solver(), end_min);
     tree_[depth][position].end_max.SetValue(solver(), end_max);
-    tree_[depth][position]
-        .performed.SetValue(solver(), static_cast<int>(performed));
+    tree_[depth][position].performed.SetValue(solver(),
+                                              static_cast<int>(performed));
   }
 
   int64 StartMin(int depth, int position) const {
@@ -505,12 +505,14 @@ class CoverConstraint : public TreeArrayConstraint {
       if (performed != UNPERFORMED) {
         *bucket_start_min =
             std::min(*bucket_start_min, StartMin(parent_depth + 1, k));
-        *bucket_end_max = std::max(*bucket_end_max, EndMax(parent_depth + 1, k));
+        *bucket_end_max =
+            std::max(*bucket_end_max, EndMax(parent_depth + 1, k));
         may_be_performed_count++;
         if (performed == PERFORMED) {
           *bucket_start_max =
               std::min(*bucket_start_max, StartMax(parent_depth + 1, k));
-          *bucket_end_min = std::max(*bucket_end_min, EndMin(parent_depth + 1, k));
+          *bucket_end_min =
+              std::max(*bucket_end_min, EndMin(parent_depth + 1, k));
           must_be_performed_count++;
         }
       }

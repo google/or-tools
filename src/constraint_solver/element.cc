@@ -13,11 +13,10 @@
 
 
 #include <algorithm>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
@@ -541,8 +540,8 @@ IntExpr* Solver::MakeElement(const std::vector<int>& values, IntVar* const index
 namespace {
 class IntExprFunctionElement : public BaseIntExprElement {
  public:
-  IntExprFunctionElement(Solver* const s, ResultCallback1<int64, int64>* values,
-                         IntVar* const expr, bool del);
+  IntExprFunctionElement(Solver* const s, Solver::IndexEvaluator1 values,
+                         IntVar* const expr);
   ~IntExprFunctionElement() override;
 
   std::string name() const override {
@@ -568,71 +567,64 @@ class IntExprFunctionElement : public BaseIntExprElement {
   }
 
  protected:
-  int64 ElementValue(int index) const override { return values_->Run(index); }
+  int64 ElementValue(int index) const override { return values_(index); }
   int64 ExprMin() const override { return expr_->Min(); }
   int64 ExprMax() const override { return expr_->Max(); }
 
  private:
-  ResultCallback1<int64, int64>* values_;
-  const bool delete_;
+  Solver::IndexEvaluator1 values_;
 };
 
-IntExprFunctionElement::IntExprFunctionElement(
-    Solver* const s, ResultCallback1<int64, int64>* values, IntVar* const e,
-    bool del)
-    : BaseIntExprElement(s, e), values_(values), delete_(del) {
-  CHECK(values) << "null pointer";
-  values->CheckIsRepeatable();
+IntExprFunctionElement::IntExprFunctionElement(Solver* const s,
+                                               Solver::IndexEvaluator1 values,
+                                               IntVar* const e)
+    : BaseIntExprElement(s, e), values_(std::move(values)) {
+  CHECK(values_ != nullptr);
 }
 
-IntExprFunctionElement::~IntExprFunctionElement() {
-  if (delete_) {
-    delete values_;
-  }
-}
+IntExprFunctionElement::~IntExprFunctionElement() {}
 
 // ----- Increasing Element -----
 
 class IncreasingIntExprFunctionElement : public BaseIntExpr {
  public:
   IncreasingIntExprFunctionElement(Solver* const s,
-                                   ResultCallback1<int64, int64>* values,
+                                   Solver::IndexEvaluator1 values,
                                    IntVar* const index)
-      : BaseIntExpr(s), values_(values), index_(index) {
-    DCHECK(values);
+      : BaseIntExpr(s), values_(std::move(values)), index_(index) {
+    DCHECK(values_ != nullptr);
     DCHECK(index);
     DCHECK(s);
-    values->CheckIsRepeatable();
   }
 
-  ~IncreasingIntExprFunctionElement() override { delete values_; }
+  ~IncreasingIntExprFunctionElement() override {}
 
-  int64 Min() const override { return values_->Run(index_->Min()); }
+  int64 Min() const override { return values_(index_->Min()); }
 
   void SetMin(int64 m) override {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
-    if (m > values_->Run(expression_max)) {
+    if (m > values_(expression_max)) {
       solver()->Fail();
     }
     int64 nmin = expression_min;
-    while (nmin <= expression_max && values_->Run(nmin) < m) {
+    while (nmin <= expression_max && values_(nmin) < m) {
       nmin++;
     }
     DCHECK_LE(nmin, expression_max);
     index_->SetMin(nmin);
   }
 
-  int64 Max() const override { return values_->Run(index_->Max()); }
+  int64 Max() const override { return values_(index_->Max()); }
 
   void SetMax(int64 m) override {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
-    if (m < values_->Run(expression_min)) {
+    if (m < values_(expression_min)) {
       solver()->Fail();
     }
     int64 nmax = expression_max;
-    while (nmax >= expression_min && values_->Run(nmax) > m) {
+    while (nmax >= expression_min && values_(nmax) > m) {
       nmax--;
     }
     DCHECK_GE(nmax, expression_min);
@@ -642,17 +634,17 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
   void SetRange(int64 mi, int64 ma) override {
     const int64 expression_min = index_->Min();
     const int64 expression_max = index_->Max();
-    if (mi > ma || ma < values_->Run(expression_min) ||
-        mi > values_->Run(expression_max)) {
+    if (mi > ma || ma < values_(expression_min) ||
+        mi > values_(expression_max)) {
       solver()->Fail();
     }
     int64 nmax = expression_max;
-    while (nmax >= expression_min && values_->Run(nmax) > ma) {
+    while (nmax >= expression_min && values_(nmax) > ma) {
       nmax--;
     }
     DCHECK_GE(nmax, expression_min);
     int64 nmin = expression_min;
-    while (nmin <= nmax && values_->Run(nmin) < mi) {
+    while (nmin <= nmax && values_(nmin) < mi) {
       nmin++;
     }
     DCHECK_LE(nmin, nmax);
@@ -687,49 +679,30 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
   }
 
  private:
-  ResultCallback1<int64, int64>* values_;
+  Solver::IndexEvaluator1 values_;
   IntVar* const index_;
 };
 }  // namespace
 
-IntExpr* Solver::MakeElement(ResultCallback1<int64, int64>* values,
+IntExpr* Solver::MakeElement(Solver::IndexEvaluator1 values,
                              IntVar* const index) {
   CHECK_EQ(this, index->solver());
   return RegisterIntExpr(
-      RevAlloc(new IntExprFunctionElement(this, values, index, true)));
+      RevAlloc(new IntExprFunctionElement(this, values, index)));
 }
 
-namespace {
-class OppositeCallback : public BaseObject {
- public:
-  explicit OppositeCallback(ResultCallback1<int64, int64>* const values)
-      : values_(values) {
-    CHECK(values_ != nullptr);
-    values_->CheckIsRepeatable();
-  }
-
-  ~OppositeCallback() override {}
-
-  int64 Run(int64 index) { return -values_->Run(index); }
-
-  std::string DebugString() const override { return "OppositeCallback"; }
-
- public:
-  std::unique_ptr<ResultCallback1<int64, int64>> values_;
-};
-}  // namespace
-
-IntExpr* Solver::MakeMonotonicElement(ResultCallback1<int64, int64>* values,
+IntExpr* Solver::MakeMonotonicElement(Solver::IndexEvaluator1 values,
                                       bool increasing, IntVar* const index) {
   CHECK_EQ(this, index->solver());
   if (increasing) {
     return RegisterIntExpr(
         RevAlloc(new IncreasingIntExprFunctionElement(this, values, index)));
   } else {
-    OppositeCallback* const opposite_callback =
-        RevAlloc(new OppositeCallback(values));
-    ResultCallback1<int64, int64>* opposite_values =
-        NewPermanentCallback(opposite_callback, &OppositeCallback::Run);
+    // You need to pass by copy such that opposite_value does not include a
+    // dandling reference when leaving this scope.
+    Solver::IndexEvaluator1 opposite_values = [values](int64 i) {
+      return -values(i);
+    };
     return RegisterIntExpr(MakeOpposite(RevAlloc(
         new IncreasingIntExprFunctionElement(this, opposite_values, index))));
   }
@@ -740,8 +713,7 @@ IntExpr* Solver::MakeMonotonicElement(ResultCallback1<int64, int64>* values,
 namespace {
 class IntIntExprFunctionElement : public BaseIntExpr {
  public:
-  IntIntExprFunctionElement(Solver* const s,
-                            ResultCallback2<int64, int64, int64>* values,
+  IntIntExprFunctionElement(Solver* const s, Solver::IndexEvaluator2 values,
                             IntVar* const expr1, IntVar* const expr2);
   ~IntIntExprFunctionElement() override;
   std::string DebugString() const override {
@@ -774,7 +746,7 @@ class IntIntExprFunctionElement : public BaseIntExpr {
 
  private:
   int64 ElementValue(int index1, int index2) const {
-    return values_->Run(index1, index2);
+    return values_(index1, index2);
   }
   void UpdateSupports() const;
 
@@ -787,14 +759,14 @@ class IntIntExprFunctionElement : public BaseIntExpr {
   mutable int max_support1_;
   mutable int max_support2_;
   mutable bool initial_update_;
-  std::unique_ptr<ResultCallback2<int64, int64, int64>> values_;
+  Solver::IndexEvaluator2 values_;
   IntVarIterator* const expr1_iterator_;
   IntVarIterator* const expr2_iterator_;
 };
 
 IntIntExprFunctionElement::IntIntExprFunctionElement(
-    Solver* const s, ResultCallback2<int64, int64, int64>* values,
-    IntVar* const expr1, IntVar* const expr2)
+    Solver* const s, Solver::IndexEvaluator2 values, IntVar* const expr1,
+    IntVar* const expr2)
     : BaseIntExpr(s),
       expr1_(expr1),
       expr2_(expr2),
@@ -805,11 +777,10 @@ IntIntExprFunctionElement::IntIntExprFunctionElement(
       max_support1_(-1),
       max_support2_(-1),
       initial_update_(true),
-      values_(values),
+      values_(std::move(values)),
       expr1_iterator_(expr1_->MakeDomainIterator(true)),
       expr2_iterator_(expr2_->MakeDomainIterator(true)) {
-  CHECK(values) << "null pointer";
-  values->CheckIsRepeatable();
+  CHECK(values_ != nullptr);
 }
 
 IntIntExprFunctionElement::~IntIntExprFunctionElement() {}
@@ -955,7 +926,7 @@ void IntIntExprFunctionElement::UpdateSupports() const {
 }
 }  // namespace
 
-IntExpr* Solver::MakeElement(ResultCallback2<int64, int64, int64>* values,
+IntExpr* Solver::MakeElement(Solver::IndexEvaluator2 values,
                              IntVar* const index1, IntVar* const index2) {
   CHECK_EQ(this, index1->solver());
   CHECK_EQ(this, index2->solver());
@@ -976,9 +947,9 @@ class IfThenElseCt : public CastConstraint {
         zero_(zero),
         one_(one) {}
 
-  virtual ~IfThenElseCt() {}
+  ~IfThenElseCt() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
     condition_->WhenBound(demon);
     one_->WhenRange(demon);
@@ -986,7 +957,7 @@ class IfThenElseCt : public CastConstraint {
     target_var_->WhenRange(demon);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     condition_->SetRange(0, 1);
     const int64 target_var_min = target_var_->Min();
     const int64 target_var_max = target_var_->Max();
@@ -1021,14 +992,14 @@ class IfThenElseCt : public CastConstraint {
     target_var_->SetRange(new_min, new_max);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf(
         "(%s ? %s : %s) == %s", condition_->DebugString().c_str(),
         one_->DebugString().c_str(), zero_->DebugString().c_str(),
         target_var_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {}
+  void Accept(ModelVisitor* const visitor) const override {}
 
  private:
   IntVar* const condition_;
@@ -1358,35 +1329,13 @@ Constraint* MakeElementEqualityFunc(Solver* const solver,
     } else {
       return solver->MakeEquality(target, vals[val]);
     }
-  } else if (IsArrayBoolean(vals)) {
-    std::vector<int64> ones;
-    int first_zero = -1;
-    for (int i = 0; i < vals.size(); ++i) {
-      if (vals[i] == 1LL) {
-        ones.push_back(i);
-      } else {
-        first_zero = i;
-      }
-    }
-    if (ones.size() == 1) {
-      DCHECK_EQ(1LL, vals[ones.back()]);
-      solver->AddConstraint(solver->MakeBetweenCt(index, 0, vals.size() - 1));
-      return solver->MakeIsEqualCstCt(index, ones.back(), target);
-    } else if (ones.size() == vals.size() - 1) {
-      solver->AddConstraint(solver->MakeBetweenCt(index, 0, vals.size() - 1));
-      return solver->MakeIsDifferentCstCt(index, first_zero, target);
-    } else if (ones.size() == ones.back() - ones.front() + 1) {  // contiguous.
-      solver->AddConstraint(solver->MakeBetweenCt(index, 0, vals.size() - 1));
-      return solver->MakeIsBetweenCt(index, ones.front(), ones.back(), target);
-    } else {
-      solver->AddConstraint(solver->MakeBetweenCt(index, 0, vals.size() - 1));
-      return solver->MakeIsMemberCt(index, ones, target);
-    }
-  } else if (IsIncreasingContiguous(vals)) {
-    return solver->MakeEquality(target, solver->MakeSum(index, vals[0]));
   } else {
-    return solver->RevAlloc(
-        new IntElementConstraint(solver, vals, index, target));
+    if (IsIncreasingContiguous(vals)) {
+      return solver->MakeEquality(target, solver->MakeSum(index, vals[0]));
+    } else {
+      return solver->RevAlloc(
+          new IntElementConstraint(solver, vals, index, target));
+    }
   }
 }
 }  // namespace
@@ -1417,11 +1366,11 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
     IntVar* const scaled_index = MakeSum(index, -index->Min())->Var();
     IntVar* const zero = vars[index->Min()];
     IntVar* const one = vars[index->Max()];
-    const std::string name = StringPrintf(
-        "ElementVar([%s], %s)", JoinNamePtr(vars, ", ").c_str(),
-        index->name().c_str());
-    IntVar* const target =MakeIntVar(std::min(zero->Min(), one->Min()),
-                                     std::max(zero->Max(), one->Max()), name);
+    const std::string name =
+        StringPrintf("ElementVar([%s], %s)", JoinNamePtr(vars, ", ").c_str(),
+                     index->name().c_str());
+    IntVar* const target = MakeIntVar(std::min(zero->Min(), one->Min()),
+                                      std::max(zero->Max(), one->Max()), name);
     AddConstraint(
         RevAlloc(new IfThenElseCt(this, scaled_index, one, zero, target)));
     return target;

@@ -25,7 +25,7 @@
 // Optionally one can randomly forbid a set of random connections between nodes
 // (forbidden arcs).
 
-#include "base/unique_ptr.h"
+#include <memory>
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"

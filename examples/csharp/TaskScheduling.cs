@@ -34,6 +34,14 @@ class Task {
   }
 }
 
+class Prefix : VoidToString
+{
+  public override string Run()
+  {
+    return "[TaskScheduling] ";
+  }
+}
+
 class TaskScheduling {
   public static List<Job> myJobList = new List<Job>();
   public static Dictionary<long, List<IntervalVar>> tasksToEquipment =
@@ -176,8 +184,9 @@ class TaskScheduling {
     DecisionBuilder main_phase = solver.Compose(sequence_phase, objective_phase);
 
     const int kLogFrequency = 1000000;
+    VoidToString prefix = new Prefix();
     SearchMonitor search_log =
-        solver.MakeSearchLog(kLogFrequency, objective_monitor);
+        solver.MakeSearchLog(kLogFrequency, objective_monitor, prefix);
 
     SolutionCollector collector = solver.MakeLastSolutionCollector();
     collector.Add(all_seq.ToArray());

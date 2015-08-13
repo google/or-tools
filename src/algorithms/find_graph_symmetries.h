@@ -16,7 +16,7 @@
 #ifndef OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
 #define OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
 
-#include "base/unique_ptr.h"
+#include <memory>
 #include <vector>
 
 #include "algorithms/dynamic_partition.h"

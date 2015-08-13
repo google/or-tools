@@ -16,7 +16,7 @@
 #include <functional>
 #include "base/hash.h"
 #include <limits>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -379,7 +379,7 @@ class ImpactRecorder : public SearchMonitor {
         current_log_space_(0.0),
         impacts_(size_),
         original_min_(size_, 0LL),
-        domain_iterators_(new IntVarIterator* [size_]),
+        domain_iterators_(new IntVarIterator*[size_]),
         display_level_(display_level),
         current_var_(kUninitializedVarIndex),
         current_value_(0),
@@ -434,8 +434,8 @@ class ImpactRecorder : public SearchMonitor {
       // By default, we init impacts to 2.0 -> equivalent to failure.
       // This will be overwritten to real impact values on valid domain
       // values during the FirstRun() method.
-      impacts_[i]
-          .resize(vars_[i]->Max() - vars_[i]->Min() + 1, kInitFailureImpact);
+      impacts_[i].resize(vars_[i]->Max() - vars_[i]->Min() + 1,
+                         kInitFailureImpact);
     }
 
     for (int i = 0; i < size_; ++i) {
@@ -483,7 +483,7 @@ class ImpactRecorder : public SearchMonitor {
       }
       IntVarIterator* const iterator = domain_iterators_[var_index];
       DecisionBuilder* init_decision_builder = nullptr;
-      bool no_split = var->Size() < splits;
+      const bool no_split = var->Size() < splits;
       if (no_split) {
         // The domain is small enough, we scan it completely.
         container->without_split()->set_update_impact_callback(
@@ -635,7 +635,7 @@ class ImpactRecorder : public SearchMonitor {
   // original_min_[i] + j to variable i.
   std::vector<std::vector<double> > impacts_;
   std::vector<int64> original_min_;
-  std::unique_ptr<IntVarIterator * []> domain_iterators_;
+  std::unique_ptr<IntVarIterator* []> domain_iterators_;
   int64 init_count_;
   const DefaultPhaseParameters::DisplayLevel display_level_;
   int current_var_;
@@ -1118,8 +1118,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
     }
 
     Decision* const decision = parameters_.decision_builder != nullptr
-        ? parameters_.decision_builder->Next(solver)
-        : ImpactNext(solver);
+                                   ? parameters_.decision_builder->Next(solver)
+                                   : ImpactNext(solver);
 
     // Returns early if the search tree is finished anyway.
     if (decision == nullptr) {
@@ -1159,9 +1159,8 @@ class DefaultIntegerSearch : public DecisionBuilder {
         case FindVar::SPLIT_LOW: {
           if (last_int_var_->Max() > last_int_value_ &&
               last_int_var_->Min() <= last_int_value_) {
-            Decision* const split =
-                solver->MakeVariableLessOrEqualValue(last_int_var_,
-                                                     last_int_value_);
+            Decision* const split = solver->MakeVariableLessOrEqualValue(
+                last_int_var_, last_int_value_);
             ClearLastDecision();
             last_conflict_count_++;
             return split;
@@ -1171,18 +1170,15 @@ class DefaultIntegerSearch : public DecisionBuilder {
         case FindVar::SPLIT_HIGH: {
           if (last_int_var_->Min() < last_int_value_ &&
               last_int_var_->Max() >= last_int_value_) {
-            Decision* const split =
-                solver->MakeVariableGreaterOrEqualValue(last_int_var_,
-                                                        last_int_value_);
+            Decision* const split = solver->MakeVariableGreaterOrEqualValue(
+                last_int_var_, last_int_value_);
             ClearLastDecision();
             last_conflict_count_++;
             return split;
           }
           break;
         }
-        default: {
-          break;
-        }
+        default: { break; }
       }
     }
 

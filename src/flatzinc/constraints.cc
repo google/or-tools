@@ -383,8 +383,7 @@ void ExtractBoolAnd(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractBoolClause(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  std::vector<IntVar*> positive_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
+  std::vector<IntVar*> positive_variables = fzsolver->GetVariableArray(ct->Arg(0));
   const std::vector<IntVar*> negative_variables =
       fzsolver->GetVariableArray(ct->Arg(1));
   std::vector<IntVar*> vars;
@@ -481,7 +480,7 @@ void ExtractCircuit(FzSolver* fzsolver, FzConstraint* ct) {
   const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
   const int size = tmp_vars.size();
   bool found_zero = false;
-  bool found_size= false;
+  bool found_size = false;
   for (IntVar* const var : tmp_vars) {
     if (var->Min() == 0) {
       found_zero = true;
@@ -831,10 +830,8 @@ void ExtractCumulative(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffn(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<IntVar*> x_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
-  const std::vector<IntVar*> y_variables =
-      fzsolver->GetVariableArray(ct->Arg(1));
+  const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+  const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
   if (ct->Arg(2).type == FzArgument::INT_LIST &&
       ct->Arg(3).type == FzArgument::INT_LIST) {
     const std::vector<int64>& x_sizes = ct->Arg(2).values;
@@ -875,26 +872,25 @@ void ExtractDiffnK(FzSolver* fzsolver, FzConstraint* ct) {
 
 void ExtractDiffnNonStrict(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
-  const std::vector<IntVar*> x_variables =
-      fzsolver->GetVariableArray(ct->Arg(0));
-  const std::vector<IntVar*> y_variables =
-      fzsolver->GetVariableArray(ct->Arg(1));
-  if (ct->Arg(2).type == FzArgument::INT_LIST &&
-      ct->Arg(3).type == FzArgument::INT_LIST) {
-    const std::vector<int64>& x_sizes = ct->Arg(2).values;
-    const std::vector<int64>& y_sizes = ct->Arg(3).values;
-    Constraint* const constraint =
-        solver->MakeNonOverlappingNonStrictBoxesConstraint(
-            x_variables, y_variables, x_sizes, y_sizes);
-    AddConstraint(solver, ct, constraint);
-  } else {
-    const std::vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
-    const std::vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
-    Constraint* const constraint =
-        solver->MakeNonOverlappingNonStrictBoxesConstraint(
-            x_variables, y_variables, x_sizes, y_sizes);
-    AddConstraint(solver, ct, constraint);
-  }
+    const std::vector<IntVar*> x_variables = fzsolver->GetVariableArray(ct->Arg(0));
+    const std::vector<IntVar*> y_variables = fzsolver->GetVariableArray(ct->Arg(1));
+    if (ct->Arg(2).type == FzArgument::INT_LIST &&
+        ct->Arg(3).type == FzArgument::INT_LIST) {
+      const std::vector<int64>& x_sizes = ct->Arg(2).values;
+      const std::vector<int64>& y_sizes = ct->Arg(3).values;
+      Constraint* const constraint =
+          solver->MakeNonOverlappingNonStrictBoxesConstraint(
+              x_variables, y_variables, x_sizes, y_sizes);
+      AddConstraint(solver, ct, constraint);
+    } else {
+      const std::vector<IntVar*> x_sizes = fzsolver->GetVariableArray(ct->Arg(2));
+      const std::vector<IntVar*> y_sizes = fzsolver->GetVariableArray(ct->Arg(3));
+      Constraint* const constraint =
+          solver->MakeNonOverlappingNonStrictBoxesConstraint(
+              x_variables, y_variables, x_sizes, y_sizes);
+      AddConstraint(solver, ct, constraint);
+    }
+
 }
 
 void ExtractDiffnNonStrictK(FzSolver* fzsolver, FzConstraint* ct) {
@@ -1549,8 +1545,7 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
 }
 
 void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
-                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs,
-                     int64* rhs) {
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
   CHECK(vars != nullptr);
   CHECK(coeffs != nullptr);
   CHECK(rhs != nullptr);
@@ -1573,8 +1568,8 @@ void ParseLongIntLin(FzSolver* fzsolver, FzConstraint* ct,
   }
 }
 
-bool AreAllExtractedAsVariables(
-    FzSolver* const fzsolver, const std::vector<FzIntegerVariable*>& fz_vars) {
+bool AreAllExtractedAsVariables(FzSolver* const fzsolver,
+                                const std::vector<FzIntegerVariable*>& fz_vars) {
   for (FzIntegerVariable* const fz_var : fz_vars) {
     IntExpr* const expr = fzsolver->Extract(fz_var);
     if (!expr->IsVar()) {
@@ -1835,8 +1830,7 @@ void ExtractIntLinGeReif(FzSolver* fzsolver, FzConstraint* ct) {
   }
 }
 
-bool PostHiddenClause(SatPropagator* const sat,
-                      const std::vector<int64>& coeffs,
+bool PostHiddenClause(SatPropagator* const sat, const std::vector<int64>& coeffs,
                       const std::vector<IntVar*>& vars) {
   std::vector<IntVar*> others;
   others.reserve(vars.size() - 1);
@@ -2397,8 +2391,7 @@ void ExtractMinimumInt(FzSolver* fzsolver, FzConstraint* ct) {
     fzsolver->SetExtracted(ct->target_variable, target);
   } else {
     IntVar* const target = fzsolver->GetExpression(ct->Arg(0))->Var();
-    const std::vector<IntVar*> variables =
-        fzsolver->GetVariableArray(ct->Arg(1));
+    const std::vector<IntVar*> variables = fzsolver->GetVariableArray(ct->Arg(1));
     Constraint* const constraint = solver->MakeMinEquality(variables, target);
     AddConstraint(solver, ct, constraint);
   }
@@ -2645,7 +2638,7 @@ void ExtractSubCircuit(FzSolver* fzsolver, FzConstraint* ct) {
   const std::vector<IntVar*> tmp_vars = fzsolver->GetVariableArray(ct->Arg(0));
   const int size = tmp_vars.size();
   bool found_zero = false;
-  bool found_size= false;
+  bool found_size = false;
   for (IntVar* const var : tmp_vars) {
     if (var->Min() == 0) {
       found_zero = true;

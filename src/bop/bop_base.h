@@ -93,20 +93,8 @@ class BopOptimizerBase {
   // Returns a std::string describing the status.
   static std::string GetStatusString(Status status);
 
-  // Sets the local time limits for each call to Optimize(). If the TimeLimit
-  // passed to Optimize() is lower than that, then it will be used instead. Note
-  // that the later always represents the global problem time limit.
-  void SetLocalTimeLimits(double in_seconds, double deterministic);
-
  protected:
-  // Utility functions that return the min between the local limits and the
-  // corresponding time left in the passed TimeLimit object.
-  double LocalTimeLimitInSeconds(TimeLimit* time_limit) const;
-  double LocalDeterministicTimeLimit(TimeLimit* time_limit) const;
-
   const std::string name_;
-  double local_time_limit_in_seconds_;
-  double local_deterministic_time_limit_;
 
   mutable StatsGroup stats_;
 };

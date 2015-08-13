@@ -362,9 +362,15 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 %unignore operations_research::MPSolverParameters;
 %unignore operations_research::MPSolverParameters::MPSolverParameters;
 %unignore operations_research::MPSolverParameters::DoubleParam;
-%unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;
+%unignore operations_research::MPSolverParameters::GetDoubleParam;
 %unignore operations_research::MPSolverParameters::SetDoubleParam;
+%unignore operations_research::MPSolverParameters::IntegerParam;
+%unignore operations_research::MPSolverParameters::GetIntegerParam;
+%unignore operations_research::MPSolverParameters::SetIntegerParam;
+%unignore operations_research::MPSolverParameters::PRESOLVE;
+%unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;
 %unignore operations_research::MPSolverParameters::kDefaultPrimalTolerance;
+// TODO(user): unit test kDefaultPrimalTolerance.
 
 // We want to ignore the CoeffMap class; but since it inherits from some
 // hash_map<>, swig complains about an undefined base class. Silence it.

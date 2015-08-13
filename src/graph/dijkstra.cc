@@ -13,7 +13,7 @@
 
 
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include <vector>
 
 #include "base/callback.h"

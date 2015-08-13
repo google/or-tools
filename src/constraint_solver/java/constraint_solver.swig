@@ -15,9 +15,16 @@
 
 %include "enumsimple.swg"
 %include "exception.i"
+%include "std_vector.i"
+
+%include "base/base.swig"
 %include "util/java/proto.swig"
 %include "util/java/tuple_set.swig"
 %include "util/java/vector.swig"
+%include "util/java/functions.swig"
+
+// Remove swig warnings
+#pragma SWIG nowarn=473
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .swig
@@ -71,136 +78,8 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // ############ END DUPLICATED CODE BLOCK ############
 
-// TODO(user): split out the callback code; it creates another file since
-// it uses a different module.
-%module(directors="1") main
-%feature("director") LongResultCallback1;
-%feature("director") LongResultCallback2;
-%feature("director") LongResultCallback3;
-%include <std_vector.i>
-%{
-#include <vector>
-#include "base/callback.h"
-#include "base/integral_types.h"
-
-// When a director is created for a class with SWIG, the C++ part of the
-// director keeps a JNI global reference to the Java part. This global reference
-// only gets deleted in the destructor of the C++ part, but by default, this
-// only happens when the Java part is processed by the GC (however, this never
-// happens, because there is the JNI global reference...).
-//
-// To break the cycle, it is necessary to delete the C++ part manually. For the
-// callback classes, this is done by deriving them from the respective C++
-// ResultCallback classes. When the java callback class is asked for a C++
-// callback class, it hands over its C++ part. It is expected, that whoever
-// receives the C++ callback class, owns it and destroys it after they no longer
-// need it. But by destroying it, they also break the reference cycle and the
-// Java part may be processed by the GC.
-//
-// However, this behavior also means that the callback class can only be used
-// in one context and that if its C++ callback class is not received by someone
-// who destroys it in the end, it will stay in memory forever.
-class LongResultCallback1 : private ResultCallback1<int64, int64> {
- public:
-  LongResultCallback1() : used_as_permanent_handler_(false) {}
-  virtual int64 run(int64) = 0;
-  ResultCallback1<int64, int64>* GetPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
-  }
-  virtual ~LongResultCallback1() {}
- private:
-  virtual bool IsRepeatable() const { return true; }
-
-  virtual int64 Run(int64 i) {
-    return run(i);
-  }
-  bool used_as_permanent_handler_;
-};
-
-class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
- public:
-  LongResultCallback2() : used_as_permanent_handler_(false) {}
-  virtual ~LongResultCallback2() {}
-  virtual int64 run(int64, int64) = 0;
-  ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
-  }
- private:
-  virtual bool IsRepeatable() const { return true; }
-
-  virtual int64 Run(int64 i, int64 j) {
-    return run(i, j);
-  }
-  bool used_as_permanent_handler_;
-};
-
-class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
- public:
-  LongResultCallback3() : used_as_permanent_handler_(false) {}
-  virtual ~LongResultCallback3() {}
-  virtual int64 run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
-  }
- private:
-  virtual bool IsRepeatable() const { return true; }
-
-  virtual int64 Run(int64 i, int64 j, int64 k) {
-    return run(i, j, k);
-  }
-  bool used_as_permanent_handler_;
-};
-%}
-
-class LongResultCallback1 : private ResultCallback1<int64, int64> {
- public:
-  virtual int64 run(int64) = 0;
-  ResultCallback1<int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback1();
- private:
-  virtual bool IsRepeatable() const;
-  virtual int64 Run(int64 i);
-  bool used_as_permanent_handler_;
-};
-class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
- public:
-  virtual int64 run(int64, int64) = 0;
-  ResultCallback2<int64, int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback2();
- private:
-  virtual bool IsRepeatable() const;
-  virtual int64 Run(int64 i, int64 j);
-  bool used_as_permanent_handler_;
-};
-class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
- public:
-  virtual int64 run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback3();
- private:
-  virtual bool IsRepeatable() const;
-  virtual int64 Run(int64 i, int64 j, int64 k);
-  bool used_as_permanent_handler_;
-};
-
-// Typemaps for callbacks in java.
-%typemap(jstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(javain) ResultCallback1<int64, int64>* "$descriptor(ResultCallback1<int64, int64>*).getCPtr($javainput.GetPermanentCallback())";
-%typemap(jstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(javain) ResultCallback2<int64, int64, int64>* "$descriptor(ResultCallback2<int64, int64, int64>*).getCPtr($javainput.GetPermanentCallback())";
-
-%typemap(jstype) ResultCallback3<int64, int64, int64, int64>*
-"LongResultCallback3";
-%typemap(javain) ResultCallback3<int64, int64, int64, int64>*
-"$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($javainput.GetPermanentCallback())";
-
 %module(directors="1") operations_research;
+
 %feature("director") DecisionBuilder;
 %feature("director") Decision;
 %feature("director") SearchMonitor;
@@ -211,13 +90,15 @@ class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> 
 %feature("director") IntVarLocalSearchOperator;
 %feature("director") SequenceVarLocalSearchOperator;
 %feature("director") IntVarLocalSearchFilter;
-%include "std_vector.i"
-
 %template(IntVector) std::vector<int>;
+
 
 %{
 #include <setjmp.h>
 
+#include <vector>
+
+#include "base/integral_types.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
@@ -238,11 +119,15 @@ struct FailureProtect {
 };
 %}
 
+// Renaming
+
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
 
+// This method causes issues with our std::vector<int64> wrapping. It's not really
+// part of the public API anyway.
 %ignore operations_research::ToInt64Vector;
 
 %rename (nextWrap) operations_research::DecisionBuilder::Next;
@@ -372,11 +257,42 @@ CONVERT_VECTOR(LocalSearchFilter);
 %extend IntVarLocalSearchFilter {
   int Index(IntVar* const var) {
     int64 index = -1;
-    self->FindIndex(var, &index);
+    $self->FindIndex(var, &index);
     return index;
   }
 }
+
 }  // namespace operations_research
+
+// Create std::function wrappers.
+WRAP_STD_FUNCTION_JAVA(
+    LongToLong,
+    "com/google/ortools/constraintsolver/",
+    int64, Long, int64)
+WRAP_STD_FUNCTION_JAVA(
+    LongLongToLong,
+    "com/google/ortools/constraintsolver/",
+    int64, Long, int64, int64)
+WRAP_STD_FUNCTION_JAVA(
+    IntIntToLong,
+    "com/google/ortools/constraintsolver/",
+    int64, Long, int, int)
+WRAP_STD_FUNCTION_JAVA(
+    LongLongLongToLong,
+    "com/google/ortools/constraintsolver/",
+    int64, Long, int64, int64, int64)
+WRAP_STD_FUNCTION_JAVA(
+    LongToBoolean,
+    "com/google/ortools/constraintsolver/",
+    bool, Boolean, int64)
+WRAP_STD_FUNCTION_JAVA(
+    VoidToBoolean,
+    "com/google/ortools/constraintsolver/",
+    bool, Boolean)
+WRAP_STD_FUNCTION_JAVA(
+    LongLongLongToBoolean,
+    "com/google/ortools/constraintsolver/",
+    bool, Boolean, int64, int64, int64)
 
 namespace operations_research {
 class LocalSearchPhaseParameters {
@@ -388,13 +304,13 @@ class LocalSearchPhaseParameters {
 
 
 // Wrap cp includes
-%include constraint_solver/constraint_solver.h
-%include constraint_solver/constraint_solveri.h
+%include "constraint_solver/constraint_solver.h"
+%include "constraint_solver/constraint_solveri.h"
 
 // Define templates instantiation after wrapping.
 namespace operations_research {
-%template(RevInteger) Rev<int64>;
+%template(RevInteger) Rev<int>;
+%template(RevLong) Rev<int64>;
 %template(RevBool) Rev<bool>;
-typedef Assignment::AssignmentContainer AssignmentContainer;
 %template(AssignmentIntContainer) AssignmentContainer<IntVar, IntVarElement>;
-}
+}  // namespace operations_research

@@ -16,7 +16,7 @@
 #include <cstddef>
 #include <functional>
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -413,7 +413,8 @@ class ArgumentHolder {
                                    const IntTupleSet& values) {
     const int rows = values.NumTuples();
     const int columns = values.Arity();
-    std::pair<int, std::vector<int64>> matrix = std::make_pair(columns, std::vector<int64>());
+    std::pair<int, std::vector<int64>> matrix =
+        std::make_pair(columns, std::vector<int64>());
     integer_matrix_argument_[arg_name] = matrix;
     std::vector<int64>* const vals = &integer_matrix_argument_[arg_name].second;
     for (int i = 0; i < rows; ++i) {
@@ -925,9 +926,9 @@ class ArrayWithOffset : public BaseObject {
 };
 
 template <class T>
-void MakeCallbackFromProto(CPModelLoader* const builder,
-                           const CPExtensionProto& proto, int tag_index,
-                           ResultCallback1<T, int64>** callback) {
+std::function<T(int64)> MakeFunctionFromProto(CPModelLoader* const builder,
+                                              const CPExtensionProto& proto,
+                                              int tag_index) {
   DCHECK_EQ(tag_index, proto.type_index());
   Solver* const solver = builder->solver();
   int64 index_min = 0;
@@ -941,7 +942,7 @@ void MakeCallbackFromProto(CPModelLoader* const builder,
   for (int i = index_min; i <= index_max; ++i) {
     array->SetValue(i, values[i - index_min]);
   }
-  *callback = NewPermanentCallback(array, &ArrayWithOffset<T>::Evaluate);
+  return [array](int64 index) { return array->Evaluate(index); };
 }
 
 #define VERIFY(expr) \
@@ -1241,11 +1242,10 @@ IntExpr* BuildElement(CPModelLoader* const builder,
   std::vector<int64> values;
   if (proto.extensions_size() > 0) {
     VERIFY_EQ(1, proto.extensions_size());
-    Solver::IndexEvaluator1* callback = nullptr;
     const int extension_tag_index =
         builder->TagIndex(ModelVisitor::kInt64ToInt64Extension);
-    MakeCallbackFromProto(builder, proto.extensions(0), extension_tag_index,
-                          &callback);
+    Solver::IndexEvaluator1 callback = MakeFunctionFromProto<int64>(
+        builder, proto.extensions(0), extension_tag_index);
     return builder->solver()->MakeElement(callback, index->Var());
   }
   if (builder->ScanArguments(ModelVisitor::kValuesArgument, proto, &values)) {
@@ -1844,15 +1844,16 @@ Constraint* BuildNoCycle(CPModelLoader* const builder,
   int64 assume_paths = 0;
   VERIFY(builder->ScanArguments(ModelVisitor::kAssumePathsArgument, proto,
                                 &assume_paths));
-  ResultCallback1<bool, int64>* sink_handler = nullptr;
+  Solver::IndexFilter1 sink_handler = nullptr;
   if (proto.extensions_size() > 0) {
     VERIFY_EQ(1, proto.extensions_size());
     const int tag_index =
         builder->TagIndex(ModelVisitor::kInt64ToBoolExtension);
-    MakeCallbackFromProto(builder, proto.extensions(0), tag_index,
-                          &sink_handler);
+    sink_handler =
+        MakeFunctionFromProto<bool>(builder, proto.extensions(0), tag_index);
   }
-  return builder->solver()->MakeNoCycle(nexts, active, nullptr, assume_paths);
+  return builder->solver()->MakeNoCycle(nexts, active, sink_handler,
+                                        assume_paths);
 }
 
 // ----- kNonEqual -----
@@ -2295,7 +2296,8 @@ bool CPModelLoader::BuildFromProto(const CPIntegerExpressionProto& proto) {
   if (!built) {
     return false;
   }
-  expressions_.resize(std::max(static_cast<int>(expressions_.size()), index + 1));
+  expressions_.resize(
+      std::max(static_cast<int>(expressions_.size()), index + 1));
   expressions_[index] = built;
   return true;
 }

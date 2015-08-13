@@ -18,7 +18,7 @@
 
 #include <algorithm>
 #include <cstdio>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 
 #include "base/commandlineflags.h"

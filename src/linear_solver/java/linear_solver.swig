@@ -16,7 +16,7 @@
 //
 // The java API is pretty much identical to the C++ API, with methods
 // systematically renamed to the Java-style "lowerCamelCase", and using
-// the Java-stype getProperty() instead of the C++ Property(), for getters.
+// the Java-style getProperty() instead of the C++ Property(), for getters.
 //
 // USAGE EXAMPLES (j/c/g and jt/c/g refer to java/com/google and javatests/...):
 // - j/c/g/ortools/samples/LinearProgramming.java

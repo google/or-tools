@@ -12,7 +12,7 @@
 // limitations under the License.
 
 #include <algorithm>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -43,14 +43,9 @@ namespace {
 class NoCycle : public Constraint {
  public:
   NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
-          const std::vector<IntVar*>& active,
-          ResultCallback1<bool, int64>* sink_handler, bool owner,
+          const std::vector<IntVar*>& active, Solver::IndexFilter1 sink_handler,
           bool assume_paths);
-  ~NoCycle() override {
-    if (owner_) {
-      delete sink_handler_;
-    }
-  }
+  ~NoCycle() override {}
   void Post() override;
   void InitialPropagate() override;
   void NextChange(int index);
@@ -83,16 +78,14 @@ class NoCycle : public Constraint {
   std::vector<int64> outbound_supports_;
   std::vector<int64> support_leaves_;
   std::vector<int64> unsupported_;
-  ResultCallback1<bool, int64>* sink_handler_;
+  Solver::IndexFilter1 sink_handler_;
   std::vector<int64> sinks_;
-  bool owner_;
   bool assume_paths_;
 };
 
 NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
                  const std::vector<IntVar*>& active,
-                 ResultCallback1<bool, int64>* sink_handler, bool owner,
-                 bool assume_paths)
+                 Solver::IndexFilter1 sink_handler, bool assume_paths)
     : Constraint(s),
       nexts_(nexts),
       active_(active),
@@ -102,7 +95,6 @@ NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
       all_nexts_bound_(false),
       outbound_supports_(nexts.size(), -1),
       sink_handler_(sink_handler),
-      owner_(owner),
       assume_paths_(assume_paths) {
   support_leaves_.reserve(size());
   unsupported_.reserve(size());
@@ -111,7 +103,6 @@ NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
     ends_[i] = i;
     iterators_[i] = nexts_[i]->MakeDomainIterator(true);
   }
-  sink_handler_->CheckIsRepeatable();
 }
 
 void NoCycle::InitialPropagate() {
@@ -120,12 +111,12 @@ void NoCycle::InitialPropagate() {
     outbound_supports_[i] = -1;
     IntVar* next = nexts_[i];
     for (int j = next->Min(); j < 0; ++j) {
-      if (!sink_handler_->Run(j)) {
+      if (!sink_handler_(j)) {
         next->RemoveValue(j);
       }
     }
     for (int j = next->Max(); j >= size(); --j) {
-      if (!sink_handler_->Run(j)) {
+      if (!sink_handler_(j)) {
         next->RemoveValue(j);
       }
     }
@@ -162,7 +153,7 @@ void NoCycle::Post() {
   }
   sinks_.clear();
   for (int i = min_min; i <= max_max; ++i) {
-    if (sink_handler_->Run(i)) {
+    if (sink_handler_(i)) {
       sinks_.push_back(i);
     }
   }
@@ -201,11 +192,11 @@ void NoCycle::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
   const int64 next = nexts_[index]->Value();
   const int64 chain_start = starts_[index];
-  const int64 chain_end = !sink_handler_->Run(next) ? ends_[next] : next;
+  const int64 chain_end = !sink_handler_(next) ? ends_[next] : next;
   Solver* const s = solver();
-  if (!sink_handler_->Run(chain_start)) {
+  if (!sink_handler_(chain_start)) {
     s->SaveAndSetValue(&ends_[chain_start], chain_end);
-    if (!sink_handler_->Run(chain_end)) {
+    if (!sink_handler_(chain_end)) {
       s->SaveAndSetValue(&starts_[chain_end], chain_start);
       nexts_[chain_end]->RemoveValue(chain_start);
       if (!assume_paths_) {
@@ -214,7 +205,7 @@ void NoCycle::NextBound(int index) {
           bool found = (current == chain_end);
           // Counter to detect implicit cycles.
           int count = 0;
-          while (!found && count < size() && !sink_handler_->Run(current) &&
+          while (!found && count < size() && !sink_handler_(current) &&
                  nexts_[current]->Bound()) {
             current = nexts_[current]->Value();
             found = (current == chain_end);
@@ -253,7 +244,7 @@ void NoCycle::ComputeSupports() {
       const int64 current_support = outbound_supports_[i];
       // Optimization: if this node was already supported by a sink, check if
       // it's still a valid support.
-      if (current_support >= 0 && sink_handler_->Run(current_support) &&
+      if (current_support >= 0 && sink_handler_(current_support) &&
           next->Contains(current_support)) {
         support_leaves_.push_back(i);
       } else {
@@ -270,7 +261,7 @@ void NoCycle::ComputeSupports() {
           }
         } else {
           for (const int64 value : InitAndGetValues(iterators_[i])) {
-            if (sink_handler_->Run(value)) {
+            if (sink_handler_(value)) {
               outbound_supports_[i] = value;
               support_leaves_.push_back(i);
               break;
@@ -327,7 +318,7 @@ void NoCycle::ComputeSupport(int index) {
   // which is both supported and was not a descendant of the node in the tree.
   if (active_[index]->Max() != 0) {
     for (const int64 next : InitAndGetValues(iterators_[index])) {
-      if (sink_handler_->Run(next)) {
+      if (sink_handler_(next)) {
         outbound_supports_[index] = next;
         return;
       }
@@ -337,7 +328,7 @@ void NoCycle::ComputeSupport(int index) {
           // Check if next is not already a descendant of index.
           bool ancestor_found = false;
           while (next_support < outbound_supports_.size() &&
-                 !sink_handler_->Run(next_support)) {
+                 !sink_handler_(next_support)) {
             if (next_support == index) {
               ancestor_found = true;
               break;
@@ -611,28 +602,23 @@ class Circuit : public Constraint {
   NumericalRev<int> num_inactives_;
   const bool sub_circuit_;
 };
-
-// ----- Misc -----
-
-bool GreaterThan(int64 x, int64 y) { return y >= x; }
 }  // namespace
 
 Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
                                 const std::vector<IntVar*>& active,
-                                ResultCallback1<bool, int64>* sink_handler,
+                                Solver::IndexFilter1 sink_handler,
                                 bool assume_paths) {
   CHECK_EQ(nexts.size(), active.size());
   if (sink_handler == nullptr) {
-    sink_handler =
-        NewPermanentCallback(&GreaterThan, static_cast<int64>(nexts.size()));
+    const int64 size = nexts.size();
+    sink_handler = [size](int64 index) { return index >= size; };
   }
-  return RevAlloc(
-      new NoCycle(this, nexts, active, sink_handler, true, assume_paths));
+  return RevAlloc(new NoCycle(this, nexts, active, sink_handler, assume_paths));
 }
 
 Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
                                 const std::vector<IntVar*>& active,
-                                ResultCallback1<bool, int64>* sink_handler) {
+                                Solver::IndexFilter1 sink_handler) {
   return MakeNoCycle(nexts, active, sink_handler, true);
 }
 
@@ -1133,13 +1119,13 @@ class DelayedPathCumul : public Constraint {
 
 // cumuls[next[i]] = cumuls[i] + transit_evaluator(i, next[i])
 
-class ResultCallback2PathCumul : public BasePathCumul {
+class IndexEvaluator2PathCumul : public BasePathCumul {
  public:
-  ResultCallback2PathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+  IndexEvaluator2PathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
                            const std::vector<IntVar*>& active,
                            const std::vector<IntVar*>& cumuls,
-                           Solver::IndexEvaluator2* transit_evaluator);
-  ~ResultCallback2PathCumul() override {}
+                           Solver::IndexEvaluator2 transit_evaluator);
+  ~IndexEvaluator2PathCumul() override {}
   void NextBound(int index) override;
   bool AcceptLink(int i, int j) const override;
 
@@ -1159,24 +1145,22 @@ class ResultCallback2PathCumul : public BasePathCumul {
   }
 
  private:
-  std::unique_ptr<Solver::IndexEvaluator2> transits_evaluator_;
+  Solver::IndexEvaluator2 transits_evaluator_;
 };
 
-ResultCallback2PathCumul::ResultCallback2PathCumul(
+IndexEvaluator2PathCumul::IndexEvaluator2PathCumul(
     Solver* const s, const std::vector<IntVar*>& nexts,
     const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
-    Solver::IndexEvaluator2* transit_evaluator)
+    Solver::IndexEvaluator2 transit_evaluator)
     : BasePathCumul(s, nexts, active, cumuls),
-      transits_evaluator_(transit_evaluator) {
-  transits_evaluator_->CheckIsRepeatable();
-}
+      transits_evaluator_(std::move(transit_evaluator)) {}
 
-void ResultCallback2PathCumul::NextBound(int index) {
+void IndexEvaluator2PathCumul::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
   const int64 next = nexts_[index]->Value();
   IntVar* cumul = cumuls_[index];
   IntVar* cumul_next = cumuls_[next];
-  const int64 transit = transits_evaluator_->Run(index, next);
+  const int64 transit = transits_evaluator_(index, next);
   cumul_next->SetMin(cumul->Min() + transit);
   cumul_next->SetMax(CapAdd(cumul->Max(), transit));
   cumul->SetMin(CapSub(cumul_next->Min(), transit));
@@ -1186,24 +1170,24 @@ void ResultCallback2PathCumul::NextBound(int index) {
   }
 }
 
-bool ResultCallback2PathCumul::AcceptLink(int i, int j) const {
+bool IndexEvaluator2PathCumul::AcceptLink(int i, int j) const {
   const IntVar* const cumul_i = cumuls_[i];
   const IntVar* const cumul_j = cumuls_[j];
-  const int64 transit = transits_evaluator_->Run(i, j);
+  const int64 transit = transits_evaluator_(i, j);
   return transit <= CapSub(cumul_j->Max(), cumul_i->Min()) &&
          CapSub(cumul_j->Min(), cumul_i->Max()) <= transit;
 }
 
 // ----- ResulatCallback2SlackPathCumul -----
 
-class ResultCallback2SlackPathCumul : public BasePathCumul {
+class IndexEvaluator2SlackPathCumul : public BasePathCumul {
  public:
-  ResultCallback2SlackPathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+  IndexEvaluator2SlackPathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
                                 const std::vector<IntVar*>& active,
                                 const std::vector<IntVar*>& cumuls,
                                 const std::vector<IntVar*>& slacks,
-                                Solver::IndexEvaluator2* transit_evaluator);
-  ~ResultCallback2SlackPathCumul() override {}
+                                Solver::IndexEvaluator2 transit_evaluator);
+  ~IndexEvaluator2SlackPathCumul() override {}
   void Post() override;
   void NextBound(int index) override;
   bool AcceptLink(int i, int j) const override;
@@ -1226,30 +1210,28 @@ class ResultCallback2SlackPathCumul : public BasePathCumul {
 
  private:
   const std::vector<IntVar*> slacks_;
-  std::unique_ptr<Solver::IndexEvaluator2> transits_evaluator_;
+  Solver::IndexEvaluator2 transits_evaluator_;
 };
 
-ResultCallback2SlackPathCumul::ResultCallback2SlackPathCumul(
+IndexEvaluator2SlackPathCumul::IndexEvaluator2SlackPathCumul(
     Solver* const s, const std::vector<IntVar*>& nexts,
     const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
-    const std::vector<IntVar*>& slacks, Solver::IndexEvaluator2* transit_evaluator)
+    const std::vector<IntVar*>& slacks, Solver::IndexEvaluator2 transit_evaluator)
     : BasePathCumul(s, nexts, active, cumuls),
       slacks_(slacks),
-      transits_evaluator_(transit_evaluator) {
-  transits_evaluator_->CheckIsRepeatable();
-}
+      transits_evaluator_(std::move(transit_evaluator)) {}
 
-void ResultCallback2SlackPathCumul::Post() {
+void IndexEvaluator2SlackPathCumul::Post() {
   BasePathCumul::Post();
   for (int i = 0; i < size(); ++i) {
     Demon* slack_demon = MakeConstraintDemon1(
-        solver(), this, &ResultCallback2SlackPathCumul::SlackRange,
+        solver(), this, &IndexEvaluator2SlackPathCumul::SlackRange,
         "SlackRange", i);
     slacks_[i]->WhenRange(slack_demon);
   }
 }
 
-void ResultCallback2SlackPathCumul::SlackRange(int index) {
+void IndexEvaluator2SlackPathCumul::SlackRange(int index) {
   if (nexts_[index]->Bound()) {
     NextBound(index);
   } else {
@@ -1266,13 +1248,13 @@ void ResultCallback2SlackPathCumul::SlackRange(int index) {
   }
 }
 
-void ResultCallback2SlackPathCumul::NextBound(int index) {
+void IndexEvaluator2SlackPathCumul::NextBound(int index) {
   if (active_[index]->Min() == 0) return;
   const int64 next = nexts_[index]->Value();
   IntVar* const cumul = cumuls_[index];
   IntVar* const cumul_next = cumuls_[next];
   IntVar* const slack = slacks_[index];
-  const int64 transit = transits_evaluator_->Run(index, next);
+  const int64 transit = transits_evaluator_(index, next);
   const int64 cumul_next_minus_transit_min = CapSub(cumul_next->Min(), transit);
   const int64 cumul_next_minus_transit_max = CapSub(cumul_next->Max(), transit);
   cumul_next->SetMin(CapAdd(CapAdd(cumul->Min(), transit), slack->Min()));
@@ -1286,11 +1268,11 @@ void ResultCallback2SlackPathCumul::NextBound(int index) {
   }
 }
 
-bool ResultCallback2SlackPathCumul::AcceptLink(int i, int j) const {
+bool IndexEvaluator2SlackPathCumul::AcceptLink(int i, int j) const {
   const IntVar* const cumul_i = cumuls_[i];
   const IntVar* const cumul_j = cumuls_[j];
   const IntVar* const slack = slacks_[i];
-  const int64 transit = transits_evaluator_->Run(i, j);
+  const int64 transit = transits_evaluator_(i, j);
   return CapAdd(transit, slack->Min()) <=
              CapSub(cumul_j->Max(), cumul_i->Min()) &&
          CapSub(cumul_j->Min(), cumul_i->Max()) <=
@@ -1310,9 +1292,9 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
 Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
                                   const std::vector<IntVar*>& active,
                                   const std::vector<IntVar*>& cumuls,
-                                  Solver::IndexEvaluator2* transit_evaluator) {
+                                  Solver::IndexEvaluator2 transit_evaluator) {
   CHECK_EQ(nexts.size(), active.size());
-  return RevAlloc(new ResultCallback2PathCumul(this, nexts, active, cumuls,
+  return RevAlloc(new IndexEvaluator2PathCumul(this, nexts, active, cumuls,
                                                transit_evaluator));
 }
 
@@ -1320,9 +1302,9 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
                                   const std::vector<IntVar*>& active,
                                   const std::vector<IntVar*>& cumuls,
                                   const std::vector<IntVar*>& slacks,
-                                  Solver::IndexEvaluator2* transit_evaluator) {
+                                  Solver::IndexEvaluator2 transit_evaluator) {
   CHECK_EQ(nexts.size(), active.size());
-  return RevAlloc(new ResultCallback2SlackPathCumul(this, nexts, active, cumuls,
+  return RevAlloc(new IndexEvaluator2SlackPathCumul(this, nexts, active, cumuls,
                                                     slacks, transit_evaluator));
 }
 

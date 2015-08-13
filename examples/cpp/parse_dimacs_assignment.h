@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 
 #include "base/callback.h"

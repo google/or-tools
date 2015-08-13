@@ -22,6 +22,7 @@ using System.Collections;
 %include "exception.i"
 %include "std_vector.i"
 %include "util/csharp/tuple_set.swig"
+%include "util/csharp/functions.swig"
 
 %module(directors="1", allprotected="1") operations_research;
 #pragma SWIG nowarn=473
@@ -52,6 +53,7 @@ using System.Collections;
 #include "base/integral_types.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/functions_swig_helpers.h"
 
 namespace operations_research {
 class LocalSearchPhaseParameters {
@@ -188,7 +190,7 @@ class LongResultCallback3 {
      .getCPtr($csinput.GetPermanentCallback())";
 
 // Since knapsack_solver.swig and constraint_solver.swig both need to
-// instantiate the std::vector template, but their csharp_wrap.cc
+// instantiate the vector template, but their csharp_wrap.cc
 // files end up being compiled into the same .dll, we must name the
 // vector template differently.
 %template(CpIntVector) std::vector<int>;
@@ -278,6 +280,324 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %typemap(csinterfaces_derived) operations_research::Constraint "IConstraintWithStatus";
 
 namespace operations_research {
+// Take care of API with function
+%ignore Solver::MakeSearchLog(
+    int branch_count,
+    IntVar* objective,
+    std::function<std::string()> display_callback);
+%ignore Solver::MakeSearchLog(
+    int branch_count,
+    OptimizeVar* const objective,
+    std::function<std::string()> display_callback);
+%ignore Solver::MakeSearchLog(
+    int branch_count,
+    std::function<std::string()> display_callback);
+%ignore Solver::MakeCustomLimit(std::function<bool()> limiter);
+%ignore Solver::MakeElement(IndexEvaluator1 values, IntVar* const index);
+%ignore Solver::MakeMonotonicElement(IndexEvaluator1 values, bool increasing,
+                                     IntVar* const index);
+%ignore Solver::MakeElement(IndexEvaluator2 values, IntVar* const index1,
+                            IntVar* const index2);
+%ignore Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                              const std::vector<IntVar*>& active,
+                              const std::vector<IntVar*>& cumuls,
+                              IndexEvaluator2 transit_evaluator);
+%ignore Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
+                              const std::vector<IntVar*>& active,
+                              const std::vector<IntVar*>& cumuls,
+                              const std::vector<IntVar*>& slacks,
+                              IndexEvaluator2 transit_evaluator);
+%ignore Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                            const std::vector<IntVar*>& active,
+                            IndexFilter1 sink_handler = nullptr);
+%ignore Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
+                            const std::vector<IntVar*>& active,
+                            IndexFilter1 sink_handler, bool assume_paths);
+%ignore Solver::MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
+                                      IndexEvaluator2 objective_function,
+                                      int64 step, const std::vector<IntVar*>& vars,
+                                      double penalty_factor);
+%ignore Solver::MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
+                                      IndexEvaluator3 objective_function,
+                                      int64 step, const std::vector<IntVar*>& vars,
+                                      const std::vector<IntVar*>& secondary_vars,
+                                      double penalty_factor);
+%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
+                          IndexEvaluator1 var_evaluator,
+                          IntValueStrategy val_str);
+
+%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
+                          IntVarStrategy var_str, IndexEvaluator2 val_eval);
+
+%ignore Solver::MakePhase(
+    const std::vector<IntVar*>& vars, IntVarStrategy var_str,
+    VariableValueComparator var_val1_val2_comparator);
+
+%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
+                          IndexEvaluator1 var_evaluator,
+                          IndexEvaluator2 val_eval);
+
+%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
+                          IntVarStrategy var_str, IndexEvaluator2 val_eval,
+                          IndexEvaluator1 tie_breaker);
+
+%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
+                          IndexEvaluator1 var_evaluator,
+                          IndexEvaluator2 val_eval,
+                          IndexEvaluator1 tie_breaker);
+%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
+                          IndexEvaluator2 evaluator, EvaluatorStrategy str);
+%ignore Solver::MakePhase(const std::vector<IntVar*>& vars,
+                          IndexEvaluator2 evaluator,
+                          IndexEvaluator1 tie_breaker,
+                          EvaluatorStrategy str);
+%ignore Solver::MakeOperator(const std::vector<IntVar*>& vars,
+                             IndexEvaluator3 evaluator,
+                             EvaluatorLocalSearchOperators op);
+%ignore Solver::MakeOperator(const std::vector<IntVar*>& vars,
+                             const std::vector<IntVar*>& secondary_vars,
+                             IndexEvaluator3 evaluator,
+                             EvaluatorLocalSearchOperators op);
+%ignore Solver::MakeLocalSearchObjectiveFilter(
+    const std::vector<IntVar*>& vars, IndexEvaluator2 values,
+    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum);
+%ignore Solver::MakeLocalSearchObjectiveFilter(
+    const std::vector<IntVar*>& vars, IndexEvaluator2 values,
+    ObjectiveWatcher delta_objective_callback, IntVar* const objective,
+    Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum);
+%ignore Solver::MakeLocalSearchObjectiveFilter(
+    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+    Solver::IndexEvaluator3 values, IntVar* const objective,
+    Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum);
+%ignore Solver::MakeLocalSearchObjectiveFilter(
+    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+    Solver::IndexEvaluator3 values, ObjectiveWatcher delta_objective_callback,
+    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
+    Solver::LocalSearchOperation op_enum);
+%ignore Solver::ConcatenateOperators(
+    const std::vector<LocalSearchOperator*>& ops,
+    std::function<int64(int, int)> evaluator);
+%ignore Solver::MakeClosureDemon(std::function<void()> closure);
+
+%extend Solver {
+  IntExpr* MakeElement(swig_util::LongToLong* values, IntVar* const index) {
+    return $self->MakeElement(values->GetFunction(), index);
+  }
+  IntExpr* MakeMonotonicElement(swig_util::LongToLong* values, bool increasing,
+                                IntVar* const index) {
+    return $self->MakeMonotonicElement(values->GetFunction(), increasing, index);
+  }
+  IntExpr* MakeElement(swig_util::LongLongToLong* values, IntVar* const index1,
+                       IntVar* const index2) {
+    return $self->MakeElement(values->GetFunction(), index1, index2);
+  }
+  Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
+                            const std::vector<IntVar*>& active,
+                            const std::vector<IntVar*>& cumuls,
+                            swig_util::LongLongToLong* transit_evaluator) {
+    return $self->MakePathCumul(nexts, active, cumuls, transit_evaluator->GetFunction());
+  }
+  Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
+                            const std::vector<IntVar*>& active,
+                            const std::vector<IntVar*>& cumuls,
+                            const std::vector<IntVar*>& slacks,
+                            swig_util::LongLongToLong* transit_evaluator) {
+    return $self->MakePathCumul(nexts, active, cumuls, slacks, transit_evaluator->GetFunction());
+  }
+  Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
+                          const std::vector<IntVar*>& active,
+                          swig_util::LongToBoolean* sink_handler = nullptr) {
+    if (sink_handler == nullptr) {
+      return $self->MakeNoCycle(nexts, active, nullptr);
+    } else {
+      return $self->MakeNoCycle(nexts, active, sink_handler->GetFunction());
+    }
+  }
+  Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
+                          const std::vector<IntVar*>& active,
+                          swig_util::LongToBoolean* sink_handler, bool assume_paths) {
+    return $self->MakeNoCycle(nexts, active, sink_handler->GetFunction());
+  }
+  SearchMonitor* MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
+                                       swig_util::LongLongToLong* objective_function,
+                                       int64 step, const std::vector<IntVar*>& vars,
+                                       double penalty_factor) {
+    return $self->MakeGuidedLocalSearch(
+        maximize, objective, objective_function->GetFunction(), step, vars, penalty_factor);
+  }
+  SearchMonitor* MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
+                                       swig_util::LongLongLongToLong* objective_function,
+                                       int64 step, const std::vector<IntVar*>& vars,
+                                       const std::vector<IntVar*>& secondary_vars,
+                                       double penalty_factor) {
+    return $self->MakeGuidedLocalSearch(
+        maximize, objective, objective_function->GetFunction(),
+        step, vars, secondary_vars, penalty_factor);
+  }
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
+                             swig_util::LongToLong* var_evaluator,
+                             IntValueStrategy val_str) {
+    return $self->MakePhase(vars, var_evaluator->GetFunction(), val_str);
+  }
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
+                             IntVarStrategy var_str, swig_util::LongLongToLong* val_eval) {
+    return $self->MakePhase(vars, var_str, val_eval->GetFunction());
+  }
+  DecisionBuilder* MakePhase(
+      const std::vector<IntVar*>& vars, IntVarStrategy var_str,
+      swig_util::LongLongLongToBoolean* var_val1_val2_comparator) {
+    return $self->MakePhase(
+        vars, var_str, var_val1_val2_comparator->GetFunction());
+  }
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
+                             swig_util::LongToLong* var_evaluator,
+                             swig_util::LongLongToLong* val_eval) {
+    return $self->MakePhase(vars, var_evaluator->GetFunction(), val_eval->GetFunction());
+  }
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
+                             IntVarStrategy var_str,
+                             swig_util::LongLongToLong* val_eval,
+                             swig_util::LongToLong* tie_breaker) {
+    return $self->MakePhase(vars, var_str, val_eval->GetFunction(), tie_breaker->GetFunction());
+  }
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
+                             swig_util::LongToLong* var_evaluator,
+                             swig_util::LongLongToLong* val_eval,
+                             swig_util::LongToLong* tie_breaker) {
+    return $self->MakePhase(vars,
+                            var_evaluator->GetFunction(),
+                            val_eval->GetFunction(),
+                            tie_breaker->GetFunction());
+  }
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
+                             swig_util::LongLongToLong* evaluator, EvaluatorStrategy str) {
+    return $self->MakePhase(vars, evaluator->GetFunction(), str);
+  }
+  DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
+                             swig_util::LongLongToLong* evaluator,
+                             swig_util::LongToLong* tie_breaker,
+                             EvaluatorStrategy str) {
+    return $self->MakePhase(
+        vars, evaluator->GetFunction(), tie_breaker->GetFunction(), str);
+  }
+  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
+                                    swig_util::LongLongLongToLong* evaluator,
+                                    EvaluatorLocalSearchOperators op) {
+    return $self->MakeOperator(vars, evaluator->GetFunction(), op);
+  }
+  LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
+                                    const std::vector<IntVar*>& secondary_vars,
+                                    swig_util::LongLongLongToLong* evaluator,
+                                    EvaluatorLocalSearchOperators op) {
+    return $self->MakeOperator(vars, secondary_vars, evaluator->GetFunction(), op);
+  }
+  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+      const std::vector<IntVar*>& vars, swig_util::LongLongToLong* values,
+      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
+      Solver::LocalSearchOperation op_enum) {
+    return $self->MakeLocalSearchObjectiveFilter(vars, values->GetFunction(),
+                                                 objective, filter_enum, op_enum);
+  }
+  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+      const std::vector<IntVar*>& vars, swig_util::LongLongToLong* values,
+      swig_util::LongToVoid* delta_objective_callback, IntVar* const objective,
+      Solver::LocalSearchFilterBound filter_enum,
+      Solver::LocalSearchOperation op_enum) {
+    return $self->MakeLocalSearchObjectiveFilter(
+        vars, values->GetFunction(), delta_objective_callback->GetFunction(),
+        objective, filter_enum, op_enum);
+  }
+  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+      swig_util::LongLongLongToLong* values, IntVar* const objective,
+      Solver::LocalSearchFilterBound filter_enum,
+      Solver::LocalSearchOperation op_enum) {
+    return $self->MakeLocalSearchObjectiveFilter(
+        vars, secondary_vars, values->GetFunction(),
+        objective, filter_enum, op_enum);
+  }
+  LocalSearchFilter* MakeLocalSearchObjectiveFilter(
+      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+      swig_util::LongLongLongToLong* values,
+      swig_util::LongToVoid* delta_objective_callback,
+      IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
+      Solver::LocalSearchOperation op_enum) {
+    return $self->MakeLocalSearchObjectiveFilter(
+        vars, secondary_vars, values->GetFunction(),
+        delta_objective_callback->GetFunction(),
+        objective, filter_enum, op_enum);
+  }
+  LocalSearchOperator* ConcatenateOperators(
+      const std::vector<LocalSearchOperator*>& ops,
+      swig_util::IntIntToLong* evaluator) {
+    return $self->ConcatenateOperators(ops, evaluator->GetFunction());
+  }
+  SearchMonitor* MakeSearchLog(
+      int branch_count,
+      OptimizeVar* const objective,
+      swig_util::VoidToString* display_callback) {
+    return $self->MakeSearchLog(branch_count, objective, [display_callback]() {
+        return display_callback->run();
+      });
+  }
+  SearchMonitor* MakeSearchLog(
+      int branch_count,
+      IntVar* const obj_var,
+      swig_util::VoidToString* display_callback) {
+    return $self->MakeSearchLog(branch_count, obj_var, [display_callback]() {
+        return display_callback->run();
+      });
+  }
+  SearchMonitor* MakeSearchLog(
+      int branch_count,
+      swig_util::VoidToString* display_callback) {
+    return $self->MakeSearchLog(branch_count, [display_callback]() {
+        return display_callback->run();
+      });
+  }
+  SearchLimit* MakeCustomLimit(swig_util::VoidToBoolean* limiter) {
+    return $self->MakeCustomLimit([limiter]() { return limiter->run(); });
+  }
+  Demon* MakeClosureDemon(swig_util::VoidToVoid* closure) {
+    return $self->MakeClosureDemon(closure->GetFunction());
+  }
+}  // extend Solver
+
+%ignore DisjunctiveConstraint::SetTransitionTime(Solver::IndexEvaluator2 transit_evaluator);
+%extend DisjunctiveConstraint {
+  void SetTransitionTime(swig_util::LongLongToLong* transit_evaluator) {
+    $self->SetTransitionTime([transit_evaluator](int64 i, int64 j) { return transit_evaluator->run(i, j); });
+  }
+}  // extend DisjunctiveConstraint
+
+%ignore Pack::AddWeightedSumLessOrEqualConstantDimension(
+      Solver::IndexEvaluator1 weights, const std::vector<int64>& bounds);
+%ignore Pack::AddWeightedSumLessOrEqualConstantDimension(
+    Solver::IndexEvaluator2 weights, const std::vector<int64>& bounds);
+%ignore Pack::AddWeightedSumEqualVarDimension(Solver::IndexEvaluator2 weights,
+                                              const std::vector<IntVar*>& loads);
+%extend Pack {
+void Pack::AddWeightedSumLessOrEqualConstantDimension(
+    swig_util::LongToLong* weights, const std::vector<int64>& bounds) {
+  return $self->AddWeightedSumLessOrEqualConstantDimension(weights->GetFunction(), bounds);
+}
+void Pack::AddWeightedSumLessOrEqualConstantDimension(
+    swig_util::LongLongToLong* weights, const std::vector<int64>& bounds) {
+  return $self->AddWeightedSumLessOrEqualConstantDimension(weights->GetFunction(), bounds);
+}
+void Pack::AddWeightedSumEqualVarDimension(
+    swig_util::LongLongToLong* weights, const std::vector<IntVar*>& loads) {
+  return $self->AddWeightedSumEqualVarDimension(weights->GetFunction(), loads);
+}
+}  // extend Pack
+
+%ignore SearchLog::SearchLog(
+    Solver* const s, OptimizeVar* const obj, IntVar* const var,
+    std::function<std::string()> display_callback, int period);
+
 %extend IntervalVar {
   Constraint* EndsAfterEnd(IntervalVar* other) {
     return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_AFTER_END, other);
@@ -295,57 +615,61 @@ namespace operations_research {
     return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_AFTER_END, other);
   }
   Constraint* StartsAfterStart(IntervalVar* other) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::STARTS_AFTER_START,
-                                                    other);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_AFTER_START, other);
   }
   Constraint* StartsAtEnd(IntervalVar* other) {
     return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_AT_END, other);
   }
   Constraint* StartsAtStart(IntervalVar* other) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::STARTS_AT_START,
-                                                    other);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_AT_START, other);
+  }
+  Constraint* EndsAfterEndWithDelay(IntervalVar* other, int64 delay) {
+    return $self->solver()->MakeIntervalVarRelationWithDelay($self, operations_research::Solver::ENDS_AFTER_END, other, delay);
+  }
+  Constraint* EndsAfterStartWithDelay(IntervalVar* other, int64 delay) {
+    return $self->solver()->MakeIntervalVarRelationWithDelay($self, operations_research::Solver::ENDS_AFTER_START, other, delay);
+  }
+  Constraint* EndsAtEndWithDelay(IntervalVar* other, int64 delay) {
+    return $self->solver()->MakeIntervalVarRelationWithDelay($self, operations_research::Solver::ENDS_AT_END, other, delay);
+  }
+  Constraint* EndsAtStartWithDelay(IntervalVar* other, int64 delay) {
+    return $self->solver()->MakeIntervalVarRelationWithDelay($self, operations_research::Solver::ENDS_AT_START, other, delay);
+  }
+  Constraint* StartsAfterEndWithDelay(IntervalVar* other, int64 delay) {
+    return $self->solver()->MakeIntervalVarRelationWithDelay($self, operations_research::Solver::STARTS_AFTER_END, other, delay);
+  }
+  Constraint* StartsAfterStartWithDelay(IntervalVar* other, int64 delay) {
+    return $self->solver()->MakeIntervalVarRelationWithDelay($self, operations_research::Solver::STARTS_AFTER_START, other, delay);
+  }
+  Constraint* StartsAtEndWithDelay(IntervalVar* other, int64 delay) {
+    return $self->solver()->MakeIntervalVarRelationWithDelay($self, operations_research::Solver::STARTS_AT_END, other, delay);
+  }
+  Constraint* StartsAtStartWithDelay(IntervalVar* other, int64 delay) {
+    return $self->solver()->MakeIntervalVarRelationWithDelay($self, operations_research::Solver::STARTS_AT_START, other, delay);
   }
   Constraint* EndsAfter(int64 date) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::ENDS_AFTER,
-                                                    date);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_AFTER, date);
   }
   Constraint* EndsAt(int64 date) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::ENDS_AT,
-                                                    date);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_AT, date);
   }
   Constraint* EndsBefore(int64 date) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::ENDS_BEFORE,
-                                                    date);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_BEFORE, date);
   }
   Constraint* StartsAfter(int64 date) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::STARTS_AFTER,
-                                                    date);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_AFTER, date);
   }
   Constraint* StartsAt(int64 date) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::STARTS_AT,
-                                                    date);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_AT, date);
   }
   Constraint* StartsBefore(int64 date) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::STARTS_BEFORE,
-                                                    date);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::STARTS_BEFORE, date);
   }
   Constraint* CrossesDate(int64 date) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::CROSS_DATE,
-                                                    date);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::CROSS_DATE, date);
   }
   Constraint* AvoidsDate(int64 date) {
-    return $self->solver()->MakeIntervalVarRelation($self,
-                                                    operations_research::Solver::AVOID_DATE,
-                                                    date);
+    return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::AVOID_DATE, date);
   }
   IntervalVar* RelaxedMax() {
     return $self->solver()->MakeIntervalRelaxedMax($self);

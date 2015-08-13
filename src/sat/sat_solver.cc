@@ -14,7 +14,7 @@
 #include "sat/sat_solver.h"
 
 #include <algorithm>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 

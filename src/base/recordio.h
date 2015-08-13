@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_BASE_RECORDIO_H_
 #define OR_TOOLS_BASE_RECORDIO_H_
 
+#include <memory>
 #include <string>
 #include "base/file.h"
-#include "base/unique_ptr.h"
 
 // This file defines some IO interfaces to compatible with Google
 // IO specifications.

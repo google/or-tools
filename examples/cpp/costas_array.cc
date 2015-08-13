@@ -312,8 +312,11 @@ void CostasSoft(const int dim) {
   // The first solution that the local optimization is based on
   Evaluator evaluator(matrix);
   DecisionBuilder* const first_solution = solver.MakePhase(
-      matrix, NewPermanentCallback(&evaluator, &Evaluator::VarEvaluator),
-      NewPermanentCallback(&evaluator, &Evaluator::ValueEvaluator));
+      matrix,
+      [&evaluator](int64 index) { return evaluator.VarEvaluator(index); },
+      [&evaluator](int64 var, int64 value) {
+        return evaluator.ValueEvaluator(var, value);
+      });
 
   SearchLimit* const search_time_limit =
       solver.MakeLimit(FLAGS_timelimit, kint64max, kint64max, kint64max);

@@ -26,8 +26,6 @@ namespace bop {
 
 BopOptimizerBase::BopOptimizerBase(const std::string& name)
     : name_(name),
-      local_time_limit_in_seconds_(std::numeric_limits<double>::infinity()),
-      local_deterministic_time_limit_(std::numeric_limits<double>::infinity()),
       stats_(name) {
   SCOPED_TIME_STAT(&stats_);
 }
@@ -57,22 +55,6 @@ std::string BopOptimizerBase::GetStatusString(Status status) {
   // if we forgot one enum case above.
   LOG(DFATAL) << "Invalid Status " << static_cast<int>(status);
   return "UNKNOWN Status";
-}
-
-void BopOptimizerBase::SetLocalTimeLimits(double in_seconds,
-                                          double deterministic) {
-  local_time_limit_in_seconds_ = in_seconds;
-  local_deterministic_time_limit_ = deterministic;
-}
-
-double BopOptimizerBase::LocalTimeLimitInSeconds(TimeLimit* time_limit) const {
-  return std::min(time_limit->GetTimeLeft(), local_time_limit_in_seconds_);
-}
-
-double BopOptimizerBase::LocalDeterministicTimeLimit(
-    TimeLimit* time_limit) const {
-  return std::min(time_limit->GetDeterministicTimeLeft(),
-                  local_deterministic_time_limit_);
 }
 
 //------------------------------------------------------------------------------

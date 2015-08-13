@@ -147,6 +147,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
+#include "base/port.h"
 #include "util/iterators.h"
 
 
@@ -317,6 +318,13 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   class OutgoingArcIterator;
   class OutgoingHeadIterator;
 
+  // Graph jargon: the "degree" of a node is its number of arcs. The out-degree
+  // is the number of outgoing arcs. The in-degree is the number of incoming
+  // arcs, and is only available for some graph implementations, below.
+  //
+  // ListGraph<>::OutDegree() works in O(degree).
+  ArcIndexType OutDegree(NodeIndexType node) const;
+
   // Allows to iterate over the forward arcs that verify Tail(arc) == node.
   // This is meant to be used as:
   //   for (const ArcIndex arc : graph.OutgoingArcs(node)) { ... }
@@ -392,6 +400,7 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 
   NodeIndexType Head(ArcIndexType arc) const;
   NodeIndexType Tail(ArcIndexType arc) const;
+  ArcIndexType OutDegree(NodeIndexType node) const;  // Work in O(1).
   IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const;
   IntegerRange<ArcIndexType> OutgoingArcsStartingFrom(NodeIndexType node,
                                                       ArcIndexType from) const;
@@ -416,6 +425,8 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 
  private:
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
+    DCHECK(is_built_);
+    DCHECK(Base::IsNodeValid(node));
     return node + 1 < num_nodes_ ? start_[node + 1] : num_arcs_;
   }
 
@@ -470,6 +481,10 @@ class ReverseArcListGraph
   class IncomingArcIterator;
   class OutgoingArcIterator;
   class OutgoingHeadIterator;
+
+  // ReverseArcListGraph<>::OutDegree() and ::InDegree() work in O(degree).
+  ArcIndexType OutDegree(NodeIndexType node) const;
+  ArcIndexType InDegree(NodeIndexType node) const;
 
   // Arc iterations functions over the arcs leaving a node (Tail(arc) == node).
   // To be used like:
@@ -553,6 +568,10 @@ class ReverseArcStaticGraph
   class IncomingArcIterator;
   class OutgoingArcIterator;
 
+  // ReverseArcStaticGraph<>::OutDegree() and ::InDegree() work in O(1).
+  ArcIndexType OutDegree(NodeIndexType node) const;
+  ArcIndexType InDegree(NodeIndexType node) const;
+
   IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const;
   IntegerRange<ArcIndexType> IncomingArcs(NodeIndexType node) const;
   BeginEndWrapper<IncidentArcIterator> IncidentArcs(NodeIndexType node) const;
@@ -584,9 +603,13 @@ class ReverseArcStaticGraph
 
  private:
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
+    DCHECK(is_built_);
+    DCHECK(Base::IsNodeValid(node));
     return node + 1 < num_nodes_ ? start_[node + 1] : num_arcs_;
   }
   ArcIndexType ReverseArcLimit(NodeIndexType node) const {
+    DCHECK(is_built_);
+    DCHECK(Base::IsNodeValid(node));
     return node + 1 < num_nodes_ ? reverse_start_[node + 1] : 0;
   }
 
@@ -629,6 +652,9 @@ class ReverseArcMixedGraph
   class IncomingArcIterator;
   class OutgoingArcIterator;
 
+  ArcIndexType OutDegree(NodeIndexType node) const;  // O(1)
+  ArcIndexType InDegree(NodeIndexType node) const;   // O(in-degree)
+
   IntegerRange<ArcIndexType> OutgoingArcs(NodeIndexType node) const;
   BeginEndWrapper<IncomingArcIterator> IncomingArcs(NodeIndexType node) const;
   BeginEndWrapper<IncidentArcIterator> IncidentArcs(NodeIndexType node) const;
@@ -660,6 +686,8 @@ class ReverseArcMixedGraph
 
  private:
   ArcIndexType DirectArcLimit(NodeIndexType node) const {
+    DCHECK(is_built_);
+    DCHECK(Base::IsNodeValid(node));
     return node + 1 < num_nodes_ ? start_[node + 1] : num_arcs_;
   }
 
@@ -1040,6 +1068,14 @@ NodeIndexType ListGraph<NodeIndexType, ArcIndexType>::Head(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType ListGraph<NodeIndexType, ArcIndexType>::OutDegree(
+    NodeIndexType node) const {
+  ArcIndexType degree(0);
+  for (auto arc ATTRIBUTE_UNUSED : OutgoingArcs(node)) ++degree;
+  return degree;
+}
+
+template <typename NodeIndexType, typename ArcIndexType>
 void ListGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
   if (node < num_nodes_) return;
   DCHECK(!const_capacities_ || node < node_capacity_);
@@ -1050,6 +1086,8 @@ void ListGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ListGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
+  DCHECK_GE(tail, 0);
+  DCHECK_GE(head, 0);
   AddNode(tail > head ? tail : head);
   head_.push_back(head);
   next_.push_back(start_[tail]);
@@ -1194,6 +1232,12 @@ StaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType StaticGraph<NodeIndexType, ArcIndexType>::OutDegree(
+    NodeIndexType node) const {
+  return DirectArcLimit(node) - start_[node];
+}
+
+template <typename NodeIndexType, typename ArcIndexType>
 void StaticGraph<NodeIndexType, ArcIndexType>::ReserveNodes(
     NodeIndexType bound) {
   DCHECK(!const_capacities_);
@@ -1226,6 +1270,8 @@ void StaticGraph<NodeIndexType, ArcIndexType>::AddNode(NodeIndexType node) {
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType StaticGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
+  DCHECK_GE(tail, 0);
+  DCHECK_GE(head, 0);
   DCHECK(!is_built_);
   AddNode(tail > head ? tail : head);
   if (arc_in_order_) {
@@ -1403,14 +1449,11 @@ class StaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator
   OutgoingArcIterator(const StaticGraph& graph, NodeIndexType node)
       : Base::BaseStaticArcIterator(graph.start_[node],
                                     graph.DirectArcLimit(node)) {
-    DCHECK(graph.is_built_);
     DCHECK(graph.IsNodeValid(node));
   }
   OutgoingArcIterator(const StaticGraph& graph, NodeIndexType node,
                       ArcIndexType arc)
       : Base::BaseStaticArcIterator(arc, graph.DirectArcLimit(node)) {
-    DCHECK(graph.is_built_);
-    DCHECK(graph.IsNodeValid(node));
     DCHECK_GE(arc, graph.start_[node]);
   }
 };
@@ -1429,6 +1472,22 @@ ReverseArcListGraph<NodeIndexType, ArcIndexType>::operator[](
   return BeginEndWrapper<OutgoingHeadIterator>(
       OutgoingHeadIterator(*this, node),
       OutgoingHeadIterator(*this, node, Base::kNilArc));
+}
+
+template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutDegree(
+    NodeIndexType node) const {
+  ArcIndexType degree(0);
+  for (auto arc ATTRIBUTE_UNUSED : OutgoingArcs(node)) ++degree;
+  return degree;
+}
+
+template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType ReverseArcListGraph<NodeIndexType, ArcIndexType>::InDegree(
+    NodeIndexType node) const {
+  ArcIndexType degree(0);
+  for (auto arc ATTRIBUTE_UNUSED : IncomingArcs(node)) ++degree;
+  return degree;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -1486,6 +1545,8 @@ void ReverseArcListGraph<NodeIndexType, ArcIndexType>::AddNode(
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcListGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
+  DCHECK_GE(tail, 0);
+  DCHECK_GE(head, 0);
   AddNode(tail > head ? tail : head);
   head_.grow(tail, head);
   next_.grow(reverse_start_[head], start_[tail]);
@@ -1627,6 +1688,18 @@ class ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
 // ReverseArcStaticGraph definition ------------------------------------------
 
 template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::OutDegree(
+    NodeIndexType node) const {
+  return DirectArcLimit(node) - start_[node];
+}
+
+template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::InDegree(
+    NodeIndexType node) const {
+  return ReverseArcLimit(node) - reverse_start_[node];
+}
+
+template <typename NodeIndexType, typename ArcIndexType>
 IntegerRange<ArcIndexType> ReverseArcStaticGraph<
     NodeIndexType, ArcIndexType>::OutgoingArcs(NodeIndexType node) const {
   return IntegerRange<ArcIndexType>(start_[node], DirectArcLimit(node));
@@ -1716,6 +1789,8 @@ void ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::AddNode(
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
+  DCHECK_GE(tail, 0);
+  DCHECK_GE(head, 0);
   AddNode(tail > head ? tail : head);
 
   // We inverse head and tail here because it is more convenient this way
@@ -1777,14 +1852,11 @@ class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator
   OutgoingArcIterator(const ReverseArcStaticGraph& graph, NodeIndexType node)
       : Base::BaseStaticArcIterator(graph.start_[node],
                                     graph.DirectArcLimit(node)) {
-    DCHECK(graph.is_built_);
     DCHECK(graph.IsNodeValid(node));
   }
   OutgoingArcIterator(const ReverseArcStaticGraph& graph, NodeIndexType node,
                       ArcIndexType arc)
       : Base::BaseStaticArcIterator(arc, graph.DirectArcLimit(node)) {
-    DCHECK(graph.is_built_);
-    DCHECK(graph.IsNodeValid(node));
     DCHECK_GE(arc, graph.start_[node]);
   }
 };
@@ -1796,14 +1868,10 @@ class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::IncomingArcIterator
   IncomingArcIterator(const ReverseArcStaticGraph& graph, NodeIndexType node)
       : Base::BaseStaticArcIterator(graph.reverse_start_[node],
                                     graph.ReverseArcLimit(node)) {
-    DCHECK(graph.is_built_);
-    DCHECK(graph.IsNodeValid(node));
   }
   IncomingArcIterator(const ReverseArcStaticGraph& graph, NodeIndexType node,
                       ArcIndexType arc)
       : Base::BaseStaticArcIterator(arc, graph.ReverseArcLimit(node)) {
-    DCHECK(graph.is_built_);
-    DCHECK(graph.IsNodeValid(node));
     DCHECK_GE(arc, graph.reverse_start_[node]);
   }
 };
@@ -1821,7 +1889,6 @@ class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::IncidentArcIterator
         next_start_(graph.start_[node]),
         first_limit_(graph.ReverseArcLimit(node)) {
     if (index_ == first_limit_) index_ = next_start_;
-    DCHECK(graph.IsNodeValid(node));
     DCHECK((index_ >= graph.reverse_start_[node] && index_ < first_limit_) ||
            (index_ >= next_start_));
   }
@@ -1830,7 +1897,6 @@ class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::IncidentArcIterator
       : Base::BaseStaticArcIterator(arc, graph.DirectArcLimit(node)),
         next_start_(graph.start_[node]),
         first_limit_(graph.ReverseArcLimit(node)) {
-    DCHECK(graph.IsNodeValid(node));
     DCHECK((index_ >= graph.reverse_start_[node] && index_ < first_limit_) ||
            (index_ >= next_start_));
   }
@@ -1850,6 +1916,20 @@ class ReverseArcStaticGraph<NodeIndexType, ArcIndexType>::IncidentArcIterator
 };
 
 // ReverseArcMixedGraph definition -------------------------------------------
+
+template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::OutDegree(
+    NodeIndexType node) const {
+  return DirectArcLimit(node) - start_[node];
+}
+
+template <typename NodeIndexType, typename ArcIndexType>
+ArcIndexType ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::InDegree(
+    NodeIndexType node) const {
+  ArcIndexType degree(0);
+  for (auto arc ATTRIBUTE_UNUSED : IncomingArcs(node)) ++degree;
+  return degree;
+}
 
 template <typename NodeIndexType, typename ArcIndexType>
 IntegerRange<ArcIndexType> ReverseArcMixedGraph<
@@ -1927,6 +2007,8 @@ void ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::AddNode(
 template <typename NodeIndexType, typename ArcIndexType>
 ArcIndexType ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::AddArc(
     NodeIndexType tail, NodeIndexType head) {
+  DCHECK_GE(tail, 0);
+  DCHECK_GE(head, 0);
   AddNode(tail > head ? tail : head);
 
   // We inverse head and tail here because it is more convenient this way
@@ -1970,14 +2052,10 @@ class ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator
   OutgoingArcIterator(const ReverseArcMixedGraph& graph, NodeIndexType node)
       : Base::BaseStaticArcIterator(graph.start_[node],
                                     graph.DirectArcLimit(node)) {
-    DCHECK(graph.is_built_);
-    DCHECK(graph.IsNodeValid(node));
   }
   OutgoingArcIterator(const ReverseArcMixedGraph& graph, NodeIndexType node,
                       ArcIndexType arc)
       : Base::BaseStaticArcIterator(arc, graph.DirectArcLimit(node)) {
-    DCHECK(graph.is_built_);
-    DCHECK(graph.IsNodeValid(node));
     DCHECK_GE(arc, graph.start_[node]);
   }
 };
@@ -2019,11 +2097,9 @@ class ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::IncidentArcIterator {
  public:
   IncidentArcIterator(const ReverseArcMixedGraph& graph, NodeIndexType node)
       : graph_(&graph) {
-    DCHECK(graph.is_built_);
-    DCHECK(graph.IsNodeValid(node));
+    limit_ = graph.DirectArcLimit(node);  // also DCHECKs node and is_built_.
     index_ = graph.reverse_start_[node];
     restart_ = graph.start_[node];
-    limit_ = graph.DirectArcLimit(node);
     if (index_ == Base::kNilArc) {
       index_ = restart_;
     }
@@ -2031,11 +2107,9 @@ class ReverseArcMixedGraph<NodeIndexType, ArcIndexType>::IncidentArcIterator {
   IncidentArcIterator(const ReverseArcMixedGraph& graph, NodeIndexType node,
                       ArcIndexType arc)
       : graph_(&graph) {
-    DCHECK(graph.is_built_);
-    DCHECK(graph.IsNodeValid(node));
+    limit_ = graph.DirectArcLimit(node);
     index_ = arc;
     restart_ = graph.start_[node];
-    limit_ = graph.DirectArcLimit(node);
     DCHECK(arc == Base::kNilArc || arc == limit_ || graph.Tail(arc) == node);
   }
   bool Ok() const {

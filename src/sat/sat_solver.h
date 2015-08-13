@@ -20,7 +20,7 @@
 #define OR_TOOLS_SAT_SAT_SOLVER_H_
 
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include <queue>
 #include <string>
 #include <vector>

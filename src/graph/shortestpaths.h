@@ -19,7 +19,7 @@
 #ifndef OR_TOOLS_GRAPH_SHORTESTPATHS_H_
 #define OR_TOOLS_GRAPH_SHORTESTPATHS_H_
 
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 

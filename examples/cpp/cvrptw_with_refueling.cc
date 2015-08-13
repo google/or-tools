@@ -19,7 +19,7 @@
 // must visit certain nodes (refueling nodes) before the quantity of fuel
 // reaches zero. Fuel consumption is proportional to the distance traveled.
 
-#include "base/unique_ptr.h"
+#include <memory>
 #include <vector>
 
 #include "base/callback.h"

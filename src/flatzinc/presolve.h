@@ -172,8 +172,8 @@ class FzPresolver {
            std::pair<FzIntegerVariable*, FzIntegerVariable*>> difference_map_;
 
   // Stores (x == y) == b
-  hash_map<FzIntegerVariable*,
-           hash_map<FzIntegerVariable*, FzIntegerVariable*>> int_eq_reif_map_;
+  hash_map<FzIntegerVariable*, hash_map<FzIntegerVariable*, FzIntegerVariable*>>
+      int_eq_reif_map_;
 
   // Stores all variables defined in the search annotations.
   hash_set<FzIntegerVariable*> decision_variables_;

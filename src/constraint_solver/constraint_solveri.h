@@ -55,8 +55,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include "base/hash.h"
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -148,9 +149,7 @@ enum VarTypes {
 template <class T>
 class SimpleRevFIFO {
  private:
-  enum {
-    CHUNK_SIZE = 16
-  };  // TODO(user): could be an extra template param
+  enum { CHUNK_SIZE = 16 };  // TODO(user): could be an extra template param
   struct Chunk {
     T data_[CHUNK_SIZE];
     const Chunk* const next_;
@@ -299,7 +298,7 @@ class RevImmutableMultiMap {
  public:
   RevImmutableMultiMap(Solver* const solver, int initial_size)
       : solver_(solver),
-        array_(solver->UnsafeRevAllocArray(new Cell* [initial_size])),
+        array_(solver->UnsafeRevAllocArray(new Cell*[initial_size])),
         size_(initial_size),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_.Value());
@@ -380,7 +379,7 @@ class RevImmutableMultiMap {
     solver_->SaveAndSetValue(
         reinterpret_cast<void**>(&array_),
         reinterpret_cast<void*>(
-            solver_->UnsafeRevAllocArray(new Cell* [size_.Value()])));
+            solver_->UnsafeRevAllocArray(new Cell*[size_.Value()])));
     memset(array_, 0, size_.Value() * sizeof(*array_));
     for (int i = 0; i < old_size; ++i) {
       Cell* tmp = old_cell_array[i];
@@ -544,6 +543,17 @@ Demon* MakeConstraintDemon0(Solver* const s, T* const ct, void (T::*method)(),
   return s->RevAlloc(new CallMethod0<T>(ct, method, name));
 }
 
+template <class P>
+std::string ParameterDebugString(P param) {
+  return StrCat(param);
+}
+
+// Support limited to pointers to classes which define DebugString().
+template <class P>
+std::string ParameterDebugString(P* param) {
+  return param->DebugString();
+}
+
 // Demon proxy to a method on the constraint with one argument.
 template <class T, class P>
 class CallMethod1 : public Demon {
@@ -557,7 +567,7 @@ class CallMethod1 : public Demon {
 
   std::string DebugString() const override {
     return StrCat("CallMethod_", name_, "(", constraint_->DebugString(), ", ",
-                  param1_, ")");
+                  ParameterDebugString(param1_), ")");
   }
 
  private:
@@ -594,7 +604,8 @@ class CallMethod2 : public Demon {
   std::string DebugString() const override {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", param1_), StrCat(", ", param2_, ")"));
+                  StrCat(", ", ParameterDebugString(param1_)),
+                  StrCat(", ", ParameterDebugString(param2_), ")"));
   }
 
  private:
@@ -634,8 +645,9 @@ class CallMethod3 : public Demon {
   std::string DebugString() const override {
     return StrCat(StrCat("CallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", param1_), StrCat(", ", param2_),
-                  StrCat(", ", param3_, ")"));
+                  StrCat(", ", ParameterDebugString(param1_)),
+                  StrCat(", ", ParameterDebugString(param2_)),
+                  StrCat(", ", ParameterDebugString(param3_), ")"));
   }
 
  private:
@@ -711,7 +723,7 @@ class DelayedCallMethod1 : public Demon {
 
   std::string DebugString() const override {
     return StrCat("DelayedCallMethod_", name_, "(", constraint_->DebugString(),
-                  ", ", param1_, ")");
+                  ", ", ParameterDebugString(param1_), ")");
   }
 
  private:
@@ -753,7 +765,8 @@ class DelayedCallMethod2 : public Demon {
   std::string DebugString() const override {
     return StrCat(StrCat("DelayedCallMethod_", name_),
                   StrCat("(", constraint_->DebugString()),
-                  StrCat(", ", param1_), StrCat(", ", param2_, ")"));
+                  StrCat(", ", ParameterDebugString(param1_)),
+                  StrCat(", ", ParameterDebugString(param2_), ")"));
   }
 
  private:
@@ -895,7 +908,6 @@ class VarLocalSearchOperator : public LocalSearchOperator {
     }
   }
 
-
   // Called by Start() after synchronizing the operator with the current
   // assignment. Should be overridden instead of Start() to avoid calling
   // VarLocalSearchOperator::Start explicitly.
@@ -903,9 +915,8 @@ class VarLocalSearchOperator : public LocalSearchOperator {
 
   // OnStart() should really be protected, but then SWIG doesn't see it. So we
   // make it public, but only subclasses should access to it (to override it).
-  protected:
 
-
+ protected:
   void MarkChange(int64 index) {
     delta_changes_.Set(index);
     changes_.Set(index);
@@ -977,13 +988,13 @@ class IntVarLocalSearchHandler {
                                  IntVarLocalSearchHandler>::IsIncremental;
 %unignore VarLocalSearchOperator<IntVar, int64,
                                  IntVarLocalSearchHandler>::OnStart;
-#endif
+#endif  // SWIGPYTHON
 
 %rename(IntVarLocalSearchOperatorTemplate)
-    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 %template(IntVarLocalSearchOperatorTemplate)
-    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
-#endif
+        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+#endif  // SWIG
 
 class IntVarLocalSearchOperator
     : public VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler> {
@@ -1212,8 +1223,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   // 'start_empty_path_class' must remain alive during the lifespan of the
   // path operator.
   PathOperator(const std::vector<IntVar*>& next_vars,
-               const std::vector<IntVar*>& path_vars,
-               int number_of_base_nodes,
+               const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
                ResultCallback1<int, int64>* start_empty_path_class);
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
@@ -1358,8 +1368,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
 template <class T>
 LocalSearchOperator* MakeLocalSearchOperator(
-    Solver* solver,
-    const std::vector<IntVar*>& vars,
+    Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     ResultCallback1<int, int64>* start_empty_path_class);
 
@@ -1595,7 +1604,7 @@ class SymmetryBreaker : public DecisionVisitor {
 class SearchLog : public SearchMonitor {
  public:
   SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
-            ResultCallback<std::string>* display_callback, int period);
+            std::function<std::string()> display_callback, int period);
   ~SearchLog() override;
   void EnterSearch() override;
   void ExitSearch() override;
@@ -1621,7 +1630,7 @@ class SearchLog : public SearchMonitor {
   std::unique_ptr<WallTimer> timer_;
   IntVar* const var_;
   OptimizeVar* const obj_;
-  std::unique_ptr<ResultCallback<std::string> > display_callback_;
+  std::function<std::string()> display_callback_;
   int nsol_;
   int64 tick_;
   int64 objective_min_;
@@ -1785,9 +1794,9 @@ class ModelCache {
 
   // Expr Constant Expressions.
 
-  virtual IntExpr* FindExprConstantExpression(IntExpr* const expr, int64 value,
-                                              ExprConstantExpressionType type)
-      const = 0;
+  virtual IntExpr* FindExprConstantExpression(
+      IntExpr* const expr, int64 value,
+      ExprConstantExpressionType type) const = 0;
 
   virtual void InsertExprConstantExpression(
       IntExpr* const expression, IntExpr* const var, int64 value,
@@ -1953,10 +1962,10 @@ class ArgumentHolder {
   // Getters.
   int64 FindIntegerArgumentWithDefault(const std::string& arg_name, int64 def) const;
   int64 FindIntegerArgumentOrDie(const std::string& arg_name) const;
-  const std::vector<int64>& FindIntegerArrayArgumentOrDie(const std::string& arg_name)
-      const;
-  const IntTupleSet& FindIntegerMatrixArgumentOrDie(const std::string& arg_name)
-      const;
+  const std::vector<int64>& FindIntegerArrayArgumentOrDie(
+      const std::string& arg_name) const;
+  const IntTupleSet& FindIntegerMatrixArgumentOrDie(
+      const std::string& arg_name) const;
 
   IntExpr* FindIntegerExpressionArgumentOrDie(const std::string& arg_name) const;
   const std::vector<IntVar*>& FindIntegerVariableArrayArgumentOrDie(

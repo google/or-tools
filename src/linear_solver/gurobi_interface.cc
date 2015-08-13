@@ -17,7 +17,7 @@
 #include <cstddef>
 #include "base/hash.h"
 #include <limits>
-#include "base/unique_ptr.h"
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
