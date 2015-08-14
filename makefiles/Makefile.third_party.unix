@@ -7,7 +7,7 @@ GOOGLE_APPUTILS_TAG = 14
 # 2.0.2
 SPARSEHASH_TAG = 116
 CBC_TAG = 2.9.5
-SWIG_TAG = 3.0.5
+SWIG_TAG = 3.0.7
 # version 8.33
 PCRE_TAG = 1336
 # Mono version.
