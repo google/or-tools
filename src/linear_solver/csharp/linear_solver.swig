@@ -187,6 +187,7 @@
 
 // MPSolverParameters API. For expert users only.
 %unignore operations_research::MPSolverParameters;
+%unignore operations_research::MPSolverParameters::MPSolverParameters;
 %unignore operations_research::MPSolverParameters::DoubleParam;
 %unignore operations_research::MPSolverParameters::RELATIVE_MIP_GAP;
 %unignore operations_research::MPSolverParameters::GetDoubleParam;
