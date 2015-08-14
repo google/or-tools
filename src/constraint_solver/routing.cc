@@ -3979,9 +3979,10 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
                            }));
   // Path-based cheapest addition heuristic.
   first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC] =
-      solver_->MakePhase(nexts_, Solver::CHOOSE_PATH, [this](int64 i, int64 j) {
-        return GetArcCostForFirstSolution(i, j);
-      });
+      solver_->MakePhase(nexts_, Solver::CHOOSE_PATH,
+                         Solver::IndexEvaluator2([this](int64 i, int64 j) {
+                           return GetArcCostForFirstSolution(i, j);
+                           }));
   if (vehicles() == 1) {
     DecisionBuilder* fast_one_path_builder =
         solver_->RevAlloc(new FastOnePathBuilder(
@@ -4003,9 +4004,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
   // Path-based most constrained arc addition heuristic.
   first_solution_decision_builders_[ROUTING_PATH_MOST_CONSTRAINED_ARC] =
       solver_->MakePhase(nexts_, Solver::CHOOSE_PATH,
-                         [this](int64 i, int64 j, int64 k) {
+                         Solver::VariableValueComparator([this](int64 i, int64 j, int64 k) {
                            return ArcIsMoreConstrainedThanArc(i, j, k);
-                         });
+                           }));
   if (FLAGS_routing_use_filtered_first_solutions) {
     first_solution_filtered_decision_builders_
         [ROUTING_PATH_MOST_CONSTRAINED_ARC] = solver_->RevAlloc(
