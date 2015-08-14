@@ -3974,9 +3974,9 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders() {
   // Cheapest addition heuristic.
   first_solution_decision_builders_[ROUTING_LOCAL_CHEAPEST_ARC] =
       solver_->MakePhase(nexts_, Solver::CHOOSE_FIRST_UNBOUND,
-                         [this](int64 i, int64 j) {
+                         Solver::IndexEvaluator2([this](int64 i, int64 j) {
                            return GetArcCostForFirstSolution(i, j);
-                         });
+                           }));
   // Path-based cheapest addition heuristic.
   first_solution_decision_builders_[ROUTING_PATH_CHEAPEST_ARC] =
       solver_->MakePhase(nexts_, Solver::CHOOSE_PATH, [this](int64 i, int64 j) {
