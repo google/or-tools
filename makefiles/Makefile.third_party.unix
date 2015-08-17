@@ -20,8 +20,8 @@ FLEX_TAG = 2.5.37
 HELP2MAN_TAG = 1.43.3
 # Autoconf support
 AUTOCONF_TAG = 2.69
-AUTOMAKE_TAG = 1.14.1
-LIBTOOL_TAG = 2.4.2
+AUTOMAKE_TAG = 1.15
+LIBTOOL_TAG = 2.4.6
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the
 # archive is present.
@@ -428,7 +428,7 @@ dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz:
 
 # Install libtool
 dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile
-	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && make install
+	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && $(SET_PATH) make install
 
 dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile: dependencies/sources/libtool-$(LIBTOOL_TAG)/configure
 	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
