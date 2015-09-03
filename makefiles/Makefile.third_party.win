@@ -263,29 +263,18 @@ dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gfla
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/schuhschuh/gflags/archive/v$(GFLAGS_TAG).zip
-	cd dependencies/archives && rename v$(GFLAGS_TAG) gflags-$(GFLAGS_TAG).zip
+	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
 
 
 # Install protocol buffers.
 install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
 
 dependencies\install\bin\protoc.exe: dependencies\sources\protobuf\autogen.sh
-ifeq ("$(VisualStudioVersion)", "12.0")
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libprotobuf.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libprotobuf-lite.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\libprotoc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\protoc.vcxproj
-endif
 	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
-ifeq ("$(VisualStudioVersion)", "12.0")
-	git checkout dependencies/solutions/libprotobuf.vcxproj
-	git checkout dependencies/solutions/libprotobuf-lite.vcxproj
-	git checkout dependencies/solutions/libprotoc.vcxproj
-	git checkout dependencies/solutions/protoc.vcxproj
-endif
 
 dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf\vsprojects\include.tar
 	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\sources\protobuf\vsprojects\include.tar
+	copy dependencies\sources\protobuf\src\google\protobuf\stubs\stl_util.h dependencies\install\include\google\protobuf\stubs
 
 dependencies\sources\protobuf\vsprojects\include.tar: dependencies\sources\protobuf\autogen.sh
 	cd dependencies\sources\protobuf\vsprojects && extract_includes.bat
@@ -294,7 +283,7 @@ dependencies\sources\protobuf\vsprojects\include.tar: dependencies\sources\proto
 dependencies\sources\protobuf\autogen.sh:
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/releases/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\protobuf-$(PROTOBUF_TAG).zip
-	move dependencies\sources\protobuf-$(PROTOBUF_TAG) dependencies\sources\protobuf
+	cd dependencies\sources && move protobuf-$(PROTOBUF_TAG) protobuf
 
 
 # Intall Google Apputils Python.
