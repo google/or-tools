@@ -258,7 +258,7 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 	$(TOUCH) dependencies/install/lib/gflags.lib
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md:
-	git clone -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
+	git clone -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies\sources\gflags-$(GFLAGS_TAG)
 
 
 
@@ -289,7 +289,7 @@ dependencies\sources\protobuf\vsprojects\include.tar: dependencies\sources\proto
 	cd dependencies\sources\protobuf\vsprojects && ..\..\..\..\tools\tar.exe cvf include.tar include
 
 dependencies\sources\protobuf\autogen.sh:
-	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf
+	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies\sources\protobuf
 
 # Intall Google Apputils Python.
 install_google_apputils: dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README
@@ -313,7 +313,7 @@ dependencies\install\include\google\dense_hash_map: dependencies\sources\sparseh
 	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
 
 dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\autogen.sh:
-	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
+	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies\sources\sparsehash-$(SPARSEHASH_TAG)
 
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
