@@ -294,6 +294,7 @@ dependencies\sources\protobuf\vsprojects\include.tar: dependencies\sources\proto
 dependencies\sources\protobuf\autogen.sh:
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/releases/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\protobuf-$(PROTOBUF_TAG).zip
+	move dependencies\sources\protobuf-$(PROTOBUF_TAG) dependencies\sources\protobuf
 
 
 # Intall Google Apputils Python.
@@ -308,19 +309,19 @@ dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README:
 # Install sparsehash.
 install_sparsehash: dependencies\install\include\google\dense_hash_map
 
-dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash-$(SPARSEHASH-HASH)\autogen.sh
+dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\autogen.sh
 	-md dependencies\install\include\sparsehash
 	-md dependencies\install\include\sparsehash\internal
 	-md dependencies\install\include\google
 	-md dependencies\install\include\google\sparsehash
-	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\* dependencies\install\include\sparsehash
-	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
-	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\google\* dependencies\install\include\google
-	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\windows\google\* dependencies\install\include\google
-	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
-	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
+	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\* dependencies\install\include\sparsehash
+	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
+	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\google\* dependencies\install\include\google
+	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\google\* dependencies\install\include\google
+	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
+	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
 
-dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\autogen.sh:
+dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\autogen.sh:
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/sparsehash/sparsehash/archive/sparsehash-$(SPARSEHASH_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\sparsehash-$(SPARSEHASH_TAG).zip
 
