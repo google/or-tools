@@ -257,9 +257,13 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && nmake install
 	$(TOUCH) dependencies/install/lib/gflags.lib
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md:
-	git clone -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies\sources\gflags-$(GFLAGS_TAG)
+dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
+	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
+	$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
+dependencies/archives/gflags-$(GFLAGS_TAG).zip:
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/schuhschuh/gflags/archive/v$(GFLAGS_TAG).zip
+	cd dependencies/archives && rename v$(GFLAGS_TAG) gflags-$(GFLAGS_TAG).zip
 
 
 # Install protocol buffers.
@@ -280,7 +284,6 @@ ifeq ("$(VisualStudioVersion)", "12.0")
 	git checkout dependencies/solutions/protoc.vcxproj
 endif
 
-
 dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf\vsprojects\include.tar
 	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\sources\protobuf\vsprojects\include.tar
 
@@ -289,13 +292,18 @@ dependencies\sources\protobuf\vsprojects\include.tar: dependencies\sources\proto
 	cd dependencies\sources\protobuf\vsprojects && ..\..\..\..\tools\tar.exe cvf include.tar include
 
 dependencies\sources\protobuf\autogen.sh:
-	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies\sources\protobuf
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/releases/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
+	tools\unzip -d dependencies\sources dependencies\archives\protobuf-$(PROTOBUF_TAG).zip
+
 
 # Intall Google Apputils Python.
 install_google_apputils: dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README
 
 dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README:
-	git clone https://github.com/google/google-apputils dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/google-apputils/archive/master.zip
+	tools\unzip -d dependencies\sources dependencies\archives\master.zip
+	cd tools\sources && rename google-apputils-master google-apputils-$(GOOGLE-APPUTILS-TAG)
+
 
 # Install sparsehash.
 install_sparsehash: dependencies\install\include\google\dense_hash_map
@@ -313,7 +321,9 @@ dependencies\install\include\google\dense_hash_map: dependencies\sources\sparseh
 	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
 
 dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\autogen.sh:
-	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies\sources\sparsehash-$(SPARSEHASH_TAG)
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/sparsehash/sparsehash/archive/sparsehash-$(SPARSEHASH_TAG).zip
+	tools\unzip -d dependencies\sources dependencies\archives\sparsehash-$(SPARSEHASH_TAG).zip
+
 
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
