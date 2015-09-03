@@ -1,8 +1,8 @@
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.1.2
-PROTOBUF_TAG = 512 # version 2.5.0 + fix
-GOOGLE_APPUTILS_TAG = 14 # 0.4.0
-SPARSEHASH_TAG = 116 # 2.0.2
+PROTOBUF_TAG = 2.6.1
+GOOGLE_APPUTILS_TAG = 0.4.2
+SPARSEHASH_TAG = 2.0.2
 CBC_TAG = 2.9.5
 ZLIB_TAG = 1.2.8
 ZLIB_ARCHIVE_TAG = 128
@@ -80,7 +80,6 @@ build_third_party: \
 	missing_directories \
 	install_zlib \
 	install_gflags \
-	install_google_apputils \
 	install_protobuf \
 	install_sparsehash \
 	install_swig \
@@ -249,7 +248,7 @@ dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
 
 install_gflags: dependencies/install/lib/gflags.lib
 
-dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/CMakeLists.txt
+dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
 	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\install \
 	           -D CMAKE_BUILD_TYPE=Release \
@@ -258,13 +257,8 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/C
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && nmake install
 	$(TOUCH) dependencies/install/lib/gflags.lib
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/CMakeLists.txt: dependencies/archives/gflags-$(GFLAGS_TAG).zip
-	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
-	$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\CMakeLists.txt
-
-dependencies/archives/gflags-$(GFLAGS_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/schuhschuh/gflags/archive/v$(GFLAGS_TAG).zip
-	cd dependencies/archives && rename v$(GFLAGS_TAG) gflags-$(GFLAGS_TAG).zip
+dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md:
+	git clone -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
 
 
 
@@ -295,31 +289,31 @@ dependencies\sources\protobuf\vsprojects\include.tar: dependencies\sources\proto
 	cd dependencies\sources\protobuf\vsprojects && ..\..\..\..\tools\tar.exe cvf include.tar include
 
 dependencies\sources\protobuf\autogen.sh:
-	svn co http://protobuf.googlecode.com/svn/trunk/ -r $(PROTOBUF_TAG) dependencies/sources/protobuf
+	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf
 
 # Intall Google Apputils Python.
-install_google_apputils: dependencies\sources\google-apputils\README
+install_google_apputils: dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README
 
-dependencies\sources\google-apputils\README:
-	svn co http://google-apputils-python.googlecode.com/svn/trunk/ -r $(GOOGLE_APPUTILS_TAG) dependencies/sources/google-apputils
+dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README:
+	git clone https://github.com/google/google-apputils dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)
 
 # Install sparsehash.
 install_sparsehash: dependencies\install\include\google\dense_hash_map
 
-dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash\autogen.sh
+dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash-$(SPARSEHASH-HASH)\autogen.sh
 	-md dependencies\install\include\sparsehash
 	-md dependencies\install\include\sparsehash\internal
 	-md dependencies\install\include\google
 	-md dependencies\install\include\google\sparsehash
-	-copy dependencies\sources\sparsehash\src\sparsehash\* dependencies\install\include\sparsehash
-	-copy dependencies\sources\sparsehash\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
-	-copy dependencies\sources\sparsehash\src\google\* dependencies\install\include\google
-	-copy dependencies\sources\sparsehash\src\windows\google\* dependencies\install\include\google
-	-copy dependencies\sources\sparsehash\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
-	-copy dependencies\sources\sparsehash\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
+	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\* dependencies\install\include\sparsehash
+	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
+	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\google\* dependencies\install\include\google
+	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\windows\google\* dependencies\install\include\google
+	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
+	-copy dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
 
-dependencies\sources\sparsehash\autogen.sh:
-	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash
+dependencies\sources\sparsehash-$(SPARSEHASH_TAG)\autogen.sh:
+	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
 
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
@@ -444,8 +438,8 @@ clean_third_party:
 makefile_third_party: Makefile.local
 
 # Install python modules
-install_python_modules:
-	cd dependencies\sources\google-apputils && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
+install_python_modules: install_google_apputils
+	cd dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG) && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
 	copy dependencies\install\bin\protoc.exe dependencies\sources\protobuf\src
 	cd dependencies\sources\protobuf/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py build
 	cd dependencies\sources\protobuf/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
