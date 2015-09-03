@@ -1,11 +1,9 @@
 # SVN tags of dependencies to checkout.
 
 GFLAGS_TAG = 2.1.2
-PROTOBUF_TAG = 2.6.0
-# 0.4.0
-GOOGLE_APPUTILS_TAG = 14
-# 2.0.2
-SPARSEHASH_TAG = 116
+PROTOBUF_TAG = 2.6.1
+GOOGLE_APPUTILS_TAG = 0.4.2
+SPARSEHASH_TAG = 2.0.2
 CBC_TAG = 2.9.5
 SWIG_TAG = 3.0.7
 # version 8.33
@@ -60,7 +58,7 @@ ifeq ($(wildcard dependencies/archives/mono-$(MONO_TAG).tar.bz2),)
     MONO_TARGET =
     MONO_MAKEFILE = "\# Please add mono-$(MONO_TAG).tar.bz2 in dependencies/archives to add support for mono and .NET."
 else
-    MONO_TARGET = dependencies/install/bin/gmcs
+    MONO_TARGET = dependencies/install/bin/mcs
     MONO_MAKEFILE = UNIX_MONO_DIR = $(OR_ROOT_FULL)/dependencies/install
 endif
 
@@ -122,7 +120,6 @@ install_third_party: \
 	missing_directories \
 	install_gflags \
 	install_protobuf \
-	install_google_apputils \
 	install_sparsehash \
 	install_swig \
 	install_cbc \
@@ -232,7 +229,7 @@ src/gen/sat:
 # Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
-dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt
+dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
 	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
 		 -D BUILD_STATIC_LIBS=ON \
@@ -248,12 +245,8 @@ ifeq ($(PLATFORM),MACOSX)
                           dependencies/install/lib/libgflags.dylib
 endif
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt: dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/gflags-$(GFLAGS_TAG).tar.gz
-
-dependencies/archives/gflags-$(GFLAGS_TAG).tar.gz:
-	cd dependencies/archives && curl -OL https://github.com/schuhschuh/gflags/archive/v$(GFLAGS_TAG).tar.gz
-	cd dependencies/archives && mv v$(GFLAGS_TAG).tar.gz gflags-$(GFLAGS_TAG).tar.gz
+dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt:
+	git clone -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
 
 # Install protocol buffers.
 install_protobuf: dependencies/install/bin/protoc
@@ -267,17 +260,14 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile: dependencies/sources/pro
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh $(ACLOCAL_TARGET)
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./autogen.sh
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh: dependencies/archives/protobuf-$(PROTOBUF_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/protobuf-$(PROTOBUF_TAG).tar.gz
-
-dependencies/archives/protobuf-$(PROTOBUF_TAG).tar.gz:
-	cd dependencies/archives && curl -OL https://protobuf.googlecode.com/svn/rc/protobuf-$(PROTOBUF_TAG).tar.gz
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
+	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
 
 # Intall Google Apputils Python.
-install_google_apputils: dependencies/sources/google-apputils/README
+install_google_apputils: dependencies/sources/google-apputils-$(GOOGLE_APPUTILS_TAG)/README
 
-dependencies/sources/google-apputils/README:
-	cd dependencies/sources && git clone https://github.com/google/google-apputils
+dependencies/sources/google-apputils-$(GOOGLE_APPUTILS_TAG)/README:
+	git clone https://github.com/google/google-apputils dependencies/sources/google-apputils-$(GOOGLE_APPUTILS_TAG)
 
 # Install sparsehash.
 install_sparsehash: dependencies/install/include/google/dense_hash_map
@@ -292,7 +282,7 @@ dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/source
 	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
-	svn co http://sparsehash.googlecode.com/svn/trunk/ -r $(SPARSEHASH_TAG) dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
+	git clone https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
 	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && patch -p0 -i ../../archives/sparsehash.patch
 
 # Install Coin CBC.
@@ -359,7 +349,7 @@ dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: depende
 # Install mono if needed
 install_mono: $(MONO_TARGET)
 
-dependencies/install/bin/gmcs: dependencies/sources/mono-$(MONO_TAG)/Makefile $(ACLOCAL_TARGET)
+dependencies/install/bin/mcs: dependencies/sources/mono-$(MONO_TAG)/Makefile $(ACLOCAL_TARGET)
 	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) make -j 16 && make install
 
 dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure $(ACLOCAL_TARGET)
@@ -496,8 +486,8 @@ clean_third_party:
 makefile_third_party: Makefile.local
 
 # Install python modules
-install_python_modules:
-	cd dependencies/sources/google-apputils && python$(PYTHON_VERSION) setup.py install --user
+install_python_modules: install_google_apputils install_protobuf
+	cd dependencies/sources/google-apputils-$(GOOGLE_APPUTILS_TAG) && python$(PYTHON_VERSION) setup.py install --user
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/python && python$(PYTHON_VERSION) setup.py build
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/python && python$(PYTHON_VERSION) setup.py install --user
 
