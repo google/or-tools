@@ -282,7 +282,7 @@ dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/source
 	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
-	git clone https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
+	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
 	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && patch -p0 -i ../../archives/sparsehash.patch
 
 # Install Coin CBC.
