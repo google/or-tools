@@ -2867,11 +2867,11 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractLexLesseqInt(this, ct);
   } else if (type == "maximum_arg_int") {
     ExtractMaximumArgInt(this, ct);
-  } else if (type == "maximum_int") {
+  } else if (type == "maximum_int" || type == "array_int_maximum") {
     ExtractMaximumInt(this, ct);
   } else if (type == "minimum_arg_int") {
     ExtractMinimumArgInt(this, ct);
-  } else if (type == "minimum_int") {
+  } else if (type == "minimum_int" || type == "array_int_minimum") {
     ExtractMinimumInt(this, ct);
   } else if (type == "nvalue") {
     ExtractNvalue(this, ct);
