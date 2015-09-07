@@ -245,7 +245,7 @@ ifeq ($(PLATFORM),MACOSX)
                           dependencies/install/lib/libgflags.dylib
 endif
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.txt:
+dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md:
 	git clone -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
 
 # Install protocol buffers.
