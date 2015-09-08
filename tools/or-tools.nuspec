@@ -4,8 +4,8 @@
     <id>Google.OrTools</id>
     <version>2.0.VVVV</version>
     <authors>Google</authors>
-    <licenseUrl>http://code.google.com/p/or-tools/source/browse/trunk/LICENSE-2.0.txt</licenseUrl>
-    <projectUrl>http://code.google.com/p/or-tools</projectUrl>
+    <licenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</licenseUrl>
+    <projectUrl>https://developers.google.com/optimization</projectUrl>
     <description>.NET Assembly for the OR-Tools project</description>
     <releaseNotes>SVN Release VVVV.</releaseNotes>
     <copyright>Copyright 2015 Google</copyright>

@@ -42,8 +42,8 @@ setup(
     keywords = ('operations research, constraint programming, ' +
                 'linear programming,' + 'flow algorithms,' +
                 'python'),
-    url = 'http://code.google.com/p/or-tools/',
-    download_url = 'https://drive.google.com/#folders/0B2yUSpEp04BNdEU4QW5US1hvTzg',
+    url = 'https://developers.google.com/optimization/',
+    download_url = 'https://github.com/google/or-tools/releases',
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
