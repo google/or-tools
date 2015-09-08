@@ -1723,6 +1723,35 @@ endif
 	-$(DELREC) temp
 endif
 
+ifeq "$(SYSTEM)" "win"
+fz_archive: fz
+	-$(DELREC) temp
+	mkdir temp
+	mkdir temp\\or-tools.$(PORT)
+	mkdir temp\\or-tools.$(PORT)\\bin
+	mkdir temp\\or-tools.$(PORT)\\share
+	mkdir temp\\or-tools.$(PORT)\\share\\minizinc
+	copy LICENSE-2.0.txt temp\\or-tools.$(PORT)
+	copy bin\\fz.exe temp\\or-tools.$(PORT)\\bin\\fzn-or-tools.exe
+	copy src\\flatzinc\\mznlib\\*.mzn temp\\or-tools.$(PORT)\\share\\minizinc
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.flatzinc.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
+	-$(DELREC) temp
+else
+fz_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
+	-$(DELREC) temp
+	mkdir temp
+	mkdir temp/or-tools.$(PORT)
+	mkdir temp/or-tools.$(PORT)/bin
+	mkdir temp/or-tools.$(PORT)/share
+	mkdir temp/or-tools.$(PORT)/share/minizinc
+	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
+	cp bin/fz temp/or-tools.$(PORT)/bin/fzn-or-tools
+	cp src/flatzinc/mznlib/* temp/or-tools.$(PORT)/share/minizinc
+	cd temp && tar cvzf ../Google.OrTools.flatzinc.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	-$(DELREC) temp
+endif
+
+
 # Debug
 printdir:
 	@echo LIB_DIR = $(LIB_DIR)
