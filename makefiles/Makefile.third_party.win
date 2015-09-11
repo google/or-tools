@@ -292,7 +292,7 @@ install_google_apputils: dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_
 dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README:
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/google-apputils/archive/master.zip
 	tools\unzip -d dependencies\sources dependencies\archives\master.zip
-	cd tools\sources && rename google-apputils-master google-apputils-$(GOOGLE-APPUTILS-TAG)
+	cd dependencies\sources && move google-apputils-master google-apputils-$(GOOGLE_APPUTILS_TAG)
 
 
 # Install sparsehash.
