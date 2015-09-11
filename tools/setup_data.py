@@ -20,7 +20,7 @@ setup(
     keywords = ('operations research, constraint programming, ' +
                 'linear programming,' + 'flow algorithms,' +
                 'python'),
-    url = 'http://code.google.com/p/or-tools/',
+    url = 'https://developers.google.com/optimization/',
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

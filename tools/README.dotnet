@@ -1,6 +1,6 @@
 This file describes how to use the or-tools .NET binary archive.
 
-OR-Tools is located at http://code.google.com/p/or-tools
+OR-Tools is located at https://developers.google.com/optimization
 
 This module has been tested under:
   - ubuntu 10.04 and up (32 and 64 bit).
