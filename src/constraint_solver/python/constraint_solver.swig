@@ -880,6 +880,7 @@ namespace operations_research {
 
 // Solver: Constraints about interval variables.
 %rename (FixedDurationIntervalVar) Solver::MakeFixedDurationIntervalVar;
+%rename (IntervalVar) Solver::MakeIntervalVar;
 %rename (FixedInterval) Solver::MakeFixedInterval;
 %rename (MirrorInterval) Solver::MakeMirrorInterval;
 %rename (FixedDurationStartSyncedOnStartIntervalVar)
@@ -2220,4 +2221,3 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
-
