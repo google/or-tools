@@ -1359,4 +1359,85 @@ IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
   return b;
 }
 
+namespace {
+class ForbiddenIntervals : public Constraint {
+ public:
+  ForbiddenIntervals(Solver* const solver, IntVar* var, std::vector<int64> starts,
+          const std::vector<int64>& ends)
+      : Constraint(solver),
+        var_(var),
+        starts_(std::move(starts)),
+        ends_(std::move(ends)),
+        first_active_interval_(0),
+        last_active_interval_(starts_.size() - 1) {
+    CHECK_EQ(starts_.size(), ends_.size());
+  }
+
+  ~ForbiddenIntervals() override {}
+
+  void Post() override {
+    Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
+    var_->WhenRange(demon);
+  }
+
+  void InitialPropagate() override {
+    const int64 vmin = var_->Min();
+    const int64 vmax = var_->Max();
+    int first = first_active_interval_.Value();
+    int last = last_active_interval_.Value();
+    while (first <= last) {
+      if (ends_[first] < vmin) {
+        first++;
+      } else {
+        break;
+      }
+    }
+
+    while (first <= last) {
+      if (starts_[last] > vmax) {
+        last--;
+      } else {
+        break;
+      }
+    }
+
+    first_active_interval_.SetValue(solver(), first);
+    last_active_interval_.SetValue(solver(), last);
+
+    if (first > last) {  // no active interval
+      return;
+    }
+
+    // Should we propagate?
+    if (vmin >= starts_[first]) {
+      var_->SetMin(ends_[first] + 1);
+    }
+    if (vmax <= ends_[last]) {
+      var_->SetMax(starts_[last] - 1);
+    }
+  }
+
+ private:
+  IntVar* const var_;
+  std::vector<int64> starts_;
+  std::vector<int64> ends_;
+  Rev<int> first_active_interval_;
+  Rev<int> last_active_interval_;
+};
+}  // namespace
+
+Constraint* Solver::MakeForbiddenIntervalCt(IntExpr* const expr,
+                                            std::vector<int64> starts,
+                                            std::vector<int64> ends) {
+  return RevAlloc(new ForbiddenIntervals(this, expr->Var(),
+                                         std::move(starts), std::move(ends)));
+}
+
+Constraint* Solver::MakeForbiddenIntervalCt(IntExpr* const expr,
+                                            std::vector<int> starts,
+                                            std::vector<int> ends) {
+  return RevAlloc(new ForbiddenIntervals(this, expr->Var(),
+                                         ToInt64Vector(starts),
+                                         ToInt64Vector(ends)));
+}
 }  // namespace operations_research

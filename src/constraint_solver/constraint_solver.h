@@ -1472,6 +1472,17 @@ class Solver {
   // creates holes in the domain of the variable.
   Constraint* MakeMemberCt(IntExpr* const v, const std::vector<int64>& values);
   Constraint* MakeMemberCt(IntExpr* const v, const std::vector<int>& values);
+  // v should not be in the list of forbidden intervals [start[i]..end[i]].
+  // It assumes intervals are sorted and non overlapping.
+
+  Constraint* MakeForbiddenIntervalCt(IntExpr* const v,
+                                      std::vector<int64> starts,
+                                      std::vector<int64> ends);
+  // v should not be in the list of forbidden intervals [start[i]..end[i]].
+  // It assumes intervals are sorted and non overlapping.
+  Constraint* MakeForbiddenIntervalCt(IntExpr* const v,
+                                      std::vector<int> starts,
+                                      std::vector<int> ends);
 
   // |{i | v[i] == value}| == count
   Constraint* MakeCount(const std::vector<IntVar*>& v, int64 value, int64 count);
