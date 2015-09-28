@@ -14,13 +14,10 @@
 #ifndef OR_TOOLS_BASE_HASH_H_
 #define OR_TOOLS_BASE_HASH_H_
 
-// Hash maps and hash sets are compiler dependant.
+// Hash maps and hash sets are compiler dependent.
 #if defined(__GNUC__) && !defined(STLPORT)
-#include <ext/hash_map>
-#include <ext/hash_set>
-namespace operations_research {
-using namespace __gnu_cxx;  // NOLINT
-}  // namespace operations_research
+#include <unordered_map>
+#include <unordered_set>
 #else
 #include <hash_map>
 #include <hash_set>
@@ -123,15 +120,10 @@ inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
 // GNU C++ port, with or without STLport.
 // --------------------------------------------------------------------------
 #ifdef __GNUC__
-// hash namespace
-#if defined(__GNUC__) && defined(STLPORT)
-#define HASH_NAMESPACE std
-#elif defined(__GNUC__) && !defined(STLPORT)
-#define HASH_NAMESPACE __gnu_cxx
-#endif
 
 // Support a few hash<> operators, in the hash namespace.
-namespace HASH_NAMESPACE {
+namespace std {
+
 template <class First, class Second>
 struct hash<std::pair<First, Second> > {
   size_t operator()(const std::pair<First, Second>& p) const {
@@ -145,41 +137,7 @@ struct hash<std::pair<First, Second> > {
   }
 };
 
-template <class T>
-struct hash<T*> {
-  size_t operator()(T* x) const { return reinterpret_cast<size_t>(x); }
-};
-
-// hash<int64> and hash<std::string> are already defined with STLport.
 #ifndef STLPORT
-template <>
-struct hash<int64> {
-  size_t operator()(int64 x) const { return static_cast<size_t>(x); }
-};
-
-template <>
-struct hash<uint64> {
-  size_t operator()(uint64 x) const { return static_cast<size_t>(x); }
-};
-
-template <>
-struct hash<const std::string> {
-  size_t operator()(const std::string& x) const {
-    size_t hash = 0;
-    int c;
-    const char* s = x.c_str();
-    while ((c = *s++)) {  // Extra () to remove a warning on Windows.
-      hash = ((hash << 5) + hash) ^ c;
-    }
-    return hash;
-  }
-};
-
-template <>
-struct hash<std::string> {
-  size_t operator()(const std::string& x) const { return hash<const std::string>()(x); }
-};
-
 template <class T, std::size_t N>
 struct hash<std::array<T, N>> {
  public:
@@ -200,14 +158,14 @@ struct hash<std::array<T, N>> {
   static const size_t min_buckets = 8;  // 4 and 8 are defaults.
 };
 #endif  // STLPORT
-}  // namespace HASH_NAMESPACE
+}  // namespace std
 
-using HASH_NAMESPACE::hash;
-using HASH_NAMESPACE::hash_map;
-using HASH_NAMESPACE::hash_set;
+using std::hash;
+template <typename K, typename T, typename H = hash<K>, typename E = std::equal_to<K>>
+using hash_map = std::unordered_map<K, T, H, E>;
+template <typename K, typename H = hash<K>, typename E = std::equal_to<K>>
+using hash_set = std::unordered_set<K, H, E>;
 #endif  // __GNUC__
-
-#undef HASH_NAMESPACE
 
 // --------------------------------------------------------------------------
 // Microsoft Visual C++ port
