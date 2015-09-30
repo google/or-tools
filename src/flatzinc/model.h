@@ -52,7 +52,7 @@ class FzIntegerVariable;
 // Note that semi-infinite intervals aren't supported.
 // - A boolean domain({ 0, 1 } with boolean display tag).
 struct FzDomain {
-  static FzDomain IntegerList(std::vector<int64>* values);
+  static FzDomain IntegerList(std::vector<int64> values);
   static FzDomain AllInt64();
   static FzDomain Singleton(int64 value);
   static FzDomain Interval(int64 included_min, int64 included_max);
@@ -147,13 +147,10 @@ struct FzArgument {
 
   static FzArgument IntegerValue(int64 value);
   static FzArgument Interval(int64 imin, int64 imax);
-  static FzArgument IntegerList(const std::vector<int64>& values);
-#if !defined(SWIG)
-  static FzArgument IntegerList(std::vector<int64>* values);
-#endif
-  static FzArgument DomainList(const std::vector<FzDomain>& domains);
+  static FzArgument IntegerList(std::vector<int64> values);
+  static FzArgument DomainList(std::vector<FzDomain> domains);
   static FzArgument IntVarRef(FzIntegerVariable* const var);
-  static FzArgument IntVarRefArray(const std::vector<FzIntegerVariable*>& vars);
+  static FzArgument IntVarRefArray(std::vector<FzIntegerVariable*> vars);
   static FzArgument VoidArgument();
   static FzArgument FromDomain(const FzDomain& domain);
 
@@ -181,11 +178,11 @@ struct FzArgument {
 // A constraint has a type, some arguments, and a few tags. Typically, a
 // FzConstraint is on the heap, and owned by the global FzModel object.
 struct FzConstraint {
-  FzConstraint(const std::string& type_, const std::vector<FzArgument>& arguments_,
+  FzConstraint(const std::string& type_, std::vector<FzArgument> arguments_,
                bool strong_propagation_,
                FzIntegerVariable* const target_variable_)
       : type(type_),
-        arguments(arguments_),
+        arguments(std::move(arguments_)),
         target_variable(target_variable_),
         strong_propagation(strong_propagation_),
         active(true),
@@ -248,14 +245,15 @@ struct FzAnnotation {
   };
 
   static FzAnnotation Empty();
-  static FzAnnotation AnnotationList(std::vector<FzAnnotation>* list);
+  static FzAnnotation AnnotationList(std::vector<FzAnnotation> list);
   static FzAnnotation Identifier(const std::string& id);
   static FzAnnotation FunctionCall(const std::string& id,
-                                   std::vector<FzAnnotation>* args);
+                                   std::vector<FzAnnotation> args);
+  static FzAnnotation FunctionCall(const std::string& id);
   static FzAnnotation Interval(int64 interval_min, int64 interval_max);
   static FzAnnotation IntegerValue(int64 value);
   static FzAnnotation Variable(FzIntegerVariable* const var);
-  static FzAnnotation VariableList(const std::vector<FzIntegerVariable*>& vars);
+  static FzAnnotation VariableList(std::vector<FzIntegerVariable*> vars);
   static FzAnnotation String(const std::string& str);
 
   std::string DebugString() const;
@@ -295,8 +293,8 @@ struct FzOnSolutionOutput {
   //     name = array2d(min1..max1, min2..max2, [list of variable values])
   // for a 2d array (bounds.size() == 2).
   static FzOnSolutionOutput MultiDimensionalArray(
-      const std::string& name, const std::vector<Bounds>& bounds,
-      const std::vector<FzIntegerVariable*>& flat_variables,
+      const std::string& name, std::vector<Bounds> bounds,
+      std::vector<FzIntegerVariable*> flat_variables,
       bool display_as_boolean);
   // Empty output.
   static FzOnSolutionOutput VoidOutput();
@@ -324,18 +322,18 @@ class FzModel {
   // FzModel and will remain live for its lifetime.
   FzIntegerVariable* AddVariable(const std::string& name, const FzDomain& domain,
                                  bool temporary);
-  void AddConstraint(const std::string& type, const std::vector<FzArgument>& arguments,
+  void AddConstraint(const std::string& type, std::vector<FzArgument> arguments,
                      bool is_domain, FzIntegerVariable* const target_variable);
   void AddOutput(const FzOnSolutionOutput& output);
 
   // Set the search annotations and the objective: either simply satisfy the
   // problem, or minimize or maximize the given variable (which must have been
   // added with AddVariable() already).
-  void Satisfy(std::vector<FzAnnotation>* search_annotations);
+  void Satisfy(std::vector<FzAnnotation> search_annotations);
   void Minimize(FzIntegerVariable* obj,
-                std::vector<FzAnnotation>* search_annotations);
+                std::vector<FzAnnotation> search_annotations);
   void Maximize(FzIntegerVariable* obj,
-                std::vector<FzAnnotation>* search_annotations);
+                std::vector<FzAnnotation> search_annotations);
 
   // ----- Accessors and mutators -----
 

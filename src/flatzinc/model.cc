@@ -33,10 +33,10 @@ DEFINE_bool(fz_debug, false,
 namespace operations_research {
 // ----- FzDomain -----
 
-FzDomain FzDomain::IntegerList(std::vector<int64>* values) {
+FzDomain FzDomain::IntegerList(std::vector<int64> values) {
   FzDomain result;
   result.is_interval = false;
-  result.values.swap(*values);
+  result.values = std::move(values);
   result.display_as_boolean = false;
   return result;
 }
@@ -241,26 +241,17 @@ FzArgument FzArgument::Interval(int64 imin, int64 imax) {
   return result;
 }
 
-FzArgument FzArgument::IntegerList(const std::vector<int64>& values) {
+FzArgument FzArgument::IntegerList(std::vector<int64> values) {
   FzArgument result;
   result.type = INT_LIST;
-  result.values = values;
+  result.values = std::move(values);
   return result;
 }
 
-FzArgument FzArgument::IntegerList(std::vector<int64>* values) {
-  FzArgument result;
-  result.type = INT_LIST;
-  if (values != nullptr) {
-    result.values.swap(*values);
-  }
-  return result;
-}
-
-FzArgument FzArgument::DomainList(const std::vector<FzDomain>& domains) {
+FzArgument FzArgument::DomainList(std::vector<FzDomain> domains) {
   FzArgument result;
   result.type = DOMAIN_LIST;
-  result.domains = domains;
+  result.domains = std::move(domains);
   return result;
 }
 
@@ -271,10 +262,10 @@ FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
   return result;
 }
 
-FzArgument FzArgument::IntVarRefArray(const std::vector<FzIntegerVariable*>& vars) {
+FzArgument FzArgument::IntVarRefArray(std::vector<FzIntegerVariable*> vars) {
   FzArgument result;
   result.type = INT_VAR_REF_ARRAY;
-  result.variables = vars;
+  result.variables = std::move(vars);
   return result;
 }
 
@@ -460,14 +451,12 @@ FzAnnotation FzAnnotation::Empty() {
   return result;
 }
 
-FzAnnotation FzAnnotation::AnnotationList(std::vector<FzAnnotation>* list) {
+FzAnnotation FzAnnotation::AnnotationList(std::vector<FzAnnotation> list) {
   FzAnnotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
   result.interval_max = 0;
-  if (list != nullptr) {
-    result.annotations.swap(*list);
-  }
+  result.annotations = std::move(list);
   return result;
 }
 
@@ -480,16 +469,23 @@ FzAnnotation FzAnnotation::Identifier(const std::string& id) {
   return result;
 }
 
-FzAnnotation FzAnnotation::FunctionCall(const std::string& id,
-                                        std::vector<FzAnnotation>* args) {
+FzAnnotation FzAnnotation::FunctionCallWithArguments(
+    const std::string& id, std::vector<FzAnnotation> args) {
   FzAnnotation result;
   result.type = FUNCTION_CALL;
   result.interval_min = 0;
   result.interval_max = 0;
   result.id = id;
-  if (args != nullptr) {
-    result.annotations.swap(*args);
-  }
+  result.annotations = std::move(args);
+  return result;
+}
+
+FzAnnotation FzAnnotation::FunctionCall(const std::string& id) {
+  FzAnnotation result;
+  result.type = FUNCTION_CALL;
+  result.interval_min = 0;
+  result.interval_max = 0;
+  result.id = id;
   return result;
 }
 
@@ -518,12 +514,12 @@ FzAnnotation FzAnnotation::Variable(FzIntegerVariable* const var) {
 }
 
 FzAnnotation FzAnnotation::VariableList(
-    const std::vector<FzIntegerVariable*>& variables) {
+    std::vector<FzIntegerVariable*> variables) {
   FzAnnotation result;
   result.type = INT_VAR_REF_ARRAY;
   result.interval_min = 0;
   result.interval_max = 0;
-  result.variables = variables;
+  result.variables = std::move(variables);
   return result;
 }
 
@@ -602,13 +598,13 @@ FzOnSolutionOutput FzOnSolutionOutput::SingleVariable(
 }
 
 FzOnSolutionOutput FzOnSolutionOutput::MultiDimensionalArray(
-    const std::string& name, const std::vector<Bounds>& bounds,
-    const std::vector<FzIntegerVariable*>& flat_variables, bool display_as_boolean) {
+    const std::string& name, std::vector<Bounds> bounds,
+    std::vector<FzIntegerVariable*> flat_variables, bool display_as_boolean) {
   FzOnSolutionOutput result;
   result.variable = nullptr;
   result.name = name;
-  result.bounds = bounds;
-  result.flat_variables = flat_variables;
+  result.bounds = std::move(bounds);
+  result.flat_variables = std::move(flat_variables);
   result.display_as_boolean = display_as_boolean;
   return result;
 }
@@ -645,10 +641,10 @@ FzIntegerVariable* FzModel::AddVariable(const std::string& name,
 }
 
 void FzModel::AddConstraint(const std::string& id,
-                            const std::vector<FzArgument>& arguments, bool is_domain,
+                            std::vector<FzArgument> arguments, bool is_domain,
                             FzIntegerVariable* const defines) {
   FzConstraint* const constraint =
-      new FzConstraint(id, arguments, is_domain, defines);
+      new FzConstraint(id, std::move(arguments), is_domain, defines);
   constraints_.push_back(constraint);
   if (defines != nullptr) {
     defines->defining_constraint = constraint;
@@ -659,29 +655,23 @@ void FzModel::AddOutput(const FzOnSolutionOutput& output) {
   output_.push_back(output);
 }
 
-void FzModel::Satisfy(std::vector<FzAnnotation>* search_annotations) {
+void FzModel::Satisfy(std::vector<FzAnnotation> search_annotations) {
   objective_ = nullptr;
-  if (search_annotations != nullptr) {
-    search_annotations_.swap(*search_annotations);
-  }
+  search_annotations_ = std::move(search_annotations);
 }
 
 void FzModel::Minimize(FzIntegerVariable* obj,
-                       std::vector<FzAnnotation>* search_annotations) {
+                       std::vector<FzAnnotation> search_annotations) {
   objective_ = obj;
   maximize_ = false;
-  if (search_annotations != nullptr) {
-    search_annotations_.swap(*search_annotations);
-  }
+  search_annotations_ = std::move(search_annotations);
 }
 
 void FzModel::Maximize(FzIntegerVariable* obj,
-                       std::vector<FzAnnotation>* search_annotations) {
+                       std::vector<FzAnnotation> search_annotations) {
   objective_ = obj;
   maximize_ = true;
-  if (search_annotations != nullptr) {
-    search_annotations_.swap(*search_annotations);
-  }
+  search_annotations_ = std::move(search_annotations);
 }
 
 std::string FzModel::DebugString() const {

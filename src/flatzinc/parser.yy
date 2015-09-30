@@ -487,7 +487,7 @@ int_domain:
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
 | '{' integers '}' {
   CHECK($2 != nullptr);
-  $$ = FzDomain::IntegerList($2);
+  $$ = FzDomain::IntegerList(std::move(*$2));
   delete $2;
 }
 
@@ -497,7 +497,7 @@ set_domain:
 | SET OF IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($3, $5); }
 | SET OF '{' integers '}' {
   CHECK($4 != nullptr);
-  $$ = FzDomain::IntegerList($4);
+  $$ = FzDomain::IntegerList(std::move(*$4));
   delete $4;
 }
 
@@ -527,7 +527,7 @@ const_literal:
 | IVALUE DOTDOT IVALUE { $$ = FzDomain::Interval($1, $3); }
 | '{' integers '}' {
   CHECK($2 != nullptr);
-  $$ = FzDomain::IntegerList($2);
+  $$ = FzDomain::IntegerList(std::move(*$2));
   delete $2;
 }
 | '{' '}' { $$ = FzDomain::EmptyDomain(); }
@@ -590,7 +590,7 @@ argument:
 | IVALUE DOTDOT IVALUE { $$ = FzArgument::Interval($1, $3); }
 | '{' integers '}' {
   CHECK($2 != nullptr);
-  $$ = FzArgument::IntegerList($2);
+  $$ = FzArgument::IntegerList(std::move(*$2));
   delete $2;
 }
 | IDENTIFIER {
@@ -691,8 +691,12 @@ annotation:
 }
 | IDENTIFIER '(' annotation_arguments ')' {
   std::vector<FzAnnotation>* const annotations = $3;
-  $$ = FzAnnotation::FunctionCall($1, annotations);
-  delete annotations;
+  if (annotations != nullptr) {
+    $$ = FzAnnotation::FunctionCallWithArguments($1, std::move(*annotations));
+    delete annotations;
+  } else {
+    $$ = FzArgument::FunctionCall($1);
+  }
 }
 | IDENTIFIER '[' IVALUE ']' {
   CHECK(ContainsKey(context->variable_array_map, $1))
@@ -702,8 +706,12 @@ annotation:
 }
 | '[' annotation_arguments ']' {
   std::vector<FzAnnotation>* const annotations = $2;
-  $$ = FzAnnotation::AnnotationList(annotations);
-  delete annotations;
+  if (annotations != nullptr) {
+    $$ = FzAnnotation::AnnotationList(std::move(*annotations));
+    delete annotations;
+  } else {
+    $$ = FzAnnotation::Empty();
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -712,18 +720,30 @@ annotation:
 
 solve:
   SOLVE annotations SATISFY {
-  model->Satisfy($2);
-  delete $2;
+  if ($2 != nullptr) {
+    model->Satisfy(std::move(*$2));
+    delete $2;
+  } else {
+    model->Satisfy(vector<FzAnnotation>());
+  }
 }
 | SOLVE annotations MINIMIZE argument {
   CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
-  model->Minimize($4.Var(), $2);
-  delete $2;
+  if ($2 != nullptr) {
+    model->Minimize($4.Var(), std::move(*$2));
+    delete $2;
+  } else {
+    model->Minimize($4.Var(), vector<FzAnnotation>());
+  }
 }
 | SOLVE annotations MAXIMIZE argument {
   CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
-  model->Maximize($4.Var(), $2);
-  delete $2;
+  if ($2 != nullptr) {
+    model->Maximize($4.Var(), std::move(*$2));
+    delete $2;
+  } else {
+    model->Maximize($4.Var(), vector<FzAnnotation>());
+  }
 }
 
 %%
