@@ -602,19 +602,11 @@ MPSolver::ResultStatus SLMInterface::Solve(const MPSolverParameters& param) {
   }
   for (int i = 0; i < solver_->constraints_.size(); ++i) {
     MPConstraint* const ct = solver_->constraints_[i];
-    double row_activity;
-    CheckReturnKey(SlmGetSolPrimConsI(model_,ct->index(),&row_activity));
-    ct->set_activity(row_activity);
-
-    if (mip_) {
-      VLOG(4) << "row " << ct->index()
-              << ": activity = " << row_activity;
-    } else {
+    if (!mip_) {
       double dual_value;
       CheckReturnKey(SlmGetSolDualConsI(model_,ct->index(),&dual_value));
       ct->set_dual_value(dual_value);
       VLOG(4) << "row " << ct->index()
-              << ": activity = " << row_activity
               << ": dual value = " << dual_value;
     }
   }

@@ -789,7 +789,7 @@ namespace operations_research {
          unique_ptr<double[]> ub(new double[newcols]);
          unique_ptr<char[]> ctype(new char[newcols]);
          unique_ptr<const char*[]> colname(new const char*[newcols]);
- 
+
          bool have_names = false;
          for (int j = 0, varidx = last_extracted; j < newcols; ++j, ++varidx) {
             MPVariable const* const var = solver_->variables_[varidx];
@@ -845,7 +845,7 @@ namespace operations_research {
                      }
                   }
                }
-            
+
                if ( nonzeros > 0 ) {
                   // At least one of the new variables did intersect with an
                   // old constraint. We have to create the new columns via
@@ -870,7 +870,7 @@ namespace operations_research {
                   ++cmatbeg;
                   for (CPXDIM j = 0; j < newcols; ++j)
                      cmatbeg[j + 1] = cmatbeg[j] + collen[j];
-               
+
                   for (int i = 0; i < last_constraint_index_; ++i) {
                      MPConstraint const *const ct = solver_->constraints_[i];
                      CPXDIM const row = ct->index();
@@ -987,7 +987,7 @@ namespace operations_research {
                CPXNNZ nextNz = 0;
                for (/* nothing */; c < newCons && nextRow < chunk; ++c, ++nextRow) {
                   MPConstraint const *const ct = solver_->constraints_[offset + c];
-               
+
                   // Stop if there is not enough room in the arrays
                   // to add the current constraint.
                   if ( nextNz + ct->coefficients_.size() > cols ) {
@@ -999,7 +999,7 @@ namespace operations_research {
                   MakeRhs(ct->lb(), ct->ub(), rhs[nextRow], sense[nextRow], rngval[nextRow]);
                   haveRanges = haveRanges || (rngval[nextRow] != 0.0);
                   rngind[nextRow] = offset + c;
-               
+
                   // Setup left-hand side of constraint.
                   rmatbeg[nextRow] = nextNz;
                   CoeffMap const &coeffs = ct->coefficients_;
@@ -1228,7 +1228,7 @@ namespace operations_research {
          VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
          CHECK_STATUS(CPXXsetdblparam(mEnv, CPX_PARAM_TILIM, solver_->time_limit() *1e-3));
       }
-   
+
       // Solve.
       // Do not CHECK_STATUS here since some errors (for example CPXERR_NO_MEMORY)
       // still allow us to query useful information.
@@ -1285,24 +1285,10 @@ namespace operations_research {
                   VLOG(3) << var->name() << ": value =" << x[i];
                }
             }
-            if ( rows > 0 ) {
-               unique_ptr<double[]> s(new double[rows]);
-               unique_ptr<double[]> rhs(new double[rows]);
-               CHECK_STATUS(CPXXgetslack(mEnv, mLp, s.get(), 0, rows - 1));
-               CHECK_STATUS(CPXXgetrhs(mEnv, mLp, rhs.get(), 0, rows - 1));
-               for (int i = 0; i < solver_->constraints_.size(); ++i) {
-                  MPConstraint* const ct = solver_->constraints_[i];
-                  // Activity is defined as sum over all terms.
-                  ct->set_activity(rhs[i] - s[i]);
-                  VLOG(4) << "row " << ct->index() << ": slack = " << s[i];
-               }
-            }
          }
          else {
             for (int i = 0; i < solver_->variables_.size(); ++i)
                solver_->variables_[i]->set_solution_value(CPX_NAN);
-            for (int i = 0; i < solver_->constraints_.size(); ++i)
-               solver_->constraints_[i]->set_activity(CPX_NAN);
          }
 
          // MIP does not have duals
@@ -1324,7 +1310,7 @@ namespace operations_research {
                MPVariable* const var = solver_->variables_[i];
                var->set_solution_value(x[i]);
                bool value = false, dual = false;
-            
+
                if ( pfeas ) {
                   var->set_solution_value(x[i]);
                   value = true;
@@ -1344,25 +1330,12 @@ namespace operations_research {
          }
 
          if ( rows > 0 ) {
-            unique_ptr<double[]> s(new double[rows]);
             unique_ptr<double[]> pi(new double[rows]);
-            unique_ptr<double[]> rhs(new double[rows]);
-            if ( pfeas ) {
-               CHECK_STATUS(CPXXgetslack(mEnv, mLp, s.get(), 0, rows - 1));
-               CHECK_STATUS(CPXXgetrhs(mEnv, mLp, rhs.get(), 0, rows - 1));
-            }
             if ( dfeas )
                CHECK_STATUS(CPXXgetpi(mEnv, mLp, pi.get(), 0, rows - 1));
             for (int i = 0; i < solver_->constraints_.size(); ++i) {
                MPConstraint* const ct = solver_->constraints_[i];
-               // Activity is defined as sum over all terms.
-               bool slack = false, dual = false;
-               if ( pfeas ) {
-                  ct->set_activity(rhs[i] - s[i]);
-                  slack = true;
-               }
-               else
-                  ct->set_activity(CPX_NAN);
+               bool dual = false;
                if ( dfeas ) {
                   ct->set_dual_value(pi[i]);
                   dual = true;
@@ -1370,7 +1343,6 @@ namespace operations_research {
                else
                   ct->set_dual_value(CPX_NAN);
                VLOG(4) << "row " << ct->index() << ":"
-                       << (slack ? StringPrintf("  slack = %f", s[i]) : "")
                        << (dual  ? StringPrintf("  dual = %f", pi[i]) : "");
             }
          }
@@ -1402,7 +1374,7 @@ namespace operations_research {
          result_status_ = feasible ? MPSolver::FEASIBLE : MPSolver::ABNORMAL;
          break;
       }
- 
+
       sync_status_ = SOLUTION_SYNCHRONIZED;
       return result_status_;
    }
