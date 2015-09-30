@@ -247,8 +247,8 @@ struct FzAnnotation {
   static FzAnnotation Empty();
   static FzAnnotation AnnotationList(std::vector<FzAnnotation> list);
   static FzAnnotation Identifier(const std::string& id);
-  static FzAnnotation FunctionCall(const std::string& id,
-                                   std::vector<FzAnnotation> args);
+  static FzAnnotation FunctionCallWithArguments(const std::string& id,
+                                                std::vector<FzAnnotation> args);
   static FzAnnotation FunctionCall(const std::string& id);
   static FzAnnotation Interval(int64 interval_min, int64 interval_max);
   static FzAnnotation IntegerValue(int64 value);

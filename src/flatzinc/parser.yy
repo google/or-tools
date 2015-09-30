@@ -695,7 +695,7 @@ annotation:
     $$ = FzAnnotation::FunctionCallWithArguments($1, std::move(*annotations));
     delete annotations;
   } else {
-    $$ = FzArgument::FunctionCall($1);
+    $$ = FzAnnotation::FunctionCall($1);
   }
 }
 | IDENTIFIER '[' IVALUE ']' {
