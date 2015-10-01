@@ -28,6 +28,8 @@ LIBTOOL_TAG = 2.4.6
 GLPK_TAG = 4.55
 # The SCIP archive should be scipoptsuite-3.2.0.tgz
 SCIP_TAG = 3.2.0
+# Version of Sulum
+SULUM_TAG = 43
 
 # Detect if SCIP archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
@@ -503,6 +505,7 @@ Makefile.local:
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
 	@echo UNIX_SCIP_TAG = $(SCIP_TAG) >> Makefile.local
+	@echo UNIX_SULUM_VERSION = $(SULUM_TAG) >> Makefile.local
 	@echo \# Please define UNIX_SLM_DIR to use Sulum Optimization. >> Makefile.local
 	@echo \# Please define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local
 	@echo \# Please define UNIX_CPLEX_DIR to use CPLEX. >> Makefile.local
