@@ -204,11 +204,11 @@ void FixAndParseParameters(int* argc, char*** argv) {
   }
 }
 
-void ParseAndRun(const std::string& input, int num_workers, bool inputIsFilename) {
+void ParseAndRun(const std::string& input, int num_workers, bool input_is_filename) {
   WallTimer timer;
   timer.Start();
-  std::string problem_name(inputIsFilename ? input : "stdin");
-  if (inputIsFilename) {
+  std::string problem_name(input_is_filename ? input : "stdin");
+  if (input_is_filename) {
     problem_name.resize(problem_name.size() - 4);
     size_t found = problem_name.find_last_of("/\\");
     if (found != std::string::npos) {
@@ -216,13 +216,13 @@ void ParseAndRun(const std::string& input, int num_workers, bool inputIsFilename
     }
   }
   FzModel model(problem_name);
-  if (inputIsFilename) {
+  if (input_is_filename) {
     CHECK(ParseFlatzincFile(input, &model));
   } else {
     CHECK(ParseFlatzincString(input, &model));
   }
 
-  FZLOG << "File " << (inputIsFilename ? input : "stdin")
+  FZLOG << "File " << (input_is_filename ? input : "stdin")
         << " parsed in " << timer.GetInMs() << " ms"
         << FZENDL;
   FzPresolver presolve;
