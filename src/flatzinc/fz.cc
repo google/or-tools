@@ -49,6 +49,7 @@ DEFINE_int32(heuristic_period, 100, "Period to call heuristics in free search");
 DEFINE_bool(verbose_impact, false, "Verbose impact");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
 DEFINE_bool(presolve, true, "Use presolve.");
+DEFINE_bool(read_from_stdin, false, "Read the FlatZinc from stdin, not from a file");
 
 DECLARE_bool(fz_logging);
 DECLARE_bool(log_prefix);
@@ -203,18 +204,26 @@ void FixAndParseParameters(int* argc, char*** argv) {
   }
 }
 
-void ParseAndRun(const std::string& filename, int num_workers) {
+void ParseAndRun(const std::string& input, int num_workers, bool input_is_filename) {
   WallTimer timer;
   timer.Start();
-  std::string problem_name(filename);
-  problem_name.resize(problem_name.size() - 4);
-  size_t found = problem_name.find_last_of("/\\");
-  if (found != std::string::npos) {
-    problem_name = problem_name.substr(found + 1);
+  std::string problem_name(input_is_filename ? input : "stdin");
+  if (input_is_filename) {
+    problem_name.resize(problem_name.size() - 4);
+    size_t found = problem_name.find_last_of("/\\");
+    if (found != std::string::npos) {
+      problem_name = problem_name.substr(found + 1);
+    }
   }
   FzModel model(problem_name);
-  CHECK(ParseFlatzincFile(filename, &model));
-  FZLOG << "File " << filename << " parsed in " << timer.GetInMs() << " ms"
+  if (input_is_filename) {
+    CHECK(ParseFlatzincFile(input, &model));
+  } else {
+    CHECK(ParseFlatzincString(input, &model));
+  }
+
+  FZLOG << "File " << (input_is_filename ? input : "stdin")
+        << " parsed in " << timer.GetInMs() << " ms"
         << FZENDL;
   FzPresolver presolve;
   presolve.CleanUpModelForTheCpSolver(&model, FLAGS_use_sat);
@@ -251,10 +260,20 @@ void ParseAndRun(const std::string& filename, int num_workers) {
 
 int main(int argc, char** argv) {
   operations_research::FixAndParseParameters(&argc, &argv);
-  if (argc <= 1) {
-    LOG(ERROR) << "Usage: " << argv[0] << " <file>";
-    exit(EXIT_FAILURE);
+  if (FLAGS_read_from_stdin) { // allow users to pipe in the FlatZinc via stdin
+    std::string inputText = "";
+    std::string currentLine;
+    while (std::getline(std::cin, currentLine)) {
+      inputText.append(currentLine);
+    }
+
+    operations_research::ParseAndRun(inputText, FLAGS_workers, false);
+  } else {
+    if (argc <= 1) {
+      LOG(ERROR) << "Usage: " << argv[0] << " <file>";
+      exit(EXIT_FAILURE);
+    }
+    operations_research::ParseAndRun(argv[1], FLAGS_workers, true);
   }
-  operations_research::ParseAndRun(argv[1], FLAGS_workers);
   return 0;
 }
