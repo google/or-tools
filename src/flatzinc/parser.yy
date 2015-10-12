@@ -724,7 +724,7 @@ solve:
     model->Satisfy(std::move(*$2));
     delete $2;
   } else {
-    model->Satisfy(vector<FzAnnotation>());
+    model->Satisfy(std::vector<FzAnnotation>());
   }
 }
 | SOLVE annotations MINIMIZE argument {
@@ -733,7 +733,7 @@ solve:
     model->Minimize($4.Var(), std::move(*$2));
     delete $2;
   } else {
-    model->Minimize($4.Var(), vector<FzAnnotation>());
+    model->Minimize($4.Var(), std::vector<FzAnnotation>());
   }
 }
 | SOLVE annotations MAXIMIZE argument {
@@ -742,7 +742,7 @@ solve:
     model->Maximize($4.Var(), std::move(*$2));
     delete $2;
   } else {
-    model->Maximize($4.Var(), vector<FzAnnotation>());
+    model->Maximize($4.Var(), std::vector<FzAnnotation>());
   }
 }
 
