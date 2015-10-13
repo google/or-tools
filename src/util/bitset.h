@@ -91,7 +91,7 @@ inline int LeastSignificantBitPosition64DeBruijn(uint64 n) {
       5,  17, 26, 56, 15, 38, 29, 40, 10, 49, 53, 31, 21, 34, 59, 42,
       63, 6,  12, 18, 24, 27, 51, 57, 16, 55, 37, 39, 48, 30, 33, 41,
       62, 11, 23, 50, 54, 36, 47, 32, 61, 22, 35, 46, 60, 45, 44, 43, };
-  return kTab[((n & (UINT64_MAX + 1 - n)) * kSeq) >> 58];
+  return kTab[((n & (~n + 1)) * kSeq) >> 58];
 }
 
 inline int LeastSignificantBitPosition64Default(uint64 n) {
@@ -152,7 +152,7 @@ inline int LeastSignificantBitPosition32DeBruijn(uint32 n) {
     // initialized by 'kTab[(kSeq << i) >> 27] = i
     0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
     31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9};
-  return kTab[((n & (UINT32_MAX + 1 - n)) * kSeq) >> 27];
+  return kTab[((n & (~n + 1)) * kSeq) >> 27];
 }
 
 inline int LeastSignificantBitPosition32Default(uint32 n) {
