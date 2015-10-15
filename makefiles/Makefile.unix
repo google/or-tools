@@ -282,6 +282,10 @@ ifeq ($(PLATFORM),MACOSX)
     STATIC_CPLEX_LNK = -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a -lm -lpthread -framework CoreFoundation -framework IOKit
     DYNAMIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
   endif
+  ifdef UNIX_SLM_DIR
+      DYNAMIC_SLM_LNK = -rpath $(UNIX_SLM_DIR)/mac64/bin/ -L$(UNIX_SLM_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
+      STATIC_SLM_LNK = -rpath $(UNIX_SLM_DIR)/mac64/bin/ -L$(UNIX_SLM_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
+  endif
   BISON = dependencies/install/bin/bison
   FLEX = dependencies/install/bin/flex
 endif  # MAC OS X
