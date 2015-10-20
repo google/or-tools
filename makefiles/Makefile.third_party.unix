@@ -3,7 +3,7 @@
 GFLAGS_TAG = 2.1.2
 PROTOBUF_TAG = 2.6.1
 GOOGLE_APPUTILS_TAG = 0.4.2
-SPARSEHASH_TAG = 2.0.2
+SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.5
 SWIG_TAG = 3.0.7
 # version 8.33
@@ -285,7 +285,7 @@ dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/source
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && patch -p0 -i ../../archives/sparsehash.patch
+#	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && patch -p0 -i ../../archives/sparsehash.patch
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
