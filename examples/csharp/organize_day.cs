@@ -46,7 +46,7 @@ public class OrganizeDay
    *
    * Problem formulation from ECLiPSe:
    * Slides on (Finite Domain) Constraint Logic Programming, page 38f
-   * http://eclipse-clp.org/reports/eclipse.ppt
+   * http://eclipseclp.org/reports/eclipse.ppt
    *
    *
    * Also see http://www.hakank.org/google_or_tools/organize_day.py

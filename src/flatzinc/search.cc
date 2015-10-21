@@ -539,6 +539,15 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
   // Add the objective decision builder.
   if (obj_db != nullptr) {
     builders.push_back(obj_db);
+  } else if (model_.objective() != nullptr) {
+    // The model contains an objective, but the obj_db was not built.
+    IntVar* const obj_var = Extract(model_.objective())->Var();
+    obj_db = solver()->MakePhase(obj_var, Solver::CHOOSE_FIRST_UNBOUND,
+                                 model_.maximize() ? Solver::ASSIGN_MAX_VALUE
+                                                   : Solver::ASSIGN_MIN_VALUE);
+    builders.push_back(obj_db);
+    FZVLOG << "  - adding objective decision builder = "
+           << obj_db->DebugString() << FZENDL;
   }
   // Add completion decision builders to be more robust.
   AddCompletionDecisionBuilders(defined_variables, active_variables, limit,
