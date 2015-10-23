@@ -472,6 +472,9 @@ class Propagator {
   // memory location that already contains the reason.
   virtual ClauseRef Reason(const Trail& trail, int trail_index) const {
     LOG(FATAL) << "Not implemented.";
+#if !defined(__linux__)
+    return ClauseRef();
+#endif
   }
 
   // Returns the resolution node for the variable that was propagated at the
