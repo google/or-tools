@@ -16,6 +16,8 @@
 #include <cmath>
 #include <limits>
 #include "base/join.h"
+#include "base/accurate_sum.h"
+#include "util/fp_utils.h"
 
 namespace operations_research {
 namespace {
@@ -193,4 +195,66 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
 
   return std::string();
 }
+
+// TODO(user): Add a general FindFeasibilityErrorInSolution() and factor out the
+// common code.
+std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
+                                          double tolerance) {
+  const int num_vars = model.variable_size();
+
+  // First, we validate the solution hint.
+  std::string error = FindErrorInSolutionHint(model.solution_hint(), num_vars);
+  if (!error.empty()) return StrCat("Invalid solution_hint: ", error);
+
+  // Special error message for the empty case.
+  if (num_vars > 0 && model.solution_hint().var_index_size() == 0) {
+    return "Empty solution_hint.";
+  }
+
+  // To be feasible, the hint must not be partial.
+  if (model.solution_hint().var_index_size() != num_vars) {
+    return StrCat("Partial solution_hint: only ",
+                  model.solution_hint().var_index_size(), " out of the ",
+                  num_vars, " problem variables are set.");
+  }
+
+  // All the values must be exactly in the variable bounds.
+  std::vector<double> var_value(num_vars);
+  for (int i = 0; i < model.solution_hint().var_index_size(); ++i) {
+    const int var_index = model.solution_hint().var_index(i);
+    const double value = model.solution_hint().var_value(i);
+    var_value[var_index] = value;
+    const double lb = model.variable(var_index).lower_bound();
+    const double ub = model.variable(var_index).upper_bound();
+    if (!IsSmallerWithinTolerance(value, ub, tolerance) ||
+        !IsSmallerWithinTolerance(lb, value, tolerance)) {
+      return StrCat("Variable '", model.variable(var_index).name(),
+                    "' is set to ", value,
+                    " which is not in the variable bounds [", lb, ", ", ub,
+                    "] modulo a tolerance of ", tolerance, ".");
+    }
+  }
+
+  // All the constraints must be satisfiable.
+  for (int cst_index = 0; cst_index < model.constraint_size(); ++cst_index) {
+    const MPConstraintProto& constraint = model.constraint(cst_index);
+    AccurateSum<double> activity;
+    for (int j = 0; j < constraint.var_index_size(); ++j) {
+      activity.Add(constraint.coefficient(j) *
+                   var_value[constraint.var_index(j)]);
+    }
+    const double lb = model.constraint(cst_index).lower_bound();
+    const double ub = model.constraint(cst_index).upper_bound();
+    if (!IsSmallerWithinTolerance(activity.Value(), ub, tolerance) ||
+        !IsSmallerWithinTolerance(lb, activity.Value(), tolerance)) {
+      return StrCat("Constraint '", model.constraint(cst_index).name(),
+                    "' has activity ", activity.Value(),
+                    " which is not in the constraint bounds [", lb, ", ", ub,
+                    "] modulo a tolerance of ", tolerance, ".");
+    }
+  }
+
+  return "";
+}
+
 }  // namespace operations_research

@@ -93,16 +93,16 @@ BopSolveStatus BopSolver::Solve() {
 }
 
 BopSolveStatus BopSolver::InternalMonothreadSolver() {
-  TimeLimit time_limit(parameters_.max_time_in_seconds(),
-                       parameters_.max_deterministic_time());
-  time_limit.RegisterExternalBooleanAsLimit(external_boolean_as_limit_);
+  std::unique_ptr<TimeLimit> time_limit =
+      TimeLimit::FromParameters(parameters_);
+  time_limit->RegisterExternalBooleanAsLimit(external_boolean_as_limit_);
   LearnedInfo learned_info(problem_state_.original_problem());
   PortfolioOptimizer optimizer(problem_state_, parameters_,
                                parameters_.solver_optimizer_sets(0),
                                "Portfolio");
-  while (!time_limit.LimitReached()) {
+  while (!time_limit->LimitReached()) {
     const BopOptimizerBase::Status optimization_status = optimizer.Optimize(
-        parameters_, problem_state_, &learned_info, &time_limit);
+        parameters_, problem_state_, &learned_info, time_limit.get());
     problem_state_.MergeLearnedInfo(learned_info, optimization_status);
 
     if (optimization_status == BopOptimizerBase::SOLUTION_FOUND) {

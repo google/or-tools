@@ -75,10 +75,12 @@ class TreeArrayConstraint : public CastConstraint {
   void ReduceRange(int depth, int position, int64 delta_min, int64 delta_max) {
     NodeInfo* const info = &tree_[depth][position];
     if (delta_min > 0) {
-      info->node_min.SetValue(solver(), info->node_min.Value() + delta_min);
+      info->node_min.SetValue(solver(),
+                              CapAdd(info->node_min.Value(), delta_min));
     }
     if (delta_max > 0) {
-      info->node_max.SetValue(solver(), info->node_max.Value() - delta_max);
+      info->node_max.SetValue(solver(),
+                              CapSub(info->node_max.Value(), delta_max));
     }
   }
 
@@ -188,8 +190,8 @@ class SumConstraint : public TreeArrayConstraint {
         const int block_start = ChildStart(j);
         const int block_end = ChildEnd(i, j);
         for (int k = block_start; k <= block_end; ++k) {
-          sum_min += Min(i + 1, k);
-          sum_max += Max(i + 1, k);
+          sum_min = CapAdd(sum_min, Min(i + 1, k));
+          sum_max = CapAdd(sum_max, Max(i + 1, k));
         }
         InitNode(i, j, sum_min, sum_max);
       }
@@ -252,9 +254,10 @@ class SumConstraint : public TreeArrayConstraint {
     for (int i = block_start; i <= block_end; ++i) {
       const int64 target_var_min = Min(depth + 1, i);
       const int64 target_var_max = Max(depth + 1, i);
-      const int64 residual_min = sum_min - target_var_min;
-      const int64 residual_max = sum_max - target_var_max;
-      PushDown(depth + 1, i, new_min - residual_max, new_max - residual_min);
+      const int64 residual_min = CapSub(sum_min, target_var_min);
+      const int64 residual_max = CapSub(sum_max, target_var_max);
+      PushDown(depth + 1, i, CapSub(new_min, residual_max),
+               CapSub(new_max, residual_min));
     }
     // TODO(user) : Is the diameter optimization (see reference
     // above, rule 5) useful?
@@ -262,14 +265,15 @@ class SumConstraint : public TreeArrayConstraint {
 
   void LeafChanged(int term_index) {
     IntVar* const var = vars_[term_index];
-    PushUp(term_index, var->Min() - var->OldMin(), var->OldMax() - var->Max());
+    PushUp(term_index, CapSub(var->Min(), var->OldMin()),
+           CapSub(var->OldMax(), var->Max()));
     EnqueueDelayedDemon(sum_demon_);  // TODO(user): Is this needed?
   }
 
   void PushUp(int position, int64 delta_min, int64 delta_max) {
     DCHECK_GE(delta_max, 0);
     DCHECK_GE(delta_min, 0);
-    DCHECK_GT(delta_min + delta_max, 0);
+    DCHECK_GT(CapAdd(delta_min, delta_max), 0);
     for (int depth = MaxDepth(); depth >= 0; --depth) {
       ReduceRange(depth, position, delta_min, delta_max);
       position = Parent(position);
@@ -321,8 +325,8 @@ class SmallSumConstraint : public Constraint {
     int64 sum_min = 0;
     int64 sum_max = 0;
     for (IntVar* const var : vars_) {
-      sum_min += var->Min();
-      sum_max += var->Max();
+      sum_min = CapAdd(sum_min, var->Min());
+      sum_max = CapAdd(sum_max, var->Max());
     }
 
     // Propagate to sum_var.
@@ -364,17 +368,18 @@ class SmallSumConstraint : public Constraint {
         for (IntVar* const var : vars_) {
           const int64 var_min = var->Min();
           const int64 var_max = var->Max();
-          const int64 residual_min = sum_min - var_min;
-          const int64 residual_max = sum_max - var_max;
-          var->SetRange(new_min - residual_max, new_max - residual_min);
+          const int64 residual_min = CapSub(sum_min, var_min);
+          const int64 residual_max = CapSub(sum_max, var_max);
+          var->SetRange(CapSub(new_min, residual_max),
+                        CapSub(new_max, residual_min));
         }
       }
     }
   }
 
   void VarChanged(IntVar* var) {
-    const int64 delta_min = var->Min() - var->OldMin();
-    const int64 delta_max = var->OldMax() - var->Max();
+    const int64 delta_min = CapSub(var->Min(), var->OldMin());
+    const int64 delta_max = CapSub(var->OldMax(), var->Max());
     computed_min_.Add(solver(), delta_min);
     computed_max_.Add(solver(), -delta_max);
     if (computed_max_.Value() < target_var_->Max() ||
@@ -1867,7 +1872,7 @@ int64 SortBothChangeConstant(std::vector<IntVar*>* const vars,
   std::vector<Container> to_sort;
   for (int index = 0; index < vars->size(); ++index) {
     if ((*vars)[index]->Bound()) {
-      cst += (*coefs)[index] * (*vars)[index]->Min();
+      cst = CapAdd(cst, CapProd((*coefs)[index], (*vars)[index]->Min()));
     } else if ((*coefs)[index] != 0) {
       to_sort.push_back(Container((*vars)[index], (*coefs)[index]));
     }
@@ -1905,7 +1910,8 @@ class BooleanScalProdLessConstant : public Constraint {
     for (int i = 0; i < vars_.size(); ++i) {
       DCHECK_GE(coefs_[i], 0);
     }
-    upper_bound_ -= SortBothChangeConstant(&vars_, &coefs_, false);
+    upper_bound_ =
+        CapSub(upper_bound, SortBothChangeConstant(&vars_, &coefs_, false));
     max_coefficient_.SetValue(s, coefs_[vars_.size() - 1]);
   }
 
@@ -1924,7 +1930,7 @@ class BooleanScalProdLessConstant : public Constraint {
   }
 
   void PushFromTop() {
-    const int64 slack = upper_bound_ - sum_of_bound_variables_.Value();
+    const int64 slack = CapSub(upper_bound_, sum_of_bound_variables_.Value());
     if (slack < 0) {
       solver()->Fail();
     }
@@ -1951,7 +1957,7 @@ class BooleanScalProdLessConstant : public Constraint {
     for (int index = 0; index < vars_.size(); ++index) {
       if (vars_[index]->Bound()) {
         const int64 value = vars_[index]->Min();
-        sum += value * coefs_[index];
+        sum = CapAdd(sum, CapProd(value, coefs_[index]));
       } else {
         last_unbound = index;
       }
@@ -1964,7 +1970,7 @@ class BooleanScalProdLessConstant : public Constraint {
   void Update(int var_index) {
     if (vars_[var_index]->Min() == 1) {
       sum_of_bound_variables_.SetValue(
-          solver(), sum_of_bound_variables_.Value() + coefs_[var_index]);
+          solver(), CapAdd(sum_of_bound_variables_.Value(), coefs_[var_index]));
       PushFromTop();
     }
   }
@@ -2034,8 +2040,10 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
   void Propagate() {
     target_var_->SetRange(sum_of_bound_variables_.Value(),
                           sum_of_all_variables_.Value());
-    const int64 slack_up = target_var_->Max() - sum_of_bound_variables_.Value();
-    const int64 slack_down = sum_of_all_variables_.Value() - target_var_->Min();
+    const int64 slack_up =
+        CapSub(target_var_->Max(), sum_of_bound_variables_.Value());
+    const int64 slack_down =
+        CapSub(sum_of_all_variables_.Value(), target_var_->Min());
     const int64 max_coeff = max_coefficient_.Value();
     if (slack_down < max_coeff || slack_up < max_coeff) {
       int64 last_unbound = first_unbound_backward_.Value();
@@ -2061,10 +2069,10 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
     int64 sum_bound = 0;
     int64 sum_all = 0;
     for (int index = 0; index < vars_.size(); ++index) {
-      const int64 value = vars_[index]->Max() * coefs_[index];
-      sum_all += value;
+      const int64 value = CapProd(vars_[index]->Max(), coefs_[index]);
+      sum_all = CapAdd(sum_all, value);
       if (vars_[index]->Bound()) {
-        sum_bound += value;
+        sum_bound = CapAdd(sum_bound, value);
       } else {
         last_unbound = index;
       }
@@ -2078,10 +2086,10 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
   void Update(int var_index) {
     if (vars_[var_index]->Min() == 1) {
       sum_of_bound_variables_.SetValue(
-          solver(), sum_of_bound_variables_.Value() + coefs_[var_index]);
+          solver(), CapAdd(sum_of_bound_variables_.Value(), coefs_[var_index]));
     } else {
       sum_of_all_variables_.SetValue(
-          solver(), sum_of_all_variables_.Value() - coefs_[var_index]);
+          solver(), CapSub(sum_of_all_variables_.Value(), coefs_[var_index]));
     }
     Propagate();
   }
@@ -2135,7 +2143,7 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     int64 min = 0;
     for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Min()) {
-        min += coefs_[i];
+        min = CapAdd(min, coefs_[i]);
       }
     }
     return min;
@@ -2147,7 +2155,7 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     int64 max = 0;
     for (int i = 0; i < vars_.size(); ++i) {
       if (vars_[i]->Max()) {
-        max += coefs_[i];
+        max = CapAdd(max, coefs_[i]);
       }
     }
     return max;
@@ -2161,12 +2169,12 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     int64 diameter = -1;
     for (int i = 0; i < vars_.size(); ++i) {
       const int64 coefficient = coefs_[i];
-      const int64 var_min = vars_[i]->Min() * coefficient;
-      const int64 var_max = vars_[i]->Max() * coefficient;
-      current_min += var_min;
-      current_max += var_max;
+      const int64 var_min = CapProd(vars_[i]->Min(), coefficient);
+      const int64 var_max = CapProd(vars_[i]->Max(), coefficient);
+      current_min = CapAdd(current_min, var_min);
+      current_max = CapAdd(current_max, var_max);
       if (var_min != var_max) {  // Coefficients are increasing.
-        diameter = var_max - var_min;
+        diameter = CapSub(var_max, var_min);
       }
     }
     if (u >= current_max && l <= current_min) {
@@ -2179,15 +2187,17 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     u = std::min(current_max, u);
     l = std::max(l, current_min);
 
-    if (u - l > diameter) {
+    if (CapSub(u, l) > diameter) {
       return;
     }
 
     for (int i = 0; i < vars_.size(); ++i) {
       const int64 coefficient = coefs_[i];
       IntVar* const var = vars_[i];
-      const int64 new_min = l - current_max + var->Max() * coefficient;
-      const int64 new_max = u - current_min + var->Min() * coefficient;
+      const int64 new_min =
+          CapAdd(CapSub(l, current_max), CapProd(var->Max(), coefficient));
+      const int64 new_max =
+          CapAdd(CapSub(u, current_min), CapProd(var->Min(), coefficient));
       if (new_max < 0 || new_min > coefficient || new_min > new_max) {
         solver()->Fail();
       }
@@ -2253,7 +2263,8 @@ class PositiveBooleanScalProdEqCst : public Constraint {
         constant_(constant),
         max_coefficient_(0) {
     CHECK(!vars.empty());
-    constant_ -= SortBothChangeConstant(&vars_, &coefs_, false);
+    constant_ =
+        CapSub(constant_, SortBothChangeConstant(&vars_, &coefs_, false));
     max_coefficient_.SetValue(s, coefs_[vars_.size() - 1]);
   }
 
@@ -2275,8 +2286,8 @@ class PositiveBooleanScalProdEqCst : public Constraint {
         sum_of_all_variables_.Value() < constant_) {
       solver()->Fail();
     }
-    const int64 slack_up = constant_ - sum_of_bound_variables_.Value();
-    const int64 slack_down = sum_of_all_variables_.Value() - constant_;
+    const int64 slack_up = CapSub(constant_, sum_of_bound_variables_.Value());
+    const int64 slack_down = CapSub(sum_of_all_variables_.Value(), constant_);
     const int64 max_coeff = max_coefficient_.Value();
     if (slack_down < max_coeff || slack_up < max_coeff) {
       int64 last_unbound = first_unbound_backward_.Value();
@@ -2302,10 +2313,10 @@ class PositiveBooleanScalProdEqCst : public Constraint {
     int64 sum_bound = 0LL;
     int64 sum_all = 0LL;
     for (int index = 0; index < vars_.size(); ++index) {
-      const int64 value = vars_[index]->Max() * coefs_[index];
-      sum_all += value;
+      const int64 value = CapProd(vars_[index]->Max(), coefs_[index]);
+      sum_all = CapAdd(sum_all, value);
       if (vars_[index]->Bound()) {
-        sum_bound += value;
+        sum_bound = CapAdd(sum_bound, value);
       } else {
         last_unbound = index;
       }
@@ -2319,10 +2330,10 @@ class PositiveBooleanScalProdEqCst : public Constraint {
   void Update(int var_index) {
     if (vars_[var_index]->Min() == 1) {
       sum_of_bound_variables_.SetValue(
-          solver(), sum_of_bound_variables_.Value() + coefs_[var_index]);
+          solver(), CapAdd(sum_of_bound_variables_.Value(), coefs_[var_index]));
     } else {
       sum_of_all_variables_.SetValue(
-          solver(), sum_of_all_variables_.Value() - coefs_[var_index]);
+          solver(), CapSub(sum_of_all_variables_.Value(), coefs_[var_index]));
     }
     Propagate();
   }
@@ -2481,7 +2492,7 @@ class ExprLinearizer : public ModelParser {
 
   void Visit(const IntExpr* const expr, int64 multiplier) {
     if (expr->Min() == expr->Max()) {
-      constant_ += expr->Min() * multiplier;
+      constant_ = CapAdd(constant_, CapProd(expr->Min(), multiplier));
     } else {
       PushMultiplier(multiplier);
       expr->Accept(this);
@@ -2599,19 +2610,20 @@ class ExprLinearizer : public ModelParser {
   }
 
   void RegisterExpression(const IntExpr* const expr, int64 coef) {
-    (*variables_to_coefficients_)[const_cast<IntExpr*>(expr)->Var()] +=
-        coef * multipliers_.back();
+    int64& value =
+        (*variables_to_coefficients_)[const_cast<IntExpr*>(expr)->Var()];
+    value = CapAdd(value, CapProd(coef, multipliers_.back()));
   }
 
   void AddConstant(int64 constant) {
-    constant_ += constant * multipliers_.back();
+    constant_ = CapAdd(constant_, CapProd(constant, multipliers_.back()));
   }
 
   void PushMultiplier(int64 multiplier) {
     if (multipliers_.empty()) {
       multipliers_.push_back(multiplier);
     } else {
-      multipliers_.push_back(multiplier * multipliers_.back());
+      multipliers_.push_back(CapProd(multiplier, multipliers_.back()));
     }
   }
 
@@ -2643,7 +2655,7 @@ void DeepLinearize(Solver* const solver, const std::vector<IntVar*>& pre_vars,
     IntVar* const variable = pre_vars[i];
     const int64 coefficient = pre_coefs[i];
     if (variable->Bound()) {
-      *constant += coefficient * variable->Min();
+      *constant = CapAdd(*constant, CapProd(coefficient, variable->Min()));
     } else if (solver->CastExpression(variable) == nullptr) {
       vars->push_back(variable);
       coefs->push_back(coefficient);
@@ -2678,7 +2690,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
   DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
-  cst -= constant;
+  cst = CapSub(cst, constant);
 
   const int size = vars.size();
   if (size == 0 || AreAllNull(coefs)) {
@@ -2688,7 +2700,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
   if (AreAllBoundOrNull(vars, coefs)) {
     int64 sum = 0;
     for (int i = 0; i < size; ++i) {
-      sum += coefs[i] * vars[i]->Min();
+      sum = CapAdd(sum, CapProd(coefs[i], vars[i]->Min()));
     }
     return sum == cst ? solver->MakeTrueConstraint()
                       : solver->MakeFalseConstraint();
@@ -2730,7 +2742,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
       } else {
@@ -2759,7 +2771,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         pos_term = solver->MakeProd(vars[i], coefs[i]);
       } else {
@@ -2772,7 +2784,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
@@ -2785,7 +2797,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
       } else {
@@ -2798,7 +2810,7 @@ Constraint* MakeScalProdEqualityFct(Solver* const solver,
     int64 rhs = cst;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
@@ -2852,7 +2864,7 @@ Constraint* MakeScalProdGreaterOrEqualFct(Solver* solver,
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
   DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
-  cst -= constant;
+  cst = CapSub(cst, constant);
 
   const int size = vars.size();
   if (size == 0 || AreAllNull<int64>(coefs)) {
@@ -2887,7 +2899,7 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
   DeepLinearize(solver, pre_vars, pre_coefs, &vars, &coefs, &constant);
-  upper_bound -= constant;
+  upper_bound = CapSub(upper_bound, constant);
 
   const int size = vars.size();
   if (size == 0 || AreAllNull<int64>(coefs)) {
@@ -2898,7 +2910,7 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
   if (AreAllBoundOrNull(vars, coefs)) {
     int64 cst = 0;
     for (int i = 0; i < size; ++i) {
-      cst += vars[i]->Min() * coefs[i];
+      cst = CapAdd(cst, CapProd(vars[i]->Min(), coefs[i]));
     }
     return cst <= upper_bound ? solver->MakeTrueConstraint()
                               : solver->MakeFalseConstraint();
@@ -2929,7 +2941,7 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
       } else {
@@ -2954,7 +2966,7 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         pos_term = solver->MakeProd(vars[i], coefs[i]);
       } else {
@@ -2967,7 +2979,7 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {
@@ -2980,7 +2992,7 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         pos_terms.push_back(solver->MakeProd(vars[i], coefs[i])->Var());
       } else {
@@ -2993,7 +3005,7 @@ Constraint* MakeScalProdLessOrEqualFct(Solver* solver,
     int64 rhs = upper_bound;
     for (int i = 0; i < size; ++i) {
       if (coefs[i] == 0 || vars[i]->Bound()) {
-        rhs -= coefs[i] * vars[i]->Min();
+        rhs = CapSub(rhs, CapProd(coefs[i], vars[i]->Min()));
       } else if (coefs[i] > 0) {
         LOG(FATAL) << "Should not be here";
       } else {

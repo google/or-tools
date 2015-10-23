@@ -37,7 +37,6 @@
 #include "sat/clause.h"
 #include "sat/sat_base.h"
 #include "sat/sat_parameters.pb.h"
-#include "sat/symmetry.h"
 #include "sat/unsat_proof.h"
 #include "util/bitset.h"
 #include "util/running_stat.h"
@@ -118,16 +117,9 @@ class SatSolver {
   // return true.
   bool IsModelUnsat() const { return is_model_unsat_; }
 
-  // Add a set of Literals permutation that are assumed to be symmetries of the
-  // problem. The solver will take ownership of the pointers.
-  //
-  // TODO(user): This currently can't be used with unsat_proof() on. Fix it.
-  void AddSymmetries(std::vector<std::unique_ptr<SparsePermutation>>* generators) {
-    DCHECK(!is_model_unsat_);
-    for (int i = 0; i < generators->size(); ++i) {
-      symmetry_propagator_.AddSymmetry(std::move((*generators)[i]));
-    }
-  }
+  // Adds and registers the given propagator with the sat solver. Note that
+  // during propagation, they will be called in the order they where added.
+  void AddPropagator(std::unique_ptr<Propagator> propagator);
 
   // Advanced usage. This is only relevant when trying to compute an unsat core.
   // All the constraints added by one of the Add*() function above when this was
@@ -424,19 +416,12 @@ class SatSolver {
   // Returns the decision level of a given variable.
   int DecisionLevel(VariableIndex var) const { return trail_.Info(var).level; }
 
-  // Returns the reason for a given variable assignment. The variable must be
-  // assigned (this is DCHECKed). The interpretation is that because all the
-  // literal of a reason were assigned to false, we could deduce the assignement
-  // of the given variable.
-  //
-  // WARNING: The returned ClauseRef will be invalidated by the next call to
-  // Reason().
-  //
-  // Complexity remark: This is called a lot less often than Enqueue(). So it is
-  // better to do as little work as possible during Enqueue() and more work
-  // here. In particular, generating a reason clause lazily make sense.
-  ClauseRef Reason(VariableIndex var);
+  // Returns the relevant pointer if the given variable was propagated by the
+  // constraint in question. This is used to bump the activity of the learned
+  // clauses or pb constraints.
   SatClause* ReasonClauseOrNull(VariableIndex var) const;
+  UpperBoundedLinearConstraint* ReasonPbConstraintOrNull(
+      VariableIndex var) const;
 
   // This does one step of a pseudo-Boolean resolution:
   // - The variable var has been assigned to l at a given trail_index.
@@ -451,17 +436,17 @@ class SatSolver {
                          MutableUpperBoundedLinearConstraint* conflict,
                          Coefficient* slack);
 
-  // Returns true if the clause is the reason for an assigned variable or was
-  // the reason the last time a variable was assigned.
+  // Returns true iff the clause is the reason for an assigned variable.
   //
-  // Note(user): Since this is only used to delete learned clause, it sounds
-  // like a good idea to keep clauses that were used as a reason even if the
-  // variable is currently not assigned. This way, even if the clause cleaning
-  // happen just after a restart, the logic will not change.
+  // TODO(user): With our current data structures, we could also return true
+  // for clauses that where just used as a reason (like just before an untrail).
+  // This may be beneficial, but should properly be defined so that we can
+  // have the same behavior if we change the implementation.
   bool ClauseIsUsedAsReason(SatClause* clause) const {
     const VariableIndex var = clause->PropagatedLiteral().Variable();
-    return trail_.Info(var).type == AssignmentInfo::CLAUSE_PROPAGATION &&
-           trail_.Info(var).sat_clause == clause;
+    return trail_.Info(var).trail_index < trail_.Index() &&
+           trail_[trail_.Info(var).trail_index].Variable() == var &&
+           ReasonClauseOrNull(var) == clause;
   }
 
   // Add a problem clause. Not that the clause is assumed to be "cleaned", that
@@ -488,6 +473,10 @@ class SatSolver {
 
   // Performs propagation of the recently enqueued elements.
   bool Propagate();
+  bool PropagationIsDone() const;
+
+  // Update the propagators_ list with the relevant propagators.
+  void InitializePropagators();
 
   // Asks for the next decision to branch upon. This shouldn't be called if
   // there is no active variable (i.e. unassigned variable).
@@ -495,8 +484,9 @@ class SatSolver {
 
   // Unrolls the trail until a given point. This unassign the assigned variables
   // and add them to the priority queue with the correct weight.
-  void Untrail(int trail_index);
-  void UntrailWithoutPQUpdate(int trail_index);
+  void Untrail(int target_trail_index);
+  void UntrailWithoutPQUpdate(int target_trail_index);
+  void UntrailPropagators(int target_trail_index);
 
   // Update the resolution node associated to all the newly fixed variables so
   // each node expresses the reason why this variable was assigned. This is
@@ -553,9 +543,6 @@ class SatSolver {
   // This will returns nullptr if the solver is not configured to compute unsat
   // core or if the current constraint is not relevant for the core computation.
   ResolutionNode* CreateRootResolutionNode();
-
-  // Return the resolution node associated with the given variable assignment.
-  ResolutionNode* ResolutionNodeForAssignment(VariableIndex var) const;
 
   // Creates a ResolutionNode associated to a learned conflict. Basically, the
   // node will hold the information that the learned clause can be derived from
@@ -673,11 +660,17 @@ class SatSolver {
   };
   hash_map<SatClause*, ClauseInfo> clauses_info_;
 
-  // Observers of literals.
-  LiteralWatchers watched_clauses_;
+  // Internal propagators. We keep them here because we need more than the
+  // Propagator interface for them.
+  LiteralWatchers clauses_propagator_;
   BinaryImplicationGraph binary_implication_graph_;
   PbConstraints pb_constraints_;
-  SymmetryPropagator symmetry_propagator_;
+
+  // Ordered list of propagators used by Propagate()/Untrail().
+  std::vector<Propagator*> propagators_;
+
+  // Ordered list of propagators added with AddPropagator().
+  std::vector<std::unique_ptr<Propagator>> external_propagators_;
 
   // Keep track of all binary clauses so they can be exported.
   bool track_binary_clauses_;
@@ -702,12 +695,6 @@ class SatSolver {
 
   // The assumption level. See SolveWithAssumptions().
   int assumption_level_;
-
-  // The index of the first non-propagated literal on the trail. The first index
-  // is for non-binary clauses propagation and the second index is for binary
-  // clauses propagation.
-  int propagation_trail_index_;
-  int binary_propagation_trail_index_;
 
   // The size of the trail when ProcessNewlyFixedVariables() was last called.
   // Note that the trail contains only fixed literals (that is literals of

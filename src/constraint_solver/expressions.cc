@@ -321,7 +321,7 @@ class DomainIntVar : public IntVar {
       elements_.push_back(std::make_pair(value, elem));
       if (solver_->state() != Solver::OUTSIDE_SEARCH) {
         solver_->AddBacktrackAction(
-            solver_->RevAlloc(new UninsertAction(this, value)), false);
+            [this, value](Solver* s) { Uninsert(value); }, false);
       }
     }
 
@@ -363,24 +363,6 @@ class DomainIntVar : public IntVar {
     // Number of active elements.
     int Size() const { return elements_.size() - start_.Value(); }
 
-   private:
-    // If an object is added during search (root node, or tree search), we need
-    // to remove it when backtracking. We use a backtrack action for this.
-    class UninsertAction : public Action {
-     public:
-      UninsertAction(RevIntPtrMap<T>* map, int64 value)
-          : map_(map), value_(value) {}
-      ~UninsertAction() override {}
-
-      void Run(Solver* const s) override { map_->Uninsert(value_); }
-
-      std::string DebugString() const override { return "Uninsert"; }
-
-     private:
-      RevIntPtrMap<T>* const map_;
-      const int64 value_;
-    };
-
     // Removes the object permanently from the map.
     void Uninsert(int64 value) {
       for (int pos = 0; pos < elements_.size(); ++pos) {
@@ -397,6 +379,7 @@ class DomainIntVar : public IntVar {
       LOG(FATAL) << "The element should have been removed";
     }
 
+   private:
     Solver* const solver_;
     const int64 range_min_;
     NumericalRev<int> start_;
@@ -1544,7 +1527,7 @@ class DomainIntVar : public IntVar {
 
   void Process();
   void Push();
-  void ClearInProcess();
+  void CleanInProcess();
   uint64 Size() const override {
     if (bits_ != nullptr) return bits_->Size();
     return (max_.Value() - min_.Value() + 1);
@@ -2418,7 +2401,7 @@ void DomainIntVar::CreateBits() {
   }
 }
 
-void DomainIntVar::ClearInProcess() {
+void DomainIntVar::CleanInProcess() {
   in_process_ = false;
   if (bits_ != nullptr) {
     bits_->ClearHoles();
@@ -2437,30 +2420,33 @@ void DomainIntVar::Process() {
   if (bits_ != nullptr) {
     bits_->ClearRemovedValues();
   }
-  SetQueueCleanerOnFail(solver(), this);
+  set_variable_to_clean_on_fail(this);
   new_min_ = min_.Value();
   new_max_ = max_.Value();
-  if (min_.Value() == max_.Value()) {
+  const bool is_bound = min_.Value() == max_.Value();
+  const bool range_changed =
+      min_.Value() != OldMin() || max_.Value() != OldMax();
+  // Process immediate demons.
+  if (is_bound) {
     ExecuteAll(bound_demons_);
-    for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_bound_demons_); it.ok();
-         ++it) {
-      EnqueueDelayedDemon(*it);
-    }
   }
-  if (min_.Value() != OldMin() || max_.Value() != OldMax()) {
+  if (range_changed) {
     ExecuteAll(range_demons_);
-    for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_range_demons_); it.ok();
-         ++it) {
-      EnqueueDelayedDemon(*it);
-    }
   }
   ExecuteAll(domain_demons_);
-  for (SimpleRevFIFO<Demon*>::Iterator it(&delayed_domain_demons_); it.ok();
-       ++it) {
-    EnqueueDelayedDemon(*it);
+
+  // Process delayed demons.
+  if (is_bound) {
+    EnqueueAll(delayed_bound_demons_);
   }
-  clear_queue_action_on_fail();
-  ClearInProcess();
+  if (range_changed) {
+    EnqueueAll(delayed_range_demons_);
+  }
+  EnqueueAll(delayed_domain_demons_);
+
+  // Everything went well if we arrive here. Let's clean the variable.
+  set_variable_to_clean_on_fail(nullptr);
+  CleanInProcess();
   old_min_ = min_.Value();
   old_max_ = max_.Value();
   if (min_.Value() < new_min_) {
@@ -6369,28 +6355,6 @@ class LinkExprAndDomainIntVar : public CastConstraint {
   int64 cached_max_;
   uint64 fail_stamp_;
 };
-
-// ----- Utilities -----
-
-// Variable-based queue cleaner. It is used to put a domain int var in
-// a clean state after a failure occuring during its process() method.
-class VariableQueueCleaner : public Action {
- public:
-  VariableQueueCleaner() : var_(nullptr) {}
-
-  ~VariableQueueCleaner() override {}
-
-  void Run(Solver* const solver) override {
-    DCHECK(var_ != nullptr);
-    var_->ClearInProcess();
-  }
-
-  void set_var(DomainIntVar* const var) { var_ = var; }
-
- private:
-  DomainIntVar* var_;
-};
-
 }  //  namespace
 
 // ----- Misc -----
@@ -6404,7 +6368,11 @@ IntVarIterator* BooleanVar::MakeDomainIterator(bool reversible) const {
 
 // ----- API -----
 
-Action* NewDomainIntVarCleaner() { return new VariableQueueCleaner; }
+void CleanVariableOnFail(IntVar* const var) {
+  DCHECK_EQ(DOMAIN_INT_VAR, var->VarType());
+  DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
+  dvar->CleanInProcess();
+}
 
 Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
                        const std::vector<IntVar*>& vars) {
@@ -6418,15 +6386,6 @@ Constraint* SetIsGreaterOrEqual(IntVar* const var, const std::vector<int64>& val
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK(dvar != nullptr);
   return dvar->SetIsGreaterOrEqual(values, vars);
-}
-
-void Solver::set_queue_cleaner_on_fail(IntVar* const var) {
-  DCHECK_EQ(DOMAIN_INT_VAR, var->VarType());
-  DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
-  VariableQueueCleaner* const cleaner =
-      reinterpret_cast<VariableQueueCleaner*>(variable_cleaner_.get());
-  cleaner->set_var(dvar);
-  set_queue_action_on_fail(cleaner);
 }
 
 void RestoreBoolValue(IntVar* const var) {

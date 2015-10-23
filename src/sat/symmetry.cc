@@ -16,9 +16,8 @@
 namespace operations_research {
 namespace sat {
 
-SymmetryPropagator::SymmetryPropagator(Trail* trail)
-    : trail_(trail),
-      propagation_trail_index_(0),
+SymmetryPropagator::SymmetryPropagator()
+    : Propagator("SymmetryPropagator"),
       stats_("SymmetryPropagator"),
       num_propagations_(0),
       num_conflicts_(0) {}
@@ -55,14 +54,9 @@ void SymmetryPropagator::AddSymmetry(
   permutations_.emplace_back(permutation.release());
 }
 
-bool SymmetryPropagator::PropagationNeeded() const {
+bool SymmetryPropagator::PropagateNext(Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
-  return !permutations_.empty() && propagation_trail_index_ < trail_->Index();
-}
-
-bool SymmetryPropagator::PropagateNext() {
-  SCOPED_TIME_STAT(&stats_);
-  const Literal true_literal = (*trail_)[propagation_trail_index_];
+  const Literal true_literal = (*trail)[propagation_trail_index_];
   if (true_literal.Index() < images_.size()) {
     const std::vector<ImageInfo>& images = images_[true_literal.Index()];
     for (int image_index = 0; image_index < images.size(); ++image_index) {
@@ -71,7 +65,9 @@ bool SymmetryPropagator::PropagateNext() {
       // TODO(user): some optim ideas: no need to enqueue if a decision image is
       // already assigned to false. But then the Untrail() is more involved.
       std::vector<AssignedLiteralInfo>* p_trail = &(permutation_trails_[p_index]);
-      if (Enqueue(true_literal, images[image_index].image, p_trail)) continue;
+      if (Enqueue(*trail, true_literal, images[image_index].image, p_trail)) {
+        continue;
+      }
 
       // We have a non-symmetric literal and its image is not already assigned
       // to
@@ -81,15 +77,26 @@ bool SymmetryPropagator::PropagateNext() {
 
       // If the first non-symmetric literal is a decision, then we can't deduce
       // anything. Otherwise, it is either a conflict or a propagation.
-      const AssignmentInfo& assignment_info =
-          trail_->Info(non_symmetric.literal.Variable());
-      if (assignment_info.type == AssignmentInfo::SEARCH_DECISION) continue;
-      if (trail_->Assignment().IsLiteralFalse(non_symmetric.image)) {
+      const VariableIndex non_symmetric_var = non_symmetric.literal.Variable();
+      const AssignmentInfo& assignment_info = trail->Info(non_symmetric_var);
+      if (trail->AssignmentType(non_symmetric_var) ==
+          AssignmentType::kSearchDecision) {
+        continue;
+      }
+      if (trail->Assignment().LiteralIsFalse(non_symmetric.image)) {
         // Conflict.
-        conflict_permutation_index_ = p_index;
-        conflict_source_reason_ = non_symmetric.literal;
-        conflict_literal_ = non_symmetric.image;
         ++num_conflicts_;
+
+        // Set the conflict on the trail.
+        // Note that we need to fetch a reason for this.
+        std::vector<Literal>* conflict = trail->MutableConflict();
+        const ClauseRef initial_reason =
+            trail->Reason(non_symmetric.literal.Variable());
+        Permute(p_index, initial_reason, conflict);
+        conflict->push_back(non_symmetric.image);
+        for (Literal literal : *conflict) {
+          DCHECK(trail->Assignment().LiteralIsFalse(literal)) << literal;
+        }
 
         // Backtrack over all the enqueues we just did.
         for (; image_index >= 0; --image_index) {
@@ -98,8 +105,11 @@ bool SymmetryPropagator::PropagateNext() {
         return false;
       } else {
         // Propagation.
-        trail_->EnqueueWithSymmetricReason(
-            non_symmetric.image, assignment_info.trail_index, p_index);
+        if (trail->Index() >= reasons_.size()) {
+          reasons_.resize(trail->Index() + 1);
+        }
+        reasons_[trail->Index()] = {assignment_info.trail_index, p_index};
+        trail->Enqueue(non_symmetric.image, propagator_id_);
         ++num_propagations_;
       }
     }
@@ -108,11 +118,19 @@ bool SymmetryPropagator::PropagateNext() {
   return true;
 }
 
-void SymmetryPropagator::Untrail(int trail_index) {
+bool SymmetryPropagator::Propagate(Trail* trail) {
+  const int old_index = trail->Index();
+  while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
+    if (!PropagateNext(trail)) return false;
+  }
+  return true;
+}
+
+void SymmetryPropagator::Untrail(const Trail& trail, int trail_index) {
   SCOPED_TIME_STAT(&stats_);
   while (propagation_trail_index_ > trail_index) {
     --propagation_trail_index_;
-    const Literal true_literal = (*trail_)[propagation_trail_index_];
+    const Literal true_literal = trail[propagation_trail_index_];
     if (true_literal.Index() < images_.size()) {
       for (ImageInfo& info : images_[true_literal.Index()]) {
         permutation_trails_[info.permutation_index].pop_back();
@@ -121,11 +139,23 @@ void SymmetryPropagator::Untrail(int trail_index) {
   }
 }
 
-bool SymmetryPropagator::Enqueue(Literal literal, Literal image,
+ClauseRef SymmetryPropagator::Reason(const Trail& trail,
+                                     int trail_index) const {
+  SCOPED_TIME_STAT(&stats_);
+  const ReasonInfo& reason_info = reasons_[trail_index];
+  std::vector<Literal>* reason = trail.GetVectorToStoreReason(trail_index);
+  Permute(reason_info.symmetry_index,
+          trail.Reason(trail[reason_info.source_trail_index].Variable()),
+          reason);
+  return ClauseRef(*reason);
+}
+
+bool SymmetryPropagator::Enqueue(const Trail& trail, Literal literal,
+                                 Literal image,
                                  std::vector<AssignedLiteralInfo>* p_trail) {
   // Small optimization to get the trail index of literal.
   const int literal_trail_index = propagation_trail_index_;
-  DCHECK_EQ(literal_trail_index, trail_->Info(literal.Variable()).trail_index);
+  DCHECK_EQ(literal_trail_index, trail.Info(literal.Variable()).trail_index);
 
   // Push the new AssignedLiteralInfo on the permutation trail. Note that we
   // don't know yet its first_non_symmetric_info_index_so_far but we know that
@@ -140,10 +170,10 @@ bool SymmetryPropagator::Enqueue(Literal literal, Literal image,
 
   // Compute first_non_symmetric_info_index_so_far.
   while (*index < p_trail->size() &&
-         trail_->Assignment().IsLiteralTrue((*p_trail)[*index].image)) {
+         trail.Assignment().LiteralIsTrue((*p_trail)[*index].image)) {
     // This AssignedLiteralInfo is symmetric for the full solver assignment.
     // We test if it is also symmetric for the assignment so far:
-    if (trail_->Info((*p_trail)[*index].image.Variable()).trail_index >
+    if (trail.Info((*p_trail)[*index].image.Variable()).trail_index >
         literal_trail_index) {
       // It isn't, so we can stop the function here. We will continue the loop
       // when this function is called again with an higher trail_index.
@@ -152,21 +182,6 @@ bool SymmetryPropagator::Enqueue(Literal literal, Literal image,
     ++(*index);
   }
   return *index == p_trail->size();
-}
-
-VariableIndex SymmetryPropagator::VariableAtTheSourceOfLastConflict() const {
-  return conflict_source_reason_.Variable();
-}
-
-const std::vector<Literal>& SymmetryPropagator::LastConflict(
-    ClauseRef initial_reason) const {
-  SCOPED_TIME_STAT(&stats_);
-  Permute(conflict_permutation_index_, initial_reason, &conflict_scratchpad_);
-  conflict_scratchpad_.push_back(conflict_literal_);
-  for (Literal literal : conflict_scratchpad_) {
-    DCHECK(trail_->Assignment().IsLiteralFalse(literal)) << literal;
-  }
-  return conflict_scratchpad_;
 }
 
 void SymmetryPropagator::Permute(int index, ClauseRef input,

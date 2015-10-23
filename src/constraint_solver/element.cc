@@ -13,6 +13,7 @@
 
 
 #include <algorithm>
+#include <numeric>
 #include <memory>
 #include <string>
 #include <vector>
@@ -23,10 +24,14 @@
 #include "base/join.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/iterators.h"
+#include "util/range_minimum_query.h"
 #include "util/string_array.h"
 
 DEFINE_bool(cp_disable_element_cache, true,
-            "Is true, caching for IntElement is disabled.");
+            "If true, caching for IntElement is disabled.");
+DEFINE_bool(cp_use_element_rmq, true,
+            "If true, rmq's will be used in element expressions.");
 
 namespace operations_research {
 
@@ -34,6 +39,31 @@ namespace operations_research {
 void LinkVarExpr(Solver* const s, IntExpr* const expr, IntVar* const var);
 
 namespace {
+
+template <class T>
+class VectorLess {
+ public:
+  explicit VectorLess(const std::vector<T>* values) : values_(values) {}
+  bool operator()(const T& x, const T& y) {
+    return (*values_)[x] < (*values_)[y];
+  }
+
+ private:
+  const std::vector<T>* values_;
+};
+
+template <class T>
+class VectorGreater {
+ public:
+  explicit VectorGreater(const std::vector<T>* values) : values_(values) {}
+  bool operator()(const T& x, const T& y) {
+    return (*values_)[x] > (*values_)[y];
+  }
+
+ private:
+  const std::vector<T>* values_;
+};
+
 // ----- BaseIntExprElement -----
 
 class BaseIntExprElement : public BaseIntExpr {
@@ -320,6 +350,103 @@ class IntExprElement : public BaseIntExprElement {
   const std::vector<int64> values_;
 };
 
+// ----- Range Minimum Query-based Element -----
+
+class RangeMinimumQueryExprElement : public BaseIntExpr {
+ public:
+  RangeMinimumQueryExprElement(Solver* solver, const std::vector<int64>& values,
+                               IntVar* index);
+  ~RangeMinimumQueryExprElement() override {}
+  int64 Min() const override;
+  int64 Max() const override;
+  void Range(int64* mi, int64* ma) override;
+  void SetMin(int64 m) override;
+  void SetMax(int64 m) override;
+  void SetRange(int64 mi, int64 ma) override;
+  bool Bound() const override { return (index_->Bound()); }
+  // TODO(user) : improve me, the previous test is not always true
+  void WhenRange(Demon* d) override { index_->WhenRange(d); }
+  IntVar* CastToVar() override {
+    // TODO(user): Should we try to make holes in the domain of index_, as we
+    // do here, or should we only propagate bounds as we do in
+    // IncreasingIntExprElement ?
+    IntVar* const var = solver()->MakeIntVar(min_rmq_.array());
+    solver()->AddCastConstraint(solver()->RevAlloc(new IntElementConstraint(
+                                    solver(), min_rmq_.array(), index_, var)),
+                                var, this);
+    return var;
+  }
+
+ private:
+  int64 IndexMin() const { return std::max(0LL, index_->Min()); }
+  int64 IndexMax() const {
+    return std::min(static_cast<int64>(min_rmq_.array().size()) - 1,
+                    index_->Max());
+  }
+
+  IntVar* const index_;
+  const RangeMinimumQuery<int64, std::less<int64>> min_rmq_;
+  const RangeMinimumQuery<int64, std::greater<int64>> max_rmq_;
+};
+
+RangeMinimumQueryExprElement::RangeMinimumQueryExprElement(
+    Solver* solver, const std::vector<int64>& values, IntVar* index)
+    : BaseIntExpr(solver), index_(index), min_rmq_(values), max_rmq_(values) {
+  CHECK(solver != nullptr);
+  CHECK(index != nullptr);
+}
+
+int64 RangeMinimumQueryExprElement::Min() const {
+  return min_rmq_.GetMinimumFromRange(IndexMin(), IndexMax() + 1);
+}
+
+int64 RangeMinimumQueryExprElement::Max() const {
+  return max_rmq_.GetMinimumFromRange(IndexMin(), IndexMax() + 1);
+}
+
+void RangeMinimumQueryExprElement::Range(int64* mi, int64* ma) {
+  const int64 range_min = IndexMin();
+  const int64 range_max = IndexMax() + 1;
+  *mi = min_rmq_.GetMinimumFromRange(range_min, range_max);
+  *ma = max_rmq_.GetMinimumFromRange(range_min, range_max);
+}
+
+#define UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS(test) \
+  const std::vector<int64>& values = min_rmq_.array();  \
+  int64 index_min = IndexMin();                    \
+  int64 index_max = IndexMax();                    \
+  int64 value = values[index_min];                 \
+  while (index_min < index_max && (test)) {        \
+    index_min++;                                   \
+    value = values[index_min];                     \
+  }                                                \
+  if (index_min == index_max && (test)) {          \
+    solver()->Fail();                              \
+  }                                                \
+  value = values[index_max];                       \
+  while (index_max >= index_min && (test)) {       \
+    index_max--;                                   \
+    value = values[index_max];                     \
+  }                                                \
+  index_->SetRange(index_min, index_max);
+
+void RangeMinimumQueryExprElement::SetMin(int64 m) {
+  UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS(value < m);
+}
+
+void RangeMinimumQueryExprElement::SetMax(int64 m) {
+  UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS(value > m);
+}
+
+void RangeMinimumQueryExprElement::SetRange(int64 mi, int64 ma) {
+  if (mi > ma) {
+    solver()->Fail();
+  }
+  UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS(value < mi || value > ma);
+}
+
+#undef UPDATE_RMQ_BASE_ELEMENT_INDEX_BOUNDS
+
 // ----- Increasing Element -----
 
 class IncreasingIntExprElement : public BaseIntExpr {
@@ -383,18 +510,18 @@ int64 IncreasingIntExprElement::Min() const {
 }
 
 void IncreasingIntExprElement::SetMin(int64 m) {
-  const int64 expression_min = std::max(0LL, index_->Min());
-  const int64 expression_max =
+  const int64 index_min = std::max(0LL, index_->Min());
+  const int64 index_max =
       std::min(static_cast<int64>(values_.size()) - 1LL, index_->Max());
-  if (expression_min > expression_max || m > values_[expression_max]) {
+
+  if (index_min > index_max || m > values_[index_max]) {
     solver()->Fail();
   }
-  int64 nmin = expression_min;
-  while (nmin <= expression_max && values_[nmin] < m) {
-    nmin++;
-  }
-  DCHECK_LE(nmin, expression_max);
-  index_->SetMin(nmin);
+
+  const std::vector<int64>::const_iterator first =
+      std::lower_bound(values_.begin(), values_.end(), m);
+  const int64 new_index_min = first - values_.begin();
+  index_->SetMin(new_index_min);
 }
 
 int64 IncreasingIntExprElement::Max() const {
@@ -404,42 +531,39 @@ int64 IncreasingIntExprElement::Max() const {
 }
 
 void IncreasingIntExprElement::SetMax(int64 m) {
-  const int64 expression_min = std::max(0LL, index_->Min());
-  const int64 expression_max =
-      std::min(static_cast<int64>(values_.size()) - 1LL, index_->Max());
-  if (expression_min > expression_max || m < values_[expression_min]) {
+  int64 index_min = std::max(0LL, index_->Min());
+  if (m < values_[index_min]) {
     solver()->Fail();
   }
-  int64 nmax = expression_max;
-  while (nmax >= expression_min && values_[nmax] > m) {
-    nmax--;
-  }
-  DCHECK_GE(nmax, expression_min);
-  index_->SetRange(expression_min, nmax);
+
+  const std::vector<int64>::const_iterator last_after =
+      std::upper_bound(values_.begin(), values_.end(), m);
+  const int64 new_index_max = (last_after - values_.begin()) - 1;
+  index_->SetRange(0, new_index_max);
 }
 
 void IncreasingIntExprElement::SetRange(int64 mi, int64 ma) {
   if (mi > ma) {
     solver()->Fail();
   }
-  const int64 expression_min = std::max(0LL, index_->Min());
-  const int64 expression_max =
+  const int64 index_min = std::max(0LL, index_->Min());
+  const int64 index_max =
       std::min(static_cast<int64>(values_.size()) - 1LL, index_->Max());
-  if (expression_min > expression_max || mi > values_[expression_max] ||
-      ma < values_[expression_min]) {
+
+  if (mi > ma || ma < values_[index_min] || mi > values_[index_max]) {
     solver()->Fail();
   }
-  int64 nmin = expression_min;
-  while (nmin <= expression_max && (values_[nmin] < mi || values_[nmin] > ma)) {
-    nmin++;
-  }
-  DCHECK_LE(nmin, expression_max);
-  int64 nmax = expression_max;
-  while (nmax >= nmin && (values_[nmax] < mi || values_[nmax] > ma)) {
-    nmax--;
-  }
-  DCHECK_GE(nmax, expression_min);
-  index_->SetRange(nmin, nmax);
+
+  const std::vector<int64>::const_iterator first =
+      std::lower_bound(values_.begin(), values_.end(), mi);
+  const int64 new_index_min = first - values_.begin();
+
+  const std::vector<int64>::const_iterator last_after =
+      std::upper_bound(first, values_.end(), ma);
+  const int64 new_index_max = (last_after - values_.begin()) - 1;
+
+  // Assign.
+  index_->SetRange(new_index_min, new_index_max);
 }
 
 // ----- Solver::MakeElement(int array, int var) -----
@@ -505,8 +629,13 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
       result = solver->RegisterIntExpr(solver->RevAlloc(
           new IncreasingIntExprElement(solver, values, index)));
     } else {
-      result = solver->RegisterIntExpr(
-          solver->RevAlloc(new IntExprElement(solver, values, index)));
+      if (FLAGS_cp_use_element_rmq) {
+        result = solver->RegisterIntExpr(solver->RevAlloc(
+            new RangeMinimumQueryExprElement(solver, values, index)));
+      } else {
+        result = solver->RegisterIntExpr(
+            solver->RevAlloc(new IntExprElement(solver, values, index)));
+      }
     }
     if (!FLAGS_cp_disable_element_cache) {
       solver->Cache()->InsertVarConstantArrayExpression(
@@ -602,53 +731,44 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
   int64 Min() const override { return values_(index_->Min()); }
 
   void SetMin(int64 m) override {
-    const int64 expression_min = index_->Min();
-    const int64 expression_max = index_->Max();
-    if (m > values_(expression_max)) {
+    const int64 index_min = index_->Min();
+    const int64 index_max = index_->Max();
+    if (m > values_(index_max)) {
       solver()->Fail();
     }
-    int64 nmin = expression_min;
-    while (nmin <= expression_max && values_(nmin) < m) {
-      nmin++;
-    }
-    DCHECK_LE(nmin, expression_max);
-    index_->SetMin(nmin);
+    const int64 new_index_min = FindNewIndexMin(index_min, index_max, m);
+    index_->SetMin(new_index_min);
   }
 
   int64 Max() const override { return values_(index_->Max()); }
 
   void SetMax(int64 m) override {
-    const int64 expression_min = index_->Min();
-    const int64 expression_max = index_->Max();
-    if (m < values_(expression_min)) {
+    int64 index_min = index_->Min();
+    int64 index_max = index_->Max();
+    if (m < values_(index_min)) {
       solver()->Fail();
     }
-    int64 nmax = expression_max;
-    while (nmax >= expression_min && values_(nmax) > m) {
-      nmax--;
-    }
-    DCHECK_GE(nmax, expression_min);
-    index_->SetMax(nmax);
+    const int64 new_index_max = FindNewIndexMax(index_min, index_max, m);
+    index_->SetMax(new_index_max);
   }
 
   void SetRange(int64 mi, int64 ma) override {
-    const int64 expression_min = index_->Min();
-    const int64 expression_max = index_->Max();
-    if (mi > ma || ma < values_(expression_min) ||
-        mi > values_(expression_max)) {
+    const int64 index_min = index_->Min();
+    const int64 index_max = index_->Max();
+    const int64 value_min = values_(index_min);
+    const int64 value_max = values_(index_max);
+    if (mi > ma || ma < value_min || mi > value_max) {
       solver()->Fail();
     }
-    int64 nmax = expression_max;
-    while (nmax >= expression_min && values_(nmax) > ma) {
-      nmax--;
+    if (mi <= value_min && ma >= value_max) {
+      // Nothing to do.
+      return;
     }
-    DCHECK_GE(nmax, expression_min);
-    int64 nmin = expression_min;
-    while (nmin <= nmax && values_(nmin) < mi) {
-      nmin++;
-    }
-    DCHECK_LE(nmin, nmax);
-    index_->SetRange(nmin, nmax);
+
+    const int64 new_index_min = FindNewIndexMin(index_min, index_max, mi);
+    const int64 new_index_max = FindNewIndexMax(new_index_min, index_max, ma);
+    // Assign.
+    index_->SetRange(new_index_min, new_index_max);
   }
 
   std::string name() const override {
@@ -679,6 +799,56 @@ class IncreasingIntExprFunctionElement : public BaseIntExpr {
   }
 
  private:
+  int64 FindNewIndexMin(int64 index_min, int64 index_max, int64 m) {
+    if (m <= values_(index_min)) {
+      return index_min;
+    }
+
+    DCHECK_LT(values_(index_min), m);
+    DCHECK_GE(values_(index_max), m);
+
+    int64 index_lower_bound = index_min;
+    int64 index_upper_bound = index_max;
+    while (index_upper_bound - index_lower_bound > 1) {
+      DCHECK_LT(values_(index_lower_bound), m);
+      DCHECK_GE(values_(index_upper_bound), m);
+      const int64 pivot = (index_lower_bound + index_upper_bound) / 2;
+      const int64 pivot_value = values_(pivot);
+      if (pivot_value < m) {
+        index_lower_bound = pivot;
+      } else {
+        index_upper_bound = pivot;
+      }
+    }
+    DCHECK(values_(index_upper_bound) >= m);
+    return index_upper_bound;
+  }
+
+  int64 FindNewIndexMax(int64 index_min, int64 index_max, int64 m) {
+    if (m >= values_(index_max)) {
+      return index_max;
+    }
+
+    DCHECK_LE(values_(index_min), m);
+    DCHECK_GT(values_(index_max), m);
+
+    int64 index_lower_bound = index_min;
+    int64 index_upper_bound = index_max;
+    while (index_upper_bound - index_lower_bound > 1) {
+      DCHECK_LE(values_(index_lower_bound), m);
+      DCHECK_GT(values_(index_upper_bound), m);
+      const int64 pivot = (index_lower_bound + index_upper_bound) / 2;
+      const int64 pivot_value = values_(pivot);
+      if (pivot_value > m) {
+        index_upper_bound = pivot;
+      } else {
+        index_lower_bound = pivot;
+      }
+    }
+    DCHECK(values_(index_lower_bound) <= m);
+    return index_lower_bound;
+  }
+
   Solver::IndexEvaluator1 values_;
   IntVar* const index_;
 };
@@ -1007,17 +1177,19 @@ class IfThenElseCt : public CastConstraint {
   IntExpr* const one_;
 };
 
-// ----- IntExprArrayElementCt -----
+// ----- IntExprEvaluatorElementCt -----
 
-// This constraint implements vars[index] == var. It is delayed such
+// This constraint implements evaluator(index) == var. It is delayed such
 // that propagation only occurs when all variables have been touched.
+// The range of the evaluator is [range_start, range_end).
 
 namespace {
-class IntExprArrayElementCt : public CastConstraint {
+class IntExprEvaluatorElementCt : public CastConstraint {
  public:
-  IntExprArrayElementCt(Solver* const s, const std::vector<IntVar*>& vars,
-                        IntVar* const index, IntVar* const target_var);
-  ~IntExprArrayElementCt() override {}
+  IntExprEvaluatorElementCt(Solver* const s, Solver::Int64ToIntVar evaluator,
+                            int64 range_start, int64 range_end,
+                            IntVar* const index, IntVar* const target);
+  ~IntExprEvaluatorElementCt() override {}
 
   void Post() override;
   void InitialPropagate() override;
@@ -1027,80 +1199,80 @@ class IntExprArrayElementCt : public CastConstraint {
   void UpdateExpr();
 
   std::string DebugString() const override;
+  void Accept(ModelVisitor* const visitor) const override;
 
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
-    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
-                                               vars_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
-                                            index_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
-                                            target_var_);
-    visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
-  }
+ protected:
+  IntVar* const index_;
 
  private:
-  int64 size() const { return vars_.size(); }
-
-  const std::vector<IntVar*> vars_;
-  IntVar* const index_;
+  const Solver::Int64ToIntVar evaluator_;
+  const int64 range_start_;
+  const int64 range_end_;
   int min_support_;
   int max_support_;
 };
 
-IntExprArrayElementCt::IntExprArrayElementCt(Solver* const s,
-                                             const std::vector<IntVar*>& vars,
-                                             IntVar* const index,
-                                             IntVar* const target_var)
+IntExprEvaluatorElementCt::IntExprEvaluatorElementCt(
+    Solver* const s, Solver::Int64ToIntVar evaluator, int64 range_start,
+    int64 range_end, IntVar* const index, IntVar* const target_var)
     : CastConstraint(s, target_var),
-      vars_(vars),
       index_(index),
+      evaluator_(std::move(evaluator)),
+      range_start_(range_start),
+      range_end_(range_end),
       min_support_(-1),
       max_support_(-1) {}
 
-void IntExprArrayElementCt::Post() {
+void IntExprEvaluatorElementCt::Post() {
   Demon* const delayed_propagate_demon = MakeDelayedConstraintDemon0(
-      solver(), this, &IntExprArrayElementCt::Propagate, "Propagate");
-  for (int i = 0; i < size(); ++i) {
-    vars_[i]->WhenRange(delayed_propagate_demon);
+      solver(), this, &IntExprEvaluatorElementCt::Propagate, "Propagate");
+  for (int i = range_start_; i < range_end_; ++i) {
+    IntVar* const current_var = evaluator_(i);
+    current_var->WhenRange(delayed_propagate_demon);
     Demon* const update_demon = MakeConstraintDemon1(
-        solver(), this, &IntExprArrayElementCt::Update, "Update", i);
-    vars_[i]->WhenRange(update_demon);
+        solver(), this, &IntExprEvaluatorElementCt::Update, "Update", i);
+    current_var->WhenRange(update_demon);
   }
   index_->WhenRange(delayed_propagate_demon);
   Demon* const update_expr_demon = MakeConstraintDemon0(
-      solver(), this, &IntExprArrayElementCt::UpdateExpr, "UpdateExpr");
+      solver(), this, &IntExprEvaluatorElementCt::UpdateExpr, "UpdateExpr");
   index_->WhenRange(update_expr_demon);
   Demon* const update_var_demon = MakeConstraintDemon0(
-      solver(), this, &IntExprArrayElementCt::Propagate, "UpdateVar");
+      solver(), this, &IntExprEvaluatorElementCt::Propagate, "UpdateVar");
 
   target_var_->WhenRange(update_var_demon);
 }
 
-void IntExprArrayElementCt::InitialPropagate() { Propagate(); }
+void IntExprEvaluatorElementCt::InitialPropagate() { Propagate(); }
 
-void IntExprArrayElementCt::Propagate() {
-  const int64 emin = std::max(0LL, index_->Min());
-  const int64 emax = std::min(size() - 1LL, index_->Max());
+void IntExprEvaluatorElementCt::Propagate() {
+  const int64 emin = std::max(range_start_, index_->Min());
+  const int64 emax = std::min(range_end_ - 1LL, index_->Max());
   const int64 vmin = target_var_->Min();
   const int64 vmax = target_var_->Max();
   if (emin == emax) {
     index_->SetValue(emin);  // in case it was reduced by the above min/max.
-    vars_[emin]->SetRange(vmin, vmax);
+    evaluator_(emin)->SetRange(vmin, vmax);
   } else {
     int64 nmin = emin;
-    while (nmin <= emax &&
-           (vars_[nmin]->Min() > vmax || vars_[nmin]->Max() < vmin)) {
-      nmin++;
+    for (; nmin <= emax; nmin++) {
+      // break if the intersection of
+      // [evaluator_(nmin)->Min(), evaluator_(nmin)->Max()] and [vmin, vmax]
+      // is non-empty.
+      IntVar* const nmin_var = evaluator_(nmin);
+      if (nmin_var->Min() <= vmax && nmin_var->Max() >= vmin) break;
     }
     int64 nmax = emax;
-    while (nmax >= nmin &&
-           (vars_[nmax]->Max() < vmin || vars_[nmax]->Min() > vmax)) {
-      nmax--;
+    for (; nmin <= nmax; nmax--) {
+      // break if the intersection of
+      // [evaluator_(nmin)->Min(), evaluator_(nmin)->Max()] and [vmin, vmax]
+      // is non-empty.
+      IntExpr* const nmax_var = evaluator_(nmax);
+      if (nmax_var->Min() <= vmax && nmax_var->Max() >= vmin) break;
     }
     index_->SetRange(nmin, nmax);
     if (nmin == nmax) {
-      vars_[nmin]->SetRange(vmin, vmax);
+      evaluator_(nmin)->SetRange(vmin, vmax);
     }
   }
   if (min_support_ == -1 || max_support_ == -1) {
@@ -1109,11 +1281,12 @@ void IntExprArrayElementCt::Propagate() {
     int64 gmin = kint64max;
     int64 gmax = kint64min;
     for (int i = index_->Min(); i <= index_->Max(); ++i) {
-      const int64 vmin = vars_[i]->Min();
+      IntExpr* const var_i = evaluator_(i);
+      const int64 vmin = var_i->Min();
       if (vmin < gmin) {
         gmin = vmin;
       }
-      const int64 vmax = vars_[i]->Max();
+      const int64 vmax = var_i->Max();
       if (vmax > gmax) {
         gmax = vmax;
       }
@@ -1124,25 +1297,96 @@ void IntExprArrayElementCt::Propagate() {
   }
 }
 
-void IntExprArrayElementCt::Update(int index) {
+void IntExprEvaluatorElementCt::Update(int index) {
   if (index == min_support_ || index == max_support_) {
     solver()->SaveAndSetValue(&min_support_, -1);
     solver()->SaveAndSetValue(&max_support_, -1);
   }
 }
 
-void IntExprArrayElementCt::UpdateExpr() {
+void IntExprEvaluatorElementCt::UpdateExpr() {
   if (!index_->Contains(min_support_) || !index_->Contains(max_support_)) {
     solver()->SaveAndSetValue(&min_support_, -1);
     solver()->SaveAndSetValue(&max_support_, -1);
   }
 }
 
+namespace {
+std::string StringifyEvaluatorBare(const Solver::Int64ToIntVar& evaluator,
+                              int64 range_start, int64 range_end) {
+  std::string out;
+  for (int64 i = range_start; i < range_end; ++i) {
+    if (i != range_start) {
+      out += ", ";
+    }
+    out += StringPrintf("%" GG_LL_FORMAT "d -> %s", i,
+                        evaluator(i)->DebugString().c_str());
+  }
+  return out;
+}
+
+std::string StringifyInt64ToIntVar(const Solver::Int64ToIntVar& evaluator,
+                              int64 range_begin, int64 range_end) {
+  std::string out;
+  if (range_end - range_begin > 10) {
+    out = StringPrintf(
+        "IntToIntVar(%s, ...%s)",
+        StringifyEvaluatorBare(evaluator, range_begin, range_begin + 5).c_str(),
+        StringifyEvaluatorBare(evaluator, range_end - 5, range_end).c_str());
+  } else {
+    out = StringPrintf(
+        "IntToIntVar(%s)",
+        StringifyEvaluatorBare(evaluator, range_begin, range_end).c_str());
+  }
+  return out;
+}
+}  // namespace
+
+std::string IntExprEvaluatorElementCt::DebugString() const {
+  return StringifyInt64ToIntVar(evaluator_, range_start_, range_end_);
+}
+
+void IntExprEvaluatorElementCt::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
+  visitor->VisitIntegerVariableEvaluatorArgument(
+      ModelVisitor::kEvaluatorArgument, evaluator_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument, index_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                          target_var_);
+  visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
+}
+
+// ----- IntExprArrayElementCt -----
+
+// This constraint implements vars[index] == var. It is delayed such
+// that propagation only occurs when all variables have been touched.
+
+class IntExprArrayElementCt : public IntExprEvaluatorElementCt {
+ public:
+  IntExprArrayElementCt(Solver* const s, std::vector<IntVar*> vars,
+                        IntVar* const index, IntVar* const target_var);
+
+  std::string DebugString() const override;
+  void Accept(ModelVisitor* const visitor) const override;
+
+ private:
+  const std::vector<IntVar*> vars_;
+};
+
+IntExprArrayElementCt::IntExprArrayElementCt(Solver* const s,
+                                             std::vector<IntVar*> vars,
+                                             IntVar* const index,
+                                             IntVar* const target_var)
+    : IntExprEvaluatorElementCt(s, [this](int64 idx) {
+        return vars_[idx];
+      }, 0, vars.size(), index, target_var), vars_(std::move(vars)) {}
+
 std::string IntExprArrayElementCt::DebugString() const {
-  if (size() > 10) {
+  int64 size = vars_.size();
+  if (size > 10) {
     return StringPrintf("IntExprArrayElement(var array of size %" GG_LL_FORMAT
                         "d, %s) == %s",
-                        size(), index_->DebugString().c_str(),
+                        size, index_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   } else {
     return StringPrintf("IntExprArrayElement([%s], %s) == %s",
@@ -1150,6 +1394,16 @@ std::string IntExprArrayElementCt::DebugString() const {
                         index_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
+}
+
+void IntExprArrayElementCt::Accept(ModelVisitor* const visitor) const {
+  visitor->BeginVisitConstraint(ModelVisitor::kElementEqual, this);
+  visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                             vars_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument, index_);
+  visitor->VisitIntegerExpressionArgument(ModelVisitor::kTargetArgument,
+                                          target_var_);
+  visitor->EndVisitConstraint(ModelVisitor::kElementEqual, this);
 }
 
 // ----- IntExprArrayElementCstCt -----
@@ -1393,6 +1647,22 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const ind
   IntVar* const element_var = MakeIntVar(emin, emax, vname);
   AddConstraint(
       RevAlloc(new IntExprArrayElementCt(this, vars, index, element_var)));
+  return element_var;
+}
+
+IntExpr* Solver::MakeElement(Int64ToIntVar vars, int64 range_start,
+                             int64 range_end, IntVar* argument) {
+  const std::string index_name =
+      argument->name().size() > 0 ? argument->name() : argument->DebugString();
+  const std::string vname =
+      StringPrintf("ElementVar(%s, %s)",
+                   StringifyInt64ToIntVar(vars, range_start, range_end).c_str(),
+                   index_name.c_str());
+  IntVar* const element_var = MakeIntVar(kint64min, kint64max, vname);
+  IntExprEvaluatorElementCt* evaluation_ct = new IntExprEvaluatorElementCt(
+      this, std::move(vars), range_start, range_end, argument, element_var);
+  AddConstraint(RevAlloc(evaluation_ct));
+  evaluation_ct->Propagate();
   return element_var;
 }
 

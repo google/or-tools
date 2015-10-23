@@ -69,6 +69,7 @@ message GlopParameters {
     TRIANGULAR = 2;
   }
 
+
   // PricingRule to use during the feasibility phase.
   optional PricingRule feasibility_rule = 1 [default = STEEPEST_EDGE];
 
@@ -286,9 +287,13 @@ message GlopParameters {
   // TODO(user): Clean this up and use the same small pivot detection.
   optional double dual_small_pivot_threshold = 38 [default = 1e-4];
 
-  // A zero tolerance used by the preprocessors. This is used for things like
-  // detecting if two columns/rows are proportional or if an interval is empty.
-  optional double preprocessor_zero_tolerance = 39 [default = 1e-11];
+  // A floating point tolerance used by the preprocessors. This is used for
+  // things like detecting if two columns/rows are proportional or if an
+  // interval is empty.
+  //
+  // Note that the preprocessors also use solution_feasibility_tolerance() to
+  // detect if a problem is infeasible.
+  optional double preprocessor_zero_tolerance = 39 [default = 1e-9];
 
   // The solver will stop as soon as it has proven that the objective is smaller
   // than objective_lower_limit or greater than objective_upper_limit. Depending
@@ -339,4 +344,5 @@ message GlopParameters {
   // Number of threads in the OMP parallel sections. If left to 1, the code will
   // not create any OMP threads and will remain single-threaded.
   optional int32 num_omp_threads = 44 [default = 1];
+
 }

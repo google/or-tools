@@ -83,6 +83,7 @@ class GuidedSatFirstSolutionGenerator : public BopOptimizerBase {
 class BopRandomFirstSolutionGenerator : public BopOptimizerBase {
  public:
   BopRandomFirstSolutionGenerator(const std::string& name,
+                                  const BopParameters& parameters,
                                   sat::SatSolver* sat_propagator,
                                   MTRandom* random);
   ~BopRandomFirstSolutionGenerator() override;
@@ -148,7 +149,6 @@ class LinearRelaxation : public BopOptimizerBase {
   int num_fixed_variables_;
   bool problem_already_solved_;
   double scaled_solution_cost_;
-  double deterministic_time_limit_;
 };
 
 }  // namespace bop

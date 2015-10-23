@@ -125,8 +125,8 @@ void SatAssignmentToBopSolution(const sat::VariablesAssignment& assignment,
   // Only extract the variables of the initial problem.
   CHECK_LE(solution->Size(), assignment.NumberOfVariables());
   for (sat::VariableIndex var(0); var < solution->Size(); ++var) {
-    CHECK(assignment.IsVariableAssigned(var));
-    const bool value = assignment.IsLiteralTrue(sat::Literal(var, true));
+    CHECK(assignment.VariableIsAssigned(var));
+    const bool value = assignment.LiteralIsTrue(sat::Literal(var, true));
     const VariableIndex bop_var_id(var.value());
     solution->SetValue(bop_var_id, value);
   }

@@ -367,6 +367,11 @@ class MPSolver {
   // valid, populate "error_message".
   MPSolverResponseStatus LoadModelFromProto(const MPModelProto& input_model,
                                             std::string* error_message);
+  // The same as above, except that the loading keeps original variable and
+  // constraint names. Caller should make sure that all variable names and
+  // constraint names are unique, respectively.
+  MPSolverResponseStatus LoadModelFromProtoWithUniqueNamesOrDie(
+      const MPModelProto& input_model, std::string* error_message);
 
   // Encodes the current solution in a solution response protocol buffer.
   // Only nonzero variable values are stored in order to reduce the
@@ -589,6 +594,9 @@ class MPSolver {
   // Permanent storage for SetSolverSpecificParametersAsString().
   std::string solver_specific_parameter_string_;
 
+
+  MPSolverResponseStatus LoadModelFromProtoInternal(
+      const MPModelProto& input_model, bool clear_names, std::string* error_message);
 
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };

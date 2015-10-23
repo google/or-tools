@@ -18,7 +18,9 @@
 #include "base/stringprintf.h"
 #include "base/sysinfo.h"
 
+#ifndef ANDROID_JNI
 #include "base/encodingutils.h"
+#endif
 
 
 #include "base/stl_util.h"

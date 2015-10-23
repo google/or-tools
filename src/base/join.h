@@ -88,6 +88,17 @@ std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
               const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
               const AlphaNum& g, const AlphaNum& h);
+std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
+              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i);
+std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
+              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+              const AlphaNum& j);
+std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
+              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+              const AlphaNum& j, const AlphaNum& k);
 
 void StrAppend(std::string* s, const AlphaNum& a);
 void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b);
@@ -106,6 +117,18 @@ void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
 void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
                const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
                const AlphaNum& f, const AlphaNum& g, const AlphaNum& h);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+               const AlphaNum& i);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+               const AlphaNum& i, const AlphaNum& j);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+               const AlphaNum& i, const AlphaNum& j, const AlphaNum& k);
 
 namespace strings {
 template <class Iterable>

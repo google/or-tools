@@ -18,6 +18,7 @@
 #include "constraint_solver/constraint_solver.h"
 
 #include <csetjmp>
+#include <deque>
 #include <iosfwd>
 #include <memory>
 #include <string>
@@ -121,85 +122,9 @@ void Demon::desinhibit(Solver* const s) {
   }
 }
 
-// ------------------ Action class ------------------
-
-std::string Action::DebugString() const { return "Action"; }
-
 // ------------------ Queue class ------------------
 
-namespace {
-class FifoPriorityQueue {
- public:
-  struct Cell {
-    explicit Cell(Demon* const d) : demon(d), next(nullptr) {}
-    Demon* demon;
-    Cell* next;
-  };
-
-  FifoPriorityQueue() : first_(nullptr), last_(nullptr), free_cells_(nullptr) {}
-
-  ~FifoPriorityQueue() {
-    while (first_ != nullptr) {
-      Cell* const tmp = first_;
-      first_ = tmp->next;
-      delete tmp;
-    }
-    while (free_cells_ != nullptr) {
-      Cell* const tmp = free_cells_;
-      free_cells_ = tmp->next;
-      delete tmp;
-    }
-  }
-
-  Demon* Next() {
-    if (first_ != nullptr) {
-      DCHECK(last_ != nullptr);
-      Cell* const tmp_cell = first_;
-      Demon* const demon = tmp_cell->demon;
-      first_ = tmp_cell->next;
-      if (first_ == nullptr) {
-        last_ = nullptr;
-      }
-      tmp_cell->next = free_cells_;
-      free_cells_ = tmp_cell;
-      return demon;
-    }
-    return nullptr;
-  }
-
-  void Enqueue(Demon* const d) {
-    Cell* cell = free_cells_;
-    if (cell != nullptr) {
-      cell->demon = d;
-      free_cells_ = cell->next;
-      cell->next = nullptr;
-    } else {
-      cell = new Cell(d);
-    }
-    if (last_ != nullptr) {
-      last_->next = cell;
-      last_ = cell;
-    } else {
-      first_ = cell;
-      last_ = cell;
-    }
-  }
-
-  void AfterFailure() {
-    if (first_ != nullptr) {
-      last_->next = free_cells_;
-      free_cells_ = first_;
-      first_ = nullptr;
-      last_ = nullptr;
-    }
-  }
-
- private:
-  Cell* first_;
-  Cell* last_;
-  Cell* free_cells_;
-};
-}  // namespace
+extern void CleanVariableOnFail(IntVar* const var);
 
 class Queue {
  public:
@@ -210,20 +135,12 @@ class Queue {
         stamp_(1),
         freeze_level_(0),
         in_process_(false),
-        clear_action_(nullptr),
+        clean_action_(nullptr),
+        clean_variable_(nullptr),
         in_add_(false),
-        instruments_demons_(s->InstrumentsDemons()) {
-    for (int i = 0; i < Solver::kNumPriorities; ++i) {
-      containers_[i] = new FifoPriorityQueue();
-    }
-  }
+        instruments_demons_(s->InstrumentsDemons()) {}
 
-  ~Queue() {
-    for (int i = 0; i < Solver::kNumPriorities; ++i) {
-      delete containers_[i];
-      containers_[i] = nullptr;
-    }
-  }
+  ~Queue() {}
 
   void Freeze() {
     freeze_level_++;
@@ -255,49 +172,22 @@ class Queue {
     }
   }
 
-  void ProcessNormalDemon(Demon* const demon) {
-    if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % kTestPeriod == 0) {
-      solver_->TopPeriodicCheck();
-    }
-    demon->Run(solver_);
-    solver_->CheckFail();
-  }
-
-  void ProcessInstrumentedNormalDemon(Demon* const demon) {
-    solver_->GetPropagationMonitor()->BeginDemonRun(demon);
-    if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % kTestPeriod == 0) {
-      solver_->TopPeriodicCheck();
-    }
-    demon->Run(solver_);
-    solver_->CheckFail();
-    solver_->GetPropagationMonitor()->EndDemonRun(demon);
-  }
-
   void Process() {
     if (!in_process_) {
       in_process_ = true;
-      Demon* d = nullptr;
-      while ((d = containers_[Solver::VAR_PRIORITY]->Next()) != nullptr ||
-             (d = containers_[Solver::DELAYED_PRIORITY]->Next()) != nullptr) {
-        ProcessOneDemon(d);
+      while (!var_queue_.empty() || !delayed_queue_.empty()) {
+        if (!var_queue_.empty()) {
+          Demon* const demon = var_queue_.front();
+          var_queue_.pop_front();
+          ProcessOneDemon(demon);
+        } else {
+          DCHECK(!delayed_queue_.empty());
+          Demon* const demon = delayed_queue_.front();
+          delayed_queue_.pop_front();
+          ProcessOneDemon(demon);
+        }
       }
       in_process_ = false;
-    }
-  }
-
-  void Execute(Demon* const demon) {
-    if (demon->stamp() < stamp_) {
-      if (demon->priority() == Solver::NORMAL_PRIORITY) {
-        if (!instruments_demons_) {
-          ProcessNormalDemon(demon);
-        } else {
-          ProcessInstrumentedNormalDemon(demon);
-        }
-      } else {
-        DCHECK_EQ(demon->priority(), Solver::DELAYED_PRIORITY);
-        demon->set_stamp(stamp_);
-        containers_[Solver::DELAYED_PRIORITY]->Enqueue(demon);
-      }
     }
   }
 
@@ -320,7 +210,14 @@ class Queue {
         Demon* const demon = *it;
         if (demon->stamp() < stamp_) {
           DCHECK_EQ(demon->priority(), Solver::NORMAL_PRIORITY);
-          ProcessInstrumentedNormalDemon(demon);
+          solver_->GetPropagationMonitor()->BeginDemonRun(demon);
+          if (++solver_->demon_runs_[Solver::NORMAL_PRIORITY] % kTestPeriod ==
+              0) {
+            solver_->TopPeriodicCheck();
+          }
+          demon->Run(solver_);
+          solver_->CheckFail();
+          solver_->GetPropagationMonitor()->EndDemonRun(demon);
         }
       }
     }
@@ -328,10 +225,7 @@ class Queue {
 
   void EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
     for (SimpleRevFIFO<Demon*>::Iterator it(&demons); it.ok(); ++it) {
-      Demon* const demon = *it;
-      DCHECK_EQ(demon->priority(), Solver::DELAYED_PRIORITY);
-      demon->set_stamp(stamp_);
-      containers_[Solver::DELAYED_PRIORITY]->Enqueue(demon);
+      EnqueueDelayedDemon(*it);
     }
   }
 
@@ -339,7 +233,7 @@ class Queue {
     DCHECK(demon->priority() == Solver::VAR_PRIORITY);
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
-      containers_[Solver::VAR_PRIORITY]->Enqueue(demon);
+      var_queue_.push_back(demon);
       if (freeze_level_ == 0) {
         Process();
       }
@@ -350,18 +244,24 @@ class Queue {
     DCHECK(demon->priority() == Solver::DELAYED_PRIORITY);
     if (demon->stamp() < stamp_) {
       demon->set_stamp(stamp_);
-      containers_[Solver::DELAYED_PRIORITY]->Enqueue(demon);
+      delayed_queue_.push_back(demon);
     }
   }
 
   void AfterFailure() {
-    for (int i = 0; i < Solver::kNumPriorities; ++i) {
-      containers_[i]->AfterFailure();
+    // Clean queue.
+    var_queue_.clear();
+    delayed_queue_.clear();
+
+    // Call cleaning actions on variables.
+    if (clean_action_ != nullptr) {
+      clean_action_(solver_);
+      clean_action_ = nullptr;
+    } else if (clean_variable_ != nullptr) {
+      CleanVariableOnFail(clean_variable_);
+      clean_variable_ = nullptr;
     }
-    if (clear_action_ != nullptr) {
-      clear_action_->Run(solver_);
-      clear_action_ = nullptr;
-    }
+
     freeze_level_ = 0;
     in_process_ = false;
     in_add_ = false;
@@ -372,9 +272,20 @@ class Queue {
 
   uint64 stamp() const { return stamp_; }
 
-  void set_action_on_fail(Action* const a) { clear_action_ = a; }
+  void set_action_on_fail(Solver::Action a) {
+    DCHECK(clean_variable_ == nullptr);
+    clean_action_ = a;
+  }
 
-  void clear_action_on_fail() { clear_action_ = nullptr; }
+  void set_variable_to_clean_on_fail(IntVar* var) {
+    DCHECK(clean_action_ == nullptr);
+    clean_variable_ = var;
+  }
+
+  void reset_action_on_fail() {
+    DCHECK(clean_variable_ == nullptr);
+    clean_action_ = nullptr;
+  }
 
   void AddConstraint(Constraint* const c) {
     to_add_.push_back(c);
@@ -398,13 +309,15 @@ class Queue {
 
  private:
   Solver* const solver_;
-  FifoPriorityQueue* containers_[Solver::kNumPriorities];
+  std::deque<Demon*> var_queue_;
+  std::deque<Demon*> delayed_queue_;
   uint64 stamp_;
   // The number of nested freeze levels. The queue is frozen if and only if
   // freeze_level_ > 0.
   uint32 freeze_level_;
   bool in_process_;
-  Action* clear_action_;
+  Solver::Action clean_action_;
+  IntVar* clean_variable_;
   std::vector<Constraint*> to_add_;
   bool in_add_;
   const bool instruments_demons_;
@@ -415,15 +328,36 @@ class Queue {
 struct StateInfo {  // This is an internal structure to store
                     // additional information on the choice point.
  public:
-  StateInfo() : ptr_info(nullptr), int_info(0), depth(0), left_depth(0) {}
+  StateInfo()
+      : ptr_info(nullptr),
+        int_info(0),
+        depth(0),
+        left_depth(0),
+        reversible_action(nullptr) {}
   StateInfo(void* pinfo, int iinfo)
-      : ptr_info(pinfo), int_info(iinfo), depth(0), left_depth(0) {}
+      : ptr_info(pinfo),
+        int_info(iinfo),
+        depth(0),
+        left_depth(0),
+        reversible_action(nullptr) {}
   StateInfo(void* pinfo, int iinfo, int d, int ld)
-      : ptr_info(pinfo), int_info(iinfo), depth(d), left_depth(ld) {}
+      : ptr_info(pinfo),
+        int_info(iinfo),
+        depth(d),
+        left_depth(ld),
+        reversible_action(nullptr) {}
+  StateInfo(Solver::Action a, bool fast)
+      : ptr_info(nullptr),
+        int_info(static_cast<int>(fast)),
+        depth(0),
+        left_depth(0),
+        reversible_action(a) {}
+
   void* ptr_info;
   int int_info;
   int depth;
   int left_depth;
+  Solver::Action reversible_action;
 };
 
 struct StateMarker {
@@ -1087,23 +1021,6 @@ void Search::JumpBack() {
 Search* Solver::ActiveSearch() const { return searches_.back(); }
 
 namespace {
-class UndoBranchSelector : public Action {
- public:
-  explicit UndoBranchSelector(int depth) : depth_(depth) {}
-  ~UndoBranchSelector() override {}
-  void Run(Solver* const s) override {
-    if (s->SolveDepth() == depth_) {
-      s->ActiveSearch()->SetBranchSelector(nullptr);
-    }
-  }
-  std::string DebugString() const override {
-    return StringPrintf("UndoBranchSelector(%i)", depth_);
-  }
-
- private:
-  const int depth_;
-};
-
 class ApplyBranchSelector : public DecisionBuilder {
  public:
   explicit ApplyBranchSelector(Solver::BranchSelector bs) : selector_(bs) {}
@@ -1127,7 +1044,14 @@ void Solver::SetBranchSelector(BranchSelector bs) {
   // We cannot use the trail as the search can be nested and thus
   // deleted upon backtrack. Thus we guard the undo action by a
   // check on the number of nesting of solve().
-  AddBacktrackAction(RevAlloc(new UndoBranchSelector(SolveDepth())), false);
+  const int solve_depth = SolveDepth();
+  AddBacktrackAction(
+      [solve_depth](Solver* s) {
+        if (s->SolveDepth() == solve_depth) {
+          s->ActiveSearch()->SetBranchSelector(nullptr);
+        }
+      },
+      false);
   searches_.back()->SetBranchSelector(bs);
 }
 
@@ -1378,7 +1302,6 @@ enum SentinelMarker {
 };
 }  // namespace
 
-extern Action* NewDomainIntVarCleaner();
 extern PropagationMonitor* BuildTrace(Solver* const s);
 extern ModelCache* BuildModelCache(Solver* const solver);
 extern DependencyGraph* BuildDependencyGraph(Solver* const solver);
@@ -1411,10 +1334,8 @@ void Solver::Init() {
   neighbors_ = 0;
   filtered_neighbors_ = 0;
   accepted_neighbors_ = 0;
-  variable_cleaner_.reset(NewDomainIntVarCleaner());
   timer_.reset(new ClockTimer);
   searches_.assign(1, new Search(this, 0));
-  fail_hooks_ = nullptr;
   fail_stamp_ = GG_ULONGLONG(1);
   balancing_decision_.reset(new BalancingDecision);
   fail_intercept_ = nullptr;
@@ -1550,8 +1471,8 @@ void Solver::PushState(Solver::MarkerType t, const StateInfo& info) {
   queue_->increase_stamp();
 }
 
-void Solver::AddBacktrackAction(Action* a, bool fast) {
-  StateInfo info(a, static_cast<int>(fast));
+void Solver::AddBacktrackAction(Action a, bool fast) {
+  StateInfo info(a, fast);
   PushState(REVERSIBLE_ACTION, info);
 }
 
@@ -1559,7 +1480,7 @@ Solver::MarkerType Solver::PopState(StateInfo* info) {
   CHECK(!searches_.back()->marker_stack_.empty())
       << "PopState() on an empty stack";
   CHECK(info != nullptr);
-  StateMarker* m = searches_.back()->marker_stack_.back();
+  StateMarker* const m = searches_.back()->marker_stack_.back();
   if (m->type_ != REVERSIBLE_ACTION || m->info_.int_info == 0) {
     trail_->BacktrackTo(m);
   }
@@ -1586,22 +1507,6 @@ void Solver::check_alloc_state() {
   }
 }
 
-void Solver::AddFailHook(Action* a) {
-  if (fail_hooks_ == nullptr) {
-    SaveValue(reinterpret_cast<void**>(&fail_hooks_));
-    fail_hooks_ = UnsafeRevAlloc(new SimpleRevFIFO<Action*>);
-  }
-  fail_hooks_->Push(this, a);
-}
-
-void Solver::CallFailHooks() {
-  if (fail_hooks_ != nullptr) {
-    for (SimpleRevFIFO<Action*>::Iterator it(fail_hooks_); it.ok(); ++it) {
-      (*it)->Run(this);
-    }
-  }
-}
-
 void Solver::FreezeQueue() { queue_->Freeze(); }
 
 void Solver::UnfreezeQueue() { queue_->Unfreeze(); }
@@ -1611,8 +1516,6 @@ void Solver::EnqueueVar(Demon* const d) { queue_->EnqueueVar(d); }
 void Solver::EnqueueDelayedDemon(Demon* const d) {
   queue_->EnqueueDelayedDemon(d);
 }
-
-void Solver::Execute(Demon* const d) { queue_->Execute(d); }
 
 void Solver::ExecuteAll(const SimpleRevFIFO<Demon*>& demons) {
   queue_->ExecuteAll(demons);
@@ -1626,15 +1529,13 @@ uint64 Solver::stamp() const { return queue_->stamp(); }
 
 uint64 Solver::fail_stamp() const { return fail_stamp_; }
 
-void Solver::set_queue_action_on_fail(Action* a) {
-  queue_->set_action_on_fail(a);
+void Solver::set_action_on_fail(Action a) { queue_->set_action_on_fail(a); }
+
+void Solver::set_variable_to_clean_on_fail(IntVar* v) {
+  queue_->set_variable_to_clean_on_fail(v);
 }
 
-void SetQueueCleanerOnFail(Solver* const solver, IntVar* const var) {
-  solver->set_queue_cleaner_on_fail(var);
-}
-
-void Solver::clear_queue_action_on_fail() { queue_->clear_action_on_fail(); }
+void Solver::reset_action_on_fail() { queue_->reset_action_on_fail(); }
 
 void Solver::AddConstraint(Constraint* const c) {
   DCHECK(c != nullptr);
@@ -1972,15 +1873,15 @@ bool Solver::BacktrackOneLevel(Decision** const fail_decision) {
         }
         break;
       case REVERSIBLE_ACTION: {
-        Action* d = reinterpret_cast<Action*>(info.ptr_info);
-        d->Run(this);
+        if (info.reversible_action != nullptr) {
+          info.reversible_action(this);
+        }
         break;
       }
     }
   }
   Search* const search = searches_.back();
   search->EndFail();
-  CallFailHooks();
   fail_stamp_++;
   if (no_more_solutions) {
     search->NoMoreSolutions();
@@ -2048,8 +1949,7 @@ void Solver::BacktrackToSentinel(int magic_code) {
       case CHOICE_POINT:
         break;
       case REVERSIBLE_ACTION: {
-        Demon* d = reinterpret_cast<Demon*>(info.ptr_info);
-        d->Run(this);
+        info.reversible_action(this);
         break;
       }
     }
@@ -2717,6 +2617,8 @@ const char ModelVisitor::kTuplesArgument[] = "tuples";
 const char ModelVisitor::kValueArgument[] = "value";
 const char ModelVisitor::kValuesArgument[] = "values";
 const char ModelVisitor::kVarsArgument[] = "variables";
+const char ModelVisitor::kEvaluatorArgument[] = "evaluator";
+
 const char ModelVisitor::kVariableArgument[] = "variable";
 
 const char ModelVisitor::kMirrorOperation[] = "mirror";
@@ -2790,6 +2692,9 @@ void ModelVisitor::VisitIntegerExpressionArgument(const std::string& arg_name,
                                                   IntExpr* const argument) {
   argument->Accept(this);
 }
+
+void ModelVisitor::VisitIntegerVariableEvaluatorArgument(
+    const std::string& arg_name, const Solver::Int64ToIntVar& arguments) {}
 
 void ModelVisitor::VisitIntegerVariableArrayArgument(
     const std::string& arg_name, const std::vector<IntVar*>& arguments) {

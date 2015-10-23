@@ -51,6 +51,11 @@ class LPSolver {
   // the last position. To disable this behavior, simply call Clear() before.
   ProblemStatus Solve(const LinearProgram& lp) MUST_USE_RESULT;
 
+  // Same as Solve() but use the given time limit rather than constructing a new
+  // one from the current GlopParameters.
+  ProblemStatus SolveWithTimeLimit(const LinearProgram& lp,
+                                   TimeLimit* time_limit) MUST_USE_RESULT;
+
   // Puts the solver in a clean state.
   //
   // Calling Solve() for the first time, or calling Clear() then Solve() on the
@@ -116,6 +121,7 @@ class LPSolver {
   // Returns the number of simplex iterations used by the last Solve().
   int GetNumberOfSimplexIterations() const;
 
+
   // Returns the "deterministic time" since the creation of the solver. Note
   // That this time is only increased when some operations take place in this
   // class.
@@ -140,7 +146,9 @@ class LPSolver {
 
   // Runs the revised simplex algorithm if needed (i.e. if the program was not
   // already solved by the preprocessors).
-  void RunRevisedSimplexIfNeeded(ProblemSolution* solution);
+  void RunRevisedSimplexIfNeeded(ProblemSolution* solution,
+                                 TimeLimit* time_limit);
+
 
   // Checks that the returned solution values and statuses are consistent.
   // Returns true if this is the case. See the code for the exact check
@@ -222,6 +230,7 @@ class LPSolver {
 
   // The number of revised simplex iterations used by the last Solve().
   int num_revised_simplex_iterations_;
+
 
   // The current ProblemSolution.
   // TODO(user): use a ProblemSolution directly?

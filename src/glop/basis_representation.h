@@ -228,11 +228,9 @@ class BasisFactorization {
 
   // Specialized version for ComputeTau() in DualEdgeNorms. This reuses an
   // intermediate result of the last LeftSolveForUnitRow() in order to save a
-  // permutation. Note that the input 'a' should actually be equal to the last
-  // result of LeftSolveForUnitRow() and is mainly used during DCHECK.
-  //
-  // Note: The returned result is only valid until the next call to
-  // LeftSolveForUnitRow().
+  // permutation if it is available. Note that the input 'a' should always be
+  // equal to the last result of LeftSolveForUnitRow() and will be used for a
+  // DCHECK() or if the intermediate result wasn't kept.
   DenseColumn* RightSolveForTau(ScatteredColumnReference a) const;
 
   // Returns the norm of B^{-1}.a, this is a specific function because
@@ -323,6 +321,25 @@ class BasisFactorization {
   // the last LeftSolveForUnitRow() and also the final result of
   // RightSolveForTau().
   mutable DenseColumn tau_;
+
+  // Booleans controlling the interaction between LeftSolveForUnitRow() that may
+  // or may not keep its intermediate results for the optimized
+  // RightSolveForTau().
+  //
+  // tau_computation_can_be_optimized_ will be true iff LeftSolveForUnitRow()
+  // kept its intermediate result when it was called and the factorization
+  // didn't change since then. If it is true, then RightSolveForTau() can use
+  // this result for a faster computation.
+  //
+  // tau_is_computed_ is used as an heuristic by LeftSolveForUnitRow() to decide
+  // if it is worth keeping its intermediate result (which is sligthly slower).
+  // It is simply set to true by RightSolveForTau() and to false by
+  // LeftSolveForUnitRow(), this way the optimization will automatically switch
+  // itself on when switching from the primal simplex (where RightSolveForTau()
+  // is never called) to the dual where it is called after each
+  // LeftSolveForUnitRow(), and back off again in the other direction.
+  mutable bool tau_computation_can_be_optimized_;
+  mutable bool tau_is_computed_;
 
   // Data structure to store partial solve results for the middle form product
   // update. See LeftSolveForUnitRow() and RightSolveForProblemColumn(). We use

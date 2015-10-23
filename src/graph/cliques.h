@@ -34,6 +34,7 @@
 #include "base/join.h"
 #include "base/int_type.h"
 #include "base/int_type_indexed_vector.h"
+#include "util/time_limit.h"
 
 namespace operations_research {
 
@@ -182,6 +183,29 @@ class BronKerboschAlgorithm {
   // resume the search from the beginning.
   BronKerboschAlgorithmStatus RunIterations(int64 max_num_iterations);
 
+  // Runs at most 'max_num_iterations' iterations of the Bron-Kerbosch
+  // algorithm, until the time limit is exceeded or until all cliques are
+  // enumerated. When this function returns INTERRUPTED, there is still work to
+  // be done to process all the cliques in the graph. In such case the method
+  // can be called again and it will resume the work where the previous call had
+  // stopped. When it returns COMPLETED any subsequent call to the method will
+  // resume the search from the beginning.
+  BronKerboschAlgorithmStatus RunWithTimeLimit(int64 max_num_iterations,
+                                               TimeLimit* time_limit);
+
+  // Runs the Bron-Kerbosch algorithm for at most kint64max iterations, until
+  // the time limit is excceded or until all cliques are enumerated. In
+  // practice, running the algorithm for kint64max iterations is equivalent to
+  // running until completion or until the other stopping conditions apply. When
+  // this function returns INTERRUPTED, there is still work to be done to
+  // process all the cliques in the graph. In such case the method can be called
+  // again and it will resume the work where the previous call had stopped. When
+  // it returns COMPLETED any subsequent call to the method will resume the
+  // search from the beginning.
+  BronKerboschAlgorithmStatus RunWithTimeLimit(TimeLimit* time_limit) {
+    return RunWithTimeLimit(kint64max, time_limit);
+  }
+
  private:
   DEFINE_INT_TYPE(CandidateIndex, ptrdiff_t);
 
@@ -199,13 +223,15 @@ class BronKerboschAlgorithm {
         : pivot(other.pivot),
           num_remaining_candidates(other.num_remaining_candidates),
           candidates(other.candidates),
-          first_candidate_index(other.first_candidate_index) {}
+          first_candidate_index(other.first_candidate_index),
+          candidate_for_recursion(other.candidate_for_recursion) {}
 
     State& operator=(const State& other) {
       pivot = other.pivot;
       num_remaining_candidates = other.num_remaining_candidates;
       candidates = other.candidates;
       first_candidate_index = other.first_candidate_index;
+      candidate_for_recursion = other.candidate_for_recursion;
       return *this;
     }
 
@@ -227,7 +253,8 @@ class BronKerboschAlgorithm {
         StrAppend(&buffer, candidates[i]);
       }
       StrAppend(&buffer, "]\nfirst_candidate_index = ",
-                first_candidate_index.value(), "\n");
+                first_candidate_index.value(), "\ncandidate_for_recursion = ",
+                candidate_for_recursion.value());
       return buffer;
     }
 
@@ -250,7 +277,24 @@ class BronKerboschAlgorithm {
     // also the number of elements of the "not" set stored at the beginning of
     // 'candidates'.
     CandidateIndex first_candidate_index;
+
+    // The current position in candidates when looking for the pivot and/or the
+    // next candidate disconnected from the pivot.
+    CandidateIndex candidate_for_recursion;
   };
+
+  // The deterministic time coefficients for the push and pop operations of the
+  // Bron-Kerbosch algorithm. The coefficients are set to match approximately
+  // the running time in seconds on a recent workstation on the random graph
+  // benchmark.
+  // NOTE(user): PushState is not the only source of complexity in the
+  // algorithm, but non-negative linear least squares produced zero coefficients
+  // for all other deterministic counters tested during the benchmarking. When
+  // we optimize the algorithm, we might need to add deterministic time to the
+  // other places that may produce complexity, namely InitializeState, PopState
+  // and SelectCandidateIndexForRecursion.
+  static constexpr double kPushStateDeterministicTimeSecondsPerCandidate =
+      0.54663e-7;
 
   // Initializes the root state of the algorithm.
   void Initialize();
@@ -305,6 +349,10 @@ class BronKerboschAlgorithm {
   // Set to true if the algorithm is active (it was not stopped by an the clique
   // callback).
   int64 num_remaining_iterations_;
+
+  // The current time limit used by the solver. The time limit is assigned by
+  // the Run methods and it can be different for each call to run.
+  TimeLimit* time_limit_;
 };
 
 template <typename NodeIndex>
@@ -334,6 +382,8 @@ void BronKerboschAlgorithm<NodeIndex>::InitializeState(State* state) {
   }
   state->num_remaining_candidates = num_disconnected_candidates;
   if (pivot_index >= state->first_candidate_index) {
+    std::swap(state->candidates[pivot_index],
+              state->candidates[state->first_candidate_index]);
     ++state->num_remaining_candidates;
   }
 }
@@ -342,12 +392,14 @@ template <typename NodeIndex>
 typename BronKerboschAlgorithm<NodeIndex>::CandidateIndex BronKerboschAlgorithm<
     NodeIndex>::SelectCandidateIndexForRecursion(State* state) {
   DCHECK(state != nullptr);
-  CandidateIndex disconnected_node_index = state->first_candidate_index;
+  CandidateIndex disconnected_node_index =
+      std::max(state->first_candidate_index, state->candidate_for_recursion);
   while (disconnected_node_index < state->candidates.size() &&
          state->candidates[disconnected_node_index] != state->pivot &&
          IsArc(state->pivot, state->candidates[disconnected_node_index])) {
     ++disconnected_node_index;
   }
+  state->candidate_for_recursion = disconnected_node_index;
   return disconnected_node_index;
 }
 
@@ -359,6 +411,7 @@ void BronKerboschAlgorithm<NodeIndex>::Initialize() {
 
   State* const root_state = &states_.back();
   root_state->first_candidate_index = 0;
+  root_state->candidate_for_recursion = 0;
   root_state->candidates.resize(num_nodes_, 0);
   std::iota(root_state->candidates.begin(), root_state->candidates.end(), 0);
   root_state->num_remaining_candidates = num_nodes_;
@@ -392,11 +445,16 @@ std::string BronKerboschAlgorithm<NodeIndex>::CliqueDebugString(
 template <typename NodeIndex>
 void BronKerboschAlgorithm<NodeIndex>::PushState(NodeIndex selected) {
   DCHECK(!states_.empty());
+  DCHECK(time_limit_ != nullptr);
   DVLOG(2) << "PushState: New depth = " << states_.size() + 1
            << ", selected node = " << selected;
   ITIVector<CandidateIndex, NodeIndex> new_candidates;
 
   State* const previous_state = &states_.back();
+  const double deterministic_time =
+      kPushStateDeterministicTimeSecondsPerCandidate *
+      previous_state->candidates.size();
+  time_limit_->AdvanceDeterministicTime(deterministic_time, "PushState");
 
   // Add all candidates from previous_state->candidates that are connected to
   // 'selected' in the graph to the vector 'new_candidates', skipping the node
@@ -448,13 +506,16 @@ void BronKerboschAlgorithm<NodeIndex>::PushState(NodeIndex selected) {
 }
 
 template <typename NodeIndex>
-BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunIterations(
-    int64 max_num_iterations) {
+BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunWithTimeLimit(
+    int64 max_num_iterations, TimeLimit* time_limit) {
+  CHECK(time_limit != nullptr);
+  time_limit_ = time_limit;
   if (states_.empty()) {
     Initialize();
   }
   for (num_remaining_iterations_ = max_num_iterations;
-       !states_.empty() && num_remaining_iterations_ > 0;
+       !states_.empty() && num_remaining_iterations_ > 0 &&
+       !time_limit->LimitReached();
        --num_remaining_iterations_) {
     State* const state = &states_.back();
     DVLOG(2) << "Loop: " << states_.size() << " states, "
@@ -477,8 +538,16 @@ BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunIterations(
 
     PushState(selected);
   }
+  time_limit_ = nullptr;
   return states_.empty() ? BronKerboschAlgorithmStatus::COMPLETED
                          : BronKerboschAlgorithmStatus::INTERRUPTED;
+}
+
+template <typename NodeIndex>
+BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::RunIterations(
+    int64 max_num_iterations) {
+  TimeLimit time_limit(std::numeric_limits<double>::infinity());
+  return RunWithTimeLimit(max_num_iterations, &time_limit);
 }
 
 template <typename NodeIndex>

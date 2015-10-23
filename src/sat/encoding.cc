@@ -77,13 +77,13 @@ bool EncodingNode::IncreaseCurrentUB(SatSolver* solver) {
 int EncodingNode::Reduce(const SatSolver& solver) {
   int i = 0;
   while (i < literals_.size() &&
-         solver.Assignment().IsLiteralTrue(literals_[i])) {
+         solver.Assignment().LiteralIsTrue(literals_[i])) {
     ++i;
     ++lb_;
   }
   literals_.erase(literals_.begin(), literals_.begin() + i);
   while (!literals_.empty() &&
-         solver.Assignment().IsLiteralFalse(literals_.back())) {
+         solver.Assignment().LiteralIsFalse(literals_.back())) {
     literals_.pop_back();
     ub_ = lb_ + literals_.size();
   }

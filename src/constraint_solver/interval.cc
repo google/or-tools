@@ -397,21 +397,11 @@ class BaseIntervalVar : public IntervalVar {
     BaseIntervalVar* const var_;
   };
 
-  class Cleaner : public Action {
-   public:
-    explicit Cleaner(BaseIntervalVar* const var) : var_(var) {}
-    ~Cleaner() override {}
-    void Run(Solver* const s) override { var_->ClearInProcess(); }
-
-   private:
-    BaseIntervalVar* const var_;
-  };
-
   BaseIntervalVar(Solver* const s, const std::string& name)
       : IntervalVar(s, name),
         in_process_(false),
         handler_(this),
-        cleaner_(this) {}
+        cleaner_([this](Solver* s) { CleanInProcess(); }) {}
 
   ~BaseIntervalVar() override {}
 
@@ -419,7 +409,7 @@ class BaseIntervalVar : public IntervalVar {
 
   virtual void Push() = 0;
 
-  void ClearInProcess() { in_process_ = false; }
+  void CleanInProcess() { in_process_ = false; }
 
   std::string BaseName() const override { return "IntervalVar"; }
 
@@ -428,7 +418,7 @@ class BaseIntervalVar : public IntervalVar {
  protected:
   bool in_process_;
   Handler handler_;
-  Cleaner cleaner_;
+  Solver::Action cleaner_;
 };
 
 class RangeVar : public IntExpr {
@@ -849,13 +839,13 @@ void FixedDurationIntervalVar::Process() {
   in_process_ = true;
   start_.UpdatePostponedBounds();
   performed_.UpdatePostponedValue();
-  set_queue_action_on_fail(&cleaner_);
+  set_action_on_fail(cleaner_);
   if (performed_.Max() == 1) {
     start_.ProcessDemons();
   }
   performed_.Process();
-  clear_queue_action_on_fail();
-  ClearInProcess();
+  reset_action_on_fail();
+  CleanInProcess();
   start_.UpdatePreviousBounds();
   start_.ApplyPostponedBounds(START);
   performed_.UpdatePreviousValueAndApplyPostponedValue();
@@ -1069,10 +1059,10 @@ void FixedDurationPerformedIntervalVar::Process() {
   CHECK(!in_process_);
   in_process_ = true;
   start_.UpdatePostponedBounds();
-  set_queue_action_on_fail(&cleaner_);
+  set_action_on_fail(cleaner_);
   start_.ProcessDemons();
-  clear_queue_action_on_fail();
-  ClearInProcess();
+  reset_action_on_fail();
+  CleanInProcess();
   start_.UpdatePreviousBounds();
   start_.ApplyPostponedBounds(START);
 }
@@ -1947,15 +1937,15 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
     duration_.UpdatePostponedBounds();
     end_.UpdatePostponedBounds();
     performed_.UpdatePostponedValue();
-    set_queue_action_on_fail(&cleaner_);
+    set_action_on_fail(cleaner_);
     if (performed_.Max() == 1) {
       start_.ProcessDemons();
       duration_.ProcessDemons();
       end_.ProcessDemons();
     }
     performed_.Process();
-    clear_queue_action_on_fail();
-    ClearInProcess();
+    reset_action_on_fail();
+    CleanInProcess();
     // TODO(user): Replace this enum by a callback.
     start_.UpdatePreviousBounds();
     start_.ApplyPostponedBounds(START);

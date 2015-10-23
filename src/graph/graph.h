@@ -450,7 +450,7 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
 // Extends the ListGraph by also storing the reverse arcs.
 // This class also documents the Graph interface related to reverse arc.
 // - NodeIndexType can be unsigned, but ArcIndexType must be signed.
-// - It has most of the same advantanges and inconvenients as ListGraph.
+// - It has most of the same advantanges and disadvantages as ListGraph.
 // - It takes 2 * ArcIndexType * node_capacity()
 //   + 2 * (ArcIndexType + NodeIndexType) * arc_capacity() memory.
 template <typename NodeIndexType = int32, typename ArcIndexType = int32>
@@ -536,7 +536,7 @@ class ReverseArcListGraph
 
 // StaticGraph with reverse arc.
 // - NodeIndexType can be unsigned, but ArcIndexType must be signed.
-// - It has most of the same advantanges and inconvenients as StaticGraph.
+// - It has most of the same advantanges and disadvantages as StaticGraph.
 // - It takes 2 * ArcIndexType * node_capacity()
 //   + 2 * (ArcIndexType + NodeIndexType) * arc_capacity() memory.
 // - If the ArcIndexPermutation is needed, then an extra ArcIndexType *
@@ -915,8 +915,8 @@ BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::FreezeCapacities() {
   // TODO(user): Only define this in debug mode at the cost of having a lot
   // of ifndef NDEBUG all over the place? remove the function completely ?
   const_capacities_ = true;
-  DCHECK_LE(num_nodes_, node_capacity_);
-  DCHECK_LE(num_arcs_, arc_capacity_);
+  node_capacity_ = std::max(node_capacity_, num_nodes_);
+  arc_capacity_ = std::max(arc_capacity_, num_arcs_);
 }
 
 // Computes the cummulative sum of the entry in v. We only use it with

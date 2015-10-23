@@ -21,11 +21,23 @@ namespace operations_research {
 // Returns an empty std::string iff the model is valid and not trivially infeasible.
 // Otherwise, returns a description of the first error or trivial infeasibility
 // encountered.
-std::string FindErrorInMPModelProto(const MPModelProto& model);
-
+//
 // NOTE(user): the code of this method (and the client code too!) is
 // considerably simplified by this std::string-based, simple API. If clients
 // require it, we could add a formal error status enum.
+std::string FindErrorInMPModelProto(const MPModelProto& model);
+
+// Returns an empty std::string if the solution hint given in the model is a feasible
+// solution. Otherwise, returns a description of the first reason for
+// infeasibility.
+//
+// This function can be useful for debugging/checking that the given solution
+// hint is feasible when it is expected to be the case. The feasibility is
+// checked up to the given tolerance using the
+// ::operations_research::IsLowerWithinTolerance() function.
+std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
+                                          double tolerance);
+
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_LINEAR_SOLVER_MODEL_VALIDATOR_H_

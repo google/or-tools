@@ -46,7 +46,7 @@ class LinearExpr(object):
     coeffs = {}
     constant = self.Visit(coeffs)
     return constant + sum(
-        [var.solution_value() * coeff for var, coeff in coeffs.iteritems()])
+        var.solution_value() * coeff for var, coeff in sorted(coeffs.items()))
 
   def __add__(self, expr):
     if isinstance(expr, (int, long, float)):
@@ -231,6 +231,6 @@ class LinearConstraint(object):
       ub = self.__ub - constant
 
     constraint = solver.RowConstraint(lb, ub, name)
-    for v, c, in coeffs.iteritems():
+    for v, c, in sorted(coeffs.items()):
       constraint.SetCoefficient(v, float(c))
     return constraint

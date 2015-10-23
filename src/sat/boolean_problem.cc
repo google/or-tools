@@ -37,7 +37,7 @@ void ExtractAssignment(const LinearBooleanProblem& problem,
   assignemnt->clear();
   for (int i = 0; i < problem.num_variables(); ++i) {
     assignemnt->push_back(
-        solver.Assignment().IsLiteralTrue(Literal(VariableIndex(i), true)));
+        solver.Assignment().LiteralIsTrue(Literal(VariableIndex(i), true)));
   }
 }
 
@@ -394,7 +394,7 @@ void StoreAssignment(const VariablesAssignment& assignment,
                      BooleanAssignment* output) {
   output->clear_literals();
   for (VariableIndex var(0); var < assignment.NumberOfVariables(); ++var) {
-    if (assignment.IsVariableAssigned(var)) {
+    if (assignment.VariableIsAssigned(var)) {
       output->add_literals(
           assignment.GetTrueLiteralForAssignedVariable(var).SignedValue());
     }

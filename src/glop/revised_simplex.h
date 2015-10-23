@@ -167,7 +167,8 @@ class RevisedSimplex {
   // and try to use the previously computed solution as a warm-start. To disable
   // this behavior or give explicit warm-start data, use one of the State*()
   // functions below.
-  Status Solve(const LinearProgram& linear_program) MUST_USE_RESULT;
+  Status Solve(const LinearProgram& linear_program,
+               TimeLimit* time_limit) MUST_USE_RESULT;
 
   // Do not use the current solution as a warm-start for the next Solve(). The
   // next Solve() will behave as if the class just got created.
@@ -190,6 +191,7 @@ class RevisedSimplex {
   ConstraintStatus GetConstraintStatus(RowIndex row) const;
   const BasisState& GetState() const;
   double DeterministicTime() const;
+  bool objective_limit_reached() const { return objective_limit_reached_; }
 
   // If the problem status is PRIMAL_UNBOUNDED (respectively DUAL_UNBOUNDED),
   // then the solver has a corresponding primal (respectively dual) ray to show
@@ -290,9 +292,10 @@ class RevisedSimplex {
   void SetNonBasicVariableStatusAndDeriveValue(ColIndex col,
                                                VariableStatus status);
 
-  // In debug mode, checks if the basis_ and is_basic_ arrays are well formed.
-  // Also checks that the variable statuses are consistent with this basis.
-  void DebugCheckBasisIsConsistent() const;
+  // Checks if the basis_ and is_basic_ arrays are well formed. Also checks that
+  // the variable statuses are consistent with this basis. Returns true if this
+  // is the case. This is meant to be used in debug mode only.
+  bool BasisIsConsistent() const;
 
   // Moves the column entering_col into the basis at position basis_row. Removes
   // the current basis column at position basis_row from the basis and sets its
@@ -513,10 +516,22 @@ class RevisedSimplex {
   // TODO(user): remove duplicate code between the two functions.
   Status DualMinimize(TimeLimit* time_limit) MUST_USE_RESULT;
 
+  // Computes primal and dual infeasibilities and residuals of an OPTIMAL
+  // solution, and returns whether they are all within solution feasibility
+  // tolerance. Returns true if solution status is different than OPTIMAL.
+  bool SolutionIsPrecise() const;
+
   // Utility functions to return the current ColIndex of the slack column with
   // given number. Note that currently, such columns are always present in the
   // internal representation of a linear program.
   ColIndex SlackColIndex(RowIndex row) const;
+
+  // Advances the deterministic time in time_limit with the difference between
+  // the current internal deterministic time and the internal deterministic time
+  // during the last call to this method.
+  // TODO(user): Update the internals of revised simplex so that the time
+  // limit is updated at the source and remove this method.
+  void AdvanceDeterministicTime(TimeLimit* time_limit);
 
   // Problem status
   ProblemStatus problem_status_;
@@ -662,6 +677,10 @@ class RevisedSimplex {
   // Time spent in the second (optimization) phase.
   double optimization_time_;
 
+  // The internal deterministic time during the most recent call to
+  // RevisedSimplex::AdvanceDeterministicTime.
+  double last_deterministic_time_update_;
+
   // Statistics about the iterations done by Minimize().
   struct IterationStats : public StatsGroup {
     IterationStats()
@@ -721,6 +740,13 @@ class RevisedSimplex {
 
   // Indicate if we are in the feasibility_phase (1st phase) or not.
   bool feasibility_phase_;
+
+  // Indicates whether simplex ended due to the objective limit being reached.
+  // Note that it's not enough to compare the final objective value with the
+  // limit due to numerical issues (i.e., the limit which is reached within
+  // given tolerance on the internal objective may no longer be reached when the
+  // objective scaling and offset are taken into account).
+  bool objective_limit_reached_;
 
   // Temporary vector used to hold the best leaving column candidates that are
   // tied using the current choosing criteria. We actually only store the tied

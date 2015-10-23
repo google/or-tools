@@ -38,4 +38,23 @@ std::string TimeLimit::DebugString() const {
 #endif
   return buffer;
 }
+
+NestedTimeLimit::NestedTimeLimit(TimeLimit* base_time_limit,
+                                 double limit_in_seconds,
+                                 double deterministic_limit)
+    : base_time_limit_(CHECK_NOTNULL(base_time_limit)),
+      time_limit_(std::min(base_time_limit_->GetTimeLeft(), limit_in_seconds),
+                  std::min(base_time_limit_->GetDeterministicTimeLeft(),
+                           deterministic_limit)) {
+  if (base_time_limit_->external_boolean_as_limit_ != nullptr) {
+    time_limit_.RegisterExternalBooleanAsLimit(
+        base_time_limit_->external_boolean_as_limit_);
+  }
+}
+
+NestedTimeLimit::~NestedTimeLimit() {
+  base_time_limit_->AdvanceDeterministicTime(
+      time_limit_.GetElapsedDeterministicTime());
+}
+
 }  // namespace operations_research

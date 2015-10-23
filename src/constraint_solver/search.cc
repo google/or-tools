@@ -488,6 +488,31 @@ DecisionBuilder* Solver::Compose(const std::vector<DecisionBuilder*>& dbs) {
   return RevAlloc(new ComposeDecisionBuilder(dbs));
 }
 
+// ---------- ClosureDecision ---------
+
+namespace {
+class ClosureDecision : public Decision {
+ public:
+  ClosureDecision(Solver::Action apply, Solver::Action refute)
+      : apply_(apply), refute_(refute) {}
+  ~ClosureDecision() override {}
+
+  void Apply(Solver* const s) override { apply_(s); }
+
+  void Refute(Solver* const s) override { refute_(s); }
+
+  std::string DebugString() const override { return "ClosureDecision"; }
+
+ private:
+  Solver::Action apply_;
+  Solver::Action refute_;
+};
+}  // namespace
+
+Decision* Solver::MakeDecision(Action apply, Action refute) {
+  return RevAlloc(new ClosureDecision(apply, refute));
+}
+
 // ---------- Try Decision Builder ----------
 
 namespace {

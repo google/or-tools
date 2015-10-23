@@ -121,18 +121,18 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
   CHECK(time_limit != nullptr);
   learned_info->Clear();
 
-  const double initial_dt =
-      sat_solver_ == nullptr ? 0.0 : sat_solver_->deterministic_time();
-  auto advance_dt = ::operations_research::util::MakeCleanup([initial_dt, this, &time_limit]() {
-    time_limit->AdvanceDeterministicTime(sat_solver_->deterministic_time() -
-                                         initial_dt);
-  });
-
   const BopOptimizerBase::Status sync_status =
       SynchronizeIfNeeded(problem_state, parameters.num_relaxed_vars());
   if (sync_status != BopOptimizerBase::CONTINUE) {
     return sync_status;
   }
+
+  CHECK(sat_solver_ != nullptr);
+  const double initial_dt = sat_solver_->deterministic_time();
+  auto advance_dt = ::operations_research::util::MakeCleanup([initial_dt, this, &time_limit]() {
+    time_limit->AdvanceDeterministicTime(sat_solver_->deterministic_time() -
+                                         initial_dt);
+  });
 
   // Set the parameters for this run.
   // TODO(user): Because of this, we actually loose the perfect continuity
@@ -142,6 +142,7 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::Optimize(
       parameters.max_number_of_conflicts_in_random_lns());
   sat_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
   sat_params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
+  sat_params.set_random_seed(parameters.random_seed());
 
   sat_solver_->SetParameters(sat_params);
   const sat::SatSolver::Status sat_status = sat_solver_->Solve();
@@ -184,14 +185,10 @@ bool UseLinearRelaxationForSatAssignmentPreference(
   }
 
   glop::LPSolver lp_solver;
-  glop::GlopParameters params;
-  params.set_max_time_in_seconds(time_limit->GetTimeLeft());
-  params.set_max_deterministic_time(
-      std::min(time_limit->GetDeterministicTimeLeft(),
-               parameters.initial_lp_max_deterministic_time()));
-  lp_solver.SetParameters(params);
-  const glop::ProblemStatus lp_status = lp_solver.Solve(lp_model);
-  time_limit->AdvanceDeterministicTime(lp_solver.DeterministicTime());
+  NestedTimeLimit nested_time_limit(time_limit, time_limit->GetTimeLeft(),
+                                    parameters.lp_max_deterministic_time());
+  const glop::ProblemStatus lp_status =
+      lp_solver.SolveWithTimeLimit(lp_model, nested_time_limit.GetTimeLimit());
 
   if (lp_status != glop::ProblemStatus::OPTIMAL &&
       lp_status != glop::ProblemStatus::PRIMAL_FEASIBLE &&
@@ -297,6 +294,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
           local_parameters.max_number_of_conflicts_for_quick_check());
       params.set_max_time_in_seconds(time_limit->GetTimeLeft());
       params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
+      params.set_random_seed(parameters.random_seed());
       sat_propagator_->SetParameters(params);
       sat_propagator_->SetAssumptionLevel(
           sat_propagator_->CurrentDecisionLevel());
@@ -313,14 +311,22 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
         continue;
       }
     }
+
+    // Restore to the assumption level.
+    // This is call is important since all the fixed variable in the
+    // propagator_ will be used to construct the local problem below.
+    // Note that calling RestoreSolverToAssumptionLevel() might actually prove
+    // the infeasibility. It is important to check the UNSAT status afterward.
+    if (!sat_propagator_->IsModelUnsat()) {
+      sat_propagator_->RestoreSolverToAssumptionLevel();
+    }
+
+    // Check if the problem is proved UNSAT, by previous the search or the
+    // RestoreSolverToAssumptionLevel() call above.
     if (sat_propagator_->IsModelUnsat()) {
       return problem_state.solution().IsFeasible()
                  ? BopOptimizerBase::OPTIMAL_SOLUTION_FOUND
                  : BopOptimizerBase::INFEASIBLE;
-    } else {
-      // This is call is important since all the fixed variable in the
-      // propagator_ will be used to construct the local problem below.
-      sat_propagator_->RestoreSolverToAssumptionLevel();
     }
 
     // Construct and Solve the LNS subproblem.
@@ -337,6 +343,7 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
     params.set_max_number_of_conflicts(conflict_limit);
     params.set_max_time_in_seconds(time_limit->GetTimeLeft());
     params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
+    params.set_random_seed(parameters.random_seed());
 
     sat::SatSolver sat_solver;
     sat_solver.SetParameters(params);

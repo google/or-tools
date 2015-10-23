@@ -153,6 +153,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
   sat::SatParameters sat_params;
   sat_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
   sat_params.set_max_deterministic_time(time_limit->GetDeterministicTimeLeft());
+  sat_params.set_random_seed(parameters.random_seed());
 
   // We use a relatively small conflict limit so that other optimizer get a
   // chance to run if this one is slow. Note that if this limit is reached, we
@@ -193,11 +194,12 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::Optimize(
 // BopRandomFirstSolutionGenerator
 //------------------------------------------------------------------------------
 BopRandomFirstSolutionGenerator::BopRandomFirstSolutionGenerator(
-    const std::string& name, sat::SatSolver* sat_propagator, MTRandom* random)
+    const std::string& name, const BopParameters& parameters,
+    sat::SatSolver* sat_propagator, MTRandom* random)
     : BopOptimizerBase(name),
       random_(random),
       sat_propagator_(sat_propagator),
-      sat_seed_(0) {}
+      sat_seed_(parameters.random_seed()) {}
 
 BopRandomFirstSolutionGenerator::~BopRandomFirstSolutionGenerator() {}
 
@@ -333,9 +335,7 @@ LinearRelaxation::LinearRelaxation(const BopParameters& parameters,
       offset_(0),
       num_fixed_variables_(-1),
       problem_already_solved_(false),
-      scaled_solution_cost_(glop::kInfinity),
-      deterministic_time_limit_(
-          parameters.initial_lp_max_deterministic_time()) {}
+      scaled_solution_cost_(glop::kInfinity) {}
 
 LinearRelaxation::~LinearRelaxation() {}
 
@@ -431,7 +431,10 @@ BopOptimizerBase::Status LinearRelaxation::Optimize(
           << StringPrintf("%.6f", lp_solver_.GetObjectiveValue())
           << "   status: " << GetProblemStatusString(lp_status);
 
-  problem_already_solved_ = true;
+  if (lp_status == glop::ProblemStatus::OPTIMAL ||
+      lp_status == glop::ProblemStatus::IMPRECISE) {
+    problem_already_solved_ = true;
+  }
 
   if (lp_status == glop::ProblemStatus::INIT) {
     return BopOptimizerBase::LIMIT_REACHED;
@@ -487,30 +490,12 @@ glop::ProblemStatus LinearRelaxation::Solve(bool incremental_solve,
     glop_params.set_use_dual_simplex(true);
     glop_params.set_allow_simplex_algorithm_change(true);
     glop_params.set_use_preprocessing(false);
+    lp_solver_.SetParameters(glop_params);
   }
-  // Due to the way the deterministic time works in Glop, an existing lp_solver
-  // might have an initial non zero deterministic time even when a new problem
-  // is loaded.
-  const double initial_deterministic_time = lp_solver_.DeterministicTime();
-  glop_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
-  glop_params.set_max_deterministic_time(
-      initial_deterministic_time +
-      std::min(time_limit->GetDeterministicTimeLeft(),
-               deterministic_time_limit_));
-  lp_solver_.SetParameters(glop_params);
-
-  const glop::ProblemStatus lp_status = lp_solver_.Solve(lp_model_);
-  const double elapsed_deterministic_time =
-      lp_solver_.DeterministicTime() - initial_deterministic_time;
-  time_limit->AdvanceDeterministicTime(elapsed_deterministic_time);
-
-  // Double the deterministic time limit at each iteration until an optimal
-  // solution is found.
-  if (lp_status != glop::ProblemStatus::OPTIMAL &&
-      deterministic_time_limit_ <= elapsed_deterministic_time) {
-    deterministic_time_limit_ *= 2.0;
-  }
-
+  NestedTimeLimit nested_time_limit(time_limit, time_limit->GetTimeLeft(),
+                                    parameters_.lp_max_deterministic_time());
+  const glop::ProblemStatus lp_status = lp_solver_.SolveWithTimeLimit(
+      lp_model_, nested_time_limit.GetTimeLimit());
   return lp_status;
 }
 

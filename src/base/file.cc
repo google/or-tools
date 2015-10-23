@@ -245,6 +245,13 @@ util::Status SetBinaryProto(const std::string& filename,
                       StrCat("Could not write proto to '", filename, "'."));
 }
 
+util::Status Delete(const std::string& path, int flags) {
+  if (flags == Defaults()) {
+    if (remove(path.c_str())) return util::Status::OK;
+  }
+  return util::Status(util::error::INVALID_ARGUMENT,
+                      StrCat("Could not delete '", path, "'."));
+}
 }  // namespace file
 
 }  // namespace operations_research

@@ -48,7 +48,8 @@ BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
 
   if (assignment_iterator_ == nullptr) {
     assignment_iterator_.reset(new LocalSearchAssignmentIterator(
-        problem_state, max_num_decisions_, &sat_wrapper_));
+        problem_state, max_num_decisions_,
+        parameters.max_num_broken_constraints_in_ls(), &sat_wrapper_));
   }
 
   if (state_update_stamp_ != problem_state.update_stamp()) {
@@ -439,7 +440,7 @@ ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
 
     int32 num_branches = 0;
     for (const ConstraintTerm& term : by_constraint_matrix_[i]) {
-      if (sat_assignment_.IsVariableAssigned(
+      if (sat_assignment_.VariableIsAssigned(
               sat::VariableIndex(term.var.value()))) {
         continue;
       }
@@ -479,7 +480,7 @@ TermIndex OneFlipConstraintRepairer::NextRepairingTerm(
        loop_term_index < end_term_index; ++loop_term_index) {
     const TermIndex term_index(loop_term_index % terms.size());
     const ConstraintTerm term = terms[term_index];
-    if (sat_assignment_.IsVariableAssigned(
+    if (sat_assignment_.VariableIsAssigned(
             sat::VariableIndex(term.var.value()))) {
       continue;
     }
@@ -497,7 +498,7 @@ bool OneFlipConstraintRepairer::RepairIsValid(ConstraintIndex ct_index,
                                               TermIndex term_index) const {
   if (maintainer_.ConstraintIsFeasible(ct_index)) return false;
   const ConstraintTerm term = by_constraint_matrix_[ct_index][term_index];
-  if (sat_assignment_.IsVariableAssigned(
+  if (sat_assignment_.VariableIsAssigned(
           sat::VariableIndex(term.var.value()))) {
     return false;
   }
@@ -551,7 +552,7 @@ std::vector<sat::Literal> SatWrapper::FullSatTrail() const {
 
 int SatWrapper::ApplyDecision(sat::Literal decision_literal,
                               std::vector<sat::Literal>* propagated_literals) {
-  CHECK(!sat_solver_->Assignment().IsVariableAssigned(
+  CHECK(!sat_solver_->Assignment().VariableIsAssigned(
       decision_literal.Variable()));
   CHECK(propagated_literals != nullptr);
 
@@ -596,8 +597,9 @@ double SatWrapper::deterministic_time() const {
 
 LocalSearchAssignmentIterator::LocalSearchAssignmentIterator(
     const ProblemState& problem_state, int max_num_decisions,
-    SatWrapper* sat_wrapper)
+    int max_num_broken_constraints, SatWrapper* sat_wrapper)
     : max_num_decisions_(max_num_decisions),
+      max_num_broken_constraints_(max_num_broken_constraints),
       maintainer_(problem_state.original_problem()),
       sat_wrapper_(sat_wrapper),
       repairer_(problem_state.original_problem(), maintainer_,
@@ -799,6 +801,17 @@ bool LocalSearchAssignmentIterator::EnqueueNextRepairingTermIfAny(
 bool LocalSearchAssignmentIterator::GoDeeper() {
   // Can we add one more decision?
   if (search_nodes_.size() >= max_num_decisions_) {
+    return false;
+  }
+
+  // Is the number of infeasible constraints reasonable?
+  //
+  // TODO(user): Make this parameters dynamic. We can either try lower value
+  // first and increase it later, or try to dynamically change it during the
+  // search. Another idea is to have instead a "max number of constraints that
+  // can be repaired in one decision" and to take into account the number of
+  // decisions left.
+  if (maintainer_.NumInfeasibleConstraints() > max_num_broken_constraints_) {
     return false;
   }
 

@@ -58,7 +58,8 @@ bool CleanUpPredicate(const Watcher& watcher) {
 // ----- LiteralWatchers -----
 
 LiteralWatchers::LiteralWatchers()
-    : is_clean_(true),
+    : Propagator("LiteralWatchers"),
+      is_clean_(true),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),
       num_watched_clauses_(0),
@@ -71,6 +72,7 @@ LiteralWatchers::~LiteralWatchers() {
 void LiteralWatchers::Resize(int num_variables) {
   DCHECK(is_clean_);
   watchers_on_false_.resize(num_variables << 1);
+  reasons_.resize(num_variables);
   needs_cleaning_.Resize(LiteralIndex(num_variables << 1));
   statistics_.resize(num_variables);
 }
@@ -97,7 +99,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
   for (std::vector<Watcher>::iterator it = watchers.begin(); it != watchers.end();
        ++it) {
     // Don't even look at the clause memory if the blocking literal is true.
-    if (assignment.IsLiteralTrue(it->blocking_literal)) {
+    if (assignment.LiteralIsTrue(it->blocking_literal)) {
       *new_it++ = *it;
       continue;
     }
@@ -108,7 +110,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
     const Literal other_watched_literal =
         (literals[1] == false_literal) ? literals[0] : literals[1];
     if (other_watched_literal != it->blocking_literal &&
-        assignment.IsLiteralTrue(other_watched_literal)) {
+        assignment.LiteralIsTrue(other_watched_literal)) {
       *new_it++ = Watcher(it->clause, other_watched_literal);
       ++num_inspected_clause_literals_;
       continue;
@@ -118,7 +120,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
     {
       int i = 2;
       const int size = it->clause->Size();
-      while (i < size && assignment.IsLiteralFalse(literals[i])) ++i;
+      while (i < size && assignment.LiteralIsFalse(literals[i])) ++i;
       num_inspected_clause_literals_ += i;
       if (i < size) {
         // literal[i] is undefined or true, it's now the new literal to watch.
@@ -134,10 +136,13 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
 
     // At this point other_watched_literal is either false or undefined, all
     // other literals are false.
-    if (assignment.IsLiteralFalse(other_watched_literal)) {
+    if (assignment.LiteralIsFalse(other_watched_literal)) {
       // Conflict: All literals of it->clause are false.
-      trail->SetFailingSatClause(
-          ClauseRef(it->clause->begin(), it->clause->end()), it->clause);
+      //
+      // Note(user): we could avoid a copy here, but the conflict analysis
+      // complexity will be a lot higher than this anyway.
+      trail->MutableConflict()->assign(it->clause->begin(), it->clause->end());
+      trail->SetFailingSatClause(it->clause);
       trail->SetFailingResolutionNode(it->clause->ResolutionNodePointer());
       num_inspected_clause_literals_ += it - watchers.begin() + 1;
       watchers.erase(new_it, it);
@@ -149,13 +154,35 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       // clause using this convention.
       literals[0] = other_watched_literal;
       literals[1] = false_literal;
-      trail->EnqueueWithSatClauseReason(other_watched_literal, it->clause);
+      reasons_[trail->Index()] = it->clause;
+      trail->Enqueue(other_watched_literal, propagator_id_);
       *new_it++ = *it;
     }
   }
   num_inspected_clause_literals_ += watchers.size();
   watchers.erase(new_it, watchers.end());
   return true;
+}
+
+bool LiteralWatchers::Propagate(Trail* trail) {
+  const int old_index = trail->Index();
+  while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
+    const Literal literal = (*trail)[propagation_trail_index_++];
+    if (!PropagateOnFalse(literal.Negated(), trail)) return false;
+  }
+  return true;
+}
+
+ClauseRef LiteralWatchers::Reason(const Trail& trail, int trail_index) const {
+  return reasons_[trail_index]->PropagationReason();
+}
+
+ResolutionNode* LiteralWatchers::GetResolutionNode(int trail_index) const {
+  return reasons_[trail_index]->ResolutionNodePointer();
+}
+
+SatClause* LiteralWatchers::ReasonClause(int trail_index) const {
+  return reasons_[trail_index];
 }
 
 bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
@@ -217,6 +244,7 @@ void LiteralWatchers::UpdateStatistics(const SatClause& clause, bool added) {
 void BinaryImplicationGraph::Resize(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
   implications_.resize(num_variables << 1);
+  reasons_.resize(num_variables);
 }
 
 void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
@@ -229,11 +257,14 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
 void BinaryImplicationGraph::AddBinaryConflict(Literal a, Literal b,
                                                Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
+  if (num_implications_ == 0) propagation_trail_index_ = trail->Index();
   AddBinaryClause(a, b);
-  if (trail->Assignment().IsLiteralFalse(a)) {
-    trail->EnqueueWithBinaryReason(b, a);
-  } else if (trail->Assignment().IsLiteralFalse(b)) {
-    trail->EnqueueWithBinaryReason(a, b);
+  if (trail->Assignment().LiteralIsFalse(a)) {
+    reasons_[trail->Index()] = a;
+    trail->Enqueue(b, propagator_id_);
+  } else if (trail->Assignment().LiteralIsFalse(b)) {
+    reasons_[trail->Index()] = b;
+    trail->Enqueue(a, propagator_id_);
   }
 }
 
@@ -248,7 +279,7 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
 
   const VariablesAssignment& assignment = trail->Assignment();
   for (Literal literal : implications_[true_literal.Index()]) {
-    if (assignment.IsLiteralTrue(literal)) {
+    if (assignment.LiteralIsTrue(literal)) {
       // Note(user): I tried to update the reason here if the literal was
       // enqueued after the true_literal on the trail. This property is
       // important for ComputeFirstUIPConflict() to work since it needs the
@@ -258,19 +289,35 @@ bool BinaryImplicationGraph::PropagateOnTrue(Literal true_literal,
     }
 
     ++num_propagations_;
-    if (assignment.IsLiteralFalse(literal)) {
+    if (assignment.LiteralIsFalse(literal)) {
       // Conflict.
-      temporary_clause_[0] = true_literal.Negated();
-      temporary_clause_[1] = literal;
-      trail->SetFailingClause(
-          ClauseRef(&temporary_clause_[0], &temporary_clause_[0] + 2));
+      *(trail->MutableConflict()) = {true_literal.Negated(), literal};
       return false;
     } else {
       // Propagation.
-      trail->EnqueueWithBinaryReason(literal, true_literal.Negated());
+      reasons_[trail->Index()] = true_literal.Negated();
+      trail->Enqueue(literal, propagator_id_);
     }
   }
   return true;
+}
+
+bool BinaryImplicationGraph::Propagate(Trail* trail) {
+  if (num_implications_ == 0) {
+    propagation_trail_index_ = trail->Index();
+    return true;
+  }
+  while (propagation_trail_index_ < trail->Index()) {
+    const Literal literal = (*trail)[propagation_trail_index_++];
+    if (!PropagateOnTrue(literal, trail)) return false;
+  }
+  return true;
+}
+
+ClauseRef BinaryImplicationGraph::Reason(const Trail& trail,
+                                         int trail_index) const {
+  const Literal* p = &reasons_[trail_index];
+  return ClauseRef(p, p + 1);
 }
 
 // Here, we remove all the literal whose negation are implied by the negation of
@@ -368,7 +415,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
     if (!is_marked_[literal.Index()]) {
       is_marked_.Set(literal.Index());
       // If the literal is assigned to false, we mark it.
-      if (trail.Assignment().IsLiteralFalse(literal)) {
+      if (trail.Assignment().LiteralIsFalse(literal)) {
         marked->Set(literal.Variable());
       }
       for (Literal implied : implications_[literal.Index()]) {
@@ -515,7 +562,7 @@ void BinaryImplicationGraph::RemoveFixedVariables(
   }
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
     RemoveIf(&implications_[i],
-             std::bind1st(std::mem_fun(&VariablesAssignment::IsLiteralTrue),
+             std::bind1st(std::mem_fun(&VariablesAssignment::LiteralIsTrue),
                           &assigment));
   }
 }
@@ -546,18 +593,18 @@ bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
     const VariablesAssignment& assignment, std::vector<Literal>* removed_literals) {
   removed_literals->clear();
   DCHECK(is_attached_);
-  if (assignment.IsVariableAssigned(literals_[0].Variable()) ||
-      assignment.IsVariableAssigned(literals_[1].Variable())) {
+  if (assignment.VariableIsAssigned(literals_[0].Variable()) ||
+      assignment.VariableIsAssigned(literals_[1].Variable())) {
     DCHECK(IsSatisfied(assignment));
     return true;
   }
   int j = 2;
-  while (j < size_ && !assignment.IsVariableAssigned(literals_[j].Variable())) {
+  while (j < size_ && !assignment.VariableIsAssigned(literals_[j].Variable())) {
     ++j;
   }
   for (int i = j; i < size_; ++i) {
-    if (assignment.IsVariableAssigned(literals_[i].Variable())) {
-      if (assignment.IsLiteralTrue(literals_[i])) return true;
+    if (assignment.VariableIsAssigned(literals_[i].Variable())) {
+      if (assignment.LiteralIsTrue(literals_[i])) return true;
       removed_literals->push_back(literals_[i]);
     } else {
       literals_[j] = literals_[i];
@@ -634,7 +681,7 @@ bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
   // on position 0 and 1.
   int num_literal_not_false = 0;
   for (int i = 0; i < size_; ++i) {
-    if (!trail->Assignment().IsLiteralFalse(literals_[i])) {
+    if (!trail->Assignment().LiteralIsFalse(literals_[i])) {
       std::swap(literals_[i], literals_[num_literal_not_false]);
       ++num_literal_not_false;
       if (num_literal_not_false == 2) {
@@ -661,8 +708,9 @@ bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
     }
 
     // Propagates literals_[0] if it is undefined.
-    if (!trail->Assignment().IsLiteralTrue(literals_[0])) {
-      trail->EnqueueWithSatClauseReason(literals_[0], this);
+    if (!trail->Assignment().LiteralIsTrue(literals_[0])) {
+      demons->SetReasonClause(trail->Index(), this);
+      trail->Enqueue(literals_[0], demons->propagator_id_);
     }
   }
 
@@ -675,7 +723,7 @@ bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
 
 bool SatClause::IsSatisfied(const VariablesAssignment& assignment) const {
   for (const Literal literal : *this) {
-    if (assignment.IsLiteralTrue(literal)) return true;
+    if (assignment.LiteralIsTrue(literal)) return true;
   }
   return false;
 }

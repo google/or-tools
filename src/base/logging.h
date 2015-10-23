@@ -39,7 +39,6 @@ DECLARE_bool(log_prefix);
 #define CHECK_GE(x, y) CHECK((x) >= (y))
 #define CHECK_EQ(x, y) CHECK((x) == (y))
 #define CHECK_NE(x, y) CHECK((x) != (y))
-#define CHECK_NOTNULL(x) CHECK((x) != NULL)
 
 // Debug-only checking.
 #ifdef NDEBUG
@@ -162,5 +161,12 @@ class LogMessageVoidify {
   // higher than "?:". See its usage.
   void operator&(std::ostream&) {}
 };
+
+template <typename T>
+T&& CheckNotNull(T&& t) {
+  CHECK(t != nullptr);
+  return std::forward<T>(t);
+}
+#define CHECK_NOTNULL(x) CheckNotNull((x))
 
 #endif  // OR_TOOLS_BASE_LOGGING_H_

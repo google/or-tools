@@ -169,10 +169,14 @@ class SatClause {
 // Stores the 2-watched literals data structure.  See
 // http://www.cs.berkeley.edu/~necula/autded/lecture24-sat.pdf for
 // detail.
-class LiteralWatchers {
+class LiteralWatchers : public Propagator {
  public:
   LiteralWatchers();
   ~LiteralWatchers();
+
+  bool Propagate(Trail* trail) final;
+  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+  ResolutionNode* GetResolutionNode(int trail_index) const final;
 
   // Resizes the data structure.
   void Resize(int num_variables);
@@ -181,21 +185,15 @@ class LiteralWatchers {
   // enqueued on the trail. Returns false if a contradiction was encountered.
   bool AttachAndPropagate(SatClause* clause, Trail* trail);
 
-  // Attaches the given clause to the event: the given literal becomes false.
-  // The blocking_literal can be any literal from the clause, it is used to
-  // speed up PropagateOnFalse() by skipping the clause if it is true.
-  void AttachOnFalse(Literal literal, Literal blocking_literal,
-                     SatClause* clause);
-
   // Lazily detach the given clause. The deletion will actually occur when
   // CleanUpWatchers() is called. The later needs to be called before any other
   // function in this class can be called. This is DCHECKed.
   void LazyDetach(SatClause* clause);
   void CleanUpWatchers();
 
-  // Launches all propagation when the given literal becomes false.
-  // Returns false if a contradiction was encountered.
-  bool PropagateOnFalse(Literal false_literal, Trail* trail);
+  // Returns the reason of the variable at given trail_index.
+  // This only works for variable propagated by this class.
+  SatClause* ReasonClause(int trail_index) const;
 
   // Total number of clauses inspected during calls to PropagateOnFalse().
   int64 num_inspected_clauses() const { return num_inspected_clauses_; }
@@ -218,6 +216,26 @@ class LiteralWatchers {
   }
 
  private:
+  // Launches all propagation when the given literal becomes false.
+  // Returns false if a contradiction was encountered.
+  bool PropagateOnFalse(Literal false_literal, Trail* trail);
+
+  // Attaches the given clause to the event: the given literal becomes false.
+  // The blocking_literal can be any literal from the clause, it is used to
+  // speed up PropagateOnFalse() by skipping the clause if it is true.
+  void AttachOnFalse(Literal literal, Literal blocking_literal,
+                     SatClause* clause);
+
+  // AttachOnFalse and SetReasonClause() need to be called from
+  // SatClause::AttachAndEnqueuePotentialUnitPropagation().
+  //
+  // TODO(user): This is not super clean, find a better way.
+  friend bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
+      Trail* trail, LiteralWatchers* demons);
+  void SetReasonClause(int trail_index, SatClause* clause) {
+    reasons_[trail_index] = clause;
+  }
+
   // Updates statistics_ for the literals in the given clause. added indicates
   // if we are adding the clause or deleting it.
   void UpdateStatistics(const SatClause& clause, bool added);
@@ -231,6 +249,9 @@ class LiteralWatchers {
     Literal blocking_literal;
   };
   ITIVector<LiteralIndex, std::vector<Watcher> > watchers_on_false_;
+
+  // SatClause reasons by trail_index.
+  std::vector<SatClause*> reasons_;
 
   // Indicates if the corresponding watchers_on_false_ list need to be
   // cleaned. The boolean is_clean_ is just used in DCHECKs.
@@ -320,10 +341,11 @@ class BinaryClauseManager {
 //   of Satisfiability Testing - SAT 2011, Lecture Notes in Computer Science
 //   Volume 6695, 2011, pp 201-215
 //   http://www.cs.helsinki.fi/u/mjarvisa/papers/heule-jarvisalo-biere.sat11.pdf
-class BinaryImplicationGraph {
+class BinaryImplicationGraph : public Propagator {
  public:
   BinaryImplicationGraph()
-      : num_implications_(0),
+      : Propagator("BinaryImplicationGraph"),
+        num_implications_(0),
         num_propagations_(0),
         num_inspections_(0),
         num_minimization_(0),
@@ -337,6 +359,9 @@ class BinaryImplicationGraph {
     });
   }
 
+  bool Propagate(Trail* trail) final;
+  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+
   // Resizes the data structure.
   void Resize(int num_variables);
 
@@ -347,11 +372,6 @@ class BinaryImplicationGraph {
   // Same as AddBinaryClause() but enqueues a possible unit propagation.
   void AddBinaryConflict(Literal a, Literal b, Trail* trail);
 
-  // Propagates all the direct implications of the given literal becoming true.
-  // Returns false if a conflict was encountered, in which case
-  // trail->SetFailingClause() will be called with the correct size 2 clause.
-  // This calls trail->Enqueue() on the newly assigned literals.
-  bool PropagateOnTrue(Literal true_literal, Trail* trail);
 
   // Uses the binary implication graph to minimize the given conflict by
   // removing literals that implies others. The idea is that if a and b are two
@@ -410,16 +430,22 @@ class BinaryImplicationGraph {
   }
 
  private:
+  // Propagates all the direct implications of the given literal becoming true.
+  // Returns false if a conflict was encountered, in which case
+  // trail->SetFailingClause() will be called with the correct size 2 clause.
+  // This calls trail->Enqueue() on the newly assigned literals.
+  bool PropagateOnTrue(Literal true_literal, Trail* trail);
+
   // Remove any literal whose negation is marked (except the first one).
   void RemoveRedundantLiterals(std::vector<Literal>* conflict);
+
+  // Binary reasons by trail_index.
+  std::vector<Literal> reasons_;
 
   // This is indexed by the Index() of a literal. Each list stores the
   // literals that are implied if the index literal becomes true.
   ITIVector<LiteralIndex, std::vector<Literal>> implications_;
   int64 num_implications_;
-
-  // Holds the last conflicting binary clause.
-  Literal temporary_clause_[2];
 
   // Some stats.
   int64 num_propagations_;

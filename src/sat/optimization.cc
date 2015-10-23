@@ -480,7 +480,7 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
         ++num_above_threshold;
       } else {
         // This impact the stratification heuristic.
-        if (solver->Assignment().IsLiteralTrue(assumptions[i])) {
+        if (solver->Assignment().LiteralIsTrue(assumptions[i])) {
           to_delete.push_back(i);
         }
       }
@@ -1105,7 +1105,7 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
     if (core.size() == 1) {
       // The core will be reduced at the beginning of the next loop.
       // Find the associated node, and call IncreaseNodeSize() on it.
-      CHECK(solver->Assignment().IsLiteralFalse(core[0]));
+      CHECK(solver->Assignment().LiteralIsFalse(core[0]));
       for (EncodingNode* n : nodes) {
         if (n->literal(0).Negated() == core[0]) {
           IncreaseNodeSize(n, solver);

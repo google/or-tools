@@ -40,33 +40,32 @@ Demon* Solver::MakeDelayedConstraintInitialPropagateCallback(
 }
 
 namespace {
-class Callback1Demon : public Demon {
+class ActionDemon : public Demon {
  public:
-  // Ownership of the callback is transfered to the demon.
-  explicit Callback1Demon(std::function<void(Solver*)> callback)
-      : callback_(callback) {
-    CHECK(callback != nullptr);
+  explicit ActionDemon(Solver::Action action) : action_(action) {
+    CHECK(action != nullptr);
   }
-  ~Callback1Demon() override {}
 
-  void Run(Solver* const solver) override { callback_(solver); }
+  ~ActionDemon() override {}
+
+  void Run(Solver* const solver) override { action_(solver); }
 
  private:
-  std::function<void(Solver*)> callback_;
+  Solver::Action action_;
 };
 
 class ClosureDemon : public Demon {
  public:
-  // Ownership of the callback is transfered to the demon.
-  explicit ClosureDemon(std::function<void()> callback) : callback_(callback) {
-    CHECK(callback != nullptr);
+  explicit ClosureDemon(Solver::Closure closure) : closure_(closure) {
+    CHECK(closure != nullptr);
   }
+
   ~ClosureDemon() override {}
 
-  void Run(Solver* const solver) override { callback_(); }
+  void Run(Solver* const solver) override { closure_(); }
 
  private:
-  std::function<void()> callback_;
+  Solver::Closure closure_;
 };
 
 // ----- True and False Constraint -----
@@ -500,11 +499,11 @@ class IndexOfFirstMaxValue : public Constraint {
 
 // ----- API -----
 
-Demon* Solver::MakeCallbackDemon(std::function<void(Solver*)> callback) {
-  return RevAlloc(new Callback1Demon(callback));
+Demon* Solver::MakeActionDemon(Solver::Action action) {
+  return RevAlloc(new ActionDemon(action));
 }
 
-Demon* Solver::MakeClosureDemon(std::function<void()> closure) {
+Demon* Solver::MakeClosureDemon(Solver::Closure closure) {
   return RevAlloc(new ClosureDemon(closure));
 }
 

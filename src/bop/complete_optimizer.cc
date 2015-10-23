@@ -129,6 +129,7 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     sat_params.set_max_time_in_seconds(time_limit->GetTimeLeft());
     sat_params.set_max_deterministic_time(
         time_limit->GetDeterministicTimeLeft());
+    sat_params.set_random_seed(parameters.random_seed());
     sat_params.set_max_number_of_conflicts(conflict_limit);
     solver_.SetParameters(sat_params);
 
@@ -197,7 +198,7 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
 
     int new_node_index = 0;
     if (core.size() == 1) {
-      CHECK(solver_.Assignment().IsLiteralFalse(core[0]));
+      CHECK(solver_.Assignment().LiteralIsFalse(core[0]));
       for (sat::EncodingNode* n : nodes_) {
         if (n->literal(0).Negated() == core[0]) {
           sat::IncreaseNodeSize(n, &solver_);

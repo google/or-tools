@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <limits>
+#include <memory>
 #include <string>
 #ifndef NDEBUG
 #include <unordered_map>
@@ -97,6 +98,32 @@ class TimeLimit {
   explicit TimeLimit(
       double limit_in_seconds,
       double deterministic_limit = std::numeric_limits<double>::infinity());
+
+  // Creates a time limit object that uses infinite time for both wall time and
+  // deterministic time.
+  static std::unique_ptr<TimeLimit> Infinite() {
+    return std::unique_ptr<TimeLimit>(
+        new TimeLimit(std::numeric_limits<double>::infinity(),
+                      std::numeric_limits<double>::infinity()));
+  }
+
+  // Creates a time limit object that puts limit only on the deterministic time.
+  static std::unique_ptr<TimeLimit> FromDeterministicTime(
+      double deterministic_limit) {
+    return std::unique_ptr<TimeLimit>(new TimeLimit(
+        std::numeric_limits<double>::infinity(), deterministic_limit));
+  }
+
+  // Creates a time limit object initialized from an object that provides
+  // methods max_time_in_seconds() and max_deterministic_time(). This method is
+  // designed specifically to work with solver parameter protos, e.g.
+  // BopParameters, MipParameters and SatParameters.
+  template <typename Parameters>
+  static std::unique_ptr<TimeLimit> FromParameters(
+      const Parameters& parameters) {
+    return std::unique_ptr<TimeLimit>(new TimeLimit(
+        parameters.max_time_in_seconds(), parameters.max_deterministic_time()));
+  }
 
   // Returns true when the external limit is true, or the deterministic time is
   // over the deterministic limit or if the next time LimitReached() is called
@@ -200,8 +227,73 @@ return 1e-9 * (base::GetCurrentTimeNanos() - start_ns_);
   std::unordered_map<std::string, double> deterministic_counters_;
 #endif
 
+  friend class NestedTimeLimit;
+  friend class ParallelTimeLimit;
+
   DISALLOW_COPY_AND_ASSIGN(TimeLimit);
 };
+
+// Provides a way to nest time limits for algorithms where a certain part of
+// the computation is bounded not just by the overall time limit, but also by a
+// stricter time limit specific just for this particular part.
+//
+// This class takes a base time limit object (the overall time limit) and the
+// part-specific time limit, and creates a new time limit object for the part.
+// This new time limit object will expire when either the overall time limit
+// expires or when the part-specific time limit expires.
+//
+// Example usage:
+// TimeLimit overall_time_limit(...);
+// NestedTimeLimit subalgorith_time_limit(&overall_time_limit,
+//                                        subalgorithm_limit_in_seconds,
+//                                        subalgorithm_deterministic_limit);
+// RunTheSubalgorithm(subalgorithm_time_limit.GetTimeLimit());
+//
+// Note that remaining wall time in the base time limit is decreasing
+// "automatically", but the deterministic time needs to be updated manually.
+// This update is done only once, during the destruction of the nested time
+// limit object. To track the deterministic time properly, the user must avoid
+// modifying the base time limit object when a nested time limit exists.
+//
+// The nested time limits supports the external time limit condition in the
+// sense, that if the overall time limit has an external boolean registered, the
+// nested time limit object will use the same boolean value as an external time
+// limit too.
+class NestedTimeLimit {
+ public:
+  // Creates the nested time limit. Note that 'base_time_limit' must remain
+  // valid for the whole lifetime of the nested time limit object.
+  NestedTimeLimit(TimeLimit* base_time_limit, double limit_in_seconds,
+                  double deterministic_limit);
+  // Updates elapsed deterministic time in the base time limit object.
+  ~NestedTimeLimit();
+
+  // Creates a time limit object initialized from a base time limit and an
+  // object that provides methods max_time_in_seconds() and
+  // max_deterministic_time(). This method is designed specifically to work with
+  // solver parameter protos, e.g. BopParameters, MipParameters and
+  // SatParameters.
+  template <typename Parameters>
+  static std::unique_ptr<NestedTimeLimit> FromBaseTimeLimitAndParameters(
+      TimeLimit* time_limit, const Parameters& parameters) {
+    return std::unique_ptr<NestedTimeLimit>(
+        new NestedTimeLimit(time_limit, parameters.max_time_in_seconds(),
+                            parameters.max_deterministic_time()));
+  }
+
+  // Returns a time limit object that represents the combination of the overall
+  // time limit and the part-specific time limit. The returned time limit object
+  // is owned by the nested time limit object that returns it, and it will
+  // remain valid until the nested time limit object is destroyed.
+  TimeLimit* GetTimeLimit() { return &time_limit_; }
+
+ private:
+  TimeLimit* const base_time_limit_;
+  TimeLimit time_limit_;
+
+  DISALLOW_COPY_AND_ASSIGN(NestedTimeLimit);
+};
+
 
 // ################## Implementations below #####################
 
@@ -233,7 +325,7 @@ inline bool TimeLimit::LimitReached() {
     return true;
   }
 
-  const int64 current_ns = base::GetCurrentTimeNanos();
+const int64 current_ns = base::GetCurrentTimeNanos();
   running_max_.Add(std::max(safety_buffer_ns_, current_ns - last_ns_));
   last_ns_ = current_ns;
   if (current_ns + running_max_.GetCurrentMax() >= limit_ns_) {
@@ -259,7 +351,7 @@ inline bool TimeLimit::LimitReached() {
 
 inline double TimeLimit::GetTimeLeft() const {
   if (limit_ns_ == kint64max) return std::numeric_limits<double>::infinity();
-  const int64 delta_ns = limit_ns_ - base::GetCurrentTimeNanos();
+const int64 delta_ns = limit_ns_ - base::GetCurrentTimeNanos();
   if (delta_ns < 0) return 0.0;
 #ifdef ANDROID_JNI
   return delta_ns * 1e-9;

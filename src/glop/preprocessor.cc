@@ -47,11 +47,10 @@ Preprocessor::~Preprocessor() {}
 
 #define RUN_PREPROCESSOR(name)                                           \
   RunAndPushIfRelevant(std::unique_ptr<Preprocessor>(new name()), #name, \
-                       &time_limit, lp)
+                       time_limit, lp)
 
-bool MainLpPreprocessor::Run(LinearProgram* lp) {
+bool MainLpPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
-  TimeLimit time_limit(parameters_.max_time_in_seconds());
   initial_num_rows_ = lp->num_constraints();
   initial_num_cols_ = lp->num_variables();
   initial_num_entries_ = lp->num_entries();
@@ -120,11 +119,10 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     std::unique_ptr<Preprocessor> preprocessor, const std::string& name,
     TimeLimit* time_limit, LinearProgram* lp) {
   RETURN_IF_NULL(preprocessor);
+  RETURN_IF_NULL(time_limit);
   if (status_ != ProblemStatus::INIT || time_limit->LimitReached()) return;
 
-  WallTimer timer;
-  timer.Start();
-  parameters_.set_max_time_in_seconds(time_limit->GetTimeLeft());
+  const double start_time = time_limit->GetElapsedTime();
   preprocessor->SetParameters(parameters_);
 
   // No need to run the preprocessor if the lp is empty.
@@ -134,11 +132,12 @@ void MainLpPreprocessor::RunAndPushIfRelevant(
     return;
   }
 
-  if (preprocessor->Run(lp)) {
+  if (preprocessor->Run(lp, time_limit)) {
     const EntryIndex new_num_entries = lp->num_entries();
+    const double preprocess_time = time_limit->GetElapsedTime() - start_time;
     VLOG(1) << StringPrintf(
         "%s(%fs): %d(%d) rows, %d(%d) columns, %lld(%lld) entries.",
-        name.c_str(), timer.Get(), lp->num_constraints().value(),
+        name.c_str(), preprocess_time, lp->num_constraints().value(),
         (lp->num_constraints() - initial_num_rows_).value(),
         lp->num_variables().value(),
         (lp->num_variables() - initial_num_cols_).value(),
@@ -328,7 +327,8 @@ Fractional ComputeMaxVariableBoundsMagnitude(const LinearProgram& lp) {
 
 }  // namespace
 
-bool EmptyColumnPreprocessor::Run(LinearProgram* linear_program) {
+bool EmptyColumnPreprocessor::Run(LinearProgram* linear_program,
+                                  TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(linear_program, false);
   column_deletion_helper_.Clear();
   const ColIndex num_cols = linear_program->num_variables();
@@ -428,11 +428,11 @@ struct ColumnWithRepresentativeAndScaledCost {
 
 }  // namespace
 
-bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
+bool ProportionalColumnPreprocessor::Run(LinearProgram* lp,
+                                         TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
-  const Fractional kTolerance = parameters_.preprocessor_zero_tolerance();
-  ColMapping mapping =
-      FindProportionalColumns(lp->GetSparseMatrix(), kTolerance);
+  ColMapping mapping = FindProportionalColumns(
+      lp->GetSparseMatrix(), parameters_.preprocessor_zero_tolerance());
 
   // Compute some statistics and make each class representative point to itself
   // in the mapping. Also store the columns that are proportional to at least
@@ -501,15 +501,14 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
   }
 
   // Deal with empty slope intervals.
-  const Fractional tolerance = parameters_.preprocessor_zero_tolerance();
   for (const ColIndex col : proportional_columns) {
     const ColIndex representative = mapping[col];
 
     // This is only needed for class representative columns.
     if (representative == col) {
-      if (slope_upper_bound[representative] -
-              slope_lower_bound[representative] <
-          -tolerance) {
+      if (!IsSmallerWithinFeasibilityTolerance(
+              slope_lower_bound[representative],
+              slope_upper_bound[representative])) {
         VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED, no feasible dual values"
                 << " can satisfy the constraints of the proportional columns"
                 << " with representative " << representative << "."
@@ -535,11 +534,13 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
 
     const Fractional lower_bound = lp->variable_lower_bounds()[col];
     const Fractional upper_bound = lp->variable_upper_bounds()[col];
-    if (slope + tolerance < slope_lower_bound[representative]) {
+    if (!IsSmallerWithinFeasibilityTolerance(slope_lower_bound[representative],
+                                             slope)) {
       // The scaled reduced cost is < 0.
       variable_can_be_fixed = true;
       target_bound = (column_factors_[col] >= 0.0) ? upper_bound : lower_bound;
-    } else if (slope - tolerance > slope_upper_bound[representative]) {
+    } else if (!IsSmallerWithinFeasibilityTolerance(
+                   slope, slope_upper_bound[representative])) {
       // The scaled reduced cost is > 0.
       variable_can_be_fixed = true;
       target_bound = (column_factors_[col] >= 0.0) ? lower_bound : upper_bound;
@@ -596,7 +597,7 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp) {
     for (++i; i < sorted_columns.size(); ++i) {
       if (sorted_columns[i].representative != target_representative) break;
       if (fabs(sorted_columns[i].scaled_cost - target_scaled_cost) >=
-          kTolerance) {
+          parameters_.preprocessor_zero_tolerance()) {
         break;
       }
       ++num_merged;
@@ -770,10 +771,9 @@ void ProportionalColumnPreprocessor::RecoverSolution(
 // ProportionalRowPreprocessor
 // --------------------------------------------------------
 
-bool ProportionalRowPreprocessor::Run(LinearProgram* lp) {
+bool ProportionalRowPreprocessor::Run(LinearProgram* lp,
+                                      TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
-  const Fractional kTolerance = parameters_.preprocessor_zero_tolerance();
-
   const RowIndex num_rows = lp->num_constraints();
   const SparseMatrix& transpose = lp->GetTransposeSparseMatrix();
 
@@ -802,7 +802,8 @@ bool ProportionalRowPreprocessor::Run(LinearProgram* lp) {
   // We need the first representative of each proportional row class to point to
   // itself for the loop below. TODO(user): Already return such a mapping from
   // FindProportionalColumns()?
-  ColMapping mapping = FindProportionalColumns(transpose, kTolerance);
+  ColMapping mapping = FindProportionalColumns(
+      transpose, parameters_.preprocessor_zero_tolerance());
   DenseBooleanColumn is_a_representative(num_rows, false);
   int num_proportional_rows = 0;
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -861,10 +862,10 @@ bool ProportionalRowPreprocessor::Run(LinearProgram* lp) {
       DCHECK_NE(lower_source, kInvalidRow);
       row_deletion_helper_.UnmarkRow(lower_source);
     } else {
-      // Report ProblemStatus::PRIMAL_INFEASIBLE if the new lower bound is
-      // greater than the new upper bound, modulo the primal value tolerance.
-      const Fractional tolerance = parameters_.primal_feasibility_tolerance();
-      if (upper_bounds[row] - lower_bounds[row] < -tolerance) {
+      // Report ProblemStatus::PRIMAL_INFEASIBLE if the new lower bound is not
+      // lower than the new upper bound modulo the default tolerance.
+      if (!IsSmallerWithinFeasibilityTolerance(lower_bounds[row],
+                                               upper_bounds[row])) {
         status_ = ProblemStatus::PRIMAL_INFEASIBLE;
         return false;
       }
@@ -926,7 +927,7 @@ bool ProportionalRowPreprocessor::Run(LinearProgram* lp) {
       // Note that if the imprecision was greater than the tolerance, the code
       // at the beginning of this block would have reported
       // ProblemStatus::PRIMAL_INFEASIBLE.
-      DCHECK_GT(new_ub - new_lb, -tolerance);
+      DCHECK(IsSmallerWithinFeasibilityTolerance(new_lb, new_ub));
       if (new_lb > new_ub) {
         if (lower_bound_sources_[new_representative] == new_representative) {
           new_ub = lp->constraint_lower_bounds()[new_representative];
@@ -1017,7 +1018,7 @@ void ProportionalRowPreprocessor::RecoverSolution(
 // FixedVariablePreprocessor
 // --------------------------------------------------------
 
-bool FixedVariablePreprocessor::Run(LinearProgram* lp) {
+bool FixedVariablePreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   const ColIndex num_cols = lp->num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -1048,7 +1049,8 @@ void FixedVariablePreprocessor::RecoverSolution(
 // ForcingAndImpliedFreeConstraintPreprocessor
 // --------------------------------------------------------
 
-bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
+bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp,
+                                                      TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   const RowIndex num_rows = lp->num_constraints();
 
@@ -1076,10 +1078,8 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
 
   // Note that the ScalingPreprocessor is currently executed last, so here the
   // problem has not been scaled yet.
-  const Fractional tolerance = parameters_.preprocessor_zero_tolerance();
-
   int num_implied_free_constraints = 0;
-  bool forcing_constraints_are_present = false;
+  int num_forcing_constraints = 0;
   is_forcing_up_.assign(num_rows, false);
   DenseBooleanColumn is_forcing_down(num_rows, false);
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -1088,8 +1088,10 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
     Fractional upper = lp->constraint_upper_bounds()[row];
 
     // Check for infeasibility.
-    if (implied_upper_bounds[row] < lower - tolerance ||
-        implied_lower_bounds[row] > upper + tolerance) {
+    if (!IsSmallerWithinFeasibilityTolerance(lower,
+                                             implied_upper_bounds[row]) ||
+        !IsSmallerWithinFeasibilityTolerance(implied_lower_bounds[row],
+                                             upper)) {
       VLOG(1) << "implied bound " << implied_lower_bounds[row] << " "
               << implied_upper_bounds[row];
       VLOG(1) << "constraint bound " << lower << " " << upper;
@@ -1099,14 +1101,16 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
 
     // Check if the constraint is forcing. That is, all the variables that
     // appear in it must be at one of their bounds.
-    if (implied_upper_bounds[row] <= lower + tolerance) {
+    if (IsSmallerWithinPreprocessorZeroTolerance(implied_upper_bounds[row],
+                                                 lower)) {
       is_forcing_down[row] = true;
-      forcing_constraints_are_present = true;
+      ++num_forcing_constraints;
       continue;
     }
-    if (implied_lower_bounds[row] >= upper - tolerance) {
+    if (IsSmallerWithinPreprocessorZeroTolerance(upper,
+                                                 implied_lower_bounds[row])) {
       is_forcing_up_[row] = true;
-      forcing_constraints_are_present = true;
+      ++num_forcing_constraints;
       continue;
     }
 
@@ -1116,17 +1120,21 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
     //
     // Note that we could relax only one of the two bounds, but the impact this
     // would have on the revised simplex algorithm is unclear at this point.
-    if (implied_lower_bounds[row] + tolerance >= lower &&
-        implied_upper_bounds[row] - tolerance <= upper) {
+    if (IsSmallerWithinPreprocessorZeroTolerance(lower,
+                                                 implied_lower_bounds[row]) &&
+        IsSmallerWithinPreprocessorZeroTolerance(implied_upper_bounds[row],
+                                                 upper)) {
       lp->SetConstraintBounds(row, -kInfinity, kInfinity);
       ++num_implied_free_constraints;
     }
   }
+
   if (num_implied_free_constraints > 0) {
     VLOG(1) << num_implied_free_constraints << " implied free constraints.";
   }
 
-  if (forcing_constraints_are_present) {
+  if (num_forcing_constraints > 0) {
+    VLOG(1) << num_forcing_constraints << " forcing constraints.";
     lp_is_maximization_problem_ = lp->IsMaximizationProblem();
     deleted_columns_.PopulateFromZero(num_rows, num_cols);
     costs_.resize(num_cols, 0.0);
@@ -1140,6 +1148,8 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
         if (is_forcing_down[e.row()]) {
           const Fractional candidate = e.coefficient() < 0.0 ? lower : upper;
           if (is_forced && candidate != target_bound) {
+            VLOG(1) << "A variable is forced in both directions! bounds: ["
+                    << lower << ", " << upper << "]. coeff:" << e.coefficient();
             status_ = ProblemStatus::PRIMAL_INFEASIBLE;
             return false;
           }
@@ -1149,6 +1159,8 @@ bool ForcingAndImpliedFreeConstraintPreprocessor::Run(LinearProgram* lp) {
         if (is_forcing_up_[e.row()]) {
           const Fractional candidate = e.coefficient() < 0.0 ? upper : lower;
           if (is_forced && candidate != target_bound) {
+            VLOG(1) << "A variable is forced in both directions! bounds: ["
+                    << lower << ", " << upper << "]. coeff:" << e.coefficient();
             status_ = ProblemStatus::PRIMAL_INFEASIBLE;
             return false;
           }
@@ -1269,7 +1281,7 @@ struct ColWithDegree {
 };
 }  // namespace
 
-bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
+bool ImpliedFreePreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   const RowIndex num_rows = lp->num_constraints();
   const ColIndex num_cols = lp->num_variables();
@@ -1338,7 +1350,6 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
   int num_already_free_variables = 0;
   int num_implied_free_variables = 0;
   int num_fixed_variables = 0;
-  const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   for (ColWithDegree col_with_degree : col_by_degree) {
     const ColIndex col = col_with_degree.col;
 
@@ -1377,22 +1388,27 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
     }
 
     // Detect infeasible cases.
-    if (overall_implied_lb >= upper_bound + tolerance ||
-        overall_implied_ub <= lower_bound - tolerance ||
-        overall_implied_lb >= overall_implied_ub + tolerance) {
+    if (!IsSmallerWithinFeasibilityTolerance(overall_implied_lb, upper_bound) ||
+        !IsSmallerWithinFeasibilityTolerance(lower_bound, overall_implied_ub) ||
+        !IsSmallerWithinFeasibilityTolerance(overall_implied_lb,
+                                             overall_implied_ub)) {
       status_ = ProblemStatus::PRIMAL_INFEASIBLE;
       return false;
     }
 
     // Detect fixed variable cases (there are two kinds).
-    if (overall_implied_lb + tolerance >= upper_bound ||
-        overall_implied_ub <= lower_bound + tolerance) {
+    // Note that currently we don't do anything here except counting them.
+    if (IsSmallerWithinPreprocessorZeroTolerance(upper_bound,
+                                                 overall_implied_lb) ||
+        IsSmallerWithinPreprocessorZeroTolerance(overall_implied_ub,
+                                                 lower_bound)) {
       // This case is already dealt with by the
       // ForcingAndImpliedFreeConstraintPreprocessor since it means that (at
       // least) one of the row is forcing.
       ++num_fixed_variables;
       continue;
-    } else if (overall_implied_lb + tolerance >= overall_implied_ub) {
+    } else if (IsSmallerWithinPreprocessorZeroTolerance(overall_implied_ub,
+                                                        overall_implied_lb)) {
       // TODO(user): As of July 2013, with our preprocessors this case is never
       // triggered on the Netlib. Note however that if it appears it can have a
       // big impact since by fixing the variable, the two involved constraints
@@ -1403,14 +1419,11 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp) {
     }
 
     // Is the variable implied free? Note that for an infinite lower_bound or
-    // upper_bound the respective inequality is always true. We also do not
-    // use tolerances here because it is quite common that the bound of a
-    // variable and the corresponding implied bound are exactly zero.
-    //
-    // TODO(user): Use a tolerance to make even more variables free? We should
-    // probably use a fraction of the primal tolerance if we do that.
-    if (overall_implied_lb >= lower_bound &&
-        overall_implied_ub <= upper_bound) {
+    // upper_bound the respective inequality is always true.
+    if (IsSmallerWithinPreprocessorZeroTolerance(lower_bound,
+                                                 overall_implied_lb) &&
+        IsSmallerWithinPreprocessorZeroTolerance(overall_implied_ub,
+                                                 upper_bound)) {
       ++num_implied_free_variables;
       lp->SetVariableBounds(col, -kInfinity, kInfinity);
       for (const SparseColumn::Entry e : lp->GetSparseColumn(col)) {
@@ -1475,7 +1488,8 @@ void ImpliedFreePreprocessor::RecoverSolution(ProblemSolution* solution) const {
 // DoubletonFreeColumnPreprocessor
 // --------------------------------------------------------
 
-bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp) {
+bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp,
+                                          TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   // We will modify the matrix transpose and then push the change to the linear
   // program by calling lp->UseTransposeMatrixAsReference(). Note that
@@ -1706,7 +1720,8 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
                             lp->variable_upper_bounds()[col]));
 }
 
-bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp) {
+bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp,
+                                            TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   const ColIndex num_cols(lp->num_variables());
   for (ColIndex col(0); col < num_cols; ++col) {
@@ -1857,7 +1872,8 @@ void UnconstrainedVariablePreprocessor::RecoverSolution(
 // FreeConstraintPreprocessor
 // --------------------------------------------------------
 
-bool FreeConstraintPreprocessor::Run(LinearProgram* linear_program) {
+bool FreeConstraintPreprocessor::Run(LinearProgram* linear_program,
+                                     TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(linear_program, false);
   const RowIndex num_rows = linear_program->num_constraints();
   for (RowIndex row(0); row < num_rows; ++row) {
@@ -1883,7 +1899,8 @@ void FreeConstraintPreprocessor::RecoverSolution(
 // EmptyConstraintPreprocessor
 // --------------------------------------------------------
 
-bool EmptyConstraintPreprocessor::Run(LinearProgram* lp) {
+bool EmptyConstraintPreprocessor::Run(LinearProgram* lp,
+                                      TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   const RowIndex num_rows(lp->num_constraints());
   const ColIndex num_cols(lp->num_variables());
@@ -1897,13 +1914,14 @@ bool EmptyConstraintPreprocessor::Run(LinearProgram* lp) {
   }
 
   // Delete degree 0 rows.
-  const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   for (RowIndex row(0); row < num_rows; ++row) {
     if (degree[row] == 0) {
       // We need to check that 0.0 is allowed by the constraint bounds,
       // otherwise, the problem is ProblemStatus::PRIMAL_INFEASIBLE.
-      if (tolerance < lp->constraint_lower_bounds()[row] ||
-          -tolerance > lp->constraint_upper_bounds()[row]) {
+      if (!IsSmallerWithinFeasibilityTolerance(
+              lp->constraint_lower_bounds()[row], 0) ||
+          !IsSmallerWithinFeasibilityTolerance(
+              0, lp->constraint_upper_bounds()[row])) {
         VLOG(1) << "Problem PRIMAL_INFEASIBLE, constraint "
                 << row << " is empty and its range ["
                 << lp->constraint_lower_bounds()[row] << ","
@@ -1940,7 +1958,8 @@ SingletonUndo::SingletonUndo(OperationType type, const LinearProgram& lp,
       constraint_upper_bound_(lp.constraint_upper_bounds()[e.row]),
       constraint_status_(status) {}
 
-void SingletonUndo::Undo(const SparseMatrix& deleted_columns,
+void SingletonUndo::Undo(const GlopParameters& parameters,
+                         const SparseMatrix& deleted_columns,
                          const SparseMatrix& deleted_rows,
                          ProblemSolution* solution) const {
   switch (type_) {
@@ -1948,10 +1967,10 @@ void SingletonUndo::Undo(const SparseMatrix& deleted_columns,
       SingletonRowUndo(deleted_columns, solution);
       break;
     case ZERO_COST_SINGLETON_COLUMN:
-      ZeroCostSingletonColumnUndo(deleted_rows, solution);
+      ZeroCostSingletonColumnUndo(parameters, deleted_rows, solution);
       break;
     case SINGLETON_COLUMN_IN_EQUALITY:
-      SingletonColumnInEqualityUndo(deleted_rows, solution);
+      SingletonColumnInEqualityUndo(parameters, deleted_rows, solution);
       break;
     case MAKE_CONSTRAINT_AN_EQUALITY:
       MakeConstraintAnEqualityUndo(solution);
@@ -1973,10 +1992,12 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
   Fractional new_upper_bound =
       std::min(lp->variable_upper_bounds()[e.col], implied_upper_bound);
   if (new_upper_bound < new_lower_bound) {
-    // Only report ProblemStatus::PRIMAL_INFEASIBLE if the difference is large
-    // enough.
-    const Fractional tolerance = parameters_.primal_feasibility_tolerance();
-    if (new_lower_bound - new_upper_bound > tolerance) {
+    if (!IsSmallerWithinFeasibilityTolerance(new_lower_bound,
+                                             new_upper_bound)) {
+      VLOG(1) << "Problem ProblemStatus::INFEASIBLE_OR_UNBOUNDED, singleton "
+                 "row causes the bound of the variable "
+              << e.col << " to be infeasible by "
+              << new_lower_bound - new_upper_bound;
       status_ = ProblemStatus::PRIMAL_INFEASIBLE;
       return;
     }
@@ -2095,7 +2116,8 @@ void SingletonPreprocessor::DeleteZeroCostSingletonColumn(
 
 // We need to restore the variable value in order to satisfy the constraint.
 void SingletonUndo::ZeroCostSingletonColumnUndo(
-    const SparseMatrix& deleted_rows, ProblemSolution* solution) const {
+    const GlopParameters& parameters, const SparseMatrix& deleted_rows,
+    ProblemSolution* solution) const {
   // If the variable was fixed, this is easy. Note that this is the only
   // possible case if the current constraint status is FIXED.
   if (variable_upper_bound_ == variable_lower_bound_) {
@@ -2130,24 +2152,30 @@ void SingletonUndo::ZeroCostSingletonColumnUndo(
   const Fractional activity =
       ScalarProduct(solution->primal_values, deleted_rows.column(row_as_col));
 
-  // TODO(user): use parameters_ here (it needs to be passed to SingletonUndo)
-  const Fractional tolerance = 1e-10;
-
-  // First we try to fix the variable at its lower or upper bound and leave
-  // the constraint VariableStatus::BASIC.
+  // First we try to fix the variable at its lower or upper bound and leave the
+  // constraint VariableStatus::BASIC. Note that we use the same logic as in
+  // Preprocessor::IsSmallerWithinPreprocessorZeroTolerance() which we can't use
+  // here because we are not deriving from the Preprocessor class.
+  const Fractional tolerance = parameters.preprocessor_zero_tolerance();
+  const auto is_smaller_with_tolerance = [tolerance](Fractional a,
+                                                     Fractional b) {
+    return ::operations_research::IsSmallerWithinTolerance(a, b, tolerance);
+  };
   if (variable_lower_bound_ != -kInfinity) {
-    const Fractional test = activity + e_.coeff * variable_lower_bound_;
-    if (test >= constraint_lower_bound_ - tolerance &&
-        test <= constraint_upper_bound_ + tolerance) {
+    const Fractional activity_at_lb =
+        activity + e_.coeff * variable_lower_bound_;
+    if (is_smaller_with_tolerance(constraint_lower_bound_, activity_at_lb) &&
+        is_smaller_with_tolerance(activity_at_lb, constraint_upper_bound_)) {
       solution->primal_values[e_.col] = variable_lower_bound_;
       solution->variable_statuses[e_.col] = VariableStatus::AT_LOWER_BOUND;
       return;
     }
   }
   if (variable_upper_bound_ != kInfinity) {
-    const Fractional test = activity + e_.coeff * variable_upper_bound_;
-    if (test >= constraint_lower_bound_ - tolerance &&
-        test <= constraint_upper_bound_ + tolerance) {
+    const Fractional actibity_at_ub =
+        activity + e_.coeff * variable_upper_bound_;
+    if (is_smaller_with_tolerance(constraint_lower_bound_, actibity_at_ub) &&
+        is_smaller_with_tolerance(actibity_at_ub, constraint_upper_bound_)) {
       solution->primal_values[e_.col] = variable_upper_bound_;
       solution->variable_statuses[e_.col] = VariableStatus::AT_UPPER_BOUND;
       return;
@@ -2231,8 +2259,7 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
       // tolerances in a few preprocessors. Like an empty column with a cost of
       // 1e-17 and unbounded towards infinity is currently implying that the
       // problem is unbounded. This will need fixing.
-      const Fractional kTolerance = parameters_.preprocessor_zero_tolerance();
-      if (fabs(new_cost) < kTolerance) {
+      if (fabs(new_cost) < parameters_.preprocessor_zero_tolerance()) {
         new_cost = 0.0;
       }
       lp->SetObjectiveCoefficient(col, new_cost);
@@ -2245,9 +2272,10 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
 }
 
 void SingletonUndo::SingletonColumnInEqualityUndo(
-    const SparseMatrix& deleted_rows, ProblemSolution* solution) const {
+    const GlopParameters& parameters, const SparseMatrix& deleted_rows,
+    ProblemSolution* solution) const {
   // First do the same as a zero-cost singleton column.
-  ZeroCostSingletonColumnUndo(deleted_rows, solution);
+  ZeroCostSingletonColumnUndo(parameters, deleted_rows, solution);
 
   // Then, restore the dual optimal value taking into account the cost
   // modification.
@@ -2332,9 +2360,9 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
 
   // Note that some of the tests below will be always true if the bounds of
   // the column of index col are infinite. This is the desired behavior.
-  const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   ConstraintStatus relaxed_status = ConstraintStatus::FIXED_VALUE;
-  if (cost < 0.0 && (ub - tolerance <= lp->variable_upper_bounds()[e.col])) {
+  if (cost < 0.0 && IsSmallerWithinPreprocessorZeroTolerance(
+                        ub, lp->variable_upper_bounds()[e.col])) {
     if (e.coeff > 0) {
       if (cst_upper_bound == kInfinity) {
         status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
@@ -2374,7 +2402,8 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
     // condition is that the dual value needs to be <= 0.
     lp->SetVariableBounds(e.col, lp->variable_lower_bounds()[e.col], kInfinity);
   }
-  if (cost > 0.0 && (lb + tolerance >= lp->variable_lower_bounds()[e.col])) {
+  if (cost > 0.0 && IsSmallerWithinPreprocessorZeroTolerance(
+                        lp->variable_lower_bounds()[e.col], lb)) {
     if (e.coeff > 0) {
       if (cst_lower_bound == -kInfinity) {
         status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
@@ -2413,7 +2442,7 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
   return false;
 }
 
-bool SingletonPreprocessor::Run(LinearProgram* lp) {
+bool SingletonPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   const SparseMatrix& matrix = lp->GetSparseMatrix();
   const SparseMatrix& transpose = lp->GetTransposeSparseMatrix();
@@ -2500,10 +2529,10 @@ void SingletonPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   column_deletion_helper_.RestoreDeletedColumns(solution);
   row_deletion_helper_.RestoreDeletedRows(solution);
 
-  // It is important to indo the operations in the correct order, i.e. in the
+  // It is important to undo the operations in the correct order, i.e. in the
   // reverse order in which they were done.
   for (int i = undo_stack_.size() - 1; i >= 0; --i) {
-    undo_stack_[i].Undo(deleted_columns_, deleted_rows_, solution);
+    undo_stack_[i].Undo(parameters_, deleted_columns_, deleted_rows_, solution);
   }
 }
 
@@ -2540,7 +2569,8 @@ MatrixEntry SingletonPreprocessor::GetSingletonRowMatrixEntry(
 // RemoveNearZeroEntriesPreprocessor
 // --------------------------------------------------------
 
-bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp) {
+bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp,
+                                            TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   const ColIndex num_cols = lp->num_variables();
   if (num_cols == 0) return false;
@@ -2559,12 +2589,8 @@ bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp) {
     }
   }
 
-  // To not have too many parameters, we derive the maximum allowed impact of
-  // removing the coefficient from the primal_feasibility_tolerance. This is
-  // computed so that the maximum error on the right hand side is one order of
-  // magnitude below the tolerance.
-  const Fractional allowed_impact =
-      0.1 * parameters_.primal_feasibility_tolerance();
+  // To not have too many parameters, we use the preprocessor_zero_tolerance.
+  const Fractional allowed_impact = parameters_.preprocessor_zero_tolerance();
 
   // TODO(user): Our criteria ensure that during presolve a primal feasible
   // solution will stay primal feasible. However, we have no guarantee on the
@@ -2616,7 +2642,8 @@ void RemoveNearZeroEntriesPreprocessor::RecoverSolution(
 // SingletonColumnSignPreprocessor
 // --------------------------------------------------------
 
-bool SingletonColumnSignPreprocessor::Run(LinearProgram* linear_program) {
+bool SingletonColumnSignPreprocessor::Run(LinearProgram* linear_program,
+                                          TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(linear_program, false);
   const ColIndex num_cols = linear_program->num_variables();
   if (num_cols == 0) return false;
@@ -2663,11 +2690,11 @@ void SingletonColumnSignPreprocessor::RecoverSolution(
 // DoubletonEqualityRowPreprocessor
 // --------------------------------------------------------
 
-bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
+bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp,
+                                           TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   // Note that we don't update the transpose during this preprocessor run.
   const SparseMatrix& original_transpose = lp->GetTransposeSparseMatrix();
-  const Fractional kTolerance = parameters_.preprocessor_zero_tolerance();
 
   // Iterate over the rows that were already doubletons before this preprocessor
   // run, and whose items don't belong to a column that we deleted during this
@@ -2777,9 +2804,7 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp) {
       // 3) If the new bounds are fixed (the domain is a singleton) or
       //    infeasible, then we let the
       //    ForcingAndImpliedFreeConstraintPreprocessor do the work.
-      if (ub < lb + kTolerance) {
-        continue;
-      }
+      if (IsSmallerWithinPreprocessorZeroTolerance(ub, lb)) continue;
       lp->SetVariableBounds(r.col[MODIFIED], lb, ub);
     }
 
@@ -2906,7 +2931,7 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
 // DualizerPreprocessor
 // --------------------------------------------------------
 
-bool DualizerPreprocessor::Run(LinearProgram* lp) {
+bool DualizerPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   if (parameters_.solve_dual_problem() == GlopParameters::NEVER_DO) {
     return false;
@@ -3154,7 +3179,8 @@ ProblemStatus DualizerPreprocessor::ChangeStatusToDualStatus(
 // ShiftVariableBoundsPreprocessor
 // --------------------------------------------------------
 
-bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp) {
+bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp,
+                                          TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
 
   // Save the linear program bounds before shifting them.
@@ -3252,7 +3278,7 @@ void ShiftVariableBoundsPreprocessor::RecoverSolution(
 // ScalingPreprocessor
 // --------------------------------------------------------
 
-bool ScalingPreprocessor::Run(LinearProgram* lp) {
+bool ScalingPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
   if (!parameters_.use_scaling()) return false;
 
@@ -3323,6 +3349,29 @@ void ScalingPreprocessor::RecoverSolution(ProblemSolution* solution) const {
     }
   }
 }
+
+// --------------------------------------------------------
+// ToMinimizationPreprocessor
+// --------------------------------------------------------
+
+bool ToMinimizationPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
+  RETURN_VALUE_IF_NULL(lp, false);
+  if (lp->IsMaximizationProblem()) {
+    for (ColIndex col(0); col < lp->num_variables(); ++col) {
+      const Fractional coeff = lp->objective_coefficients()[col];
+      if (coeff != 0.0) {
+        lp->SetObjectiveCoefficient(col, -coeff);
+      }
+    }
+    lp->SetMaximizationProblem(false);
+    lp->SetObjectiveOffset(-lp->objective_offset());
+    lp->SetObjectiveScalingFactor(-lp->objective_scaling_factor());
+  }
+  return false;
+}
+
+void ToMinimizationPreprocessor::RecoverSolution(
+    ProblemSolution* solution) const {}
 
 }  // namespace glop
 }  // namespace operations_research

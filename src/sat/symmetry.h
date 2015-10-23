@@ -52,10 +52,14 @@ namespace sat {
 //
 // TODO(user): Implements the optimizations mentioned in the paper?
 // TODO(user): Instrument and see if the code can be optimized.
-class SymmetryPropagator {
+class SymmetryPropagator : public Propagator {
  public:
-  explicit SymmetryPropagator(Trail* trail);  // No ownership taken.
+  SymmetryPropagator();
   ~SymmetryPropagator();
+
+  bool Propagate(Trail* trail) final;
+  void Untrail(const Trail& trail, int trail_index) final;
+  ClauseRef Reason(const Trail& trail, int trail_index) const final;
 
   // Adds a new permutation to this symmetry propagator. The ownership is
   // transfered. This must be an integer permutation such that:
@@ -74,40 +78,18 @@ class SymmetryPropagator {
   // TODO(user): Currently this can only be called before PropagateNext() is
   // called (DCHECKed). Not sure if we need more incrementality though.
   void AddSymmetry(std::unique_ptr<SparsePermutation> permutation);
+  int num_permutations() const { return permutations_.size(); }
 
-  // If some literals enqueued on the trail haven't been processed by this class
-  // then PropagationNeeded() will returns true. In this case, it is possible to
-  // call PropagateNext() to process them.
+  // Visible for testing.
   //
-  // PropagateNext() will returns false if a conflict in the assignment is
-  // detected. Note that it will also abort early if some new literals are
-  // propagated, so in order to propagate everything, you need a construct like
-  // while (PropagationNeeded()) PropagateNext();
-  bool PropagationNeeded() const;
-  bool PropagateNext();
-
-  // Backtracks to the state where all the literals with trail index greater or
-  // equal to the given one are assumed to be unassigned.
-  void Untrail(int trail_index);
-
-  // Functions to get the clause representing the last conflict. One must first
-  // query the reason of the assignment of the variable
-  // VariableAtTheSourceOfLastConflict() and then call LastConflict() with this
-  // reason.
-  VariableIndex VariableAtTheSourceOfLastConflict() const;
-  const std::vector<Literal>& LastConflict(ClauseRef initial_reason) const;
-
   // Permutes a list of literals from input into output using the permutation
   // with given index. This uses tmp_literal_mapping_ and has a complexity in
   // O(permutation_support + input_size).
   void Permute(int index, ClauseRef input, std::vector<Literal>* output) const;
 
  private:
-  // The solver trail that contains the variables assignements and all the
-  // assignment info. propagation_trail_index_ is the index of the first
-  // assigned variable from the trail that is not yet processed by this class.
-  Trail* trail_;
-  int propagation_trail_index_;
+  // Propagates the literal at propagation_trail_index_ from the trail.
+  bool PropagateNext(Trail* trail);
 
   // The permutations.
   // The index of a permutation is its position in this vector.
@@ -145,7 +127,7 @@ class SymmetryPropagator {
   // Adds an AssignedLiteralInfo to the given permutation trail.
   // Returns false if there is a non-symmetric literal in this trail with its
   // image not already assigned to true by the solver.
-  bool Enqueue(Literal literal, Literal image,
+  bool Enqueue(const Trail& trail, Literal literal, Literal image,
                std::vector<AssignedLiteralInfo>* permutation_trail);
 
   // The identity permutation over all the literals.
@@ -153,11 +135,12 @@ class SymmetryPropagator {
   // restored to the identity.
   mutable ITIVector<LiteralIndex, Literal> tmp_literal_mapping_;
 
-  // Temporary data needed to compute the last conflict.
-  int conflict_permutation_index_;
-  Literal conflict_source_reason_;
-  Literal conflict_literal_;
-  mutable std::vector<Literal> conflict_scratchpad_;
+  // Symmetry reason indexed by trail_index.
+  struct ReasonInfo {
+    int source_trail_index;
+    int symmetry_index;
+  };
+  std::vector<ReasonInfo> reasons_;
 
   mutable StatsGroup stats_;
   int num_propagations_;

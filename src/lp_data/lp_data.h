@@ -241,10 +241,24 @@ class LinearProgram {
   // Tests if the solution is LP-feasible within the given tolerance,
   // i.e., satisfies all linear constraints within the absolute tolerance level.
   // The solution does not need to satisfy the integer constraints.
-  // The solution must contain exactly GetNumberOfColumns() values and IsValid()
-  // must evaluate to true (otherwise, false is returned).
-  bool IsSolutionFeasible(const DenseRow& solution,
-                          const Fractional absolute_tolerance) const;
+  bool SolutionIsLPFeasible(const DenseRow& solution,
+                            Fractional absolute_tolerance) const;
+
+  // Tests if the solution is integer within the given tolerance, i.e., all
+  // integer variables have integer values within the absolute tolerance level.
+  // The solution does not need to satisfy the linear constraints.
+  bool SolutionIsInteger(const DenseRow& solution,
+                         Fractional absolute_tolerance) const;
+
+  // Tests if the solution is both LP-feasible and integer within the tolerance.
+  bool SolutionIsMIPFeasible(const DenseRow& solution,
+                             Fractional absolute_tolerance) const;
+
+  // Functions to translate the sum(solution * objective_coefficients()) to
+  // the real objective of the problem and back. Note that these can also
+  // be used to translate bounds of the objective in the same way.
+  Fractional ApplyObjectiveScalingAndOffset(Fractional value) const;
+  Fractional RemoveObjectiveScalingAndOffset(Fractional value) const;
 
   // A short std::string with the problem dimension.
   std::string GetDimensionString() const;

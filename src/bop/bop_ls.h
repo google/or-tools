@@ -429,7 +429,9 @@ class OneFlipConstraintRepairer {
 class LocalSearchAssignmentIterator {
  public:
   LocalSearchAssignmentIterator(const ProblemState& problem_state,
-                                int max_num_decisions, SatWrapper* sat_wrapper);
+                                int max_num_decisions,
+                                int max_num_broken_constraints,
+                                SatWrapper* sat_wrapper);
 
   // Sets whether or not a transposition table is used.
   void UseTranspositionTable(bool v) { use_transposition_table_ = v; }
@@ -509,6 +511,7 @@ class LocalSearchAssignmentIterator {
                                      TermIndex index);
 
   const int max_num_decisions_;
+  const int max_num_broken_constraints_;
   bool better_solution_has_been_found_;
   AssignmentAndConstraintFeasibilityMaintainer maintainer_;
   SatWrapper* const sat_wrapper_;

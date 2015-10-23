@@ -138,6 +138,8 @@ bool WriteProtoToFile(const google::protobuf::Message& proto, const std::string&
 void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
                            const std::string& file_name);
 
+util::Status Delete(const std::string& path, int flags);
+
 }  // namespace file
 
 }  // namespace operations_research

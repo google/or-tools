@@ -49,7 +49,7 @@ class Preprocessor {
   // identity function). Also updates status_ to something different from
   // ProblemStatus::INIT if the problem was solved (including bad statuses
   // like ProblemStatus::ABNORMAL, ProblemStatus::INFEASIBLE, etc.).
-  virtual bool Run(LinearProgram* linear_program) = 0;
+  virtual bool Run(LinearProgram* linear_program, TimeLimit* time_limit) = 0;
 
   // Stores the optimal solution of the linear program that was passed to
   // Run(). The given solution needs to be set to the optimal solution of the
@@ -75,6 +75,19 @@ class Preprocessor {
   virtual void UseInMipContext() { in_mip_context_ = true; }
 
  protected:
+  // Returns true if a is less than b (or slighlty greater than b with a given
+  // tolerance).
+  bool IsSmallerWithinFeasibilityTolerance(Fractional a, Fractional b) const {
+    return ::operations_research::IsSmallerWithinTolerance(
+        a, b, parameters_.solution_feasibility_tolerance());
+  }
+  bool IsSmallerWithinPreprocessorZeroTolerance(Fractional a,
+                                                Fractional b) const {
+    // TODO(user): use an absolute tolerance here to be even more defensive?
+    return ::operations_research::IsSmallerWithinTolerance(
+        a, b, parameters_.preprocessor_zero_tolerance());
+  }
+
   ProblemStatus status_;
   GlopParameters parameters_;
   bool in_mip_context_;
@@ -92,7 +105,8 @@ class MainLpPreprocessor : public Preprocessor {
  public:
   MainLpPreprocessor() {}
   ~MainLpPreprocessor() override {}
-  bool Run(LinearProgram* linear_program) override;
+
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const override;
 
  private:
@@ -219,7 +233,7 @@ class EmptyColumnPreprocessor : public Preprocessor {
  public:
   EmptyColumnPreprocessor() {}
   ~EmptyColumnPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -244,7 +258,7 @@ class ProportionalColumnPreprocessor : public Preprocessor {
  public:
   ProportionalColumnPreprocessor() {}
   ~ProportionalColumnPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
@@ -282,7 +296,7 @@ class ProportionalRowPreprocessor : public Preprocessor {
  public:
   ProportionalRowPreprocessor() {}
   ~ProportionalRowPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -338,7 +352,8 @@ class SingletonUndo {
   // columns and rows passed by the calling instance of SingletonPreprocessor.
   // Note that the operations must be undone in the reverse order of the one
   // in which they were applied.
-  void Undo(const SparseMatrix& deleted_columns,
+  void Undo(const GlopParameters& parameters,
+            const SparseMatrix& deleted_columns,
             const SparseMatrix& deleted_rows, ProblemSolution* solution) const;
 
  private:
@@ -346,9 +361,11 @@ class SingletonUndo {
   // Undo() just calls the correct one.
   void SingletonRowUndo(const SparseMatrix& deleted_columns,
                         ProblemSolution* solution) const;
-  void ZeroCostSingletonColumnUndo(const SparseMatrix& deleted_rows,
+  void ZeroCostSingletonColumnUndo(const GlopParameters& parameters,
+                                   const SparseMatrix& deleted_rows,
                                    ProblemSolution* solution) const;
-  void SingletonColumnInEqualityUndo(const SparseMatrix& deleted_rows,
+  void SingletonColumnInEqualityUndo(const GlopParameters& parameters,
+                                     const SparseMatrix& deleted_rows,
                                      ProblemSolution* solution) const;
   void MakeConstraintAnEqualityUndo(ProblemSolution* solution) const;
 
@@ -375,7 +392,7 @@ class SingletonPreprocessor : public Preprocessor {
  public:
   SingletonPreprocessor() {}
   ~SingletonPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
@@ -456,7 +473,7 @@ class FixedVariablePreprocessor : public Preprocessor {
  public:
   FixedVariablePreprocessor() {}
   ~FixedVariablePreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -488,7 +505,7 @@ class ForcingAndImpliedFreeConstraintPreprocessor : public Preprocessor {
  public:
   ForcingAndImpliedFreeConstraintPreprocessor() {}
   ~ForcingAndImpliedFreeConstraintPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -530,7 +547,7 @@ class ImpliedFreePreprocessor : public Preprocessor {
  public:
   ImpliedFreePreprocessor() {}
   ~ImpliedFreePreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
@@ -576,7 +593,7 @@ class DoubletonFreeColumnPreprocessor : public Preprocessor {
  public:
   DoubletonFreeColumnPreprocessor() {}
   ~DoubletonFreeColumnPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
@@ -621,7 +638,7 @@ class UnconstrainedVariablePreprocessor : public Preprocessor {
  public:
   UnconstrainedVariablePreprocessor() {}
   ~UnconstrainedVariablePreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
   // Removes the given variable and all the rows in which it appears: If a
@@ -659,7 +676,7 @@ class FreeConstraintPreprocessor : public Preprocessor {
  public:
   FreeConstraintPreprocessor() {}
   ~FreeConstraintPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -675,7 +692,7 @@ class EmptyConstraintPreprocessor : public Preprocessor {
  public:
   EmptyConstraintPreprocessor() {}
   ~EmptyConstraintPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -697,7 +714,7 @@ class RemoveNearZeroEntriesPreprocessor : public Preprocessor {
  public:
   RemoveNearZeroEntriesPreprocessor() {}
   ~RemoveNearZeroEntriesPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -715,7 +732,7 @@ class SingletonColumnSignPreprocessor : public Preprocessor {
  public:
   SingletonColumnSignPreprocessor() {}
   ~SingletonColumnSignPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -733,7 +750,7 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
  public:
   DoubletonEqualityRowPreprocessor() {}
   ~DoubletonEqualityRowPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
@@ -798,7 +815,7 @@ class DualizerPreprocessor : public Preprocessor {
  public:
   DualizerPreprocessor() {}
   ~DualizerPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final {
     LOG(FATAL) << "In the presence of integer variables, "
@@ -855,7 +872,7 @@ class ShiftVariableBoundsPreprocessor : public Preprocessor {
  public:
   ShiftVariableBoundsPreprocessor() {}
   ~ShiftVariableBoundsPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
 
  private:
@@ -879,7 +896,7 @@ class ScalingPreprocessor : public Preprocessor {
  public:
   ScalingPreprocessor() {}
   ~ScalingPreprocessor() final {}
-  bool Run(LinearProgram* linear_program) final;
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
   void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
@@ -890,6 +907,23 @@ class ScalingPreprocessor : public Preprocessor {
   SparseMatrixScaler scaler_;
 
   DISALLOW_COPY_AND_ASSIGN(ScalingPreprocessor);
+};
+
+// --------------------------------------------------------
+// ToMinimizationPreprocessor
+// --------------------------------------------------------
+// Changes the problem from maximization to minimization (if applicable).
+// As of 2015/09/03 this is not used by Glop, but will be used by Glip.
+// The preprocessor is kept here, because it could be used by Glop too.
+class ToMinimizationPreprocessor : public Preprocessor {
+ public:
+  ToMinimizationPreprocessor() {}
+  ~ToMinimizationPreprocessor() final {}
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
+  void RecoverSolution(ProblemSolution* solution) const final;
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ToMinimizationPreprocessor);
 };
 
 }  // namespace glop

@@ -318,6 +318,31 @@ class MutableUpperBoundedLinearConstraint {
   SparseBitset<VariableIndex> non_zeros_;
 };
 
+// A simple "helper" class to enqueue a propagated literal on the trail and
+// keep the information needed to explain it when requested.
+class UpperBoundedLinearConstraint;
+struct PbConstraintsEnqueueHelper {
+  void Enqueue(Literal l, int source_trail_index,
+               UpperBoundedLinearConstraint* ct, Trail* trail) {
+    reasons[trail->Index()] = {source_trail_index, ct};
+    trail->Enqueue(l, propagator_id);
+  }
+
+  // The propagator id of PbConstraints.
+  int propagator_id;
+
+  // A temporary vector to store the last conflict.
+  std::vector<Literal> conflict;
+
+  // Information needed to recover the reason of an Enqueue().
+  // Indexed by trail_index.
+  struct ReasonInfo {
+    int source_trail_index;
+    UpperBoundedLinearConstraint* pb_constraint;
+  };
+  std::vector<ReasonInfo> reasons;
+};
+
 // This class contains "half" the propagation logic for a constraint of the form
 //   sum ci * li <= rhs, ci positive coefficients, li literals.
 //
@@ -347,7 +372,7 @@ class UpperBoundedLinearConstraint {
   // Returns false if the preconditions described in
   // PbConstraints::AddConstraint() are not meet.
   bool InitializeRhs(Coefficient rhs, int trail_index, Coefficient* threshold,
-                     Trail* trail, std::vector<Literal>* conflict);
+                     Trail* trail, PbConstraintsEnqueueHelper* helper);
 
   // Tests for propagation and enqueues propagated literals on the trail.
   // Returns false if a conflict was detected, in which case conflict is filled.
@@ -363,7 +388,7 @@ class UpperBoundedLinearConstraint {
   //
   // The threshold is updated to its new value.
   bool Propagate(int trail_index, Coefficient* threshold, Trail* trail,
-                 std::vector<Literal>* conflict);
+                 PbConstraintsEnqueueHelper* helper);
 
   // Updates the given threshold and the internal state. This is the opposite of
   // Propagate(). Each time a literal in unassigned, the threshold value must
@@ -481,11 +506,10 @@ class UpperBoundedLinearConstraint {
 
 // Class responsible for managing a set of pseudo-Boolean constraints and their
 // propagation.
-class PbConstraints {
+class PbConstraints : public Propagator {
  public:
-  explicit PbConstraints(Trail* trail)
-      : trail_(trail),
-        propagation_trail_index_(0),
+  PbConstraints()
+      : Propagator("PbConstraints"),
         conflicting_constraint_index_(-1),
         num_learned_constraint_before_cleanup_(0),
         constraint_activity_increment_(1.0),
@@ -501,12 +525,20 @@ class PbConstraints {
     });
   }
 
+  bool Propagate(Trail* trail) final;
+  void Untrail(const Trail& trail, int trail_index) final;
+  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+  ResolutionNode* GetResolutionNode(int trail_index) const final;
+
   // Changes the number of variables.
   void Resize(int num_variables) {
     // Note that we avoid using up memory in the common case where there is no
     // pb constraints at all. If there is 10 million variables, this vector
     // alone will take 480 MB!
-    if (!constraints_.empty()) to_update_.resize(num_variables << 1);
+    if (!constraints_.empty()) {
+      to_update_.resize(num_variables << 1);
+      enqueue_helper_.reasons.resize(num_variables);
+    }
   }
 
   // Parameters management.
@@ -525,40 +557,16 @@ class PbConstraints {
   // - The constraint cannot be conflicting.
   // - The constraint cannot have propagated at an earlier decision level.
   bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
-                     ResolutionNode* node);
+                     ResolutionNode* node, Trail* trail);
 
   // Same as AddConstraint(), but also marks the added constraint as learned
   // so that it can be deleted during the constraint cleanup phase.
   bool AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cst,
-                            Coefficient rhs, ResolutionNode* node);
+                            Coefficient rhs, ResolutionNode* node,
+                            Trail* trail);
 
   // Returns the number of constraints managed by this class.
   int NumberOfConstraints() const { return constraints_.size(); }
-
-  // If some literals enqueued on the trail haven't been processed by this class
-  // then PropagationNeeded() will returns true. In this case, it is possible to
-  // call PropagateNext() to process the first of these literals.
-  bool PropagationNeeded() const {
-    return !constraints_.empty() && propagation_trail_index_ < trail_->Index();
-  }
-  bool PropagateNext();
-
-  // Reverts the state so that all the literals with trail index greater or
-  // equals to the given on are not processed for propagation.
-  //
-  // Note that this should only be called at the decision level boundaries.
-  void Untrail(int trail_index);
-
-  // Computes the reason for the given variable assignement.
-  // Note that this should only be called if the reason type is PB_PROPAGATION.
-  void ReasonFor(VariableIndex var, std::vector<Literal>* reason) const {
-    SCOPED_TIME_STAT(&stats_);
-    const AssignmentInfo& info = trail_->Info(var);
-    DCHECK_EQ(trail_->InitialAssignmentType(var),
-              AssignmentInfo::PB_PROPAGATION);
-    info.pb_constraint->FillReason(*trail_, info.source_trail_index, var,
-                                   reason);
-  }
 
   // ConflictingConstraint() returns the last PB constraint that caused a
   // conflict. Calling ClearConflictingConstraint() reset this to nullptr.
@@ -570,6 +578,10 @@ class PbConstraints {
     if (conflicting_constraint_index_ == -1) return nullptr;
     return constraints_[conflicting_constraint_index_.value()].get();
   }
+
+  // Returns the underlying UpperBoundedLinearConstraint responsible for
+  // assigning the literal at given trail index.
+  UpperBoundedLinearConstraint* ReasonPbConstraint(int trail_index) const;
 
   // Activity update functions.
   // TODO(user): Remove duplication with other activity update functions.
@@ -591,6 +603,8 @@ class PbConstraints {
   int64 num_threshold_updates() const { return num_threshold_updates_; }
 
  private:
+  bool PropagateNext(Trail* trail);
+
   // Same function as the clause related one is SatSolver().
   // TODO(user): Remove duplication.
   void ComputeNewLearnedConstraintLimit();
@@ -618,17 +632,6 @@ class PbConstraints {
     Coefficient coefficient;
   };
 
-  // The solver trail that contains the variables assignements and all the
-  // assignment info.
-  Trail* trail_;
-
-  // Index of the first assigned variable from the trail that is not yet
-  // processed by this class.
-  int propagation_trail_index_;
-
-  // Temporary vector to hold the last conflict of a pseudo-Boolean propagation.
-  mutable std::vector<Literal> conflict_scratchpad_;
-
   // The set of all pseudo-boolean constraint managed by this class.
   std::vector<std::unique_ptr<UpperBoundedLinearConstraint>> constraints_;
 
@@ -645,6 +648,9 @@ class PbConstraints {
   // Pointers to the constraints grouped by their hash.
   // This is used to find duplicate constraints by AddConstraint().
   hash_map<int64, std::vector<UpperBoundedLinearConstraint*>> possible_duplicates_;
+
+  // Helper to enqueue propagated literals on the trail and store their reasons.
+  PbConstraintsEnqueueHelper enqueue_helper_;
 
   // Last conflicting PB constraint index. This is reset to -1 when
   // ClearConflictingConstraint() is called.
@@ -691,8 +697,8 @@ class VariableWithSameReasonIdentifier {
   // had the same reason, then var is returned.
   VariableIndex FirstVariableWithSameReason(VariableIndex var) {
     if (seen_[var]) return first_variable_[var];
-    if (trail_.Info(var).type != AssignmentInfo::SAME_REASON_AS) return var;
-    const VariableIndex reference_var = trail_.Info(var).reference_var;
+    const VariableIndex reference_var = trail_.ReferenceVarWithSameReason(var);
+    if (reference_var == var) return var;
     if (seen_[reference_var]) return first_variable_[reference_var];
     seen_.Set(reference_var);
     first_variable_[reference_var] = var;

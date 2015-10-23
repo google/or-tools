@@ -71,7 +71,7 @@ void SatPostsolver::Postsolve(VariablesAssignment* assignment) const {
   // First, we set all unassigned variable to true.
   // This will be a valid assignment of the presolved problem.
   for (VariableIndex var(0); var < assignment->NumberOfVariables(); ++var) {
-    if (!assignment->IsVariableAssigned(var)) {
+    if (!assignment->VariableIsAssigned(var)) {
       assignment->AssignFromTrueLiteral(Literal(var, true));
     }
   }
@@ -81,7 +81,7 @@ void SatPostsolver::Postsolve(VariablesAssignment* assignment) const {
     bool set_associated_var = true;
     const int new_start = clauses_start_[i];
     for (int j = new_start; j < previous_start; ++j) {
-      if (assignment->IsLiteralTrue(clauses_literals_[j])) {
+      if (assignment->LiteralIsTrue(clauses_literals_[j])) {
         set_associated_var = false;
         break;
       }
@@ -100,9 +100,9 @@ std::vector<bool> SatPostsolver::ExtractAndPostsolveSolution(
     const SatSolver& solver) {
   std::vector<bool> solution(solver.NumVariables());
   for (VariableIndex var(0); var < solver.NumVariables(); ++var) {
-    CHECK(solver.Assignment().IsVariableAssigned(var));
+    CHECK(solver.Assignment().VariableIsAssigned(var));
     solution[var.value()] =
-        solver.Assignment().IsLiteralTrue(Literal(var, true));
+        solver.Assignment().LiteralIsTrue(Literal(var, true));
   }
   return PostsolveSolution(solution);
 }
@@ -111,7 +111,7 @@ std::vector<bool> SatPostsolver::PostsolveSolution(const std::vector<bool>& solu
   for (VariableIndex var(0); var < solution.size(); ++var) {
     CHECK_LT(var, reverse_mapping_.size());
     CHECK_NE(reverse_mapping_[var], VariableIndex(-1));
-    CHECK(!assignment_.IsVariableAssigned(reverse_mapping_[var]));
+    CHECK(!assignment_.VariableIsAssigned(reverse_mapping_[var]));
     assignment_.AssignFromTrueLiteral(
         Literal(reverse_mapping_[var], solution[var.value()]));
   }
@@ -119,7 +119,7 @@ std::vector<bool> SatPostsolver::PostsolveSolution(const std::vector<bool>& solu
   std::vector<bool> postsolved_solution;
   for (int i = 0; i < reverse_mapping_.size(); ++i) {
     postsolved_solution.push_back(
-        assignment_.IsLiteralTrue(Literal(VariableIndex(i), true)));
+        assignment_.LiteralIsTrue(Literal(VariableIndex(i), true)));
   }
   return postsolved_solution;
 }
@@ -750,7 +750,7 @@ void ProbeAndFindEquivalentLiteral(
       const LiteralIndex rep(partition.GetRootAndCompressPath(i.value()));
       if (assignment.IsLiteralAssigned(Literal(i)) &&
           !assignment.IsLiteralAssigned(Literal(rep))) {
-        solver->AddUnitClause(assignment.IsLiteralTrue(Literal(i))
+        solver->AddUnitClause(assignment.LiteralIsTrue(Literal(i))
                                   ? Literal(rep)
                                   : Literal(rep).Negated());
       }
@@ -761,7 +761,7 @@ void ProbeAndFindEquivalentLiteral(
       (*mapping)[i] = rep;
       if (assignment.IsLiteralAssigned(Literal(rep))) {
         if (!assignment.IsLiteralAssigned(Literal(i))) {
-          solver->AddUnitClause(assignment.IsLiteralTrue(Literal(rep))
+          solver->AddUnitClause(assignment.LiteralIsTrue(Literal(rep))
                                     ? Literal(Literal(i))
                                     : Literal(i).Negated());
         }

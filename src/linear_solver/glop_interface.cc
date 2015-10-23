@@ -29,9 +29,9 @@
 
 #ifndef ANDROID_JNI
 #include "base/file.h"
+#include "google/protobuf/text_format.h"
 #endif
 
-#include "google/protobuf/text_format.h"
 #include "base/hash.h"
 #include "glop/lp_solver.h"
 #include "glop/parameters.pb.h"

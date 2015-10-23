@@ -173,7 +173,7 @@ class SatConstraint : public Constraint {
     while (propagated_trail_index_ < trail.Index()) {
       const sat::Literal literal = trail[propagated_trail_index_];
       const sat::VariableIndex var = literal.Variable();
-      if (trail.Info(var).type != sat::AssignmentInfo::SEARCH_DECISION) {
+      if (trail.AssignmentType(var) != sat::AssignmentType::kSearchDecision) {
         std::pair<IntVar*, int64> p =
             variable_manager_.BooleanVariableMeaning(var);
         IntVar* int_var = p.first;
@@ -242,8 +242,8 @@ class SatConstraint : public Constraint {
   // conflict, true otherwise. Note that the literal is only enqueued if it is
   // not already set.
   bool EnqueueLiteral(sat::Literal literal) {
-    if (sat_solver_.Assignment().IsLiteralFalse(literal)) return false;
-    if (sat_solver_.Assignment().IsLiteralTrue(literal)) return true;
+    if (sat_solver_.Assignment().LiteralIsFalse(literal)) return false;
+    if (sat_solver_.Assignment().LiteralIsTrue(literal)) return true;
     if (sat_solver_.EnqueueDecisionIfNotConflicting(literal)) return true;
     return false;
   }

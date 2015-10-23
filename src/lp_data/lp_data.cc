@@ -295,7 +295,7 @@ void LinearProgram::SetObjectiveOffset(Fractional objective_offset) {
 void LinearProgram::SetObjectiveScalingFactor(
     Fractional objective_scaling_factor) {
   DCHECK(IsFinite(objective_scaling_factor));
-  DCHECK_LT(0.0, objective_scaling_factor);
+  DCHECK_NE(0.0, objective_scaling_factor);
   objective_scaling_factor_ = objective_scaling_factor;
 }
 
@@ -404,12 +404,13 @@ std::string LinearProgram::GetObjectiveStatsString() const {
   }
 }
 
-bool LinearProgram::IsSolutionFeasible(
-    const DenseRow& solution, const Fractional absolute_tolerance) const {
+bool LinearProgram::SolutionIsLPFeasible(const DenseRow& solution,
+                                         Fractional absolute_tolerance) const {
+  DCHECK_EQ(solution.size(), num_variables());
   if (solution.size() != num_variables()) return false;
-  if (!IsValid()) return false;
   const ColIndex num_cols = num_variables();
   for (ColIndex col = ColIndex(0); col < num_cols; ++col) {
+    if (!IsFinite(solution[col])) return false;
     const Fractional lb_error = variable_lower_bounds()[col] - solution[col];
     const Fractional ub_error = solution[col] - variable_upper_bounds()[col];
     if (lb_error > absolute_tolerance || ub_error > absolute_tolerance) {
@@ -421,9 +422,7 @@ bool LinearProgram::IsSolutionFeasible(
   for (RowIndex row = RowIndex(0); row < num_rows; ++row) {
     const Fractional sum =
         ScalarProduct(solution, transpose.column(RowToColIndex(row)));
-    // In case there are two or more infinite values in the solution with
-    // opposite coefficients.
-    if (isnan(sum)) return false;
+    if (!IsFinite(sum)) return false;
     const Fractional lb_error = constraint_lower_bounds()[row] - sum;
     const Fractional ub_error = sum - constraint_upper_bounds()[row];
     if (lb_error > absolute_tolerance || ub_error > absolute_tolerance) {
@@ -431,6 +430,34 @@ bool LinearProgram::IsSolutionFeasible(
     }
   }
   return true;
+}
+
+bool LinearProgram::SolutionIsInteger(const DenseRow& solution,
+                                      Fractional absolute_tolerance) const {
+  DCHECK_EQ(solution.size(), num_variables());
+  if (solution.size() != num_variables()) return false;
+  for (ColIndex col : IntegerVariablesList()) {
+    if (!IsFinite(solution[col])) return false;
+    const Fractional fractionality = fabs(solution[col] - round(solution[col]));
+    if (fractionality > absolute_tolerance) return false;
+  }
+  return true;
+}
+
+bool LinearProgram::SolutionIsMIPFeasible(const DenseRow& solution,
+                                          Fractional absolute_tolerance) const {
+  return SolutionIsLPFeasible(solution, absolute_tolerance) &&
+         SolutionIsInteger(solution, absolute_tolerance);
+}
+
+Fractional LinearProgram::ApplyObjectiveScalingAndOffset(
+    Fractional value) const {
+  return objective_scaling_factor() * (value + objective_offset());
+}
+
+Fractional LinearProgram::RemoveObjectiveScalingAndOffset(
+    Fractional value) const {
+  return value / objective_scaling_factor() - objective_offset();
 }
 
 std::string LinearProgram::Dump() const {
@@ -918,7 +945,7 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {
 bool LinearProgram::IsValid() const {
   if (!IsFinite(objective_offset_)) return false;
   if (!IsFinite(objective_scaling_factor_)) return false;
-  if (objective_scaling_factor_ <= 0.0) return false;
+  if (objective_scaling_factor_ == 0.0) return false;
   const ColIndex num_cols = num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
     if (!AreBoundsValid(variable_lower_bounds()[col],

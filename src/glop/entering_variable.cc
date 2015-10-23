@@ -23,9 +23,9 @@
 namespace operations_research {
 namespace glop {
 
-#ifdef ANDROID_JNI
+#if defined(ANDROID_JNI) && (defined(__ANDROID__) || defined(__APPLE__))
 // Enum -> std::string conversions are not present in MessageLite that is being used
-// on Android.
+// on Android with ANDROID_JNI build.
 std::string GlopParameters_PricingRule_Name(int rule) {
   return SimpleItoa(rule);
 }

@@ -50,7 +50,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 38
+// NEXT TAG: 39
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -63,10 +63,10 @@ message BopParameters {
   // is called.
   optional double max_deterministic_time = 27 [default = inf];
 
-  // Maximum time allowed in deterministic time to solve the LP relaxation at
-  // first. Note that the time allowed to solve the LP relaxation might increase
-  // during the search, especially when no solutions have been found.
-  optional double initial_lp_max_deterministic_time = 37 [default = 1.0];
+  // The max deterministic time given to the LP solver each time it is called.
+  // If this is not enough to solve the LP at hand, it will simply be called
+  // again later (and the solve will resume from where it stopped).
+  optional double lp_max_deterministic_time = 37 [default = 1.0];
 
   // Maximum number of consecutive optimizer calls without improving the
   // current solution. If this number is reached, the search will be aborted.
@@ -84,7 +84,12 @@ message BopParameters {
 
   // Maximum number of cascading decisions the solver might use to repair the
   // current solution in the LS.
-  optional int32 max_num_decisions = 2 [default = 4];
+  optional int32 max_num_decisions_in_ls = 2 [default = 4];
+
+  // Abort the LS search tree as soon as strictly more than this number of
+  // constraints are broken. The default is a large value which basically
+  // disable this heuristic.
+  optional int32 max_num_broken_constraints_in_ls = 38 [default = 0x7FFFFFFF];
 
   // Whether the solver should log the search progress to LOG(INFO).
   optional bool log_search_progress = 14 [default = false];

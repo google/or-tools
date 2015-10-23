@@ -47,7 +47,9 @@
 #include "linear_solver/model_exporter.h"
 #include "linear_solver/model_validator.h"
 #include "util/fp_utils.h"
+#ifndef ANDROID_JNI
 #include "util/proto_tools.h"
+#endif
 
 DEFINE_bool(verify_solution, false,
             "Systematically verify the solution when calling Solve()"
@@ -72,7 +74,7 @@ DEFINE_bool(mpsolver_bypass_model_validation, false,
 // operations_research namespace in open_source/base).
 namespace operations_research {
 
-#ifdef ANDROID_JNI
+#if defined(ANDROID_JNI) && (defined(__ANDROID__) || defined(__APPLE__))
 // Enum -> std::string conversions are not present in MessageLite that is being used
 // on Android.
 std::string MPSolverResponseStatus_Name(int status) {
@@ -82,7 +84,7 @@ std::string MPSolverResponseStatus_Name(int status) {
 std::string MPModelRequest_SolverType_Name(int type) {
   return SimpleItoa(type);
 }
-#endif  // ANDROID_JNI
+#endif  // defined(ANDROID_JNI) && (defined(__ANDROID__) || defined(__APPLE__))
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
@@ -326,7 +328,7 @@ bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters
     no_error_so_far = interface_->ReadParameterFile(filename);
     // We need to clean up the file even if ReadParameterFile() returned
     // false. In production we can continue even if the deletion failed.
-    if (!File::Delete(filename)) {
+    if (!file::Delete(filename, file::Defaults()).ok()) {
       LOG(DFATAL) << "Couldn't delete temporary parameters file: " << filename;
     }
   }
@@ -512,6 +514,25 @@ MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_nam
 
 MPSolverResponseStatus MPSolver::LoadModelFromProto(
     const MPModelProto& input_model, std::string* error_message) {
+  // The variable and constraint names are dropped, because we allow
+  // duplicate names in the proto (they're not considered as 'ids'),
+  // unlike the MPSolver C++ API which crashes if there are duplicate names.
+  // Clearing the names makes the MPSolver generate unique names.
+  //
+  // TODO(user): This limits the number of variables and constraints to 10^9:
+  // we should fix that.
+  return LoadModelFromProtoInternal(input_model, /*clear_names=*/true,
+                                    error_message);
+}
+
+MPSolverResponseStatus MPSolver::LoadModelFromProtoWithUniqueNamesOrDie(
+    const MPModelProto& input_model, std::string* error_message) {
+  return LoadModelFromProtoInternal(input_model, /*clear_names=*/false,
+                                    error_message);
+}
+
+MPSolverResponseStatus MPSolver::LoadModelFromProtoInternal(
+    const MPModelProto& input_model, bool clear_names, std::string* error_message) {
   CHECK(error_message != nullptr);
   const std::string error = FindErrorInMPModelProto(input_model);
   if (!error.empty()) {
@@ -528,26 +549,23 @@ MPSolverResponseStatus MPSolver::LoadModelFromProto(
     }
   }
 
-  // The variable and constraint names are dropped, because we allow
-  // duplicate names in the proto (they're not considered as 'ids'),
-  // unlike the MPSolver C++ API which crashes if there are duplicate names.
-  // Passing empty names makes the MPSolver generate unique names.
-  //
-  // TODO(user): This limits the number of variables and constraints to 10^9:
-  // we should fix that.
   MPObjective* const objective = MutableObjective();
+  // Passing empty names makes the MPSolver generate unique names.
+  const std::string empty;
   for (int i = 0; i < input_model.variable_size(); ++i) {
     const MPVariableProto& var_proto = input_model.variable(i);
-    MPVariable* variable = MakeNumVar(var_proto.lower_bound(),
-                                      var_proto.upper_bound(), /*name=*/"");
+    MPVariable* variable =
+        MakeNumVar(var_proto.lower_bound(), var_proto.upper_bound(),
+                   clear_names ? empty : var_proto.name());
     variable->SetInteger(var_proto.is_integer());
     objective->SetCoefficient(variable, var_proto.objective_coefficient());
   }
 
   for (int i = 0; i < input_model.constraint_size(); ++i) {
     const MPConstraintProto& ct_proto = input_model.constraint(i);
-    MPConstraint* const ct = MakeRowConstraint(
-        ct_proto.lower_bound(), ct_proto.upper_bound(), /*name=*/"");
+    MPConstraint* const ct =
+        MakeRowConstraint(ct_proto.lower_bound(), ct_proto.upper_bound(),
+                          clear_names ? empty : ct_proto.name());
     ct->set_is_lazy(ct_proto.is_lazy());
     for (int j = 0; j < ct_proto.var_index_size(); ++j) {
       ct->SetCoefficient(variables_[ct_proto.var_index(j)],

@@ -182,6 +182,23 @@ bool AreWithinAbsoluteTolerance(FloatType x, FloatType y,
   return fabs(x - y) <= absolute_tolerance;
 }
 
+// Returns true if x is less than y or slighlty greater than y with the given
+// absolute or relative tolerance.
+template <typename FloatType>
+bool IsSmallerWithinTolerance(FloatType x, FloatType y, FloatType tolerance) {
+  if (IsPositiveOrNegativeInfinity(y)) return x <= y;
+  return x <= y + tolerance * std::max(1.0, std::min(std::abs(x), std::abs(y)));
+}
+
+// Returns true if x is within tolerance of any integer.  Always returns
+// false for x equal to +/- infinity.
+template <typename FloatType>
+inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
+  DCHECK_LE(0.0, tolerance);
+  if (IsPositiveOrNegativeInfinity(x)) return false;
+  return std::abs(x - std::round(x)) <= tolerance;
+}
+
 // Handy alternatives to EXPECT_NEAR(), using relative and absolute tolerance
 // instead of relative tolerance only, and with a proper support for infinity.
 // TODO(user): investigate moving this to base/ or some other place.
@@ -231,6 +248,12 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
 // fabs(round()) since the numbers are rounded away from zero.
 int64 ComputeGcdOfRoundedDoubles(const std::vector<double>& x,
                                  double scaling_factor);
+
+// Returns alpha * x + (1 - alpha) * y.
+template <typename FloatType>
+inline FloatType Interpolate(FloatType x, FloatType y, FloatType alpha) {
+  return alpha * x + (1 - alpha) * y;
+}
 
 }  // namespace operations_research
 

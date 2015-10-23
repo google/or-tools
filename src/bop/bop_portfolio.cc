@@ -20,6 +20,7 @@
 #include "bop/bop_util.h"
 #include "bop/complete_optimizer.h"
 #include "sat/boolean_problem.h"
+#include "sat/symmetry.h"
 
 namespace operations_research {
 namespace bop {
@@ -68,9 +69,14 @@ PortfolioOptimizer::~PortfolioOptimizer() {
   if (parameters_.log_search_progress() || VLOG_IS_ON(1)) {
     std::string stats_string;
     for (OptimizerIndex i(0); i < optimizers_.size(); ++i) {
-      stats_string += selector_->PrintStats(i);
+      if (selector_->NumCallsForOptimizer(i) > 0) {
+        stats_string += selector_->PrintStats(i);
+      }
     }
-    LOG(INFO) << "Stats. #new_solutions/#calls by optimizer:\n" + stats_string;
+    if (!stats_string.empty()) {
+      LOG(INFO) << "Stats. #new_solutions/#calls by optimizer:\n" +
+                       stats_string;
+    }
   }
 
   // Note that unique pointers are not used due to unsupported emplace_back
@@ -117,9 +123,8 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
     return sync_status;
   }
 
-  // Mark optimizers that can't run.
   for (OptimizerIndex i(0); i < optimizers_.size(); ++i) {
-    selector_->MarkOptimizerSelectable(
+    selector_->SetOptimizerRunnability(
         i, optimizers_[i]->ShouldBeRun(problem_state));
   }
 
@@ -130,6 +135,10 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
       time_limit->GetElapsedDeterministicTime();
 
   const OptimizerIndex selected_optimizer_id = selector_->SelectOptimizer();
+  if (selected_optimizer_id == kInvalidOptimizerIndex) {
+    LOG(INFO) << "All the optimizers are done.";
+    return BopOptimizerBase::ABORT;
+  }
   BopOptimizerBase* const selected_optimizer =
       optimizers_[selected_optimizer_id];
   if (parameters.log_search_progress() || VLOG_IS_ON(1)) {
@@ -142,8 +151,9 @@ BopOptimizerBase::Status PortfolioOptimizer::Optimize(
       selected_optimizer->Optimize(parameters, problem_state, learned_info,
                                    time_limit);
 
+  // ABORT means that this optimizer can't be run until we found a new solution.
   if (optimization_status == BopOptimizerBase::ABORT) {
-    selector_->MarkSelectedAborted();
+    selector_->TemporarilyMarkOptimizerAsUnselectable(selected_optimizer_id);
   }
 
   // The gain is defined as 1 for the first solution.
@@ -199,14 +209,15 @@ void PortfolioOptimizer::AddOptimizer(
           new LinearRelaxation(parameters, "LinearRelaxation"));
       break;
     case BopOptimizerMethod::LOCAL_SEARCH: {
-      for (int i = 1; i <= parameters.max_num_decisions(); ++i) {
+      for (int i = 1; i <= parameters.max_num_decisions_in_ls(); ++i) {
         optimizers_.push_back(new LocalSearchOptimizer(StringPrintf("LS_%d", i),
                                                        i, &sat_propagator_));
       }
     } break;
     case BopOptimizerMethod::RANDOM_FIRST_SOLUTION:
       optimizers_.push_back(new BopRandomFirstSolutionGenerator(
-          "SATRandomFirstSolution", &sat_propagator_, random_.get()));
+          "SATRandomFirstSolution", parameters, &sat_propagator_,
+          random_.get()));
       break;
     case BopOptimizerMethod::RANDOM_VARIABLE_LNS:
       BuildObjectiveTerms(problem, &objective_terms_);
@@ -290,11 +301,16 @@ void PortfolioOptimizer::CreateOptimizers(
     VLOG(1) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     sat::FindLinearBooleanProblemSymmetries(problem, &generators);
-    sat_propagator_.AddSymmetries(&generators);
+    std::unique_ptr<sat::SymmetryPropagator> propagator(
+        new sat::SymmetryPropagator);
+    for (int i = 0; i < generators.size(); ++i) {
+      propagator->AddSymmetry(std::move(generators[i]));
+    }
+    sat_propagator_.AddPropagator(std::move(propagator));
   }
 
   const int max_num_optimizers =
-      optimizer_set.methods_size() + parameters.max_num_decisions() - 1;
+      optimizer_set.methods_size() + parameters.max_num_decisions_in_ls() - 1;
   optimizers_.reserve(max_num_optimizers);
   for (const BopOptimizerMethod& optimizer_method : optimizer_set.methods()) {
     const OptimizerIndex old_size(optimizers_.size());
@@ -316,43 +332,41 @@ OptimizerSelector::OptimizerSelector(
   }
 }
 
-const int OptimizerSelector::kNoSelection(-1);
-
 OptimizerIndex OptimizerSelector::SelectOptimizer() {
   CHECK_GE(selected_index_, 0);
 
   do {
     ++selected_index_;
   } while (selected_index_ < run_infos_.size() &&
-           !run_infos_[selected_index_].selectable);
+           !run_infos_[selected_index_].RunnableAndSelectable());
 
   if (selected_index_ >= run_infos_.size()) {
     // Select the first possible optimizer.
-    selected_index_ = kNoSelection;
+    selected_index_ = -1;
     for (int i = 0; i < run_infos_.size(); ++i) {
-      if (run_infos_[i].selectable) {
+      if (run_infos_[i].RunnableAndSelectable()) {
         selected_index_ = i;
         break;
       }
     }
-    CHECK_NE(selected_index_, kNoSelection);
+    if (selected_index_ == -1) return kInvalidOptimizerIndex;
   } else {
     // Select the next possible optimizer. If none, select the first one.
     // Check that the time is smaller than all previous optimizers which are
-    // selectable.
+    // runnable.
     bool too_much_time_spent = false;
     const double time_spent =
         run_infos_[selected_index_].time_spent_since_last_solution;
     for (int i = 0; i < selected_index_; ++i) {
       const RunInfo& info = run_infos_[i];
-      if (info.selectable && !info.aborted &&
+      if (info.RunnableAndSelectable() &&
           info.time_spent_since_last_solution < time_spent) {
         too_much_time_spent = true;
         break;
       }
     }
     if (too_much_time_spent) {
-      // TODO(user): Remove this reccursive call, even if in practice it's
+      // TODO(user): Remove this recursive call, even if in practice it's
       //              safe because the max depth is the number of optimizers.
       return SelectOptimizer();
     }
@@ -383,15 +397,14 @@ void OptimizerSelector::UpdateScore(int64 gain, double time_spent) {
   }
 }
 
-void OptimizerSelector::MarkSelectedAborted() {
-  run_infos_[selected_index_].selectable = false;
-  run_infos_[selected_index_].aborted = true;
+void OptimizerSelector::TemporarilyMarkOptimizerAsUnselectable(
+    OptimizerIndex optimizer_index) {
+  run_infos_[info_positions_[optimizer_index]].selectable = false;
 }
 
-void OptimizerSelector::MarkOptimizerSelectable(OptimizerIndex optimizer_index,
-                                                bool selectable) {
-  run_infos_[info_positions_[optimizer_index]].selectable =
-      !run_infos_[info_positions_[optimizer_index]].aborted && selectable;
+void OptimizerSelector::SetOptimizerRunnability(OptimizerIndex optimizer_index,
+                                                bool runnable) {
+  run_infos_[info_positions_[optimizer_index]].runnable = runnable;
 }
 
 std::string OptimizerSelector::PrintStats(OptimizerIndex optimizer_index) const {
@@ -402,6 +415,12 @@ std::string OptimizerSelector::PrintStats(OptimizerIndex optimizer_index) const 
       info.name.c_str(), info.num_successes, info.num_calls,
       100.0 * info.num_successes / info.num_calls, info.total_gain,
       info.time_spent, info.score);
+}
+
+int OptimizerSelector::NumCallsForOptimizer(
+    OptimizerIndex optimizer_index) const {
+  const RunInfo& info = run_infos_[info_positions_[optimizer_index]];
+  return info.num_calls;
 }
 
 void OptimizerSelector::DebugPrint() const {
@@ -421,7 +440,6 @@ void OptimizerSelector::NewSolutionFound(int64 gain) {
   for (int i = 0; i < run_infos_.size(); ++i) {
     run_infos_[i].time_spent_since_last_solution = 0;
     run_infos_[i].selectable = true;
-    run_infos_[i].aborted = false;
   }
 }
 
@@ -433,11 +451,11 @@ void OptimizerSelector::UpdateDeterministicTime(double time_spent) {
 void OptimizerSelector::UpdateOrder() {
   // Re-sort optimizers.
   std::stable_sort(run_infos_.begin(), run_infos_.end(),
-              [](const RunInfo& a, const RunInfo& b) -> bool {
-                if (a.total_gain == 0 && b.total_gain == 0)
-                  return a.time_spent < b.time_spent;
-                return a.score > b.score;
-              });
+                   [](const RunInfo& a, const RunInfo& b) -> bool {
+                     if (a.total_gain == 0 && b.total_gain == 0)
+                       return a.time_spent < b.time_spent;
+                     return a.score > b.score;
+                   });
 
   // Update the positions.
   for (int i = 0; i < run_infos_.size(); ++i) {

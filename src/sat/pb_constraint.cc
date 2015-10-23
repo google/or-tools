@@ -103,8 +103,6 @@ bool ApplyLiteralMapping(const ITIVector<LiteralIndex, LiteralIndex>& mapping,
   Coefficient shift_due_to_fixed_variables(0);
   for (const LiteralWithCoeff& entry : *cst) {
     if (mapping[entry.literal.Index()] >= 0) {
-      VLOG(0) << entry.literal << " -> "
-              << Literal(mapping[entry.literal.Index()]);
       (*cst)[index] = LiteralWithCoeff(Literal(mapping[entry.literal.Index()]),
                                        entry.coefficient);
       ++index;
@@ -288,7 +286,7 @@ Coefficient MutableUpperBoundedLinearConstraint::ComputeSlackForTrailPrefix(
   Coefficient activity(0);
   for (VariableIndex var : PossibleNonZeros()) {
     if (GetCoefficient(var) == 0) continue;
-    if (trail.Assignment().IsLiteralTrue(GetLiteral(var)) &&
+    if (trail.Assignment().LiteralIsTrue(GetLiteral(var)) &&
         trail.Info(var).trail_index < trail_index) {
       activity += GetCoefficient(var);
     }
@@ -305,7 +303,7 @@ Coefficient MutableUpperBoundedLinearConstraint::
   for (VariableIndex var : PossibleNonZeros()) {
     if (GetCoefficient(var) == 0) continue;
     const Coefficient diff = GetCoefficient(var) - bound;
-    if (trail.Assignment().IsLiteralTrue(GetLiteral(var)) &&
+    if (trail.Assignment().LiteralIsTrue(GetLiteral(var)) &&
         trail.Info(var).trail_index < trail_index) {
       if (diff > 0) {
         removed_sum += diff;
@@ -348,7 +346,7 @@ void MutableUpperBoundedLinearConstraint::ReduceSlackTo(
   rhs_ -= diff;
   for (VariableIndex var : PossibleNonZeros()) {
     if (GetCoefficient(var) == 0) continue;
-    if (trail.Assignment().IsLiteralTrue(GetLiteral(var)) &&
+    if (trail.Assignment().LiteralIsTrue(GetLiteral(var)) &&
         trail.Info(var).trail_index < trail_index) {
       continue;
     }
@@ -453,11 +451,9 @@ bool UpperBoundedLinearConstraint::HasIdenticalTerms(
   return true;
 }
 
-bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
-                                                 int trail_index,
-                                                 Coefficient* threshold,
-                                                 Trail* trail,
-                                                 std::vector<Literal>* conflict) {
+bool UpperBoundedLinearConstraint::InitializeRhs(
+    Coefficient rhs, int trail_index, Coefficient* threshold, Trail* trail,
+    PbConstraintsEnqueueHelper* helper) {
   // Compute the slack from the assigned variables with a trail index
   // smaller than the given trail_index. The variable at trail_index has not
   // yet been propagated.
@@ -477,7 +473,7 @@ bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
     for (Literal literal : literals_) {
       const VariableIndex var = literal.Variable();
       const Coefficient coeff = coeffs_[coeff_index];
-      if (trail->Assignment().IsLiteralTrue(literal) &&
+      if (trail->Assignment().LiteralIsTrue(literal) &&
           trail->Info(var).trail_index < trail_index) {
         max_relevant_trail_index =
             std::max(max_relevant_trail_index, trail->Info(var).trail_index);
@@ -502,7 +498,7 @@ bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
   int coeff_index = 0;
   for (Literal literal : literals_) {
     const VariableIndex var = literal.Variable();
-    const int level = trail->Assignment().IsVariableAssigned(var)
+    const int level = trail->Assignment().VariableIsAssigned(var)
                           ? trail->Info(var).level
                           : last_level;
     if (level > 0) {
@@ -524,14 +520,13 @@ bool UpperBoundedLinearConstraint::InitializeRhs(Coefficient rhs,
   already_propagated_end_ = literals_.size();
   Update(slack, threshold);
   return *threshold < 0
-             ? Propagate(max_relevant_trail_index, threshold, trail, conflict)
+             ? Propagate(max_relevant_trail_index, threshold, trail, helper)
              : true;
 }
 
-bool UpperBoundedLinearConstraint::Propagate(int trail_index,
-                                             Coefficient* threshold,
-                                             Trail* trail,
-                                             std::vector<Literal>* conflict) {
+bool UpperBoundedLinearConstraint::Propagate(
+    int trail_index, Coefficient* threshold, Trail* trail,
+    PbConstraintsEnqueueHelper* helper) {
   DCHECK_LT(*threshold, 0);
   const Coefficient slack = GetSlackFromThreshold(*threshold);
   DCHECK_GE(slack, 0) << "The constraint is already a conflict!";
@@ -540,12 +535,13 @@ bool UpperBoundedLinearConstraint::Propagate(int trail_index,
   // Check propagation.
   VariableIndex first_propagated_variable(-1);
   for (int i = starts_[index_ + 1]; i < already_propagated_end_; ++i) {
-    if (trail->Assignment().IsLiteralFalse(literals_[i])) continue;
-    if (trail->Assignment().IsLiteralTrue(literals_[i])) {
+    if (trail->Assignment().LiteralIsFalse(literals_[i])) continue;
+    if (trail->Assignment().LiteralIsTrue(literals_[i])) {
       if (trail->Info(literals_[i].Variable()).trail_index > trail_index) {
         // Conflict.
-        FillReason(*trail, trail_index, literals_[i].Variable(), conflict);
-        conflict->push_back(literals_[i].Negated());
+        FillReason(*trail, trail_index, literals_[i].Variable(),
+                   &helper->conflict);
+        helper->conflict.push_back(literals_[i].Negated());
         Update(slack, threshold);
         return false;
       }
@@ -555,7 +551,7 @@ bool UpperBoundedLinearConstraint::Propagate(int trail_index,
         if (first_reason_trail_index_ == -1) {
           first_reason_trail_index_ = trail->Index();
         }
-        trail->EnqueueWithPbReason(literals_[i].Negated(), trail_index, this);
+        helper->Enqueue(literals_[i].Negated(), trail_index, this, trail);
         first_propagated_variable = literals_[i].Variable();
       } else {
         // Note that the reason for first_propagated_variable is always a
@@ -604,7 +600,7 @@ void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
     if (literal.Variable() == propagated_variable) {
       propagated_variable_coefficient = coeffs_[coeff_index];
     } else {
-      if (trail.Assignment().IsLiteralTrue(literal) &&
+      if (trail.Assignment().LiteralIsTrue(literal) &&
           trail.Info(literal.Variable()).trail_index <= source_trail_index) {
         if (include_level_zero || trail.Info(literal.Variable()).level != 0) {
           reason->push_back(literal.Negated());
@@ -653,7 +649,7 @@ Coefficient UpperBoundedLinearConstraint::ComputeCancelation(
   int literal_index = 0;
   int coeff_index = 0;
   for (Literal literal : literals_) {
-    if (!trail.Assignment().IsVariableAssigned(literal.Variable()) ||
+    if (!trail.Assignment().VariableIsAssigned(literal.Variable()) ||
         trail.Info(literal.Variable()).trail_index >= trail_index) {
       result += conflict.CancelationAmount(literal, coeffs_[coeff_index]);
     }
@@ -680,7 +676,7 @@ void UpperBoundedLinearConstraint::ResolvePBConflict(
       // The variable must be of the opposite sign in the current conflict.
       CHECK_NE(literal, conflict->GetLiteral(var));
       var_coeff = coeffs_[coeff_index];
-    } else if (trail.Assignment().IsLiteralTrue(literal) &&
+    } else if (trail.Assignment().LiteralIsTrue(literal) &&
                trail.Info(literal.Variable()).trail_index < limit_trail_index) {
       activity += coeffs_[coeff_index];
     }
@@ -792,7 +788,7 @@ void UpperBoundedLinearConstraint::ResolvePBConflict(
   literal_index = 0;
   coeff_index = 0;
   for (Literal literal : literals_) {
-    if (trail.Assignment().IsLiteralTrue(literal) &&
+    if (trail.Assignment().LiteralIsTrue(literal) &&
         trail.Info(literal.Variable()).trail_index < limit_trail_index) {
       conflict->AddTerm(literal, coeffs_[coeff_index]);
     } else {
@@ -824,15 +820,18 @@ void UpperBoundedLinearConstraint::Untrail(Coefficient* threshold,
 // TODO(user): This is relatively slow. Take the "transpose" all at once, and
 // maybe put small constraints first on the to_update_ lists.
 bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
-                                  Coefficient rhs, ResolutionNode* node) {
+                                  Coefficient rhs, ResolutionNode* node,
+                                  Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!cst.empty());
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
 
   // Special case if this is the first constraint.
   if (constraints_.empty()) {
-    to_update_.resize(trail_->NumVariables() << 1);
-    propagation_trail_index_ = trail_->Index();
+    to_update_.resize(trail->NumVariables() << 1);
+    enqueue_helper_.propagator_id = propagator_id_;
+    enqueue_helper_.reasons.resize(trail->NumVariables());
+    propagation_trail_index_ = trail->Index();
   }
 
   std::unique_ptr<UpperBoundedLinearConstraint> c(
@@ -859,8 +858,8 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
         // point.
         candidate->ChangeResolutionNode(node);
         return candidate->InitializeRhs(rhs, propagation_trail_index_,
-                                        &thresholds_[i], trail_,
-                                        &conflict_scratchpad_);
+                                        &thresholds_[i], trail,
+                                        &enqueue_helper_);
       } else {
         // The constraint is redundant, so there is nothing to do.
         return true;
@@ -870,7 +869,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
 
   thresholds_.push_back(Coefficient(0));
   if (!c->InitializeRhs(rhs, propagation_trail_index_, &thresholds_.back(),
-                        trail_, &conflict_scratchpad_)) {
+                        trail, &enqueue_helper_)) {
     thresholds_.pop_back();
     return false;
   }
@@ -881,18 +880,18 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
   for (LiteralWithCoeff term : cst) {
     DCHECK_LT(term.literal.Index(), to_update_.size());
     to_update_[term.literal.Index()].push_back(ConstraintIndexWithCoeff(
-        trail_->Assignment().IsVariableAssigned(term.literal.Variable()),
+        trail->Assignment().VariableIsAssigned(term.literal.Variable()),
         cst_index, term.coefficient));
   }
   return true;
 }
 
 bool PbConstraints::AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cst,
-                                         Coefficient rhs,
-                                         ResolutionNode* node) {
+                                         Coefficient rhs, ResolutionNode* node,
+                                         Trail* trail) {
   DeleteSomeLearnedConstraintIfNeeded();
   const int old_num_constraints = constraints_.size();
-  const bool result = AddConstraint(cst, rhs, node);
+  const bool result = AddConstraint(cst, rhs, node, trail);
 
   // The second test is to avoid marking a problem constraint as learned because
   // of the "reuse last constraint" optimization.
@@ -902,11 +901,10 @@ bool PbConstraints::AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cs
   return result;
 }
 
-bool PbConstraints::PropagateNext() {
+bool PbConstraints::PropagateNext(Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(PropagationNeeded());
-  const int order = propagation_trail_index_;
-  const Literal true_literal = (*trail_)[propagation_trail_index_];
+  const int source_trail_index = propagation_trail_index_;
+  const Literal true_literal = (*trail)[propagation_trail_index_];
   ++propagation_trail_index_;
 
   // We need to upate ALL threshold, otherwise the Untrail() will not be
@@ -923,10 +921,10 @@ bool PbConstraints::PropagateNext() {
       update.need_untrail_inspection = true;
       ++num_constraint_lookups_;
       const int old_value = cst->already_propagated_end();
-      if (!cst->Propagate(order, &thresholds_[update.index], trail_,
-                          &conflict_scratchpad_)) {
-        trail_->SetFailingClause(ClauseRef(conflict_scratchpad_));
-        trail_->SetFailingResolutionNode(cst->ResolutionNodePointer());
+      if (!cst->Propagate(source_trail_index, &thresholds_[update.index], trail,
+                          &enqueue_helper_)) {
+        trail->MutableConflict()->swap(enqueue_helper_.conflict);
+        trail->SetFailingResolutionNode(cst->ResolutionNodePointer());
         conflicting_constraint_index_ = update.index;
         conflict = true;
 
@@ -940,12 +938,20 @@ bool PbConstraints::PropagateNext() {
   return !conflict;
 }
 
-void PbConstraints::Untrail(int trail_index) {
+bool PbConstraints::Propagate(Trail* trail) {
+  const int old_index = trail->Index();
+  while (trail->Index() == old_index && propagation_trail_index_ < old_index) {
+    if (!PropagateNext(trail)) return false;
+  }
+  return true;
+}
+
+void PbConstraints::Untrail(const Trail& trail, int trail_index) {
   SCOPED_TIME_STAT(&stats_);
   to_untrail_.ClearAndResize(ConstraintIndex(constraints_.size()));
   while (propagation_trail_index_ > trail_index) {
     --propagation_trail_index_;
-    const Literal literal = (*trail_)[propagation_trail_index_];
+    const Literal literal = trail[propagation_trail_index_];
     for (ConstraintIndexWithCoeff& update : to_update_[literal.Index()]) {
       thresholds_[update.index] += update.coefficient;
 
@@ -961,6 +967,29 @@ void PbConstraints::Untrail(int trail_index) {
     constraints_[cst_index.value()]->Untrail(&(thresholds_[cst_index]),
                                              trail_index);
   }
+}
+
+ClauseRef PbConstraints::Reason(const Trail& trail, int trail_index) const {
+  SCOPED_TIME_STAT(&stats_);
+  const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
+      enqueue_helper_.reasons[trail_index];
+  std::vector<Literal>* reason = trail.GetVectorToStoreReason(trail_index);
+  reason_info.pb_constraint->FillReason(trail, reason_info.source_trail_index,
+                                        trail[trail_index].Variable(), reason);
+  return ClauseRef(*reason);
+}
+
+UpperBoundedLinearConstraint* PbConstraints::ReasonPbConstraint(
+    int trail_index) const {
+  const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
+      enqueue_helper_.reasons[trail_index];
+  return reason_info.pb_constraint;
+}
+
+ResolutionNode* PbConstraints::GetResolutionNode(int trail_index) const {
+  const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
+      enqueue_helper_.reasons[trail_index];
+  return reason_info.pb_constraint->ResolutionNodePointer();
 }
 
 // TODO(user): Because num_constraints also include problem constraints, the

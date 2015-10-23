@@ -29,6 +29,7 @@ namespace operations_research {
 namespace bop {
 
 DEFINE_INT_TYPE(OptimizerIndex, int);
+const OptimizerIndex kInvalidOptimizerIndex(-1);
 
 // Forward declaration.
 class OptimizerSelector;
@@ -103,13 +104,14 @@ class OptimizerSelector {
       const ITIVector<OptimizerIndex, BopOptimizerBase*>& optimizers);
 
   // Selects the next optimizer to run based on the user defined order and
-  // history of success.
+  // history of success. Returns kInvalidOptimizerIndex if no optimizer is
+  // selectable and runnable (see the functions below).
   //
   // The optimizer is selected using the following algorithm (L being the
   // sorted list of optimizers, and l the position of the last selected
   // optimizer):
   //   a- If a new solution has been found by optimizer l, select the first
-  //     optimizer l' in L, l' >= 0, that can run.
+  //      optimizer l' in L, l' >= 0, that can run.
   //   b- If optimizer l didn't find a new solution, select the first
   //      optimizer l', with l' > l, such that its deterministic time spent
   //      since last solution is smaller than the deterministic time spent
@@ -123,6 +125,7 @@ class OptimizerSelector {
   // The gain corresponds to the reward to assign to the solver; It could for
   // instance be the difference in cost between the last and the current
   // solution.
+  //
   // The time spent corresponds to the time the optimizer spent; To make the
   // behavior deterministic, it is recommanded to use the deterministic time
   // instead of the elapsed time.
@@ -131,26 +134,27 @@ class OptimizerSelector {
   // found.
   void UpdateScore(int64 gain, double time_spent);
 
-  // Marks the selected optimizer as not selectable because the optimizer
-  // ABORTed last time it ran on the current solution. This will be reverted
-  // as soon as a new solution is found.
-  void MarkSelectedAborted();
+  // Marks the given optimizer as not selectable until UpdateScore() is called
+  // with a positive gain. In which case, all optimizer will become selectable
+  // again.
+  void TemporarilyMarkOptimizerAsUnselectable(OptimizerIndex optimizer_index);
 
-  // Marks the selected optimizer as not selectable because the optimizer can't
-  // be called.
-  // Note that contrary to MarkSelectedAborted(), this will not be reverted when
-  // a new solution is found.
-  void MarkOptimizerSelectable(OptimizerIndex optimizer_index, bool selectable);
+  // Sets whether or not an optimizer is "runnable". Like a non-selectable one,
+  // a non-runnable optimizer will never be returned by SelectOptimizer().
+  //
+  // TODO(user): Maybe we should simply have the notion of selectability here
+  // and let the client handle the logic to decide what optimizer are selectable
+  // or not.
+  void SetOptimizerRunnability(OptimizerIndex optimizer_index, bool runable);
 
   // Returns statistics about the given optimizer.
   std::string PrintStats(OptimizerIndex optimizer_index) const;
+  int NumCallsForOptimizer(OptimizerIndex optimizer_index) const;
 
   // Prints some debug information. Should not be used in production.
   void DebugPrint() const;
 
  private:
-  static const int kNoSelection;
-
   // Updates internals when a solution has been found using the selected
   // optimizer.
   void NewSolutionFound(int64 gain);
@@ -170,9 +174,11 @@ class OptimizerSelector {
           total_gain(0),
           time_spent(0.0),
           time_spent_since_last_solution(0),
+          runnable(true),
           selectable(true),
-          aborted(false),
           score(0.0) {}
+
+    bool RunnableAndSelectable() const { return runnable && selectable; }
 
     OptimizerIndex optimizer_index;
     std::string name;
@@ -181,8 +187,8 @@ class OptimizerSelector {
     int64 total_gain;
     double time_spent;
     double time_spent_since_last_solution;
+    bool runnable;
     bool selectable;
-    bool aborted;
     double score;
   };
 
@@ -190,6 +196,7 @@ class OptimizerSelector {
   ITIVector<OptimizerIndex, int> info_positions_;
   int selected_index_;
 };
+
 }  // namespace bop
 }  // namespace operations_research
 #endif  // OR_TOOLS_BOP_BOP_PORTFOLIO_H_

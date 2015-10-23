@@ -181,6 +181,7 @@ BasisFactorization::BasisFactorization(const MatrixView& matrix,
     : stats_(),
       matrix_(matrix),
       basis_(basis),
+      tau_is_computed_(false),
       max_num_updates_(0),
       num_updates_(0),
       eta_factorization_(),
@@ -194,6 +195,7 @@ BasisFactorization::~BasisFactorization() {}
 void BasisFactorization::Clear() {
   SCOPED_TIME_STAT(&stats_);
   num_updates_ = 0;
+  tau_computation_can_be_optimized_ = false;
   eta_factorization_.Clear();
   lu_factorization_.Clear();
   rank_one_factorization_.Clear();
@@ -297,6 +299,7 @@ Status BasisFactorization::Update(ColIndex entering_col,
                                 eta_non_zeros, dense_eta);
     }
     ++num_updates_;
+    tau_computation_can_be_optimized_ = false;
     return Status::OK;
   }
   return ForceRefactorization();
@@ -368,7 +371,15 @@ DenseColumn* BasisFactorization::RightSolveForTau(ScatteredColumnReference a)
   SCOPED_TIME_STAT(&stats_);
   BumpDeterministicTimeForSolve(matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
-    lu_factorization_.RightSolveLWithPermutedInput(a.dense_column, &tau_);
+    if (tau_computation_can_be_optimized_) {
+      // Once used, the intermediate result is overriden, so RightSolveForTau()
+      // can no longer use the optimized algorithm.
+      tau_computation_can_be_optimized_ = false;
+      lu_factorization_.RightSolveLWithPermutedInput(a.dense_column, &tau_);
+    } else {
+      tau_ = a.dense_column;
+      lu_factorization_.RightSolveL(&tau_);
+    }
     rank_one_factorization_.RightSolve(&tau_);
     lu_factorization_.RightSolveU(&tau_);
   } else {
@@ -376,6 +387,7 @@ DenseColumn* BasisFactorization::RightSolveForTau(ScatteredColumnReference a)
     lu_factorization_.RightSolve(&tau_);
     eta_factorization_.RightSolve(&tau_);
   }
+  tau_is_computed_ = true;
   return &tau_;
 }
 
@@ -415,12 +427,14 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j, DenseRow* y,
   }
   rank_one_factorization_.LeftSolve(y);
 
-  // TODO(user): Find a better way to decide what version to use. We may
-  // alternate primal and dual solves, and we only need tau_ if we update the
-  // dual norms...
-  if (parameters_.use_dual_simplex()) {
+  // We only keep the intermediate result needed for the optimized tau_
+  // computation if it was computed after the last time this was called.
+  if (tau_is_computed_) {
+    tau_is_computed_ = false;
+    tau_computation_can_be_optimized_ = true;
     lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, &tau_);
   } else {
+    tau_computation_can_be_optimized_ = false;
     lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, nullptr);
   }
 }

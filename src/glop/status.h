@@ -37,6 +37,7 @@ class Status {
 
     // A pointer argument was NULL when it shouldn't be.
     ERROR_NULL = 3,
+
   };
 
   // Creates a "successful" status.

@@ -99,7 +99,7 @@ GraphSymmetryFinder::GraphSymmetryFinder(const Graph& graph, bool is_undirected)
       tmp_degree_(NumNodes(), 0),
       tmp_nodes_with_degree_(NumNodes() + 1) {
   // Set up an "unlimited" time limit by default.
-  time_limit_.reset(new TimeLimit(std::numeric_limits<double>::infinity()));
+  time_limit_ = TimeLimit::Infinite();
   tmp_partition_.Reset(NumNodes());
   if (is_undirected) {
     DCHECK(GraphIsSymmetric(graph));
