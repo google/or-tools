@@ -125,8 +125,8 @@ class SatPropagator : public Constraint {
 #endif
     const bool new_value = vars_[index]->Value() != 0;
     sat::Literal literal(var, new_value);
-    if (sat_.Assignment().IsVariableAssigned(var)) {
-      if (sat_.Assignment().IsLiteralTrue(literal)) {
+    if (sat_.Assignment().VariableIsAssigned(var)) {
+      if (sat_.Assignment().LiteralIsTrue(literal)) {
 #ifdef SAT_DEBUG
         FZDLOG << " - literal = " << literal.SignedValue()
                << " already processed" << FZENDL;
