@@ -21,6 +21,10 @@
 %}
 
 %module(directors="1") operations_research;
+%feature("director") LongResultCallback1;
+%feature("director") LongResultCallback2;
+%feature("director") LongResultCallback3;
+%feature("director") NodeEvaluator2;
 
 // Convert RoutingModel::NodeIndex to (32-bit signed) integers.
 %typemap(ctype) operations_research::RoutingModel::NodeIndex "int"
@@ -105,9 +109,36 @@ CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
 
 CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int);
 
-// Create input mapping for NodeEvaluator2
-%feature("director") NodeEvaluator2;
+// Create input mapping for NodeEvaluator2 and LongResultCallbackN
+// Callback wrapping.
+// TODO(viger): split out the callback code; it creates another file since
+// it uses a different module.
 %{
+class LongResultCallback1 {
+ public:
+  virtual int64 Run(int64) = 0;
+  ResultCallback1<int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback1::Run);
+  }
+  virtual ~LongResultCallback1() {}
+};
+class LongResultCallback2 {
+ public:
+  virtual int64 Run(int64, int64) = 0;
+  ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback2::Run);
+  }
+  virtual ~LongResultCallback2() {}
+};
+class LongResultCallback3 {
+ public:
+  virtual int64 Run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
+    return NewPermanentCallback(this, &LongResultCallback3::Run);
+  }
+  virtual ~LongResultCallback3() {}
+};
+
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
   NodeEvaluator2() : used_as_permanent_handler_(false) {}
@@ -143,6 +174,25 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
   }
 %}
 
+class LongResultCallback1 {
+ public:
+  virtual int64 Run(int64) = 0;
+  ResultCallback1<int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback1();
+};
+class LongResultCallback2 {
+ public:
+  virtual int64 Run(int64, int64) = 0;
+  ResultCallback2<int64, int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback2();
+};
+class LongResultCallback3 {
+ public:
+  virtual int64 Run(int64, int64, int64) = 0;
+  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
+  virtual ~LongResultCallback3();
+};
+
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
   NodeEvaluator2();
@@ -156,6 +206,21 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
                     operations_research::RoutingModel::NodeIndex j);
   bool used_as_permanent_handler_;
 };
+
+// Typemaps for callbacks in csharp.
+%typemap(cstype) ResultCallback1<int64, int64>* "LongResultCallback1";
+%typemap(csin) ResultCallback1<int64, int64>*
+    "$descriptor(ResultCallback1<int64, int64>*)
+     .getCPtr($csinput.GetPermanentCallback())";
+%typemap(cstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
+%typemap(csin) ResultCallback2<int64, int64, int64>*
+    "$descriptor(ResultCallback2<int64, int64, int64>*)
+     .getCPtr($csinput.GetPermanentCallback())";
+%typemap(cstype) ResultCallback3<int64, int64, int64, int64>*
+    "LongResultCallback3";
+%typemap(csin) ResultCallback3<int64, int64, int64, int64>*
+    "$descriptor(ResultCallback3<int64, int64, int64, int64>*)
+     .getCPtr($csinput.GetPermanentCallback())";
 
 %typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
 %typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($csinput.DisownAndGetPermanentCallback())";

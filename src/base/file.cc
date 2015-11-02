@@ -130,20 +130,31 @@ bool File::Open() const { return f_ != NULL; }
 void File::Init() {}
 
 namespace file {
-util::Status GetContents(const std::string& filename, std::string* output, int flags) {
-  if (flags == Defaults()) {
-    File* file = File::Open(filename, "r");
-    if (file != NULL) {
-      const int64 size = file->Size();
-      if (file->ReadToString(output, size) == size) return util::Status::OK;
-    }
+util::Status GetContents(
+    const std::string& filename, std::string* output, int flags) {
+  if (flags != Defaults()) {
+    return util::Status(
+        util::error::INVALID_ARGUMENT,
+        "The file::GetContents() APIs only support the file::Defaults() "
+        "options!");
+  }
+  File* file = File::Open(filename, "r");
+  if (file != NULL) {
+    const int64 size = file->Size();
+    if (file->ReadToString(output, size) == size) return util::Status::OK;
   }
   return util::Status(util::error::INVALID_ARGUMENT,
                       StrCat("Could not read '", filename, "'"));
 }
 
 util::Status WriteString(File* file, const std::string& contents, int flags) {
-  if (flags == Defaults() && file != NULL &&
+  if (flags != Defaults()) {
+    return util::Status(
+        util::error::INVALID_ARGUMENT,
+        "The file::WriteString() APIs only support the file::Defaults() "
+        "options!");
+  }
+  if (file != NULL &&
       file->Write(contents.c_str(), contents.size()) == contents.size() &&
       file->Close()) {
     return util::Status::OK;
@@ -152,8 +163,14 @@ util::Status WriteString(File* file, const std::string& contents, int flags) {
                       StrCat("Could not write ", contents.size(), " bytes"));
 }
 
-util::Status SetContents(const std::string& filename, const std::string& contents,
-                         int flags) {
+util::Status SetContents(
+    const std::string& filename, const std::string& contents, int flags) {
+  if (flags != Defaults()) {
+    return util::Status(
+        util::error::INVALID_ARGUMENT,
+        "The file::SetContents() APIs only support the file::Defaults() "
+        "options!");
+  }
   return WriteString(File::Open(filename, "w"), contents, flags);
 }
 
@@ -227,28 +244,40 @@ void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
   CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
 }
 
-util::Status SetTextProto(const std::string& filename, const google::protobuf::Message& proto,
-                          int flags) {
-  if (flags == Defaults()) {
-    if (WriteProtoToASCIIFile(proto, filename)) return util::Status::OK;
+util::Status SetTextProto(
+    const std::string& filename, const google::protobuf::Message& proto,
+    int flags) {
+  if (flags != Defaults()) {
+    return util::Status(
+        util::error::INVALID_ARGUMENT,
+        "The file::SetTextProto() APIs only support the file::Defaults() "
+        "options!");
   }
+  if (WriteProtoToASCIIFile(proto, filename)) return util::Status::OK;
   return util::Status(util::error::INVALID_ARGUMENT,
                       StrCat("Could not write proto to '", filename, "'."));
 }
 
 util::Status SetBinaryProto(const std::string& filename,
                             const google::protobuf::Message& proto, int flags) {
-  if (flags == Defaults()) {
-    if (WriteProtoToFile(proto, filename)) return util::Status::OK;
+  if (flags != Defaults()) {
+    return util::Status(
+        util::error::INVALID_ARGUMENT,
+        "The file::SetBinaryProto() APIs only support the file::Defaults() "
+        "options!");
   }
+  if (WriteProtoToFile(proto, filename)) return util::Status::OK;
   return util::Status(util::error::INVALID_ARGUMENT,
                       StrCat("Could not write proto to '", filename, "'."));
 }
 
 util::Status Delete(const std::string& path, int flags) {
-  if (flags == Defaults()) {
-    if (remove(path.c_str())) return util::Status::OK;
+  if (flags != Defaults()) {
+    return util::Status(
+        util::error::INVALID_ARGUMENT,
+        "The file::Delete() APIs only support the file::Defaults() options!");
   }
+  if (remove(path.c_str())) return util::Status::OK;
   return util::Status(util::error::INVALID_ARGUMENT,
                       StrCat("Could not delete '", path, "'."));
 }

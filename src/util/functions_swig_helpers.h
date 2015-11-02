@@ -28,111 +28,61 @@ namespace swig_util {
 class LongToLong {
  public:
   virtual ~LongToLong() {}
-  virtual int64 run(int64) = 0;
-#if !defined(SWIG)
-  std::function<int64(int64)> GetFunction() {
-    return [this](int64 i) { return run(i); };
-  }
-#endif
+  virtual int64 Run(int64) = 0;
 };
 
 class LongLongToLong {
  public:
   virtual ~LongLongToLong() {}
-  virtual int64 run(int64, int64) = 0;
-#if !defined(SWIG)
-  std::function<int64(int64, int64)> GetFunction() {
-    return [this](int64 i, int64 j) { return run(i, j); };
-  }
-#endif
+  virtual int64 Run(int64, int64) = 0;
 };
 
 class IntIntToLong {
  public:
   virtual ~IntIntToLong() {}
-  virtual int64 run(int, int) = 0;
-#if !defined(SWIG)
-  std::function<int64(int, int)> GetFunction() {
-    return [this](int i, int j) { return run(i, j); };
-  }
-#endif
+  virtual int64 Run(int, int) = 0;
 };
 
 class LongLongLongToLong {
  public:
   virtual ~LongLongLongToLong() {}
-  virtual int64 run(int64, int64, int64) = 0;
-#if !defined(SWIG)
-  std::function<int64(int64, int64, int64)> GetFunction() {
-    return [this](int64 i, int64 j, int64 k) { return run(i, j, k); };
-  }
-#endif
+  virtual int64 Run(int64, int64, int64) = 0;
 };
 
 class LongToBoolean {
  public:
   virtual ~LongToBoolean() {}
-  virtual bool run(int64) = 0;
-#if !defined(SWIG)
-  std::function<bool(int64)> GetFunction() {
-    return [this](int64 i) { return run(i); };
-  }
-#endif
+  virtual bool Run(int64) = 0;
 };
 
 class VoidToString {
  public:
   virtual ~VoidToString() {}
-  virtual std::string run() = 0;
-#if !defined(SWIG)
-  std::function<std::string()> GetFunction() {
-    return [this]() { return run(); };
-  }
-#endif
+  virtual std::string Run() = 0;
 };
 
 class VoidToBoolean {
  public:
   virtual ~VoidToBoolean() {}
-  virtual bool run() = 0;
-#if !defined(SWIG)
-  std::function<bool()> GetFunction() {
-    return [this]() { return run(); };
-  }
-#endif
+  virtual bool Run() = 0;
 };
 
 class LongLongLongToBoolean {
  public:
   virtual ~LongLongLongToBoolean() {}
-  virtual bool run(int64 i, int64 j, int64 k) = 0;
-#if !defined(SWIG)
-  std::function<bool(int64, int64, int64)> GetFunction() {
-    return [this](int64 i, int64 j, int64 k) { return run(i, j, k); };
-  }
-#endif
+  virtual bool Run(int64 i, int64 j, int64 k) = 0;
 };
 
 class LongToVoid {
  public:
   virtual ~LongToVoid() {}
-  virtual void run(int64 i) = 0;
-#if !defined(SWIG)
-  std::function<void(int64)> GetFunction() {
-    return [this](int64 i) { run(i); };
-  }
-#endif
+  virtual void Run(int64 i) = 0;
 };
 
 class VoidToVoid {
  public:
   virtual ~VoidToVoid() {}
-  virtual void run() = 0;
-#if !defined(SWIG)
-  std::function<void()> GetFunction() {
-    return [this]() { run(); };
-  }
-#endif
+  virtual void Run() = 0;
 };
 }  // namespace swig_util
 }  // namespace operations_research

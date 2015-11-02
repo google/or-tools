@@ -24,7 +24,8 @@
 %include "util/java/functions.swig"
 
 // Remove swig warnings
-#pragma SWIG nowarn=473
+%warnfilter(473) operations_research::DecisionBuilder;
+// TODO(user): Remove this warnfilter.
 
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .swig
@@ -83,7 +84,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %feature("director") DecisionBuilder;
 %feature("director") Decision;
 %feature("director") SearchMonitor;
-%feature("director") Action;
 %feature("director") LocalSearchOperator;
 %feature("director") PathOperator;
 %feature("director") BaseLns;

@@ -14,13 +14,16 @@
 // This file provides swig wrapping for some specialization of std::function
 // parameters. Currently, swig does not support much of C++11 features, and
 // especially not the std::function.
-
+//
+// For now, clients must %include this.
+// TODO(user): move the C++ code to a separate file, so that clients can
+// simply %import this (and %{ #include %} the C++ file).
+//
 // Usage and tests in pywrapfunctions_test.py
 
 %include "base/base.swig"
 
 %{
-
 #include <functional>
 
 // Wrap std::function<std::string()>

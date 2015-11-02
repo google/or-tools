@@ -38,22 +38,13 @@
 // swig files.
 
 %feature("director") operations_research::swig_util::LongToLong;
-%rename (Run) operations_research::swig_util::LongToLong::run;
 %feature("director") operations_research::swig_util::LongLongToLong;
-%rename (Run) operations_research::swig_util::LongLongToLong::run;
 %feature("director") operations_research::swig_util::IntIntToLong;
-%rename (Run) operations_research::swig_util::IntIntToLong::run;
 %feature("director") operations_research::swig_util::LongLongLongToLong;
-%rename (Run) operations_research::swig_util::LongLongLongToLong::run;
 %feature("director") operations_research::swig_util::LongToBoolean;
-%rename (Run) operations_research::swig_util::LongToBoolean::run;
 %feature("director") operations_research::swig_util::VoidToString;
-%rename (Run) operations_research::swig_util::VoidToString::run;
 %feature("director") operations_research::swig_util::VoidToBoolean;
-%rename (Run) operations_research::swig_util::VoidToBoolean::run;
 %feature("director") operations_research::swig_util::LongLongLongToBoolean;
-%rename (Run) operations_research::swig_util::LongLongLongToBoolean::run;
 %feature("director") operations_research::swig_util::LongToVoid;
-%rename (Run) operations_research::swig_util::LongToVoid::run;
 
 %include "util/functions_swig_helpers.h"

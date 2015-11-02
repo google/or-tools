@@ -112,6 +112,7 @@ import java.lang.reflect.*;
 // List of the classes exposed.
 %unignore operations_research::MPSolver;
 %unignore operations_research::MPSolver::MPSolver;
+%unignore operations_research::MPSolver::~MPSolver;
 %unignore operations_research::MPConstraint;
 %unignore operations_research::MPVariable;
 %unignore operations_research::MPObjective;

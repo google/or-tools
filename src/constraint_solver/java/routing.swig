@@ -162,53 +162,26 @@ class LongResultCallback1 : private ResultCallback1<int64, int64> {
   virtual int64 run(int64) = 0;
   ResultCallback1<int64, int64>* getPermanentCallback();
   virtual ~LongResultCallback1();
-
- private:
-  virtual bool IsRepeatable() const;
-  virtual int64 Run(int64 i);
-  bool used_as_permanent_handler_;
 };
 class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
  public:
   virtual int64 run(int64, int64) = 0;
   ResultCallback2<int64, int64, int64>* getPermanentCallback();
   virtual ~LongResultCallback2();
-
- private:
-  virtual bool IsRepeatable() const;
-  virtual int64 Run(int64 i, int64 j);
-  bool used_as_permanent_handler_;
 };
 class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
  public:
   virtual int64 run(int64, int64, int64) = 0;
   ResultCallback3<int64, int64, int64, int64>* getPermanentCallback();
   virtual ~LongResultCallback3();
-
- private:
-  virtual bool IsRepeatable() const;
-  virtual int64 Run(int64 i, int64 j, int64 k);
-  bool used_as_permanent_handler_;
 };
 
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
   NodeEvaluator2() : used_as_permanent_handler_(false) {}
   virtual int64 run(int i, int j) = 0;
-  operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
-  }
+  operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback();
   virtual ~NodeEvaluator2() {}
-
- private:
-  virtual bool IsRepeatable() const { return true; }
-  virtual int64 Run(operations_research::RoutingModel::NodeIndex i,
-                    operations_research::RoutingModel::NodeIndex j) {
-    return run(i.value(), j.value());
-  }
-  bool used_as_permanent_handler_;
 };
 
 // Typemaps for callbacks in java.

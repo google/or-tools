@@ -32,12 +32,17 @@
 
 %include "base/base.swig"
 
-%import "util/python/data.swig"
-%include "util/python/functions.swig"
+// PY_CONVERT_HELPER_* macros.
+%include "constraint_solver/python/constraint_solver_helpers.swig"
 
 // Callback wrapping. See base/python/callbacks.swig.
 #define FATAL_CALLBACK_EXCEPTION
 %include "base/python/callbacks.swig"
+
+// std::function utilities.
+%include "util/python/functions.swig"
+
+%import "util/python/data.swig"
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2014-06, with
@@ -83,59 +88,16 @@
 
 // ============= Type conversions ==============
 
-// Conversion utilities, to be able to expose APIs that return a C++ object
-// pointer. The PyObjAs template must be able to deal with all such types.
-%define PY_CONVERT_HELPER_PTR(CType)
-%{
-template<>
-bool PyObjAs(PyObject *py_obj, operations_research::CType** b) {
-  return SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
-                         SWIGTYPE_p_operations_research__ ## CType,
-                         SWIG_POINTER_EXCEPTION) >= 0;
-}
-%}
-%enddef
+// See ./constraint_solver_helpers.swig
 PY_CONVERT_HELPER_PTR(SearchMonitor);
 PY_CONVERT_HELPER_PTR(IntervalVar);
 PY_CONVERT_HELPER_PTR(SequenceVar);
 PY_CONVERT_HELPER_PTR(LocalSearchOperator);
 PY_CONVERT_HELPER_PTR(LocalSearchFilter);
-#undef PY_CONVERT_HELPER_PTR
-
-// Conversion of IntExpr* and IntVar* are a bit special because of the two
-// possible casts from IntExpr and Constraint.
-%define PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(Class)
-%{
-template<>
-bool PyObjAs(PyObject *py_obj, operations_research::Class** var) {
-  // First, try to interpret the python object as an IntExpr.
-  operations_research::IntExpr* t;
-  if (SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(&t),
-                      SWIGTYPE_p_operations_research__IntExpr,
-                      SWIG_POINTER_EXCEPTION) >= 0) {
-    if (t == nullptr) return false;
-    *var = t->Var();
-    return true;
-  }
-  // Then, try to interpret it as a Constraint.
-  operations_research::Constraint* c;
-  if (SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(&c),
-                      SWIGTYPE_p_operations_research__Constraint,
-                      SWIG_POINTER_EXCEPTION) >= 0) {
-    if (c == nullptr || c->Var() == nullptr) return false;
-    *var = c->Var();
-    return true;
-  }
-  // Give up.
-  return false;
-}
-%}
-%enddef
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntExpr);
-#undef PY_CONVERT_HELPER_INTEXPR_OR_INTVAR
 
-// Conversions of DecisionBuilder* are also special because we redefine
+// Conversions of DecisionBuilder* are special because we redefine
 // our own python PyDecisionBuilder object.
 // TODO(user): for or-tools, remove this code and use directors instead.
 %pythoncode {
@@ -1184,7 +1146,6 @@ namespace operations_research {
 // - SaveAndSetValue()
 // - SaveAndAdd()
 //
-// - AddFailHook()
 // - ExportProfilingOverview()
 // - CurrentlyInSolve()
 // - balancing_decision()
@@ -1230,7 +1191,6 @@ namespace operations_research {
 // - Zero()
 // - BaseObject
 // - DecisionVisitor
-// - Action
 // - ModelVisitor
 // - CastConstraint
 // - NumericalRev<>
@@ -2221,3 +2181,4 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
+

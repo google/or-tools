@@ -34,9 +34,6 @@ using System.Collections;
 %feature("director") IntVarLocalSearchFilter;
 %feature("director") IntVarLocalSearchOperator;
 %feature("director") LocalSearchOperator;
-%feature("director") LongResultCallback1;
-%feature("director") LongResultCallback2;
-%feature("director") LongResultCallback3;
 %feature("director") OptimizeVar;
 %feature("director") SearchLimit;
 %feature("director") SearchMonitor;
@@ -124,70 +121,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 }  // namespace operations_research
 
 // ############ END DUPLICATED CODE BLOCK ############
-
-// Callback wrapping.
-// TODO(user): split out the callback code; it creates another file since
-// it uses a different module.
-%{
-class LongResultCallback1 {
- public:
-  virtual int64 Run(int64) = 0;
-  ResultCallback1<int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback1::Run);
-  }
-  virtual ~LongResultCallback1() {}
-};
-class LongResultCallback2 {
- public:
-  virtual int64 Run(int64, int64) = 0;
-  ResultCallback2<int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback2::Run);
-  }
-  virtual ~LongResultCallback2() {}
-};
-class LongResultCallback3 {
- public:
-  virtual int64 Run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback() {
-    return NewPermanentCallback(this, &LongResultCallback3::Run);
-  }
-  virtual ~LongResultCallback3() {}
-};
-%}
-
-class LongResultCallback1 {
- public:
-  virtual int64 Run(int64) = 0;
-  ResultCallback1<int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback1();
-};
-class LongResultCallback2 {
- public:
-  virtual int64 Run(int64, int64) = 0;
-  ResultCallback2<int64, int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback2();
-};
-class LongResultCallback3 {
- public:
-  virtual int64 Run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* GetPermanentCallback();
-  virtual ~LongResultCallback3();
-};
-
-// Typemaps for callbacks in csharp.
-%typemap(cstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(csin) ResultCallback1<int64, int64>*
-    "$descriptor(ResultCallback1<int64, int64>*)
-     .getCPtr($csinput.GetPermanentCallback())";
-%typemap(cstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(csin) ResultCallback2<int64, int64, int64>*
-    "$descriptor(ResultCallback2<int64, int64, int64>*)
-     .getCPtr($csinput.GetPermanentCallback())";
-%typemap(cstype) ResultCallback3<int64, int64, int64, int64>*
-    "LongResultCallback3";
-%typemap(csin) ResultCallback3<int64, int64, int64, int64>*
-    "$descriptor(ResultCallback3<int64, int64, int64, int64>*)
-     .getCPtr($csinput.GetPermanentCallback())";
 
 // Since knapsack_solver.swig and constraint_solver.swig both need to
 // instantiate the vector template, but their csharp_wrap.cc
@@ -280,7 +213,12 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %typemap(csinterfaces_derived) operations_research::Constraint "IConstraintWithStatus";
 
 namespace operations_research {
-// Take care of API with function
+// Take care of API with function.  SWIG doesn't wrap std::function<>
+// properly, so we write our custom wrappers for all methods involving
+// std::function<>.
+%ignore Solver::MakeSearchLog(
+    int branch_count,
+    std::function<std::string()> display_callback);
 %ignore Solver::MakeSearchLog(
     int branch_count,
     IntVar* objective,
@@ -289,9 +227,7 @@ namespace operations_research {
     int branch_count,
     OptimizeVar* const objective,
     std::function<std::string()> display_callback);
-%ignore Solver::MakeSearchLog(
-    int branch_count,
-    std::function<std::string()> display_callback);
+
 %ignore Solver::MakeCustomLimit(std::function<bool()> limiter);
 %ignore Solver::MakeElement(IndexEvaluator1 values, IntVar* const index);
 %ignore Solver::MakeMonotonicElement(IndexEvaluator1 values, bool increasing,
@@ -384,28 +320,37 @@ namespace operations_research {
 
 %extend Solver {
   IntExpr* MakeElement(swig_util::LongToLong* values, IntVar* const index) {
-    return $self->MakeElement(values->GetFunction(), index);
+    return $self->MakeElement(
+        [values](int64 i) { return values->Run(i); }, index);
   }
   IntExpr* MakeMonotonicElement(swig_util::LongToLong* values, bool increasing,
                                 IntVar* const index) {
-    return $self->MakeMonotonicElement(values->GetFunction(), increasing, index);
+    return $self->MakeMonotonicElement(
+        [values](int64 i) { return values->Run(i); }, increasing, index);
   }
   IntExpr* MakeElement(swig_util::LongLongToLong* values, IntVar* const index1,
                        IntVar* const index2) {
-    return $self->MakeElement(values->GetFunction(), index1, index2);
+    return $self->MakeElement(
+        [values](int64 i, int64 j) { return values->Run(i, j); }, index1,
+        index2);
   }
   Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
                             const std::vector<IntVar*>& active,
                             const std::vector<IntVar*>& cumuls,
                             swig_util::LongLongToLong* transit_evaluator) {
-    return $self->MakePathCumul(nexts, active, cumuls, transit_evaluator->GetFunction());
+    return $self->MakePathCumul(
+        nexts, active, cumuls,
+        [transit_evaluator](int64 i, int64 j) {
+          return transit_evaluator->Run(i, j); });
   }
   Constraint* MakePathCumul(const std::vector<IntVar*>& nexts,
                             const std::vector<IntVar*>& active,
                             const std::vector<IntVar*>& cumuls,
                             const std::vector<IntVar*>& slacks,
                             swig_util::LongLongToLong* transit_evaluator) {
-    return $self->MakePathCumul(nexts, active, cumuls, slacks, transit_evaluator->GetFunction());
+    return $self->MakePathCumul(nexts, active, cumuls, slacks,
+        [transit_evaluator](int64 i, int64 j) {
+          return transit_evaluator->Run(i, j); });
   }
   Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
                           const std::vector<IntVar*>& active,
@@ -413,20 +358,27 @@ namespace operations_research {
     if (sink_handler == nullptr) {
       return $self->MakeNoCycle(nexts, active, nullptr);
     } else {
-      return $self->MakeNoCycle(nexts, active, sink_handler->GetFunction());
+      return $self->MakeNoCycle(nexts, active,
+                                [sink_handler](int64 i) {
+                                  return sink_handler->Run(i); });
     }
   }
   Constraint* MakeNoCycle(const std::vector<IntVar*>& nexts,
                           const std::vector<IntVar*>& active,
                           swig_util::LongToBoolean* sink_handler, bool assume_paths) {
-    return $self->MakeNoCycle(nexts, active, sink_handler->GetFunction());
+    return $self->MakeNoCycle(nexts, active,
+                              [sink_handler](int64 i) {
+                                return sink_handler->Run(i); });
   }
   SearchMonitor* MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
                                        swig_util::LongLongToLong* objective_function,
                                        int64 step, const std::vector<IntVar*>& vars,
                                        double penalty_factor) {
     return $self->MakeGuidedLocalSearch(
-        maximize, objective, objective_function->GetFunction(), step, vars, penalty_factor);
+        maximize, objective,
+        [objective_function](int64 i, int64 j) {
+            return objective_function->Run(i, j); },
+        step, vars, penalty_factor);
   }
   SearchMonitor* MakeGuidedLocalSearch(bool maximize, IntVar* const objective,
                                        swig_util::LongLongLongToLong* objective_function,
@@ -434,72 +386,95 @@ namespace operations_research {
                                        const std::vector<IntVar*>& secondary_vars,
                                        double penalty_factor) {
     return $self->MakeGuidedLocalSearch(
-        maximize, objective, objective_function->GetFunction(),
+        maximize, objective,
+        [objective_function](int64 i, int64 j, int64 k) {
+          return objective_function->Run(i, j, k); },
         step, vars, secondary_vars, penalty_factor);
   }
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              swig_util::LongToLong* var_evaluator,
                              IntValueStrategy val_str) {
-    return $self->MakePhase(vars, var_evaluator->GetFunction(), val_str);
+    return $self->MakePhase(vars, [var_evaluator](int64 i) {
+        return var_evaluator->Run(i); }, val_str);
   }
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             IntVarStrategy var_str, swig_util::LongLongToLong* val_eval) {
-    return $self->MakePhase(vars, var_str, val_eval->GetFunction());
+                             IntVarStrategy var_str,
+                             swig_util::LongLongToLong* val_eval) {
+    return $self->MakePhase(vars, var_str, [val_eval](int64 i, int64 j) {
+        return val_eval->Run(i, j); });
   }
   DecisionBuilder* MakePhase(
       const std::vector<IntVar*>& vars, IntVarStrategy var_str,
       swig_util::LongLongLongToBoolean* var_val1_val2_comparator) {
     return $self->MakePhase(
-        vars, var_str, var_val1_val2_comparator->GetFunction());
+        vars, var_str, [var_val1_val2_comparator](int64 i, int64 j, int64 k) {
+          return var_val1_val2_comparator->Run(i, j, k); });
   }
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              swig_util::LongToLong* var_evaluator,
                              swig_util::LongLongToLong* val_eval) {
-    return $self->MakePhase(vars, var_evaluator->GetFunction(), val_eval->GetFunction());
+    return $self->MakePhase(vars, [var_evaluator](int64 i) { return var_evaluator->Run(i); }, [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); });
   }
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IntVarStrategy var_str,
                              swig_util::LongLongToLong* val_eval,
                              swig_util::LongToLong* tie_breaker) {
-    return $self->MakePhase(vars, var_str, val_eval->GetFunction(), tie_breaker->GetFunction());
+    return $self->MakePhase(
+        vars, var_str,
+        [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); },
+        [tie_breaker](int64 i) { return tie_breaker->Run(i); });
   }
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              swig_util::LongToLong* var_evaluator,
                              swig_util::LongLongToLong* val_eval,
                              swig_util::LongToLong* tie_breaker) {
-    return $self->MakePhase(vars,
-                            var_evaluator->GetFunction(),
-                            val_eval->GetFunction(),
-                            tie_breaker->GetFunction());
+    return $self->MakePhase(
+        vars,
+        [var_evaluator](int64 i) { return var_evaluator->Run(i); },
+        [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); },
+        [tie_breaker](int64 i) { return tie_breaker->Run(i); });
   }
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
-                             swig_util::LongLongToLong* evaluator, EvaluatorStrategy str) {
-    return $self->MakePhase(vars, evaluator->GetFunction(), str);
+                             swig_util::LongLongToLong* evaluator,
+                             EvaluatorStrategy str) {
+    return $self->MakePhase(
+        vars,
+        [evaluator](int64 i, int64 j) { return evaluator->Run(i, j); },
+        str);
   }
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              swig_util::LongLongToLong* evaluator,
                              swig_util::LongToLong* tie_breaker,
                              EvaluatorStrategy str) {
     return $self->MakePhase(
-        vars, evaluator->GetFunction(), tie_breaker->GetFunction(), str);
+        vars,
+        [evaluator](int64 i, int64 j) { return evaluator->Run(i, j); },
+        [tie_breaker](int64 i) { return tie_breaker->Run(i); }, str);
   }
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     swig_util::LongLongLongToLong* evaluator,
                                     EvaluatorLocalSearchOperators op) {
-    return $self->MakeOperator(vars, evaluator->GetFunction(), op);
+    return $self->MakeOperator(
+        vars,
+        [evaluator](int64 i, int64 j, int64 k) {
+          return evaluator->Run(i, j, k); }, op);
   }
   LocalSearchOperator* MakeOperator(const std::vector<IntVar*>& vars,
                                     const std::vector<IntVar*>& secondary_vars,
                                     swig_util::LongLongLongToLong* evaluator,
                                     EvaluatorLocalSearchOperators op) {
-    return $self->MakeOperator(vars, secondary_vars, evaluator->GetFunction(), op);
+    return $self->MakeOperator(
+        vars, secondary_vars,
+        [evaluator](int64 i, int64 j, int64 k) {
+          return evaluator->Run(i, j, k); }, op);
   }
   LocalSearchFilter* MakeLocalSearchObjectiveFilter(
       const std::vector<IntVar*>& vars, swig_util::LongLongToLong* values,
       IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum) {
-    return $self->MakeLocalSearchObjectiveFilter(vars, values->GetFunction(),
-                                                 objective, filter_enum, op_enum);
+    return $self->MakeLocalSearchObjectiveFilter(
+        vars, [values](int64 i, int64 j) { return values->Run(i, j); },
+        objective, filter_enum, op_enum);
   }
   LocalSearchFilter* MakeLocalSearchObjectiveFilter(
       const std::vector<IntVar*>& vars, swig_util::LongLongToLong* values,
@@ -507,7 +482,9 @@ namespace operations_research {
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum) {
     return $self->MakeLocalSearchObjectiveFilter(
-        vars, values->GetFunction(), delta_objective_callback->GetFunction(),
+        vars, [values](int64 i, int64 j) { return values->Run(i, j); },
+        [delta_objective_callback](int64 i) {
+          return delta_objective_callback->Run(i); },
         objective, filter_enum, op_enum);
   }
   LocalSearchFilter* MakeLocalSearchObjectiveFilter(
@@ -516,31 +493,36 @@ namespace operations_research {
       Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum) {
     return $self->MakeLocalSearchObjectiveFilter(
-        vars, secondary_vars, values->GetFunction(),
+        vars, secondary_vars,
+        [values](int64 i, int64 j, int64 k) { return values->Run(i, j, k); },
         objective, filter_enum, op_enum);
   }
   LocalSearchFilter* MakeLocalSearchObjectiveFilter(
-      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
       swig_util::LongLongLongToLong* values,
       swig_util::LongToVoid* delta_objective_callback,
       IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
       Solver::LocalSearchOperation op_enum) {
     return $self->MakeLocalSearchObjectiveFilter(
-        vars, secondary_vars, values->GetFunction(),
-        delta_objective_callback->GetFunction(),
+        vars, secondary_vars,
+        [values](int64 i, int64 j, int64 k) { return values->Run(i, j, k); },
+        [delta_objective_callback](int64 i) {
+          return delta_objective_callback->Run(i); },
         objective, filter_enum, op_enum);
   }
   LocalSearchOperator* ConcatenateOperators(
       const std::vector<LocalSearchOperator*>& ops,
       swig_util::IntIntToLong* evaluator) {
-    return $self->ConcatenateOperators(ops, evaluator->GetFunction());
+    return $self->ConcatenateOperators(ops, [evaluator](int i, int64 j) {
+        return evaluator->Run(i, j); });
   }
   SearchMonitor* MakeSearchLog(
       int branch_count,
       OptimizeVar* const objective,
       swig_util::VoidToString* display_callback) {
     return $self->MakeSearchLog(branch_count, objective, [display_callback]() {
-        return display_callback->run();
+        return display_callback->Run();
       });
   }
   SearchMonitor* MakeSearchLog(
@@ -548,28 +530,28 @@ namespace operations_research {
       IntVar* const obj_var,
       swig_util::VoidToString* display_callback) {
     return $self->MakeSearchLog(branch_count, obj_var, [display_callback]() {
-        return display_callback->run();
+        return display_callback->Run();
       });
   }
   SearchMonitor* MakeSearchLog(
       int branch_count,
       swig_util::VoidToString* display_callback) {
     return $self->MakeSearchLog(branch_count, [display_callback]() {
-        return display_callback->run();
+        return display_callback->Run();
       });
   }
   SearchLimit* MakeCustomLimit(swig_util::VoidToBoolean* limiter) {
-    return $self->MakeCustomLimit([limiter]() { return limiter->run(); });
+    return $self->MakeCustomLimit([limiter]() { return limiter->Run(); });
   }
   Demon* MakeClosureDemon(swig_util::VoidToVoid* closure) {
-    return $self->MakeClosureDemon(closure->GetFunction());
+    return $self->MakeClosureDemon([closure]() { return closure->Run(); });
   }
 }  // extend Solver
 
 %ignore DisjunctiveConstraint::SetTransitionTime(Solver::IndexEvaluator2 transit_evaluator);
 %extend DisjunctiveConstraint {
   void SetTransitionTime(swig_util::LongLongToLong* transit_evaluator) {
-    $self->SetTransitionTime([transit_evaluator](int64 i, int64 j) { return transit_evaluator->run(i, j); });
+    $self->SetTransitionTime([transit_evaluator](int64 i, int64 j) { return transit_evaluator->Run(i, j); });
   }
 }  // extend DisjunctiveConstraint
 
@@ -582,22 +564,24 @@ namespace operations_research {
 %extend Pack {
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
     swig_util::LongToLong* weights, const std::vector<int64>& bounds) {
-  return $self->AddWeightedSumLessOrEqualConstantDimension(weights->GetFunction(), bounds);
+  return [$self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i) { return weights->Run(i); }, bounds);
 }
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
     swig_util::LongLongToLong* weights, const std::vector<int64>& bounds) {
-  return $self->AddWeightedSumLessOrEqualConstantDimension(weights->GetFunction(), bounds);
+    return $self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i) { return weights->Run(i); }, bounds);
 }
 void Pack::AddWeightedSumEqualVarDimension(
     swig_util::LongLongToLong* weights, const std::vector<IntVar*>& loads) {
-  return $self->AddWeightedSumEqualVarDimension(weights->GetFunction(), loads);
+  return $self->AddWeightedSumEqualVarDimension([weights](int64 i) { return weights->Run(i); }, loads);
 }
 }  // extend Pack
 
+// No custom wrapping for this method, we simply ignore it.
 %ignore SearchLog::SearchLog(
     Solver* const s, OptimizeVar* const obj, IntVar* const var,
     std::function<std::string()> display_callback, int period);
 
+// Extend IntervalVar with an intuitive API to create precedence constraints.
 %extend IntervalVar {
   Constraint* EndsAfterEnd(IntervalVar* other) {
     return $self->solver()->MakeIntervalVarRelation($self, operations_research::Solver::ENDS_AFTER_END, other);

@@ -38,6 +38,7 @@
 namespace operations_research {
 
 %pythoncode {
+import numbers
 from ortools.linear_solver.linear_solver_natural_api import LinearExpr
 from ortools.linear_solver.linear_solver_natural_api import ProductCst
 from ortools.linear_solver.linear_solver_natural_api import Sum
@@ -190,21 +191,27 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     objective = self.Objective()
     objective.Clear()
     objective.SetMinimization()
-    coeffs = {}
-    offset = expr.Visit(coeffs)
-    objective.AddOffset(offset)
-    for v, c, in coeffs.iteritems():
-      objective.SetCoefficient(v, float(c))
+    if isinstance(expr, numbers.Number):
+        objective.AddOffset(expr)
+    else:
+        coeffs = {}
+        offset = expr.Visit(coeffs)
+        objective.AddOffset(offset)
+        for v, c, in coeffs.iteritems():
+          objective.SetCoefficient(v, float(c))
 
   def Maximize(self, expr):
     objective = self.Objective()
     objective.Clear()
     objective.SetMaximization()
-    coeffs = {}
-    offset = expr.Visit(coeffs)
-    objective.AddOffset(offset)
-    for v, c, in coeffs.iteritems():
-      objective.SetCoefficient(v, float(c))
+    if isinstance(expr, numbers.Number):
+        objective.AddOffset(expr)
+    else:
+        coeffs = {}
+        offset = expr.Visit(coeffs)
+        objective.AddOffset(offset)
+        for v, c, in coeffs.iteritems():
+          objective.SetCoefficient(v, float(c))
   }  // %pythoncode
 }
 
@@ -289,6 +296,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 
 
 // Expose some of the more advanced MPSolver API.
+%unignore operations_research::MPSolver::InterruptSolve;
 %unignore operations_research::MPSolver::SupportsProblemType;  // No unit test
 %unignore operations_research::MPSolver::wall_time;  // No unit test
 %unignore operations_research::MPSolver::Clear;  // No unit test
@@ -358,7 +366,6 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 
 // MPSolverParameters API. For expert users only.
 // TODO(user): also strip "MP" from the class name.
-// TODO(user): unit test all of it.
 %unignore operations_research::MPSolverParameters;
 %unignore operations_research::MPSolverParameters::MPSolverParameters;
 %unignore operations_research::MPSolverParameters::DoubleParam;

@@ -3882,7 +3882,7 @@ class IntVarIterator : public BaseObject {
   // This method indicates if we can call Value() or not.
   virtual bool Ok() const = 0;
 
-  // This method returns the value of the hole.
+  // This method returns the current value of the iterator.
   virtual int64 Value() const = 0;
 
   // This method moves the iterator to the next value.
