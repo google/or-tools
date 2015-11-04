@@ -10,6 +10,9 @@ UNIX_SWIG_BINARY=swig
 UNIX_PROTOBUF_DIR=../protobuf-2.4.1
 # Where sparsehash are installed.
 UNIX_SPARSEHASH_DIR=../sparsehash-1.11
+# Where to find python.h
+UNIX_PYTHON_INC=-I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER)
+
 # This is the root directory of the CLP installation. Please define if CLP is
 # installed. If you have installed CBC, CLP_DIR can have the same value as
 # CBC_DIR.
@@ -39,6 +42,7 @@ WINDOWS_PROTOBUF_DIR=..\\protobuf-2.4.1
 WINDOWS_SPARSEHASH_DIR=..\\sparsehash-1.11
 WINDOWS_PYTHON_DIR=c:\\Python27
 WINDOWS_PYTHON_LIB=c:\\Python27\\libs\\python27.lib
+WINDOWS_PYTHON_INC=/I$(WINDOWS_PYTHON_PATH)\\include
 # This is the root directory of the CLP installation. Please define if CLP is
 # installed. If you have installed CBC, CLP_DIR can have the same value as
 # CBC_DIR.
