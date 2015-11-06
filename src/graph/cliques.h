@@ -293,7 +293,7 @@ class BronKerboschAlgorithm {
   // we optimize the algorithm, we might need to add deterministic time to the
   // other places that may produce complexity, namely InitializeState, PopState
   // and SelectCandidateIndexForRecursion.
-  static constexpr double kPushStateDeterministicTimeSecondsPerCandidate =
+  static const double kPushStateDeterministicTimeSecondsPerCandidate =
       0.54663e-7;
 
   // Initializes the root state of the algorithm.
