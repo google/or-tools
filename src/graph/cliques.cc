@@ -25,6 +25,9 @@
 
 namespace operations_research {
 
+template <typename NodeIndex>
+const double BronKerboschAlgorithm<NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
+
 namespace {
 
 // Encapsulates graph->Run() to make all nodes self-connected.
