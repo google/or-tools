@@ -2181,4 +2181,3 @@ class PyLns(BaseLNS):
       PushBackIntVector(x, output_cpp_vector_fragments);
     return True
 }  // %pythoncode
-

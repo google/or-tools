@@ -13,21 +13,7 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-%include "base/base.swig"
-
-// TODO(user): remove this when we no longer use callbacks in the routing.
-#define FATAL_CALLBACK_EXCEPTION
-%include "base/python/callbacks.swig"
-
-// std::function utilities.
-%include "util/python/functions.swig"
-
-// PY_CONVERT_HELPER_* macros.
-%include "constraint_solver/python/constraint_solver_helpers.swig"
-
-%import "util/python/data.swig"
-%import "util/python/functions.swig"
-%import(module="google3.util.operations_research.constraint_solver.python.pywrapcp") "constraint_solver/python/constraint_solver.swig"
+%include "constraint_solver/python/constraint_solver.swig"
 
 // Include the file we want to wrap a first time.
 %{
@@ -56,9 +42,9 @@
 
 
 // See ./constraint_solver_helpers.swig.
-PY_CONVERT_HELPER_PTR(SearchMonitor);
-PY_CONVERT_HELPER_PTR(IntervalVar);
-PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
+//PY_CONVERT_HELPER_PTR(SearchMonitor);
+//PY_CONVERT_HELPER_PTR(IntervalVar);
+//PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
 
 // Convert RoutingModel::NodeIndex to (32-bit signed) integers.
 %typemap(in) operations_research::RoutingModel::NodeIndex {
