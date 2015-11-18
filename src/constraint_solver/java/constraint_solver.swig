@@ -103,6 +103,16 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 #include "constraint_solver/constraint_solveri.h"
 
 namespace operations_research {
+namespace swig_util {
+class SolverToVoid {
+ public:
+  virtual ~SolverToVoid() {}
+  virtual void Run(Solver*) = 0;
+};
+}  // namespace swig_util
+}  // namespace operations_research
+
+namespace operations_research {
 class LocalSearchPhaseParameters {
  public:
   LocalSearchPhaseParameters() {}
@@ -293,6 +303,9 @@ WRAP_STD_FUNCTION_JAVA(
     LongLongLongToBoolean,
     "com/google/ortools/constraintsolver/",
     bool, Boolean, int64, int64, int64)
+WRAP_OTHER_FUNCTIONS_JAVA("com/google/ortools/constraintsolver/")
+WRAP_CLASS_TO_VOID_JAVA("com/google/ortools/constraintsolver/",
+	                SolverToVoid, Solver)
 
 namespace operations_research {
 class LocalSearchPhaseParameters {
@@ -306,6 +319,17 @@ class LocalSearchPhaseParameters {
 // Wrap cp includes
 %include "constraint_solver/constraint_solver.h"
 %include "constraint_solver/constraint_solveri.h"
+
+namespace operations_research {
+namespace swig_util {
+class SolverToVoid {
+ public:
+  virtual ~SolverToVoid() {}
+  virtual void Run(Solver*) = 0;
+};
+}  // namespace swig_util
+}  // namespace operations_research
+
 
 // Define templates instantiation after wrapping.
 namespace operations_research {

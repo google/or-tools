@@ -1069,13 +1069,13 @@ class Solver {
   IntegerExpressionBuilder GetIntegerExpressionBuilder(const std::string& tag) const;
   IntervalVariableBuilder GetIntervalVariableBuilder(const std::string& tag) const;
   SequenceVariableBuilder GetSequenceVariableBuilder(const std::string& tag) const;
-#endif  // SWIG
 
   // When SaveValue() is not the best way to go, one can create a reversible
   // action that will be called upon backtrack. The "fast" parameter
   // indicates whether we need restore all values saved through SaveValue()
   // before calling this method.
   void AddBacktrackAction(Action a, bool fast);
+#endif  // SWIG
 
   // misc debug std::string.
   std::string DebugString() const;
@@ -1456,8 +1456,10 @@ class Solver {
   // method to call the InitiatePropagate of the constraint 'ct' with
   // low priority.
   Demon* MakeDelayedConstraintInitialPropagateCallback(Constraint* const ct);
+#if !defined(SWIG)
   // Creates a demon from a callback.
   Demon* MakeActionDemon(Action action);
+#endif
   // Creates a demon from a closure.
   Demon* MakeClosureDemon(Closure closure);
 
@@ -2374,7 +2376,9 @@ class Solver {
   Decision* MakeAssignVariablesValues(const std::vector<IntVar*>& vars,
                                       const std::vector<int64>& values);
   Decision* MakeFailDecision();
+#if !defined(SWIG)
   Decision* MakeDecision(Action apply, Action refute);
+#endif
 
   // Creates a decision builder which sequentially composes decision builders.
   // At each leaf of a decision builder, the next decision builder is therefore
@@ -3176,9 +3180,11 @@ class PropagationBaseObject : public BaseObject {
   void ExecuteAll(const SimpleRevFIFO<Demon*>& demons);
   void EnqueueAll(const SimpleRevFIFO<Demon*>& demons);
 
+#if !defined(SWIG)
   // This method sets a callback that will be called if a failure
   // happens during the propagation of the queue.
   void set_action_on_fail(Solver::Action a) { solver_->set_action_on_fail(a); }
+#endif
 
   // This methods clears the failure callback.
   void reset_action_on_fail() { solver_->reset_action_on_fail(); }
@@ -3843,10 +3849,12 @@ class IntExpr : public PropagationBaseObject {
   void WhenRange(Solver::Closure closure) {
     WhenRange(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   // Attach a demon that will watch the min or the max of the expression.
   void WhenRange(Solver::Action action) {
     WhenRange(solver()->MakeActionDemon(action));
   }
+#endif
 
   // Accepts the given visitor.
   virtual void Accept(ModelVisitor* const visitor) const;
@@ -3987,11 +3995,14 @@ class IntVar : public IntExpr {
   void WhenBound(Solver::Closure closure) {
     WhenBound(solver()->MakeClosureDemon(closure));
   }
+
+#if !defined(SWIG)
   // This method attaches an action that will be awakened when the
   // variable is bound.
   void WhenBound(Solver::Action action) {
     WhenBound(solver()->MakeActionDemon(action));
   }
+#endif
 
   // This method attaches a demon that will watch any domain
   // modification of the domain of the variable.
@@ -4001,11 +4012,13 @@ class IntVar : public IntExpr {
   void WhenDomain(Solver::Closure closure) {
     WhenDomain(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   // This method attaches an action that will watch any domain
   // modification of the domain of the variable.
   void WhenDomain(Solver::Action action) {
     WhenDomain(solver()->MakeActionDemon(action));
   }
+#endif
 
   // This method returns the number of values in the domain of the variable.
   virtual uint64 Size() const = 0;
@@ -4328,16 +4341,20 @@ class IntervalVar : public PropagationBaseObject {
   void WhenStartRange(Solver::Closure closure) {
     WhenStartRange(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   void WhenStartRange(Solver::Action action) {
     WhenStartRange(solver()->MakeActionDemon(action));
   }
+#endif
   virtual void WhenStartBound(Demon* const d) = 0;
   void WhenStartBound(Solver::Closure closure) {
     WhenStartBound(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   void WhenStartBound(Solver::Action action) {
     WhenStartBound(solver()->MakeActionDemon(action));
   }
+#endif
 
   // These methods query, set and watch the duration of the interval var.
   virtual int64 DurationMin() const = 0;
@@ -4351,16 +4368,20 @@ class IntervalVar : public PropagationBaseObject {
   void WhenDurationRange(Solver::Closure closure) {
     WhenDurationRange(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   void WhenDurationRange(Solver::Action action) {
     WhenDurationRange(solver()->MakeActionDemon(action));
   }
+#endif
   virtual void WhenDurationBound(Demon* const d) = 0;
   void WhenDurationBound(Solver::Closure closure) {
     WhenDurationBound(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   void WhenDurationBound(Solver::Action action) {
     WhenDurationBound(solver()->MakeActionDemon(action));
   }
+#endif
 
   // These methods query, set and watch the end position of the interval var.
   virtual int64 EndMin() const = 0;
@@ -4374,16 +4395,20 @@ class IntervalVar : public PropagationBaseObject {
   void WhenEndRange(Solver::Closure closure) {
     WhenEndRange(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   void WhenEndRange(Solver::Action action) {
     WhenEndRange(solver()->MakeActionDemon(action));
   }
+#endif
   virtual void WhenEndBound(Demon* const d) = 0;
   void WhenEndBound(Solver::Closure closure) {
     WhenEndBound(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   void WhenEndBound(Solver::Action action) {
     WhenEndBound(solver()->MakeActionDemon(action));
   }
+#endif
 
   // These methods query, set and watches the performed status of the
   // interval var.
@@ -4399,9 +4424,11 @@ class IntervalVar : public PropagationBaseObject {
   void WhenPerformedBound(Solver::Closure closure) {
     WhenPerformedBound(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   void WhenPerformedBound(Solver::Action action) {
     WhenPerformedBound(solver()->MakeActionDemon(action));
   }
+#endif
 
   // Attaches a demon awakened when anything about this interval changes.
   void WhenAnything(Demon* const d);
@@ -4409,10 +4436,12 @@ class IntervalVar : public PropagationBaseObject {
   void WhenAnything(Solver::Closure closure) {
     WhenAnything(solver()->MakeClosureDemon(closure));
   }
+#if !defined(SWIG)
   // Attaches an action awakened when anything about this interval changes.
   void WhenAnything(Solver::Action action) {
     WhenAnything(solver()->MakeActionDemon(action));
   }
+#endif
 
   // These methods create expressions encapsulating the start, end
   // and duration of the interval var. Please note that these must not

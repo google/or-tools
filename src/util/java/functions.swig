@@ -32,7 +32,6 @@
 #include "util/functions_swig_helpers.h"
 %}
 
-
 #define PARENTHIZE(ReturnType, Args...) ReturnType(Args)
 #define CAT3(a, b, c) a ## b ## c
 
@@ -122,14 +121,14 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 
 // --------- VoidToString ---------
 
+%define WRAP_OTHER_FUNCTIONS_JAVA(ClassPath) 
 %typemap(in) std::function<std::string()> {
   jclass object_class =
-    jenv->FindClass("com/google/ortools/"
-                    "util/VoidToString");
+    jenv->FindClass(ClassPath "VoidToString");
   if (nullptr == object_class) return $null;
   jmethodID method_id =
       jenv->GetStaticMethodID(object_class, "getCPtr",
-          "(Lcom/google/ortools/util/VoidToString;)J");
+          "(L" ClassPath "VoidToString;)J");
   assert(method_id != nullptr);
   operations_research::swig_util::VoidToString* const fun =
       reinterpret_cast<operations_research::swig_util::VoidToString*>(
@@ -151,12 +150,11 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 
 %typemap(in) std::function<void()> {
   jclass object_class =
-    jenv->FindClass("com/google/ortools/"
-                    "util/VoidToVoid");
+    jenv->FindClass(ClassPath "VoidToVoid");
   if (nullptr == object_class) return $null;
   jmethodID method_id =
       jenv->GetStaticMethodID(object_class, "getCPtr",
-          "(Lcom/google/ortools/util/VoidToVoid;)J");
+          "(L" ClassPath "VoidToVoid;)J");
   assert(method_id != nullptr);
   operations_research::swig_util::VoidToVoid* const fun =
       reinterpret_cast<operations_research::swig_util::VoidToVoid*>(
@@ -176,12 +174,11 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 
 %typemap(in) std::function<void(int64)> {
   jclass object_class =
-    jenv->FindClass("com/google/ortools/"
-                    "util/LongToVoid");
+    jenv->FindClass(ClassPath "LongToVoid");
   if (nullptr == object_class) return $null;
   jmethodID method_id =
       jenv->GetStaticMethodID(object_class, "getCPtr",
-          "(Lcom/google/ortools/util/LongToVoid;)J");
+          "(L" ClassPath "LongToVoid;)J");
   assert(method_id != nullptr);
   operations_research::swig_util::LongToVoid* const fun =
       reinterpret_cast<operations_research::swig_util::LongToVoid*>(
@@ -196,6 +193,32 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 
 // This typemap handles the conversion of the jstype to jtype typemap types
 %typemap(javain) std::function<void(int64)> "$javainput"
+%enddef  // WRAP_OTHER_FUNCTIONS_JAVA
+
+%define WRAP_CLASS_TO_VOID_JAVA(ClassPath, CppClass, Parameter)
+%typemap(in) std::function<void(operations_research::Parameter*)> {
+  jclass object_class = jenv->FindClass(ClassPath CppClass);
+  if (nullptr == object_class) return $null;
+  jmethodID method_id = jenv->GetStaticMethodID(
+      object_class, "getCPtr", "(L" ClassPath CppClass";)J");
+  assert(method_id != nullptr);
+  operations_research::swig_util::CppClass* const fun =
+      reinterpret_cast<operations_research::swig_util::CppClass*>(
+          jenv->CallStaticLongMethod(object_class, method_id, $input));
+  $1 = [fun](Parameter* param) { fun->Run(param); };
+}
+
+// These 3 typemaps tell SWIG what JNI and Java types to use
+%typemap(jni) std::function<void(operations_research::Parameter*)> "jobject"
+%typemap(jtype) std::function<void(operations_research::Parameter*)> "CppClass"
+%typemap(jstype) std::function<void(operations_research::Parameter*)> "CppClass"
+
+// This typemap handles the conversion of the jstype to jtype typemap types
+%typemap(javain) std::function<void(operations_research::Parameter*)> "$javainput"
+
+%feature("director") operations_research::swig_util::CppClass;
+%rename (run) operations_research::swig_util::CppClass::Run;
+%enddef  // WRAP_CLASS_TO_VOID_JAVA
 
 // directors
 
