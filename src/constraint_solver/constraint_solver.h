@@ -106,7 +106,6 @@ class DecisionVisitor;
 class Demon;
 class DemonProfiler;
 class DemonProfiler;
-class DependencyGraph;
 class Dimension;
 class DisjunctiveConstraint;
 class ExpressionCache;
@@ -1069,13 +1068,15 @@ class Solver {
   IntegerExpressionBuilder GetIntegerExpressionBuilder(const std::string& tag) const;
   IntervalVariableBuilder GetIntervalVariableBuilder(const std::string& tag) const;
   SequenceVariableBuilder GetSequenceVariableBuilder(const std::string& tag) const;
+#endif  // SWIG
 
+#if !defined(SWIG)
   // When SaveValue() is not the best way to go, one can create a reversible
   // action that will be called upon backtrack. The "fast" parameter
   // indicates whether we need restore all values saved through SaveValue()
   // before calling this method.
   void AddBacktrackAction(Action a, bool fast);
-#endif  // SWIG
+#endif  // !defined(SWIG)
 
   // misc debug std::string.
   std::string DebugString() const;
@@ -1459,7 +1460,7 @@ class Solver {
 #if !defined(SWIG)
   // Creates a demon from a callback.
   Demon* MakeActionDemon(Action action);
-#endif
+#endif  // !defined(SWIG)
   // Creates a demon from a closure.
   Demon* MakeClosureDemon(Closure closure);
 
@@ -2378,7 +2379,7 @@ class Solver {
   Decision* MakeFailDecision();
 #if !defined(SWIG)
   Decision* MakeDecision(Action apply, Action refute);
-#endif
+#endif  // !defined(SWIG)
 
   // Creates a decision builder which sequentially composes decision builders.
   // At each leaf of a decision builder, the next decision builder is therefore
@@ -2621,9 +2622,9 @@ class Solver {
   // always return neighbors; using it without a search limit will result in a
   // non-ending search.
   // Optionally a random seed can be specified.
-  LocalSearchOperator* MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
+  LocalSearchOperator* MakeRandomLnsOperator(const std::vector<IntVar*>& vars,
                                              int number_of_variables);
-  LocalSearchOperator* MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
+  LocalSearchOperator* MakeRandomLnsOperator(const std::vector<IntVar*>& vars,
                                              int number_of_variables,
                                              int32 seed);
 
@@ -2902,8 +2903,6 @@ class Solver {
   bool NameAllVariables() const;
   // Returns the name of the model.
   std::string model_name() const;
-  // Returns the dependency graph of the solver.
-  DependencyGraph* Graph() const;
   // Returns the propagation monitor.
   PropagationMonitor* GetPropagationMonitor() const;
   // Adds the propagation monitor to the solver. This is called internally when
@@ -3108,7 +3107,6 @@ class Solver {
   hash_map<std::string, SequenceVariableBuilder> sequence_builders_;
 
   std::unique_ptr<ModelCache> model_cache_;
-  std::unique_ptr<DependencyGraph> dependency_graph_;
   std::unique_ptr<PropagationMonitor> propagation_monitor_;
   PropagationMonitor* print_trace_;
   int anonymous_variable_index_;

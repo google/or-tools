@@ -41,8 +41,6 @@
 // not be worth it.
 #define ORTOOLS_SCIP_CALL(x) CHECK_EQ(SCIP_OKAY, x)
 
-DECLARE_double(solver_timeout_in_seconds);
-DECLARE_string(solver_write_model);
 DEFINE_bool(scip_feasibility_emphasis, false,
             "When true, emphasize search towards feasibility. This may or"
             " may not result in speedups in some problems.");

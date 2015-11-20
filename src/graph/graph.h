@@ -734,6 +734,17 @@ void Permute(const IntVector& permutation, Array* array_to_permute) {
                                  (*array_to_permute)[0]);
 }
 
+// We need a specialization for std::vector<bool>, because the default code uses
+// (*array_to_permute)[0] as ElementType, which isn't 'bool' in that case.
+template <class IntVector>
+void Permute(const IntVector& permutation, std::vector<bool>* array_to_permute) {
+  if (permutation.size() == 0) {
+    return;
+  }
+  bool unused = false;
+  PermuteWithExplicitElementType(permutation, array_to_permute, unused);
+}
+
 // A vector-like class where valid indices are in [- size_, size_) and reserved
 // indices for future growth are in [- capacity_, capacity_). It is used to hold
 // arc related information for graphs with reverse arcs.

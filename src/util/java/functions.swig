@@ -32,6 +32,7 @@
 #include "util/functions_swig_helpers.h"
 %}
 
+
 #define PARENTHIZE(ReturnType, Args...) ReturnType(Args)
 #define CAT3(a, b, c) a ## b ## c
 

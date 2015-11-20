@@ -87,10 +87,10 @@ bool CheckCostas(const std::vector<int64>& vars) {
 }
 
 // Cycles all possible permutations
-class OrderedLNS : public BaseLNS {
+class OrderedLns : public BaseLns {
  public:
-  OrderedLNS(const std::vector<IntVar*>& vars, int free_elements)
-      : BaseLNS(vars), free_elements_(free_elements) {
+  OrderedLns(const std::vector<IntVar*>& vars, int free_elements)
+      : BaseLns(vars), free_elements_(free_elements) {
     index_ = 0;
 
     // Start of with the first free_elements_ as a permutations, eg. 0,1,2,3,...
@@ -100,14 +100,13 @@ class OrderedLNS : public BaseLNS {
     }
   }
 
-  bool NextFragment(std::vector<int>* const fragment) override {
+  bool NextFragment() override {
     int dim = Size();
     std::set<int> fragment_set;
 
     do {
       int work_index = index_;
 
-      fragment->clear();
       fragment_set.clear();
 
       for (int i = 0; i < free_elements_; ++i) {
@@ -118,7 +117,7 @@ class OrderedLNS : public BaseLNS {
 
         // Check if element has been used before
         if (ret.second) {
-          fragment->push_back(current_index);
+          AppendToFragment(current_index);
         } else {
           break;
         }
@@ -137,16 +136,16 @@ class OrderedLNS : public BaseLNS {
   const int free_elements_;
 };
 
-// RandomLNS is used for the local search and frees the
+// RandomLns is used for the local search and frees the
 // number of elements specified in 'free_elements' randomly.
-class RandomLNS : public BaseLNS {
+class RandomLns : public BaseLns {
  public:
-  RandomLNS(const std::vector<IntVar*>& vars, int free_elements)
-      : BaseLNS(vars),
+  RandomLns(const std::vector<IntVar*>& vars, int free_elements)
+      : BaseLns(vars),
         free_elements_(free_elements),
         rand_(ACMRandom::HostnamePidTimeSeed()) {}
 
-  bool NextFragment(std::vector<int>* const fragment) override {
+  bool NextFragment() override {
     std::vector<int> weighted_elements;
     std::vector<int64> values;
 
@@ -164,9 +163,9 @@ class RandomLNS : public BaseLNS {
     int size = weighted_elements.size();
 
     // Randomly insert elements in vector until no more options remain
-    while (fragment->size() < std::min(free_elements_, size)) {
+    while (FragmentSize() < std::min(free_elements_, size)) {
       const int index = weighted_elements[rand_.Next() % size];
-      fragment->push_back(index);
+      AppendToFragment(index);
 
       // Remove all elements with this index from weighted_elements
       for (std::vector<int>::iterator pos = weighted_elements.begin();
@@ -321,7 +320,7 @@ void CostasSoft(const int dim) {
   SearchLimit* const search_time_limit =
       solver.MakeLimit(FLAGS_timelimit, kint64max, kint64max, kint64max);
 
-  // Locally optimize solutions for LNS
+  // Locally optimize solutions for Lns
   SearchLimit* const fail_limit =
       solver.MakeLimit(kint64max, kint64max, FLAGS_sublimit, kint64max);
 
@@ -330,13 +329,13 @@ void CostasSoft(const int dim) {
 
   std::vector<LocalSearchOperator*> localSearchOperators;
 
-  // Apply RandomLNS to free FLAGS_freevar variables at each stage
+  // Apply RandomLns to free FLAGS_freevar variables at each stage
   localSearchOperators.push_back(
-      solver.RevAlloc(new OrderedLNS(matrix, FLAGS_freevar)));
+      solver.RevAlloc(new OrderedLns(matrix, FLAGS_freevar)));
 
   // Go through all possible permutations one by one
   localSearchOperators.push_back(
-      solver.RevAlloc(new OrderedLNS(matrix, FLAGS_freeorderedvar)));
+      solver.RevAlloc(new OrderedLns(matrix, FLAGS_freeorderedvar)));
 
   LocalSearchPhaseParameters* const ls_params =
       solver.MakeLocalSearchPhaseParameters(

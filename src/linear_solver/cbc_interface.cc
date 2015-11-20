@@ -40,9 +40,6 @@
 
 // Heuristics
 
-DECLARE_double(solver_timeout_in_seconds);
-DECLARE_string(solver_write_model);
-
 namespace operations_research {
 
 class CBCInterface : public MPSolverInterface {

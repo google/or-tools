@@ -294,8 +294,7 @@ struct FzOnSolutionOutput {
   // for a 2d array (bounds.size() == 2).
   static FzOnSolutionOutput MultiDimensionalArray(
       const std::string& name, std::vector<Bounds> bounds,
-      std::vector<FzIntegerVariable*> flat_variables,
-      bool display_as_boolean);
+      std::vector<FzIntegerVariable*> flat_variables, bool display_as_boolean);
   // Empty output.
   static FzOnSolutionOutput VoidOutput();
 
@@ -387,7 +386,7 @@ class FzModelStatistics {
 
  private:
   const FzModel& model_;
-  hash_map<const std::string, std::vector<FzConstraint*> > constraints_per_type_;
+  hash_map<std::string, std::vector<FzConstraint*> > constraints_per_type_;
   hash_map<const FzIntegerVariable*, std::vector<FzConstraint*> >
       constraints_per_variables_;
 };

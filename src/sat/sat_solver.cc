@@ -560,6 +560,11 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // Optimization. All the activity of the variables assigned after the trail
   // index below will not change, so there is no need to update them. This is
   // also slightly better cache-wise, since we just enqueued these literals.
+  //
+  // TODO(user): This untrail doesn't need to call the Propagator untrail and
+  // actually shouldn't because it doesn't respect the API to call them on an
+  // exact decision level boundary, and the normal Backtrack will be called
+  // again later anyway.
   UntrailWithoutPQUpdate(
       std::max(max_trail_index + 1, last_decision_or_backtrack_trail_index_));
 
@@ -875,6 +880,10 @@ void SatSolver::Backtrack(int target_level) {
   if (CurrentDecisionLevel() == target_level) return;
   DCHECK_GE(target_level, 0);
   DCHECK_LE(target_level, CurrentDecisionLevel());
+
+  // Per the Propagator interface, this is needed before calling Untrail.
+  trail_.SetDecisionLevel(target_level);
+
   int target_trail_index = 0;
   while (current_decision_level_ > target_level) {
     --current_decision_level_;
@@ -885,7 +894,6 @@ void SatSolver::Backtrack(int target_level) {
   } else {
     UntrailWithoutPQUpdate(target_trail_index);
   }
-  trail_.SetDecisionLevel(target_level);
   last_decision_or_backtrack_trail_index_ = trail_.Index();
 }
 

@@ -19,15 +19,19 @@
 
 namespace operations_research {
 
-// Exactly like file::ReadFileToProto() but also supports GZipped files.
+enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson };
+
+// Exactly like file::ReadFileToProto() but also supports GZipped files and
+// JSON.
 bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto);
 
 // Like file::WriteProtoToFile() or file::WriteProtoToASCIIFile(), but also
-// supports GZipped output.
-// If 'binary'is true, ".bin" is appended to file_name.
-// If 'gzipped'is true, ".gz" is appended to file_name.
+// supports JSON and GZipped output.
+// If 'proto_write_format' is kProtoBinary, ".bin" is appended to file_name.
+// If 'proto_write_format' is kJson, ".json" is appended to file_name.
+// If 'gzipped' is true, ".gz" is appended to file_name.
 bool WriteProtoToFile(const std::string& file_name, const google::protobuf::Message& proto,
-                      bool binary, bool gzipped);
+                      ProtoWriteFormat proto_write_format, bool gzipped);
 
 // Prints a proto2 message as a std::string, it behaves like TextFormat::Print()
 // but also prints the default values of unset fields which is useful for

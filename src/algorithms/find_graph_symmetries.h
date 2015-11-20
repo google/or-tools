@@ -11,7 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(user, fdid): Refine this toplevel comment when this file settles.
+// This class solves the graph automorphism problem
+// (https://en.wikipedia.org/wiki/Graph_automorphism), a variant of the famous
+// graph isomorphism problem (https://en.wikipedia.org/wiki/Graph_isomorphism).
+//
+// The algorithm is largely based on the following article, published in 2008:
+// "Faster Symmetry Discovery using Sparsity of Symmetries" by Darga, Sakallah
+// and Markov. http://web.eecs.umich.edu/~imarkov/pubs/conf/dac08-sym.pdf.
+//
+// See the comments on the class below for more details.
 
 #ifndef OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
 #define OR_TOOLS_ALGORITHMS_FIND_GRAPH_SYMMETRIES_H_
@@ -64,7 +72,7 @@ class GraphSymmetryFinder {
   // the number of generators, nor in the size of these generators), but it is
   // minimal in that no generator can be removed while keeping the generated
   // group intact.
-  // TODO(user): properly verify the minimality in unit tests.
+  // TODO(user): verify the minimality in unit tests.
   //
   // Note that if "generators" is empty, then the graph has no symmetry: the
   // only automorphism is the identity.
@@ -91,10 +99,6 @@ class GraphSymmetryFinder {
   // - "factorized_automorphism_group_size" will also be incomplete, and
   //   partially valid: its last element may be undervalued. But all prior
   //   elements are valid factors of the automorphism group size.
-  //
-  // This method is largely based on the following article, published in 2008:
-  // "Faster Symmetry Discovery using Sparsity of Symmetries" by Darga, Sakallah
-  // and Markov. http://web.eecs.umich.edu/~imarkov/pubs/conf/dac08-sym.pdf.
   util::Status FindSymmetries(
       double time_limit_seconds, std::vector<int>* node_equivalence_classes_io,
       std::vector<std::unique_ptr<SparsePermutation>>* generators,

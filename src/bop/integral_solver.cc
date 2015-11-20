@@ -922,8 +922,7 @@ bool CheckSolution(const LinearProgram& linear_problem,
 BopSolveStatus InternalSolve(const LinearProgram& linear_problem,
                              const BopParameters& parameters,
                              const DenseRow& initial_solution,
-                             bool* external_boolean_as_limit,
-                             DenseRow* variable_values,
+                             TimeLimit* time_limit, DenseRow* variable_values,
                              Fractional* objective_value,
                              Fractional* best_bound) {
   CHECK(variable_values != nullptr);
@@ -949,7 +948,6 @@ BopSolveStatus InternalSolve(const LinearProgram& linear_problem,
   }
 
   BopSolver bop_solver(boolean_problem);
-  bop_solver.RegisterExternalBooleanAsLimit(external_boolean_as_limit);
   bop_solver.SetParameters(parameters);
   BopSolveStatus status = BopSolveStatus::NO_SOLUTION_FOUND;
   if (use_initial_solution) {
@@ -958,9 +956,9 @@ BopSolveStatus InternalSolve(const LinearProgram& linear_problem,
     for (int i = 0; i < boolean_initial_solution.size(); ++i) {
       bop_solution.SetValue(VariableIndex(i), boolean_initial_solution[i]);
     }
-    status = bop_solver.Solve(bop_solution);
+    status = bop_solver.SolveWithTimeLimit(bop_solution, time_limit);
   } else {
-    status = bop_solver.Solve();
+    status = bop_solver.SolveWithTimeLimit(time_limit);
   }
   if (status == BopSolveStatus::OPTIMAL_SOLUTION_FOUND ||
       status == BopSolveStatus::FEASIBLE_SOLUTION_FOUND) {
@@ -987,10 +985,10 @@ BopSolveStatus InternalSolve(const LinearProgram& linear_problem,
 }
 
 void RunOneBop(const BopParameters& parameters, int problem_index,
-               const DenseRow& initial_solution,
-               bool* external_boolean_as_limit, LPDecomposer* decomposer,
-               DenseRow* variable_values, Fractional* objective_value,
-               Fractional* best_bound, BopSolveStatus* status) {
+               const DenseRow& initial_solution, TimeLimit* time_limit,
+               LPDecomposer* decomposer, DenseRow* variable_values,
+               Fractional* objective_value, Fractional* best_bound,
+               BopSolveStatus* status) {
   CHECK(decomposer != nullptr);
   CHECK(variable_values != nullptr);
   CHECK(objective_value != nullptr);
@@ -1015,15 +1013,13 @@ void RunOneBop(const BopParameters& parameters, int problem_index,
       parameters.max_deterministic_time() / total_num_variables;
   const int local_num_variables = std::max(1, problem.num_variables().value());
 
-  BopParameters local_parameters = parameters;
-  local_parameters.set_max_time_in_seconds(
-      std::max(time_per_variable * local_num_variables,
-               parameters.decomposed_problem_min_time_in_seconds()));
-  local_parameters.set_max_deterministic_time(deterministic_time_per_variable *
-                                              local_num_variables);
+  NestedTimeLimit subproblem_time_limit(
+      time_limit, std::max(time_per_variable * local_num_variables,
+                           parameters.decomposed_problem_min_time_in_seconds()),
+      deterministic_time_per_variable * local_num_variables);
 
-  *status = InternalSolve(problem, local_parameters, local_initial_solution,
-                          external_boolean_as_limit, variable_values,
+  *status = InternalSolve(problem, parameters, local_initial_solution,
+                          subproblem_time_limit.GetTimeLimit(), variable_values,
                           objective_value, best_bound);
 }
 }  // anonymous namespace
@@ -1054,6 +1050,9 @@ BopSolveStatus IntegralSolver::Solve(
   // Some code path requires to copy the given linear_problem. When this
   // happens, we will simply change the target of this pointer.
   LinearProgram const* lp = &linear_problem;
+  std::unique_ptr<TimeLimit> time_limit =
+      TimeLimit::FromParameters(parameters_);
+  time_limit->RegisterExternalBooleanAsLimit(&interrupt_solve_);
 
 
   BopSolveStatus status;
@@ -1071,7 +1070,7 @@ BopSolveStatus IntegralSolver::Solve(
                                       BopSolveStatus::INVALID_PROBLEM);
 
         for (int i = 0; i < num_sub_problems; ++i) {
-          RunOneBop(parameters_, i, initial_solution, &interrupt_solve_,
+          RunOneBop(parameters_, i, initial_solution, time_limit.get(),
                     &decomposer, &(variable_values[i]), &(objective_values[i]),
                     &(best_bounds[i]), &(statuses[i]));
         }
@@ -1097,13 +1096,12 @@ BopSolveStatus IntegralSolver::Solve(
       CheckSolution(*lp, variable_values_);
     } else {
       status =
-          InternalSolve(*lp, parameters_, initial_solution, &interrupt_solve_,
+          InternalSolve(*lp, parameters_, initial_solution, time_limit.get(),
                         &variable_values_, &objective_value_, &best_bound_);
     }
   } else {
-    status =
-        InternalSolve(*lp, parameters_, initial_solution, &interrupt_solve_,
-                      &variable_values_, &objective_value_, &best_bound_);
+    status = InternalSolve(*lp, parameters_, initial_solution, time_limit.get(),
+                           &variable_values_, &objective_value_, &best_bound_);
   }
 
   return status;

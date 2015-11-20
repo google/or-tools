@@ -513,8 +513,7 @@ FzAnnotation FzAnnotation::Variable(FzIntegerVariable* const var) {
   return result;
 }
 
-FzAnnotation FzAnnotation::VariableList(
-    std::vector<FzIntegerVariable*> variables) {
+FzAnnotation FzAnnotation::VariableList(std::vector<FzIntegerVariable*> variables) {
   FzAnnotation result;
   result.type = INT_VAR_REF_ARRAY;
   result.interval_min = 0;
@@ -640,9 +639,8 @@ FzIntegerVariable* FzModel::AddVariable(const std::string& name,
   return var;
 }
 
-void FzModel::AddConstraint(const std::string& id,
-                            std::vector<FzArgument> arguments, bool is_domain,
-                            FzIntegerVariable* const defines) {
+void FzModel::AddConstraint(const std::string& id, std::vector<FzArgument> arguments,
+                            bool is_domain, FzIntegerVariable* const defines) {
   FzConstraint* const constraint =
       new FzConstraint(id, std::move(arguments), is_domain, defines);
   constraints_.push_back(constraint);

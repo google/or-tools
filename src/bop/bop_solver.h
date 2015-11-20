@@ -72,6 +72,16 @@ class BopSolver {
   BopSolveStatus Solve();
   BopSolveStatus Solve(const BopSolution& first_solution);
 
+  // Runs the solver with an external time limit.
+  // NOTE(user): These methods do not use the external boolean registered as
+  // a limit within this class, but the caller can register the same boolean
+  // directly into the time limit object to achieve the same effect. Eventually,
+  // we should remove the explicit 'external_boolean_as_limit_' from this class,
+  // and use only the boolean registered in the time limit object.
+  BopSolveStatus SolveWithTimeLimit(TimeLimit* time_limit);
+  BopSolveStatus SolveWithTimeLimit(const BopSolution& first_solution,
+                                    TimeLimit* time_limit);
+
   const BopSolution& best_solution() const { return problem_state_.solution(); }
   bool GetSolutionValue(VariableIndex var_id) const {
     return problem_state_.solution().Value(var_id);
@@ -90,8 +100,8 @@ class BopSolver {
 
  private:
   void UpdateParameters();
-  BopSolveStatus InternalMonothreadSolver();
-  BopSolveStatus InternalMultithreadSolver();
+  BopSolveStatus InternalMonothreadSolver(TimeLimit* time_limit);
+  BopSolveStatus InternalMultithreadSolver(TimeLimit* time_limit);
 
   const LinearBooleanProblem& problem_;
   ProblemState problem_state_;

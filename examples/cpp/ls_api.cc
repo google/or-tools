@@ -25,18 +25,18 @@
 #include "base/random.h"
 
 namespace operations_research {
-class OneVarLns : public BaseLNS {
+class OneVarLns : public BaseLns {
  public:
-  explicit OneVarLns(const std::vector<IntVar*>& vars) : BaseLNS(vars), index_(0) {}
+  explicit OneVarLns(const std::vector<IntVar*>& vars) : BaseLns(vars), index_(0) {}
 
   ~OneVarLns() override {}
 
   void InitFragments() override { index_ = 0; }
 
-  bool NextFragment(std::vector<int>* fragment) override {
+  bool NextFragment() override {
     const int size = Size();
     if (index_ < size) {
-      fragment->push_back(index_);
+      AppendToFragment(index_);
       ++index_;
       return true;
     } else {

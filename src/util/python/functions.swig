@@ -185,3 +185,23 @@ static bool PyFunctionVoidToBool(PyObject* pyfunc) {
 %typemap(in) std::function<bool()> {
   $1 = [$input]() { return PyFunctionVoidToBool($input); };
 }
+
+%{
+static void PyFunctionVoidToVoid(PyObject* pyfunc) {
+  PyObject* pyresult = PyObject_CallFunctionObjArgs(pyfunc, nullptr);
+  if (!pyresult) {
+    PyErr_SetString(PyExc_RuntimeError,
+                    "std::function<void()> invocation failed.");
+  } else {
+    Py_DECREF(pyresult);
+  }
+}
+%}
+
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<void()> {
+  $1 = PyCallable_Check($input);
+}
+
+%typemap(in) std::function<void()> {
+  $1 = [$input]() { return PyFunctionVoidToVoid($input); };
+}

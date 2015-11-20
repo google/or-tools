@@ -1304,7 +1304,6 @@ enum SentinelMarker {
 
 extern PropagationMonitor* BuildTrace(Solver* const s);
 extern ModelCache* BuildModelCache(Solver* const solver);
-extern DependencyGraph* BuildDependencyGraph(Solver* const solver);
 
 std::string Solver::model_name() const { return name_; }
 
@@ -1360,7 +1359,6 @@ void Solver::Init() {
   InitBuilders();
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
-  dependency_graph_.reset(BuildDependencyGraph(this));
   AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_profiler_));
 }
 

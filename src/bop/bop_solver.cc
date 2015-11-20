@@ -84,25 +84,32 @@ BopSolver::BopSolver(const LinearBooleanProblem& problem)
 BopSolver::~BopSolver() { IF_STATS_ENABLED(VLOG(1) << stats_.StatString()); }
 
 BopSolveStatus BopSolver::Solve() {
+  std::unique_ptr<TimeLimit> time_limit =
+      TimeLimit::FromParameters(parameters_);
+  time_limit->RegisterExternalBooleanAsLimit(external_boolean_as_limit_);
+  return SolveWithTimeLimit(time_limit.get());
+}
+
+BopSolveStatus BopSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
+  CHECK(time_limit != nullptr);
   SCOPED_TIME_STAT(&stats_);
 
   UpdateParameters();
 
-  return parameters_.number_of_solvers() > 1 ? InternalMultithreadSolver()
-                                             : InternalMonothreadSolver();
+  return parameters_.number_of_solvers() > 1
+             ? InternalMultithreadSolver(time_limit)
+             : InternalMonothreadSolver(time_limit);
 }
 
-BopSolveStatus BopSolver::InternalMonothreadSolver() {
-  std::unique_ptr<TimeLimit> time_limit =
-      TimeLimit::FromParameters(parameters_);
-  time_limit->RegisterExternalBooleanAsLimit(external_boolean_as_limit_);
+BopSolveStatus BopSolver::InternalMonothreadSolver(TimeLimit* time_limit) {
+  CHECK(time_limit != nullptr);
   LearnedInfo learned_info(problem_state_.original_problem());
   PortfolioOptimizer optimizer(problem_state_, parameters_,
                                parameters_.solver_optimizer_sets(0),
                                "Portfolio");
   while (!time_limit->LimitReached()) {
     const BopOptimizerBase::Status optimization_status = optimizer.Optimize(
-        parameters_, problem_state_, &learned_info, time_limit.get());
+        parameters_, problem_state_, &learned_info, time_limit);
     problem_state_.MergeLearnedInfo(learned_info, optimization_status);
 
     if (optimization_status == BopOptimizerBase::SOLUTION_FOUND) {
@@ -129,12 +136,21 @@ BopSolveStatus BopSolver::InternalMonothreadSolver() {
              : BopSolveStatus::NO_SOLUTION_FOUND;
 }
 
-BopSolveStatus BopSolver::InternalMultithreadSolver() {
+BopSolveStatus BopSolver::InternalMultithreadSolver(TimeLimit* time_limit) {
+  CHECK(time_limit != nullptr);
   // Not implemented.
   return BopSolveStatus::INVALID_PROBLEM;
 }
 
 BopSolveStatus BopSolver::Solve(const BopSolution& first_solution) {
+  std::unique_ptr<TimeLimit> time_limit =
+      TimeLimit::FromParameters(parameters_);
+  time_limit->RegisterExternalBooleanAsLimit(external_boolean_as_limit_);
+  return SolveWithTimeLimit(first_solution, time_limit.get());
+}
+
+BopSolveStatus BopSolver::SolveWithTimeLimit(const BopSolution& first_solution,
+                                             TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
 
   if (first_solution.IsFeasible()) {
@@ -155,7 +171,7 @@ BopSolveStatus BopSolver::Solve(const BopSolution& first_solution) {
     }
     problem_state_.set_assignment_preference(assignment_preference);
   }
-  return Solve();
+  return SolveWithTimeLimit(time_limit);
 }
 
 double BopSolver::GetScaledBestBound() const {

@@ -30,6 +30,15 @@
 %include "base/base.swig"
 
 
+// We need to forward-declare the proto here, so that the PROTO_* macros
+// involving them work correctly. The order matters very much: this declaration
+// needs to be before the %{ #include ".../linear_solver.h" %}.
+namespace operations_research {
+class MPModelProto;
+class MPModelRequest;
+class MPSolutionResponse;
+}  // namespace operations_research
+
 %{
 #include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/linear_solver.h"

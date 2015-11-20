@@ -15,13 +15,13 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/hash.h"
+#include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
 #include "flatzinc/flatzinc_constraints.h"
 #include "flatzinc/model.h"
 #include "flatzinc/sat_constraint.h"
 #include "flatzinc/search.h"
 #include "flatzinc/solver.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
 DECLARE_bool(use_sat);

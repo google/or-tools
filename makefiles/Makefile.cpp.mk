@@ -436,7 +436,6 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/constraint_solver/default_search.$O\
 	$(OBJ_DIR)/constraint_solver/demon_profiler.$O\
 	$(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O\
-	$(OBJ_DIR)/constraint_solver/dependency_graph.$O\
 	$(OBJ_DIR)/constraint_solver/deviation.$O\
 	$(OBJ_DIR)/constraint_solver/diffn.$O\
 	$(OBJ_DIR)/constraint_solver/element.$O\
@@ -513,9 +512,6 @@ $(GEN_DIR)/constraint_solver/demon_profiler.pb.cc:$(SRC_DIR)/constraint_solver/d
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/demon_profiler.proto
 
 $(GEN_DIR)/constraint_solver/demon_profiler.pb.h:$(GEN_DIR)/constraint_solver/demon_profiler.pb.cc
-
-$(OBJ_DIR)/constraint_solver/dependency_graph.$O:$(SRC_DIR)/constraint_solver/dependency_graph.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/dependency_graph.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdependency_graph.$O
 
 $(OBJ_DIR)/constraint_solver/deviation.$O:$(SRC_DIR)/constraint_solver/deviation.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/deviation.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdeviation.$O

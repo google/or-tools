@@ -33,7 +33,7 @@
 //     PathOperator to create new local search operators.
 //   - LocalSearchFilter and IntVarLocalSearchFilter to create new local
 //     search filters.
-//   - BaseLNS to write Large Neighborhood Search operators.
+//   - BaseLns to write Large Neighborhood Search operators.
 //   - SymmetryBreaker to describe model symmetries that will be broken during
 //     search using the 'Symmetry Breaking During Search' framework
 //     see Gent, I. P., Harvey, W., & Kelsey, T. (2002).
@@ -46,8 +46,6 @@
 // and exposed in this file:
 //   - SearchLog the root class of all periodic outputs during search.
 //   - ModelCache A caching layer to avoid creating twice the same object.
-//   - DependencyGraph a dedicated data structure to represent dependency graphs
-//     in the scheduling world.
 
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
@@ -149,9 +147,7 @@ enum VarTypes {
 template <class T>
 class SimpleRevFIFO {
  private:
-  enum {
-    CHUNK_SIZE = 16
-  };  // TODO(user): could be an extra template param
+  enum { CHUNK_SIZE = 16 };  // TODO(user): could be an extra template param
   struct Chunk {
     T data_[CHUNK_SIZE];
     const Chunk* const next_;
@@ -300,7 +296,7 @@ class RevImmutableMultiMap {
  public:
   RevImmutableMultiMap(Solver* const solver, int initial_size)
       : solver_(solver),
-        array_(solver->UnsafeRevAllocArray(new Cell* [initial_size])),
+        array_(solver->UnsafeRevAllocArray(new Cell*[initial_size])),
         size_(initial_size),
         num_items_(0) {
     memset(array_, 0, sizeof(*array_) * size_.Value());
@@ -381,7 +377,7 @@ class RevImmutableMultiMap {
     solver_->SaveAndSetValue(
         reinterpret_cast<void**>(&array_),
         reinterpret_cast<void*>(
-            solver_->UnsafeRevAllocArray(new Cell* [size_.Value()])));
+            solver_->UnsafeRevAllocArray(new Cell*[size_.Value()])));
     memset(array_, 0, size_.Value() * sizeof(*array_));
     for (int i = 0; i < old_size; ++i) {
       Cell* tmp = old_cell_array[i];
@@ -910,7 +906,6 @@ class VarLocalSearchOperator : public LocalSearchOperator {
     }
   }
 
-
   // Called by Start() after synchronizing the operator with the current
   // assignment. Should be overridden instead of Start() to avoid calling
   // VarLocalSearchOperator::Start explicitly.
@@ -918,8 +913,8 @@ class VarLocalSearchOperator : public LocalSearchOperator {
 
   // OnStart() should really be protected, but then SWIG doesn't see it. So we
   // make it public, but only subclasses should access to it (to override it).
-  protected:
 
+ protected:
   void MarkChange(int64 index) {
     delta_changes_.Set(index);
     changes_.Set(index);
@@ -994,9 +989,9 @@ class IntVarLocalSearchHandler {
 #endif  // SWIGPYTHON
 
 %rename(IntVarLocalSearchOperatorTemplate)
-        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 %template(IntVarLocalSearchOperatorTemplate)
-        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 #endif  // SWIG
 
 class IntVarLocalSearchOperator
@@ -1126,7 +1121,7 @@ inline void SequenceVarLocalSearchHandler::OnAddVars() {
 
 // ----- Base Large Neighborhood Search operator class ----
 
-// This is the base class for building an LNS operator. An LNS fragment is a
+// This is the base class for building an Lns operator. An Lns fragment is a
 // collection of variables which will be relaxed. Fragments are built with
 // NextFragment(), which returns false if there are no more fragments to build.
 // Optionally one can override InitFragments, which is called from
@@ -1134,15 +1129,15 @@ inline void SequenceVarLocalSearchHandler::OnAddVars() {
 //
 // Here's a sample relaxing one variable at a time:
 //
-// class OneVarLNS : public BaseLNS {
+// class OneVarLns : public BaseLns {
 //  public:
-//   OneVarLNS(const std::vector<IntVar*>& vars) : BaseLNS(vars), index_(0) {}
-//   virtual ~OneVarLNS() {}
+//   OneVarLns(const std::vector<IntVar*>& vars) : BaseLns(vars), index_(0) {}
+//   virtual ~OneVarLns() {}
 //   virtual void InitFragments() { index_ = 0; }
-//   virtual bool NextFragment(std::vector<int>* fragment) {
+//   virtual bool NextFragment() {
 //     const int size = Size();
 //     if (index_ < size) {
-//       fragment->push_back(index_);
+//       AppendToFragment(index_);
 //       ++index_;
 //       return true;
 //     } else {
@@ -1153,12 +1148,14 @@ inline void SequenceVarLocalSearchHandler::OnAddVars() {
 //  private:
 //   int index_;
 // };
-class BaseLNS : public IntVarLocalSearchOperator {
+class BaseLns : public IntVarLocalSearchOperator {
  public:
-  explicit BaseLNS(const std::vector<IntVar*>& vars);
-  ~BaseLNS() override;
+  explicit BaseLns(const std::vector<IntVar*>& vars);
+  ~BaseLns() override;
   virtual void InitFragments();
-  virtual bool NextFragment(std::vector<int>* fragment) = 0;
+  virtual bool NextFragment() = 0;
+  void AppendToFragment(int index);
+  int FragmentSize() const;
 
  protected:
   // This method should not be overridden. Override NextFragment() instead.
@@ -1167,6 +1164,7 @@ class BaseLNS : public IntVarLocalSearchOperator {
  private:
   // This method should not be overridden. Override InitFragments() instead.
   void OnStart() override;
+  std::vector<int> fragment_;
 };
 
 // ----- ChangeValue Operators -----
@@ -1226,8 +1224,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   // 'start_empty_path_class' must remain alive during the lifespan of the
   // path operator.
   PathOperator(const std::vector<IntVar*>& next_vars,
-               const std::vector<IntVar*>& path_vars,
-               int number_of_base_nodes,
+               const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
                ResultCallback1<int, int64>* start_empty_path_class);
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
@@ -1372,8 +1369,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
 template <class T>
 LocalSearchOperator* MakeLocalSearchOperator(
-    Solver* solver,
-    const std::vector<IntVar*>& vars,
+    Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
     ResultCallback1<int, int64>* start_empty_path_class);
 
@@ -1799,9 +1795,9 @@ class ModelCache {
 
   // Expr Constant Expressions.
 
-  virtual IntExpr* FindExprConstantExpression(IntExpr* const expr, int64 value,
-                                              ExprConstantExpressionType type)
-      const = 0;
+  virtual IntExpr* FindExprConstantExpression(
+      IntExpr* const expr, int64 value,
+      ExprConstantExpressionType type) const = 0;
 
   virtual void InsertExprConstantExpression(
       IntExpr* const expression, IntExpr* const var, int64 value,
@@ -1884,57 +1880,6 @@ class ModelCache {
   Solver* const solver_;
 };
 
-#if !defined(SWIG)
-// Implements a data structure useful for scheduling.
-// It is meant to store simple temporal constraints and to propagate
-// efficiently on the nodes of this temporal graph.
-class DependencyGraphNode;
-class DependencyGraph : public BaseObject {
- public:
-  ~DependencyGraph() override;
-
-  // start(left) >= end(right) + delay.
-  void AddStartsAfterEndWithDelay(IntervalVar* const left,
-                                  IntervalVar* const right, int64 delay);
-
-  // start(left) == end(right) + delay.
-  void AddStartsAtEndWithDelay(IntervalVar* const left,
-                               IntervalVar* const right, int64 delay);
-
-  // start(left) >= start(right) + delay.
-  void AddStartsAfterStartWithDelay(IntervalVar* const left,
-                                    IntervalVar* const right, int64 delay);
-
-  // start(left) == start(right) + delay.
-  void AddStartsAtStartWithDelay(IntervalVar* const left,
-                                 IntervalVar* const right, int64 delay);
-
-  // Internal API.
-
-  // Factory to create a node from an interval var. This node is
-  // attached to the start of the interval var.
-  DependencyGraphNode* BuildStartNode(IntervalVar* const var);
-
-  // Adds left == right + offset.
-  virtual void AddEquality(DependencyGraphNode* const left,
-                           DependencyGraphNode* const right, int64 offset) = 0;
-  // Adds left >= right + offset.
-  virtual void AddInequality(DependencyGraphNode* const left,
-                             DependencyGraphNode* const right,
-                             int64 offset) = 0;
-
-  // Tell the graph that this node has changed.
-  // If applied_to_min_or_max is true, the min has changed.
-  // If applied_to_min_or_max is false, the max has changed.
-  virtual void Enqueue(DependencyGraphNode* const node,
-                       bool applied_to_min_or_max) = 0;
-
- private:
-  hash_map<const IntervalVar*, DependencyGraphNode*> start_node_map_;
-  std::vector<DependencyGraphNode*> managed_nodes_;
-};
-#endif
-
 // Argument Holder: useful when visiting a model.
 #if !defined(SWIG)
 class ArgumentHolder {
@@ -1967,10 +1912,10 @@ class ArgumentHolder {
   // Getters.
   int64 FindIntegerArgumentWithDefault(const std::string& arg_name, int64 def) const;
   int64 FindIntegerArgumentOrDie(const std::string& arg_name) const;
-  const std::vector<int64>& FindIntegerArrayArgumentOrDie(const std::string& arg_name)
-      const;
-  const IntTupleSet& FindIntegerMatrixArgumentOrDie(const std::string& arg_name)
-      const;
+  const std::vector<int64>& FindIntegerArrayArgumentOrDie(
+      const std::string& arg_name) const;
+  const IntTupleSet& FindIntegerMatrixArgumentOrDie(
+      const std::string& arg_name) const;
 
   IntExpr* FindIntegerExpressionArgumentOrDie(const std::string& arg_name) const;
   const std::vector<IntVar*>& FindIntegerVariableArrayArgumentOrDie(

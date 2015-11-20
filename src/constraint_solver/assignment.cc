@@ -63,8 +63,7 @@ void IntVarElement::Copy(const IntVarElement& element) {
 void IntVarElement::LoadFromProto(
     const IntVarAssignmentProto& int_var_assignment_proto) {
   min_ = int_var_assignment_proto.min();
-  max_ = int_var_assignment_proto.has_max() ? int_var_assignment_proto.max()
-                                            : min_;
+  max_ = int_var_assignment_proto.max();
   if (int_var_assignment_proto.active()) {
     Activate();
   } else {
@@ -91,9 +90,7 @@ void IntVarElement::WriteToProto(
     IntVarAssignmentProto* int_var_assignment_proto) const {
   int_var_assignment_proto->set_var_id(var_->name());
   int_var_assignment_proto->set_min(min_);
-  if (max_ != min_) {
-    int_var_assignment_proto->set_max(max_);
-  }
+  int_var_assignment_proto->set_max(max_);
   int_var_assignment_proto->set_active(Activated());
 }
 
@@ -174,21 +171,13 @@ void IntervalVarElement::Restore() {
 void IntervalVarElement::LoadFromProto(
     const IntervalVarAssignmentProto& interval_var_assignment_proto) {
   start_min_ = interval_var_assignment_proto.start_min();
-  start_max_ = interval_var_assignment_proto.has_start_max()
-                   ? interval_var_assignment_proto.start_max()
-                   : start_min_;
+  start_max_ = interval_var_assignment_proto.start_max();
   duration_min_ = interval_var_assignment_proto.duration_min();
-  duration_max_ = interval_var_assignment_proto.has_duration_max()
-                      ? interval_var_assignment_proto.duration_max()
-                      : duration_min_;
+  duration_max_ = interval_var_assignment_proto.duration_max();
   end_min_ = interval_var_assignment_proto.end_min();
-  end_max_ = interval_var_assignment_proto.has_end_max()
-                 ? interval_var_assignment_proto.end_max()
-                 : end_min_;
+  end_max_ = interval_var_assignment_proto.end_max();
   performed_min_ = interval_var_assignment_proto.performed_min();
-  performed_max_ = interval_var_assignment_proto.has_performed_max()
-                       ? interval_var_assignment_proto.performed_max()
-                       : performed_min_;
+  performed_max_ = interval_var_assignment_proto.performed_max();
   if (interval_var_assignment_proto.active()) {
     Activate();
   } else {
@@ -200,21 +189,13 @@ void IntervalVarElement::WriteToProto(
     IntervalVarAssignmentProto* interval_var_assignment_proto) const {
   interval_var_assignment_proto->set_var_id(var_->name());
   interval_var_assignment_proto->set_start_min(start_min_);
-  if (start_max_ != start_min_) {
-    interval_var_assignment_proto->set_start_max(start_max_);
-  }
+  interval_var_assignment_proto->set_start_max(start_max_);
   interval_var_assignment_proto->set_duration_min(duration_min_);
-  if (duration_max_ != duration_min_) {
-    interval_var_assignment_proto->set_duration_max(duration_max_);
-  }
+  interval_var_assignment_proto->set_duration_max(duration_max_);
   interval_var_assignment_proto->set_end_min(end_min_);
-  if (end_max_ != end_min_) {
-    interval_var_assignment_proto->set_end_max(end_max_);
-  }
+  interval_var_assignment_proto->set_end_max(end_max_);
   interval_var_assignment_proto->set_performed_min(performed_min_);
-  if (performed_max_ != performed_min_) {
-    interval_var_assignment_proto->set_performed_max(performed_max_);
-  }
+  interval_var_assignment_proto->set_performed_max(performed_max_);
   interval_var_assignment_proto->set_active(Activated());
 }
 
@@ -563,7 +544,7 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
     CHECK(!objective_id.empty());
     if (HasObjective() && objective_id.compare(Objective()->name()) == 0) {
       const int64 obj_min = objective.min();
-      const int64 obj_max = objective.has_max() ? objective.max() : obj_min;
+      const int64 obj_max = objective.max();
       SetObjectiveRange(obj_min, obj_max);
       if (objective.active()) {
         ActivateObjective();
@@ -624,9 +605,7 @@ void Assignment::Save(AssignmentProto* const assignment_proto) const {
       const int64 obj_min = ObjectiveMin();
       const int64 obj_max = ObjectiveMax();
       objective->set_min(obj_min);
-      if (obj_min != obj_max) {
-        objective->set_max(obj_max);
-      }
+      objective->set_max(obj_max);
       objective->set_active(ActivatedObjective());
     }
   }

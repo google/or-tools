@@ -14,21 +14,19 @@
 #include "flatzinc/sat_constraint.h"
 
 #include <algorithm>
+#include <iostream>  // NOLINT
 #include <string>
 #include <vector>
-#include <iostream>  // NOLINT
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
+#include "base/int_type_indexed_vector.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-
-#include "flatzinc/model.h"
 
 #include "sat/pb_constraint.h"
 #include "sat/sat_base.h"
@@ -125,8 +123,8 @@ class SatPropagator : public Constraint {
 #endif
     const bool new_value = vars_[index]->Value() != 0;
     sat::Literal literal(var, new_value);
-    if (sat_.Assignment().VariableIsAssigned(var)) {
-      if (sat_.Assignment().LiteralIsTrue(literal)) {
+    if (sat_.Assignment().IsVariableAssigned(var)) {
+      if (sat_.Assignment().IsLiteralTrue(literal)) {
 #ifdef SAT_DEBUG
         FZDLOG << " - literal = " << literal.SignedValue()
                << " already processed" << FZENDL;

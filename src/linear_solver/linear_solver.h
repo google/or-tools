@@ -156,11 +156,6 @@ class MPSolverInterface;
 class MPSolverParameters;
 class MPVariable;
 
-// Forward declarations needed by SWIG. See java/linear_solver.swig for details.
-class MPModelProto;
-class MPModelRequest;
-class MPSolutionResponse;
-
 // This mathematical programming (MP) solver class is the main class
 // though which users build and solve problems.
 class MPSolver {

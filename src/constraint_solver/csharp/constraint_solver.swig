@@ -28,7 +28,7 @@ using System.Collections;
 #pragma SWIG nowarn=473
 
 %feature("director") Action;
-%feature("director") BaseLNS;
+%feature("director") BaseLns;
 %feature("director") Decision;
 %feature("director") DecisionBuilder;
 %feature("director") IntVarLocalSearchFilter;

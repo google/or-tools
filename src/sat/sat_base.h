@@ -451,11 +451,17 @@ class Propagator {
   // PropagationIsDone() must return true.
   virtual bool Propagate(Trail* trail) = 0;
 
-  // Reverts the state so that all the literals with trail index greater or
-  // equal to the given one are not processed for propagation.
+  // Reverts the state so that all the literals with a trail index greater or
+  // equal to the given one are not processed for propagation. Note that the
+  // trail current decision level is already reverted before this is called.
   //
-  // This is guaranteed to be called on each Backtrack() and the given trail
-  // index will always be the start of a new decision level.
+  // TODO(user): Currently this is called at each Backtrack(), but we could
+  // bundle the calls in case multiple conflict one after the other are detected
+  // even before the Propagate() call of a Propagator is called.
+  //
+  // TODO(user): It is not yet 100% the case, but this can be guaranteed to be
+  // called with a trail index that will always be the start of a new decision
+  // level.
   virtual void Untrail(const Trail& trail, int trail_index) {
     propagation_trail_index_ = std::min(propagation_trail_index_, trail_index);
   }

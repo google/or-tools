@@ -18,7 +18,7 @@ using Google.OrTools.ConstraintSolver;
  * Shows how to write a custom lns operator.
  */
 
-public class OneVarLns : BaseLNS
+public class OneVarLns : BaseLns
 {
   public OneVarLns(IntVar[] vars) : base(vars) {}
 
@@ -27,12 +27,12 @@ public class OneVarLns : BaseLNS
     index_ = 0;
   }
 
-  public override bool NextFragment(CpIntVector fragment)
+  public override bool NextFragment()
   {
     int size = Size();
     if (index_ < size)
     {
-      fragment.Add(index_);
+      AppendToFragment(index_);
       ++index_;
       return true;
     }

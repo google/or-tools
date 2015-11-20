@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <map>
 #include <string>
 #include <utility>
@@ -32,7 +33,6 @@
 #include "lp_data/lp_utils.h"
 #include "lp_data/matrix_utils.h"
 #include "util/fp_utils.h"
-#include <functional>
 
 DEFINE_bool(simplex_display_numbers_as_fractions, false,
             "Display numbers as fractions.");

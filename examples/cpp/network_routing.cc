@@ -581,12 +581,12 @@ class NetworkRoutingSolver {
 
   // ----- Implement 'clever' Large Neighborhood Search -----
 
-  class PathBasedLns : public BaseLNS {
+  class PathBasedLns : public BaseLns {
    public:
     PathBasedLns(const std::vector<IntVar*>& vars, int fragment_size,
                  const std::vector<std::vector<OnePath> >& all_paths, int num_arcs,
                  const std::vector<int64>& actual_usage_costs)
-        : BaseLNS(vars),
+        : BaseLns(vars),
           rand_(FLAGS_lns_seed),
           fragment_size_(fragment_size),
           all_paths_(all_paths),
@@ -595,9 +595,9 @@ class NetworkRoutingSolver {
       CHECK_GT(fragment_size_, 0);
     }
 
-    virtual ~PathBasedLns() {}
+    ~PathBasedLns() override {}
 
-    virtual void InitFragments() {
+    void InitFragments() override {
       // We factorize computations that need to be updated only when
       // we have a new solution and not at each fragment.
       arc_wrappers_.clear();
@@ -612,7 +612,7 @@ class NetworkRoutingSolver {
       }
     }
 
-    virtual bool NextFragment(std::vector<int>* fragment) {
+    bool NextFragment() override {
       // First we select a set of arcs to release.
       hash_set<int> arcs_to_release;
       if (arc_wrappers_.size() <= fragment_size_) {
@@ -642,7 +642,7 @@ class NetworkRoutingSolver {
         const OnePath& path = all_paths_[i][Value(i)];
         for (const int arc : arcs_to_release) {
           if (ContainsKey(path, arc)) {
-            fragment->push_back(i);
+            AppendToFragment(i);
             break;
           }
         }
@@ -703,14 +703,14 @@ class NetworkRoutingSolver {
 
   class ApplyMaxDiscrepancy : public DecisionBuilder {
    public:
-    virtual ~ApplyMaxDiscrepancy() {}
+    ~ApplyMaxDiscrepancy() override {}
 
-    virtual Decision* Next(Solver* const solver) {
+    Decision* Next(Solver* const solver) override {
       solver->SetBranchSelector([solver]() { return MaxDiscrepancy1(solver); });
       return NULL;
     }
 
-    virtual std::string DebugString() const { return "ApplyMaxDiscrepancy"; }
+    std::string DebugString() const override { return "ApplyMaxDiscrepancy"; }
   };
 
   // ----- Auxilliary Decision Builder to Store the Cost of a Solution -----
@@ -719,9 +719,9 @@ class NetworkRoutingSolver {
    public:
     StoreUsageCosts(const std::vector<IntVar*>& vars, std::vector<int64>* values)
         : vars_(vars), values_(values) {}
-    virtual ~StoreUsageCosts() {}
+    ~StoreUsageCosts() override {}
 
-    virtual Decision* Next(Solver* const s) {
+    Decision* Next(Solver* const s) override {
       for (int i = 0; i < vars_.size(); ++i) {
         (*values_)[i] = vars_[i]->Value();
       }
@@ -803,9 +803,9 @@ class NetworkRoutingSolver {
     // DecisionBuilder.
     DecisionBuilder* const db =
         solver.MakePhase(decision_vars, Solver::CHOOSE_RANDOM,
-                         Solver::IndexEvaluator2([this, &usage_costs](int64 var, int64 value) {
+                         [this, &usage_costs](int64 var, int64 value) {
                            return EvaluateMarginalCost(usage_costs, var, value);
-                           }));
+                         });
 
     // Limits.
     if (time_limit != 0 || fail_limit != 0) {
@@ -834,9 +834,9 @@ class NetworkRoutingSolver {
         solver.MakeLimit(kint64max, kint64max, FLAGS_lns_limit, kint64max);
     DecisionBuilder* const inner_db =
         solver.MakePhase(decision_vars, Solver::CHOOSE_RANDOM,
-                         Solver::IndexEvaluator2([this, &usage_costs](int64 var, int64 value) {
+                         [this, &usage_costs](int64 var, int64 value) {
                            return EvaluateMarginalCost(usage_costs, var, value);
-                           }));
+                         });
 
     DecisionBuilder* const apply = solver.RevAlloc(new ApplyMaxDiscrepancy);
     DecisionBuilder* const max_discrepency_db = solver.Compose(apply, inner_db);

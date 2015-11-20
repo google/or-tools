@@ -37,9 +37,6 @@
 #include "coin/ClpSimplex.hpp"
 #include "coin/CoinBuild.hpp"
 
-DECLARE_double(solver_timeout_in_seconds);
-DECLARE_string(solver_write_model);
-
 namespace operations_research {
 
 class CLPInterface : public MPSolverInterface {

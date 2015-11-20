@@ -19,12 +19,14 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+//#include "net/proto2/util/public/json_format.h"
 #include "base/join.h"
 
 using google::protobuf::Descriptor;
 using google::protobuf::FieldDescriptor;
 using google::protobuf::Reflection;
 using google::protobuf::TextFormat;
+//using google::protobuf::util::JsonFormat;
 
 namespace operations_research {
 
@@ -32,32 +34,49 @@ bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* pr
   std::string data;
   CHECK_OK(file::GetContents(file_name, &data, file::Defaults()));
   // Note that gzipped files are currently not supported.
-  // Try binary format first, then text format, then give up.
+  // Try binary format first, then text format, then JSON, then give up.
   if (proto->ParseFromString(data)) return true;
   if (google::protobuf::TextFormat::ParseFromString(data, proto)) return true;
+  // google::protobuf::util::JsonFormat json;
+  // if (json.ParseFromString(data, proto)) return true;
   LOG(WARNING) << "Could not parse protocol buffer";
   return false;
 }
 
 bool WriteProtoToFile(const std::string& file_name, const google::protobuf::Message& proto,
-                      bool binary, bool gzipped) {
+                      ProtoWriteFormat proto_write_format, bool gzipped) {
   // Note that gzipped files are currently not supported.
     gzipped = false;
 
+  std::string file_type_suffix;
   std::string output_string;
   google::protobuf::io::StringOutputStream stream(&output_string);
-  if (binary) {
-    if (!proto.SerializeToZeroCopyStream(&stream)) {
-      LOG(WARNING) << "Serialize to stream failed.";
+  switch (proto_write_format) {
+    case ProtoWriteFormat::kProtoBinary:
+      if (!proto.SerializeToZeroCopyStream(&stream)) {
+        LOG(WARNING) << "Serialize to stream failed.";
+        return false;
+      }
+      file_type_suffix = ".bin";
+      break;
+    case ProtoWriteFormat::kProtoText:
+      if (!google::protobuf::TextFormat::PrintToString(proto, &output_string)) {
+        LOG(WARNING) << "Printing to std::string failed.";
+        return false;
+      }
+      break;
+    case ProtoWriteFormat::kJson:
+      // JsonFormat json(JsonFormat::ADD_WHITESPACE |
+      //                 JsonFormat::PRINT_NON_FINITE_AS_STRING);
+      // if (!json.Print(proto, &stream)) {
+      //   LOG(WARNING) << "Printing to stream failed.";
+      //   return false;
+      // }
+      // file_type_suffix = ".json";
       return false;
-    }
-  } else {
-    if (!google::protobuf::TextFormat::PrintToString(proto, &output_string)) {
-      LOG(WARNING) << "Printing to std::string failed.";
-    }
+      break;
   }
-  const std::string output_file_name =
-      StrCat(file_name, binary ? ".bin" : "", gzipped ? ".gz" : "");
+  const std::string output_file_name = StrCat(file_name, file_type_suffix);
   VLOG(1) << "Writing " << output_string.size() << " bytes to "
           << output_file_name;
   if (!file::SetContents(output_file_name, output_string, file::Defaults())

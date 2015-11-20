@@ -21,18 +21,11 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_PYTHON_PYWRAPCP_UTIL_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_PYTHON_PYWRAPCP_UTIL_H_
 
-#include <setjmp.h>  // For FailureProtect. See below.
 #include <string>
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 
 using std::string;
-
-// Used in the PROTECT_FROM_FAILURE macro. See below.
-struct FailureProtect {
-  jmp_buf exception_buffer;
-  void JumpBack() { longjmp(exception_buffer, 1); }
-};
 
 class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
  public:
@@ -98,119 +91,5 @@ class CallPyDecisionBuilder : public operations_research::DecisionBuilder {
   PyObject* str_func_;
 };
 
-class PyLNSNoValues : public operations_research::BaseLNS {
- public:
-  PyLNSNoValues(const std::vector<operations_research::IntVar*>& vars, PyObject* op)
-      : BaseLNS(vars), op_(op) {
-    Py_INCREF(op_);
-    init_func_ = PyObject_GetAttrString(op_, "InitFragments");
-    Py_XINCREF(init_func_);
-    fragment_func_ = PyObject_GetAttrString(op_, "NextFragment");
-    Py_XINCREF(fragment_func_);
-  }
-
-  ~PyLNSNoValues() override {
-    Py_CLEAR(op_);
-    Py_CLEAR(init_func_);
-    Py_CLEAR(fragment_func_);
-  }
-
-  void InitFragments() override {
-    if (init_func_) {
-      PyObject* pyresult = PyEval_CallObject(init_func_, nullptr);
-      Py_XDECREF(pyresult);
-    }
-  }
-
-  bool NextFragment(std::vector<int>* fragment) override {
-    PyObject* list = PyList_New(0);
-    PyObject* args = Py_BuildValue(const_cast<char*>("(O)"), list);
-    PyObject* pyresult = PyEval_CallObject(fragment_func_, args);
-    Py_DECREF(args);
-    const int size = PyList_Size(list);
-    for (size_t i = 0; i < size; ++i) {
-      const int val = PyInt_AsLong(PyList_GetItem(list, i));
-      fragment->push_back(val);
-    }
-    Py_DECREF(list);
-    bool result = false;
-    if (pyresult) {
-      result = PyInt_AsLong(pyresult);
-      Py_DECREF(pyresult);
-    }
-    return result;
-  }
-
-  std::string DebugString() const override { return "PyLNSNoValues()"; }
-
- private:
-  PyObject* op_;
-  PyObject* init_func_;
-  PyObject* fragment_func_;
-};
-
-class PyLNS : public operations_research::BaseLNS {
- public:
-  PyLNS(const std::vector<operations_research::IntVar*>& vars, PyObject* op)
-      : BaseLNS(vars), op_(op) {
-    Py_INCREF(op_);
-    init_func_ = nullptr;
-    if (PyObject_HasAttrString(op_, "InitFragments")) {
-      init_func_ = PyObject_GetAttrString(op_, "InitFragments");
-      Py_INCREF(init_func_);
-    }
-    fragment_func_ = nullptr;
-    if (PyObject_HasAttrString(op_, "NextFragment")) {
-      fragment_func_ = PyObject_GetAttrString(op_, "NextFragment");
-      Py_INCREF(fragment_func_);
-    }
-    base_lns_ = SWIG_NewPointerObj(
-        this, SWIGTYPE_p_operations_research__BaseLNS, SWIG_POINTER_EXCEPTION);
-    Py_INCREF(base_lns_);
-  }
-  ~PyLNS() override {
-    Py_CLEAR(op_);
-    Py_CLEAR(init_func_);
-    Py_CLEAR(fragment_func_);
-    Py_CLEAR(base_lns_);
-  }
-
-  void InitFragments() override {
-    if (init_func_) {
-      PyObject* pyresult = PyEval_CallObject(init_func_, nullptr);
-      Py_XDECREF(pyresult);
-    }
-  }
-
-  bool NextFragment(std::vector<int>* fragment) override {
-    PyObject* list = PyList_New(0);
-    PyObject* args = Py_BuildValue(const_cast<char*>("(OO)"), list, base_lns_);
-    PyObject* pyresult = PyEval_CallObject(fragment_func_, args);
-    Py_DECREF(args);
-    const int size = PyList_Size(list);
-    for (size_t i = 0; i < size; ++i) {
-      const int val = PyInt_AsLong(PyList_GetItem(list, i));
-      fragment->push_back(val);
-    }
-    Py_DECREF(list);
-    bool result = false;
-    if (pyresult) {
-      result = PyInt_AsLong(pyresult);
-      Py_DECREF(pyresult);
-    }
-    return result;
-  }
-
-  std::string DebugString() const override { return "PyLNS()"; }
-
- private:
-  PyObject* op_;
-  PyObject* init_func_;
-  PyObject* fragment_func_;
-  PyObject* base_lns_;
-};
-
-// Conversion helpers. In SWIG python, "PyObjAs" is the method that determines
-// wheter a python object can be interpreted as a C++ object.
 
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_PYTHON_PYWRAPCP_UTIL_H_

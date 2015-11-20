@@ -1,4 +1,4 @@
-// Copyright 2010-2012 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,27 +15,30 @@ package com.google.ortools.samples;
 
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.AssignmentIntContainer;
-import com.google.ortools.constraintsolver.BaseLNS;
+import com.google.ortools.constraintsolver.BaseLns;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.IntVarLocalSearchFilter;
 import com.google.ortools.constraintsolver.IntVarLocalSearchOperator;
-import com.google.ortools.constraintsolver.IntVector;
 import com.google.ortools.constraintsolver.LocalSearchPhaseParameters;
 import com.google.ortools.constraintsolver.OptimizeVar;
 import com.google.ortools.constraintsolver.SearchMonitor;
 import com.google.ortools.constraintsolver.SolutionCollector;
 import com.google.ortools.constraintsolver.Solver;
 
-import java.util.logging.Logger;
-
 /**
  * Sample showing how to model using the constraint programming solver.
  *
  */
-
 public class LsApi {
-  static class OneVarLns extends BaseLNS {
+
+  static {
+    System.loadLibrary("jniortools");
+  }
+
+
+
+  static class OneVarLns extends BaseLns {
     public OneVarLns(IntVar[] vars) {
       super(vars);
     }
@@ -46,10 +49,10 @@ public class LsApi {
     }
 
     @Override
-    public boolean nextFragment(IntVector fragment) {
+    public boolean nextFragment() {
       int size = size();
       if (index_ < size) {
-        fragment.add(index_);
+        appendToFragment(index_);
         ++index_;
         return true;
       } else {
@@ -63,143 +66,130 @@ public class LsApi {
   static class MoveOneVar extends IntVarLocalSearchOperator {
     public MoveOneVar(IntVar[] variables) {
       super(variables);
-      variable_index_ = 0;
-      move_up_ = false;
+      variableIndex = 0;
+      moveUp = false;
     }
 
     @Override
-    protected boolean makeOneNeighbor() {
-      long current_value = oldValue(variable_index_);
-      if (move_up_) {
-        setValue(variable_index_, current_value  + 1);
-        variable_index_ = (variable_index_ + 1) % size();
+    protected boolean oneNeighbor() {
+      long currentValue = oldValue(variableIndex);
+      if (moveUp) {
+        setValue(variableIndex, currentValue + 1);
+        variableIndex = (variableIndex + 1) % size();
       } else {
-        setValue(variable_index_, current_value  - 1);
+        setValue(variableIndex, currentValue - 1);
       }
-      move_up_ = !move_up_;
+      moveUp = !moveUp;
       return true;
     }
 
     @Override
-    protected void onStart() {}
+    public void onStart() {}
 
     // Index of the next variable to try to restore
-    private long variable_index_;
+    private long variableIndex;
     // Direction of the modification.
-    private boolean move_up_;
+    private boolean moveUp;
   }
 
   static class SumFilter extends IntVarLocalSearchFilter {
     public SumFilter(IntVar[] vars) {
       super(vars);
-      sum_ = 0;
+      sum = 0;
     }
 
     @Override
-    protected void onSynchronize(Assignment unused_delta) {
-      sum_ = 0;
+    protected void onSynchronize(Assignment unusedDelta) {
+      sum = 0;
       for (int index = 0; index < size(); ++index) {
-        sum_ += value(index);
+        sum += value(index);
       }
     }
 
     @Override
-    public boolean accept(Assignment delta, Assignment unused_deltadelta) {
-      AssignmentIntContainer solution_delta = delta.intVarContainer();
-      int solution_delta_size = solution_delta.size();
+    public boolean accept(Assignment delta, Assignment unusedDeltadelta) {
+      AssignmentIntContainer solutionDelta = delta.intVarContainer();
+      int solutionDeltaSize = solutionDelta.size();
 
-      for (int i = 0; i < solution_delta_size; ++i) {
-        if (!solution_delta.element(i).activated()) {
+      for (int i = 0; i < solutionDeltaSize; ++i) {
+        if (!solutionDelta.element(i).activated()) {
           return true;
         }
       }
-      long new_sum = sum_;
-      for (int index = 0; index < solution_delta_size; ++index) {
-        int touched_var = index(solution_delta.element(index).var());
-        long old_value = value(touched_var);
-        long new_value = solution_delta.element(index).value();
-        new_sum += new_value - old_value;
+      long newSum = sum;
+      for (int index = 0; index < solutionDeltaSize; ++index) {
+        int touchedVar = index(solutionDelta.element(index).var());
+        long oldValue = value(touchedVar);
+        long newValue = solutionDelta.element(index).value();
+        newSum += newValue - oldValue;
       }
-      return new_sum < sum_;
+      return newSum < sum;
     }
 
-    private long sum_;
+    private long sum;
   }
 
-  private static Logger logger =
-      Logger.getLogger(LsApi.class.getName());
-
-  static {
-    System.loadLibrary("jniortools");
-  }
-
-  private static void BasicLns()
-  {
-    System.out.println("BasicLns");
-    Solver solver = new Solver("BasicLns");
+  private static void basicLns() {
+    System.out.println("basicLns");
+    Solver solver = new Solver("basicLns");
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
-    IntVar sum_var = solver.makeSum(vars).var();
-    OptimizeVar obj = solver.makeMinimize(sum_var, 1);
-    DecisionBuilder db = solver.makePhase(vars,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
-    OneVarLns one_var_lns = new OneVarLns(vars);
-    LocalSearchPhaseParameters ls_params =
-        solver.makeLocalSearchPhaseParameters(one_var_lns, db);
-    DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, ls_params);
+    IntVar sumVar = solver.makeSum(vars).var();
+    OptimizeVar obj = solver.makeMinimize(sumVar, 1);
+    DecisionBuilder db =
+        solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
+    OneVarLns oneVarLns = new OneVarLns(vars);
+    LocalSearchPhaseParameters lsParams = solver.makeLocalSearchPhaseParameters(oneVarLns, db);
+    DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
-    collector.addObjective(sum_var);
+    collector.addObjective(sumVar);
     SearchMonitor log = solver.makeSearchLog(1000, obj);
     solver.solve(ls, collector, obj, log);
     System.out.println("Objective value = " + collector.objectiveValue(0));
   }
 
-  private static void BasicLs() {
-    System.out.println("BasicLs");
-    Solver solver = new Solver("BasicLs");
+  private static void basicLs() {
+    System.out.println("basicLs");
+    Solver solver = new Solver("basicLs");
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
-    IntVar sum_var = solver.makeSum(vars).var();
-    OptimizeVar obj = solver.makeMinimize(sum_var, 1);
-    DecisionBuilder db = solver.makePhase(vars,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
-    MoveOneVar move_one_var = new MoveOneVar(vars);
-    LocalSearchPhaseParameters ls_params =
-        solver.makeLocalSearchPhaseParameters(move_one_var, db);
-    DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, ls_params);
+    IntVar sumVar = solver.makeSum(vars).var();
+    OptimizeVar obj = solver.makeMinimize(sumVar, 1);
+    DecisionBuilder db =
+        solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
+    MoveOneVar moveOneVar = new MoveOneVar(vars);
+    LocalSearchPhaseParameters lsParams = solver.makeLocalSearchPhaseParameters(moveOneVar, db);
+    DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
-    collector.addObjective(sum_var);
+    collector.addObjective(sumVar);
     SearchMonitor log = solver.makeSearchLog(1000, obj);
     solver.solve(ls, collector, obj, log);
     System.out.println("Objective value = " + collector.objectiveValue(0));
   }
 
-  private static void BasicLsWithFilter() {
-    System.out.println("BasicLsWithFilter");
-    Solver solver = new Solver("BasicLs");
+  private static void basicLsWithFilter() {
+    System.out.println("basicLsWithFilter");
+    Solver solver = new Solver("basicLs");
     IntVar[] vars = solver.makeIntVarArray(4, 0, 4, "vars");
-    IntVar sum_var = solver.makeSum(vars).var();
-    OptimizeVar obj = solver.makeMinimize(sum_var, 1);
-    DecisionBuilder db = solver.makePhase(vars,
-                                          Solver.CHOOSE_FIRST_UNBOUND,
-                                          Solver.ASSIGN_MAX_VALUE);
-    MoveOneVar move_one_var = new MoveOneVar(vars);
+    IntVar sumVar = solver.makeSum(vars).var();
+    OptimizeVar obj = solver.makeMinimize(sumVar, 1);
+    DecisionBuilder db =
+        solver.makePhase(vars, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MAX_VALUE);
+    MoveOneVar moveOneVar = new MoveOneVar(vars);
     SumFilter filter = new SumFilter(vars);
     IntVarLocalSearchFilter[] filters = new IntVarLocalSearchFilter[1];
     filters[0] = filter;
-    LocalSearchPhaseParameters ls_params =
-        solver.makeLocalSearchPhaseParameters(move_one_var, db, null, filters);
-    DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, ls_params);
+    LocalSearchPhaseParameters lsParams =
+        solver.makeLocalSearchPhaseParameters(moveOneVar, db, null, filters);
+    DecisionBuilder ls = solver.makeLocalSearchPhase(vars, db, lsParams);
     SolutionCollector collector = solver.makeLastSolutionCollector();
-    collector.addObjective(sum_var);
+    collector.addObjective(sumVar);
     SearchMonitor log = solver.makeSearchLog(1000, obj);
     solver.solve(ls, collector, obj, log);
     System.out.println("Objective value = " + collector.objectiveValue(0));
   }
 
   public static void main(String[] args) throws Exception {
-    LsApi.BasicLns();
-    LsApi.BasicLs();
-    LsApi.BasicLsWithFilter();
+    LsApi.basicLns();
+    LsApi.basicLs();
+    LsApi.basicLsWithFilter();
   }
 }

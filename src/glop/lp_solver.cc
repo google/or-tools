@@ -83,7 +83,10 @@ void DumpLinearProgramIfRequiredByFlags(const LinearProgram& linear_program,
   const std::string filespec = StrCat(FLAGS_lp_dump_dir, "/", filename);
   MPModelProto proto;
   LinearProgramToMPModelProto(linear_program, &proto);
-  if (!WriteProtoToFile(filespec, proto, FLAGS_lp_dump_binary_file,
+  const ProtoWriteFormat write_format = FLAGS_lp_dump_binary_file
+                                            ? ProtoWriteFormat::kProtoBinary
+                                            : ProtoWriteFormat::kProtoText;
+  if (!WriteProtoToFile(filespec, proto, write_format,
                         FLAGS_lp_dump_compressed_file)) {
     LOG(DFATAL) << "Could not write " << filespec;
   }

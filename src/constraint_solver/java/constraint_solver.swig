@@ -27,6 +27,19 @@
 %warnfilter(473) operations_research::DecisionBuilder;
 // TODO(user): Remove this warnfilter.
 
+%{
+#include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/constraint_solveri.h"
+#include "constraint_solver/java/javawrapcp_util.h"
+
+// Supporting structure for the PROTECT_FROM_FAILURE macro.
+#include "setjmp.h"
+struct FailureProtect {
+  jmp_buf exception_buffer;
+  void JumpBack() { longjmp(exception_buffer, 1); }
+};
+%}
+
 // ############ BEGIN DUPLICATED CODE BLOCK ############
 // IMPORTANT: keep this code block in sync with the .swig
 // files in ../python and ../csharp.
@@ -79,18 +92,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // ############ END DUPLICATED CODE BLOCK ############
 
-%module(directors="1") operations_research;
+%module(directors="1", allprotected="1") operations_research;
 
-%feature("director") DecisionBuilder;
-%feature("director") Decision;
-%feature("director") SearchMonitor;
-%feature("director") LocalSearchOperator;
-%feature("director") PathOperator;
-%feature("director") BaseLns;
-%feature("director") IntVarLocalSearchOperator;
-%feature("director") SequenceVarLocalSearchOperator;
-%feature("director") IntVarLocalSearchFilter;
-%template(IntVector) std::vector<int>;
+%feature("director") operations_research::DecisionBuilder;
+%feature("director") operations_research::Decision;
+%feature("director") operations_research::SearchMonitor;
+%feature("director") operations_research::SymmetryBreaker;
 
 
 %{
@@ -111,22 +118,6 @@ class SolverToVoid {
 };
 }  // namespace swig_util
 }  // namespace operations_research
-
-namespace operations_research {
-class LocalSearchPhaseParameters {
- public:
-  LocalSearchPhaseParameters() {}
-  ~LocalSearchPhaseParameters() {}
-};
-}  // namespace operations_research
-
-
-struct FailureProtect {
-  jmp_buf exception_buffer;
-  void JumpBack() {
-    longjmp(exception_buffer, 1);
-  }
-};
 %}
 
 // Renaming
@@ -171,7 +162,25 @@ namespace operations_research {
   }
   $1 = &result;
 }
+%typemap(out) const std::vector<type*>& {
+  jclass object_class =
+      jenv->FindClass("com/google/ortools/constraintsolver/type");
+  $result = jenv->NewObjectArray($1->size(), object_class, 0);
+  if (nullptr != object_class) {
+    jmethodID ctor = jenv->GetMethodID(object_class,"<init>", "(JZ)V");
+    for (int i = 0; i < $1->size(); ++i) {
+      jlong obj_ptr = 0;
+      *((operations_research::type **)&obj_ptr) = (*$1)[i];
+      jobject elem = jenv->NewObject(object_class, ctor, obj_ptr, false);
+      jenv->SetObjectArrayElement($result, i, elem);
+    }
+  }
+}
+%typemap(javaout) const std::vector<type*> & {
+  return $jnicall;
+}
 %enddef
+
 CONVERT_VECTOR(IntVar);
 CONVERT_VECTOR(SearchMonitor);
 CONVERT_VECTOR(DecisionBuilder);
@@ -179,6 +188,7 @@ CONVERT_VECTOR(IntervalVar);
 CONVERT_VECTOR(SequenceVar);
 CONVERT_VECTOR(LocalSearchOperator);
 CONVERT_VECTOR(LocalSearchFilter);
+CONVERT_VECTOR(SymmetryBreaker);
 
 %typemap(javacode) Solver %{
   /**
@@ -265,7 +275,7 @@ CONVERT_VECTOR(LocalSearchFilter);
 %}
 
 %extend IntVarLocalSearchFilter {
-  int Index(IntVar* const var) {
+  int index(IntVar* const var) {
     int64 index = -1;
     $self->FindIndex(var, &index);
     return index;

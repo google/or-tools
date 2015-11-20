@@ -24,11 +24,11 @@
 #include <vector>
 
 #include "base/commandlineflags.h"
-#include "base/stringprintf.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
-#include "base/threadpool.h"
+#include "base/stringprintf.h"
 #include "base/timer.h"
+#include "base/threadpool.h"
 #include "flatzinc/model.h"
 #include "flatzinc/parser.h"
 #include "flatzinc/presolve.h"

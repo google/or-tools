@@ -88,17 +88,16 @@ bool IntVarLocalSearchOperator::MakeOneNeighbor() { return true; }
 
 // ----- Base Large Neighborhood Search operator -----
 
-BaseLNS::BaseLNS(const std::vector<IntVar*>& vars)
+BaseLns::BaseLns(const std::vector<IntVar*>& vars)
     : IntVarLocalSearchOperator(vars) {}
 
-BaseLNS::~BaseLNS() {}
+BaseLns::~BaseLns() {}
 
-bool BaseLNS::MakeOneNeighbor() {
-  std::vector<int> fragment;
-  if (NextFragment(&fragment)) {
-    for (int i = 0; i < fragment.size(); ++i) {
-      DCHECK_LT(fragment[i], Size());
-      Deactivate(fragment[i]);
+bool BaseLns::MakeOneNeighbor() {
+  fragment_.clear();
+  if (NextFragment()) {
+    for (int candidate : fragment_) {
+      Deactivate(candidate);
     }
     return true;
   } else {
@@ -106,36 +105,44 @@ bool BaseLNS::MakeOneNeighbor() {
   }
 }
 
-void BaseLNS::OnStart() { InitFragments(); }
+void BaseLns::OnStart() { InitFragments(); }
 
-void BaseLNS::InitFragments() {}
+void BaseLns::InitFragments() {}
+
+void BaseLns::AppendToFragment(int index) {
+  if (index >= 0 && index < Size()) {
+    fragment_.push_back(index);
+  }
+}
+
+int BaseLns::FragmentSize() const { return fragment_.size(); }
 
 // ----- Simple Large Neighborhood Search operator -----
 
 // Frees number_of_variables (contiguous in vars) variables.
 
 namespace {
-class SimpleLNS : public BaseLNS {
+class SimpleLns : public BaseLns {
  public:
-  SimpleLNS(const std::vector<IntVar*>& vars, int number_of_variables)
-      : BaseLNS(vars), index_(0), number_of_variables_(number_of_variables) {
+  SimpleLns(const std::vector<IntVar*>& vars, int number_of_variables)
+      : BaseLns(vars), index_(0), number_of_variables_(number_of_variables) {
     CHECK_GT(number_of_variables_, 0);
   }
-  ~SimpleLNS() override {}
+  ~SimpleLns() override {}
   void InitFragments() override { index_ = 0; }
-  bool NextFragment(std::vector<int>* fragment) override;
-  std::string DebugString() const override { return "SimpleLNS"; }
+  bool NextFragment() override;
+  std::string DebugString() const override { return "SimpleLns"; }
 
  private:
   int index_;
   const int number_of_variables_;
 };
 
-bool SimpleLNS::NextFragment(std::vector<int>* fragment) {
+bool SimpleLns::NextFragment() {
   const int size = Size();
   if (index_ < size) {
     for (int i = index_; i < index_ + number_of_variables_; ++i) {
-      fragment->push_back(i % size);
+      AppendToFragment(i % size);
     }
     ++index_;
     return true;
@@ -148,41 +155,41 @@ bool SimpleLNS::NextFragment(std::vector<int>* fragment) {
 
 // Frees up to number_of_variables random variables.
 
-class RandomLNS : public BaseLNS {
+class RandomLns : public BaseLns {
  public:
-  RandomLNS(const std::vector<IntVar*>& vars, int number_of_variables, int32 seed)
-      : BaseLNS(vars), rand_(seed), number_of_variables_(number_of_variables) {
+  RandomLns(const std::vector<IntVar*>& vars, int number_of_variables, int32 seed)
+      : BaseLns(vars), rand_(seed), number_of_variables_(number_of_variables) {
     CHECK_GT(number_of_variables_, 0);
     CHECK_LE(number_of_variables_, Size());
   }
-  ~RandomLNS() override {}
-  bool NextFragment(std::vector<int>* fragment) override;
+  ~RandomLns() override {}
+  bool NextFragment() override;
 
-  std::string DebugString() const override { return "RandomLNS"; }
+  std::string DebugString() const override { return "RandomLns"; }
 
  private:
   ACMRandom rand_;
   const int number_of_variables_;
 };
 
-bool RandomLNS::NextFragment(std::vector<int>* fragment) {
+bool RandomLns::NextFragment() {
   for (int i = 0; i < number_of_variables_; ++i) {
-    fragment->push_back(rand_.Uniform(Size()));
+    AppendToFragment(rand_.Uniform(Size()));
   }
   return true;
 }
 }  // namespace
 
-LocalSearchOperator* Solver::MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
+LocalSearchOperator* Solver::MakeRandomLnsOperator(const std::vector<IntVar*>& vars,
                                                    int number_of_variables) {
-  return MakeRandomLNSOperator(vars, number_of_variables,
+  return MakeRandomLnsOperator(vars, number_of_variables,
                                ACMRandom::HostnamePidTimeSeed());
 }
 
-LocalSearchOperator* Solver::MakeRandomLNSOperator(const std::vector<IntVar*>& vars,
+LocalSearchOperator* Solver::MakeRandomLnsOperator(const std::vector<IntVar*>& vars,
                                                    int number_of_variables,
                                                    int32 seed) {
-  return RevAlloc(new RandomLNS(vars, number_of_variables, seed));
+  return RevAlloc(new RandomLns(vars, number_of_variables, seed));
 }
 
 // ----- Move Toward Target Local Search operator -----
@@ -1535,9 +1542,9 @@ bool LinKernighan::InFromOut(int64 in_i, int64 in_j, int64* out, int64* gain) {
 // inactive nodes if "unactive_fragments" is true.
 // As a special case, if chunk_size=0, then we break full paths.
 
-class PathLNS : public PathOperator {
+class PathLns : public PathOperator {
  public:
-  PathLNS(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+  PathLns(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
           int number_of_chunks, int chunk_size, bool unactive_fragments)
       : PathOperator(vars, secondary_vars, number_of_chunks, nullptr),
         number_of_chunks_(number_of_chunks),
@@ -1545,10 +1552,10 @@ class PathLNS : public PathOperator {
         unactive_fragments_(unactive_fragments) {
     CHECK_GE(chunk_size_, 0);
   }
-  ~PathLNS() override {}
+  ~PathLns() override {}
   bool MakeNeighbor() override;
 
-  std::string DebugString() const override { return "PathLNS"; }
+  std::string DebugString() const override { return "PathLns"; }
 
  private:
   inline bool ChainsAreFullPaths() const { return chunk_size_ == 0; }
@@ -1560,7 +1567,7 @@ class PathLNS : public PathOperator {
   const bool unactive_fragments_;
 };
 
-bool PathLNS::MakeNeighbor() {
+bool PathLns::MakeNeighbor() {
   if (ChainsAreFullPaths()) {
     // Reject the current position as a neighbor if any of its base node
     // isn't at the start of a path.
@@ -1576,7 +1583,7 @@ bool PathLNS::MakeNeighbor() {
   return true;
 }
 
-void PathLNS::DeactivateChain(int64 node) {
+void PathLns::DeactivateChain(int64 node) {
   for (int i = 0, current = node;
        (ChainsAreFullPaths() || i < chunk_size_) && !IsPathEnd(current);
        ++i, current = Next(current)) {
@@ -1587,7 +1594,7 @@ void PathLNS::DeactivateChain(int64 node) {
   }
 }
 
-void PathLNS::DeactivateUnactives() {
+void PathLns::DeactivateUnactives() {
   if (unactive_fragments_) {
     for (int i = 0; i < Size(); ++i) {
       if (IsInactive(i)) {
@@ -1944,18 +1951,18 @@ LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
       break;
     }
     case Solver::PATHLNS: {
-      result = RevAlloc(new PathLNS(vars, secondary_vars, 2, 3, false));
+      result = RevAlloc(new PathLns(vars, secondary_vars, 2, 3, false));
       break;
     }
     case Solver::FULLPATHLNS: {
-      result = RevAlloc(new PathLNS(vars, secondary_vars,
+      result = RevAlloc(new PathLns(vars, secondary_vars,
                                     /*number_of_chunks=*/1,
                                     /*chunk_size=*/0,
                                     /*unactive_fragments=*/true));
       break;
     }
     case Solver::UNACTIVELNS: {
-      result = RevAlloc(new PathLNS(vars, secondary_vars, 1, 6, true));
+      result = RevAlloc(new PathLns(vars, secondary_vars, 1, 6, true));
       break;
     }
     case Solver::INCREMENT: {
@@ -1978,7 +1985,7 @@ LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
     }
     case Solver::SIMPLELNS: {
       if (secondary_vars.size() == 0) {
-        result = RevAlloc(new SimpleLNS(vars, 1));
+        result = RevAlloc(new SimpleLns(vars, 1));
       } else {
         LOG(FATAL) << "Operator " << op
                    << " does not support secondary variables";

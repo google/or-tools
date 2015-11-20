@@ -155,6 +155,35 @@ PY_CONVERT(LocalSearchOperator);
 PY_CONVERT(LocalSearchFilter);
 #undef PY_CONVERT
 
+// Support passing std::function<void(Solver*)> as argument.
+
+%{
+static void PyFunctionSolverToVoid(PyObject* pyfunc,
+                                   operations_research::Solver* s) {
+  // () needed to force creation of one-element tuple
+  PyObject* const pysolver =
+      SWIG_NewPointerObj(s, SWIGTYPE_p_operations_research__Solver,
+                         SWIG_POINTER_EXCEPTION);
+  PyObject* const pyresult = PyEval_CallFunction(pyfunc, "(O)", pysolver);
+  if (!pyresult) {
+    PyErr_SetString(PyExc_RuntimeError,
+                    "std::function<void(Solver*)> invocation failed.");
+  } else {
+    Py_DECREF(pyresult);
+  }
+}
+%}
+
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<void(
+    operations_research::Solver*)> {
+  $1 = PyCallable_Check($input);
+}
+
+%typemap(in) std::function<void(operations_research::Solver*)> {
+  $1 = [$input](operations_research::Solver* s) {
+    return PyFunctionSolverToVoid($input, s);
+  };
+}
 
 // ============= Extensions ==============
 
@@ -585,8 +614,8 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   }
 }
 
-// Add easy variable getters to BaseLNS ([i] gets the value of variable #i).
-%extend operations_research::BaseLNS {
+// Add easy variable getters to BaseLns ([i] gets the value of variable #i).
+%extend operations_research::BaseLns {
   int64 __getitem__(int index) {
     return $self->Value(index);
   }
@@ -781,6 +810,7 @@ namespace operations_research {
 %unignore Solver::SolveAndCommit;
 %unignore Solver::FinishCurrentSearch;
 %unignore Solver::RestartCurrentSearch;
+%unignore Solver::AddBacktrackAction;
 
 // Solver: Debug and performance counters.
 %rename (WallTime) Solver::wall_time;
@@ -916,7 +946,8 @@ namespace operations_research {
     Solver::MakeConstraintInitialPropagateCallback;
 %rename (DelayedConstraintInitialPropagateCallback)
     Solver::MakeDelayedConstraintInitialPropagateCallback;
-
+%rename (ActionDemon) Solver::MakeActionDemon;
+%rename (ClosureDemon) Solver::MakeClosureDemon;
 
 // Solver: Solution Collectors
 %rename (BestValueSolutionCollector) Solver::MakeBestValueSolutionCollector;
@@ -965,6 +996,7 @@ namespace operations_research {
 %rename (AssignVariableValueOrFail) Solver::MakeAssignVariableValueOrFail;
 %rename (AssignVariablesValues) Solver::MakeAssignVariablesValues;
 %rename (FailDecision) Solver::MakeFailDecision;
+%rename (Decision) Solver::MakeDecision;
 
 // Solver: Decision builders. Many versions of MakePhase() are not exposed
 // directly; instead there are python-specific shortcuts provided above.
@@ -994,7 +1026,7 @@ namespace operations_research {
 
 // Solver: Local search operators.
 %rename (Operator) Solver::MakeOperator;
-%rename (RandomLNSOperator) Solver::MakeRandomLNSOperator;
+%rename (RandomLnsOperator) Solver::MakeRandomLnsOperator;
 %unignore Solver::ConcatenateOperators;
 %unignore Solver::RandomConcatenateOperators;
 %rename (LocalSearchPhaseParameters) Solver::MakeLocalSearchPhaseParameters;
@@ -1096,9 +1128,6 @@ namespace operations_research {
 // - LoadModel()
 // - UpgradeModel()
 //
-// TODO(user): implement backtrack actions with std::function and experiment
-// swig with that.
-// - AddBacktrackAction()
 //
 // - DebugString()
 // - VirtualMemorySize()
@@ -2009,13 +2038,15 @@ namespace operations_research {
 %rename (OneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
 
 
-// BaseLNS.
-%unignore BaseLNS;
+// BaseLns.
+%unignore BaseLns;
 %feature("director") BaseLNS;
-%unignore BaseLNS::BaseLNS;
-%unignore BaseLNS::~BaseLNS;
-%unignore BaseLNS::InitFragments;
-%rename (NextFragmentWrapper) BaseLNS::NextFragment;
+%unignore BaseLns::BaseLns;
+%unignore BaseLns::~BaseLns;
+%unignore BaseLns::InitFragments;
+%unignore BaseLns::NextFragment;
+%unignore BaseLns::AppendToFragment;
+%unignore BaseLns::FragmentSize;
 
 // ChangeValue
 %unignore ChangeValue;
@@ -2111,13 +2142,6 @@ namespace operations_research {
 // ============= Custom python wrappers around C++ objects ==============
 // (this section must be after the constraint_solver*.h %includes)
 
-// Helpers to manipulate a wrapped C++ std::vector<int>*. Their wrapped versions
-// are used in the python PyLNS.NextFragmentWrapper() method below.
-// Note(user): We attempted to use %typemaps instead, but didn't make it work.
-%inline %{
-inline void ClearIntVector(std::vector<int>* v) { v->clear(); }
-inline void PushBackIntVector(int x, std::vector<int>* v) { v->push_back(x); }
-%}
 %pythoncode {
 class PyDecisionBuilder(object):
 
@@ -2162,22 +2186,5 @@ class PyDemon(Demon):
 
   def DebugString(self):
     return "PyDemon"
-
-
-class PyLns(BaseLNS):
-
-  def NextFragment(self):
-    return []
-
-  def InitFragments(self):
-    pass
-
-  def NextFragmentWrapper(self, output_cpp_vector_fragments):
-    ClearIntVector(output_cpp_vector_fragments);
-    f = self.NextFragment()
-    if not f:
-      return False
-    for x in f:
-      PushBackIntVector(x, output_cpp_vector_fragments);
-    return True
 }  // %pythoncode
+

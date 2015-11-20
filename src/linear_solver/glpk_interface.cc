@@ -36,9 +36,6 @@ extern "C" {
 #include "glpk.h"
 }
 
-DECLARE_double(solver_timeout_in_seconds);
-DECLARE_string(solver_write_model);
-
 namespace operations_research {
 // Class to store information gathered in the callback
 class GLPKInformation {

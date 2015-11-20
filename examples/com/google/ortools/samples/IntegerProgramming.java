@@ -27,18 +27,17 @@ import com.google.ortools.linearsolver.MPVariable;
 public class IntegerProgramming {
   static { System.loadLibrary("jniortools"); }
 
-  private static MPSolver createSolver (String solverType) {
-    try {
-      return new MPSolver("IntegerProgrammingExample",
-                          MPSolver.OptimizationProblemType.valueOf(solverType));
-    } catch (java.lang.IllegalArgumentException e) {
-      return null;
-    }
+  private static MPSolver createSolver (String solverType)
+      throws java.lang.IllegalArgumentException {
+    return new MPSolver("IntegerProgrammingExample",
+        MPSolver.OptimizationProblemType.valueOf(solverType));
   }
 
   private static void runIntegerProgrammingExample(String solverType) {
-    MPSolver solver = createSolver(solverType);
-    if (solver == null) {
+    MPSolver solver = null;
+    try {
+      solver = createSolver(solverType);
+    } catch (java.lang.IllegalArgumentException e) {
       System.out.println("Could not create solver " + solverType);
       return;
     }

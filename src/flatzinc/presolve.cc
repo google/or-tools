@@ -12,9 +12,9 @@
 // limitations under the License.
 
 #include "flatzinc/presolve.h"
-#include "util/saturated_arithmetic.h"
 #include "base/strutil.h"
 #include "base/map_util.h"
+#include "util/saturated_arithmetic.h"
 
 DECLARE_bool(fz_logging);
 DECLARE_bool(fz_verbose);
@@ -1124,10 +1124,10 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
     return true;
   }
   if (ct->Arg(0).values.size() == 3 &&
-             ct->Arg(1).variables[0] == ct->target_variable &&
-             ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1 &&
-             !ContainsKey(array2d_index_map_, ct->target_variable) &&
-             ct->strong_propagation) {
+      ct->Arg(1).variables[0] == ct->target_variable &&
+      ct->Arg(0).values[0] == -1 && ct->Arg(0).values[1] == 1 &&
+      !ContainsKey(array2d_index_map_, ct->target_variable) &&
+      ct->strong_propagation) {
     array2d_index_map_[ct->target_variable] =
         Array2DIndexMapping(ct->Arg(1).variables[2], ct->Arg(0).values[2],
                             ct->Arg(1).variables[1], -ct->Arg(2).Value(), ct);
@@ -1145,9 +1145,9 @@ bool FzPresolver::PresolveStoreMapping(FzConstraint* ct) {
     return true;
   }
   if (ct->Arg(0).values.size() == 3 &&
-             ct->Arg(1).variables[2] == ct->target_variable &&
-             ct->Arg(0).values[2] == -1 && ct->Arg(0).values[0] == 1 &&
-             !ContainsKey(array2d_index_map_, ct->target_variable)) {
+      ct->Arg(1).variables[2] == ct->target_variable &&
+      ct->Arg(0).values[2] == -1 && ct->Arg(0).values[0] == 1 &&
+      !ContainsKey(array2d_index_map_, ct->target_variable)) {
     array2d_index_map_[ct->target_variable] =
         Array2DIndexMapping(ct->Arg(1).variables[1], ct->Arg(0).values[1],
                             ct->Arg(1).variables[0], -ct->Arg(2).Value(), ct);
@@ -1213,8 +1213,8 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
       index_var->domain.values[0] -= offset;
       index_var->domain.values[1] -= offset;
       return true;
-    } else  if (mapping.offset + mapping.coefficient > 0 &&
-                domain.values[0] > 0) {
+    } else if (mapping.offset + mapping.coefficient > 0 &&
+               domain.values[0] > 0) {
       const std::vector<int64>& values = ct->Arg(1).values;
       std::vector<int64> new_values;
       for (int64 i = 1; i <= domain.values.back(); ++i) {
@@ -1432,8 +1432,8 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
         (id == "int_eq_reif" || id == "int_ge_reif" || id == "int_le_reif" ||
          id == "bool_eq_reif" || id == "bool_ge_reif" || id == "bool_le_reif");
     if ((ct->Arg(2).HasOneValue() &&
-	 ct->Arg(2).Value() == static_cast<int64>(value)) ||
-	!ct->Arg(2).HasOneValue()) {
+         ct->Arg(2).Value() == static_cast<int64>(value)) ||
+        !ct->Arg(2).HasOneValue()) {
       FZVLOG << "Propagate boolvar from " << ct->DebugString() << " to "
              << value << FZENDL;
       CHECK_EQ(FzArgument::INT_VAR_REF, ct->Arg(2).type);
