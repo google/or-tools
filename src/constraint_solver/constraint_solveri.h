@@ -1153,7 +1153,7 @@ class BaseLns : public IntVarLocalSearchOperator {
   explicit BaseLns(const std::vector<IntVar*>& vars);
   ~BaseLns() override;
   virtual void InitFragments();
-  virtual bool NextFragment() = 0;
+  virtual bool NextFragment();
   void AppendToFragment(int index);
   int FragmentSize() const;
 

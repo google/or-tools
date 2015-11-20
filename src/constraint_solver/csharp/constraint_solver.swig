@@ -189,6 +189,97 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 // Keep the .solver() API.
 %rename (solver) *::solver;
 
+// LocalSearchOperator
+%feature("director") operations_research::LocalSearchOperator;
+%unignore operations_research::LocalSearchOperator::MakeNextNeighbor;
+%unignore operations_research::LocalSearchOperator::Start;
+
+// VarLocalSearchOperator<>
+// Ignored:
+// - Start()
+// - SkipUnchanged()
+// - ApplyChanges()
+// - RevertChanges()
+%unignore operations_research::VarLocalSearchOperator::Size;
+%unignore operations_research::VarLocalSearchOperator::Value;
+%unignore operations_research::VarLocalSearchOperator::IsIncremental;
+%unignore operations_research::VarLocalSearchOperator::OnStart;
+%unignore operations_research::VarLocalSearchOperator::OldValue;
+%unignore operations_research::VarLocalSearchOperator::SetValue;
+%unignore operations_research::VarLocalSearchOperator::Var;
+%unignore operations_research::VarLocalSearchOperator::Activated;
+%unignore operations_research::VarLocalSearchOperator::Activate;
+%unignore operations_research::VarLocalSearchOperator::Deactivate;
+%unignore operations_research::VarLocalSearchOperator::AddVars;
+
+// IntVarLocalSearchOperator
+%feature("director") operations_research::IntVarLocalSearchOperator;
+%unignore operations_research::IntVarLocalSearchOperator::Size;
+%unignore operations_research::IntVarLocalSearchOperator::MakeOneNeighbor;
+%unignore operations_research::IntVarLocalSearchOperator::Value;
+%unignore operations_research::IntVarLocalSearchOperator::IsIncremental;
+%unignore operations_research::IntVarLocalSearchOperator::OnStart;
+%unignore operations_research::IntVarLocalSearchOperator::OldValue;
+%unignore operations_research::IntVarLocalSearchOperator::SetValue;
+%unignore operations_research::IntVarLocalSearchOperator::Var;
+%unignore operations_research::IntVarLocalSearchOperator::Activated;
+%unignore operations_research::IntVarLocalSearchOperator::Activate;
+%unignore operations_research::IntVarLocalSearchOperator::Deactivate;
+%unignore operations_research::IntVarLocalSearchOperator::AddVars;
+%ignore operations_research::IntVarLocalSearchOperator::MakeNextNeighbor;
+
+%feature("director") operations_research::BaseLns;
+%unignore operations_research::BaseLns::InitFragments;
+%unignore operations_research::BaseLns::NextFragment;
+%feature ("nodirector") operations_research::BaseLns::OnStart;
+%feature ("nodirector") operations_research::BaseLns::SkipUnchanged;
+%feature ("nodirector") operations_research::BaseLns::MakeOneNeighbor;
+%unignore operations_research::BaseLns::IsIncremental;
+%unignore operations_research::BaseLns::AppendToFragment;
+%unignore operations_research::BaseLns::FragmentSize;
+
+// ChangeValue
+%feature("director") operations_research::ChangeValue;
+%unignore operations_research::ChangeValue::ModifyValue;
+
+// SequenceVarLocalSearchOperator
+// Ignored:
+// - Sequence()
+// - OldSequence()
+// - SetForwardSequence()
+// - SetBackwardSequence()
+%feature("director") operations_research::SequenceVarLocalSearchOperator;
+%unignore operations_research::SequenceVarLocalSearchOperator::Start;
+
+// PathOperator
+// Ignored:
+// - SkipUnchanged()
+// - Next()
+// - Path()
+// - number_of_nexts()
+%feature("director") operations_research::PathOperator;
+%unignore operations_research::PathOperator::MakeNeighbor;
+
+// LocalSearchFilter
+%feature("director") operations_research::IntVarLocalSearchFilter;
+%unignore operations_research::LocalSearchFilter::Accept;
+%unignore operations_research::LocalSearchFilter::Synchronize;
+%unignore operations_research::LocalSearchFilter::IsIncremental;
+
+// IntVarLocalSearchFilter
+// Ignored:
+// - IsVarSynced()
+%feature("director") operations_research::IntVarLocalSearchFilter;
+%feature("nodirector") operations_research::IntVarLocalSearchFilter::Synchronize;  // Inherited.
+%ignore operations_research::IntVarLocalSearchFilter::FindIndex;
+%unignore operations_research::IntVarLocalSearchFilter::AddVars;  // Inherited.
+%unignore operations_research::IntVarLocalSearchFilter::IsIncremental;
+%unignore operations_research::IntVarLocalSearchFilter::OnSynchronize;
+%unignore operations_research::IntVarLocalSearchFilter::Size;
+%unignore operations_research::IntVarLocalSearchFilter::Start;
+%unignore operations_research::IntVarLocalSearchFilter::Value;
+%unignore operations_research::IntVarLocalSearchFilter::Var;  // Inherited.
+
 // Rename NewSearch and EndSearch to add pinning. See the overrides of
 // NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
 %rename (NewSearchAux) operations_research::Solver::NewSearch;
@@ -400,15 +491,15 @@ namespace operations_research {
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IntVarStrategy var_str,
                              swig_util::LongLongToLong* val_eval) {
-    operations_research::Solver::IndexEvaluator2 func = 
+    operations_research::Solver::IndexEvaluator2 func =
          [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); };
     return $self->MakePhase(vars, var_str, func);
   }
   DecisionBuilder* MakePhase(
       const std::vector<IntVar*>& vars, IntVarStrategy var_str,
       swig_util::LongLongLongToBoolean* var_val1_val2_comparator) {
-    operations_research::Solver::VariableValueComparator comp = 
-        [var_val1_val2_comparator](int64 i, int64 j, int64 k) {	 
+    operations_research::Solver::VariableValueComparator comp =
+        [var_val1_val2_comparator](int64 i, int64 j, int64 k) {
       return var_val1_val2_comparator->Run(i, j, k); };
     return $self->MakePhase(vars, var_str, comp);
   }

@@ -109,6 +109,8 @@ void BaseLns::OnStart() { InitFragments(); }
 
 void BaseLns::InitFragments() {}
 
+bool BaseLns::NextFragment() { return false; }
+
 void BaseLns::AppendToFragment(int index) {
   if (index >= 0 && index < Size()) {
     fragment_.push_back(index);

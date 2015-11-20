@@ -135,7 +135,413 @@ class SolverToVoid {
 %rename (toString) *::DebugString;
 %rename (tryDecisions) operations_research::Solver::Try;
 
-%rename("%(lowercamelcase)s", %$isfunction) "";
+// Rename rules on Assignment.
+%rename (activate) operations_research::Assignment::Activate;
+%rename (activateObjective) operations_research::Assignment::ActivateObjective;
+%rename (activated) operations_research::Assignment::Activated;
+%rename (activatedObjective) operations_research::Assignment::ActivatedObjective;
+%rename (add) operations_research::Assignment::Add;
+%rename (addObjective) operations_research::Assignment::AddObjective;
+%rename (clear) operations_research::Assignment::Clear;
+%rename (contains) operations_research::Assignment::Contains;
+%rename (copy) operations_research::Assignment::Copy;
+%rename (deactivate) operations_research::Assignment::Deactivate;
+%rename (deactivateObjective) operations_research::Assignment::DeactivateObjective;
+%rename (durationMax) operations_research::Assignment::DurationMax;
+%rename (durationMin) operations_research::Assignment::DurationMin;
+%rename (durationValue) operations_research::Assignment::DurationValue;
+%rename (empty) operations_research::Assignment::Empty;
+%rename (endMax) operations_research::Assignment::EndMax;
+%rename (endMin) operations_research::Assignment::EndMin;
+%rename (endValue) operations_research::Assignment::EndValue;
+%rename (hasObjective) operations_research::Assignment::HasObjective;
+%rename (intVarContainer) operations_research::Assignment::IntVarContainer;
+%rename (load) operations_research::Assignment::Load;
+%rename (objective) operations_research::Assignment::Objective;
+%rename (objectiveBound) operations_research::Assignment::ObjectiveBound;
+%rename (objectiveMax) operations_research::Assignment::ObjectiveMax;
+%rename (objectiveMin) operations_research::Assignment::ObjectiveMin;
+%rename (objectiveValue) operations_research::Assignment::ObjectiveValue;
+%rename (performedMax) operations_research::Assignment::PerformedMax;
+%rename (performedMin) operations_research::Assignment::PerformedMin;
+%rename (performedValue) operations_research::Assignment::PerformedValue;
+%rename (restore) operations_research::Assignment::Restore;
+%rename (save) operations_research::Assignment::Save;
+%rename (size) operations_research::Assignment::Size;
+%rename (setDurationMax) operations_research::Assignment::SetDurationMax;
+%rename (setDurationMin) operations_research::Assignment::SetDurationMin;
+%rename (setDurationRange) operations_research::Assignment::SetDurationRange;
+%rename (setDurationValue) operations_research::Assignment::SetDurationValue;
+%rename (setEndMax) operations_research::Assignment::SetEndMax;
+%rename (setEndMin) operations_research::Assignment::SetEndMin;
+%rename (setEndRange) operations_research::Assignment::SetEndRange;
+%rename (setEndValue) operations_research::Assignment::SetEndValue;
+%rename (setObjectiveMax) operations_research::Assignment::SetObjectiveMax;
+%rename (setObjectiveMin) operations_research::Assignment::SetObjectiveMin;
+%rename (setObjectiveRange) operations_research::Assignment::SetObjectiveRange;
+%rename (setObjectiveValue) operations_research::Assignment::SetObjectiveValue;
+%rename (setPerformedMax) operations_research::Assignment::SetPerformedMax;
+%rename (setPerformedMin) operations_research::Assignment::SetPerformedMin;
+%rename (setPerformedRange) operations_research::Assignment::SetPerformedRange;
+%rename (setPerformedValue) operations_research::Assignment::SetPerformedValue;
+%rename (setStartMax) operations_research::Assignment::SetStartMax;
+%rename (setStartMin) operations_research::Assignment::SetStartMin;
+%rename (setStartRange) operations_research::Assignment::SetStartRange;
+%rename (setStartValue) operations_research::Assignment::SetStartValue;
+%rename (size) operations_research::Assignment::Size;
+%rename (startMax) operations_research::Assignment::StartMax;
+%rename (startMin) operations_research::Assignment::StartMin;
+%rename (startValue) operations_research::Assignment::StartValue;
+%rename (store) operations_research::Assignment::Store;
+
+// Rename rules on AssignmentContainer;
+%rename (add) operations_research::AssignmentContainer::Add;
+%rename (addAtPosition) operations_research::AssignmentContainer::AddAtPosition;
+%rename (clear) operations_research::AssignmentContainer::Clear;
+%rename (resize) operations_research::AssignmentContainer::Rezize;
+%rename (empty) operations_research::AssignmentContainer::Empty;
+%rename (copy) operations_research::AssignmentContainer::Copy;
+%rename (contains) operations_research::AssignmentContainer::Contains;
+%rename (MutableElement) operations_research::AssignmentContainer::MutableElement;
+// No MutableElementOrNull
+%rename (element) operations_research::AssignmentContainer::Element;
+// No ElementPtrOrNull
+// %unignore AssignmentContainer::elements;
+%rename (size) operations_research::AssignmentContainer::Size;
+%rename (store) operations_research::AssignmentContainer::Store;
+%rename (restore) operations_research::AssignmentContainer::restore;
+
+// Rename rules on AssignmentElement;
+%rename (activate) operations_research::AssignmentElement::Activate;
+%rename (deactivate) operations_research::AssignmentElement::Deactivate;
+%rename (activated) operations_research::AssignmentElement::Activated;
+
+// Rename rules on IntVarElement
+%rename (reset) operations_research::IntVarElement::Reset;
+%rename (clone) operations_research::IntVarElement::Clone;
+%rename (copy) operations_research::IntVarElement::Copy;
+%rename (store) operations_research::IntVarElement::Store;
+%rename (restore) operations_research::IntVarElement::Restore;
+// No LoadFromProto
+// No WriteToProto
+%rename (min) operations_research::IntVarElement::Min;
+%rename (setMin) operations_research::IntVarElement::SetMin;
+%rename (max) operations_research::IntVarElement::Max;
+%rename (setMax) operations_research::IntVarElement::SetMax;
+%rename (value) operations_research::IntVarElement::Value;
+%rename (setValue) operations_research::IntVarElement::SetValue;
+%rename (setRange) operations_research::IntVarElement::SetRange;
+%rename (var) operations_research::IntVarElement::Var;
+
+// Rename rules on SolutionCollector.
+%rename (add) operations_research::SolutionCollector::Add;
+%rename (addObjective) operations_research::SolutionCollector::AddObjective;
+%rename (durationValue) operations_research::SolutionCollector::DurationValue;
+%rename (endValue) operations_research::SolutionCollector::EndValue;
+%rename (objectiveValue) operations_research::SolutionCollector::objective_value;
+%rename (performedValue) operations_research::SolutionCollector::PerformedValue;
+%rename (solutionCount) operations_research::SolutionCollector::solution_count;
+%rename (startValue) operations_research::SolutionCollector::StartValue;
+%rename (wallTime) operations_research::SolutionCollector::wall_time;
+
+// Rename rules on Solver.
+%rename (acceptedNeighbors) operations_research::Solver::accepted_neighbors;
+%rename (addBacktrackAction) operations_research::Solver::AddBacktrackAction;
+%rename (addConstraint) operations_research::Solver::AddConstraint;
+%rename (checkAssignment) operations_research::Solver::CheckAssignment;
+%rename (compose) operations_research::Solver::Compose;
+%rename (concatenateOperators) operations_research::Solver::ConcatenateOperators;
+%rename (endSearch) operations_research::Solver::EndSearch;
+%rename (exportProfilingOverview) operations_research::Solver::ExportProfilingOverview;
+%rename (fail) operations_research::Solver::Fail;
+%rename (filteredNeighbors) operations_research::Solver::filtered_neighbors;
+%rename (getTime) operations_research::Solver::GetTime;
+%rename (makeAbs) operations_research::Solver::MakeAbs;
+%rename (makeAllDifferent) operations_research::Solver::MakeAllDifferent;
+%rename (makeAllSolutionCollector) operations_research::Solver::MakeAllSolutionCollector;
+%rename (makeAllowedAssignment) operations_research::Solver::MakeAllowedAssignments;
+%rename (makeAssignVariableValue) operations_research::Solver::MakeAssignVariableValue;
+%rename (makeAssignVariableValueOrFail) operations_research::Solver::MakeAssignVariableValueOrFail;
+%rename (makeAssignVariablesValues) operations_research::Solver::MakeAssignVariablesValues;
+%rename (makeAssignment) operations_research::Solver::MakeAssignment;
+%rename (makeBestValueSolutionCollector) operations_research::Solver::MakeBestValueSolutionCollector;
+%rename (makeBetweenCt) operations_research::Solver::MakeBetweenCt;
+%rename (makeBoolVar) operations_research::Solver::MakeBoolVar;
+%rename (makeBranchesLimit) operations_research::Solver::MakeBranchesLimit;
+%rename (makeConstantRestart) operations_research::Solver::MakeConstantRestart;
+%rename (makeConvexPiecewiseExpr) operations_research::Solver::MakeConvexPiecewiseExpr;
+%rename (makeCount) operations_research::Solver::MakeCount;
+%rename (makeCumulative) operations_research::Solver::MakeCumulative;
+%rename (makeCustomLimit) operations_research::Solver::MakeCustomLimit;
+%rename (makeDecisionBuilderFromAssignment) operations_research::Solver::MakeDecisionBuilderFromAssignment;
+%rename (makeDefaultPhase) operations_research::Solver::MakeDefaultPhase;
+%rename (makeDifference) operations_research::Solver::MakeDifference;
+%rename (makeDeviation) operations_research::Solver::MakeDeviation;
+%rename (makeDisjunctiveConstraint) operations_research::Solver::MakeDisjunctiveConstraint;
+%rename (makeDistribute) operations_research::Solver::MakeDistribute;
+%rename (makeDiv) operations_research::Solver::MakeDiv;
+%rename (makeElement) operations_research::Solver::MakeElement;
+%rename (makeEquality) operations_research::Solver::MakeEquality;
+%rename (makeFailDecision) operations_research::Solver::MakeFailDecision;
+%rename (makeFailuresLimit) operations_research::Solver::MakeFailuresLimit;
+%rename (makeFalseConstraint) operations_research::Solver::MakeFalseConstraint;
+%rename (makeFirstSolutionCollector) operations_research::Solver::MakeFirstSolutionCollector;
+%rename (makeFixedDurationIntervalVar) operations_research::Solver::MakeFixedDurationIntervalVar;
+%rename (makeFixedInterval) operations_research::Solver::MakeFixedInterval;
+%rename (makeGreater) operations_research::Solver::MakeGreater;
+%rename (makeGreaterOrEqual) operations_research::Solver::MakeGreaterOrEqual;
+%rename (makeGuidedLocalSearch) operations_research::Solver::MakeGuidedLocalSearch;
+%rename (makeIntConst) operations_research::Solver::MakeIntConst;
+%rename (makeIntVar) operations_research::Solver::MakeIntVar;
+%rename (makeIntervalVarRelation) operations_research::Solver::MakeIntervalVarRelation;
+%rename (makeIntervalVarRelationWithDelay) operations_research::Solver::MakeIntervalVarRelationWithDelay;
+%rename (makeIsBetweenCt) operations_research::Solver::MakeIsBetweenCt;
+%rename (makeIsDifferentCstCt) operations_research::Solver::MakeIsDifferentCstCt;
+%rename (makeIsDifferentCstCt) operations_research::Solver::MakeIsDifferentCt;
+%rename (makeIsDifferentCstVar) operations_research::Solver::MakeIsDifferentCstVar;
+%rename (makeIsDifferentCstVar) operations_research::Solver::MakeIsDifferentVar;
+%rename (makeIsEqualCstCt) operations_research::Solver::MakeIsEqualCstCt;
+%rename (makeIsEqualCstVar) operations_research::Solver::MakeIsEqualCstVar;
+%rename (makeIsEqualVar) operations_research::Solver::MakeIsEqualCt;
+%rename (makeIsEqualVar) operations_research::Solver::MakeIsEqualVar;
+%rename (makeIsGreaterCstCt) operations_research::Solver::MakeIsGreaterCstCt;
+%rename (makeIsGreaterCstVar) operations_research::Solver::MakeIsGreaterCstVar;
+%rename (makeIsGreaterCt) operations_research::Solver::MakeIsGreaterCt;
+%rename (makeIsGreaterOrEqualCstCt) operations_research::Solver::MakeIsGreaterOrEqualCstCt;
+%rename (makeIsGreaterOrEqualCstVar) operations_research::Solver::MakeIsGreaterOrEqualCstVar;
+%rename (makeIsGreaterOrEqualCt) operations_research::Solver::MakeIsGreaterOrEqualCt;
+%rename (makeIsGreaterOrEqualVar) operations_research::Solver::MakeIsGreaterOrEqualVar;
+%rename (makeIsGreaterVar) operations_research::Solver::MakeIsGreaterVar;
+%rename (makeIsLessCstCt) operations_research::Solver::MakeIsLessCstCt;
+%rename (makeIsLessCstVar) operations_research::Solver::MakeIsLessCstVar;
+%rename (makeIsLessCt) operations_research::Solver::MakeIsLessCt;
+%rename (makeIsLessOrEqualCstCt) operations_research::Solver::MakeIsLessOrEqualCstCt;
+%rename (makeIsLessOrEqualCstVar) operations_research::Solver::MakeIsLessOrEqualCstVar;
+%rename (makeIsLessOrEqualCt) operations_research::Solver::MakeIsLessOrEqualCt;
+%rename (makeIsLessOrEqualVar) operations_research::Solver::MakeIsLessOrEqualVar;
+%rename (makeIsLessVar) operations_research::Solver::MakeIsLessVar;
+%rename (makeIsMemberCt) operations_research::Solver::MakeIsMemberCt;
+%rename (makeIsMemberVar) operations_research::Solver::MakeIsMemberVar;
+%rename (makeLastSolutionCollector) operations_research::Solver::MakeLastSolutionCollector;
+%rename (makeLess) operations_research::Solver::MakeLess;
+%rename (makeLessOrEqual) operations_research::Solver::MakeLessOrEqual;
+%rename (makeLimit) operations_research::Solver::MakeLimit;
+%rename (makeLocalSearchObjectiveFilter) operations_research::Solver::MakeLocalSearchObjectiveFilter;
+%rename (makeLocalSearchPhase) operations_research::Solver::MakeLocalSearchPhase;
+%rename (makeLocalSearchPhaseParameters) operations_research::Solver::MakeLocalSearchPhaseParameters;
+%rename (makeLubyRestart) operations_research::Solver::MakeLubyRestart;
+%rename (makeMapDomain) operations_research::Solver::MakeMapDomain;
+%rename (makeMax) operations_research::Solver::MakeMax;
+%rename (makeMaximize) operations_research::Solver::MakeMaximize;
+%rename (makeMemberCt) operations_research::Solver::MakeMemberCt;
+%rename (makeMin) operations_research::Solver::MakeMin;
+%rename (makeMinimize) operations_research::Solver::MakeMinimize;
+%rename (makeMirrorInterval) operations_research::Solver::MakeMirrorInterval;
+%rename (makeNeighborhoodLimit) operations_research::Solver::MakeNeighborhoodLimit;
+%rename (makeNoCycle) operations_research::Solver::MakeNoCycle;
+%rename (makeNonEquality) operations_research::Solver::MakeNonEquality;
+%rename (makeOperator) operations_research::Solver::MakeOperator;
+%rename (makeOpposite) operations_research::Solver::MakeOpposite;
+%rename (makeOptimize) operations_research::Solver::MakeOptimize;
+%rename (makePack) operations_research::Solver::MakePack;
+%rename (makePathCumul) operations_research::Solver::MakePathCumul;
+%rename (makePhase) operations_research::Solver::MakePhase;
+%rename (makeProd) operations_research::Solver::MakeProd;
+%rename (makeRandomLnsOperator) operations_research::Solver::MakeRandomLnsOperator;
+%rename (makeRankFirstInterval) operations_research::Solver::MakeRankFirstInterval;
+%rename (makeRankLastInterval) operations_research::Solver::MakeRankLastInterval;
+%rename (makeRestoreAssignment) operations_research::Solver::MakeRestoreAssignment;
+%rename (makeScalProd) operations_research::Solver::MakeScalProd;
+%rename (makeScalProdEquality) operations_research::Solver::MakeScalProdEquality;
+%rename (makeScalProdGreaterOrEqual) operations_research::Solver::MakeScalProdGreaterOrEqual;
+%rename (makeScalProdLessOrEqual) operations_research::Solver::MakeScalProdLessOrEqual;
+%rename (makeScheduleOrPostpone) operations_research::Solver::MakeScheduleOrPostpone;
+%rename (makeSearchLog) operations_research::Solver::MakeSearchLog;
+%rename (makeSearchTrace) operations_research::Solver::MakeSearchTrace;
+%rename (makeSemiContinuousExpr) operations_research::Solver::MakeSemiContinuousExpr;
+%rename (makeSequenceVar) operations_research::Solver::MakeSequenceVar;
+%rename (makeSimulatedAnnealing) operations_research::Solver::MakeSimulatedAnnealing;
+%rename (makeSolutionsLimit) operations_research::Solver::MakeSolutionsLimit;
+%rename (makeSolveOnce) operations_research::Solver::MakeSolveOnce;
+%rename (makeSortingConstraint) operations_research::Solver::MakeSortingConstraint;
+%rename (makeSplitVariableDomain) operations_research::Solver::MakeSplitVariableDomain;
+%rename (makeSquare) operations_research::Solver::MakeSquare;
+%rename (makeStoreAssignment) operations_research::Solver::MakeStoreAssignment;
+%rename (makeSum) operations_research::Solver::MakeSum;
+%rename (makeSumEquality) operations_research::Solver::MakeSumEquality;
+%rename (makeSumGreaterOrEqual) operations_research::Solver::MakeSumGreaterOrEqual;
+%rename (makeSumLessOrEqual) operations_research::Solver::MakeSumLessOrEqual;
+%rename (makeSymmetryManager) operations_research::Solver::MakeSymmetryManager;
+%rename (makeTabuSearch) operations_research::Solver::MakeTabuSearch;
+%rename (makeTemporalDisjunction) operations_research::Solver::MakeTemporalDisjunction;
+%rename (makeTimeLimit) operations_research::Solver::MakeTimeLimit;
+%rename (makeTransitionConstraint) operations_research::Solver::MakeTransitionConstraint;
+%rename (makeTreeMonitor) operations_research::Solver::MakeTreeMonitor;
+%rename (makeTrueConstraint) operations_research::Solver::MakeTrueConstraint;
+%rename (makeWeightedMaximize) operations_research::Solver::MakeWeightedMaximize;
+%rename (makeWeightedMinimize) operations_research::Solver::MakeWeightedMinimize;
+%rename (makeWeightedOptimize) operations_research::Solver::MakeWeightedOptimize;
+%rename (newSearch) operations_research::Solver::NewSearch;
+%rename (nextSolution) operations_research::Solver::NextSolution;
+%rename (rand32) operations_research::Solver::Rand32;
+%rename (rand64) operations_research::Solver::Rand64;
+%rename (randomConcatenateOperators) operations_research::Solver::RandomConcatenateOperators;
+%rename (rankFirst) operations_research::SequenceVar::RankFirst;
+%rename (rankNotFirst) operations_research::SequenceVar::RankNotFirst;
+%rename (rankLast) operations_research::SequenceVar::RankLast;
+%rename (rankNotLast) operations_research::SequenceVar::RankNotLast;
+%rename (rankSequence) operations_research::SequenceVar::RankSequence;
+%rename (reSeed) operations_research::Solver::ReSeed;
+%rename (searchDepth) operations_research::Solver::SearchDepth;
+%rename (searchLeftDepth) operations_research::Solver::SearchLeftDepth;
+%rename (solve) operations_research::Solver::Solve;
+%rename (solveAndCommit) operations_research::Solver::SolveAndCommit;
+%rename (solveDepth) operations_research::Solver::SolveDepth;
+%rename (updateLimits) operations_research::Solver::UpdateLimits;
+%rename (wallTime) operations_research::Solver::wall_time;
+
+// Rename rules on IntVar and IntExpr.
+%rename (var) operations_research::IntExpr::Var;
+%rename (range) operations_research::IntExpr::Range;
+%rename (addName) operations_research::IntVar::AddName;
+%rename (isVar) operations_research::IntExpr::IsVar;
+%rename (removeValue) operations_research::IntVar::RemoveValue;
+%rename (removeValues) operations_research::IntVar::RemoveValues;
+%rename (removeInterval) operations_research::IntVar::RemoveInterval;
+
+// Rename rules on Constraint.
+%rename (var) operations_research::Constraint::Var;
+
+// Rename rule on Disjunctive Constraint.
+%rename (makeSequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
+
+// Generic rename rules.
+%rename (bound) *::Bound;
+%rename (max) *::Max;
+%rename (min) *::Min;
+%rename (setMax) *::SetMax;
+%rename (setMin) *::SetMin;
+%rename (setRange) *::SetRange;
+%rename (setValue) *::SetValue;
+%rename (setValue) *::SetValues;
+%rename (value) *::Value;
+%rename (accept) *::Accept;
+
+// Rename rules on PropagationBaseObject.
+%rename (setName) operations_research::PropagationBaseObject::set_name;
+
+// Rename rules on Search Monitor
+%rename (acceptDelta) operations_research::SearchMonitor::AcceptDelta;
+%rename (acceptNeighbor) operations_research::SearchMonitor::AcceptNeighbor;
+%rename (acceptSolution) operations_research::SearchMonitor::AcceptSolution;
+%rename (afterDecision) operations_research::SearchMonitor::AfterDecision;
+%rename (applyDecision) operations_research::SearchMonitor::ApplyDecision;
+%rename (atSolution) operations_research::SearchMonitor::AtSolution;
+%rename (beginFail) operations_research::SearchMonitor::BeginFail;
+%rename (beginInitialPropagation) operations_research::SearchMonitor::BeginInitialPropagation;
+%rename (beginNextDecision) operations_research::SearchMonitor::BeginNextDecision;
+%rename (endFail) operations_research::SearchMonitor::EndFail;
+%rename (endInitialPropagation) operations_research::SearchMonitor::EndInitialPropagation;
+%rename (endNextDecision) operations_research::SearchMonitor::EndNextDecision;
+%rename (enterSearch) operations_research::SearchMonitor::EnterSearch;
+%rename (finishCurrentSearch) operations_research::SearchMonitor::FinishCurrentSearch;
+%rename (localOptimum) operations_research::SearchMonitor::LocalOptimum;
+%rename (noMoreSolutions) operations_research::SearchMonitor::NoMoreSolutions;
+%rename (periodicCheck) operations_research::SearchMonitor::PeriodicCheck;
+%rename (refuteDecision) operations_research::SearchMonitor::RefuteDecision;
+%rename (restartCurrentSearch) operations_research::SearchMonitor::RestartCurrentSearch;
+%rename (restartSearch) operations_research::SearchMonitor::RestartSearch;
+
+// LocalSearchOperator
+%feature("director") operations_research::LocalSearchOperator;
+%rename (nextNeighbor) operations_research::LocalSearchOperator::MakeNextNeighbor;
+%rename (start) operations_research::LocalSearchOperator::Start;
+
+// VarLocalSearchOperator<>
+// Ignored:
+// - Start()
+// - SkipUnchanged()
+// - ApplyChanges()
+// - RevertChanges()
+%rename (size) operations_research::VarLocalSearchOperator::Size;
+%rename (value) operations_research::VarLocalSearchOperator::Value;
+%rename (isIncremental) operations_research::VarLocalSearchOperator::IsIncremental;
+%rename (onStart) operations_research::VarLocalSearchOperator::OnStart;
+%rename (oldValue) operations_research::VarLocalSearchOperator::OldValue;
+%rename (setValue) operations_research::VarLocalSearchOperator::SetValue;
+%rename (var) operations_research::VarLocalSearchOperator::Var;
+%rename (activated) operations_research::VarLocalSearchOperator::Activated;
+%rename (activate) operations_research::VarLocalSearchOperator::Activate;
+%rename (deactivate) operations_research::VarLocalSearchOperator::Deactivate;
+%rename (addVars) operations_research::VarLocalSearchOperator::AddVars;
+
+// IntVarLocalSearchOperator
+%feature("director") operations_research::IntVarLocalSearchOperator;
+%rename (size) operations_research::IntVarLocalSearchOperator::Size;
+%rename (oneNeighbor) operations_research::IntVarLocalSearchOperator::MakeOneNeighbor;
+%rename (value) operations_research::IntVarLocalSearchOperator::Value;
+%rename (isIncremental) operations_research::IntVarLocalSearchOperator::IsIncremental;
+%rename (onStart) operations_research::IntVarLocalSearchOperator::OnStart;
+%rename (oldValue) operations_research::IntVarLocalSearchOperator::OldValue;
+%rename (setValue) operations_research::IntVarLocalSearchOperator::SetValue;
+%rename (var) operations_research::IntVarLocalSearchOperator::Var;
+%rename (activated) operations_research::IntVarLocalSearchOperator::Activated;
+%rename (activate) operations_research::IntVarLocalSearchOperator::Activate;
+%rename (deactivate) operations_research::IntVarLocalSearchOperator::Deactivate;
+%rename (addVars) operations_research::IntVarLocalSearchOperator::AddVars;
+%ignore operations_research::IntVarLocalSearchOperator::MakeNextNeighbor;
+
+%feature("director") operations_research::BaseLns;
+%rename (initFragments) operations_research::BaseLns::InitFragments;
+%rename (nextFragment) operations_research::BaseLns::NextFragment;
+%feature ("nodirector") operations_research::BaseLns::OnStart;
+%feature ("nodirector") operations_research::BaseLns::SkipUnchanged;
+%feature ("nodirector") operations_research::BaseLns::MakeOneNeighbor;
+%rename (isIncremental) operations_research::BaseLns::IsIncremental;
+%rename (appendToFragment) operations_research::BaseLns::AppendToFragment;
+%rename(fragmentSize) operations_research::BaseLns::FragmentSize;
+
+// ChangeValue
+%feature("director") operations_research::ChangeValue;
+%rename (modifyValue) operations_research::ChangeValue::ModifyValue;
+
+// SequenceVarLocalSearchOperator
+// Ignored:
+// - Sequence()
+// - OldSequence()
+// - SetForwardSequence()
+// - SetBackwardSequence()
+%feature("director") operations_research::SequenceVarLocalSearchOperator;
+%rename (start) operations_research::SequenceVarLocalSearchOperator::Start;
+
+// PathOperator
+// Ignored:
+// - SkipUnchanged()
+// - Next()
+// - Path()
+// - number_of_nexts()
+%feature("director") operations_research::PathOperator;
+%rename (neighbor) operations_research::PathOperator::MakeNeighbor;
+
+// LocalSearchFilter
+%feature("director") operations_research::IntVarLocalSearchFilter;
+%rename (accept) operations_research::LocalSearchFilter::Accept;
+%rename (synchronize) operations_research::LocalSearchFilter::Synchronize;
+%rename (isIncremental) operations_research::LocalSearchFilter::IsIncremental;
+
+// IntVarLocalSearchFilter
+// Ignored:
+// - IsVarSynced()
+%feature("director") operations_research::IntVarLocalSearchFilter;
+%feature("nodirector") operations_research::IntVarLocalSearchFilter::Synchronize;  // Inherited.
+%ignore operations_research::IntVarLocalSearchFilter::FindIndex;
+%rename (addVars) operations_research::IntVarLocalSearchFilter::AddVars;  // Inherited.
+%rename (isIncremental) operations_research::IntVarLocalSearchFilter::IsIncremental;
+%rename (onSynchronize) operations_research::IntVarLocalSearchFilter::OnSynchronize;
+%rename (size) operations_research::IntVarLocalSearchFilter::Size;
+%rename (start) operations_research::IntVarLocalSearchFilter::Start;
+%rename (value) operations_research::IntVarLocalSearchFilter::Value;
+%rename (var) operations_research::IntVarLocalSearchFilter::Var;  // Inherited.
 
 namespace operations_research {
 %define CONVERT_VECTOR(type)

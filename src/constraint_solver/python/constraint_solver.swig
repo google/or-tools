@@ -51,15 +51,16 @@
 //swiglint: disable swigtype-name
 
 %{
-// This #includes constraint_solver.h, and inlines some C++ helpers.
-#include "constraint_solver/python/pywrapcp_util.h"
+#include <setjmp.h>  // For FailureProtect. See below.
 
-// Supporting structure for the PROTECT_FROM_FAILURE macro.
-#include "setjmp.h"
+// Used in the PROTECT_FROM_FAILURE macro. See below.
 struct FailureProtect {
   jmp_buf exception_buffer;
   void JumpBack() { longjmp(exception_buffer, 1); }
 };
+
+// This #includes constraint_solver.h, and inlines some C++ helpers.
+#include "constraint_solver/python/pywrapcp_util.h"
 %}
 
 // We need to fully support C++ inheritance, because it is heavily used by the
@@ -1990,6 +1991,7 @@ namespace operations_research {
 // Ignored:
 // - LocalSearchOperator()
 // - ~LocalSearchOperator()
+%feature("director") LocalSearchOperator;
 %unignore LocalSearchOperator;
 %rename (NextNeighbor) LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Start;
@@ -2036,17 +2038,22 @@ namespace operations_research {
 
 
 // BaseLns.
-%unignore BaseLns;
-%feature("director") BaseLNS;
+%feature("director") BaseLns;
 %unignore BaseLns::BaseLns;
+%unignore BaseLns;
 %unignore BaseLns::~BaseLns;
 %unignore BaseLns::InitFragments;
 %unignore BaseLns::NextFragment;
+%feature ("nodirector") BaseLns::OnStart;
+%feature ("nodirector") BaseLns::SkipUnchanged;
+%feature ("nodirector") BaseLns::MakeOneNeighbor;
+%unignore BaseLns::IsIncremental;
 %unignore BaseLns::AppendToFragment;
 %unignore BaseLns::FragmentSize;
 
 // ChangeValue
 %unignore ChangeValue;
+%feature ("director") ChangeValue;
 %unignore ChangeValue::ChangeValue;
 %unignore ChangeValue::~ChangeValue;
 %unignore ChangeValue::ModifyValue;

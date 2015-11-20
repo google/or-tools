@@ -3,11 +3,11 @@ from google.apputils import app
 import gflags
 import random
 
-class OneVarLns(pywrapcp.PyLns):
+class OneVarLns(pywrapcp.BaseLns):
   """One Var LNS."""
 
   def __init__(self, vars):
-    pywrapcp.PyLns.__init__(self, vars)
+    pywrapcp.BaseLns.__init__(self, vars)
     self.__index = 0
 
   def InitFragments(self):
@@ -15,10 +15,11 @@ class OneVarLns(pywrapcp.PyLns):
 
   def NextFragment(self):
     if self.__index < self.Size():
+      self.AppendToFragment(self.__index)
       self.__index += 1
-      return [self.__index - 1]
+      return True
     else:
-      return []
+      return False
 
 
 class MoveOneVar(pywrapcp.IntVarLocalSearchOperator):
