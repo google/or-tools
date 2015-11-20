@@ -400,15 +400,17 @@ namespace operations_research {
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              IntVarStrategy var_str,
                              swig_util::LongLongToLong* val_eval) {
-    return $self->MakePhase(vars, var_str, [val_eval](int64 i, int64 j) {
-        return val_eval->Run(i, j); });
+    operations_research::Solver::IndexEvaluator2 func = 
+         [val_eval](int64 i, int64 j) { return val_eval->Run(i, j); };
+    return $self->MakePhase(vars, var_str, func);
   }
   DecisionBuilder* MakePhase(
       const std::vector<IntVar*>& vars, IntVarStrategy var_str,
       swig_util::LongLongLongToBoolean* var_val1_val2_comparator) {
-    return $self->MakePhase(
-        vars, var_str, [var_val1_val2_comparator](int64 i, int64 j, int64 k) {
-          return var_val1_val2_comparator->Run(i, j, k); });
+    operations_research::Solver::VariableValueComparator comp = 
+        [var_val1_val2_comparator](int64 i, int64 j, int64 k) {	 
+      return var_val1_val2_comparator->Run(i, j, k); };
+    return $self->MakePhase(vars, var_str, comp);
   }
   DecisionBuilder* MakePhase(const std::vector<IntVar*>& vars,
                              swig_util::LongToLong* var_evaluator,

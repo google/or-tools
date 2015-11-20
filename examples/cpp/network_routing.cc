@@ -801,11 +801,12 @@ class NetworkRoutingSolver {
     }
 
     // DecisionBuilder.
+    Solver::IndexEvaluator2 value_evaluator = 
+      [this, &usage_costs](int64 var, int64 value) {
+      return EvaluateMarginalCost(usage_costs, var, value);
+    };
     DecisionBuilder* const db =
-        solver.MakePhase(decision_vars, Solver::CHOOSE_RANDOM,
-                         [this, &usage_costs](int64 var, int64 value) {
-                           return EvaluateMarginalCost(usage_costs, var, value);
-                         });
+      solver.MakePhase(decision_vars, Solver::CHOOSE_RANDOM, value_evaluator);
 
     // Limits.
     if (time_limit != 0 || fail_limit != 0) {
@@ -832,11 +833,12 @@ class NetworkRoutingSolver {
                          actual_usage_costs));
     SearchLimit* const lns_limit =
         solver.MakeLimit(kint64max, kint64max, FLAGS_lns_limit, kint64max);
-    DecisionBuilder* const inner_db =
-        solver.MakePhase(decision_vars, Solver::CHOOSE_RANDOM,
-                         [this, &usage_costs](int64 var, int64 value) {
-                           return EvaluateMarginalCost(usage_costs, var, value);
-                         });
+    Solver::IndexEvaluator2 marginal_evaluator = 
+      [this, &usage_costs](int64 var, int64 value) {
+      return EvaluateMarginalCost(usage_costs, var, value);
+    };
+    DecisionBuilder* const inner_db = solver.MakePhase(
+       decision_vars, Solver::CHOOSE_RANDOM, marginal_evaluator);
 
     DecisionBuilder* const apply = solver.RevAlloc(new ApplyMaxDiscrepancy);
     DecisionBuilder* const max_discrepency_db = solver.Compose(apply, inner_db);
