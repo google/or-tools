@@ -53,6 +53,13 @@
 %{
 // This #includes constraint_solver.h, and inlines some C++ helpers.
 #include "constraint_solver/python/pywrapcp_util.h"
+
+// Supporting structure for the PROTECT_FROM_FAILURE macro.
+#include "setjmp.h"
+struct FailureProtect {
+  jmp_buf exception_buffer;
+  void JumpBack() { longjmp(exception_buffer, 1); }
+};
 %}
 
 // We need to fully support C++ inheritance, because it is heavily used by the
@@ -276,16 +283,6 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   IntExpr* ElementFunction(std::function<int64(int64)> values,
                            IntVar* const index) {
     return $self->MakeElement(values, index);
-  }
-
-  LocalSearchOperator* LNSOperator(const std::vector<IntVar*>& vars,
-                                   PyObject* lns) {
-    return $self->RevAlloc(new PyLNS(vars, lns));
-  }
-
-  LocalSearchOperator* LNSNoValuesOperator(const std::vector<IntVar*>& vars,
-                                           PyObject* lns) {
-    return $self->RevAlloc(new PyLNSNoValues(vars, lns));
   }
 
   DecisionBuilder* VarEvalValStrPhase(
@@ -2187,4 +2184,3 @@ class PyDemon(Demon):
   def DebugString(self):
     return "PyDemon"
 }  // %pythoncode
-
