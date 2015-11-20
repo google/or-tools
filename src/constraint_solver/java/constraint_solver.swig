@@ -122,6 +122,9 @@ class SolverToVoid {
 
 // Renaming
 
+// Generic rule (to remove)
+%rename("%(lowercamelcase)s", %$isfunction) "";
+
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
