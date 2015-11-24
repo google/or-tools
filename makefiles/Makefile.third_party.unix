@@ -13,7 +13,7 @@ MONO_TAG = 4.0.1
 # BISON, FLEX
 BISON_TAG = 3.0.4
 # Flex 2.5.39 is broken on mac.
-FLEX_TAG = 2.5.37
+FLEX_TAG = 2.6.0
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
 # Autoconf support
