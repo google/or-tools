@@ -1,6 +1,6 @@
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.1.2
-PROTOBUF_TAG = 2.6.1
+PROTOBUF_TAG = 3.0.0-beta-1
 GOOGLE_APPUTILS_TAG = 0.4.2
 SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.7
@@ -201,31 +201,31 @@ install_directories: dependencies\install\bin dependencies\install\lib\coin depe
 
 dependencies\install\bin: dependencies\install
 ifeq ($(wildcard dependencies\install),)
-	tools\mkdir.exe dependencies\install\bin
+	-$(MKDIR_P) dependencies\install\bin
 endif
 
 dependencies\install\lib: dependencies\install
 ifeq ($(wildcard dependencies\install\lib),)
-	tools\mkdir.exe dependencies\install\lib
+	-$(MKDIR_P) dependencies\install\lib
 endif
 
 dependencies\install\lib\coin: dependencies\install\lib
 ifeq ($(wildcard dependencies\install\lib\coin),)
-	tools\mkdir.exe dependencies\install\lib\coin
+	-$(MKDIR_P) dependencies\install\lib\coin
 endif
 
 dependencies\install\include: dependencies\install
 ifeq ($(wildcard dependencies\install\include),)
-	tools\mkdir.exe dependencies\install\include
+	-$(MKDIR_P) dependencies\install\include
 endif
 
 dependencies\install\include\coin: dependencies\install\include
 ifeq ($(wildcard dependencies\install\include\coin),)
-	tools\mkdir.exe dependencies\install\include\coin
+	-$(MKDIR_P) dependencies\install\include\coin
 endif
 
 dependencies\install:
-	tools\mkdir.exe dependencies\install
+	-$(MKDIR_P) dependencies\install
 
 # Install zlib
 install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
@@ -271,21 +271,34 @@ dependencies/archives/gflags-$(GFLAGS_TAG).zip:
 # Install protocol buffers.
 install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
 
-dependencies\install\bin\protoc.exe: dependencies\sources\protobuf\autogen.sh
-	cd dependencies\solutions && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
+dependencies\install\bin\protoc.exe: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe
+	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe dependencies\install\bin
+	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\*.lib dependencies\install\lib
 
-dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf\vsprojects\include.tar
-	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\sources\protobuf\vsprojects\include.tar
-	copy dependencies\sources\protobuf\src\google\protobuf\stubs\stl_util.h dependencies\install\include\google\protobuf\stubs
+dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
 
-dependencies\sources\protobuf\vsprojects\include.tar: dependencies\sources\protobuf\autogen.sh
-	cd dependencies\sources\protobuf\vsprojects && extract_includes.bat
-	cd dependencies\sources\protobuf\vsprojects && ..\..\..\..\tools\tar.exe cvf include.tar include
+dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar
+	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar
+#	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\src\google\protobuf-$(PROTOBUF_TAG)\stubs\stl_util.h dependencies\install\include\google\protobuf-$(PROTOBUF_TAG)\stubs
 
-dependencies\sources\protobuf\autogen.sh:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/releases/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\protobuf-$(PROTOBUF_TAG).zip
-	cd dependencies\sources && move protobuf-$(PROTOBUF_TAG) protobuf
+dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && extract_includes.bat
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && ..\..\..\..\..\tools\tar.exe cf include.tar include
+
+dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
+	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build	
+	tools\sed -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
+ifeq ("$(PTRLENGTH)", "64")
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013 Win64" -DBUILD_TESTING=OFF --DBUILD_SHARED_LIB=ON ..
+else
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013" -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
+endif
+
+dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
+#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
+	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
 
 
 # Intall Google Apputils Python.
@@ -442,9 +455,9 @@ makefile_third_party: Makefile.local
 # Install python modules
 install_python_modules: install_google_apputils
 	cd dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG) && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
-	copy dependencies\install\bin\protoc.exe dependencies\sources\protobuf\src
-	cd dependencies\sources\protobuf/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py build
-	cd dependencies\sources\protobuf/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
+	copy dependencies\install\bin\protoc.exe dependencies\sources\protobuf-$(PROTOBUF_TAG)\src
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py build
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
 
 Makefile.local:
 	@echo Generating Makefile.local
