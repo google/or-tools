@@ -239,6 +239,19 @@ def test_size_1_var():
   solver = pywrapcp.Solver('test_size_1_var')
   x = solver.IntVar([0], 'x')
 
+def test_cumulative_api():
+  solver = pywrapcp.Solver('Problem')
+
+  #Vars
+  S=[solver.FixedDurationIntervalVar(0, 10, 5,False, "S_%s"%a)
+     for a in range(10)]
+
+  C = solver.IntVar(2, 5)
+
+  D = [a % 3 + 2 for a in range(10)]
+
+  solver.Add(solver.Cumulative(S, D, C, "cumul"))
+
 
 def main():
   test_member()
@@ -254,6 +267,7 @@ def main():
   test_hole_iterator()
   test_sum_constraint()
   test_size_1_var()
+  test_cumulative_api()
 
 
 if __name__ == '__main__':
