@@ -217,7 +217,7 @@ ifeq ($(PLATFORM),LINUX)
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
   CCC = clang++ -fPIC -std=c++11
-  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
+  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min 10.8 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
   CMAKE = /Applications/CMake.app/Contents/bin/cmake
   JNI_LIB_EXT = jnilib
   ifeq ($(UNIX_MONO_DIR),)
@@ -247,7 +247,7 @@ ifeq ($(PLATFORM),MACOSX)
   STATIC_POST_LIB = .a
   DYNAMIC_LIB_SUFFIX = dylib
   DYNAMIC_SWIG_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
-  DYNAMIC_LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.6 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
+  DYNAMIC_LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min 10.8 -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
   DYNAMIC_LINK_PREFIX = -o # Space needed.
   STATIC_LIB_SUFFIX = a
   STATIC_LINK_CMD = ar -r -v
