@@ -16,7 +16,7 @@ or-tools/
   examples/com/          <- Java examples
   examples/cpp/          <- C++ examples
   examples/csharp/       <- C# examples
-  examples/flatzinc/	 <- Flatzinc examples
+  examples/flatzinc/     <- Flatzinc examples
   examples/python/       <- Python examples
   examples/tests/        <- C# unit tests and bug reports
   lib/                   <- Libraries and jar files
@@ -25,17 +25,17 @@ or-tools/
   src/                   <- Source code
   src/algorithms/        <- Basic algorithms
   src/base/              <- Basic utilities
-  src/bop/		 <- Boolean solver based on SAT
-  src/com/ 		 <- C# and Java source files
+  src/bop/               <- Boolean solver based on SAT
+  src/com/               <- C# and Java source files
   src/constraint_solver/ <- Constraint solver
-  src/flatzinc/ 	 <- Flatzinc interpreter
+  src/flatzinc/          <- Flatzinc interpreter
   src/gen/               <- Generated files
-  src/glop/		 <- Linear solver
+  src/glop/              <- Linear solver
   src/graph/             <- Graph algorithms
   src/linear_solver/     <- Linear solver wrapper
-  src/lp_data/		 <- Data structures for linear model
-  src/ortools		 <- Python source code
-  src/sat/		 <- Sat solver
+  src/lp_data/           <- Data structures for linear model
+  src/ortools            <- Python source code
+  src/sat/               <- Sat solver
   src/util/              <- Utilities needed by the constraint solver
   tools/                 <- Windows binaries
 
