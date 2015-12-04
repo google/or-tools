@@ -23,3 +23,9 @@ dependencies/sources/pcre-1336/
 dependencies/sources/protobuf-3.0.0-beta-1/
 dependencies/sources/sparsehash-2.0.3/
 dependencies/sources/swig-3.0.7/
+
+*.o
+*.so
+*.py[co]
+
+src/gen/
