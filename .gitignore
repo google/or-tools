@@ -10,7 +10,6 @@ dependencies/archives/libtool-2.4.6.tar.gz
 dependencies/archives/patchelf-0.8.tar.gz
 dependencies/archives/swig-3.0.7.tar.gz
 dependencies/install/
-
 dependencies/sources/autoconf-2.69/
 dependencies/sources/automake-1.15/
 dependencies/sources/bison-3.0.4/
