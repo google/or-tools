@@ -12,16 +12,22 @@
 # limitations under the License.
 #
 
-from google.apputils import app
-import gflags
+import argparse
+import sys
+
 from ortools.constraint_solver import pywrapcp
 from ortools.linear_solver import pywraplp
 
-FLAGS = gflags.FLAGS
-gflags.DEFINE_integer('load_min', 480, 'Minimum load in minutes')
-gflags.DEFINE_integer('load_max', 540, 'Maximum load in minutes')
-gflags.DEFINE_integer('commute_time', 30, 'Commute time in minutes')
-gflags.DEFINE_integer('num_workers', 98, 'Maximum number of workers.')
+
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('--load_min', type=int, default=480,
+                    help='Minimum load in minutes')
+PARSER.add_argument('--load_max', type=int, default=540,
+                    help='Maximum load in minutes')
+PARSER.add_argument('--commute_time', type=int, default=30,
+                    help='Commute time in minutes')
+PARSER.add_argument('--num_workers', type=int, default=98,
+                    help='Maximum number of workers')
 
 
 def FindCombinations(durations, load_min, load_max, commute_time):
@@ -102,17 +108,17 @@ def Select(combinations, loads, max_number_of_workers):
   return -1, []
 
 
-def GetOptimalSchedule(demand):
+def GetOptimalSchedule(demand, flags):
   """Computes the optimal schedule for the appointment selection problem."""
   combinations = FindCombinations([a[2] for a in demand],
-                                  FLAGS.load_min,
-                                  FLAGS.load_max,
-                                  FLAGS.commute_time)
+                                  flags.load_min,
+                                  flags.load_max,
+                                  flags.commute_time)
   print 'found %d possible combinations of appointements' % len(combinations)
 
   cost, selection = Select(combinations,
                            [a[0] for a in demand],
-                           FLAGS.num_workers)
+                           flags.num_workers)
   output = [(selection[i], [(combinations[i][t], demand[t][1])
                             for t in range(len(demand))
                             if combinations[i][t] != 0])
@@ -120,21 +126,25 @@ def GetOptimalSchedule(demand):
   return cost, output
 
 
-def main(unused_argv):
+def main(argv):
+  flags = PARSER.parse_args(argv)
+
   demand = [(40, 'A1', 90), (30, 'A2', 120), (25, 'A3', 180)]
   print 'appointments: '
   for a in demand:
     print '   %d * %s : %d min' % (a[0], a[1], a[2])
-  print 'commute time = %d' % FLAGS.commute_time
-  print 'accepted total duration = [%d..%d]' % (FLAGS.load_min, FLAGS.load_max)
-  print '%d workers' % FLAGS.num_workers
-  cost, selection = GetOptimalSchedule(demand)
+  print 'commute time = %d' % flags.commute_time
+  print 'accepted total duration = [%d..%d]' % (flags.load_min, flags.load_max)
+  print '%d workers' % flags.num_workers
+  cost, selection = GetOptimalSchedule(demand, flags)
   print 'Optimal solution as a cost of %d' % cost
   for template in selection:
     print '%d schedules with ' % template[0]
     for t in template[1]:
       print '   %d installation of type %s' % (t[0], t[1])
 
+  return 0
+
 
 if __name__ == '__main__':
-  app.run()
+  sys.exit(main(sys.argv[1:]))
