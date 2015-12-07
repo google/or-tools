@@ -97,6 +97,7 @@ struct FailureProtect {
 // ============= Type conversions ==============
 
 // See ./constraint_solver_helpers.swig
+PY_CONVERT_HELPER_PTR(DecisionBuilder);
 PY_CONVERT_HELPER_PTR(SearchMonitor);
 PY_CONVERT_HELPER_PTR(IntervalVar);
 PY_CONVERT_HELPER_PTR(SequenceVar);
@@ -105,35 +106,6 @@ PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntExpr);
 
-// Conversions of DecisionBuilder* are special because we redefine
-// our own python PyDecisionBuilder object.
-// TODO(user): for or-tools, remove this code and use directors instead.
-%pythoncode {
-class PyDecisionBuilder(object):
-  def NextWrapper(self, solver):
-    try:
-      return self.Next(solver)
-    except Exception:
-      return solver.FailDecision()
-
-  def DebugString(self):
-    return "PyDecisionBuilder"
-}  // %pythoncode
-%{
-template<>
-bool PyObjAs(PyObject *py_obj, operations_research::DecisionBuilder** b) {
-  if (SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
-                      SWIGTYPE_p_operations_research__DecisionBuilder,
-                      SWIG_POINTER_EXCEPTION) == -1) {
-    // If the conversion failed, we try to create our own decision builder
-    // if it looks like we're given one.
-    PyErr_Clear();
-    if (PyObject_GetAttrString(py_obj, "Next") == nullptr) return false;
-    *b = new CallPyDecisionBuilder(py_obj);
-  }
-  return true;
-}
-%}
 
 // Actual conversions. This also includes the conversion to std::vector<Class>.
 %define PY_CONVERT(Class)
@@ -196,11 +168,6 @@ static void PyFunctionSolverToVoid(PyObject* pyfunc,
 // ============= Extensions ==============
 
 // Add display methods on BaseObject and Solver.
-%extend operations_research::BaseObject {
-  std::string __str__() {
-    return $self->DebugString();
-  }
-}
 %extend operations_research::Solver {
   std::string __str__() {
     return $self->DebugString();
@@ -253,6 +220,10 @@ Constraint* PythonMethodName(int64 date) {
 %define PY_STRINGIFY_DEBUGSTRING(Class)
 %extend operations_research::Class {
   std::string __repr__() {
+    return $self->DebugString();
+  }
+
+  std::string __str__() {
     return $self->DebugString();
   }
 }
@@ -1333,19 +1304,18 @@ namespace operations_research {
 
 
 // DecisionBuilder
-// Ignored:
-// - DebugString()
+%feature("director") DecisionBuilder;
 %unignore DecisionBuilder;
 %unignore DecisionBuilder::DecisionBuilder;
 %unignore DecisionBuilder::~DecisionBuilder;
-%unignore DecisionBuilder::Next;
+%rename (NextWrapper) DecisionBuilder::Next;
+%unignore DecisionBuilder::DebugString;
+%feature("nodirector") DecisionBuilder::Accept;
+%feature("nodirector") DecisionBuilder::AppendMonitors;
 
 
 // Constraint
 // Ignored:
-// - Post()
-// - DebugString()
-// - PostAndPropagate()
 // - Accept()
 // - IsCastConstraint()
 %unignore Constraint;
@@ -1362,6 +1332,7 @@ namespace operations_research {
 %unignore Constraint::Post;
 %unignore Constraint::InitialPropagate;
 %rename (InitialPropagateWrapper) Constraint::InitialPropagate;
+%unignore Constraint::DebugString;
 
 
 // SearchMonitor.
@@ -2147,7 +2118,10 @@ namespace operations_research {
 // (this section must be after the constraint_solver*.h %includes)
 
 %pythoncode {
-class PyDecisionBuilder(object):
+class PyDecisionBuilder(DecisionBuilder):
+
+  def __init__(self):
+    DecisionBuilder.__init__(self)
 
   def NextWrapper(self, solver):
     try:
@@ -2163,6 +2137,9 @@ class PyDecisionBuilder(object):
 
 
 class PyConstraint(Constraint):
+
+  def __init__(self):
+    Constraint.__init__(self)
 
   def InitialPropagateWrapper(self):
     try:

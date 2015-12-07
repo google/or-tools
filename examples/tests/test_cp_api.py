@@ -112,6 +112,9 @@ class ConstraintTest(pywrapcp.PyConstraint):
     print self._x
     print 'out of InitialPropagate()'
 
+  def DebugString(self):
+    return 'ConstraintTest'
+
 
 def test_constraint():
   solver = pywrapcp.Solver('test export')
@@ -253,6 +256,26 @@ def test_cumulative_api():
   solver.Add(solver.Cumulative(S, D, C, "cumul"))
 
 
+class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
+
+  def __init__(self):
+    pywrapcp.PyDecisionBuilder.__init__(self)
+
+  def Next(self, solver):
+    print "In Next"
+    return None
+
+  def DebugString(self):
+    return 'CustomDecisionBuilder'
+
+
+def test_custom_search():
+  solver = pywrapcp.Solver('test_custom_search')
+  db = CustomDecisionBuilder()
+  print str(db)
+  solver.Solve(db)
+
+
 def main():
   test_member()
   test_sparse_var()
@@ -268,6 +291,7 @@ def main():
   test_sum_constraint()
   test_size_1_var()
   test_cumulative_api()
+  test_custom_search()
 
 
 if __name__ == '__main__':
