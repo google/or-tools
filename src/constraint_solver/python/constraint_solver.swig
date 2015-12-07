@@ -2131,7 +2131,6 @@ class PyDecision(Decision):
        self.Apply(solver)
     except Exception as e:
       if 'CP Solver fail' in str(e):
-        print 'caught Fail'
         solver.ShouldFail()
       else:
         raise
