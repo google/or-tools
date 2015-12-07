@@ -97,6 +97,7 @@ struct FailureProtect {
 // ============= Type conversions ==============
 
 // See ./constraint_solver_helpers.swig
+PY_CONVERT_HELPER_PTR(Decision);
 PY_CONVERT_HELPER_PTR(DecisionBuilder);
 PY_CONVERT_HELPER_PTR(SearchMonitor);
 PY_CONVERT_HELPER_PTR(IntervalVar);
@@ -127,6 +128,7 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
 %enddef
 PY_CONVERT(IntVar);
 PY_CONVERT(IntExpr);
+PY_CONVERT(Decision);
 PY_CONVERT(DecisionBuilder);
 PY_CONVERT(SearchMonitor);
 PY_CONVERT(IntervalVar);
@@ -1296,12 +1298,13 @@ namespace operations_research {
 // Ignored:
 // - DebugString()
 // - Accept()
+%feature ("director") Decision;
 %unignore Decision;
 %unignore Decision::Decision;
 %unignore Decision::~Decision;
-%unignore Decision::Apply;
-%unignore Decision::Refute;
-
+%rename (ApplyWrapper) Decision::Apply;
+%rename (RefuteWrapper) Decision::Refute;
+%feature("nodirector") Decision::Accept;
 
 // DecisionBuilder
 %feature("director") DecisionBuilder;
@@ -2118,6 +2121,34 @@ namespace operations_research {
 // (this section must be after the constraint_solver*.h %includes)
 
 %pythoncode {
+class PyDecision(Decision):
+
+  def __init__(self):
+    Decision.__init__(self)
+
+  def ApplyWrapper(self, solver):
+    try:
+       self.Apply(solver)
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        print 'caught Fail'
+        solver.ShouldFail()
+      else:
+        raise
+
+  def RefuteWrapper(self, solver):
+    try:
+       self.Refute(solver)
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        solver.ShouldFail()
+      else:
+        raise
+
+  def DebugString(self):
+    return "PyDecision"
+
+
 class PyDecisionBuilder(DecisionBuilder):
 
   def __init__(self):

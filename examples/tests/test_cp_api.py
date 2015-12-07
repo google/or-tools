@@ -269,9 +269,47 @@ class CustomDecisionBuilder(pywrapcp.PyDecisionBuilder):
     return 'CustomDecisionBuilder'
 
 
-def test_custom_search():
-  solver = pywrapcp.Solver('test_custom_search')
+def test_custom_decision_builder():
+  solver = pywrapcp.Solver('test_custom_decision_builder')
   db = CustomDecisionBuilder()
+  print str(db)
+  solver.Solve(db)
+
+
+class CustomDecision(pywrapcp.PyDecision):
+
+  def __init__(self):
+    pywrapcp.PyDecision.__init__(self)
+
+  def Apply(self, solver):
+    print 'In Apply'
+    solver.Fail()
+
+  def Refute(self, solver):
+    print 'In Refute'
+
+  def DebugString(self):
+    return 'CustomDecision'
+
+class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
+
+  def __init__(self):
+    pywrapcp.PyDecisionBuilder.__init__(self)
+    self.__done = False
+
+  def Next(self, solver):
+    if not self.__done:
+      self.__done = True
+      return CustomDecision()
+    return None
+
+  def DebugString(self):
+    return 'CustomDecisionBuilderCustomDecision'
+
+
+def test_custom_decision():
+  solver = pywrapcp.Solver('test_custom_decision')
+  db = CustomDecisionBuilderCustomDecision()
   print str(db)
   solver.Solve(db)
 
@@ -291,7 +329,8 @@ def main():
   test_sum_constraint()
   test_size_1_var()
   test_cumulative_api()
-  test_custom_search()
+  test_custom_decision_builder()
+  test_custom_decision()
 
 
 if __name__ == '__main__':

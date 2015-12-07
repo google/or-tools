@@ -2072,6 +2072,7 @@ bool Solver::NextSolution() {
         search->RefuteDecision(fd);
         branches_++;
         fd->Refute(this);
+        CheckFail();
         search->AfterDecision(fd, false);
         search->RightMove();
         fd = nullptr;
@@ -2100,6 +2101,7 @@ bool Solver::NextSolution() {
               search->ApplyDecision(d);
               branches_++;
               d->Apply(this);
+              CheckFail();
               search->AfterDecision(d, true);
               search->LeftMove();
               break;
@@ -2107,12 +2109,14 @@ bool Solver::NextSolution() {
             case KEEP_LEFT: {
               search->ApplyDecision(d);
               d->Apply(this);
+              CheckFail();
               search->AfterDecision(d, true);
               break;
             }
             case KEEP_RIGHT: {
               search->RefuteDecision(d);
               d->Refute(this);
+              CheckFail();
               search->AfterDecision(d, false);
               break;
             }
