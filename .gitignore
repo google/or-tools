@@ -5,8 +5,10 @@ dependencies/archives/autoconf.patch
 dependencies/archives/automake-1.15.tar.gz
 dependencies/archives/bison-3.0.4.tar.gz
 dependencies/archives/flex-2.6.0.tar.bz2
+dependencies/archives/gflags-2.1.2.tar.gz
 dependencies/archives/help2man-1.43.3.tar.gz
 dependencies/archives/libtool-2.4.6.tar.gz
+dependencies/archives/mono-4.0.1.tar.bz2
 dependencies/archives/patchelf-0.8.tar.gz
 dependencies/archives/swig-3.0.7.tar.gz
 dependencies/install/
@@ -19,6 +21,7 @@ dependencies/sources/gflags-2.1.2/
 dependencies/sources/google-apputils-0.4.2/
 dependencies/sources/help2man-1.43.3/
 dependencies/sources/libtool-2.4.6/
+dependencies/sources/mono-4.0.1
 dependencies/sources/pcre-1336/
 dependencies/sources/protobuf-3.0.0-beta-1/
 dependencies/sources/sparsehash-2.0.3/
