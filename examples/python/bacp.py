@@ -12,14 +12,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from google.apputils import app
-import gflags
+import argparse
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
+parser = argparse.ArgumentParser()
 
-gflags.DEFINE_string('data', 'python/data/bacp/bacp12.txt',
-                     'path to data file')
+parser.add_argument('--data', default = 'data/bacp/bacp12.txt',
+                    help = 'path to data file')
 
 #----------------helper for binpacking posting----------------
 
@@ -48,10 +47,10 @@ def ReadData(filename):
   return (credits, nb_periods, prereq)
 
 
-def main(unused_argv):
+def main(args):
   #------------------solver and variable declaration-------------
 
-  credits, nb_periods, prereq = ReadData(FLAGS.data)
+  credits, nb_periods, prereq = ReadData(args.data)
   nb_courses = len(credits)
 
   solver = pywrapcp.Solver('Balanced Academic Curriculum Problem')
@@ -85,4 +84,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main(parser.parse_args())

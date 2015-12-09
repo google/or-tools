@@ -20,27 +20,6 @@
 #include "constraint_solver/routing.h"
 %}
 
-// We "convert" the C++ flags to python gflags. We also need to actually
-// pass the value from the python flags to the C++ ones, upon the
-// RoutingModel construction. This is a copy paste of the same code on the
-// Solver class in ./constraint_solver.swig.
-
-// As with the solver ctor, at the beginning of the routing model's
-// constructor code (in python), call SetFlags() with the python flags
-// as parameters.
-// Note: Indentation is critical here as the code is copied verbatim in the
-// python code.
-%feature("pythonprepend") operations_research::RoutingModel::RoutingModel %{
-        Solver.SetFlags(FLAGS.cp_trace_propagation,
-                        FLAGS.cp_trace_search,
-                        FLAGS.cp_print_model,
-                        FLAGS.cp_model_stats,
-                        FLAGS.cp_export_file,
-                        FLAGS.cp_no_solve,
-                        FLAGS.cp_profile_file)
-%}
-
-
 // See ./constraint_solver_helpers.swig.
 //PY_CONVERT_HELPER_PTR(SearchMonitor);
 //PY_CONVERT_HELPER_PTR(IntervalVar);

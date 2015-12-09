@@ -21,20 +21,15 @@ between all marks are all different. The objective is to minimize the length
 of the rule.
 """
 
-
-
-from google.apputils import app
-import gflags
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
 # pylint: disable=g-explicit-bool-comparison
 
 
-def main(unused_argv):
+def main():
   # Create the solver.
   solver = pywrapcp.Solver('golomb ruler')
 
@@ -78,4 +73,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

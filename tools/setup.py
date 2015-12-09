@@ -25,8 +25,7 @@ setup(
         'ortools.linear_solver',],
     ext_modules = [dummy_module],
     install_requires = [
-        'google-apputils >= 0.4',
-        'protobuf >= 2.5.0'],
+        'protobuf >= 2.8.0'],
     dependency_links = ['http://google-apputils-python.googlecode.com/files/'],
     package_data = {
         'ortools.constraint_solver' : ['_pywrapcp.dll'],

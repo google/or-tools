@@ -2,7 +2,6 @@
 
 GFLAGS_TAG = 2.1.2
 PROTOBUF_TAG = 3.0.0-beta-1
-GOOGLE_APPUTILS_TAG = 0.4.2
 SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.7
 SWIG_TAG = 3.0.7
@@ -265,12 +264,6 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/pr
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
 	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
 
-# Intall Google Apputils Python.
-install_google_apputils: dependencies/sources/google-apputils-$(GOOGLE_APPUTILS_TAG)/README
-
-dependencies/sources/google-apputils-$(GOOGLE_APPUTILS_TAG)/README:
-	git clone https://github.com/google/google-apputils dependencies/sources/google-apputils-$(GOOGLE_APPUTILS_TAG)
-
 # Install sparsehash.
 install_sparsehash: dependencies/install/include/google/dense_hash_map
 
@@ -487,8 +480,7 @@ clean_third_party:
 makefile_third_party: Makefile.local
 
 # Install python modules
-install_python_modules: install_google_apputils install_protobuf
-	cd dependencies/sources/google-apputils-$(GOOGLE_APPUTILS_TAG) && python$(PYTHON_VERSION) setup.py install --user
+install_python_modules: install_protobuf
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/python && python$(PYTHON_VERSION) setup.py build
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/python && python$(PYTHON_VERSION) setup.py install --user
 

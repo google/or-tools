@@ -12,24 +12,22 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import argparse
 from ortools.constraint_solver import pywrapcp
-from google.apputils import app
-import gflags
 import random
 
-FLAGS = gflags.FLAGS
+parser = argparse.ArgumentParser()
 
-gflags.DEFINE_string('data',
-                     'data/steel_mill/steel_mill_slab.txt',
-                     'path to data file')
-gflags.DEFINE_integer('lns_fragment_size',
-                      10,
-                      'size of the random lns fragment')
-gflags.DEFINE_integer('lns_random_seed', 0, 'seed for the lns random generator')
-gflags.DEFINE_integer('lns_fail_limit',
-                      30,
-                      'fail limit when exploring fragments')
-gflags.DEFINE_integer('time_limit', 20000, 'global time limit')
+parser.add_argument('--data', default = 'data/steel_mill/steel_mill_slab.txt',
+                    help = 'path to data file')
+parser.add_argument('--time_limit', default = 20000, type = int,
+                    help = 'global time limit')
+parser.add_argument('--lns_fragment_size', default = 10, type = int,
+                    help = 'size of the random lns fragment')
+parser.add_argument('--lns_random_seed', default = 0, type = int,
+                    help = 'seed for the lns random generator')
+parser.add_argument('--lns_fail_limit', default = 30, type = int,
+                    help = 'fail limit when exploring fragments')
 
 
 # ---------- helper for binpacking posting ----------
@@ -69,7 +67,6 @@ def ReadData(filename):
 
 # ---------- dedicated search for this problem ----------
 
-
 class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
   '''Dedicated Decision Builder for steel mill slab.
 
@@ -84,6 +81,7 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
   '''
 
   def __init__(self, x, nb_slabs, weights, loss_array, loads):
+    pywrapcp.PyDecisionBuilder.__init__(self)
     self.__x = x
     self.__nb_slabs = nb_slabs
     self.__weights = weights
@@ -144,11 +142,11 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
 # ----------- LNS Operator ----------
 
 
-class SteelRandomLns(pywrapcp.PyLns):
+class SteelRandomLns(pywrapcp.BaseLns):
   """Random LNS for Steel."""
 
   def __init__(self, x, rand, lns_size):
-    pywrapcp.PyLns.__init__(self, x)
+    pywrapcp.BaseLns.__init__(self, x)
     self.__random = rand
     self.__lns_size = lns_size
 
@@ -156,19 +154,18 @@ class SteelRandomLns(pywrapcp.PyLns):
     pass
 
   def NextFragment(self):
-    fragment = []
-    while len(fragment) < self.__lns_size:
+    while self.FragmentSize() < self.__lns_size:
       pos = self.__random.randint(0, self.Size() - 1)
-      fragment.append(pos)
-    return fragment
+      self.AppendToFragment(pos)
+    return True
 
 # ----------- Main Function -----------
 
 
-def main(unused_argv):
+def main(args):
   # ----- solver and variable declaration -----
   (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders) =\
-      ReadData(FLAGS.data)
+      ReadData(args.data)
   nb_colors = len(color_orders)
   solver = pywrapcp.Solver('Steel Mill Slab')
   x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i))
@@ -210,22 +207,22 @@ def main(unused_argv):
                           solver.CHOOSE_RANDOM,
                           solver.ASSIGN_MIN_VALUE)
   # The most important aspect is to limit the time exploring each fragment.
-  inner_limit = solver.FailuresLimit(FLAGS.lns_fail_limit)
+  inner_limit = solver.FailuresLimit(args.lns_fail_limit)
   continuation_db = solver.SolveOnce(inner_db, [inner_limit])
 
   # Now, we create the LNS objects.
   rand = random.Random()
-  rand.seed(FLAGS.lns_random_seed)
-  local_search_operator = SteelRandomLns(x, rand, FLAGS.lns_fragment_size)
+  rand.seed(args.lns_random_seed)
+  local_search_operator = SteelRandomLns(x, rand, args.lns_fragment_size)
   # This is in fact equivalent to the following predefined LNS operator:
   # local_search_operator = solver.RandomLNSOperator(x,
-  #                                                  FLAGS.lns_fragment_size,
-  #                                                  FLAGS.lns_random_seed)
+  #                                                  args.lns_fragment_size,
+  #                                                  args.lns_random_seed)
   local_search_parameters = solver.LocalSearchPhaseParameters(
       local_search_operator, continuation_db)
   local_search_db = solver.LocalSearchPhase(first_solution,
                                             local_search_parameters)
-  global_limit = solver.TimeLimit(FLAGS.time_limit)
+  global_limit = solver.TimeLimit(args.time_limit)
 
   print 'using LNS to improve the initial solution'
 
@@ -238,4 +235,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main(parser.parse_args())

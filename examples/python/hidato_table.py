@@ -24,7 +24,6 @@
   '''
 """
 
-from google.apputils import app
 from ortools.constraint_solver import pywrapcp
 
 
@@ -204,4 +203,4 @@ def PrintMatrix(game):
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

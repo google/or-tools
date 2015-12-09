@@ -58,7 +58,6 @@
   http://www.hakank.org/google_or_tools/
 """
 
-from google.apputils import app
 from ortools.constraint_solver import pywrapcp
 
 
@@ -200,4 +199,4 @@ def print_solution(A, E, alpha, n, word_len):
 
 
 if __name__ == "__main__":
-  app.run()
+  main()

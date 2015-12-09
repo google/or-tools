@@ -14,8 +14,6 @@
 """Integer programming examples that show how to use the APIs."""
 
 
-from google.apputils import app
-
 from ortools.linear_solver import pywraplp
 
 
@@ -122,4 +120,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

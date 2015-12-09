@@ -15,7 +15,6 @@
 
 
 
-from google.apputils import app
 from ortools.graph import pywrapgraph
 
 
@@ -84,4 +83,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

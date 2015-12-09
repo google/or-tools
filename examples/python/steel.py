@@ -12,16 +12,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from google.apputils import app
-import gflags
+import argparse
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
-
-gflags.DEFINE_string('data', 'data/steel_mill/steel_mill_slab.txt',
-                     'path to data file')
-gflags.DEFINE_integer('time_limit', 20000, 'global time limit')
-
+parser = argparse.ArgumentParser()
+parser.add_argument('--data', default = 'data/steel_mill/steel_mill_slab.txt',
+                    help = 'path to data file')
+parser.add_argument('--time_limit', default = 20000, type = int,
+                    help = 'global time limit')
 
 #----------------helper for binpacking posting----------------
 
@@ -75,6 +73,7 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
   '''
 
   def __init__(self, x, nb_slabs, weights, losstab, loads):
+    pywrapcp.PyDecisionBuilder.__init__(self)
     self.__x = x
     self.__nb_slabs = nb_slabs
     self.__weights = weights
@@ -132,10 +131,10 @@ class SteelDecisionBuilder(pywrapcp.PyDecisionBuilder):
     return 'SteelMillDecisionBuilder(' + str(self.__x) + ')'
 
 
-def main(unused_argv):
+def main(args):
   #------------------solver and variable declaration-------------
   (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders) =\
-      ReadData(FLAGS.data)
+      ReadData(args.data)
   nb_colors = len(color_orders)
   solver = pywrapcp.Solver('Steel Mill Slab')
   x = [solver.IntVar(0, nb_slabs - 1, 'x' + str(i))
@@ -163,7 +162,7 @@ def main(unused_argv):
 
   db = SteelDecisionBuilder(x, nb_slabs, weights, loss, load_vars)
   search_log = solver.SearchLog(100000, objective_var)
-  global_limit = solver.TimeLimit(FLAGS.time_limit)
+  global_limit = solver.TimeLimit(args.time_limit)
   solver.NewSearch(db, [objective, search_log, global_limit])
   while solver.NextSolution():
     print 'Objective:', objective_var.Value(),\
@@ -172,4 +171,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main(parser.parse_args())
