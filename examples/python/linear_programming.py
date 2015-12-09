@@ -111,7 +111,7 @@ def SolveAndPrint(solver, variable_list, constraint_list):
            (i, constraint.dual_value(), activities[constraint.index()]))
 
 
-def main(unused_argv):
+def main():
   all_names_and_problem_types = (
       linear_solver_pb2.MPModelRequest.SolverType.items())
   for name, problem_type in all_names_and_problem_types:

@@ -47,7 +47,7 @@ def BuildPairs(rows, cols):
               y + dy >= 0 and y + dy < cols and (dx != 0 or dy != 0))]
 
 
-def main(unused_argv):
+def main():
   for model in range(1, 7):
     print
     print('----- Solving problem %i -----' % model)

@@ -77,7 +77,7 @@ def MinCostFlow():
     print 'There was an issue with the min cost flow input.'
 
 
-def main(unused_argv):
+def main():
   MaxFlow()
   MinCostFlow()
 

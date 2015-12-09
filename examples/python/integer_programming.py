@@ -114,7 +114,7 @@ def RunAllIntegerExampleCppStyleAPI():
         pywraplp.Solver.SCIP_MIXED_INTEGER_PROGRAMMING)
 
 
-def main(unused_argv):
+def main():
   RunAllIntegerExampleNaturalLanguageAPI()
   RunAllIntegerExampleCppStyleAPI()
 
