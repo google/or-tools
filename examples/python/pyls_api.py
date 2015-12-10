@@ -1,5 +1,4 @@
 from ortools.constraint_solver import pywrapcp
-import random
 
 class OneVarLns(pywrapcp.BaseLns):
   """One Var LNS."""
