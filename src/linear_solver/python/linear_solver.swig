@@ -135,6 +135,9 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
 
+  def __hash__(self):
+    return object.__hash__(self)
+
   def __ge__(self, arg):
     if self.IsConstant(arg):
       return LinearConstraint(self, arg, 1e308)
@@ -209,7 +212,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
         coeffs = {}
         offset = expr.Visit(coeffs)
         objective.AddOffset(offset)
-        for v, c, in coeffs.iteritems():
+        for v, c, in iter(coeffs.items()):
           objective.SetCoefficient(v, float(c))
 
   def Maximize(self, expr):
@@ -222,7 +225,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
         coeffs = {}
         offset = expr.Visit(coeffs)
         objective.AddOffset(offset)
-        for v, c, in coeffs.iteritems():
+        for v, c, in iter(coeffs.items()):
           objective.SetCoefficient(v, float(c))
   }  // %pythoncode
 }

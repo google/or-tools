@@ -115,6 +115,9 @@ class LinearExpr(object):
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
 
+  def __hash__(self):
+    return object.__hash__(self)
+
   def __ge__(self, arg):
     if self.IsConstant(arg):
       return LinearConstraint(self, arg, 1e308)
