@@ -33,7 +33,7 @@ The Norwegian lives next to the blue house.
 Who owns a zebra and who drinks water?
 """
 
-
+from __future__ import print_function
 
 from ortools.constraint_solver import pywrapcp
 
@@ -110,10 +110,10 @@ def main():
     people = [englishman, spaniard, japanese, ukrainian, norwegian]
     water_drinker = [p for p in people if p.Value() == water.Value()][0]
     zebra_owner = [p for p in people if p.Value() == zebra.Value()][0]
-    print 'The %s drinks water.' % water_drinker.Name()
-    print 'The %s owns the zebra.' % zebra_owner.Name()
+    print('The', water_drinker.Name(), 'drinks water.')
+    print('The', zebra_owner.Name(), 'owns the zebra.')
   else:
-    print 'No solutions to the zebra problem, this is unusual!'
+    print('No solutions to the zebra problem, this is unusual!')
   solver.EndSearch()
 
 
