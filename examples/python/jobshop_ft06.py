@@ -24,14 +24,10 @@ jobs. This is called the makespan.
 
 
 
-from google.apputils import app
-import gflags
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
 
-
-def main(unused_argv):
+def main():
   # Creates the solver.
   solver = pywrapcp.Solver('jobshop ft06')
 
@@ -106,4 +102,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

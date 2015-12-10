@@ -1,7 +1,6 @@
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.1.2
 PROTOBUF_TAG = 3.0.0-beta-1
-GOOGLE_APPUTILS_TAG = 0.4.2
 SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.7
 ZLIB_TAG = 1.2.8
@@ -192,7 +191,6 @@ download_third_party: \
 	dependencies/sources/protobuf/autogen.sh \
 	dependencies/sources/sparsehash/autogen.sh \
 	dependencies/archives/swigwin-$(SWIG_TAG).zip \
-	dependencies/sources/google-apputils/README \
 	dependencies/sources/cbc-$(CBC_TAG)/configure
 
 # Directories:
@@ -287,7 +285,7 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependenc
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && ..\..\..\..\..\tools\tar.exe cf include.tar include
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
-	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build	
+	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build
 	tools\sed -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
 ifeq ("$(PTRLENGTH)", "64")
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013 Win64" -DBUILD_TESTING=OFF ..
@@ -299,15 +297,6 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 #	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
-
-
-# Intall Google Apputils Python.
-install_google_apputils: dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README
-
-dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/google-apputils/archive/master.zip
-	tools\unzip -d dependencies\sources dependencies\archives\master.zip
-	cd dependencies\sources && move google-apputils-master google-apputils-$(GOOGLE_APPUTILS_TAG)
 
 
 # Install sparsehash.
@@ -453,8 +442,7 @@ clean_third_party:
 makefile_third_party: Makefile.local
 
 # Install python modules
-install_python_modules: install_google_apputils
-	cd dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG) && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
+install_python_modules: install_protobuf
 	copy dependencies\install\bin\protoc.exe dependencies\sources\protobuf-$(PROTOBUF_TAG)\src
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py build
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user

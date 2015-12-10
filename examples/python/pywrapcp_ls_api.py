@@ -18,8 +18,6 @@ This example file can also be used as a unit test.
 
 from ortools.constraint_solver import pywrapcp
 
-from google.apputils import app
-
 
 class OneVarLns(pywrapcp.PyLns):
   """One Var LNS."""
@@ -139,4 +137,4 @@ def main(_):
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

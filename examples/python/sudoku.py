@@ -15,14 +15,9 @@
 
 
 
-from google.apputils import app
-import gflags
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
-
-
-def main(unused_argv):
+def main():
   # Create the solver.
   solver = pywrapcp.Solver('sudoku')
 
@@ -91,4 +86,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

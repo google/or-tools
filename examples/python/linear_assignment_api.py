@@ -20,7 +20,6 @@
 
 
 
-from google.apputils import app
 from ortools.graph import pywrapgraph
 
 
@@ -59,4 +58,4 @@ def main(unused_argv):
   RunAssignmentOn4x4Matrix()
 
 if __name__ == '__main__':
-  app.run()
+  main()

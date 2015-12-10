@@ -1,6 +1,4 @@
 from ortools.constraint_solver import pywrapcp
-from google.apputils import app
-import gflags
 import random
 
 class OneVarLns(pywrapcp.BaseLns):
@@ -113,11 +111,11 @@ def Solve(type):
   print 'Objective value = %d' % collector.ObjectiveValue(0)
 
 
-def main(_):
+def main():
   Solve(0)
   Solve(1)
   Solve(2)
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

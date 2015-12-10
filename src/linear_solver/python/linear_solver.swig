@@ -69,44 +69,47 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
   // particular, SWIG's %define won't work because they get prepended with a
   // C-style comment "/*...*/" upon expansion, which breaks the python code.
   %pythoncode {
+  def IsConstant(self, expr):
+    return isinstance(expr, numbers.Number)
+
   def __add__(self, expr):
-    if isinstance(expr, (int, long, float)):
+    if self.IsConstant(expr):
       return SumCst(self, expr)
     else:
       return Sum(self, expr)
 
   def __radd__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return SumCst(self, cst)
     else:
       raise TypeError
 
   def __sub__(self, expr):
-    if isinstance(expr, (int, long, float)):
+    if self.IsConstant(expr):
       return SumCst(self, -expr)
     else:
       return Sum(self, ProductCst(expr, -1))
 
   def __rsub__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return SumCst(ProductCst(self, -1), cst)
     else:
       raise TypeError
 
   def __mul__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return ProductCst(self, cst)
     else:
       raise TypeError
 
   def __rmul__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       return ProductCst(self, cst)
     else:
       raise TypeError
 
   def __div__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       if cst == 0.0:
         raise ZeroDivisionError
       else:
@@ -115,7 +118,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
       raise TypeError
 
   def __truediv__(self, cst):
-    if isinstance(cst, (int, long, float)):
+    if self.IsConstant(cst):
       if cst == 0.0:
         raise ZeroDivisionError
       else:
@@ -127,19 +130,22 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     return ProductCst(self, -1)
 
   def __eq__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, arg, arg)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
 
+  def __hash__(self):
+    return object.__hash__(self)
+
   def __ge__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, arg, 1e308)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 1e308)
 
   def __le__(self, arg):
-    if isinstance(arg, (int, long, float)):
+    if self.IsConstant(arg):
       return LinearConstraint(self, -1e308, arg)
     else:
       return LinearConstraint(Sum(self, ProductCst(arg, -1)), -1e308, 0.0)
@@ -206,7 +212,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
         coeffs = {}
         offset = expr.Visit(coeffs)
         objective.AddOffset(offset)
-        for v, c, in coeffs.iteritems():
+        for v, c, in iter(coeffs.items()):
           objective.SetCoefficient(v, float(c))
 
   def Maximize(self, expr):
@@ -219,7 +225,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
         coeffs = {}
         offset = expr.Visit(coeffs)
         objective.AddOffset(offset)
-        for v, c, in coeffs.iteritems():
+        for v, c, in iter(coeffs.items()):
           objective.SetCoefficient(v, float(c))
   }  // %pythoncode
 }
