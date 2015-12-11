@@ -610,6 +610,14 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
       return result
     else:
       raise StopIteration()
+
+  def __next__(self):
+    if self.Ok():
+      result = self.Value()
+      self.Next()
+      return result
+    else:
+      raise StopIteration()
   }  // %pythoncode
 }
 
