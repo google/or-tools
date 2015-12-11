@@ -276,13 +276,17 @@ def test_custom_decision_builder():
   solver.Solve(db)
 
 
+
 class CustomDecision(pywrapcp.PyDecision):
 
   def __init__(self):
     pywrapcp.PyDecision.__init__(self)
+    self._val = 1
+    print "Set value to", self._val
 
   def Apply(self, solver):
     print 'In Apply'
+    print "Expect value", self._val
     solver.Fail()
 
   def Refute(self, solver):
@@ -300,7 +304,8 @@ class CustomDecisionBuilderCustomDecision(pywrapcp.PyDecisionBuilder):
   def Next(self, solver):
     if not self.__done:
       self.__done = True
-      return CustomDecision()
+      self.__decision = CustomDecision()
+      return self.__decision
     return None
 
   def DebugString(self):
