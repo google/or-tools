@@ -301,3 +301,65 @@ ifeq ($(SYSTEM),win)
 else
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_egg upload
 endif
+
+pypi3_archive: python $(PATCHELF)
+	-$(DELREC) temp
+	$(MKDIR) temp
+	$(MKDIR) temp$Sortools
+	$(MKDIR) temp$Sortools$Sortools
+	$(MKDIR) temp$Sortools$Sortools$Sconstraint_solver
+	$(MKDIR) temp$Sortools$Sortools$Slinear_solver
+	$(MKDIR) temp$Sortools$Sortools$Sgraph
+	$(MKDIR) temp$Sortools$Sortools$Salgorithms
+	$(MKDIR) temp$Sortools$Sdummy
+	$(COPY) src$Sgen$Sortools$Sconstraint_solver$S*.py temp$Sortools$Sortools$Sconstraint_solver
+	$(COPY) src$Sortools$Slinear_solver$S*.py temp$Sortools$Sortools$Slinear_solver
+	$(COPY) src$Sgen$Sortools$Slinear_solver$S*.py temp$Sortools$Sortools$Slinear_solver
+	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sortools$Sortools$Sgraph
+	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$Sortools$Sortools$Salgorithms
+	$(TOUCH) temp$Sortools$Sortools$S__init__.py
+	$(TOUCH) temp$Sortools$Sortools$Sconstraint_solver$S__init__.py
+	$(TOUCH) temp$Sortools$Sortools$Slinear_solver$S__init__.py
+	$(TOUCH) temp$Sortools$Sortools$Sgraph$S__init__.py
+	$(TOUCH) temp$Sortools$Sortools$Salgorithms$S__init__.py
+	$(COPY) tools$Sdummy_ortools_dependency.cc temp$Sortools$Sdummy
+	$(COPY) tools$SREADME.pypi temp$Sortools$SREADME.txt
+	$(COPY) LICENSE-2.0.txt temp$Sortools
+	$(COPY) tools$Ssetup_py3.py temp$Sortools$Ssetup.py
+	$(SED) -i -e 's/VVVV/$(GIT_REVISION)/' temp$Sortools$Ssetup.py
+ifeq ($(SYSTEM),win)
+	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sortools$Sortools$Sconstraint_solver
+	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sortools$Sortools$Slinear_solver
+	copy src\gen\ortools\graph\_pywrapgraph.pyd temp$Sortools$Sortools$Sgraph
+	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sortools$Sortools$Salgorithms
+	$(SED) -i -e 's/\.dll/\.pyd/' temp/ortools/setup.py
+	$(SED) -i -e '/DELETEWIN/d' temp/ortools/setup.py
+	$(SED) -i -e 's/DELETEUNIX/          /g' temp/ortools/setup.py
+	-del temp\ortools\setup.py-e
+else
+	cp lib/_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/constraint_solver
+	cp lib/_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/linear_solver
+	cp lib/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/graph
+	cp lib/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp/ortools/ortools/algorithms
+	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/ortools/ortools
+	$(SED) -i -e 's/\.dll/\.so/' temp/ortools/setup.py
+	$(SED) -i -e 's/DELETEWIN //g' temp/ortools/setup.py
+	$(SED) -i -e '/DELETEUNIX/d' temp/ortools/setup.py
+	$(SED) -i -e 's/DLL/$(DYNAMIC_LIB_SUFFIX)/g' temp/ortools/setup.py
+	-rm temp/ortools/setup.py-e
+ifeq ($(PLATFORM),MACOSX)
+	tools/fix_python_libraries_on_mac.sh
+endif
+ifeq ($(PLATFORM),LINUX)
+	tools/fix_python_libraries_on_linux.sh
+endif
+endif
+
+pypi3_upload: pypi3_archive
+	@echo Uploading Pypi module.
+ifeq ($(SYSTEM),win)
+	@echo Do not forget to run: set VS90COMNTOOLS="$(VS$(VS_COMTOOLS)COMNTOOLS)
+	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_egg bdist_wininst upload"
+else
+	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_egg upload
+endif
