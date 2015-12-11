@@ -39,7 +39,7 @@ def test_proto():
   text_format.Merge(text_model, input_proto)
   solver = pywraplp.Solver('solveFromProto',
                            pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
-  print input_proto
+  print(input_proto)
   # For now, create the model from the proto by parsing the proto
   solver.LoadModelFromProto(input_proto.model)
   solver.EnableOutput()
@@ -47,7 +47,7 @@ def test_proto():
   # Fill solution
   solution = linear_solver_pb2.MPSolutionResponse()
   solver.FillSolutionResponseProto(solution)
-  print solution
+  print(solution)
 
 
 def main():

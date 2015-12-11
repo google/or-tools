@@ -15,7 +15,7 @@ DELETEUNIX               extra_link_args=['/MANIFEST'],
                         )
 
 setup(
-    name='ortools',
+    name='py3-ortools',
     version='2.VVVV',
     packages=[
         'ortools',
@@ -50,7 +50,7 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Office/Business :: Scheduling',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',
