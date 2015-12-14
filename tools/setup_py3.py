@@ -26,7 +26,6 @@ setup(
     ext_modules = [dummy_module],
     install_requires = [
         'protobuf >= 2.8.0'],
-    dependency_links = ['http://google-apputils-python.googlecode.com/files/'],
     package_data = {
         'ortools.constraint_solver' : ['_pywrapcp.dll'],
         'ortools.linear_solver' : ['_pywraplp.dll'],
