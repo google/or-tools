@@ -218,7 +218,12 @@ endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
   CCC = clang++ -fPIC -std=c++11 -mmacosx-version-min=$(MAC_MIN_VERSION) -stdlib=libc++
   DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
-  CMAKE = /Applications/CMake.app/Contents/bin/cmake
+  ifeq (, $(shell which cmake))
+    $(warning "no cmake in $(PATH), assuming it is in /Applications ")
+    CMAKE ?= /Applications/CMake.app/Contents/bin/cmake
+  endif
+  # CMAKE = /Applications/CMake.app/Contents/bin/cmake
+  
   JNI_LIB_EXT = jnilib
   ifeq ($(UNIX_MONO_DIR),)
     CSC = gmcs
