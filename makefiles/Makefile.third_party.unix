@@ -5,8 +5,7 @@ PROTOBUF_TAG = 3.0.0-beta-1
 SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.7
 SWIG_TAG = 3.0.7
-# version 8.33
-PCRE_TAG = 1336
+PCRE_TAG = 8.37
 # Mono version.
 MONO_TAG = 4.0.1
 # BISON, FLEX
@@ -302,7 +301,7 @@ dependencies/sources/pcre-$(PCRE_TAG)/configure: dependencies/sources/pcre-$(PCR
 	cd dependencies/sources/pcre-$(PCRE_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/pcre-$(PCRE_TAG)/autogen.sh:
-	svn co svn://vcs.exim.org/pcre/code/trunk -r $(PCRE_TAG) dependencies/sources/pcre-$(PCRE_TAG)
+	git clone -b pcre-$(PCRE_TAG) https://github.com/Distrotech/pcre dependencies/sources/pcre-$(PCRE_TAG)
 
 # Install SWIG.
 install_swig: dependencies/install/bin/swig
@@ -316,11 +315,8 @@ dependencies/sources/swig-$(SWIG_TAG)/Makefile: dependencies/sources/swig-$(SWIG
 dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/sources/swig-$(SWIG_TAG)/autogen.sh $(ACLOCAL_TARGET)
 	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) ./autogen.sh
 
-dependencies/sources/swig-$(SWIG_TAG)/autogen.sh: dependencies/archives/swig-$(SWIG_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/swig-$(SWIG_TAG).tar.gz
-
-dependencies/archives/swig-$(SWIG_TAG).tar.gz:
-	cd dependencies/archives && curl -OL http://prdownloads.sourceforge.net/swig/swig-$(SWIG_TAG).tar.gz
+dependencies/sources/swig-$(SWIG_TAG)/autogen.sh:
+	git clone -b rel-$(SWIG_TAG) https://github.com/swig/swig dependencies/sources/swig-$(SWIG_TAG)
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
