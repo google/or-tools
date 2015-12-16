@@ -50,6 +50,9 @@
   http://www.hakank.org/google_or_tools/
 
 """
+
+from __future__ import print_function
+
 import string
 import sys
 
@@ -64,7 +67,7 @@ def main(n=12):
   #
   # data
   #
-  print "n:", n
+  print("n:", n)
 
   #
   # declare variables
@@ -99,15 +102,15 @@ def main(n=12):
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
-    print "x:", [x[i].Value() for i in range(n)]
-    print "diffs:", [diffs[i].Value() for i in range(n - 1)]
+    print("x:", [x[i].Value() for i in range(n)])
+    print("diffs:", [diffs[i].Value() for i in range(n - 1)])
     num_solutions += 1
-    print
+    print()
 
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 n = 12
 if __name__ == "__main__":

@@ -48,6 +48,8 @@
 
 """
 
+from __future__ import print_function
+
 from ortools.constraint_solver import pywrapcp
 from collections import defaultdict
 
@@ -236,18 +238,18 @@ def main(n):
   while solver.NextSolution():
     num_solutions += 1
     x_val = [1] + [x[i].Value() for i in range(n)]
-    print 'x:', x_val
+    print('x:', x_val)
     for i in range(1, n + 1):
-      print '%s -> %s' % (nodes[x_val[i - 1] - 1], nodes[x_val[i] - 1])
+      print('%s -> %s' % (nodes[x_val[i - 1] - 1], nodes[x_val[i] - 1]))
 
   solver.EndSearch()
 
   if num_solutions > 0:
-    print
-    print 'num_solutions:', num_solutions
-    print 'failures:', solver.Failures()
-    print 'branches:', solver.Branches()
-    print 'WallTime:', solver.WallTime(), 'ms'
+    print()
+    print('num_solutions:', num_solutions)
+    print('failures:', solver.Failures())
+    print('branches:', solver.Branches())
+    print('WallTime:', solver.WallTime(), 'ms')
 
   # return the solution (or an empty array)
   return x_val
@@ -260,7 +262,7 @@ if __name__ == '__main__':
     result = main(n)
     result_len = len(result)
     if result_len:
-      print '\nFound a solution of length %i:' % result_len,
-      print result
-      print
+      print()
+      print('Found a solution of length %i:' % result_len, result)
+      print()
       break

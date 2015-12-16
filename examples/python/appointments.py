@@ -12,6 +12,8 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
+
 import argparse
 from ortools.constraint_solver import pywrapcp
 from ortools.linear_solver import pywraplp
@@ -99,7 +101,7 @@ def Select(combinations, loads, max_number_of_workers):
 
   # The problem has an optimal solution.
   if result_status == pywraplp.Solver.OPTIMAL:
-    print 'Problem solved in %f milliseconds' % solver.WallTime()
+    print('Problem solved in %f milliseconds' % solver.WallTime())
     return solver.Objective().Value(), [int(v.SolutionValue())
                                         for v in variables]
   return -1, []
@@ -111,7 +113,7 @@ def GetOptimalSchedule(demand, args):
                                   args.load_min,
                                   args.load_max,
                                   args.commute_time)
-  print 'found %d possible combinations of appointements' % len(combinations)
+  print('found %d possible combinations of appointements' % len(combinations))
 
   cost, selection = Select(combinations,
                            [a[0] for a in demand],
@@ -125,18 +127,18 @@ def GetOptimalSchedule(demand, args):
 
 def main(args):
   demand = [(40, 'A1', 90), (30, 'A2', 120), (25, 'A3', 180)]
-  print 'appointments: '
+  print('appointments: ')
   for a in demand:
-    print '   %d * %s : %d min' % (a[0], a[1], a[2])
-  print 'commute time = %d' % args.commute_time
-  print 'accepted total duration = [%d..%d]' % (args.load_min, args.load_max)
-  print '%d workers' % args.num_workers
+    print('   %d * %s : %d min' % (a[0], a[1], a[2]))
+  print('commute time = %d' % args.commute_time)
+  print('accepted total duration = [%d..%d]' % (args.load_min, args.load_max))
+  print('%d workers' % args.num_workers)
   cost, selection = GetOptimalSchedule(demand, args)
-  print 'Optimal solution as a cost of %d' % cost
+  print('Optimal solution as a cost of %d' % cost)
   for template in selection:
-    print '%d schedules with ' % template[0]
+    print('%d schedules with ' % template[0])
     for t in template[1]:
-      print '   %d installation of type %s' % (t[0], t[1])
+      print('   %d installation of type %s' % (t[0], t[1]))
 
 
 if __name__ == '__main__':
