@@ -1,19 +1,16 @@
-# TAGS for various dependencies
+# SVN tags of dependencies to checkout.
+
 GFLAGS_TAG = 2.1.2
 PROTOBUF_TAG = 3.0.0-beta-1
 SPARSEHASH_TAG = 2.0.3
+CBC_TAG = 2.9.7
 SWIG_TAG = 3.0.7
 PCRE_TAG = 8.37
-# CBC and dependencies
-CBC_TAG = 2.9.7
-CGL_TAG = 0.59.7
-CLP_TAG = 1.16.9
-COINUTILS_TAG = 2.10.11
-OSI_TAG = 0.107.6
 # Mono version.
 MONO_TAG = 4.0.1
 # BISON, FLEX
 BISON_TAG = 3.0.4
+# Flex 2.5.39 is broken on mac.
 FLEX_TAG = 2.6.0
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
@@ -281,63 +278,17 @@ dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/source
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
 
-# Install Coin CBC
-
+# Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
 
 dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile $(ACLOCAL_TARGET)
 	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) make install
 
-dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in $(ACLOCAL_TARGET) dependencies/install/lib/libCgl.a
+dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in $(ACLOCAL_TARGET)
 	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT"
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
-	git clone -b releases/$(CBC_TAG) https://github.com/coin-or/Cbc dependencies/sources/cbc-$(CBC_TAG)
-
-# Cgl
-
-dependencies/install/lib/libCgl.a: dependencies/sources/cgl-$(CGL_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/cgl-$(CGL_TAG) && $(SET_PATH) make install
-
-dependencies/sources/cgl-$(CGL_TAG)/Makefile: dependencies/sources/cgl-$(CGL_TAG)/Makefile.in $(ACLOCAL_TARGET) dependencies/install/lib/libClp.a
-	cd dependencies/sources/cgl-$(CGL_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
-
-dependencies/sources/cgl-$(CGL_TAG)/Makefile.in:
-	svn co --ignore-externals https://projects.coin-or.org/svn/Cgl/releases/$(CGL_TAG) dependencies/sources/cgl-$(CGL_TAG)
-#	git clone -b releases/$(CGL_TAG) https://github.com/coin-or/Cgl dependencies/sources/cgl-$(CGL_TAG)
-
-# Clp
-
-dependencies/install/lib/libClp.a: dependencies/sources/clp-$(CLP_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/clp-$(CLP_TAG) && $(SET_PATH) make install
-
-dependencies/sources/clp-$(CLP_TAG)/Makefile: dependencies/sources/clp-$(CLP_TAG)/Makefile.in $(ACLOCAL_TARGET) dependencies/install/lib/libOsi.a
-	cd dependencies/sources/clp-$(CLP_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
-
-dependencies/sources/clp-$(CLP_TAG)/Makefile.in:
-	git clone -b releases/$(CLP_TAG) https://github.com/coin-or/Clp dependencies/sources/clp-$(CLP_TAG)
-
-# Osi
-
-dependencies/install/lib/libOsi.a: dependencies/sources/osi-$(OSI_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/osi-$(OSI_TAG) && $(SET_PATH) make install
-
-dependencies/sources/osi-$(OSI_TAG)/Makefile: dependencies/sources/osi-$(OSI_TAG)/Makefile.in $(ACLOCAL_TARGET) dependencies/install/lib/libCoinUtils.a
-	cd dependencies/sources/osi-$(OSI_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
-
-dependencies/sources/osi-$(OSI_TAG)/Makefile.in:
-	git clone -b releases/$(OSI_TAG) https://github.com/coin-or/Osi dependencies/sources/osi-$(OSI_TAG)
-
-# CoinUtils
-
-dependencies/install/lib/libCoinUtils.a: dependencies/sources/coinutils-$(COINUTILS_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/coinutils-$(COINUTILS_TAG) && $(SET_PATH) make install
-
-dependencies/sources/coinutils-$(COINUTILS_TAG)/Makefile: dependencies/sources/coinutils-$(COINUTILS_TAG)/Makefile.in $(ACLOCAL_TARGET)
-	cd dependencies/sources/coinutils-$(COINUTILS_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic
-
-dependencies/sources/coinutils-$(COINUTILS_TAG)/Makefile.in:
-	git clone -b releases/$(COINUTILS_TAG) https://github.com/coin-or/Coinutils dependencies/sources/coinutils-$(COINUTILS_TAG)
+	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
 
 # Install pcre (dependency of SWIG).
 dependencies/install/bin/pcretest: dependencies/sources/pcre-$(PCRE_TAG)/Makefile $(ACLOCAL_TARGET)
@@ -503,27 +454,23 @@ dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz:
 clean_third_party:
 	-$(DEL) Makefile.local
 	-$(DELREC) dependencies/install
-	-$(DELREC) dependencies/sources/autoconf*
-	-$(DELREC) dependencies/sources/automake*
-	-$(DELREC) dependencies/sources/bison*
 	-$(DELREC) dependencies/sources/cbc*
-	-$(DELREC) dependencies/sources/cgl*
-	-$(DELREC) dependencies/sources/clp*
 	-$(DELREC) dependencies/sources/coin-cbc*
-	-$(DELREC) dependencies/sources/coinutils*
-	-$(DELREC) dependencies/sources/flex*
 	-$(DELREC) dependencies/sources/gflags*
 	-$(DELREC) dependencies/sources/glpk*
 	-$(DELREC) dependencies/sources/google*
-	-$(DELREC) dependencies/sources/help2man*
-	-$(DELREC) dependencies/sources/libtool*
 	-$(DELREC) dependencies/sources/mono*
-	-$(DELREC) dependencies/sources/osi*
-	-$(DELREC) dependencies/sources/patchelf*
 	-$(DELREC) dependencies/sources/pcre*
+	-$(DELREC) dependencies/sources/swig*
 	-$(DELREC) dependencies/sources/protobuf*
 	-$(DELREC) dependencies/sources/sparsehash*
-	-$(DELREC) dependencies/sources/swig*
+	-$(DELREC) dependencies/sources/libtool*
+	-$(DELREC) dependencies/sources/autoconf*
+	-$(DELREC) dependencies/sources/automake*
+	-$(DELREC) dependencies/sources/bison*
+	-$(DELREC) dependencies/sources/flex*
+	-$(DELREC) dependencies/sources/help2man*
+	-$(DELREC) dependencies/sources/patchelf*
 
 # Create Makefile.local
 makefile_third_party: Makefile.local
