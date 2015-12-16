@@ -787,6 +787,10 @@ namespace operations_research {
 %rename (MirrorInterval) Solver::MakeMirrorInterval;
 %rename (FixedDurationStartSyncedOnStartIntervalVar)
     Solver::MakeFixedDurationStartSyncedOnStartIntervalVar;
+%rename (FixedDurationStartSyncedOnEndIntervalVar)
+    Solver::MakeFixedDurationStartSyncedOnEndIntervalVar;
+%rename (FixedDurationEndSyncedOnStartIntervalVar)
+    Solver::MakeFixedDurationEndSyncedOnStartIntervalVar;
 %rename (FixedDurationEndSyncedOnEndIntervalVar)
     Solver::MakeFixedDurationEndSyncedOnEndIntervalVar;
 %rename (IntervalRelaxedMin) Solver::MakeIntervalRelaxedMin;
