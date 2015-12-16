@@ -38,8 +38,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 
@@ -219,6 +219,6 @@ def main(sols=1):
 num_solutions_to_show = 1
 if __name__ == "__main__":
   if (len(sys.argv) > 1):
-    num_solutions_to_show = string.atoi(sys.argv[1])
+    num_solutions_to_show = int(sys.argv[1])
 
   main(num_solutions_to_show)

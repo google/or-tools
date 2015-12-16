@@ -67,8 +67,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 
@@ -197,10 +197,10 @@ n = 6             # number of sides of each die
 minimize_val = 0  # Minimizing max value (0: no, 1: yes)
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    m = string.atoi(sys.argv[1])
+    m = int(sys.argv[1])
   if len(sys.argv) > 2:
-    n = string.atoi(sys.argv[2])
+    n = int(sys.argv[2])
   if len(sys.argv) > 3:
-    minimize_val = string.atoi(sys.argv[3])
+    minimize_val = int(sys.argv[3])
 
   main(m, n, minimize_val)

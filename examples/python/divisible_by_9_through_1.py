@@ -52,7 +52,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-import string
+
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -170,7 +170,7 @@ default_base = 10
 max_base = 16
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    base = string.atoi(sys.argv[1])
+    base = int(sys.argv[1])
     if base > max_base:
       print "Sorry, max allowed base is %i. Setting base to %i..." % (max_base, default_base)
       base = default_base

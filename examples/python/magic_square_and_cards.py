@@ -28,7 +28,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-import string
+
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -109,5 +109,5 @@ def main(n=3):
 n = 3
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    n = string.atoi(sys.argv[1])
+    n = int(sys.argv[1])
   main(n)

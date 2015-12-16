@@ -53,7 +53,6 @@
 
 from __future__ import print_function
 
-import string
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -115,5 +114,5 @@ def main(n=12):
 n = 12
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    n = string.atoi(sys.argv[1])
+    n = int(sys.argv[1])
   main(n)

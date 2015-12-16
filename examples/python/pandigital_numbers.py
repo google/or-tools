@@ -62,7 +62,6 @@
 
 """
 
-import string
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -159,9 +158,9 @@ base = 10
 start = 1
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    base = string.atoi(sys.argv[1])
+    base = int(sys.argv[1])
   if len(sys.argv) > 2:
-    start = string.atoi(sys.argv[2])
+    start = int(sys.argv[2])
 
   x_len = base - 1 + 1 - start
   for len1 in range(1 + (x_len)):

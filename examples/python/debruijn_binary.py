@@ -42,8 +42,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 # converts a number (s) <-> an array of numbers (t) in the specific base.
@@ -188,10 +188,10 @@ n = 3
 m = base ** n
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    base = string.atoi(sys.argv[1])
+    base = int(sys.argv[1])
   if len(sys.argv) > 2:
-    n = string.atoi(sys.argv[2])
+    n = int(sys.argv[2])
   if len(sys.argv) > 3:
-    m = string.atoi(sys.argv[3])
+    m = int(sys.argv[3])
 
   main(base, n, m)

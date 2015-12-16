@@ -41,7 +41,6 @@
 from __future__ import print_function
 
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 

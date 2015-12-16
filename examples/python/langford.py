@@ -46,7 +46,6 @@
 """
 
 import sys
-import string
 
 from ortools.constraint_solver import pywrapcp
 
@@ -108,8 +107,8 @@ k = 8
 num_sol = 0
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    k = string.atoi(sys.argv[1])
+    k = int(sys.argv[1])
   if len(sys.argv) > 2:
-    num_sol = string.atoi(sys.argv[2])
+    num_sol = int(sys.argv[2])
 
   main(k, num_sol)

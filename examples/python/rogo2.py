@@ -45,8 +45,8 @@
   http://www.hakank.org/google_or_tools/
 
 """
+
 import sys
-import string
 import re
 
 from ortools.constraint_solver import pywrapcp
