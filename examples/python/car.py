@@ -31,7 +31,6 @@
 """
 
 import sys
-import string
 
 from ortools.constraint_solver import pywrapcp
 
@@ -143,5 +142,5 @@ def main(num_sol=3):
 num_sol = 3
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    num_sol = string.atoi(sys.argv[1])
+    num_sol = int(sys.argv[1])
   main(num_sol)

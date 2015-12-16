@@ -47,8 +47,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+
 import sys
-import string
 
 from ortools.constraint_solver import pywrapcp
 
@@ -137,7 +137,7 @@ m = 40
 n = 4
 if __name__ == '__main__':
   if len(sys.argv) > 1:
-    m = string.atoi(sys.argv[1])
+    m = int(sys.argv[1])
   if len(sys.argv) > 2:
-    n = string.atoi(sys.argv[2])
+    n = int(sys.argv[2])
   main(m, n)

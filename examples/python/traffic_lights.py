@@ -71,7 +71,6 @@
 
 """
 
-import string
 import sys
 
 from ortools.constraint_solver import pywrapcp

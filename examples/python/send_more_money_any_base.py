@@ -44,7 +44,6 @@
 """
 
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 
@@ -109,6 +108,6 @@ if __name__ == '__main__':
   # for base in range(10,30):
   #    main(base)
   if len(sys.argv) > 1:
-    base = string.atoi(sys.argv[1])
+    base = int(sys.argv[1])
 
   main(base)

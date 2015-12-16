@@ -44,8 +44,8 @@
   http://www.hakank.org/google_or_tools/
 
 """
+
 import sys
-import string
 import re
 
 from ortools.constraint_solver import pywrapcp
@@ -161,7 +161,7 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
     problem = sys.argv[1]
   if len(sys.argv) > 2:
-    base = string.atoi(sys.argv[2])
+    base = int(sys.argv[2])
 
   if problem == "TEST" or problem == "test":
     test_problems(base)
