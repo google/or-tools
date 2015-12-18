@@ -1380,21 +1380,16 @@ class EdgeFinder : public Constraint {
              IntVar* const capacity)
       : Constraint(solver),
         capacity_(capacity),
+        tasks_(tasks),
         by_start_min_(tasks.size()),
         by_end_max_(tasks.size()),
         by_end_min_(tasks.size()),
         lt_tree_(tasks.size(), capacity_->Max()),
-        dual_capacity_tree_(tasks.size()) {
-    // Populate
-    for (int i = 0; i < tasks.size(); ++i) {
-      by_start_min_[i] = tasks[i];
-      by_end_max_[i] = tasks[i];
-      by_end_min_[i] = tasks[i];
-    }
-  }
+        dual_capacity_tree_(tasks.size()),
+        has_zero_demand_tasks_(true) {}
 
   ~EdgeFinder() override {
-    STLDeleteElements(&by_start_min_);
+    STLDeleteElements(&tasks_);
     STLDeleteValues(&update_map_);
   }
 
@@ -1402,10 +1397,10 @@ class EdgeFinder : public Constraint {
     // Add the demons
     Demon* const demon = MakeDelayedConstraintDemon0(
         solver(), this, &EdgeFinder::InitialPropagate, "RangeChanged");
-    for (int i = 0; i < by_start_min_.size(); ++i) {
+    for (Task* const task : tasks_) {
       // Delay propagation, as this constraint is not incremental: we pay
       // O(n log n) each time the constraint is awakened.
-      by_start_min_[i]->WhenAnything(demon);
+      task->WhenAnything(demon);
     }
     capacity_->WhenRange(demon);
   }
@@ -1440,7 +1435,28 @@ class EdgeFinder : public Constraint {
   void InitPropagation() {
     // Clear the update stack
     start_min_update_.clear();
-    // sort y start min.
+    // Re_init vectors if has_zero_demand_tasks_ is true
+    if (has_zero_demand_tasks_.Value()) {
+      by_start_min_.clear();
+      by_end_min_.clear();
+      by_end_max_.clear();
+      // Only populate tasks with demand_min > 0.
+      bool zero_demand = false;
+      for (Task* const task : tasks_) {
+        if (task->DemandMin() > 0) {
+          by_start_min_.push_back(task);
+          by_end_min_.push_back(task);
+          by_end_max_.push_back(task);
+        } else {
+          zero_demand = true;
+        }
+      }
+      if (!zero_demand) {
+        has_zero_demand_tasks_.SetValue(solver(), false);
+      }
+    }
+
+    // sort by start min.
     std::sort(by_start_min_.begin(), by_start_min_.end(),
               StartMinLessThan<Task>);
     for (int i = 0; i < by_start_min_.size(); ++i) {
@@ -1597,6 +1613,9 @@ class EdgeFinder : public Constraint {
   // Capacity of the cumulative resource.
   IntVar* const capacity_;
 
+  // Initial vector of tasks
+  std::vector<Task*> tasks_;
+
   // Cumulative tasks, ordered by non-decreasing start min.
   std::vector<Task*> by_start_min_;
 
@@ -1621,6 +1640,9 @@ class EdgeFinder : public Constraint {
   // whose demand is d cannot end before by_end_max_[i], then it cannot start
   // before update_map_[d][i].
   UpdateMap update_map_;
+
+  // Has one task a demand min == 0
+  Rev<bool> has_zero_demand_tasks_;
 
   DISALLOW_COPY_AND_ASSIGN(EdgeFinder);
 };
