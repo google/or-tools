@@ -161,7 +161,7 @@ class GLOPInterface : public MPSolverInterface {
   void SetPresolveMode(int value) override;
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
-  bool ReadParameterFile(const std::string& filename) override;
+  bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
 
  private:
   void NonIncrementalChange();
@@ -471,15 +471,16 @@ void GLOPInterface::SetLpAlgorithm(int value) {
   }
 }
 
-bool GLOPInterface::ReadParameterFile(const std::string& filename) {
+bool GLOPInterface::SetSolverSpecificParametersAsString(
+    const std::string& parameters) {
 #ifdef ANDROID_JNI
+  // NOTE(user): Android build uses protocol buffers in lite mode, and
+  // parsing data from text format is not supported there. To allow solver
+  // specific parameters from std::string on Android, we first need to switch to
+  // non-lite version of protocol buffers.
   return false;
 #else
-  std::string params;
-  if (!file::GetContents(filename, &params, file::Defaults()).ok()) {
-    return false;
-  }
-  const bool ok = google::protobuf::TextFormat::MergeFromString(params, &parameters_);
+  const bool ok = google::protobuf::TextFormat::MergeFromString(parameters, &parameters_);
   lp_solver_.SetParameters(parameters_);
   return ok;
 #endif

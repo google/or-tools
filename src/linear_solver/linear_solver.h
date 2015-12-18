@@ -1285,6 +1285,16 @@ class MPSolverInterface {
   virtual void SetDualTolerance(double value) = 0;
   virtual void SetPresolveMode(int value) = 0;
 
+  // Pass solver specific parameters in text format. The format is
+  // solver-specific and is the same as the corresponding solver configuration
+  // file format. Returns true if the operation was successful.
+  //
+  // The default implementation of this method stores the parameters in a
+  // temporary file and calls ReadParameterFile to import the parameter file
+  // into the solver. Solvers that support passing the parameters directly can
+  // override this method to skip the temporary file logic.
+  virtual bool SetSolverSpecificParametersAsString(const std::string& parameters);
+
   // Reads a solver-specific file of parameters and set them.
   // Returns true if there was no errors.
   virtual bool ReadParameterFile(const std::string& filename);

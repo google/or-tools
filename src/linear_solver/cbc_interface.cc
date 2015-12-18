@@ -401,7 +401,11 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       }
       break;
     case 1:
-      result_status_ = MPSolver::FEASIBLE;
+      if (model.bestSolution() != NULL) {
+        result_status_ = MPSolver::FEASIBLE;
+      } else {
+        result_status_ = MPSolver::NOT_SOLVED;
+      }
       break;
     default:
       result_status_ = MPSolver::ABNORMAL;

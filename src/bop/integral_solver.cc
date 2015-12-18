@@ -1025,20 +1025,29 @@ void RunOneBop(const BopParameters& parameters, int problem_index,
 }  // anonymous namespace
 
 IntegralSolver::IntegralSolver()
-    : parameters_(),
-      variable_values_(),
-      objective_value_(0.0),
-      interrupt_solve_(false) {}
+    : parameters_(), variable_values_(), objective_value_(0.0) {}
 
 BopSolveStatus IntegralSolver::Solve(const LinearProgram& linear_problem) {
   return Solve(linear_problem, DenseRow());
 }
 
+BopSolveStatus IntegralSolver::SolveWithTimeLimit(
+    const LinearProgram& linear_problem, TimeLimit* time_limit) {
+  return SolveWithTimeLimit(linear_problem, DenseRow(), time_limit);
+}
+
 BopSolveStatus IntegralSolver::Solve(
     const LinearProgram& linear_problem,
     const DenseRow& user_provided_intial_solution) {
-  interrupt_solve_ = false;
+  std::unique_ptr<TimeLimit> time_limit =
+      TimeLimit::FromParameters(parameters_);
+  return SolveWithTimeLimit(linear_problem, user_provided_intial_solution,
+                            time_limit.get());
+}
 
+BopSolveStatus IntegralSolver::SolveWithTimeLimit(
+    const LinearProgram& linear_problem,
+    const DenseRow& user_provided_intial_solution, TimeLimit* time_limit) {
   // We make a copy so that we can clear it if the presolve is active.
   DenseRow initial_solution = user_provided_intial_solution;
   if (initial_solution.size() > 0) {
@@ -1050,9 +1059,6 @@ BopSolveStatus IntegralSolver::Solve(
   // Some code path requires to copy the given linear_problem. When this
   // happens, we will simply change the target of this pointer.
   LinearProgram const* lp = &linear_problem;
-  std::unique_ptr<TimeLimit> time_limit =
-      TimeLimit::FromParameters(parameters_);
-  time_limit->RegisterExternalBooleanAsLimit(&interrupt_solve_);
 
 
   BopSolveStatus status;
@@ -1070,8 +1076,8 @@ BopSolveStatus IntegralSolver::Solve(
                                       BopSolveStatus::INVALID_PROBLEM);
 
         for (int i = 0; i < num_sub_problems; ++i) {
-          RunOneBop(parameters_, i, initial_solution, time_limit.get(),
-                    &decomposer, &(variable_values[i]), &(objective_values[i]),
+          RunOneBop(parameters_, i, initial_solution, time_limit, &decomposer,
+                    &(variable_values[i]), &(objective_values[i]),
                     &(best_bounds[i]), &(statuses[i]));
         }
 
@@ -1096,11 +1102,11 @@ BopSolveStatus IntegralSolver::Solve(
       CheckSolution(*lp, variable_values_);
     } else {
       status =
-          InternalSolve(*lp, parameters_, initial_solution, time_limit.get(),
+          InternalSolve(*lp, parameters_, initial_solution, time_limit,
                         &variable_values_, &objective_value_, &best_bound_);
     }
   } else {
-    status = InternalSolve(*lp, parameters_, initial_solution, time_limit.get(),
+    status = InternalSolve(*lp, parameters_, initial_solution, time_limit,
                            &variable_values_, &objective_value_, &best_bound_);
   }
 

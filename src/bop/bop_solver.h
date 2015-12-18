@@ -73,11 +73,6 @@ class BopSolver {
   BopSolveStatus Solve(const BopSolution& first_solution);
 
   // Runs the solver with an external time limit.
-  // NOTE(user): These methods do not use the external boolean registered as
-  // a limit within this class, but the caller can register the same boolean
-  // directly into the time limit object to achieve the same effect. Eventually,
-  // we should remove the explicit 'external_boolean_as_limit_' from this class,
-  // and use only the boolean registered in the time limit object.
   BopSolveStatus SolveWithTimeLimit(TimeLimit* time_limit);
   BopSolveStatus SolveWithTimeLimit(const BopSolution& first_solution,
                                     TimeLimit* time_limit);
@@ -93,11 +88,6 @@ class BopSolver {
   double GetScaledBestBound() const;
   double GetScaledGap() const;
 
-  // Sets an external limit to stop the search when the Boolean value becomes
-  // true. Note that the Solve() call may still linger for a while depending on
-  // the conditions.
-  void RegisterExternalBooleanAsLimit(const bool* external_boolean_as_limit);
-
  private:
   void UpdateParameters();
   BopSolveStatus InternalMonothreadSolver(TimeLimit* time_limit);
@@ -106,7 +96,6 @@ class BopSolver {
   const LinearBooleanProblem& problem_;
   ProblemState problem_state_;
   BopParameters parameters_;
-  const bool* external_boolean_as_limit_;
 
   mutable StatsGroup stats_;
 };
