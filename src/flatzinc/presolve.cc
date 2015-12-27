@@ -1011,10 +1011,10 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
     ct->type = "int_lin_ge";
   } else if (ct->type == "int_lin_lt") {
     ct->type = "int_lin_gt";
-  } else if (ct->type == "int_lin_le") {
-    ct->type = "int_lin_ge";
-  } else if (ct->type == "int_lin_lt") {
-    ct->type = "int_lin_gt";
+  } else if (ct->type == "int_lin_ge") {
+    ct->type = "int_lin_le";
+  } else if (ct->type == "int_lin_gt") {
+    ct->type = "int_lin_lt";
   } else if (ct->type == "int_lin_le_reif") {
     ct->type = "int_lin_ge_reif";
   } else if (ct->type == "int_lin_ge_reif") {
