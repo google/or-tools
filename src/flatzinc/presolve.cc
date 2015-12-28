@@ -707,11 +707,7 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
     ct->MutableArg(1)->type = FzArgument::INT_VALUE;
     ct->MutableArg(1)->variables.clear();
     ct->MutableArg(1)->values.push_back(rhs / coefficient);
-    if (ct->arguments.size() == 4) {
-      DCHECK(HasSuffixString(ct->type, "_reif"));
-      ct->arguments[2] = ct->Arg(3);
-    }
-    ct->arguments.pop_back();
+    ct->RemoveArg(2);
     // Change type (remove "_lin" part).
     DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
     ct->type.erase(3, 4);
@@ -752,11 +748,7 @@ bool FzPresolver::SimplifyBinaryLinear(FzConstraint* ct) {
   ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
   ct->MutableArg(1)->variables.clear();
   ct->MutableArg(1)->variables.push_back(second);
-  if (ct->arguments.size() == 4) {
-    DCHECK(HasSuffixString(ct->type, "_reif"));
-    ct->arguments[2] = ct->Arg(3);
-  }
-  ct->arguments.pop_back();
+  ct->RemoveArg(2);
   // Change type (remove "_lin" part).
   DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
   ct->type.erase(3, 4);
@@ -1584,7 +1576,7 @@ bool FzPresolver::SimplifyIntNeReif(FzConstraint* ct) {
         int_eq_reif_map_[ct->Arg(0).Var()][ct->Arg(1).Var()];
     ct->MutableArg(0)->variables[0] = opposite;
     ct->MutableArg(1)->variables[0] = ct->Arg(2).Var();
-    ct->arguments.pop_back();
+    ct->RemoveArg(2);
     ct->type = "bool_not";
     FZVLOG << "  -> " << ct->DebugString() << FZENDL;
     return true;
