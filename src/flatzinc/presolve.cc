@@ -636,6 +636,20 @@ bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
                    : "bool_not";
     return true;
   }
+  if (ct->Arg(0).HasOneValue()) {
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
+    const int64 value = ct->Arg(0).Value();
+    // Remove boolean value argument.
+    ct->arguments[0] = ct->Arg(1);
+    ct->arguments[1] = ct->Arg(2);
+    ct->arguments.pop_back();
+    // Change type.
+    ct->type = ((ct->type == "bool_eq_reif" && value == 1) ||
+                (ct->type == "bool_ne_reif" && value == 0))
+                   ? "bool_eq"
+                   : "bool_not";
+    return true;
+  }
   return false;
 }
 
