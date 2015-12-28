@@ -221,6 +221,8 @@ struct FzConstraint {
   // Cleans the field target_variable, as well as the field defining_constraint
   // on the target_variable.
   void RemoveTargetVariable();
+  // Helper method to remove one argument.
+  void RemoveArg(int arg_pos);
 
   const FzArgument& Arg(int arg_pos) const { return arguments[arg_pos]; }
 #if !defined(SWIG)

@@ -421,6 +421,10 @@ std::string FzConstraint::DebugString() const {
                       strong.c_str(), presolve_status_str.c_str());
 }
 
+void FzConstraint::RemoveArg(int arg_pos) {
+  arguments.erase(arguments.begin() + arg_pos);
+}
+
 void FzConstraint::MarkAsInactive() {
   RemoveTargetVariable();
   FZVLOG << "  - marking " << DebugString() << " as inactive" << FZENDL;
