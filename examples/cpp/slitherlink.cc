@@ -41,6 +41,7 @@ void PrintSolution(const std::vector<std::vector<int>>& data,
     }
     const int termination = v_arcs[num_columns][i]->Value();
     second_line += termination == 1 ? "|" : " ";
+    third_line += termination == 1 ? "|" : " ";
     std::cout << first_line << std::endl;
     std::cout << third_line << std::endl;
     std::cout << second_line << std::endl;
