@@ -29,23 +29,27 @@ void PrintSolution(const std::vector<std::vector<int>>& data,
   for (int i = 0; i < num_rows; ++i) {
     std::string first_line;
     std::string second_line;
+    std::string third_line;
     for (int j = 0; j < num_columns; ++j) {
       const int h_arc = h_arcs[i][j]->Value();
       const int v_arc = v_arcs[j][i]->Value();
       const int sum = data[i][j];
-      first_line +=  h_arc == 1 ? " -" : "  ";
+      first_line +=  h_arc == 1 ? " ---" : "    ";
       second_line += v_arc == 1 ? "|" : " ";
-      second_line += sum == -1 ? " " : StringPrintf("%d", sum).c_str();
+      second_line += sum == -1 ? "   " : StringPrintf(" %d ", sum).c_str();
+      third_line += v_arc == 1 ? "|   " : "    ";
     }
     const int termination = v_arcs[num_columns][i]->Value();
     second_line += termination == 1 ? "|" : " ";
     std::cout << first_line << std::endl;
+    std::cout << third_line << std::endl;
     std::cout << second_line << std::endl;
+    std::cout << third_line << std::endl;
   }
   std::string last_line;
   for (int j = 0; j < num_columns; ++j) {
     const int h_arc = h_arcs[num_rows][j]->Value();
-    last_line +=  h_arc == 1 ? " -" : "  ";
+    last_line +=  h_arc == 1 ? " ---" : "    ";
   }
   std::cout << last_line << std::endl;
 }
