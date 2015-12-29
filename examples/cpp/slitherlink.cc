@@ -9,6 +9,15 @@ const std::vector<std::vector<int>> data = { {  3,  2, -1,  3 },
                                              {  3, -1, -1, -1 },
                                              {  3, -1,  3,  1 } };
 
+const std::vector<std::vector<int>> data2 = { { -1, 0, -1, 1, -1, -1, 1, -1 },
+                                              { -1, 3, -1, -1, 2, 3, -1, 2 },
+                                              { -1, -1, 0, -1, -1, -1, -1, 0 },
+                                              { -1, 3, -1, -1, 0, -1, -1, -1 },
+                                              { -1, -1, -1, 3, -1, -1, 0, -1 },
+                                              { 1, -1, -1, -1, -1, 3, -1, -1 },
+                                              { 3, -1, 1, 3, -1, -1, 3, -1 },
+                                              { -1, 0, -1, -1, 3, -1, 3, -1 } };
+
 const std::vector<int> zero_or_two = { 0, 2 };
 
 void PrintSolution(const std::vector<std::vector<int>>& data,
@@ -115,6 +124,6 @@ void Solve(const std::vector<std::vector<int>>& data) {
 }  // namespace operations_research
 
 int main() {
-  operations_research::Solve(operations_research::data);
+  operations_research::Solve(operations_research::data2);
   return 0;
 }
