@@ -40,6 +40,27 @@ const std::vector<std::vector<int>> big = {
 
 namespace operations_research {
 namespace {
+std::vector<IntVar*> NeighboringArcs(
+    int i, int j,
+    const std::vector<std::vector<IntVar *>> &h_arcs,
+    const std::vector<std::vector<IntVar *>> &v_arcs) {
+  std::vector<IntVar *> tmp;
+  if (j > 0) {
+    tmp.push_back(h_arcs[i][j - 1]);
+  }
+  if (j < v_arcs.size() - 1) {
+    tmp.push_back(h_arcs[i][j]);
+  }
+  if (i > 0) {
+    tmp.push_back(v_arcs[j][i - 1]);
+  }
+  if (i < h_arcs.size() - 1) {
+    tmp.push_back(v_arcs[j][i]);
+  }
+  return tmp;
+}
+
+// Dedicated constraint: Sum(boolvars) is even.
 class BooleanSumEven : public Constraint {
  public:
   BooleanSumEven(Solver* const s, const std::vector<IntVar*>& vars)
@@ -231,7 +252,19 @@ class GridSinglePath : public Constraint {
     }
 
     if (visited_points.size() < possible_points.size()) {
-      solver()->Fail();
+      for (const int point: visited_points) {
+        possible_points.erase(point);
+      }
+      // Loop on unreachable points and zero all neighboring arcs.
+      for (const int point : possible_points) {
+        const int i = point / num_columns;
+        const int j = point % num_columns;
+        const std::vector<IntVar*> neighbors =
+            NeighboringArcs(i, j, h_arcs_, v_arcs_);
+        for (IntVar* const var : neighbors) {
+          var->SetMax(0);
+        }
+      }
     }
   }
 
@@ -317,21 +350,10 @@ void Solve(const std::vector<std::vector<int>> &data) {
   const std::vector<int> zero_or_two = { 0, 2 };
   for (int i = 0; i < num_rows + 1; ++i) {
     for (int j = 0; j < num_columns + 1; ++j) {
-      std::vector<IntVar *> tmp;
-      if (j > 0) {
-        tmp.push_back(h_arcs[i][j - 1]);
-      }
-      if (j < num_columns) {
-        tmp.push_back(h_arcs[i][j]);
-      }
-      if (i > 0) {
-        tmp.push_back(v_arcs[j][i - 1]);
-      }
-      if (i < num_rows) {
-        tmp.push_back(v_arcs[j][i]);
-      }
+      const std::vector<IntVar *> neighbors =
+          NeighboringArcs(i, j, h_arcs, v_arcs);
       solver.AddConstraint(
-          solver.MakeMemberCt(solver.MakeSum(tmp), zero_or_two));
+          solver.MakeMemberCt(solver.MakeSum(neighbors), zero_or_two));
     }
   }
 
