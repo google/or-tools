@@ -168,6 +168,9 @@ class GridSinglePath : public Constraint {
     }
   }
 
+  // This constraint implements a single propagation.
+  // If one point is on the path, it checks the reachability of all possible
+  // nodes, and fails otherwise.
   void InitialPropagate() override {
     const int num_rows = h_arcs_.size();     // number of points
     const int num_columns = v_arcs_.size();  // number of points
