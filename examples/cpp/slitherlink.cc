@@ -162,6 +162,9 @@ Constraint* MakeBooleanSumEven(Solver* const s, const std::vector<IntVar*>& v) {
   return s->RevAlloc(new BooleanSumEven(s, v));
 }
 
+// Dedicated constraint: There is a single path on the grid.
+// This constraint does not enforce the non-crossing, this is done
+// by the constraint on the degree of each node.
 class GridSinglePath : public Constraint {
  public:
   GridSinglePath(Solver* const solver,
@@ -191,7 +194,7 @@ class GridSinglePath : public Constraint {
 
   // This constraint implements a single propagation.
   // If one point is on the path, it checks the reachability of all possible
-  // nodes, and fails otherwise.
+  // nodes, and zero out the unreachable parts.
   void InitialPropagate() override {
     const int num_rows = h_arcs_.size();     // number of points
     const int num_columns = v_arcs_.size();  // number of points
