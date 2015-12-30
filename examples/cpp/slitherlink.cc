@@ -1,18 +1,20 @@
+#include <deque>
 #include <vector>
 #include <string>
+#include <unordered_set>
 
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
-const std::vector<std::vector<int> > small = {
+const std::vector<std::vector<int>> small = {
   { 3, 2, -1, 3 },
   { -1, -1, -1, 2 },
   { 3, -1, -1, -1 },
   { 3, -1, 3, 1 }
 };
 
-const std::vector<std::vector<int> > medium = {
+const std::vector<std::vector<int>> medium = {
   { -1, 0, -1, 1, -1, -1, 1, -1 },
   { -1, 3, -1, -1, 2, 3, -1, 2 },
   { -1, -1, 0, -1, -1, -1, -1, 0 },
@@ -23,7 +25,7 @@ const std::vector<std::vector<int> > medium = {
   { -1, 0, -1, -1, 3, -1, 3, -1 }
 };
 
-const std::vector<std::vector<int> > hard = {
+const std::vector<std::vector<int>> big = {
   { 3, -1, -1, -1, 2, -1, 1, -1, 1, 2 },
   { 1, -1, 0, -1, 3, -1, 2, 0, -1, -1 },
   { -1, 3, -1, -1, -1, -1, -1, -1, 3, -1 },
@@ -139,11 +141,112 @@ Constraint* MakeBooleanSumEven(Solver* const s, const std::vector<IntVar*>& v) {
   return s->RevAlloc(new BooleanSumEven(s, v));
 }
 
+class GridSinglePath : public Constraint {
+ public:
+  GridSinglePath(Solver* const solver,
+                 const std::vector<std::vector<IntVar*>>& h_arcs,
+                 const std::vector<std::vector<IntVar*>>& v_arcs)
+      : Constraint(solver),
+        h_arcs_(h_arcs),
+        v_arcs_(v_arcs) {}
+
+  ~GridSinglePath() {}
+
+  void Post() override {
+    Demon* const demon =
+        solver()->MakeDelayedConstraintInitialPropagateCallback(this);
+    for (auto& row : h_arcs_) {
+      for (IntVar* const var : row) {
+        var->WhenBound(demon);
+      }
+    }
+
+    for (auto& column : v_arcs_) {
+      for (IntVar* const var : column) {
+        var->WhenBound(demon);
+      }
+    }
+  }
+
+  void InitialPropagate() override {
+    const int num_rows = h_arcs_.size();     // number of points
+    const int num_columns = v_arcs_.size();  // number of points
+
+    const int num_points = num_rows * num_columns;
+    int root_node = -1;
+    std::unordered_set<int> possible_points;
+    std::vector<std::vector<int>> neighbors(num_points);
+    for (int i = 0; i < num_rows; ++i) {
+      for (int j = 0; j < num_columns - 1; ++j) {
+        IntVar* const h_arc = h_arcs_[i][j];
+        if (h_arc->Max() == 1) {
+          const int head = i * num_columns + j;
+          const int tail = i * num_columns + j + 1;
+          neighbors[head].push_back(tail);
+          neighbors[tail].push_back(head);
+          possible_points.insert(head);
+          possible_points.insert(tail);
+          if (root_node == -1 && h_arc->Min() == 1) {
+            root_node = head;
+          }
+        }
+      }
+    }
+
+    for (int i = 0; i < num_rows - 1; ++i) {
+      for (int j = 0; j < num_columns; ++j) {
+        IntVar* const v_arc = v_arcs_[j][i];
+        if (v_arc->Max() == 1) {
+          const int head = i * num_columns + j;
+          const int tail = (i + 1) * num_columns + j;
+          neighbors[head].push_back(tail);
+          neighbors[tail].push_back(head);
+          possible_points.insert(head);
+          possible_points.insert(tail);
+          if (root_node == -1 && v_arc->Min() == 1) {
+            root_node = head;
+          }
+        }
+      }
+    }
+    if (root_node == -1) {
+      return;
+    }
+    std::unordered_set<int> visited_points;
+    std::deque<int> to_process;
+    to_process.push_back(root_node);
+    while (!to_process.empty()) {
+      const int candidate = to_process.front();
+      to_process.pop_front();
+      visited_points.insert(candidate);
+      for (int neighbor : neighbors[candidate]) {
+        if (!ContainsKey(visited_points, neighbor)) {
+          to_process.push_back(neighbor);
+          visited_points.insert(neighbor);
+        }
+      }
+    }
+
+    if (visited_points.size() < possible_points.size()) {
+      solver()->Fail();
+    }
+  }
+
+ private:
+  const std::vector<std::vector<IntVar*>> h_arcs_;
+  const std::vector<std::vector<IntVar*>> v_arcs_;
+};
+
+Constraint* MakeSingleLoop(Solver* const solver,
+                           const std::vector<std::vector<IntVar *>> &h_arcs,
+                           const std::vector<std::vector<IntVar *>> &v_arcs) {
+  return solver->RevAlloc(new GridSinglePath(solver, h_arcs, v_arcs));
+}
 }  // namespace
 
-void PrintSolution(const std::vector<std::vector<int> > &data,
-                   const std::vector<std::vector<IntVar *> > &h_arcs,
-                   const std::vector<std::vector<IntVar *> > &v_arcs) {
+void PrintSolution(const std::vector<std::vector<int>> &data,
+                   const std::vector<std::vector<IntVar *>> &h_arcs,
+                   const std::vector<std::vector<IntVar *>> &v_arcs) {
   const int num_rows = data.size();
   const int num_columns = data[0].size();
 
@@ -176,20 +279,20 @@ void PrintSolution(const std::vector<std::vector<int> > &data,
   std::cout << last_line << std::endl;
 }
 
-void Solve(const std::vector<std::vector<int> > &data) {
+void Solve(const std::vector<std::vector<int>> &data) {
   const int num_rows = data.size();
   const int num_columns = data[0].size();
 
   Solver solver("slitherlink");
   std::vector<IntVar *> all_vars;
-  std::vector<std::vector<IntVar *> > h_arcs(num_rows + 1);
+  std::vector<std::vector<IntVar *>> h_arcs(num_rows + 1);
   for (int i = 0; i < num_rows + 1; ++i) {
     solver.MakeBoolVarArray(num_columns, StringPrintf("h_arc_%i_", i),
                             &h_arcs[i]);
     all_vars.insert(all_vars.end(), h_arcs[i].begin(), h_arcs[i].end());
   }
 
-  std::vector<std::vector<IntVar *> > v_arcs(num_columns + 1);
+  std::vector<std::vector<IntVar *>> v_arcs(num_columns + 1);
   for (int i = 0; i < num_columns + 1; ++i) {
     solver.MakeBoolVarArray(num_rows, StringPrintf("v_arc_%i_", i), &v_arcs[i]);
     all_vars.insert(all_vars.end(), v_arcs[i].begin(), v_arcs[i].end());
@@ -246,6 +349,7 @@ void Solve(const std::vector<std::vector<int> > &data) {
   }
 
   // Hamiltonian path: add single path constraint.
+  solver.AddConstraint(MakeSingleLoop(&solver, h_arcs, v_arcs));
 
   // Search.
   DecisionBuilder *const db = solver.MakePhase(
@@ -262,6 +366,11 @@ void Solve(const std::vector<std::vector<int> > &data) {
 } // namespace operations_research
 
 int main() {
-  operations_research::Solve(hard);
+  std::cout << "Small problem" << std::endl;
+  operations_research::Solve(small);
+  std::cout << "Medium problem" << std::endl;
+  operations_research::Solve(medium);
+  std::cout << "Big problem" << std::endl;
+  operations_research::Solve(big);
   return 0;
 }
