@@ -42,9 +42,9 @@ namespace operations_research {
 namespace {
 std::vector<IntVar*> NeighboringArcs(
     int i, int j,
-    const std::vector<std::vector<IntVar *>> &h_arcs,
-    const std::vector<std::vector<IntVar *>> &v_arcs) {
-  std::vector<IntVar *> tmp;
+    const std::vector<std::vector<IntVar*>>& h_arcs,
+    const std::vector<std::vector<IntVar*>>& v_arcs) {
+  std::vector<IntVar*> tmp;
   if (j > 0) {
     tmp.push_back(h_arcs[i][j - 1]);
   }
@@ -277,15 +277,14 @@ class GridSinglePath : public Constraint {
 };
 
 Constraint* MakeSingleLoop(Solver* const solver,
-                           const std::vector<std::vector<IntVar *>> &h_arcs,
-                           const std::vector<std::vector<IntVar *>> &v_arcs) {
+                           const std::vector<std::vector<IntVar*>>& h_arcs,
+                           const std::vector<std::vector<IntVar*>>& v_arcs) {
   return solver->RevAlloc(new GridSinglePath(solver, h_arcs, v_arcs));
 }
-}  // namespace
 
-void PrintSolution(const std::vector<std::vector<int>> &data,
-                   const std::vector<std::vector<IntVar *>> &h_arcs,
-                   const std::vector<std::vector<IntVar *>> &v_arcs) {
+void PrintSolution(const std::vector<std::vector<int>>& data,
+                   const std::vector<std::vector<IntVar*>>& h_arcs,
+                   const std::vector<std::vector<IntVar*>>& v_arcs) {
   const int num_rows = data.size();
   const int num_columns = data[0].size();
 
@@ -317,21 +316,22 @@ void PrintSolution(const std::vector<std::vector<int>> &data,
   }
   std::cout << last_line << std::endl;
 }
+}  // namespace
 
-void Solve(const std::vector<std::vector<int>> &data) {
+void SlitherLink(const std::vector<std::vector<int>>& data) {
   const int num_rows = data.size();
   const int num_columns = data[0].size();
 
   Solver solver("slitherlink");
-  std::vector<IntVar *> all_vars;
-  std::vector<std::vector<IntVar *>> h_arcs(num_rows + 1);
+  std::vector<IntVar*> all_vars;
+  std::vector<std::vector<IntVar*>> h_arcs(num_rows + 1);
   for (int i = 0; i < num_rows + 1; ++i) {
     solver.MakeBoolVarArray(num_columns, StringPrintf("h_arc_%i_", i),
                             &h_arcs[i]);
     all_vars.insert(all_vars.end(), h_arcs[i].begin(), h_arcs[i].end());
   }
 
-  std::vector<std::vector<IntVar *>> v_arcs(num_columns + 1);
+  std::vector<std::vector<IntVar*>> v_arcs(num_columns + 1);
   for (int i = 0; i < num_columns + 1; ++i) {
     solver.MakeBoolVarArray(num_rows, StringPrintf("v_arc_%i_", i), &v_arcs[i]);
     all_vars.insert(all_vars.end(), v_arcs[i].begin(), v_arcs[i].end());
@@ -342,7 +342,7 @@ void Solve(const std::vector<std::vector<int>> &data) {
     for (int j = 0; j < num_columns; ++j) {
       const int value = data[i][j];
       if (value != -1) {
-        std::vector<IntVar *> square = { h_arcs[i][j], h_arcs[i + 1][j],
+        std::vector<IntVar*> square = { h_arcs[i][j], h_arcs[i + 1][j],
                                          v_arcs[j][i], v_arcs[j + 1][i] };
         solver.AddConstraint(solver.MakeSumEquality(square, value));
       }
@@ -353,7 +353,7 @@ void Solve(const std::vector<std::vector<int>> &data) {
   const std::vector<int> zero_or_two = { 0, 2 };
   for (int i = 0; i < num_rows + 1; ++i) {
     for (int j = 0; j < num_columns + 1; ++j) {
-      const std::vector<IntVar *> neighbors =
+      const std::vector<IntVar*> neighbors =
           NeighboringArcs(i, j, h_arcs, v_arcs);
       solver.AddConstraint(
           solver.MakeMemberCt(solver.MakeSum(neighbors), zero_or_two));
@@ -362,14 +362,14 @@ void Solve(const std::vector<std::vector<int>> &data) {
 
   // Single loop: sum of arc on row or column is even
   for (int i = 0; i < num_columns; ++i) {
-    std::vector<IntVar *> column;
+    std::vector<IntVar*> column;
     for (int j = 0; j < num_rows + 1; ++j) {
       column.push_back(h_arcs[j][i]);
     }
     solver.AddConstraint(MakeBooleanSumEven(&solver, column));
   }
   for (int i = 0; i < num_rows; ++i) {
-    std::vector<IntVar *> row;
+    std::vector<IntVar*> row;
     for (int j = 0; j < num_columns + 1; ++j) {
       row.push_back(v_arcs[j][i]);
     }
@@ -379,7 +379,7 @@ void Solve(const std::vector<std::vector<int>> &data) {
   // Hamiltonian path: add single path constraint.
   solver.AddConstraint(MakeSingleLoop(&solver, h_arcs, v_arcs));
 
-  // Special rule on corners: value == 3 implies 2 external arcs used.
+  // Special rule on corners: value == 3 implies 2 border arcs used.
   if (data[0][0] == 3) {
     h_arcs[0][0]->SetMin(1);
     v_arcs[0][0]->SetMin(1);
@@ -413,10 +413,10 @@ void Solve(const std::vector<std::vector<int>> &data) {
 
 int main() {
   std::cout << "Small problem" << std::endl;
-  operations_research::Solve(small);
+  operations_research::SlitherLink(small);
   std::cout << "Medium problem" << std::endl;
-  operations_research::Solve(medium);
+  operations_research::SlitherLink(medium);
   std::cout << "Big problem" << std::endl;
-  operations_research::Solve(big);
+  operations_research::SlitherLink(big);
   return 0;
 }
