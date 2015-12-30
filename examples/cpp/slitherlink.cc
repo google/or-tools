@@ -351,11 +351,29 @@ void Solve(const std::vector<std::vector<int>> &data) {
   // Hamiltonian path: add single path constraint.
   solver.AddConstraint(MakeSingleLoop(&solver, h_arcs, v_arcs));
 
+  // Special rule on corners: value == 3 implies 2 external arcs used.
+  if (data[0][0] == 3) {
+    h_arcs[0][0]->SetMin(1);
+    v_arcs[0][0]->SetMin(1);
+  }
+  if (data[0][num_columns - 1] == 3) {
+    h_arcs[0][num_columns - 1]->SetMin(1);
+    v_arcs[num_columns][0]->SetMin(1);
+  }
+  if (data[num_rows - 1][0] == 3) {
+    h_arcs[num_rows][0]->SetMin(1);
+    v_arcs[0][num_rows - 1]->SetMin(1);
+  }
+  if (data[num_rows - 1][num_columns - 1] == 3) {
+    h_arcs[num_rows][num_columns - 1]->SetMin(1);
+    v_arcs[num_columns][num_rows - 1]->SetMin(1);
+  }
+
   // Search.
-  DecisionBuilder *const db = solver.MakePhase(
+  DecisionBuilder* const db = solver.MakePhase(
       all_vars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MAX_VALUE);
 
-  SearchMonitor *const log = solver.MakeSearchLog(1000000);
+  SearchMonitor* const log = solver.MakeSearchLog(1000000);
 
   solver.NewSearch(db, log);
   while (solver.NextSolution()) {
