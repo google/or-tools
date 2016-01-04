@@ -1511,7 +1511,7 @@ void ParseShortIntLin(FzSolver* fzsolver, FzConstraint* ct, IntExpr** left,
             solver->MakeSum(solver->MakeProd(e2, c2), solver->MakeProd(e3, c3));
         *right = solver->MakeSum(solver->MakeProd(e1, -c1), rhs);
       } else if (c1 > 0 && c2 < 0 && c3 < 0) {
-        *left = solver->MakeSum(solver->MakeProd(e1, c1), rhs);
+        *left = solver->MakeSum(solver->MakeProd(e1, c1), -rhs);
         *right = solver->MakeSum(solver->MakeProd(e2, -c2),
                                  solver->MakeProd(e3, -c3));
       } else if (c1 > 0 && c2 < 0 && c3 > 0) {
