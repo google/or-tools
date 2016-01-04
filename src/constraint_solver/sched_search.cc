@@ -427,37 +427,29 @@ class SetTimesForward : public DecisionBuilder {
     int64 best_est = kint64max;
     int64 best_lct = kint64max;
     int support = -1;
+    // We are looking for the interval that has the smallest start min
+    // (tie break with smallest end max) and is not postponed. And
+    // you're going to schedule that interval at its start min.
     for (int i = 0; i < vars_.size(); ++i) {
       IntervalVar* const v = vars_[i];
-      if (v->MayBePerformed() && v->StartMax() > v->StartMin()) {
-        if (v->StartMin() > markers_[i] &&
-            (v->StartMin() < best_est ||
-             (v->StartMin() == best_est && v->EndMax() < best_lct))) {
-          best_est = v->StartMin();
-          best_lct = v->EndMax();
-          support = i;
-        }
+      if (v->MayBePerformed() && v->StartMax() != v->StartMin() &&
+          !IsPostponed(i) &&
+          (v->StartMin() < best_est ||
+           (v->StartMin() == best_est && v->EndMax() < best_lct))) {
+        best_est = v->StartMin();
+        best_lct = v->EndMax();
+        support = i;
       }
     }
     // TODO(user) : remove this crude quadratic loop with
     // reversibles range reduction.
-    if (support == -1) {
+    if (support == -1) {  // All intervals are either fixed or postponed.
       UnperformPostponedTaskBefore(kint64max);
       return nullptr;
     }
     UnperformPostponedTaskBefore(best_est);
     return s->RevAlloc(
         new ScheduleOrPostpone(vars_[support], best_est, &markers_[support]));
-  }
-
-  void UnperformPostponedTaskBefore(int64 date) {
-    for (int i = 0; i < vars_.size(); ++i) {
-      IntervalVar* const v = vars_[i];
-      if (v->MayBePerformed() && v->StartMin() <= markers_[i] &&
-          (v->EndMin() <= date || v->StartMax() <= date)) {
-        v->SetPerformed(false);
-      }
-    }
   }
 
   std::string DebugString() const override { return "SetTimesForward()"; }
@@ -470,6 +462,29 @@ class SetTimesForward : public DecisionBuilder {
   }
 
  private:
+  bool IsPostponed(int index) {
+    DCHECK(vars_[index]->MayBePerformed());
+    return vars_[index]->StartMin() <= markers_[index];
+  }
+
+  void UnperformPostponedTaskBefore(int64 date) {
+    for (int i = 0; i < vars_.size(); ++i) {
+      IntervalVar* const v = vars_[i];
+      if (v->MayBePerformed() && v->StartMin() != v->StartMax() &&
+          IsPostponed(i) &&
+          // There are two rules here:
+          //  - v->StartMax() <= date: the interval should have been scheduled
+          //    as it cannot be scheduled later (assignment is chronological).
+          //  - v->EndMin() <= date: The interval can fit before the current
+          //    start date. In that case, it 'should' always fit, and as it has
+          //    not be scheduled, then we are missing it. So, as a dominance
+          //    rule, it should be marked as unperformed.
+          (v->EndMin() <= date || v->StartMax() <= date)) {
+        v->SetPerformed(false);
+      }
+    }
+  }
+
   const std::vector<IntervalVar*> vars_;
   std::vector<int64> markers_;
 };
