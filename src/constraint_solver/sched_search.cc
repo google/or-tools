@@ -397,7 +397,7 @@ class ScheduleOrPostpone : public Decision {
   }
 
   void Refute(Solver* const s) override {
-    s->SaveAndSetValue(marker_, est_.Value() + 1);
+    s->SaveAndSetValue(marker_, est_.Value());
   }
 
   void Accept(DecisionVisitor* const visitor) const override {
@@ -427,32 +427,37 @@ class SetTimesForward : public DecisionBuilder {
     int64 best_est = kint64max;
     int64 best_lct = kint64max;
     int support = -1;
-    int refuted = 0;
     for (int i = 0; i < vars_.size(); ++i) {
       IntervalVar* const v = vars_[i];
       if (v->MayBePerformed() && v->StartMax() > v->StartMin()) {
-        if (v->StartMin() >= markers_[i] &&
+        if (v->StartMin() > markers_[i] &&
             (v->StartMin() < best_est ||
              (v->StartMin() == best_est && v->EndMax() < best_lct))) {
           best_est = v->StartMin();
           best_lct = v->EndMax();
           support = i;
-        } else {
-          refuted++;
         }
       }
     }
     // TODO(user) : remove this crude quadratic loop with
     // reversibles range reduction.
     if (support == -1) {
-      if (refuted == 0) {
-        return nullptr;
-      } else {
-        s->Fail();
+      UnperformPostponedTaskBefore(kint64max);
+      return nullptr;
+    }
+    UnperformPostponedTaskBefore(best_est);
+    return s->RevAlloc(
+        new ScheduleOrPostpone(vars_[support], best_est, &markers_[support]));
+  }
+
+  void UnperformPostponedTaskBefore(int64 date) {
+    for (int i = 0; i < vars_.size(); ++i) {
+      IntervalVar* const v = vars_[i];
+      if (v->StartMin() <= markers_[i] && v->MayBePerformed() &&
+          (v->EndMin() <= date || v->StartMax() <= date)) {
+        v->SetPerformed(false);
       }
     }
-    return s->RevAlloc(new ScheduleOrPostpone(
-        vars_[support], vars_[support]->StartMin(), &markers_[support]));
   }
 
   std::string DebugString() const override { return "SetTimesForward()"; }
