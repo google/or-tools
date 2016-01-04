@@ -453,7 +453,7 @@ class SetTimesForward : public DecisionBuilder {
   void UnperformPostponedTaskBefore(int64 date) {
     for (int i = 0; i < vars_.size(); ++i) {
       IntervalVar* const v = vars_[i];
-      if (v->StartMin() <= markers_[i] && v->MayBePerformed() &&
+      if (v->MayBePerformed() && v->StartMin() <= markers_[i] &&
           (v->EndMin() <= date || v->StartMax() <= date)) {
         v->SetPerformed(false);
       }
