@@ -720,6 +720,10 @@ namespace operations_research {
 %unignore Solver::~Solver;
 %unignore Solver::AddConstraint;
 %unignore Solver::Solve;
+%unignore Solver::DemonPriority;
+%unignore Solver::DELAYED_PRIORITY;
+%unignore Solver::VAR_PRIORITY;
+%unignore Solver::NORMAL_PRIORITY;
 
 // Solver: Decomposed or specialized Solve() API.
 %unignore Solver::NewSearch;
@@ -1128,7 +1132,6 @@ namespace operations_research {
 
 // Unexposed Solver enums:
 // - EvaluatorLocalSearchOperators
-// - DemonPriority
 // - BinaryIntervalRelation (replaced by an ad-hoc API on IntervalVar).
 // - UnaryIntervalRelation (ditto)
 // - DecisionModification
@@ -1700,7 +1703,6 @@ namespace operations_research {
 
 // Demon
 // Ignored:
-// - priority()
 // - DebugString()
 %feature("director") Demon;
 %unignore Demon;
@@ -1709,6 +1711,7 @@ namespace operations_research {
 %rename (RunWrapper) Demon::Run;
 %rename (Inhibit) Demon::inhibit;
 %rename (Desinhibit) Demon::desinhibit;
+%rename (Priority) Demon::priority;
 
 // AssignmentElement
 // Ignored:
@@ -2167,8 +2170,7 @@ class PyConstraintDemon(PyDemon):
     self.__method(self.__constraint, *self.__args)
 
   def Priority(self):
-    return (pywrapcp.Solver.DELAYED_PRIORITY if self.__delayed
-            else pywrapcp.Solver.NORMAL_PRIORITY)
+    return Solver.DELAYED_PRIORITY if self.__delayed else Solver.NORMAL_PRIORITY
 
   def DebugString(self):
     return 'PyConstraintDemon'
