@@ -1232,9 +1232,21 @@ namespace operations_research {
 // - set_name()
 // - HasName()
 // - Basename()
+
+%feature("director") BaseObject;
+%unignore BaseObject;
+%unignore BaseObject::BaseObject;
+%unignore BaseObject::~BaseObject;
+%unignore BaseObject::DebugString;
+
+%feature("director") PropagationBaseObject;
 %unignore PropagationBaseObject;
+%unignore PropagationBaseObject::PropagationBaseObject;
+%unignore PropagationBaseObject::~PropagationBaseObject;
 %rename (Name) PropagationBaseObject::name;
 %rename (solver) PropagationBaseObject::solver;
+%unignore PropagationBaseObject::DebugString;
+%feature("nodirector") PropagationBaseObject::BaseName;
 
 // Decision
 // Ignored:
@@ -1263,20 +1275,20 @@ namespace operations_research {
 // Ignored:
 // - Accept()
 // - IsCastConstraint()
-%unignore Constraint;
-%unignore Constraint::Var;
 // Note(user): we prefer setting the 'director' feature on the individual
 // methods of a class that require it, but sometimes we must actually set
 // 'director' on the class itself, because it is a C++ abstract class and
 // the client needs to construct it. In these cases, we don't bother
 // setting the 'director' feature on individual methods, since it is done
 // automatically when setting it on the class.
+%unignore Constraint;
 %feature("director") Constraint;
 %unignore Constraint::Constraint;
 %unignore Constraint::~Constraint;
 %unignore Constraint::Post;
-%unignore Constraint::InitialPropagate;
+//%unignore Constraint::InitialPropagate;
 %rename (InitialPropagateWrapper) Constraint::InitialPropagate;
+%unignore Constraint::Var;
 %unignore Constraint::DebugString;
 
 
@@ -1830,9 +1842,18 @@ namespace operations_research {
 namespace operations_research {
 %rename (RevInteger) Rev<int64>;
 %rename (RevInteger) Rev<int64>::Rev;
-%unignore Rev<int64>::Value;
 %unignore Rev<int64>::SetValue;
+%unignore Rev<int64>::Value;
 %template(RevInteger) Rev<int64>;
+
+%rename (NumericalRevInteger) NumericalRev<int64>;
+%rename (NumericalRevInteger) NumericalRev<int64>::NumericalRev;
+%unignore NumericalRev<int64>::Add;
+%unignore NumericalRev<int64>::Decr;
+%unignore NumericalRev<int64>::Incr;
+%unignore NumericalRev<int64>::SetValue;
+%unignore NumericalRev<int64>::Value;
+%template(NumericalRevInteger) NumericalRev<int64>;
 
 %rename (RevBool) Rev<bool>;
 %rename (RevBool) Rev<bool>::Rev;
@@ -2110,8 +2131,8 @@ class PyDecisionBuilder(DecisionBuilder):
 
 class PyConstraint(Constraint):
 
-  def __init__(self):
-    Constraint.__init__(self)
+  def __init__(self, solver):
+    Constraint.__init__(self, solver)
 
   def InitialPropagateWrapper(self):
     try:
