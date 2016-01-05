@@ -35,8 +35,8 @@ class BooleanSumEven(pywrapcp.PyConstraint):
   def __init__(self, solver, vars):
     pywrapcp.PyConstraint.__init__(self, solver)
     self.__vars = vars
-    self.__num_possible_true_vars = pywrapcp.RevInteger(0)
-    self.__num_always_true_vars = pywrapcp.RevInteger(0)
+    self.__num_possible_true_vars = pywrapcp.NumericalRevInteger(0)
+    self.__num_always_true_vars = pywrapcp.NumericalRevInteger(0)
 
   def Post(self):
     for i in range(len(self.__vars)):
@@ -71,9 +71,9 @@ class BooleanSumEven(pywrapcp.PyConstraint):
     solver = self.solver()
     value = self.__vars[index].Value()
     if value == 0:
-      self.__num_possible_true_vars.SetValue(solver, self.__num_possible_true_vars.Value() - 1)
+      self.__num_possible_true_vars.Decr(solver)
     else:
-      self.__num_always_true_vars.SetValue(solver, self.__num_always_true_vars.Value() + 1)
+      self.__num_always_true_vars.Incr(solver)
 
     num_possible = self.__num_possible_true_vars.Value()
     num_always = self.__num_always_true_vars.Value()

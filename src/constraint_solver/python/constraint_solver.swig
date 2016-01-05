@@ -1148,9 +1148,6 @@ namespace operations_research {
 // - DecisionVisitor
 // - ModelVisitor
 // - CastConstraint
-// - NumericalRev<>
-// - RevArray<>
-// - NumericalRevArray<>
 // - NoGood
 // - NoGoodManager
 // - AssignmentElement
@@ -1361,6 +1358,32 @@ namespace operations_research {
 %unignore Rev::Rev;
 %unignore Rev::Value;
 %unignore Rev::SetValue;
+
+// RevArray<>
+%unignore RevArray;
+%unignore RevArray::RevArray;
+%unignore RevArray::Value;
+%unignore RevArray::SetValue;
+%rename (__len__) RevArray::size;
+
+// NumericalRev<>
+%unignore NumericalRev;
+%unignore NumericalRev::NumericalRev;
+%unignore NumericalRev::Add;
+%unignore NumericalRev::Decr;
+%unignore NumericalRev::Incr;
+%unignore NumericalRev::SetValue;
+%unignore NumericalRev::Value;
+
+// NumericalRevArray<>
+%unignore NumericalRevArray;
+%unignore NumericalRevArray::NumericalRevArray;
+%unignore NumericalRevArray::Add;
+%unignore NumericalRevArray::Decr;
+%unignore NumericalRevArray::Incr;
+%unignore NumericalRevArray::SetValue;
+%unignore NumericalRevArray::Value;
+%rename (__len__) NumericalRevArray::size;
 
 // IntExpr
 // Ignored:
