@@ -37,14 +37,12 @@ class BooleanSumEven(pywrapcp.PyConstraint):
     self.__vars = vars
     self.__num_possible_true_vars = pywrapcp.RevInteger(0)
     self.__num_always_true_vars = pywrapcp.RevInteger(0)
-    self.__demons = []
 
   def Post(self):
     for i in range(len(self.__vars)):
       v = self.__vars[i]
       if not v.Bound():
-        demon = BooleanSumEvenUpdateDemon(self, i)
-        self.__demons.append(demon)
+        demon = self.Demon(BooleanSumEven.Update, i)
         v.WhenBound(demon)
 
   def InitialPropagate(self):
@@ -100,7 +98,6 @@ class BooleanSumEven(pywrapcp.PyConstraint):
 def SlitherLink(data):
   num_rows = len(data)
   num_columns = len(data[0])
-  to_keep = []
 
   solver = pywrapcp.Solver('slitherlink')
   h_arcs = [[solver.BoolVar('h_arcs[%i][%i]' % (i, j))
@@ -125,15 +122,11 @@ def SlitherLink(data):
 
   for i in range(num_columns):
     column = [h_arcs[j][i] for j in range(num_rows + 1)]
-    ct = BooleanSumEven(solver, column)
-    to_keep.append(ct)
-    solver.Add(ct)
+    solver.Add(BooleanSumEven(solver, column))
 
   for i in range(num_rows):
     row = [v_arcs[j][i] for j in range(num_columns + 1)]
-    ct = BooleanSumEven(solver, row)
-    to_keep.append(ct)
-    solver.Add(ct)
+    solver.Add(BooleanSumEven(solver, row))
 
   all_vars = []
   for row in h_arcs:

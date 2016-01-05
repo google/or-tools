@@ -174,7 +174,17 @@ static void PyFunctionSolverToVoid(PyObject* pyfunc,
   std::string __str__() {
     return $self->DebugString();
   }
+  %pythoncode {
+  def Add(self, ct):
+    if isinstance(ct, PyConstraint):
+      self.__python_constraints.append(ct)
+    self.AddConstraint(ct)
+  }  // %pythoncode
 }
+
+%feature("pythonappend") operations_research::Solver::Solver %{
+  self.__python_constraints = []
+%}
 
 // Extend IntervalVar to provide a nicer pythonic API for precedence
 // and scheduling constraints. The macros below help do that concisely.
@@ -708,7 +718,7 @@ namespace operations_research {
 %unignore Solver;
 %unignore Solver::Solver;
 %unignore Solver::~Solver;
-%rename (Add) Solver::AddConstraint;
+%unignore Solver::AddConstraint;
 %unignore Solver::Solve;
 
 // Solver: Decomposed or specialized Solve() API.
@@ -2129,10 +2139,55 @@ class PyDecisionBuilder(DecisionBuilder):
     return "PyDecisionBuilder"
 
 
+class PyDemon(Demon):
+
+  def RunWrapper(self, solver):
+    try:
+      self.Run(solver)
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        solver.ShouldFail()
+      else:
+        raise
+
+  def DebugString(self):
+    return "PyDemon"
+
+class PyConstraintDemon(PyDemon):
+
+  def __init__(self, ct, method, delayed, *args):
+    PyDemon.__init__(self)
+    self.__constraint = ct
+    self.__method = method
+    self.__delayed = delayed
+    self.__args = args
+
+  def Run(self, solver):
+    self.__method(self.__constraint, *self.__args)
+
+  def Priority(self):
+    return (pywrapcp.Solver.DELAYED_PRIORITY if self.__delayed
+            else pywrapcp.Solver.NORMAL_PRIORITY)
+
+  def DebugString(self):
+    return 'PyConstraintDemon'
+
+
 class PyConstraint(Constraint):
 
   def __init__(self, solver):
     Constraint.__init__(self, solver)
+    self.__demons = []
+
+  def Demon(self, method, *args):
+    demon = PyConstraintDemon(self, method, False, *args)
+    self.__demons.append(demon)
+    return demon
+
+  def DelayedDemon(self, method, *args):
+    demon = PyConstraintDemon(self, method, True, *args)
+    self.__demons.append(demon)
+    return demon
 
   def InitialPropagateWrapper(self):
     try:
@@ -2147,17 +2202,4 @@ class PyConstraint(Constraint):
     return "PyConstraint"
 
 
-class PyDemon(Demon):
-
-  def RunWrapper(self, solver):
-    try:
-      self.Run(solver)
-    except Exception as e:
-      if 'CP Solver fail' in str(e):
-        solver.ShouldFail()
-      else:
-        raise
-
-  def DebugString(self):
-    return "PyDemon"
 }  // %pythoncode
