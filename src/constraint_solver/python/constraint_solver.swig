@@ -2215,6 +2215,12 @@ class PyConstraint(Constraint):
     self.__demons.append(demon)
     return demon
 
+  def InitialPropagateDemon(self):
+    return self.solver().ConstraintInitialPropagateCallback(self)
+
+  def DelayedInitialPropagateDemon(self):
+    return self.solver().DelayedConstraintInitialPropagateCallback(self)
+
   def InitialPropagateWrapper(self):
     try:
       self.InitialPropagate()

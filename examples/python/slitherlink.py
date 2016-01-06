@@ -148,14 +148,14 @@ class GridSinglePath(pywrapcp.PyConstraint):
     self.__v_arcs = v_arcs
 
   def Post(self):
-    demon = self.solver().DelayedConstraintInitialPropagateCallback(self);
+    demon = self.DelayedInitialPropagateDemon()
     for row in self.__h_arcs:
       for var in row:
-        var.WhenBound(demon);
+        var.WhenBound(demon)
 
     for column in self.__v_arcs:
       for var in column:
-        var.WhenBound(demon);
+        var.WhenBound(demon)
 
 
   # This constraint implements a single propagation.
