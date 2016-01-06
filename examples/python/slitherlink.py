@@ -37,15 +37,15 @@ def PrintSolution(data, h_arcs, v_arcs):
     termination = v_arcs[num_columns][i].Value()
     second_line += '|' if termination else ' '
     third_line += '|' if termination else ' '
-    print first_line
-    print third_line
-    print second_line
-    print third_line
+    print(first_line)
+    print(third_line)
+    print(second_line)
+    print(third_line)
   last_line = ''
   for j in range(num_columns):
     h_arc = h_arcs[num_rows][j].Value()
     last_line += ' ---' if h_arc else '    '
-  print last_line
+  print(last_line)
 
 
 class BooleanSumEven(pywrapcp.PyConstraint):
@@ -194,7 +194,7 @@ class GridSinglePath(pywrapcp.PyConstraint):
 
       # Loop on unreachable points and zero all neighboring arcs.
       for point in possible_points:
-        i = point / num_columns
+        i = point // num_columns
         j = point % num_columns
         neighbors = NeighboringArcs(i, j, self.__h_arcs, self.__v_arcs)
         for var in neighbors:
