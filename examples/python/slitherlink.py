@@ -50,7 +50,7 @@ def PrintSolution(data, h_arcs, v_arcs):
     first_line = ''
     second_line = ''
     third_line = ''
-    for j in range(num_columns:)
+    for j in range(num_columns):
       h_arc = h_arcs[i][j].Value()
       v_arc = v_arcs[j][i].Value()
       cnt = data[i][j]
