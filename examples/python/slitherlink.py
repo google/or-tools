@@ -1,4 +1,5 @@
 from ortools.constraint_solver import pywrapcp
+from collections import deque
 
 
 small = [[3, 2, -1, 3], [-1, -1, -1, 2], [3, -1, -1, -1], [3, -1, 3, 1]]
@@ -17,17 +18,34 @@ def NeighboringArcs(i, j, h_arcs, v_arcs):
   return tmp
 
 
-class BooleanSumEvenUpdateDemon(pywrapcp.PyDemon):
-  def __init__(self, ct, index):
-    pywrapcp.PyDemon.__init__(self)
-    self.__ct = ct
-    self.__index = index
+def PrintSolution(data, h_arcs, v_arcs):
+  num_rows = len(data)
+  num_columns = len(data[0])
 
-  def Run(self, solver):
-    self.__ct.Update(self.__index)
-
-  def DebugString(self):
-    return 'BooleanSumEvenUpdateDemon(%i)' % self.__index
+  for i in range(num_rows):
+    first_line = ''
+    second_line = ''
+    third_line = ''
+    for j in range(num_columns):
+      h_arc = h_arcs[i][j].Value()
+      v_arc = v_arcs[j][i].Value()
+      cnt = data[i][j]
+      first_line += ' ---' if h_arc else '    '
+      second_line += '|' if v_arc else ' '
+      second_line += '   ' if cnt == -1 else ' %i ' % cnt
+      third_line += '|   ' if v_arc == 1 else '    '
+    termination = v_arcs[num_columns][i].Value()
+    second_line += '|' if termination else ' '
+    third_line += '|' if termination else ' '
+    print first_line
+    print third_line
+    print second_line
+    print third_line
+  last_line = ''
+  for j in range(num_columns):
+    h_arc = h_arcs[num_rows][j].Value()
+    last_line += ' ---' if h_arc else '    '
+  print last_line
 
 
 class BooleanSumEven(pywrapcp.PyConstraint):
@@ -95,6 +113,94 @@ class BooleanSumEven(pywrapcp.PyConstraint):
     return 'BooleanSumEven'
 
 
+# Dedicated constraint: There is a single path on the grid.
+# This constraint does not enforce the non-crossing, this is done
+# by the constraint on the degree of each node.
+class GridSinglePath(pywrapcp.PyConstraint):
+
+  def __init__(self, solver, h_arcs, v_arcs):
+    pywrapcp.PyConstraint.__init__(self, solver)
+    self.__h_arcs = h_arcs
+    self.__v_arcs = v_arcs
+
+  def Post(self):
+    demon = self.solver().DelayedConstraintInitialPropagateCallback(self);
+    for row in self.__h_arcs:
+      for var in row:
+        var.WhenBound(demon);
+
+    for column in self.__v_arcs:
+      for var in column:
+        var.WhenBound(demon);
+
+
+  # This constraint implements a single propagation.
+  # If one point is on the path, it checks the reachability of all possible
+  # nodes, and zero out the unreachable parts.
+  def InitialPropagate(self):
+    num_rows = len(self.__h_arcs)
+    num_columns = len(self.__v_arcs)
+
+    num_points = num_rows * num_columns
+    root_node = -1
+    possible_points = set()
+    neighbors = [[] for _ in range(num_points)]
+
+    for i in range(num_rows):
+      for j in range(num_columns - 1):
+        h_arc = self.__h_arcs[i][j]
+        if h_arc.Max() == 1:
+          head = i * num_columns + j
+          tail = i * num_columns + j + 1
+          neighbors[head].append(tail)
+          neighbors[tail].append(head)
+          possible_points.add(head)
+          possible_points.add(tail)
+          if root_node == -1 and h_arc.Min() == 1:
+            root_node = head
+
+    for i in range(num_rows - 1):
+      for j in range(num_columns):
+        v_arc = self.__v_arcs[j][i]
+        if v_arc.Max() == 1:
+          head = i * num_columns + j
+          tail = (i + 1) * num_columns + j
+          neighbors[head].append(tail)
+          neighbors[tail].append(head)
+          possible_points.add(head)
+          possible_points.add(tail)
+          if root_node == -1 and v_arc.Min() == 1:
+            root_node = head
+
+    if root_node == -1:
+      return
+
+    visited_points = set()
+    to_process = deque()
+
+    # Compute reachable points
+    to_process.append(root_node)
+    while to_process:
+      candidate = to_process.popleft()
+      visited_points.add(candidate)
+      for neighbor in neighbors[candidate]:
+        if not neighbor in visited_points:
+          to_process.append(neighbor)
+          visited_points.add(neighbor)
+
+    if len(visited_points) < len(possible_points):
+      for point in visited_points:
+        possible_points.remove(point)
+
+      # Loop on unreachable points and zero all neighboring arcs.
+      for point in possible_points:
+        i = point / num_columns
+        j = point % num_columns
+        neighbors = NeighboringArcs(i, j, self.__h_arcs, self.__v_arcs)
+        for var in neighbors:
+          var.SetMax(0)
+
+
 def SlitherLink(data):
   num_rows = len(data)
   num_columns = len(data[0])
@@ -108,18 +214,21 @@ def SlitherLink(data):
              for j in range(num_rows)]
             for i in range(num_columns + 1)]
 
+  # Constraint on the sum or arcs
   for i in range(num_rows):
     for j in range(num_columns):
       if data[i][j] != -1:
         sq = [h_arcs[i][j], h_arcs[i + 1][j], v_arcs[j][i], v_arcs[j + 1][i]]
         solver.Add(solver.SumEquality(sq, data[i][j]))
 
+  # Single loop: each node has a degree 0 or 2
   zero_or_two = [0, 2]
   for i in range(num_rows + 1):
     for j in range(num_columns + 1):
       neighbors = NeighboringArcs(i, j, h_arcs, v_arcs)
       solver.Add(solver.Sum(neighbors).Member(zero_or_two))
 
+  # Single loop: sum or arcs on row or column is even
   for i in range(num_columns):
     column = [h_arcs[j][i] for j in range(num_rows + 1)]
     solver.Add(BooleanSumEven(solver, column))
@@ -128,6 +237,24 @@ def SlitherLink(data):
     row = [v_arcs[j][i] for j in range(num_columns + 1)]
     solver.Add(BooleanSumEven(solver, row))
 
+  # Single loop: main constraint
+  solver.Add(GridSinglePath(solver, h_arcs, v_arcs))
+
+  # Special rule on corners: value == 3 implies 2 border arcs used.
+  if data[0][0] == 3:
+    h_arcs[0][0].SetMin(1)
+    v_arcs[0][0].SetMin(1)
+  if data[0][num_columns - 1] == 3:
+    h_arcs[0][num_columns - 1].SetMin(1)
+    v_arcs[num_columns][0].SetMin(1)
+  if data[num_rows - 1][0] == 3:
+    h_arcs[num_rows][0].SetMin(1)
+    v_arcs[0][num_rows - 1].SetMin(1)
+  if data[num_rows - 1][num_columns - 1] == 3:
+    h_arcs[num_rows][num_columns - 1].SetMin(1)
+    v_arcs[num_columns][num_rows - 1].SetMin(1)
+
+  # Search
   all_vars = []
   for row in h_arcs:
     all_vars.extend(row)
@@ -142,8 +269,7 @@ def SlitherLink(data):
 
   solver.NewSearch(db, log)
   while solver.NextSolution():
-    print 'Solution'
-
+    PrintSolution(data, h_arcs, v_arcs)
   solver.EndSearch()
 
 
