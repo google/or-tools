@@ -174,7 +174,17 @@ static void PyFunctionSolverToVoid(PyObject* pyfunc,
   std::string __str__() {
     return $self->DebugString();
   }
+  %pythoncode {
+  def Add(self, ct):
+    if isinstance(ct, PyConstraint):
+      self.__python_constraints.append(ct)
+    self.AddConstraint(ct)
+  }  // %pythoncode
 }
+
+%feature("pythonappend") operations_research::Solver::Solver %{
+  self.__python_constraints = []
+%}
 
 // Extend IntervalVar to provide a nicer pythonic API for precedence
 // and scheduling constraints. The macros below help do that concisely.
@@ -708,8 +718,12 @@ namespace operations_research {
 %unignore Solver;
 %unignore Solver::Solver;
 %unignore Solver::~Solver;
-%rename (Add) Solver::AddConstraint;
+%unignore Solver::AddConstraint;
 %unignore Solver::Solve;
+%unignore Solver::DemonPriority;
+%unignore Solver::DELAYED_PRIORITY;
+%unignore Solver::VAR_PRIORITY;
+%unignore Solver::NORMAL_PRIORITY;
 
 // Solver: Decomposed or specialized Solve() API.
 %unignore Solver::NewSearch;
@@ -896,6 +910,7 @@ namespace operations_research {
 // Solver: Search logs.
 %rename (SearchLog) Solver::MakeSearchLog;
 %rename (SearchTrace) Solver::MakeSearchTrace;
+%rename (TreeMonitor) Solver::MakeTreeMonitor;
 
 // Solver: Model visitors.
 %unignore Solver::Accept;
@@ -1067,8 +1082,6 @@ namespace operations_research {
 //
 // - MakeNoGoodManager()
 //
-// - MakeTreeMonitor()
-//
 // - MakeVariableDegreeVisitor()
 //
 // - MakeSymmetryManager()
@@ -1119,7 +1132,6 @@ namespace operations_research {
 
 // Unexposed Solver enums:
 // - EvaluatorLocalSearchOperators
-// - DemonPriority
 // - BinaryIntervalRelation (replaced by an ad-hoc API on IntervalVar).
 // - UnaryIntervalRelation (ditto)
 // - DecisionModification
@@ -1136,9 +1148,6 @@ namespace operations_research {
 // - DecisionVisitor
 // - ModelVisitor
 // - CastConstraint
-// - NumericalRev<>
-// - RevArray<>
-// - NumericalRevArray<>
 // - NoGood
 // - NoGoodManager
 // - AssignmentElement
@@ -1233,9 +1242,21 @@ namespace operations_research {
 // - set_name()
 // - HasName()
 // - Basename()
+
+%feature("director") BaseObject;
+%unignore BaseObject;
+%unignore BaseObject::BaseObject;
+%unignore BaseObject::~BaseObject;
+%unignore BaseObject::DebugString;
+
+%feature("director") PropagationBaseObject;
 %unignore PropagationBaseObject;
+%unignore PropagationBaseObject::PropagationBaseObject;
+%unignore PropagationBaseObject::~PropagationBaseObject;
 %rename (Name) PropagationBaseObject::name;
 %rename (solver) PropagationBaseObject::solver;
+%unignore PropagationBaseObject::DebugString;
+%feature("nodirector") PropagationBaseObject::BaseName;
 
 // Decision
 // Ignored:
@@ -1264,20 +1285,20 @@ namespace operations_research {
 // Ignored:
 // - Accept()
 // - IsCastConstraint()
-%unignore Constraint;
-%unignore Constraint::Var;
 // Note(user): we prefer setting the 'director' feature on the individual
 // methods of a class that require it, but sometimes we must actually set
 // 'director' on the class itself, because it is a C++ abstract class and
 // the client needs to construct it. In these cases, we don't bother
 // setting the 'director' feature on individual methods, since it is done
 // automatically when setting it on the class.
+%unignore Constraint;
 %feature("director") Constraint;
 %unignore Constraint::Constraint;
 %unignore Constraint::~Constraint;
 %unignore Constraint::Post;
-%unignore Constraint::InitialPropagate;
+//%unignore Constraint::InitialPropagate;
 %rename (InitialPropagateWrapper) Constraint::InitialPropagate;
+%unignore Constraint::Var;
 %unignore Constraint::DebugString;
 
 
@@ -1337,6 +1358,32 @@ namespace operations_research {
 %unignore Rev::Rev;
 %unignore Rev::Value;
 %unignore Rev::SetValue;
+
+// RevArray<>
+%unignore RevArray;
+%unignore RevArray::RevArray;
+%unignore RevArray::Value;
+%unignore RevArray::SetValue;
+%rename (__len__) RevArray::size;
+
+// NumericalRev<>
+%unignore NumericalRev;
+%unignore NumericalRev::NumericalRev;
+%unignore NumericalRev::Add;
+%unignore NumericalRev::Decr;
+%unignore NumericalRev::Incr;
+%unignore NumericalRev::SetValue;
+%unignore NumericalRev::Value;
+
+// NumericalRevArray<>
+%unignore NumericalRevArray;
+%unignore NumericalRevArray::NumericalRevArray;
+%unignore NumericalRevArray::Add;
+%unignore NumericalRevArray::Decr;
+%unignore NumericalRevArray::Incr;
+%unignore NumericalRevArray::SetValue;
+%unignore NumericalRevArray::Value;
+%rename (__len__) NumericalRevArray::size;
 
 // IntExpr
 // Ignored:
@@ -1679,7 +1726,6 @@ namespace operations_research {
 
 // Demon
 // Ignored:
-// - priority()
 // - DebugString()
 %feature("director") Demon;
 %unignore Demon;
@@ -1688,6 +1734,7 @@ namespace operations_research {
 %rename (RunWrapper) Demon::Run;
 %rename (Inhibit) Demon::inhibit;
 %rename (Desinhibit) Demon::desinhibit;
+%rename (Priority) Demon::priority;
 
 // AssignmentElement
 // Ignored:
@@ -1831,9 +1878,18 @@ namespace operations_research {
 namespace operations_research {
 %rename (RevInteger) Rev<int64>;
 %rename (RevInteger) Rev<int64>::Rev;
-%unignore Rev<int64>::Value;
 %unignore Rev<int64>::SetValue;
+%unignore Rev<int64>::Value;
 %template(RevInteger) Rev<int64>;
+
+%rename (NumericalRevInteger) NumericalRev<int64>;
+%rename (NumericalRevInteger) NumericalRev<int64>::NumericalRev;
+%unignore NumericalRev<int64>::Add;
+%unignore NumericalRev<int64>::Decr;
+%unignore NumericalRev<int64>::Incr;
+%unignore NumericalRev<int64>::SetValue;
+%unignore NumericalRev<int64>::Value;
+%template(NumericalRevInteger) NumericalRev<int64>;
 
 %rename (RevBool) Rev<bool>;
 %rename (RevBool) Rev<bool>::Rev;
@@ -2109,10 +2165,61 @@ class PyDecisionBuilder(DecisionBuilder):
     return "PyDecisionBuilder"
 
 
+class PyDemon(Demon):
+
+  def RunWrapper(self, solver):
+    try:
+      self.Run(solver)
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        solver.ShouldFail()
+      else:
+        raise
+
+  def DebugString(self):
+    return "PyDemon"
+
+
+class PyConstraintDemon(PyDemon):
+
+  def __init__(self, ct, method, delayed, *args):
+    PyDemon.__init__(self)
+    self.__constraint = ct
+    self.__method = method
+    self.__delayed = delayed
+    self.__args = args
+
+  def Run(self, solver):
+    self.__method(self.__constraint, *self.__args)
+
+  def Priority(self):
+    return Solver.DELAYED_PRIORITY if self.__delayed else Solver.NORMAL_PRIORITY
+
+  def DebugString(self):
+    return 'PyConstraintDemon'
+
+
 class PyConstraint(Constraint):
 
-  def __init__(self):
-    Constraint.__init__(self)
+  def __init__(self, solver):
+    Constraint.__init__(self, solver)
+    self.__demons = []
+
+  def Demon(self, method, *args):
+    demon = PyConstraintDemon(self, method, False, *args)
+    self.__demons.append(demon)
+    return demon
+
+  def DelayedDemon(self, method, *args):
+    demon = PyConstraintDemon(self, method, True, *args)
+    self.__demons.append(demon)
+    return demon
+
+  def InitialPropagateDemon(self):
+    return self.solver().ConstraintInitialPropagateCallback(self)
+
+  def DelayedInitialPropagateDemon(self):
+    return self.solver().DelayedConstraintInitialPropagateCallback(self)
 
   def InitialPropagateWrapper(self):
     try:
@@ -2127,17 +2234,4 @@ class PyConstraint(Constraint):
     return "PyConstraint"
 
 
-class PyDemon(Demon):
-
-  def RunWrapper(self, solver):
-    try:
-      self.Run(solver)
-    except Exception as e:
-      if 'CP Solver fail' in str(e):
-        solver.ShouldFail()
-      else:
-        raise
-
-  def DebugString(self):
-    return "PyDemon"
 }  // %pythoncode

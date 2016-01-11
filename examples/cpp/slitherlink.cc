@@ -99,11 +99,7 @@ class BooleanSumEven : public Constraint {
       solver()->Fail();
     } else if (num_possible_true == num_always_true + 1) {
       DCHECK_NE(-1, possible_true_index);
-      if (num_possible_true % 2 == 0) {
-        vars_[possible_true_index]->SetMin(1);
-      } else {
-        vars_[possible_true_index]->SetMax(0);
-      }
+      vars_[possible_true_index]->SetValue(num_always_true % 2);
     }
     num_possible_true_vars_.SetValue(solver(), num_possible_true);
     num_always_true_vars_.SetValue(solver(), num_always_true);
