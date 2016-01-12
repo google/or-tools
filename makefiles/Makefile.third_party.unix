@@ -229,7 +229,20 @@ src/gen/sat:
 # Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
-dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md
+check_cmake:
+ifeq ($(PLATFORM),MACOSX)
+  ifeq ($(shell which cmake),)
+    ifeq ($(wildcard /Applications/CMake.app/Contents/bin/cmake),)
+      $(warning "cmake not found in /Applications, please install the official version")
+    else
+      $(warning "cmake found in /Applications")
+    endif
+  else
+    $(warning "cmake found in PATH")
+  endif
+endif
+
+dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md check_cmake
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
 	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
 		 -D BUILD_STATIC_LIBS=ON \
