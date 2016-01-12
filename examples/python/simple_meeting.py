@@ -100,7 +100,7 @@ def main():
                                                         name)
     room_meeting_copies[r] = room_meeting_copy
 
-  meeting_location = solver.IntVar(all_rooms, 'meeting location')
+  meeting_location = solver.IntVar(list(all_rooms), 'meeting location')
 
   all_people_calendars = {}
   all_people_presence = {}
