@@ -728,7 +728,6 @@ solve:
   }
 }
 | SOLVE annotations MINIMIZE argument {
-  CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
   if ($2 != nullptr) {
     model->Minimize($4.Var(), std::move(*$2));
     delete $2;
@@ -737,7 +736,6 @@ solve:
   }
 }
 | SOLVE annotations MAXIMIZE argument {
-  CHECK_EQ(FzArgument::INT_VAR_REF, $4.type);
   if ($2 != nullptr) {
     model->Maximize($4.Var(), std::move(*$2));
     delete $2;
