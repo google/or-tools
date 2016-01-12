@@ -75,7 +75,7 @@ ACLOCAL_TARGET = \
 SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
 
 # Main target.
-.PHONY: third_party build_third_party makefile_third_party missing_directories
+.PHONY: makefile_third_party missing_directories
 third_party: install_third_party makefile_third_party
 
 # Create missing directories
@@ -229,17 +229,11 @@ src/gen/sat:
 # Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
+CMAKE_MISSING = "cmake not found in /Applications, nor in the PATH, please install the official version, or from brew"
+
 check_cmake:
 ifeq ($(PLATFORM),MACOSX)
-  ifeq ($(shell which cmake),)
-    ifeq ($(wildcard /Applications/CMake.app/Contents/bin/cmake),)
-      $(warning "cmake not found in /Applications, please install the official version")
-    else
-      $(warning "cmake found in /Applications")
-    endif
-  else
-    $(warning "cmake found in PATH")
-  endif
+	@$(CMAKE) --version >& /dev/null || echo $(CMAKE_MISSING)
 endif
 
 dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md check_cmake
