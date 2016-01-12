@@ -36,7 +36,7 @@ pyalgorithms: $(LIB_DIR)/_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN
 
 $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py: \
 		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/python/data.swig \
+		$(SRC_DIR)/util/python/vector.swig \
 		$(SRC_DIR)/algorithms/python/knapsack_solver.swig \
 		$(SRC_DIR)/algorithms/knapsack_solver.h
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc -module pywrapknapsack_solver $(SRC_DIR)/algorithms$Spython$Sknapsack_solver.swig
@@ -59,7 +59,7 @@ pygraph: $(LIB_DIR)/_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/g
 
 $(GEN_DIR)/ortools/graph/pywrapgraph.py: \
 		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/python/data.swig \
+		$(SRC_DIR)/util/python/vector.swig \
 		$(SRC_DIR)/graph/python/graph.swig \
 		$(SRC_DIR)/graph/min_cost_flow.h \
 		$(SRC_DIR)/graph/max_flow.h \
@@ -98,7 +98,7 @@ $(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: $(SRC_DIR)/constraint_so
 
 $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/python/data.swig \
+		$(SRC_DIR)/util/python/vector.swig \
 		$(SRC_DIR)/constraint_solver/python/constraint_solver.swig \
 		$(SRC_DIR)/constraint_solver/python/routing.swig \
 		$(SRC_DIR)/constraint_solver/constraint_solver.h \
@@ -137,7 +137,7 @@ $(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py: $(SRC_DIR)/linear_solver/
 
 $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
 		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/python/data.swig \
+		$(SRC_DIR)/util/python/vector.swig \
 		$(SRC_DIR)/linear_solver/python/linear_solver.swig \
 		$(SRC_DIR)/linear_solver/linear_solver.h \
 		$(GEN_DIR)/linear_solver/linear_solver.pb.h \

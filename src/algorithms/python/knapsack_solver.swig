@@ -19,7 +19,7 @@
 
 %include "base/base.swig"
 
-%import "util/python/data.swig"
+%import "util/python/vector.swig"
 
 %{
 #include "algorithms/knapsack_solver.h"

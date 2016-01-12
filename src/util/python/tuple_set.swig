@@ -5,7 +5,7 @@
 
 // This .swig include provides a lot of typemap conversion tools.
 // TODO(user): see if we really need it.
-%include util/python/data.swig
+%include util/python/vector.swig
 
 %{
 // TODO(user): see if we can remove <vector>

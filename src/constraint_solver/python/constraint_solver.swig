@@ -42,7 +42,7 @@
 // std::function utilities.
 %include "util/python/functions.swig"
 
-%import "util/python/data.swig"
+%import "util/python/vector.swig"
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2014-06, with
