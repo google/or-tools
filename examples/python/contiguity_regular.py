@@ -40,7 +40,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 #
@@ -94,7 +94,7 @@ def regular(x, Q, S, d, q0, F):
   # (q0), and a[i+1] holds the state we're in after processing
   # x[i].  If a[n] is in F, then we succeed (ie. accept the
   # string).
-  x_range = range(0, len(x))
+  x_range = list(range(0, len(x)))
   m = 0
   n = len(x)
 
@@ -164,14 +164,14 @@ def main():
   while solver.NextSolution():
     num_solutions += 1
     # Note: here we subract 1 from the solution
-    print 'reg_input:', [reg_input[i].Value() - 1 for i in range(n)]
+    print('reg_input:', [int(reg_input[i].Value() - 1) for i in range(n)])
 
   solver.EndSearch()
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'wall_time:', solver.WallTime(), 'ms'
+  print()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('wall_time:', solver.WallTime(), 'ms')
 
 
 if __name__ == '__main__':

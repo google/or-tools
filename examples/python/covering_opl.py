@@ -56,7 +56,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -71,9 +71,9 @@ def main():
   # data
   #
   nb_workers = 32
-  Workers = range(nb_workers)
+  Workers = list(range(nb_workers))
   num_tasks = 15
-  Tasks = range(num_tasks)
+  Tasks = list(range(num_tasks))
 
   # Which worker is qualified for each task.
   # Note: This is 1-based and will be made 0-base below.
@@ -131,21 +131,21 @@ def main():
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print "Total cost", total_cost.Value()
-    print "We should hire these workers: ",
+    print("Total cost", total_cost.Value())
+    print("We should hire these workers: ", end=' ')
     for w in Workers:
       if Hire[w].Value() == 1:
-        print w,
-    print
-    print
+        print(w, end=' ')
+    print()
+    print()
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 if __name__ == "__main__":
