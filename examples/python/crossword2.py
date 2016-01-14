@@ -57,11 +57,11 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
-def main(_):
+def main():
   # Create the solver.
   solver = pywrapcp.Solver("Problem")
 
@@ -180,22 +180,22 @@ def main(_):
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
-    print E
+    print(E)
     print_solution(A, E, alpha, n, word_len)
     num_solutions += 1
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 def print_solution(A, E, alpha, n, word_len):
   for ee in range(n):
-    print "%i: (%2i)" % (ee, E[ee].Value()),
-    print "".join(["%s" % (alpha[A[ee, ii].Value()]) for ii in range(word_len)])
+    print("%i: (%2i)" % (ee, E[ee].Value()), end=' ')
+    print("".join(["%s" % (alpha[A[ee, ii].Value()]) for ii in range(word_len)]))
 
 
 if __name__ == "__main__":
