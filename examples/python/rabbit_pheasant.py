@@ -19,9 +19,7 @@ rewritten using the SWIG generated python wrapper.
 Its purpose it to demonstrate how a simple example can be written in all the
 flavors of constraint programming interfaces.
 """
-
-
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -47,10 +45,10 @@ def main():
   solver.NextSolution()
 
   # Display output.
-  print pheasant
-  print rabbit
+  print(pheasant)
+  print(rabbit)
   solver.EndSearch()
-  print solver
+  print(solver)
 
 if __name__ == '__main__':
   main()

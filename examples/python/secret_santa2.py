@@ -61,7 +61,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -117,11 +117,11 @@ def main(singe=0):
 
   if single == 1:
     n = n_with_single
-    Noah, Ava, Ryan, Mia, Ella, John, Lily, Evan, Single = range(n)
+    Noah, Ava, Ryan, Mia, Ella, John, Lily, Evan, Single = list(range(n))
     rounds = rounds_single
   else:
     n = n_no_single
-    Noah, Ava, Ryan, Mia, Ella, John, Lily, Evan = range(n)
+    Noah, Ava, Ryan, Mia, Ella, John, Lily, Evan = list(range(n))
     rounds = rounds_no_single
 
   M = n + 1
@@ -196,26 +196,26 @@ def main(singe=0):
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print 'total distances:', z.Value()
-    print 'santas:', [santas[i].Value() for i in range(n)]
+    print('total distances:', z.Value())
+    print('santas:', [santas[i].Value() for i in range(n)])
     for i in range(n):
-      print '%s\tis a Santa to %s (distance %i)' % \
+      print('%s\tis a Santa to %s (distance %i)' % \
             (persons[i],
              persons[santas[i].Value()],
-             santa_distance[i].Value())
+             santa_distance[i].Value()))
     # print 'distance:', [santa_distance[i].Value()
     #                     for i in range(n)]
-    print
+    print()
 
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 single = 0
 if __name__ == '__main__':
-  print 'Secret Santas without single'
+  print('Secret Santas without single')
   main(single)
-  print '\nSecret Santas with single:'
+  print('\nSecret Santas with single:')
   single = 1
   main(single)

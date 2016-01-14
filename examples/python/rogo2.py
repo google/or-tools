@@ -45,7 +45,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 import sys
 import re
 
@@ -62,14 +62,14 @@ def main(problem, rows, cols, max_steps):
   #
   W = 0
   B = -1
-  print "rows: %i cols: %i max_steps: %i" % (rows, cols, max_steps)
+  print("rows: %i cols: %i max_steps: %i" % (rows, cols, max_steps))
 
   problem_flatten = [problem[i][j] for i in range(rows) for j in range(cols)]
   max_point = max(problem_flatten)
-  print "max_point:", max_point
+  print("max_point:", max_point)
   max_sum = sum(problem_flatten)
-  print "max_sum:", max_sum
-  print
+  print("max_sum:", max_sum)
+  print()
 
   #
   # declare variables
@@ -156,16 +156,16 @@ def main(problem, rows, cols, max_steps):
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print "sum_points:", sum_points.Value()
-    print "adding 1 to coords..."
+    print("sum_points:", sum_points.Value())
+    print("adding 1 to coords...")
     for s in range(max_steps):
-      print "%i %i" % (x[s].Value() + 1, y[s].Value() + 1)
-    print
+      print("%i %i" % (x[s].Value() + 1, y[s].Value() + 1))
+    print()
 
-  print "\nnum_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("\nnum_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 # Default problem:
@@ -190,5 +190,5 @@ problem = [
 ]
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    execfile(sys.argv[1])
+    exec(compile(open(sys.argv[1]).read(), sys.argv[1], 'exec'))
   main(problem, rows, cols, max_steps)

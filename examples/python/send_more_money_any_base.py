@@ -42,7 +42,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -53,7 +53,7 @@ def main(base=10):
   solver = pywrapcp.Solver('Send most money')
 
   # data
-  print 'base:', base
+  print('base:', base)
 
   # declare variables
   s = solver.IntVar(0, base - 1, 's')
@@ -93,14 +93,14 @@ def main(base=10):
   num_solutions = collector.SolutionCount()
   money_val = 0
   for s in range(num_solutions):
-    print 'x:', [collector.Value(s, x[i]) for i in range(len(x))]
+    print('x:', [collector.Value(s, x[i]) for i in range(len(x))])
 
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime()
-  print
+  print()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime())
+  print()
 
 
 base = 10
