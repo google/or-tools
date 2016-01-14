@@ -18,7 +18,7 @@ occurrences of i in this sequence is equal to the value of the ith number.
 It uses an aggregated formulation of the count expression called
 distribute().
 """
-
+from __future__ import print_function
 
 
 from ortools.constraint_solver import pywrapcp
@@ -29,7 +29,7 @@ def main():
   solver = pywrapcp.Solver('magic sequence')
 
   size = 100
-  all_values = range(0, size)
+  all_values = list(range(0, size))
   all_vars = [solver.IntVar(0, size, 'vars_%d' % i) for i in all_values]
 
   solver.Add(solver.Distribute(all_vars, all_values, all_vars))
@@ -39,7 +39,7 @@ def main():
                                 solver.CHOOSE_FIRST_UNBOUND,
                                 solver.ASSIGN_MIN_VALUE))
   solver.NextSolution()
-  print all_vars
+  print(all_vars)
   solver.EndSearch()
 
 

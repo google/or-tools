@@ -63,6 +63,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -96,7 +97,7 @@ def main(game="", r="", c=""):
     r = default_r
     c = default_c
   else:
-    print "rows:", r, " cols:", c
+    print("rows:", r, " cols:", c)
 
   #
   # Default problem from "Some Minesweeper Configurations",page 3
@@ -120,15 +121,15 @@ def main(game="", r="", c=""):
   S = [-1, 0, 1]  # for the neighbors of "this" cell
 
   # print problem instance
-  print "Problem:"
+  print("Problem:")
   for i in range(r):
     for j in range(c):
       if game[i][j] == X:
-        print "X",
+        print("X", end=' ')
       else:
-        print game[i][j],
-    print
-  print
+        print(game[i][j], end=' ')
+    print()
+  print()
 
   # declare variables
   mines = {}
@@ -169,25 +170,25 @@ def main(game="", r="", c=""):
                [collector])
 
   num_solutions = collector.SolutionCount()
-  print "num_solutions: ", num_solutions
+  print("num_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
       minesval = [collector.Value(s, mines[(i, j)])
                   for i in range(r) for j in range(c)]
       for i in range(r):
         for j in range(c):
-          print minesval[i * c + j],
-        print
-      print
+          print(minesval[i * c + j], end=' ')
+        print()
+      print()
 
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    print()
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.Failures())
+    print("branches:", solver.Branches())
+    print("WallTime:", solver.WallTime())
 
   else:
-    print "No solutions found"
+    print("No solutions found")
 
 
 #
@@ -217,21 +218,21 @@ def read_problem(file):
 def print_mines(mines, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print mines[i, j],
-    print ""
+      print(mines[i, j], end=' ')
+    print("")
 
 
 def print_game(game, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print game[i][j],
-    print ""
+      print(game[i][j], end=' ')
+    print("")
 
 
 if __name__ == "__main__":
   if len(sys.argv) > 1:
     file = sys.argv[1]
-    print "Problem instance from", file
+    print("Problem instance from", file)
     [game, rows, cols] = read_problem(file)
     # print_game(game, rows, cols)
     main(game, rows, cols)
