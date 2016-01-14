@@ -1,3 +1,4 @@
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 class OneVarLns(pywrapcp.BaseLns):
@@ -85,17 +86,17 @@ def Solve(type):
   ls = None
 
   if type == 0:  # LNS
-    print 'Large Neighborhood Search'
+    print('Large Neighborhood Search')
     one_var_lns = OneVarLns(vars)
     ls_params = solver.LocalSearchPhaseParameters(one_var_lns, db)
     ls = solver.LocalSearchPhase(vars, db, ls_params)
   elif type == 1:  # LS
-    print 'Local Search'
+    print('Local Search')
     move_one_var = MoveOneVar(vars)
     ls_params = solver.LocalSearchPhaseParameters(move_one_var, db)
     ls = solver.LocalSearchPhase(vars, db, ls_params)
   else:
-    print 'Local Search with Filter'
+    print('Local Search with Filter')
     move_one_var = MoveOneVar(vars)
     sum_filter = SumFilter(vars)
     ls_params = solver.LocalSearchPhaseParameters(move_one_var, db, None,
@@ -107,7 +108,7 @@ def Solve(type):
   collector.AddObjective(sum_var)
   log = solver.SearchLog(1000, obj)
   solver.Solve(ls, [collector, obj, log])
-  print 'Objective value = %d' % collector.ObjectiveValue(0)
+  print('Objective value = %d' % collector.ObjectiveValue(0))
 
 
 def main():
