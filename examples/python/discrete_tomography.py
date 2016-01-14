@@ -54,6 +54,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -67,7 +68,7 @@ def main(row_sums="", col_sums=""):
   # data
   #
   if row_sums == "":
-    print "Using default problem instance"
+    print("Using default problem instance")
     row_sums = [0, 0, 8, 2, 6, 4, 5, 3, 7, 0, 0]
     col_sums = [0, 0, 7, 1, 6, 3, 4, 5, 2, 7, 0, 0]
 
@@ -106,16 +107,16 @@ def main(row_sums="", col_sums=""):
   num_solutions = 0
   while solver.NextSolution():
     print_solution(x, r, c, row_sums, col_sums)
-    print
+    print()
 
     num_solutions += 1
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 #
 # Print solution
@@ -123,18 +124,18 @@ def main(row_sums="", col_sums=""):
 
 
 def print_solution(x, rows, cols, row_sums, col_sums):
-  print "  ",
+  print("  ", end=' ')
   for j in range(cols):
-    print col_sums[j],
-  print
+    print(col_sums[j], end=' ')
+  print()
   for i in range(rows):
-    print row_sums[i],
+    print(row_sums[i], end=' ')
     for j in range(cols):
       if x[i][j].Value() == 1:
-        print "#",
+        print("#", end=' ')
       else:
-        print ".",
-    print ""
+        print(".", end=' ')
+    print("")
 
 
 #
@@ -152,7 +153,7 @@ def read_problem(file):
 if __name__ == "__main__":
   if len(sys.argv) > 1:
     file = sys.argv[1]
-    print "Problem instance from", file
+    print("Problem instance from", file)
     [row_sums, col_sums] = read_problem(file)
     main(row_sums, col_sums)
   else:
