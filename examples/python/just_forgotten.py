@@ -45,7 +45,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -92,27 +92,27 @@ def main():
   while solver.NextSolution():
     num_solutions += 1
     xval = [x[j].Value() for j in range(cols)]
-    print "Account number:"
+    print("Account number:")
     for j in range(cols):
-      print "%i " % xval[j],
-    print
-    print "\nThe four tries, where '!' represents a correct digit:"
+      print("%i " % xval[j], end=' ')
+    print()
+    print("\nThe four tries, where '!' represents a correct digit:")
     for i in range(rows):
       for j in range(cols):
         check = " "
         if a[i][j] == xval[j]:
           check = "!"
-        print "%i%s" % (a[i][j], check),
-      print
-    print
-  print
+        print("%i%s" % (a[i][j], check), end=' ')
+      print()
+    print()
+  print()
 
   solver.EndSearch()
 
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 if __name__ == "__main__":
   main()
