@@ -17,7 +17,7 @@
    http://www.ee.oulu.fi/~mpa/matreng/eem1_2-1.htm with kCost[0][1]
    modified so the optimum solution is unique.
 """
-
+from __future__ import print_function
 
 
 from ortools.graph import pywrapgraph
@@ -41,20 +41,20 @@ def RunAssignmentOn4x4Matrix():
 
   solve_status = assignment.Solve()
   if solve_status == assignment.OPTIMAL:
-    print 'Successful solve.'
-    print 'Total cost', assignment.OptimalCost(), '/', expected_cost
+    print('Successful solve.')
+    print('Total cost', assignment.OptimalCost(), '/', expected_cost)
     for i in range(0, assignment.NumNodes()):
-      print 'Left node %d assigned to right node %d with cost %d.' % (
+      print('Left node %d assigned to right node %d with cost %d.' % (
           i,
           assignment.RightMate(i),
-          assignment.AssignmentCost(i))
+          assignment.AssignmentCost(i)))
   elif solve_status == assignment.INFEASIBLE:
-    print 'No perfect matching exists.'
+    print('No perfect matching exists.')
   elif solve_status == assignment.POSSIBLE_OVERFLOW:
-    print 'Some input costs are too large and may cause an integer overflow.'
+    print('Some input costs are too large and may cause an integer overflow.')
 
 
-def main(unused_argv):
+def main():
   RunAssignmentOn4x4Matrix()
 
 if __name__ == '__main__':
