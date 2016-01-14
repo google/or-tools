@@ -34,7 +34,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -91,22 +91,22 @@ def main(num_buses_check=0):
   num_solutions = collector.SolutionCount()
   num_buses_check_value = 0
   for s in range(num_solutions):
-    print "x:", [collector.Value(s, x[i]) for i in range(len(x))],
+    print("x:", [collector.Value(s, x[i]) for i in range(len(x))], end=' ')
     num_buses_check_value = collector.Value(s, num_buses)
-    print " num_buses:", num_buses_check_value
+    print(" num_buses:", num_buses_check_value)
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
-  print
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
+  print()
   if num_buses_check == 0:
     return num_buses_check_value
 
 if __name__ == "__main__":
-  print "Check for minimun number of buses"
+  print("Check for minimun number of buses")
   num_buses_check = main()
-  print "... got ", num_buses_check, "buses"
-  print "All solutions:"
+  print("... got ", num_buses_check, "buses")
+  print("All solutions:")
   main(num_buses_check)

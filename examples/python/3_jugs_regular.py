@@ -49,7 +49,6 @@
 """
 
 from __future__ import print_function
-
 from ortools.constraint_solver import pywrapcp
 from collections import defaultdict
 
@@ -104,7 +103,7 @@ def regular(x, Q, S, d, q0, F):
   # (q0), and a[i+1] holds the state we're in after processing
   # x[i].  If a[n] is in F, then we succeed (ie. accept the
   # string).
-  x_range = range(0, len(x))
+  x_range = list(range(0, len(x)))
   m = 0
   n = len(x)
 

@@ -22,6 +22,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.linear_solver import pywraplp
 
@@ -30,7 +31,7 @@ def main(sol='GLPK'):
 
   # Create the solver.
 
-  print 'Solver: ', sol
+  print('Solver: ', sol)
 
   # using GLPK
   if sol == 'GLPK':
@@ -48,10 +49,10 @@ def main(sol='GLPK'):
   NbRaw = 2
   NbScrap = 2
   NbIngo = 1
-  Metals = range(NbMetals)
-  Raws = range(NbRaw)
-  Scraps = range(NbScrap)
-  Ingos = range(NbIngo)
+  Metals = list(range(NbMetals))
+  Raws = list(range(NbRaw))
+  Scraps = list(range(NbScrap))
+  Ingos = list(range(NbIngo))
 
   CostMetal = [22, 10, 13]
   CostRaw = [6, 5]
@@ -102,39 +103,39 @@ def main(sol='GLPK'):
   #
   solver.Solve()
 
-  print
+  print()
 
-  print 'z = ', solver.Objective().Value()
-  print 'Metals'
+  print('z = ', solver.Objective().Value())
+  print('Metals')
   for i in Metals:
-    print p[i].SolutionValue(),
-  print
+    print(p[i].SolutionValue(), end=' ')
+  print()
 
-  print 'Raws'
+  print('Raws')
   for i in Raws:
-    print r[i].SolutionValue(),
-  print
+    print(r[i].SolutionValue(), end=' ')
+  print()
 
-  print 'Scraps'
+  print('Scraps')
   for i in Scraps:
-    print s[i].SolutionValue(),
-  print
+    print(s[i].SolutionValue(), end=' ')
+  print()
 
-  print 'Ingos'
+  print('Ingos')
   for i in Ingos:
-    print ii[i].SolutionValue(),
-  print
+    print(ii[i].SolutionValue(), end=' ')
+  print()
 
-  print 'Metals'
+  print('Metals')
   for i in Metals:
-    print metal[i].SolutionValue(),
-  print
+    print(metal[i].SolutionValue(), end=' ')
+  print()
 
-  print
+  print()
 
-  print 'walltime  :', solver.WallTime(), 'ms'
+  print('walltime  :', solver.WallTime(), 'ms')
   if sol == 'CBC':
-    print 'iterations:', solver.Iterations()
+    print('iterations:', solver.Iterations())
 
 
 if __name__ == '__main__':
@@ -143,7 +144,7 @@ if __name__ == '__main__':
   if len(sys.argv) > 1:
     sol = sys.argv[1]
     if sol != 'GLPK' and sol != 'CBC':
-      print 'Solver must be either GLPK or CBC'
+      print('Solver must be either GLPK or CBC')
       sys.exit(1)
 
   main(sol)
