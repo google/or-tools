@@ -66,7 +66,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -171,12 +171,12 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
                     solver.CHOOSE_FIRST_UNBOUND,
                     solver.ASSIGN_MIN_VALUE)
 
-  print 'before solver, wall time = ', solver.WallTime(), 'ms'
+  print('before solver, wall time = ', solver.WallTime(), 'ms')
   solver.NewSearch(db)
 
   num_solutions = 0
   while solver.NextSolution():
-    print
+    print()
     num_solutions += 1
     for i in range(rows):
       row = [board[i, j].Value() for j in range(cols)]
@@ -186,21 +186,21 @@ def main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules):
           row_pres.append('#')
         else:
           row_pres.append(' ')
-      print '  ', ''.join(row_pres)
+      print('  ', ''.join(row_pres))
 
-    print
-    print '  ', '-' * cols
+    print()
+    print('  ', '-' * cols)
 
     if num_solutions >= 2:
-      print '2 solutions is enough...'
+      print('2 solutions is enough...')
       break
 
   solver.EndSearch()
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 
 #
@@ -245,5 +245,5 @@ col_rules = [
 if __name__ == '__main__':
   if len(sys.argv) > 1:
     file = sys.argv[1]
-    execfile(file)
+    exec(compile(open(file).read(), file, 'exec'))
   main(rows, row_rule_len, row_rules, cols, col_rule_len, col_rules)

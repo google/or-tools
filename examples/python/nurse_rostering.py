@@ -29,7 +29,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 from collections import defaultdict
 
@@ -84,7 +84,7 @@ def regular(x, Q, S, d, q0, F):
   # (q0), and a[i+1] holds the state we're in after processing
   # x[i].  If a[n] is in F, then we succeed (ie. accept the
   # string).
-  x_range = range(0, len(x))
+  x_range = list(range(0, len(x)))
   m = 0
   n = len(x)
 
@@ -232,34 +232,34 @@ def main():
     num_solutions += 1
 
     for i in range(num_nurses):
-      print 'Nurse%i: ' % i,
+      print('Nurse%i: ' % i, end=' ')
       this_day_stat = defaultdict(int)
       for j in range(num_days):
         d = days[x[i, j].Value() - 1]
         this_day_stat[d] += 1
-        print d,
-      print ' day_stat:', [(d, this_day_stat[d]) for d in this_day_stat],
-      print 'total:', nurse_stat[i].Value(), 'workdays'
-    print
+        print(d, end=' ')
+      print(' day_stat:', [(d, this_day_stat[d]) for d in this_day_stat], end=' ')
+      print('total:', nurse_stat[i].Value(), 'workdays')
+    print()
 
-    print 'Statistics per day:'
+    print('Statistics per day:')
     for j in range(num_days):
-      print 'Day%2i: ' % j,
+      print('Day%2i: ' % j, end=' ')
       for t in shifts:
-        print day_stat[j, t].Value(),
-      print
-    print
+        print(day_stat[j, t].Value(), end=' ')
+      print()
+    print()
 
     # We just show 2 solutions
     if num_solutions >= 2:
       break
 
   solver.EndSearch()
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 
 if __name__ == '__main__':
