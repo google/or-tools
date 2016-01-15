@@ -183,7 +183,7 @@ encapsulated in an <tt class="docutils literal"><span class="pre">IntExpr</span>
 <div class="highlight-c++"><div class="highlight"><pre><span class="n">IntExpr</span><span class="o">*</span> <span class="nf">PerformedExpr</span><span class="p">();</span>
 </pre></div>
 </div>
-<p>The corresponding <tt class="docutils literal"><span class="pre">IntExpr</span></tt> acts like a <img class="math" src="../../_images/math/016f10daec11b69c18d2bf68896ecd98339fe426.png" alt="0-1" style="vertical-align: -1px"/> <tt class="docutils literal"><span class="pre">IntervalVar</span></tt><a class="footnote-reference" href="#performed-intexpr-is-intervalvar" id="id3">[2]</a>.
+<p>The corresponding <tt class="docutils literal"><span class="pre">IntExpr</span></tt> acts like a <img class="math" src="../../_images/math/016f10daec11b69c18d2bf68896ecd98339fe426.png" alt="0-1" style="vertical-align: -1px"/> <tt class="docutils literal"><span class="pre">IntVar</span></tt><a class="footnote-reference" href="#performed-intexpr-is-intvar" id="id3">[2]</a>.
 If its minimum value is <img class="math" src="../../_images/math/dce34f4dfb2406144304ad0d6106c5382ddd1446.png" alt="1" style="vertical-align: -1px"/>, the corresponding <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> variables must be performed. If its
 maximal value is <img class="math" src="../../_images/math/bc1f9d9bf8a1b606a4188b5ce9a2af1809e27a89.png" alt="0" style="vertical-align: 0px"/>, the corresponding <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> is unperformed and if <img class="math" src="../../_images/math/ce4b0697810792acb7da44ab5ef5c62c45917f4f.png" alt="\text{min} = 0" style="vertical-align: -1px"/>
 and <img class="math" src="../../_images/math/c3c8f330093ec775717da39692935b7d17af3d62.png" alt="\text{max} = 1" style="vertical-align: -1px"/>, the corresponding <tt class="docutils literal"><span class="pre">IntervalVar</span></tt> might be performed.</p>
@@ -698,10 +698,10 @@ Machine_2: Job 1 (2,3)  Job 2 (7,10)  Job 0 (10,12)
 thus doesn&#8217;t necessarily correspond to the figure. Read on.</td></tr>
 </tbody>
 </table>
-<table class="docutils footnote" frame="void" id="performed-intexpr-is-intervalvar" rules="none">
+<table class="docutils footnote" frame="void" id="performed-intexpr-is-intvar" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>Actually, it is an <tt class="docutils literal"><span class="pre">IntervalVar</span></tt>!</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>Actually, it is an <tt class="docutils literal"><span class="pre">IntVar</span></tt>!</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="sequencevar-virtually-conceptualized" rules="none">
