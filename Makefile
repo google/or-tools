@@ -41,11 +41,8 @@ clean: clean_cc clean_java clean_python clean_csharp clean_compat
 include $(OR_ROOT)makefiles/Makefile.port
 OR_ROOT_FULL=$(OR_TOOLS_TOP)
 
-# We include predefined variables
-include $(OR_ROOT)makefiles/Makefile.def
-
-# Then we overwrite the local ones if the Makefile.local file exists.
--include $(OR_ROOT)Makefile.local
+# Load local variables
+include $(OR_ROOT)Makefile.local
 
 # Then include specific system commands and definitions
 include $(OR_ROOT)makefiles/Makefile.$(SYSTEM)
