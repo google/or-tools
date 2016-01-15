@@ -33,7 +33,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -96,12 +96,12 @@ def main(unused_argv):
                             solver.INT_VALUE_DEFAULT),
                [collector, objective])
 
-  print "z:", collector.ObjectiveValue(0)
-  print "x:", [collector.Value(0, x[i]) for i in range(n)]
+  print("z:", collector.ObjectiveValue(0))
+  print("x:", [collector.Value(0, x[i]) for i in range(n)])
 
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 if __name__ == "__main__":

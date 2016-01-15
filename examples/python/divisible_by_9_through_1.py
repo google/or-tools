@@ -52,7 +52,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -116,7 +116,7 @@ def main(base=10):
 
   digits_str = "_0123456789ABCDEFGH"
 
-  print "base:", base
+  print("base:", base)
 
   # declare variables
 
@@ -150,19 +150,19 @@ def main(base=10):
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
-    print "x: ", [x[i].Value() for i in range(n)]
-    print "t: ", [t[i].Value() for i in range(n)]
-    print "number base 10: %i base %i: %s" % (t[0].Value(),
+    print("x: ", [x[i].Value() for i in range(n)])
+    print("t: ", [t[i].Value() for i in range(n)])
+    print("number base 10: %i base %i: %s" % (t[0].Value(),
                                               base,
-                                              "".join([digits_str[x[i].Value() + 1] for i in range(n)]))
-    print
+                                              "".join([digits_str[x[i].Value() + 1] for i in range(n)])))
+    print()
     num_solutions += 1
   solver.EndSearch()
 
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 base = 10
@@ -172,7 +172,7 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
     base = int(sys.argv[1])
     if base > max_base:
-      print "Sorry, max allowed base is %i. Setting base to %i..." % (max_base, default_base)
+      print("Sorry, max allowed base is %i. Setting base to %i..." % (max_base, default_base))
       base = default_base
   main(base)
 

@@ -36,7 +36,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_cp_solver/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -84,25 +84,25 @@ def main():
                [collector])
 
   num_solutions = collector.SolutionCount()
-  print "num_solutions: ", num_solutions
+  print("num_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
-      print "z:", collector.Value(s, z)
+      print("z:", collector.Value(s, z))
       xval = [collector.Value(s, x[i]) for i in range(num_prices)]
-      print "x:", xval
+      print("x:", xval)
       for i in range(num_prices):
         if xval[i] > 0:
-          print xval[i], "of", products[i], ":", price[i] / 100.0
-      print
+          print(xval[i], "of", products[i], ":", price[i] / 100.0)
+      print()
 
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    print()
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.Failures())
+    print("branches:", solver.Branches())
+    print("WallTime:", solver.WallTime())
 
   else:
-    print "No solutions found"
+    print("No solutions found")
 
 
 if __name__ == "__main__":

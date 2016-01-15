@@ -51,6 +51,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -87,21 +88,21 @@ def main(puzzle='', n=''):
     puzzle = default_puzzle
     n = default_n
   else:
-    print 'n:', n
+    print('n:', n)
 
   # for the neighbors of 'this' cell
   S = [-1, 0, 1]
 
   # print problem instance
-  print 'Problem:'
+  print('Problem:')
   for i in range(n):
     for j in range(n):
       if puzzle[i][j] == X:
         sys.stdout.write('.')
       else:
         sys.stdout.write(str(puzzle[i][j]))
-    print
-  print
+    print()
+  print()
 
   #
   # declare variables
@@ -138,7 +139,7 @@ def main(puzzle='', n=''):
 
   solver.NewSearch(db)
   num_solutions = 0
-  print 'Solution:'
+  print('Solution:')
   while solver.NextSolution():
     num_solutions += 1
     for i in range(n):
@@ -148,13 +149,13 @@ def main(puzzle='', n=''):
           row[j] = ' '
         else:
           row[j] = '#'
-      print ''.join(row)
-    print
+      print(''.join(row))
+    print()
 
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 
 #
@@ -180,7 +181,7 @@ def read_problem(file):
 if __name__ == '__main__':
   if len(sys.argv) > 1:
     file = sys.argv[1]
-    print 'Problem instance from', file
+    print('Problem instance from', file)
     [puzzle, n] = read_problem(file)
     main(puzzle, n)
   else:

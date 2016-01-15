@@ -40,6 +40,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.linear_solver import pywraplp
 
@@ -48,7 +49,7 @@ def main(sol='GLPK'):
 
   # Create the solver.
 
-  print 'Solver: ', sol
+  print('Solver: ', sol)
 
   # using GLPK
   if sol == 'GLPK':
@@ -70,10 +71,10 @@ def main(sol='GLPK'):
   n = 8
 
   # set of agents
-  I = range(m)
+  I = list(range(m))
 
   # set of tasks
-  J = range(n)
+  J = list(range(n))
 
   # cost of allocating task j to agent i
   # """
@@ -133,25 +134,25 @@ def main(sol='GLPK'):
   #
   solver.Solve()
 
-  print
-  print 'z: ', int(solver.Objective().Value())
+  print()
+  print('z: ', int(solver.Objective().Value()))
 
-  print 'Assigned'
+  print('Assigned')
   for j in J:
-    print int(assigned[j].SolutionValue()),
-  print
+    print(int(assigned[j].SolutionValue()), end=' ')
+  print()
 
-  print 'Matrix:'
+  print('Matrix:')
   for i in I:
     for j in J:
-      print int(x[i, j].SolutionValue()),
-    print
-  print
+      print(int(x[i, j].SolutionValue()), end=' ')
+    print()
+  print()
 
-  print
-  print 'walltime  :', solver.WallTime(), 'ms'
+  print()
+  print('walltime  :', solver.WallTime(), 'ms')
   if sol == 'CBC':
-    print 'iterations:', solver.Iterations()
+    print('iterations:', solver.Iterations())
 
 
 if __name__ == '__main__':
@@ -160,7 +161,7 @@ if __name__ == '__main__':
   if len(sys.argv) > 1:
     sol = sys.argv[1]
     if sol != 'GLPK' and sol != 'CBC':
-      print 'Solver must be either GLPK or CBC'
+      print('Solver must be either GLPK or CBC')
       sys.exit(1)
 
   main(sol)

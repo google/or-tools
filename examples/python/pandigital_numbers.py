@@ -61,7 +61,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -140,18 +140,18 @@ def main(base=10, start=1, len1=1, len2=4):
   solver.EndSearch()
 
   if 0 and num_solutions > 0:
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
-    print
+    print()
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.Failures())
+    print("branches:", solver.Branches())
+    print("WallTime:", solver.WallTime())
+    print()
 
 
 def print_solution(x, len1, len2, x_len):
-  print "".join([str(x[i]) for i in range(len1)]), "*",
-  print "".join([str(x[i]) for i in range(len1, len1 + len2)]), "=",
-  print "".join([str(x[i]) for i in range(len1 + len2, x_len)])
+  print("".join([str(x[i]) for i in range(len1)]), "*", end=' ')
+  print("".join([str(x[i]) for i in range(len1, len1 + len2)]), "=", end=' ')
+  print("".join([str(x[i]) for i in range(len1 + len2, x_len)]))
 
 
 base = 10

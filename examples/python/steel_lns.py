@@ -11,7 +11,7 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-
+from __future__ import print_function
 import argparse
 from ortools.constraint_solver import pywrapcp
 import random
@@ -58,11 +58,11 @@ def ReadData(filename):
   wc = [[int(j) for j in f.readline().split()] for i in range(nb_slabs)]
   weights = [x[0] for x in wc]
   colors = [x[1] for x in wc]
-  loss = [min(filter(lambda x: x >= c, capacity)) - c
+  loss = [min([x for x in capacity if x >= c]) - c
           for c in range(max_capacity + 1)]
-  color_orders = [filter(lambda o: colors[o] == c, range(nb_slabs))
+  color_orders = [[o for o in range(nb_slabs) if colors[o] == c]
                   for c in range(1, nb_colors + 1)]
-  print 'Solving steel mill with', nb_slabs, 'slabs'
+  print('Solving steel mill with', nb_slabs, 'slabs')
   return (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders)
 
 # ---------- dedicated search for this problem ----------
@@ -197,9 +197,9 @@ def main(args):
   first_solution.AddObjective(objective_var)
   store_db = solver.StoreAssignment(first_solution)
   first_solution_db = solver.Compose([assign_db, store_db])
-  print 'searching for initial solution,',
+  print('searching for initial solution,', end=' ')
   solver.Solve(first_solution_db)
-  print 'initial cost =', first_solution.ObjectiveValue()
+  print('initial cost =', first_solution.ObjectiveValue())
 
   # To search a fragment, we use a basic randomized decision builder.
   # We can also use assign_db instead of inner_db.
@@ -224,13 +224,13 @@ def main(args):
                                             local_search_parameters)
   global_limit = solver.TimeLimit(args.time_limit)
 
-  print 'using LNS to improve the initial solution'
+  print('using LNS to improve the initial solution')
 
   search_log = solver.SearchLog(100000, objective_var)
   solver.NewSearch(local_search_db, [objective, search_log, global_limit])
   while solver.NextSolution():
-    print 'Objective:', objective_var.Value(),\
-        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs))
+    print('Objective:', objective_var.Value(),\
+        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs)))
   solver.EndSearch()
 
 

@@ -66,7 +66,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -140,18 +140,18 @@ def main(set_partition=1):
                             solver.INT_VALUE_DEFAULT),
                [collector, objective])
 
-  print "z:", collector.ObjectiveValue(0)
-  print "selected alternatives:", [i + 1 for i in range(num_alternatives)
-                                   if collector.Value(0, x[i]) == 1]
+  print("z:", collector.ObjectiveValue(0))
+  print("selected alternatives:", [i + 1 for i in range(num_alternatives)
+                                   if collector.Value(0, x[i]) == 1])
 
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 if __name__ == "__main__":
-  print "Set partition:"
+  print("Set partition:")
   main(1)
 
-  print "\nSet covering:"
+  print("\nSet covering:")
   main(0)

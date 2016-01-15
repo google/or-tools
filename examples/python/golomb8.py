@@ -35,7 +35,7 @@ def main():
 
   size = 8
   var_max = size * size
-  all_vars = range(0, size)
+  all_vars = list(range(0, size))
 
   marks = [solver.IntVar(0, var_max, 'marks_%d' % i) for i in all_vars]
 
@@ -63,13 +63,13 @@ def main():
     time = collector.WallTime(i)
     branches = collector.Branches(i)
     failures = collector.Failures(i)
-    print ('Solution #%i: value = %i, failures = %i, branches = %i,'
-           'time = %i ms') % (i, obj_value, failures, branches, time)
+    print(('Solution #%i: value = %i, failures = %i, branches = %i,'
+           'time = %i ms') % (i, obj_value, failures, branches, time))
   time = solver.WallTime()
   branches = solver.Branches()
   failures = solver.Failures()
-  print ('Total run : failures = %i, branches = %i, time = %i ms' %
-         (failures, branches, time))
+  print(('Total run : failures = %i, branches = %i, time = %i ms' %
+         (failures, branches, time)))
 
 
 if __name__ == '__main__':

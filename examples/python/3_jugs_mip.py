@@ -28,6 +28,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.linear_solver import pywraplp
 
@@ -36,7 +37,7 @@ def main(sol='CBC'):
 
   # Create the solver.
 
-  print 'Solver: ', sol
+  print('Solver: ', sol)
 
   # using GLPK
   if sol == 'GLPK':
@@ -145,22 +146,22 @@ def main(sol='CBC'):
   #
   solver.Solve()
 
-  print
-  print 'z: ', int(solver.Objective().Value())
+  print()
+  print('z: ', int(solver.Objective().Value()))
 
   t = start
   while t != end:
-    print nodes[t], '->',
+    print(nodes[t], '->', end=' ')
     for j in range(n):
       if x[t, j].SolutionValue() == 1:
-        print nodes[j]
+        print(nodes[j])
         t = j
         break
 
-  print
-  print 'walltime  :', solver.WallTime(), 'ms'
+  print()
+  print('walltime  :', solver.WallTime(), 'ms')
   if sol == 'CBC':
-    print 'iterations:', solver.Iterations()
+    print('iterations:', solver.Iterations())
 
 
 if __name__ == '__main__':
@@ -169,7 +170,7 @@ if __name__ == '__main__':
   if len(sys.argv) > 1:
     sol = sys.argv[1]
     if sol != 'GLPK' and sol != 'CBC':
-      print 'Solver must be either GLPK or CBC'
+      print('Solver must be either GLPK or CBC')
       sys.exit(1)
 
   main(sol)

@@ -22,7 +22,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.linear_solver import pywraplp
 
 
@@ -31,12 +31,12 @@ def main(unused_argv):
   # Create the solver.
 
   # using GLPK
-  solver = pywraplp.Solver('CoinsGridGLPK',
-                           pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
+  #solver = pywraplp.Solver('CoinsGridGLPK',
+  #                         pywraplp.Solver.GLPK_LINEAR_PROGRAMMING)
 
   # Using CLP
-  # solver = pywraplp.Solver('CoinsGridCLP',
-  #                          pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
+  solver = pywraplp.Solver('CoinsGridCLP',
+                            pywraplp.Solver.CLP_LINEAR_PROGRAMMING)
 
   # data
 
@@ -53,17 +53,17 @@ def main(unused_argv):
   # objective
   objective = solver.Maximize(40 * Gas + 50 * Chloride)
 
-  print 'NumConstraints:', solver.NumConstraints()
+  print('NumConstraints:', solver.NumConstraints())
 
   #
   # solution and search
   #
   solver.Solve()
 
-  print
-  print 'objective = ', solver.Objective().Value()
-  print 'Gas = ', Gas.SolutionValue(), 'ReducedCost =', Gas.ReducedCost()
-  print 'Chloride:', Chloride.SolutionValue(), 'ReducedCost =', Chloride.ReducedCost()
+  print()
+  print('objective = ', solver.Objective().Value())
+  print('Gas = ', Gas.SolutionValue(), 'ReducedCost =', Gas.ReducedCost())
+  print('Chloride:', Chloride.SolutionValue(), 'ReducedCost =', Chloride.ReducedCost())
 
 if __name__ == '__main__':
   main('Volsay')

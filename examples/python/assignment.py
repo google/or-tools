@@ -31,7 +31,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -88,28 +88,28 @@ def main(cost, rows, cols):
   solver.NewSearch(db, [objective])
   num_solutions = 0
   while solver.NextSolution():
-    print "total_cost:", total_cost.Value()
+    print("total_cost:", total_cost.Value())
     for i in range(rows):
       for j in range(cols):
-        print x[i][j].Value(),
-      print
-    print
+        print(x[i][j].Value(), end=' ')
+      print()
+    print()
 
     for i in range(rows):
-      print "Task:", i,
+      print("Task:", i, end=' ')
       for j in range(cols):
         if x[i][j].Value() == 1:
-          print " is done by ", j
-    print
+          print(" is done by ", j)
+    print()
 
     num_solutions += 1
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 # Problem instance

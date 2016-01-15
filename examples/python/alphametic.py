@@ -44,7 +44,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 import sys
 import re
 
@@ -57,21 +57,21 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
   solver = pywrapcp.Solver("Send most money")
 
   # data
-  print "\nproblem:", problem_str
+  print("\nproblem:", problem_str)
 
   # convert to array.
   problem = re.split("[\s+=]", problem_str)
 
   p_len = len(problem)
-  print "base:", base
+  print("base:", base)
 
   # create the lookup table: list of (digit : ix)
   a = sorted(set("".join(problem)))
   n = len(a)
-  lookup = dict(zip(a, range(n)))
+  lookup = dict(list(zip(a, list(range(n)))))
 
   # length of each number
-  lens = map(len, problem)
+  lens = list(map(len, problem))
 
   #
   # declare variables
@@ -117,27 +117,27 @@ def main(problem_str="SEND+MORE=MONEY", base=10):
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print "\nsolution #%i" % num_solutions
+    print("\nsolution #%i" % num_solutions)
     for i in range(n):
-      print a[i], "=", x[i].Value()
-    print
+      print(a[i], "=", x[i].Value())
+    print()
     for prob in problem:
       for p in prob:
-        print p,
-      print
-    print
+        print(p, end=' ')
+      print()
+    print()
     for prob in problem:
       for p in prob:
-        print x[lookup[p]].Value(),
-      print
+        print(x[lookup[p]].Value(), end=' ')
+      print()
 
-    print "sums:", [sums[i].Value() for i in range(p_len)]
-    print
+    print("sums:", [sums[i].Value() for i in range(p_len)])
+    print()
 
-  print "\nnum_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("\nnum_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 def test_problems(base=10):

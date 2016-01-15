@@ -60,6 +60,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 from collections import defaultdict
 
 from ortools.constraint_solver import pywrapcp
@@ -82,9 +83,9 @@ def flatten_matrix(solver, m, rows, cols):
 def print_flat_matrix(m_flat, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print m_flat[i * cols + j].Value(),
-    print
-  print
+      print(m_flat[i * cols + j].Value(), end=' ')
+    print()
+  print()
 
 
 def main(the_killers):
@@ -186,23 +187,23 @@ def main(the_killers):
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
-    print "the_killer:", the_killer.Value()
+    print("the_killer:", the_killer.Value())
     the_killers[the_killer.Value()] += 1
-    print "the_victim:", the_victim.Value()
-    print "hates:"
+    print("the_victim:", the_victim.Value())
+    print("hates:")
     print_flat_matrix(hates_flat, n, n)
-    print "richer:"
+    print("richer:")
     print_flat_matrix(richer_flat, n, n)
-    print
+    print()
     num_solutions += 1
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 the_killers = defaultdict(int)
@@ -210,6 +211,6 @@ p = ["agatha", "butler", "charles"]
 if __name__ == "__main__":
   main(the_killers)
 
-  print "\n"
+  print("\n")
   for k in the_killers:
-    print "the killer %s was choosen in %i solutions" % (p[k], the_killers[k])
+    print("the killer %s was choosen in %i solutions" % (p[k], the_killers[k]))

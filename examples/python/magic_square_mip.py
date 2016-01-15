@@ -42,6 +42,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.linear_solver import pywraplp
 
@@ -56,7 +57,7 @@ def main(n=3, sol='GLPK', use_output_matrix=0):
 
   # Create the solver.
 
-  print 'Solver: ', sol
+  print('Solver: ', sol)
 
   # using GLPK
   if sol == 'GLPK':
@@ -70,13 +71,13 @@ def main(n=3, sol='GLPK', use_output_matrix=0):
   #
   # data
   #
-  print 'n = ', n
+  print('n = ', n)
 
   # range_n = range(1, n+1)
-  range_n = range(0, n)
+  range_n = list(range(0, n))
 
   N = n * n
-  range_N = range(1, N + 1)
+  range_N = list(range(1, N + 1))
 
   #
   # variables
@@ -91,7 +92,7 @@ def main(n=3, sol='GLPK', use_output_matrix=0):
 
   # For output. Much slower....
   if use_output_matrix == 1:
-    print 'Using an output matrix'
+    print('Using an output matrix')
     square = {}
     for i in range_n:
       for j in range_n:
@@ -156,32 +157,32 @@ def main(n=3, sol='GLPK', use_output_matrix=0):
   #
   solver.Solve()
 
-  print
+  print()
 
-  print 's: ', int(s.SolutionValue())
+  print('s: ', int(s.SolutionValue()))
   if use_output_matrix == 1:
     for i in range_n:
       for j in range_n:
-        print int(square[i, j].SolutionValue()),
-      print
-    print
+        print(int(square[i, j].SolutionValue()), end=' ')
+      print()
+    print()
   else:
     for i in range_n:
       for j in range_n:
-        print sum([int(k * x[i, j, k].SolutionValue()) for k in range_N]), ' ',
-      print
+        print(sum([int(k * x[i, j, k].SolutionValue()) for k in range_N]), ' ', end=' ')
+      print()
 
-  print '\nx:'
+  print('\nx:')
   for i in range_n:
     for j in range_n:
       for k in range_N:
-        print int(x[i, j, k].SolutionValue()),
-      print
+        print(int(x[i, j, k].SolutionValue()), end=' ')
+      print()
 
-  print
-  print 'walltime  :', solver.WallTime(), 'ms'
+  print()
+  print('walltime  :', solver.WallTime(), 'ms')
   if sol == 'CBC':
-    print 'iterations:', solver.Iterations()
+    print('iterations:', solver.Iterations())
 
 
 if __name__ == '__main__':
@@ -194,7 +195,7 @@ if __name__ == '__main__':
   if len(sys.argv) > 2:
     sol = sys.argv[2]
     if sol != 'GLPK' and sol != 'CBC':
-      print 'Solver must be either GLPK or CBC'
+      print('Solver must be either GLPK or CBC')
       sys.exit(1)
 
   if len(sys.argv) > 3:

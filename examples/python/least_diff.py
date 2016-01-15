@@ -37,7 +37,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_cp_solver/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -48,7 +48,7 @@ def main(unused_argv):
   #
   # declare variables
   #
-  digits = range(0, 10)
+  digits = list(range(0, 10))
   a = solver.IntVar(digits, "a")
   b = solver.IntVar(digits, "b")
   c = solver.IntVar(digits, "c")
@@ -63,9 +63,9 @@ def main(unused_argv):
 
   letters = [a, b, c, d, e, f, g, h, i, j]
 
-  x = solver.IntVar(range(0, 99999), "x")
-  y = solver.IntVar(range(0, 99999), "y")
-  diff = solver.IntVar(range(0, 99999), "y")
+  x = solver.IntVar(list(range(0, 99999)), "x")
+  y = solver.IntVar(list(range(0, 99999)), "y")
+  diff = solver.IntVar(list(range(0, 99999)), "y")
 
   #
   # constraints
@@ -103,16 +103,16 @@ def main(unused_argv):
   xval = collector.Value(0, x)
   yval = collector.Value(0, y)
   diffval = collector.Value(0, diff)
-  print "x:", xval
-  print "y:", yval
-  print "diff:", diffval
-  print xval, "-", yval, "=", diffval
-  print [("abcdefghij"[i], collector.Value(0, letters[i])) for i in range(10)]
-  print
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
-  print
+  print("x:", xval)
+  print("y:", yval)
+  print("diff:", diffval)
+  print(xval, "-", yval, "=", diffval)
+  print([("abcdefghij"[i], collector.Value(0, letters[i])) for i in range(10)])
+  print()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
+  print()
 
 if __name__ == "__main__":
   main("cp sample")

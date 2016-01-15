@@ -37,7 +37,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 from ortools.linear_solver import pywraplp
 
@@ -46,7 +46,7 @@ def main(sol='GLPK'):
 
   # Create the solver.
 
-  print 'Solver: ', sol
+  print('Solver: ', sol)
 
   if sol == 'GLPK':
     # using GLPK
@@ -68,7 +68,7 @@ def main(sol='GLPK'):
   # number of nodes
   n = 11
   # set of nodes
-  V = range(n)
+  V = list(range(n))
 
   num_edges = 20
 
@@ -138,21 +138,21 @@ def main(sol='GLPK'):
   #
   solver.Solve()
 
-  print
-  print 'number of colors:', int(solver.Objective().Value())
-  print 'colors used:', [int(u[i].SolutionValue()) for i in range(nc)]
-  print
+  print()
+  print('number of colors:', int(solver.Objective().Value()))
+  print('colors used:', [int(u[i].SolutionValue()) for i in range(nc)])
+  print()
 
   for v in V:
-    print 'v%i' % v, ' color ',
+    print('v%i' % v, ' color ', end=' ')
     for c in range(nc):
       if int(x[v, c].SolutionValue()) == 1:
-        print c
+        print(c)
 
-  print
-  print 'WallTime:', solver.WallTime()
+  print()
+  print('WallTime:', solver.WallTime())
   if sol == 'CBC':
-    print 'iterations:', solver.Iterations()
+    print('iterations:', solver.Iterations())
 
 
 if __name__ == '__main__':
@@ -161,7 +161,7 @@ if __name__ == '__main__':
   if len(sys.argv) > 1:
     sol = sys.argv[1]
     if sol != 'GLPK' and sol != 'CBC':
-      print 'Solver must be either GLPK or CBC'
+      print('Solver must be either GLPK or CBC')
       sys.exit(1)
 
   main(sol)

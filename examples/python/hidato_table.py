@@ -23,7 +23,7 @@
   diagonally.
   '''
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -49,9 +49,9 @@ def BuildPairs(rows, cols):
 
 def main():
   for model in range(1, 7):
-    print
-    print('----- Solving problem %i -----' % model)
-    print
+    print()
+    print(('----- Solving problem %i -----' % model))
+    print()
     Solve(model)
 
 
@@ -121,7 +121,7 @@ def Solve(model):
   r = len(puzzle)
   c = len(puzzle[0])
 
-  print('Initial game (%i x %i)' % (r, c))
+  print(('Initial game (%i x %i)' % (r, c)))
   PrintMatrix(puzzle)
 
   #
@@ -166,15 +166,15 @@ def Solve(model):
 
   solver.EndSearch()
 
-  print('solutions : %i' % num_solutions)
-  print('failures  : %i' % solver.Failures())
-  print('branches  : %i' % solver.Branches())
-  print('wall time : %i' % solver.WallTime())
+  print(('solutions : %i' % num_solutions))
+  print(('failures  : %i' % solver.Failures()))
+  print(('branches  : %i' % solver.Branches()))
+  print(('wall time : %i' % solver.WallTime()))
 
 
 def PrintOneSolution(positions, rows, cols, num_solution):
   """Print a current solution."""
-  print('Solution %i:' % num_solution)
+  print(('Solution %i:' % num_solution))
   # Create empty board.
   board = []
   for unused_i in range(rows):
@@ -199,7 +199,7 @@ def PrintMatrix(game):
       else:
         line += '% 3s' % game[i][j]
     print(line)
-  print
+  print()
 
 
 if __name__ == '__main__':

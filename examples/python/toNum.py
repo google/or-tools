@@ -23,8 +23,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 #
@@ -74,13 +73,13 @@ def main(unused_argv):
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):
-    print "x:", [collector.Value(s, x[i]) for i in range(n)]
-    print "y:", collector.Value(s, y)
-    print
+    print("x:", [collector.Value(s, x[i]) for i in range(n)])
+    print("y:", collector.Value(s, y))
+    print()
 
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 if __name__ == "__main__":

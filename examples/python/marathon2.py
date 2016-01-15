@@ -47,7 +47,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -117,18 +117,18 @@ def main():
   while solver.NextSolution():
     num_solutions += 1
     runners_val = [runners[i].Value() for i in range(n)]
-    print 'runners:', runners_val
-    print 'Places:'
+    print('runners:', runners_val)
+    print('Places:')
     for i in range(1, n + 1):
       for j in range(n):
         if runners_val[j] == i:
-          print '%i: %s' % (i, runners_str[j])
-    print
+          print('%i: %s' % (i, runners_str[j]))
+    print()
 
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 
 if __name__ == '__main__':

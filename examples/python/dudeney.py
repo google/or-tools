@@ -10,15 +10,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
 def dudeney(n):
   solver = pywrapcp.Solver('Dudeney')
-  x = [solver.IntVar(range(10), 'x' + str(i)) for i in range(n)]
-  nb = solver.IntVar(range(3, 10 ** n), 'nb')
-  s = solver.IntVar(range(1, 9 * n + 1), 's')
+  x = [solver.IntVar(list(range(10)), 'x' + str(i)) for i in range(n)]
+  nb = solver.IntVar(list(range(3, 10 ** n)), 'nb')
+  s = solver.IntVar(list(range(1, 9 * n + 1)), 's')
 
   solver.Add(nb == s * s * s)
   solver.Add(sum([10 ** (n - i - 1) * x[i] for i in range(n)]) == nb)
@@ -35,10 +35,10 @@ def dudeney(n):
 
   for i in range(collector.SolutionCount()):
     nbsol = collector.Value(i, nb)
-    print nbsol
+    print(nbsol)
 
-  print '#fails:', solver.Failures()
-  print 'time:', solver.WallTime(), 'ms'
+  print('#fails:', solver.Failures())
+  print('time:', solver.WallTime(), 'ms')
 
 if __name__ == '__main__':
   dudeney(6)

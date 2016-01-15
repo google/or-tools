@@ -47,7 +47,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -61,9 +61,9 @@ def main(m=40, n=4):
   #
   # data
   #
-  print 'total weight (m):', m
-  print 'number of pieces (n):', n
-  print
+  print('total weight (m):', m)
+  print('number of pieces (n):', n)
+  print()
 
   #
   # variables
@@ -113,24 +113,24 @@ def main(m=40, n=4):
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print 'weights:   ',
+    print('weights:   ', end=' ')
     for w in [weights[j].Value() for j in range(n)]:
-      print '%3i ' % w,
-    print
-    print '-' * 30
+      print('%3i ' % w, end=' ')
+    print()
+    print('-' * 30)
     for i in range(m):
-      print 'weight  %2i:' % (i + 1),
+      print('weight  %2i:' % (i + 1), end=' ')
       for j in range(n):
-        print '%3i ' % x[i, j].Value(),
-      print
-    print
-  print
+        print('%3i ' % x[i, j].Value(), end=' ')
+      print()
+    print()
+  print()
   solver.EndSearch()
 
-  print 'num_solutions:', num_solutions
-  print 'failures :', solver.Failures()
-  print 'branches :', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print('num_solutions:', num_solutions)
+  print('failures :', solver.Failures())
+  print('branches :', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 
 m = 40

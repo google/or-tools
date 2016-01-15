@@ -34,7 +34,6 @@ Who owns a zebra and who drinks water?
 """
 
 from __future__ import print_function
-
 from ortools.constraint_solver import pywrapcp
 
 
