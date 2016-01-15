@@ -118,6 +118,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.linear_solver import pywraplp
 
@@ -126,7 +127,7 @@ def main(sol="GLPK"):
 
   # Create the solver.
 
-  print "Solver: ", sol
+  print("Solver: ", sol)
 
   # using GLPK
   if sol == "GLPK":
@@ -142,14 +143,14 @@ def main(sol="GLPK"):
   #
   # commodities
   num_commodities = 77
-  C = range(num_commodities)
+  C = list(range(num_commodities))
 
   #  days in a year
   days = 365.25
 
   # nutrients
   num_nutrients = 9
-  N = range(num_nutrients)
+  N = list(range(num_nutrients))
 
   nutrients = [
       "calories",      # Calories, unit = 1000
@@ -359,22 +360,22 @@ def main(sol="GLPK"):
   #
   solver.Solve()
 
-  print
+  print()
 
-  print "Cost = %0.2f" % solver.Objective().Value()
+  print("Cost = %0.2f" % solver.Objective().Value())
   # print 'Cost:', cost.SolutionValue()
-  print "Total cost: %0.2f" % total_cost.SolutionValue()
-  print
+  print("Total cost: %0.2f" % total_cost.SolutionValue())
+  print()
   for i in C:
     if x[i].SolutionValue() > 0:
-      print "%-21s %-11s  %0.2f  %0.2f" % (commodities[i][0], commodities[i][1],
-                                           x_cost[i].SolutionValue(), quant[i].SolutionValue())
+      print("%-21s %-11s  %0.2f  %0.2f" % (commodities[i][0], commodities[i][1],
+                                           x_cost[i].SolutionValue(), quant[i].SolutionValue()))
 
-  print
+  print()
 
-  print "walltime  :", solver.WallTime(), "ms"
+  print("walltime  :", solver.WallTime(), "ms")
   if sol == "CBC":
-    print "iterations:", solver.Iterations()
+    print("iterations:", solver.Iterations())
 
 
 if __name__ == "__main__":
@@ -383,7 +384,7 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
     sol = sys.argv[1]
     if sol != "GLPK" and sol != "CBC":
-      print "Solver must be either GLPK or CBC"
+      print("Solver must be either GLPK or CBC")
       sys.exit(1)
 
   main(sol)

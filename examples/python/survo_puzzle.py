@@ -60,7 +60,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -82,7 +82,7 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
             [8, 0, 0, 0],
             [0, 0, 3, 0]]
 
-  print "r:", r, "c:", c
+  print("r:", r, "c:", c)
 
   # declare variables
   x = {}
@@ -126,7 +126,7 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
                [collector])
 
   num_solutions = collector.SolutionCount()
-  print "\nnum_solutions: ", num_solutions
+  print("\nnum_solutions: ", num_solutions)
   if num_solutions > 0:
     for s in range(num_solutions):
       xval = [collector.Value(s, x[(i, j)])
@@ -134,18 +134,18 @@ def main(r=0, c=0, rowsums=[], colsums=[], game=[]):
 
       for i in range(r):
         for j in range(c):
-          print "%2i" % (xval[i * c + j]),
-        print
-      print
+          print("%2i" % (xval[i * c + j]), end=' ')
+        print()
+      print()
 
-    print
-    print "num_solutions:", num_solutions
-    print "failures:", solver.Failures()
-    print "branches:", solver.Branches()
-    print "WallTime:", solver.WallTime()
+    print()
+    print("num_solutions:", num_solutions)
+    print("failures:", solver.Failures())
+    print("branches:", solver.Branches())
+    print("WallTime:", solver.WallTime())
 
   else:
-    print "No solutions found"
+    print("No solutions found")
 
 
 #

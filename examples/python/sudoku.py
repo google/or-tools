@@ -13,8 +13,7 @@
 
 """This model implements a sudoku solver."""
 
-
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 def main():
@@ -23,8 +22,8 @@ def main():
 
   cell_size = 3
   line_size = cell_size ** 2
-  line = range(0, line_size)
-  cell = range(0, cell_size)
+  line = list(range(0, line_size))
+  cell = list(range(0, cell_size))
 
   initial_grid = [[0, 6, 0, 0, 5, 0, 0, 2, 0],
                   [0, 0, 0, 3, 0, 0, 0, 9, 0],
@@ -82,7 +81,7 @@ def main():
 
   if collector.SolutionCount() == 1:
     for i in line:
-      print [int(collector.Value(0, grid[(i, j)])) for j in line]
+      print([int(collector.Value(0, grid[(i, j)])) for j in line])
 
 
 if __name__ == '__main__':

@@ -43,7 +43,7 @@
   This model was created by Hakan Kjellerstrand (hakank@bonetmail.com)
   See my other Google CP Solver models: http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -83,7 +83,7 @@ def main(streams='', placed=''):
   n = len(streams)
   num_placed = len(placed)
 
-  print 'n:', n
+  print('n:', n)
 
   #
   # variables
@@ -135,24 +135,24 @@ def main(streams='', placed=''):
   while solver.NextSolution():
     for i in range(n):
       for j in range(n):
-        print x[i, j].Value(),
-      print
+        print(x[i, j].Value(), end=' ')
+      print()
 
-    print
+    print()
     num_solutions += 1
 
   solver.EndSearch()
 
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 if __name__ == '__main__':
   if len(sys.argv) > 1:
     problem_file = sys.argv[1]
-    execfile(problem_file)
+    exec(compile(open(problem_file).read(), problem_file, 'exec'))
     main(streams, placed)
   else:
     main()
