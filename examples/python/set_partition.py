@@ -45,7 +45,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -55,7 +55,7 @@ from ortools.constraint_solver import pywrapcp
 # Partition the sets (binary matrix representation).
 #
 def partition_sets(x, num_sets, n):
-  solver = x.values()[0].solver()
+  solver = list(x.values())[0].solver()
 
   for i in range(num_sets):
     for j in range(num_sets):
@@ -77,9 +77,9 @@ def main(n=16, num_sets=2):
   #
   # data
   #
-  print "n:", n
-  print "num_sets:", num_sets
-  print
+  print("n:", n)
+  print("num_sets:", num_sets)
+  print()
 
   # Check sizes
   assert n % num_sets == 0, "Equal sets is not possible."
@@ -144,28 +144,28 @@ def main(n=16, num_sets=2):
         a_val[i, j] = a[i, j].Value()
 
     sq = sum([(j + 1) * a_val[0, j] for j in range(n)])
-    print "sums:", sq
+    print("sums:", sq)
     sq2 = sum([((j + 1) * a_val[0, j]) ** 2 for j in range(n)])
-    print "sums squared:", sq2
+    print("sums squared:", sq2)
 
     for i in range(num_sets):
       if sum([a_val[i, j] for j in range(n)]):
-        print i + 1, ":",
+        print(i + 1, ":", end=' ')
         for j in range(n):
           if a_val[i, j] == 1:
-            print j + 1,
-        print
+            print(j + 1, end=' ')
+        print()
 
-    print
+    print()
     num_solutions += 1
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 n = 16

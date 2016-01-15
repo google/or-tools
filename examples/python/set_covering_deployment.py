@@ -39,7 +39,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -123,21 +123,21 @@ def main():
                             solver.INT_VALUE_DEFAULT),
                [collector, objective])
 
-  print "num_armies:", collector.ObjectiveValue(0)
-  print "X:", [collector.Value(0, X[i]) for i in range(n)]
-  print "Y:", [collector.Value(0, Y[i]) for i in range(n)]
+  print("num_armies:", collector.ObjectiveValue(0))
+  print("X:", [collector.Value(0, X[i]) for i in range(n)])
+  print("Y:", [collector.Value(0, Y[i]) for i in range(n)])
 
   for i in range(n):
     if collector.Value(0, X[i]) == 1:
-      print "army:", countries[i],
+      print("army:", countries[i], end=' ')
     if collector.Value(0, Y[i]) == 1:
-      print "reserv army:", countries[i], " "
-  print
+      print("reserv army:", countries[i], " ")
+  print()
 
-  print
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 if __name__ == "__main__":

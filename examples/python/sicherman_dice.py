@@ -59,6 +59,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -117,23 +118,23 @@ def main():
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
-    print "x1:", [x1[i].Value() for i in range(n)]
-    print "x2:", [x2[i].Value() for i in range(n)]
-    print
+    print("x1:", [x1[i].Value() for i in range(n)])
+    print("x2:", [x2[i].Value() for i in range(n)])
+    print()
 
     num_solutions += 1
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions, "solver.solutions:", solver.Solutions()
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
-  print "MemoryUsage:", solver.MemoryUsage()
-  print "SearchDepth:", solver.SearchDepth()
-  print "SolveDepth:", solver.SolveDepth()
-  print "stamp:", solver.Stamp()
-  print "solver", solver
+  print()
+  print("num_solutions:", num_solutions, "solver.solutions:", solver.Solutions())
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
+  print("MemoryUsage:", solver.MemoryUsage())
+  print("SearchDepth:", solver.SearchDepth())
+  print("SolveDepth:", solver.SolveDepth())
+  print("stamp:", solver.Stamp())
+  print("solver", solver)
 
 
 if __name__ == "__main__":

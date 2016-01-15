@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import print_function
 import argparse
 from ortools.constraint_solver import pywrapcp
 
@@ -49,11 +50,11 @@ def ReadData(filename):
   wc = [[int(j) for j in f.readline().split()] for i in range(nb_slabs)]
   weights = [x[0] for x in wc]
   colors = [x[1] for x in wc]
-  loss = [min(filter(lambda x: x >= c, capacity)) - c
+  loss = [min([x for x in capacity if x >= c]) - c
           for c in range(max_capacity + 1)]
-  color_orders = [filter(lambda o: colors[o] == c, range(nb_slabs))
+  color_orders = [[o for o in range(nb_slabs) if colors[o] == c]
                   for c in range(1, nb_colors + 1)]
-  print 'Solving steel mill with', nb_slabs, 'slabs'
+  print('Solving steel mill with', nb_slabs, 'slabs')
   return (nb_slabs, capacity, max_capacity, weights, colors, loss, color_orders)
 
 #------------------dedicated search for this problem-----------
@@ -165,8 +166,8 @@ def main(args):
   global_limit = solver.TimeLimit(args.time_limit)
   solver.NewSearch(db, [objective, search_log, global_limit])
   while solver.NextSolution():
-    print 'Objective:', objective_var.Value(),\
-        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs))
+    print('Objective:', objective_var.Value(),\
+        'check:', sum(loss[load_vars[s].Min()] for s in range(nb_slabs)))
   solver.EndSearch()
 
 

@@ -48,7 +48,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -100,22 +100,22 @@ def main():
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print 'total differences:', z.Value()
+    print('total differences:', z.Value())
     for i in range(num_skiers):
       x_val = x[i].Value()
       ski_height = ski_heights[x[i].Value()]
       diff = ski_height - skier_heights[i]
-      print 'Skier %i: Ski %i with length %2i (diff: %2i)' %\
-            (i, x_val, ski_height, diff)
-    print
+      print('Skier %i: Ski %i with length %2i (diff: %2i)' %\
+            (i, x_val, ski_height, diff))
+    print()
 
   solver.EndSearch()
 
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime()
+  print()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime())
 
 
 if __name__ == '__main__':

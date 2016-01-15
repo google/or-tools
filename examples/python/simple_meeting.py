@@ -24,9 +24,7 @@ Each person must have an 1 hour lunch break between 11h30 AM and 2h30 PM.
 The goal is to find a meeting and a room such that all m mandatory people are
 in the meeting and a maximum of non mandatory people are also in the meeting.
 """
-
-
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -37,7 +35,7 @@ def main():
 
   # All participants (mandatory and non mandatory).
   attendees = 12
-  all_people = range(1, attendees + 1)
+  all_people = list(range(1, attendees + 1))
 
   # Mandatory people.
   all_mandatory_people = [1, 2, 5, 9]
@@ -55,7 +53,7 @@ def main():
                        {'start': 4, 'duration': 8, 'person': 4}]
 
   rooms_count = 5
-  all_rooms = range(1, rooms_count + 1)
+  all_rooms = list(range(1, rooms_count + 1))
 
   room_sizes = {1: 7, 2: 8, 3: 10, 4: 3, 5: 8}
 
@@ -201,10 +199,10 @@ def main():
 
   if collector.SolutionCount() > 0:
 
-    print ('we could schedule %d persons in room %d starting at quarter %d' %
-           (collector.Value(0, people_count),
-            collector.Value(0, meeting_location),
-            collector.StartValue(0, meeting)))
+    print('we could schedule %d persons in room %d starting at quarter %d' %
+          (collector.Value(0, people_count),
+          collector.Value(0, meeting_location),
+          collector.StartValue(0, meeting)))
 
 
 if __name__ == '__main__':
