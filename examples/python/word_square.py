@@ -38,8 +38,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
-import string
 import re
 from ortools.constraint_solver import pywrapcp
 
@@ -107,11 +107,11 @@ def main(words, word_len, num_answers=20):
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 #
@@ -132,8 +132,8 @@ def get_dict():
 def print_solution(E, words):
   # print E
   for e in E:
-    print words[e.Value()]
-  print
+    print(words[e.Value()])
+  print()
 
 
 def read_words(word_list, word_len, limit):
@@ -142,10 +142,10 @@ def read_words(word_list, word_len, limit):
   count = 0
   words = open(word_list).readlines()
   for w in words:
-    w = string.strip(w).lower()
+    w = w.strip().lower()
     # if len(w) == word_len and not dict.has_key(w) and not re.search("[^a-zедц]",w) and count < limit:
     # Later note: The limit is not needed anymore with Mistral
-    if len(w) == word_len and not dict.has_key(w) and not re.search(
+    if len(w) == word_len and w not in dict and not re.search(
         "[^a-zедц]", w):
       dict[w] = 1
       all_words.append(w)
@@ -171,5 +171,5 @@ if __name__ == "__main__":
 
   # Note: I have to use a limit, otherwise it seg faults
   words = read_words(word_dict, word_len, limit)
-  print "It was", len(words), "words"
+  print("It was", len(words), "words")
   main(words, word_len, num_answers)
