@@ -221,7 +221,7 @@ ifeq ($(PLATFORM),MACOSX)
 
   CMAKE := $(shell which cmake)
   ifeq ($(CMAKE),)
-    CMAKE ?= /Applications/CMake.app/Contents/bin/cmake
+    CMAKE = /Applications/CMake.app/Contents/bin/cmake
   else
     $(warning "cmake found: $(CMAKE)")
   endif
