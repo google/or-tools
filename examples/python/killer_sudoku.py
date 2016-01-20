@@ -84,7 +84,7 @@ def calc(cc, x, res):
 
   # sum the numbers
   cage = [x[i[0] - 1, i[1] - 1] for i in cc]
-  solver.Add(solver.Sum([cage]) == res)
+  solver.Add(solver.Sum(cage) == res)
   solver.Add(solver.AllDifferent(cage))
 
 
