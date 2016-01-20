@@ -7,7 +7,7 @@ CBC_TAG = 2.9.7
 SWIG_TAG = 3.0.7
 PCRE_TAG = 8.37
 # Mono version.
-MONO_TAG = 4.0.1
+MONO_TAG = 4.2.2.29
 # BISON, FLEX
 BISON_TAG = 3.0.4
 # Flex 2.5.39 is broken on mac.
@@ -51,15 +51,6 @@ ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
 else
     GLPK_TARGET = dependencies/install/bin/glpsol
     GLPK_MAKEFILE = UNIX_GLPK_DIR = $(OR_ROOT_FULL)/dependencies/install
-endif
-
-# Detect if mono archive is there
-ifeq ($(wildcard dependencies/archives/mono-$(MONO_TAG).tar.bz2),)
-    MONO_TARGET =
-    MONO_MAKEFILE = "\# Please add mono-$(MONO_TAG).tar.bz2 in dependencies/archives to add support for mono and .NET."
-else
-    MONO_TARGET = dependencies/install/bin/mcs
-    MONO_MAKEFILE = UNIX_MONO_DIR = $(OR_ROOT_FULL)/dependencies/install
 endif
 
 # Detect if patchelf is needed
@@ -344,7 +335,7 @@ dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: depende
 	cd dependencies/install && tar xvzmf ../archives/scipoptsuite-$(SCIP_TAG).tgz && cd scipoptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
 
 # Install mono if needed
-install_mono: $(MONO_TARGET)
+install_mono: dependencies/install/bin/mcs
 
 dependencies/install/bin/mcs: dependencies/sources/mono-$(MONO_TAG)/Makefile $(ACLOCAL_TARGET)
 	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) make -j 16 && make install
@@ -353,11 +344,14 @@ dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO
 ifeq ($(PLATFORM),MACOSX)
 	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10 --with-mcs-docs=no
 else
-	cd dependencies/sources/mono-$(MONO_TAG) && ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 endif
 
-dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/archives/mono-$(MONO_TAG).tar.bz2
-	cd dependencies/sources && tar xvjmf ../archives/mono-$(MONO_TAG).tar.bz2
+dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/sources/mono-$(MONO_TAG)/autogen.sh
+	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./autogen.sh
+
+dependencies/sources/mono-$(MONO_TAG)/autogen.sh:
+	cd dependencies/sources && git clone --recursive -b mono-$(MONO_TAG) https://github.com/mono/mono.git mono-$(MONO_TAG)
 
 # Install patchelf on linux platforms.
 dependencies/install/bin/patchelf: dependencies/sources/patchelf-0.8/Makefile
@@ -456,6 +450,14 @@ dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure: dependencies/archives/a
 dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/autoconf/autoconf-$(AUTOCONF_TAG).tar.gz
 
+# Install C# protobuf
+
+CSHARP_PROTOBUF_SRC = $(shell grep Compile dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf/Google.Protobuf.csproj | cut -d\" -f 2 | sed -e 's/\\/\//g')
+
+install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
+
+dependencies/install/bin/Google.Protobuf.dll: install_protobuf install_mono
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo $(CSHARP_PROTOBUF_SRC)
 
 # Clean everything.
 clean_third_party:
