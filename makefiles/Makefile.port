@@ -20,6 +20,7 @@ ifeq ("$(SYSTEM)","unix")
       DETECTED_PYTHON_VERSION = 2.6
     endif
   endif
+  MCS = $(shell which mcs)
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
     CODEPORT = OpSys-Linux
@@ -138,3 +139,4 @@ printport:
 	@echo GIT_REVISION = \"$(GIT_REVISION)\"
 	@echo GIT_HASH = $(GIT_HASH)
 	@echo PORT = $(PORT)
+	@echo MCS = $(MCS)

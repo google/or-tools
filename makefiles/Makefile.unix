@@ -227,13 +227,8 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 
   JNI_LIB_EXT = jnilib
-  ifeq ($(UNIX_MONO_DIR),)
-    CSC = gmcs
-    MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono
-  else
-    CSC = $(UNIX_MONO_DIR)/bin/mcs
-    MONO = DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) $(UNIX_MONO_DIR)/bin/mono
-  endif
+  CSC = mcs
+  MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono
 
   DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
   STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
