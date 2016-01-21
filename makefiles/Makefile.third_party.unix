@@ -346,7 +346,7 @@ install_mono: dependencies/install/bin/mcs
 dependencies/install/bin/mcs: dependencies/sources/mono-$(MONO_TAG)/Makefile $(ACLOCAL_TARGET)
 	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) make -j 16 && make install
 
-dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure $(ACLOCAL_TARGET)
+dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/autogen.sh $(ACLOCAL_TARGET)
 ifeq ($(PLATFORM),MACOSX)
 	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./autogen.sh --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10 --with-mcs-docs=no
 	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10 --with-mcs-docs=no
