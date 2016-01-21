@@ -107,7 +107,9 @@ MISSING_DIRECTORIES = \
 
 missing_directories: $(MISSING_DIRECTORIES)
 
-install_third_party: \
+install_third_party: install_third_party_cc install_third_party_csharp
+
+install_third_party_cc: \
 	missing_directories \
 	install_gflags \
 	install_protobuf \
@@ -116,10 +118,14 @@ install_third_party: \
 	install_cbc \
 	install_glpk \
 	install_scip \
-	install_mono \
 	install_bison \
 	install_flex
 
+install_third_party_csharp: \
+	missing_directories \
+	install_mono \
+	install_protobuf \
+	install_csharp_protobuf \
 
 bin:
 	$(MKDIR_P) bin
@@ -342,13 +348,11 @@ dependencies/install/bin/mcs: dependencies/sources/mono-$(MONO_TAG)/Makefile $(A
 
 dependencies/sources/mono-$(MONO_TAG)/Makefile: dependencies/sources/mono-$(MONO_TAG)/configure $(ACLOCAL_TARGET)
 ifeq ($(PLATFORM),MACOSX)
+	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./autogen.sh --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10 --with-mcs-docs=no
 	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-glib=embedded --enable-nls=no --host=x86_64-apple-darwin10 --with-mcs-docs=no
 else
-	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
+	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./autogen.sh --prefix=$(OR_ROOT_FULL)/dependencies/install
 endif
-
-dependencies/sources/mono-$(MONO_TAG)/configure: dependencies/sources/mono-$(MONO_TAG)/autogen.sh
-	cd dependencies/sources/mono-$(MONO_TAG) && $(SET_PATH) ./autogen.sh
 
 dependencies/sources/mono-$(MONO_TAG)/autogen.sh:
 	cd dependencies/sources && git clone --recursive -b mono-$(MONO_TAG) https://github.com/mono/mono.git mono-$(MONO_TAG)
