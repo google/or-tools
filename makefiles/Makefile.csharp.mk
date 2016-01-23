@@ -64,7 +64,15 @@ CSHARPEXE = \
 csharpexe: $(CSHARPEXE)
 
 # Main target.
+ifeq ("$(SYSTEM)","unix")
+ifeq ($(MCS),)
+csharp:
+else #MCS
 csharp: csharportools csharpexe
+endif # MCS
+else # Windows
+csharp: csharportools csharpexe
+endif
 
 # Clean target.
 clean_csharp:

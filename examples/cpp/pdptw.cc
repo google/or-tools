@@ -34,7 +34,7 @@
 // http://en.wikipedia.org/wiki/Vehicle_routing_problem
 // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.123.9965&rep=rep1&type=pdf.
 // Reads data in the format defined by Li & Lim
-// (http://www.sintef.no/Projectweb/TOP/PDPTW/Li--Lim-benchmark/Documentation/).
+// (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
 
 #include <vector>
 
@@ -165,7 +165,7 @@ bool SafeParseInt64Array(const std::string& str, std::vector<int64>* parsed_int)
 }  // namespace
 
 // Builds and solves a model from a file in the format defined by Li & Lim
-// (http://www.sintef.no/static/am/opti/projects/top/vrp/format_pdp.htm).
+// (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
 bool LoadAndSolve(const std::string& pdp_file) {
   // Load all the lines of the file in RAM (it shouldn't be too large anyway).
   std::vector<std::string> lines;

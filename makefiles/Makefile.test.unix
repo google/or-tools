@@ -21,7 +21,14 @@ test_python: python
 test_java: java run_RabbitsPheasants run_FlowExample run_Tsp run_LinearProgramming run_IntegerProgramming run_Knapsack run_MultiThreadIntegerProgramming
 
 # csharp test
-test_csharp: $(CSHARPEXE) $(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe $(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe
+
+ifneq ($(MCS),)
+CSHARP_TEST = run_test_csharp
+endif
+
+test_csharp: $(CSHARP_TEST)
+
+run_test_csharp: $(CSHARPEXE) $(BIN_DIR)/testlp$(CLR_EXE_SUFFIX).exe $(BIN_DIR)/testcp$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)/cslinearprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)/csintegerprogramming$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)/csrabbitspheasants$(CLR_EXE_SUFFIX).exe
