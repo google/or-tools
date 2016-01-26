@@ -105,13 +105,11 @@ MISSING_DIRECTORIES = \
 
 missing_directories: $(MISSING_DIRECTORIES)
 
-install_third_party: install_third_party_cc
-
 ifneq ($(MCS),)
 CSHARP_THIRD_PARTY = install_csharp_protobuf
 endif
 
-install_third_party_cc: \
+install_third_party: \
 	missing_directories \
 	install_gflags \
 	install_protobuf \
