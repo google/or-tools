@@ -32,6 +32,7 @@
 #include "cpp/sat_cnf_reader.h"
 #include "sat/sat_solver.h"
 #include "sat/simplification.h"
+#include "sat/symmetry.h"
 #include "util/time_limit.h"
 #include "base/random.h"
 #include "base/status.h"
@@ -238,7 +239,11 @@ int Run() {
     LOG(INFO) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     FindLinearBooleanProblemSymmetries(problem, &generators);
-    solver->AddSymmetries(&generators);
+    std::unique_ptr<SymmetryPropagator> propagator(new SymmetryPropagator);
+    for (int i = 0; i < generators.size(); ++i) {
+      propagator->AddSymmetry(std::move(generators[i]));
+    }
+    solver->AddPropagator(std::move(propagator));
   }
 
   // Optimize?
