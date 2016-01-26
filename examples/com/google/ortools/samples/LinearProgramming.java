@@ -32,7 +32,7 @@ public class LinearProgramming {
       return new MPSolver("LinearProgrammingExample",
                           MPSolver.OptimizationProblemType.valueOf(solverType));
     } catch (java.lang.IllegalArgumentException e) {
-      throw new Error(e);
+      return null;
     }
   }
 

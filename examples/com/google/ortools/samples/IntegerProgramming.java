@@ -32,7 +32,7 @@ public class IntegerProgramming {
       return new MPSolver("IntegerProgrammingExample",
                           MPSolver.OptimizationProblemType.valueOf(solverType));
     } catch (java.lang.IllegalArgumentException e) {
-      throw new Error(e);
+      return null;
     }
   }
 
