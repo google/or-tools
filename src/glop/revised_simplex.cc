@@ -1284,9 +1284,9 @@ Fractional RevisedSimplex::ComputeHarrisRatioAndLeavingCandidates(
       // Note that at least lower bounding it by 0.0 is really important on
       // numerically difficult problems because its helps in the choice of a
       // stable pivot.
-      harris_ratio = std::min(
-          harris_ratio,
-          std::max(minimum_delta / magnitude, ratio + harris_tolerance / magnitude));
+      harris_ratio = std::min(harris_ratio,
+                              std::max(minimum_delta / magnitude,
+                                       ratio + harris_tolerance / magnitude));
     }
   }
   return harris_ratio;

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// TODO(viger): make this SWIG file comply with the SWIG style guide.
+// TODO(user): make this SWIG file comply with the SWIG style guide.
 %include base/base.swig
 
 %{

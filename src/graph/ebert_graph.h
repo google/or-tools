@@ -648,10 +648,10 @@ class ForwardStaticGraph
       first_incident_arc_[kFirstNode + input_arcs[arc].first] += 1;
       // Take this opportunity to see how many nodes are really
       // mentioned in the arc list.
-      num_nodes_ = std::max(num_nodes_,
-                       static_cast<NodeIndexType>(input_arcs[arc].first + 1));
-      num_nodes_ = std::max(num_nodes_,
-                       static_cast<NodeIndexType>(input_arcs[arc].second + 1));
+      num_nodes_ = std::max(
+          num_nodes_, static_cast<NodeIndexType>(input_arcs[arc].first + 1));
+      num_nodes_ = std::max(
+          num_nodes_, static_cast<NodeIndexType>(input_arcs[arc].second + 1));
     }
     ArcIndexType next_arc = kFirstArc;
     for (NodeIndexType node = 0; node < num_nodes; ++node) {

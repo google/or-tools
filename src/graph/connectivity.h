@@ -21,17 +21,13 @@
 #ifndef OR_TOOLS_GRAPH_CONNECTIVITY_H_
 #define OR_TOOLS_GRAPH_CONNECTIVITY_H_
 
+#include <vector>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "graph/ebert_graph.h"
 
 namespace operations_research {
-
-#ifndef _MSC_VER
-static_assert(StarGraph::kFirstNode == 0,
-              "StarGraph::kFirstNode should be equal to 0.");
-#endif
 
 // Template class implementing a Union-Find algorithm with path compression for
 // maintaining the connected components of a graph.
@@ -50,9 +46,9 @@ static_assert(StarGraph::kFirstNode == 0,
 // algorithms. Journal of the ACM 31(2):245–281.
 //
 // Usage example:
-// ConnectedComponents components;
+// ConnectedComponents<int, int> components;
 // components.Init(num_nodes);
-// for (ArcIndex arc = 0; arc < num_arcs; ++arc) {
+// for (int arc = 0; arc < num_arcs; ++arc) {
 //   components.AddArc(tail[arc], head[arc]);
 // }
 // int num_connected_components = components.GetNumberOfConnectedComponents();
@@ -61,54 +57,111 @@ static_assert(StarGraph::kFirstNode == 0,
 // }
 // // Group the nodes in the same connected component together.
 // // group[class_number][i] contains the i-th node in group class_number.
-// hash_map<NodeIndex, std::vector<NodeIndex> > group(num_connected_components);
-// for (NodeIndex node = 0; node < num_nodes; ++node) {
+// hash_map<int, std::vector<int> > group(num_connected_components);
+// for (int node = 0; node < num_nodes; ++node) {
 //   group[components.GetClassRepresentative(node)].push_back(node);
 // }
 //
-// NodeIndex is used to denote both a node index and a number of nodes,
-// as passed as parameter to Init.
-//
 // Keywords: graph, connected components.
 
+template <typename NodeIndex, typename ArcIndex>
 class ConnectedComponents {
  public:
   ConnectedComponents() : num_nodes_(0), class_(), class_size_() {}
 
   // Reserves memory for num_nodes and resets the data structures.
-  void Init(NodeIndex num_nodes);
+  void Init(NodeIndex num_nodes) {
+    CHECK_GE(num_nodes, 0);
+    num_nodes_ = num_nodes;
+    class_.resize(num_nodes_);
+    class_size_.assign(num_nodes_, 1);
+    for (NodeIndex node = 0; node < num_nodes_; ++node) {
+      class_[node] = node;
+    }
+  }
 
   // Adds the information that NodeIndex tail and NodeIndex head are connected.
-  void AddArc(NodeIndex tail, NodeIndex head);
+  void AddArc(NodeIndex tail, NodeIndex head) {
+    const NodeIndex tail_class = CompressPath(tail);
+    const NodeIndex head_class = CompressPath(head);
+    if (tail_class != head_class) {
+      MergeClasses(tail_class, head_class);
+    }
+  }
 
   // Adds a complete StarGraph to the object. Note that Depth-First Search
   // is a better algorithm for finding connected components on graphs.
   // TODO(user): implement Depth-First Search-based connected components finder.
-  void AddGraph(const StarGraph& graph);
+  template <typename Graph>
+  void AddGraph(const Graph& graph) {
+    Init(graph.num_nodes());
+    for (NodeIndex tail = 0; tail < graph.num_nodes(); ++tail) {
+      for (typename Graph::OutgoingArcIterator it(graph, tail); it.Ok();
+           it.Next()) {
+        AddArc(tail, graph.Head(it.Index()));
+      }
+    }
+  }
 
   // Compresses the path for node.
-  NodeIndex CompressPath(NodeIndex node);
+  NodeIndex CompressPath(NodeIndex node) {
+    CheckNodeBounds(node);
+    NodeIndex parent = node;
+    while (parent != class_[parent]) {
+      CheckNodeBounds(class_[parent]);
+      CheckNodeBounds(class_[class_[parent]]);
+      parent = class_[parent];
+    }
+    while (node != class_[node]) {
+      const NodeIndex old_parent = class_[node];
+      class_[node] = parent;
+      node = old_parent;
+    }
+    return parent;
+  }
 
   // Returns the equivalence class representative for node.
-  NodeIndex GetClassRepresentative(NodeIndex node);
+  NodeIndex GetClassRepresentative(NodeIndex node) {
+    return CompressPath(node);
+  }
 
   // Returns the number of connected components. Allocates num_nodes_ bits for
   // the computation.
-  NodeIndex GetNumberOfConnectedComponents();
+  NodeIndex GetNumberOfConnectedComponents() {
+    NodeIndex number = 0;
+    for (NodeIndex node = 0; node < num_nodes_; ++node) {
+      if (class_[node] == node) ++number;
+    }
+    return number;
+  }
 
   // Merges the equivalence classes of node1 and node2.
-  void MergeClasses(NodeIndex node1, NodeIndex node2);
+  void MergeClasses(NodeIndex node1, NodeIndex node2) {
+    // It's faster (~10%) to swap the two values and have a single piece of
+    // code for merging the classes.
+    CheckNodeBounds(node1);
+    CheckNodeBounds(node2);
+    if (class_size_[node1] < class_size_[node2]) {
+      std::swap(node1, node2);
+    }
+    class_[node2] = node1;
+    class_size_[node1] += class_size_[node2];
+  }
 
  private:
+  void CheckNodeBounds(NodeIndex node_index) {
+    DCHECK_LE(0, node_index);
+    DCHECK_LT(node_index, num_nodes_);
+  }
   // The exact number of nodes in the graph.
   NodeIndex num_nodes_;
 
   // The equivalence class representative for each node.
-  NodeIndexArray class_;
+  std::vector<NodeIndex> class_;
 
   // The size of each equivalence class of each node. Used to compress the paths
   // and therefore achieve better time complexity.
-  NodeIndexArray class_size_;
+  std::vector<NodeIndex> class_size_;
 
   DISALLOW_COPY_AND_ASSIGN(ConnectedComponents);
 };

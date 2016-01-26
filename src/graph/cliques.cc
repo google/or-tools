@@ -26,7 +26,9 @@
 namespace operations_research {
 
 template <typename NodeIndex>
-const double BronKerboschAlgorithm<NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
+
+const double BronKerboschAlgorithm<
+    NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
 
 namespace {
 
@@ -198,7 +200,8 @@ class FindAndEliminate {
       : graph_(graph), node_count_(node_count), callback_(callback) {}
 
   bool GraphCallback(int node1, int node2) {
-    if (visited_.find(std::make_pair(std::min(node1, node2), std::max(node1, node2))) !=
+    if (visited_.find(
+            std::make_pair(std::min(node1, node2), std::max(node1, node2))) !=
         visited_.end()) {
       return false;
     }

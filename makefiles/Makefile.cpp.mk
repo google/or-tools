@@ -752,7 +752,6 @@ GRAPH_LIB_OBJS=\
 	$(OBJ_DIR)/graph/simple_assignment.$O \
 	$(OBJ_DIR)/graph/linear_assignment.$O \
 	$(OBJ_DIR)/graph/cliques.$O \
-	$(OBJ_DIR)/graph/connectivity.$O \
 	$(OBJ_DIR)/graph/flow_problem.pb.$O \
 	$(OBJ_DIR)/graph/max_flow.$O \
 	$(OBJ_DIR)/graph/min_cost_flow.$O
@@ -765,9 +764,6 @@ $(OBJ_DIR)/graph/simple_assignment.$O:$(SRC_DIR)/graph/assignment.cc
 
 $(OBJ_DIR)/graph/cliques.$O:$(SRC_DIR)/graph/cliques.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/cliques.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Scliques.$O
-
-$(OBJ_DIR)/graph/connectivity.$O:$(SRC_DIR)/graph/connectivity.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/connectivity.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sconnectivity.$O
 
 $(GEN_DIR)/graph/flow_problem.pb.cc:$(SRC_DIR)/graph/flow_problem.proto
 	 $(PROTOBUF_DIR)$Sbin$Sprotoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)$Sgraph$Sflow_problem.proto

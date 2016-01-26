@@ -208,7 +208,8 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver) {
 EncodingNode FullMerge(Coefficient upper_bound, EncodingNode* a,
                        EncodingNode* b, SatSolver* solver) {
   EncodingNode n;
-  const int size = std::min(Coefficient(a->size() + b->size()), upper_bound).value();
+  const int size =
+      std::min(Coefficient(a->size() + b->size()), upper_bound).value();
   n.InitializeFullNode(size, a, b, solver);
   for (int ia = 0; ia < a->size(); ++ia) {
     if (ia + b->size() < size) {

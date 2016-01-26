@@ -317,10 +317,10 @@ Fractional ComputeMaxVariableBoundsMagnitude(const LinearProgram& lp) {
   Fractional max_bounds_magnitude = 0.0;
   const ColIndex num_cols = lp.num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
-    max_bounds_magnitude =
-        std::max(max_bounds_magnitude,
-            std::max(MagnitudeOrZeroIfInfinite(lp.variable_lower_bounds()[col]),
-                MagnitudeOrZeroIfInfinite(lp.variable_upper_bounds()[col])));
+    max_bounds_magnitude = std::max(
+        max_bounds_magnitude,
+        std::max(MagnitudeOrZeroIfInfinite(lp.variable_lower_bounds()[col]),
+                 MagnitudeOrZeroIfInfinite(lp.variable_upper_bounds()[col])));
   }
   return max_bounds_magnitude;
 }
@@ -2606,7 +2606,8 @@ bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp,
     // TODO(user): Write a small class that takes a matrix, its transpose, row
     // and column bounds, and "propagate" the bounds as much as possible so we
     // can use this better estimate here and remove more near-zero entries.
-    const Fractional max_magnitude = std::max(fabs(lower_bound), fabs(upper_bound));
+    const Fractional max_magnitude =
+        std::max(fabs(lower_bound), fabs(upper_bound));
     if (max_magnitude == kInfinity || max_magnitude == 0) continue;
     const Fractional threshold = allowed_impact / max_magnitude;
     lp->GetMutableSparseColumn(col)

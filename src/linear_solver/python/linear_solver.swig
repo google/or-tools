@@ -64,7 +64,7 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     return $self->name();
   }
 
-  // Note(user): the 74 lines below are a pure duplication of code from
+  // Note(user): the lines below are a pure duplication of code from
   // ../linear_solver_natural_api.py. Unfortunately it wasn't easy to fix. In
   // particular, SWIG's %define won't work because they get prepended with a
   // C-style comment "/*...*/" upon expansion, which breaks the python code.

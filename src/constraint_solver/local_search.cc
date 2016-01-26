@@ -1110,8 +1110,8 @@ class TSPOpt : public PathOperator {
   std::string DebugString() const override { return "TSPOpt"; }
 
  private:
-  std::vector<std::vector<int64> > cost_;
-  HamiltonianPathSolver<int64> hamiltonian_path_solver_;
+  std::vector<std::vector<int64>> cost_;
+  HamiltonianPathSolver<int64, std::vector<std::vector<int64>>> hamiltonian_path_solver_;
   Solver::IndexEvaluator3 evaluator_;
   const int chain_length_;
 };
@@ -1179,8 +1179,8 @@ class TSPLns : public PathOperator {
   bool MakeOneNeighbor() override;
 
  private:
-  std::vector<std::vector<int64> > cost_;
-  HamiltonianPathSolver<int64> hamiltonian_path_solver_;
+  std::vector<std::vector<int64>> cost_;
+  HamiltonianPathSolver<int64, std::vector<std::vector<int64>>> hamiltonian_path_solver_;
   Solver::IndexEvaluator3 evaluator_;
   const int tsp_size_;
   ACMRandom rand_;
@@ -1309,10 +1309,8 @@ class NearestNeighbors {
 
  private:
   void ComputeNearest(int row);
-  static void Pivot(int start, int end, int* neighbors, int64* row, int* index);
-  static void Swap(int i, int j, int* neighbors, int64* row);
 
-  std::vector<std::vector<int> > neighbors_;
+  std::vector<std::vector<int>> neighbors_;
   Solver::IndexEvaluator3 evaluator_;
   const PathOperator& path_operator_;
   const int size_;
@@ -1349,58 +1347,25 @@ void NearestNeighbors::ComputeNearest(int row) {
   const IntVar* var = path_operator_.Var(row);
   const int64 var_min = var->Min();
   const int var_size = var->Max() - var_min + 1;
-  std::unique_ptr<int[]> neighbors(new int[var_size]);
-  std::unique_ptr<int64[]> row_data(new int64[var_size]);
+  using ValuedIndex = std::pair<int /*index*/, int64 /*value*/>;
+  std::vector<ValuedIndex> neighbors(var_size);
   for (int i = 0; i < var_size; ++i) {
     const int index = i + var_min;
-    neighbors[i] = index;
-    row_data[i] = evaluator_(row, index, path);
+    neighbors[i] = std::make_pair(index, evaluator_(row, index, path));
   }
-
   if (var_size > size_) {
-    int start = 0;
-    int end = var_size;
-    int size = size_;
-    while (size > 0) {
-      int index = (end - start) / 2;
-      Pivot(start, end, neighbors.get(), row_data.get(), &index);
-      if (index - start >= size) {
-        end = index;
-      } else {
-        start = index + 1;
-        size -= start;
-      }
-    }
+    std::nth_element(neighbors.begin(), neighbors.begin() + size_ - 1,
+                     neighbors.end(),
+                     [](const ValuedIndex& a, const ValuedIndex& b) {
+                       return a.second < b.second;
+                     });
   }
 
   // Setup global neighbor matrix for row row_index
   for (int i = 0; i < std::min(size_, var_size); ++i) {
-    neighbors_[row].push_back(neighbors[i]);
-    std::sort(neighbors_[row].begin(), neighbors_[row].end());
+    neighbors_[row].push_back(neighbors[i].first);
   }
-}
-
-void NearestNeighbors::Pivot(int start, int end, int* neighbors, int64* row,
-                             int* index) {
-  Swap(start, *index, neighbors, row);
-  int j = start;
-  for (int i = start + 1; i < end; ++i) {
-    if (row[i] < row[j]) {
-      Swap(j, i, neighbors, row);
-      ++j;
-      Swap(i, j, neighbors, row);
-    }
-  }
-  *index = j;
-}
-
-void NearestNeighbors::Swap(int i, int j, int* neighbors, int64* row) {
-  const int64 row_i = row[i];
-  const int neighbor_i = neighbors[i];
-  row[i] = row[j];
-  neighbors[i] = neighbors[j];
-  row[j] = row_i;
-  neighbors[j] = neighbor_i;
+  std::sort(neighbors_[row].begin(), neighbors_[row].end());
 }
 
 class LinKernighan : public PathOperator {
@@ -1650,7 +1615,7 @@ LocalSearchOperator* Solver::MakeNeighborhoodLimit(
 namespace {
 class CompoundOperator : public LocalSearchOperator {
  public:
-  CompoundOperator(const std::vector<LocalSearchOperator*>& operators,
+  CompoundOperator(std::vector<LocalSearchOperator*> operators,
                    std::function<int64(int, int)> evaluator);
   ~CompoundOperator() override {}
   void Start(const Assignment* assignment) override;
@@ -1680,53 +1645,39 @@ class CompoundOperator : public LocalSearchOperator {
   };
 
   int64 index_;
-  int64 size_;
-  std::unique_ptr<LocalSearchOperator* []> operators_;
-  std::unique_ptr<int[]> operator_indices_;
+  std::vector<LocalSearchOperator*> operators_;
+  std::vector<int> operator_indices_;
   std::function<int64(int, int)> evaluator_;
   Bitset64<> started_;
   const Assignment* start_assignment_;
 };
 
-CompoundOperator::CompoundOperator(
-    const std::vector<LocalSearchOperator*>& operators,
-    std::function<int64(int, int)> evaluator)
+CompoundOperator::CompoundOperator(std::vector<LocalSearchOperator*> operators,
+                                   std::function<int64(int, int)> evaluator)
     : index_(0),
-      size_(0),
+      operators_(std::move(operators)),
       evaluator_(std::move(evaluator)),
-      started_(operators.size()),
+      started_(operators_.size()),
       start_assignment_(nullptr) {
-  for (int i = 0; i < operators.size(); ++i) {
-    if (operators[i] != nullptr) {
-      ++size_;
-    }
-  }
-  operators_.reset(new LocalSearchOperator*[size_]);
-  operator_indices_.reset(new int[size_]);
-  int index = 0;
-  for (int i = 0; i < operators.size(); ++i) {
-    if (operators[i] != nullptr) {
-      operators_[index] = operators[i];
-      operator_indices_[index] = index;
-      ++index;
-    }
-  }
+  operators_.erase(std::remove(operators_.begin(), operators_.end(), nullptr),
+                   operators_.end());
+  operator_indices_.resize(operators_.size());
+  std::iota(operator_indices_.begin(), operator_indices_.end(), 0);
 }
 
 void CompoundOperator::Start(const Assignment* assignment) {
   start_assignment_ = assignment;
   started_.ClearAll();
-  if (size_ > 0) {
+  if (operators_.size() > 0) {
     OperatorComparator comparator(evaluator_, operator_indices_[index_]);
-    std::sort(operator_indices_.get(), operator_indices_.get() + size_,
-              comparator);
+    std::sort(operator_indices_.begin(), operator_indices_.end(), comparator);
     index_ = 0;
   }
 }
 
 bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
                                         Assignment* deltadelta) {
-  if (size_ > 0) {
+  if (operators_.size() > 0) {
     do {
       // TODO(user): keep copy of delta in case MakeNextNeighbor
       // pollutes delta on a fail.
@@ -1739,7 +1690,7 @@ bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
         return true;
       }
       ++index_;
-      if (index_ == size_) {
+      if (index_ == operators_.size()) {
         index_ = 0;
       }
     } while (index_ != 0);
@@ -1788,10 +1739,8 @@ LocalSearchOperator* Solver::ConcatenateOperators(
 namespace {
 class RandomCompoundOperator : public LocalSearchOperator {
  public:
-  explicit RandomCompoundOperator(
-      const std::vector<LocalSearchOperator*>& operators);
-  RandomCompoundOperator(const std::vector<LocalSearchOperator*>& operators,
-                         int32 seed);
+  explicit RandomCompoundOperator(std::vector<LocalSearchOperator*> operators);
+  RandomCompoundOperator(std::vector<LocalSearchOperator*> operators, int32 seed);
   ~RandomCompoundOperator() override {}
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
@@ -1799,45 +1748,32 @@ class RandomCompoundOperator : public LocalSearchOperator {
   std::string DebugString() const override { return "RandomCompoundOperator"; }
 
  private:
-  const int size_;
   ACMRandom rand_;
-  std::unique_ptr<LocalSearchOperator* []> operators_;
+  const std::vector<LocalSearchOperator*> operators_;
 };
 
 void RandomCompoundOperator::Start(const Assignment* assignment) {
-  for (int i = 0; i < size_; ++i) {
-    operators_[i]->Start(assignment);
+  for (LocalSearchOperator* const op : operators_) {
+    op->Start(assignment);
   }
 }
 
 RandomCompoundOperator::RandomCompoundOperator(
-    const std::vector<LocalSearchOperator*>& operators)
-    : size_(operators.size()),
-      rand_(ACMRandom::HostnamePidTimeSeed()),
-      operators_(new LocalSearchOperator*[size_]) {
-  for (int i = 0; i < size_; ++i) {
-    operators_[i] = operators[i];
-  }
-}
+    std::vector<LocalSearchOperator*> operators)
+    : RandomCompoundOperator(std::move(operators),
+                             ACMRandom::HostnamePidTimeSeed()) {}
 
 RandomCompoundOperator::RandomCompoundOperator(
-    const std::vector<LocalSearchOperator*>& operators, int32 seed)
-    : size_(operators.size()),
-      rand_(seed),
-      operators_(new LocalSearchOperator*[size_]) {
-  for (int i = 0; i < size_; ++i) {
-    operators_[i] = operators[i];
-  }
-}
+    std::vector<LocalSearchOperator*> operators, int32 seed)
+    : rand_(seed), operators_(std::move(operators)) {}
 
 bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
                                               Assignment* deltadelta) {
-  std::vector<int> indices(size_);
-  for (int i = 0; i < size_; ++i) {
-    indices[i] = i;
-  }
+  const int size = operators_.size();
+  std::vector<int> indices(size);
+  std::iota(indices.begin(), indices.end(), 0);
   std::random_shuffle(indices.begin(), indices.end(), rand_);
-  for (int i = 0; i < size_; ++i) {
+  for (int i = 0; i < size; ++i) {
     if (operators_[indices[i]]->MakeNextNeighbor(delta, deltadelta)) {
       return true;
     }

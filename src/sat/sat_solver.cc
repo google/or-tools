@@ -1954,7 +1954,8 @@ int SatSolver::ComputeMaxTrailIndex(ClauseRef clause) const {
   SCOPED_TIME_STAT(&stats_);
   int trail_index = -1;
   for (const Literal literal : clause) {
-    trail_index = std::max(trail_index, trail_.Info(literal.Variable()).trail_index);
+    trail_index =
+        std::max(trail_index, trail_.Info(literal.Variable()).trail_index);
   }
   return trail_index;
 }
@@ -2211,7 +2212,8 @@ void SatSolver::ComputePBConflict(int max_trail_index,
       if (trail_.Assignment().LiteralIsTrue(conflict->GetLiteral(var))) {
         sum_for_le_level[level] += coeff;
       }
-      max_coeff_for_ge_level[level] = std::max(max_coeff_for_ge_level[level], coeff);
+      max_coeff_for_ge_level[level] =
+          std::max(max_coeff_for_ge_level[level], coeff);
     }
   }
 
@@ -2367,8 +2369,8 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // variables of the conflict here.
   for (VariableIndex var : is_marked_.PositionsSetAtLeastOnce()) {
     const int level = DecisionLevel(var);
-    min_trail_index_per_level_[level] =
-        std::min(min_trail_index_per_level_[level], trail_.Info(var).trail_index);
+    min_trail_index_per_level_[level] = std::min(
+        min_trail_index_per_level_[level], trail_.Info(var).trail_index);
   }
 
   // Remove the redundant variable from the conflict. That is the ones that can

@@ -127,13 +127,8 @@ ifeq ($(PLATFORM),LINUX)
   else
     ARCH  =
   endif
-  ifeq ($(UNIX_MONO_DIR),)
-    CSC = mono-csc
-    MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
-  else
-    CSC = $(UNIX_MONO_DIR)/bin/mcs
-    MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) $(UNIX_MONO_DIR)/bin/mono
-  endif
+  CSC = mcs
+  MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
 
   # This is needed to find libgflags.a
   DYNAMIC_GFLAGS_LNK = -Wl,-rpath $(UNIX_GFLAGS_DIR)/lib -L$(UNIX_GFLAGS_DIR)/lib -lgflags

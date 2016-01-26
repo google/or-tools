@@ -614,8 +614,8 @@ void GenericMaxFlow<Graph>::GlobalUpdate() {
           // Note(user): I haven't seen this anywhere in the literature.
           // TODO(user): Investigate more and maybe write a publication :)
           if (node_excess_[head] > 0) {
-            const FlowQuantity flow =
-                std::min(node_excess_[head], residual_arc_capacity_[opposite_arc]);
+            const FlowQuantity flow = std::min(
+                node_excess_[head], residual_arc_capacity_[opposite_arc]);
             PushFlow(flow, opposite_arc);
 
             // If the arc became saturated, it is no longer in the residual

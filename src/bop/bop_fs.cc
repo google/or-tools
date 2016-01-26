@@ -558,8 +558,10 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
         // Compute the new min.
         best_lp_objective =
             lp_model_.IsMaximizationProblem()
-                ? std::min(best_lp_objective, std::max(objective_true, objective_false))
-                : std::max(best_lp_objective, std::min(objective_true, objective_false));
+                ? std::min(best_lp_objective,
+                           std::max(objective_true, objective_false))
+                : std::max(best_lp_objective,
+                           std::min(objective_true, objective_false));
       }
     }
 

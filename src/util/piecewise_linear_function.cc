@@ -233,7 +233,9 @@ bool PiecewiseSegment::FindComparator(int64 point,
   return point == kint64min || point < segment.start_x();
 }
 
-void PiecewiseSegment::ExpandEnd(int64 end_x) { end_x_ = std::max(end_x_, end_x); }
+void PiecewiseSegment::ExpandEnd(int64 end_x) {
+  end_x_ = std::max(end_x_, end_x);
+}
 
 void PiecewiseSegment::AddConstantToX(int64 constant) {
   if (IsAtBounds(CapAdd(reference_x_, constant))) {

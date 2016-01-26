@@ -158,8 +158,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
     if (can_decrease.IsSet(col) && coeff > threshold) {
       if (variable_type[col] != VariableType::UPPER_AND_LOWER_BOUNDED) {
         if (-reduced_costs[col] > harris_ratio * coeff) continue;
-        harris_ratio =
-            std::min(harris_ratio, (-reduced_costs[col] + harris_tolerance) / coeff);
+        harris_ratio = std::min(
+            harris_ratio, (-reduced_costs[col] + harris_tolerance) / coeff);
         harris_ratio = std::max(0.0, harris_ratio);
       }
       breakpoints.push_back(ColWithRatio(col, -reduced_costs[col], coeff));
@@ -171,8 +171,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
     if (can_increase.IsSet(col) && coeff < -threshold) {
       if (variable_type[col] != VariableType::UPPER_AND_LOWER_BOUNDED) {
         if (reduced_costs[col] > harris_ratio * -coeff) continue;
-        harris_ratio =
-            std::min(harris_ratio, (reduced_costs[col] + harris_tolerance) / -coeff);
+        harris_ratio = std::min(
+            harris_ratio, (reduced_costs[col] + harris_tolerance) / -coeff);
         harris_ratio = std::max(0.0, harris_ratio);
       }
       breakpoints.push_back(ColWithRatio(col, reduced_costs[col], -coeff));
@@ -230,8 +230,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
     // Update harris_ratio (only if the variable cannot flip).
     if (!variable_can_flip) {
-      harris_ratio =
-          std::min(harris_ratio, top.ratio + harris_tolerance / top.coeff_magnitude);
+      harris_ratio = std::min(
+          harris_ratio, top.ratio + harris_tolerance / top.coeff_magnitude);
 
       // If the dual infeasibility is too high, the harris_ratio can be
       // negative. In this case we set it to 0.0, allowing any infeasible

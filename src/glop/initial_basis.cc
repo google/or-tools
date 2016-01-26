@@ -137,7 +137,8 @@ bool InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
   std::vector<ColIndex> residual_singleton_column;
   max_scaled_abs_cost_ = 0.0;
   for (ColIndex col(0); col < num_cols; ++col) {
-    max_scaled_abs_cost_ = std::max(max_scaled_abs_cost_, fabs(objective_[col]));
+    max_scaled_abs_cost_ =
+        std::max(max_scaled_abs_cost_, fabs(objective_[col]));
     if (residual_pattern.ColDegree(col) == 1) {
       residual_singleton_column.push_back(col);
     }
@@ -214,7 +215,8 @@ void InitialBasis::ComputeCandidates(ColIndex num_cols,
     if (variable_type_[col] != VariableType::FIXED_VARIABLE &&
         matrix_.column(col).num_entries() > 0) {
       candidates->push_back(col);
-      max_scaled_abs_cost_ = std::max(max_scaled_abs_cost_, fabs(objective_[col]));
+      max_scaled_abs_cost_ =
+          std::max(max_scaled_abs_cost_, fabs(objective_[col]));
     }
   }
   const Fractional kBixbyWeight = 1000.0;

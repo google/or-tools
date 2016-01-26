@@ -251,7 +251,7 @@ inline uint64 Hash1(int64 value) { return Hash1(static_cast<uint64>(value)); }
 inline uint64 Hash1(int value) { return Hash1(static_cast<uint32>(value)); }
 
 inline uint64 Hash1(void* const ptr) {
-#if defined(ARCH_K8) || defined(__powerpc64__)
+#if defined(ARCH_K8) || defined(__powerpc64__) || defined(__aarch64__)
   return Hash1(reinterpret_cast<uint64>(ptr));
 #else
   return Hash1(reinterpret_cast<uint32>(ptr));
@@ -913,7 +913,6 @@ class VarLocalSearchOperator : public LocalSearchOperator {
 
   // OnStart() should really be protected, but then SWIG doesn't see it. So we
   // make it public, but only subclasses should access to it (to override it).
-
  protected:
   void MarkChange(int64 index) {
     delta_changes_.Set(index);

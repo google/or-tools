@@ -33,6 +33,7 @@ DEFINE_INT_TYPE(VariableIndex, int);
 
 // Index of a literal (>= 0), see Literal below.
 DEFINE_INT_TYPE(LiteralIndex, int);
+const LiteralIndex kNoLiteralIndex(-1);
 
 // A literal is used to represent a variable or its negation. If it represents
 // the variable it is said to be positive. If it represent its negation, it is
@@ -164,10 +165,9 @@ class ClauseRef {
  public:
   ClauseRef() : begin_(nullptr), end_(nullptr) {}
   ClauseRef(Literal const* b, Literal const* e) : begin_(b), end_(e) {}
-
-  // Note that this can't be used on an empty vector. TODO(user): fix?
   explicit ClauseRef(const std::vector<Literal>& literals)
-      : begin_(&literals[0]), end_(&literals[0] + literals.size()) {}
+      : begin_(literals.empty() ? nullptr : &literals[0]),
+        end_(literals.empty() ? nullptr : &literals[0] + literals.size()) {}
 
   // For testing so this can be used with EXPECT_THAT().
   typedef Literal value_type;

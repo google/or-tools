@@ -82,6 +82,7 @@ class File {
 
   // Closes the file.
   bool Close();
+  util::Status Close(int flags);
 
   // Flushes buffer.
   bool Flush();

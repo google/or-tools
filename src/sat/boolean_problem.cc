@@ -230,8 +230,8 @@ void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
   const LinearObjective& objective = problem.objective();
   double max_weight = 0;
   for (int i = 0; i < objective.literals_size(); ++i) {
-    max_weight =
-        std::max(max_weight, fabs(static_cast<double>(objective.coefficients(i))));
+    max_weight = std::max(max_weight,
+                          fabs(static_cast<double>(objective.coefficients(i))));
   }
   for (int i = 0; i < objective.literals_size(); ++i) {
     const double weight =

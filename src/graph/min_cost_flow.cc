@@ -740,7 +740,7 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::UpdatePrices() {
       if (node_in_queue[node]) continue;
       max_potential_diff =
           std::max(max_potential_diff,
-              min_non_admissible_potential[node] - node_potential_[node]);
+                   min_non_admissible_potential[node] - node_potential_[node]);
       if (max_potential_diff == potential_delta) break;
     }
     DCHECK_LE(max_potential_diff, potential_delta);
@@ -823,7 +823,7 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Discharge(
         const bool head_active_before_push = IsActive(head);
         const FlowQuantity delta =
             std::min(node_excess_[node],
-                static_cast<FlowQuantity>(residual_arc_capacity_[arc]));
+                     static_cast<FlowQuantity>(residual_arc_capacity_[arc]));
         FastPushFlow(delta, arc, node);
         if (IsActive(head) && !head_active_before_push) {
           active_nodes_.push(head);

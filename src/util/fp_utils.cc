@@ -78,7 +78,8 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
   for (double x : input) {
     if (x == 0.0) continue;
     const double scaled = fabs(ldexp(x, factor_exponent));
-    *relative_error = std::max(*relative_error, fabs(round(scaled) / scaled - 1));
+    *relative_error =
+        std::max(*relative_error, fabs(round(scaled) / scaled - 1));
   }
 }
 

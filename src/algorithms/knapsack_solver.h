@@ -120,7 +120,10 @@ class KnapsackSolver {
     #if defined(USE_GLPK)
     KNAPSACK_MULTIDIMENSION_GLPK_MIP_SOLVER = 4,
     #endif  // USE_GLPK
-    KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER = 5
+    KNAPSACK_MULTIDIMENSION_BRANCH_AND_BOUND_SOLVER = 5,
+    #if defined(USE_SCIP)
+    KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER = 6,
+    #endif  // USE_SCIP
   };
 
   explicit KnapsackSolver(const std::string& solver_name);

@@ -161,8 +161,9 @@ void SatPresolver::AddClause(ClauseRef clause) {
   }
 
   const Literal max_literal = clause_ref.back();
-  const int required_size =
-      std::max(max_literal.Index().value(), max_literal.NegatedIndex().value()) + 1;
+  const int required_size = std::max(max_literal.Index().value(),
+                                     max_literal.NegatedIndex().value()) +
+                            1;
   if (required_size > literal_to_clauses_.size()) {
     literal_to_clauses_.resize(required_size);
     literal_to_clause_sizes_.resize(required_size);

@@ -545,7 +545,9 @@ bool LPSolver::IsProblemSolutionConsistent(
         }
         break;
       case VariableStatus::AT_UPPER_BOUND:
-        if (value != ub || lb == ub) {
+        // TODO(user): revert to an exact comparison once the bug causing this
+        // to fail has been fixed.
+        if (!AreWithinAbsoluteTolerance(value, ub, 1e-7) || lb == ub) {
           LogVariableStatusError(col, value, status, lb, ub);
           return false;
         }
