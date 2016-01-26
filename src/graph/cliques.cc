@@ -24,14 +24,7 @@
 #include "base/hash.h"
 
 namespace operations_research {
-
-template <typename NodeIndex>
-
-const double BronKerboschAlgorithm<
-    NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
-
 namespace {
-
 // Encapsulates graph->Run() to make all nodes self-connected.
 inline bool Connects(ResultCallback2<bool, int, int>* const graph, int i,
                      int j) {

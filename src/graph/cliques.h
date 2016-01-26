@@ -554,6 +554,9 @@ BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::Run() {
   return RunIterations(kint64max);
 }
 
+template <typename NodeIndex>
+const double BronKerboschAlgorithm<
+    NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GRAPH_CLIQUES_H_
