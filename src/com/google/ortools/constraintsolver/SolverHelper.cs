@@ -360,6 +360,9 @@ public partial class IntExpr : PropagationBaseObject {
   public static IntExpr operator/(IntExpr a, long v) {
     return a.solver().MakeDiv(a, v);
   }
+  public static IntExpr operator%(IntExpr a, long v) {
+    return a.solver().MakeModulo(a, v);
+  }
   public static IntExpr operator-(IntExpr a) {
     return a.solver().MakeOpposite(a);
   }
