@@ -175,7 +175,7 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %rename (NextWrapper) operations_research::DecisionBuilder::Next;
 
 // Rename rules on Decision;
-%rename (AcceptWrapper) operations_research::Decision::Accept;
+%rename (ApplyWrapper) operations_research::Decision::Apply;
 %rename (RefuteWrapper) operations_research::Decision::Refute;
 
 // Rename rule on SearchLimit

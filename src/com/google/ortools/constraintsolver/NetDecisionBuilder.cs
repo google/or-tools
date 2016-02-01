@@ -57,11 +57,11 @@ public class NetDecision : Decision
    * This method wraps the calls to Accept() and catches fail exceptions.
    * It currently catches all application exceptions.
    */
-  public override void AcceptWrapper(Solver solver)
+  public override void ApplyWrapper(Solver solver)
   {
     try
     {
-      Accept(solver);
+      Apply(solver);
     }
     catch (ApplicationException e)
     {
@@ -70,9 +70,9 @@ public class NetDecision : Decision
     }
   }
   /**
-   * This is the new method to subclass when defining a .Net decision's Accept().
+   * This is the new method to subclass when defining a .Net decision's Apply().
    */
-  public virtual void Accept(Solver solver)
+  public virtual void Apply(Solver solver)
   {
   }
   
