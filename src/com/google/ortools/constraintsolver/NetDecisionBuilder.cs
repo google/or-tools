@@ -51,6 +51,55 @@ public class NetDecisionBuilder : DecisionBuilder
   }
 }
 
+public class NetDecision : Decision
+{
+  /**
+   * This method wraps the calls to Accept() and catches fail exceptions.
+   * It currently catches all application exceptions.
+   */
+  public override void ApplyWrapper(Solver solver)
+  {
+    try
+    {
+      Apply(solver);
+    }
+    catch (ApplicationException e)
+    {
+      // TODO(lperron): Catch only fail exceptions.
+        solver.ShouldFail();
+    }
+  }
+  /**
+   * This is the new method to subclass when defining a .Net decision's Apply().
+   */
+  public virtual void Apply(Solver solver)
+  {
+  }
+  
+    /**
+   * This method wraps the calls to Refute() and catches fail exceptions.
+   * It currently catches all application exceptions.
+   */
+  public override void RefuteWrapper(Solver solver)
+  {
+    try
+    {
+      Refute(solver);
+    }
+    catch (ApplicationException e)
+    {
+      // TODO(lperron): Catch only fail exceptions.
+      solver.ShouldFail();
+    }
+  }
+  /**
+   * This is the new method to subclass when defining a .Net decision's Refute().
+   */
+  public virtual void Refute(Solver solver)
+  {
+  }
+  
+}
 public class NetDemon : Demon
 {
   /**
