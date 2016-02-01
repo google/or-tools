@@ -17,6 +17,7 @@
 #include "base/hash.h"
 #include <iterator>
 #include <memory>
+#include <numeric>
 #include <set>
 #include <string>
 #include <utility>
