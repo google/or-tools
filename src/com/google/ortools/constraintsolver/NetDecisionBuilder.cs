@@ -61,12 +61,12 @@ public class NetDecision : Decision
   {
     try
     {
-      return Accept(solver);
+      Accept(solver);
     }
     catch (ApplicationException e)
     {
       // TODO(lperron): Catch only fail exceptions.
-      return solver.ShouldFail();
+        solver.ShouldFail();
     }
   }
   /**
@@ -84,12 +84,12 @@ public class NetDecision : Decision
   {
     try
     {
-      return Refute(solver);
+      Refute(solver);
     }
     catch (ApplicationException e)
     {
       // TODO(lperron): Catch only fail exceptions.
-      return solver.ShouldFail();
+      solver.ShouldFail();
     }
   }
   /**
