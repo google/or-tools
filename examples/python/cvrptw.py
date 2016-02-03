@@ -352,7 +352,7 @@ class Customers():
                 tranit time from a to b.
         """
         def tranit_time_return(a, b):
-            return(self.distmat[a][b] / (speed_kmph / 60 ** 2))
+            return(self.distmat[a][b] / (speed_kmph * 1.0 / 60 ** 2))
 
         return tranit_time_return
 
