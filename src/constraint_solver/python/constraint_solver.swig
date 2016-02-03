@@ -32,12 +32,10 @@
 
 %include "base/base.swig"
 
+%include "util/python/proto.swig"
+
 // PY_CONVERT_HELPER_* macros.
 %include "constraint_solver/python/constraint_solver_helpers.swig"
-
-// Callback wrapping. See base/python/callbacks.swig.
-#define FATAL_CALLBACK_EXCEPTION
-%include "base/python/callbacks.swig"
 
 // std::function utilities.
 %include "util/python/functions.swig"
@@ -50,6 +48,15 @@
 // The absence of whitespace before 'swiglint' is mandatory.
 //swiglint: disable swigtype-name
 
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../constraint_solver.h" %}.
+namespace operations_research {
+class AssignmentProto;
+class ConstraintSolverParameters;
+class SearchLimitParameters;
+}  // namespace operations_research
+
 %{
 #include <setjmp.h>  // For FailureProtect. See below.
 
@@ -61,6 +68,9 @@ struct FailureProtect {
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
 #include "constraint_solver/python/pywrapcp_util.h"
+#include "constraint_solver/assignment.pb.h"
+#include "constraint_solver/search_limit.pb.h"
+#include "constraint_solver/solver_parameters.pb.h"
 %}
 
 // We need to fully support C++ inheritance, because it is heavily used by the
@@ -78,8 +88,6 @@ struct FailureProtect {
 //
 // See the occurrences of "director" in this file.
 %module(directors="1") operations_research
-#pragma SWIG nowarn=473
-
 // The %feature and %exception below let python exceptions that occur within
 // director method propagate to the user as they were originally. See
 // http://www.swig.org/Doc1.3/Python.html#Python_nn36 for example.
@@ -170,6 +178,11 @@ static void PyFunctionSolverToVoid(PyObject* pyfunc,
 // ============= Extensions ==============
 
 // Add display methods on BaseObject and Solver.
+%extend operations_research::BaseObject {
+  std::string __str__() {
+    return $self->DebugString();
+  }
+}
 %extend operations_research::Solver {
   std::string __str__() {
     return $self->DebugString();
@@ -268,6 +281,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
                            IntVar* const index) {
     return $self->MakeElement(values, index);
   }
+
 
   DecisionBuilder* VarEvalValStrPhase(
       const std::vector<IntVar*>& vars,
@@ -720,6 +734,8 @@ namespace operations_research {
 %unignore Solver::~Solver;
 %unignore Solver::AddConstraint;
 %unignore Solver::Solve;
+%unignore Solver::DefaultSolverParameters;
+%rename (Parameters) Solver::parameters;
 %unignore Solver::DemonPriority;
 %unignore Solver::DELAYED_PRIORITY;
 %unignore Solver::VAR_PRIORITY;
@@ -899,7 +915,7 @@ namespace operations_research {
 %rename (ConstantRestart) Solver::MakeConstantRestart;
 
 // Solver: Search Limits.
-%unignore Solver::SearchLimitProto;  // search_limit.proto
+%unignore Solver::SearchLimitParameters;  // search_limit.proto
 %rename (Limit) Solver::MakeLimit;
 %rename (TimeLimit) Solver::MakeTimeLimit;
 %rename (BranchesLimit) Solver::MakeBranchesLimit;
@@ -1153,38 +1169,47 @@ namespace operations_research {
 // - AssignmentElement
 // - SolutionPool
 
-// SolverParameters
-// Ignored:
-// - Constants:
-//   - kDefaultTrailCompression
-//   - kDefaultTrailBlockSize
-//   - kDefaultArraySplitSize
-//   - kDefaultNameStoring
-//   - kDefaultProfileLevel
-//   - kDefaultTraceLevel
-//   - kDefaultNameAllVariables
-%unignore SolverParameters;
-%unignore SolverParameters::SolverParameters;
+// ConstraintSolverParameters
+%unignore ConstraintSolverParameters;
+%unignore ConstraintSolverParameters::ConstraintSolverParameters;
+%unignore ConstraintSolverParameters::~ConstraintSolverParameters;
 
-// SolverParameters: Enums.
-%unignore SolverParameters::TrailCompression;
-%unignore SolverParameters::NO_COMPRESSION;
-%unignore SolverParameters::COMPRESS_WITH_ZLIB;
-%unignore SolverParameters::ProfileLevel;
-%unignore SolverParameters::NO_PROFILING;
-%unignore SolverParameters::NORMAL_PROFILING;
-%unignore SolverParameters::TraceLevel;
-%unignore SolverParameters::NO_TRACE;
-%unignore SolverParameters::NORMAL_TRACE;
+// ConstraintSolverParameters: Enums.
+%unignore ConstraintSolverParameters::TrailCompression;
+%unignore ConstraintSolverParameters::NO_COMPRESSION;
+%unignore ConstraintSolverParameters::COMPRESS_WITH_ZLIB;
 
-// SolverParameters: data members.
-%unignore SolverParameters::compress_trail;
-%unignore SolverParameters::trail_block_size;
-%unignore SolverParameters::array_split_size;
-%unignore SolverParameters::store_names;
-%unignore SolverParameters::profile_level;
-%unignore SolverParameters::trace_level;
-%unignore SolverParameters::name_all_variables;
+// ConstraintSolverParameters: methods.
+%unignore ConstraintSolverParameters::compress_trail;
+%unignore ConstraintSolverParameters::set_compress_trail;
+%unignore ConstraintSolverParameters::trail_block_size;
+%unignore ConstraintSolverParameters::set_trail_block_size;
+%unignore ConstraintSolverParameters::array_split_size;
+%unignore ConstraintSolverParameters::set_array_split_size;
+%unignore ConstraintSolverParameters::store_names;
+%unignore ConstraintSolverParameters::set_store_names;
+%unignore ConstraintSolverParameters::name_cast_variables;
+%unignore ConstraintSolverParameters::set_name_cast_variables;
+%unignore ConstraintSolverParameters::name_all_variables;
+%unignore ConstraintSolverParameters::set_name_all_variables;
+%unignore ConstraintSolverParameters::profile_propagation;
+%unignore ConstraintSolverParameters::set_profile_propagation;
+%unignore ConstraintSolverParameters::profile_file;
+%unignore ConstraintSolverParameters::set_profile_file;
+%unignore ConstraintSolverParameters::trace_propagation;
+%unignore ConstraintSolverParameters::set_trace_propagation;
+%unignore ConstraintSolverParameters::trace_search;
+%unignore ConstraintSolverParameters::set_trace_search;
+%unignore ConstraintSolverParameters::print_model;
+%unignore ConstraintSolverParameters::set_print_model;
+%unignore ConstraintSolverParameters::print_model_stats;
+%unignore ConstraintSolverParameters::set_print_model_stats;
+%unignore ConstraintSolverParameters::print_added_constraints;
+%unignore ConstraintSolverParameters::set_print_added_constraints;
+%unignore ConstraintSolverParameters::export_file;
+%unignore ConstraintSolverParameters::set_export_file;
+%unignore ConstraintSolverParameters::disable_solve;
+%unignore ConstraintSolverParameters::set_disable_solve;
 
 // DefaultPhaseParameters
 // Ignored:
@@ -1296,7 +1321,6 @@ namespace operations_research {
 %unignore Constraint::Constraint;
 %unignore Constraint::~Constraint;
 %unignore Constraint::Post;
-//%unignore Constraint::InitialPropagate;
 %rename (InitialPropagateWrapper) Constraint::InitialPropagate;
 %unignore Constraint::Var;
 %unignore Constraint::DebugString;
@@ -1872,14 +1896,25 @@ namespace operations_research {
 
 }  // namespace operations_research
 
+PY_PROTO_TYPEMAP(ortools.constraint_solver.assignment_pb2,
+                 AssignmentProto,
+                 operations_research::AssignmentProto)
+PY_PROTO_TYPEMAP(ortools.constraint_solver.solver_parameters_pb2,
+                 ConstraintSolverParameters,
+                 operations_research::ConstraintSolverParameters)
+PY_PROTO_TYPEMAP(ortools.constraint_solver_search_limit_pb2,
+                 SearchLimitParameters,
+                 operations_research::SearchLimitParameters)
+
 %include "constraint_solver/constraint_solver.h"
+
 
 // Define templates instantiation after wrapping.
 namespace operations_research {
 %rename (RevInteger) Rev<int64>;
 %rename (RevInteger) Rev<int64>::Rev;
-%unignore Rev<int64>::SetValue;
 %unignore Rev<int64>::Value;
+%unignore Rev<int64>::SetValue;
 %template(RevInteger) Rev<int64>;
 
 %rename (NumericalRevInteger) NumericalRev<int64>;
@@ -2011,9 +2046,9 @@ namespace operations_research {
 
 
 // BaseLns.
+%unignore BaseLns;
 %feature("director") BaseLns;
 %unignore BaseLns::BaseLns;
-%unignore BaseLns;
 %unignore BaseLns::~BaseLns;
 %unignore BaseLns::InitFragments;
 %unignore BaseLns::NextFragment;

@@ -16,8 +16,10 @@
 // and local search filters.
 // TODO(user): Move all existing routing search code here.
 
+#include <cstdlib>
 #include <map>
 #include <set>
+#include <utility>
 #include "base/small_map.h"
 #include "base/small_ordered_set.h"
 #include "constraint_solver/routing.h"
@@ -1388,9 +1390,7 @@ bool RoutingFilteredDecisionBuilder::InitializeRoutes() {
 
 void RoutingFilteredDecisionBuilder::MakeDisjunctionNodesUnperformed(
     int64 node) {
-  std::vector<int> alternates;
-  model()->GetDisjunctionIndicesFromIndex(node, &alternates);
-  for (const int alternate : alternates) {
+  for (const int alternate : model()->GetDisjunctionIndicesFromIndex(node)) {
     if (node != alternate) {
       SetValue(alternate, alternate);
     }
@@ -1758,7 +1758,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
 // the entries which are being kept and must be updated.
 #if defined(_MSC_VER)
   hash_set<std::pair<RoutingModel::NodePair, /*delivery_insert_after*/ int64>,
-           PairPairInt64Hasher> existing_insertions;
+           PairPairInt64Hasher>
+      existing_insertions;
 #else
   hash_set<std::pair<RoutingModel::NodePair, /*delivery_insert_after*/ int64>>
       existing_insertions;
@@ -1864,7 +1865,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
 // the entries which are being kept and must be updated.
 #if defined(_MSC_VER)
   hash_set<std::pair<RoutingModel::NodePair, /*pickup_insert_after*/ int64>,
-           PairPairInt64Hasher> existing_insertions;
+           PairPairInt64Hasher>
+      existing_insertions;
 #else
   hash_set<std::pair<RoutingModel::NodePair, /*pickup_insert_after*/ int64>>
       existing_insertions;
@@ -2514,5 +2516,267 @@ SavingsFilteredDecisionBuilder::ComputeSavings() const {
   }
   std::sort(savings.begin(), savings.end());
   return savings;
+}
+
+namespace {
+// The description is in routing.h:MakeGuidedSlackFinalizer
+class GuidedSlackFinalizer : public DecisionBuilder {
+ public:
+  GuidedSlackFinalizer(const RoutingDimension* dimension, RoutingModel* model,
+                       std::function<int64(int64)> initializer);
+  Decision* Next(Solver* solver) override;
+
+ private:
+  int64 SelectValue(int64 index);
+  int64 ChooseVariable();
+
+  const RoutingDimension* const dimension_;
+  RoutingModel* const model_;
+  const std::function<int64(int64)> initializer_;
+  RevArray<bool> is_initialized_;
+  std::vector<int64> initial_values_;
+  Rev<int64> current_index_;
+  Rev<int64> current_route_;
+  RevArray<int64> last_delta_used_;
+
+  DISALLOW_COPY_AND_ASSIGN(GuidedSlackFinalizer);
+};
+
+GuidedSlackFinalizer::GuidedSlackFinalizer(
+    const RoutingDimension* dimension, RoutingModel* model,
+    std::function<int64(int64)> initializer)
+    : dimension_(CHECK_NOTNULL(dimension)),
+      model_(CHECK_NOTNULL(model)),
+      initializer_(std::move(initializer)),
+      is_initialized_(dimension->slacks().size(), false),
+      initial_values_(dimension->slacks().size(), kint64min),
+      current_index_(model_->Start(0)),
+      current_route_(0),
+      last_delta_used_(dimension->slacks().size(), 0) {}
+
+Decision* GuidedSlackFinalizer::Next(Solver* solver) {
+  CHECK_EQ(solver, model_->solver());
+  const int node_idx = ChooseVariable();
+  CHECK(node_idx == -1 ||
+        (node_idx >= 0 && node_idx < dimension_->slacks().size()));
+  if (node_idx != -1) {
+    if (!is_initialized_[node_idx]) {
+      initial_values_[node_idx] = initializer_(node_idx);
+      is_initialized_.SetValue(solver, node_idx, true);
+    }
+    const int64 value = SelectValue(node_idx);
+    IntVar* const slack_variable = dimension_->SlackVar(node_idx);
+    return solver->MakeAssignVariableValue(slack_variable, value);
+  }
+  return nullptr;
+}
+
+int64 GuidedSlackFinalizer::SelectValue(int64 index) {
+  const IntVar* const slack_variable = dimension_->SlackVar(index);
+  const int64 center = initial_values_[index];
+  const int64 max_delta =
+      std::max(center - slack_variable->Min(), slack_variable->Max() - center) +
+      1;
+  int64 delta = last_delta_used_[index];
+
+  // The sequence of deltas is 0, 1, -1, 2, -2 ...
+  // Only the values inside the domain of variable are returned.
+  while (std::abs(delta) < max_delta &&
+         !slack_variable->Contains(center + delta)) {
+    if (delta > 0) {
+      delta = -delta;
+    } else {
+      delta = -delta + 1;
+    }
+  }
+  last_delta_used_.SetValue(model_->solver(), index, delta);
+  return center + delta;
+}
+
+int64 GuidedSlackFinalizer::ChooseVariable() {
+  int64 int_current_node = current_index_.Value();
+  int64 int_current_route = current_route_.Value();
+
+  while (int_current_route < model_->vehicles()) {
+    while (!model_->IsEnd(int_current_node) &&
+           dimension_->SlackVar(int_current_node)->Bound()) {
+      int_current_node = model_->NextVar(int_current_node)->Value();
+    }
+    if (!model_->IsEnd(int_current_node)) {
+      break;
+    }
+    int_current_route += 1;
+    if (int_current_route < model_->vehicles()) {
+      int_current_node = model_->Start(int_current_route);
+    }
+  }
+
+  CHECK(int_current_route == model_->vehicles() ||
+        !dimension_->SlackVar(int_current_node)->Bound());
+  current_index_.SetValue(model_->solver(), int_current_node);
+  current_route_.SetValue(model_->solver(), int_current_route);
+  if (int_current_route < model_->vehicles()) {
+    return int_current_node;
+  } else {
+    return -1;
+  }
+}
+}  // namespace
+
+DecisionBuilder* RoutingModel::MakeGuidedSlackFinalizer(
+    const RoutingDimension* dimension,
+    std::function<int64(int64)> initializer) {
+  return solver_->RevAlloc(
+      new GuidedSlackFinalizer(dimension, this, std::move(initializer)));
+}
+
+int64 RoutingDimension::ShortestTransitionSlack(int64 node) const {
+  CHECK_EQ(base_dimension_, this);
+  CHECK(!model_->IsEnd(node));
+  // Recall that the model is cumul[i+1] = cumul[i] + transit[i] + slack[i]. Our
+  // aim is to find a value for slack[i] such that cumul[i+1] + transit[i+1] is
+  // minimized.
+  const int64 next = model_->NextVar(node)->Value();
+  if (model_->IsEnd(next)) {
+    return SlackVar(node)->Min();
+  }
+  const int64 next_next = model_->NextVar(next)->Value();
+  const int64 serving_vehicle = model_->VehicleVar(node)->Value();
+  CHECK_EQ(serving_vehicle, model_->VehicleVar(next)->Value());
+  const RoutingModel::StateDependentTransit transit_from_next =
+      state_dependent_transit_evaluators_[serving_vehicle]->Run(next,
+                                                                next_next);
+  // We have that transit[i+1] is a function of cumul[i+1].
+  const int64 next_cumul_min = CumulVar(next)->Min();
+  const int64 next_cumul_max = CumulVar(next)->Max();
+  const int64 optimal_next_cumul =
+      transit_from_next.transit_plus_identity->RangeMinArgument(
+          next_cumul_min, next_cumul_max + 1);
+  // A few checks to make sure we're on the same page.
+  DCHECK_LE(next_cumul_min, optimal_next_cumul);
+  DCHECK_LE(optimal_next_cumul, next_cumul_max);
+  // optimal_next_cumul = cumul + transit + optimal_slack, so
+  // optimal_slack = optimal_next_cumul - cumul - transit.
+  // In the current implementation TransitVar(i) = transit[i] + slack[i], so we
+  // have to find the transit from the evaluators.
+  const int64 current_cumul = CumulVar(node)->Value();
+  const int64 current_state_independent_transit =
+      transit_evaluators_[serving_vehicle]->Run(node, next);
+  const int64 current_state_dependent_transit =
+      state_dependent_transit_evaluators_[serving_vehicle]
+          ->Run(node, next)
+          .transit->Query(current_cumul);
+  const int64 optimal_slack = optimal_next_cumul - current_cumul -
+                              current_state_independent_transit -
+                              current_state_dependent_transit;
+  CHECK_LE(SlackVar(node)->Min(), optimal_slack);
+  CHECK_LE(optimal_slack, SlackVar(node)->Max());
+  return optimal_slack;
+}
+
+namespace {
+class GreedyDescentLSOperator : public LocalSearchOperator {
+ public:
+  explicit GreedyDescentLSOperator(std::vector<IntVar*> variables);
+
+  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
+  void Start(const Assignment* assignment) override;
+
+ private:
+  int64 FindMaxDistanceToDomain(const Assignment* assignment);
+
+  const std::vector<IntVar*> variables_;
+  const Assignment* center_;
+  int64 current_step_;
+  // The deltas are returned in this order:
+  // (current_step_, 0, ... 0), (-current_step_, 0, ... 0),
+  // (0, current_step_, ... 0), (0, -current_step_, ... 0),
+  // ...
+  // (0, ... 0, current_step_), (0, ... 0, -current_step_).
+  // current_direction_ keeps track what was the last returned delta.
+  int64 current_direction_;
+
+  DISALLOW_COPY_AND_ASSIGN(GreedyDescentLSOperator);
+};
+
+GreedyDescentLSOperator::GreedyDescentLSOperator(std::vector<IntVar*> variables)
+    : variables_(std::move(variables)),
+      center_(nullptr),
+      current_step_(0),
+      current_direction_(0) {}
+
+bool GreedyDescentLSOperator::MakeNextNeighbor(Assignment* delta,
+                                               Assignment* /*deltadelta*/) {
+  static const int64 sings[] = {1, -1};
+  for (; 1 <= current_step_; current_step_ /= 2) {
+    for (; current_direction_ < 2 * variables_.size();) {
+      const int64 variable_idx = current_direction_ / 2;
+      IntVar* const variable = variables_[variable_idx];
+      const int64 sign_index = current_direction_ % 2;
+      const int64 sign = sings[sign_index];
+      const int64 offset = sign * current_step_;
+      const int64 new_value = center_->Value(variable) + offset;
+      ++current_direction_;
+      if (variable->Contains(new_value)) {
+        delta->Add(variable);
+        delta->SetValue(variable, new_value);
+        return true;
+      }
+    }
+    current_direction_ = 0;
+  }
+  return false;
+}
+
+void GreedyDescentLSOperator::Start(const Assignment* assignment) {
+  CHECK(assignment != nullptr);
+  current_step_ = FindMaxDistanceToDomain(assignment);
+  center_ = assignment;
+}
+
+int64 GreedyDescentLSOperator::FindMaxDistanceToDomain(
+    const Assignment* assignment) {
+  int64 result = kint64min;
+  for (const IntVar* const var : variables_) {
+    result = std::max(result, std::abs(var->Max() - assignment->Value(var)));
+    result = std::max(result, std::abs(var->Min() - assignment->Value(var)));
+  }
+  return result;
+}
+}  // namespace
+
+std::unique_ptr<LocalSearchOperator> RoutingModel::MakeGreedyDescentLSOperator(
+    std::vector<IntVar*> variables) {
+  return std::unique_ptr<LocalSearchOperator>(
+      new GreedyDescentLSOperator(std::move(variables)));
+}
+
+DecisionBuilder* RoutingModel::MakeSelfDependentDimensionFinalizer(
+    const RoutingDimension* dimension) {
+  CHECK(dimension != nullptr);
+  CHECK(dimension->base_dimension() == dimension);
+  std::function<int64(int64)> slack_guide = [dimension](int64 index) {
+    return dimension->ShortestTransitionSlack(index);
+  };
+  DecisionBuilder* const guided_finalizer =
+      MakeGuidedSlackFinalizer(dimension, slack_guide);
+  DecisionBuilder* const slacks_finalizer =
+      solver_->MakeSolveOnce(guided_finalizer);
+  std::vector<IntVar*> start_cumuls(vehicles_, nullptr);
+  for (int64 vehicle_idx = 0; vehicle_idx < vehicles_; ++vehicle_idx) {
+    start_cumuls[vehicle_idx] = dimension->CumulVar(starts_[vehicle_idx]);
+  }
+  LocalSearchOperator* const hill_climber =
+      solver_->RevAlloc(new GreedyDescentLSOperator(start_cumuls));
+  LocalSearchPhaseParameters* const parameters =
+      solver_->MakeLocalSearchPhaseParameters(hill_climber, slacks_finalizer);
+  Assignment* const first_solution = solver_->MakeAssignment();
+  first_solution->Add(start_cumuls);
+  for (IntVar* const cumul : start_cumuls) {
+    first_solution->SetValue(cumul, cumul->Min());
+  }
+  DecisionBuilder* const finalizer =
+      solver_->MakeLocalSearchPhase(first_solution, parameters);
+  return finalizer;
 }
 }  // namespace operations_research

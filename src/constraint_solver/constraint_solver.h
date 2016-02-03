@@ -80,8 +80,9 @@
 #include "base/timer.h"
 #include "base/map_util.h"
 #include "base/hash.h"
-#include "base/random.h"
+#include "constraint_solver/solver_parameters.pb.h"
 #include "util/tuple_set.h"
+#include "base/random.h"
 
 class File;
 
@@ -91,13 +92,13 @@ namespace operations_research {
 class Assignment;
 class AssignmentProto;
 class BaseObject;
-class CPArgumentProto;
-class CPConstraintProto;
-class CPIntegerExpressionProto;
-class CPIntervalVariableProto;
-class CPModelLoader;
-class CPModelProto;
-class CPSequenceVariableProto;
+class CpArgument;
+class CpConstraint;
+class CpIntegerExpression;
+class CpIntervalVariable;
+class CpModelLoader;
+class CpModel;
+class CpSequenceVariable;
 class CastConstraint;
 class Constraint;
 class Decision;
@@ -112,10 +113,10 @@ class ExpressionCache;
 class IntExpr;
 class IntTupleSet;
 class IntVar;
-class IntVarAssignmentProto;
+class IntVarAssignment;
 class IntVarElement;
 class IntervalVar;
-class IntervalVarAssignmentProto;
+class IntervalVarAssignment;
 class IntervalVarElement;
 class LocalSearchFilter;
 class LocalSearchOperator;
@@ -133,71 +134,19 @@ class RevBitMatrix;
 class RevBitSet;
 class Search;
 class SearchLimit;
-class SearchLimitProto;
+class SearchLimitParameters;
 class SearchMonitor;
 class SequenceVar;
-class SequenceVarAssignmentProto;
+class SequenceVarAssignment;
 class SolutionCollector;
 class SolutionPool;
 class Solver;
+class ConstraintSolverParameters;
 class SymmetryBreaker;
 struct StateInfo;
 struct Trail;
 template <class T>
 class SimpleRevFIFO;
-
-// This struct holds all parameters for the Solver object.
-// SolverParameters is only used by the Solver constructor to define solving
-// parameters such as the trail compression or the profile level.
-// Note this is for advanced users only.
-struct SolverParameters {
- public:
-  enum TrailCompression {
-    NO_COMPRESSION, COMPRESS_WITH_ZLIB
-  };
-
-  enum ProfileLevel { NO_PROFILING, NORMAL_PROFILING };
-
-  enum TraceLevel { NO_TRACE, NORMAL_TRACE };
-
-  static const TrailCompression kDefaultTrailCompression;
-  static const int kDefaultTrailBlockSize;
-  static const int kDefaultArraySplitSize;
-  static const bool kDefaultNameStoring;
-  static const ProfileLevel kDefaultProfileLevel;
-  static const TraceLevel kDefaultTraceLevel;
-  static const bool kDefaultNameAllVariables;
-
-  SolverParameters();
-
-  // This parameter indicates if the solver should compress the trail
-  // during the search. No compression means that the solver will be faster,
-  // but will use more memory.
-  TrailCompression compress_trail;
-
-  // This parameter indicates the default size of a block of the trail.
-  // Compression applies at the block level.
-  int trail_block_size;
-
-  // When a sum/min/max operation is applied on a large array, this
-  // array is recursively split into blocks of size 'array_split_size'.
-  int array_split_size;
-
-  // This parameters indicates if the solver should store the names of
-  // the objets it manages.
-  bool store_names;
-
-  // Support for profiling propagation. LIGHT supports only a reduced
-  // version of the summary. COMPLETE supports the full version of the
-  // summary, as well as the csv export.
-  ProfileLevel profile_level;
-
-  // Support for full trace of propagation.
-  TraceLevel trace_level;
-
-  // Should anonymous variables be given a name.
-  bool name_all_variables;
-};
 
 // This struct holds all parameters for the default search.
 // DefaultPhaseParameters is only used by Solver::MakeDefaultPhase methods.
@@ -817,24 +766,25 @@ class Solver {
   typedef std::function<void()> Closure;
 
 #ifndef SWIG
-  typedef std::function<IntExpr*(CPModelLoader*,
-                                 const CPIntegerExpressionProto&)>
+  typedef std::function<IntExpr*(CpModelLoader*, const CpIntegerExpression&)>
       IntegerExpressionBuilder;
-  typedef std::function<Constraint*(CPModelLoader*, const CPConstraintProto&)>
+  typedef std::function<Constraint*(CpModelLoader*, const CpConstraint&)>
       ConstraintBuilder;
-  typedef std::function<IntervalVar*(
-      CPModelLoader*, const CPIntervalVariableProto&)> IntervalVariableBuilder;
-  typedef std::function<SequenceVar*(
-      CPModelLoader*, const CPSequenceVariableProto&)> SequenceVariableBuilder;
+  typedef std::function<IntervalVar*(CpModelLoader*, const CpIntervalVariable&)>
+      IntervalVariableBuilder;
+  typedef std::function<SequenceVar*(CpModelLoader*, const CpSequenceVariable&)>
+      SequenceVariableBuilder;
 #endif  // SWIG
 
   // Solver API
   explicit Solver(const std::string& modelname);
-  Solver(const std::string& modelname, const SolverParameters& parameters);
+  Solver(const std::string& modelname, const ConstraintSolverParameters& parameters);
   ~Solver();
 
-  // Read-only Parameters.
-  const SolverParameters& parameters() const { return parameters_; }
+  // Stored Parameters.
+  ConstraintSolverParameters parameters() const { return parameters_; }
+  // Create a ConstraintSolverParameters proto with all the default values.
+  static ConstraintSolverParameters DefaultSolverParameters();
 
   // reversibility
 
@@ -1026,22 +976,22 @@ class Solver {
 
   // Exports the model to protobuf. This code will be called
   // from inside the solver during the start of the search.
-  void ExportModel(CPModelProto* const proto) const;
+  void ExportModel(CpModel* const proto) const;
   // Exports the model to protobuf. Search monitors are useful to pass
   // the objective and limits to the protobuf.
   void ExportModel(const std::vector<SearchMonitor*>& monitors,
-                   CPModelProto* const proto) const;
+                   CpModel* const proto) const;
   // Exports the model to protobuf. Search monitors are useful to pass
   // the objective and limits to the protobuf.
-  void ExportModel(const std::vector<SearchMonitor*>& monitors,
-                   CPModelProto* const proto, DecisionBuilder* const db) const;
+  void ExportModel(const std::vector<SearchMonitor*>& monitors, CpModel* const proto,
+                   DecisionBuilder* const db) const;
   // Loads the model into the solver, and returns true upon success.
-  bool LoadModel(const CPModelProto& proto);
+  bool LoadModel(const CpModel& proto);
   // Loads the model into the solver, appends search monitors to monitors,
   // and returns true upon success.
-  bool LoadModel(const CPModelProto& proto, std::vector<SearchMonitor*>* monitors);
+  bool LoadModel(const CpModel& proto, std::vector<SearchMonitor*>* monitors);
   // Upgrades the model to the latest version.
-  static bool UpgradeModel(CPModelProto* const proto);
+  static bool UpgradeModel(CpModel* const proto);
 
 #if !defined(SWIG)
   // Collects decision variables.
@@ -2239,7 +2189,10 @@ class Solver {
                          int64 solutions, bool smart_time_check,
                          bool cumulative);
   // Creates a search limit from its protobuf description
-  SearchLimit* MakeLimit(const SearchLimitProto& proto);
+  SearchLimit* MakeLimit(const SearchLimitParameters& proto);
+
+  // Creates a search limit proto containing default values.
+  SearchLimitParameters MakeDefaultSearchLimitParameters() const;
 
   // Creates a search limit that is reached when either of the underlying limit
   // is reached. That is, the returned limit is more stringent than both
@@ -2845,7 +2798,7 @@ class Solver {
 
   // Exports the profiling information in a human readable overview.
   // The parameter profile_level used to create the solver must be
-  // different from NO_PROFILING.
+  // set to true.
   void ExportProfilingOverview(const std::string& filename);
 
   // Returns true whether the current search has been
@@ -2925,12 +2878,13 @@ class Solver {
   friend class SearchMonitor;
   friend class SearchLimit;
 
-#ifndef SWIG
+#if !defined(SWIG)
   friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
   template <class>
   friend class SimpleRevFIFO;
   template <class K, class V>
   friend class RevImmutableMultiMap;
+
   // Returns true if expr represents either boolean_var or 1 -
   // boolean_var.  In that case, it fills sub_var and is_negated to be
   // true if the expression is 1 - boolean_var -- equivalent to
@@ -3059,7 +3013,7 @@ class Solver {
                      IntExpr** const right);
 
   const std::string name_;
-  const SolverParameters parameters_;
+  const ConstraintSolverParameters parameters_;
   hash_map<const PropagationBaseObject*, std::string> propagation_object_names_;
   hash_map<const PropagationBaseObject*, IntegerCastInfo> cast_information_;
   hash_set<const Constraint*> cast_constraints_;
@@ -4598,8 +4552,8 @@ class IntVarElement : public AssignmentElement {
       var_->SetRange(min_, max_);
     }
   }
-  void LoadFromProto(const IntVarAssignmentProto& int_var_assignment_proto);
-  void WriteToProto(IntVarAssignmentProto* int_var_assignment_proto) const;
+  void LoadFromProto(const IntVarAssignment& int_var_assignment_proto);
+  void WriteToProto(IntVarAssignment* int_var_assignment_proto) const;
 
   int64 Min() const { return min_; }
   void SetMin(int64 m) { min_ = m; }
@@ -4645,9 +4599,8 @@ class IntervalVarElement : public AssignmentElement {
   void Store();
   void Restore();
   void LoadFromProto(
-      const IntervalVarAssignmentProto& interval_var_assignment_proto);
-  void WriteToProto(
-      IntervalVarAssignmentProto* interval_var_assignment_proto) const;
+      const IntervalVarAssignment& interval_var_assignment_proto);
+  void WriteToProto(IntervalVarAssignment* interval_var_assignment_proto) const;
 
   int64 StartMin() const { return start_min_; }
   int64 StartMax() const { return start_max_; }
@@ -4757,9 +4710,8 @@ class SequenceVarElement : public AssignmentElement {
   void Store();
   void Restore();
   void LoadFromProto(
-      const SequenceVarAssignmentProto& sequence_var_assignment_proto);
-  void WriteToProto(
-      SequenceVarAssignmentProto* sequence_var_assignment_proto) const;
+      const SequenceVarAssignment& sequence_var_assignment_proto);
+  void WriteToProto(SequenceVarAssignment* sequence_var_assignment_proto) const;
 
   const std::vector<int>& ForwardSequence() const;
   const std::vector<int>& BackwardSequence() const;

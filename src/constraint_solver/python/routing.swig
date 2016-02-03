@@ -15,15 +15,22 @@
 
 %include "constraint_solver/python/constraint_solver.swig"
 
+// TODO(user): remove this when we no longer use callbacks in the routing.
+#define FATAL_CALLBACK_EXCEPTION
+%include "base/python/callbacks.swig"
+
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../routing.h" %}.
+namespace operations_research {
+class RoutingModelParameters;
+class RoutingSearchParameters;
+}  // namespace operations_research
+
 // Include the file we want to wrap a first time.
 %{
 #include "constraint_solver/routing.h"
 %}
-
-// See ./constraint_solver_helpers.swig.
-//PY_CONVERT_HELPER_PTR(SearchMonitor);
-//PY_CONVERT_HELPER_PTR(IntervalVar);
-//PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
 
 // Convert RoutingModel::NodeIndex to (32-bit signed) integers.
 %typemap(in) operations_research::RoutingModel::NodeIndex {
@@ -170,9 +177,16 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
                           const std::string& name) {
     DCHECK_EQ(values.size(), $self->nodes());
     $self->AddVectorDimension(values.data(), capacity,
-                             fix_start_cumul_to_zero, name);
+                              fix_start_cumul_to_zero, name);
   }
 }
+
+PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
+                 RoutingModelParameters,
+                 operations_research::RoutingModelParameters)
+PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
+                 RoutingSearchParameters,
+                 operations_research::RoutingSearchParameters)
 
 %ignore operations_research::RoutingModel::WrapIndexEvaluator(
     Solver::IndexEvaluator2* evaluator);
@@ -180,6 +194,11 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
 %ignore operations_research::RoutingModel::RoutingModel(
     int nodes, int vehicles,
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+
+%ignore operations_research::RoutingModel::RoutingModel(
+    int nodes, int vehicles,
+    const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end,
+    const RoutingModelParameters& parameters);
 
 // Wrap cp includes
 %include "constraint_solver/routing.h"

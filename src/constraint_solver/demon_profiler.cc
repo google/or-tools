@@ -260,10 +260,10 @@ class DemonProfiler : public PropagationMonitor {
         "  --- Demon: %s\n             invocations=%" GG_LL_FORMAT
         "d, failures=%" GG_LL_FORMAT "d, total runtime=%" GG_LL_FORMAT
         "d us, [average=%.2lf, median=%.2lf, stddev=%.2lf]\n";
-    File* const file = File::Open(filename, "w");
+    File* file;
     const std::string model =
         StringPrintf("Model %s:\n", solver->model_name().c_str());
-    if (file) {
+    if (file::Open(filename, "w", &file, file::Defaults()).ok()) {
       file::WriteString(file, model, file::Defaults()).IgnoreError();
       std::vector<Container> to_sort;
       for (hash_map<const Constraint*, ConstraintRuns*>::const_iterator it =
@@ -319,7 +319,7 @@ class DemonProfiler : public PropagationMonitor {
         }
       }
     }
-    file->Close();
+    file->Close(file::Defaults()).IgnoreError();
   }
 
   // Export Information

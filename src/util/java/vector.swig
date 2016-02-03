@@ -89,9 +89,9 @@
   }
 %}
 %typemap(out) std::vector<CType> %{
-  $result = jenv->New ## JavaTypeName ## Array($1.size());
-  jenv->Set ## JavaTypeName ## ArrayRegion(
-      $result, 0, $1.size(), reinterpret_cast<j ## JavaType*>(&($1)[0]));
+  const std::vector<CType>& vec = $1;
+  $result = jenv->New ## JavaTypeName ## Array(vec.size());
+      jenv->Set ## JavaTypeName ## ArrayRegion($result, 0, vec.size(), vec.data());
 %}
 %typemap(javaout) std::vector<CType> {
   return $jnicall;

@@ -47,7 +47,7 @@ class TreeArrayConstraint : public Constraint {
       : Constraint(solver),
         vars_(vars),
         target_var_(target_var),
-        block_size_(solver->parameters().array_split_size) {
+        block_size_(solver->parameters().array_split_size()) {
     std::vector<int> lengths;
     lengths.push_back(vars_.size());
     while (lengths.back() > 1) {

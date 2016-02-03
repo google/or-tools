@@ -143,6 +143,18 @@ bool File::Open() const { return f_ != NULL; }
 void File::Init() {}
 
 namespace file {
+util::Status Open(const std::string& filename, const std::string& mode,
+                  File** f, int flags) {
+  if (flags == Defaults()) {
+    *f = File::Open(filename, mode.c_str());
+    if (*f != nullptr) {
+      return util::Status::OK;
+    }
+  }
+  return util::Status(util::error::INVALID_ARGUMENT,
+                      StrCat("Could not open '", filename, "'"));
+}
+
 util::Status GetContents(const std::string& filename, std::string* output, int flags) {
   if (flags == Defaults()) {
     File* file = File::Open(filename, "r");

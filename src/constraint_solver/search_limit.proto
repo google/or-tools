@@ -14,18 +14,21 @@
 //
 // This file contains a protocol buffer definition for search limits.
 
-syntax = "proto2";
-
+syntax = "proto3";
+option java_package = "com.google.ortools.constraintsolver";
+option java_multiple_files = true;
+option java_outer_classname = "SearchLimitProtobuf";
+option csharp_namespace = "Google.OrTools.ConstraintSolver";
 
 package operations_research;
 
 // A search limit
 // The default values for int64 fields is the maxima value, i.e., 2^63-1
-message SearchLimitProto {
-  optional int64 time = 1 [default = 9223372036854775807];
-  optional int64 branches = 2 [default = 9223372036854775807];
-  optional int64 failures = 3 [default = 9223372036854775807];
-  optional int64 solutions = 4 [default = 9223372036854775807];
-  optional bool smart_time_check = 5 [default = false];
-  optional bool cumulative = 6 [default = false];
+message SearchLimitParameters {
+  int64 time = 1;
+  int64 branches = 2;
+  int64 failures = 3;
+  int64 solutions = 4;
+  bool smart_time_check = 5;
+  bool cumulative = 6;
 };

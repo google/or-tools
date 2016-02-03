@@ -12,54 +12,54 @@
 // limitations under the License.
 
 
-syntax = "proto2";
+syntax = "proto3";
 
 package operations_research;
 
 // Storage for IntVars.
-message IntVarAssignmentProto {
-  optional string var_id = 1;
-  optional int64 min = 2;
-  optional int64 max = 3;  // if undefined -> == min.
-  optional bool active = 4 [default = true];
+message IntVarAssignment {
+  string var_id = 1;
+  int64 min = 2;
+  int64 max = 3;
+  bool active = 4;
 }
 
 // Storage for IntervalVars.
-message IntervalVarAssignmentProto {
-  optional string var_id = 1;
-  optional int64 start_min = 2;
-  optional int64 start_max = 3;  // if undefined -> == start_min.
-  optional int64 duration_min = 4;
-  optional int64 duration_max = 5;  // if undefined -> == duration_min.
-  optional int64 end_min = 6;
-  optional int64 end_max = 7;  // if undefined -> == end_min.
-  optional int64 performed_min = 8;
-  optional int64 performed_max = 9;  // if undefined -> performed_min.
-  optional bool active = 10 [default = true];
+message IntervalVarAssignment {
+  string var_id = 1;
+  int64 start_min = 2;
+  int64 start_max = 3;
+  int64 duration_min = 4;
+  int64 duration_max = 5;
+  int64 end_min = 6;
+  int64 end_max = 7;
+  int64 performed_min = 8;
+  int64 performed_max = 9;
+  bool active = 10;
 }
 
 // Storage for SequenceVars.
-message SequenceVarAssignmentProto {
-  optional string var_id = 1;
+message SequenceVarAssignment {
+  string var_id = 1;
   repeated int32 forward_sequence = 2;
   repeated int32 backward_sequence = 3;
   repeated int32 unperformed = 4;
-  optional bool active = 5 [default = true];
+  bool active = 5;
 }
 
-// This optional message indicates how the assignment was produced.
+// This message indicates how the assignment was produced.
 message WorkerInfo {
-  optional int32 worker_id = 1;
-  optional string bns = 2;
+  int32 worker_id = 1;
+  string bns = 2;
 }
 
 // Global container for all assignment variables and objective
 message AssignmentProto {
-  repeated IntVarAssignmentProto int_var_assignment = 1;
-  repeated IntervalVarAssignmentProto interval_var_assignment = 2;
-  repeated SequenceVarAssignmentProto sequence_var_assignment = 6;
-  optional IntVarAssignmentProto objective = 3;
-  optional WorkerInfo worker_info = 4;
-  optional bool is_valid = 5 [default = true];
+  repeated IntVarAssignment int_var_assignment = 1;
+  repeated IntervalVarAssignment interval_var_assignment = 2;
+  repeated SequenceVarAssignment sequence_var_assignment = 6;
+  IntVarAssignment objective = 3;
+  WorkerInfo worker_info = 4;
+  bool is_valid = 5;
 }
 

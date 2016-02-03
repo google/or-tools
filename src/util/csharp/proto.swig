@@ -46,57 +46,62 @@
 // @param CSharpProtoType the corresponding fully qualified C# protocol message
 //        type
 // @param param_name the parameter name
-// @param deleteCppReturn indicates that the resulting object is a native
-// (java, c#, python) object, and thus the C++ proto can be safely deleted
-// after the conversion.
 %define PROTO_INPUT(CppProtoType, CSharpProtoType, param_name)
-%typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, char*"
+%typemap(ctype)  PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, uint8*"
 %typemap(imtype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "int proto_size, byte[]"
 %typemap(cstype) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "CSharpProtoType"
-%typemap(csin)   PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.GetByteArrayLength(), $csinput.ToByteArray()"
-%typemap(in)     PROTO_TYPE* INPUT (CppProtoType temp), PROTO_TYPE& INPUT (CppProtoType temp) {
-  int proto_size = 0;
-  std::unique_ptr<char[]> proto_buffer($input);
-  bool parsed_ok = temp.ParseFromArray(proto_buffer.get(), proto_size);
+%typemap(csin)   PROTO_TYPE* INPUT, PROTO_TYPE& INPUT "$csinput.CalculateSize(), ProtoHelper.ProtoToByteArray($csinput)"
+%typemap(in)     PROTO_TYPE* INPUT, PROTO_TYPE& INPUT {
+  $1 = new CppProtoType;
+  bool parsed_ok = $1->ParseFromArray($input, proto_size);
   if (!parsed_ok) {
     SWIG_CSharpSetPendingException(
         SWIG_CSharpSystemException,
         "Unable to parse CppProtoType protocol message.");
   }
-  $1 = &temp;
 }
-
+%typemap(freearg) PROTO_TYPE* INPUT, PROTO_TYPE& INPUT {
+  delete $1;
+ }
 %apply PROTO_TYPE& INPUT { const CppProtoType& param_name }
 %apply PROTO_TYPE& INPUT { CppProtoType& param_name }
 %apply PROTO_TYPE* INPUT { const CppProtoType* param_name }
 %apply PROTO_TYPE* INPUT { CppProtoType* param_name }
-
 %enddef // end PROTO_INPUT
 
-%define PROTO2_RETURN(CppProtoType, CSharpProtoType, deleteCppReturn)
-%typemap(ctype)  CppProtoType* "char*"
-%typemap(imtype) CppProtoType* "byte[]"
-%typemap(cstype) CppProtoType* "CSharpProtoType"
-%typemap(csout)  CppProtoType* {
-  byte[] buf = $imcall;
-  if (buf == null || buf.Length == 0) {
-    return null;
-  }
+%define PROTO2_RETURN(CppProtoType, CSharpProtoType)
+%typemap(ctype)  CppProtoType "uint8*"
+%typemap(imtype) CppProtoType "System.IntPtr"
+%typemap(cstype) CppProtoType "CSharpProtoType"
+%typemap(csout)  CppProtoType {
+  byte[] tmp = new byte[4];
+  System.IntPtr data = $imcall;
+  System.Runtime.InteropServices.Marshal.Copy(data, tmp, 0, 4);
+  int size = Convert.ToInt32(tmp[0]) +
+      Convert.ToInt32(tmp[1]) * 0xFF +
+      Convert.ToInt32(tmp[2]) * 0xFFFF +
+      Convert.ToInt32(tmp[3]) * 0xFFFFFF;
+  byte[] buf = new byte[size + 4];
+  System.Runtime.InteropServices.Marshal.Copy(data, buf, 0, size + 4);
+  // TODO(user): delete the C++ buffer.
   try {
-    return CSharpProtoType.ParseFrom(buf);
+    Google.Protobuf.CodedInputStream input =
+        new Google.Protobuf.CodedInputStream(buf, 4, size);
+    CSharpProtoType proto = new CSharpProtoType();
+    proto.MergeFrom(input);
+    return proto;
   } catch (Google.Protobuf.InvalidProtocolBufferException e) {
     throw new SystemException(
         "Unable to parse CSharpProtoType protocol message.");
   }
 }
-%typemap(out) CppProtoType* {
-  std::unique_ptr<char[]> buf(new char[$1->ByteSize()]);
-  $1->SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
-  $result = buf.get();
-  if (deleteCppReturn) {
-    // To prevent a memory leak.
-    delete $1;
-    $1 = NULL;
-  }
+%typemap(out) CppProtoType {
+  const int size = $1.ByteSize();
+  $result = new uint8[size + 4];
+  $1.SerializeWithCachedSizesToArray($result + 4);
+  $result[0] = size & 0xFF;
+  $result[1] = (size << 8) & 0xFF;
+  $result[2] = (size << 16) & 0xFF;
+  $result[3] = (size << 24) & 0xFF;
 }
-%enddef // end PROTO2_RETURN_AND_DELETE
+%enddef // end PROTO2_RETURN

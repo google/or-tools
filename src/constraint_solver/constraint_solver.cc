@@ -39,20 +39,21 @@
 #include "constraint_solver/model.pb.h"
 #include "util/tuple_set.h"
 
+// These flags are used to set the fields in the DefaultSolverParameters proto.
 DEFINE_bool(cp_trace_propagation, false,
             "Trace propagation events (constraint and demon executions,"
             " variable modifications).");
 DEFINE_bool(cp_trace_search, false, "Trace search events");
-DEFINE_bool(cp_show_constraints, false,
+DEFINE_bool(cp_print_added_constraints, false,
             "show all constraints added to the solver.");
 DEFINE_bool(cp_print_model, false,
             "use PrintModelVisitor on model before solving.");
 DEFINE_bool(cp_model_stats, false,
             "use StatisticsModelVisitor on model before solving.");
-DEFINE_string(cp_export_file, "", "Export model to file using CPModelProto.");
-DEFINE_bool(cp_no_solve, false, "Force failure at the beginning of a search.");
+DEFINE_string(cp_export_file, "", "Export model to file using CpModel.");
+DEFINE_bool(cp_disable_solve, false,
+            "Force failure at the beginning of a search.");
 DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
-DEFINE_bool(cp_verbose_fail, false, "Verbose output when failing.");
 DEFINE_bool(cp_name_variables, false, "Force all variables to have names.");
 DEFINE_bool(cp_name_cast_variables, false,
             "Name variables casted from expressions");
@@ -65,16 +66,27 @@ void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
 namespace operations_research {
 
-// ----- SolverParameters -----
+// ----- ConstraintSolverParameters -----
 
-SolverParameters::SolverParameters()
-    : compress_trail(kDefaultTrailCompression),
-      trail_block_size(kDefaultTrailBlockSize),
-      array_split_size(kDefaultArraySplitSize),
-      store_names(kDefaultNameStoring),
-      profile_level(kDefaultProfileLevel),
-      trace_level(kDefaultTraceLevel),
-      name_all_variables(kDefaultNameAllVariables) {}
+ConstraintSolverParameters Solver::DefaultSolverParameters() {
+  ConstraintSolverParameters params;
+  params.set_compress_trail(ConstraintSolverParameters::NO_COMPRESSION);
+  params.set_trail_block_size(8000);
+  params.set_array_split_size(16);
+  params.set_store_names(true);
+  params.set_profile_propagation(!FLAGS_cp_profile_file.empty());
+  params.set_trace_propagation(FLAGS_cp_trace_propagation);
+  params.set_trace_search(FLAGS_cp_trace_search);
+  params.set_name_all_variables(FLAGS_cp_name_variables);
+  params.set_profile_file(FLAGS_cp_profile_file);
+  params.set_print_model(FLAGS_cp_print_model);
+  params.set_print_model_stats(FLAGS_cp_model_stats);
+  params.set_export_file(FLAGS_cp_export_file);
+  params.set_disable_solve(FLAGS_cp_disable_solve);
+  params.set_name_cast_variables(FLAGS_cp_name_cast_variables);
+  params.set_print_added_constraints(FLAGS_cp_print_added_constraints);
+  return params;
+}
 
 // ----- Forward Declarations and Profiling Support -----
 extern DemonProfiler* BuildDemonProfiler(Solver* const solver);
@@ -89,17 +101,16 @@ bool Solver::InstrumentsDemons() const {
 }
 
 bool Solver::IsProfilingEnabled() const {
-  return parameters_.profile_level != SolverParameters::NO_PROFILING ||
-         !FLAGS_cp_profile_file.empty();
+  return parameters_.profile_propagation() ||
+         !parameters_.profile_file().empty();
 }
 
 bool Solver::InstrumentsVariables() const {
-  return parameters_.trace_level != SolverParameters::NO_TRACE ||
-         FLAGS_cp_trace_propagation;
+  return parameters_.trace_propagation();
 }
 
 bool Solver::NameAllVariables() const {
-  return parameters_.name_all_variables || FLAGS_cp_name_variables;
+  return parameters_.name_all_variables();
 }
 
 // ------------------ Demon class ----------------
@@ -504,8 +515,9 @@ class ZlibTrailPacker : public TrailPacker<T> {
 template <class T>
 class CompressedTrail {
  public:
-  CompressedTrail(int block_size,
-                  SolverParameters::TrailCompression compression_level)
+  CompressedTrail(
+      int block_size,
+      ConstraintSolverParameters::TrailCompression compression_level)
       : block_size_(block_size),
         blocks_(nullptr),
         free_blocks_(nullptr),
@@ -515,14 +527,15 @@ class CompressedTrail {
         current_(0),
         size_(0) {
     switch (compression_level) {
-      case SolverParameters::NO_COMPRESSION: {
+      case ConstraintSolverParameters::NO_COMPRESSION: {
         packer_.reset(new NoCompressionTrailPacker<T>(block_size));
         break;
       }
-      case SolverParameters::COMPRESS_WITH_ZLIB: {
+      case ConstraintSolverParameters::COMPRESS_WITH_ZLIB: {
         packer_.reset(new ZlibTrailPacker<T>(block_size));
         break;
       }
+      default: { LOG(ERROR) << "Should not be here"; }
     }
 
     // We zero all memory used by addrval arrays.
@@ -647,7 +660,8 @@ struct Trail {
   std::vector<void*> rev_memory_;
   std::vector<void**> rev_memory_array_;
 
-  Trail(int block_size, SolverParameters::TrailCompression compression_level)
+  Trail(int block_size,
+        ConstraintSolverParameters::TrailCompression compression_level)
       : rev_ints_(block_size, compression_level),
         rev_int64s_(block_size, compression_level),
         rev_uint64s_(block_size, compression_level),
@@ -1307,7 +1321,7 @@ extern ModelCache* BuildModelCache(Solver* const solver);
 
 std::string Solver::model_name() const { return name_; }
 
-Solver::Solver(const std::string& name, const SolverParameters& parameters)
+Solver::Solver(const std::string& name, const ConstraintSolverParameters& parameters)
     : name_(name),
       parameters_(parameters),
       random_(ACMRandom::DeterministicSeed()),
@@ -1317,6 +1331,7 @@ Solver::Solver(const std::string& name, const SolverParameters& parameters)
 
 Solver::Solver(const std::string& name)
     : name_(name),
+      parameters_(DefaultSolverParameters()),
       random_(ACMRandom::DeterministicSeed()),
       demon_profiler_(BuildDemonProfiler(this)) {
   Init();
@@ -1325,7 +1340,7 @@ Solver::Solver(const std::string& name)
 void Solver::Init() {
   queue_.reset(new Queue(this));
   trail_.reset(
-      new Trail(parameters_.trail_block_size, parameters_.compress_trail));
+      new Trail(parameters_.trail_block_size(), parameters_.compress_trail()));
   state_ = OUTSIDE_SEARCH;
   branches_ = 0;
   fails_ = 0;
@@ -1378,16 +1393,6 @@ Solver::~Solver() {
   DeleteBuilders();
 }
 
-const SolverParameters::TrailCompression
-SolverParameters::kDefaultTrailCompression = SolverParameters::NO_COMPRESSION;
-const int SolverParameters::kDefaultTrailBlockSize = 8000;
-const int SolverParameters::kDefaultArraySplitSize = 16;
-const bool SolverParameters::kDefaultNameStoring = true;
-const SolverParameters::ProfileLevel SolverParameters::kDefaultProfileLevel =
-    SolverParameters::NO_PROFILING;
-const SolverParameters::TraceLevel SolverParameters::kDefaultTraceLevel =
-    SolverParameters::NO_TRACE;
-const bool SolverParameters::kDefaultNameAllVariables = false;
 
 std::string Solver::DebugString() const {
   std::string out = "Solver(name = \"" + name_ + "\", state = ";
@@ -1552,7 +1557,7 @@ void Solver::AddConstraint(Constraint* const c) {
     additional_constraints_list_.push_back(c);
     additional_constraints_parent_list_.push_back(constraint_parent);
   } else {
-    if (FLAGS_cp_show_constraints) {
+    if (parameters_.print_added_constraints()) {
       LOG(INFO) << c->DebugString();
     }
     constraints_list_.push_back(c);
@@ -1605,20 +1610,21 @@ void Solver::Accept(ModelVisitor* const visitor,
 void Solver::ProcessConstraints() {
   // Both constraints_list_ and additional_constraints_list_ are used in
   // a FIFO way.
-  if (FLAGS_cp_print_model) {
+  if (parameters_.print_model()) {
     ModelVisitor* const visitor = MakePrintModelVisitor();
     Accept(visitor);
   }
-  if (FLAGS_cp_model_stats) {
+  if (parameters_.print_model_stats()) {
     ModelVisitor* const visitor = MakeStatisticsModelVisitor();
     Accept(visitor);
   }
-  if (!FLAGS_cp_export_file.empty()) {
-    File* file = File::Open(FLAGS_cp_export_file, "wb");
-    if (file == nullptr) {
-      LOG(WARNING) << "Cannot open " << FLAGS_cp_export_file;
+  const std::string export_file = parameters_.export_file();
+  if (!export_file.empty()) {
+    File* file;
+    if (!file::Open(export_file, "wb", &file, file::Defaults()).ok()) {
+      LOG(WARNING) << "Cannot open " << export_file;
     } else {
-      CPModelProto export_proto;
+      CpModel export_proto;
       ExportModel(&export_proto);
       VLOG(1) << export_proto.DebugString();
       RecordWriter writer(file);
@@ -1627,7 +1633,7 @@ void Solver::ProcessConstraints() {
     }
   }
 
-  if (FLAGS_cp_no_solve) {
+  if (parameters_.disable_solve()) {
     LOG(INFO) << "Forcing early failure";
     Fail();
   }
@@ -1819,11 +1825,10 @@ void Solver::NewSearch(DecisionBuilder* const db,
     }
   } else {                   // Top level search
     print_trace_ = nullptr;  // Clears it first.
-    if (FLAGS_cp_trace_propagation ||
-        parameters_.trace_level != SolverParameters::NO_TRACE) {
+    if (parameters_.trace_propagation()) {
       print_trace_ = BuildPrintTrace(this);
       print_trace_->Install();
-    } else if (FLAGS_cp_trace_search) {
+    } else if (parameters_.trace_search()) {
       // This is useful to trace the exact behavior of the search.
       // The '######## ' prefix is the same as the progagation trace.
       // Search trace is subsumed by propagation trace, thus only one
@@ -2192,9 +2197,10 @@ void Solver::EndSearch() {
     // Restores the state.
     state_ = OUTSIDE_SEARCH;
     // Checks if we want to export the profile info.
-    if (!FLAGS_cp_profile_file.empty()) {
-      LOG(INFO) << "Exporting profile to " << FLAGS_cp_profile_file;
-      ExportProfilingOverview(FLAGS_cp_profile_file);
+    if (!parameters_.profile_file().empty()) {
+      const std::string& file_name = parameters_.profile_file();
+      LOG(INFO) << "Exporting profile to " << file_name;
+      ExportProfilingOverview(file_name);
     }
   } else {  // We clean the nested Search.
     delete search;
@@ -2366,7 +2372,7 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
   if (cast_info != nullptr && cast_info->expression != nullptr) {
     if (cast_info->expression->HasName()) {
       return StringPrintf("Var<%s>", cast_info->expression->name().c_str());
-    } else if (FLAGS_cp_name_cast_variables) {
+    } else if (parameters_.name_cast_variables()) {
       return StringPrintf("Var<%s>",
                           cast_info->expression->DebugString().c_str());
     } else {
@@ -2377,7 +2383,7 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
     }
   }
   const std::string base_name = object->BaseName();
-  if (FLAGS_cp_name_variables && !base_name.empty()) {
+  if (parameters_.name_all_variables() && !base_name.empty()) {
     const std::string new_name =
         StringPrintf("%s_%d", base_name.c_str(), anonymous_variable_index_++);
     propagation_object_names_[object] = new_name;
@@ -2387,7 +2393,7 @@ std::string Solver::GetName(const PropagationBaseObject* object) {
 }
 
 void Solver::SetName(const PropagationBaseObject* object, const std::string& name) {
-  if (parameters_.store_names &&
+  if (parameters_.store_names() &&
       GetName(object).compare(name) != 0) {  // in particular if name.empty()
     propagation_object_names_[object] = name;
   }
@@ -2396,7 +2402,7 @@ void Solver::SetName(const PropagationBaseObject* object, const std::string& nam
 bool Solver::HasName(const PropagationBaseObject* const object) const {
   return ContainsKey(propagation_object_names_,
                      const_cast<PropagationBaseObject*>(object)) ||
-         (!object->BaseName().empty() && FLAGS_cp_name_variables);
+         (!object->BaseName().empty() && parameters_.name_all_variables());
 }
 
 // ------------------ Useful Operators ------------------

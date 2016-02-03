@@ -64,7 +64,7 @@ ACLOCAL_TARGET = \
 SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
 
 # Main target.
-.PHONY: makefile_third_party missing_directories
+.PHONY: makefile_third_party missing_directories install_java_protobuf
 third_party: install_third_party makefile_third_party
 
 # Create missing directories
@@ -431,6 +431,16 @@ dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure: dependencies/archives/a
 
 dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/autoconf/autoconf-$(AUTOCONF_TAG).tar.gz
+
+# Install Java protobuf
+
+install_java_protobuf: dependencies/install/lib/protobuf.jar
+
+dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
+	  ../../../install/bin/protoc --java_out=src/main/java -I../src \
+	  ../src/google/protobuf/descriptor.proto
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/src/main/java && jar cvf ../../../../../../install/lib/protobuf.jar com/google/protobuf/*java
 
 # Install C# protobuf
 

@@ -460,6 +460,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/constraint_solver/sched_search.$O\
 	$(OBJ_DIR)/constraint_solver/search.$O\
 	$(OBJ_DIR)/constraint_solver/search_limit.pb.$O\
+	$(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O\
 	$(OBJ_DIR)/constraint_solver/table.$O\
 	$(OBJ_DIR)/constraint_solver/timetabling.$O\
 	$(OBJ_DIR)/constraint_solver/trace.$O\
@@ -470,7 +471,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 $(OBJ_DIR)/constraint_solver/alldiff_cst.$O:$(SRC_DIR)/constraint_solver/alldiff_cst.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/alldiff_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Salldiff_cst.$O
 
-$(OBJ_DIR)/constraint_solver/assignment.$O:$(SRC_DIR)/constraint_solver/assignment.cc $(GEN_DIR)/constraint_solver/assignment.pb.h
+$(OBJ_DIR)/constraint_solver/assignment.$O:$(SRC_DIR)/constraint_solver/assignment.cc $(GEN_DIR)/constraint_solver/assignment.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sassignment.$O
 
 $(OBJ_DIR)/constraint_solver/assignment.pb.$O:$(GEN_DIR)/constraint_solver/assignment.pb.cc
@@ -489,6 +490,16 @@ $(GEN_DIR)/constraint_solver/assignment.pb.h:$(GEN_DIR)/constraint_solver/assign
 
 $(OBJ_DIR)/constraint_solver/collect_variables.$O:$(SRC_DIR)/constraint_solver/collect_variables.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/collect_variables.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Scollect_variables.$O
+
+$(GEN_DIR)/constraint_solver/solver_parameters.pb.cc:$(SRC_DIR)/constraint_solver/solver_parameters.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/solver_parameters.proto
+
+$(GEN_DIR)/constraint_solver/solver_parameters.pb.h:$(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
+
+$(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O:$(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+
+$(SRC_DIR)/constraint_solver/constraint_solver.h: $(GEN_DIR)/constraint_solver/solver_parameters.pb.h
 
 $(OBJ_DIR)/constraint_solver/constraint_solver.$O:$(SRC_DIR)/constraint_solver/constraint_solver.cc $(GEN_DIR)/constraint_solver/model.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraint_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraint_solver.$O
@@ -703,6 +714,7 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/util/graph_export.$O \
 	$(OBJ_DIR)/util/piecewise_linear_function.$O \
 	$(OBJ_DIR)/util/proto_tools.$O \
+	$(OBJ_DIR)/util/range_query_function.$O \
 	$(OBJ_DIR)/util/rational_approximation.$O \
 	$(OBJ_DIR)/util/stats.$O \
 	$(OBJ_DIR)/util/time_limit.$O \
@@ -725,6 +737,9 @@ $(OBJ_DIR)/util/piecewise_linear_function.$O:$(SRC_DIR)/util/piecewise_linear_fu
 
 $(OBJ_DIR)/util/proto_tools.$O:$(SRC_DIR)/util/proto_tools.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sutil$Sproto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sproto_tools.$O
+
+$(OBJ_DIR)/util/range_query_function.$O:$(SRC_DIR)/util/range_query_function.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sutil$Srange_query_function.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srange_query_function.$O
 
 $(OBJ_DIR)/util/rational_approximation.$O:$(SRC_DIR)/util/rational_approximation.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/rational_approximation.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srational_approximation.$O
@@ -817,12 +832,36 @@ endif
 
 ROUTING_LIB_OBJS=\
 	$(OBJ_DIR)/constraint_solver/routing.$O \
+	$(OBJ_DIR)/constraint_solver/routing_enums.pb.$O \
+	$(OBJ_DIR)/constraint_solver/routing_flags.$O \
+	$(OBJ_DIR)/constraint_solver/routing_parameters.pb.$O \
 	$(OBJ_DIR)/constraint_solver/routing_search.$O
 
-$(OBJ_DIR)/constraint_solver/routing.$O:$(SRC_DIR)/constraint_solver/routing.cc
+$(GEN_DIR)/constraint_solver/routing_enums.pb.cc:$(SRC_DIR)/constraint_solver/routing_enums.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/routing_enums.proto
+
+$(GEN_DIR)/constraint_solver/routing_enums.pb.h:$(GEN_DIR)/constraint_solver/routing_enums.pb.cc
+
+$(OBJ_DIR)/constraint_solver/routing_enums.pb.$O:$(GEN_DIR)/constraint_solver/routing_enums.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/routing_enums.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_enums.pb.$O
+
+$(GEN_DIR)/constraint_solver/routing_parameters.pb.cc:$(SRC_DIR)/constraint_solver/routing_parameters.proto $(GEN_DIR)/constraint_solver/routing_enums.pb.h
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/constraint_solver/routing_parameters.proto
+
+$(GEN_DIR)/constraint_solver/routing_parameters.pb.h:$(GEN_DIR)/constraint_solver/routing_parameters.pb.cc
+
+$(OBJ_DIR)/constraint_solver/routing_parameters.pb.$O:$(GEN_DIR)/constraint_solver/routing_parameters.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/routing_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_parameters.pb.$O
+
+$(SRC_DIR)/constraint_solver/routing.h: $(GEN_DIR)/constraint_solver/routing_parameters.pb.h
+
+$(OBJ_DIR)/constraint_solver/routing.$O:$(SRC_DIR)/constraint_solver/routing.cc $(SRC_DIR)/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting.$O
 
-$(OBJ_DIR)/constraint_solver/routing_search.$O:$(SRC_DIR)/constraint_solver/routing_search.cc
+$(OBJ_DIR)/constraint_solver/routing_flags.$O:$(SRC_DIR)/constraint_solver/routing_flags.cc $(SRC_DIR)/constraint_solver/routing.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_flags.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_flags.$O
+
+$(OBJ_DIR)/constraint_solver/routing_search.$O:$(SRC_DIR)/constraint_solver/routing_search.cc $(SRC_DIR)/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_search.$O
 
 $(LIB_DIR)/$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX): $(ROUTING_LIB_OBJS)
@@ -1246,29 +1285,32 @@ $(OBJ_DIR)/cryptarithm.$O:$(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)/constraint_sol
 $(BIN_DIR)/cryptarithm$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/cryptarithm.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/cryptarithm.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scryptarithm$E
 
-$(OBJ_DIR)/cvrptw.$O: $(EX_DIR)/cpp/cvrptw.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h
+$(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
+
+$(OBJ_DIR)/cvrptw.$O: $(EX_DIR)/cpp/cvrptw.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw.$O
 
-$(BIN_DIR)/cvrptw$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
+$(BIN_DIR)/cvrptw$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw.$O $(OBJ_DIR)/cvrptw_lib.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(OBJ_DIR)/cvrptw_lib.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
 
-$(OBJ_DIR)/cvrptw_with_refueling.$O: $(EX_DIR)/cpp/cvrptw_with_refueling.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h
+$(OBJ_DIR)/cvrptw_with_refueling.$O: $(EX_DIR)/cpp/cvrptw_with_refueling.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_refueling.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_refueling.$O
 
-$(BIN_DIR)/cvrptw_with_refueling$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_refueling.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
+$(BIN_DIR)/cvrptw_with_refueling$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(OBJ_DIR)/cvrptw_lib.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(OBJ_DIR)/cvrptw_lib.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
 
-$(OBJ_DIR)/cvrptw_with_resources.$O: $(EX_DIR)/cpp/cvrptw_with_resources.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h
+$(OBJ_DIR)/cvrptw_with_resources.$O: $(EX_DIR)/cpp/cvrptw_with_resources.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_resources.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_resources.$O
 
-$(BIN_DIR)/cvrptw_with_resources$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_resources.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_resources.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
+$(BIN_DIR)/cvrptw_with_resources$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_resources.$O $(OBJ_DIR)/cvrptw_lib.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_resources.$O $(OBJ_DIR)/cvrptw_lib.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
 
-$(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O: $(EX_DIR)/cpp/cvrptw_with_stop_times_and_resources.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h
+$(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O: $(EX_DIR)/cpp/cvrptw_with_stop_times_and_resources.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_stop_times_and_resources.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_stop_times_and_resources.$O
 
-$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
+$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(OBJ_DIR)/cvrptw_lib.$O $(OBJ_DIR)/cvrptw_lib.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(OBJ_DIR)/cvrptw_lib.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
 
 $(OBJ_DIR)/dobble_ls.$O:$(EX_DIR)/cpp/dobble_ls.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/dobble_ls.cc $(OBJ_OUT)$(OBJ_DIR)$Sdobble_ls.$O

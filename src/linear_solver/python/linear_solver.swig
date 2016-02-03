@@ -40,7 +40,6 @@ class MPSolutionResponse;
 }  // namespace operations_research
 
 %{
-#include "linear_solver/linear_solver.pb.h"
 #include "linear_solver/linear_solver.h"
 %}
 
@@ -48,12 +47,15 @@ namespace operations_research {
 
 %pythoncode {
 import numbers
+from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
+from ortools.linear_solver.linear_solver_natural_api import inf
 from ortools.linear_solver.linear_solver_natural_api import LinearExpr
 from ortools.linear_solver.linear_solver_natural_api import ProductCst
 from ortools.linear_solver.linear_solver_natural_api import Sum
 from ortools.linear_solver.linear_solver_natural_api import SumArray
 from ortools.linear_solver.linear_solver_natural_api import SumCst
 from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
+from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 }  // %pythoncode
 
 %extend MPVariable {
@@ -64,101 +66,9 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
     return $self->name();
   }
 
-  // Note(user): the lines below are a pure duplication of code from
-  // ../linear_solver_natural_api.py. Unfortunately it wasn't easy to fix. In
-  // particular, SWIG's %define won't work because they get prepended with a
-  // C-style comment "/*...*/" upon expansion, which breaks the python code.
   %pythoncode {
-  def IsConstant(self, expr):
-    return isinstance(expr, numbers.Number)
-
-  def __add__(self, expr):
-    if self.IsConstant(expr):
-      return SumCst(self, expr)
-    else:
-      return Sum(self, expr)
-
-  def __radd__(self, cst):
-    if self.IsConstant(cst):
-      return SumCst(self, cst)
-    else:
-      raise TypeError
-
-  def __sub__(self, expr):
-    if self.IsConstant(expr):
-      return SumCst(self, -expr)
-    else:
-      return Sum(self, ProductCst(expr, -1))
-
-  def __rsub__(self, cst):
-    if self.IsConstant(cst):
-      return SumCst(ProductCst(self, -1), cst)
-    else:
-      raise TypeError
-
-  def __mul__(self, cst):
-    if self.IsConstant(cst):
-      return ProductCst(self, cst)
-    else:
-      raise TypeError
-
-  def __rmul__(self, cst):
-    if self.IsConstant(cst):
-      return ProductCst(self, cst)
-    else:
-      raise TypeError
-
-  def __div__(self, cst):
-    if self.IsConstant(cst):
-      if cst == 0.0:
-        raise ZeroDivisionError
-      else:
-        return ProductCst(self, 1.0 / cst)
-    else:
-      raise TypeError
-
-  def __truediv__(self, cst):
-    if self.IsConstant(cst):
-      if cst == 0.0:
-        raise ZeroDivisionError
-      else:
-        return ProductCst(self, 1.0 / cst)
-    else:
-      raise TypeError
-
-  def __neg__(self):
-    return ProductCst(self, -1)
-
-  def __eq__(self, arg):
-    if self.IsConstant(arg):
-      return LinearConstraint(self, arg, arg)
-    else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
-
-  def __hash__(self):
-    return object.__hash__(self)
-
-  def __ge__(self, arg):
-    if self.IsConstant(arg):
-      return LinearConstraint(self, arg, 1e308)
-    else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 1e308)
-
-  def __le__(self, arg):
-    if self.IsConstant(arg):
-      return LinearConstraint(self, -1e308, arg)
-    else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), -1e308, 0.0)
-
-  def Visit(self, coeffs):
-    return self.DoVisit(coeffs, 1.0)
-
-  def DoVisit(self, coeffs, multiplier):
-    if self in coeffs:
-      coeffs[self] += multiplier
-    else:
-      coeffs[self] = multiplier
-    return 0.0
+  def __getattr__(self, name):
+    return getattr(VariableExpr(self), name)
   }  // %pythoncode
 }
 
@@ -401,3 +311,11 @@ from ortools.linear_solver.linear_solver_natural_api import LinearConstraint
 %include "linear_solver/linear_solver.h"
 
 %unignoreall
+
+%pythoncode {
+def setup_variable_operator(opname):
+  setattr(Variable, opname,
+          lambda self, *args: getattr(VariableExpr(self), opname)(*args))
+for opname in LinearExpr.SUPPORTED_OPERATOR_METHODS:
+  setup_variable_operator(opname)
+}  // %pythoncode

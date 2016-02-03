@@ -1,0 +1,111 @@
+// Copyright 2010-2014 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Enums used to define routing parameters.
+
+syntax = "proto3";
+option java_package = "com.google.ortools.constraintsolver";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.ConstraintSolver";
+
+package operations_research;
+
+// First solution strategies, used as starting point of local search.
+message FirstSolutionStrategy {
+  enum Value {
+    // Lets the solver detect which strategy to use according to the model being
+    // solved.
+    AUTOMATIC = 0;
+
+    // --- Path addition heuristics ---
+    // Starting from a route "start" node, connect it to the node which produces
+    // the cheapest route segment, then extend the route by iterating on the
+    // last node added to the route.
+    PATH_CHEAPEST_ARC = 3;
+    // Same as PATH_CHEAPEST_ARC, but arcs are evaluated with a comparison-based
+    // selector which will favor the most constrained arc first. To assign a
+    // selector to the routing model, see
+    // RoutingModel::ArcIsMoreConstrainedThanArc() in routing.h for details.
+    PATH_MOST_CONSTRAINED_ARC = 4;
+    // Same as PATH_CHEAPEST_ARC, except that arc costs are evaluated using the
+    // function passed to RoutingModel::SetFirstSolutionEvaluator()
+    // (cf. routing.h).
+    EVALUATOR_STRATEGY = 5;
+    // Savings algorithm (Clarke & Wright).
+    // Reference: Clarke, G. & Wright, J.W.:
+    // "Scheduling of Vehicles from a Central Depot to a Number of Delivery
+    // Points", Operations Research, Vol. 12, 1964, pp. 568-581
+    SAVINGS = 10;
+    // Sweep algorithm (Wren & Holliday).
+    // Reference: Anthony Wren & Alan Holliday: Computer Scheduling of Vehicles
+    // from One or More Depots to a Number of Delivery Points Operational
+    // Research Quarterly (1970-1977),
+    // Vol. 23, No. 3 (Sep., 1972), pp. 333-344
+    SWEEP = 11;
+
+    // --- Path insertion heuristics ---
+    // Make all nodes inactive. Only finds a solution if nodes are optional (are
+    // element of a disjunction constraint with a finite penalty cost).
+    ALL_UNPERFORMED = 6;
+    // Iteratively build a solution by inserting the cheapest node at its
+    // cheapest position; the cost of insertion is based on the global cost
+    // function of the routing model. As of 2/2012, only works on models with
+    // optional nodes (with finite penalty costs).
+    BEST_INSERTION = 7;
+    // Iteratively build a solution by inserting the cheapest node at its
+    // cheapest position; the cost of insertion is based on the the arc cost
+    // function. Is faster than BEST_INSERTION.
+    PARALLEL_CHEAPEST_INSERTION = 8;
+    // Iteratively build a solution by inserting each node at its cheapest
+    // position; the cost of insertion is based on the the arc cost function.
+    // Differs from PARALLEL_CHEAPEST_INSERTION by the node selected for
+    // insertion; here nodes are considered in their order of creation. Is
+    // faster than PARALLEL_CHEAPEST_INSERTION.
+    LOCAL_CHEAPEST_INSERTION = 9;
+
+    // --- Variable-based heuristics ---
+    // Iteratively connect two nodes which produce the cheapest route segment.
+    GLOBAL_CHEAPEST_ARC = 1;
+    // Select the first node with an unbound successor and connect it to the
+    // node which produces the cheapest route segment.
+    LOCAL_CHEAPEST_ARC = 2;
+    // Select the first node with an unbound successor and connect it to the
+    // first available node.
+    // This is equivalent to the CHOOSE_FIRST_UNBOUND strategy combined with
+    // ASSIGN_MIN_VALUE (cf. constraint_solver.h).
+    FIRST_UNBOUND_MIN_VALUE = 12;
+  }
+}
+
+// Local search metaheuristics used to guide the search. Apart from greedy
+// descent, they will try to escape local minima.
+message LocalSearchMetaheuristic {
+  enum Value {
+    // Lets the solver select the metaheuristic.
+    AUTOMATIC = 0;
+
+    // Accepts improving (cost-reducing) local search neighbors until a local
+    // minimum is reached.
+    GREEDY_DESCENT = 1;
+    // Uses guided local search to escape local minima
+    // (cf. http://en.wikipedia.org/wiki/Guided_Local_Search); this is generally
+    // the most efficient metaheuristic for vehicle routing.
+    GUIDED_LOCAL_SEARCH = 2;
+    // Uses simulated annealing to escape local minima
+    // (cf. http://en.wikipedia.org/wiki/Simulated_annealing).
+    SIMULATED_ANNEALING = 3;
+    // Uses tabu search to escape local minima
+    // (cf. http://en.wikipedia.org/wiki/Tabu_search).
+    TABU_SEARCH = 4;
+  }
+}

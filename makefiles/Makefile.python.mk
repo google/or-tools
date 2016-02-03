@@ -87,7 +87,7 @@ $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: $(SRC_DIR)/constraint_
 	$(COPY) $(SRC_DIR)$Sconstraint_solver$Ssearch_limit.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
 
-$(GEN_DIR)/ortools/constraint_solver/model_pb2.py: $(SRC_DIR)/constraint_solver/model.proto
+$(GEN_DIR)/ortools/constraint_solver/model_pb2.py: $(SRC_DIR)/constraint_solver/model.proto $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py
 	$(COPY) $(SRC_DIR)$Sconstraint_solver$Smodel.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
 	$(SED) -i -e "s/constraint_solver/ortools\/constraint_solver/g" $(GEN_DIR)$Sortools$Sconstraint_solver$Smodel.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Smodel.proto
@@ -95,6 +95,19 @@ $(GEN_DIR)/ortools/constraint_solver/model_pb2.py: $(SRC_DIR)/constraint_solver/
 $(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: $(SRC_DIR)/constraint_solver/assignment.proto
 	$(COPY) $(SRC_DIR)$Sconstraint_solver$Sassignment.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Sassignment.proto
+
+$(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py: $(SRC_DIR)/constraint_solver/solver_parameters.proto
+	$(COPY) $(SRC_DIR)$Sconstraint_solver$Ssolver_parameters.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
+
+$(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py: $(SRC_DIR)/constraint_solver/routing_enums.proto
+	$(COPY) $(SRC_DIR)$Sconstraint_solver$Srouting_enums.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
+
+$(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py: $(SRC_DIR)/constraint_solver/routing_parameters.proto
+	$(COPY) $(SRC_DIR)$Sconstraint_solver$Srouting_parameters.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
+	$(SED) -i -e "s/constraint_solver/ortools\/constraint_solver/g" $(GEN_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
 
 $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(SRC_DIR)/base/base.swig \
@@ -104,8 +117,11 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(SRC_DIR)/constraint_solver/constraint_solver.h \
 		$(SRC_DIR)/constraint_solver/constraint_solveri.h \
 		$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py \
-		$(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/model_pb2.py \
+		$(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py \
+		$(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py \
+		$(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
+		$(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py \
 		$(GEN_DIR)/constraint_solver/assignment.pb.h \
 		$(GEN_DIR)/constraint_solver/model.pb.h \
 		$(GEN_DIR)/constraint_solver/search_limit.pb.h

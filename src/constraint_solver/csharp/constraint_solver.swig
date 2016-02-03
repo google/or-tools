@@ -23,9 +23,23 @@ using System.Collections;
 %include "std_vector.i"
 %include "util/csharp/tuple_set.swig"
 %include "util/csharp/functions.swig"
+%include "util/csharp/proto.swig"
+
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../constraint_solver.h" %}.
+namespace operations_research {
+class ConstraintSolverParameters;
+class SearchLimitParameters;
+}  // namespace operations_research
 
 %module(directors="1", allprotected="1") operations_research;
 #pragma SWIG nowarn=473
+
+%typemap(javaimports) operations_research::Solver %{
+import com.google.ortools.constraintsolver.ConstraintSolverParameters;
+import com.google.ortools.constraintsolver.SearchLimitParameters;
+%}
 
 %feature("director") Action;
 %feature("director") BaseLns;
@@ -39,7 +53,6 @@ using System.Collections;
 %feature("director") SearchMonitor;
 %feature("director") SequenceVarLocalSearchOperator;
 %feature("director") SymmetryBreaker;
-
 %{
 #include <setjmp.h>
 
@@ -51,6 +64,8 @@ using System.Collections;
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/functions_swig_helpers.h"
+#include "constraint_solver/search_limit.pb.h"
+#include "constraint_solver/solver_parameters.pb.h"
 
 namespace operations_research {
 class LocalSearchPhaseParameters {
@@ -836,6 +851,19 @@ class LocalSearchPhaseParameters {
   ~LocalSearchPhaseParameters();
 };
 }  // namespace operations_research
+
+// Protobuf support
+PROTO_INPUT(operations_research::ConstraintSolverParameters,
+            Google.OrTools.ConstraintSolver.ConstraintSolverParameters,
+            parameters)
+PROTO2_RETURN(operations_research::ConstraintSolverParameters,
+              Google.OrTools.ConstraintSolver.ConstraintSolverParameters)
+
+PROTO_INPUT(operations_research::SearchLimitParameters,
+            Google.OrTools.ConstraintSolver.SearchLimitParameters,
+            proto)
+PROTO2_RETURN(operations_research::SearchLimitParameters,
+              Google.OrTools.ConstraintSolver.SearchLimitParameters)
 
 // Wrap cp includes
 %include "constraint_solver/constraint_solver.h"

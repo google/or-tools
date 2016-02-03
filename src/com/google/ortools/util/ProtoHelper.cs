@@ -11,22 +11,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+namespace Google.OrTools {
 
-syntax = "proto3";
+using System;
+using Google.Protobuf;
 
-package operations_research;
-
-message DemonRuns {
-  string demon_id = 1;
-  repeated int64 start_time = 2;
-  repeated int64 end_time = 3;
-  int64 failures = 4;
+public static class ProtoHelper
+{
+  public static byte[] ProtoToByteArray(IMessage message)
+  {
+    int size = message.CalculateSize();
+    byte[] buffer = new byte[size];
+    CodedOutputStream output = new CodedOutputStream(buffer);
+    message.WriteTo(output);
+    return buffer;
+  }
 }
-
-message ConstraintRuns {
-  string constraint_id = 1;
-  repeated int64 initial_propagation_start_time = 2;
-  repeated int64 initial_propagation_end_time = 3;
-  int64 failures = 4;
-  repeated DemonRuns demons = 5;
-}
+}  // namespace Google.OrTools

@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name='ortools_examples',
-    version='2.VVVV',
+    version='3.VVVV',
     install_requires = ['ortools'],
     license='Apache 2.0',
     author = 'Google Inc',

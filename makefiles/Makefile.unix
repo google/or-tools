@@ -22,6 +22,8 @@ OBJ_DIR = $(OR_ROOT)objs
 SRC_DIR = $(OR_ROOT)src
 EX_DIR  = $(OR_ROOT)examples
 INC_DIR = $(OR_ROOT)src
+DEP_BIN_DIR = $(OR_ROOT)dependencies/install/bin
+
 O = o
 E =
 LDOUT = -o # need the space.

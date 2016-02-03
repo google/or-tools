@@ -14,6 +14,7 @@
 
 package com.google.ortools.samples;
 
+import com.google.ortools.constraintsolver.ConstraintSolverParameters;
 import com.google.ortools.constraintsolver.DecisionBuilder;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.Solver;
@@ -39,8 +40,13 @@ public class RabbitsPheasants {
    * and 56 legs. How many rabbits and how many pheasants are we thus
    * seeing?
    */
-  private static void solve() {
-    Solver solver = new Solver("RabbitsPheasants");
+  private static void solve(boolean traceSearch) {
+    ConstraintSolverParameters parameters =
+        ConstraintSolverParameters.newBuilder()
+            .mergeFrom(Solver.defaultSolverParameters())
+            .setTraceSearch(traceSearch)
+            .build();
+    Solver solver = new Solver("RabbitsPheasants", parameters);
     IntVar rabbits = solver.makeIntVar(0, 100, "rabbits");
     IntVar pheasants = solver.makeIntVar(0, 100, "pheasants");
     solver.addConstraint(solver.makeEquality(solver.makeSum(rabbits, pheasants),
@@ -59,6 +65,6 @@ public class RabbitsPheasants {
   }
 
   public static void main(String[] args) throws Exception {
-    RabbitsPheasants.solve();
+    RabbitsPheasants.solve(args.length > 0);
   }
 }

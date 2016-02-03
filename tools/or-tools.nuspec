@@ -2,13 +2,13 @@
 <package >
   <metadata>
     <id>Google.OrTools</id>
-    <version>2.1.VVVV</version>
+    <version>2.2.VVVV</version>
     <authors>Google</authors>
     <licenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</licenseUrl>
     <projectUrl>https://developers.google.com/optimization</projectUrl>
     <description>.NET Assembly for the OR-Tools project</description>
     <releaseNotes>SVN Release VVVV.</releaseNotes>
-    <copyright>Copyright 2015 Google</copyright>
+    <copyright>Copyright 2016 Google</copyright>
     <tags>OperationsResearch MathProgramming LinearProgramming C++ Python Java .NET</tags>
   </metadata>
   <files>
