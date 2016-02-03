@@ -62,8 +62,11 @@ $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.java: $(SRC_DIR
 $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java: $(SRC_DIR)/constraint_solver/routing_enums.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sconstraint_solver$Srouting_enums.proto
 
+$(LIB_DIR)/protobuf.jar: dependencies$Sinstall$Slib$Sprotobuf.jar
+	$(COPY) dependencies$Sinstall$Slib$Sprotobuf.jar $(LIB_DIR)
+
 $(LIB_DIR)/com.google.ortools.jar: \
-	install_java_protobuf \
+	$(LIB_DIR)/protobuf.jar \
 	$(GEN_DIR)/constraint_solver/constraint_solver_java_wrap.cc \
 	$(GEN_DIR)/algorithms/knapsack_solver_java_wrap.cc \
 	$(GEN_DIR)/graph/graph_java_wrap.cc \
@@ -72,7 +75,7 @@ $(LIB_DIR)/com.google.ortools.jar: \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimitProtobuf.java \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.java \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp dependencies$Sinstall$Slib$Sprotobuf.jar $(SRC_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp lib$Sprotobuf.jar $(SRC_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.java $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
 	$(JAR_BIN) cf $(LIB_DIR)$Scom.google.ortools.jar -C $(OBJ_DIR) com$Sgoogle$Sortools$S
 
 $(LIB_DIR)/$(LIBPREFIX)jniortools.$(JNI_LIB_EXT): \
@@ -88,282 +91,282 @@ $(LIB_DIR)/$(LIBPREFIX)jniortools.$(JNI_LIB_EXT): \
 compile_RabbitsPheasants: $(OBJ_DIR)/com/google/ortools/samples/RabbitsPheasants.class
 
 $(OBJ_DIR)/com/google/ortools/samples/RabbitsPheasants.class: javaortools $(EX_DIR)/com/google/ortools/samples/RabbitsPheasants.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SRabbitsPheasants.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SRabbitsPheasants.java
 
 run_RabbitsPheasants: compile_RabbitsPheasants
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.RabbitsPheasants
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.RabbitsPheasants
 
 compile_LsApi: $(OBJ_DIR)/com/google/ortools/samples/LsApi.class
 
 $(OBJ_DIR)/com/google/ortools/samples/LsApi.class: javaortools $(EX_DIR)/com/google/ortools/samples/LsApi.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SLsApi.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SLsApi.java
 
 run_LsApi: compile_LsApi
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.LsApi
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.LsApi
 
 compile_GolombRuler: $(OBJ_DIR)/com/google/ortools/samples/GolombRuler.class
 
 $(OBJ_DIR)/com/google/ortools/samples/GolombRuler.class: javaortools $(EX_DIR)/com/google/ortools/samples/GolombRuler.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SGolombRuler.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SGolombRuler.java
 
 run_GolombRuler: compile_GolombRuler
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.GolombRuler
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.GolombRuler
 
 compile_Partition: $(OBJ_DIR)/com/google/ortools/samples/Partition.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Partition.class: javaortools $(EX_DIR)/com/google/ortools/samples/Partition.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SPartition.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SPartition.java
 
 run_Partition: compile_Partition
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Partition
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Partition
 
 compile_SendMoreMoney: $(OBJ_DIR)/com/google/ortools/samples/SendMoreMoney.class
 
 $(OBJ_DIR)/com/google/ortools/samples/SendMoreMoney.class: javaortools $(EX_DIR)/com/google/ortools/samples/SendMoreMoney.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSendMoreMoney.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSendMoreMoney.java
 
 run_SendMoreMoney: compile_SendMoreMoney
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.SendMoreMoney
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.SendMoreMoney
 
 compile_SendMoreMoney2: $(OBJ_DIR)/com/google/ortools/samples/SendMoreMoney2.class
 
 $(OBJ_DIR)/com/google/ortools/samples/SendMoreMoney2.class: javaortools $(EX_DIR)/com/google/ortools/samples/SendMoreMoney2.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSendMoreMoney2.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSendMoreMoney2.java
 
 run_SendMoreMoney2: compile_SendMoreMoney2
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.SendMoreMoney2
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.SendMoreMoney2
 
 compile_LeastDiff: $(OBJ_DIR)/com/google/ortools/samples/LeastDiff.class
 
 $(OBJ_DIR)/com/google/ortools/samples/LeastDiff.class: javaortools $(EX_DIR)/com/google/ortools/samples/LeastDiff.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SLeastDiff.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SLeastDiff.java
 
 run_LeastDiff: compile_LeastDiff
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.LeastDiff
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.LeastDiff
 
 compile_MagicSquare: $(OBJ_DIR)/com/google/ortools/samples/MagicSquare.class
 
 $(OBJ_DIR)/com/google/ortools/samples/MagicSquare.class: javaortools $(EX_DIR)/com/google/ortools/samples/MagicSquare.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMagicSquare.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMagicSquare.java
 
 run_MagicSquare: compile_MagicSquare
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.MagicSquare
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.MagicSquare
 
 compile_NQueens: $(OBJ_DIR)/com/google/ortools/samples/NQueens.class
 
 $(OBJ_DIR)/com/google/ortools/samples/NQueens.class: javaortools $(EX_DIR)/com/google/ortools/samples/NQueens.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SNQueens.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SNQueens.java
 
 run_NQueens: compile_NQueens
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.NQueens
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.NQueens
 
 compile_NQueens2: $(OBJ_DIR)/com/google/ortools/samples/NQueens2.class
 
 $(OBJ_DIR)/com/google/ortools/samples/NQueens2.class: javaortools $(EX_DIR)/com/google/ortools/samples/NQueens2.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SNQueens2.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SNQueens2.java
 
 run_NQueens2: compile_NQueens2
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.NQueens2
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.NQueens2
 
 
 compile_AllDifferentExcept0: $(OBJ_DIR)/com/google/ortools/samples/AllDifferentExcept0.class
 
 $(OBJ_DIR)/com/google/ortools/samples/AllDifferentExcept0.class: javaortools $(EX_DIR)/com/google/ortools/samples/AllDifferentExcept0.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SAllDifferentExcept0.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SAllDifferentExcept0.java
 
 run_AllDifferentExcept0: compile_AllDifferentExcept0
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.AllDifferentExcept0
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.AllDifferentExcept0
 
 
 compile_Diet: $(OBJ_DIR)/com/google/ortools/samples/Diet.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Diet.class: javaortools $(EX_DIR)/com/google/ortools/samples/Diet.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SDiet.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SDiet.java
 
 run_Diet: compile_Diet
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Diet
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Diet
 
 
 compile_Map: $(OBJ_DIR)/com/google/ortools/samples/Map.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Map.class: javaortools $(EX_DIR)/com/google/ortools/samples/Map.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMap.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMap.java
 
 run_Map: compile_Map
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Map
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Map
 
 
 compile_Map2: $(OBJ_DIR)/com/google/ortools/samples/Map2.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Map2.class: javaortools $(EX_DIR)/com/google/ortools/samples/Map2.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMap2.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMap2.java
 
 run_Map2: compile_Map2
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Map2
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Map2
 
 
 compile_Minesweeper: $(OBJ_DIR)/com/google/ortools/samples/Minesweeper.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Minesweeper.class: javaortools $(EX_DIR)/com/google/ortools/samples/Minesweeper.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMinesweeper.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMinesweeper.java
 
 run_Minesweeper: compile_Minesweeper
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Minesweeper
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Minesweeper
 
 
 compile_QuasigroupCompletion: $(OBJ_DIR)/com/google/ortools/samples/QuasigroupCompletion.class
 
 $(OBJ_DIR)/com/google/ortools/samples/QuasigroupCompletion.class: javaortools $(EX_DIR)/com/google/ortools/samples/QuasigroupCompletion.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SQuasigroupCompletion.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SQuasigroupCompletion.java
 
 run_QuasigroupCompletion: compile_QuasigroupCompletion
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.QuasigroupCompletion
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.QuasigroupCompletion
 
 
 compile_SendMostMoney: $(OBJ_DIR)/com/google/ortools/samples/SendMostMoney.class
 
 $(OBJ_DIR)/com/google/ortools/samples/SendMostMoney.class: javaortools $(EX_DIR)/com/google/ortools/samples/SendMostMoney.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSendMostMoney.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSendMostMoney.java
 
 run_SendMostMoney: compile_SendMostMoney
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.SendMostMoney
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.SendMostMoney
 
 
 compile_Seseman: $(OBJ_DIR)/com/google/ortools/samples/Seseman.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Seseman.class: javaortools $(EX_DIR)/com/google/ortools/samples/Seseman.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSeseman.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSeseman.java
 
 run_Seseman: compile_Seseman
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Seseman
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Seseman
 
 
 compile_Sudoku: $(OBJ_DIR)/com/google/ortools/samples/Sudoku.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Sudoku.class: javaortools $(EX_DIR)/com/google/ortools/samples/Sudoku.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSudoku.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSudoku.java
 
 run_Sudoku: compile_Sudoku
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Sudoku
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Sudoku
 
 compile_Tsp: $(OBJ_DIR)/com/google/ortools/samples/Tsp.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Tsp.class: javaortools $(EX_DIR)/com/google/ortools/samples/Tsp.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$STsp.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$STsp.java
 
 run_Tsp: compile_Tsp
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Tsp $(ARGS)
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Tsp $(ARGS)
 
 compile_CapacitatedVehicleRoutingProblemWithTimeWindows: $(OBJ_DIR)/com/google/ortools/samples/CapacitatedVehicleRoutingProblemWithTimeWindows.class
 
 $(OBJ_DIR)/com/google/ortools/samples/CapacitatedVehicleRoutingProblemWithTimeWindows.class: javaortools $(EX_DIR)/com/google/ortools/samples/CapacitatedVehicleRoutingProblemWithTimeWindows.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SCapacitatedVehicleRoutingProblemWithTimeWindows.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SCapacitatedVehicleRoutingProblemWithTimeWindows.java
 
 run_CapacitatedVehicleRoutingProblemWithTimeWindows: compile_CapacitatedVehicleRoutingProblemWithTimeWindows
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.CapacitatedVehicleRoutingProblemWithTimeWindows $(ARGS)
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.CapacitatedVehicleRoutingProblemWithTimeWindows $(ARGS)
 
 compile_Xkcd: $(OBJ_DIR)/com/google/ortools/samples/Xkcd.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Xkcd.class: javaortools $(EX_DIR)/com/google/ortools/samples/Xkcd.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SXkcd.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SXkcd.java
 
 run_Xkcd: compile_Xkcd
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Xkcd
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Xkcd
 
 
 compile_SurvoPuzzle: $(OBJ_DIR)/com/google/ortools/samples/SurvoPuzzle.class
 
 $(OBJ_DIR)/com/google/ortools/samples/SurvoPuzzle.class: javaortools $(EX_DIR)/com/google/ortools/samples/SurvoPuzzle.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSurvoPuzzle.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SSurvoPuzzle.java
 
 run_SurvoPuzzle: compile_SurvoPuzzle
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.SurvoPuzzle
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.SurvoPuzzle
 
 
 compile_Circuit: $(OBJ_DIR)/com/google/ortools/samples/Circuit.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Circuit.class: javaortools $(EX_DIR)/com/google/ortools/samples/Circuit.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SCircuit.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SCircuit.java
 
 run_Circuit: compile_Circuit
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Circuit
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Circuit
 
 
 compile_CoinsGrid: $(OBJ_DIR)/com/google/ortools/samples/CoinsGrid.class
 
 $(OBJ_DIR)/com/google/ortools/samples/CoinsGrid.class: javaortools $(EX_DIR)/com/google/ortools/samples/CoinsGrid.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SCoinsGrid.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SCoinsGrid.java
 
 run_CoinsGrid: compile_CoinsGrid
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.CoinsGrid
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.CoinsGrid
 
 # Java Algorithms Examples
 
 compile_Knapsack: $(OBJ_DIR)/com/google/ortools/samples/Knapsack.class
 
 $(OBJ_DIR)/com/google/ortools/samples/Knapsack.class: javaortools $(EX_DIR)/com/google/ortools/samples/Knapsack.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SKnapsack.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SKnapsack.java
 
 run_Knapsack: compile_Knapsack
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.Knapsack
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Knapsack
 
 # Java Algorithms Examples
 
 compile_FlowExample: $(OBJ_DIR)/com/google/ortools/samples/FlowExample.class
 
 $(OBJ_DIR)/com/google/ortools/samples/FlowExample.class: javaortools $(EX_DIR)/com/google/ortools/samples/FlowExample.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SFlowExample.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SFlowExample.java
 
 run_FlowExample: compile_FlowExample javaortools
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.FlowExample
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.FlowExample
 
 compile_LinearAssignmentAPI: $(OBJ_DIR)/com/google/ortools/samples/LinearAssignmentAPI.class
 
 $(OBJ_DIR)/com/google/ortools/samples/LinearAssignmentAPI.class: javaortools $(EX_DIR)/com/google/ortools/samples/LinearAssignmentAPI.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)com$Sgoogle$Sortools$Ssamples$SLinearAssignmentAPI.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)com$Sgoogle$Sortools$Ssamples$SLinearAssignmentAPI.java
 
 run_LinearAssignmentAPI: compile_LinearAssignmentAPI javaortools
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.LinearAssignmentAPI
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.LinearAssignmentAPI
 
 # Java Linear Programming Examples
 
 compile_LinearProgramming: $(OBJ_DIR)/com/google/ortools/samples/LinearProgramming.class
 
 $(OBJ_DIR)/com/google/ortools/samples/LinearProgramming.class: javaortools $(EX_DIR)/com/google/ortools/samples/LinearProgramming.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SLinearProgramming.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SLinearProgramming.java
 
 run_LinearProgramming: compile_LinearProgramming
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.LinearProgramming
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.LinearProgramming
 
 compile_IntegerProgramming: $(OBJ_DIR)/com/google/ortools/samples/IntegerProgramming.class
 
 $(OBJ_DIR)/com/google/ortools/samples/IntegerProgramming.class: javaortools $(EX_DIR)/com/google/ortools/samples/IntegerProgramming.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SIntegerProgramming.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SIntegerProgramming.java
 
 run_IntegerProgramming: compile_IntegerProgramming
-	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.IntegerProgramming
+	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.IntegerProgramming
 
 
 # Integer programming Coin-CBC section
 run_MultiThreadIntegerProgramming: compile_MultiThreadIntegerProgramming
-	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.MultiThreadTest
+	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.MultiThreadTest
 
 compile_MultiThreadIntegerProgramming: $(OBJ_DIR)/com/google/ortools/samples/MultiThreadTest.class
 
 $(OBJ_DIR)/com/google/ortools/samples/MultiThreadTest.class: javaortools $(EX_DIR)/com/google/ortools/samples/MultiThreadTest.java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMultiThreadTest.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMultiThreadTest.java
 
 
 
 # Compile and Run CP java example:
 
 $(OBJ_DIR)/com/google/ortools/samples/$(EX).class: javaortools $(EX_DIR)/com/google/ortools/samples/$(EX).java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$S$(EX).java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$S$(EX).java
 
 cjava: $(OBJ_DIR)/com/google/ortools/samples/$(EX).class
 
 rjava: $(OBJ_DIR)/com/google/ortools/samples/$(EX).class javaortools
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)dependencies$Sinstall$Slib$Sprotobuf.jar com.google.ortools.samples.$(EX) $(ARGS)
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.$(EX) $(ARGS)
 
 # Build stand-alone archive file for redistribution.
 
