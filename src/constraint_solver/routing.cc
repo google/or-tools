@@ -4287,16 +4287,14 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
           [this](int64 i, int64 j) { return GetArcCostForFirstSolution(i, j); },
           Solver::CHOOSE_STATIC_GLOBAL_BEST);
   // Cheapest addition heuristic.
+  Solver::IndexEvaluator2 eval = [this](int64 i, int64 j) {
+    return GetArcCostForFirstSolution(i, j);
+  };
   first_solution_decision_builders_[FirstSolutionStrategy::LOCAL_CHEAPEST_ARC] =
-      solver_->MakePhase(nexts_, Solver::CHOOSE_FIRST_UNBOUND,
-                         [this](int64 i, int64 j) {
-                           return GetArcCostForFirstSolution(i, j);
-                         });
+      solver_->MakePhase(nexts_, Solver::CHOOSE_FIRST_UNBOUND, eval);
   // Path-based cheapest addition heuristic.
   first_solution_decision_builders_[FirstSolutionStrategy::PATH_CHEAPEST_ARC] =
-      solver_->MakePhase(nexts_, Solver::CHOOSE_PATH, [this](int64 i, int64 j) {
-        return GetArcCostForFirstSolution(i, j);
-      });
+      solver_->MakePhase(nexts_, Solver::CHOOSE_PATH, eval);
   if (vehicles() == 1) {
     DecisionBuilder* fast_one_path_builder =
         solver_->RevAlloc(new FastOnePathBuilder(
@@ -4322,20 +4320,19 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                              [FirstSolutionStrategy::PATH_CHEAPEST_ARC]);
   }
   // Path-based most constrained arc addition heuristic.
+  Solver::VariableValueComparator comp =  [this](int64 i, int64 j, int64 k) {
+    return ArcIsMoreConstrainedThanArc(i, j, k);
+  };
+          
   first_solution_decision_builders_
       [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->MakePhase(
-          nexts_, Solver::CHOOSE_PATH, [this](int64 i, int64 j, int64 k) {
-            return ArcIsMoreConstrainedThanArc(i, j, k);
-          });
+          nexts_, Solver::CHOOSE_PATH, comp);
   if (search_parameters.use_filtered_first_solution_strategy()) {
     first_solution_filtered_decision_builders_
-        [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->RevAlloc(
-            new ComparatorCheapestAdditionFilteredDecisionBuilder(
-                this,
-                [this](int64 i, int64 j, int64 k) {
-                  return ArcIsMoreConstrainedThanArc(i, j, k);
-                },
-                GetOrCreateFeasibilityFilters()));
+        [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] =
+      solver_->RevAlloc(
+	  new ComparatorCheapestAdditionFilteredDecisionBuilder(
+	      this, comp, GetOrCreateFeasibilityFilters()));
     first_solution_decision_builders_
         [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->Try(
             first_solution_filtered_decision_builders_
