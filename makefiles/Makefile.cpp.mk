@@ -471,7 +471,7 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 $(SRC_DIR)/constraint_solver/constraint_solver.h: $(GEN_DIR)/constraint_solver/solver_parameters.pb.h
 
 $(OBJ_DIR)/constraint_solver/alldiff_cst.$O:$(SRC_DIR)/constraint_solver/alldiff_cst.cc
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/alldiff_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Salldiff_cst.$O
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/alldiff_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Salldiff_cst.$O $(SRC_DIR)/constraint_solver/constraint_solver.h
 
 $(OBJ_DIR)/constraint_solver/assignment.$O:$(SRC_DIR)/constraint_solver/assignment.cc $(GEN_DIR)/constraint_solver/assignment.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sassignment.$O
@@ -479,10 +479,10 @@ $(OBJ_DIR)/constraint_solver/assignment.$O:$(SRC_DIR)/constraint_solver/assignme
 $(OBJ_DIR)/constraint_solver/assignment.pb.$O:$(GEN_DIR)/constraint_solver/assignment.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/assignment.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sassignment.pb.$O
 
-$(OBJ_DIR)/constraint_solver/ac4r_table.$O:$(SRC_DIR)/constraint_solver/ac4r_table.cc
+$(OBJ_DIR)/constraint_solver/ac4r_table.$O:$(SRC_DIR)/constraint_solver/ac4r_table.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4r_table.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sac4r_table.$O
 
-$(OBJ_DIR)/constraint_solver/ac4_mdd_reset_table.$O:$(SRC_DIR)/constraint_solver/ac4_mdd_reset_table.cc
+$(OBJ_DIR)/constraint_solver/ac4_mdd_reset_table.$O:$(SRC_DIR)/constraint_solver/ac4_mdd_reset_table.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/ac4_mdd_reset_table.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sac4_mdd_reset_table.$O
 
 $(GEN_DIR)/constraint_solver/assignment.pb.cc:$(SRC_DIR)/constraint_solver/assignment.proto
@@ -490,7 +490,7 @@ $(GEN_DIR)/constraint_solver/assignment.pb.cc:$(SRC_DIR)/constraint_solver/assig
 
 $(GEN_DIR)/constraint_solver/assignment.pb.h:$(GEN_DIR)/constraint_solver/assignment.pb.cc
 
-$(OBJ_DIR)/constraint_solver/collect_variables.$O:$(SRC_DIR)/constraint_solver/collect_variables.cc
+$(OBJ_DIR)/constraint_solver/collect_variables.$O:$(SRC_DIR)/constraint_solver/collect_variables.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/collect_variables.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Scollect_variables.$O
 
 $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc:$(SRC_DIR)/constraint_solver/solver_parameters.proto
@@ -498,27 +498,27 @@ $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc:$(SRC_DIR)/constraint_solve
 
 $(GEN_DIR)/constraint_solver/solver_parameters.pb.h:$(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
 
-$(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O:$(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
+$(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O:$(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
 
 $(SRC_DIR)/constraint_solver/constraint_solver.h: $(GEN_DIR)/constraint_solver/solver_parameters.pb.h
 
-$(OBJ_DIR)/constraint_solver/constraint_solver.$O:$(SRC_DIR)/constraint_solver/constraint_solver.cc $(GEN_DIR)/constraint_solver/model.pb.h
+$(OBJ_DIR)/constraint_solver/constraint_solver.$O:$(SRC_DIR)/constraint_solver/constraint_solver.cc $(GEN_DIR)/constraint_solver/model.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraint_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraint_solver.$O
 
-$(OBJ_DIR)/constraint_solver/constraints.$O:$(SRC_DIR)/constraint_solver/constraints.cc
+$(OBJ_DIR)/constraint_solver/constraints.$O:$(SRC_DIR)/constraint_solver/constraints.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraints.$O
 
-$(OBJ_DIR)/constraint_solver/count_cst.$O:$(SRC_DIR)/constraint_solver/count_cst.cc
+$(OBJ_DIR)/constraint_solver/count_cst.$O:$(SRC_DIR)/constraint_solver/count_cst.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/count_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Scount_cst.$O
 
-$(OBJ_DIR)/constraint_solver/default_search.$O:$(SRC_DIR)/constraint_solver/default_search.cc
+$(OBJ_DIR)/constraint_solver/default_search.$O:$(SRC_DIR)/constraint_solver/default_search.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/default_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdefault_search.$O
 
-$(OBJ_DIR)/constraint_solver/demon_profiler.$O:$(SRC_DIR)/constraint_solver/demon_profiler.cc $(GEN_DIR)/constraint_solver/demon_profiler.pb.h
+$(OBJ_DIR)/constraint_solver/demon_profiler.$O:$(SRC_DIR)/constraint_solver/demon_profiler.cc $(GEN_DIR)/constraint_solver/demon_profiler.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/demon_profiler.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdemon_profiler.$O
 
-$(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O:$(GEN_DIR)/constraint_solver/demon_profiler.pb.cc
+$(OBJ_DIR)/constraint_solver/demon_profiler.pb.$O:$(GEN_DIR)/constraint_solver/demon_profiler.pb.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/demon_profiler.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdemon_profiler.pb.$O
 
 $(GEN_DIR)/constraint_solver/demon_profiler.pb.cc:$(SRC_DIR)/constraint_solver/demon_profiler.proto
@@ -526,46 +526,46 @@ $(GEN_DIR)/constraint_solver/demon_profiler.pb.cc:$(SRC_DIR)/constraint_solver/d
 
 $(GEN_DIR)/constraint_solver/demon_profiler.pb.h:$(GEN_DIR)/constraint_solver/demon_profiler.pb.cc
 
-$(OBJ_DIR)/constraint_solver/deviation.$O:$(SRC_DIR)/constraint_solver/deviation.cc
+$(OBJ_DIR)/constraint_solver/deviation.$O:$(SRC_DIR)/constraint_solver/deviation.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/deviation.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdeviation.$O
 
-$(OBJ_DIR)/constraint_solver/diffn.$O:$(SRC_DIR)/constraint_solver/diffn.cc
+$(OBJ_DIR)/constraint_solver/diffn.$O:$(SRC_DIR)/constraint_solver/diffn.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/diffn.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdiffn.$O
 
-$(OBJ_DIR)/constraint_solver/element.$O:$(SRC_DIR)/constraint_solver/element.cc
+$(OBJ_DIR)/constraint_solver/element.$O:$(SRC_DIR)/constraint_solver/element.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/element.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Selement.$O
 
-$(OBJ_DIR)/constraint_solver/expr_array.$O:$(SRC_DIR)/constraint_solver/expr_array.cc
+$(OBJ_DIR)/constraint_solver/expr_array.$O:$(SRC_DIR)/constraint_solver/expr_array.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expr_array.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sexpr_array.$O
 
-$(OBJ_DIR)/constraint_solver/expr_cst.$O:$(SRC_DIR)/constraint_solver/expr_cst.cc
+$(OBJ_DIR)/constraint_solver/expr_cst.$O:$(SRC_DIR)/constraint_solver/expr_cst.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expr_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sexpr_cst.$O
 
-$(OBJ_DIR)/constraint_solver/expressions.$O:$(SRC_DIR)/constraint_solver/expressions.cc
+$(OBJ_DIR)/constraint_solver/expressions.$O:$(SRC_DIR)/constraint_solver/expressions.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/expressions.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sexpressions.$O
 
-$(OBJ_DIR)/constraint_solver/gcc.$O:$(SRC_DIR)/constraint_solver/gcc.cc
+$(OBJ_DIR)/constraint_solver/gcc.$O:$(SRC_DIR)/constraint_solver/gcc.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/gcc.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sgcc.$O
 
-$(OBJ_DIR)/constraint_solver/graph_constraints.$O:$(SRC_DIR)/constraint_solver/graph_constraints.cc
+$(OBJ_DIR)/constraint_solver/graph_constraints.$O:$(SRC_DIR)/constraint_solver/graph_constraints.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/graph_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sgraph_constraints.$O
 
-$(OBJ_DIR)/constraint_solver/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h $(GEN_DIR)/glop/parameters.pb.h
+$(OBJ_DIR)/constraint_solver/hybrid.$O:$(SRC_DIR)/constraint_solver/hybrid.cc $(GEN_DIR)/linear_solver/linear_solver.pb.h $(GEN_DIR)/glop/parameters.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/hybrid.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Shybrid.$O
 
-$(OBJ_DIR)/constraint_solver/interval.$O:$(SRC_DIR)/constraint_solver/interval.cc
+$(OBJ_DIR)/constraint_solver/interval.$O:$(SRC_DIR)/constraint_solver/interval.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/interval.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sinterval.$O
 
-$(OBJ_DIR)/constraint_solver/io.$O:$(SRC_DIR)/constraint_solver/io.cc $(GEN_DIR)/constraint_solver/model.pb.h
+$(OBJ_DIR)/constraint_solver/io.$O:$(SRC_DIR)/constraint_solver/io.cc $(GEN_DIR)/constraint_solver/model.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/io.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sio.$O
 
-$(OBJ_DIR)/constraint_solver/local_search.$O:$(SRC_DIR)/constraint_solver/local_search.cc
+$(OBJ_DIR)/constraint_solver/local_search.$O:$(SRC_DIR)/constraint_solver/local_search.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/local_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Slocal_search.$O
 
-$(OBJ_DIR)/constraint_solver/model.pb.$O:$(GEN_DIR)/constraint_solver/model.pb.cc
+$(OBJ_DIR)/constraint_solver/model.pb.$O:$(GEN_DIR)/constraint_solver/model.pb.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/model.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Smodel.pb.$O
 
-$(OBJ_DIR)/constraint_solver/model_cache.$O:$(SRC_DIR)/constraint_solver/model_cache.cc
+$(OBJ_DIR)/constraint_solver/model_cache.$O:$(SRC_DIR)/constraint_solver/model_cache.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/model_cache.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Smodel_cache.$O
 
 $(GEN_DIR)/constraint_solver/model.pb.cc:$(SRC_DIR)/constraint_solver/model.proto
@@ -573,34 +573,34 @@ $(GEN_DIR)/constraint_solver/model.pb.cc:$(SRC_DIR)/constraint_solver/model.prot
 
 $(GEN_DIR)/constraint_solver/model.pb.h:$(GEN_DIR)/constraint_solver/model.pb.cc $(GEN_DIR)/constraint_solver/search_limit.pb.h
 
-$(OBJ_DIR)/constraint_solver/nogoods.$O:$(SRC_DIR)/constraint_solver/nogoods.cc
+$(OBJ_DIR)/constraint_solver/nogoods.$O:$(SRC_DIR)/constraint_solver/nogoods.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/nogoods.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Snogoods.$O
 
-$(OBJ_DIR)/constraint_solver/pack.$O:$(SRC_DIR)/constraint_solver/pack.cc
+$(OBJ_DIR)/constraint_solver/pack.$O:$(SRC_DIR)/constraint_solver/pack.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/pack.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Spack.$O
 
-$(OBJ_DIR)/constraint_solver/range_cst.$O:$(SRC_DIR)/constraint_solver/range_cst.cc
+$(OBJ_DIR)/constraint_solver/range_cst.$O:$(SRC_DIR)/constraint_solver/range_cst.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/range_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srange_cst.$O
 
-$(OBJ_DIR)/constraint_solver/resource.$O:$(SRC_DIR)/constraint_solver/resource.cc
+$(OBJ_DIR)/constraint_solver/resource.$O:$(SRC_DIR)/constraint_solver/resource.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/resource.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sresource.$O
 
-$(OBJ_DIR)/constraint_solver/sat_constraint.$O:$(SRC_DIR)/constraint_solver/sat_constraint.cc $(GEN_DIR)/sat/sat_parameters.pb.h
+$(OBJ_DIR)/constraint_solver/sat_constraint.$O:$(SRC_DIR)/constraint_solver/sat_constraint.cc $(GEN_DIR)/sat/sat_parameters.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sat_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssat_constraint.$O
 
-$(OBJ_DIR)/constraint_solver/sched_constraints.$O:$(SRC_DIR)/constraint_solver/sched_constraints.cc
+$(OBJ_DIR)/constraint_solver/sched_constraints.$O:$(SRC_DIR)/constraint_solver/sched_constraints.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssched_constraints.$O
 
-$(OBJ_DIR)/constraint_solver/sched_expr.$O:$(SRC_DIR)/constraint_solver/sched_expr.cc
+$(OBJ_DIR)/constraint_solver/sched_expr.$O:$(SRC_DIR)/constraint_solver/sched_expr.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssched_expr.$O
 
-$(OBJ_DIR)/constraint_solver/sched_search.$O:$(SRC_DIR)/constraint_solver/sched_search.cc
+$(OBJ_DIR)/constraint_solver/sched_search.$O:$(SRC_DIR)/constraint_solver/sched_search.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/sched_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssched_search.$O
 
-$(OBJ_DIR)/constraint_solver/search.$O:$(SRC_DIR)/constraint_solver/search.cc $(GEN_DIR)/constraint_solver/search_limit.pb.h
+$(OBJ_DIR)/constraint_solver/search.$O:$(SRC_DIR)/constraint_solver/search.cc $(GEN_DIR)/constraint_solver/search_limit.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssearch.$O
 
-$(OBJ_DIR)/constraint_solver/search_limit.pb.$O:$(GEN_DIR)/constraint_solver/search_limit.pb.cc
+$(OBJ_DIR)/constraint_solver/search_limit.pb.$O:$(GEN_DIR)/constraint_solver/search_limit.pb.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/search_limit.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssearch_limit.pb.$O
 
 $(GEN_DIR)/constraint_solver/search_limit.pb.cc:$(SRC_DIR)/constraint_solver/search_limit.proto
@@ -608,25 +608,25 @@ $(GEN_DIR)/constraint_solver/search_limit.pb.cc:$(SRC_DIR)/constraint_solver/sea
 
 $(GEN_DIR)/constraint_solver/search_limit.pb.h:$(GEN_DIR)/constraint_solver/search_limit.pb.cc
 
-$(OBJ_DIR)/constraint_solver/softgcc.$O:$(SRC_DIR)/constraint_solver/softgcc.cc
+$(OBJ_DIR)/constraint_solver/softgcc.$O:$(SRC_DIR)/constraint_solver/softgcc.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/softgcc.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssoftgcc.$O
 
-$(OBJ_DIR)/constraint_solver/table.$O:$(SRC_DIR)/constraint_solver/table.cc
+$(OBJ_DIR)/constraint_solver/table.$O:$(SRC_DIR)/constraint_solver/table.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/table.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Stable.$O
 
-$(OBJ_DIR)/constraint_solver/timetabling.$O:$(SRC_DIR)/constraint_solver/timetabling.cc
+$(OBJ_DIR)/constraint_solver/timetabling.$O:$(SRC_DIR)/constraint_solver/timetabling.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/timetabling.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Stimetabling.$O
 
-$(OBJ_DIR)/constraint_solver/trace.$O:$(SRC_DIR)/constraint_solver/trace.cc
+$(OBJ_DIR)/constraint_solver/trace.$O:$(SRC_DIR)/constraint_solver/trace.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/trace.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Strace.$O
 
-$(OBJ_DIR)/constraint_solver/tree_monitor.$O:$(SRC_DIR)/constraint_solver/tree_monitor.cc
+$(OBJ_DIR)/constraint_solver/tree_monitor.$O:$(SRC_DIR)/constraint_solver/tree_monitor.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/tree_monitor.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Stree_monitor.$O
 
-$(OBJ_DIR)/constraint_solver/utilities.$O:$(SRC_DIR)/constraint_solver/utilities.cc
+$(OBJ_DIR)/constraint_solver/utilities.$O:$(SRC_DIR)/constraint_solver/utilities.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sutilities.$O
 
-$(OBJ_DIR)/constraint_solver/visitor.$O:$(SRC_DIR)/constraint_solver/visitor.cc
+$(OBJ_DIR)/constraint_solver/visitor.$O:$(SRC_DIR)/constraint_solver/visitor.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/visitor.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Svisitor.$O
 
 $(LIB_DIR)/$(LIBPREFIX)constraint_solver.$(DYNAMIC_LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS)
