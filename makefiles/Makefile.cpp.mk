@@ -468,6 +468,8 @@ CONSTRAINT_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/constraint_solver/utilities.$O \
 	$(OBJ_DIR)/constraint_solver/visitor.$O
 
+$(SRC_DIR)/constraint_solver/constraint_solver.h: $(GEN_DIR)/constraint_solver/solver_parameters.pb.h
+
 $(OBJ_DIR)/constraint_solver/alldiff_cst.$O:$(SRC_DIR)/constraint_solver/alldiff_cst.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/alldiff_cst.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Salldiff_cst.$O
 
