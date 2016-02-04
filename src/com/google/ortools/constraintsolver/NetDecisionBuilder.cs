@@ -51,6 +51,59 @@ public class NetDecisionBuilder : DecisionBuilder
   }
 }
 
+/**
+ * This class acts as a intermediate step between a c++ decision and a
+ * .Net one. Its main purpose is to catch the .Net application
+ * exception launched when a failure occurs during the
+ * Apply()/Refute() calls, and to set the ShouldFail() flag on the
+ * solver that will propagate the failure back to the C++ code.
+ *
+ */
+public class NetDecision : Decision
+{
+  /**
+   * This methods wraps the calls to Apply() and catches fail exceptions.
+   * It currently catches all application exceptions.
+   */
+  public override void ApplyWrapper(Solver solver)
+  {
+    try
+    {
+      Apply(solver);
+    }
+    catch (ApplicationException e)
+    {
+      // TODO(user): Catch only fail exceptions.
+      solver.ShouldFail();
+    }
+  }
+  /**
+   * This is a new method to subclass when defining a .Net decision.
+   */
+  public virtual void Apply(Solver solver)
+  {
+  }
+
+  public override void RefuteWrapper(Solver solver)
+  {
+    try
+    {
+      Refute(solver);
+    }
+    catch (ApplicationException e)
+    {
+      // TODO(user): Catch only fail exceptions.
+      solver.ShouldFail();
+    }
+  }
+  /**
+   * This is a new method to subclass when defining a .Net decision.
+   */
+  public virtual void Refute(Solver solver)
+  {
+  }
+}
+
 public class NetDemon : Demon
 {
   /**
