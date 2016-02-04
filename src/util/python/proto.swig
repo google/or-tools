@@ -29,9 +29,7 @@ namespace operations_research {
         if (PyObject_IsInstance($input, clss)) {
           ok = true;
         }
-        Py_DECREF(clss);
       }
-      Py_DECREF(dict);
     }
     Py_DECREF(module);
   }
