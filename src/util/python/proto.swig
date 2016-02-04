@@ -85,11 +85,9 @@ namespace operations_research {
               clss, const_cast<char*>("FromString"),
               const_cast<char*>("(O)"),
               python_encoded_protobuf);
-        //        Py_DECREF(python_encoded_protobuf);
+        Py_DECREF(python_encoded_protobuf);
         $result = result;
-        Py_DECREF(clss);
       }
-      Py_DECREF(dict);
     }
     Py_DECREF(module);
   }
