@@ -2292,6 +2292,11 @@ class Solver {
   // search. Use this only for low level debugging.
   SearchMonitor* MakeSearchTrace(const std::string& prefix);
 
+  // ----- Callback-based search monitors -----
+  SearchMonitor* MakeEnterSearchCallback(std::function<void()> callback);
+  SearchMonitor* MakeExitSearchCallback(std::function<void()> callback);
+  SearchMonitor* MakeAtSolutionCallback(std::function<void()> callback);
+
   // ----- ModelVisitor -----
 
   // Prints the model.

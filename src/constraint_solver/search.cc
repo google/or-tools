@@ -361,6 +361,70 @@ SearchMonitor* Solver::MakeSearchTrace(const std::string& prefix) {
   return RevAlloc(new SearchTrace(this, prefix));
 }
 
+// ---------- Callback-based search monitors ----------
+namespace {
+class AtSolutionCallback : public SearchMonitor {
+ public:
+  AtSolutionCallback(Solver* const solver, std::function<void()> callback)
+      : SearchMonitor(solver), callback_(std::move(callback)) {}
+  ~AtSolutionCallback() override {}
+  bool AtSolution() override;
+
+ private:
+  const std::function<void()> callback_;
+};
+
+bool AtSolutionCallback::AtSolution() {
+  callback_();
+  return false;
+}
+
+}  // namespace
+
+SearchMonitor* Solver::MakeAtSolutionCallback(std::function<void()> callback) {
+  return RevAlloc(new AtSolutionCallback(this, std::move(callback)));
+}
+
+namespace {
+class EnterSearchCallback : public SearchMonitor {
+ public:
+  EnterSearchCallback(Solver* const solver, std::function<void()> callback)
+      : SearchMonitor(solver), callback_(std::move(callback)) {}
+  ~EnterSearchCallback() override {}
+  void EnterSearch() override;
+
+ private:
+  const std::function<void()> callback_;
+};
+
+void EnterSearchCallback::EnterSearch() { callback_(); }
+
+}  // namespace
+
+SearchMonitor* Solver::MakeEnterSearchCallback(std::function<void()> callback) {
+  return RevAlloc(new EnterSearchCallback(this, std::move(callback)));
+}
+
+namespace {
+class ExitSearchCallback : public SearchMonitor {
+ public:
+  ExitSearchCallback(Solver* const solver, std::function<void()> callback)
+      : SearchMonitor(solver), callback_(std::move(callback)) {}
+  ~ExitSearchCallback() override {}
+  void ExitSearch() override;
+
+ private:
+  const std::function<void()> callback_;
+};
+
+void ExitSearchCallback::ExitSearch() { callback_(); }
+
+}  // namespace
+
+SearchMonitor* Solver::MakeExitSearchCallback(std::function<void()> callback) {
+  return RevAlloc(new ExitSearchCallback(this, std::move(callback)));
+}
+
 // ---------- Composite Decision Builder --------
 
 namespace {

@@ -68,13 +68,6 @@ class LinearExpr(object):
                      'truediv', 'neg', 'eq', 'ge', 'le']
   ]
 
-  # TODO(user): Remove Visit() in favor of GetCoeffs().
-  def Visit(self, coeffs):
-    """Fills the coefficient dictionary, and returns the offset."""
-    self.AddSelfToCoeffMap(coeffs, 1.0)
-    constant = coeffs.pop(OFFSET_KEY, 0.0)
-    return constant
-
   def solution_value(self):  # pylint: disable=invalid-name
     """Value of this linear expr, using the solution_value of its vars."""
     coeffs = self.GetCoeffs()

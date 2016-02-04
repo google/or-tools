@@ -119,10 +119,9 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     if isinstance(expr, numbers.Number):
         objective.AddOffset(expr)
     else:
-        coeffs = {}
-        offset = expr.Visit(coeffs)
-        objective.AddOffset(offset)
-        for v, c, in iter(coeffs.items()):
+        coeffs = expr.GetCoeffs()
+        objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
+        for v, c, in coeffs.iteritems():
           objective.SetCoefficient(v, float(c))
 
   def Maximize(self, expr):
@@ -132,10 +131,9 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     if isinstance(expr, numbers.Number):
         objective.AddOffset(expr)
     else:
-        coeffs = {}
-        offset = expr.Visit(coeffs)
-        objective.AddOffset(offset)
-        for v, c, in iter(coeffs.items()):
+        coeffs = expr.GetCoeffs()
+        objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
+        for v, c, in coeffs.iteritems():
           objective.SetCoefficient(v, float(c))
   }  // %pythoncode
 }

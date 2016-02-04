@@ -478,7 +478,7 @@ class Propagator {
   // memory location that already contains the reason.
   virtual ClauseRef Reason(const Trail& trail, int trail_index) const {
     LOG(FATAL) << "Not implemented.";
-#if !defined(__linux__)
+#if !defined(__linux__)  // for Mac OS and MSVC++.
     return ClauseRef();
 #endif
   }

@@ -923,8 +923,8 @@ ConstraintSolverParameters::TrailCompression GetTrailCompression(
       return ConstraintSolverParameters::NO_COMPRESSION;
     case RoutingModelParameters::ZLIB:
       return ConstraintSolverParameters::COMPRESS_WITH_ZLIB;
-default:
-      return ConstraintSolverParameters::NO_COMPRESSION;
+    default:
+            return ConstraintSolverParameters::NO_COMPRESSION;
   }
 }
 
@@ -1121,7 +1121,7 @@ RoutingModel::~RoutingModel() {
 RoutingModelParameters RoutingModel::DefaultModelParameters() {
   static const char* const kModelParameters =
       "reduce_vehicle_cost_model: true "
-      "trail_compression: ZLIB";
+            "trail_compression: ZLIB";
   RoutingModelParameters parameters;
   if (!google::protobuf::TextFormat::ParseFromString(kModelParameters, &parameters)) {
     LOG(ERROR) << "Unsupported default model parameters: " << kModelParameters;
@@ -1132,7 +1132,7 @@ RoutingModelParameters RoutingModel::DefaultModelParameters() {
 RoutingSearchParameters RoutingModel::DefaultSearchParameters() {
   static const char* const kSearchParameters =
       "first_solution_strategy: AUTOMATIC "
-      "use_filtered_first_solution_strategy: false "
+      "use_filtered_first_solution_strategy: true "
       "local_search_operators {"
       "  use_relocate: true"
       "  use_relocate_pair: true"

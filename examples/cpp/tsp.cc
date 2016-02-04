@@ -33,10 +33,12 @@
 #include "base/integral_types.h"
 #include "base/join.h"
 #include "constraint_solver/routing.h"
+#include "constraint_solver/routing_flags.h"
 #include "base/random.h"
 
 using operations_research::Assignment;
 using operations_research::RoutingModel;
+using operations_research::RoutingSearchParameters;
 using operations_research::ACMRandom;
 using operations_research::StrAppend;
 
@@ -46,8 +48,6 @@ DEFINE_int32(tsp_random_forbidden_connections, 0,
              "Number of random forbidden connections.");
 DEFINE_bool(tsp_use_deterministic_random_seed, false,
             "Use deterministic random seeds.");
-DECLARE_string(routing_first_solution);
-DECLARE_bool(routing_no_lns);
 
 // Random seed generator.
 int32 GetSeed() {
@@ -108,10 +108,11 @@ int main(int argc, char** argv) {
     // Nodes are indexed from 0 to FLAGS_tsp_size - 1, by default the start of
     // the route is node 0.
     RoutingModel routing(FLAGS_tsp_size, 1);
+    RoutingSearchParameters parameters =
+        operations_research::BuildSearchParametersFromFlags();
     // Setting first solution heuristic (cheapest addition).
-    FLAGS_routing_first_solution = "PathCheapestArc";
-    // Disabling Large Neighborhood Search, comment out to activate it.
-    FLAGS_routing_no_lns = true;
+    parameters.set_first_solution_strategy(
+        operations_research::FirstSolutionStrategy::PATH_CHEAPEST_ARC);
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
@@ -139,7 +140,7 @@ int main(int argc, char** argv) {
       }
     }
     // Solve, returns a solution if any (owned by RoutingModel).
-    const Assignment* solution = routing.Solve();
+    const Assignment* solution = routing.SolveWithParameters(parameters);
     if (solution != NULL) {
       // Solution cost.
       LOG(INFO) << "Cost " << solution->ObjectiveValue();

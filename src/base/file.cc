@@ -55,16 +55,10 @@ bool File::Close() {
 }
 
 util::Status File::Close(int flags) {
-  if (flags == file::Defaults()) {
-    if (fclose(f_) == 0) {
-      f_ = NULL;
-      return util::Status::OK;
-    } else {
-      return false;
-    }
-  }
-  return util::Status(util::error::INVALID_ARGUMENT,
-                      StrCat("Could not close file '", name_, "'"));
+  if (flags != file::Defaults()) return false;
+  return Close() ? util::Status::OK
+                 : util::Status(util::error::INVALID_ARGUMENT,
+                                StrCat("Could not close file '", name_, "'"));
 }
 
 void File::ReadOrDie(void* const buf, size_t size) {
