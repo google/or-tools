@@ -166,17 +166,17 @@ struct is_class_or_union {
 };
 
 template <typename T>
-struct remove_reference {
+struct c_remove_reference {
   typedef T type;
 };
 template <typename T>
-struct remove_reference<T&> {
+struct c_remove_reference<T&> {
   typedef T type;
 };
 
 template <typename T>
 struct ConstRef {
-  typedef typename remove_reference<T>::type base_type;
+  typedef typename c_remove_reference<T>::type base_type;
   typedef const base_type& type;
 };
 
@@ -439,7 +439,7 @@ class _ConstMemberResultCallback_1_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_0(const T* object, MemberSignature member,
@@ -477,7 +477,7 @@ class _ConstMemberResultCallback_1_0<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_0(const T* object, MemberSignature member,
@@ -531,7 +531,7 @@ class _MemberResultCallback_1_0 : public ResultCallback<R> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_0(T* object, MemberSignature member,
@@ -569,7 +569,7 @@ class _MemberResultCallback_1_0<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_0(T* object, MemberSignature member,
@@ -619,7 +619,7 @@ class _FunctionResultCallback_1_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_0(FunctionSignature function,
@@ -654,7 +654,7 @@ class _FunctionResultCallback_1_0<del, void, P1> : public Closure {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_0(FunctionSignature function,
@@ -702,8 +702,8 @@ class _ConstMemberResultCallback_2_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_0(const T* object, MemberSignature member,
@@ -746,8 +746,8 @@ class _ConstMemberResultCallback_2_0<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_0(const T* object, MemberSignature member,
@@ -805,8 +805,8 @@ class _MemberResultCallback_2_0 : public ResultCallback<R> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_0(T* object, MemberSignature member,
@@ -849,8 +849,8 @@ class _MemberResultCallback_2_0<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_0(T* object, MemberSignature member,
@@ -905,8 +905,8 @@ class _FunctionResultCallback_2_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_0(FunctionSignature function,
@@ -942,8 +942,8 @@ class _FunctionResultCallback_2_0<del, void, P1, P2> : public Closure {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_0(FunctionSignature function,
@@ -994,9 +994,9 @@ class _ConstMemberResultCallback_3_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_0(const T* object, MemberSignature member,
@@ -1041,9 +1041,9 @@ class _ConstMemberResultCallback_3_0<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_0(const T* object, MemberSignature member,
@@ -1109,9 +1109,9 @@ class _MemberResultCallback_3_0 : public ResultCallback<R> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_0(T* object, MemberSignature member,
@@ -1156,9 +1156,9 @@ class _MemberResultCallback_3_0<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_0(T* object, MemberSignature member,
@@ -1221,9 +1221,9 @@ class _FunctionResultCallback_3_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_0(FunctionSignature function,
@@ -1260,9 +1260,9 @@ class _FunctionResultCallback_3_0<del, void, P1, P2, P3> : public Closure {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_0(FunctionSignature function,
@@ -1317,10 +1317,10 @@ class _ConstMemberResultCallback_4_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_0(const T* object, MemberSignature member,
@@ -1367,10 +1367,10 @@ class _ConstMemberResultCallback_4_0<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_0(const T* object, MemberSignature member,
@@ -1441,10 +1441,10 @@ class _MemberResultCallback_4_0 : public ResultCallback<R> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_0(T* object, MemberSignature member,
@@ -1491,10 +1491,10 @@ class _MemberResultCallback_4_0<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_0(T* object, MemberSignature member,
@@ -1560,10 +1560,10 @@ class _FunctionResultCallback_4_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_0(FunctionSignature function,
@@ -1606,10 +1606,10 @@ class _FunctionResultCallback_4_0<del, void, P1, P2, P3, P4> : public Closure {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_0(FunctionSignature function,
@@ -1668,11 +1668,11 @@ class _ConstMemberResultCallback_5_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_0(const T* object, MemberSignature member,
@@ -1721,11 +1721,11 @@ class _ConstMemberResultCallback_5_0<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_0(const T* object, MemberSignature member,
@@ -1802,11 +1802,11 @@ class _MemberResultCallback_5_0 : public ResultCallback<R> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_0(T* object, MemberSignature member,
@@ -1855,11 +1855,11 @@ class _MemberResultCallback_5_0<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_0(T* object, MemberSignature member,
@@ -1933,11 +1933,11 @@ class _FunctionResultCallback_5_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_0(FunctionSignature function,
@@ -1983,11 +1983,11 @@ class _FunctionResultCallback_5_0<del, void, P1, P2, P3, P4,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_0(FunctionSignature function,
@@ -2054,12 +2054,12 @@ class _ConstMemberResultCallback_6_0 : public ResultCallback<R> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_0(const T* object, MemberSignature member,
@@ -2111,12 +2111,12 @@ class _ConstMemberResultCallback_6_0<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_0(const T* object, MemberSignature member,
@@ -2195,12 +2195,12 @@ class _MemberResultCallback_6_0 : public ResultCallback<R> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_0(T* object, MemberSignature member,
@@ -2252,12 +2252,12 @@ class _MemberResultCallback_6_0<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_0(T* object, MemberSignature member,
@@ -2335,12 +2335,12 @@ class _FunctionResultCallback_6_0 : public ResultCallback<R> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_0(FunctionSignature function,
@@ -2388,12 +2388,12 @@ class _FunctionResultCallback_6_0<del, void, P1, P2, P3, P4, P5,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_0(FunctionSignature function,
@@ -2714,7 +2714,7 @@ class _ConstMemberResultCallback_1_1 : public ResultCallback1<R, A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_1(const T* object, MemberSignature member,
@@ -2752,7 +2752,7 @@ class _ConstMemberResultCallback_1_1<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_1(const T* object, MemberSignature member,
@@ -2808,7 +2808,7 @@ class _MemberResultCallback_1_1 : public ResultCallback1<R, A1> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_1(T* object, MemberSignature member,
@@ -2846,7 +2846,7 @@ class _MemberResultCallback_1_1<del, void, T, P1, A1,
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_1(T* object, MemberSignature member,
@@ -2896,7 +2896,7 @@ class _FunctionResultCallback_1_1 : public ResultCallback1<R, A1> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_1(FunctionSignature function,
@@ -2931,7 +2931,7 @@ class _FunctionResultCallback_1_1<del, void, P1, A1> : public Callback1<A1> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_1(FunctionSignature function,
@@ -2979,8 +2979,8 @@ class _ConstMemberResultCallback_2_1 : public ResultCallback1<R, A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_1(const T* object, MemberSignature member,
@@ -3023,8 +3023,8 @@ class _ConstMemberResultCallback_2_1<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_1(const T* object, MemberSignature member,
@@ -3082,8 +3082,8 @@ class _MemberResultCallback_2_1 : public ResultCallback1<R, A1> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_1(T* object, MemberSignature member,
@@ -3126,8 +3126,8 @@ class _MemberResultCallback_2_1<del, void, T, P1, P2, A1,
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_1(T* object, MemberSignature member,
@@ -3182,8 +3182,8 @@ class _FunctionResultCallback_2_1 : public ResultCallback1<R, A1> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_1(FunctionSignature function,
@@ -3220,8 +3220,8 @@ class _FunctionResultCallback_2_1<del, void, P1, P2,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_1(FunctionSignature function,
@@ -3273,9 +3273,9 @@ class _ConstMemberResultCallback_3_1 : public ResultCallback1<R, A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_1(const T* object, MemberSignature member,
@@ -3320,9 +3320,9 @@ class _ConstMemberResultCallback_3_1<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_1(const T* object, MemberSignature member,
@@ -3390,9 +3390,9 @@ class _MemberResultCallback_3_1 : public ResultCallback1<R, A1> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_1(T* object, MemberSignature member,
@@ -3437,9 +3437,9 @@ class _MemberResultCallback_3_1<del, void, T, P1, P2, P3, A1,
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_1(T* object, MemberSignature member,
@@ -3502,9 +3502,9 @@ class _FunctionResultCallback_3_1 : public ResultCallback1<R, A1> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_1(FunctionSignature function,
@@ -3546,9 +3546,9 @@ class _FunctionResultCallback_3_1<del, void, P1, P2, P3,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_1(FunctionSignature function,
@@ -3604,10 +3604,10 @@ class _ConstMemberResultCallback_4_1 : public ResultCallback1<R, A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_1(const T* object, MemberSignature member,
@@ -3655,10 +3655,10 @@ class _ConstMemberResultCallback_4_1<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_1(const T* object, MemberSignature member,
@@ -3731,10 +3731,10 @@ class _MemberResultCallback_4_1 : public ResultCallback1<R, A1> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_1(T* object, MemberSignature member,
@@ -3781,10 +3781,10 @@ class _MemberResultCallback_4_1<del, void, T, P1, P2, P3, P4, A1,
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_1(T* object, MemberSignature member,
@@ -3854,10 +3854,10 @@ class _FunctionResultCallback_4_1 : public ResultCallback1<R, A1> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_1(FunctionSignature function,
@@ -3901,10 +3901,10 @@ class _FunctionResultCallback_4_1<del, void, P1, P2, P3, P4,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_1(FunctionSignature function,
@@ -3968,11 +3968,11 @@ class _ConstMemberResultCallback_5_1 : public ResultCallback1<R, A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_1(const T* object, MemberSignature member,
@@ -4023,11 +4023,11 @@ class _ConstMemberResultCallback_5_1<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_1(const T* object, MemberSignature member,
@@ -4105,11 +4105,11 @@ class _MemberResultCallback_5_1 : public ResultCallback1<R, A1> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_1(T* object, MemberSignature member,
@@ -4159,11 +4159,11 @@ class _MemberResultCallback_5_1<del, void, T, P1, P2, P3, P4, P5, A1,
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_1(T* object, MemberSignature member,
@@ -4238,11 +4238,11 @@ class _FunctionResultCallback_5_1 : public ResultCallback1<R, A1> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_1(FunctionSignature function,
@@ -4288,11 +4288,11 @@ class _FunctionResultCallback_5_1<del, void, P1, P2, P3, P4, P5,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_1(FunctionSignature function,
@@ -4362,12 +4362,12 @@ class _ConstMemberResultCallback_6_1 : public ResultCallback1<R, A1> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_1(const T* object, MemberSignature member,
@@ -4420,12 +4420,12 @@ class _ConstMemberResultCallback_6_1<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_1(const T* object, MemberSignature member,
@@ -4505,12 +4505,12 @@ class _MemberResultCallback_6_1 : public ResultCallback1<R, A1> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_1(T* object, MemberSignature member,
@@ -4562,12 +4562,12 @@ class _MemberResultCallback_6_1<del, void, T, P1, P2, P3, P4, P5, P6, A1,
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_1(T* object, MemberSignature member,
@@ -4645,12 +4645,12 @@ class _FunctionResultCallback_6_1 : public ResultCallback1<R, A1> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_1(FunctionSignature function,
@@ -4699,12 +4699,12 @@ class _FunctionResultCallback_6_1<del, void, P1, P2, P3, P4, P5, P6,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_1(FunctionSignature function,
@@ -5028,7 +5028,7 @@ class _ConstMemberResultCallback_1_2 : public ResultCallback2<R, A1, A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_2(const T* object, MemberSignature member,
@@ -5069,7 +5069,7 @@ class _ConstMemberResultCallback_1_2<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_2(const T* object, MemberSignature member,
@@ -5125,7 +5125,7 @@ class _MemberResultCallback_1_2 : public ResultCallback2<R, A1, A2> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_2(T* object, MemberSignature member,
@@ -5166,7 +5166,7 @@ class _MemberResultCallback_1_2<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_2(T* object, MemberSignature member,
@@ -5219,7 +5219,7 @@ class _FunctionResultCallback_1_2 : public ResultCallback2<R, A1, A2> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_2(FunctionSignature function,
@@ -5255,7 +5255,7 @@ class _FunctionResultCallback_1_2<del, void, P1, A1, A2> : public Callback2<
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_2(FunctionSignature function,
@@ -5304,8 +5304,8 @@ class _ConstMemberResultCallback_2_2 : public ResultCallback2<R, A1, A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_2(const T* object, MemberSignature member,
@@ -5349,8 +5349,8 @@ class _ConstMemberResultCallback_2_2<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_2(const T* object, MemberSignature member,
@@ -5414,8 +5414,8 @@ class _MemberResultCallback_2_2 : public ResultCallback2<R, A1, A2> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_2(T* object, MemberSignature member,
@@ -5459,8 +5459,8 @@ class _MemberResultCallback_2_2<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_2(T* object, MemberSignature member,
@@ -5519,8 +5519,8 @@ class _FunctionResultCallback_2_2 : public ResultCallback2<R, A1, A2> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_2(FunctionSignature function,
@@ -5557,8 +5557,8 @@ class _FunctionResultCallback_2_2<del, void, P1, P2, A1, A2> : public Callback2<
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_2(FunctionSignature function,
@@ -5612,9 +5612,9 @@ class _ConstMemberResultCallback_3_2 : public ResultCallback2<R, A1, A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_2(const T* object, MemberSignature member,
@@ -5660,9 +5660,9 @@ class _ConstMemberResultCallback_3_2<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_2(const T* object, MemberSignature member,
@@ -5732,9 +5732,9 @@ class _MemberResultCallback_3_2 : public ResultCallback2<R, A1, A2> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_2(T* object, MemberSignature member,
@@ -5780,9 +5780,9 @@ class _MemberResultCallback_3_2<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_2(T* object, MemberSignature member,
@@ -5849,9 +5849,9 @@ class _FunctionResultCallback_3_2 : public ResultCallback2<R, A1, A2> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_2(FunctionSignature function,
@@ -5893,9 +5893,9 @@ class _FunctionResultCallback_3_2<del, void, P1, P2, P3, A1,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_2(FunctionSignature function,
@@ -5951,10 +5951,10 @@ class _ConstMemberResultCallback_4_2 : public ResultCallback2<R, A1, A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_2(const T* object, MemberSignature member,
@@ -6003,10 +6003,10 @@ class _ConstMemberResultCallback_4_2<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_2(const T* object, MemberSignature member,
@@ -6080,10 +6080,10 @@ class _MemberResultCallback_4_2 : public ResultCallback2<R, A1, A2> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_2(T* object, MemberSignature member,
@@ -6132,10 +6132,10 @@ class _MemberResultCallback_4_2<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_2(T* object, MemberSignature member,
@@ -6206,10 +6206,10 @@ class _FunctionResultCallback_4_2 : public ResultCallback2<R, A1, A2> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_2(FunctionSignature function,
@@ -6253,10 +6253,10 @@ class _FunctionResultCallback_4_2<del, void, P1, P2, P3, P4, A1,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_2(FunctionSignature function,
@@ -6322,11 +6322,11 @@ class _ConstMemberResultCallback_5_2 : public ResultCallback2<R, A1, A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_2(const T* object, MemberSignature member,
@@ -6377,11 +6377,11 @@ class _ConstMemberResultCallback_5_2<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_2(const T* object, MemberSignature member,
@@ -6460,11 +6460,11 @@ class _MemberResultCallback_5_2 : public ResultCallback2<R, A1, A2> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_2(T* object, MemberSignature member,
@@ -6515,11 +6515,11 @@ class _MemberResultCallback_5_2<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_2(T* object, MemberSignature member,
@@ -6594,11 +6594,11 @@ class _FunctionResultCallback_5_2 : public ResultCallback2<R, A1, A2> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_2(FunctionSignature function,
@@ -6645,11 +6645,11 @@ class _FunctionResultCallback_5_2<del, void, P1, P2, P3, P4, P5, A1,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_2(FunctionSignature function,
@@ -6722,12 +6722,12 @@ class _ConstMemberResultCallback_6_2 : public ResultCallback2<R, A1, A2> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_2(const T* object, MemberSignature member,
@@ -6780,12 +6780,12 @@ class _ConstMemberResultCallback_6_2<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_2(const T* object, MemberSignature member,
@@ -6867,12 +6867,12 @@ class _MemberResultCallback_6_2 : public ResultCallback2<R, A1, A2> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_2(T* object, MemberSignature member,
@@ -6925,12 +6925,12 @@ class _MemberResultCallback_6_2<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_2(T* object, MemberSignature member,
@@ -7008,12 +7008,12 @@ class _FunctionResultCallback_6_2 : public ResultCallback2<R, A1, A2> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_2(FunctionSignature function,
@@ -7062,12 +7062,12 @@ class _FunctionResultCallback_6_2<del, void, P1, P2, P3, P4, P5, P6, A1,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_2(FunctionSignature function,
@@ -7395,7 +7395,7 @@ class _ConstMemberResultCallback_1_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_3(const T* object, MemberSignature member,
@@ -7437,7 +7437,7 @@ class _ConstMemberResultCallback_1_3<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_3(const T* object, MemberSignature member,
@@ -7495,7 +7495,7 @@ class _MemberResultCallback_1_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_3(T* object, MemberSignature member,
@@ -7537,7 +7537,7 @@ class _MemberResultCallback_1_3<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_3(T* object, MemberSignature member,
@@ -7590,7 +7590,7 @@ class _FunctionResultCallback_1_3 : public ResultCallback3<R, A1, A2, A3> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_3(FunctionSignature function,
@@ -7626,7 +7626,7 @@ class _FunctionResultCallback_1_3<del, void, P1, A1, A2, A3> : public Callback3<
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_3(FunctionSignature function,
@@ -7676,8 +7676,8 @@ class _ConstMemberResultCallback_2_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_3(const T* object, MemberSignature member,
@@ -7721,8 +7721,8 @@ class _ConstMemberResultCallback_2_3<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_3(const T* object, MemberSignature member,
@@ -7788,8 +7788,8 @@ class _MemberResultCallback_2_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_3(T* object, MemberSignature member,
@@ -7833,8 +7833,8 @@ class _MemberResultCallback_2_3<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_3(T* object, MemberSignature member,
@@ -7897,8 +7897,8 @@ class _FunctionResultCallback_2_3 : public ResultCallback3<R, A1, A2, A3> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_3(FunctionSignature function,
@@ -7938,8 +7938,8 @@ class _FunctionResultCallback_2_3<del, void, P1, P2, A1, A2,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_3(FunctionSignature function,
@@ -7993,9 +7993,9 @@ class _ConstMemberResultCallback_3_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_3(const T* object, MemberSignature member,
@@ -8042,9 +8042,9 @@ class _ConstMemberResultCallback_3_3<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_3(const T* object, MemberSignature member,
@@ -8115,9 +8115,9 @@ class _MemberResultCallback_3_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_3(T* object, MemberSignature member,
@@ -8164,9 +8164,9 @@ class _MemberResultCallback_3_3<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_3(T* object, MemberSignature member,
@@ -8234,9 +8234,9 @@ class _FunctionResultCallback_3_3 : public ResultCallback3<R, A1, A2, A3> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_3(FunctionSignature function,
@@ -8278,9 +8278,9 @@ class _FunctionResultCallback_3_3<del, void, P1, P2, P3, A1, A2,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_3(FunctionSignature function,
@@ -8343,10 +8343,10 @@ class _ConstMemberResultCallback_4_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_3(const T* object, MemberSignature member,
@@ -8395,10 +8395,10 @@ class _ConstMemberResultCallback_4_3<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_3(const T* object, MemberSignature member,
@@ -8472,10 +8472,10 @@ class _MemberResultCallback_4_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_3(T* object, MemberSignature member,
@@ -8524,10 +8524,10 @@ class _MemberResultCallback_4_3<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_3(T* object, MemberSignature member,
@@ -8598,10 +8598,10 @@ class _FunctionResultCallback_4_3 : public ResultCallback3<R, A1, A2, A3> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_3(FunctionSignature function,
@@ -8646,10 +8646,10 @@ class _FunctionResultCallback_4_3<del, void, P1, P2, P3, P4, A1, A2,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_3(FunctionSignature function,
@@ -8718,11 +8718,11 @@ class _ConstMemberResultCallback_5_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_3(const T* object, MemberSignature member,
@@ -8773,11 +8773,11 @@ class _ConstMemberResultCallback_5_3<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_3(const T* object, MemberSignature member,
@@ -8859,11 +8859,11 @@ class _MemberResultCallback_5_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_3(T* object, MemberSignature member,
@@ -8914,11 +8914,11 @@ class _MemberResultCallback_5_3<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_3(T* object, MemberSignature member,
@@ -8993,11 +8993,11 @@ class _FunctionResultCallback_5_3 : public ResultCallback3<R, A1, A2, A3> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_3(FunctionSignature function,
@@ -9044,11 +9044,11 @@ class _FunctionResultCallback_5_3<del, void, P1, P2, P3, P4, P5, A1, A2,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_3(FunctionSignature function,
@@ -9121,12 +9121,12 @@ class _ConstMemberResultCallback_6_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_3(const T* object, MemberSignature member,
@@ -9179,12 +9179,12 @@ class _ConstMemberResultCallback_6_3<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_3(const T* object, MemberSignature member,
@@ -9266,12 +9266,12 @@ class _MemberResultCallback_6_3 : public ResultCallback3<R, A1, A2, A3> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_3(T* object, MemberSignature member,
@@ -9324,12 +9324,12 @@ class _MemberResultCallback_6_3<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_3(T* object, MemberSignature member,
@@ -9407,12 +9407,12 @@ class _FunctionResultCallback_6_3 : public ResultCallback3<R, A1, A2, A3> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_3(FunctionSignature function,
@@ -9461,12 +9461,12 @@ class _FunctionResultCallback_6_3<del, void, P1, P2, P3, P4, P5, P6, A1, A2,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_3(FunctionSignature function,
@@ -9806,7 +9806,7 @@ class _ConstMemberResultCallback_1_4
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_4(const T* object, MemberSignature member,
@@ -9848,7 +9848,7 @@ class _ConstMemberResultCallback_1_4<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_4(const T* object, MemberSignature member,
@@ -9911,7 +9911,7 @@ class _MemberResultCallback_1_4 : public ResultCallback4<R, A1, A2, A3, A4> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_4(T* object, MemberSignature member,
@@ -9953,7 +9953,7 @@ class _MemberResultCallback_1_4<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_4(T* object, MemberSignature member,
@@ -10013,7 +10013,7 @@ class _FunctionResultCallback_1_4 : public ResultCallback4<R, A1, A2, A3, A4> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_4(FunctionSignature function,
@@ -10049,7 +10049,7 @@ class _FunctionResultCallback_1_4<del, void, P1, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_4(FunctionSignature function,
@@ -10101,8 +10101,8 @@ class _ConstMemberResultCallback_2_4
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_4(const T* object, MemberSignature member,
@@ -10147,8 +10147,8 @@ class _ConstMemberResultCallback_2_4<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_4(const T* object, MemberSignature member,
@@ -10215,8 +10215,8 @@ class _MemberResultCallback_2_4 : public ResultCallback4<R, A1, A2, A3, A4> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_4(T* object, MemberSignature member,
@@ -10261,8 +10261,8 @@ class _MemberResultCallback_2_4<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_4(T* object, MemberSignature member,
@@ -10326,8 +10326,8 @@ class _FunctionResultCallback_2_4 : public ResultCallback4<R, A1, A2, A3, A4> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_4(FunctionSignature function,
@@ -10367,8 +10367,8 @@ class _FunctionResultCallback_2_4<del, void, P1, P2, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_4(FunctionSignature function,
@@ -10425,9 +10425,9 @@ class _ConstMemberResultCallback_3_4
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_4(const T* object, MemberSignature member,
@@ -10474,9 +10474,9 @@ class _ConstMemberResultCallback_3_4<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_4(const T* object, MemberSignature member,
@@ -10547,9 +10547,9 @@ class _MemberResultCallback_3_4 : public ResultCallback4<R, A1, A2, A3, A4> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_4(T* object, MemberSignature member,
@@ -10596,9 +10596,9 @@ class _MemberResultCallback_3_4<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_4(T* object, MemberSignature member,
@@ -10666,9 +10666,9 @@ class _FunctionResultCallback_3_4 : public ResultCallback4<R, A1, A2, A3, A4> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_4(FunctionSignature function,
@@ -10711,9 +10711,9 @@ class _FunctionResultCallback_3_4<del, void, P1, P2, P3, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_4(FunctionSignature function,
@@ -10780,10 +10780,10 @@ class _ConstMemberResultCallback_4_4
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_4(const T* object, MemberSignature member,
@@ -10832,10 +10832,10 @@ class _ConstMemberResultCallback_4_4<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_4(const T* object, MemberSignature member,
@@ -10912,10 +10912,10 @@ class _MemberResultCallback_4_4 : public ResultCallback4<R, A1, A2, A3, A4> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_4(T* object, MemberSignature member,
@@ -10964,10 +10964,10 @@ class _MemberResultCallback_4_4<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_4(T* object, MemberSignature member,
@@ -11038,10 +11038,10 @@ class _FunctionResultCallback_4_4 : public ResultCallback4<R, A1, A2, A3, A4> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_4(FunctionSignature function,
@@ -11086,10 +11086,10 @@ class _FunctionResultCallback_4_4<del, void, P1, P2, P3, P4, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_4(FunctionSignature function,
@@ -11159,11 +11159,11 @@ class _ConstMemberResultCallback_5_4
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_4(const T* object, MemberSignature member,
@@ -11214,11 +11214,11 @@ class _ConstMemberResultCallback_5_4<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_4(const T* object, MemberSignature member,
@@ -11300,11 +11300,11 @@ class _MemberResultCallback_5_4 : public ResultCallback4<R, A1, A2, A3, A4> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_4(T* object, MemberSignature member,
@@ -11355,11 +11355,11 @@ class _MemberResultCallback_5_4<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_4(T* object, MemberSignature member,
@@ -11435,11 +11435,11 @@ class _FunctionResultCallback_5_4 : public ResultCallback4<R, A1, A2, A3, A4> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_4(FunctionSignature function,
@@ -11486,11 +11486,11 @@ class _FunctionResultCallback_5_4<del, void, P1, P2, P3, P4, P5, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_4(FunctionSignature function,
@@ -11564,12 +11564,12 @@ class _ConstMemberResultCallback_6_4
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_4(const T* object, MemberSignature member,
@@ -11625,12 +11625,12 @@ class _ConstMemberResultCallback_6_4<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_4(const T* object, MemberSignature member,
@@ -11713,12 +11713,12 @@ class _MemberResultCallback_6_4 : public ResultCallback4<R, A1, A2, A3, A4> {
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_4(T* object, MemberSignature member,
@@ -11773,12 +11773,12 @@ class _MemberResultCallback_6_4<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_4(T* object, MemberSignature member,
@@ -11856,12 +11856,12 @@ class _FunctionResultCallback_6_4 : public ResultCallback4<R, A1, A2, A3, A4> {
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_4(FunctionSignature function,
@@ -11910,12 +11910,12 @@ class _FunctionResultCallback_6_4<del, void, P1, P2, P3, P4, P5, P6, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_4(FunctionSignature function,
@@ -12267,7 +12267,7 @@ class _ConstMemberResultCallback_1_5
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_5(const T* object, MemberSignature member,
@@ -12311,7 +12311,7 @@ class _ConstMemberResultCallback_1_5<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _ConstMemberResultCallback_1_5(const T* object, MemberSignature member,
@@ -12376,7 +12376,7 @@ class _MemberResultCallback_1_5
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_5(T* object, MemberSignature member,
@@ -12420,7 +12420,7 @@ class _MemberResultCallback_1_5<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _MemberResultCallback_1_5(T* object, MemberSignature member,
@@ -12482,7 +12482,7 @@ class _FunctionResultCallback_1_5
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_5(FunctionSignature function,
@@ -12521,7 +12521,7 @@ class _FunctionResultCallback_1_5<del, void, P1, A1, A2, A3, A4,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
+  typename c_remove_reference<P1>::type p1_;
 
  public:
   inline _FunctionResultCallback_1_5(FunctionSignature function,
@@ -12576,8 +12576,8 @@ class _ConstMemberResultCallback_2_5
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_5(const T* object, MemberSignature member,
@@ -12623,8 +12623,8 @@ class _ConstMemberResultCallback_2_5<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _ConstMemberResultCallback_2_5(const T* object, MemberSignature member,
@@ -12692,8 +12692,8 @@ class _MemberResultCallback_2_5
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_5(T* object, MemberSignature member,
@@ -12739,8 +12739,8 @@ class _MemberResultCallback_2_5<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _MemberResultCallback_2_5(T* object, MemberSignature member,
@@ -12805,8 +12805,8 @@ class _FunctionResultCallback_2_5
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_5(FunctionSignature function,
@@ -12848,8 +12848,8 @@ class _FunctionResultCallback_2_5<del, void, P1, P2, A1, A2, A3, A4,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
 
  public:
   inline _FunctionResultCallback_2_5(FunctionSignature function,
@@ -12912,9 +12912,9 @@ class _ConstMemberResultCallback_3_5
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_5(const T* object, MemberSignature member,
@@ -12962,9 +12962,9 @@ class _ConstMemberResultCallback_3_5<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _ConstMemberResultCallback_3_5(const T* object, MemberSignature member,
@@ -13038,9 +13038,9 @@ class _MemberResultCallback_3_5
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_5(T* object, MemberSignature member,
@@ -13088,9 +13088,9 @@ class _MemberResultCallback_3_5<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _MemberResultCallback_3_5(T* object, MemberSignature member,
@@ -13159,9 +13159,9 @@ class _FunctionResultCallback_3_5
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_5(FunctionSignature function,
@@ -13205,9 +13205,9 @@ class _FunctionResultCallback_3_5<del, void, P1, P2, P3, A1, A2, A3, A4,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
 
  public:
   inline _FunctionResultCallback_3_5(FunctionSignature function,
@@ -13274,10 +13274,10 @@ class _ConstMemberResultCallback_4_5
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_5(const T* object, MemberSignature member,
@@ -13327,10 +13327,10 @@ class _ConstMemberResultCallback_4_5<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _ConstMemberResultCallback_4_5(const T* object, MemberSignature member,
@@ -13409,10 +13409,10 @@ class _MemberResultCallback_4_5
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_5(T* object, MemberSignature member,
@@ -13462,10 +13462,10 @@ class _MemberResultCallback_4_5<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _MemberResultCallback_4_5(T* object, MemberSignature member,
@@ -13538,10 +13538,10 @@ class _FunctionResultCallback_4_5
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_5(FunctionSignature function,
@@ -13587,10 +13587,10 @@ class _FunctionResultCallback_4_5<del, void, P1, P2, P3, P4, A1, A2, A3, A4,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
 
  public:
   inline _FunctionResultCallback_4_5(FunctionSignature function,
@@ -13660,11 +13660,11 @@ class _ConstMemberResultCallback_5_5
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_5(const T* object, MemberSignature member,
@@ -13719,11 +13719,11 @@ class _ConstMemberResultCallback_5_5<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _ConstMemberResultCallback_5_5(const T* object, MemberSignature member,
@@ -13806,11 +13806,11 @@ class _MemberResultCallback_5_5
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_5(T* object, MemberSignature member,
@@ -13864,11 +13864,11 @@ class _MemberResultCallback_5_5<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _MemberResultCallback_5_5(T* object, MemberSignature member,
@@ -13947,11 +13947,11 @@ class _FunctionResultCallback_5_5
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_5(FunctionSignature function,
@@ -13999,11 +13999,11 @@ class _FunctionResultCallback_5_5<del, void, P1, P2, P3, P4, P5, A1, A2, A3, A4,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
 
  public:
   inline _FunctionResultCallback_5_5(FunctionSignature function,
@@ -14080,12 +14080,12 @@ class _ConstMemberResultCallback_6_5
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_5(const T* object, MemberSignature member,
@@ -14142,12 +14142,12 @@ class _ConstMemberResultCallback_6_5<
  private:
   const T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _ConstMemberResultCallback_6_5(const T* object, MemberSignature member,
@@ -14231,12 +14231,12 @@ class _MemberResultCallback_6_5
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_5(T* object, MemberSignature member,
@@ -14293,12 +14293,12 @@ class _MemberResultCallback_6_5<
  private:
   T* object_;
   MemberSignature member_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _MemberResultCallback_6_5(T* object, MemberSignature member,
@@ -14378,12 +14378,12 @@ class _FunctionResultCallback_6_5
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_5(FunctionSignature function,
@@ -14434,12 +14434,12 @@ class _FunctionResultCallback_6_5<del, void, P1, P2, P3, P4, P5, P6, A1, A2, A3,
 
  private:
   FunctionSignature function_;
-  typename remove_reference<P1>::type p1_;
-  typename remove_reference<P2>::type p2_;
-  typename remove_reference<P3>::type p3_;
-  typename remove_reference<P4>::type p4_;
-  typename remove_reference<P5>::type p5_;
-  typename remove_reference<P6>::type p6_;
+  typename c_remove_reference<P1>::type p1_;
+  typename c_remove_reference<P2>::type p2_;
+  typename c_remove_reference<P3>::type p3_;
+  typename c_remove_reference<P4>::type p4_;
+  typename c_remove_reference<P5>::type p5_;
+  typename c_remove_reference<P6>::type p6_;
 
  public:
   inline _FunctionResultCallback_6_5(FunctionSignature function,

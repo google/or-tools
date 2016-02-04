@@ -86,7 +86,9 @@ build_third_party: \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
-	install_scip
+	install_scip \
+	install_bison \
+	install_csharp_protobuf
 
 bin:
 	$(MKDIR_P) bin
@@ -288,9 +290,9 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependen
 	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build
 	tools\sed -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
 ifeq ("$(PTRLENGTH)", "64")
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013 Win64" -DBUILD_TESTING=OFF ..
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013 Win64" -Dprotobuf_BUILD_TESTS=OFF ..
 else
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013" -DBUILD_TESTING=OFF ..
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013" -protobuf_DBUILD_TESTS=OFF ..
 endif
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
@@ -425,6 +427,24 @@ dependencies\install\bin\win_bison.exe: dependencies\archives\win_flex_bison-$(B
 
 dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
 	tools\wget -P dependencies\archives http://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
+
+# Install Java protobuf
+
+install_java_protobuf: dependencies/install/lib/protobuf.jar
+
+dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
+	  ..\\..\\..\\install\\bin\\protoc --java_out=src\\main\\java -I..\\src \
+	  ..\\src\\google\\protobuf\\descriptor.proto
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\src\\main\\java && $(JAR_BIN) cvf ..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
+
+# Install C# protobuf
+
+
+install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
+
+dependencies/install/bin/Google.Protobuf.dll:
+	$(COPY) tools\Google.Protobuf.dll dependencies\\install\\bin
 
 # Clean everything.
 clean_third_party:

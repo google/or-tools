@@ -141,7 +141,7 @@ inline RangeMinimumIndexQuery<T, Compare>::RangeMinimumIndexQuery(
 template <typename T, typename Compare>
 RangeMinimumIndexQuery<T, Compare>::RangeMinimumIndexQuery(std::vector<T> array,
                                                            Compare cmp)
-    : cmp_{std::move(array), std::move(cmp)},
+    : cmp_({std::move(array), std::move(cmp)}),
       rmq_(CreateIndexVector(cmp_.array.size()), cmp_) {}
 
 template <typename T, typename Compare>
