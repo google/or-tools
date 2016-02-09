@@ -71,14 +71,14 @@ void RunAllExamples() {
   LOG(INFO) << "---- Integer programming example with SCIP ----";
   RunIntegerProgrammingExample(MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
   #endif
-  #if defined(USE_GUROBI)
+#if defined(USE_GUROBI)
   LOG(INFO) << "---- Integer programming example with Gurobi ----";
   RunIntegerProgrammingExample(MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING);
-  #endif  // USE_GUROBI
-  #if defined(USE_CPLEX)
+#endif  // USE_GUROBI
+#if defined(USE_CPLEX)
   LOG(INFO) << "---- Integer programming example with CPLEX ----";
   RunIntegerProgrammingExample(MPSolver::CPLEX_MIXED_INTEGER_PROGRAMMING);
-  #endif  // USE_CPLEX
+#endif  // USE_CPLEX
 }
 }  // namespace operations_research
 

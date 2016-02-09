@@ -803,8 +803,8 @@ class NetworkRoutingSolver {
     }
 
     // DecisionBuilder.
-    Solver::IndexEvaluator2  eval_marginal_cost =
-      [this, &usage_costs](int64 var, int64 value) {
+    Solver::IndexEvaluator2 eval_marginal_cost = [this, &usage_costs](
+        int64 var, int64 value) {
       return EvaluateMarginalCost(usage_costs, var, value);
     };
 

@@ -61,7 +61,7 @@ void AnotherAssignment() {
     }
   }
 
-  bool succes = assignement->ComputeAssignment();
+  assignement->ComputeAssignment();
   LOG(INFO) << "Cost : " << assignement->GetCost();
 }
 
