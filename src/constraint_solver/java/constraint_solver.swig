@@ -21,6 +21,7 @@
 %include "util/java/tuple_set.swig"
 %include "util/java/vector.swig"
 %include "util/java/functions.swig"
+
 %include "util/java/proto.swig"
 
 // Remove swig warnings

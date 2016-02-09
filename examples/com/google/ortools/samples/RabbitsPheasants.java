@@ -65,6 +65,7 @@ public class RabbitsPheasants {
   }
 
   public static void main(String[] args) throws Exception {
-    RabbitsPheasants.solve(args.length > 0);
+    boolean traceSearch = args.length > 0;
+    RabbitsPheasants.solve(traceSearch);
   }
 }

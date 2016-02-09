@@ -432,7 +432,13 @@ class Trail {
 };
 
 // Base class for all the SAT constraints.
-class Propagator {
+class PropagatorInterface {
+ public:
+  PropagatorInterface() {}
+  virtual ~PropagatorInterface() {}
+  virtual bool Propagate(Trail* trail) = 0;
+};
+class Propagator : public PropagatorInterface {
  public:
   explicit Propagator(const std::string& name)
       : name_(name), propagator_id_(-1), propagation_trail_index_(0) {}

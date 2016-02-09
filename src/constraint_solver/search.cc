@@ -3429,9 +3429,9 @@ BinaryGuidedLocalSearch::BinaryGuidedLocalSearch(
       objective_function_(objective_function) {}
 
 IntExpr* BinaryGuidedLocalSearch::MakeElementPenalty(int index) {
-  return solver()->MakeElement([this, index](int64 i) {
-    return PenalizedValue(index, i);
-  }, vars_[index]);
+  return solver()->MakeElement(
+      [this, index](int64 i) { return PenalizedValue(index, i); },
+      vars_[index]);
 }
 
 int64 BinaryGuidedLocalSearch::AssignmentElementPenalty(
@@ -3513,9 +3513,9 @@ TernaryGuidedLocalSearch::TernaryGuidedLocalSearch(
 }
 
 IntExpr* TernaryGuidedLocalSearch::MakeElementPenalty(int index) {
-  return solver()->MakeElement([this, index](int64 i, int64 j) {
-    return PenalizedValue(index, i, j);
-  }, vars_[index], secondary_vars_[index]);
+  return solver()->MakeElement(
+      [this, index](int64 i, int64 j) { return PenalizedValue(index, i, j); },
+      vars_[index], secondary_vars_[index]);
 }
 
 int64 TernaryGuidedLocalSearch::AssignmentElementPenalty(
@@ -3933,8 +3933,8 @@ SearchLimit* Solver::MakeLimit(SearchLimit* const limit_1,
 
 void Solver::UpdateLimits(int64 time, int64 branches, int64 failures,
                           int64 solutions, SearchLimit* limit) {
-  reinterpret_cast<RegularLimit*>(limit)
-      ->UpdateLimits(time, branches, failures, solutions);
+  reinterpret_cast<RegularLimit*>(limit)->UpdateLimits(time, branches, failures,
+                                                       solutions);
 }
 
 int64 Solver::GetTime(SearchLimit* limit) {

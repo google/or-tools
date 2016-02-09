@@ -12,6 +12,7 @@
 // limitations under the License.
 
 // This .swig file is only used in the open-source export of
+// util/operations_research (github or-tools)
 //
 // It exposes the linear programming and integer programming solver.
 //

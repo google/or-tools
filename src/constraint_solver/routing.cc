@@ -4320,19 +4320,18 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                              [FirstSolutionStrategy::PATH_CHEAPEST_ARC]);
   }
   // Path-based most constrained arc addition heuristic.
-  Solver::VariableValueComparator comp =  [this](int64 i, int64 j, int64 k) {
+  Solver::VariableValueComparator comp = [this](int64 i, int64 j, int64 k) {
     return ArcIsMoreConstrainedThanArc(i, j, k);
   };
-          
+
   first_solution_decision_builders_
-      [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->MakePhase(
-          nexts_, Solver::CHOOSE_PATH, comp);
+      [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] =
+          solver_->MakePhase(nexts_, Solver::CHOOSE_PATH, comp);
   if (search_parameters.use_filtered_first_solution_strategy()) {
     first_solution_filtered_decision_builders_
-        [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] =
-      solver_->RevAlloc(
-	  new ComparatorCheapestAdditionFilteredDecisionBuilder(
-	      this, comp, GetOrCreateFeasibilityFilters()));
+        [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->RevAlloc(
+            new ComparatorCheapestAdditionFilteredDecisionBuilder(
+                this, comp, GetOrCreateFeasibilityFilters()));
     first_solution_decision_builders_
         [FirstSolutionStrategy::PATH_MOST_CONSTRAINED_ARC] = solver_->Try(
             first_solution_filtered_decision_builders_

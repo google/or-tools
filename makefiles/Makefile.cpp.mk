@@ -29,6 +29,9 @@ DYNAMIC_ROUTING_LIBS = \
 DYNAMIC_FLATZINC_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
 
+DYNAMIC_CVRPTW_LIBS = \
+        $(LIB_DIR)/$(LIBPREFIX)cvrptw_lib.$(DYNAMIC_LIB_SUFFIX)
+
 DYNAMIC_DIMACS_LIBS = \
         $(LIB_DIR)/$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX)
 
@@ -80,6 +83,10 @@ DYNAMIC_ROUTING_DEPS = $(DYNAMIC_ROUTING_LIBS) \
 
 DYNAMIC_FLATZINC_DEPS = $(DYNAMIC_FLATZINC_LIBS) \
         $(DYNAMIC_CP_DEPS)
+DYNAMIC_CVRPTW_DEPS = $(DYNAMIC_CVRPTW_LIBS) \
+        $(DYNAMIC_BASE_DEPS) \
+        $(DYNAMIC_CP_DEPS) \
+        $(DYNAMIC_ROUTING_DEPS)
 
 DYNAMIC_DIMACS_DEPS = $(DYNAMIC_DIMACS_LIBS) \
         $(DYNAMIC_BASE_DEPS) \
@@ -136,6 +143,11 @@ DYNAMIC_ROUTING_LNK = \
 DYNAMIC_FLATZINC_LNK = \
         $(DYNAMIC_PRE_LIB)fz$(DYNAMIC_POST_LIB)\
         $(DYNAMIC_CP_LNK)
+
+DYNAMIC_CVRPTW_LNK = \
+        $(DYNAMIC_PRE_LIB)cvrptw_lib$(DYNAMIC_POST_LIB) \
+        $(DYNAMIC_CP_LNK) \
+        $(DYNAMIC_ROUTING_LNK)
 
 DYNAMIC_DIMACS_LNK = \
         $(DYNAMIC_PRE_LIB)graph$(DYNAMIC_POST_LIB) \
@@ -345,9 +357,9 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)graph.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(DYNAMIC_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)cvrptw_lib.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)dimacs.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(DYNAMIC_LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz2.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(DYNAMIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
@@ -362,7 +374,6 @@ clean_cc:
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(STATIC_LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz2.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(STATIC_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
@@ -378,7 +389,6 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Sfz2$E
-	-$(DEL) $(BIN_DIR)$Sparser_main$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
 	-$(DEL) $(CPBINARIES)
 	-$(DEL) $(LPBINARIES)
@@ -388,8 +398,8 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Sbop$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sflatzinc$Sparser.*
 	-$(DEL) $(GEN_DIR)$Sglop$S*.pb.*
-	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.tab.*
-	-$(DEL) $(GEN_DIR)$Sflatzinc$Sflatzinc.yy.*
+	-$(DEL) $(GEN_DIR)$Sflatzinc$S*.tab.*
+	-$(DEL) $(GEN_DIR)$Sflatzinc$S*.yy.*
 	-$(DEL) $(GEN_DIR)$Ssat$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
@@ -416,6 +426,8 @@ lpexe: $(LPBINARIES)
 lplibs: $(DYNAMIC_LP_DEPS) $(STATIC_LP_DEPS)
 
 graphlibs: $(DYNAMIC_GRAPH_DEPS) $(STATIC_GRAPH_DEPS)
+
+cvrptwlibs: $(DYNAMIC_CVRPTW_LIBS)
 
 dimacslibs: $(DYNAMIC_DIMACS_LIBS)
 
@@ -1136,6 +1148,17 @@ $(BIN_DIR)/solve$E: $(OBJ_DIR)/glop/solve.$O $(STATIC_LP_DEPS)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Ssolve.$O $(STATIC_LP_LNK) $(STATIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssolve$E
 
 
+# CVRPTW common library
+
+CVRPTW_LIB_OBJS=\
+	$(OBJ_DIR)/cvrptw_lib.$O
+
+$(OBJ_DIR)/cvrptw_lib.$O:$(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h $(SRC_DIR)/constraint_solver/routing.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
+
+$(LIB_DIR)/$(LIBPREFIX)cvrptw_lib.$(DYNAMIC_LIB_SUFFIX): $(CVRPTW_LIB_OBJS)
+	$(DYNAMIC_LINK_CMD) $(DYNAMIC_LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)cvrptw_lib.$(DYNAMIC_LIB_SUFFIX) $(CVRPTW_LIB_OBJS)
+
 # DIMACS challenge problem format library
 
 DIMACS_LIB_OBJS=\
@@ -1287,32 +1310,29 @@ $(OBJ_DIR)/cryptarithm.$O:$(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)/constraint_sol
 $(BIN_DIR)/cryptarithm$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/cryptarithm.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/cryptarithm.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scryptarithm$E
 
-$(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h
-	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
-
 $(OBJ_DIR)/cvrptw.$O: $(EX_DIR)/cpp/cvrptw.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw.$O
 
-$(BIN_DIR)/cvrptw$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw.$O $(OBJ_DIR)/cvrptw_lib.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(OBJ_DIR)/cvrptw_lib.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
+$(BIN_DIR)/cvrptw$E: $(DYNAMIC_ROUTING_DEPS) $(DYNAMIC_CVRPTW_DEPS) $(OBJ_DIR)/cvrptw.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_CVRPTW_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
 
 $(OBJ_DIR)/cvrptw_with_refueling.$O: $(EX_DIR)/cpp/cvrptw_with_refueling.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_refueling.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_refueling.$O
 
-$(BIN_DIR)/cvrptw_with_refueling$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(OBJ_DIR)/cvrptw_lib.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(OBJ_DIR)/cvrptw_lib.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
+$(BIN_DIR)/cvrptw_with_refueling$E: $(DYNAMIC_ROUTING_DEPS) $(DYNAMIC_CVRPTW_DEPS) $(OBJ_DIR)/cvrptw_with_refueling.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_CVRPTW_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
 
 $(OBJ_DIR)/cvrptw_with_resources.$O: $(EX_DIR)/cpp/cvrptw_with_resources.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_resources.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_resources.$O
 
-$(BIN_DIR)/cvrptw_with_resources$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_resources.$O $(OBJ_DIR)/cvrptw_lib.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_resources.$O $(OBJ_DIR)/cvrptw_lib.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
+$(BIN_DIR)/cvrptw_with_resources$E: $(DYNAMIC_ROUTING_DEPS) $(DYNAMIC_CVRPTW_DEPS) $(OBJ_DIR)/cvrptw_with_resources.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_resources.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_CVRPTW_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
 
 $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O: $(EX_DIR)/cpp/cvrptw_with_stop_times_and_resources.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_stop_times_and_resources.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_stop_times_and_resources.$O
 
-$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E: $(DYNAMIC_ROUTING_DEPS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(OBJ_DIR)/cvrptw_lib.$O $(OBJ_DIR)/cvrptw_lib.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(OBJ_DIR)/cvrptw_lib.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
+$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E: $(DYNAMIC_ROUTING_DEPS) $(DYNAMIC_CVRPTW_DEPS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(DYNAMIC_ROUTING_LNK) $(DYNAMIC_CVRPTW_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
 
 $(OBJ_DIR)/dobble_ls.$O:$(EX_DIR)/cpp/dobble_ls.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/dobble_ls.cc $(OBJ_OUT)$(OBJ_DIR)$Sdobble_ls.$O

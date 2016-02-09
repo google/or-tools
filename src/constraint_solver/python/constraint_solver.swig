@@ -16,6 +16,7 @@
 //
 // It is particularly complex for a swig file, mostly because it contains a
 // lot of MOE code for the export to the or-tools open-source project at
+// https://github.com/google/or-tools, which benefits from a much more
 // powerful python API thanks to the possible use of directors.
 //
 // USAGE EXAMPLES (most of which are also unit tests):
@@ -187,14 +188,13 @@ static void PyFunctionSolverToVoid(PyObject* pyfunc,
   std::string __str__() {
     return $self->DebugString();
   }
-  %pythoncode {
+%pythoncode {
   def Add(self, ct):
     if isinstance(ct, PyConstraint):
       self.__python_constraints.append(ct)
     self.AddConstraint(ct)
   }  // %pythoncode
 }
-
 %feature("pythonappend") operations_research::Solver::Solver %{
   self.__python_constraints = []
 %}
@@ -1338,41 +1338,23 @@ namespace operations_research {
 %unignore SearchMonitor::SearchMonitor;
 %unignore SearchMonitor::~SearchMonitor;
 %unignore SearchMonitor::EnterSearch;
-%feature("director") SearchMonitor::EnterSearch;
 %unignore SearchMonitor::RestartSearch;
-%feature("director") SearchMonitor::RestartSearch;
 %unignore SearchMonitor::ExitSearch;
-%feature("director") SearchMonitor::ExitSearch;
 %unignore SearchMonitor::BeginNextDecision;
-%feature("director") SearchMonitor::BeginNextDecision;
 %unignore SearchMonitor::EndNextDecision;
-%feature("director") SearchMonitor::EndNextDecision;
 %unignore SearchMonitor::ApplyDecision;
-%feature("director") SearchMonitor::ApplyDecision;
 %unignore SearchMonitor::RefuteDecision;
-%feature("director") SearchMonitor::RefuteDecision;
 %unignore SearchMonitor::AfterDecision;
-%feature("director") SearchMonitor::AfterDecision;
 %unignore SearchMonitor::BeginFail;
-%feature("director") SearchMonitor::BeginFail;
 %unignore SearchMonitor::EndFail;
-%feature("director") SearchMonitor::EndFail;
 %unignore SearchMonitor::BeginInitialPropagation;
-%feature("director") SearchMonitor::BeginInitialPropagation;
 %unignore SearchMonitor::EndInitialPropagation;
-%feature("director") SearchMonitor::EndInitialPropagation;
 %unignore SearchMonitor::AcceptSolution;
-%feature("director") SearchMonitor::AcceptSolution;
 %unignore SearchMonitor::AtSolution;
-%feature("director") SearchMonitor::AtSolution;
 %unignore SearchMonitor::NoMoreSolutions;
-%feature("director") SearchMonitor::NoMoreSolutions;
 %unignore SearchMonitor::LocalOptimum;
-%feature("director") SearchMonitor::LocalOptimum;
 %unignore SearchMonitor::AcceptDelta;
-%feature("director") SearchMonitor::AcceptDelta;
 %unignore SearchMonitor::AcceptNeighbor;
-%feature("director") SearchMonitor::AcceptNeighbor;
 %rename (solver) SearchMonitor::solver;
 %feature("nodirector") SearchMonitor::solver;
 
@@ -1451,9 +1433,7 @@ namespace operations_research {
 %unignore IntVar::WhenBound;
 %unignore IntVar::WhenDomain;
 %rename (HoleIteratorAux) IntVar::MakeHoleIterator;
-%feature("director") IntVar::MakeHoleIterator;
 %rename (DomainIteratorAux) IntVar::MakeDomainIterator;
-%feature("director") IntVar::MakeDomainIterator;
 %unignore IntVar::OldMin;
 %unignore IntVar::OldMax;
 
@@ -2003,9 +1983,6 @@ namespace operations_research {
 %unignore LocalSearchOperator;
 %rename (NextNeighbor) LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Start;
-%feature("director") LocalSearchOperator::MakeNextNeighbor;
-%feature("director") LocalSearchOperator::Start;
-
 
 // VarLocalSearchOperator<>
 // Ignored:
@@ -2024,10 +2001,8 @@ namespace operations_research {
 %unignore VarLocalSearchOperator::Size;
 %unignore VarLocalSearchOperator::Value;
 %unignore VarLocalSearchOperator::IsIncremental;
-%feature("director") VarLocalSearchOperator::IsIncremental;
 %unignore VarLocalSearchOperator::IsIncremental;
 %unignore VarLocalSearchOperator::OnStart;
-%feature("director") VarLocalSearchOperator::OnStart;
 %unignore VarLocalSearchOperator::OnStart;
 %unignore VarLocalSearchOperator::OldValue;
 %unignore VarLocalSearchOperator::SetValue;
@@ -2041,7 +2016,6 @@ namespace operations_research {
 %unignore IntVarLocalSearchOperator::IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::~IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::Size;
-%feature("director") IntVarLocalSearchOperator::MakeOneNeighbor;
 %rename (OneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
 
 
@@ -2087,7 +2061,6 @@ namespace operations_research {
 // - number_of_nexts()
 %unignore PathOperator;
 %rename (Neighbor) PathOperator::MakeNeighbor;
-%feature("director") PathOperator::MakeNeighbor;
 
 
 // LocalSearchFilter
@@ -2270,3 +2243,4 @@ class PyConstraint(Constraint):
 
 
 }  // %pythoncode
+

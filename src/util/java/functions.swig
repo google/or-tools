@@ -122,7 +122,7 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 
 // --------- VoidToString ---------
 
-%define WRAP_OTHER_FUNCTIONS_JAVA(ClassPath) 
+%define WRAP_OTHER_FUNCTIONS_JAVA(ClassPath)
 %typemap(in) std::function<std::string()> {
   jclass object_class =
     jenv->FindClass(ClassPath "VoidToString");

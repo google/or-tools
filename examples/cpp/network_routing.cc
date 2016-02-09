@@ -809,7 +809,7 @@ class NetworkRoutingSolver {
     };
 
     DecisionBuilder* const db = solver.MakePhase(
-	decision_vars, Solver::CHOOSE_RANDOM, eval_marginal_cost);
+        decision_vars, Solver::CHOOSE_RANDOM, eval_marginal_cost);
 
     // Limits.
     if (time_limit != 0 || fail_limit != 0) {

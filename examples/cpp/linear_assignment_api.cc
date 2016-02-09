@@ -68,7 +68,7 @@ void AnotherAssignment() {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::AssignmentOn4x4Matrix();
   operations_research::AnotherAssignment();
   return 0;

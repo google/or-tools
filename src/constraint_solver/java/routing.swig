@@ -319,6 +319,7 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %rename (setDimensionSpanCost) SetDimensionSpanCost;
 %rename (getDimensionSpanCost) GetDimensionSpanCost;
 
+
 // Protobuf support
 PROTO_INPUT(operations_research::RoutingSearchParameters,
             com.google.ortools.constraintsolver.RoutingSearchParameters,

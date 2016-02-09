@@ -466,7 +466,7 @@ class RoutingModel {
   static RoutingModel::StateDependentTransit MakeStateDependentTransit(
       const std::function<int64(int64)>& f, int64 domain_start,
       int64 domain_end);
-#endif // SWIG
+#endif  // SWIG
   // Outputs the names of all dimensions added to the routing engine.
   // TODO(user): rename.
   std::vector<std::string> GetAllDimensionNames() const;
@@ -533,13 +533,13 @@ class RoutingModel {
     }
     return disjunction_indices;
   }
-#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#if !defined(SWIGPYTHON)
   // Returns the variable indices of the nodes in the disjunction of index
   // 'index'.
   const std::vector<int>& GetDisjunctionIndices(DisjunctionIndex index) const {
     return disjunctions_[index].nodes;
   }
-#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#endif  // !defined(SWIGPYTHON)
   // Returns the penalty of the node disjunction of index 'index'.
   int64 GetDisjunctionPenalty(DisjunctionIndex index) const {
     return disjunctions_[index].value;
@@ -794,14 +794,14 @@ class RoutingModel {
   // Returns true if the route of 'vehicle' is non empty in 'assignment'.
   bool IsVehicleUsed(const Assignment& assignment, int vehicle) const;
 // Variables
-#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#if !defined(SWIGPYTHON)
   // Returns all next variables of the model, such that Nexts(i) is the next
   // variable of the node corresponding to i.
   const std::vector<IntVar*>& Nexts() const { return nexts_; }
   // Returns all vehicle variables of the model,  such that VehicleVars(i) is
   // the vehicle variable of the node corresponding to i.
   const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
-#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#endif  // !defined(SWIGPYTHON)
   // Returns the next variable of the node corresponding to index.
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
   // Returns the active variable of the node corresponding to index.
@@ -1274,13 +1274,13 @@ class RoutingDimension {
   IntVar* CumulVar(int64 index) const { return cumuls_[index]; }
   IntVar* TransitVar(int64 index) const { return transits_[index]; }
   IntVar* SlackVar(int64 index) const { return slacks_[index]; }
-#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#if !defined(SWIGPYTHON)
   // Like CumulVar(), TransitVar(), SlackVar() but return the whole variable
   // vectors instead (indexed by int64 var index).
   const std::vector<IntVar*>& cumuls() const { return cumuls_; }
   const std::vector<IntVar*>& transits() const { return transits_; }
   const std::vector<IntVar*>& slacks() const { return slacks_; }
-#if !defined(SWIGCSHARP)
+#if !defined(SWIGCSHARP) && !defined(SWIGJAVA)
   // Returns the callback evaluating the capacity for vehicle indices.
   RoutingModel::VehicleEvaluator* capacity_evaluator() const {
     return capacity_evaluator_.get();
@@ -1290,8 +1290,8 @@ class RoutingDimension {
   RoutingModel::TransitEvaluator2* transit_evaluator(int vehicle) const {
     return transit_evaluators_[vehicle];
   }
-#endif  // SWIGCSHARP
-#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#endif  // !defined(SWIGCSHARP) && !defined(SWIGJAVA)
+#endif  // !defined(SWIGPYTHON)
   // Sets an upper bound on the dimension span on a given vehicle. This is the
   // preferred way to limit the "length" of the route of a vehicle according to
   // a dimension.

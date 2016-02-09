@@ -13,6 +13,8 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+%include "base/base.swig"
+
 %include "constraint_solver/python/constraint_solver.swig"
 
 // TODO(user): remove this when we no longer use callbacks in the routing.
@@ -31,6 +33,7 @@ class RoutingSearchParameters;
 %{
 #include "constraint_solver/routing.h"
 %}
+
 
 // Convert RoutingModel::NodeIndex to (32-bit signed) integers.
 %typemap(in) operations_research::RoutingModel::NodeIndex {

@@ -40,9 +40,13 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
   // loose no extra information.
   int factor_exponent = 0;
   uint64 abs_sum = 0;
+  bool recompute_abs_sum = false;
   bool is_first_value = true;
   const int msb = MostSignificantBitPosition64(max_absolute_sum);
-  for (double x : input) {
+  const int size = input.size();
+  for (int i = 0; i < size; ++i) {
+    const double x = input[i];
+
     // A value of zero can just be skipped (and needs to because the code below
     // doesn't handle it correctly).
     if (x == 0.0) continue;
@@ -54,28 +58,48 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
     // round(fabs(x).2^candidate) <= max_absolute_sum.
     int candidate = msb - ilogb(x);
     if (round(ldexp(fabs(x), candidate)) > max_absolute_sum) --candidate;
-    DCHECK_LE(round(ldexp(fabs(x), candidate)), max_absolute_sum);
+    DCHECK_LE(std::abs(static_cast<int64>(round(ldexp(x, candidate)))),
+              max_absolute_sum);
 
     // Update factor_exponent which is the min of all the candidates.
     if (is_first_value || candidate < factor_exponent) {
       is_first_value = false;
-      abs_sum >>= std::max(0, std::min(63, factor_exponent - candidate));
       factor_exponent = candidate;
+      recompute_abs_sum = true;
+    } else {
+      // Update the sum of absolute values of the numbers seen so far.
+      abs_sum += std::abs(static_cast<int64>(round(ldexp(x, factor_exponent))));
+      if (abs_sum > max_absolute_sum) {
+        factor_exponent--;
+        recompute_abs_sum = true;
+      }
     }
 
-    // Update the sum of absolute values of the numbers seen so far.
-    abs_sum += round(fabs(ldexp(x, factor_exponent)));
-    if (abs_sum > max_absolute_sum) {
-      abs_sum >>= 1;
-      factor_exponent--;
+    // TODO(user): This is not super efficient, but note that in practice we
+    // will only scan the vector of values about log(size) times. It is possible
+    // to maintain an upper bound on the abs_sum in linear time instead, but the
+    // code and corner cases are a lot more involved. Also, we currently only
+    // use this code in situations where its run-time is negligeable compared to
+    // the rest.
+    while (recompute_abs_sum) {
+      abs_sum = 0;
+      for (int j = 0; j <= i; ++j) {
+        const double x = input[j];
+        abs_sum +=
+            std::abs(static_cast<int64>(round(ldexp(x, factor_exponent))));
+      }
+      recompute_abs_sum = false;
+      if (abs_sum > max_absolute_sum) {
+        factor_exponent--;
+        recompute_abs_sum = true;
+      }
     }
-    DCHECK_LE(abs_sum, max_absolute_sum);
   }
 
   // Compute the relative_error.
   *relative_error = 0.0;
   *scaling_factor = ldexp(1.0, factor_exponent);
-  for (double x : input) {
+  for (const double x : input) {
     if (x == 0.0) continue;
     const double scaled = fabs(ldexp(x, factor_exponent));
     *relative_error =
