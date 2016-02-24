@@ -63,9 +63,11 @@ ifeq ("$(SYSTEM)","unix")
   S = /
   CLP_INC = -DUSE_CLP
   CBC_INC = -DUSE_CBC
+  GLOP_INC = -DUSE_GLOP
+  BOP_INT = -DUSE_BOP
   DEBUG = -O4 -DNDEBUG
   CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) $(ARCH) -Wno-deprecated \
-      $(CBC_INC) $(CLP_INC)
+      $(CBC_INC) $(CLP_INC) $(GLOP_INC) $(BOP_INC)
 endif
 
 # Windows specific part.
@@ -83,10 +85,12 @@ ifeq ("$(SYSTEM)","win")
   endif
   CLP_INC = -DUSE_CLP
   CBC_INC = -DUSE_CBC
+  GLOP_INC = -DUSE_GLOP
+  BOP_INC = -DUSE_BOP
   CFLAGS= -nologo $(DEBUG) $(CBC_INC) $(CLP_INC)\
       /D__WIN32__ /I$(INC_DIR)\\src\\windows /DGFLAGS_DLL_DECL= \
       /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG= \
-      /I$(INC_DIR) /I$(EX_DIR)
+      /I$(INC_DIR) /I$(EX_DIR) /D $(GLOP_INC) $(BOP_INC)
   LD_FLAGS = psapi.lib ws2_32.lib
   ORTOOLS_LIB = lib\\ortools.lib
   O=obj
