@@ -92,4 +92,14 @@ message ConstraintSolverParameters {
   // Disable solving.
 
   bool disable_solve = 15;
+
+  //
+  // Control the implementation of the table constraint.
+  // Mostly use for testing.
+  //
+  bool use_compact_table = 16;
+  bool use_small_table = 17;
+  bool use_sat_table = 18;
+  int32 ac4r_table_threshold = 19;
+  bool use_mdd_table = 20;
 };

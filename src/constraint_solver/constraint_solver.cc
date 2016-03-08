@@ -57,6 +57,17 @@ DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
 DEFINE_bool(cp_name_variables, false, "Force all variables to have names.");
 DEFINE_bool(cp_name_cast_variables, false,
             "Name variables casted from expressions");
+DEFINE_bool(cp_use_compact_table, true,
+            "Use compact table constraint when possible.");
+DEFINE_bool(cp_use_small_table, true,
+            "Use small compact table constraint when possible.");
+DEFINE_bool(cp_use_sat_table, false,
+            "If true, use a SAT constraint for all table constraints.");
+DEFINE_int32(cp_ac4r_table_threshold, 2048,
+             "Above this size, allowed assignment constraints will use the "
+             "revised AC-4 implementation of the table constraint.");
+DEFINE_bool(cp_use_mdd_table, false, "Use mdd table");
+
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
@@ -85,6 +96,11 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_disable_solve(FLAGS_cp_disable_solve);
   params.set_name_cast_variables(FLAGS_cp_name_cast_variables);
   params.set_print_added_constraints(FLAGS_cp_print_added_constraints);
+  params.set_use_compact_table(FLAGS_cp_use_compact_table);
+  params.set_use_small_table(FLAGS_cp_use_small_table);
+  params.set_use_sat_table(FLAGS_cp_use_sat_table);
+  params.set_ac4r_table_threshold(FLAGS_cp_ac4r_table_threshold);
+  params.set_use_mdd_table(FLAGS_cp_use_mdd_table);
   return params;
 }
 

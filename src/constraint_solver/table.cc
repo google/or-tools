@@ -33,17 +33,6 @@
 #include "util/string_array.h"
 #include "util/tuple_set.h"
 
-DEFINE_bool(cp_use_compact_table, true,
-            "Use compact table constraint when possible.");
-DEFINE_bool(cp_use_small_table, true,
-            "Use small compact table constraint when possible.");
-DEFINE_bool(cp_use_sat_table, false,
-            "If true, use a SAT constraint for all table constraints.");
-DEFINE_int32(cp_ac4r_table_threshold, 2048,
-             "Above this size, allowed assignment constraints will use the "
-             "revised AC-4 implementation of the table constraint.");
-DEFINE_bool(cp_use_mdd_table, false, "Use mdd table");
-
 namespace operations_research {
 // External table code.
 Constraint* BuildAc4TableConstraint(Solver* const solver,
@@ -1346,15 +1335,16 @@ class TransitionConstraint : public Constraint {
       tmp_vars[1] = vars_[var_index];
       tmp_vars[2] = states[var_index + 1];
       // We always build the compact versions of the tables.
+      const ConstraintSolverParameters& params = solver()->parameters();
       if (num_tuples <= kBitsInUint64) {
         s->AddConstraint(s->RevAlloc(new SmallCompactPositiveTableConstraint(
             s, tmp_vars, transition_table_)));
-      } else if (FLAGS_cp_use_sat_table &&
-                 num_tuples > FLAGS_cp_ac4r_table_threshold) {
+      } else if (params.use_sat_table() &&
+                 num_tuples > params.ac4r_table_threshold()) {
         s->AddConstraint(
             BuildSatTableConstraint(s, tmp_vars, transition_table_));
-      } else if (FLAGS_cp_use_mdd_table &&
-                 num_tuples > FLAGS_cp_ac4r_table_threshold) {
+      } else if (params.use_mdd_table() &&
+                 num_tuples > params.ac4r_table_threshold()) {
         s->AddConstraint(
             BuildAc4MddResetTableConstraint(s, transition_table_, tmp_vars));
       } else {
@@ -1406,19 +1396,19 @@ const int TransitionConstraint::kTransitionTupleSize = 3;
 
 Constraint* Solver::MakeAllowedAssignments(const std::vector<IntVar*>& vars,
                                            const IntTupleSet& tuples) {
-  if (FLAGS_cp_use_sat_table) {
+  if (parameters_.use_sat_table()) {
     return BuildSatTableConstraint(this, vars, tuples);
   }
-  if (FLAGS_cp_use_compact_table && HasCompactDomains(vars)) {
-    if (tuples.NumTuples() < kBitsInUint64 && FLAGS_cp_use_small_table) {
+  if (parameters_.use_compact_table() && HasCompactDomains(vars)) {
+    if (tuples.NumTuples() < kBitsInUint64 && parameters_.use_small_table()) {
       return RevAlloc(
           new SmallCompactPositiveTableConstraint(this, vars, tuples));
     } else {
       return RevAlloc(new CompactPositiveTableConstraint(this, vars, tuples));
     }
   }
-  if (tuples.NumTuples() > FLAGS_cp_ac4r_table_threshold) {
-    if (FLAGS_cp_use_mdd_table) {
+  if (tuples.NumTuples() > parameters_.ac4r_table_threshold()) {
+    if (parameters_.use_mdd_table()) {
       return BuildAc4MddResetTableConstraint(this, tuples, vars);
     } else {
       return BuildAc4TableConstraint(this, tuples, vars);
