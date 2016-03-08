@@ -25,9 +25,6 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
-DEFINE_bool(cp_diffn_use_cumulative, true,
-            "Diffn constraint adds redundant cumulative constraint");
-
 namespace operations_research {
 // Diffn constraint, Non overlapping boxs.
 namespace {
@@ -64,7 +61,8 @@ class Diffn : public Constraint {
     }
     delayed_demon_ = MakeDelayedConstraintDemon0(s, this, &Diffn::PropagateAll,
                                                  "PropagateAll");
-    if (FLAGS_cp_diffn_use_cumulative && IsArrayInRange(x_, 0LL, kint64max) &&
+    if (solver()->parameters().diffn_use_cumulative() &&
+        IsArrayInRange(x_, 0LL, kint64max) &&
         IsArrayInRange(y_, 0LL, kint64max)) {
       Constraint* ct1 = nullptr;
       Constraint* ct2 = nullptr;

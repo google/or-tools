@@ -93,13 +93,33 @@ message ConstraintSolverParameters {
 
   bool disable_solve = 15;
 
+  // The following flags are meant for internal use only.
+
   //
   // Control the implementation of the table constraint.
-  // Mostly use for testing.
   //
-  bool use_compact_table = 16;
-  bool use_small_table = 17;
-  bool use_sat_table = 18;
-  int32 ac4r_table_threshold = 19;
-  bool use_mdd_table = 20;
+  bool use_compact_table = 100;
+  bool use_small_table = 101;
+  bool use_sat_table = 102;
+  int32 ac4r_table_threshold = 103;
+  bool use_mdd_table = 104;
+
+  //
+  // Control the propagation of the cumulative constraint.
+  //
+  bool use_cumulative_edge_finder = 105;
+  bool use_cumulative_time_table = 106;
+  bool use_sequence_high_demand_tasks = 107;
+  bool use_all_possible_disjunctions = 108;
+  int32 max_edge_finder_size = 109;
+
+  //
+  // Control the propagation of the diffn constraint.
+  //
+  bool diffn_use_cumulative = 110;
+
+  //
+  // Constrol the implementation of the element constraint.
+  //
+  bool use_element_rmq = 111;
 };

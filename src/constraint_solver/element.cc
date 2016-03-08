@@ -30,8 +30,6 @@
 
 DEFINE_bool(cp_disable_element_cache, true,
             "If true, caching for IntElement is disabled.");
-DEFINE_bool(cp_use_element_rmq, true,
-            "If true, rmq's will be used in element expressions.");
 
 namespace operations_research {
 
@@ -629,7 +627,7 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
       result = solver->RegisterIntExpr(solver->RevAlloc(
           new IncreasingIntExprElement(solver, values, index)));
     } else {
-      if (FLAGS_cp_use_element_rmq) {
+      if (solver->parameters().use_element_rmq()) {
         result = solver->RegisterIntExpr(solver->RevAlloc(
             new RangeMinimumQueryExprElement(solver, values, index)));
       } else {

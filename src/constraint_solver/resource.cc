@@ -42,25 +42,6 @@
 #include "util/saturated_arithmetic.h"
 #include "util/string_array.h"
 
-// TODO(user) Should these remains flags, or should they move to
-// SolverParameters?
-DEFINE_bool(cp_use_cumulative_edge_finder, true,
-            "Use the O(n log n) cumulative edge finding algorithm described "
-            "in 'Edge Finding Filtering Algorithm for Discrete  Cumulative "
-            "Resources in O(kn log n)' by Petr Vilim, CP 2009.");
-DEFINE_bool(cp_use_cumulative_time_table, true,
-            "Use a O(n^2) cumulative time table propagation algorithm.");
-DEFINE_bool(cp_use_sequence_high_demand_tasks, true,
-            "Use a sequence constraints for cumulative tasks that have a "
-            "demand greater than half of the capacity of the resource.");
-DEFINE_bool(cp_use_all_possible_disjunctions, true,
-            "Post temporal disjunctions for all pairs of tasks sharing a "
-            "cumulative resource and that cannot overlap because the sum of "
-            "their demand exceeds the capacity.");
-DEFINE_int32(cp_max_edge_finder_size, 50,
-             "Do not post the edge finder in the cumulative constraints if "
-             "it contains more than this number of tasks");
-
 namespace operations_research {
 namespace {
 // ----- Comparison functions -----
@@ -1893,18 +1874,19 @@ class CumulativeConstraint : public Constraint {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
-    if (FLAGS_cp_use_cumulative_time_table) {
+    const ConstraintSolverParameters& params = solver()->parameters();
+    if (params.use_cumulative_time_table()) {
       PostOneSidedConstraint(false, false);
       PostOneSidedConstraint(true, false);
     }
-    if (FLAGS_cp_use_cumulative_edge_finder) {
+    if (params.use_cumulative_edge_finder()) {
       PostOneSidedConstraint(false, true);
       PostOneSidedConstraint(true, true);
     }
-    if (FLAGS_cp_use_sequence_high_demand_tasks) {
+    if (params.use_sequence_high_demand_tasks()) {
       PostHighDemandSequenceConstraint();
     }
-    if (FLAGS_cp_use_all_possible_disjunctions) {
+    if (params.use_all_possible_disjunctions()) {
       PostAllDisjunctions();
     }
   }
@@ -2021,7 +2003,8 @@ class CumulativeConstraint : public Constraint {
     } else {
       Solver* const s = solver();
       if (edge_finder) {
-        return useful_tasks.size() < FLAGS_cp_max_edge_finder_size
+        const ConstraintSolverParameters& params = solver()->parameters();
+        return useful_tasks.size() < params.max_edge_finder_size()
                    ? s->RevAlloc(new EdgeFinder<CumulativeTask>(s, useful_tasks,
                                                                 capacity_))
                    : nullptr;
@@ -2074,18 +2057,19 @@ class VariableDemandCumulativeConstraint : public Constraint {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
-    if (FLAGS_cp_use_cumulative_time_table) {
+    const ConstraintSolverParameters& params = solver()->parameters();
+    if (params.use_cumulative_time_table()) {
       PostOneSidedConstraint(false, false);
       PostOneSidedConstraint(true, false);
     }
-    if (FLAGS_cp_use_cumulative_edge_finder) {
+    if (params.use_cumulative_edge_finder()) {
       PostOneSidedConstraint(false, true);
       PostOneSidedConstraint(true, true);
     }
-    if (FLAGS_cp_use_sequence_high_demand_tasks) {
+    if (params.use_sequence_high_demand_tasks()) {
       PostHighDemandSequenceConstraint();
     }
-    if (FLAGS_cp_use_all_possible_disjunctions) {
+    if (params.use_all_possible_disjunctions()) {
       PostAllDisjunctions();
     }
   }

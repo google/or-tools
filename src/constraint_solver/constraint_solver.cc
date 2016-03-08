@@ -67,6 +67,27 @@ DEFINE_int32(cp_ac4r_table_threshold, 2048,
              "Above this size, allowed assignment constraints will use the "
              "revised AC-4 implementation of the table constraint.");
 DEFINE_bool(cp_use_mdd_table, false, "Use mdd table");
+DEFINE_bool(cp_use_cumulative_edge_finder, true,
+            "Use the O(n log n) cumulative edge finding algorithm described "
+            "in 'Edge Finding Filtering Algorithm for Discrete  Cumulative "
+            "Resources in O(kn log n)' by Petr Vilim, CP 2009.");
+DEFINE_bool(cp_use_cumulative_time_table, true,
+            "Use a O(n^2) cumulative time table propagation algorithm.");
+DEFINE_bool(cp_use_sequence_high_demand_tasks, true,
+            "Use a sequence constraints for cumulative tasks that have a "
+            "demand greater than half of the capacity of the resource.");
+DEFINE_bool(cp_use_all_possible_disjunctions, true,
+            "Post temporal disjunctions for all pairs of tasks sharing a "
+            "cumulative resource and that cannot overlap because the sum of "
+            "their demand exceeds the capacity.");
+DEFINE_int32(cp_max_edge_finder_size, 50,
+             "Do not post the edge finder in the cumulative constraints if "
+             "it contains more than this number of tasks");
+DEFINE_bool(cp_diffn_use_cumulative, true,
+            "Diffn constraint adds redundant cumulative constraint");
+DEFINE_bool(cp_use_element_rmq, true,
+            "If true, rmq's will be used in element expressions.");
+
 
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
@@ -101,6 +122,15 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_use_sat_table(FLAGS_cp_use_sat_table);
   params.set_ac4r_table_threshold(FLAGS_cp_ac4r_table_threshold);
   params.set_use_mdd_table(FLAGS_cp_use_mdd_table);
+  params.set_use_cumulative_edge_finder(FLAGS_cp_use_cumulative_edge_finder);
+  params.set_use_cumulative_time_table(FLAGS_cp_use_cumulative_time_table);
+  params.set_use_sequence_high_demand_tasks(
+      FLAGS_cp_use_sequence_high_demand_tasks);
+  params.set_use_all_possible_disjunctions(
+      FLAGS_cp_use_all_possible_disjunctions);
+  params.set_max_edge_finder_size(FLAGS_cp_max_edge_finder_size);
+  params.set_diffn_use_cumulative(FLAGS_cp_diffn_use_cumulative);
+  params.set_use_element_rmq(FLAGS_cp_use_element_rmq);
   return params;
 }
 
