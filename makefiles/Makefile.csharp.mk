@@ -468,6 +468,6 @@ else
 	cp data/rogo/* temp/or-tools.$(PORT)/data/rogo
 	cp data/survo_puzzle/* temp/or-tools.$(PORT)/data/survo_puzzle
 	cp data/quasigroup_completion/* temp/or-tools.$(PORT)/data/quasigroup_completion
-	cd temp && tar cvzf ../$(CLR_DLL_NAME).NET.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	cd temp && tar -c -v -z --no-same-owner -f ../$(CLR_DLL_NAME).NET.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
 endif
 	-$(DELREC) temp

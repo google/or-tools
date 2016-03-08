@@ -233,7 +233,7 @@ else
 	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools.$(PORT)/setup.py
 	-rm temp/or-tools.$(PORT)/setup.py-e
 	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
-	cd temp && tar cvzf ../Google.OrTools.python.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
 endif
 
 python_examples_archive:
@@ -253,7 +253,7 @@ ifeq ($(SYSTEM),win)
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples.$(GIT_REVISION).zip ortools_examples
 else
 	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
-	cd temp && tar cvzf ../Google.OrTools.python.examples.$(GIT_REVISION).tar.gz ortools_examples
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.examples.$(GIT_REVISION).tar.gz ortools_examples
 endif
 
 pypi_archive: python $(PATCHELF)

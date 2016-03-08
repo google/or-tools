@@ -436,6 +436,6 @@ else
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	cd temp && tar cvzf ../Google.OrTools.java.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.java.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
 endif
 	-$(DELREC) temp
