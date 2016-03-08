@@ -12,7 +12,8 @@
 // limitations under the License.
 
 #include <list>
-
+#include <queue>
+#include <stack>
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
@@ -26,8 +27,6 @@
 
 namespace operations_research {
 namespace {
-
-#define MEMTABLETOMDDDEBUGNON
 
 /**
 * Creation of MDD, from Yap & al, "An MDD-based Generalized Arc Consistency
@@ -46,8 +45,22 @@ class MDD {
   bool visited;
 
  public:
+
+  int64 num_state;
+
+  int cptIn;
+
+  MDD * newVersion;
+  bool deleted;
+
   MDD(int nb_values, int num_var, int nb_instance)
-      : state_(false), num_var_(num_var), id(nb_instance), visited(false) {
+      : state_(false),
+        newVersion(nullptr),
+        deleted(false),
+        cptIn(0),
+        num_var_(num_var),
+        id(nb_instance),
+        visited(false) {
     for (int i = 0; i < nb_values; i++) {
       childs_.push_back(nullptr);
     }
@@ -116,7 +129,12 @@ class MDD_Factory {
   std::vector<VMREC*> g_;
   std::vector<int> NumDifferentValuesInColumn;
   MDD* finalEdge_;
+  MDD* Troot_;
+  MDD** mddGrid;
   int nb_instance;
+  VectorMap<int64>* alreadyToDelete;
+
+  std::list<MDD*> toDelete;
 
  public:
   std::vector<VectorMap<int64> > vm_;
@@ -182,17 +200,6 @@ class MDD_Factory {
     }
     int i;
 
-    //        for (i = 0; i < T->size(); i++) {
-    //            if ((*T)[i] != nullptr) {
-    //                if (!(*T)[i]->getState()) {
-    //                    break;
-    //                }
-    //            }
-    //        }
-    //        if (!(i < T->size())) {
-    //            return T;
-    //        }
-
     std::vector<MDD*> B(T->size(), nullptr);
     bool BEmpty = true;
     for (i = 0; i < T->size(); i++) {
@@ -208,19 +215,17 @@ class MDD_Factory {
       return nullptr;
     }
 
-    MDD* G = new MDD(T->size(), T->getNumVar(), nb_instance++);
     for (int i = 0; i < T->size(); i++) {
-      G->set(i, B[i]);
+      T->set(i, B[i]);
     }
-    delete (T);
-    MDD* GP = gContains(G);
-    if (GP != nullptr) {  //exist a G' identical to G...
-      delete (G);
+    MDD* GP = gContains(T);
+    if (GP != nullptr) {  //exist a G' identical to T...
+      delete (T);
       return GP;
     } else {
-      //add G to the global set of MDD
-      gAdd(G);
-      return G;
+      //add T to the global set of MDD
+      gAdd(T);
+      return T;
     }
   }
 
@@ -282,7 +287,363 @@ class MDD_Factory {
     return T;
   }
 
+  void Draw(MDD* T) {
+        std::vector<MDD*>* v1, *v2, *tmp;
+        int nb = 0;
+        std::cout << "digraph G{\n";
+        std::vector<bool> visited(getNbInstance());
+        v1 = new std::vector<MDD*>();
+        v2 = new std::vector<MDD*>();
+        v1->push_back(T);
+        while (v1->size() > 0) {
+            tmp = v2;
+            v2 = v1;
+            v1 = tmp;
+
+            while (v2->size()) {
+                for (int i = 0; i < v2->back()->size(); ++i) {
+                    MDD* fils = (*v2->back())[i];
+                    if (fils != nullptr) {
+                        std::cout << v2->back()->getID() << " -> " << fils->getID() << " [ label = "<< vm_[v2->back()->getNumVar()].Element(i) << " ]\n";
+                        if (!visited[fils->getID()]) {
+                            visited[fils->getID()] = true;
+                            v1->push_back((*v2->back())[i]);
+                        }
+                    }
+                    
+                }
+                v2->pop_back();
+            }
+        }
+        std::cout << "}\n";
+        
+    }
+
+  //regular new
+
+  //new regular
+  MDD* regular(const std::vector<IntVar*>& variables, IntTupleSet& tuples,
+               int64 initial_state, std::vector<int64>& final_states) {
+
+    int numWord_ = tuples.NumDifferentValuesInColumn(1);
+    int numState = tuples.NumDifferentValuesInColumn(0);
+
+    int size_ = variables.size();
+
+    finalEdge_ = new MDD(0, size_, nb_instance++);
+
+    finalEdge_->setState(true);
+
+    for (int i = 0; i < size_; i++) {
+      vm_.push_back(VectorMap<int64>());
+      g_.push_back(new VMREC());
+      NumDifferentValuesInColumn.push_back(numWord_);
+    }
+
+    Troot_ = new MDD(NumDifferentValuesInColumn[0], 0, nb_instance++);
+
+    //creer la grille
+
+    int gSize = (size_ - 1) * numState;
+
+    mddGrid = new MDD* [gSize];
+
+    int indexIter = 0;
+
+    for (int i = 0; i < (size_ - 1); ++i) {
+      for (int j = 0; j < numState; ++j) {
+        mddGrid[indexIter + j] = new MDD(numWord_, 1 + i, nb_instance++);
+      }
+      indexIter += numState;
+
+    }
+
+    VectorMap<int64> stateIndex;
+    VectorMap<int64> final_states_set;
+
+    for (int i = 0; i < final_states.size(); ++i) {
+      final_states_set.Add(final_states[i]);
+    }
+
+    for (int tuple = 0; tuple < tuples.NumTuples(); ++tuple) {
+
+      int64 start_state = tuples.Value(tuple, 0);
+      if (!stateIndex.Contains(start_state)) {
+        stateIndex.Add(start_state);
+      }
+      int64 end_state = tuples.Value(tuple, 2);
+      if (!stateIndex.Contains(end_state)) {
+        stateIndex.Add(end_state);
+      }
+
+      int start_index = stateIndex.Index(start_state);
+      int end_index = stateIndex.Index(end_state);
+
+      int64 value = tuples.Value(tuple, 1);
+
+      if (!vm_[0].Contains(value)) {
+        for (int i = 0; i < size_; ++i) {
+          vm_[i].Add(value);
+
+        }
+      }
+      int indexValue = vm_[0].Index(value);
+
+      //ajouter les arcs entre les bon noeud
+      //d'abord l'arc du noeud 0 au noeud i
+
+      if (start_state == initial_state && (*Troot_)[indexValue] == nullptr) {
+        Troot_->set(indexValue, mddGrid[end_index]);
+        mddGrid[end_index]->cptIn++;
+      }
+
+      //ensuite dans la grille
+      indexIter = 0;
+      for (int depth = 0; depth < size_ - 2; ++depth) {
+        mddGrid[start_index + indexIter]
+            ->set(indexValue, mddGrid[end_index + indexIter + numState]);
+        mddGrid[end_index + indexIter + numState]->cptIn++;
+        indexIter += numState;
+
+      }
+
+      if (final_states_set.Contains(end_state)) {
+        //puis la derniere i vers le final
+        mddGrid[start_index + indexIter]->set(indexValue, finalEdge_);
+        finalEdge_->cptIn++;
+      }
+
+    }
+
+    //supprimer les noeuds qui n'ont pas de noeud precedent
+    for (int i = 0; i < gSize; ++i) {
+      if (mddGrid[i]->cptIn == 0) {
+        for (int j = 0; j < numWord_; ++j) {
+          if ((*mddGrid[i])[j])  //si l'arc existe
+              {
+            (*mddGrid[i])[j]->cptIn--;
+          }
+        }
+        delete mddGrid[i];
+
+      }
+    }
+
+    delete[] mddGrid;
+
+    Troot_ = mddReduceRegular(Troot_);
+
+    while(toDelete.size()){
+          delete toDelete.front();
+          toDelete.pop_front();
+        }
+
+    return Troot_;
+
+  }
+
+  //
+  // Constructor for regular
+  //
+
+  MDD* regularAncien(const std::vector<IntVar*>& variables,
+                      IntTupleSet& tuples, int64 initial_state,
+                      std::vector<int64>& final_states) {
+
+    int nbValues = tuples.NumDifferentValuesInColumn(1);
+        MDD* Troot = new MDD(nbValues, 0, nb_instance++);
+        
+        finalEdge_ = new MDD(0, variables.size(), nb_instance++);
+        
+        finalEdge_->setState(true);
+        alreadyToDelete = new VectorMap<int64>();
+        
+        Troot->num_state = initial_state;
+        
+        MDD* T = nullptr;
+        
+        VectorMap<int64> * v = new VectorMap<int64>();
+        
+        std::vector<MDD*> mdds;
+
+        VectorMap<int64> final_states_set;
+
+        for (int e = 0; e < final_states.size(); e++) {
+            final_states_set.Add(final_states[e]);
+        }
+        
+        VectorMap<int64> stateIndex;
+
+        std::vector<std::vector<int> > tuplesIndex;
+
+        for (int i=0; i < tuples.NumTuples(); i++) {
+
+            int64 state = tuples.Value(i,0);
+            if (!stateIndex.Contains(state)) {
+                stateIndex.Add(state);
+                tuplesIndex.emplace_back();
+            }
+            int index = stateIndex.Index(state);
+            tuplesIndex[index].push_back(i);
+            
+        }
+        
+        std::queue<MDD*> l;
+        
+        l.push(Troot);
+        l.push(nullptr);
+        
+        
+        
+        for (int i = 0; i < variables.size(); i++) {
+            vm_.push_back(VectorMap<int64>());
+            g_.push_back(new VMREC());
+        }
+        
+        int lvl = 0;
+
+        while (l.size() > 0) {
+            T = l.front();
+            l.pop();
+            if (T == nullptr) {
+                delete v;
+                v = new VectorMap<int64>();
+                mdds.clear();
+                lvl++;
+                if (lvl == variables.size()-1) {
+                    break;
+                }
+                l.push(nullptr);
+                continue;
+            }
+            int64 state = T->num_state;
+            int si = stateIndex.Index(state);
+            for (int t=0; t < tuplesIndex[si].size(); t++) {
+                int i = tuplesIndex[si][t];
+                
+                if (state == tuples.Value(i,0)) {
+                    int64 value = tuples.Value(i,1);
+                    if (!vm_[lvl].Contains(value)) {
+                        vm_[lvl].Add(value);
+                    }
+                    
+                    int index = vm_[lvl].Index(value);
+                    int64 newState = tuples.Value(i,2);
+                    
+                    if (!v->Contains(newState)) {
+                        v->Add(newState);
+                        mdds.push_back(new MDD(nbValues, lvl+1, nb_instance++));
+                        l.push(mdds[v->Index(newState)]);
+                        mdds[v->Index(newState)]->num_state = newState;
+                    }
+                    
+                    T->set(index, mdds[v->Index(newState)]);
+                    
+                }
+            }
+        }
+        
+         delete v;
+
+        while (l.size() > 0) {
+            T = l.front();
+            l.pop();
+            
+            int64 state = T->num_state;
+            int si = stateIndex.Index(state);
+            for (int t=0; t < tuplesIndex[si].size(); t++) {
+                int i = tuplesIndex[si][t];
+                if (state == tuples.Value(i,0)) {
+                    int64 value = tuples.Value(i,1);
+                    if (!vm_[lvl].Contains(value)) {
+                        vm_[lvl].Add(value);
+                    }
+                    
+                    int index = vm_[lvl].Index(value);
+                    int64 newState = tuples.Value(i,2);
+                    
+                    if (final_states_set.Contains(newState)) {
+                        T->set(index, finalEdge_);
+                        
+                    }
+                    
+                }
+            }
+        }
+        Troot = mddReduceRegular(Troot);
+
+        while(!toDelete.empty()){
+          delete toDelete.front();
+          toDelete.pop_front();
+        }
+
+        return Troot;
+
+  }
+
+
+  MDD* mddReduceRegular(MDD* T) {
+
+    if (T == nullptr) {
+      return nullptr;
+    }
+
+    if (T->deleted)
+    {
+      return T->newVersion;
+    }
+
+    if (T->getState()) {
+      return T;
+    }
+    int i;
+
+    std::vector<MDD*> B(T->size(), nullptr);
+    bool BEmpty = true;
+    
+    for (i = 0; i < T->size(); i++) {
+      MDD* G = mddReduceRegular((*T)[i]);
+      if (G != nullptr) {
+        B[i] = G;
+        BEmpty = false;
+      }
+    }
+
+    if (BEmpty) {
+      T->deleted = true;
+      toDelete.push_back(T);
+      return nullptr;
+    }
+
+    for (int i = 0; i < T->size(); i++) {
+      T->set(i, B[i]);
+    }
+
+    MDD* GP = gContains(T);
+    if (GP != nullptr) {  //exist a G' identical to G...
+      // delete (T);
+      T->deleted = true;
+      toDelete.push_back(T);
+      T->newVersion = GP;
+
+      return GP;
+    } else {
+      //add G to the global set of MDD
+      gAdd(T);
+      T->deleted = true;
+      T->newVersion = T;
+
+      return T;
+    }
+  
+  }
+
+
 };
+
+
+
+
 
 class Sparse_Set_Rev : public NumericalRev<int> {
  public:
@@ -350,71 +711,11 @@ class Sparse_Set_Rev : public NumericalRev<int> {
   int size;
 };
 
-class Sparse_Set {
- public:
-  Sparse_Set(int size_, int* sparse_, int* dense_)
-      : sparse(sparse_), dense(dense_), value(0), size(size_) {
-    for (int i = 0; i < size; ++i) {
-      sparse[i] = -1;
-      dense_[i] = -1;
-    }
-
-  }
-
-  ~Sparse_Set() {
-    delete sparse;
-    delete dense;
-  }
-
-  int operator[](int i) { return dense[i]; }
-
-  bool isMember(int k) {
-    int a = sparse[k];
-    if (a < value && a >= 0 && dense[a] == k) {
-      return true;
-    }
-    return false;
-  }
-
-  void addMember(int k) {
-    // int a = sparse[k];
-    // int b = value;
-    // if (a >= b || a < 0  || dense[a] != k)
-    // {
-    //   sparse[k] = b;
-    //   dense[b] = k;
-    //   value++;
-    // }
-    sparse[k] = value++;
-    dense[sparse[k]] = k;
-  }
-  void remove(int k) {
-    int a = sparse[k];
-    int b = value - 1;
-    dense[a] = dense[b];
-    value--;
-  }
-
-  void clear() { value = 0; }
-
-  int nbValues() { return value; }
-
- private:
-  int* sparse;
-  int* dense;
-  int size;
-  int value;
-
-};
-
 class MyMDD {
   class Edge {
    public:
     Edge(int value, int start, int end, int id)
-        : value_(value), in_the_list_(0), id_(id), start_(start), end_(end) {}
-
-    void setInTheList(int state) { in_the_list_ = state; }
-    inline int getInTheList() { return in_the_list_; }
+        : value_(value), id_(id), start_(start), end_(end) {}
 
     inline int getValue() { return value_; }
 
@@ -429,8 +730,6 @@ class MyMDD {
    private:
     int start_;
     int end_;
-    //bool to know if a Edge is already in the delete liste
-    int in_the_list_;
     int id_;
 
     int value_;
@@ -442,8 +741,7 @@ class MyMDD {
          int number_of_edges)
         : var_(var),
           in_(nb_in, shared_in, number_of_edges),
-          out_(nb_out, shared_out, number_of_edges),
-          visited(0) {}
+          out_(nb_out, shared_out, number_of_edges) {}
 
     inline int getNumberOfEdgeIn() { return in_.Size(); }
     inline int getNumberOfEdgeOut() { return out_.Size(); }
@@ -469,21 +767,16 @@ class MyMDD {
       out_.Restore(solver, edge);
     }
 
-    inline bool isVisited() { return visited.Value(); }
-
-    void setVisited(Solver* solver) { visited.Incr(solver); }
-
    private:
     RevIntSet<int> in_;
     RevIntSet<int> out_;
-    NumericalRev<int> visited;
 
     int var_;
   };
 
  public:
 
-  MyMDD(const IntTupleSet& tuples, Solver* solver)
+  MyMDD(MDD_Factory& mf, MDD* mdd, Solver* solver)
       : vm_(),
         number_of_edges_by_value(),
         edges_(),
@@ -495,9 +788,9 @@ class MyMDD {
         nodes_lvl(),
         sizeBeforeReset(),
         edges_lvl() {
-    //Construct the MDD
-    MDD_Factory mf;
-    MDD* mdd = mf.mddify(tuples);
+    // //Construct the MDD
+    // MDD_Factory mf;
+    // MDD* mdd = mf.mddify(tuples);
 
     //
     std::list<MDD*> tmp;
@@ -524,7 +817,7 @@ class MyMDD {
 
     std::vector<int> indice;
 
-    std::vector<int> nb_nodes_lvl(tuples.Arity() + 1, 0);
+    std::vector<int> nb_nodes_lvl(mf.vm_.size() + 1, 0);
 
     tmp.push_back(mdd);
 
@@ -568,7 +861,7 @@ class MyMDD {
     shared_out_ = new int[edges_.size()];
     shared_nodes = new int[indice.size() + 1];
 
-    for (int lvl = 0; lvl < tuples.Arity() + 1; ++lvl) {
+    for (int lvl = 0; lvl < mf.vm_.size() + 1; ++lvl) {
       nodes_lvl.push_back(new Sparse_Set_Rev(indice.size(), shared_nodes,
                                              new int[nb_nodes_lvl[lvl]]));
 
@@ -623,46 +916,6 @@ class MyMDD {
     return vm_[index].Element(val);
   }
 
-  /**
-  * Here the functions for the MDD4 Cst.
-  */
-
-  void getRemovedEdge(int edge, std::vector<int>& deleteListDown,
-                      std::vector<int>& deleteListUp, Solver* solver) {
-    getRemovedEdgeUp(edge, deleteListUp, solver);
-    getRemovedEdgeDown(edge, deleteListDown, solver);
-  }
-  void getRemovedEdgeUp(int edge, std::vector<int>& deleteList,
-                        Solver* solver) {
-    const int e_start = edges_[edge]->getStart();
-    if (!nodes_[e_start]->isVisited() &&
-        nodes_[e_start]->getNumberOfEdgeOut() == 0) {
-      nodes_[e_start]->setVisited(solver);
-      int i = nodes_[e_start]->getNumberOfEdgeIn() - 1;
-      while (i > -1) {
-        deleteList.push_back(nodes_[e_start]->getEdgeIn(i));
-        removeEdgeUp(nodes_[e_start]->getEdgeIn(i--), solver);
-      }
-
-    }
-
-  }
-  void getRemovedEdgeDown(int edge, std::vector<int>& deleteList,
-                          Solver* solver) {
-
-    const int e_end = edges_[edge]->getEnd();
-    if (!nodes_[e_end]->isVisited() &&
-        nodes_[e_end]->getNumberOfEdgeIn() == 0) {
-      nodes_[e_end]->setVisited(solver);
-      int i = nodes_[e_end]->getNumberOfEdgeOut() - 1;
-      while (i > -1) {
-        deleteList.push_back(nodes_[e_end]->getEdgeOut(i));
-        removeEdgeDown(nodes_[e_end]->getEdgeOut(i--), solver);
-      }
-    }
-
-  }
-
   void removeEdge(int edge, Solver* solver) {
     nodes_[edges_[edge]->getStart()]->removeEdgeOut(edge, solver);
     nodes_[edges_[edge]->getEnd()]->removeEdgeIn(edge, solver);
@@ -679,9 +932,6 @@ class MyMDD {
 
   }
 
-  /**
-  * Here the functions for the MDD4-R Cst.
-  */
   void resetDeleteEdge(int edge, Solver* solver, int& cptUp, int& cptDown) {
     resetDeleteEdgeUp(edge, solver, cptUp);
     resetDeleteEdgeDown(edge, solver, cptDown);
@@ -780,80 +1030,6 @@ class MyMDD {
     }
   }
 
-  /**
-  * First version of the Reset.
-  */
-
-  //will be use during the reset, to get only once the edges
-
-  void getStillValidEdges(int edge, std::vector<int>& ListDown,
-                          std::vector<int>& ListUp, Solver* solver) {
-
-    if (nodes_[edges_[edge]->getStart()]->getNumberOfEdgeIn() > 0) {
-      int i = nodes_[edges_[edge]->getStart()]->getNumberOfEdgeIn() - 1;
-      while (i > -1) {
-        ListUp.push_back(nodes_[edges_[edge]->getStart()]->getEdgeIn(i--));
-      }
-      nodes_[edges_[edge]->getStart()]->ClearEdgeIn(solver);
-      nodes_[edges_[edge]->getStart()]->ClearEdgeOut(solver);
-    }
-
-    if (nodes_[edges_[edge]->getEnd()]->getNumberOfEdgeOut() > 0) {
-      int i = nodes_[edges_[edge]->getEnd()]->getNumberOfEdgeOut() - 1;
-      while (i > -1) {
-        ListDown.push_back(nodes_[edges_[edge]->getEnd()]->getEdgeOut(i--));
-      }
-      nodes_[edges_[edge]->getEnd()]->ClearEdgeOut(solver);
-      nodes_[edges_[edge]->getEnd()]->ClearEdgeIn(solver);
-    }
-
-  }
-
-  void getStillValidEdgesUp(int edge, std::vector<int>& ListUp,
-                            Solver* solver) {
-
-    if (nodes_[edges_[edge]->getStart()]->getNumberOfEdgeIn() > 0) {
-      int i = nodes_[edges_[edge]->getStart()]->getNumberOfEdgeIn() - 1;
-      while (i > -1) {
-        ListUp.push_back(nodes_[edges_[edge]->getStart()]->getEdgeIn(i--));
-      }
-      nodes_[edges_[edge]->getStart()]->ClearEdgeIn(solver);
-      nodes_[edges_[edge]->getStart()]->ClearEdgeOut(solver);
-    }
-
-  }
-
-  void getStillValidEdgesDown(int edge, std::vector<int>& ListDown,
-                              Solver* solver) {
-
-    if (nodes_[edges_[edge]->getEnd()]->getNumberOfEdgeOut() > 0) {
-      int i = nodes_[edges_[edge]->getEnd()]->getNumberOfEdgeOut() - 1;
-      while (i > -1) {
-        ListDown.push_back(nodes_[edges_[edge]->getEnd()]->getEdgeOut(i--));
-      }
-      nodes_[edges_[edge]->getEnd()]->ClearEdgeOut(solver);
-      nodes_[edges_[edge]->getEnd()]->ClearEdgeIn(solver);
-    }
-
-  }
-
-  void restoreEdge(int edge, Solver* solver) {
-    nodes_[edges_[edge]->getEnd()]->RestoreEdgeIn(edge, solver);
-    nodes_[edges_[edge]->getStart()]->RestoreEdgeOut(edge, solver);
-  }
-  void restoreEdgeUp(int edge, Solver* solver) {
-    nodes_[edges_[edge]->getEnd()]->RestoreEdgeIn(edge, solver);
-  }
-
-  void restoreEdgeDown(int edge, Solver* solver) {
-    nodes_[edges_[edge]->getStart()]->RestoreEdgeOut(edge, solver);
-  }
-
-  void setInTheList(int index, int state) {
-    edges_[index]->setInTheList(state);
-  }
-  int getInTheList(int index) { return edges_[index]->getInTheList(); }
-
   int getVarForEdge(int edge) {
     return nodes_[edges_[edge]->getStart()]->getVariable();
   }
@@ -900,7 +1076,8 @@ class MddTableVar {
         var_(var),
         domain_iterator_(var->MakeDomainIterator(true)),
         delta_domain_iterator_(var->MakeHoleIterator(true)),
-        mdd_(mdd) {
+        mdd_(mdd),
+        firstTime(true) {
     for (int value_index = 0; value_index < edges_per_value_.size();
          value_index++) {
       edges_per_value_[value_index] =
@@ -959,6 +1136,19 @@ class MddTableVar {
   }
 
   void ComputeDeltaDomain(std::vector<int>* delta) {
+
+// nouvelle version, Pour Laurent, il utilise des bitset et
+// recupère donc les valeurs supprimer / modifier en parcourant
+// le plus petit ensemble des deux.
+// Ici j'ai besoin pour voir directement itérer ensuite sur les
+// Bon/Mauvais rapidement (en prenant donc le plus petit ensemble
+// des deux)
+// Idée 1)  utilisé un sparseSet pour mon domain. il permetra
+// de soit supprimer les valeurs supprimées, soit de reset
+// et de remetre les valeur postive.
+
+#define NEWDELTA
+
     delta->clear();
     // we iterate the delta of the variable
     //
@@ -970,36 +1160,94 @@ class MddTableVar {
     // - from oldmin to min
     // - for the deleted values between min and max
     // - from max to oldmax
-
-    // First iteration: from old_min to min.
     const int64 old_min_domain = var_->OldMin();
+    const int64 old_max_domain = var_->OldMax();
     const int64 min_domain = var_->Min();
     const int64 max_domain = var_->Max();
-    for (int64 val = old_min_domain; val < min_domain; ++val) {
-      const int index = mdd_.getIndexVal(index_, val);
-      if (index != -1) {
-        delta->push_back(index);
-      }
-    }
-    // Second iteration: "delta" domain iteration.
-    IntVarIterator* const it = delta_domain_iterator_;
-    for (it->Init(); it->Ok(); it->Next()) {
-      const int64 value = it->Value();
-      if (value > min_domain && value < max_domain) {
-        const int index = mdd_.getIndexVal(index_, value);
-        if (index != -1) {
-          delta->push_back(index);
+
+    //pour le cas ou le MDD contients des valeurs qui ne sont pas dans la
+    //variable
+    if (firstTime) {
+      firstTime = false;
+      for (int i = 0; i < active_values_.Size(); ++i) {
+        if (!var_->Contains(
+                mdd_.getValForIndex(index_, active_values_.Element(i)))) {
+          delta->push_back(active_values_.Element(i));
         }
       }
     }
-    // Third iteration: from max to old_max.
-    const int64 old_max_domain = var_->OldMax();
-    for (int64 val = max_domain + 1; val <= old_max_domain; ++val) {
-      const int index = mdd_.getIndexVal(index_, val);
-      if (index != -1) {
-        delta->push_back(index);
-      }
+
+#ifdef NEWDELTA
+
+    switch (var_->Size()) {
+      case 1:
+        for (int64 val = old_min_domain; val <= old_max_domain; ++val) {
+          const int index = mdd_.getIndexVal(index_, val);
+          if (index != -1 && min_domain != val) {
+            delta->push_back(index);
+          }
+        }
+        return;
+        break;
+      case 2:
+        for (int64 val = old_min_domain; val <= old_max_domain; ++val) {
+          const int index = mdd_.getIndexVal(index_, val);
+          if (index != -1 && min_domain != val && max_domain != val) {
+            delta->push_back(index);
+          }
+        }
+        return;
+        break;
+      default:
+        //Si c'est un interval
+        if (var_->Size() == max_domain - min_domain + 1) {
+          for (int64 val = old_min_domain; val < min_domain; ++val) {
+            const int index = mdd_.getIndexVal(index_, val);
+            if (index != -1) {
+              delta->push_back(index);
+            }
+          }
+          for (int64 val = max_domain + 1; val <= old_max_domain; ++val) {
+            const int index = mdd_.getIndexVal(index_, val);
+            if (index != -1) {
+              delta->push_back(index);
+            }
+          }
+          return;
+        }
+#endif
+
+        // First iteration: from old_min to min.
+
+        for (int64 val = old_min_domain; val < min_domain; ++val) {
+          const int index = mdd_.getIndexVal(index_, val);
+          if (index != -1) {
+            delta->push_back(index);
+          }
+        }
+        // Second iteration: "delta" domain iteration.
+        IntVarIterator* const it = delta_domain_iterator_;
+        for (it->Init(); it->Ok(); it->Next()) {
+          const int64 value = it->Value();
+          if (value > min_domain && value < max_domain) {
+            const int index = mdd_.getIndexVal(index_, value);
+            if (index != -1) {
+              delta->push_back(index);
+            }
+          }
+        }
+        // Third iteration: from max to old_max.
+        for (int64 val = max_domain + 1; val <= old_max_domain; ++val) {
+          const int index = mdd_.getIndexVal(index_, val);
+          if (index != -1) {
+            delta->push_back(index);
+          }
+        }
+
+#ifdef NEWDELTA
     }
+#endif
+
   }
 
   void addEdge(int value, int edge) {
@@ -1074,28 +1322,27 @@ class MddTableVar {
 
   int index_;
   MyMDD& mdd_;
+  bool firstTime;
 };
 
 class Ac4MddTableConstraint : public Constraint {
  public:
 
-  Ac4MddTableConstraint(Solver* const solver, const IntTupleSet& tuples,
+  Ac4MddTableConstraint(Solver* const solver, MDD_Factory& mf, MDD* mdd,
                         const std::vector<IntVar*>& vars)
       : Constraint(solver),
         original_vars_(vars),
-        vars_(tuples.Arity()),
+        vars_(vars.size()),
         delta_of_value_indices_(0),
-        num_variables_(tuples.Arity()),
+        num_variables_(vars.size()),
         solver_(solver),
-        mdd_(tuples, solver_),
+        mdd_(mf, mdd, solver_),
         up(new std::vector<int>()),
         down(new std::vector<int>()),
         edges(new std::vector<int>()),
-        tmp(nullptr),
-        num_tuples_(tuples.NumTuples()),
-        tuple_set_(tuples) {
+        tmp(nullptr) {
     shared_positions_edges_ = new int[mdd_.getNumberOfEdge()];
-    for (int var_index = 0; var_index < tuples.Arity(); var_index++) {
+    for (int var_index = 0; var_index < vars.size(); var_index++) {
       vars_[var_index] = new MddTableVar(
           solver, vars[var_index], var_index, mdd_.vm_[var_index].size(),
           shared_positions_edges_, mdd_.getNumberOfEdge(),
@@ -1311,16 +1558,13 @@ class Ac4MddTableConstraint : public Constraint {
   }
 
   virtual std::string DebugString() const {
-    return StringPrintf("AllowedAssignments(arity = %d, tuple_count = %d)",
-                        num_variables_, num_tuples_);
+    return StringPrintf("MDD4R(arity = %d)", num_variables_);
   }
 
   virtual void Accept(ModelVisitor* const visitor) const {
     visitor->BeginVisitConstraint(ModelVisitor::kAllowedAssignments, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                original_vars_);
-    visitor->VisitIntegerMatrixArgument(ModelVisitor::kTuplesArgument,
-                                        tuple_set_);
     visitor->EndVisitConstraint(ModelVisitor::kAllowedAssignments, this);
   }
 
@@ -1331,15 +1575,12 @@ class Ac4MddTableConstraint : public Constraint {
   std::vector<MddTableVar*> vars_;
   // Number of variables.
   const int num_variables_;
-  const int num_tuples_;
   // Temporary storage for delta of one variable.
   std::vector<int> delta_of_value_indices_;
   //MDD
   MyMDD mdd_;
   //temporary storage for deleted edges
   std::vector<int> edges_to_remove_;
-  //set of tuple for the visitor
-  const IntTupleSet tuple_set_;
 
   int* shared_positions_edges_;
 
@@ -1356,7 +1597,25 @@ class Ac4MddTableConstraint : public Constraint {
 Constraint* BuildAc4MddResetTableConstraint(Solver* const solver,
                                             const IntTupleSet& tuples,
                                             const std::vector<IntVar*>& vars) {
-  return solver->RevAlloc(new Ac4MddTableConstraint(solver, tuples, vars));
+  MDD_Factory mf;
+  MDD* mdd = mf.mddify(tuples);
+  return solver->RevAlloc(new Ac4MddTableConstraint(solver, mf, mdd, vars));
+}
+
+Constraint* BuildAc4MddResetRegularConstraint(
+    Solver* const solver, const std::vector<IntVar*>& vars, IntTupleSet& tuples,
+    int64 initial_state, std::vector<int64>& final_states) {
+  
+  MDD_Factory mf;
+  MDD* mdd = mf.regular(vars, tuples, initial_state, final_states);
+  return solver->RevAlloc(new Ac4MddTableConstraint(solver, mf, mdd, vars));
+  
+}
+
+Constraint* BuildAc4MddResetConstraint(Solver* const solver,
+                                       const std::vector<IntVar*>& vars,
+                                       MDD_Factory& mf, MDD* mdd) {
+  return solver->RevAlloc(new Ac4MddTableConstraint(solver, mf, mdd, vars));
 }
 
 }  // namespace operations_research
