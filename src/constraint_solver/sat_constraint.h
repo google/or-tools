@@ -51,7 +51,7 @@ class IntVarLiteralGetter {
   //   the fact that the variable is bound to its min value.
   //
   // TODO(user): Support holes in the interval.
-  IntVarLiteralGetter(sat::VariableIndex i, int64 min, int64 max)
+  IntVarLiteralGetter(sat::BooleanVariable i, int64 min, int64 max)
       : first_variable_(i), min_value_(min), max_value_(max) {}
 
   // Returns the literal encoding (var == value).
@@ -76,7 +76,7 @@ class IntVarLiteralGetter {
  private:
   // These should really be const, but this causes problem with our open source
   // build because we use std::vector<IntVarLiteralGetter>.
-  sat::VariableIndex first_variable_;
+  sat::BooleanVariable first_variable_;
   int64 min_value_;
   int64 max_value_;
 };
@@ -114,7 +114,7 @@ class BooleanVariableManager {
   // it is true. This returns the IntVar and the value. If the pointer is
   // nullptr, then this variable index wasn't created by this class.
   std::pair<IntVar*, int64> BooleanVariableMeaning(
-      sat::VariableIndex var) const {
+      sat::BooleanVariable var) const {
     DCHECK_GE(var, 0);
     // This test is necessary because the SAT solver may know of variables not
     // registered by this class.
@@ -127,7 +127,7 @@ class BooleanVariableManager {
   std::vector<IntVar*> registered_int_vars_;
   std::vector<IntVarLiteralGetter> associated_variables_;
   hash_map<IntVar*, int> registration_index_map_;
-  ITIVector<sat::VariableIndex, std::pair<IntVar*, int64>> variable_meaning_;
+  ITIVector<sat::BooleanVariable, std::pair<IntVar*, int64>> variable_meaning_;
   DISALLOW_COPY_AND_ASSIGN(BooleanVariableManager);
 };
 
@@ -172,7 +172,7 @@ class SatConstraint : public Constraint {
     const sat::Trail& trail = sat_solver_.LiteralTrail();
     while (propagated_trail_index_ < trail.Index()) {
       const sat::Literal literal = trail[propagated_trail_index_];
-      const sat::VariableIndex var = literal.Variable();
+      const sat::BooleanVariable var = literal.Variable();
       if (trail.AssignmentType(var) != sat::AssignmentType::kSearchDecision) {
         std::pair<IntVar*, int64> p =
             variable_manager_.BooleanVariableMeaning(var);

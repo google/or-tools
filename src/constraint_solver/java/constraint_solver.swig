@@ -144,6 +144,8 @@ class SolverToVoid {
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
+%ignore operations_research::Solver::set_fail_intercept;
+%ignore operations_research::PropagationBaseObject::set_action_on_fail;
 
 // This method causes issues with our std::vector<int64> wrapping. It's not really
 // part of the public API anyway.
@@ -287,11 +289,13 @@ class SolverToVoid {
 %rename (makeBetweenCt) operations_research::Solver::MakeBetweenCt;
 %rename (makeBoolVar) operations_research::Solver::MakeBoolVar;
 %rename (makeBranchesLimit) operations_research::Solver::MakeBranchesLimit;
+%rename (makeClosureDemon) operations_research::Solver::MakeClosureDemon;
 %rename (makeConstantRestart) operations_research::Solver::MakeConstantRestart;
 %rename (makeConvexPiecewiseExpr) operations_research::Solver::MakeConvexPiecewiseExpr;
 %rename (makeCount) operations_research::Solver::MakeCount;
 %rename (makeCumulative) operations_research::Solver::MakeCumulative;
 %rename (makeCustomLimit) operations_research::Solver::MakeCustomLimit;
+%rename (makeDecision) operations_research::Solver::MakeDecision;
 %rename (makeDecisionBuilderFromAssignment) operations_research::Solver::MakeDecisionBuilderFromAssignment;
 %rename (makeDefaultPhase) operations_research::Solver::MakeDefaultPhase;
 %rename (makeDefaultSearchLimitParameters) operations_research::Solver::MakeDefaultSearchLimitParameters;
@@ -740,9 +744,11 @@ WRAP_STD_FUNCTION_JAVA(
     LongLongLongToBoolean,
     "com/google/ortools/constraintsolver/",
     bool, Boolean, int64, int64, int64)
-WRAP_OTHER_FUNCTIONS_JAVA("com/google/ortools/constraintsolver/")
-WRAP_CLASS_TO_VOID_JAVA("com/google/ortools/constraintsolver/",
-	                SolverToVoid, Solver)
+WRAP_STD_FUNCTIONS_WITH_VOID_JAVA("com/google/ortools/constraintsolver/")
+WRAP_STD_FUNCTION_JAVA_CLASS_TO_VOID(
+    SolverToVoid,
+    "com/google/ortools/constraintsolver/",
+    Solver)
 
 // Protobuf support
 PROTO_INPUT(operations_research::ConstraintSolverParameters,

@@ -68,6 +68,11 @@ class SatClause {
   static SatClause* Create(const std::vector<Literal>& literals, bool is_redundant,
                            ResolutionNode* node);
 
+  // non-sized delete because this is a tail-padded class
+  void operator delete(void* p) {
+    ::operator delete(p);  // non-sized delete
+  }
+
   // Number of literals in the clause.
   int Size() const { return size_; }
 
@@ -111,7 +116,7 @@ class SatClause {
 
   // Sorts the literals of the clause depending on the given parameters and
   // statistics. Do not call this on an attached clause.
-  void SortLiterals(const ITIVector<VariableIndex, VariableInfo>& statistics,
+  void SortLiterals(const ITIVector<BooleanVariable, VariableInfo>& statistics,
                     const SatParameters& parameters);
 
   // Sets up the 2-watchers data structure. It selects two non-false literals
@@ -206,7 +211,7 @@ class LiteralWatchers : public Propagator {
 
   // Returns some statistics on the number of appearance of this variable in
   // all the attached clauses.
-  const VariableInfo& VariableStatistic(VariableIndex var) const {
+  const VariableInfo& VariableStatistic(BooleanVariable var) const {
     return statistics_[var];
   }
 
@@ -258,7 +263,7 @@ class LiteralWatchers : public Propagator {
   SparseBitset<LiteralIndex> needs_cleaning_;
   bool is_clean_;
 
-  ITIVector<VariableIndex, VariableInfo> statistics_;
+  ITIVector<BooleanVariable, VariableInfo> statistics_;
   SatParameters parameters_;
   int64 num_inspected_clauses_;
   int64 num_inspected_clause_literals_;
@@ -385,10 +390,10 @@ class BinaryImplicationGraph : public Propagator {
   void MinimizeConflictWithReachability(std::vector<Literal>* c);
   void MinimizeConflictExperimental(const Trail& trail, std::vector<Literal>* c);
   void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
-                             SparseBitset<VariableIndex>* marked);
+                             SparseBitset<BooleanVariable>* marked);
   void MinimizeConflictFirstWithTransitiveReduction(
       const Trail& trail, std::vector<Literal>* c,
-      SparseBitset<VariableIndex>* marked, RandomBase* random);
+      SparseBitset<BooleanVariable>* marked, RandomBase* random);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:

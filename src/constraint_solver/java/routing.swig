@@ -240,6 +240,10 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
     int64 capacity,
     const std::string& name);
 
+%ignore operations_research::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+
+
 %extend operations_research::RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,

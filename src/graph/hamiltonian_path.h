@@ -522,10 +522,12 @@ class HamiltonianPathSolver {
   // int32 and int64.
   struct SaturatedArithmetic {
     static T Add(T a, T b) { return a + b; }
+    static T Sub(T a, T b) { return a - b; }
   };
   template <bool Dummy>
   struct SaturatedArithmetic<int64, Dummy> {
     static int64 Add(int64 a, int64 b) { return CapAdd(a, b); }
+    static int64 Sub(int64 a, int64 b) { return CapSub(a, b); }
   };
   // TODO(user): implement this natively in saturated_arithmetic.h
   template <bool Dummy>
@@ -533,10 +535,18 @@ class HamiltonianPathSolver {
     static int32 Add(int32 a, int32 b) {
       const int64 a64 = a;
       const int64 b64 = b;
-      const int64 min_int32 = std::numeric_limits<int32>::min();
-      const int64 max_int32 = std::numeric_limits<int32>::max();
+      const int64 min_int32 = kint32min;
+      const int64 max_int32 = kint32max;
       return static_cast<int32>(
           std::max(min_int32, std::min(max_int32, a64 + b64)));
+    }
+    static int32 Sub(int32 a, int32 b) {
+      const int64 a64 = a;
+      const int64 b64 = b;
+      const int64 min_int32 = kint32min;
+      const int64 max_int32 = kint32max;
+      return static_cast<int32>(
+          std::max(min_int32, std::min(max_int32, a64 - b64)));
     }
   };
 
@@ -700,11 +710,11 @@ void HamiltonianPathSolver<CostType, CostFunction>::Solve() {
   for (int end_node : hamiltonian_set) {
     const CostType cost = mem_.Value(hamiltonian_set, end_node);
     hamiltonian_costs_[end_node] = cost;
-    if (cost < min_hamiltonian_cost) {
+    if (cost <= min_hamiltonian_cost) {
       min_hamiltonian_cost = cost;
       best_hamiltonian_path_end_node_ = end_node;
     }
-    DCHECK_LE(tsp_cost_, cost + Cost(end_node, 0));
+    DCHECK_LE(tsp_cost_, Saturated<CostType>::Add(cost, Cost(end_node, 0)));
     // Get the Hamiltonian paths.
     hamiltonian_paths_[end_node] =
         ComputePath(hamiltonian_costs_[end_node], hamiltonian_set, end_node);
@@ -726,10 +736,11 @@ std::vector<int> HamiltonianPathSolver<CostType, CostFunction>::ComputePath(
   for (int rank = path_size - 2; rank >= 0; --rank) {
     for (int src : subset) {
       const CostType partial_cost = mem_.Value(subset, src);
-      const CostType incumbent_cost = partial_cost + Cost(src, dest);
+      const CostType incumbent_cost =
+          Saturated<CostType>::Add(partial_cost, Cost(src, dest));
       // Take precision into account when CosttType is float or double.
       // There is no visible penalty in the case CostType is an integer type.
-      if (std::abs(current_cost - incumbent_cost) <=
+      if (std::abs(Saturated<CostType>::Sub(current_cost, incumbent_cost)) <=
           std::numeric_limits<CostType>::epsilon() * current_cost) {
         subset = subset.RemoveElement(src);
         current_cost = partial_cost;
@@ -754,9 +765,10 @@ bool HamiltonianPathSolver<CostType, CostFunction>::PathIsValid(
   DCHECK_EQ(NodeSet::FullSet(num_nodes_).value(), coverage.value());
   CostType check_cost = 0;
   for (int i = 0; i < path.size() - 1; ++i) {
-    check_cost += Cost(path[i], path[i + 1]);
+    check_cost =
+        Saturated<CostType>::Add(check_cost, Cost(path[i], path[i + 1]));
   }
-  DCHECK_LE(std::abs(cost - check_cost),
+  DCHECK_LE(std::abs(Saturated<CostType>::Sub(cost, check_cost)),
             std::numeric_limits<CostType>::epsilon() * cost)
       << "cost = " << cost << " check_cost = " << check_cost;
   return true;
@@ -794,7 +806,8 @@ bool HamiltonianPathSolver<CostType,
   for (int k = 0; k < num_nodes_; ++k) {
     for (int i = 0; i < num_nodes_; ++i) {
       for (int j = 0; j < num_nodes_; ++j) {
-        const CostType detour_cost = Cost(i, k) + Cost(k, j);
+        const CostType detour_cost =
+            Saturated<CostType>::Add(Cost(i, k), Cost(k, j));
         if (detour_cost < Cost(i, j)) {
           triangle_inequality_ok_ = false;
           return triangle_inequality_ok_;

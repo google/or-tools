@@ -139,6 +139,14 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
     ResizeSolution(lp.num_constraints(), lp.num_variables());
     return ProblemStatus::INVALID_PROBLEM;
   }
+  // Display a warning if assertions are enabled.
+  DLOG(WARNING)
+      << "\n******************************************************************"
+         "\n* WARNING: Glop will be very slow because it will use DCHECKs    *"
+         "\n* to verify the results and the precision of the solver.         *"
+         "\n* You can gain at least an order of magnitude speedup by         *"
+         "\n* compiling with optimizations enabled and by defining NDEBUG.   *"
+         "\n******************************************************************";
 
   // Note that we only activate the floating-point exceptions after we are sure
   // that the program is valid. This way, if we have input NaNs, we will not
@@ -170,7 +178,12 @@ ProblemStatus LPSolver::SolveWithTimeLimit(const LinearProgram& lp,
                            current_linear_program_.num_variables());
   solution.status = preprocessor.status();
 
-  RunRevisedSimplexIfNeeded(&solution, time_limit);
+  // Do not launch the solver if the time limit was already reached. This might
+  // mean that the pre-processors were not all run, and current_linear_program_
+  // might not be in a completely safe state.
+  if (!time_limit->LimitReached()) {
+    RunRevisedSimplexIfNeeded(&solution, time_limit);
+  }
 
   if (postsolve_is_needed) preprocessor.RecoverSolution(&solution);
   return LoadAndVerifySolution(lp, solution);

@@ -86,8 +86,9 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 // Add conversion list(tuple(int)) -> std::vector<vector>.
 // TODO(user): see if we can also get rid of this and utilize already
 // existing code.
-%typemap(in) const std::vector<std::vector<int64> >&
-    (std::vector<std::vector<int64> > temp) {
+%define PY_LIST_LIST_INPUT_TYPEMAP(type, checker)
+%typemap(in) const std::vector<std::vector<type> >&
+    (std::vector<std::vector<type> > temp) {
   if (!PyList_Check($input)) {
     PyErr_SetString(PyExc_TypeError, "Expecting a list of tuples");
     SWIG_fail;
@@ -113,16 +114,19 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
       }
       temp[i].resize(arity);
       for (size_t j = 0; j < local_arity; ++j) {
-        temp[i][j] = PyInt_AsLong(is_tuple ?
-                                  PyTuple_GetItem(tuple, j) :
-                                  PyList_GetItem(tuple, j));
+        bool success = PyObjAs<type>(is_tuple ?
+                                     PyTuple_GetItem(tuple, j) :
+                                     PyList_GetItem(tuple, j), &temp[i][j]);
+        if (!success) {
+          SWIG_fail;
+        }
       }
     }
   }
   $1 = &temp;
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<std::vector<int64> >& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<std::vector<type> >& {
   if (!PyList_Check($input)) {
     $1 = 0;
   } else {
@@ -139,7 +143,7 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
         for (size_t j = 0; j < arity; ++j) {
           PyObject* const entry =
               is_tuple ? PyTuple_GetItem(tuple, j) : PyList_GetItem(tuple, j);
-          if (!PyInt_Check(entry) && !PyLong_Check(entry)) {
+          if (!checker(entry)) {
             failed = true;
             break;
           }
@@ -152,4 +156,7 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
     $1 = failed ? 0 : 1;
   }
 }
+%enddef
+
+PY_LIST_LIST_INPUT_TYPEMAP(long long, SwigPyIntOrLong_Check);
 }  // namespace operations_research

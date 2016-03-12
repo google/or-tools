@@ -226,7 +226,7 @@ void LiteralWatchers::CleanUpWatchers() {
 void LiteralWatchers::UpdateStatistics(const SatClause& clause, bool added) {
   SCOPED_TIME_STAT(&stats_);
   for (const Literal literal : clause) {
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     const int direction = added ? 1 : -1;
     statistics_[var].num_appearances += direction;
     statistics_[var].weighted_num_appearances +=
@@ -404,7 +404,7 @@ void BinaryImplicationGraph::MinimizeConflictWithReachability(
 // minimization algorithm can take advantage of that.
 void BinaryImplicationGraph::MinimizeConflictFirst(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<VariableIndex>* marked) {
+    SparseBitset<BooleanVariable>* marked) {
   SCOPED_TIME_STAT(&stats_);
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
   dfs_stack_.clear();
@@ -431,7 +431,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
 // first UIP conflict.
 void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<VariableIndex>* marked, RandomBase* random) {
+    SparseBitset<BooleanVariable>* marked, RandomBase* random) {
   SCOPED_TIME_STAT(&stats_);
   const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
@@ -644,7 +644,7 @@ bool LiteralWithLargerWeightFirst(const WeightedLiteral& wv1,
 }  // namespace
 
 void SatClause::SortLiterals(
-    const ITIVector<VariableIndex, VariableInfo>& statistics,
+    const ITIVector<BooleanVariable, VariableInfo>& statistics,
     const SatParameters& parameters) {
   DCHECK(!IsAttached());
   const SatParameters::LiteralOrdering literal_order =

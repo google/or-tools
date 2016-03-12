@@ -74,7 +74,7 @@ SatSolver::~SatSolver() {
     // We also have to free the ResolutionNode of the variable assigned at
     // level 0.
     for (int i = 0; i < trail_.Index(); ++i) {
-      const VariableIndex var = trail_[i].Variable();
+      const BooleanVariable var = trail_[i].Variable();
       if (trail_.AssignmentType(var) == AssignmentType::kUnitReason) {
         unsat_proof_.UnlockNode(trail_.GetResolutionNode(var));
       }
@@ -106,7 +106,7 @@ void SatSolver::SetNumVariables(int num_variables) {
   queue_elements_.resize(num_variables);
 
   // Only reset the polarity of the new variables.
-  ResetPolarity(/*from=*/VariableIndex(polarity_.size()));
+  ResetPolarity(/*from=*/BooleanVariable(polarity_.size()));
 
   // Important: Because there is new variables, we need to recompute the
   // priority queue. Note that this will not reset the activity, it will however
@@ -427,8 +427,16 @@ void SatSolver::AddPropagator(std::unique_ptr<Propagator> propagator) {
   InitializePropagators();
 }
 
+void SatSolver::AddLastPropagator(std::unique_ptr<Propagator> propagator) {
+  CHECK_EQ(CurrentDecisionLevel(), 0);
+  CHECK(last_propagator_ == nullptr);
+  trail_.RegisterPropagator(propagator.get());
+  last_propagator_ = std::move(propagator);
+  InitializePropagators();
+}
+
 UpperBoundedLinearConstraint* SatSolver::ReasonPbConstraintOrNull(
-    VariableIndex var) const {
+    BooleanVariable var) const {
   // It is important to deal properly with "SameReasonAs" variables here.
   var = trail_.ReferenceVarWithSameReason(var);
   const AssignmentInfo& info = trail_.Info(var);
@@ -438,7 +446,7 @@ UpperBoundedLinearConstraint* SatSolver::ReasonPbConstraintOrNull(
   return nullptr;
 }
 
-SatClause* SatSolver::ReasonClauseOrNull(VariableIndex var) const {
+SatClause* SatSolver::ReasonClauseOrNull(BooleanVariable var) const {
   DCHECK(trail_.Assignment().VariableIsAssigned(var));
   const AssignmentInfo& info = trail_.Info(var);
   if (trail_.AssignmentType(var) == clauses_propagator_.PropagatorId()) {
@@ -449,7 +457,7 @@ SatClause* SatSolver::ReasonClauseOrNull(VariableIndex var) const {
 
 void SatSolver::SaveDebugAssignment() {
   debug_assignment_.Resize(num_variables_.value());
-  for (VariableIndex i(0); i < num_variables_; ++i) {
+  for (BooleanVariable i(0); i < num_variables_; ++i) {
     debug_assignment_.AssignFromTrueLiteral(
         trail_.Assignment().GetTrueLiteralForAssignedVariable(i));
   }
@@ -1172,7 +1180,7 @@ std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
     } else {
       // Marks all the literals of its reason.
       for (const Literal literal : trail_.Reason(marked_literal.Variable())) {
-        const VariableIndex var = literal.Variable();
+        const BooleanVariable var = literal.Variable();
         const int level = DecisionLevel(var);
         if (level > 0 && !is_marked_[var]) is_marked_.Set(var);
       }
@@ -1190,7 +1198,7 @@ void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
   SCOPED_TIME_STAT(&stats_);
   const double max_activity_value = parameters_.max_variable_activity_value();
   for (const Literal literal : literals) {
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     const int level = DecisionLevel(var);
     if (level == 0) continue;
     if (level == CurrentDecisionLevel() && bump_again_lbd_limit > 0) {
@@ -1212,7 +1220,7 @@ void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
 void SatSolver::BumpReasonActivities(const std::vector<Literal>& literals) {
   SCOPED_TIME_STAT(&stats_);
   for (const Literal literal : literals) {
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     if (DecisionLevel(var) > 0) {
       SatClause* clause = ReasonClauseOrNull(var);
       if (clause != nullptr) {
@@ -1277,7 +1285,7 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
 void SatSolver::RescaleVariableActivities(double scaling_factor) {
   SCOPED_TIME_STAT(&stats_);
   variable_activity_increment_ *= scaling_factor;
-  for (VariableIndex var(0); var < activities_.size(); ++var) {
+  for (BooleanVariable var(0); var < activities_.size(); ++var) {
     activities_[var] *= scaling_factor;
   }
 
@@ -1450,7 +1458,7 @@ void SatSolver::ProcessNewlyFixedVariableResolutionNodes() {
   if (!parameters_.unsat_proof()) return;
   CHECK_GE(num_processed_fixed_variables_, 0);
   for (int i = num_processed_fixed_variables_; i < trail_.Index(); ++i) {
-    const VariableIndex var = trail_[i].Variable();
+    const BooleanVariable var = trail_[i].Variable();
     if (trail_.AssignmentType(var) == AssignmentType::kSearchDecision) continue;
 
     // DCHECK that the reason doesn't contain the propagated literal (it used
@@ -1558,6 +1566,11 @@ void SatSolver::InitializePropagators() {
   // binary_implication_graph_/pb_constraints_ propagators if there is anything
   // to propagate. Because of this, it is important to call
   // InitializePropagators() after the first constraint of this kind is added.
+  //
+  // TODO(user): uses the Model classes here to only call
+  // model.GetOrCreate<BinaryImplicationGraph>() when the first binary
+  // constraint is needed, and have a mecanism to always make this propagator
+  // first. Same for the linear constraints.
   if (binary_implication_graph_.NumberOfImplications() > 0) {
     propagators_.push_back(&binary_implication_graph_);
   }
@@ -1567,6 +1580,9 @@ void SatSolver::InitializePropagators() {
   }
   for (int i = 0; i < external_propagators_.size(); ++i) {
     propagators_.push_back(external_propagators_[i].get());
+  }
+  if (last_propagator_ != nullptr) {
+    propagators_.push_back(last_propagator_.get());
   }
 }
 
@@ -1583,7 +1599,7 @@ void SatSolver::UntrailPropagators(int target_trail_index) {
   }
 }
 
-bool SatSolver::ResolvePBConflict(VariableIndex var,
+bool SatSolver::ResolvePBConflict(BooleanVariable var,
                                   MutableUpperBoundedLinearConstraint* conflict,
                                   Coefficient* slack) {
   const int trail_index = trail_.Info(var).trail_index;
@@ -1674,14 +1690,14 @@ Literal SatSolver::NextBranch() {
   }
 
   // Choose the variable.
-  VariableIndex var;
+  BooleanVariable var;
   const double ratio = parameters_.random_branches_ratio();
   if (ratio != 0.0 && random_.RandDouble() < ratio) {
     ++counters_.num_random_branches;
     while (true) {
       // TODO(user): This may not be super efficient if almost all the
       // variables are assigned.
-      var = VariableIndex(
+      var = BooleanVariable(
           (*var_ordering_.Raw())[random_.Uniform(var_ordering_.Raw()->size())] -
           &queue_elements_.front());
       if (!trail_.Assignment().VariableIsAssigned(var)) break;
@@ -1691,12 +1707,12 @@ Literal SatSolver::NextBranch() {
   } else {
     // The loop is done this way in order to leave the final choice in the heap.
     DCHECK(!var_ordering_.IsEmpty());
-    var = VariableIndex(var_ordering_.Top() - &queue_elements_.front());
+    var = BooleanVariable(var_ordering_.Top() - &queue_elements_.front());
     while (trail_.Assignment().VariableIsAssigned(var)) {
       var_ordering_.Pop();
       pq_need_update_for_var_at_trail_index_.Set(trail_.Info(var).trail_index);
       DCHECK(!var_ordering_.IsEmpty());
-      var = VariableIndex(var_ordering_.Top() - &queue_elements_.front());
+      var = BooleanVariable(var_ordering_.Top() - &queue_elements_.front());
     }
   }
 
@@ -1708,11 +1724,11 @@ Literal SatSolver::NextBranch() {
   return Literal(var, polarity_[var].value);
 }
 
-void SatSolver::ResetPolarity(VariableIndex from) {
+void SatSolver::ResetPolarity(BooleanVariable from) {
   SCOPED_TIME_STAT(&stats_);
   const int size = num_variables_.value();
   polarity_.resize(size);
-  for (VariableIndex var(from); var < size; ++var) {
+  for (BooleanVariable var(from); var < size; ++var) {
     Polarity p;
     switch (parameters_.initial_polarity()) {
       case SatParameters::POLARITY_TRUE:
@@ -1743,8 +1759,8 @@ void SatSolver::InitializeVariableOrdering() {
 
   // First, extract the variables without activity, and add the other to the
   // priority queue.
-  std::vector<VariableIndex> variables;
-  for (VariableIndex var(0); var < num_variables_; ++var) {
+  std::vector<BooleanVariable> variables;
+  for (BooleanVariable var(0); var < num_variables_; ++var) {
     if (!trail_.Assignment().VariableIsAssigned(var)) {
       if (activities_[var] > 0) {
         queue_elements_[var].weight = activities_[var];
@@ -1773,7 +1789,7 @@ void SatSolver::InitializeVariableOrdering() {
   }
 
   // Add the variables without activity to the queue (in the default order)
-  for (VariableIndex var : variables) {
+  for (BooleanVariable var : variables) {
     queue_elements_[var].weight = 0.0;
     var_ordering_.Add(&queue_elements_[var]);
   }
@@ -1803,7 +1819,7 @@ void SatSolver::SetAssignmentPreference(Literal literal, double weight) {
 
 std::vector<std::pair<Literal, double>> SatSolver::AllPreferences() const {
   std::vector<std::pair<Literal, double>> prefs;
-  for (VariableIndex var(0); var < polarity_.size(); ++var) {
+  for (BooleanVariable var(0); var < polarity_.size(); ++var) {
     // TODO(user): we currently assume that if the tie_breaker is zero then
     // no preference was set (which is not 100% correct). Fix that.
     if (queue_elements_[var].tie_breaker > 0.0) {
@@ -1821,14 +1837,14 @@ void SatSolver::ResetDecisionHeuristic() {
   is_decision_heuristic_initialized_ = true;
 
   // Reset the polarity heurisitic.
-  ResetPolarity(/*from=*/VariableIndex(0));
+  ResetPolarity(/*from=*/BooleanVariable(0));
 
   // Reset the branching variable heuristic.
   activities_.assign(num_variables_.value(), 0.0);
   is_var_ordering_initialized_ = false;
 
   // Reset the tie breaking.
-  for (VariableIndex var(0); var < num_variables_; ++var) {
+  for (BooleanVariable var(0); var < num_variables_; ++var) {
     queue_elements_[var].tie_breaker = 0.0;
   }
 }
@@ -1846,7 +1862,7 @@ void SatSolver::UntrailWithoutPQUpdate(int target_trail_index) {
   UntrailPropagators(target_trail_index);
   while (trail_.Index() > target_trail_index) {
     const Literal literal = trail_.Dequeue();
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     polarity_[var].SetLastAssignmentValue(literal.IsPositive());
 
     // We check that the priority queue doesn't need to be updated.
@@ -1862,7 +1878,7 @@ void SatSolver::Untrail(int target_trail_index) {
   UntrailPropagators(target_trail_index);
   while (trail_.Index() > target_trail_index) {
     const Literal literal = trail_.Dequeue();
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     polarity_[var].SetLastAssignmentValue(literal.IsPositive());
 
     // Update the priority queue if needed.
@@ -1941,7 +1957,7 @@ ResolutionNode* SatSolver::CreateResolutionNode(
     tmp_parents_.push_back(failing_clause_resolution_node);
   }
   for (Literal literal : reason_used_to_infer_the_conflict) {
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     ResolutionNode* node = trail_.GetResolutionNode(var);
     if (node != nullptr) tmp_parents_.push_back(node);
   }
@@ -2009,7 +2025,7 @@ void SatSolver::ComputeFirstUIPConflict(
     int num_new_vars_at_positive_level = 0;
     int num_vars_at_positive_level_in_clause_to_expand = 0;
     for (const Literal literal : clause_to_expand) {
-      const VariableIndex var = literal.Variable();
+      const BooleanVariable var = literal.Variable();
       const int level = DecisionLevel(var);
       if (level > 0) ++num_vars_at_positive_level_in_clause_to_expand;
       if (!is_marked_[var]) {
@@ -2104,7 +2120,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
   // Iterate backward over the trail.
   int backjump_level = 0;
   while (true) {
-    const VariableIndex var = trail_[trail_index].Variable();
+    const BooleanVariable var = trail_[trail_index].Variable();
     --trail_index;
 
     if (conflict->GetCoefficient(var) > 0 &&
@@ -2131,7 +2147,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
       const int current_level = DecisionLevel(var);
       int i = trail_index;
       while (i >= 0) {
-        const VariableIndex previous_var = trail_[i].Variable();
+        const BooleanVariable previous_var = trail_[i].Variable();
         if (conflict->GetCoefficient(previous_var) > 0 &&
             trail_.Assignment().LiteralIsTrue(
                 conflict->GetLiteral(previous_var))) {
@@ -2198,7 +2214,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
                                              Coefficient(0));
   int size = 0;
   Coefficient max_sum(0);
-  for (VariableIndex var : conflict->PossibleNonZeros()) {
+  for (BooleanVariable var : conflict->PossibleNonZeros()) {
     const Coefficient coeff = conflict->GetCoefficient(var);
     if (coeff == 0) continue;
     max_sum += coeff;
@@ -2279,7 +2295,8 @@ void SatSolver::MinimizeConflict(
     // the last level (already added) and are not independent where used to
     // minimize the clause.
     const int current_level = CurrentDecisionLevel();
-    const std::vector<VariableIndex>& marked = is_marked_.PositionsSetAtLeastOnce();
+    const std::vector<BooleanVariable>& marked =
+        is_marked_.PositionsSetAtLeastOnce();
     for (int i = 0; i < marked.size(); ++i) {
       if (DecisionLevel(marked[i]) == current_level) continue;
       if (!is_independent_[marked[i]]) {
@@ -2304,7 +2321,7 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
   // since the first literal of the conflict is the 1-UIP literal.
   int index = 1;
   for (int i = 1; i < conflict->size(); ++i) {
-    const VariableIndex var = (*conflict)[i].Variable();
+    const BooleanVariable var = (*conflict)[i].Variable();
     bool can_be_removed = false;
     if (DecisionLevel(var) != current_level) {
       // It is important not to call Reason(var) when it can be avoided.
@@ -2367,7 +2384,7 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // Note(user): Because is_marked_ may actually contains literals that are
   // implied if the 1-UIP literal is false, we can't just iterate on the
   // variables of the conflict here.
-  for (VariableIndex var : is_marked_.PositionsSetAtLeastOnce()) {
+  for (BooleanVariable var : is_marked_.PositionsSetAtLeastOnce()) {
     const int level = DecisionLevel(var);
     min_trail_index_per_level_[level] = std::min(
         min_trail_index_per_level_[level], trail_.Info(var).trail_index);
@@ -2378,7 +2395,7 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // Note that we can skip the first position since this is the 1-UIP.
   int index = 1;
   for (int i = 1; i < conflict->size(); ++i) {
-    const VariableIndex var = (*conflict)[i].Variable();
+    const BooleanVariable var = (*conflict)[i].Variable();
     if (trail_.Info(var).trail_index <=
             min_trail_index_per_level_[DecisionLevel(var)] ||
         !CanBeInferedFromConflictVariables(var)) {
@@ -2395,7 +2412,7 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   // involves less than half the size of min_trail_index_per_level_.
   const int threshold = min_trail_index_per_level_.size() / 2;
   if (is_marked_.PositionsSetAtLeastOnce().size() < threshold) {
-    for (VariableIndex var : is_marked_.PositionsSetAtLeastOnce()) {
+    for (BooleanVariable var : is_marked_.PositionsSetAtLeastOnce()) {
       min_trail_index_per_level_[DecisionLevel(var)] =
           std::numeric_limits<int>::max();
     }
@@ -2404,11 +2421,11 @@ void SatSolver::MinimizeConflictRecursively(std::vector<Literal>* conflict) {
   }
 }
 
-bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
+bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
   // Test for an already processed variable with the same reason.
   {
     DCHECK(is_marked_[variable]);
-    const VariableIndex v =
+    const BooleanVariable v =
         same_reason_identifier_.FirstVariableWithSameReason(variable);
     if (v != variable) return !is_independent_[v];
   }
@@ -2430,7 +2447,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
   // First we expand the reason for the given variable.
   DCHECK(!trail_.Reason(variable).IsEmpty());
   for (Literal literal : trail_.Reason(variable)) {
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     DCHECK_NE(var, variable);
     if (is_marked_[var]) continue;
     const int level = DecisionLevel(var);
@@ -2451,7 +2468,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
 
   // Then we start the DFS.
   while (!variable_to_process_.empty()) {
-    const VariableIndex current_var = variable_to_process_.back();
+    const BooleanVariable current_var = variable_to_process_.back();
     if (current_var == dfs_stack_.back()) {
       // We finished the DFS of the variable dfs_stack_.back(), this can be seen
       // as a recursive call terminating.
@@ -2476,7 +2493,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
 
     // Test for an already processed variable with the same reason.
     {
-      const VariableIndex v =
+      const BooleanVariable v =
           same_reason_identifier_.FirstVariableWithSameReason(current_var);
       if (v != current_var) {
         if (is_independent_[v]) break;
@@ -2491,7 +2508,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
     bool abort_early = false;
     DCHECK(!trail_.Reason(current_var).IsEmpty());
     for (Literal literal : trail_.Reason(current_var)) {
-      const VariableIndex var = literal.Variable();
+      const BooleanVariable var = literal.Variable();
       DCHECK_NE(var, current_var);
       const int level = DecisionLevel(var);
       if (level == 0 || is_marked_[var]) continue;
@@ -2506,7 +2523,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
   }
 
   // All the variable left on the dfs_stack_ are independent.
-  for (const VariableIndex var : dfs_stack_) {
+  for (const BooleanVariable var : dfs_stack_) {
     is_independent_.Set(var);
   }
   return dfs_stack_.empty();
@@ -2515,9 +2532,9 @@ bool SatSolver::CanBeInferedFromConflictVariables(VariableIndex variable) {
 namespace {
 
 struct WeightedVariable {
-  WeightedVariable(VariableIndex v, int w) : var(v), weight(w) {}
+  WeightedVariable(BooleanVariable v, int w) : var(v), weight(w) {}
 
-  VariableIndex var;
+  BooleanVariable var;
   int weight;
 };
 
@@ -2552,7 +2569,7 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
   const int current_level = CurrentDecisionLevel();
   std::vector<WeightedVariable> variables_sorted_by_level;
   for (Literal literal : *conflict) {
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     is_marked_.Set(var);
     const int level = DecisionLevel(var);
     if (level < current_level) {
@@ -2563,9 +2580,9 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
             VariableWithLargerWeightFirst());
 
   // Then process the reason of the variable with highest level first.
-  std::vector<VariableIndex> to_remove;
+  std::vector<BooleanVariable> to_remove;
   for (WeightedVariable weighted_var : variables_sorted_by_level) {
-    const VariableIndex var = weighted_var.var;
+    const BooleanVariable var = weighted_var.var;
 
     // A nullptr reason means that this was a decision variable from the
     // previous levels.
@@ -2576,7 +2593,7 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
     // in the current conflict. Level 0 literals are ignored.
     std::vector<Literal> not_contained_literals;
     for (const Literal reason_literal : reason) {
-      const VariableIndex reason_var = reason_literal.Variable();
+      const BooleanVariable reason_var = reason_literal.Variable();
 
       // We ignore level 0 variables.
       if (DecisionLevel(reason_var) == 0) continue;
@@ -2605,7 +2622,7 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
   }
 
   // Unmark the variable that should be removed from the conflict.
-  for (VariableIndex var : to_remove) {
+  for (BooleanVariable var : to_remove) {
     is_marked_.Clear(var);
   }
 

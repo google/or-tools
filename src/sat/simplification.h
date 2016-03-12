@@ -57,7 +57,7 @@ class SatPostsolver {
   //
   // This can be called more than once. But each call must refer to the current
   // variables set (after all the previous mapping have been applied).
-  void ApplyMapping(const ITIVector<VariableIndex, VariableIndex>& mapping);
+  void ApplyMapping(const ITIVector<BooleanVariable, BooleanVariable>& mapping);
 
   // Extracts the current assignment of the given solver and postsolve it.
   //
@@ -79,7 +79,7 @@ class SatPostsolver {
   // All the added clauses will be mapped back to the initial variables using
   // this reverse mapping. This way, clauses_ and associated_literal_ are only
   // in term of the initial problem.
-  ITIVector<VariableIndex, VariableIndex> reverse_mapping_;
+  ITIVector<BooleanVariable, BooleanVariable> reverse_mapping_;
 
   // This will stores the fixed variables value and later the postsolved
   // assignment.
@@ -141,8 +141,8 @@ class SatPresolver {
   // After presolving, Some variables in [0, NumVariables()) have no longer any
   // clause pointing to them. This return a mapping that maps this interval to
   // [0, new_size) such that now all variables are used. The unused variable
-  // will be mapped to VariableIndex(-1).
-  ITIVector<VariableIndex, VariableIndex> VariableMapping() const;
+  // will be mapped to BooleanVariable(-1).
+  ITIVector<BooleanVariable, BooleanVariable> VariableMapping() const;
 
   // Loads the current presolved problem in to the given sat solver.
   // Note that the variables will be re-indexed according to the mapping given
@@ -194,7 +194,7 @@ class SatPresolver {
   // in a priority queue so that we process first the ones that occur the least
   // often in the clause database.
   void InitializePriorityQueue();
-  void UpdatePriorityQueue(VariableIndex var);
+  void UpdatePriorityQueue(BooleanVariable var);
   struct PQElement {
     PQElement() : heap_index(-1), variable(-1), weight(0.0) {}
 
@@ -209,10 +209,10 @@ class SatPresolver {
     }
 
     int heap_index;
-    VariableIndex variable;
+    BooleanVariable variable;
     double weight;
   };
-  ITIVector<VariableIndex, PQElement> var_pq_elements_;
+  ITIVector<BooleanVariable, PQElement> var_pq_elements_;
   AdjustablePriorityQueue<PQElement> var_pq_;
 
   // List of clauses on which we need to call ProcessClauseToSimplifyOthers().

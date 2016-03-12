@@ -49,6 +49,8 @@ DEFINE_int32(tsp_random_forbidden_connections, 0,
 DEFINE_bool(tsp_use_deterministic_random_seed, false,
             "Use deterministic random seeds.");
 
+namespace operations_research {
+
 // Random seed generator.
 int32 GetSeed() {
   if (FLAGS_tsp_use_deterministic_random_seed) {
@@ -100,19 +102,17 @@ class RandomMatrix {
   const int size_;
 };
 
-int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
+void Tsp() {
   if (FLAGS_tsp_size > 0) {
     // TSP of size FLAGS_tsp_size.
     // Second argument = 1 to build a single tour (it's a TSP).
     // Nodes are indexed from 0 to FLAGS_tsp_size - 1, by default the start of
     // the route is node 0.
     RoutingModel routing(FLAGS_tsp_size, 1);
-    RoutingSearchParameters parameters =
-        operations_research::BuildSearchParametersFromFlags();
+    RoutingSearchParameters parameters = BuildSearchParametersFromFlags();
     // Setting first solution heuristic (cheapest addition).
     parameters.set_first_solution_strategy(
-        operations_research::FirstSolutionStrategy::PATH_CHEAPEST_ARC);
+        FirstSolutionStrategy::PATH_CHEAPEST_ARC);
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
@@ -162,5 +162,11 @@ int main(int argc, char** argv) {
   } else {
     LOG(INFO) << "Specify an instance size greater than 0.";
   }
+}
+}  // namespace operations_research
+
+int main(int argc, char** argv) {
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  operations_research::Tsp();
   return 0;
 }

@@ -97,6 +97,15 @@ class Stat {
   // Returns a human-readable formated line of the form "name: ValueAsString()".
   std::string StatString() const;
 
+  // At display, stats are displayed by decreasing priority, then decreasing
+  // Sum(), then alphabetical order.
+  // Used to group the stats per category (timing, ratio, etc..,).
+  virtual int Priority() const { return 0; }
+
+  // By default return 0 for the sum. This makes it possible to sort stats by
+  // decreasing total time.
+  virtual double Sum() const { return 0; }
+
   // Prints information about this statistic.
   virtual std::string ValueAsString() const = 0;
 
@@ -157,7 +166,7 @@ class DistributionStat : public Stat {
   std::string ValueAsString() const override = 0;
 
   // Trivial statistics on all the values added so far.
-  double Sum() const { return sum_; }
+  double Sum() const override { return sum_; }
   double Max() const { return max_; }
   double Min() const { return min_; }
   int64 Num() const { return num_; }
@@ -197,6 +206,9 @@ class TimeDistribution : public DistributionStat {
   TimeDistribution(const std::string& name, StatsGroup* group)
       : DistributionStat(name, group), timer_() {}
   std::string ValueAsString() const override;
+
+  // Time distributions have a high priority to be displayed first.
+  int Priority() const override { return 100; }
 
   // Internaly the TimeDistribution stores cpu cycles (to do a bit less work
   // on each StopTimerAndAddElapsedTime()). Use this function to convert

@@ -23,7 +23,7 @@ namespace sat {
 
 SatPostsolver::SatPostsolver(int num_variables) {
   reverse_mapping_.resize(num_variables);
-  for (VariableIndex var(0); var < num_variables; ++var) {
+  for (BooleanVariable var(0); var < num_variables; ++var) {
     reverse_mapping_[var] = var;
   }
   assignment_.Resize(num_variables);
@@ -46,15 +46,15 @@ void SatPostsolver::FixVariable(Literal x) {
 }
 
 void SatPostsolver::ApplyMapping(
-    const ITIVector<VariableIndex, VariableIndex>& mapping) {
-  ITIVector<VariableIndex, VariableIndex> new_mapping(reverse_mapping_.size(),
-                                                      VariableIndex(-1));
-  for (VariableIndex v(0); v < mapping.size(); ++v) {
-    const VariableIndex image = mapping[v];
-    if (image != VariableIndex(-1)) {
-      CHECK_EQ(new_mapping[image], VariableIndex(-1));
+    const ITIVector<BooleanVariable, BooleanVariable>& mapping) {
+  ITIVector<BooleanVariable, BooleanVariable> new_mapping(
+      reverse_mapping_.size(), kNoBooleanVariable);
+  for (BooleanVariable v(0); v < mapping.size(); ++v) {
+    const BooleanVariable image = mapping[v];
+    if (image != kNoBooleanVariable) {
+      CHECK_EQ(new_mapping[image], kNoBooleanVariable);
       CHECK_LT(v, reverse_mapping_.size());
-      CHECK_NE(reverse_mapping_[v], VariableIndex(-1));
+      CHECK_NE(reverse_mapping_[v], kNoBooleanVariable);
       new_mapping[image] = reverse_mapping_[v];
     }
   }
@@ -63,14 +63,14 @@ void SatPostsolver::ApplyMapping(
 
 Literal SatPostsolver::ApplyReverseMapping(Literal l) {
   CHECK_LT(l.Variable(), reverse_mapping_.size());
-  CHECK_NE(reverse_mapping_[l.Variable()], VariableIndex(-1));
+  CHECK_NE(reverse_mapping_[l.Variable()], kNoBooleanVariable);
   return Literal(reverse_mapping_[l.Variable()], l.IsPositive());
 }
 
 void SatPostsolver::Postsolve(VariablesAssignment* assignment) const {
   // First, we set all unassigned variable to true.
   // This will be a valid assignment of the presolved problem.
-  for (VariableIndex var(0); var < assignment->NumberOfVariables(); ++var) {
+  for (BooleanVariable var(0); var < assignment->NumberOfVariables(); ++var) {
     if (!assignment->VariableIsAssigned(var)) {
       assignment->AssignFromTrueLiteral(Literal(var, true));
     }
@@ -99,7 +99,7 @@ void SatPostsolver::Postsolve(VariablesAssignment* assignment) const {
 std::vector<bool> SatPostsolver::ExtractAndPostsolveSolution(
     const SatSolver& solver) {
   std::vector<bool> solution(solver.NumVariables());
-  for (VariableIndex var(0); var < solver.NumVariables(); ++var) {
+  for (BooleanVariable var(0); var < solver.NumVariables(); ++var) {
     CHECK(solver.Assignment().VariableIsAssigned(var));
     solution[var.value()] =
         solver.Assignment().LiteralIsTrue(Literal(var, true));
@@ -108,9 +108,9 @@ std::vector<bool> SatPostsolver::ExtractAndPostsolveSolution(
 }
 
 std::vector<bool> SatPostsolver::PostsolveSolution(const std::vector<bool>& solution) {
-  for (VariableIndex var(0); var < solution.size(); ++var) {
+  for (BooleanVariable var(0); var < solution.size(); ++var) {
     CHECK_LT(var, reverse_mapping_.size());
-    CHECK_NE(reverse_mapping_[var], VariableIndex(-1));
+    CHECK_NE(reverse_mapping_[var], kNoBooleanVariable);
     CHECK(!assignment_.VariableIsAssigned(reverse_mapping_[var]));
     assignment_.AssignFromTrueLiteral(
         Literal(reverse_mapping_[var], solution[var.value()]));
@@ -119,7 +119,7 @@ std::vector<bool> SatPostsolver::PostsolveSolution(const std::vector<bool>& solu
   std::vector<bool> postsolved_solution;
   for (int i = 0; i < reverse_mapping_.size(); ++i) {
     postsolved_solution.push_back(
-        assignment_.LiteralIsTrue(Literal(VariableIndex(i), true)));
+        assignment_.LiteralIsTrue(Literal(BooleanVariable(i), true)));
   }
   return postsolved_solution;
 }
@@ -187,16 +187,17 @@ void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
   }
 }
 
-ITIVector<VariableIndex, VariableIndex> SatPresolver::VariableMapping() const {
-  ITIVector<VariableIndex, VariableIndex> result;
-  VariableIndex new_var(0);
-  for (VariableIndex var(0); var < NumVariables(); ++var) {
+ITIVector<BooleanVariable, BooleanVariable> SatPresolver::VariableMapping()
+    const {
+  ITIVector<BooleanVariable, BooleanVariable> result;
+  BooleanVariable new_var(0);
+  for (BooleanVariable var(0); var < NumVariables(); ++var) {
     if (literal_to_clause_sizes_[Literal(var, true).Index()] > 0 ||
         literal_to_clause_sizes_[Literal(var, false).Index()] > 0) {
       result.push_back(new_var);
       ++new_var;
     } else {
-      result.push_back(VariableIndex(-1));
+      result.push_back(kNoBooleanVariable);
     }
   }
   return result;
@@ -211,10 +212,10 @@ void SatPresolver::LoadProblemIntoSatSolver(SatSolver* solver) {
   clause_to_process_.clear();
   literal_to_clauses_.clear();
 
-  const ITIVector<VariableIndex, VariableIndex> mapping = VariableMapping();
+  const ITIVector<BooleanVariable, BooleanVariable> mapping = VariableMapping();
   int new_size = 0;
-  for (VariableIndex index : mapping) {
-    if (index != VariableIndex(-1)) ++new_size;
+  for (BooleanVariable index : mapping) {
+    if (index != kNoBooleanVariable) ++new_size;
   }
 
   std::vector<Literal> temp;
@@ -222,7 +223,7 @@ void SatPresolver::LoadProblemIntoSatSolver(SatSolver* solver) {
   for (std::vector<Literal>& clause_ref : clauses_) {
     temp.clear();
     for (Literal l : clause_ref) {
-      CHECK_NE(mapping[l.Variable()], VariableIndex(-1));
+      CHECK_NE(mapping[l.Variable()], kNoBooleanVariable);
       temp.push_back(Literal(mapping[l.Variable()], l.IsPositive()));
     }
     if (!temp.empty()) solver->AddProblemClause(temp);
@@ -253,7 +254,7 @@ bool SatPresolver::Presolve() {
 
   InitializePriorityQueue();
   while (var_pq_.Size() > 0) {
-    VariableIndex var = var_pq_.Top()->variable;
+    BooleanVariable var = var_pq_.Top()->variable;
     var_pq_.Pop();
     if (CrossProduct(Literal(var, true))) {
       if (!ProcessAllClauses()) return false;
@@ -480,7 +481,7 @@ Literal SatPresolver::FindLiteralWithShortestOccurenceList(
   return result;
 }
 
-void SatPresolver::UpdatePriorityQueue(VariableIndex var) {
+void SatPresolver::UpdatePriorityQueue(BooleanVariable var) {
   if (var_pq_elements_.empty()) return;  // not initialized.
   PQElement* element = &var_pq_elements_[var];
   element->weight = literal_to_clause_sizes_[Literal(var, true).Index()] +
@@ -495,7 +496,7 @@ void SatPresolver::UpdatePriorityQueue(VariableIndex var) {
 void SatPresolver::InitializePriorityQueue() {
   const int num_vars = NumVariables();
   var_pq_elements_.resize(num_vars);
-  for (VariableIndex var(0); var < num_vars; ++var) {
+  for (BooleanVariable var(0); var < num_vars; ++var) {
     PQElement* element = &var_pq_elements_[var];
     element->variable = var;
     element->weight = literal_to_clause_sizes_[Literal(var, true).Index()] +
@@ -518,7 +519,7 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
   int num_one_side = 0;
   int num_simple_definition = 0;
   int num_vars = 0;
-  for (VariableIndex var(0); var < NumVariables(); ++var) {
+  for (BooleanVariable var(0); var < NumVariables(); ++var) {
     const int s1 = literal_to_clause_sizes_[Literal(var, true).Index()];
     const int s2 = literal_to_clause_sizes_[Literal(var, false).Index()];
     if (s1 == 0 && s2 == 0) continue;

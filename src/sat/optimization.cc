@@ -356,10 +356,10 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
         CHECK_LT(index, assumptions.size());
 
         // The new blocking and assumption variables for this core entry.
-        const Literal a(VariableIndex(old_num_variables + i), true);
-        Literal b(VariableIndex(old_num_variables + core.size() + i), true);
+        const Literal a(BooleanVariable(old_num_variables + i), true);
+        Literal b(BooleanVariable(old_num_variables + core.size() + i), true);
         if (core.size() == 2) {
-          b = Literal(VariableIndex(old_num_variables + 2), true);
+          b = Literal(BooleanVariable(old_num_variables + 2), true);
           if (i == 1) b = b.Negated();
         }
 
@@ -630,10 +630,10 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
         CHECK_LT(index, assumptions.size());
 
         // The new blocking and assumption variables for this core entry.
-        const Literal a(VariableIndex(old_num_variables + i), true);
-        Literal b(VariableIndex(old_num_variables + core.size() + i), true);
+        const Literal a(BooleanVariable(old_num_variables + i), true);
+        Literal b(BooleanVariable(old_num_variables + core.size() + i), true);
         if (core.size() == 2) {
-          b = Literal(VariableIndex(old_num_variables + 2), true);
+          b = Literal(BooleanVariable(old_num_variables + 2), true);
           if (i == 1) b = b.Negated();
         }
 

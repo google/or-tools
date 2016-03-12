@@ -104,7 +104,7 @@ bool ProblemState::MergeLearnedInfo(
   if (!learned_info.binary_clauses.empty()) {
     const int old_num = binary_clause_manager_.NumClauses();
     for (sat::BinaryClause c : learned_info.binary_clauses) {
-      sat::VariableIndex num_vars(original_problem_.num_variables());
+      const int num_vars = original_problem_.num_variables();
       if (c.a.Variable() < num_vars && c.b.Variable() < num_vars) {
         binary_clause_manager_.Add(c);
       }
@@ -214,7 +214,7 @@ LearnedInfo ProblemState::GetLearnedInfo() const {
   for (VariableIndex var(0); var < is_fixed_.size(); ++var) {
     if (is_fixed_[var]) {
       learned_info.fixed_literals.push_back(
-          sat::Literal(sat::VariableIndex(var.value()), fixed_values_[var]));
+          sat::Literal(sat::BooleanVariable(var.value()), fixed_values_[var]));
     }
   }
   learned_info.solution = solution_;

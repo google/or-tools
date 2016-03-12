@@ -168,14 +168,14 @@ class MutableUpperBoundedLinearConstraint {
   void ClearAll();
 
   // Returns the coefficient (>= 0) of the given variable.
-  Coefficient GetCoefficient(VariableIndex var) const {
+  Coefficient GetCoefficient(BooleanVariable var) const {
     return AbsCoefficient(terms_[var]);
   }
 
   // Returns the literal under which the given variable appear in the
   // constraint. Note that if GetCoefficient(var) == 0 this just returns
   // Literal(var, true).
-  Literal GetLiteral(VariableIndex var) const {
+  Literal GetLiteral(BooleanVariable var) const {
     return Literal(var, terms_[var] > 0);
   }
 
@@ -192,7 +192,7 @@ class MutableUpperBoundedLinearConstraint {
 
   // Same as ReduceCoefficients() but only consider the coefficient of the given
   // variable.
-  void ReduceGivenCoefficient(VariableIndex var) {
+  void ReduceGivenCoefficient(BooleanVariable var) {
     const Coefficient bound = max_sum_ - rhs_;
     const Coefficient diff = GetCoefficient(var) - bound;
     if (diff > 0) {
@@ -259,7 +259,7 @@ class MutableUpperBoundedLinearConstraint {
   // The encoding used internally is described below in the terms_ comment.
   void AddTerm(Literal literal, Coefficient coeff) {
     CHECK_GT(coeff, 0);
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     const Coefficient term_encoding = literal.IsPositive() ? coeff : -coeff;
     if (literal != GetLiteral(var)) {
       // The two terms are of opposite sign, a "cancelation" happens.
@@ -282,14 +282,14 @@ class MutableUpperBoundedLinearConstraint {
   // Returns the "cancelation" amount of AddTerm(literal, coeff).
   Coefficient CancelationAmount(Literal literal, Coefficient coeff) const {
     DCHECK_GT(coeff, 0);
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     if (literal == GetLiteral(var)) return Coefficient(0);
     return std::min(coeff, AbsCoefficient(terms_[var]));
   }
 
   // Returns a set of positions that contains all the non-zeros terms of the
   // constraint. Note that this set can also contains some zero terms.
-  const std::vector<VariableIndex>& PossibleNonZeros() const {
+  const std::vector<BooleanVariable>& PossibleNonZeros() const {
     return non_zeros_.PositionsSetAtLeastOnce();
   }
 
@@ -305,7 +305,7 @@ class MutableUpperBoundedLinearConstraint {
   // The encoding is special:
   // - If terms_[x] > 0, then the associated term is 'terms_[x] . x'
   // - If terms_[x] < 0, then the associated term is 'terms_[x] . (x - 1)'
-  ITIVector<VariableIndex, Coefficient> terms_;
+  ITIVector<BooleanVariable, Coefficient> terms_;
 
   // The right hand side of the constraint (sum terms <= rhs_).
   Coefficient rhs_;
@@ -315,7 +315,7 @@ class MutableUpperBoundedLinearConstraint {
   Coefficient max_sum_;
 
   // Contains the possibly non-zeros terms_ value.
-  SparseBitset<VariableIndex> non_zeros_;
+  SparseBitset<BooleanVariable> non_zeros_;
 };
 
 // A simple "helper" class to enqueue a propagated literal on the trail and
@@ -412,11 +412,11 @@ class UpperBoundedLinearConstraint {
   // better to use during conflict minimization (namely the one already in the
   // 1-UIP conflict).
   void FillReason(const Trail& trail, int source_trail_index,
-                  VariableIndex propagated_variable, std::vector<Literal>* reason);
+                  BooleanVariable propagated_variable, std::vector<Literal>* reason);
 
   // Same operation as SatSolver::ResolvePBConflict(), the only difference is
   // that here the reason for var is *this.
-  void ResolvePBConflict(const Trail& trail, VariableIndex var,
+  void ResolvePBConflict(const Trail& trail, BooleanVariable var,
                          MutableUpperBoundedLinearConstraint* conflict,
                          Coefficient* conflict_slack);
 
@@ -686,7 +686,7 @@ class VariableWithSameReasonIdentifier {
 
   void Resize(int num_variables) {
     first_variable_.resize(num_variables);
-    seen_.ClearAndResize(VariableIndex(num_variables));
+    seen_.ClearAndResize(BooleanVariable(num_variables));
   }
 
   // Clears the cache. Call this before each conflict analysis.
@@ -695,9 +695,10 @@ class VariableWithSameReasonIdentifier {
   // Returns the first variable with exactly the same reason as 'var' on which
   // this function was called since the last Clear(). Note that if no variable
   // had the same reason, then var is returned.
-  VariableIndex FirstVariableWithSameReason(VariableIndex var) {
+  BooleanVariable FirstVariableWithSameReason(BooleanVariable var) {
     if (seen_[var]) return first_variable_[var];
-    const VariableIndex reference_var = trail_.ReferenceVarWithSameReason(var);
+    const BooleanVariable reference_var =
+        trail_.ReferenceVarWithSameReason(var);
     if (reference_var == var) return var;
     if (seen_[reference_var]) return first_variable_[reference_var];
     seen_.Set(reference_var);
@@ -707,8 +708,8 @@ class VariableWithSameReasonIdentifier {
 
  private:
   const Trail& trail_;
-  ITIVector<VariableIndex, VariableIndex> first_variable_;
-  SparseBitset<VariableIndex> seen_;
+  ITIVector<BooleanVariable, BooleanVariable> first_variable_;
+  SparseBitset<BooleanVariable> seen_;
 
   DISALLOW_COPY_AND_ASSIGN(VariableWithSameReasonIdentifier);
 };

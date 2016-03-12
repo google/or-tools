@@ -153,8 +153,8 @@ void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
 std::string SolutionString(const LinearBooleanProblem& problem,
                       const std::vector<bool>& assignment) {
   std::string output;
-  VariableIndex limit(problem.original_num_variables());
-  for (VariableIndex index(0); index < limit; ++index) {
+  BooleanVariable limit(problem.original_num_variables());
+  for (BooleanVariable index(0); index < limit; ++index) {
     if (index > 0) output += " ";
     output += StringPrintf(
         "%d", Literal(index, assignment[index.value()]).SignedValue());

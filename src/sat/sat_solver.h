@@ -29,19 +29,19 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
-#include "base/int_type_indexed_vector.h"
+#include "google/protobuf/text_format.h"
 #include "base/int_type.h"
+#include "base/int_type_indexed_vector.h"
 #include "base/map_util.h"
-#include "base/random.h"
-#include "sat/pb_constraint.h"
 #include "sat/clause.h"
-#include "sat/sat_base.h"
+#include "sat/pb_constraint.h"
 #include "sat/sat_parameters.pb.h"
 #include "sat/unsat_proof.h"
 #include "util/bitset.h"
 #include "util/running_stat.h"
 #include "util/stats.h"
 #include "util/time_limit.h"
+#include "base/random.h"
 #include "base/adjustable_priority_queue.h"
 
 namespace operations_research {
@@ -72,6 +72,11 @@ class SatSolver {
   // variables...
   void SetNumVariables(int num_variables);
   int NumVariables() const { return num_variables_.value(); }
+  BooleanVariable NewBooleanVariable() {
+    const int num_vars = NumVariables();
+    SetNumVariables(num_vars + 1);
+    return BooleanVariable(num_vars);
+  }
 
   // Fixes a variable so that the given literal is true. This can be used to
   // solve a subproblem where some variables are fixed. Note that it is more
@@ -120,6 +125,7 @@ class SatSolver {
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they where added.
   void AddPropagator(std::unique_ptr<Propagator> propagator);
+  void AddLastPropagator(std::unique_ptr<Propagator> propagator);
 
   // Advanced usage. This is only relevant when trying to compute an unsat core.
   // All the constraints added by one of the Add*() function above when this was
@@ -414,14 +420,16 @@ class SatSolver {
   std::string Indent() const;
 
   // Returns the decision level of a given variable.
-  int DecisionLevel(VariableIndex var) const { return trail_.Info(var).level; }
+  int DecisionLevel(BooleanVariable var) const {
+    return trail_.Info(var).level;
+  }
 
   // Returns the relevant pointer if the given variable was propagated by the
   // constraint in question. This is used to bump the activity of the learned
   // clauses or pb constraints.
-  SatClause* ReasonClauseOrNull(VariableIndex var) const;
+  SatClause* ReasonClauseOrNull(BooleanVariable var) const;
   UpperBoundedLinearConstraint* ReasonPbConstraintOrNull(
-      VariableIndex var) const;
+      BooleanVariable var) const;
 
   // This does one step of a pseudo-Boolean resolution:
   // - The variable var has been assigned to l at a given trail_index.
@@ -432,7 +440,7 @@ class SatSolver {
   //
   // Returns true if the reason for var was a normal clause. In this case,
   // the *slack is updated to its new value.
-  bool ResolvePBConflict(VariableIndex var,
+  bool ResolvePBConflict(BooleanVariable var,
                          MutableUpperBoundedLinearConstraint* conflict,
                          Coefficient* slack);
 
@@ -443,7 +451,7 @@ class SatSolver {
   // This may be beneficial, but should properly be defined so that we can
   // have the same behavior if we change the implementation.
   bool ClauseIsUsedAsReason(SatClause* clause) const {
-    const VariableIndex var = clause->PropagatedLiteral().Variable();
+    const BooleanVariable var = clause->PropagatedLiteral().Variable();
     return trail_.Info(var).trail_index < trail_.Index() &&
            trail_[trail_.Info(var).trail_index].Variable() == var &&
            ReasonClauseOrNull(var) == clause;
@@ -567,7 +575,7 @@ class SatSolver {
   void MinimizeConflictRecursively(std::vector<Literal>* conflict);
 
   // Utility function used by MinimizeConflictRecursively().
-  bool CanBeInferedFromConflictVariables(VariableIndex variable);
+  bool CanBeInferedFromConflictVariables(BooleanVariable variable);
 
   // To be used in DCHECK(). Verifies some property of the conflict clause:
   // - There is an unique literal with the highest decision level.
@@ -627,7 +635,7 @@ class SatSolver {
 
   // Reinitializes the polarity of all the variables with an index greater than
   // or equal to the given one.
-  void ResetPolarity(VariableIndex from);
+  void ResetPolarity(BooleanVariable from);
 
   // Init restart period.
   void InitRestart();
@@ -636,7 +644,7 @@ class SatSolver {
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
 
-  VariableIndex num_variables_;
+  BooleanVariable num_variables_;
 
   // The number of constraints of the initial problem that where added.
   int num_constraints_;
@@ -671,6 +679,7 @@ class SatSolver {
 
   // Ordered list of propagators added with AddPropagator().
   std::vector<std::unique_ptr<Propagator>> external_propagators_;
+  std::unique_ptr<Propagator> last_propagator_;
 
   // Keep track of all binary clauses so they can be exported.
   bool track_binary_clauses_;
@@ -785,7 +794,7 @@ class SatSolver {
 
   bool is_var_ordering_initialized_;
   AdjustablePriorityQueue<WeightedVarQueueElement> var_ordering_;
-  ITIVector<VariableIndex, WeightedVarQueueElement> queue_elements_;
+  ITIVector<BooleanVariable, WeightedVarQueueElement> queue_elements_;
 
   // Whether the priority of the given variable needs to be updated in
   // var_ordering_. Note that this is only accessed for assigned variables and
@@ -800,7 +809,7 @@ class SatSolver {
   double clause_activity_increment_;
 
   // Stores variable activity.
-  ITIVector<VariableIndex, double> activities_;
+  ITIVector<BooleanVariable, double> activities_;
 
   // Used by NextBranch() to choose the polarity of the next decision.
   struct Polarity {
@@ -811,8 +820,8 @@ class SatSolver {
     }
   };
   bool is_decision_heuristic_initialized_;
-  ITIVector<VariableIndex, Polarity> polarity_;
-  ITIVector<VariableIndex, double> weighted_sign_;
+  ITIVector<BooleanVariable, Polarity> polarity_;
+  ITIVector<BooleanVariable, double> weighted_sign_;
 
   // If true, leave the initial variable activities to their current value.
   bool leave_initial_activities_unchanged_;
@@ -832,13 +841,13 @@ class SatSolver {
   int strategy_counter_;
 
   // Temporary members used during conflict analysis.
-  SparseBitset<VariableIndex> is_marked_;
-  SparseBitset<VariableIndex> is_independent_;
+  SparseBitset<BooleanVariable> is_marked_;
+  SparseBitset<BooleanVariable> is_independent_;
   std::vector<int> min_trail_index_per_level_;
 
   // Temporary members used by CanBeInferedFromConflictVariables().
-  std::vector<VariableIndex> dfs_stack_;
-  std::vector<VariableIndex> variable_to_process_;
+  std::vector<BooleanVariable> dfs_stack_;
+  std::vector<BooleanVariable> variable_to_process_;
 
   // Temporary member used by AddLinearConstraintInternal().
   std::vector<Literal> literals_scratchpad_;

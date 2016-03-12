@@ -107,7 +107,7 @@ class EncodingNode {
   int depth_;
   int lb_;
   int ub_;
-  VariableIndex for_sorting_;
+  BooleanVariable for_sorting_;
 
   Coefficient weight_;
   EncodingNode* child_a_;

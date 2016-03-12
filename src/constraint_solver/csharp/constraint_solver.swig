@@ -41,7 +41,6 @@ import com.google.ortools.constraintsolver.ConstraintSolverParameters;
 import com.google.ortools.constraintsolver.SearchLimitParameters;
 %}
 
-%feature("director") Action;
 %feature("director") BaseLns;
 %feature("director") Decision;
 %feature("director") DecisionBuilder;
@@ -164,6 +163,7 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
+%ignore operations_research::PropagationBaseObject::set_action_on_fail;
 
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";
@@ -338,6 +338,7 @@ namespace operations_research {
     OptimizeVar* const objective,
     std::function<std::string()> display_callback);
 
+%ignore Solver::MakeActionDemon;
 %ignore Solver::MakeCustomLimit(std::function<bool()> limiter);
 %ignore Solver::MakeElement(IndexEvaluator1 values, IntVar* const index);
 %ignore Solver::MakeMonotonicElement(IndexEvaluator1 values, bool increasing,
@@ -427,6 +428,7 @@ namespace operations_research {
     const std::vector<LocalSearchOperator*>& ops,
     std::function<int64(int, int)> evaluator);
 %ignore Solver::MakeClosureDemon(std::function<void()> closure);
+%ignore Solver::set_fail_intercept;
 
 %extend Solver {
   IntExpr* MakeElement(swig_util::LongToLong* values, IntVar* const index) {

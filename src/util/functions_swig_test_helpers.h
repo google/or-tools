@@ -59,6 +59,16 @@ class FunctionSwigTestHelpers {
   }
 
   static bool NoOpVoidToBool(std::function<bool()> fun) { return fun(); }
+
+  static void NoOpInt64ToVoid(std::function<void(int64)> fun, int64 x) {
+    fun(x);
+  }
+
+  static void NoOpVoidToVoid(std::function<void()> fun) { fun(); }
+
+  static void NoOpStringToVoid(std::function<void(std::string)> fun, std::string x) {
+    fun(x);
+  }
 };
 }  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_FUNCTIONS_SWIG_TEST_HELPERS_H_

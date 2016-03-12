@@ -32,7 +32,7 @@ void EncodingNode::InitializeFullNode(int n, EncodingNode* a, EncodingNode* b,
                                       SatSolver* solver) {
   CHECK(literals_.empty()) << "Already initialized";
   CHECK_GT(n, 0);
-  const VariableIndex first_var_index(solver->NumVariables());
+  const BooleanVariable first_var_index(solver->NumVariables());
   solver->SetNumVariables(solver->NumVariables() + n);
   for (int i = 0; i < n; ++i) {
     literals_.push_back(Literal(first_var_index + i, true));
@@ -51,7 +51,7 @@ void EncodingNode::InitializeFullNode(int n, EncodingNode* a, EncodingNode* b,
 void EncodingNode::InitializeLazyNode(EncodingNode* a, EncodingNode* b,
                                       SatSolver* solver) {
   CHECK(literals_.empty()) << "Already initialized";
-  const VariableIndex first_var_index(solver->NumVariables());
+  const BooleanVariable first_var_index(solver->NumVariables());
   solver->SetNumVariables(solver->NumVariables() + 1);
   literals_.emplace_back(first_var_index, true);
   child_a_ = a;
@@ -67,7 +67,7 @@ void EncodingNode::InitializeLazyNode(EncodingNode* a, EncodingNode* b,
 bool EncodingNode::IncreaseCurrentUB(SatSolver* solver) {
   CHECK(!literals_.empty());
   if (current_ub() == ub_) return false;
-  literals_.emplace_back(VariableIndex(solver->NumVariables()), true);
+  literals_.emplace_back(BooleanVariable(solver->NumVariables()), true);
   solver->SetNumVariables(solver->NumVariables() + 1);
   solver->AddBinaryClause(literals_.back().Negated(),
                           literals_[literals_.size() - 2]);

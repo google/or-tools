@@ -402,8 +402,8 @@ clean_cc:
 	-$(DEL) $(GEN_DIR)$Ssat$S*.pb.*
 	-$(DEL) $(BIN_DIR)$S*.exp
 	-$(DEL) $(BIN_DIR)$S*.lib
-	-$(DELREC) $(OR_ROOT)src$Sgen$Sflatzinc2
-	-$(DELREC) $(OR_ROOT)objs$Sflatzinc2
+	-$(DELREC) $(OR_ROOT)src$Sgen$Sflatzinc
+	-$(DELREC) $(OR_ROOT)objs$Sflatzinc
 
 clean_compat:
 	-$(DELREC) $(OR_ROOT)constraint_solver

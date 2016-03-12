@@ -441,7 +441,7 @@ ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
     int32 num_branches = 0;
     for (const ConstraintTerm& term : by_constraint_matrix_[i]) {
       if (sat_assignment_.VariableIsAssigned(
-              sat::VariableIndex(term.var.value()))) {
+              sat::BooleanVariable(term.var.value()))) {
         continue;
       }
       const int64 new_value =
@@ -481,7 +481,7 @@ TermIndex OneFlipConstraintRepairer::NextRepairingTerm(
     const TermIndex term_index(loop_term_index % terms.size());
     const ConstraintTerm term = terms[term_index];
     if (sat_assignment_.VariableIsAssigned(
-            sat::VariableIndex(term.var.value()))) {
+            sat::BooleanVariable(term.var.value()))) {
       continue;
     }
     const int64 new_value =
@@ -499,7 +499,7 @@ bool OneFlipConstraintRepairer::RepairIsValid(ConstraintIndex ct_index,
   if (maintainer_.ConstraintIsFeasible(ct_index)) return false;
   const ConstraintTerm term = by_constraint_matrix_[ct_index][term_index];
   if (sat_assignment_.VariableIsAssigned(
-          sat::VariableIndex(term.var.value()))) {
+          sat::BooleanVariable(term.var.value()))) {
     return false;
   }
   const int64 new_value =
@@ -515,7 +515,7 @@ sat::Literal OneFlipConstraintRepairer::GetFlip(ConstraintIndex ct_index,
                                                 TermIndex term_index) const {
   const ConstraintTerm term = by_constraint_matrix_[ct_index][term_index];
   const bool value = maintainer_.Assignment(term.var);
-  return sat::Literal(sat::VariableIndex(term.var.value()), !value);
+  return sat::Literal(sat::BooleanVariable(term.var.value()), !value);
 }
 
 void OneFlipConstraintRepairer::SortTermsOfEachConstraints(int num_variables) {

@@ -27,7 +27,7 @@ void SatTableConstraint::Post() {
   }
 
   // Then create an extra BooleanVariable per tuple.
-  const sat::VariableIndex first_tuple_var(sat_solver->NumVariables());
+  const sat::BooleanVariable first_tuple_var(sat_solver->NumVariables());
   sat_solver->SetNumVariables(sat_solver->NumVariables() + tuples_.NumTuples());
 
   std::vector<sat::Literal> clause;
@@ -93,7 +93,7 @@ int BooleanVariableManager::RegisterIntVar(IntVar* int_var) {
   registered_int_vars_.push_back(int_var);
 
   const int num_variables(solver_->NumVariables());
-  IntVarLiteralGetter literal_getter(sat::VariableIndex(num_variables),
+  IntVarLiteralGetter literal_getter(sat::BooleanVariable(num_variables),
                                      int_var->Min(), int_var->Max());
   associated_variables_.push_back(literal_getter);
   solver_->SetNumVariables(num_variables + literal_getter.NumVariableUsed());

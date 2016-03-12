@@ -233,7 +233,7 @@ bool CanonicalBooleanLinearProblem::AddConstraint(
 void MutableUpperBoundedLinearConstraint::ClearAndResize(int num_variables) {
   if (terms_.size() != num_variables) {
     terms_.assign(num_variables, Coefficient(0));
-    non_zeros_.ClearAndResize(VariableIndex(num_variables));
+    non_zeros_.ClearAndResize(BooleanVariable(num_variables));
     rhs_ = 0;
     max_sum_ = 0;
   } else {
@@ -243,7 +243,7 @@ void MutableUpperBoundedLinearConstraint::ClearAndResize(int num_variables) {
 
 void MutableUpperBoundedLinearConstraint::ClearAll() {
   // TODO(user): We could be more efficient and have only one loop here.
-  for (VariableIndex var : non_zeros_.PositionsSetAtLeastOnce()) {
+  for (BooleanVariable var : non_zeros_.PositionsSetAtLeastOnce()) {
     terms_[var] = Coefficient(0);
   }
   non_zeros_.ClearAll();
@@ -256,7 +256,7 @@ void MutableUpperBoundedLinearConstraint::ReduceCoefficients() {
   CHECK_LT(rhs_, max_sum_) << "Trivially sat.";
   Coefficient removed_sum(0);
   const Coefficient bound = max_sum_ - rhs_;
-  for (VariableIndex var : PossibleNonZeros()) {
+  for (BooleanVariable var : PossibleNonZeros()) {
     const Coefficient diff = GetCoefficient(var) - bound;
     if (diff > 0) {
       removed_sum += diff;
@@ -270,7 +270,7 @@ void MutableUpperBoundedLinearConstraint::ReduceCoefficients() {
 
 std::string MutableUpperBoundedLinearConstraint::DebugString() {
   std::string result;
-  for (VariableIndex var : PossibleNonZeros()) {
+  for (BooleanVariable var : PossibleNonZeros()) {
     if (!result.empty()) result += " + ";
     result += StringPrintf("%lld[%s]", GetCoefficient(var).value(),
                            GetLiteral(var).DebugString().c_str());
@@ -284,7 +284,7 @@ std::string MutableUpperBoundedLinearConstraint::DebugString() {
 Coefficient MutableUpperBoundedLinearConstraint::ComputeSlackForTrailPrefix(
     const Trail& trail, int trail_index) const {
   Coefficient activity(0);
-  for (VariableIndex var : PossibleNonZeros()) {
+  for (BooleanVariable var : PossibleNonZeros()) {
     if (GetCoefficient(var) == 0) continue;
     if (trail.Assignment().LiteralIsTrue(GetLiteral(var)) &&
         trail.Info(var).trail_index < trail_index) {
@@ -300,7 +300,7 @@ Coefficient MutableUpperBoundedLinearConstraint::
   Coefficient activity(0);
   Coefficient removed_sum(0);
   const Coefficient bound = max_sum_ - rhs_;
-  for (VariableIndex var : PossibleNonZeros()) {
+  for (BooleanVariable var : PossibleNonZeros()) {
     if (GetCoefficient(var) == 0) continue;
     const Coefficient diff = GetCoefficient(var) - bound;
     if (trail.Assignment().LiteralIsTrue(GetLiteral(var)) &&
@@ -344,7 +344,7 @@ void MutableUpperBoundedLinearConstraint::ReduceSlackTo(
   // Applies the algorithm described in the .h
   const Coefficient diff = slack - target;
   rhs_ -= diff;
-  for (VariableIndex var : PossibleNonZeros()) {
+  for (BooleanVariable var : PossibleNonZeros()) {
     if (GetCoefficient(var) == 0) continue;
     if (trail.Assignment().LiteralIsTrue(GetLiteral(var)) &&
         trail.Info(var).trail_index < trail_index) {
@@ -364,7 +364,7 @@ void MutableUpperBoundedLinearConstraint::ReduceSlackTo(
 void MutableUpperBoundedLinearConstraint::CopyIntoVector(
     std::vector<LiteralWithCoeff>* output) {
   output->clear();
-  for (VariableIndex var : non_zeros_.PositionsSetAtLeastOnce()) {
+  for (BooleanVariable var : non_zeros_.PositionsSetAtLeastOnce()) {
     const Coefficient coeff = GetCoefficient(var);
     if (coeff != 0) {
       output->push_back(LiteralWithCoeff(GetLiteral(var), GetCoefficient(var)));
@@ -375,7 +375,7 @@ void MutableUpperBoundedLinearConstraint::CopyIntoVector(
 
 Coefficient MutableUpperBoundedLinearConstraint::ComputeMaxSum() const {
   Coefficient result(0);
-  for (VariableIndex var : non_zeros_.PositionsSetAtLeastOnce()) {
+  for (BooleanVariable var : non_zeros_.PositionsSetAtLeastOnce()) {
     result += GetCoefficient(var);
   }
   return result;
@@ -471,7 +471,7 @@ bool UpperBoundedLinearConstraint::InitializeRhs(
     int literal_index = 0;
     int coeff_index = 0;
     for (Literal literal : literals_) {
-      const VariableIndex var = literal.Variable();
+      const BooleanVariable var = literal.Variable();
       const Coefficient coeff = coeffs_[coeff_index];
       if (trail->Assignment().LiteralIsTrue(literal) &&
           trail->Info(var).trail_index < trail_index) {
@@ -497,7 +497,7 @@ bool UpperBoundedLinearConstraint::InitializeRhs(
   int literal_index = 0;
   int coeff_index = 0;
   for (Literal literal : literals_) {
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     const int level = trail->Assignment().VariableIsAssigned(var)
                           ? trail->Info(var).level
                           : last_level;
@@ -533,7 +533,7 @@ bool UpperBoundedLinearConstraint::Propagate(
   while (index_ >= 0 && coeffs_[index_] > slack) --index_;
 
   // Check propagation.
-  VariableIndex first_propagated_variable(-1);
+  BooleanVariable first_propagated_variable(-1);
   for (int i = starts_[index_ + 1]; i < already_propagated_end_; ++i) {
     if (trail->Assignment().LiteralIsFalse(literals_[i])) continue;
     if (trail->Assignment().LiteralIsTrue(literals_[i])) {
@@ -567,10 +567,9 @@ bool UpperBoundedLinearConstraint::Propagate(
   return true;
 }
 
-void UpperBoundedLinearConstraint::FillReason(const Trail& trail,
-                                              int source_trail_index,
-                                              VariableIndex propagated_variable,
-                                              std::vector<Literal>* reason) {
+void UpperBoundedLinearConstraint::FillReason(
+    const Trail& trail, int source_trail_index,
+    BooleanVariable propagated_variable, std::vector<Literal>* reason) {
   reason->clear();
 
   // Optimization for an "at most one" constraint.
@@ -660,7 +659,7 @@ Coefficient UpperBoundedLinearConstraint::ComputeCancelation(
 }
 
 void UpperBoundedLinearConstraint::ResolvePBConflict(
-    const Trail& trail, VariableIndex var,
+    const Trail& trail, BooleanVariable var,
     MutableUpperBoundedLinearConstraint* conflict,
     Coefficient* conflict_slack) {
   const int limit_trail_index = trail.Info(var).trail_index;

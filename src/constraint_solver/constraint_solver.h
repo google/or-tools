@@ -765,6 +765,7 @@ class Solver {
   typedef std::function<void(Solver*)> Action;
   typedef std::function<void()> Closure;
 
+// TODO(user): Remove all these SWIG protected code, move to .swig.
 #ifndef SWIG
   typedef std::function<IntExpr*(CpModelLoader*, const CpIntegerExpression&)>
       IntegerExpressionBuilder;
@@ -3806,6 +3807,7 @@ class IntExpr : public PropagationBaseObject {
   void WhenRange(Solver::Closure closure) {
     WhenRange(solver()->MakeClosureDemon(closure));
   }
+
 #if !defined(SWIG)
   // Attach a demon that will watch the min or the max of the expression.
   void WhenRange(Solver::Action action) {

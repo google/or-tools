@@ -147,6 +147,7 @@ PY_CONVERT(LocalSearchFilter);
 #undef PY_CONVERT
 
 // Support passing std::function<void(Solver*)> as argument.
+// See ../utils/python/functions.swig, from which this was copied and adapted.
 
 %{
 static void PyFunctionSolverToVoid(PyObject* pyfunc,
@@ -636,12 +637,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
       raise StopIteration()
 
   def __next__(self):
-    if self.Ok():
-      result = self.Value()
-      self.Next()
-      return result
-    else:
-      raise StopIteration()
+    return self.next()
   }  // %pythoncode
 }
 
@@ -750,7 +746,8 @@ namespace operations_research {
 %unignore Solver::SolveAndCommit;
 %unignore Solver::FinishCurrentSearch;
 %unignore Solver::RestartCurrentSearch;
-%unignore Solver::AddBacktrackAction;
+// TOOD(lperron): Support Action in python.
+// %unignore Solver::AddBacktrackAction;
 
 // Solver: Debug and performance counters.
 %rename (WallTime) Solver::wall_time;
@@ -890,7 +887,6 @@ namespace operations_research {
     Solver::MakeConstraintInitialPropagateCallback;
 %rename (DelayedConstraintInitialPropagateCallback)
     Solver::MakeDelayedConstraintInitialPropagateCallback;
-%rename (ActionDemon) Solver::MakeActionDemon;
 %rename (ClosureDemon) Solver::MakeClosureDemon;
 
 // Solver: Solution Collectors

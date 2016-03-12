@@ -1248,7 +1248,7 @@ bool TSPLns::MakeNeighbor() {
       meta_node_costs.push_back(cost);
       cost = 0;
     } else {
-      cost += evaluator_(node, next, node_path);
+      cost = CapAdd(cost, evaluator_(node, next, node_path));
     }
     node = next;
   }
@@ -1257,11 +1257,13 @@ bool TSPLns::MakeNeighbor() {
   // Setup TSP cost matrix
   CHECK_EQ(meta_node_costs.size(), tsp_size_);
   for (int i = 0; i < tsp_size_; ++i) {
-    cost_[i][0] = meta_node_costs[i] +
-                  evaluator_(breaks[i], Next(breaks[tsp_size_ - 1]), node_path);
+    cost_[i][0] =
+        CapAdd(meta_node_costs[i],
+               evaluator_(breaks[i], Next(breaks[tsp_size_ - 1]), node_path));
     for (int j = 1; j < tsp_size_; ++j) {
-      cost_[i][j] = meta_node_costs[i] +
-                    evaluator_(breaks[i], Next(breaks[j - 1]), node_path);
+      cost_[i][j] =
+          CapAdd(meta_node_costs[i],
+                 evaluator_(breaks[i], Next(breaks[j - 1]), node_path));
     }
     cost_[i][i] = 0;
   }
@@ -1432,7 +1434,7 @@ bool LinKernighan::MakeNeighbor() {
           const int64 next_out = Next(out);
           int64 in_cost = evaluator_(node, next_out, path);
           int64 out_cost = evaluator_(out, next_out, path);
-          if (gain - in_cost + out_cost > 0) return true;
+          if (CapAdd(CapSub(gain, in_cost), out_cost) > 0) return true;
           node = out;
           if (IsPathEnd(node)) {
             return false;
@@ -1461,7 +1463,7 @@ bool LinKernighan::MakeNeighbor() {
     }
     int64 in_cost = evaluator_(base, chain_last, path);
     int64 out_cost = evaluator_(chain_last, out, path);
-    if (gain - in_cost + out_cost > 0) {
+    if (CapAdd(CapSub(gain, in_cost), out_cost) > 0) {
       return true;
     }
     node = chain_last;
@@ -1483,12 +1485,12 @@ bool LinKernighan::InFromOut(int64 in_i, int64 in_j, int64* out, int64* gain) {
   int64 best_gain = kint64min;
   int64 path = Path(in_i);
   int64 out_cost = evaluator_(in_i, in_j, path);
-  const int64 current_gain = *gain + out_cost;
+  const int64 current_gain = CapAdd(*gain, out_cost);
   for (int k = 0; k < nexts.size(); ++k) {
     const int64 next = nexts[k];
     if (next != in_j) {
       int64 in_cost = evaluator_(in_j, next, path);
-      int64 new_gain = current_gain - in_cost;
+      int64 new_gain = CapSub(current_gain, in_cost);
       if (new_gain > 0 && next != Next(in_j) && marked_.count(in_j) == 0 &&
           marked_.count(next) == 0) {
         if (best_gain < new_gain) {
