@@ -20,6 +20,8 @@
 #define OR_TOOLS_SAT_OPTIMIZATION_H_
 
 #include "sat/boolean_problem.h"
+#include "sat/integer.h"
+#include "sat/model.h"
 #include "sat/sat_solver.h"
 
 namespace operations_research {
@@ -111,6 +113,16 @@ SatSolver::Status SolveWithCardinalityEncoding(
 SatSolver::Status SolveWithCardinalityEncodingAndCore(
     LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
     std::vector<bool>* solution);
+
+// Model-based API, for now we just provide a basic algorithm that minimize a
+// given IntegerVariable by solving a sequence of decision problem.
+//
+// The "observer" function will be called each time a new feasible solution is
+// found.
+SatSolver::Status MinimizeIntegerVariableWithLinearScan(
+    IntegerVariable objective_var,
+    const std::function<void(const Model&)>& feasible_solution_observer,
+    Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

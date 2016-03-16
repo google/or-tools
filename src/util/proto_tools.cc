@@ -19,14 +19,12 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-//#include "net/proto2/util/public/json_format.h"
 #include "base/join.h"
 
 using google::protobuf::Descriptor;
 using google::protobuf::FieldDescriptor;
 using google::protobuf::Reflection;
 using google::protobuf::TextFormat;
-//using google::protobuf::util::JsonFormat;
 
 namespace operations_research {
 
@@ -37,8 +35,6 @@ bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* pr
   // Try binary format first, then text format, then JSON, then give up.
   if (proto->ParseFromString(data)) return true;
   if (google::protobuf::TextFormat::ParseFromString(data, proto)) return true;
-  // google::protobuf::util::JsonFormat json;
-  // if (json.ParseFromString(data, proto)) return true;
   LOG(WARNING) << "Could not parse protocol buffer";
   return false;
 }
@@ -64,16 +60,6 @@ bool WriteProtoToFile(const std::string& file_name, const google::protobuf::Mess
         LOG(WARNING) << "Printing to std::string failed.";
         return false;
       }
-      break;
-    case ProtoWriteFormat::kJson:
-      // JsonFormat json(JsonFormat::ADD_WHITESPACE |
-      //                 JsonFormat::PRINT_NON_FINITE_AS_STRING);
-      // if (!json.Print(proto, &stream)) {
-      //   LOG(WARNING) << "Printing to stream failed.";
-      //   return false;
-      // }
-      // file_type_suffix = ".json";
-      return false;
       break;
   }
   const std::string output_file_name = StrCat(file_name, file_type_suffix);

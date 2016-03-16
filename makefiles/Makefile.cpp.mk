@@ -654,7 +654,6 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/linear_solver/bop_interface.$O \
 	$(OBJ_DIR)/linear_solver/glop_interface.$O \
 	$(OBJ_DIR)/linear_solver/cbc_interface.$O \
-	$(OBJ_DIR)/linear_solver/cplex_interface.$O \
 	$(OBJ_DIR)/linear_solver/clp_interface.$O \
 	$(OBJ_DIR)/linear_solver/glpk_interface.$O \
 	$(OBJ_DIR)/linear_solver/gurobi_interface.$O \
@@ -663,8 +662,8 @@ LINEAR_SOLVER_LIB_OBJS = \
 	$(OBJ_DIR)/linear_solver/model_exporter.$O \
 	$(OBJ_DIR)/linear_solver/model_validator.$O \
 	$(OBJ_DIR)/linear_solver/scip_interface.$O \
-	$(OBJ_DIR)/linear_solver/sulum_interface.$O
-
+	$(OBJ_DIR)/linear_solver/cplex_interface.$O \
+	$(OBJ_DIR)/linear_solver/sulum_interface.$O \
 
 $(OBJ_DIR)/linear_solver/cbc_interface.$O:$(SRC_DIR)/linear_solver/cbc_interface.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/cbc_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Scbc_interface.$O
@@ -1540,6 +1539,7 @@ SAT_LIB_OBJS = \
 	$(OBJ_DIR)/sat/boolean_problem.pb.$O \
 	$(OBJ_DIR)/sat/clause.$O\
 	$(OBJ_DIR)/sat/encoding.$O\
+	$(OBJ_DIR)/sat/integer.$O\
 	$(OBJ_DIR)/sat/lp_utils.$O\
 	$(OBJ_DIR)/sat/optimization.$O\
 	$(OBJ_DIR)/sat/pb_constraint.$O\
@@ -1576,6 +1576,9 @@ $(OBJ_DIR)/sat/clause.$O: $(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(S
 
 $(OBJ_DIR)/sat/encoding.$O: $(SRC_DIR)/sat/encoding.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/encoding.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/encoding.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sencoding.$O
+
+$(OBJ_DIR)/sat/integer.$O: $(SRC_DIR)/sat/integer.cc $(SRC_DIR)/sat/integer.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger.$O
 
 $(OBJ_DIR)/sat/optimization.$O: $(SRC_DIR)/sat/optimization.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/optimization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soptimization.$O
@@ -1656,7 +1659,7 @@ $(OBJ_DIR)/bop/bop_solver.$O: $(SRC_DIR)/bop/bop_solver.cc $(SRC_DIR)/bop/bop_so
 $(OBJ_DIR)/bop/bop_solution.$O: $(SRC_DIR)/bop/bop_solution.cc $(SRC_DIR)/bop/bop_base.h $(SRC_DIR)/bop/bop_solution.h $(GEN_DIR)/bop/bop_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/bop/bop_solution.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_solution.$O
 
-$(OBJ_DIR)/bop/bop_util.$O: $(SRC_DIR)/bop/bop_util.cc $(SRC_DIR)/bop/bop_util.h $(SRC_DIR)/bop/bop_types.h $(SRC_DIR)/bop/bop_base.h $(SRC_DIR)/bop/bop_solution.h
+$(OBJ_DIR)/bop/bop_util.$O: $(SRC_DIR)/bop/bop_util.cc $(SRC_DIR)/bop/bop_util.h $(SRC_DIR)/bop/bop_types.h $(SRC_DIR)/bop/bop_base.h $(SRC_DIR)/bop/bop_solution.h $(GEN_DIR)/bop/bop_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/bop/bop_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_util.$O
 
 $(OBJ_DIR)/bop/complete_optimizer.$O: $(SRC_DIR)/bop/complete_optimizer.cc $(SRC_DIR)/bop/complete_optimizer.h $(SRC_DIR)/bop/bop_util.h $(SRC_DIR)/bop/bop_types.h $(SRC_DIR)/bop/bop_base.h $(SRC_DIR)/bop/bop_solution.h $(GEN_DIR)/bop/bop_parameters.pb.h

@@ -82,6 +82,7 @@ public class NetDecision : Decision
    */
   public virtual void Apply(Solver solver)
   {
+    // By default, do nothing
   }
 
   public override void RefuteWrapper(Solver solver)

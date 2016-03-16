@@ -34,6 +34,7 @@
 #include "base/int_type_indexed_vector.h"
 #include "base/map_util.h"
 #include "sat/clause.h"
+#include "sat/model.h"
 #include "sat/pb_constraint.h"
 #include "sat/sat_parameters.pb.h"
 #include "sat/unsat_proof.h"
@@ -57,6 +58,12 @@ class SatSolver {
  public:
   SatSolver();
   ~SatSolver();
+
+  static SatSolver* CreateInModel(Model* model) {
+    SatSolver* solver = new SatSolver();
+    model->TakeOwnership(solver);
+    return solver;
+  }
 
   // Parameters management. Note that calling SetParameters() will reset the
   // value of many heuristics. For instance:
@@ -905,6 +912,26 @@ class SatSolver {
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
+
+inline std::function<void(Model*)> BooleanLinearConstraint(
+    int64 lower_bound, int64 upper_bound, std::vector<LiteralWithCoeff>* cst) {
+  return [=](Model* model) {
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/true, Coefficient(lower_bound),
+        /*use_upper_bound=*/true, Coefficient(upper_bound), cst);
+  };
+}
+
+inline std::function<SatParameters(Model*)> NewSatParameters(std::string params) {
+  return [=](Model* model) {
+    sat::SatParameters parameters;
+    if (!params.empty()) {
+      CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters)) << params;
+      model->GetOrCreate<SatSolver>()->SetParameters(parameters);
+    }
+    return parameters;
+  };
+}
 
 // Returns a std::string representation of a SatSolver::Status.
 std::string SatStatusString(SatSolver::Status status);

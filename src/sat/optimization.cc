@@ -1155,5 +1155,57 @@ SatSolver::Status SolveWithCardinalityEncodingAndCore(
   }
 }
 
+SatSolver::Status MinimizeIntegerVariableWithLinearScan(
+    IntegerVariable objective_var,
+    const std::function<void(const Model&)>& feasible_solution_observer,
+    Model* model) {
+  // Timing.
+  WallTimer wall_timer;
+  UserTimer user_timer;
+  wall_timer.Start();
+  user_timer.Start();
+
+  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  LOG(INFO) << "#Boolean_variables:" << sat_solver->NumVariables();
+
+  // Simple linear scan algorithm to find the optimal.
+  SatSolver::Status result;
+  bool model_is_feasible = false;
+  int objective;
+  while (true) {
+    result = sat_solver->Solve();
+    if (result != SatSolver::MODEL_SAT) break;
+
+    // The objective is the current lower bound of the objective_var.
+    objective = integer_trail->LowerBound(objective_var);
+
+    // We have a solution!
+    model_is_feasible = true;
+    feasible_solution_observer(*model);
+
+    // Restrict the objective.
+    sat_solver->Backtrack(0);
+    integer_trail->Enqueue(
+        IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {}, {});
+  }
+
+  // Display summary.
+  if (model_is_feasible) {
+    printf("objective: %d\n", objective);
+  } else {
+    printf("objective: NA\n");
+  }
+  printf("status: %s\n",
+         result == SatSolver::MODEL_UNSAT ? "OPTIMAL" : "LIMIT_REACHED");
+  printf("conflicts: %lld\n", sat_solver->num_failures());
+  printf("branches: %lld\n", sat_solver->num_branches());
+  printf("propagations: %lld\n", sat_solver->num_propagations());
+  printf("walltime: %f\n", wall_timer.Get());
+  printf("usertime: %f\n", user_timer.Get());
+  printf("deterministic_time: %f\n", sat_solver->deterministic_time());
+  return result;
+}
+
 }  // namespace sat
 }  // namespace operations_research
