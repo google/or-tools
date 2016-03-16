@@ -47,6 +47,7 @@ namespace operations_research {
 
 %pythoncode {
 import numbers
+import sys
 from ortools.linear_solver.linear_solver_natural_api import OFFSET_KEY
 from ortools.linear_solver.linear_solver_natural_api import inf
 from ortools.linear_solver.linear_solver_natural_api import LinearExpr
@@ -121,8 +122,12 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     else:
         coeffs = expr.GetCoeffs()
         objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
-        for v, c, in coeffs.iteritems():
-          objective.SetCoefficient(v, float(c))
+        if sys.version_info >= (3, 0):
+          for v, c, in list(coeffs.items()):
+            objective.SetCoefficient(v, float(c))
+        else:
+          for v, c, in coeffs.iteritems():
+            objective.SetCoefficient(v, float(c))
 
   def Maximize(self, expr):
     objective = self.Objective()
@@ -133,8 +138,12 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
     else:
         coeffs = expr.GetCoeffs()
         objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
-        for v, c, in coeffs.iteritems():
-          objective.SetCoefficient(v, float(c))
+        if sys.version_info >= (3, 0):
+          for v, c, in list(coeffs.items()):
+            objective.SetCoefficient(v, float(c))
+        else:
+          for v, c, in coeffs.iteritems():
+            objective.SetCoefficient(v, float(c))
   }  // %pythoncode
 }
 

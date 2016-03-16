@@ -58,9 +58,15 @@ namespace operations_research {
 %typemap(argout) CppType* const, CppType* {
   std::string encoded_protobuf;
   $1->SerializeToString(&encoded_protobuf);
+#if defined(PY3)
+  PyObject* const python_encoded_protobuf =
+      PyBytes_FromStringAndSize(encoded_protobuf.c_str(),
+                                encoded_protobuf.size());
+#else  // PY3
   PyObject* const python_encoded_protobuf =
       PyString_FromStringAndSize(encoded_protobuf.c_str(),
                                  encoded_protobuf.size());
+#endif  // PY3
   if (python_encoded_protobuf != nullptr) {
     PyObject* const result = PyObject_CallMethod(
         $input, const_cast<char*>("ParseFromString"),
@@ -79,8 +85,13 @@ namespace operations_research {
       if (clss != nullptr) {
         std::string encoded_protobuf;
         $1.SerializeToString(&encoded_protobuf);
+#if defined(PY3)
+        PyObject* const python_encoded_protobuf = PyBytes_FromStringAndSize(
+            encoded_protobuf.c_str(), encoded_protobuf.size());
+#else  // PY3
         PyObject* const python_encoded_protobuf = PyString_FromStringAndSize(
             encoded_protobuf.c_str(), encoded_protobuf.size());
+#endif  // PY3
         PyObject* const result = PyObject_CallMethod(
               clss, const_cast<char*>("FromString"),
               const_cast<char*>("(O)"),

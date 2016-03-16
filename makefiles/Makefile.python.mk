@@ -2,9 +2,21 @@
 
 # Detect python3
 
+ifeq ("$(PYTHON_VERSION)","3.2")
+  PYTHON3 = true
+  SWIG_PYTHON3_FLAG=-py3 -DPY3
+endif
 ifeq ("$(PYTHON_VERSION)","3.3")
   PYTHON3 = true
-  SWIG_PYTHON3_FLAG=-py3
+  SWIG_PYTHON3_FLAG=-py3 -DPY3
+endif
+ifeq ("$(PYTHON_VERSION)","3.4")
+  PYTHON3 = true
+  SWIG_PYTHON3_FLAG=-py3 -DPY3
+endif
+ifeq ("$(PYTHON_VERSION)","3.5")
+  PYTHON3 = true
+  SWIG_PYTHON3_FLAG=-py3 -DPY3
 endif
 
 # Main target
