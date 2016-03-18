@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "solution_checker.h"
+#include "util/task/status.h"
 
 using roadef_challenge::DataParser;
 using roadef_challenge::SolutionChecker;
@@ -28,20 +29,20 @@ void FileToVector(const char* const filename, vector<int>* values) {
 }
 }  // anonymous namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
   const int kExpectedArgc = 4;
   if (argc != kExpectedArgc) {
-    LOG(INFO) << "Wrong number of files to read." << endl
-              << "The syntax should be:" << endl
+    LOG(INFO) << "Wrong number of files to read." << std::endl
+              << "The syntax should be:" << std::endl
               << "solution_checker instance_filename "
-              << "initial_solution_filename new_solution_filename" << endl
-              << "Current is:" << endl;
+              << "initial_solution_filename new_solution_filename" << std::endl
+              << "Current is:" << std::endl;
 
     for (int i = 0; i < argc; ++i) {
       LOG(INFO) << " " << argv[i];
     }
-    LOG(INFO) << endl;
+    LOG(INFO) << std::endl;
     return 0;
   }
 
@@ -53,26 +54,20 @@ int main(int argc, char **argv) {
   FileToVector(argv[2], &initial_assignments);
   FileToVector(argv[3], &new_assignments);
 
-  DataParser data(model,
-                  initial_assignments,
-                  new_assignments);
+  DataParser data(model, initial_assignments, new_assignments);
 
-  SolutionChecker solution_checker(data.machines(),
-                                   data.services(),
-                                   data.processes(),
-                                   data.balance_costs(),
-                                   data.process_move_cost_weight(),
-                                   data.service_move_cost_weight(),
-                                   data.machine_move_cost_weight(),
-                                   data.initial_assignments(),
-                                   data.new_assignments());
+  SolutionChecker solution_checker(
+      data.machines(), data.services(), data.processes(), data.balance_costs(),
+      data.process_move_cost_weight(), data.service_move_cost_weight(),
+      data.machine_move_cost_weight(), data.initial_assignments(),
+      data.new_assignments());
 
   if (solution_checker.Check()) {
     const int64 objective_cost = solution_checker.GetObjectiveCost();
     LOG(INFO) << "Solution is valid. Total objective cost is " << objective_cost
-              << endl;
+              << std::endl;
   } else {
-    LOG(INFO) << "Solution is invalid." << endl;
+    LOG(INFO) << "Solution is invalid." << std::endl;
   }
 
   solution_checker.PrintStats();

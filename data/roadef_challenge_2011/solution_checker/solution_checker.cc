@@ -30,8 +30,7 @@ RemainingCapacities::RemainingCapacities(const Capacities& initial_capacities,
   InitRemainingCapacities(initial_capacities);
 }
 
-RemainingCapacities::~RemainingCapacities()
-{}
+RemainingCapacities::~RemainingCapacities() {}
 
 void RemainingCapacities::InitRemainingCapacities(
     const Capacities& initial_capacities) {
@@ -42,8 +41,7 @@ void RemainingCapacities::InitRemainingCapacities(
 void RemainingCapacities::Consume(const Requirements& requirements) {
   const ResourceIndex num_resources = GetNumberOfResources();
   CHECK_EQ(num_resources, ResourceIndex(requirements.size()));
-  for (ResourceIndex resource_id(0);
-       resource_id < num_resources;
+  for (ResourceIndex resource_id(0); resource_id < num_resources;
        ++resource_id) {
     const int64 consumption = requirements.at(resource_id);
     remaining_capacities_.at(resource_id) -= consumption;
@@ -51,12 +49,10 @@ void RemainingCapacities::Consume(const Requirements& requirements) {
   }
 }
 
-void RemainingCapacities::UndoConsumption(
-    const Requirements& requirements) {
+void RemainingCapacities::UndoConsumption(const Requirements& requirements) {
   const ResourceIndex num_resources = GetNumberOfResources();
   CHECK_EQ(num_resources, ResourceIndex(requirements.size()));
-  for (ResourceIndex resource_id(0);
-       resource_id < num_resources;
+  for (ResourceIndex resource_id(0); resource_id < num_resources;
        ++resource_id) {
     const int64 consumption = requirements.at(resource_id);
     remaining_capacities_.at(resource_id) += consumption;
@@ -68,8 +64,8 @@ void RemainingCapacities::UndoConsumption(
 }
 
 int64 RemainingCapacities::GetMinTransientValue() const {
-  return *min_element(transient_remaining_capacities_.begin(),
-                      transient_remaining_capacities_.end());
+  return *std::min_element(transient_remaining_capacities_.begin(),
+                           transient_remaining_capacities_.end());
 }
 
 int64 RemainingCapacities::GetLoadCost(
@@ -77,66 +73,55 @@ int64 RemainingCapacities::GetLoadCost(
   int64 load_cost = 0;
   const ResourceIndex num_resources = GetNumberOfResources();
   CHECK_EQ(num_resources, ResourceIndex(safety_remaining_capacities.size()));
-  for (ResourceIndex resource_id(0);
-       resource_id < num_resources;
+  for (ResourceIndex resource_id(0); resource_id < num_resources;
        ++resource_id) {
     const int load_cost_weight = resources_.at(resource_id).load_cost_weight;
-    const int64 delta = safety_remaining_capacities.at(resource_id)
-        - remaining_capacities_.at(resource_id);
-    load_cost += load_cost_weight * max(delta, 0LL);
+    const int64 delta = safety_remaining_capacities.at(resource_id) -
+                        remaining_capacities_.at(resource_id);
+    load_cost += load_cost_weight * std::max(delta, 0LL);
   }
   return load_cost;
 }
 
-int64 RemainingCapacities::GetBalanceCost(
-    const BalanceCost& balance_cost) const {
-  const int64 remaining_on_target = balance_cost.target
-      * remaining_capacities_.at(balance_cost.first_resource_id);
+int64 RemainingCapacities::GetBalanceCost(const BalanceCost& balance_cost)
+    const {
+  const int64 remaining_on_target =
+      balance_cost.target *
+      remaining_capacities_.at(balance_cost.first_resource_id);
   const int64 remaining =
       remaining_capacities_.at(balance_cost.second_resource_id);
-  return balance_cost.weight * max(0LL,
-                                   remaining_on_target - remaining);
+  return balance_cost.weight * std::max(0LL, remaining_on_target - remaining);
 }
 
 // --------------------------------------------------------
 // Process
 // --------------------------------------------------------
-Process::Process(ProcessIndex id,
-                 const Requirements& requirements,
-                 int move_cost,
-                 const Service& service)
+Process::Process(ProcessIndex id, const Requirements& requirements,
+                 int move_cost, const Service& service)
     : id_(id),
       requirements_(requirements),
       move_cost_(move_cost),
-      service_(service)
-{}
+      service_(service) {}
 
-Process::~Process()
-{}
+Process::~Process() {}
 
 // --------------------------------------------------------
 // Service
 // --------------------------------------------------------
-Service::Service(ServiceIndex id,
-                 NumberOfLocations spread_min,
+Service::Service(ServiceIndex id, NumberOfLocations spread_min,
                  const Dependencies& dependencies)
     : id_(id),
       spread_min_(spread_min),
       dependencies_(dependencies),
-      processes_()
-{}
+      processes_() {}
 
-Service::~Service() {
-  STLDeleteElements(&processes_);
-}
+Service::~Service() { STLDeleteElements(&processes_); }
 
 // --------------------------------------------------------
 // Machine
 // --------------------------------------------------------
-Machine::Machine(MachineIndex id,
-                 NeighborhoodIndex neighborhood_id,
-                 LocationIndex location_id,
-                 const Capacities& capacities,
+Machine::Machine(MachineIndex id, NeighborhoodIndex neighborhood_id,
+                 LocationIndex location_id, const Capacities& capacities,
                  const Capacities& safety_capacities,
                  const Resources& resources,
                  const MoveToMachineCosts& move_to_machine_costs)
@@ -151,16 +136,14 @@ Machine::Machine(MachineIndex id,
   const ResourceIndex num_resources = VectorSize(resources);
   CHECK_EQ(num_resources, capacities_.size());
   CHECK_EQ(num_resources, safety_remaining_capacities_.size());
-  for (ResourceIndex resource_id(0);
-       resource_id < num_resources;
+  for (ResourceIndex resource_id(0); resource_id < num_resources;
        ++resource_id) {
     safety_remaining_capacities_.at(resource_id) -=
         safety_capacities.at(resource_id);
   }
 }
 
-Machine::~Machine()
-{}
+Machine::~Machine() {}
 
 void Machine::InitRemainingCapacities() {
   remaining_capacities_.InitRemainingCapacities(capacities_);
@@ -175,8 +158,8 @@ void Machine::ProcessMoveOut(const Process& process) {
 }
 
 bool Machine::HasNegativeRemainingCapacity() const {
-  return remaining_capacities_.GetNumberOfResources() > 0
-      && remaining_capacities_.GetMinTransientValue() < 0;
+  return remaining_capacities_.GetNumberOfResources() > 0 &&
+         remaining_capacities_.GetMinTransientValue() < 0;
 }
 
 int64 Machine::GetLoadCost() const {
@@ -210,15 +193,12 @@ void CheckAssigments(const ProcessAssignments& assignments,
 
 }  // anonymous namespace
 
-SolutionChecker::SolutionChecker(const Machines& machines,
-                                 const Services& services,
-                                 const Processes& processes,
-                                 const BalanceCosts& balance_costs,
-                                 int process_move_cost_weight,
-                                 int service_move_cost_weight,
-                                 int machine_move_cost_weight,
-                                 const ProcessAssignments& initial_assignments,
-                                 const ProcessAssignments& new_assignments)
+SolutionChecker::SolutionChecker(
+    const Machines& machines, const Services& services,
+    const Processes& processes, const BalanceCosts& balance_costs,
+    int process_move_cost_weight, int service_move_cost_weight,
+    int machine_move_cost_weight, const ProcessAssignments& initial_assignments,
+    const ProcessAssignments& new_assignments)
     : machines_(machines),
       services_(services),
       processes_(processes),
@@ -247,14 +227,11 @@ SolutionChecker::SolutionChecker(const Machines& machines,
   ComputeRemainingCapacities();
 }
 
-SolutionChecker::~SolutionChecker()
-{}
+SolutionChecker::~SolutionChecker() {}
 
 bool SolutionChecker::Check() const {
-  return CheckRemainingCapacities()
-      && CheckConflictConstraints()
-      && CheckSpreadConstraints()
-      && CheckDependencyConstraints();
+  return CheckRemainingCapacities() && CheckConflictConstraints() &&
+         CheckSpreadConstraints() && CheckDependencyConstraints();
 }
 
 int64 SolutionChecker::GetObjectiveCost() const {
@@ -263,8 +240,8 @@ int64 SolutionChecker::GetObjectiveCost() const {
   const int64 process_move_cost = GetProcessMoveCost();
   const int64 service_move_cost = GetServiceMoveCost();
   const int64 machine_move_cost = GetMachineMoveCost();
-  const int64 total_cost = load_cost + balance_cost + process_move_cost
-      + service_move_cost + machine_move_cost;
+  const int64 total_cost = load_cost + balance_cost + process_move_cost +
+                           service_move_cost + machine_move_cost;
   return total_cost;
 }
 
@@ -314,8 +291,7 @@ bool SolutionChecker::CheckRemainingCapacities() const {
     const Machine& machine = machines(machine_id);
     if (machine.HasNegativeRemainingCapacity()) {
       LOG(INFO) << "Machine " << machine_id
-                << " has a negative remaining capacity."
-                << endl;
+                << " has a negative remaining capacity." << std::endl;
       return false;
     }
   }
@@ -326,18 +302,17 @@ bool SolutionChecker::CheckConflictConstraints() const {
   const ServiceIndex num_services = GetNumberOfServices();
   for (ServiceIndex service_id(0); service_id < num_services; ++service_id) {
     const Service& service = services(service_id);
-vector<bool> is_machine_used(machines_.size(), false);
+    vector<bool> is_machine_used(machines_.size(), false);
     LocalProcessIndex num_local_processes = service.GetNumberOfProcesses();
     for (LocalProcessIndex local_process_id(0);
-         local_process_id < num_local_processes;
-         ++local_process_id) {
+         local_process_id < num_local_processes; ++local_process_id) {
       const Process& process = service.processes(local_process_id);
       const ProcessIndex process_id = process.id();
       const MachineIndex machine_id = new_assignments_.at(process_id);
       if (is_machine_used.at(machine_id)) {
         LOG(INFO) << "Service " << service_id
                   << " has two processes running on "
-                  << "the same machine " << machine_id << "." << endl;
+                  << "the same machine " << machine_id << "." << std::endl;
         return false;
       }
       is_machine_used.at(machine_id) = true;
@@ -350,12 +325,11 @@ bool SolutionChecker::CheckSpreadConstraints() const {
   const ServiceIndex num_services = GetNumberOfServices();
   for (ServiceIndex service_id(0); service_id < num_services; ++service_id) {
     const Service& service = services(service_id);
-vector<bool> is_location_used(machines_.size(), false);
+    vector<bool> is_location_used(machines_.size(), false);
     NumberOfLocations spread(0);
     LocalProcessIndex num_local_processes = service.GetNumberOfProcesses();
     for (LocalProcessIndex local_process_id(0);
-         local_process_id < num_local_processes;
-         ++local_process_id) {
+         local_process_id < num_local_processes; ++local_process_id) {
       const Process& process = service.processes(local_process_id);
       const ProcessIndex process_id = process.id();
       const MachineIndex machine_id = new_assignments_.at(process_id);
@@ -371,8 +345,7 @@ vector<bool> is_location_used(machines_.size(), false);
     if (spread < spread_min) {
       LOG(INFO) << "Service " << service_id << " runs in " << spread
                 << " different locations. It should run in at least "
-                << spread_min
-                << " different locations." << endl;
+                << spread_min << " different locations." << std::endl;
       return false;
     }
   }
@@ -380,15 +353,13 @@ vector<bool> is_location_used(machines_.size(), false);
 }
 
 bool SolutionChecker::CheckDependencyConstraint(
-    const Service& dependent_service,
-    const Service& service) const {
+    const Service& dependent_service, const Service& service) const {
   // Mark all neighborhood where a process of service runs.
-vector<bool> used_neighborhoods(machines_.size(),
-                                  false);
+  vector<bool> used_neighborhoods(machines_.size(),
+                                    false);
   LocalProcessIndex num_local_processes = service.GetNumberOfProcesses();
   for (LocalProcessIndex local_process_id(0);
-       local_process_id < num_local_processes;
-       ++local_process_id) {
+       local_process_id < num_local_processes; ++local_process_id) {
     const Process& process = service.processes(local_process_id);
     const ProcessIndex process_id = process.id();
     const MachineIndex machine_id = new_assignments_.at(process_id);
@@ -400,8 +371,7 @@ vector<bool> used_neighborhoods(machines_.size(),
   // Check if processes of dependent_service runs on marked machines.
   num_local_processes = dependent_service.GetNumberOfProcesses();
   for (LocalProcessIndex local_process_id(0);
-       local_process_id < num_local_processes;
-       ++local_process_id) {
+       local_process_id < num_local_processes; ++local_process_id) {
     const Process& process = dependent_service.processes(local_process_id);
     const ProcessIndex process_id = process.id();
     const MachineIndex machine_id = new_assignments_.at(process_id);
@@ -411,7 +381,7 @@ vector<bool> used_neighborhoods(machines_.size(),
       LOG(INFO) << "Process " << process_id << " of service "
                 << dependent_service.id()
                 << " should run in the neighborhood of a process of service "
-                << service.id() << " runs." << endl;
+                << service.id() << " runs." << std::endl;
       return false;
     }
   }
@@ -421,13 +391,11 @@ vector<bool> used_neighborhoods(machines_.size(),
 bool SolutionChecker::CheckDependencyConstraints() const {
   const ServiceIndex num_services = GetNumberOfServices();
   for (ServiceIndex dependent_service_id(0);
-       dependent_service_id < num_services;
-       ++dependent_service_id) {
+       dependent_service_id < num_services; ++dependent_service_id) {
     const Service& dependent_service = services(dependent_service_id);
     const DependencyIndex num_dependencies =
         dependent_service.GetNumberOfDependencies();
-    for (DependencyIndex dependency_id(0);
-         dependency_id < num_dependencies;
+    for (DependencyIndex dependency_id(0); dependency_id < num_dependencies;
          ++dependency_id) {
       const ServiceIndex service_id =
           dependent_service.dependencies(dependency_id);
@@ -454,8 +422,7 @@ int64 SolutionChecker::GetBalanceCost() const {
   int64 cost = 0;
   const MachineIndex num_machines = GetNumberOfMachines();
   const BalanceCostIndex num_balance_costs(balance_costs_.size());
-  for (BalanceCostIndex balance_id(0);
-       balance_id < num_balance_costs;
+  for (BalanceCostIndex balance_id(0); balance_id < num_balance_costs;
        ++balance_id) {
     const BalanceCost& balance_cost = balance_costs(balance_id);
     for (MachineIndex machine_id(0); machine_id < num_machines; ++machine_id) {
@@ -486,14 +453,13 @@ int64 SolutionChecker::GetServiceMoveCost() const {
     int num_moves = 0;
     LocalProcessIndex num_local_processes = service.GetNumberOfProcesses();
     for (LocalProcessIndex local_process_id(0);
-         local_process_id < num_local_processes;
-         ++local_process_id) {
+         local_process_id < num_local_processes; ++local_process_id) {
       const Process& process = service.processes(local_process_id);
       if (HasProcessMoved(process)) {
         ++num_moves;
       }
     }
-    max_num_moves = max(max_num_moves, num_moves);
+    max_num_moves = std::max(max_num_moves, num_moves);
   }
   return service_move_cost_weight_ * max_num_moves;
 }
@@ -543,13 +509,13 @@ int DataParser::GetNextModelValue(int max_value) {
   if (next_value < 0) {
     LOG(INFO) << "Value at position " << raw_data_iterator_
               << " should be positive; current value is " << next_value << "."
-              << endl;
+              << std::endl;
   }
 
   if (next_value > max_value) {
     LOG(INFO) << "Value at position " << raw_data_iterator_
               << " should be smaller than " << max_value
-              << " ; current value is " << next_value << "." << endl;
+              << " ; current value is " << next_value << "." << std::endl;
   }
   CHECK(next_value >= 0 && next_value <= max_value);
 
@@ -558,9 +524,9 @@ int DataParser::GetNextModelValue(int max_value) {
 }
 
 template<class T>
-void DataParser::GetModelVector(size_t size,
-                                int max_value,
-                                vector<T>* model_vector) {
+  void DataParser::GetModelVector(size_t size,
+                                  int max_value,
+                                  vector<T>* model_vector) {
   CHECK_NOTNULL(model_vector);
   model_vector->clear();
   for (int i = 0; i < size; ++i) {
@@ -615,14 +581,9 @@ void DataParser::ParseMachines() {
     MoveToMachineCosts move_to_machine_costs;
     GetModelVector(num_machines, kMaxIntValue, &move_to_machine_costs);
 
-    Machine* const machine =
-        new Machine(MachineIndex(machine_id),
-                    neighborhood_id,
-                    location_id,
-                    capacities,
-                    safety_capacities,
-                    resources_,
-                    move_to_machine_costs);
+    Machine* const machine = new Machine(
+        MachineIndex(machine_id), neighborhood_id, location_id, capacities,
+        safety_capacities, resources_, move_to_machine_costs);
     machines_.push_back(machine);
   }
 }
@@ -636,9 +597,8 @@ void DataParser::ParseServices() {
     const int num_dependencies = GetNextModelValue(kMaxNumDependencies);
     Dependencies dependencies;
     GetModelVector(num_dependencies, num_services - 1, &dependencies);
-    Service* const service = new Service(ServiceIndex(service_id),
-                                         spread_min,
-                                         dependencies);
+    Service* const service =
+        new Service(ServiceIndex(service_id), spread_min, dependencies);
     services_.push_back(service);
   }
 }
@@ -657,10 +617,8 @@ void DataParser::ParseProcesses() {
     Requirements requirements;
     GetModelVector(num_resources, kMaxIntValue, &requirements);
     const int move_cost = GetNextModelValue(kMaxIntValue);
-    Process* const process = new Process(ProcessIndex(process_id),
-                                         requirements,
-                                         move_cost,
-                                         *service);
+    Process* const process = new Process(ProcessIndex(process_id), requirements,
+                                         move_cost, *service);
     processes_.push_back(process);
     service->AddProcess(process);
   }
@@ -676,10 +634,8 @@ void DataParser::ParseBalanceCosts() {
         GetNextModelValue(num_resources - 1));
     const int target = GetNextModelValue(kMaxIntValue);
     const int weight = GetNextModelValue(kMaxIntValue);
-    const BalanceCost balance_cost(first_resource_id,
-                                   second_resource_id,
-                                   target,
-                                   weight);
+    const BalanceCost balance_cost(first_resource_id, second_resource_id,
+                                   target, weight);
     balance_costs_.push_back(balance_cost);
   }
 }
@@ -698,8 +654,7 @@ void DataParser::ParseAssignments(const vector<int>& assignments,
   const size_t num_assignments = assignments.size();
   const size_t num_processes = processes_.size();
   CHECK_EQ(num_processes, num_assignments);
-  for (int assignment_id = 0;
-       assignment_id < num_assignments;
+  for (int assignment_id = 0; assignment_id < num_assignments;
        ++assignment_id) {
     const MachineIndex machine_id(assignments.at(assignment_id));
     CHECK(machine_id >= 0 && machine_id < num_machines);
