@@ -16,7 +16,6 @@
 %include "base/base.swig"
 
 %include "constraint_solver/python/constraint_solver.swig"
-
 // TODO(user): remove this when we no longer use callbacks in the routing.
 #define FATAL_CALLBACK_EXCEPTION
 %include "base/python/callbacks.swig"
@@ -55,6 +54,8 @@ bool PyObjAs(PyObject *py, operations_research::RoutingModel::NodeIndex* i) {
 %}
 PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
                        PyInt_Check, PyInt_FromLong);
+PY_LIST_LIST_INPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
+                           PyInt_Check);
 // TODO(user): also support std::vector<std::vector<>> <-> list of list.
 
 // Create input mapping for NodeEvaluator2
@@ -102,67 +103,6 @@ bool PyObjAs(PyObject* py_obj,
 PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
                        PyCallable_Check, );
 
-// Support std::vector<std::vector<operations_research::RoutingModel::NodeIndex>>& as parameter.
-%typemap(in) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&
-    (std::vector<std::vector<operations_research::RoutingModel::NodeIndex> > temp) {
-  if (!PyList_Check($input)) {
-    PyErr_SetString(PyExc_TypeError, "Expecting a list of tuples");
-    SWIG_fail;
-  }
-  int len = PyList_Size($input);
-  if (len > 0) {
-    temp.resize(len);
-    for (size_t i = 0; i < len; ++i) {
-      PyObject *tuple = PyList_GetItem($input, i);
-      if (!PyTuple_Check(tuple) && !PyList_Check(tuple)) {
-        PyErr_SetString(PyExc_TypeError, "Expecting a sequence");
-        SWIG_fail;
-      }
-      bool is_tuple = PyTuple_Check(tuple);
-      int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
-      temp[i].resize(arity);
-      for (size_t j = 0; j < arity; ++j) {
-        temp[i][j] = operations_research::RoutingModel::NodeIndex(
-            PyInt_AsLong(is_tuple ? PyTuple_GetItem(tuple, j)
-                                  : PyList_GetItem(tuple, j)));
-      }
-    }
-  }
-  $1 = &temp;
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER)
-    const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& {
-  if (!PyList_Check($input)) {
-    $1 = 0;
-  } else {
-    const int size = PyList_Size($input);
-    bool failed = false;
-    for (size_t i = 0; i < size; ++i) {
-      PyObject* const tuple = PyList_GetItem($input, i);
-      if (!PyTuple_Check(tuple) && !PyList_Check(tuple)) {
-        $1 = 0;
-        break;
-      } else {
-        const bool is_tuple = PyTuple_Check(tuple);
-        const int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
-        for (size_t j = 0; j < arity; ++j) {
-          PyObject* const entry =
-              is_tuple ? PyTuple_GetItem(tuple, j) : PyList_GetItem(tuple, j);
-          if (!PyInt_Check(entry) && !PyLong_Check(entry)) {
-            failed = true;
-            break;
-          }
-        }
-      }
-      if (failed) {
-        break;
-      }
-    }
-    $1 = failed ? 0 : 1;
-  }
-}
-
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,
     int64 capacity,
@@ -172,6 +112,9 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
     const int64* const* values,
     int64 capacity,
     const std::string& name);
+
+%ignore operations_research::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 
 %extend operations_research::RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,

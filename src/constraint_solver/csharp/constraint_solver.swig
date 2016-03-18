@@ -678,15 +678,15 @@ namespace operations_research {
 %extend Pack {
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
     swig_util::LongToLong* weights, const std::vector<int64>& bounds) {
-  return [$self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i) { return weights->Run(i); }, bounds);
+  return $self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i) { return weights->Run(i); }, bounds);
 }
 void Pack::AddWeightedSumLessOrEqualConstantDimension(
     swig_util::LongLongToLong* weights, const std::vector<int64>& bounds) {
-    return $self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i) { return weights->Run(i); }, bounds);
+    return $self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i, int64 j) { return weights->Run(i, j); }, bounds);
 }
 void Pack::AddWeightedSumEqualVarDimension(
     swig_util::LongLongToLong* weights, const std::vector<IntVar*>& loads) {
-  return $self->AddWeightedSumEqualVarDimension([weights](int64 i) { return weights->Run(i); }, loads);
+  return $self->AddWeightedSumEqualVarDimension([weights](int64 i, int64 j) { return weights->Run(i, j); }, loads);
 }
 }  // extend Pack
 
