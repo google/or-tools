@@ -45,7 +45,7 @@ def main(sol='CBC'):
                              pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
   else:
     # Using CBC
-    solver = pywraplp.Solver('CoinsGridCLP',
+    solver = pywraplp.Solver('CoinsGridCBC',
                              pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
   #
