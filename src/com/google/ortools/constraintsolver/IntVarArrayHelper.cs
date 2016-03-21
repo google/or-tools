@@ -191,7 +191,7 @@ public static class IntVarArrayHelper
 }
 
 
-// TODO(viger): Try to move this code back to the .swig with @define macros.
+// TODO(user): Try to move this code back to the .swig with @define macros.
 public partial class IntVarVector: IDisposable, System.Collections.IEnumerable
 #if !SWIG_DOTNET_1
     , System.Collections.Generic.IList<IntVar>

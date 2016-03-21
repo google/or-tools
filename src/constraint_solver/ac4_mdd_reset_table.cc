@@ -310,19 +310,19 @@ class MDD_Factory {
                             v1->push_back((*v2->back())[i]);
                         }
                     }
-                    
+
                 }
                 v2->pop_back();
             }
         }
         std::cout << "}\n";
-        
+
     }
 
   //regular new
 
   //new regular
-  MDD* regular(const std::vector<IntVar*>& variables, IntTupleSet& tuples,
+  MDD* regular(const std::vector<IntVar*>& variables, const IntTupleSet& tuples,
                int64 initial_state, std::vector<int64>& final_states) {
 
     int numWord_ = tuples.NumDifferentValuesInColumn(1);
@@ -447,23 +447,23 @@ class MDD_Factory {
   //
 
   MDD* regularAncien(const std::vector<IntVar*>& variables,
-                      IntTupleSet& tuples, int64 initial_state,
+                      const IntTupleSet& tuples, int64 initial_state,
                       std::vector<int64>& final_states) {
 
     int nbValues = tuples.NumDifferentValuesInColumn(1);
         MDD* Troot = new MDD(nbValues, 0, nb_instance++);
-        
+
         finalEdge_ = new MDD(0, variables.size(), nb_instance++);
-        
+
         finalEdge_->setState(true);
         alreadyToDelete = new VectorMap<int64>();
-        
+
         Troot->num_state = initial_state;
-        
+
         MDD* T = nullptr;
-        
+
         VectorMap<int64> * v = new VectorMap<int64>();
-        
+
         std::vector<MDD*> mdds;
 
         VectorMap<int64> final_states_set;
@@ -471,7 +471,7 @@ class MDD_Factory {
         for (int e = 0; e < final_states.size(); e++) {
             final_states_set.Add(final_states[e]);
         }
-        
+
         VectorMap<int64> stateIndex;
 
         std::vector<std::vector<int> > tuplesIndex;
@@ -485,21 +485,21 @@ class MDD_Factory {
             }
             int index = stateIndex.Index(state);
             tuplesIndex[index].push_back(i);
-            
+
         }
-        
+
         std::queue<MDD*> l;
-        
+
         l.push(Troot);
         l.push(nullptr);
-        
-        
-        
+
+
+
         for (int i = 0; i < variables.size(); i++) {
             vm_.push_back(VectorMap<int64>());
             g_.push_back(new VMREC());
         }
-        
+
         int lvl = 0;
 
         while (l.size() > 0) {
@@ -520,35 +520,35 @@ class MDD_Factory {
             int si = stateIndex.Index(state);
             for (int t=0; t < tuplesIndex[si].size(); t++) {
                 int i = tuplesIndex[si][t];
-                
+
                 if (state == tuples.Value(i,0)) {
                     int64 value = tuples.Value(i,1);
                     if (!vm_[lvl].Contains(value)) {
                         vm_[lvl].Add(value);
                     }
-                    
+
                     int index = vm_[lvl].Index(value);
                     int64 newState = tuples.Value(i,2);
-                    
+
                     if (!v->Contains(newState)) {
                         v->Add(newState);
                         mdds.push_back(new MDD(nbValues, lvl+1, nb_instance++));
                         l.push(mdds[v->Index(newState)]);
                         mdds[v->Index(newState)]->num_state = newState;
                     }
-                    
+
                     T->set(index, mdds[v->Index(newState)]);
-                    
+
                 }
             }
         }
-        
+
          delete v;
 
         while (l.size() > 0) {
             T = l.front();
             l.pop();
-            
+
             int64 state = T->num_state;
             int si = stateIndex.Index(state);
             for (int t=0; t < tuplesIndex[si].size(); t++) {
@@ -558,15 +558,15 @@ class MDD_Factory {
                     if (!vm_[lvl].Contains(value)) {
                         vm_[lvl].Add(value);
                     }
-                    
+
                     int index = vm_[lvl].Index(value);
                     int64 newState = tuples.Value(i,2);
-                    
+
                     if (final_states_set.Contains(newState)) {
                         T->set(index, finalEdge_);
-                        
+
                     }
-                    
+
                 }
             }
         }
@@ -600,7 +600,7 @@ class MDD_Factory {
 
     std::vector<MDD*> B(T->size(), nullptr);
     bool BEmpty = true;
-    
+
     for (i = 0; i < T->size(); i++) {
       MDD* G = mddReduceRegular((*T)[i]);
       if (G != nullptr) {
@@ -635,7 +635,7 @@ class MDD_Factory {
 
       return T;
     }
-  
+
   }
 
 
@@ -776,7 +776,7 @@ class MyMDD {
 
  public:
 
-  MyMDD(MDD_Factory& mf, MDD* mdd, Solver* solver)
+  MyMDD(MDD_Factory* mf, MDD* mdd, Solver* solver)
       : vm_(),
         number_of_edges_by_value(),
         edges_(),
@@ -797,11 +797,11 @@ class MyMDD {
     number_of_edge = 0;
 
     //creation of the convertion table
-    for (int var = 0; var < mf.vm_.size(); var++) {
+    for (int var = 0; var < mf->vm_.size(); var++) {
       vm_.push_back(VectorMap<int64>());
       number_of_edges_by_value.push_back(std::vector<int>());
-      for (int val = 0; val < mf.vm_[var].size(); val++) {
-        vm_[var].Add(mf.vm_[var][val]);
+      for (int val = 0; val < mf->vm_[var].size(); val++) {
+        vm_[var].Add(mf->vm_[var][val]);
         number_of_edges_by_value[var].push_back(0);
 
       }
@@ -809,15 +809,15 @@ class MyMDD {
     }
 
     //will count how many arc are intering in a node
-    std::vector<int> nb_in(mf.getNbInstance(), 0);
+    std::vector<int> nb_in(mf->getNbInstance(), 0);
     //will count how many arc will get out from a node
-    std::vector<int> nb_out(mf.getNbInstance(), 0);
+    std::vector<int> nb_out(mf->getNbInstance(), 0);
 
-    std::vector<int> num_var(mf.getNbInstance(), -1);
+    std::vector<int> num_var(mf->getNbInstance(), -1);
 
     std::vector<int> indice;
 
-    std::vector<int> nb_nodes_lvl(mf.vm_.size() + 1, 0);
+    std::vector<int> nb_nodes_lvl(mf->vm_.size() + 1, 0);
 
     tmp.push_back(mdd);
 
@@ -861,7 +861,7 @@ class MyMDD {
     shared_out_ = new int[edges_.size()];
     shared_nodes = new int[indice.size() + 1];
 
-    for (int lvl = 0; lvl < mf.vm_.size() + 1; ++lvl) {
+    for (int lvl = 0; lvl < mf->vm_.size() + 1; ++lvl) {
       nodes_lvl.push_back(new Sparse_Set_Rev(indice.size(), shared_nodes,
                                              new int[nb_nodes_lvl[lvl]]));
 
@@ -1328,7 +1328,7 @@ class MddTableVar {
 class Ac4MddTableConstraint : public Constraint {
  public:
 
-  Ac4MddTableConstraint(Solver* const solver, MDD_Factory& mf, MDD* mdd,
+  Ac4MddTableConstraint(Solver* const solver, MDD_Factory* mf, MDD* mdd,
                         const std::vector<IntVar*>& vars)
       : Constraint(solver),
         original_vars_(vars),
@@ -1599,22 +1599,22 @@ Constraint* BuildAc4MddResetTableConstraint(Solver* const solver,
                                             const std::vector<IntVar*>& vars) {
   MDD_Factory mf;
   MDD* mdd = mf.mddify(tuples);
-  return solver->RevAlloc(new Ac4MddTableConstraint(solver, mf, mdd, vars));
+  return solver->RevAlloc(new Ac4MddTableConstraint(solver, &mf, mdd, vars));
 }
 
 Constraint* BuildAc4MddResetRegularConstraint(
     Solver* const solver, const std::vector<IntVar*>& vars, IntTupleSet& tuples,
     int64 initial_state, std::vector<int64>& final_states) {
-  
+
   MDD_Factory mf;
   MDD* mdd = mf.regular(vars, tuples, initial_state, final_states);
-  return solver->RevAlloc(new Ac4MddTableConstraint(solver, mf, mdd, vars));
-  
+  return solver->RevAlloc(new Ac4MddTableConstraint(solver, &mf, mdd, vars));
+
 }
 
 Constraint* BuildAc4MddResetConstraint(Solver* const solver,
                                        const std::vector<IntVar*>& vars,
-                                       MDD_Factory& mf, MDD* mdd) {
+                                       MDD_Factory* mf, MDD* mdd) {
   return solver->RevAlloc(new Ac4MddTableConstraint(solver, mf, mdd, vars));
 }
 

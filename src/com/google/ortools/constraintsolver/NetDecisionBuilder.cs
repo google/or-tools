@@ -38,7 +38,7 @@ public class NetDecisionBuilder : DecisionBuilder
     }
     catch (ApplicationException e)
     {
-      // TODO(lperron): Catch only fail exceptions.
+      // TODO(user): Catch only fail exceptions.
       return solver.MakeFailDecision();
     }
   }
@@ -118,7 +118,7 @@ public class NetDemon : Demon
     }
     catch (ApplicationException e)
     {
-      // TODO(lperron): Check that this is indeed a fail. Try implementing
+      // TODO(user): Check that this is indeed a fail. Try implementing
       // custom exceptions (hard).
       solver.ShouldFail();
     }
