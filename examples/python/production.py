@@ -27,7 +27,7 @@ import sys
 from ortools.linear_solver import pywraplp
 
 
-def main(sol='GLPK'):
+def main(sol='CBC'):
 
   # Create the solver.
 

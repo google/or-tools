@@ -53,7 +53,7 @@ from ortools.linear_solver import pywraplp
 #
 
 
-def main(n=3, sol='GLPK', use_output_matrix=0):
+def main(n=3, sol='CBC', use_output_matrix=0):
 
   # Create the solver.
 

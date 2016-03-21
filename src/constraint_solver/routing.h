@@ -221,6 +221,7 @@ class RoutingModel {
   typedef ResultCallback2<int64, int64, int64> TransitEvaluator2;
   typedef std::pair<int, int> NodePair;
   typedef std::vector<NodePair> NodePairs;
+// TODO(user): Remove all SWIG guards by adding the @ignore in .swig.
 #if !defined(SWIG)
   // What follows is relevant for models with time/state dependent transits.
   // Such transits, say from node A to node B, are functions f: int64->int64
@@ -688,6 +689,7 @@ class RoutingModel {
   // can be used in the context of locking the parts of the routes which have
   // already been driven in online routing problems.
   const Assignment* const PreAssignment() const { return preassignment_; }
+  Assignment* MutablePreAssignment() { return preassignment_; }
   // Writes the current solution to a file containing an AssignmentProto.
   // Returns false if the file cannot be opened or if there is no current
   // solution.

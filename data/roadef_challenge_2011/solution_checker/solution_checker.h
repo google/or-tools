@@ -53,9 +53,7 @@ size_t VectorSize(const vector<T>& v) {
 
 struct Resource {
   Resource(bool _is_transient, int _load_cost_weight)
-      : is_transient(_is_transient),
-        load_cost_weight(_load_cost_weight)
-  {}
+      : is_transient(_is_transient), load_cost_weight(_load_cost_weight) {}
 
   bool is_transient;
   int load_cost_weight;
@@ -64,14 +62,11 @@ typedef vector<Resource> Resources;
 
 struct BalanceCost {
   BalanceCost(ResourceIndex _first_resource_id,
-              ResourceIndex _second_resource_id,
-              int _target,
-              int _weight)
+              ResourceIndex _second_resource_id, int _target, int _weight)
       : first_resource_id(_first_resource_id),
         second_resource_id(_second_resource_id),
         target(_target),
-        weight(_weight)
-  {}
+        weight(_weight) {}
 
   ResourceIndex first_resource_id;
   ResourceIndex second_resource_id;
@@ -86,8 +81,7 @@ typedef vector<BalanceCost> BalanceCosts;
 // constraints).
 class RemainingCapacities {
  public:
-  RemainingCapacities(const Capacities& capacities,
-                      const Resources& resources);
+  RemainingCapacities(const Capacities& capacities, const Resources& resources);
   virtual ~RemainingCapacities();
 
   // Initializes the remaining capacities and transient remaining capacities.
@@ -130,9 +124,7 @@ class Service;
 // constraints and compute objective costs.
 class Process {
  public:
-  Process(ProcessIndex id,
-          const Requirements& requirements,
-          int move_cost,
+  Process(ProcessIndex id, const Requirements& requirements, int move_cost,
           const Service& service);
   virtual ~Process();
 
@@ -155,8 +147,7 @@ typedef vector<const Process*> LocalProcesses;
 // constraints and compute objective costs.
 class Service {
  public:
-  Service(ServiceIndex id,
-          NumberOfLocations spread_min,
+  Service(ServiceIndex id, NumberOfLocations spread_min,
           const Dependencies& dependencies);
   virtual ~Service();
 
@@ -197,12 +188,9 @@ typedef vector<Service*> Services;
 // constraints and compute objective costs.
 class Machine {
  public:
-  Machine(MachineIndex id,
-          NeighborhoodIndex neighborhood_id,
-          LocationIndex location_id,
-          const Capacities& capacities,
-          const Capacities& safety_capacities,
-          const Resources& resources,
+  Machine(MachineIndex id, NeighborhoodIndex neighborhood_id,
+          LocationIndex location_id, const Capacities& capacities,
+          const Capacities& safety_capacities, const Resources& resources,
           const MoveToMachineCosts& move_to_machine_costs);
   virtual ~Machine();
 
@@ -256,12 +244,9 @@ typedef vector<Machine*> Machines;
 // This class checks all hard constraints and compute the total objective cost.
 class SolutionChecker {
  public:
-  SolutionChecker(const Machines& machines,
-                  const Services& services,
-                  const Processes& processes,
-                  const BalanceCosts& balance_costs,
-                  int process_move_cost_weight,
-                  int service_move_cost_weight,
+  SolutionChecker(const Machines& machines, const Services& services,
+                  const Processes& processes, const BalanceCosts& balance_costs,
+                  int process_move_cost_weight, int service_move_cost_weight,
                   int machine_move_cost_weight,
                   const ProcessAssignments& initial_assignments,
                   const ProcessAssignments& new_assignments);
@@ -380,10 +365,10 @@ class DataParser {
  private:
   int GetNextModelValue(int max_value);
 
-template<class T>
-  void GetModelVector(size_t size,
-                      int max_value,
-                      vector<T>* model_vector);
+  template<class T>
+    void GetModelVector(size_t size,
+                        int max_value,
+                        vector<T>* model_vector);
 
   void Parse();
   void ParseModel();

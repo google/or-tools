@@ -95,6 +95,7 @@ class MPSolutionResponse;
 
 // Expose the MPSolver's basic API, with trivial renames when needed.
 %unignore operations_research::MPSolver::MPSolver;
+%unignore operations_research::MPSolver::~MPSolver;
 %unignore operations_research::MPSolver::MakeBoolVar;
 %unignore operations_research::MPSolver::MakeIntVar;
 %unignore operations_research::MPSolver::MakeNumVar;
