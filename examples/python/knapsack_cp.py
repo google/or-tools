@@ -38,7 +38,7 @@ def knapsack(solver, values, weights, n):
 
 def main(values, weights, n):
   # Create the solver.
-  solver = pywrapcp.Solver("n-queens")
+  solver = pywrapcp.Solver("knapsack_cp")
 
   #
   # data
