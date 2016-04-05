@@ -50,6 +50,11 @@ bool DijkstraShortestPath(int node_count, int start_node, int end_node,
 bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
                              ResultCallback2<int64, int, int>* const graph,
                              int64 disconnected_distance, std::vector<int>* nodes);
+
+bool AStarShortestPath(int node_count, int start_node, int end_node,
+                             ResultCallback2<int64, int, int>* const graph, 
+                             ResultCallback1<int64, int>* const heuristic,
+                             int64 disconnected_distance, std::vector<int>* nodes);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GRAPH_SHORTESTPATHS_H_
