@@ -33,7 +33,7 @@
 //
 // Search will then be applied on the sequence constraints.
 
-#include "cpp/jobshop.h"
+#include "jobshop.h"
 #include <cstdio>
 #include <cstdlib>
 

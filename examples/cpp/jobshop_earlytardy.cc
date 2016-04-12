@@ -44,8 +44,8 @@
 #include "constraint_solver/constraint_solver.h"
 #include "linear_solver/linear_solver.h"
 #include "util/string_array.h"
-#include "cpp/jobshop_earlytardy.h"
-#include "cpp/jobshop_ls.h"
+#include "jobshop_earlytardy.h"
+#include "jobshop_ls.h"
 
 DEFINE_string(
     jet_file,

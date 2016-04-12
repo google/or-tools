@@ -21,7 +21,7 @@
 #include <map>
 #include <vector>
 
-#include "cpp/fap_parser.h"
+#include "fap_parser.h"
 
 using std::string;
 

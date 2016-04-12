@@ -12,7 +12,7 @@
 // limitations under the License.
 //
 
-#include "cpp/fap_utilities.h"
+#include "fap_utilities.h"
 
 #include <map>
 #include <set>

@@ -33,7 +33,7 @@
 //
 // Search will be implemented as local search on the sequence variables.
 
-#include "cpp/jobshop_ls.h"
+#include "jobshop_ls.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -45,7 +45,7 @@
 #include "base/bitmap.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "cpp/jobshop.h"
+#include "jobshop.h"
 
 DEFINE_string(
     data_file, "",

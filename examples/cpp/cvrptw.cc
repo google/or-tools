@@ -30,7 +30,7 @@
 #include "base/logging.h"
 #include "constraint_solver/routing.h"
 #include "constraint_solver/routing_flags.h"
-#include "cpp/cvrptw_lib.h"
+#include "cvrptw_lib.h"
 
 using operations_research::RoutingModel;
 using operations_research::RoutingSearchParameters;

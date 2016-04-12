@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "cpp/cvrptw_lib.h"
+#include "cvrptw_lib.h"
 
 #include <set>
 
