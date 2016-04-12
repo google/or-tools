@@ -1707,12 +1707,6 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp\\or-tools.$(PORT)\\examples
 	mkdir temp\\or-tools.$(PORT)\\examples\\cpp
 	mkdir temp\\or-tools.$(PORT)\\examples\\data
-	mkdir temp\\or-tools.$(PORT)\\examples\\data\\et_jobshop
-	mkdir temp\\or-tools.$(PORT)\\examples\\data\\flexible_jobshop
-	mkdir temp\\or-tools.$(PORT)\\examples\\data\\jobshop
-	mkdir temp\\or-tools.$(PORT)\\examples\\data\\multidim_knapsack
-	mkdir temp\\or-tools.$(PORT)\\examples\\data\\cvrptw
-	mkdir temp\\or-tools.$(PORT)\\examples\\data\\pdptw
 	mkdir temp\\or-tools.$(PORT)\\include
 	mkdir temp\\or-tools.$(PORT)\\include\\algorithms
 	mkdir temp\\or-tools.$(PORT)\\include\\base
@@ -1731,6 +1725,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	copy lib\\ortools.lib temp\\or-tools.$(PORT)\\lib
 	copy examples\\cpp\\*.cc temp\\or-tools.$(PORT)\\examples\\cpp
 	copy examples\\cpp\\*.h temp\\or-tools.$(PORT)\\examples\\cpp
+	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
 	copy src\\algorithms\\*.h temp\\or-tools.$(PORT)\\include\\algorithms
 	copy src\\base\\*.h temp\\or-tools.$(PORT)\\include\\base
 	copy src\\constraint_solver\\*.h temp\\or-tools.$(PORT)\\include\\constraint_solver
