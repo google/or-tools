@@ -16,6 +16,7 @@ or-tools/
   examples/com/          <- Java examples
   examples/cpp/          <- C++ examples
   examples/csharp/       <- C# examples
+  examples/data/         <- Data files for examples
   examples/flatzinc/     <- Flatzinc examples
   examples/python/       <- Python examples
   examples/tests/        <- C# unit tests and bug reports
