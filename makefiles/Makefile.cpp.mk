@@ -1707,6 +1707,10 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp\\or-tools.$(PORT)\\examples
 	mkdir temp\\or-tools.$(PORT)\\examples\\cpp
 	mkdir temp\\or-tools.$(PORT)\\examples\\data
+	mkdir temp\\or-tools.$(PORT)\\examples\\data\\et_jobshop
+	mkdir temp\\or-tools.$(PORT)\\examples\\data\\flexible_jobshop
+	mkdir temp\\or-tools.$(PORT)\\examples\\data\\jobshop
+	mkdir temp\\or-tools.$(PORT)\\examples\\data\\multidim_knapsack
 	mkdir temp\\or-tools.$(PORT)\\include
 	mkdir temp\\or-tools.$(PORT)\\include\\algorithms
 	mkdir temp\\or-tools.$(PORT)\\include\\base
@@ -1753,6 +1757,10 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp/or-tools.$(PORT)/examples
 	mkdir temp/or-tools.$(PORT)/examples/cpp
 	mkdir temp/or-tools.$(PORT)/examples/data
+	mkdir temp/or-tools.$(PORT)/examples/data/et_jobshop
+	mkdir temp/or-tools.$(PORT)/examples/data/flexible_jobshop
+	mkdir temp/or-tools.$(PORT)/examples/data/jobshop
+	mkdir temp/or-tools.$(PORT)/examples/data/multidim_knapsack
 	mkdir temp/or-tools.$(PORT)/include
 	mkdir temp/or-tools.$(PORT)/include/algorithms
 	mkdir temp/or-tools.$(PORT)/include/base
@@ -1776,6 +1784,10 @@ ifeq ($(PLATFORM),MACOSX)
 endif
 	cp examples/cpp/*.cc temp/or-tools.$(PORT)/examples/cpp
 	cp examples/cpp/*.h temp/or-tools.$(PORT)/examples/cpp
+	cp -R examples/data/et_jobshop/* temp/or-tools.$(PORT)/examples/data/et_jobshop
+	cp -R examples/data/flexible_jobshop/* temp/or-tools.$(PORT)/examples/data/flexible_jobshop
+	cp -R examples/data/jobshop/* temp/or-tools.$(PORT)/examples/data/jobshop
+	cp -R examples/data/multidim_knapsack/* temp/or-tools.$(PORT)/examples/data/multidim_knapsack
 	cp src/algorithms/*.h temp/or-tools.$(PORT)/include/algorithms
 	cp src/base/*.h temp/or-tools.$(PORT)/include/base
 	cp src/constraint_solver/*.h temp/or-tools.$(PORT)/include/constraint_solver

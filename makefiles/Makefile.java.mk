@@ -390,19 +390,19 @@ ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\graph
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\linearsolver
 	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	tools\mkdir temp\or-tools.$(PORT)\data
-	tools\mkdir temp\or-tools.$(PORT)\data\discrete_tomography
-	tools\mkdir temp\or-tools.$(PORT)\data\fill_a_pix
-	tools\mkdir temp\or-tools.$(PORT)\data\minesweeper
-	tools\mkdir temp\or-tools.$(PORT)\data\rogo
-	tools\mkdir temp\or-tools.$(PORT)\data\survo_puzzle
-	tools\mkdir temp\or-tools.$(PORT)\data\quasigroup_completion
-	copy data\discrete_tomography\* temp\or-tools.$(PORT)\data\discrete_tomography
-	copy data\fill_a_pix\* temp\or-tools.$(PORT)\data\fill_a_pix
-	copy data\minesweeper\* temp\or-tools.$(PORT)\data\minesweeper
-	copy data\rogo\* temp\or-tools.$(PORT)\data\rogo
-	copy data\survo_puzzle\* temp\or-tools.$(PORT)\data\survo_puzzle
-	copy data\quasigroup_completion\* temp\or-tools.$(PORT)\data\quasigroup_completion
+	tools\mkdir temp\or-tools.$(PORT)\examples\data
+	tools\mkdir temp\or-tools.$(PORT)\examples\data\discrete_tomography
+	tools\mkdir temp\or-tools.$(PORT)\examples\data\fill_a_pix
+	tools\mkdir temp\or-tools.$(PORT)\examples\data\minesweeper
+	tools\mkdir temp\or-tools.$(PORT)\examples\data\rogo
+	tools\mkdir temp\or-tools.$(PORT)\examples\data\survo_puzzle
+	tools\mkdir temp\or-tools.$(PORT)\examples\data\quasigroup_completion
+	copy examples\data\discrete_tomography\* temp\or-tools.$(PORT)\examples\data\discrete_tomography
+	copy examples\data\fill_a_pix\* temp\or-tools.$(PORT)\examples\data\fill_a_pix
+	copy examples\data\minesweeper\* temp\or-tools.$(PORT)\examples\data\minesweeper
+	copy examples\data\rogo\* temp\or-tools.$(PORT)\examples\data\rogo
+	copy examples\data\survo_puzzle\* temp\or-tools.$(PORT)\examples\data\survo_puzzle
+	copy examples\data\quasigroup_completion\* temp\or-tools.$(PORT)\examples\data\quasigroup_completion
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
@@ -418,19 +418,19 @@ else
 	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/graph
 	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/linearsolver
 	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	mkdir temp/or-tools.$(PORT)/data
-	mkdir temp/or-tools.$(PORT)/data/discrete_tomography
-	mkdir temp/or-tools.$(PORT)/data/fill_a_pix
-	mkdir temp/or-tools.$(PORT)/data/minesweeper
-	mkdir temp/or-tools.$(PORT)/data/rogo
-	mkdir temp/or-tools.$(PORT)/data/survo_puzzle
-	mkdir temp/or-tools.$(PORT)/data/quasigroup_completion
-	cp data/discrete_tomography/* temp/or-tools.$(PORT)/data/discrete_tomography
-	cp data/fill_a_pix/* temp/or-tools.$(PORT)/data/fill_a_pix
-	cp data/minesweeper/* temp/or-tools.$(PORT)/data/minesweeper
-	cp data/rogo/* temp/or-tools.$(PORT)/data/rogo
-	cp data/survo_puzzle/* temp/or-tools.$(PORT)/data/survo_puzzle
-	cp data/quasigroup_completion/* temp/or-tools.$(PORT)/data/quasigroup_completion
+	mkdir temp/or-tools.$(PORT)/examples/data
+	mkdir temp/or-tools.$(PORT)/examples/data/discrete_tomography
+	mkdir temp/or-tools.$(PORT)/examples/data/fill_a_pix
+	mkdir temp/or-tools.$(PORT)/examples/data/minesweeper
+	mkdir temp/or-tools.$(PORT)/examples/data/rogo
+	mkdir temp/or-tools.$(PORT)/examples/data/survo_puzzle
+	mkdir temp/or-tools.$(PORT)/examples/data/quasigroup_completion
+	cp examples/data/discrete_tomography/* temp/or-tools.$(PORT)/examples/data/discrete_tomography
+	cp examples/data/fill_a_pix/* temp/or-tools.$(PORT)/examples/data/fill_a_pix
+	cp examples/data/minesweeper/* temp/or-tools.$(PORT)/examples/data/minesweeper
+	cp examples/data/rogo/* temp/or-tools.$(PORT)/examples/data/rogo
+	cp examples/data/survo_puzzle/* temp/or-tools.$(PORT)/examples/data/survo_puzzle
+	cp examples/data/quasigroup_completion/* temp/or-tools.$(PORT)/examples/data/quasigroup_completion
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples

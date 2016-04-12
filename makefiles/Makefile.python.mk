@@ -206,7 +206,7 @@ python_archive: python
 	$(MKDIR) temp
 	$(MKDIR) temp$Sor-tools.$(PORT)
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sexamples
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sdata
+	$(MKDIR) temp$Sor-tools.$(PORT)$Sexamples$Sdata
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sdummy
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools
 	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
@@ -235,7 +235,7 @@ ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sor-tools.$(PORT)$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.pyd/' temp/or-tools.$(PORT)/setup.py
 	-del temp\or-tools.$(PORT)\setup.py-e
-	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
+	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
 else
 	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
@@ -244,7 +244,7 @@ else
 	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools.$(PORT)/setup.py
 	-rm temp/or-tools.$(PORT)/setup.py-e
-	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
+	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
 	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
 endif
 
@@ -253,7 +253,7 @@ python_examples_archive:
 	$(MKDIR) temp
 	$(MKDIR) temp$Sortools_examples
 	$(MKDIR) temp$Sortools_examples$Sexamples
-	$(MKDIR) temp$Sortools_examples$Sdata
+	$(MKDIR) temp$Sortools_examples$Sexamples$Sdata
 	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples
 	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
@@ -261,10 +261,10 @@ python_examples_archive:
 	$(SED) -i -e 's/VVVV/$(shell svnversion)/' temp$Sortools_examples$Ssetup.py
 	-$(DEL) temp$Sortools_examples$Ssetup.py-e
 ifeq ($(SYSTEM),win)
-	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* data | ..\..\tools\tar.exe xvm
+	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples.$(GIT_REVISION).zip ortools_examples
 else
-	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* data | tar xvm
+	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
 	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.examples.$(GIT_REVISION).tar.gz ortools_examples
 endif
 
