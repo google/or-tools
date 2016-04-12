@@ -75,7 +75,7 @@ class SatPropagator : public Constraint {
     } else {
       const int num_vars = sat_.NumVariables();
       sat_.SetNumVariables(num_vars + 1);
-      const sat::VariableIndex var(num_vars);
+      const sat::BooleanVariable var(num_vars);
       DCHECK_EQ(vars_.size(), var.value());
       vars_.push_back(expr_var);
       indices_[expr_var] = var;
@@ -92,7 +92,7 @@ class SatPropagator : public Constraint {
     const int to_index = sat_.LiteralTrail().Index();
     for (int index = from_index; index < to_index; ++index) {
       const sat::Literal literal = sat_.LiteralTrail()[index];
-      const sat::VariableIndex var = literal.Variable();
+      const sat::BooleanVariable var = literal.Variable();
       const bool assigned_bool = literal.IsPositive();
 #ifdef SAT_DEBUG
       FZDLOG << " - var " << var << " was assigned to " << assigned_bool
@@ -105,7 +105,7 @@ class SatPropagator : public Constraint {
 
   // This method is called during the processing of the CP solver queue when
   // a boolean variable is bound.
-  void VariableIndexBound(int index) {
+  void BooleanVariableBound(int index) {
     if (sat_decision_level_.Value() < sat_.CurrentDecisionLevel()) {
 #ifdef SAT_DEBUG
       FZDLOG << "After failure, sat_decision_level = "
@@ -116,9 +116,9 @@ class SatPropagator : public Constraint {
       sat_.Backtrack(sat_decision_level_.Value());
       DCHECK_EQ(sat_decision_level_.Value(), sat_.CurrentDecisionLevel());
     }
-    const sat::VariableIndex var = sat::VariableIndex(index);
+    const sat::BooleanVariable var = sat::BooleanVariable(index);
 #ifdef SAT_DEBUG
-    FZDLOG << "VariableIndexBound: " << vars_[index]->DebugString()
+    FZDLOG << "BooleanVariableBound: " << vars_[index]->DebugString()
            << " with sat variable " << var << FZENDL;
 #endif
     const bool new_value = vars_[index]->Value() != 0;
@@ -158,8 +158,8 @@ class SatPropagator : public Constraint {
     demons_.resize(vars_.size());
     for (int i = 0; i < vars_.size(); ++i) {
       demons_[i] = MakeConstraintDemon1(solver(), this,
-                                        &SatPropagator::VariableIndexBound,
-                                        "VariableIndexBound", i);
+                                        &SatPropagator::BooleanVariableBound,
+                                        "BooleanVariableBound", i);
       vars_[i]->WhenDomain(demons_[i]);
     }
   }
@@ -173,7 +173,7 @@ class SatPropagator : public Constraint {
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
       if (var->Bound()) {
-        VariableIndexBound(i);
+        BooleanVariableBound(i);
       }
     }
 #ifdef SAT_DEBUG
@@ -195,14 +195,14 @@ class SatPropagator : public Constraint {
  private:
   sat::SatSolver sat_;
   std::vector<IntVar*> vars_;
-  hash_map<IntVar*, sat::VariableIndex> indices_;
+  hash_map<IntVar*, sat::BooleanVariable> indices_;
   std::vector<sat::Literal> bound_literals_;
   NumericalRev<int> sat_decision_level_;
   std::vector<Demon*> demons_;
   std::vector<sat::Literal> early_deductions_;
 };
 
-void DeclareVariableIndex(SatPropagator* sat, IntVar* var) {
+void DeclareBooleanVariable(SatPropagator* sat, IntVar* var) {
   CHECK(sat->IsExpressionBoolean(var));
   sat->Literal(var);
 }
