@@ -1705,6 +1705,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp\\or-tools.$(PORT)
 	mkdir temp\\or-tools.$(PORT)\\bin
 	mkdir temp\\or-tools.$(PORT)\\examples
+	mkdir temp\\or-tools.$(PORT)\\examples\\cpp
+	mkdir temp\\or-tools.$(PORT)\\examples\\data
 	mkdir temp\\or-tools.$(PORT)\\include
 	mkdir temp\\or-tools.$(PORT)\\include\\algorithms
 	mkdir temp\\or-tools.$(PORT)\\include\\base
@@ -1721,8 +1723,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	copy tools\\README.cc temp\\or-tools.$(PORT)\\README
 	copy tools\\Makefile.cc temp\\or-tools.$(PORT)\\Makefile
 	copy lib\\ortools.lib temp\\or-tools.$(PORT)\\lib
-	copy examples\\cpp\\*.cc temp\\or-tools.$(PORT)\\examples
-	copy examples\\cpp\\*.h temp\\or-tools.$(PORT)\\examples
+	copy examples\\cpp\\*.cc temp\\or-tools.$(PORT)\\examples\\cpp
+	copy examples\\cpp\\*.h temp\\or-tools.$(PORT)\\examples\\cpp
 	copy src\\algorithms\\*.h temp\\or-tools.$(PORT)\\include\\algorithms
 	copy src\\base\\*.h temp\\or-tools.$(PORT)\\include\\base
 	copy src\\constraint_solver\\*.h temp\\or-tools.$(PORT)\\include\\constraint_solver
@@ -1749,6 +1751,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp/or-tools.$(PORT)
 	mkdir temp/or-tools.$(PORT)/bin
 	mkdir temp/or-tools.$(PORT)/examples
+	mkdir temp/or-tools.$(PORT)/examples/cpp
+	mkdir temp/or-tools.$(PORT)/examples/data
 	mkdir temp/or-tools.$(PORT)/include
 	mkdir temp/or-tools.$(PORT)/include/algorithms
 	mkdir temp/or-tools.$(PORT)/include/base
@@ -1770,8 +1774,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 ifeq ($(PLATFORM),MACOSX)
 	cp tools/install_libortools_mac.sh temp/or-tools.$(PORT)
 endif
-	cp examples/cpp/*.cc temp/or-tools.$(PORT)/examples
-	cp examples/cpp/*.h temp/or-tools.$(PORT)/examples
+	cp examples/cpp/*.cc temp/or-tools.$(PORT)/examples/cpp
+	cp examples/cpp/*.h temp/or-tools.$(PORT)/examples/cpp
 	cp src/algorithms/*.h temp/or-tools.$(PORT)/include/algorithms
 	cp src/base/*.h temp/or-tools.$(PORT)/include/base
 	cp src/constraint_solver/*.h temp/or-tools.$(PORT)/include/constraint_solver
