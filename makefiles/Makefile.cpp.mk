@@ -1711,6 +1711,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp\\or-tools.$(PORT)\\examples\\data\\flexible_jobshop
 	mkdir temp\\or-tools.$(PORT)\\examples\\data\\jobshop
 	mkdir temp\\or-tools.$(PORT)\\examples\\data\\multidim_knapsack
+	mkdir temp\\or-tools.$(PORT)\\examples\\data\\cvrptw
+	mkdir temp\\or-tools.$(PORT)\\examples\\data\\pdptw
 	mkdir temp\\or-tools.$(PORT)\\include
 	mkdir temp\\or-tools.$(PORT)\\include\\algorithms
 	mkdir temp\\or-tools.$(PORT)\\include\\base
@@ -1761,6 +1763,8 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	mkdir temp/or-tools.$(PORT)/examples/data/flexible_jobshop
 	mkdir temp/or-tools.$(PORT)/examples/data/jobshop
 	mkdir temp/or-tools.$(PORT)/examples/data/multidim_knapsack
+	mkdir temp/or-tools.$(PORT)/examples/data/cvrptw
+	mkdir temp/or-tools.$(PORT)/examples/data/pdptw
 	mkdir temp/or-tools.$(PORT)/include
 	mkdir temp/or-tools.$(PORT)/include/algorithms
 	mkdir temp/or-tools.$(PORT)/include/base
@@ -1788,6 +1792,8 @@ endif
 	cp -R examples/data/flexible_jobshop/* temp/or-tools.$(PORT)/examples/data/flexible_jobshop
 	cp -R examples/data/jobshop/* temp/or-tools.$(PORT)/examples/data/jobshop
 	cp -R examples/data/multidim_knapsack/* temp/or-tools.$(PORT)/examples/data/multidim_knapsack
+	cp -R examples/data/cvrptw/* temp/or-tools.$(PORT)/examples/data/cvrptw
+	cp -R examples/data/pdptw/* temp/or-tools.$(PORT)/examples/data/pdptw
 	cp src/algorithms/*.h temp/or-tools.$(PORT)/include/algorithms
 	cp src/base/*.h temp/or-tools.$(PORT)/include/base
 	cp src/constraint_solver/*.h temp/or-tools.$(PORT)/include/constraint_solver
