@@ -12,7 +12,7 @@
 // limitations under the License.
 //
 
-#include "fap_model_printer.h"
+#include "cpp/fap_model_printer.h"
 
 #include <map>
 #include <string>

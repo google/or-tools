@@ -41,7 +41,7 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "constraint_solver/constraint_solver.h"
-#include "flexible_jobshop.h"
+#include "cpp/flexible_jobshop.h"
 #include "util/string_array.h"
 
 DEFINE_string(

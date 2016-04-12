@@ -51,9 +51,9 @@
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
-#include "fap_model_printer.h"
-#include "fap_parser.h"
-#include "fap_utilities.h"
+#include "cpp/fap_model_printer.h"
+#include "cpp/fap_parser.h"
+#include "cpp/fap_utilities.h"
 
 DEFINE_string(directory, "", "Specifies the directory of the data.");
 DEFINE_string(evaluator, "",

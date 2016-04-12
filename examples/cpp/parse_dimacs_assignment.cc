@@ -12,7 +12,7 @@
 // limitations under the License.
 
 
-#include "parse_dimacs_assignment.h"
+#include "cpp/parse_dimacs_assignment.h"
 
 #include "base/commandlineflags.h"
 

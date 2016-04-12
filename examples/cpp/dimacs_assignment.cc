@@ -25,8 +25,8 @@
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "algorithms/hungarian.h"
-#include "parse_dimacs_assignment.h"
-#include "print_dimacs_assignment.h"
+#include "cpp/parse_dimacs_assignment.h"
+#include "cpp/print_dimacs_assignment.h"
 #include "graph/ebert_graph.h"
 #include "graph/linear_assignment.h"
 
