@@ -253,8 +253,9 @@ python_examples_archive:
 	$(MKDIR) temp
 	$(MKDIR) temp$Sortools_examples
 	$(MKDIR) temp$Sortools_examples$Sexamples
+	$(MKDIR) temp$Sortools_examples$Sexamples$Spython
 	$(MKDIR) temp$Sortools_examples$Sexamples$Sdata
-	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples
+	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples$Spython
 	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
 	$(COPY) tools$Ssetup_data.py temp$Sortools_examples$Ssetup.py
@@ -268,7 +269,7 @@ else
 	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.examples.$(GIT_REVISION).tar.gz ortools_examples
 endif
 
-pypi_archive: python $(PATCHELF)
+pypi2_archive: python $(PATCHELF)
 	-$(DELREC) temp
 	$(MKDIR) temp
 	$(MKDIR) temp$Sortools
@@ -321,8 +322,8 @@ ifeq ($(PLATFORM),LINUX)
 endif
 endif
 
-pypi_upload: pypi_archive
-	@echo Uploading Pypi module.
+pypi2_upload: pypi2_archive
+	@echo Uploading Pypi module for python2.
 ifeq ($(SYSTEM),win)
 	@echo Do not forget to run: set VS90COMNTOOLS="$(VS$(VS_COMTOOLS)COMNTOOLS)
 	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_egg bdist_wininst upload"
@@ -384,10 +385,21 @@ endif
 endif
 
 pypi3_upload: pypi3_archive
-	@echo Uploading Pypi module.
+	@echo Uploading Pypi module for python3.
 ifeq ($(SYSTEM),win)
 	@echo Do not forget to run: set VS90COMNTOOLS="$(VS$(VS_COMTOOLS)COMNTOOLS)
 	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_egg bdist_wininst upload"
 else
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_egg upload
 endif
+
+ifeq ($(PYTHON3),true)
+PYPI_UPLOAD=pypi3_upload
+PYPI_ARCHIVE=pypi3_archive
+else
+PYPI_UPLOAD=pypi2_upload
+PYPI_ARCHIVE=pypi2_archive
+endif
+
+pypi_archive: $(PYPI_ARCHIVE)
+pypi_upload: $(PYPI_UPLOAD)
