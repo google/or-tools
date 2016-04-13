@@ -433,6 +433,7 @@ ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp\or-tools.$(PORT)\examples\data\quasigroup_completion
 	copy LICENSE-2.0.txt temp$Sor-tools.$(PORT)
 	copy tools\README.dotnet temp\or-tools.$(PORT)\README
+	copy bin\Google.Protobuf.dll temp\or-tools.$(PORT)\bin
 	copy bin\$(CLR_DLL_NAME).dll temp\or-tools.$(PORT)\bin
 	copy examples\csharp\*.cs temp\or-tools.$(PORT)\examples
 	copy examples\csharp\*.sln temp\or-tools.$(PORT)\examples
@@ -459,6 +460,7 @@ else
 	mkdir temp/or-tools.$(PORT)/examples/data/quasigroup_completion
 	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
 	cp tools/README.dotnet temp/or-tools.$(PORT)/README
+	cp bin/Google.Protobuf.dll temp/or-tools.$(PORT)/bin
 	cp bin/$(CLR_DLL_NAME).dll temp/or-tools.$(PORT)/bin
 	cp lib/lib$(CLR_DLL_NAME).so temp/or-tools.$(PORT)/bin
 	cp examples/csharp/*.cs temp/or-tools.$(PORT)/examples
