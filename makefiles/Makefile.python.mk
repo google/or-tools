@@ -18,6 +18,10 @@ ifeq ("$(PYTHON_VERSION)","3.5")
   PYTHON3 = true
   SWIG_PYTHON3_FLAG=-py3 -DPY3
 endif
+ifeq ("$(PYTHON_VERSION)","35")
+  PYTHON3 = true
+  SWIG_PYTHON3_FLAG=-py3 -DPY3
+endif
 
 # Main target
 python: pycp pyalgorithms pygraph pylp
@@ -403,3 +407,7 @@ endif
 
 pypi_archive: $(PYPI_ARCHIVE)
 pypi_upload: $(PYPI_UPLOAD)
+
+detect_python:
+	@echo PYTHON3 = $(PYTHON3)
+	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
