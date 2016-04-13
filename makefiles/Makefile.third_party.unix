@@ -8,7 +8,6 @@ SWIG_TAG = 3.0.8
 PCRE_TAG = 8.37
 # BISON, FLEX
 BISON_TAG = 3.0.4
-# Flex 2.5.39 is broken on mac.
 FLEX_TAG = 2.6.0
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
@@ -62,6 +61,9 @@ ACLOCAL_TARGET = \
 	dependencies/install/bin/libtool
 
 SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
+ifeq ($(PLATFORM), MACOSX)
+  SET_COMPILER = CXX="$(CCC)"
+endif
 
 # Main target.
 .PHONY: makefile_third_party missing_directories install_java_protobuf
@@ -229,14 +231,14 @@ ifeq ($(PLATFORM),MACOSX)
 endif
 
 dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md check_cmake
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_COMPILER) \
 	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
 		 -D BUILD_STATIC_LIBS=ON \
 	         -D CMAKE_INSTALL_PREFIX=../../install \
 		 -D CMAKE_CXX_FLAGS=-fPIC \
 	         .
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
-	make -j 4 && \
+	$(SET_COMPILER) make -j 4 && \
 	make install
 	$(TOUCH) dependencies/install/bin/gflags_completions.sh
 ifeq ($(PLATFORM),MACOSX)
@@ -251,13 +253,13 @@ dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md:
 install_protobuf: dependencies/install/bin/protoc
 
 dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) make install
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) make install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile: dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./autogen.sh
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) ./autogen.sh
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
 	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
@@ -266,13 +268,13 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
 install_sparsehash: dependencies/install/include/google/dense_hash_map
 
 dependencies/install/include/google/dense_hash_map: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) make install
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) make install
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) ./autogen.sh
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) ./autogen.sh
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
@@ -281,10 +283,10 @@ dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 install_cbc: dependencies/install/bin/cbc
 
 dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) make install
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) $(SET_COMPILER) make install
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT"
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT"
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)

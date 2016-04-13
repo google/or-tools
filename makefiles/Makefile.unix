@@ -193,8 +193,9 @@ ifeq ($(PLATFORM),LINUX)
   FLEX = dependencies/install/bin/flex
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
-  CCC = clang++ -fPIC -std=c++11 -mmacosx-version-min=$(MAC_MIN_VERSION) -stdlib=libc++
-  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
+  MAC_COMPATIBILITY = -mmacosx-version-min=$(MAC_MIN_VERSION)
+  CCC = clang++ -fPIC -std=c++11  $(MAC_COMPATIBILITY) -stdlib=libc++
+  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress $(MAC_COMPATIBILITY) -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
 
   CMAKE := $(shell which cmake)
   ifeq ($(CMAKE),)
