@@ -1472,6 +1472,12 @@ $(OBJ_DIR)/issue57.$O:$(EX_DIR)/tests/issue57.cc $(SRC_DIR)/constraint_solver/co
 $(BIN_DIR)/issue57$E: $(DYNAMIC_CP_DEPS) $(OBJ_DIR)/issue57.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue57.$O $(DYNAMIC_CP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue57$E
 
+$(OBJ_DIR)/issue173.$O:$(EX_DIR)/tests/issue173.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/issue173.cc $(OBJ_OUT)$(OBJ_DIR)$Sissue173.$O
+
+$(BIN_DIR)/issue173$E: $(DYNAMIC_LP_DEPS) $(OBJ_DIR)/issue173.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue173.$O $(DYNAMIC_LP_LNK) $(DYNAMIC_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue173$E
+
 $(OBJ_DIR)/visitor_test.$O:$(EX_DIR)/tests/visitor_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/visitor_test.cc $(OBJ_OUT)$(OBJ_DIR)$Svisitor_test.$O
 
