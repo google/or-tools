@@ -346,6 +346,14 @@ $(OBJ_DIR)/com/google/ortools/samples/IntegerProgramming.class: javaortools $(EX
 run_IntegerProgramming: compile_IntegerProgramming
 	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.IntegerProgramming
 
+compile_Issue173: $(OBJ_DIR)/com/google/ortools/samples/Issue173.class
+
+$(OBJ_DIR)/com/google/ortools/samples/Issue173.class: javaortools $(EX_DIR)/com/google/ortools/samples/Issue173.java
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SIssue173.java
+
+run_Issue173: compile_Issue173
+	$(JAVA_BIN) -Xss2048k -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Issue173
+
 
 # Integer programming Coin-CBC section
 run_MultiThreadIntegerProgramming: compile_MultiThreadIntegerProgramming
