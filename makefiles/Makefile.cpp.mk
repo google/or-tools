@@ -821,6 +821,7 @@ endif
 SHORTESTPATHS_LIB_OBJS=\
 	$(OBJ_DIR)/graph/bellman_ford.$O \
 	$(OBJ_DIR)/graph/dijkstra.$O \
+	$(OBJ_DIR)/graph/astar.$O \
 	$(OBJ_DIR)/graph/shortestpaths.$O
 
 $(OBJ_DIR)/graph/bellman_ford.$O:$(SRC_DIR)/graph/bellman_ford.cc
@@ -828,6 +829,9 @@ $(OBJ_DIR)/graph/bellman_ford.$O:$(SRC_DIR)/graph/bellman_ford.cc
 
 $(OBJ_DIR)/graph/dijkstra.$O:$(SRC_DIR)/graph/dijkstra.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/dijkstra.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sdijkstra.$O
+	
+$(OBJ_DIR)/graph/astar.$O:$(SRC_DIR)/graph/astar.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/astar.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sastar.$O
 
 $(OBJ_DIR)/graph/shortestpaths.$O:$(SRC_DIR)/graph/shortestpaths.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/shortestpaths.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sshortestpaths.$O
