@@ -40,6 +40,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from collections import namedtuple
 from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver import routing_enums_pb2
 from datetime import datetime, timedelta
 
 
@@ -624,10 +625,6 @@ def main():
     start_fn = vehicles.return_starting_callback(customers,
                                                  sameStartFinish=True)
 
-    # Set a global parameter.
-    glob_param = pywrapcp.RoutingParameters()
-    glob_param.use_light_propagation = False
-    pywrapcp.RoutingModel.SetGlobalParameters(glob_param)
 
     # Make the routing model instance.
     routing = pywrapcp.RoutingModel(customers.number,  # int number
@@ -635,13 +632,16 @@ def main():
                                     vehicles.starts,  # List of int start depot
                                     vehicles.ends)  # List of int end depot
 
-    parameters = pywrapcp.RoutingSearchParameters()
+    parameters = routing.DefaultSearchParameters()
     # Setting first solution heuristic (cheapest addition).
-    parameters.first_solution = 'PathCheapestArc'
+    parameters.first_solution_strategy = (
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
     # Disabling Large Neighborhood Search, comment out to activate it.
-    parameters.no_lns = False
-    parameters.no_tsp = True
-    parameters.time_limit = 10 * 1000  # 10 seconds
+#    parameters.no_lns = False
+#    parameters.no_tsp = True
+    parameters.time_limit_ms = 10 * 1000  # 10 seconds
+    parameters.use_light_propagation = False
+
 
     # Set the cost function (distance callback) for each arc, homogenious for
     # all vehicles.
@@ -697,7 +697,7 @@ def main():
     # print(routing.ApplyLocksToAllVehicles(partial_list, False))
 
     # Solve the problem !
-    assignment = routing.SolveWithParameters(parameters, None)
+    assignment = routing.SolveWithParameters(parameters)
 
     # The rest is all optional for saving, printing or plotting the solution.
     if assignment:
