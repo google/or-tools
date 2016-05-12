@@ -426,7 +426,7 @@ dependencies\install\bin\win_bison.exe: dependencies\archives\win_flex_bison-$(B
 	tools\touch.exe dependencies\install\bin/win_bison.exe
 
 dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
-	tools\wget -P dependencies\archives http://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
+	tools\wget -P dependencies\archives --no-check-certificate https://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
 
 # Install Java protobuf
 
