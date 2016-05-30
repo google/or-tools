@@ -77,6 +77,7 @@ $(GEN_DIR)/ortools/graph/pywrapgraph.py: \
 		$(SRC_DIR)/base/base.swig \
 		$(SRC_DIR)/util/python/vector.swig \
 		$(SRC_DIR)/graph/python/graph.swig \
+		$(SRC_DIR)/graph/shortestpaths.h \
 		$(SRC_DIR)/graph/min_cost_flow.h \
 		$(SRC_DIR)/graph/max_flow.h \
 		$(SRC_DIR)/graph/ebert_graph.h

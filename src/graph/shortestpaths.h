@@ -54,18 +54,18 @@ bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
 // Dijsktra Shortest path with callback based description of the
 // graph.  The callback returns the distance between two nodes, a
 // distance of 'disconnected_distance' indicates no arcs between these
-// two nodes. Additionally, the heuristic callback returns a 
+// two nodes. Additionally, the heuristic callback returns a
 // an approximate distance between the node and the target, which guides
 // the search. If the heuristic is admissible (ie. never overestimates cost)
-//, the A* algorithm returns an optimal solution. 
+//, the A* algorithm returns an optimal solution.
 // Ownership of the callbacks is taken by the function that
-// will delete it in the end. 
-// This function returns true if 'start_node' and 'end_node' are 
+// will delete it in the end.
+// This function returns true if 'start_node' and 'end_node' are
 // connected, false otherwise.
 bool AStarShortestPath(int node_count, int start_node, int end_node,
-                             ResultCallback2<int64, int, int>* const graph, 
-                             ResultCallback1<int64, int>* const heuristic,
-                             int64 disconnected_distance, std::vector<int>* nodes);
+                       ResultCallback2<int64, int, int>* const graph,
+                       ResultCallback1<int64, int>* const heuristic,
+                       int64 disconnected_distance, std::vector<int>* nodes);
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GRAPH_SHORTESTPATHS_H_

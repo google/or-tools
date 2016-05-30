@@ -28,6 +28,9 @@
 
 %include "base/base.swig"
 
+#define FATAL_CALLBACK_EXCEPTION
+%include "base/python/callbacks.swig"
+
 %import "graph/ebert_graph.h"
 
 // Convert the "std::vector<int>* result" parameters to python outputs.
@@ -38,7 +41,10 @@
 #include "graph/assignment.h"
 #include "graph/max_flow.h"
 #include "graph/min_cost_flow.h"
+#include "graph/shortestpaths.h"
 %}
+
+
 
 // ############ max_flow.h ############
 
@@ -139,3 +145,17 @@
 %include "graph/assignment.h"
 
 %unignoreall
+
+
+
+%unignoreall
+
+%unignore operations_research;
+
+%apply std::vector<int>* OUTPUT {std::vector<int>* nodes}
+
+%unignore operations_research::DijkstraShortestPath;
+%unignore operations_research::BellmanFordShortestPath;
+%unignore operations_research::AStarShortestPath;
+
+%include "graph/shortestpaths.h"
