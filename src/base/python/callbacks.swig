@@ -71,6 +71,30 @@ static int64 PyCallback1Int64Int64(PyObject* pyfunc, int64 i) {
 }
 
 %{
+static int64 PyCallback1Int64Int(PyObject* pyfunc, int i) {
+  // () needed to force creation of one-element tuple
+  PyObject* pyresult = PyEval_CallFunction(pyfunc, "(l)", static_cast<long>(i));
+  int64 result = 0;
+  if (!pyresult) {
+    PyErr_SetString(PyExc_RuntimeError,
+                    "ResultCallback1<int64, int64> invocation failed.");
+  } else {
+    result = PyInt_AsLong(pyresult);
+    Py_DECREF(pyresult);
+  }
+  return result;
+}
+%}
+
+%typemap(in) ResultCallback1<int64, int>* {
+  if (!PyCallable_Check($input)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallback1Int64Int, $input);
+}
+
+%{
 static int64 PyCallback2Int64Int64Int64(PyObject* pyfunc, int64 i, int64 j) {
   PyObject* pyresult = PyEval_CallFunction(pyfunc, "ll", static_cast<long>(i),
                                            static_cast<long>(j));
@@ -92,6 +116,30 @@ static int64 PyCallback2Int64Int64Int64(PyObject* pyfunc, int64 i, int64 j) {
     SWIG_fail;
   }
   $1 = NewPermanentCallback(&PyCallback2Int64Int64Int64, $input);
+}
+
+%{
+static int64 PyCallback2Int64IntInt(PyObject* pyfunc, int i, int j) {
+  PyObject* pyresult = PyEval_CallFunction(pyfunc, "ll", static_cast<long>(i),
+                                           static_cast<long>(j));
+  int64 result = 0;
+  if (!pyresult) {
+    PyErr_SetString(PyExc_RuntimeError,
+                    "ResultCallback2<int64, int64, int64> invocation failed.");
+  } else {
+    result = PyInt_AsLong(pyresult);
+    Py_DECREF(pyresult);
+  }
+  return result;
+}
+%}
+
+%typemap(in) ResultCallback2<int64, int, int>* {
+  if (!PyCallable_Check($input)) {
+    PyErr_SetString(PyExc_TypeError, "Need a callable object!");
+    SWIG_fail;
+  }
+  $1 = NewPermanentCallback(&PyCallback2Int64IntInt, $input);
 }
 
 %{
