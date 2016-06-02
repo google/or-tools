@@ -22,8 +22,8 @@ namespace operations_research {
 
 class Bitmap {
  public:
-  // Constructor : This one will allocate on a uint32 boundary
-  // fill: true = initialize with 1's, false = initialize with 0's
+  // Constructor : This allocates on a uint32 boundary.
+  // fill: true = initialize with 1's, false = initialize with 0's.
   explicit Bitmap(uint32 size, bool fill = false)
       : max_size_(size),
         array_size_(BitLength64(size)),
@@ -32,7 +32,7 @@ class Bitmap {
     SetAll(fill);
   }
 
-  // Destructor : clean up if we allocated
+  // Destructor: clean up.
   ~Bitmap() { delete[] map_; }
 
   // Resizes the bitmap.

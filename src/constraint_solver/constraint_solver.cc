@@ -23,7 +23,6 @@
 #include <memory>
 #include <string>
 
-#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -87,8 +86,6 @@ DEFINE_bool(cp_diffn_use_cumulative, true,
             "Diffn constraint adds redundant cumulative constraint");
 DEFINE_bool(cp_use_element_rmq, true,
             "If true, rmq's will be used in element expressions.");
-
-
 
 void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
@@ -803,7 +800,8 @@ struct Trail {
 
     target = m->rev_memory_index_;
     for (int curr = rev_memory_.size() - 1; curr >= target; --curr) {
-      delete reinterpret_cast<char*>(rev_memory_[curr]);
+      // Explicitely call unsized delete
+      ::operator delete(reinterpret_cast<char*>(rev_memory_[curr]));
       // The previous cast is necessary to deallocate generic memory
       // described by a void* when passed to the RevAlloc procedure
       // We cannot do a delete[] there
@@ -1367,6 +1365,13 @@ extern ModelCache* BuildModelCache(Solver* const solver);
 
 std::string Solver::model_name() const { return name_; }
 
+namespace {
+void CheckSolverParameters(const ConstraintSolverParameters& parameters) {
+  CHECK_GT(parameters.array_split_size(), 0)
+      << "Were parameters built using Solver::DefaultSolverParameters() ?";
+}
+}  // namespace
+
 Solver::Solver(const std::string& name, const ConstraintSolverParameters& parameters)
     : name_(name),
       parameters_(parameters),
@@ -1384,6 +1389,7 @@ Solver::Solver(const std::string& name)
 }
 
 void Solver::Init() {
+  CheckSolverParameters(parameters_);
   queue_.reset(new Queue(this));
   trail_.reset(
       new Trail(parameters_.trail_block_size(), parameters_.compress_trail()));
@@ -1438,7 +1444,6 @@ Solver::~Solver() {
   DeleteDemonProfiler(demon_profiler_);
   DeleteBuilders();
 }
-
 
 std::string Solver::DebugString() const {
   std::string out = "Solver(name = \"" + name_ + "\", state = ";
@@ -2123,6 +2128,8 @@ bool Solver::NextSolution() {
         search->RefuteDecision(fd);
         branches_++;
         fd->Refute(this);
+        // Check the fail state that could have been set in the python/java/C#
+        // layer.
         CheckFail();
         search->AfterDecision(fd, false);
         search->RightMove();
@@ -2572,10 +2579,12 @@ const char ModelVisitor::kMinEqual[] = "MinEqual";
 const char ModelVisitor::kModulo[] = "Modulo";
 const char ModelVisitor::kNoCycle[] = "NoCycle";
 const char ModelVisitor::kNonEqual[] = "NonEqual";
+const char ModelVisitor::kNotMember[] = "NotMember";
 const char ModelVisitor::kNullIntersect[] = "NullIntersect";
 const char ModelVisitor::kOpposite[] = "Opposite";
 const char ModelVisitor::kPack[] = "Pack";
 const char ModelVisitor::kPathCumul[] = "PathCumul";
+const char ModelVisitor::kDelayedPathCumul[] = "DelayedPathCumul";
 const char ModelVisitor::kPerformedExpr[] = "PerformedExpression";
 const char ModelVisitor::kPower[] = "Power";
 const char ModelVisitor::kProduct[] = "Product";
@@ -2630,6 +2639,7 @@ const char ModelVisitor::kEarlyCostArgument[] = "early_cost";
 const char ModelVisitor::kEarlyDateArgument[] = "early_date";
 const char ModelVisitor::kEndMinArgument[] = "end_min";
 const char ModelVisitor::kEndMaxArgument[] = "end_max";
+const char ModelVisitor::kEndsArgument[] = "ends";
 const char ModelVisitor::kExpressionArgument[] = "expression";
 const char ModelVisitor::kFailuresLimitArgument[] = "failures_limit";
 const char ModelVisitor::kFinalStatesArgument[] = "final_states";
@@ -2663,6 +2673,7 @@ const char ModelVisitor::kSizeYArgument[] = "size_y";
 const char ModelVisitor::kSolutionLimitArgument[] = "solutions_limit";
 const char ModelVisitor::kStartMinArgument[] = "start_min";
 const char ModelVisitor::kStartMaxArgument[] = "start_max";
+const char ModelVisitor::kStartsArgument[] = "starts";
 const char ModelVisitor::kStepArgument[] = "step";
 const char ModelVisitor::kTargetArgument[] = "target_variable";
 const char ModelVisitor::kTimeLimitArgument[] = "time_limit";

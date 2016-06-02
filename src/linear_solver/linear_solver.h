@@ -12,7 +12,6 @@
 // limitations under the License.
 
 //
-//                                                      (Laurent Perron).
 //
 // A C++ wrapper that provides a simple and unified interface to
 // several linear programming and mixed integer programming solvers:
@@ -21,6 +20,7 @@
 //
 //
 // -----------------------------------
+//
 // What is Linear Programming?
 //
 //   In mathematics, linear programming (LP) is a technique for optimization of
@@ -55,6 +55,7 @@
 //     http://en.wikipedia.org/wiki/Linear_programming
 //
 // -----------------------------------
+//
 // Example of a Linear Program
 //
 //   maximize:
@@ -71,6 +72,7 @@
 //       infinite.
 //
 // -----------------------------------
+//
 // What is Mixed Integer Programming?
 //
 //   Here, the constraints and the objective are still linear but
@@ -90,7 +92,8 @@
 //   function of its load).
 //
 // -----------------------------------
-// How to use the wrapper?
+//
+// How to use the wrapper
 //
 //   The user builds the model and solves it through the MPSolver class,
 //   then queries the solution through the MPSolver, MPVariable and
@@ -103,8 +106,9 @@
 //     before the model modification may not longer be feasible or
 //     optimal.
 //
-//   @see ../examples/linear_programming.cc for a simple LP example
-//   @see ../examples/integer_programming.cc for a simple MIP example
+// @see ../examples/linear_programming.cc for a simple LP example.
+//
+// @see ../examples/integer_programming.cc for a simple MIP example.
 //
 //   All methods cannot be called successfully in all cases. For
 //   example: you cannot query a solution when no solution exists, you
@@ -115,7 +119,8 @@
 // TODO(user): handle failures gracefully.
 //
 // -----------------------------------
-// For developers: How the does the wrapper work?
+//
+// For developers: How the wrapper works
 //
 //   MPSolver stores a representation of the model (variables,
 //   constraints and objective) in its own data structures and a

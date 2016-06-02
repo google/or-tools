@@ -728,6 +728,7 @@ UTIL_LIB_OBJS=\
 	$(OBJ_DIR)/util/proto_tools.$O \
 	$(OBJ_DIR)/util/range_query_function.$O \
 	$(OBJ_DIR)/util/rational_approximation.$O \
+	$(OBJ_DIR)/util/sorted_interval_list.$O \
 	$(OBJ_DIR)/util/stats.$O \
 	$(OBJ_DIR)/util/time_limit.$O \
 	$(OBJ_DIR)/util/xml_helper.$O
@@ -755,6 +756,9 @@ $(OBJ_DIR)/util/range_query_function.$O:$(SRC_DIR)/util/range_query_function.cc 
 
 $(OBJ_DIR)/util/rational_approximation.$O:$(SRC_DIR)/util/rational_approximation.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/rational_approximation.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srational_approximation.$O
+
+$(OBJ_DIR)/util/sorted_interval_list.$O:$(SRC_DIR)/util/sorted_interval_list.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/sorted_interval_list.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Ssorted_interval_list.$O
 
 $(OBJ_DIR)/util/stats.$O:$(SRC_DIR)/util/stats.cc
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/stats.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sstats.$O
@@ -1548,6 +1552,7 @@ SAT_LIB_OBJS = \
 	$(OBJ_DIR)/sat/boolean_problem.$O\
 	$(OBJ_DIR)/sat/boolean_problem.pb.$O \
 	$(OBJ_DIR)/sat/clause.$O\
+	$(OBJ_DIR)/sat/drat.$O\
 	$(OBJ_DIR)/sat/encoding.$O\
 	$(OBJ_DIR)/sat/integer.$O\
 	$(OBJ_DIR)/sat/lp_utils.$O\
@@ -1556,12 +1561,11 @@ SAT_LIB_OBJS = \
 	$(OBJ_DIR)/sat/sat_parameters.pb.$O\
 	$(OBJ_DIR)/sat/sat_solver.$O\
 	$(OBJ_DIR)/sat/simplification.$O\
-	$(OBJ_DIR)/sat/symmetry.$O\
-	$(OBJ_DIR)/sat/unsat_proof.$O
+	$(OBJ_DIR)/sat/symmetry.$O
 
 satlibs: $(DYNAMIC_SAT_DEPS) $(STATIC_SAT_DEPS)
 
-$(OBJ_DIR)/sat/sat_solver.$O: $(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/encoding.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
+$(OBJ_DIR)/sat/sat_solver.$O: $(SRC_DIR)/sat/sat_solver.cc $(SRC_DIR)/sat/sat_solver.h $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/drat.h $(SRC_DIR)/sat/encoding.h $(GEN_DIR)/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/sat_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_solver.$O
 
 $(OBJ_DIR)/sat/lp_utils.$O: $(SRC_DIR)/sat/lp_utils.cc $(SRC_DIR)/sat/lp_utils.h $(SRC_DIR)/sat/sat_solver.h $(GEN_DIR)/sat/sat_parameters.pb.h $(GEN_DIR)/glop/parameters.pb.h
@@ -1584,6 +1588,9 @@ $(OBJ_DIR)/sat/boolean_problem.pb.$O: $(GEN_DIR)/sat/boolean_problem.pb.cc $(GEN
 $(OBJ_DIR)/sat/clause.$O: $(SRC_DIR)/sat/clause.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/clause.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sclause.$O
 
+$(OBJ_DIR)/sat/drat.$O: $(SRC_DIR)/sat/drat.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/drat.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/drat.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdrat.$O
+
 $(OBJ_DIR)/sat/encoding.$O: $(SRC_DIR)/sat/encoding.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/encoding.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/encoding.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sencoding.$O
 
@@ -1596,10 +1603,7 @@ $(OBJ_DIR)/sat/optimization.$O: $(SRC_DIR)/sat/optimization.cc $(SRC_DIR)/sat/sa
 $(OBJ_DIR)/sat/pb_constraint.$O: $(SRC_DIR)/sat/pb_constraint.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/pb_constraint.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/pb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spb_constraint.$O
 
-$(OBJ_DIR)/sat/unsat_proof.$O: $(SRC_DIR)/sat/unsat_proof.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/unsat_proof.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/unsat_proof.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sunsat_proof.$O
-
-$(OBJ_DIR)/sat/symmetry.$O: $(SRC_DIR)/sat/symmetry.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/symmetry.h $(SRC_DIR)/sat/clause.h $(SRC_DIR)/sat/unsat_proof.h $(GEN_DIR)/sat/sat_parameters.pb.h
+$(OBJ_DIR)/sat/symmetry.$O: $(SRC_DIR)/sat/symmetry.cc $(SRC_DIR)/sat/sat_base.h $(SRC_DIR)/sat/symmetry.h $(SRC_DIR)/sat/clause.h $(GEN_DIR)/sat/sat_parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/symmetry.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssymmetry.$O
 
 $(GEN_DIR)/sat/sat_parameters.pb.cc: $(SRC_DIR)/sat/sat_parameters.proto

@@ -15,7 +15,8 @@
 //
 // The python API is enriched by custom code defined here, making it
 // extremely intuitive, like:
-//   solver = pywraplp.Solver(pywraplp.Solver.LINEAR_PROGRAMMING_GLOP)
+//   solver = pywraplp.Solver(
+//       'Example Solver', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
 //   x1 = solver.NumVar(0.0, 1.0, 'x1')
 //   x2 = solver.NumVar(-3.0, 2.0, 'x2')
 //   c1 = solver.Add(2 * x1 - 3.2 * x2 + 1 <= 2.5)

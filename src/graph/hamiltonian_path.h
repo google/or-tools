@@ -86,6 +86,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <stack>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -209,12 +210,12 @@ class Set {
 };
 
 template <>
-int Set<uint64>::SmallestElement() const {
+inline int Set<uint64>::SmallestElement() const {
   return LeastSignificantBitPosition64(value_);
 }
 
 template <>
-int Set<uint64>::Cardinality() const {
+inline int Set<uint64>::Cardinality() const {
   return BitCount64(value_);
 }
 
@@ -596,6 +597,14 @@ class HamiltonianPathSolver {
   LatticeMemoryManager<NodeSet, CostType> mem_;
 };
 
+// Utility function to simplify building a HamiltonianPathSolver from a functor.
+template <typename CostType, typename CostFunction>
+HamiltonianPathSolver<CostType, CostFunction> MakeHamiltonianPathSolver(
+    int num_nodes, CostFunction cost) {
+  return HamiltonianPathSolver<CostType, CostFunction>(num_nodes,
+                                                       std::move(cost));
+}
+
 template <typename CostType, typename CostFunction>
 HamiltonianPathSolver<CostType, CostFunction>::HamiltonianPathSolver(
     CostFunction cost)
@@ -939,6 +948,14 @@ std::vector<int> ChristofidesPathSolver<CostType>::TravelingSalesmanPath() {
 template <typename CostType>
 void ChristofidesPathSolver<CostType>::Solve() {
   const int num_nodes = graph_.num_nodes();
+  tsp_path_.clear();
+  tsp_cost_ = 0;
+  if (num_nodes == 1) {
+    tsp_path_ = {0, 0};
+  }
+  if (num_nodes <= 1) {
+    return;
+  }
   // Compute Minimum Spanning Tree.
   const std::vector<int> mst = BuildKruskalMinimumSpanningTree<>(
       graph_, [this](int a, int b) { return arc_costs_[a] < arc_costs_[b]; });
@@ -998,9 +1015,7 @@ void ChristofidesPathSolver<CostType>::Solve() {
     const int head = odd_degree_nodes[reduced_graph.Head(arc)];
     egraph.AddArc(tail, head);
   }
-  tsp_path_.clear();
   std::vector<bool> touched(num_nodes, false);
-  tsp_cost_ = 0;
   DCHECK(IsEulerianGraph(egraph));
   for (const int node : BuildEulerianTourFromNode(egraph, 0)) {
     if (touched[node]) continue;
@@ -1011,6 +1026,150 @@ void ChristofidesPathSolver<CostType>::Solve() {
   tsp_cost_ += tsp_path_.empty() ? 0 : costs_(tsp_path_.back(), 0);
   tsp_path_.push_back(0);
   solved_ = true;
+}
+
+template <typename CostType, typename CostFunction>
+class PruningHamiltonianSolver {
+  // PruningHamiltonianSolver computes a minimum Hamiltonian path from node 0
+  // over a graph defined by a cost matrix, with pruning. For each search state,
+  // PruningHamiltonianSolver computes the lower bound for the future overall
+  // TSP cost, and stops further search if it exceeds the current best solution.
+
+  // For the heuristics to determine future lower bound over visited nodeset S
+  // and last visited node k, the cost of minimum spanning tree of (V \ S) ∪ {k}
+  // is calculated and added to the current cost(S). The cost of MST is
+  // guaranteed to be smaller than or equal to the cost of Hamiltonian path,
+  // because Hamiltonian path is a spanning tree itself.
+
+  // TODO(user): Use generic map-based cache instead of lattice-based one.
+  // TODO(user): Use SaturatedArithmetic for better precision.
+
+ public:
+  typedef uint32 Integer;
+  typedef Set<Integer> NodeSet;
+
+  explicit PruningHamiltonianSolver(CostFunction cost);
+  PruningHamiltonianSolver(int num_nodes, CostFunction cost);
+
+  // Returns the cost of the Hamiltonian path from 0 to end_node.
+  CostType HamiltonianCost(int end_node);
+
+  // TODO(user): Add function to return an actual path.
+  // TODO(user): Add functions for Hamiltonian cycle.
+
+ private:
+  // Returns the cost value between two nodes.
+  CostType Cost(int i, int j) { return cost_(i, j); }
+
+  // Solve and get TSP cost.
+  void Solve(int end_node);
+
+  // Compute lower bound for remaining subgraph.
+  CostType ComputeFutureLowerBound(NodeSet current_set, int last_visited);
+
+  // Cost function used to build Hamiltonian paths.
+  MatrixOrFunction<CostType, CostFunction, true> cost_;
+
+  // The number of nodes in the problem.
+  int num_nodes_;
+
+  // The cost of the computed TSP path.
+  CostType tsp_cost_;
+
+  // If already solved.
+  bool solved_;
+
+  // Memoize for dynamic programming.
+  LatticeMemoryManager<NodeSet, CostType> mem_;
+};
+
+template <typename CostType, typename CostFunction>
+PruningHamiltonianSolver<CostType, CostFunction>::PruningHamiltonianSolver(
+    CostFunction cost)
+    : PruningHamiltonianSolver<CostType, CostFunction>(cost.size(), cost) {}
+
+template <typename CostType, typename CostFunction>
+PruningHamiltonianSolver<CostType, CostFunction>::PruningHamiltonianSolver(
+    int num_nodes, CostFunction cost)
+    : cost_(std::move(cost)),
+      num_nodes_(num_nodes),
+      tsp_cost_(0),
+      solved_(false) {}
+
+template <typename CostType, typename CostFunction>
+void PruningHamiltonianSolver<CostType, CostFunction>::Solve(int end_node) {
+  if (solved_ || num_nodes_ == 0) return;
+  // TODO(user): Use an approximate solution as a base target before solving.
+
+  // TODO(user): Instead of pure DFS, find out the order of sets to compute
+  // to utilize cache as possible.
+
+  mem_.Init(num_nodes_);
+  NodeSet start_set = NodeSet::Singleton(0);
+  std::stack<std::pair<NodeSet, int>> state_stack;
+  state_stack.push(std::make_pair(start_set, 0));
+
+  while (!state_stack.empty()) {
+    const std::pair<NodeSet, int> current = state_stack.top();
+    state_stack.pop();
+
+    const NodeSet current_set = current.first;
+    const int last_visited = current.second;
+    const CostType current_cost = mem_.Value(current_set, last_visited);
+
+    // TODO(user): Optimize iterating unvisited nodes.
+    for (int next_to_visit = 0; next_to_visit < num_nodes_; next_to_visit++) {
+      // Let's to as much check possible before adding to stack.
+
+      // Skip if this node is already visited.
+      if (current_set.Contains(next_to_visit)) continue;
+
+      // Skip if the end node is prematurely visited.
+      const int next_cardinality = current_set.Cardinality() + 1;
+      if (next_to_visit == end_node && next_cardinality != num_nodes_) continue;
+
+      const NodeSet next_set = current_set.AddElement(next_to_visit);
+      const CostType next_cost =
+          current_cost + Cost(last_visited, next_to_visit);
+
+      // Compare with the best cost found so far, and skip if that is better.
+      const CostType previous_best = mem_.Value(next_set, next_to_visit);
+      if (previous_best != 0 && next_cost >= previous_best) continue;
+
+      // Compute lower bound of Hamiltonian cost, and skip if this is greater
+      // than the best Hamiltonian cost found so far.
+      const CostType lower_bound =
+          ComputeFutureLowerBound(next_set, next_to_visit);
+      if (tsp_cost_ != 0 && next_cost + lower_bound >= tsp_cost_) continue;
+
+      // If next is the last node to visit, update tsp_cost_ and skip.
+      if (next_cardinality == num_nodes_) {
+        tsp_cost_ = next_cost;
+        continue;
+      }
+
+      // Add to the stack, finally.
+      mem_.SetValue(next_set, next_to_visit, next_cost);
+      state_stack.push(std::make_pair(next_set, next_to_visit));
+    }
+  }
+
+  solved_ = true;
+}
+
+template <typename CostType, typename CostFunction>
+CostType PruningHamiltonianSolver<CostType, CostFunction>::HamiltonianCost(
+    int end_node) {
+  Solve(end_node);
+  return tsp_cost_;
+}
+
+template <typename CostType, typename CostFunction>
+CostType
+PruningHamiltonianSolver<CostType, CostFunction>::ComputeFutureLowerBound(
+    NodeSet current_set, int last_visited) {
+  // TODO(user): Compute MST.
+  return 0;  // For now, return 0 as future lower bound.
 }
 }  // namespace operations_research
 

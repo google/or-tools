@@ -101,6 +101,7 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
           {"EvaluatorStrategy", FirstSolutionStrategy::EVALUATOR_STRATEGY},
           {"Savings", FirstSolutionStrategy::SAVINGS},
           {"Sweep", FirstSolutionStrategy::SWEEP},
+          {"Christofides", FirstSolutionStrategy::CHRISTOFIDES},
           {"AllUnperformed", FirstSolutionStrategy::ALL_UNPERFORMED},
           {"BestInsertion", FirstSolutionStrategy::BEST_INSERTION},
           {"GlobalCheapestInsertion",

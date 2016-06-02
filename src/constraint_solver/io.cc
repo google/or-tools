@@ -35,87 +35,6 @@
 #include "util/vector_map.h"
 
 namespace operations_research {
-// ---------- CpModelLoader -----------
-
-// The class CpModelLoader is responsible for reading a protocol
-// buffer representing a CP model and creating the corresponding CP
-// model with the expressions and constraints. It should not be used directly.
-class CpModelLoader {
- public:
-  explicit CpModelLoader(Solver* const solver) : solver_(solver) {}
-  ~CpModelLoader() {}
-
-  Solver* solver() const { return solver_; }
-
-  // Builds integer expression from proto and stores it. It returns
-  // true upon success.
-  bool BuildFromProto(const CpIntegerExpression& proto);
-  // Builds constraint from proto and returns it.
-  Constraint* BuildFromProto(const CpConstraint& proto);
-  // Builds interval variable from proto and stores it. It returns
-  // true upon success.
-  bool BuildFromProto(const CpIntervalVariable& proto);
-  // Builds sequence variable from proto and stores it. It returns
-  // true upon success.
-  bool BuildFromProto(const CpSequenceVariable& proto);
-
-  // Returns stored integer expression.
-  IntExpr* IntegerExpression(int index) const;
-  // Returns stored interval variable.
-  IntervalVar* IntervalVariable(int index) const;
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       int64* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       IntExpr** to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       std::vector<int64>* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       IntTupleSet* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       std::vector<IntVar*>* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       IntervalVar** to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       std::vector<IntervalVar*>* to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       SequenceVar** to_fill);
-
-  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
-                       std::vector<SequenceVar*>* to_fill);
-
-  template <class P, class A>
-  bool ScanArguments(const std::string& type, const P& proto, A* to_fill) {
-    const int index = tags_.Index(type);
-    for (int i = 0; i < proto.arguments_size(); ++i) {
-      if (ScanOneArgument(index, proto.arguments(i), to_fill)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  int TagIndex(const std::string& tag) const { return tags_.Index(tag); }
-
-  void AddTag(const std::string& tag) { tags_.Add(tag); }
-
-  // TODO(user): Use.
-  void SetSequenceVariable(int index, SequenceVar* const var) {}
-
- private:
-  Solver* const solver_;
-  std::vector<IntExpr*> expressions_;
-  std::vector<IntervalVar*> intervals_;
-  std::vector<SequenceVar*> sequences_;
-  VectorMap<std::string> tags_;
-};
 
 Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
                        const std::vector<IntVar*>& vars);
@@ -552,6 +471,7 @@ class SecondPassVisitor : public ModelVisitor {
                           const Constraint* const constraint) override {
     // We ignore cast constraints, they will be regenerated automatically.
     if (constraint->IsCastConstraint()) {
+      PopArgumentHolder();
       return;
     }
 
@@ -904,60 +824,6 @@ class SecondPassVisitor : public ModelVisitor {
 
 // ---------- Model Protocol Reader ----------
 
-// ----- Utility Class for Callbacks -----
-
-template <class T>
-class ArrayWithOffset : public BaseObject {
- public:
-  ArrayWithOffset(int64 index_min, int64 index_max)
-      : index_min_(index_min),
-        index_max_(index_max),
-        values_(new T[index_max - index_min + 1]) {
-    DCHECK_LE(index_min, index_max);
-  }
-
-  ~ArrayWithOffset() override {}
-
-  virtual T Evaluate(int64 index) const {
-    DCHECK_GE(index, index_min_);
-    DCHECK_LE(index, index_max_);
-    return values_[index - index_min_];
-  }
-
-  void SetValue(int64 index, T value) {
-    DCHECK_GE(index, index_min_);
-    DCHECK_LE(index, index_max_);
-    values_[index - index_min_] = value;
-  }
-
-  std::string DebugString() const override { return "ArrayWithOffset"; }
-
- private:
-  const int64 index_min_;
-  const int64 index_max_;
-  std::unique_ptr<T[]> values_;
-};
-
-template <class T>
-std::function<T(int64)> MakeFunctionFromProto(CpModelLoader* const builder,
-                                              const CpExtension& proto,
-                                              int tag_index) {
-  DCHECK_EQ(tag_index, proto.type_index());
-  Solver* const solver = builder->solver();
-  int64 index_min = 0;
-  CHECK(builder->ScanArguments(ModelVisitor::kMinArgument, proto, &index_min));
-  int64 index_max = 0;
-  CHECK(builder->ScanArguments(ModelVisitor::kMaxArgument, proto, &index_max));
-  std::vector<int64> values;
-  CHECK(builder->ScanArguments(ModelVisitor::kValuesArgument, proto, &values));
-  ArrayWithOffset<T>* const array =
-      solver->RevAlloc(new ArrayWithOffset<T>(index_min, index_max));
-  for (int i = index_min; i <= index_max; ++i) {
-    array->SetValue(i, values[i - index_min]);
-  }
-  return [array](int64 index) { return array->Evaluate(index); };
-}
-
 #define VERIFY(expr) \
   if (!(expr)) return nullptr
 #define VERIFY_BOOL(expr) \
@@ -1253,6 +1119,28 @@ IntExpr* BuildElement(CpModelLoader* const builder,
   IntExpr* index = nullptr;
   VERIFY(builder->ScanArguments(ModelVisitor::kIndexArgument, proto, &index));
   std::vector<int64> values;
+  IntExpr* index2 = nullptr;
+  if (builder->ScanArguments(ModelVisitor::kIndex2Argument, proto, &index2)) {
+    int64 index_min = 0;
+    VERIFY(
+        builder->ScanArguments(ModelVisitor::kMinArgument, proto, &index_min));
+    int64 index_max = 0;
+    VERIFY(
+        builder->ScanArguments(ModelVisitor::kMaxArgument, proto, &index_max));
+    const int extension_tag_index =
+        builder->TagIndex(ModelVisitor::kInt64ToInt64Extension);
+    ArrayWithOffset<Solver::IndexEvaluator1>* const array =
+        builder->solver()->RevAlloc(
+            new ArrayWithOffset<Solver::IndexEvaluator1>(index_min, index_max));
+    for (int i = index_min; i <= index_max; ++i) {
+      array->SetValue(i, MakeFunctionFromProto<int64>(
+                             builder, proto.extensions(i - index_min),
+                             extension_tag_index));
+    }
+    return builder->solver()->MakeElement(
+        [array](int64 i, int64 j) { return array->Evaluate(i)(j); },
+        index->Var(), index2->Var());
+  }
   if (proto.extensions_size() > 0) {
     VERIFY_EQ(1, proto.extensions_size());
     const int extension_tag_index =
@@ -1427,19 +1315,11 @@ IntExpr* BuildIntegerVariable(CpModelLoader* const builder,
   if (builder->ScanArguments(ModelVisitor::kMinArgument, proto, &var_min)) {
     int64 var_max = 0;
     VERIFY(builder->ScanArguments(ModelVisitor::kMaxArgument, proto, &var_max));
-    IntVar* const result = builder->solver()->MakeIntVar(var_min, var_max);
-    if (!proto.name().empty()) {
-      result->set_name(proto.name());
-    }
-    return result;
+    return builder->solver()->MakeIntVar(var_min, var_max, proto.name());
   }
   std::vector<int64> values;
   if (builder->ScanArguments(ModelVisitor::kValuesArgument, proto, &values)) {
-    IntVar* const result = builder->solver()->MakeIntVar(values);
-    if (!proto.name().empty()) {
-      result->set_name(proto.name());
-    }
-    return result;
+    return builder->solver()->MakeIntVar(values, proto.name());
   }
   return nullptr;
 }
@@ -1887,6 +1767,20 @@ Constraint* BuildNonEqual(CpModelLoader* const builder,
   return nullptr;
 }
 
+// ----- kNotMember -----
+
+Constraint* BuildNotMember(CpModelLoader* const builder,
+                           const CpConstraint& proto) {
+  std::vector<int64> starts;
+  VERIFY(builder->ScanArguments(ModelVisitor::kStartsArgument, proto, &starts));
+  std::vector<int64> ends;
+  VERIFY(builder->ScanArguments(ModelVisitor::kEndsArgument, proto, &ends));
+  IntExpr* expr = nullptr;
+  VERIFY(
+      builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr));
+  return builder->solver()->MakeNotMemberCt(expr, starts, ends);
+}
+
 // ----- kNullIntersect -----
 
 Constraint* BuildNullIntersect(CpModelLoader* const builder,
@@ -2037,6 +1931,23 @@ Constraint* BuildPathCumul(CpModelLoader* const builder,
   VERIFY(builder->ScanArguments(ModelVisitor::kTransitsArgument, proto,
                                 &transits));
   return builder->solver()->MakePathCumul(nexts, active, cumuls, transits);
+}
+
+// ----- kDelayedPathCumul -----
+
+Constraint* BuildDelayedPathCumul(CpModelLoader* const builder,
+                                  const CpConstraint& proto) {
+  std::vector<IntVar*> nexts;
+  VERIFY(builder->ScanArguments(ModelVisitor::kNextsArgument, proto, &nexts));
+  std::vector<IntVar*> active;
+  VERIFY(builder->ScanArguments(ModelVisitor::kActiveArgument, proto, &active));
+  std::vector<IntVar*> cumuls;
+  VERIFY(builder->ScanArguments(ModelVisitor::kCumulsArgument, proto, &cumuls));
+  std::vector<IntVar*> transits;
+  VERIFY(builder->ScanArguments(ModelVisitor::kTransitsArgument, proto,
+                                &transits));
+  return builder->solver()->MakeDelayedPathCumul(nexts, active, cumuls,
+                                                 transits);
 }
 
 // ----- kPerformedExpr -----
@@ -2712,6 +2623,7 @@ void Solver::InitBuilders() {
   REGISTER(kOpposite, IntegerExpressionBuilder(BuildOpposite));
   REGISTER(kPack, ConstraintBuilder(BuildPack));
   REGISTER(kPathCumul, ConstraintBuilder(BuildPathCumul));
+  REGISTER(kDelayedPathCumul, ConstraintBuilder(BuildDelayedPathCumul));
   REGISTER(kPerformedExpr, IntegerExpressionBuilder(BuildPerformedExpr));
   REGISTER(kPower, IntegerExpressionBuilder(BuildPower));
   REGISTER(kProduct, IntegerExpressionBuilder(BuildProduct));

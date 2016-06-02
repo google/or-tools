@@ -42,6 +42,7 @@
 #include "util/saturated_arithmetic.h"
 #include "util/string_array.h"
 
+
 namespace operations_research {
 namespace {
 // ----- Comparison functions -----
@@ -750,7 +751,7 @@ class RankedPropagator : public Constraint {
       if (++counter > ranked_first) {
         DCHECK(intervals_[first - 1]->MayBePerformed());
         partial_sequence_.RankFirst(s, first - 1);
-        VLOG(1) << "RankFirst " << first - 1 << " -> "
+        VLOG(2) << "RankFirst " << first - 1 << " -> "
                 << partial_sequence_.DebugString();
       }
     }
@@ -766,7 +767,7 @@ class RankedPropagator : public Constraint {
       last = previous_[last];
       if (++counter > ranked_last) {
         partial_sequence_.RankLast(s, last - 1);
-        VLOG(1) << "RankLast " << last - 1 << " -> "
+        VLOG(2) << "RankLast " << last - 1 << " -> "
                 << partial_sequence_.DebugString();
       }
     }

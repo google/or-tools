@@ -129,10 +129,15 @@ void IntegerTrail::Enqueue(IntegerLiteral i_lit,
 
   // Convert each IntegerLiteral reason to the index of an entry in the integer
   // trail.
+  //
   // TODO(user): Do that lazily when the lazy reason are implemented.
+  //
+  // TODO(user): Check that the same LbVar never appear twice. If it does the
+  // one with the lowest bound could be removed.
+  const int size = vars_.size();
   for (IntegerLiteral i_lit : bounds_reason) {
     const int reason_tail_index = FindLowestTrailIndexThatExplainBound(i_lit);
-    if (reason_tail_index != -1) {
+    if (reason_tail_index >= size) {
       dependencies_buffer_.push_back(reason_tail_index);
     }
   }
@@ -171,34 +176,72 @@ std::vector<Literal> IntegerTrail::ReasonFor(IntegerLiteral literal) const {
 // made faster by using some caching mecanism.
 void IntegerTrail::MergeReasonInto(const std::vector<IntegerLiteral>& literals,
                                    std::vector<Literal>* output) const {
-  DCHECK(tmp_pq_.empty());
+  DCHECK(tmp_queue_.empty());
+  tmp_trail_indices_.clear();
+  tmp_var_to_highest_explained_trail_index_.resize(vars_.size(), 0);
+  DCHECK(std::all_of(tmp_var_to_highest_explained_trail_index_.begin(),
+                     tmp_var_to_highest_explained_trail_index_.end(),
+                     [](int v) { return v == 0; }));
+
   const int size = vars_.size();
   for (const IntegerLiteral& literal : literals) {
     const int trail_index = FindLowestTrailIndexThatExplainBound(literal);
+
     // Any indices lower than that means that there is no reason needed.
     // Note that it is important for size to be signed because of -1 indices.
-    if (trail_index >= size) tmp_pq_.push(trail_index);
+    if (trail_index >= size) tmp_queue_.push_back(trail_index);
   }
 
-  // TODO(user): Think about how to minimize the produced reason. It is possible
-  // that literal like x >= 2 and x >= 4 both appear in the same reason, and the
-  // first one may be removable in some cases (provided that we don't need x >=
-  // 2 to proove x >= 4).
-  tmp_seen_.assign(integer_trail_.size(), false);
+  // This implement an iterative DFS on a DAG. Each time a node from the
+  // tmp_queue_ is expanded, we change its sign, so that when we go back
+  // (equivalent to the return of the recursive call), we can detect that this
+  // node was already expanded.
+  //
+  // To detect nodes from which we already performed the full DFS exploration,
+  // we use tmp_var_to_highest_explained_trail_index_.
+  //
+  // TODO(user): The order in which each trail_index is expanded will change
+  // how much of the reason is "minimized". Investigate if some order are better
+  // than other.
+  while (!tmp_queue_.empty()) {
+    const bool already_expored = tmp_queue_.back() < 0;
+    const int trail_index = std::abs(tmp_queue_.back());
+    const TrailEntry& entry = integer_trail_[trail_index];
 
-  // It is important to process the trail indices in decreasing order, it is
-  // why tmp_pq_ is a priority queue.
-  while (!tmp_pq_.empty()) {
-    const int trail_index = tmp_pq_.top();
-    tmp_pq_.pop();
-
-    if (tmp_seen_[trail_index]) continue;
-    tmp_seen_[trail_index] = true;
-
-    AppendLiteralsReason(trail_index, output);
-    for (const int next_trail_index : Dependencies(trail_index)) {
-      tmp_pq_.push(next_trail_index);
+    // Since we already have an explanation for a larger bound (ex: x>=4) we
+    // don't need to add the explanation for a lower one (ex: x>=2).
+    if (trail_index <=
+        tmp_var_to_highest_explained_trail_index_[LbVar(entry.var)]) {
+      tmp_queue_.pop_back();
+      continue;
     }
+
+    DCHECK_GT(trail_index, 0);
+    if (already_expored) {
+      // We are in the "return" of the DFS recursive call.
+      DCHECK_GT(trail_index,
+                tmp_var_to_highest_explained_trail_index_[LbVar(entry.var)]);
+      tmp_var_to_highest_explained_trail_index_[LbVar(entry.var)] = trail_index;
+      tmp_trail_indices_.push_back(trail_index);
+      tmp_queue_.pop_back();
+    } else {
+      // We make "recursive calls" from this node.
+      tmp_queue_.back() = -trail_index;
+      for (const int next_trail_index : Dependencies(trail_index)) {
+        const TrailEntry& next_entry = integer_trail_[next_trail_index];
+        if (next_trail_index >
+            tmp_var_to_highest_explained_trail_index_[LbVar(next_entry.var)]) {
+          tmp_queue_.push_back(next_trail_index);
+        }
+      }
+    }
+  }
+
+  // Cleanup + output the reason.
+  for (const int trail_index : tmp_trail_indices_) {
+    const TrailEntry& entry = integer_trail_[trail_index];
+    tmp_var_to_highest_explained_trail_index_[LbVar(entry.var)] = 0;
+    AppendLiteralsReason(trail_index, output);
   }
   STLSortAndRemoveDuplicates(output);
 }

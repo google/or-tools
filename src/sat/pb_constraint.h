@@ -343,7 +343,8 @@ struct PbConstraintsEnqueueHelper {
   std::vector<ReasonInfo> reasons;
 };
 
-// This class contains "half" the propagation logic for a constraint of the form
+// This class contains half the propagation logic for a constraint of the form
+//
 //   sum ci * li <= rhs, ci positive coefficients, li literals.
 //
 // The other half is implemented by the PbConstraints class below which takes
@@ -358,8 +359,7 @@ struct PbConstraintsEnqueueHelper {
 class UpperBoundedLinearConstraint {
  public:
   // Takes a pseudo-Boolean formula in canonical form.
-  UpperBoundedLinearConstraint(const std::vector<LiteralWithCoeff>& cst,
-                               ResolutionNode* node);
+  explicit UpperBoundedLinearConstraint(const std::vector<LiteralWithCoeff>& cst);
 
   // Returns true if the given terms are the same as the one in this constraint.
   bool HasIdenticalTerms(const std::vector<LiteralWithCoeff>& cst);
@@ -436,18 +436,11 @@ class UpperBoundedLinearConstraint {
       const Trail& trail, int trail_index,
       const MutableUpperBoundedLinearConstraint& conflict);
 
-  // Returns the resolution node associated to this constraint. Note that it can
-  // be nullptr if the solver is not configured to compute the reason for an
-  // unsatisfiable problem or if this constraint is not relevant for the current
-  // core computation.
-  ResolutionNode* ResolutionNodePointer() const { return node_; }
-  void ChangeResolutionNode(ResolutionNode* node) { node_ = node; }
-
   // API to mark a constraint for deletion before actually deleting it.
   void MarkForDeletion() { is_marked_for_deletion_ = true; }
   bool is_marked_for_deletion() const { return is_marked_for_deletion_; }
 
-  // Only learned constraint are considered for deletion during the constraint
+  // Only learned constraints are considered for deletion during the constraint
   // cleanup phase. We also can't delete variables used as a reason.
   void set_is_learned(bool is_learned) { is_learned_ = is_learned; }
   bool is_learned() const { return is_learned_; }
@@ -498,9 +491,6 @@ class UpperBoundedLinearConstraint {
   std::vector<Literal> literals_;
   Coefficient rhs_;
 
-  // This is only used for UNSAT core computation.
-  ResolutionNode* node_;
-
   int64 hash_;
 };
 
@@ -528,7 +518,6 @@ class PbConstraints : public Propagator {
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
   ClauseRef Reason(const Trail& trail, int trail_index) const final;
-  ResolutionNode* GetResolutionNode(int trail_index) const final;
 
   // Changes the number of variables.
   void Resize(int num_variables) {
@@ -541,7 +530,7 @@ class PbConstraints : public Propagator {
     }
   }
 
-  // Parameters management.
+  // Parameter management.
   void SetParameters(const SatParameters& parameters) {
     parameters_ = parameters;
   }
@@ -557,13 +546,12 @@ class PbConstraints : public Propagator {
   // - The constraint cannot be conflicting.
   // - The constraint cannot have propagated at an earlier decision level.
   bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
-                     ResolutionNode* node, Trail* trail);
+                     Trail* trail);
 
   // Same as AddConstraint(), but also marks the added constraint as learned
   // so that it can be deleted during the constraint cleanup phase.
   bool AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cst,
-                            Coefficient rhs, ResolutionNode* node,
-                            Trail* trail);
+                            Coefficient rhs, Trail* trail);
 
   // Returns the number of constraints managed by this class.
   int NumberOfConstraints() const { return constraints_.size(); }
@@ -571,7 +559,7 @@ class PbConstraints : public Propagator {
   // ConflictingConstraint() returns the last PB constraint that caused a
   // conflict. Calling ClearConflictingConstraint() reset this to nullptr.
   //
-  // TODO(user): This is an hack to get the PB conflict, because the rest of
+  // TODO(user): This is a hack to get the PB conflict, because the rest of
   // the solver API assume only clause conflict. Find a cleaner way?
   void ClearConflictingConstraint() { conflicting_constraint_index_ = -1; }
   UpperBoundedLinearConstraint* ConflictingConstraint() {

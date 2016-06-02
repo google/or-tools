@@ -18,10 +18,11 @@
 // O(n*log(n)) time and memory.
 
 // Note: There exists an O(n) preprocessing algorithm, but it is considerably
-// more involved and the hidden constants behind the big O notation are much
-// higher.
-// The algorithms are well explained in wikipedia:
-// https://en.wikipedia.org/wiki/Range_minimum_query
+// more involved and the hidden constants behind it are much higher.
+//
+// The algorithms are well explained in Wikipedia:
+// https://en.wikipedia.org/wiki/Range_minimum_query.
+//
 //
 // Implementation: The idea is to cache every std::min(arr, i, j) where j - i is a
 // power of two, i.e. j = i + 2^k for some k. Provided this information, we can
@@ -47,7 +48,7 @@ class RangeMinimumQuery {
   explicit RangeMinimumQuery(std::vector<T> array);
   RangeMinimumQuery(std::vector<T> array, Compare cmp);
 
-  // Returns the minimum (wrt Compare) arr[x], where x is contained in
+  // Returns the minimum (w.r.t. Compare) arr[x], where x is contained in
   // [from, to).
   T GetMinimumFromRange(int from, int to) const;
 

@@ -382,12 +382,11 @@ Coefficient MutableUpperBoundedLinearConstraint::ComputeMaxSum() const {
 }
 
 UpperBoundedLinearConstraint::UpperBoundedLinearConstraint(
-    const std::vector<LiteralWithCoeff>& cst, ResolutionNode* node)
+    const std::vector<LiteralWithCoeff>& cst)
     : is_marked_for_deletion_(false),
       is_learned_(false),
       first_reason_trail_index_(-1),
-      activity_(0.0),
-      node_(node) {
+      activity_(0.0) {
   DCHECK(!cst.empty());
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
   literals_.reserve(cst.size());
@@ -579,9 +578,6 @@ void UpperBoundedLinearConstraint::FillReason(
     return;
   }
 
-  // This is needed for unsat proof.
-  const bool include_level_zero = trail.NeedFixedLiteralsInReason();
-
   // Optimization: This will be set to the index of the last literal in the
   // reason.
   int last_i = 0;
@@ -601,7 +597,7 @@ void UpperBoundedLinearConstraint::FillReason(
     } else {
       if (trail.Assignment().LiteralIsTrue(literal) &&
           trail.Info(literal.Variable()).trail_index <= source_trail_index) {
-        if (include_level_zero || trail.Info(literal.Variable()).level != 0) {
+        if (trail.Info(literal.Variable()).level > 0) {
           reason->push_back(literal.Negated());
           last_i = i;
           last_coeff_index = coeff_index;
@@ -819,8 +815,7 @@ void UpperBoundedLinearConstraint::Untrail(Coefficient* threshold,
 // TODO(user): This is relatively slow. Take the "transpose" all at once, and
 // maybe put small constraints first on the to_update_ lists.
 bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
-                                  Coefficient rhs, ResolutionNode* node,
-                                  Trail* trail) {
+                                  Coefficient rhs, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!cst.empty());
   DCHECK(std::is_sorted(cst.begin(), cst.end(), CoeffComparator));
@@ -834,7 +829,7 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
   }
 
   std::unique_ptr<UpperBoundedLinearConstraint> c(
-      new UpperBoundedLinearConstraint(cst, node));
+      new UpperBoundedLinearConstraint(cst));
   std::vector<UpperBoundedLinearConstraint*>& duplicate_candidates =
       possible_duplicates_[c->hash()];
 
@@ -851,11 +846,6 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
           ++i;
         }
         CHECK_LT(i, constraints_.size());
-
-        // The new constraint is tighther, so we also replace the
-        // ResolutionNode. TODO(user): The old one could be unlocked at this
-        // point.
-        candidate->ChangeResolutionNode(node);
         return candidate->InitializeRhs(rhs, propagation_trail_index_,
                                         &thresholds_[i], trail,
                                         &enqueue_helper_);
@@ -886,11 +876,10 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
 }
 
 bool PbConstraints::AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cst,
-                                         Coefficient rhs, ResolutionNode* node,
-                                         Trail* trail) {
+                                         Coefficient rhs, Trail* trail) {
   DeleteSomeLearnedConstraintIfNeeded();
   const int old_num_constraints = constraints_.size();
-  const bool result = AddConstraint(cst, rhs, node, trail);
+  const bool result = AddConstraint(cst, rhs, trail);
 
   // The second test is to avoid marking a problem constraint as learned because
   // of the "reuse last constraint" optimization.
@@ -923,7 +912,6 @@ bool PbConstraints::PropagateNext(Trail* trail) {
       if (!cst->Propagate(source_trail_index, &thresholds_[update.index], trail,
                           &enqueue_helper_)) {
         trail->MutableConflict()->swap(enqueue_helper_.conflict);
-        trail->SetFailingResolutionNode(cst->ResolutionNodePointer());
         conflicting_constraint_index_ = update.index;
         conflict = true;
 
@@ -983,12 +971,6 @@ UpperBoundedLinearConstraint* PbConstraints::ReasonPbConstraint(
   const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];
   return reason_info.pb_constraint;
-}
-
-ResolutionNode* PbConstraints::GetResolutionNode(int trail_index) const {
-  const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
-      enqueue_helper_.reasons[trail_index];
-  return reason_info.pb_constraint->ResolutionNodePointer();
 }
 
 // TODO(user): Because num_constraints also include problem constraints, the

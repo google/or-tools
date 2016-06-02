@@ -56,6 +56,12 @@ class Model {
     return f(this);
   }
 
+  // Similar to Add() but this is const.
+  template <typename T>
+  T Get(std::function<T(const Model&)> f) const {
+    return f(*this);
+  }
+
   // Returns an object of type T that is unique to this model (this is a bit
   // like a "local" singleton). This returns an already created instance or
   // create a new one if needed using the T::CreateInModel(Model* model)

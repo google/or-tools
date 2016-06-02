@@ -241,8 +241,8 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
   // Set-up a sat_propagator_ cleanup task to catch all the exit cases.
   const double initial_dt = sat_propagator_->deterministic_time();
-  auto sat_propagator_cleanup = ::operations_research::util::MakeCleanup(
-      [initial_dt, this, &learned_info, &time_limit]() {
+  auto sat_propagator_cleanup =
+      ::operations_research::util::MakeCleanup([initial_dt, this, &learned_info, &time_limit]() {
         if (!sat_propagator_->IsModelUnsat()) {
           sat_propagator_->SetAssumptionLevel(0);
           sat_propagator_->RestoreSolverToAssumptionLevel();

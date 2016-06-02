@@ -52,6 +52,15 @@ message FirstSolutionStrategy {
     // Research Quarterly (1970-1977),
     // Vol. 23, No. 3 (Sep., 1972), pp. 333-344
     SWEEP = 11;
+    // Christofides algorithm (actually a variant of the Christofides algorithm
+    // using a maximal matching instead of a maximum matching, which does
+    // not guarantee the 3/2 factor of the approximation on a metric travelling
+    // salesman). Works on generic vehicle routing models by extending a route
+    // until no nodes can be inserted on it.
+    // Reference: Nicos Christofides, Worst-case analysis of a new heuristic for
+    // the travelling salesman problem, Report 388, Graduate School of
+    // Industrial Administration, CMU, 1976.
+    CHRISTOFIDES = 13;
 
     // --- Path insertion heuristics ---
     // Make all nodes inactive. Only finds a solution if nodes are optional (are

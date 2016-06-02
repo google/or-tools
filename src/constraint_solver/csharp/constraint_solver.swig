@@ -688,6 +688,7 @@ void Pack::AddWeightedSumEqualVarDimension(
     swig_util::LongLongToLong* weights, const std::vector<IntVar*>& loads) {
   return $self->AddWeightedSumEqualVarDimension([weights](int64 i, int64 j) { return weights->Run(i, j); }, loads);
 }
+
 }  // extend Pack
 
 // No custom wrapping for this method, we simply ignore it.

@@ -40,13 +40,13 @@
 
 namespace operations_research {
 
-// Given an IntVar, this class allows to fetch the sat::Literal associated with
+// Given an IntVar, this class fetches the sat::Literal associated with
 // the fact that the variable is equal or not to a given value in its domain.
 class IntVarLiteralGetter {
  public:
   // The mapping of IntVar values to Boolean variables is as follow:
   // - We always assume the IntVar to take all possible values in [min, max].
-  // - We create one Boolean variable per value: {i, i + 1, ..., i + max - min}
+  // - We create one Boolean variable per value: {i, i + 1, ..., i + max - min}.
   // - If size([min, max] == 2) then we just use one variable i that represent
   //   the fact that the variable is bound to its min value.
   //

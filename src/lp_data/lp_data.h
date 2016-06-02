@@ -13,6 +13,7 @@
 
 //
 // Storage classes for Linear Programs.
+//
 // LinearProgram stores the complete data for a Linear Program:
 //   - objective coefficients and offset,
 //   - cost coefficients,
@@ -42,13 +43,11 @@
 namespace operations_research {
 namespace glop {
 
-// --------------------------------------------------------
-// LinearProgram
-// --------------------------------------------------------
-// This class is used to store a linear problem in a form accepted by LPSolver.
+// The LinearProgram class is used to store a linear problem in a form
+// accepted by LPSolver.
 //
-// In addition to the simple setters functions used to create such problems, the
-// class also contains a few more advanced modification functions used primarly
+// In addition to the simple setter functions used to create such problems, the
+// class also contains a few more advanced modification functions used primarily
 // by preprocessors. A client shouldn't need to use them directly.
 class LinearProgram {
  public:
@@ -270,6 +269,10 @@ class LinearProgram {
   // lp_solve (see http://lpsolve.sourceforge.net/5.1/index.htm).
   std::string Dump() const;
 
+  // Returns a std::string that contains the provided solution of the LP in the
+  // format var1 = X, var2 = Y, var3 = Z, ...
+  std::string DumpSolution(const DenseRow& variable_values) const;
+
   // Returns a comma-separated std::string of integers containing (in that order)
   // num_constraints_, num_variables_in_file_, num_entries_,
   // num_objective_non_zeros_, num_rhs_non_zeros_, num_less_than_constraints_,
@@ -314,11 +317,33 @@ class LinearProgram {
   //      Entries in column (Max / average / std, dev.): 4 / 2.59 / 0.96
   std::string GetPrettyNonZeroStats() const;
 
-  // Adds slack variables to the problem for rows that are either free or are
-  // lower- and upper- bounded by finite bounds that are not equal (range
-  // constraint). This is done in such a way that in the modified problem, these
-  // constraints will be equality constraints with both bounds set to 0.0.
-  void AddSlackVariablesForFreeAndBoxedRows();
+  // Adds slack variables to the problem for all rows. The new slack variables
+  // have bounds set to opposite of the bounds of the corresponding constraint,
+  // and changes all constraints to equality constraints with both bounds set to
+  // 0.0. If a constraint uses only integer variables and all their coefficients
+  // are integer, it will mark the slack variable as integer too.
+  //
+  // This method may be called only once for one linear program. It is also an
+  // error to call CreateNewVariable() or CreateNewConstraint() on a linear
+  // program on which this method was called.
+  //
+  // Note that many of the slack variables may not be useful at all, but in
+  // order not to recompute the matrix from one Solve() to the next, we always
+  // include all of them for a given lp matrix.
+  //
+  // TODO(user): investigate the impact on the running time. It seems low
+  // because we almost never iterate on fixed variables.
+  void AddSlackVariablesForAllRows(bool detect_integer_constraints);
+
+  // Returns the index of the first slack variable in the linear program.
+  // Returns kInvalidCol if slack variables were not injected into the problem
+  // yet.
+  ColIndex GetFirstSlackVariable() const;
+
+  // Returns the index of the slack variable corresponding to the given
+  // constraint. Returns kInvalidCol if slack variables were not injected into
+  // the problem yet.
+  ColIndex GetSlackVariable(RowIndex row) const;
 
   // Populates the calling object with the dual of the LinearProgram passed as
   // parameter.
@@ -388,6 +413,12 @@ class LinearProgram {
   // This needs to allocate O(num_variables) memory to update variable_table_.
   void DeleteColumns(const DenseBooleanRow& columns_to_delete);
 
+  // Removes slack variables from the linear program. The method restores the
+  // bounds on constraints from the bounds of the slack variables, resets the
+  // index of the first slack variable, and removes the relevant columns from
+  // the matrix.
+  void DeleteSlackVariables();
+
   // Scales the problem using the given scaler.
   void Scale(SparseMatrixScaler* scaler);
 
@@ -409,6 +440,10 @@ class LinearProgram {
   bool UpdateVariableBoundsToIntersection(
       const DenseRow& variable_lower_bounds,
       const DenseRow& variable_upper_bounds);
+
+  // Returns true if the linear program is in equation form Ax = 0 and all slack
+  // variables have been added.
+  bool IsInEquationForm() const;
 
  private:
   // A helper function that updates the vectors integer_variables_list_,
@@ -492,6 +527,10 @@ class LinearProgram {
 
   // The name of the LinearProgram.
   std::string name_;
+
+  // The index of the first slack variable added to the linear program by
+  // LinearProgram::AddSlackVariablesForAllRows().
+  ColIndex first_slack_variable_;
 
   DISALLOW_COPY_AND_ASSIGN(LinearProgram);
 };

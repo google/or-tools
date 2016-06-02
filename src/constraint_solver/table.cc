@@ -46,7 +46,6 @@ Constraint* BuildAc4MddResetTableConstraint(Solver* const solver,
                                             const IntTupleSet& tuples,
                                             const std::vector<IntVar*>& vars);
 
-
 namespace {
 // ----- Presolve helpers -----
 // TODO(user): Move this out of this file.
@@ -214,13 +213,13 @@ class BasePositiveTableConstraint : public Constraint {
 
  protected:
   bool TupleValue(int tuple_index, int var_index, int64* const value) const {
-    return transformations_[var_index]
-        .Reverse(tuples_.Value(tuple_index, var_index), value);
+    return transformations_[var_index].Reverse(
+        tuples_.Value(tuple_index, var_index), value);
   }
 
   int64 UnsafeTupleValue(int tuple_index, int var_index) const {
-    return transformations_[var_index]
-        .UnsafeReverse(tuples_.Value(tuple_index, var_index));
+    return transformations_[var_index].UnsafeReverse(
+        tuples_.Value(tuple_index, var_index));
   }
 
   const int tuple_count_;
@@ -1264,7 +1263,7 @@ bool HasCompactDomains(const std::vector<IntVar*>& vars) {
       sum_of_spans += var->Max() - var->Min() + 1;
     }
   }
-  return sum_of_spans < 4 * sum_of_sizes;
+  return sum_of_spans < 16 * sum_of_sizes;
 }
 
 // ---------- Deterministic Finite Automaton ----------

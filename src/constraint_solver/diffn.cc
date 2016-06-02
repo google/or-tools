@@ -25,6 +25,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "util/string_array.h"
 
+
 namespace operations_research {
 // Diffn constraint, Non overlapping boxs.
 namespace {

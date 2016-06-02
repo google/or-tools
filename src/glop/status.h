@@ -38,6 +38,9 @@ class Status {
     // A pointer argument was NULL when it shouldn't be.
     ERROR_NULL = 3,
 
+    // The linear program is invalid or it does not have the required format.
+    ERROR_INVALID_PROBLEM = 4,
+
   };
 
   // Creates a "successful" status.

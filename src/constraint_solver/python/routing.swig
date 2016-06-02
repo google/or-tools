@@ -103,29 +103,23 @@ bool PyObjAs(PyObject* py_obj,
 PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
                        PyCallable_Check, );
 
-%ignore operations_research::RoutingModel::AddVectorDimension(
-    const int64* values,
+%ignore operations_research::RoutingModel::AddMatrixDimension(
+    std::vector<std::vector<int64> > values,
     int64 capacity,
     const std::string& name);
 
-%ignore operations_research::RoutingModel::AddMatrixDimension(
-    const int64* const* values,
+%extend operations_research::RoutingModel {
+  void AddMatrixDimension(
+    const std::vector<std::vector<int64> >& values,
     int64 capacity,
-    const std::string& name);
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
+  }
+}
 
 %ignore operations_research::RoutingModel::MakeStateDependentTransit;
 %ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-
-%extend operations_research::RoutingModel {
-  void AddVectorDimension(const std::vector<int64>& values,
-                          int64 capacity,
-                          bool fix_start_cumul_to_zero,
-                          const std::string& name) {
-    DCHECK_EQ(values.size(), $self->nodes());
-    $self->AddVectorDimension(values.data(), capacity,
-                              fix_start_cumul_to_zero, name);
-  }
-}
 
 PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
                  RoutingModelParameters,

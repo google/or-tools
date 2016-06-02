@@ -217,5 +217,20 @@ bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
   return true;
 }
 
+bool IsRightMostSquareMatrixIdentity(const SparseMatrix& matrix) {
+  DCHECK(matrix.IsCleanedUp());
+  if (matrix.num_rows().value() > matrix.num_cols().value()) return false;
+  const ColIndex first_identity_col =
+      matrix.num_cols() - RowToColIndex(matrix.num_rows());
+  for (ColIndex col = first_identity_col; col < matrix.num_cols(); ++col) {
+    const SparseColumn& column = matrix.column(col);
+    if (column.num_entries() != 1 ||
+        column.EntryCoefficient(EntryIndex(0)) != 1.0) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace glop
 }  // namespace operations_research

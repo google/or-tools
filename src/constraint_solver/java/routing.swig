@@ -230,31 +230,22 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
   }
 }
 
-%ignore operations_research::RoutingModel::AddVectorDimension(
-    const int64* values,
-    int64 capacity,
-    const std::string& name);
-
 %ignore operations_research::RoutingModel::AddMatrixDimension(
-    const int64* const* values,
+    std::vector<std::vector<int64> > values,
     int64 capacity,
+    bool fix_start_cumul_to_zero,
     const std::string& name);
-
-%ignore operations_research::RoutingModel::MakeStateDependentTransit;
-%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
-
 
 %extend operations_research::RoutingModel {
-  void AddVectorDimension(const std::vector<int64>& values,
-                          int64 capacity,
-                          bool fix_start_cumul_to_zero,
+  void addMatrixDimension(const std::vector<std::vector<int64> >& values,
+                          int64 capacity, bool fix_start_cumul_to_zero,
                           const std::string& name) {
-    DCHECK_EQ(values.size(), $self->nodes());
-    $self->AddVectorDimension(values.data(), capacity,
-                              fix_start_cumul_to_zero, name);
+    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 }
 
+%ignore operations_research::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 %ignore operations_research::RoutingModel::RoutingModel(
     int nodes, int vehicles,
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);

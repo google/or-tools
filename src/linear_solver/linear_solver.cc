@@ -604,7 +604,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     // static_cast<int64> avoids a warning with -Wreal-conversion. This
     // helps catching bugs with unwanted conversions from double to ints.
     solver.set_time_limit(
-        static_cast<int64>(model_request.solver_time_limit_seconds()) * 1000);
+        static_cast<int64>(model_request.solver_time_limit_seconds() * 1000));
   }
   solver.Solve();
   solver.FillSolutionResponseProto(response);

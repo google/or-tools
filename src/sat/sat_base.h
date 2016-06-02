@@ -96,7 +96,7 @@ inline std::ostream& operator<<(std::ostream& os, Literal literal) {
 }
 
 // Holds the current variable assignment of the solver.
-// Each variables can be unassigned or be assigned to true or false.
+// Each variable can be unassigned or be assigned to true or false.
 class VariablesAssignment {
  public:
   VariablesAssignment() {}
@@ -120,7 +120,7 @@ class VariablesAssignment {
     assignment_.ClearTwoBits(literal.Index());
   }
 
-  // Literal getters. Note that both can be false in which case the
+  // Literal getters. Note that both can be false, in which case the
   // corresponding variable is not assigned.
   bool LiteralIsFalse(Literal literal) const {
     return assignment_.IsSet(literal.NegatedIndex());
@@ -138,7 +138,7 @@ class VariablesAssignment {
   }
 
   // Returns the literal of the given variable that is assigned to true.
-  // That is depending on the variable, it can be the positive literal or the
+  // That is, depending on the variable, it can be the positive literal or the
   // negative one. Only call this on an assigned variable.
   Literal GetTrueLiteralForAssignedVariable(BooleanVariable var) const {
     DCHECK(VariableIsAssigned(var));
@@ -148,7 +148,7 @@ class VariablesAssignment {
   int NumberOfVariables() const { return assignment_.size().value() / 2; }
 
  private:
-  // The encoding is as follow:
+  // The encoding is as follows:
   // - assignment_.IsSet(literal.Index()) means literal is true.
   // - assignment_.IsSet(literal.Index() ^ 1]) means literal is false.
   // - If both are false, then the variable (and the literal) is unassigned.
@@ -157,7 +157,7 @@ class VariablesAssignment {
   DISALLOW_COPY_AND_ASSIGN(VariablesAssignment);
 };
 
-// A really simple wrapper used to pass a reference to a clause. This
+// A simple wrapper used to pass a reference to a clause. This
 // abstraction is needed because not all clauses come from an underlying
 // SatClause or are encoded with a std::vector<Literal>.
 //
@@ -188,7 +188,6 @@ class ClauseRef {
 };
 
 // Forward declaration.
-class ResolutionNode;
 class SatClause;
 class Propagator;
 
@@ -202,10 +201,11 @@ struct AssignmentInfo {
   // LBD computation, the literal of the conflict are already ordered by level,
   // so we could do it fairly efficiently.
   //
-  // TODO(user): We currently don't support more than 268M decision. That should
-  // be enough for most practical problem, but we should fail properly if this
-  // limit is reached.
-  uint32 level : 28;
+  // TODO(user): We currently don't support more than 134M decision levels. That
+  // should be enough for most practical problem, but we should fail properly if
+  // this limit is reached.
+  bool last_polarity : 1;
+  uint32 level : 27;
 
   // The type of assignment (see AssignmentType below).
   //
@@ -231,27 +231,28 @@ struct AssignmentType {
   static const int kFirstFreePropagationId = 4;
 };
 
-// The solver trail stores the assignement made by the solver in order.
+// The solver trail stores the assignment made by the solver in order.
 // This class is responsible for maintaining the assignment of each variable
 // and the information of each assignment.
 class Trail {
  public:
-  Trail() : num_enqueues_(0), need_level_zero_(false) {
+  Trail() : num_enqueues_(0) {
     current_info_.trail_index = 0;
     current_info_.level = 0;
   }
 
   void Resize(int num_variables);
 
-  // Registers a propagator. This assigns an unique id to this propagator and
+  // Registers a propagator. This assigns a unique id to this propagator and
   // calls SetPropagatorId() on it.
   void RegisterPropagator(Propagator* propagator);
 
   // Enqueues the assignment that make the given literal true on the trail. This
-  // should only be called on unassigned variable.
+  // should only be called on unassigned variables.
   void Enqueue(Literal true_literal, int propagator_id) {
     DCHECK(!assignment_.VariableIsAssigned(true_literal.Variable()));
     trail_[current_info_.trail_index] = true_literal;
+    current_info_.last_polarity = true_literal.IsPositive();
     current_info_.type = propagator_id;
     info_[true_literal.Variable()] = current_info_;
     assignment_.AssignFromTrueLiteral(true_literal);
@@ -265,35 +266,31 @@ class Trail {
   }
 
   // Specific Enqueue() version for a fixed variable.
-  void EnqueueWithUnitReason(Literal true_literal, ResolutionNode* node) {
-    resolution_nodes_[true_literal.Variable()] = node;
+  void EnqueueWithUnitReason(Literal true_literal) {
     Enqueue(true_literal, AssignmentType::kUnitReason);
   }
 
   // Some constraints propagate a lot of literals at once. In these cases, it is
   // more efficient to have all the propagated literals except the first one
-  // refering to the reason of the first of them.
+  // referring to the reason of the first of them.
   void EnqueueWithSameReasonAs(Literal true_literal,
                                BooleanVariable reference_var) {
     reference_var_with_same_reason_as_[true_literal.Variable()] = reference_var;
     Enqueue(true_literal, AssignmentType::kSameReasonAs);
   }
 
-  // Returns the reason that explain why this variable was assigned.
+  // Returns the reason why this variable was assigned.
   ClauseRef Reason(BooleanVariable var) const;
 
   // Returns the "type" of an assignment (see AssignmentType). Note that this
-  // function never returns kSameReasonAs or kCachedReason, it returns instead
+  // function never returns kSameReasonAs or kCachedReason, it instead returns
   // the initial type that caused this assignment. As such, it is different
-  // from Info(var).type and the later should not be used outside this class.
+  // from Info(var).type and the latter should not be used outside this class.
   int AssignmentType(BooleanVariable var) const;
 
-  // If a variable was propagated with EnqueueWithSameReasonAs() returns its
+  // If a variable was propagated with EnqueueWithSameReasonAs(), returns its
   // reference variable. Otherwise return the given variable.
   BooleanVariable ReferenceVarWithSameReason(BooleanVariable var) const;
-
-  // Returns the resolution node associated with this variable.
-  ResolutionNode* GetResolutionNode(BooleanVariable var) const;
 
   // This can be used to get a location at which the reason for the literal
   // at trail_index on the trail can be stored.
@@ -304,7 +301,7 @@ class Trail {
     return &reasons_repository_[trail_index];
   }
 
-  // After this is called, Reason(var) will returns the content of the
+  // After this is called, Reason(var) will return the content of the
   // GetVectorToStoreReason(trail_index_of_var) and will not call the virtual
   // Reason() function of the associated propagator.
   void NotifyThatReasonIsCached(BooleanVariable var) const {
@@ -316,11 +313,11 @@ class Trail {
   }
 
   // Dequeues the last assigned literal and returns it.
-  // Note that we do not touch its assignement info.
+  // Note that we do not touch its assignment info.
   Literal Dequeue() {
-    --current_info_.trail_index;
-    assignment_.UnassignLiteral(trail_[current_info_.trail_index]);
-    return trail_[current_info_.trail_index];
+    const Literal l = trail_[--current_info_.trail_index];
+    assignment_.UnassignLiteral(l);
+    return l;
   }
 
   // Changes the decision level used by the next Enqueue().
@@ -347,16 +344,6 @@ class Trail {
   void SetFailingSatClause(SatClause* clause) { failing_sat_clause_ = clause; }
   SatClause* FailingSatClause() const { return failing_sat_clause_; }
 
-  // Sets/Gets the resolution node of the last conflict.
-  void SetFailingResolutionNode(ResolutionNode* node) { failing_node_ = node; }
-  ResolutionNode* FailingResolutionNode() const { return failing_node_; }
-
-  // This is required for producing correct unsat proof. Recall that a fixed
-  // literals is one assigned at level zero. The option is here so every code
-  // that needs it can easily access it.
-  bool NeedFixedLiteralsInReason() const { return need_level_zero_; }
-  void SetNeedFixedLiteralsInReason(bool value) { need_level_zero_ = value; }
-
   // Getters.
   int NumVariables() const { return trail_.size(); }
   int64 NumberOfEnqueues() const { return num_enqueues_; }
@@ -369,13 +356,6 @@ class Trail {
     return info_[var];
   }
 
-  // Sets the new resolution node for a variable that is fixed.
-  void SetFixedVariableInfo(BooleanVariable var, ResolutionNode* node) {
-    CHECK_EQ(info_[var].level, 0);
-    info_[var].type = AssignmentType::kUnitReason;
-    resolution_nodes_[var] = node;
-  }
-
   // Print the current literals on the trail.
   std::string DebugString() {
     std::string result;
@@ -386,6 +366,10 @@ class Trail {
     return result;
   }
 
+  void SetLastPolarity(BooleanVariable var, bool polarity) {
+    info_[var].last_polarity = polarity;
+  }
+
  private:
   int64 num_enqueues_;
   AssignmentInfo current_info_;
@@ -394,28 +378,23 @@ class Trail {
   std::vector<Literal> conflict_;
   ITIVector<BooleanVariable, AssignmentInfo> info_;
   SatClause* failing_sat_clause_;
-  ResolutionNode* failing_node_;
-  bool need_level_zero_;
 
   // Data used by EnqueueWithSameReasonAs().
   ITIVector<BooleanVariable, BooleanVariable>
       reference_var_with_same_reason_as_;
 
-  // Resolution nodes of the fixed variables.
-  ITIVector<BooleanVariable, ResolutionNode*> resolution_nodes_;
-
   // Reason cache. Mutable since we want the API to be the same whether the
   // reason are cached or not.
   //
-  // When a reason is computed for the first time, we changes the type of the
+  // When a reason is computed for the first time, we change the type of the
   // variable assignment to kCachedReason so that we know that if it is needed
   // again the reason can just be retrieved by a direct access to reasons_. The
-  // old type is saved in old_type_ and can be retreived by
+  // old type is saved in old_type_ and can be retrieved by
   // AssignmentType().
   //
   // Note(user): Changing the type is not "clean" but it is efficient. The idea
-  // is that it is important to do as little as possible when pushing/poping
-  // literal on the trail. Computing the reason happens a lot less often, so it
+  // is that it is important to do as little as possible when pushing/popping
+  // literals on the trail. Computing the reason happens a lot less often, so it
   // is okay to do slightly more work then. Note also, that we don't need to
   // do anything on "untrail", the kCachedReason type will be overwritten when
   // the same variable is assigned again.
@@ -491,15 +470,6 @@ class Propagator : public PropagatorInterface {
 #endif
   }
 
-  // Returns the resolution node for the variable that was propagated at the
-  // given trail index.
-  //
-  // TODO(user): This is currently not supported by all our propagators. Fix
-  // or remove as it is currently not used?
-  virtual ResolutionNode* GetResolutionNode(int trail_index) const {
-    return nullptr;
-  }
-
   // Returns true if all the preconditions for Propagate() are satisfied.
   // This is just meant to be used in a DCHECK.
   bool PropagatePreconditionsAreSatisfied(const Trail& trail) const;
@@ -553,7 +523,6 @@ inline void Trail::Resize(int num_variables) {
   // TODO(user): these vectors are not always used. Initialize them
   // dynamically.
   old_type_.resize(num_variables);
-  resolution_nodes_.resize(num_variables);
   reference_var_with_same_reason_as_.resize(num_variables);
 }
 
@@ -606,17 +575,6 @@ inline ClauseRef Trail::Reason(BooleanVariable var) const {
   old_type_[var] = info.type;
   info_[var].type = AssignmentType::kCachedReason;
   return reasons_[var];
-}
-
-inline ResolutionNode* Trail::GetResolutionNode(BooleanVariable var) const {
-  // Special case for AssignmentType::kSameReasonAs to avoid a recursive call.
-  var = ReferenceVarWithSameReason(var);
-
-  const int type = AssignmentType(var);
-  if (type == AssignmentType::kUnitReason) return resolution_nodes_[var];
-  DCHECK_LT(type, propagators_.size());
-  DCHECK(propagators_[type] != nullptr);
-  return propagators_[type]->GetResolutionNode(info_[var].trail_index);
 }
 
 }  // namespace sat

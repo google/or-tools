@@ -13,7 +13,7 @@
 
 // Algorithms to encode constraints into their SAT representation. Currently,
 // this contains one possible encoding of a cardinality constraint as used by
-// the core-based optimization algorithm in optimization.h .
+// the core-based optimization algorithm in optimization.h.
 
 #ifndef OR_TOOLS_SAT_ENCODING_H_
 #define OR_TOOLS_SAT_ENCODING_H_
@@ -29,7 +29,7 @@ namespace sat {
 // called an EncodingNode, because it represents one node of the tree used to
 // encode a cardinality constraint.
 //
-// In practice, not all literals are explicitely created:
+// In practice, not all literals are explicitly created:
 // - Only the literals in [lb, current_ub) are "active" at a given time.
 // - The represented number is known to be >= lb.
 // - It may be greater than current_ub, but the extra literals will be only
@@ -86,7 +86,7 @@ class EncodingNode {
   // Removes the left-side literals fixed to 1 and returns the number of
   // literals removed this way. Note that this increases lb_ and reduces the
   // number of active literals. It also removes any right-side literals fixed to
-  // 0. If such a literal exist, ub is updated accordingly.
+  // 0. If such a literal exists, ub is updated accordingly.
   int Reduce(const SatSolver& solver);
 
   // Fix the right-side variables with indices >= to the given upper_bound to
@@ -122,7 +122,7 @@ class EncodingNode {
 COMPILE_ASSERT(sizeof(EncodingNode) <= 64,
                ERROR_EncodingNode_is_not_well_compacted);
 
-// Merges the two given EncodingNode by creating a new node that corresponds to
+// Merges the two given EncodingNodes by creating a new node that corresponds to
 // the sum of the two given ones. Only the left-most binary variable is created
 // for the parent node, the other ones will be created later when needed.
 EncodingNode LazyMerge(EncodingNode* a, EncodingNode* b, SatSolver* solver);
@@ -135,12 +135,12 @@ void IncreaseNodeSize(EncodingNode* node, SatSolver* solver);
 
 // Merges the two given EncodingNode by creating a new node that corresponds to
 // the sum of the two given ones. The given upper_bound is interpreted as a
-// bound on this sum, and allows to create less binary variables.
+// bound on this sum, and allows creating fewer binary variables.
 EncodingNode FullMerge(Coefficient upper_bound, EncodingNode* a,
                        EncodingNode* b, SatSolver* solver);
 
 // Merges all the given nodes two by two until there is only one left. Returns
-// the final node which encode the sum of all the given nodes.
+// the final node which encodes the sum of all the given nodes.
 EncodingNode* MergeAllNodesWithDeque(Coefficient upper_bound,
                                      const std::vector<EncodingNode*>& nodes,
                                      SatSolver* solver,
@@ -154,7 +154,7 @@ EncodingNode* LazyMergeAllNodeWithPQ(const std::vector<EncodingNode*>& nodes,
 
 // Returns a vector with one new EncodingNode by variable in the given
 // objective.
-// All the variables must have the same cost (modulo the sign), this is CHECHed.
+// All the variables must have the same cost (modulo the sign), this is CHECKed.
 // Also returns in offset the number of negative variables.
 std::vector<EncodingNode*> CreateInitialEncodingNodes(
     const LinearObjective& objective_proto, Coefficient* offset,

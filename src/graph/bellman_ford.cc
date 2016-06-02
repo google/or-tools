@@ -12,10 +12,10 @@
 // limitations under the License.
 
 
+#include <functional>
 #include <memory>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/integral_types.h"
 
 namespace operations_research {
@@ -24,16 +24,13 @@ class BellmanFord {
   static const int64 kInfinity = kint64max / 2;
 
   BellmanFord(int node_count, int start_node,
-              ResultCallback2<int64, int, int>* const graph,
-              int64 disconnected_distance)
+              std::function<int64(int, int)> graph, int64 disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
-        graph_(graph),
+        graph_(std::move(graph)),
         disconnected_distance_(disconnected_distance),
         distance_(new int64[node_count_]),
-        predecessor_(new int[node_count_]) {
-    graph->CheckIsRepeatable();
-  }
+        predecessor_(new int[node_count_]) {}
   bool ShortestPath(int end_node, std::vector<int>* nodes);
 
  private:
@@ -44,7 +41,7 @@ class BellmanFord {
 
   const int node_count_;
   const int start_node_;
-  std::unique_ptr<ResultCallback2<int64, int, int> > graph_;
+  std::function<int64(int, int)> graph_;
   const int64 disconnected_distance_;
   std::unique_ptr<int64[]> distance_;
   std::unique_ptr<int[]> predecessor_;
@@ -62,7 +59,7 @@ void BellmanFord::Update() {
   for (int i = 0; i < node_count_ - 1; i++) {
     for (int u = 0; u < node_count_; u++) {
       for (int v = 0; v < node_count_; v++) {
-        const int64 graph_u_v = graph_->Run(u, v);
+        const int64 graph_u_v = graph_(u, v);
         if (graph_u_v != disconnected_distance_) {
           const int64 other_distance = distance_[u] + graph_u_v;
           if (distance_[v] > other_distance) {
@@ -78,7 +75,7 @@ void BellmanFord::Update() {
 bool BellmanFord::Check() const {
   for (int u = 0; u < node_count_; u++) {
     for (int v = 0; v < node_count_; v++) {
-      const int graph_u_v = graph_->Run(u, v);
+      const int graph_u_v = graph_(u, v);
       if (graph_u_v != disconnected_distance_) {
         if (distance_[v] > distance_[u] + graph_u_v) {
           return false;
@@ -112,9 +109,10 @@ bool BellmanFord::ShortestPath(int end_node, std::vector<int>* nodes) {
 }
 
 bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
-                             ResultCallback2<int64, int, int>* const graph,
+                             std::function<int64(int, int)> graph,
                              int64 disconnected_distance, std::vector<int>* nodes) {
-  BellmanFord bf(node_count, start_node, graph, disconnected_distance);
+  BellmanFord bf(node_count, start_node, std::move(graph),
+                 disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }
 }  // namespace operations_research

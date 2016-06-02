@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Implementation of a pure SAT presolver. This roughtly follows the paper:
+// Implementation of a pure SAT presolver. This roughly follows the paper:
 //
 // "Effective Preprocessing in SAT through Variable and Clause Elimination",
 // Niklas Een and Armin Biere, published in the SAT 2005 proceedings.
@@ -22,6 +22,7 @@
 #include <deque>
 #include <vector>
 
+#include "sat/drat.h"
 #include "sat/sat_base.h"
 #include "sat/sat_parameters.pb.h"
 #include "sat/sat_solver.h"
@@ -70,6 +71,12 @@ class SatPostsolver {
   Literal ApplyReverseMapping(Literal l);
   void Postsolve(VariablesAssignment* assignment) const;
 
+  // The presolve can add new variables, so we need to store the number of
+  // original variables in order to return a solution with the correct number
+  // of variables.
+  const int initial_num_variables_;
+  int num_variables_;
+
   // Stores the arguments of the Add() calls: clauses_start_[i] is the index of
   // the first literal of the clause #i in the clauses_literals_ deque.
   std::vector<int> clauses_start_;
@@ -88,11 +95,11 @@ class SatPostsolver {
   DISALLOW_COPY_AND_ASSIGN(SatPostsolver);
 };
 
-// This class hold a SAT problem (i.e. a set of clauses) and the logic to
-// presolve it by a series of subsumption, self-subsuming resolution and
+// This class holds a SAT problem (i.e. a set of clauses) and the logic to
+// presolve it by a series of subsumption, self-subsuming resolution, and
 // variable elimination by clause distribution.
 //
-// Note(user): Note that this does propagate unit-clauses, but probably a lot
+// Note that this does propagate unit-clauses, but probably much
 // less efficiently than the propagation code in the SAT solver. So it is better
 // to use a SAT solver to fix variables before using this class.
 //
@@ -108,7 +115,9 @@ class SatPresolver {
   typedef int32 ClauseIndex;
 
   explicit SatPresolver(SatPostsolver* postsolver)
-      : postsolver_(postsolver), num_trivial_clauses_(0) {}
+      : postsolver_(postsolver),
+        num_trivial_clauses_(0),
+        drat_writer_(nullptr) {}
   void SetParameters(const SatParameters& params) { parameters_ = params; }
 
   // Registers a mapping to encode equivalent literals.
@@ -119,6 +128,7 @@ class SatPresolver {
   }
 
   // Adds new clause to the SatPresolver.
+  void SetNumVariables(int num_variables);
   void AddBinaryClause(Literal a, Literal b);
   void AddClause(ClauseRef clause);
 
@@ -166,6 +176,11 @@ class SatPresolver {
   // that this function only do that if the number of clauses is reduced.
   bool CrossProduct(Literal x);
 
+  // Visible for testing. Just applies the BVA step of the presolve.
+  void PresolveWithBva();
+
+  void SetDratWriter(DratWriter* drat_writer) { drat_writer_ = drat_writer; }
+
  private:
   // Internal function to add clauses generated during the presolve. The clause
   // must already be sorted with the default Literal order and will be cleared
@@ -186,6 +201,20 @@ class SatPresolver {
   // Finds the literal from the clause that occur the less in the clause
   // database.
   Literal FindLiteralWithShortestOccurenceList(const std::vector<Literal>& clause);
+  LiteralIndex FindLiteralWithShortestOccurenceListExcluding(
+      const std::vector<Literal>& clause, Literal to_exclude);
+
+  // Tests and maybe perform a Simple Bounded Variable addition starting from
+  // the given literal as described in the paper: "Automated Reencoding of
+  // Boolean Formulas", Norbert Manthey, Marijn J. H. Heule, and Armin Biere,
+  // Volume 7857 of the series Lecture Notes in Computer Science pp 102-117,
+  // 2013.
+  // https://www.research.ibm.com/haifa/conferences/hvc2012/papers/paper16.pdf
+  //
+  // This seems to have a mostly postive effect, except on the crafted problem
+  // familly mugrauer_balint--GI.crafted_nxx_d6_cx_numxx where the reduction
+  // is big, but apparently the problem is harder to prove UNSAT for the solver.
+  void SimpleBva(LiteralIndex l);
 
   // Display some statistics on the current clause database.
   void DisplayStats(double elapsed_seconds);
@@ -215,6 +244,37 @@ class SatPresolver {
   ITIVector<BooleanVariable, PQElement> var_pq_elements_;
   AdjustablePriorityQueue<PQElement> var_pq_;
 
+  // Literal priority queue for BVA. The literals are ordered by descending
+  // number of occurences in clauses.
+  void InitializeBvaPriorityQueue();
+  void UpdateBvaPriorityQueue(LiteralIndex var);
+  void AddToBvaPriorityQueue(LiteralIndex var);
+  struct BvaPqElement {
+    BvaPqElement() : heap_index(-1), literal(-1), weight(0.0) {}
+
+    // Interface for the AdjustablePriorityQueue.
+    void SetHeapIndex(int h) { heap_index = h; }
+    int GetHeapIndex() const { return heap_index; }
+
+    // Priority order.
+    // The AdjustablePriorityQueue returns the largest element first.
+    bool operator<(const BvaPqElement& other) const {
+      return weight < other.weight;
+    }
+
+    int heap_index;
+    LiteralIndex literal;
+    double weight;
+  };
+  std::deque<BvaPqElement> bva_pq_elements_;  // deque because we add variables.
+  AdjustablePriorityQueue<BvaPqElement> bva_pq_;
+
+  // Temporary data for SimpleBva().
+  std::set<LiteralIndex> m_lit_;
+  std::vector<ClauseIndex> m_cls_;
+  hash_map<LiteralIndex, std::vector<ClauseIndex>> p_;
+  std::vector<Literal> tmp_new_clause_;
+
   // List of clauses on which we need to call ProcessClauseToSimplifyOthers().
   // See ProcessAllClauses().
   std::vector<bool> in_clause_to_process_;
@@ -239,8 +299,9 @@ class SatPresolver {
   ITIVector<LiteralIndex, LiteralIndex> equiv_mapping_;
 
   int num_trivial_clauses_;
-
   SatParameters parameters_;
+  DratWriter* drat_writer_;
+
   DISALLOW_COPY_AND_ASSIGN(SatPresolver);
 };
 
@@ -253,6 +314,13 @@ class SatPresolver {
 //   opposite_literal is then removed from b.
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
                     LiteralIndex* opposite_literal);
+
+// Visible for testing. Returns kNoLiteralIndex except if:
+// - a and b differ in only one literal.
+// - For a it is the given literal l.
+// In which case, returns the LiteralIndex of the literal in b that is not in a.
+LiteralIndex DifferAtGivenLiteral(const std::vector<Literal>& a,
+                                  const std::vector<Literal>& b, Literal l);
 
 // Visible for testing. Computes the resolvant of 'a' and 'b' obtained by
 // performing the resolution on 'x'. If the resolvant is trivially true this
@@ -285,7 +353,7 @@ int ComputeResolvantSize(Literal x, const std::vector<Literal>& a,
 // only pure SAT problem, but the returned mapping do need to be applied to all
 // constraints.
 void ProbeAndFindEquivalentLiteral(
-    SatSolver* solver, SatPostsolver* postsolver,
+    SatSolver* solver, SatPostsolver* postsolver, DratWriter* drat_writer,
     ITIVector<LiteralIndex, LiteralIndex>* mapping);
 
 }  // namespace sat

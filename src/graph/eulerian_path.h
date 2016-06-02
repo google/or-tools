@@ -79,13 +79,14 @@ std::vector<NodeIndex> BuildEulerianPathFromNode(const Graph& graph,
     std::vector<NodeIndex> tour_stack = {root};
     std::vector<ArcIndex> active_arcs(graph.num_nodes());
     for (const NodeIndex node : graph.AllNodes()) {
-      active_arcs[node] = *(graph.IncidentArcs(node)).begin();
+      active_arcs[node] = *(graph.OutgoingOrOppositeIncomingArcs(node)).begin();
     }
     while (!tour_stack.empty()) {
       const NodeIndex node = tour_stack.back();
       bool has_unvisited_edges = false;
       for (const ArcIndex arc :
-           graph.IncidentArcsStartingFrom(node, active_arcs[node])) {
+           graph.OutgoingOrOppositeIncomingArcsStartingFrom(
+               node, active_arcs[node])) {
         const ArcIndex edge = arc < 0 ? graph.OppositeArc(arc) : arc;
         if (unvisited_edges[edge]) {
           has_unvisited_edges = true;

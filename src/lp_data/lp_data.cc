@@ -23,8 +23,10 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/join.h"
+#include "base/join.h"
 #include "lp_data/lp_print_utils.h"
 #include "lp_data/lp_utils.h"
+#include "lp_data/matrix_utils.h"
 
 namespace operations_research {
 namespace glop {
@@ -125,7 +127,8 @@ LinearProgram::LinearProgram()
       columns_are_known_to_be_clean_(true),
       transpose_matrix_is_consistent_(true),
       integer_variables_list_is_consistent_(true),
-      name_() {}
+      name_(),
+      first_slack_variable_(kInvalidCol) {}
 
 void LinearProgram::Clear() {
   matrix_.Clear();
@@ -152,9 +155,14 @@ void LinearProgram::Clear() {
   transpose_matrix_is_consistent_ = true;
   integer_variables_list_is_consistent_ = true;
   name_.clear();
+  first_slack_variable_ = kInvalidCol;
 }
 
 ColIndex LinearProgram::CreateNewVariable() {
+  DCHECK_EQ(kInvalidCol, first_slack_variable_)
+      << "New variables can't be added to programs that already have slack "
+         "variables. Consider calling LinearProgram::DeleteSlackVariables() "
+         "before adding new variables to the problem.";
   objective_coefficients_.push_back(0.0);
   variable_lower_bounds_.push_back(0);
   variable_upper_bounds_.push_back(kInfinity);
@@ -165,6 +173,10 @@ ColIndex LinearProgram::CreateNewVariable() {
 }
 
 RowIndex LinearProgram::CreateNewConstraint() {
+  DCHECK_EQ(kInvalidCol, first_slack_variable_)
+      << "New constraints can't be added to programs that already have slack "
+         "variables. Consider calling LinearProgram::DeleteSlackVariables() "
+         "before adding new variables to the problem.";
   const RowIndex row(constraint_names_.size());
   matrix_.SetNumRows(row + 1);
   constraint_lower_bounds_.push_back(Fractional(0.0));
@@ -547,9 +559,20 @@ std::string LinearProgram::Dump() const {
   return output;
 }
 
+std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
+  DCHECK_EQ(variable_values.size(), num_variables());
+  std::string output;
+  for (ColIndex col(0); col < variable_values.size(); ++col) {
+    if (!output.empty()) StrAppend(&output, ", ");
+    StrAppend(&output, GetVariableName(col), " = ", variable_values[col]);
+  }
+  return output;
+}
+
 std::string LinearProgram::GetProblemStats() const {
-  return ProblemStatFormatter("%d,%d,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
-                              "%d,%d,%d,%d");
+  return ProblemStatFormatter(
+      "%d,%d,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+      "%d,%d,%d,%d");
 }
 
 std::string LinearProgram::GetPrettyProblemStats() const {
@@ -585,19 +608,68 @@ std::string LinearProgram::GetPrettyNonZeroStats() const {
       "Entries in column (Max / average / std. dev.): %d / %.2f / %.2f\n");
 }
 
-void LinearProgram::AddSlackVariablesForFreeAndBoxedRows() {
-  const RowIndex num_rows = num_constraints();
-  for (RowIndex row(0); row < num_rows; ++row) {
-    const Fractional lower_bound = constraint_lower_bounds()[row];
-    const Fractional upper_bound = constraint_upper_bounds()[row];
-    if (AreBoundsFreeOrBoxed(lower_bound, upper_bound)) {
-      const ColIndex new_col = CreateNewVariable();
-      SetConstraintBounds(row, 0.0, 0.0);
-      SetVariableBounds(new_col, -upper_bound, -lower_bound);
-      SetCoefficient(row, new_col, Fractional(1.0));
+void LinearProgram::AddSlackVariablesForAllRows(
+    bool detect_integer_constraints) {
+  if (first_slack_variable_ != kInvalidCol) {
+    LOG(DFATAL) << "The problem was already extended with slack variables.";
+    return;
+  }
+
+  // Clean up the matrix. We're going to add entries, but we'll only be adding
+  // them to new columns, and only one entry per column, which does not
+  // invalidate the "cleanness" of the matrix.
+  matrix_.CleanUp();
+
+  // Detect which constraints produce an integer slack variable. A constraint
+  // has an integer slack variable, if it contains only integer variables with
+  // integer coefficients. We do not check the bounds of the constraints,
+  // because in such case, they will be tightened to integer values by the
+  // preprocessors.
+  //
+  // We don't use the transpose, because it might not be valid and it would be
+  // inefficient to update it and invalidate it again at the end of this
+  // preprocessor.
+  DenseBooleanColumn has_integer_slack_variable(num_constraints(),
+                                                detect_integer_constraints);
+  if (detect_integer_constraints) {
+    for (ColIndex col(0); col < num_variables(); ++col) {
+      const SparseColumn& column = matrix_.column(col);
+      const bool is_integer_varaible = is_variable_integer_[col];
+      for (const SparseColumn::Entry& entry : column) {
+        const RowIndex row = entry.row();
+        has_integer_slack_variable[row] =
+            has_integer_slack_variable[row] && is_integer_varaible &&
+            round(entry.coefficient()) == entry.coefficient();
+      }
     }
   }
+
+  // Extend the matrix of the problem with an identity matrix.
+  const ColIndex original_num_variables = num_variables();
+  for (RowIndex row(0); row < num_constraints(); ++row) {
+    const ColIndex slack_col = CreateNewVariable();
+    SetVariableIntegrality(slack_col, has_integer_slack_variable[row]);
+    SetVariableBounds(slack_col, -constraint_upper_bounds_[row],
+                      -constraint_lower_bounds_[row]);
+    SetVariableName(slack_col, StringPrintf("s%d", row.value()));
+    SetCoefficient(row, slack_col, 1.0);
+    SetConstraintBounds(row, 0.0, 0.0);
+  }
   transpose_matrix_is_consistent_ = false;
+  first_slack_variable_ = original_num_variables;
+}
+
+ColIndex LinearProgram::GetFirstSlackVariable() const {
+  return first_slack_variable_;
+}
+
+ColIndex LinearProgram::GetSlackVariable(RowIndex row) const {
+  DCHECK_GE(row, RowIndex(0));
+  DCHECK_LT(row, num_constraints());
+  if (first_slack_variable_ == kInvalidCol) {
+    return kInvalidCol;
+  }
+  return first_slack_variable_ + RowToColIndex(row);
 }
 
 void LinearProgram::PopulateFromDual(const LinearProgram& dual,
@@ -687,8 +759,8 @@ void LinearProgram::PopulateFromDual(const LinearProgram& dual,
       const ColIndex col = CreateNewVariable();
       SetVariableBounds(col, 0.0, kInfinity);
       SetObjectiveCoefficient(col, lower_bound);
-      matrix_.mutable_column(col)
-          ->PopulateFromSparseVector(matrix_.column(RowToColIndex(dual_row)));
+      matrix_.mutable_column(col)->PopulateFromSparseVector(
+          matrix_.column(RowToColIndex(dual_row)));
       (*duplicated_rows)[dual_row] = col;
     }
   }
@@ -716,11 +788,13 @@ void LinearProgram::PopulateFromLinearProgram(
   constraint_table_.clear();
 
   PopulateNameObjectiveAndVariablesFromLinearProgram(linear_program);
+  first_slack_variable_ = linear_program.first_slack_variable_;
 }
 
 void LinearProgram::PopulateFromLinearProgramVariables(
     const LinearProgram& linear_program) {
   matrix_.PopulateFromZero(RowIndex(0), linear_program.num_variables());
+  first_slack_variable_ = kInvalidCol;
   transpose_matrix_is_consistent_ = false;
   transpose_matrix_.Clear();
 
@@ -835,6 +909,7 @@ void LinearProgram::Swap(LinearProgram* linear_program) {
   std::swap(integer_variables_list_is_consistent_,
             linear_program->integer_variables_list_is_consistent_);
   name_.swap(linear_program->name_);
+  std::swap(first_slack_variable_, linear_program->first_slack_variable_);
 }
 
 void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
@@ -883,6 +958,29 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
         ColToRowIndex(new_index),
         reinterpret_cast<const RowPermutation&>(permutation));
   }
+}
+
+void LinearProgram::DeleteSlackVariables() {
+  DCHECK_NE(first_slack_variable_, kInvalidCol);
+  DenseBooleanRow slack_variables(matrix_.num_cols(), false);
+  // Restore the bounds on the constraints corresponding to the slack variables.
+  for (ColIndex slack_variable = first_slack_variable_;
+       slack_variable < matrix_.num_cols(); ++slack_variable) {
+    const SparseColumn& column = matrix_.column(slack_variable);
+    // Slack variables appear only in the constraints for which they were
+    // created. We can find this constraint by looking at the (only) entry in
+    // the columnm of the slack variable.
+    DCHECK_EQ(column.num_entries(), 1);
+    const RowIndex row = column.EntryRow(EntryIndex(0));
+    DCHECK_EQ(constraint_lower_bounds_[row], 0.0);
+    DCHECK_EQ(constraint_upper_bounds_[row], 0.0);
+    SetConstraintBounds(row, -variable_upper_bounds_[slack_variable],
+                        -variable_lower_bounds_[slack_variable]);
+    slack_variables[slack_variable] = true;
+  }
+
+  DeleteColumns(slack_variables);
+  first_slack_variable_ = kInvalidCol;
 }
 
 void LinearProgram::Scale(SparseMatrixScaler* scaler) {
@@ -1039,7 +1137,8 @@ std::string LinearProgram::ProblemStatFormatter(const char* format) const {
       continue;
     }
     LOG(DFATAL) << "There is a bug since all possible cases for the row bounds "
-                   "should have been accounted for. row=" << row;
+                   "should have been accounted for. row="
+                << row;
   }
 
   const int num_integer_variables = IntegerVariablesList().size();
@@ -1096,6 +1195,19 @@ void LinearProgram::ResizeRowsIfNeeded(RowIndex row) {
     constraint_upper_bounds_.resize(row + 1, Fractional(0.0));
     constraint_names_.resize(row + 1, "");
   }
+}
+
+bool LinearProgram::IsInEquationForm() const {
+  for (RowIndex constraint(0); constraint < num_constraints(); ++constraint) {
+    if (constraint_lower_bounds_[constraint] != 0.0 ||
+        constraint_upper_bounds_[constraint] != 0.0) {
+      return false;
+    }
+  }
+  const ColIndex num_slack_variables =
+      num_variables() - GetFirstSlackVariable();
+  return num_constraints().value() == num_slack_variables.value() &&
+         IsRightMostSquareMatrixIdentity(matrix_);
 }
 
 // --------------------------------------------------------

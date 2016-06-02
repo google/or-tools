@@ -27,9 +27,8 @@
 // of any class of problems where that actually happens. An additional sqrt(n)
 // factor could be shaved off the running time bound using the technique
 // described in http://dx.doi.org/10.1137/S0895480194281185
-// (see also http://theory.stanford.edu/~robert/papers/glob_upd.ps)
-// but in the practical implementation jimbob@ could never get that approach to
-// yield faster code.
+// (see also http://theory.stanford.edu/~robert/papers/glob_upd.ps).
+//
 //
 // Example usage:
 //
@@ -142,8 +141,8 @@
 //     push additional flow along such an arc without violating
 //     epsilon-optimality. In the case of a left-to-right residual
 //     arc, the reduced cost must be at most epsilon/2. In the case of
-//     a right-to-left residual arc, the reduced cost must be at most
-//     -epsilon/2. The careful reader will note that these thresholds
+//     a right-to-left residual arc, the reduced cost must be at
+//     most -epsilon/2. The careful reader will note that these thresholds
 //     are not used explicitly anywhere in this implementation, and
 //     the reason is the implicit pricing of left-side nodes.
 //   Reduced cost: Essentially an arc's reduced cost is its
@@ -189,7 +188,7 @@
 //
 // [ Ahuja et al. ] R. K. Ahuja, T. L. Magnanti, J. B. Orlin, "Network Flows:
 // Theory, Algorithms, and Applications," Prentice Hall, 1993,
-// ISBN: 978-0136175490, http://www.amazon.com/dp/013617549X
+// ISBN: 978-0136175490, http://www.amazon.com/dp/013617549X.
 //
 // Keywords: linear sum assignment problem, Hungarian method, Goldberg, Kennedy.
 

@@ -26,7 +26,7 @@
 #include "google/protobuf/io/tokenizer.h"
 #include "base/status.h"
 
-// This file defines some IO interfaces to compatible with Google
+// This file defines some IO interfaces for compatibility with Google
 // IO specifications.
 namespace operations_research {
 
@@ -42,7 +42,7 @@ class File {
   }
 #endif  // SWIG
 
-  // Opens file "name" with flags specified by "flag"
+  // Opens file "name" with flags specified by "flag".
   // If open failed, program will exit.
   static File* OpenOrDie(const char* const name, const char* const flag);
 
@@ -60,7 +60,7 @@ class File {
   void ReadOrDie(void* const buff, size_t size);
 
   // Reads a line from file to a std::string.
-  // Each line must be no more than max_length bytes
+  // Each line must be no more than max_length bytes.
   char* ReadLine(char* const output, uint64 max_length);
 
   // Reads the whole file to a std::string, with a maximum length of 'max_length'.

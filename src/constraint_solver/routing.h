@@ -15,27 +15,30 @@
 // The vehicle routing library lets one model and solve generic vehicle routing
 // problems ranging from the Traveling Salesman Problem to more complex
 // problems such as the Capacitated Vehicle Routing Problem with Time Windows.
+//
 // The objective of a vehicle routing problem is to build routes covering a set
 // of nodes minimizing the overall cost of the routes (usually proportional to
 // the sum of the lengths of each segment of the routes) while respecting some
 // problem-specific constraints (such as the length of a route). A route is
 // equivalent to a path connecting nodes, starting/ending at specific
 // starting/ending nodes.
+//
 // The term "vehicle routing" is historical and the category of problems solved
 // is not limited to the routing of vehicles: any problem involving finding
 // routes visiting a given number of nodes optimally falls under this category
 // of problems, such as finding the optimal sequence in a playlist.
-// The literature around vehicle routing problems is extremelly dense but one
+// The literature around vehicle routing problems is extremely dense but one
 // can find some basic introductions in the following links:
-// http://en.wikipedia.org/wiki/Travelling_salesman_problem
-// http://www.tsp.gatech.edu/history/index.html
-// http://en.wikipedia.org/wiki/Vehicle_routing_problem
+// - http://en.wikipedia.org/wiki/Travelling_salesman_problem
+// - http://www.tsp.gatech.edu/history/index.html
+// - http://en.wikipedia.org/wiki/Vehicle_routing_problem
 //
 // The vehicle routing library is a vertical layer above the constraint
 // programming library (constraint_programming:cp).
 // One has access to all underlying constrained variables of the vehicle
 // routing model which can therefore be enriched by adding any constraint
 // available in the constraint programming library.
+//
 // There are two sets of variables available:
 // - path variables:
 //   * "next(i)" variables representing the immediate successor of the node
@@ -55,7 +58,7 @@
 //     after visiting the node corresponding to i.
 // Solving the vehicle routing problems is mainly done using approximate methods
 // (namely local search,
-// cf. http://en.wikipedia.org/wiki/Local_search_(optimization)), potentially
+// cf. http://en.wikipedia.org/wiki/Local_search_(optimization) ), potentially
 // combined with exact techniques based on dynamic programming and exhaustive
 // tree search.
 // TODO(user): Add a section on costs (vehicle arc costs, span costs,
@@ -91,7 +94,7 @@
 //       size (in number of nodes) up to cp_local_search_tsp_opt_size (flag with
 //       a default value of 13 nodes). It is not activated by default because it
 //       can slow down the search.
-//   * Meta-heuritics: used to guide the search out of local minima found by
+//   * Meta-heuristics: used to guide the search out of local minima found by
 //     local search. Note that, in general, a search with metaheuristics
 //     activated never stops, therefore one must specify a search limit.
 //     Several types of metaheuristics are provided:
@@ -118,7 +121,7 @@
 //     }
 //
 // - Create a routing model for a given problem size (int number of nodes) and
-//   number of routes (here 1):
+//   number of routes (here, 1):
 //
 //     RoutingModel routing(...number of nodes..., 1);
 //
@@ -135,7 +138,7 @@
 //    const Assignment* solution = routing.Solve();
 //    CHECK(solution != nullptr);
 //
-// - Inspect the solution cost and route (only one route here:
+// - Inspect the solution cost and route (only one route here):
 //
 //    LOG(INFO) << "Cost " << solution->ObjectiveValue();
 //    const int route_number = 0;
@@ -145,9 +148,7 @@
 //      LOG(INFO) << routing.IndexToNode(node);
 //    }
 //
-// More information on the usage of the routing library can be found here:
-// More information on the range of vehicle routing problems the library can
-// tackle can be found here:
+//
 // Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
@@ -218,7 +219,7 @@ class RoutingModel {
   typedef _RoutingModel_VehicleClassIndex VehicleClassIndex;
   typedef ResultCallback1<int64, int64> VehicleEvaluator;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
-  typedef ResultCallback2<int64, int64, int64> TransitEvaluator2;
+  typedef std::function<int64(int64, int64)> TransitEvaluator2;
   typedef std::pair<int, int> NodePair;
   typedef std::vector<NodePair> NodePairs;
 // TODO(user): Remove all SWIG guards by adding the @ignore in .swig.
@@ -241,7 +242,7 @@ class RoutingModel {
   };
   typedef ResultCallback2<StateDependentTransit, NodeIndex, NodeIndex>
       VariableNodeEvaluator2;
-  typedef ResultCallback2<StateDependentTransit, int64, int64>
+  typedef std::function<StateDependentTransit(int64, int64)>
       VariableIndexEvaluator2;
 #endif  // SWIG
 
@@ -271,8 +272,19 @@ class RoutingModel {
     // their transit evaluator (the raw version that takes var index, not Node
     // Index) and their span cost coefficient, we just store those.
     // This is sorted by the natural operator < (and *not* by DimensionIndex).
-    std::vector<std::pair<TransitEvaluator2*, int64> >
-        dimension_transit_evaluator_and_cost_coefficient;
+    struct DimensionCost {
+      int64 transit_evaluator_class;
+      int64 cost_coefficient;
+      const RoutingDimension* dimension;
+      bool operator<(const DimensionCost& cost) const {
+        if (transit_evaluator_class != cost.transit_evaluator_class) {
+          return transit_evaluator_class < cost.transit_evaluator_class;
+        }
+        return cost_coefficient < cost.cost_coefficient;
+      }
+    };
+    std::vector<DimensionCost>
+        dimension_transit_evaluator_class_and_cost_coefficient;
 
     explicit CostClass(NodeEvaluator2* arc_cost_evaluator)
         : arc_cost_evaluator(arc_cost_evaluator) {
@@ -284,8 +296,8 @@ class RoutingModel {
       if (a.arc_cost_evaluator != b.arc_cost_evaluator) {
         return a.arc_cost_evaluator < b.arc_cost_evaluator;
       }
-      return a.dimension_transit_evaluator_and_cost_coefficient <
-             b.dimension_transit_evaluator_and_cost_coefficient;
+      return a.dimension_transit_evaluator_class_and_cost_coefficient <
+             b.dimension_transit_evaluator_class_and_cost_coefficient;
     }
   };
 
@@ -310,7 +322,7 @@ class RoutingModel {
     ITIVector<DimensionIndex, int64> dimension_capacities;
     // dimension_evaluators[d]->Run(from, to) is the transit value of arc
     // from->to for a dimension d.
-    ITIVector<DimensionIndex, TransitEvaluator2*> dimension_evaluators;
+    ITIVector<DimensionIndex, int64> dimension_evaluator_classes;
     // Fingerprint of unvisitable non-start/end nodes.
     uint64 unvisitable_nodes_fprint;
 
@@ -419,7 +431,7 @@ class RoutingModel {
   // model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddVectorDimension(const int64* values, int64 capacity,
+  bool AddVectorDimension(std::vector<int64> values, int64 capacity,
                           bool fix_start_cumul_to_zero, const std::string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'values[i][next(i)]' for node i; 'capacity' is the upper bound of
@@ -428,7 +440,7 @@ class RoutingModel {
   // model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddMatrixDimension(const int64* const* values, int64 capacity,
+  bool AddMatrixDimension(std::vector<std::vector<int64> > values, int64 capacity,
                           bool fix_start_cumul_to_zero, const std::string& name);
 #if !defined(SWIG)
   // Creates a dimension with transits depending on the cumuls of another
@@ -595,8 +607,10 @@ class RoutingModel {
   // Sets the cost function of the model such that the cost of a segment of a
   // route between node 'from' and 'to' is evaluator(from, to), whatever the
   // route or vehicle performing the route.
+  // Takes ownership of the callback 'evaluator'.
   void SetArcCostEvaluatorOfAllVehicles(NodeEvaluator2* evaluator);
   // Sets the cost function for a given vehicle route.
+  // Takes ownership of the callback 'evaluator'.
   void SetArcCostEvaluatorOfVehicle(NodeEvaluator2* evaluator, int vehicle);
   // Sets the fixed cost of all vehicle routes. It is equivalent to calling
   // SetFixedCostOfVehicle on all vehicle routes.
@@ -907,6 +921,10 @@ class RoutingModel {
       const RoutingSearchParameters& search_parameters) const;
   int64 GetNumberOfRejectsInFirstSolution(
       const RoutingSearchParameters& search_parameters) const;
+
+  // Internal only: initializes the builders used to build a solver model from
+  // CpModels.
+  static void InitializeBuilders(Solver* solver);
 
   // DEPRECATED METHODS.
   // Don't use these methods; instead use their proposed replacement (in
@@ -1252,14 +1270,25 @@ class RoutingModel {
   DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
 
+// Routing model visitor.
+class RoutingModelVisitor : public BaseObject {
+ public:
+  // Constraint types.
+  static const char kLightElement[];
+  static const char kLightElement2[];
+};
+
 // Dimensions represent quantities accumulated at nodes along the routes. They
 // represent quantities such as weights or volumes carried along the route, or
 // distance or times.
+//
 // Quantities at a node are represented by "cumul" variables and the increase
 // or decrease of quantities between nodes are represented by "transit"
 // variables. These variables are linked as follows:
+//
 // if j == next(i),
 // cumuls(j) = cumuls(i) + transits(i) + slacks(i) + state_dependent_transits(i)
+//
 // where slack is a positive slack variable (can represent waiting times for
 // a time dimension), and state_dependent_transits is a non-purely functional
 // version of transits_. Favour transits over state_dependent_transits when
@@ -1271,6 +1300,12 @@ class RoutingDimension {
   // this value is the one taken by the corresponding transit variable when
   // the 'next' variable for 'from_index' is bound to 'to_index'.
   int64 GetTransitValue(int64 from_index, int64 to_index, int64 vehicle) const;
+  // Same as above but taking a vehicle class of the dimension instead of a
+  // vehicle (the class of a vehicle can be obtained with vehicle_to_class()).
+  int64 GetTransitValueFromClass(int64 from_index, int64 to_index,
+                                 int64 vehicle_class) const {
+    return class_evaluators_[vehicle_class](from_index, to_index);
+  }
   // Get the cumul, transit and slack variables for the given node (given as
   // int64 var index).
   IntVar* CumulVar(int64 index) const { return cumuls_[index]; }
@@ -1289,9 +1324,10 @@ class RoutingDimension {
   }
   // Returns the callback evaluating the transit value between two node indices
   // for a given vehicle.
-  RoutingModel::TransitEvaluator2* transit_evaluator(int vehicle) const {
-    return transit_evaluators_[vehicle];
+  const RoutingModel::TransitEvaluator2& transit_evaluator(int vehicle) const {
+    return class_evaluators_[vehicle_to_class_[vehicle]];
   }
+  int vehicle_to_class(int vehicle) const { return vehicle_to_class_[vehicle]; }
 #endif  // !defined(SWIGCSHARP) && !defined(SWIGJAVA)
 #endif  // !defined(SWIGPYTHON)
   // Sets an upper bound on the dimension span on a given vehicle. This is the
@@ -1516,8 +1552,7 @@ class RoutingDimension {
   std::vector<IntVar*> fixed_transits_;
   // "transit_evaluators_" does the indexing by vehicle, while
   // "class_evaluators_" does the de-duplicated ownership.
-  std::vector<RoutingModel::TransitEvaluator2*> transit_evaluators_;
-  std::vector<std::unique_ptr<RoutingModel::TransitEvaluator2> > class_evaluators_;
+  std::vector<RoutingModel::TransitEvaluator2> class_evaluators_;
   std::vector<int64> vehicle_to_class_;
 
   // The transits of a dimension may depend on its cumuls or the cumuls of
@@ -1527,9 +1562,7 @@ class RoutingDimension {
 
   // "state_dependent_transit_evaluators_" does the indexing by vehicle, while
   // "state_dependent_class_evaluators_" does the de-duplicated ownership.
-  std::vector<RoutingModel::VariableIndexEvaluator2*>
-      state_dependent_transit_evaluators_;
-  std::vector<std::unique_ptr<RoutingModel::VariableIndexEvaluator2> >
+  std::vector<RoutingModel::VariableIndexEvaluator2>
       state_dependent_class_evaluators_;
   std::vector<int64> state_dependent_vehicle_to_class_;
 
@@ -1940,6 +1973,19 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
 
   const int64 saving_neighbors_;
   int64 size_squared_;
+};
+
+// Christofides addition heuristic. Initially created to solve TSPs, extended to
+// support any model by extending routes as much as possible following the path
+// found by the heuristic, before starting a new route.
+
+class ChristofidesFilteredDecisionBuilder
+    : public RoutingFilteredDecisionBuilder {
+ public:
+  ChristofidesFilteredDecisionBuilder(
+      RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
+  ~ChristofidesFilteredDecisionBuilder() override {}
+  bool BuildSolution() override;
 };
 
 // Routing filters

@@ -37,8 +37,8 @@ Status Markowitz::ComputeRowAndColumnPermutation(const MatrixView& basis_matrix,
   // Initialize all the matrices.
   lower_.Reset(num_rows);
   upper_.Reset(num_rows);
-  permuted_lower_.PopulateFromZero(num_rows, num_cols);
-  permuted_upper_.PopulateFromZero(num_rows, num_cols);
+  permuted_lower_.Reset(num_cols);
+  permuted_upper_.Reset(num_cols);
   permuted_lower_column_needs_solve_.assign(num_cols, false);
   contains_only_singleton_columns_ = true;
 
@@ -113,14 +113,13 @@ Status Markowitz::ComputeRowAndColumnPermutation(const MatrixView& basis_matrix,
       lower_.AddDiagonalOnlyColumn(1.0);
       upper_.AddTriangularColumn(basis_matrix.column(pivot_col), pivot_row);
     } else {
-      SparseColumn* lower_column = permuted_lower_.mutable_column(pivot_col);
-      lower_.AddAndNormalizeTriangularColumn(*lower_column, pivot_row,
-                                             pivot_coefficient);
-      lower_column->ClearAndRelease();
+      lower_.AddAndNormalizeTriangularColumn(permuted_lower_.column(pivot_col),
+                                             pivot_row, pivot_coefficient);
+      permuted_lower_.ClearAndReleaseColumn(pivot_col);
 
       upper_.AddTriangularColumnWithGivenDiagonalEntry(
           permuted_upper_.column(pivot_col), pivot_row, pivot_coefficient);
-      permuted_upper_.mutable_column(pivot_col)->ClearAndRelease();
+      permuted_upper_.ClearAndReleaseColumn(pivot_col);
     }
 
     // Update the permutations.
@@ -649,7 +648,7 @@ bool MatrixNonZeroPattern::IsColumnDeleted(ColIndex col) const {
 }
 
 void MatrixNonZeroPattern::RemoveDeletedColumnsFromRow(RowIndex row) {
-  std::vector<ColIndex>& ref = row_non_zero_[row];
+  auto& ref = row_non_zero_[row];
   int new_index = 0;
   const int end = ref.size();
   for (int i = 0; i < end; ++i) {
@@ -724,28 +723,23 @@ void MatrixNonZeroPattern::Update(RowIndex pivot_row, ColIndex pivot_col,
 }
 
 void MatrixNonZeroPattern::MergeInto(RowIndex pivot_row, RowIndex row) {
-  // Compute the fill-in in col_scratchpad_.
   // Note that bool_scratchpad_ must be already false on the positions in
   // row_non_zero_[pivot_row].
-  col_scratchpad_.clear();
   for (const ColIndex col : row_non_zero_[row]) {
     bool_scratchpad_[col] = true;
   }
+
+  auto& non_zero = row_non_zero_[row];
+  const int old_size = non_zero.size();
   for (const ColIndex col : row_non_zero_[pivot_row]) {
     if (bool_scratchpad_[col]) {
       bool_scratchpad_[col] = false;
     } else {
-      col_scratchpad_.push_back(col);
+      non_zero.push_back(col);
+      ++col_degree_[col];
     }
   }
-
-  // Add the fill-in to the pattern.
-  for (const ColIndex col : col_scratchpad_) {
-    ++col_degree_[col];
-  }
-  row_degree_[row] += col_scratchpad_.size();
-  row_non_zero_[row].insert(row_non_zero_[row].end(), col_scratchpad_.begin(),
-                            col_scratchpad_.end());
+  row_degree_[row] += non_zero.size() - old_size;
 }
 
 namespace {
@@ -753,10 +747,10 @@ namespace {
 // Given two sorted vectors (the second one is the initial value of out), merges
 // them and outputs the sorted result in out. The merge is stable and an element
 // of input_a will appear before the identical elements of the second input.
-void MergeSortedVectors(const std::vector<ColIndex>& input_a,
-                        std::vector<ColIndex>* out) {
+template <typename V, typename W>
+void MergeSortedVectors(const V& input_a, W* out) {
   if (input_a.empty()) return;
-  const std::vector<ColIndex>& input_b = *out;
+  const auto& input_b = *out;
   int index_a = input_a.size() - 1;
   int index_b = input_b.size() - 1;
   int index_out = input_a.size() + input_b.size();
@@ -788,8 +782,8 @@ void MergeSortedVectors(const std::vector<ColIndex>& input_a,
 // pattern using this temporary vector.
 void MatrixNonZeroPattern::MergeIntoSorted(RowIndex pivot_row, RowIndex row) {
   // We want to add the entries of the input not already in the output.
-  const std::vector<ColIndex>& input = row_non_zero_[pivot_row];
-  const std::vector<ColIndex>& output = row_non_zero_[row];
+  const auto& input = row_non_zero_[pivot_row];
+  const auto& output = row_non_zero_[row];
 
   // These two resizes are because of the set_difference() output iterator api.
   col_scratchpad_.resize(input.size());
@@ -853,6 +847,46 @@ ColIndex ColumnPriorityQueue::Pop() {
   col_index_[col] = -1;
   col_degree_[col] = 0;
   return col;
+}
+
+void SparseMatrixWithReusableColumnMemory::Reset(ColIndex num_cols) {
+  mapping_.assign(num_cols.value(), -1);
+  free_columns_.clear();
+  columns_.clear();
+}
+
+const SparseColumn& SparseMatrixWithReusableColumnMemory::column(
+    ColIndex col) const {
+  if (mapping_[col] == -1) return empty_column_;
+  return columns_[mapping_[col]];
+}
+
+SparseColumn* SparseMatrixWithReusableColumnMemory::mutable_column(
+    ColIndex col) {
+  if (mapping_[col] != -1) return &columns_[mapping_[col]];
+  int new_col_index;
+  if (free_columns_.empty()) {
+    new_col_index = columns_.size();
+    columns_.push_back(SparseColumn());
+  } else {
+    new_col_index = free_columns_.back();
+    free_columns_.pop_back();
+  }
+  mapping_[col] = new_col_index;
+  return &columns_[new_col_index];
+}
+
+void SparseMatrixWithReusableColumnMemory::ClearAndReleaseColumn(ColIndex col) {
+  DCHECK_NE(mapping_[col], -1);
+  free_columns_.push_back(mapping_[col]);
+  columns_[mapping_[col]].Clear();
+  mapping_[col] = -1;
+}
+
+void SparseMatrixWithReusableColumnMemory::Clear() {
+  mapping_.clear();
+  free_columns_.clear();
+  columns_.clear();
 }
 
 }  // namespace glop

@@ -650,7 +650,6 @@ class DimensionLessThanConstant : public Dimension {
 
 class DimensionSumCallbackLessThanConstant : public Dimension {
  public:
-  // Ownership is taken by the class. The callback has to be permanent.
   DimensionSumCallbackLessThanConstant(Solver* const s, Pack* const p,
                                        Solver::IndexEvaluator1 weights,
                                        int vars_count,
@@ -750,7 +749,6 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
 
 class DimensionLessThanConstantCallback2 : public Dimension {
  public:
-  // Ownership is taken by the class. The callback has to be permanent.
   DimensionLessThanConstantCallback2(Solver* const s, Pack* const p,
                                      Solver::IndexEvaluator2 weights,
                                      int vars_count,

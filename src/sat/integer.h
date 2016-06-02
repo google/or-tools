@@ -227,8 +227,9 @@ class IntegerTrail : public Propagator {
   std::vector<int> dependencies_buffer_;
 
   // Temporary data used by MergeReasonInto().
-  mutable std::priority_queue<int> tmp_pq_;
-  mutable std::vector<bool> tmp_seen_;
+  mutable std::vector<int> tmp_queue_;
+  mutable std::vector<int> tmp_trail_indices_;
+  mutable ITIVector<LbVar, int> tmp_var_to_highest_explained_trail_index_;
 
   // Lazy reason repository.
   std::vector<std::vector<Literal>> literal_reasons_;
@@ -254,7 +255,34 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int lb,
   };
 }
 
-// This class allows to register Propagator that will be called if one of their
+inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable v, int lb) {
+  return [=](Model* model) {
+    model->GetOrCreate<IntegerTrail>()->Enqueue(
+        IntegerLiteral::GreaterOrEqual(v, lb), std::vector<Literal>(),
+        std::vector<IntegerLiteral>());
+  };
+}
+inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int ub) {
+  return [=](Model* model) {
+    model->GetOrCreate<IntegerTrail>()->Enqueue(
+        IntegerLiteral::LowerOrEqual(v, ub), std::vector<Literal>(),
+        std::vector<IntegerLiteral>());
+  };
+}
+
+inline std::function<int(const Model&)> LowerBound(IntegerVariable v) {
+  return [=](const Model& model) {
+    return model.Get<IntegerTrail>()->LowerBound(v);
+  };
+}
+
+inline std::function<int(const Model&)> UpperBound(IntegerVariable v) {
+  return [=](const Model& model) {
+    return model.Get<IntegerTrail>()->UpperBound(v);
+  };
+}
+
+// This class allows registering Propagator that will be called if a
 // watched Literal or LbVar changes.
 class GenericLiteralWatcher : public Propagator {
  public:
@@ -265,7 +293,7 @@ class GenericLiteralWatcher : public Propagator {
     GenericLiteralWatcher* watcher =
         new GenericLiteralWatcher(model->GetOrCreate<IntegerTrail>());
 
-    // TODO(user): This propagator currently need to be last because it is the
+    // TODO(user): This propagator currently needs to be last because it is the
     // only one enforcing that a fix-point is reached on the integer variables.
     // Figure out a better interaction between the sat propagation loop and
     // this one.
@@ -274,9 +302,9 @@ class GenericLiteralWatcher : public Propagator {
     return watcher;
   }
 
-  // On propagate, the registered propagators will be called if they needs to
+  // On propagate, the registered propagators will be called if they need to
   // until a fixed point is reached. Propagators with low ids will tend to be
-  // called first, but it ultimally depends on their "waking" order.
+  // called first, but it ultimately depends on their "waking" order.
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int literal_trail_index) final;
 
@@ -301,7 +329,7 @@ class GenericLiteralWatcher : public Propagator {
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<LbVar> modified_vars_;
 
-  // Propagators ids that needs to be called.
+  // Propagator ids that needs to be called.
   std::deque<int> queue_;
   std::vector<bool> in_queue_;
 

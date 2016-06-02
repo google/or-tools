@@ -173,8 +173,6 @@ class MatrixNonZeroPattern {
   // non-sorted version. Investigate more.
   void MergeIntoSorted(RowIndex pivot_row, RowIndex row);
 
-  // TODO(user): use vector32 and maybe a specialized vector for small sizes
-  // like InlinedVector?
   ITIVector<RowIndex, std::vector<ColIndex>> row_non_zero_;
   StrictITIVector<RowIndex, int32> row_degree_;
   StrictITIVector<ColIndex, int32> col_degree_;
@@ -215,6 +213,43 @@ class ColumnPriorityQueue {
   std::vector<std::vector<ColIndex>> col_by_degree_;
   int32 min_degree_;
   DISALLOW_COPY_AND_ASSIGN(ColumnPriorityQueue);
+};
+
+// Contains a set of columns indexed by ColIndex. This is like a SparseMatrix
+// but this class is optimized for the case where only a small subset of columns
+// is needed at the same time (like it is the case in our LU algorithm). It
+// reuses the memory of the columns that are no longer needed.
+class SparseMatrixWithReusableColumnMemory {
+ public:
+  SparseMatrixWithReusableColumnMemory() {}
+
+  // Resets the repository to num_cols empty columns.
+  void Reset(ColIndex num_cols);
+
+  // Returns the column with given index.
+  const SparseColumn& column(ColIndex col) const;
+
+  // Gets the mutable column with given column index. The returned vector
+  // address is only valid until the next call to mutable_column().
+  SparseColumn* mutable_column(ColIndex col);
+
+  // Clears the column with given index and releases its memory to the common
+  // memory pool that is used to create new mutable_column() on demand.
+  void ClearAndReleaseColumn(ColIndex col);
+
+  // Reverts this class to its initial state. This releases the memory of the
+  // columns that were used but not the memory of this class member (this should
+  // be fine).
+  void Clear();
+
+ private:
+  // mutable_column(col) is stored in columns_[mapping_[col]].
+  // The columns_ that can be reused have their index stored in free_columns_.
+  const SparseColumn empty_column_;
+  ITIVector<ColIndex, int> mapping_;
+  std::vector<int> free_columns_;
+  std::vector<SparseColumn> columns_;
+  DISALLOW_COPY_AND_ASSIGN(SparseMatrixWithReusableColumnMemory);
 };
 
 // The class that computes either the actual L.U decomposition, or the
@@ -349,8 +384,8 @@ class Markowitz {
   // These matrices are transformed during the algorithm into the final L and U
   // matrices modulo some row and column permutations. Note that the columns of
   // these matrices stay in the initial order.
-  SparseMatrix permuted_lower_;
-  SparseMatrix permuted_upper_;
+  SparseMatrixWithReusableColumnMemory permuted_lower_;
+  SparseMatrixWithReusableColumnMemory permuted_upper_;
 
   // These matrices will hold the final L and U. The are created columns by
   // columns from left to right, and at the end, their rows are permuted by

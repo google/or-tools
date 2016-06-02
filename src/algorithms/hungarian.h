@@ -12,24 +12,22 @@
 // limitations under the License.
 
 //
-// IMPORTANT NOTE: we advise to use the code in
+// IMPORTANT NOTE: we advise using the code in
 // graph/linear_assignment.h whose complexity is
 // usually much smaller.
 // TODO(user): base this code on LinearSumAssignment.
 //
-// See: //depot/google3/java/com/google/wireless/genie/frontend
-//       /mixer/matching/HungarianOptimizer.java
 
-// An O(n^4) implementation of the Kuhn-Munkres algorithm (aka the
+// An O(n^4) implementation of the Kuhn-Munkres algorithm (a.k.a. the
 // Hungarian algorithm) for solving the assignment problem.
 // The assignment problem takes a set of agents, a set of tasks and a
 // cost associated with assigning each agent to each task and produces
-// an optimal (i.e. least cost) assignment of agents to tasks.
-// The code also enables to compute a maximum assignment by changing the
+// an optimal (i.e., least cost) assignment of agents to tasks.
+// The code also enables computing a maximum assignment by changing the
 // input matrix.
 //
 // This code is based on (read: translated from) the Java version
-// (read: translated from) the python version at
+// (read: translated from) the Python version at
 //   http://www.clapper.org/software/python/munkres/
 // which in turn is based on
 //   http://www.public.iastate.edu/~ddoty/HungarianAlgorithm.html.

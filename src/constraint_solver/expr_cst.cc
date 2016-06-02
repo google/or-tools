@@ -27,6 +27,8 @@
 #include "base/stl_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/saturated_arithmetic.h"
+#include "util/sorted_interval_list.h"
 
 DEFINE_int32(cache_initial_size, 1024,
              "Initial size of the array of the hash "
@@ -1360,20 +1362,14 @@ IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
 }
 
 namespace {
-class ForbiddenIntervals : public Constraint {
+class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
  public:
-  ForbiddenIntervals(Solver* const solver, IntVar* var, std::vector<int64> starts,
-          const std::vector<int64>& ends)
-      : Constraint(solver),
-        var_(var),
-        starts_(std::move(starts)),
-        ends_(std::move(ends)),
-        first_active_interval_(0),
-        last_active_interval_(starts_.size() - 1) {
-    CHECK_EQ(starts_.size(), ends_.size());
-  }
+  SortedDisjointForbiddenIntervalsConstraint(
+      Solver* const solver, IntVar* const var,
+      const SortedDisjointIntervalList& intervals)
+      : Constraint(solver), var_(var), intervals_(intervals) {}
 
-  ~ForbiddenIntervals() override {}
+  ~SortedDisjointForbiddenIntervalsConstraint() override {}
 
   void Post() override {
     Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
@@ -1383,61 +1379,64 @@ class ForbiddenIntervals : public Constraint {
   void InitialPropagate() override {
     const int64 vmin = var_->Min();
     const int64 vmax = var_->Max();
-    int first = first_active_interval_.Value();
-    int last = last_active_interval_.Value();
-    while (first <= last) {
-      if (ends_[first] < vmin) {
-        first++;
-      } else {
-        break;
-      }
-    }
-
-    while (first <= last) {
-      if (starts_[last] > vmax) {
-        last--;
-      } else {
-        break;
-      }
-    }
-
-    first_active_interval_.SetValue(solver(), first);
-    last_active_interval_.SetValue(solver(), last);
-
-    if (first > last) {  // no active interval
+    const auto first_interval_it = intervals_.FirstIntervalGreaterOrEqual(vmin);
+    if (first_interval_it == intervals_.end()) {
+      // No interval intersects the variable's range. Nothing to do.
       return;
     }
+    const auto last_interval_it = intervals_.LastIntervalLessOrEqual(vmax);
+    CHECK(last_interval_it != intervals_.end());
+    // TODO(user): Quick fail if first_interval_it == last_interval_it, which
+    // would imply that the interval contains the entire range of the variable?
+    if (vmin >= first_interval_it->start) {
+      // The variable's minimum is inside a forbidden interval. Move it to the
+      // interval's end.
+      var_->SetMin(CapAdd(first_interval_it->end, 1));
+    }
+    if (vmax <= last_interval_it->end) {
+      // Ditto, on the other side.
+      var_->SetMax(CapSub(last_interval_it->start, 1));
+    }
+  }
 
-    // Should we propagate?
-    if (vmin >= starts_[first]) {
-      var_->SetMin(ends_[first] + 1);
+  std::string DebugString() const override {
+    return StringPrintf("ForbiddenIntervalCt(%s, %s)",
+                        var_->DebugString().c_str(),
+                        intervals_.DebugString().c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kNotMember, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            var_);
+    std::vector<int64> starts;
+    std::vector<int64> ends;
+    for (auto& interval : intervals_) {
+      starts.push_back(interval.start);
+      ends.push_back(interval.end);
     }
-    if (vmax <= ends_[last]) {
-      var_->SetMax(starts_[last] - 1);
-    }
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kStartsArgument, starts);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kEndsArgument, ends);
+    visitor->EndVisitConstraint(ModelVisitor::kNotMember, this);
   }
 
  private:
   IntVar* const var_;
-  std::vector<int64> starts_;
-  std::vector<int64> ends_;
-  Rev<int> first_active_interval_;
-  Rev<int> last_active_interval_;
+  const SortedDisjointIntervalList intervals_;
 };
 }  // namespace
 
-Constraint* Solver::MakeForbiddenIntervalCt(IntExpr* const expr,
-                                            std::vector<int64> starts,
-                                            std::vector<int64> ends) {
-  return RevAlloc(new ForbiddenIntervals(this, expr->Var(),
-                                         std::move(starts), std::move(ends)));
+Constraint* Solver::MakeNotMemberCt(IntExpr* const expr, std::vector<int64> starts,
+                                    std::vector<int64> ends) {
+  SortedDisjointIntervalList intervals(starts, ends);
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), intervals));
 }
 
-Constraint* Solver::MakeForbiddenIntervalCt(IntExpr* const expr,
-                                            std::vector<int> starts,
-                                            std::vector<int> ends) {
-  return RevAlloc(new ForbiddenIntervals(this, expr->Var(),
-                                         ToInt64Vector(starts),
-                                         ToInt64Vector(ends)));
+Constraint* Solver::MakeNotMemberCt(IntExpr* const expr, std::vector<int> starts,
+                                    std::vector<int> ends) {
+  SortedDisjointIntervalList intervals(starts, ends);
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), intervals));
 }
 }  // namespace operations_research

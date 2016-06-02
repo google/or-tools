@@ -119,7 +119,7 @@ message ConstraintSolverParameters {
   bool diffn_use_cumulative = 110;
 
   //
-  // Constrol the implementation of the element constraint.
+  // Control the implementation of the element constraint.
   //
   bool use_element_rmq = 111;
 };

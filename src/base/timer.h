@@ -28,7 +28,7 @@ class WallTimer {
     running_ = false;
     sum_ = 0;
   }
-  // Multiple Start() will simply only take into account the last one.
+  // When Start() is called multiple times, only the most recent is used.
   void Start() {
     running_ = true;
     start_ = base::GetCurrentTimeNanos();

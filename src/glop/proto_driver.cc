@@ -25,6 +25,7 @@
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "base/timer.h"
+#include "base/filesystem.h"
 #include "base/file.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
@@ -215,7 +216,7 @@ int main(int argc, char* argv[]) {
       "The files must be in text proto format.",
       &argc, &argv, true);
   std::vector<std::string> file_list;
-  File::Match(FLAGS_input, &file_list);
+  file::Match(FLAGS_input, &file_list, file::Defaults()).IgnoreError();
   const int size = file_list.size();
   std::vector<InstanceResult> clp_result(size);
   std::vector<InstanceResult> glop_result(size);

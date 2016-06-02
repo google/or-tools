@@ -926,6 +926,32 @@ class ToMinimizationPreprocessor : public Preprocessor {
   DISALLOW_COPY_AND_ASSIGN(ToMinimizationPreprocessor);
 };
 
+// --------------------------------------------------------
+// AddSlackVariablesPreprocessor
+// --------------------------------------------------------
+// Transforms the linear program to the equation form
+// min c.x, s.t. A.x = 0. This is done by:
+// 1. Introducing slack variables for all constraints; all these variables are
+//    introduced with coefficient 1.0, and their bounds are set to be negative
+//    bounds of the corresponding constraint.
+// 2. Changing the bounds of all constraints to (0, 0) to make them an equality.
+//
+// As a consequence, the matrix of the linear program always has full row rank
+// after this preprocessor. Note that the slack variables are always added last,
+// so that the rightmost square sub-matrix is always the identity matrix.
+class AddSlackVariablesPreprocessor : public Preprocessor {
+ public:
+  AddSlackVariablesPreprocessor() {}
+  ~AddSlackVariablesPreprocessor() final {}
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
+  void RecoverSolution(ProblemSolution* solution) const final;
+
+ private:
+  ColIndex first_slack_col_;
+
+  DISALLOW_COPY_AND_ASSIGN(AddSlackVariablesPreprocessor);
+};
+
 }  // namespace glop
 }  // namespace operations_research
 

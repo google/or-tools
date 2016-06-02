@@ -23,6 +23,7 @@
 #include "base/small_map.h"
 #include "base/small_ordered_set.h"
 #include "constraint_solver/routing.h"
+#include "graph/hamiltonian_path.h"
 #include "util/bitset.h"
 #include "util/saturated_arithmetic.h"
 
@@ -410,7 +411,7 @@ class ChainCumulFilter : public BasePathFilter {
   const std::vector<IntVar*> cumuls_;
   std::vector<int64> start_to_vehicle_;
   std::vector<int64> start_to_end_;
-  std::vector<RoutingModel::TransitEvaluator2*> evaluators_;
+  std::vector<const RoutingModel::TransitEvaluator2*> evaluators_;
   RoutingModel::VehicleEvaluator* const capacity_evaluator_;
   std::vector<int64> current_path_cumul_mins_;
   std::vector<int64> current_max_of_path_end_cumul_mins_;
@@ -439,7 +440,7 @@ ChainCumulFilter::ChainCumulFilter(const RoutingModel& routing_model,
   for (int i = 0; i < routing_model.vehicles(); ++i) {
     start_to_vehicle_[routing_model.Start(i)] = i;
     start_to_end_[routing_model.Start(i)] = routing_model.End(i);
-    evaluators_[i] = dimension.transit_evaluator(i);
+    evaluators_[i] = &dimension.transit_evaluator(i);
   }
 }
 
@@ -458,7 +459,7 @@ void ChainCumulFilter::OnSynchronizePathFromStart(int64 start) {
     if (next != old_nexts_[node] || vehicle != old_vehicles_[node]) {
       old_nexts_[node] = next;
       old_vehicles_[node] = vehicle;
-      current_transits_[node] = evaluators_[vehicle]->Run(node, next);
+      current_transits_[node] = (*evaluators_[vehicle])(node, next);
     }
     cumul = CapAdd(cumul, current_transits_[node]);
     cumul = std::max(cumuls_[next]->Min(), cumul);
@@ -489,7 +490,7 @@ bool ChainCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
         vehicle == old_vehicles_[node]) {
       cumul = CapAdd(cumul, current_transits_[node]);
     } else {
-      cumul = CapAdd(cumul, evaluators_[vehicle]->Run(node, next));
+      cumul = CapAdd(cumul, (*evaluators_[vehicle])(node, next));
     }
     cumul = std::max(cumuls_[next]->Min(), cumul);
     if (cumul > capacity) return false;
@@ -616,7 +617,7 @@ class PathCumulFilter : public BasePathFilter {
   const std::vector<IntVar*> cumuls_;
   const std::vector<IntVar*> slacks_;
   std::vector<int64> start_to_vehicle_;
-  std::vector<RoutingModel::TransitEvaluator2*> evaluators_;
+  std::vector<const RoutingModel::TransitEvaluator2*> evaluators_;
   std::vector<int64> vehicle_span_upper_bounds_;
   bool has_vehicle_span_upper_bounds_;
   int64 total_current_cumul_cost_value_;
@@ -729,7 +730,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
   start_to_vehicle_.resize(Size(), -1);
   for (int i = 0; i < routing_model.vehicles(); ++i) {
     start_to_vehicle_[routing_model.Start(i)] = i;
-    evaluators_[i] = dimension.transit_evaluator(i);
+    evaluators_[i] = &dimension.transit_evaluator(i);
   }
 }
 
@@ -800,7 +801,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
       int64 total_transit = 0;
       while (node < Size()) {
         const int64 next = Value(node);
-        const int64 transit = evaluators_[vehicle]->Run(node, next);
+        const int64 transit = (*evaluators_[vehicle])(node, next);
         total_transit = CapAdd(total_transit, transit);
         const int64 transit_slack = CapAdd(transit, slacks_[node]->Min());
         current_path_transits_.PushTransit(r, node, next, transit_slack);
@@ -889,7 +890,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   node = path_start;
   while (node < Size()) {
     const int64 next = GetNext(node);
-    const int64 transit = evaluators_[vehicle]->Run(node, next);
+    const int64 transit = (*evaluators_[vehicle])(node, next);
     total_transit = CapAdd(total_transit, transit);
     const int64 transit_slack = CapAdd(transit, slacks_[node]->Min());
     delta_path_transits_.PushTransit(path, node, next, transit_slack);
@@ -2518,6 +2519,77 @@ SavingsFilteredDecisionBuilder::ComputeSavings() const {
   return savings;
 }
 
+// ChristofidesFilteredDecisionBuilder
+ChristofidesFilteredDecisionBuilder::ChristofidesFilteredDecisionBuilder(
+    RoutingModel* model, const std::vector<LocalSearchFilter*>& filters)
+    : RoutingFilteredDecisionBuilder(model, filters) {}
+
+// TODO(user): Support pickup & delivery.
+bool ChristofidesFilteredDecisionBuilder::BuildSolution() {
+  if (!InitializeRoutes()) {
+    return false;
+  }
+  const int size = model()->Size() - model()->vehicles() + 1;
+  // Node indices for Christofides solver.
+  // 0: start/end node
+  // >0: non start/end nodes
+  // TODO(user): Add robustness to fixed arcs by collapsing them into meta-
+  // nodes.
+  std::vector<int> indices(1, 0);
+  for (int i = 1; i < size; ++i) {
+    if (!model()->IsStart(i) && !model()->IsEnd(i)) {
+      indices.push_back(i);
+    }
+  }
+  const int num_cost_classes = model()->GetCostClassesCount();
+  std::vector<std::vector<int>> path_per_cost_class(num_cost_classes);
+  std::vector<bool> class_covered(num_cost_classes, false);
+  for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+    const int64 cost_class =
+        model()->GetCostClassIndexOfVehicle(vehicle).value();
+    if (!class_covered[cost_class]) {
+      class_covered[cost_class] = true;
+      const int64 start = model()->Start(vehicle);
+      const int64 end = model()->End(vehicle);
+      ChristofidesPathSolver<int64> christofides_solver(
+          indices.size(),
+          [this, &indices, start, end, cost_class](int from, int to) {
+            CHECK(from < indices.size() && to < indices.size())
+                << from << " " << to << " " << indices.size();
+            const int from_index = (from == 0) ? start : indices[from];
+            const int to_index = (to == 0) ? end : indices[to];
+            return model()->GetArcCostForClass(from_index, to_index,
+                                               cost_class);
+          });
+      path_per_cost_class[cost_class] =
+          christofides_solver.TravelingSalesmanPath();
+    }
+  }
+  // TODO(user): Investigate if sorting paths per cost improves solutions.
+  for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+    const int64 cost_class =
+        model()->GetCostClassIndexOfVehicle(vehicle).value();
+    const std::vector<int>& path = path_per_cost_class[cost_class];
+    DCHECK_EQ(0, path[0]);
+    DCHECK_EQ(0, path.back());
+    // Extend route from start.
+    int prev = GetStartChainEnd(vehicle);
+    const int end = model()->End(vehicle);
+    for (int i = 1; i < path.size() - 1 && prev != end; ++i) {
+      int next = indices[path[i]];
+      if (!Contains(next)) {
+        SetValue(prev, next);
+        SetValue(next, end);
+        if (Commit()) {
+          prev = next;
+        }
+      }
+    }
+  }
+  MakeUnassignedNodesUnperformed();
+  return Commit();
+}
+
 namespace {
 // The description is in routing.h:MakeGuidedSlackFinalizer
 class GuidedSlackFinalizer : public DecisionBuilder {
@@ -2644,8 +2716,8 @@ int64 RoutingDimension::ShortestTransitionSlack(int64 node) const {
   const int64 serving_vehicle = model_->VehicleVar(node)->Value();
   CHECK_EQ(serving_vehicle, model_->VehicleVar(next)->Value());
   const RoutingModel::StateDependentTransit transit_from_next =
-      state_dependent_transit_evaluators_[serving_vehicle]->Run(next,
-                                                                next_next);
+      state_dependent_class_evaluators_
+          [state_dependent_vehicle_to_class_[serving_vehicle]](next, next_next);
   // We have that transit[i+1] is a function of cumul[i+1].
   const int64 next_cumul_min = CumulVar(next)->Min();
   const int64 next_cumul_max = CumulVar(next)->Max();
@@ -2661,11 +2733,11 @@ int64 RoutingDimension::ShortestTransitionSlack(int64 node) const {
   // have to find the transit from the evaluators.
   const int64 current_cumul = CumulVar(node)->Value();
   const int64 current_state_independent_transit =
-      transit_evaluators_[serving_vehicle]->Run(node, next);
+      class_evaluators_[vehicle_to_class_[serving_vehicle]](node, next);
   const int64 current_state_dependent_transit =
-      state_dependent_transit_evaluators_[serving_vehicle]
-          ->Run(node, next)
-          .transit->Query(current_cumul);
+      state_dependent_class_evaluators_
+          [state_dependent_vehicle_to_class_[serving_vehicle]](node, next)
+              .transit->Query(current_cumul);
   const int64 optimal_slack = optimal_next_cumul - current_cumul -
                               current_state_independent_transit -
                               current_state_dependent_transit;

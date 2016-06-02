@@ -76,13 +76,13 @@ class DynamicPermutation {
   // added in a random order. O(orbit size) in the worst case.
   int RootOf(int i) const;
 
-  // The exhaustive set of the 'loose end' of the incomplete cycles (eg. paths)
-  // built so far.
-  // TODO(user): use a faster underlying container; like SparseBitSet, and
+  // The exhaustive set of the 'loose end' of the incomplete cycles
+  // (e.g., paths) built so far.
+  // TODO(user): use a faster underlying container like SparseBitSet, and
   // tweak this API accordingly.
   const std::set<int>& LooseEnds() const { return loose_ends_; }
 
-  // Creates a SparsePermutation reprensting the current permutation.
+  // Creates a SparsePermutation representing the current permutation.
   // Requirements: the permutation must only have cycles.
   //
   // Complexity: O(support size).

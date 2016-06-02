@@ -27,6 +27,7 @@
 #include "base/strutil.h"
 #include "algorithms/sparse_permutation.h"
 #include "sat/boolean_problem.h"
+#include "sat/drat.h"
 #include "cpp/opb_reader.h"
 #include "sat/optimization.h"
 #include "cpp/sat_cnf_reader.h"
@@ -101,11 +102,6 @@ DEFINE_bool(presolve, false,
 DEFINE_bool(probing, false, "If true, presolve the problem using probing.");
 
 
-DEFINE_bool(refine_core, false,
-            "If true, turn on the unsat_proof parameters and if the problem is "
-            "UNSAT, refine as much as possible its UNSAT core in order to get "
-            "a small one.");
-
 DEFINE_bool(reduce_memory_usage, false,
             "If true, do not keep a copy of the original problem in memory."
             "This reduce the memory usage, but disable the solution cheking at "
@@ -179,15 +175,16 @@ int Run() {
         << FLAGS_params;
   }
 
-  // Enforce some parameters if we are looking for UNSAT core.
-  if (FLAGS_refine_core) {
-    parameters.set_unsat_proof(true);
-    parameters.set_treat_binary_clauses_separately(false);
-  }
+  Model model;
+  DratWriter* drat_writer = model.GetOrCreate<DratWriter>();
 
   // Initialize the solver.
   std::unique_ptr<SatSolver> solver(new SatSolver());
+  solver->SetDratWriter(drat_writer);
   solver->SetParameters(parameters);
+
+  // The global time limit.
+  std::unique_ptr<TimeLimit> time_limit(TimeLimit::FromParameters(parameters));
 
   // Read the problem.
   LinearBooleanProblem problem;
@@ -231,6 +228,10 @@ int Run() {
           Coefficient(atoi64(FLAGS_lower_bound)), !FLAGS_upper_bound.empty(),
           Coefficient(atoi64(FLAGS_upper_bound)), solver.get())) {
     LOG(INFO) << "UNSAT when setting the objective constraint.";
+  }
+
+  if (drat_writer != nullptr) {
+    drat_writer->SetNumVariables(solver->NumVariables());
   }
 
   // Symmetries!
@@ -284,17 +285,54 @@ int Run() {
     if (FLAGS_presolve) {
       SatPostsolver postsolver(problem.num_variables());
 
+      // Some problems are formulated in such a way that our SAT heuristics
+      // simply works without conflict. Get them out of the way first because it
+      // is possible that the presolve lose this "lucky" ordering. This is in
+      // particular the case on the SAT14.crafted.complete-xxx-... problems.
+      //
+      // TODO(user): Use the SolveWithRandomParameters() instead, it sounds
+      // like a better idea to try a bunch of different heuristic rather than
+      // just the default one.
+      result = SatSolver::LIMIT_REACHED;
+      {
+        MTRandom random("A random seed.");
+        SatParameters new_params = parameters;
+        new_params.set_log_search_progress(false);
+        new_params.set_max_number_of_conflicts(1);
+        const int num_times = 1000;
+        for (int i = 0; i < num_times && !time_limit->LimitReached(); ++i) {
+          solver->SetParameters(new_params);
+          result = solver->SolveWithTimeLimit(time_limit.get());
+          if (result != SatSolver::LIMIT_REACHED) {
+            LOG(INFO) << "Problem solved by trivial heuristic!";
+            break;
+          }
+
+          // We randomize at the end so that the default params is executed
+          // at least once.
+          solver->RestoreSolverToAssumptionLevel();
+          RandomizeDecisionHeuristic(&random, &new_params);
+          new_params.set_random_seed(i);
+          solver->SetParameters(new_params);
+          solver->ResetDecisionHeuristic();
+        }
+
+        // Restore the initial parameters.
+        solver->SetParameters(parameters);
+        solver->ResetDecisionHeuristic();
+      }
+
       // We use a new block so the memory used by the presolver can be
       // reclaimed as soon as it is no longer needed.
-      //
-      // TODO(user): Automatically adapt the number of iterations.
-      result = SatSolver::MODEL_SAT;
-      for (int i = 0; i < 4; ++i) {
+      const int max_num_passes = result == SatSolver::LIMIT_REACHED ? 4 : 0;
+      for (int i = 0; i < max_num_passes && !time_limit->LimitReached(); ++i) {
         const int saved_num_variables = solver->NumVariables();
 
         // Probe + find equivalent literals.
+        // TODO(user): Use a derived time limit in the probing phase.
         ITIVector<LiteralIndex, LiteralIndex> equiv_map;
-        ProbeAndFindEquivalentLiteral(solver.get(), &postsolver, &equiv_map);
+        ProbeAndFindEquivalentLiteral(solver.get(), &postsolver, drat_writer,
+                                      &equiv_map);
         if (solver->IsModelUnsat()) {
           printf("c unsat during probing!\n");
           result = SatSolver::MODEL_UNSAT;
@@ -308,8 +346,10 @@ int Run() {
           postsolver.FixVariable(solver->LiteralTrail()[i]);
         }
 
+        // TODO(user): Pass the time_limit to the presolver.
         SatPresolver presolver(&postsolver);
         presolver.SetParameters(parameters);
+        presolver.SetDratWriter(drat_writer);
         presolver.SetEquivalentLiteralMapping(equiv_map);
         solver->ExtractClauses(&presolver);
         solver.release();
@@ -322,19 +362,24 @@ int Run() {
           break;
         }
 
+        postsolver.ApplyMapping(presolver.VariableMapping());
+        if (drat_writer != nullptr) {
+          drat_writer->ApplyMapping(presolver.VariableMapping());
+        }
+
         // Load the presolved problem in a new solver.
         solver.reset(new SatSolver());
+        solver->SetDratWriter(drat_writer);
         solver->SetParameters(parameters);
         presolver.LoadProblemIntoSatSolver(solver.get());
-        postsolver.ApplyMapping(presolver.VariableMapping());
 
         // Stop if a fixed point has been reached.
         if (solver->NumVariables() == saved_num_variables) break;
       }
 
       // Solve.
-      if (result != SatSolver::MODEL_UNSAT) {
-        result = solver->Solve();
+      if (result == SatSolver::LIMIT_REACHED) {
+        result = solver->SolveWithTimeLimit(time_limit.get());
       }
 
       // Recover the solution.
@@ -347,40 +392,6 @@ int Run() {
       if (result == SatSolver::MODEL_SAT) {
         ExtractAssignment(problem, *solver, &solution);
         CHECK(IsAssignmentValid(problem, solution));
-      }
-
-      // Unsat with verification.
-      // Note(user): For now we just compute an UNSAT core and check it.
-      if (result == SatSolver::MODEL_UNSAT && parameters.unsat_proof()) {
-        CHECK(!FLAGS_reduce_memory_usage) << "incompatible";
-        std::vector<int> core;
-        solver->ComputeUnsatCore(&core);
-        LOG(INFO) << "UNSAT. Identified a core of " << core.size()
-                  << " constraints.";
-
-        // The following block is mainly for testing the UNSAT core feature.
-        if (FLAGS_refine_core) {
-          int old_core_size = core.size();
-          LinearBooleanProblem old_problem;
-          LinearBooleanProblem core_unsat_problem;
-          old_problem = problem;
-          int i = 1;
-          do {
-            ExtractSubproblem(old_problem, core, &core_unsat_problem);
-            core_unsat_problem.set_name(StringPrintf("Subproblem #%d", i));
-            old_core_size = core.size();
-            old_problem = core_unsat_problem;
-            SatSolver new_solver;
-            new_solver.SetParameters(parameters);
-            CHECK(LoadBooleanProblem(core_unsat_problem, &new_solver));
-            CHECK_EQ(new_solver.Solve(), SatSolver::MODEL_UNSAT)
-                << "Wrong core!";
-            new_solver.ComputeUnsatCore(&core);
-            LOG(INFO) << "Core #" << i << " checked, next size is "
-                      << core.size();
-            ++i;
-          } while (core.size() != old_core_size);
-        }
       }
     }
   }

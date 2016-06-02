@@ -12,9 +12,9 @@
 // limitations under the License.
 
 //
-// The aim is to provide a basis for solving knapsack problems:
-//   - 0-1 knapsack problem,
-//   - Multi-dimensional knapsack problem,
+// This library solves knapsacks:
+//   - 0-1 knapsack problems,
+//   - Multi-dimensional knapsack problems,
 //   - TODO(user) Multi-dimensional knapsack problem with n-ary conflicts
 //     between items.
 //
@@ -96,12 +96,13 @@ namespace operations_research {
 //    Integer Programming solver GLPK.
 //
 // KnapsackSolver also implements a problem reduction algorithm based on lower
-// and upper bounds (see Ingargolia and Korsh - A reduction algorithm for
-// zero-one single knapsack problems. Management Science 1973). This reduction
-// method is preferred to better algorithms (see for instance Martello and Toth
-// - A new algorithm for the 0-1 knapsack problem. Management Science 1988),
-// because it remains valid with more complex problems, eg. multi-dimensional,
-// conflicts...
+// and upper bounds (see Ingargolia and Korsh: A reduction algorithm for
+// zero-one single knapsack problems. Management Science, 1973). This reduction
+// method is preferred to better algorithms (see, for instance, Martello
+// and Toth: A new algorithm for the 0-1 knapsack problem. Management Science,
+// 1988), because it remains valid with more complex problems, e.g.,
+// multi-dimensional, conflicts...
+//
 // The main idea is to compute lower and upper bounds for each item in or out
 // of the knapsack; if the best lower bound is strictly greater than the upper
 // bound when an item is in, then this item is surely not in the optimal
@@ -295,13 +296,15 @@ class KnapsackSearchNode {
 // be rebuilt at each node. One simple solution is to apply all decisions
 // between the node 'to' and the root. This can be computed in
 // O(number_of_items).
-// However it is possible to achieve better average complexity. Two
-// consecutively explored nodes are usually close enough (ie. much less than
+//
+// However, it is possible to achieve better average complexity. Two
+// consecutively explored nodes are usually close enough (i.e., much less than
 // number_of_items) to benefit from an incremental update from the node
 // 'from' to the node 'to'.
-// 'via' field is the common parent of 'from' field and 'to' field.
+//
+// The 'via' field is the common parent of 'from' field and 'to' field.
 // So the state can be built by reverting all decisions from 'from' to 'via'
-// and applying all decisions from 'via' to 'to'.
+// and then applying all decisions from 'via' to 'to'.
 class KnapsackSearchPath {
  public:
   KnapsackSearchPath(const KnapsackSearchNode& from,
@@ -350,12 +353,13 @@ class KnapsackState {
 };
 
 // ----- KnapsackPropagator -----
-// KnapsackPropagator is the base to model and propagate a constraint given
-// an assignment.
+// KnapsackPropagator is the base class for modeling and propagating a
+// constraint given an assignment.
+//
 // When some work has to be done both by the base and the derived class,
 // a protected pure virtual method ending by 'Propagator' is defined.
-// For instance 'Init' creates a vector of items, and then calls
-// 'InitPropagator' to let the derived class to do its own initialization.
+// For instance, 'Init' creates a vector of items, and then calls
+// 'InitPropagator' to let the derived class perform its own initialization.
 class KnapsackPropagator {
  public:
   explicit KnapsackPropagator(const KnapsackState& state);
@@ -426,19 +430,21 @@ class KnapsackPropagator {
 // a capacity constraint.
 // As a KnapsackPropagator is supposed to compute profit lower and upper
 // bounds, and get the next item to select, it can be seen as a 0-1 Knapsack
-// solver. The most efficient way to compute upper bound is to iterate on
+// solver. The most efficient way to compute the upper bound is to iterate on
 // items in profit-per-unit-weight decreasing order. The break item is
 // commonly defined as the first item for which there is not enough remaining
 // capacity. Selecting this break item as the next-item-to-assign usually
-// gives the best results (see Greenbreg & Hegerich).
+// gives the best results (see Greenberg & Hegerich).
+//
 // This is exactly what is implemented in this class.
+//
 // When there is only one propagator, it is possible to compute a better
 // profit lower bound almost for free. During the scan to find the
 // break element all unbound items are added just as if they were part of
-// the current solution. This is used both in ComputeProfitBounds and
+// the current solution. This is used in both ComputeProfitBounds and
 // CopyCurrentSolutionPropagator.
 // For incrementality reasons, the ith item should be accessible in O(1). That's
-// the reason why item vector has to be duplicated 'sorted_items_'.
+// the reason why the item vector has to be duplicated 'sorted_items_'.
 class KnapsackCapacityPropagator : public KnapsackPropagator {
  public:
   KnapsackCapacityPropagator(const KnapsackState& state, int64 capacity);
@@ -447,10 +453,10 @@ class KnapsackCapacityPropagator : public KnapsackPropagator {
   int GetNextItemId() const override { return break_item_id_; }
 
  protected:
-  // Initializes KnapsackCapacityPropagator (eg. sort items in decreasing
+  // Initializes KnapsackCapacityPropagator (e.g., sort items in decreasing
   // order).
   void InitPropagator() override;
-  // Updates internal data structure incrementally (ie. 'consumed_capacity_')
+  // Updates internal data structure incrementally (i.e., 'consumed_capacity_')
   // to avoid a O(number_of_items) scan.
   bool UpdatePropagator(bool revert,
                         const KnapsackAssignment& assignment) override;
@@ -478,7 +484,7 @@ class KnapsackCapacityPropagator : public KnapsackPropagator {
 };
 
 // ----- BaseKnapsackSolver -----
-// This the base class for knapsack solvers.
+// This is the base class for knapsack solvers.
 class BaseKnapsackSolver {
  public:
   explicit BaseKnapsackSolver(const std::string& solver_name)
@@ -512,12 +518,12 @@ class BaseKnapsackSolver {
 // ----- KnapsackGenericSolver -----
 // KnapsackGenericSolver is the multi-dimensional knapsack solver class.
 // In the current implementation, the next item to assign is given by the
-// master propagator. Using SetMasterPropagator allows to change the default
-// (propagator of the first dimension), and select another dimension when
+// master propagator. Using SetMasterPropagator allows changing the default
+// (propagator of the first dimension), and selecting another dimension when
 // more constrained.
-// TODO(user): In case of multi-dimensional knapsack problem, implement an
-// aggregated propagator to combine all dimensions and give a better guide
-// to select next item (see for instance Dobson's aggregated efficiency).
+// TODO(user): In the case of a multi-dimensional knapsack problem, implement
+// an aggregated propagator to combine all dimensions and give a better guide
+// to select the next item (see, for instance, Dobson's aggregated efficiency).
 class KnapsackGenericSolver : public BaseKnapsackSolver {
  public:
   explicit KnapsackGenericSolver(const std::string& solver_name);
