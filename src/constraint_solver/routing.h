@@ -1208,7 +1208,7 @@ class RoutingModel {
 #ifndef SWIG
   ITIVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
 #endif  // SWIG
-  std::unique_ptr<ResultCallback1<int, int64> > vehicle_start_class_callback_;
+  std::function<int(int64)> vehicle_start_class_callback_;
   // Cached callbacks
   hash_map<const NodeEvaluator2*, NodeEvaluator2*> cached_node_callbacks_;
   hash_map<const VariableNodeEvaluator2*, VariableNodeEvaluator2*>

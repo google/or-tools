@@ -331,7 +331,7 @@ class DecrementValue : public ChangeValue {
 PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
                            const std::vector<IntVar*>& path_vars,
                            int number_of_base_nodes,
-                           ResultCallback1<int, int64>* start_empty_path_class)
+                           std::function<int(int64)> start_empty_path_class)
     : IntVarLocalSearchOperator(next_vars),
       number_of_nexts_(next_vars.size()),
       ignore_path_vars_(path_vars.empty()),
@@ -340,7 +340,7 @@ PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
       base_paths_(number_of_base_nodes),
       just_started_(false),
       first_start_(true),
-      start_empty_path_class_(start_empty_path_class) {
+      start_empty_path_class_(std::move(start_empty_path_class)) {
   if (!ignore_path_vars_) {
     AddVars(path_vars);
   }
@@ -525,10 +525,10 @@ void PathOperator::InitializePathStarts() {
     if (!has_prevs[i]) {
       if (use_empty_path_symmetry_breaker && IsPathEnd(OldNext(i))) {
         if (start_empty_path_class_ != nullptr) {
-          if (empty_found[start_empty_path_class_->Run(i)]) {
+          if (empty_found[start_empty_path_class_(i)]) {
             continue;
           } else {
-            empty_found[start_empty_path_class_->Run(i)] = true;
+            empty_found[start_empty_path_class_(i)] = true;
           }
         }
       }
@@ -663,8 +663,9 @@ bool PathOperator::CheckChainValidity(int64 before_chain, int64 chain_end,
 class TwoOpt : public PathOperator {
  public:
   TwoOpt(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-         ResultCallback1<int, int64>* start_empty_path_class)
-      : PathOperator(vars, secondary_vars, 2, start_empty_path_class),
+         std::function<int(int64)> start_empty_path_class)
+      : PathOperator(vars, secondary_vars, 2,
+                     std::move(start_empty_path_class)),
         last_base_(-1),
         last_(-1) {}
   ~TwoOpt() override {}
@@ -731,9 +732,10 @@ bool TwoOpt::MakeNeighbor() {
 class Relocate : public PathOperator {
  public:
   Relocate(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-           ResultCallback1<int, int64>* start_empty_path_class,
+           std::function<int(int64)> start_empty_path_class,
            int64 chain_length = 1LL, bool single_path = false)
-      : PathOperator(vars, secondary_vars, 2, start_empty_path_class),
+      : PathOperator(vars, secondary_vars, 2,
+                     std::move(start_empty_path_class)),
         chain_length_(chain_length),
         single_path_(single_path) {
     CHECK_GT(chain_length_, 0);
@@ -782,8 +784,9 @@ bool Relocate::MakeNeighbor() {
 class Exchange : public PathOperator {
  public:
   Exchange(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-           ResultCallback1<int, int64>* start_empty_path_class)
-      : PathOperator(vars, secondary_vars, 2, start_empty_path_class) {}
+           std::function<int(int64)> start_empty_path_class)
+      : PathOperator(vars, secondary_vars, 2,
+                     std::move(start_empty_path_class)) {}
   ~Exchange() override {}
   bool MakeNeighbor() override;
 
@@ -823,8 +826,9 @@ bool Exchange::MakeNeighbor() {
 class Cross : public PathOperator {
  public:
   Cross(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-        ResultCallback1<int, int64>* start_empty_path_class)
-      : PathOperator(vars, secondary_vars, 2, start_empty_path_class) {}
+        std::function<int(int64)> start_empty_path_class)
+      : PathOperator(vars, secondary_vars, 2,
+                     std::move(start_empty_path_class)) {}
   ~Cross() override {}
   bool MakeNeighbor() override;
 
@@ -857,9 +861,9 @@ class BaseInactiveNodeToPathOperator : public PathOperator {
   BaseInactiveNodeToPathOperator(
       const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
       int number_of_base_nodes,
-      ResultCallback1<int, int64>* start_empty_path_class)
+      std::function<int(int64)> start_empty_path_class)
       : PathOperator(vars, secondary_vars, number_of_base_nodes,
-                     start_empty_path_class),
+                     std::move(start_empty_path_class)),
         inactive_node_(0) {}
   ~BaseInactiveNodeToPathOperator() override {}
 
@@ -908,9 +912,9 @@ class MakeActiveOperator : public BaseInactiveNodeToPathOperator {
  public:
   MakeActiveOperator(const std::vector<IntVar*>& vars,
                      const std::vector<IntVar*>& secondary_vars,
-                     ResultCallback1<int, int64>* start_empty_path_class)
+                     std::function<int(int64)> start_empty_path_class)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 1,
-                                       start_empty_path_class) {}
+                                       std::move(start_empty_path_class)) {}
   ~MakeActiveOperator() override {}
   bool MakeNeighbor() override;
 
@@ -931,9 +935,9 @@ class MakeActiveAndRelocate : public BaseInactiveNodeToPathOperator {
  public:
   MakeActiveAndRelocate(const std::vector<IntVar*>& vars,
                         const std::vector<IntVar*>& secondary_vars,
-                        ResultCallback1<int, int64>* start_empty_path_class)
+                        std::function<int(int64)> start_empty_path_class)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 2,
-                                       start_empty_path_class) {}
+                                       std::move(start_empty_path_class)) {}
   ~MakeActiveAndRelocate() override {}
   bool MakeNeighbor() override;
 
@@ -965,8 +969,9 @@ class MakeInactiveOperator : public PathOperator {
  public:
   MakeInactiveOperator(const std::vector<IntVar*>& vars,
                        const std::vector<IntVar*>& secondary_vars,
-                       ResultCallback1<int, int64>* start_empty_path_class)
-      : PathOperator(vars, secondary_vars, 1, start_empty_path_class) {}
+                       std::function<int(int64)> start_empty_path_class)
+      : PathOperator(vars, secondary_vars, 1,
+                     std::move(start_empty_path_class)) {}
   ~MakeInactiveOperator() override {}
   bool MakeNeighbor() override {
     const int64 base = BaseNode(0);
@@ -992,8 +997,9 @@ class MakeChainInactiveOperator : public PathOperator {
  public:
   MakeChainInactiveOperator(const std::vector<IntVar*>& vars,
                             const std::vector<IntVar*>& secondary_vars,
-                            ResultCallback1<int, int64>* start_empty_path_class)
-      : PathOperator(vars, secondary_vars, 2, start_empty_path_class) {}
+                            std::function<int(int64)> start_empty_path_class)
+      : PathOperator(vars, secondary_vars, 2,
+                     std::move(start_empty_path_class)) {}
   ~MakeChainInactiveOperator() override {}
   bool MakeNeighbor() override {
     return MakeChainInactive(BaseNode(0), BaseNode(1));
@@ -1030,9 +1036,9 @@ class SwapActiveOperator : public BaseInactiveNodeToPathOperator {
  public:
   SwapActiveOperator(const std::vector<IntVar*>& vars,
                      const std::vector<IntVar*>& secondary_vars,
-                     ResultCallback1<int, int64>* start_empty_path_class)
+                     std::function<int(int64)> start_empty_path_class)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 1,
-                                       start_empty_path_class) {}
+                                       std::move(start_empty_path_class)) {}
   ~SwapActiveOperator() override {}
   bool MakeNeighbor() override;
 
@@ -1063,11 +1069,11 @@ bool SwapActiveOperator::MakeNeighbor() {
 
 class ExtendedSwapActiveOperator : public BaseInactiveNodeToPathOperator {
  public:
-  ExtendedSwapActiveOperator(
-      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-      ResultCallback1<int, int64>* start_empty_path_class)
+  ExtendedSwapActiveOperator(const std::vector<IntVar*>& vars,
+                             const std::vector<IntVar*>& secondary_vars,
+                             std::function<int(int64)> start_empty_path_class)
       : BaseInactiveNodeToPathOperator(vars, secondary_vars, 2,
-                                       start_empty_path_class) {}
+                                       std::move(start_empty_path_class)) {}
   ~ExtendedSwapActiveOperator() override {}
   bool MakeNeighbor() override;
 
@@ -1799,18 +1805,19 @@ template <class T>
 LocalSearchOperator* MakeLocalSearchOperator(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    ResultCallback1<int, int64>* start_empty_path_class) {
-  return solver->RevAlloc(new T(vars, secondary_vars, start_empty_path_class));
+    std::function<int(int64)> start_empty_path_class) {
+  return solver->RevAlloc(
+      new T(vars, secondary_vars, std::move(start_empty_path_class)));
 }
 
-#define MAKE_LOCAL_SEARCH_OPERATOR(OperatorClass)                         \
-  template <>                                                             \
-  LocalSearchOperator* MakeLocalSearchOperator<OperatorClass>(            \
-      Solver * solver, const std::vector<IntVar*>& vars,                       \
-      const std::vector<IntVar*>& secondary_vars,                              \
-      ResultCallback1<int, int64>* start_empty_path_class) {              \
-    return solver->RevAlloc(                                              \
-        new OperatorClass(vars, secondary_vars, start_empty_path_class)); \
+#define MAKE_LOCAL_SEARCH_OPERATOR(OperatorClass)                  \
+  template <>                                                      \
+  LocalSearchOperator* MakeLocalSearchOperator<OperatorClass>(     \
+      Solver * solver, const std::vector<IntVar*>& vars,                \
+      const std::vector<IntVar*>& secondary_vars,                       \
+      std::function<int(int64)> start_empty_path_class) {          \
+    return solver->RevAlloc(new OperatorClass(                     \
+        vars, secondary_vars, std::move(start_empty_path_class))); \
   }
 
 MAKE_LOCAL_SEARCH_OPERATOR(TwoOpt)

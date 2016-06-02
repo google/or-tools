@@ -59,7 +59,6 @@
 #include <string>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -1218,8 +1217,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   // 'number_of_base_nodes' is the number of nodes needed to define a
   // neighbor. 'start_empty_path_class' is a callback returning an index such
   // that if
-  // c1 = start_empty_path_class->Run(StartNode(p1)),
-  // c2 = start_empty_path_class->Run(StartNode(p2)),
+  // c1 = start_empty_path_class(StartNode(p1)),
+  // c2 = start_empty_path_class(StartNode(p2)),
   // p1 and p2 are path indices,
   // then if c1 == c2, p1 and p2 are equivalent if they are empty.
   // This is used to remove neighborhood symmetries on equivalent empty paths;
@@ -1227,13 +1226,9 @@ class PathOperator : public IntVarLocalSearchOperator {
   // moving the same node to equivalent empty paths will be skipped.
   // 'start_empty_path_class' can be nullptr in which case no symmetries will be
   // removed.
-  // Ownership of 'start_empty_path_class' is not taken by this class and
-  // therefore must be explicitly deleted by the caller.
-  // 'start_empty_path_class' must remain alive during the lifespan of the
-  // path operator.
   PathOperator(const std::vector<IntVar*>& next_vars,
                const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
-               ResultCallback1<int, int64>* start_empty_path_class);
+               std::function<int(int64)> start_empty_path_class);
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
 
@@ -1370,7 +1365,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<bool> inactives_;
   bool just_started_;
   bool first_start_;
-  ResultCallback1<int, int64>* start_empty_path_class_;
+  std::function<int(int64)> start_empty_path_class_;
 };
 
 // ----- Operator Factories ------
@@ -1379,7 +1374,7 @@ template <class T>
 LocalSearchOperator* MakeLocalSearchOperator(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    ResultCallback1<int, int64>* start_empty_path_class);
+    std::function<int(int64)> start_empty_path_class);
 
 // Classes to which this template function can be applied to as of 04/2014.
 // Usage: LocalSearchOperator* op = MakeLocalSearchOperator<Relocate>(...);

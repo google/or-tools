@@ -293,9 +293,9 @@ class PathWithPreviousNodesOperator : public PathOperator {
   PathWithPreviousNodesOperator(
       const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
       int number_of_base_nodes,
-      ResultCallback1<int, int64>* start_empty_path_class)
+      std::function<int(int64)> start_empty_path_class)
       : PathOperator(vars, secondary_vars, number_of_base_nodes,
-                     start_empty_path_class) {
+                     std::move(start_empty_path_class)) {
     int64 max_next = -1;
     for (const IntVar* const var : vars) {
       max_next = std::max(max_next, var->Max());
@@ -347,10 +347,10 @@ class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
  public:
   MakeRelocateNeighborsOperator(
       const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-      ResultCallback1<int, int64>* start_empty_path_class,
+      std::function<int(int64)> start_empty_path_class,
       RoutingModel::TransitEvaluator2 arc_evaluator)
       : PathWithPreviousNodesOperator(vars, secondary_vars, 2,
-                                      start_empty_path_class),
+                                      std::move(start_empty_path_class)),
         arc_evaluator_(std::move(arc_evaluator)) {}
   ~MakeRelocateNeighborsOperator() override {}
   bool MakeNeighbor() override {
@@ -433,10 +433,11 @@ class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
 LocalSearchOperator* MakeRelocateNeighbors(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    ResultCallback1<int, int64>* start_empty_path_class,
+    std::function<int(int64)> start_empty_path_class,
     RoutingModel::TransitEvaluator2 arc_evaluator) {
   return solver->RevAlloc(new MakeRelocateNeighborsOperator(
-      vars, secondary_vars, start_empty_path_class, std::move(arc_evaluator)));
+      vars, secondary_vars, std::move(start_empty_path_class),
+      std::move(arc_evaluator)));
 }
 
 // Pair-based neighborhood operators, designed to move nodes by pairs (pairs
@@ -466,9 +467,10 @@ class MakePairActiveOperator : public PathOperator {
  public:
   MakePairActiveOperator(const std::vector<IntVar*>& vars,
                          const std::vector<IntVar*>& secondary_vars,
-                         ResultCallback1<int, int64>* start_empty_path_class,
+                         std::function<int(int64)> start_empty_path_class,
                          const RoutingModel::NodePairs& pairs)
-      : PathOperator(vars, secondary_vars, 2, start_empty_path_class),
+      : PathOperator(vars, secondary_vars, 2,
+                     std::move(start_empty_path_class)),
         inactive_pair_(0),
         pairs_(pairs) {}
   ~MakePairActiveOperator() override {}
@@ -540,10 +542,10 @@ bool MakePairActiveOperator::MakeNeighbor() {
 LocalSearchOperator* MakePairActive(
     Solver* const solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    ResultCallback1<int, int64>* start_empty_path_class,
+    std::function<int(int64)> start_empty_path_class,
     const RoutingModel::NodePairs& pairs) {
   return solver->RevAlloc(new MakePairActiveOperator(
-      vars, secondary_vars, start_empty_path_class, pairs));
+      vars, secondary_vars, std::move(start_empty_path_class), pairs));
 }
 
 // Operator which moves a pair of nodes to another position where the first
@@ -557,9 +559,10 @@ class PairRelocateOperator : public PathOperator {
  public:
   PairRelocateOperator(const std::vector<IntVar*>& vars,
                        const std::vector<IntVar*>& secondary_vars,
-                       ResultCallback1<int, int64>* start_empty_path_class,
+                       std::function<int(int64)> start_empty_path_class,
                        const RoutingModel::NodePairs& node_pairs)
-      : PathOperator(vars, secondary_vars, 3, start_empty_path_class) {
+      : PathOperator(vars, secondary_vars, 3,
+                     std::move(start_empty_path_class)) {
     int64 index_max = 0;
     for (const IntVar* const var : vars) {
       index_max = std::max(index_max, var->Max());
@@ -641,22 +644,22 @@ void PairRelocateOperator::OnNodeInitialization() {
 LocalSearchOperator* MakePairRelocate(
     Solver* const solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    ResultCallback1<int, int64>* start_empty_path_class,
+    std::function<int(int64)> start_empty_path_class,
     const RoutingModel::NodePairs& pairs) {
   return solver->RevAlloc(new PairRelocateOperator(
-      vars, secondary_vars, start_empty_path_class, pairs));
+      vars, secondary_vars, std::move(start_empty_path_class), pairs));
 }
 
 // Operator which inserts inactive nodes into a path and makes a pair of
 // inactive nodes inactive.
 class NodePairSwapActiveOperator : public PathWithPreviousNodesOperator {
  public:
-  NodePairSwapActiveOperator(
-      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-      ResultCallback1<int, int64>* start_empty_path_class,
-      const RoutingModel::NodePairs& node_pairs)
+  NodePairSwapActiveOperator(const std::vector<IntVar*>& vars,
+                             const std::vector<IntVar*>& secondary_vars,
+                             std::function<int(int64)> start_empty_path_class,
+                             const RoutingModel::NodePairs& node_pairs)
       : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
-                                      start_empty_path_class),
+                                      std::move(start_empty_path_class)),
         inactive_node_(0) {
     int64 max_pair_index = -1;
     for (const std::pair<int64, int64>& node_pair : node_pairs) {
@@ -722,10 +725,10 @@ bool NodePairSwapActiveOperator::MakeNeighbor() {
 LocalSearchOperator* NodePairSwapActive(
     Solver* const solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    ResultCallback1<int, int64>* start_empty_path_class,
+    std::function<int(int64)> start_empty_path_class,
     const RoutingModel::NodePairs& pairs) {
   return solver->RevAlloc(new NodePairSwapActiveOperator(
-      vars, secondary_vars, start_empty_path_class, pairs));
+      vars, secondary_vars, std::move(start_empty_path_class), pairs));
 }
 
 // Operator which inserts pairs of inactive nodes into a path and makes an
@@ -738,11 +741,12 @@ LocalSearchOperator* NodePairSwapActive(
 template <bool swap_first>
 class PairNodeSwapActiveOperator : public PathOperator {
  public:
-  PairNodeSwapActiveOperator(
-      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-      ResultCallback1<int, int64>* start_empty_path_class,
-      const RoutingModel::NodePairs& node_pairs)
-      : PathOperator(vars, secondary_vars, 2, start_empty_path_class),
+  PairNodeSwapActiveOperator(const std::vector<IntVar*>& vars,
+                             const std::vector<IntVar*>& secondary_vars,
+                             std::function<int(int64)> start_empty_path_class,
+                             const RoutingModel::NodePairs& node_pairs)
+      : PathOperator(vars, secondary_vars, 2,
+                     std::move(start_empty_path_class)),
         inactive_pair_(0),
         pairs_(node_pairs) {}
   ~PairNodeSwapActiveOperator() override {}
@@ -824,13 +828,13 @@ bool PairNodeSwapActiveOperator<swap_first>::MakeNeighbor() {
 LocalSearchOperator* PairNodeSwapActive(
     Solver* const solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    ResultCallback1<int, int64>* start_empty_path_class,
+    std::function<int(int64)> start_empty_path_class,
     const RoutingModel::NodePairs& pairs) {
   return solver->ConcatenateOperators(
       {solver->RevAlloc(new PairNodeSwapActiveOperator<true>(
            vars, secondary_vars, start_empty_path_class, pairs)),
        solver->RevAlloc(new PairNodeSwapActiveOperator<false>(
-           vars, secondary_vars, start_empty_path_class, pairs))});
+           vars, secondary_vars, std::move(start_empty_path_class), pairs))});
 }
 
 // Cached callbacks
@@ -2139,8 +2143,9 @@ void RoutingModel::CloseModelWithParameters(
   }
   ComputeCostClasses(parameters);
   ComputeVehicleClasses();
-  vehicle_start_class_callback_.reset(
-      NewPermanentCallback(this, &RoutingModel::GetVehicleStartClass));
+  vehicle_start_class_callback_ = [this](int64 start) {
+    return GetVehicleStartClass(start);
+  };
 
   AddNoCycleConstraintInternal();
 
@@ -4076,13 +4081,13 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
       MakeLocalSearchOperator<MakeActiveOperator>(
           solver_.get(), nexts_,
           CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-          vehicle_start_class_callback_.get());
+          vehicle_start_class_callback_);
   if (!pickup_delivery_pairs_.empty()) {
     insertion_operator = solver_->ConcatenateOperators(
         {MakePairActive(
              solver_.get(), nexts_,
              CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-             vehicle_start_class_callback_.get(), pickup_delivery_pairs_),
+             vehicle_start_class_callback_, pickup_delivery_pairs_),
          insertion_operator});
   }
   return insertion_operator;
@@ -4103,7 +4108,7 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
           solver_.get(), nexts_,                                   \
           CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()  \
                                               : vehicle_vars_,     \
-          vehicle_start_class_callback_.get());
+          vehicle_start_class_callback_);
 
 #define CP_ROUTING_ADD_CALLBACK_OPERATOR(operator_type, cp_operator_type)  \
   if (CostsAreHomogeneousAcrossVehicles()) {                               \
@@ -4128,21 +4133,21 @@ void RoutingModel::CreateNeighborhoodOperators() {
   local_search_operators_[RELOCATE_PAIR] = MakePairRelocate(
       solver_.get(), nexts_,
       CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_.get(), pickup_delivery_pairs_);
+      vehicle_start_class_callback_, pickup_delivery_pairs_);
   local_search_operators_[RELOCATE_NEIGHBORS] = MakeRelocateNeighbors(
       solver_.get(), nexts_,
       CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-      vehicle_start_class_callback_.get(),
+      vehicle_start_class_callback_,
       [this](int64 from, int64 to) { return GetHomogeneousCost(from, to); });
   local_search_operators_[NODE_PAIR_SWAP] = solver_->ConcatenateOperators(
       {NodePairSwapActive(
            solver_.get(), nexts_,
            CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-           vehicle_start_class_callback_.get(), pickup_delivery_pairs_),
+           vehicle_start_class_callback_, pickup_delivery_pairs_),
        PairNodeSwapActive(
            solver_.get(), nexts_,
            CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
-           vehicle_start_class_callback_.get(), pickup_delivery_pairs_)});
+           vehicle_start_class_callback_, pickup_delivery_pairs_)});
   CP_ROUTING_ADD_OPERATOR2(EXCHANGE, Exchange);
   CP_ROUTING_ADD_OPERATOR2(CROSS, Cross);
   CP_ROUTING_ADD_OPERATOR2(TWO_OPT, TwoOpt);
