@@ -1,6 +1,6 @@
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.1.2
-PROTOBUF_TAG = 3.0.0-beta-1
+PROTOBUF_TAG = 3.0.0-beta-3
 GOOGLE_APPUTILS_TAG = 0.4.2
 SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.7
@@ -289,17 +289,12 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependenc
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
 	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build	
 	tools\sed -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
-ifeq ("$(PTRLENGTH)", "64")
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013 Win64" -DBUILD_TESTING=OFF --DBUILD_SHARED_LIB=ON ..
-else
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013" -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON ..
-endif
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 #	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
-
 
 # Intall Google Apputils Python.
 install_google_apputils: dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README
@@ -349,17 +344,15 @@ dependencies\install\bin\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisu
 	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
 
 dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\configure
-ifeq ("$(VisualStudioVersion)", "12.0")
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
-endif
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj $(VS_RELEASE)
 	sed -i 's/CBC_BUILD;/CBC_BUILD;CBC_THREAD_SAFE;CBC_NO_INTERRUPT;/g' dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
 	cd dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:cbc /p:Configuration=Release;BuildCmd=ReBuild
 
@@ -404,10 +397,8 @@ dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG
 #	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
 	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -d scip-$(SCIP_TAG).tgz
 	- cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\tar.exe xvmf scip-$(SCIP_TAG).tar
-ifeq ("$(VisualStudioVersion)", "12.0")
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
-endif
+	tools\upgrade_vs_project.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj $(VS_RELEASE)
 	cd dependencies\solutions\Scip && msbuild /t:soplex
 	cd dependencies\solutions\Scip && msbuild /t:scip
 	-mkdir dependencies\install\include
@@ -420,10 +411,8 @@ endif
 	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\lpi\*.h dependencies\install\include\scip\lpi
 	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\nlpi\*.h dependencies\install\include\scip\nlpi
 	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\blockmemshell\*.h dependencies\install\include\scip\blockmemshell
-ifeq ("$(VisualStudioVersion)", "12.0")
 	git checkout dependencies/solutions/Scip/soplex/soplex.vcxproj
 	git checkout dependencies/solutions/Scip/scip/scip.vcxproj
-endif
 
 # Install bison and flex in one package.
 install_bison: dependencies\install\bin\win_bison.exe
