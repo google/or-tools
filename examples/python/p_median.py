@@ -34,7 +34,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -50,10 +50,10 @@ def main():
   p = 2
 
   num_customers = 4
-  customers = range(num_customers)
+  customers = list(range(num_customers))
   Albert, Bob, Chris, Daniel = customers
   num_warehouses = 3
-  warehouses = range(num_warehouses)
+  warehouses = list(range(num_warehouses))
   Santa_Clara, San_Jose, Berkeley = warehouses
 
   demand = [100, 80, 80, 70]
@@ -113,18 +113,18 @@ def main():
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print 'z:', z.Value()
-    print 'open:', [open[w].Value() for w in warehouses]
+    print('z:', z.Value())
+    print('open:', [open[w].Value() for w in warehouses])
     for c in customers:
       for w in warehouses:
-        print ship[c, w].Value(),
-      print
-    print
+        print(ship[c, w].Value(), end=' ')
+      print()
+    print()
 
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 
 if __name__ == '__main__':

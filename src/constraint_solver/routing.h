@@ -15,27 +15,30 @@
 // The vehicle routing library lets one model and solve generic vehicle routing
 // problems ranging from the Traveling Salesman Problem to more complex
 // problems such as the Capacitated Vehicle Routing Problem with Time Windows.
+//
 // The objective of a vehicle routing problem is to build routes covering a set
 // of nodes minimizing the overall cost of the routes (usually proportional to
 // the sum of the lengths of each segment of the routes) while respecting some
 // problem-specific constraints (such as the length of a route). A route is
 // equivalent to a path connecting nodes, starting/ending at specific
 // starting/ending nodes.
+//
 // The term "vehicle routing" is historical and the category of problems solved
 // is not limited to the routing of vehicles: any problem involving finding
 // routes visiting a given number of nodes optimally falls under this category
 // of problems, such as finding the optimal sequence in a playlist.
-// The literature around vehicle routing problems is extremelly dense but one
+// The literature around vehicle routing problems is extremely dense but one
 // can find some basic introductions in the following links:
-// http://en.wikipedia.org/wiki/Travelling_salesman_problem
-// http://www.tsp.gatech.edu/history/index.html
-// http://en.wikipedia.org/wiki/Vehicle_routing_problem
+// - http://en.wikipedia.org/wiki/Travelling_salesman_problem
+// - http://www.tsp.gatech.edu/history/index.html
+// - http://en.wikipedia.org/wiki/Vehicle_routing_problem
 //
 // The vehicle routing library is a vertical layer above the constraint
 // programming library (constraint_programming:cp).
 // One has access to all underlying constrained variables of the vehicle
 // routing model which can therefore be enriched by adding any constraint
 // available in the constraint programming library.
+//
 // There are two sets of variables available:
 // - path variables:
 //   * "next(i)" variables representing the immediate successor of the node
@@ -55,7 +58,7 @@
 //     after visiting the node corresponding to i.
 // Solving the vehicle routing problems is mainly done using approximate methods
 // (namely local search,
-// cf. http://en.wikipedia.org/wiki/Local_search_(optimization)), potentially
+// cf. http://en.wikipedia.org/wiki/Local_search_(optimization) ), potentially
 // combined with exact techniques based on dynamic programming and exhaustive
 // tree search.
 // TODO(user): Add a section on costs (vehicle arc costs, span costs,
@@ -91,7 +94,7 @@
 //       size (in number of nodes) up to cp_local_search_tsp_opt_size (flag with
 //       a default value of 13 nodes). It is not activated by default because it
 //       can slow down the search.
-//   * Meta-heuritics: used to guide the search out of local minima found by
+//   * Meta-heuristics: used to guide the search out of local minima found by
 //     local search. Note that, in general, a search with metaheuristics
 //     activated never stops, therefore one must specify a search limit.
 //     Several types of metaheuristics are provided:
@@ -118,7 +121,7 @@
 //     }
 //
 // - Create a routing model for a given problem size (int number of nodes) and
-//   number of routes (here 1):
+//   number of routes (here, 1):
 //
 //     RoutingModel routing(...number of nodes..., 1);
 //
@@ -135,7 +138,7 @@
 //    const Assignment* solution = routing.Solve();
 //    CHECK(solution != nullptr);
 //
-// - Inspect the solution cost and route (only one route here:
+// - Inspect the solution cost and route (only one route here):
 //
 //    LOG(INFO) << "Cost " << solution->ObjectiveValue();
 //    const int route_number = 0;
@@ -145,9 +148,7 @@
 //      LOG(INFO) << routing.IndexToNode(node);
 //    }
 //
-// More information on the usage of the routing library can be found here:
-// More information on the range of vehicle routing problems the library can
-// tackle can be found here:
+//
 // Keywords: Vehicle Routing, Traveling Salesman Problem, TSP, VRP, CVRPTW, PDP.
 
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
@@ -166,11 +167,13 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
+#include "base/int_type_indexed_vector.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "constraint_solver/routing_parameters.pb.h"
+#include "util/range_query_function.h"
 #include "base/adjustable_priority_queue-inl.h"
 #include "base/adjustable_priority_queue.h"
 
@@ -193,196 +196,8 @@ DEFINE_INT_TYPE(_RoutingModel_DimensionIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_DisjunctionIndex, int);
 DEFINE_INT_TYPE(_RoutingModel_VehicleClassIndex, int);
 
-// This class stores solver parameters.
-struct RoutingParameters {
-  RoutingParameters() {
-    use_light_propagation = false;
-    cache_callbacks = false;
-    max_cache_size = 1000;
-  }
-
-  // Use constraints with light propagation in routing model.
-  bool use_light_propagation;
-  // Cache callback calls.
-  bool cache_callbacks;
-  // Maximum cache size when callback caching is on.
-  int64 max_cache_size;
-};
-
-// This class stores search parameters.
-struct RoutingSearchParameters {
-  RoutingSearchParameters() {
-    no_lns = false;
-    no_fullpathlns = true;
-    no_relocate = false;
-    no_relocate_neighbors = true;
-    no_exchange = false;
-    no_cross = false;
-    no_2opt = false;
-    no_oropt = false;
-    no_make_active = false;
-    no_lkh = false;
-    no_tsp = true;
-    no_tsplns = true;
-    use_chain_make_inactive = false;
-    use_extended_swap_active = false;
-    solution_limit = kint64max;
-    time_limit = kint64max;
-    lns_time_limit = 100;
-    guided_local_search = false;
-    guided_local_search_lambda_coefficient = 0.1;
-    simulated_annealing = false;
-    tabu_search = false;
-    dfs = false;
-    first_solution = "";
-    use_first_solution_dive = false;
-    optimization_step = 1;
-    trace = false;
-  }
-
-  // ----- Neighborhood deactivation -----
-
-  // Routing: forbids use of Large Neighborhood Search.
-  bool no_lns;
-  // Routing: forbids use of Full-path Large Neighborhood Search.
-  bool no_fullpathlns;
-  // Routing: forbids use of Relocate neighborhood.
-  bool no_relocate;
-  // Routing: forbids use of RelocateNeighbors neighborhood.
-  bool no_relocate_neighbors;
-  // Routing: forbids use of Exchange neighborhood.
-  bool no_exchange;
-  // Routing: forbids use of Cross neighborhood.
-  bool no_cross;
-  // Routing: forbids use of 2Opt neighborhood.
-  bool no_2opt;
-  // Routing: forbids use of OrOpt neighborhood.
-  bool no_oropt;
-  // Routing: forbids use of MakeActive/SwapActive/MakeInactive neighborhoods.
-  bool no_make_active;
-  // Routing: forbids use of LKH neighborhood.
-  bool no_lkh;
-  // Routing: forbids use of TSPOpt neighborhood.
-  bool no_tsp;
-  // Routing: forbids use of TSPLNS neighborhood.
-  bool no_tsplns;
-  // Routing: use chain version of MakeInactive neighborhood.
-  bool use_chain_make_inactive;
-  // Routing: use extended version of SwapActive neighborhood.
-  bool use_extended_swap_active;
-
-  // ----- Search limits -----
-
-  // Routing: number of solutions limit.
-  int64 solution_limit;
-  // Routing: time limit in ms.
-  int64 time_limit;
-  // Routing: time limit in ms for LNS sub-decision builder.
-  int64 lns_time_limit;
-
-  // Meta-heuristics
-
-  // Routing: use GLS.
-  bool guided_local_search;
-  // Lambda coefficient in GLS.
-  double guided_local_search_lambda_coefficient;
-  // Routing: use simulated annealing.
-  bool simulated_annealing;
-  // Routing: use tabu search.
-  bool tabu_search;
-
-  // ----- Search control ------
-
-  // Routing: use a complete depth-first search.
-  bool dfs;
-  // Routing: first solution heuristic. See RoutingStrategyName() in
-  // the code to get a full list.
-  std::string first_solution;
-  // Dive (left-branch) for first solution.
-  bool use_first_solution_dive;
-  // Optimization step.
-  int64 optimization_step;
-  // Trace search.
-  bool trace;
-};
-
 class RoutingModel {
  public:
-  // First solution strategies, used as starting point of local search.
-  // TODO(user): Remove this when the corresponding enum is available in
-  // the routing search parameters protobuf.
-  enum RoutingStrategy {
-    // Select the first node with an unbound successor and connect it to the
-    // first available node.
-    // This is equivalent to the CHOOSE_FIRST_UNBOUND strategy combined with
-    // ASSIGN_MIN_VALUE (cf. constraint_solver.h).
-    ROUTING_DEFAULT_STRATEGY,
-    // Iteratively connect two nodes which produce the cheapest route segment.
-    ROUTING_GLOBAL_CHEAPEST_ARC,
-    // Select the first node with an unbound successor and connect it to the
-    // node which produces the cheapest route segment.
-    ROUTING_LOCAL_CHEAPEST_ARC,
-    // Starting from a route "start" node, connect it to the node which produces
-    // the cheapest route segment, then extend the route by iterating on the
-    // last node added to the route.
-    ROUTING_PATH_CHEAPEST_ARC,
-    // Same as ROUTING_PATH_CHEAPEST_ARC, but arcs are evaluated with a
-    // comparison-based selector which will favor the most constrained arc
-    // first. See ArcIsMoreConstrainedThanArc() for details.
-    ROUTING_PATH_MOST_CONSTRAINED_ARC,
-    // Same as ROUTING_PATH_CHEAPEST_ARC, except that arc costs are evaluated
-    // using the function passed to RoutingModel::SetFirstSolutionEvaluator().
-    ROUTING_EVALUATOR_STRATEGY,
-    // Make all node inactive. Only finds a solution if nodes are optional (are
-    // element of a disjunction constraint with a finite penalty cost).
-    ROUTING_ALL_UNPERFORMED,
-    // Iteratively build a solution by inserting the cheapest node at its
-    // cheapest position; the cost of insertion is based on the global cost
-    // function of the routing model. As of 2/2012, only works on models with
-    // optional nodes (with finite penalty costs).
-    ROUTING_BEST_INSERTION,
-    // Iteratively build a solution by inserting the cheapest node at its
-    // cheapest position; the cost of insertion is based on the the arc cost
-    // function. Is faster than BEST_INSERTION.
-    ROUTING_GLOBAL_CHEAPEST_INSERTION,
-    // Iteratively build a solution by inserting each node at its cheapest
-    // position; the cost of insertion is based on the the arc cost function.
-    // Differs from ROUTING_GLOBAL_CHEAPEST_INSERTION by the node selected for
-    // insertion; here nodes are considered in their order of creation. Is
-    // faster than ROUTING_GLOBAL_CHEAPEST_INSERTION.
-    ROUTING_LOCAL_CHEAPEST_INSERTION,
-    // Savings algorithm (Clarke & Wright).
-    // Reference: Clarke, G. & Wright, J.W.:
-    // "Scheduling of Vehicles from a Central Depot to a Number of
-    // Delivery Points", Operations Research, Vol. 12, 1964, pp. 568-581
-    ROUTING_SAVINGS,
-    // Sweep algorithm (Wren & Holliday).
-    // Reference: Anthony Wren & Alan Holliday: Computer Scheduling of Vehicles
-    // from One or More Depots to a Number of Delivery Points
-    // Operational Research Quarterly (1970-1977),
-    // Vol. 23, No. 3 (Sep., 1972), pp. 333-344
-    ROUTING_SWEEP,
-    ROUTING_FIRST_SOLUTION_STRATEGY_COUNTER
-  };
-
-  // Metaheuristics used to guide the search. Apart greedy descent, they will
-  // try to escape local minima.
-  enum RoutingMetaheuristic {
-    // Accepts improving (cost-reducing) local search neighbors until a local
-    // minimum is reached. This is the default heuristic.
-    ROUTING_GREEDY_DESCENT,
-    // Uses guided local search to escape local minima
-    // (cf. http://en.wikipedia.org/wiki/Guided_Local_Search); this is
-    // generally the most efficient metaheuristic for vehicle routing.
-    ROUTING_GUIDED_LOCAL_SEARCH,
-    // Uses simulated annealing to escape local minima
-    // (cf. http://en.wikipedia.org/wiki/Simulated_annealing).
-    ROUTING_SIMULATED_ANNEALING,
-    // Uses tabu search to escape local minima
-    // (cf. http://en.wikipedia.org/wiki/Tabu_search).
-    ROUTING_TABU_SEARCH,
-  };
-
   // Status of the search.
   enum Status {
     // Problem not solved yet (before calling RoutingModel::Solve()).
@@ -404,9 +219,32 @@ class RoutingModel {
   typedef _RoutingModel_VehicleClassIndex VehicleClassIndex;
   typedef ResultCallback1<int64, int64> VehicleEvaluator;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
-  typedef ResultCallback2<int64, int64, int64> TransitEvaluator2;
+  typedef std::function<int64(int64, int64)> TransitEvaluator2;
   typedef std::pair<int, int> NodePair;
   typedef std::vector<NodePair> NodePairs;
+// TODO(user): Remove all SWIG guards by adding the @ignore in .swig.
+#if !defined(SWIG)
+  // What follows is relevant for models with time/state dependent transits.
+  // Such transits, say from node A to node B, are functions f: int64->int64
+  // of the cumuls of a dimension. The user is free to implement the abstract
+  // RangeIntToIntFunction interface, but it is expected that the implementation
+  // of each method is quite fast. For performance-related reasons,
+  // StateDependentTransit keeps an additional pointer to a
+  // RangeMinMaxIndexFunction, with similar functionality to
+  // RangeIntToIntFunction, for g(x) = f(x)+x, where f is the transit from A to
+  // B. In most situations the best solutions are problem-specific, but in case
+  // of doubt the user may use the MakeStateDependentTransit function from the
+  // routing library, which works out-of-the-box, with very good running time,
+  // but memory inefficient in some situations.
+  struct StateDependentTransit {
+    RangeIntToIntFunction* transit;                   // f(x)
+    RangeMinMaxIndexFunction* transit_plus_identity;  // g(x) = f(x) + x
+  };
+  typedef ResultCallback2<StateDependentTransit, NodeIndex, NodeIndex>
+      VariableNodeEvaluator2;
+  typedef std::function<StateDependentTransit(int64, int64)>
+      VariableIndexEvaluator2;
+#endif  // SWIG
 
 #if !defined(SWIG)
   struct CostClass {
@@ -434,8 +272,19 @@ class RoutingModel {
     // their transit evaluator (the raw version that takes var index, not Node
     // Index) and their span cost coefficient, we just store those.
     // This is sorted by the natural operator < (and *not* by DimensionIndex).
-    std::vector<std::pair<TransitEvaluator2*, int64> >
-        dimension_transit_evaluator_and_cost_coefficient;
+    struct DimensionCost {
+      int64 transit_evaluator_class;
+      int64 cost_coefficient;
+      const RoutingDimension* dimension;
+      bool operator<(const DimensionCost& cost) const {
+        if (transit_evaluator_class != cost.transit_evaluator_class) {
+          return transit_evaluator_class < cost.transit_evaluator_class;
+        }
+        return cost_coefficient < cost.cost_coefficient;
+      }
+    };
+    std::vector<DimensionCost>
+        dimension_transit_evaluator_class_and_cost_coefficient;
 
     explicit CostClass(NodeEvaluator2* arc_cost_evaluator)
         : arc_cost_evaluator(arc_cost_evaluator) {
@@ -447,8 +296,8 @@ class RoutingModel {
       if (a.arc_cost_evaluator != b.arc_cost_evaluator) {
         return a.arc_cost_evaluator < b.arc_cost_evaluator;
       }
-      return a.dimension_transit_evaluator_and_cost_coefficient <
-             b.dimension_transit_evaluator_and_cost_coefficient;
+      return a.dimension_transit_evaluator_class_and_cost_coefficient <
+             b.dimension_transit_evaluator_class_and_cost_coefficient;
     }
   };
 
@@ -473,7 +322,7 @@ class RoutingModel {
     ITIVector<DimensionIndex, int64> dimension_capacities;
     // dimension_evaluators[d]->Run(from, to) is the transit value of arc
     // from->to for a dimension d.
-    ITIVector<DimensionIndex, TransitEvaluator2*> dimension_evaluators;
+    ITIVector<DimensionIndex, int64> dimension_evaluator_classes;
     // Fingerprint of unvisitable non-start/end nodes.
     uint64 unvisitable_nodes_fprint;
 
@@ -495,23 +344,33 @@ class RoutingModel {
   // dimension name does not correspond to an actual dimension.
   static const DimensionIndex kNoDimension;
 
+  // In the following constructors, the versions which do not take
+  // RoutingModelParamters are equivalent to passing DefaultModelParameters.
   // Supposes a single depot. A depot is the start and end node of the route of
   // a vehicle.
   RoutingModel(int nodes, int vehicles);
+  RoutingModel(int nodes, int vehicles,
+               const RoutingModelParameters& parameters);
   // Constructor taking a vector of (start node, end node) pairs for each
   // vehicle route. Used to model multiple depots.
   RoutingModel(int nodes, int vehicles,
                const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+  RoutingModel(int nodes, int vehicles,
+               const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end,
+               const RoutingModelParameters& parameters);
   // Constructor taking vectors of start nodes and end nodes for each
   // vehicle route. Used to model multiple depots.
   // TODO(user): added to simplify SWIG wrapping. Remove when swigging
   // std::vector<std::pair<int, int> > is ok.
   RoutingModel(int nodes, int vehicles, const std::vector<NodeIndex>& starts,
                const std::vector<NodeIndex>& ends);
+  RoutingModel(int nodes, int vehicles, const std::vector<NodeIndex>& starts,
+               const std::vector<NodeIndex>& ends,
+               const RoutingModelParameters& parameters);
   ~RoutingModel();
 
-  // Global parameters.
-  static void SetGlobalParameters(const RoutingParameters& parameters);
+  static RoutingModelParameters DefaultModelParameters();
+  static RoutingSearchParameters DefaultSearchParameters();
 
   // Model creation
 
@@ -572,7 +431,7 @@ class RoutingModel {
   // model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddVectorDimension(const int64* values, int64 capacity,
+  bool AddVectorDimension(std::vector<int64> values, int64 capacity,
                           bool fix_start_cumul_to_zero, const std::string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'values[i][next(i)]' for node i; 'capacity' is the upper bound of
@@ -581,11 +440,49 @@ class RoutingModel {
   // model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddMatrixDimension(const int64* const* values, int64 capacity,
+  bool AddMatrixDimension(std::vector<std::vector<int64> > values, int64 capacity,
                           bool fix_start_cumul_to_zero, const std::string& name);
+#if !defined(SWIG)
+  // Creates a dimension with transits depending on the cumuls of another
+  // dimension. 'pure_transits' are the per-vehicle fixed transits as above.
+  // 'dependent_transits' is a vector containing for each vehicle a function
+  // taking two nodes and returning a function taking a dimension cumul value
+  // and returning a transit value. 'base_dimension' indicates the dimension
+  // from which the cumul variable is taken. If 'base_dimension' is nullptr,
+  // then the newly created dimension is self-based.
+  bool AddDimensionDependentDimensionWithVehicleCapacity(
+      const std::vector<NodeEvaluator2*>& pure_transits,
+      const std::vector<VariableNodeEvaluator2*>& dependent_transits,
+      const RoutingDimension* base_dimension, int64 slack_max,
+      VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+      const std::string& name) {
+    return AddDimensionDependentDimensionWithVehicleCapacityInternal(
+        pure_transits, dependent_transits, base_dimension, slack_max, kint64max,
+        vehicle_capacity, fix_start_cumul_to_zero, name);
+  }
+  // As above, but pure_transits are taken to be zero evaluators.
+  bool AddDimensionDependentDimensionWithVehicleCapacity(
+      const std::vector<VariableNodeEvaluator2*>& transits,
+      const RoutingDimension* base_dimension, int64 slack_max,
+      VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+      const std::string& name);
+  // Homogeneous versions of the functions above.
+  bool AddDimensionDependentDimensionWithVehicleCapacity(
+      VariableNodeEvaluator2* transits, const RoutingDimension* base_dimension,
+      int64 slack_max, int64 vehicle_capacity, bool fix_start_cumul_to_zero,
+      const std::string& name);
+  bool AddDimensionDependentDimensionWithVehicleCapacity(
+      NodeEvaluator2* pure_transits, VariableNodeEvaluator2* dependent_transits,
+      const RoutingDimension* base_dimension, int64 slack_max,
+      int64 vehicle_capacity, bool fix_start_cumul_to_zero, const std::string& name);
+  // Creates a cached StateDependentTransit from an std::function.
+  static RoutingModel::StateDependentTransit MakeStateDependentTransit(
+      const std::function<int64(int64)>& f, int64 domain_start,
+      int64 domain_end);
+#endif  // SWIG
   // Outputs the names of all dimensions added to the routing engine.
   // TODO(user): rename.
-  void GetAllDimensions(std::vector<std::string>* dimension_names) const;
+  std::vector<std::string> GetAllDimensionNames() const;
   // Returns true if a dimension exists for a given dimension name.
   bool HasDimension(const std::string& dimension_name) const;
   // Returns a dimension from its name. Dies if the dimension does not exist.
@@ -641,21 +538,21 @@ class RoutingModel {
   }
   // Returns the variable indices of the nodes in the same disjunction as the
   // node corresponding to the variable of index 'index'.
-  void GetDisjunctionIndicesFromIndex(int64 index, std::vector<int>* indices) const {
+  std::vector<int> GetDisjunctionIndicesFromIndex(int64 index) const {
+    std::vector<int> disjunction_indices;
     DisjunctionIndex disjunction = kNoDisjunction;
     if (GetDisjunctionIndexFromVariableIndex(index, &disjunction)) {
-      *indices = disjunctions_[disjunction].nodes;
-    } else {
-      indices->clear();
+      disjunction_indices = disjunctions_[disjunction].nodes;
     }
+    return disjunction_indices;
   }
-#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#if !defined(SWIGPYTHON)
   // Returns the variable indices of the nodes in the disjunction of index
   // 'index'.
   const std::vector<int>& GetDisjunctionIndices(DisjunctionIndex index) const {
     return disjunctions_[index].nodes;
   }
-#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#endif  // !defined(SWIGPYTHON)
   // Returns the penalty of the node disjunction of index 'index'.
   int64 GetDisjunctionPenalty(DisjunctionIndex index) const {
     return disjunctions_[index].value;
@@ -710,8 +607,10 @@ class RoutingModel {
   // Sets the cost function of the model such that the cost of a segment of a
   // route between node 'from' and 'to' is evaluator(from, to), whatever the
   // route or vehicle performing the route.
+  // Takes ownership of the callback 'evaluator'.
   void SetArcCostEvaluatorOfAllVehicles(NodeEvaluator2* evaluator);
   // Sets the cost function for a given vehicle route.
+  // Takes ownership of the callback 'evaluator'.
   void SetArcCostEvaluatorOfVehicle(NodeEvaluator2* evaluator, int vehicle);
   // Sets the fixed cost of all vehicle routes. It is equivalent to calling
   // SetFixedCostOfVehicle on all vehicle routes.
@@ -723,15 +622,7 @@ class RoutingModel {
   // the first and last nodes.
   int64 GetFixedCostOfVehicle(int vehicle) const;
 
-  // Search
-  // Returns the strategy used to build a first solution.
-  RoutingStrategy first_solution_strategy() const {
-    return first_solution_strategy_;
-  }
-  // Sets the strategy used to build a first solution.
-  void set_first_solution_strategy(RoutingStrategy strategy) {
-    first_solution_strategy_ = strategy;
-  }
+// Search
 // Gets/sets the evaluator used when the first solution heuristic is set to
 // ROUTING_EVALUATOR_STRATEGY (variant of ROUTING_PATH_CHEAPEST_ARC using
 // 'evaluator' to sort node segments).
@@ -744,22 +635,9 @@ class RoutingModel {
   void SetFirstSolutionEvaluator(Solver::IndexEvaluator2 evaluator) {
     first_solution_evaluator_ = evaluator;
   }
-  // If a first solution flag has been set (to a value different than Default),
-  // returns the corresponding strategy, otherwise returns the strategy which
-  // was set.
-  RoutingStrategy GetSelectedFirstSolutionStrategy() const;
   // Adds a local search operator to the set of operators used to solve the
   // vehicle routing problem.
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
-  // Returns the metaheuristic used.
-  RoutingMetaheuristic metaheuristic() const { return metaheuristic_; }
-  // Sets the metaheuristic to be used.
-  void set_metaheuristic(RoutingMetaheuristic metaheuristic) {
-    metaheuristic_ = metaheuristic;
-  }
-  // If a metaheuristic flag has been set, returns the corresponding
-  // metaheuristic, otherwise returns the metaheuristic which was set.
-  RoutingMetaheuristic GetSelectedMetaheuristic() const;
   // Adds a search monitor to the search used to solve the routing model.
   void AddSearchMonitor(SearchMonitor* const monitor);
   // Adds a variable to minimize in the solution finalizer. The solution
@@ -774,14 +652,25 @@ class RoutingModel {
   // modification to the model can be done, but RoutesToAssignment becomes
   // available. Note that CloseModel() is automatically called by Solve() and
   // other methods that produce solution.
+  // This is equivalent to calling
+  // CloseModelWithParameters(DefaultSearchParameters()).
   void CloseModel();
+  // Same as above taking search parameters (as of 10/2015 some the parameters
+  // have to be set when closing the model).
+  void CloseModelWithParameters(
+      const RoutingSearchParameters& search_parameters);
   // Solves the current routing model; closes the current model.
+  // This is equivalent to calling
+  // SolveWithParameters(DefaultSearchParameters())
+  // or
+  // SolveFromAssignmentWithParameters(assignment, DefaultSearchParameters()).
   const Assignment* Solve(const Assignment* assignment = nullptr);
   // Solves the current routing model with the given parameters.
-  // Closes the current model.
   const Assignment* SolveWithParameters(
-      const RoutingSearchParameters& parameters,
-      const Assignment* assignment);
+      const RoutingSearchParameters& search_parameters);
+  const Assignment* SolveFromAssignmentWithParameters(
+      const Assignment* assignment,
+      const RoutingSearchParameters& search_parameters);
   // Computes a lower bound to the routing problem solving a linear assignment
   // problem. The routing model must be closed before calling this method.
   // Note that problems with node disjunction constraints (including optional
@@ -814,6 +703,7 @@ class RoutingModel {
   // can be used in the context of locking the parts of the routes which have
   // already been driven in online routing problems.
   const Assignment* const PreAssignment() const { return preassignment_; }
+  Assignment* MutablePreAssignment() { return preassignment_; }
   // Writes the current solution to a file containing an AssignmentProto.
   // Returns false if the file cannot be opened or if there is no current
   // solution.
@@ -873,10 +763,13 @@ class RoutingModel {
   // solution exists.
   // This method changes the vehicle and dimension variables as necessary.
   // While compacting the solution, only basic checks on vehicle variables are
-  // performed; the complete solution is checked at the end and if it is not
-  // valid, no attempts to repair it are made (instead, the method returns
-  // nullptr).
+  // performed; if one of these checks fails no attempts to repair it are made
+  // (instead, the method returns nullptr).
   Assignment* CompactAssignment(const Assignment& assignment) const;
+  // Same as CompactAssignment() but also checks the validity of the final
+  // compact solution; if it is not valid, no attempts to repair it are made
+  // (instead, the method returns nullptr).
+  Assignment* CompactAndCheckAssignment(const Assignment& assignment) const;
   // Adds an extra variable to the vehicle routing assignment.
   void AddToAssignment(IntVar* const var);
   void AddIntervalToAssignment(IntervalVar* const interval);
@@ -917,14 +810,14 @@ class RoutingModel {
   // Returns true if the route of 'vehicle' is non empty in 'assignment'.
   bool IsVehicleUsed(const Assignment& assignment, int vehicle) const;
 // Variables
-#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#if !defined(SWIGPYTHON)
   // Returns all next variables of the model, such that Nexts(i) is the next
   // variable of the node corresponding to i.
   const std::vector<IntVar*>& Nexts() const { return nexts_; }
   // Returns all vehicle variables of the model,  such that VehicleVars(i) is
   // the vehicle variable of the node corresponding to i.
   const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
-#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#endif  // !defined(SWIGPYTHON)
   // Returns the next variable of the node corresponding to index.
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
   // Returns the active variable of the node corresponding to index.
@@ -1022,30 +915,16 @@ class RoutingModel {
   // nodes that are not end of a route are safe.
   bool HasIndex(NodeIndex node) const;
 
-  // Time limits
-  // Returns the current time limit used in the search.
-  int64 TimeLimit() const { return time_limit_ms_; }
-  // Updates the time limit used in the search.
-  void UpdateTimeLimit(int64 limit_ms);
-  // Updates the time limit used in the Large Neighborhood search tree.
-  void UpdateLNSTimeLimit(int64 limit_ms);
-
   // Returns statistics on first solution search, number of decisions sent to
   // filters, number of decisions rejected by filters.
-  int64 GetNumberOfDecisionsInFirstSolution() const;
-  int64 GetNumberofRejectsInFirstSolution() const;
+  int64 GetNumberOfDecisionsInFirstSolution(
+      const RoutingSearchParameters& search_parameters) const;
+  int64 GetNumberOfRejectsInFirstSolution(
+      const RoutingSearchParameters& search_parameters) const;
 
-  // Conversion between enums and strings; the Parse*() conversions return true
-  // on success and the *Name() conversions return nullptr when given unknown
-  // values. See the .cc for the name conversions. The rule of thumb is:
-  // RoutingModel::ROUTING_PATH_CHEAPEST_ARC <-> "PathCheapestArc".
-  static const char* RoutingStrategyName(RoutingStrategy strategy);
-  static bool ParseRoutingStrategy(const std::string& strategy_str,
-                                   RoutingStrategy* strategy);
-  static const char* RoutingMetaheuristicName(
-      RoutingMetaheuristic metaheuristic);
-  static bool ParseRoutingMetaheuristic(const std::string& metaheuristic_str,
-                                        RoutingMetaheuristic* metaheuristic);
+  // Internal only: initializes the builders used to build a solver model from
+  // CpModels.
+  static void InitializeBuilders(Solver* solver);
 
   // DEPRECATED METHODS.
   // Don't use these methods; instead use their proposed replacement (in
@@ -1062,6 +941,7 @@ class RoutingModel {
   int GetVehicleCostCount() const;  // GetNonZeroCostClassesCount()
   int64 GetCost(int64 i, int64 j, int64 v);  // GetArcCostForVehicle()
   int64 GetVehicleClassCost(int64 i, int64 j, int64 c);  // GetArcCostForClass()
+
   // All the methods below are replaced by public methods of the
   // RoutingDimension class. See that class.
   void SetDimensionTransitCost(const std::string& d, int64 c);
@@ -1091,30 +971,70 @@ class RoutingModel {
   int64 GetEndCumulVarSoftUpperBound(int, const std::string&) const;
   int64 GetEndCumulVarSoftUpperBoundCoefficient(int, const std::string&) const;
 
+  // The next few members are in the public section only for testing purposes.
+  // TODO(user): Find a way to test and restrict the access at the same time.
+  //
+  // MakeGuidedSlackFinalizer creates a DecisionBuilder for the slacks of a
+  // dimension using a callback to choose which values to start with.
+  // The finalizer works only when all next variables in the model have
+  // been fixed. It has the following two characteristics:
+  // 1. It follows the routes defined by the nexts variables when choosing a
+  //    variable to make a decision on.
+  // 2. When it comes to choose a value for the slack of node i, the decision
+  //    builder first calls the callback with argument i, and supposingly the
+  //    returned value is x it creates decisions slack[i] = x, slack[i] = x + 1,
+  //    slack[i] = x - 1, slack[i] = x + 2, etc.
+  DecisionBuilder* MakeGuidedSlackFinalizer(
+      const RoutingDimension* dimension,
+      std::function<int64(int64)> initializer);
+#ifndef SWIG
+  // TODO(user): MakeGreedyDescentLSOperator is too general for routing.h.
+  // Perhaps move it to constraint_solver.h.
+  // MakeGreedyDescentLSOperator creates a local search operator that tries to
+  // improve the initial assignment by moving a logarithmically decreasing step
+  // away in each possible dimension.
+  static std::unique_ptr<LocalSearchOperator> MakeGreedyDescentLSOperator(
+      std::vector<IntVar*> variables);
+#endif  // __SWIG__
+  // MakeSelfDependentDimensionFinalizer is a finalizer for the slacks of a
+  // self-dependent dimension. It makes an extensive use of the caches of the
+  // state dependent transits.
+  // In detail, MakeSelfDependentDimensionFinalizer returns a composition of a
+  // local search decision builder with a greedy descent operator for the cumul
+  // of the start of each route and a guided slack finalizer. Provided there are
+  // no time windows and the maximum slacks are large enough, once the cumul of
+  // the start of route is fixed, the guided finalizer can find optimal values
+  // of the slacks for the rest of the route in time proportional to the length
+  // of the route. Therefore the composed finalizer generally works in time
+  // O(log(t)*n*m), where t is the latest possible departute time, n is the
+  // number of nodes in the network and m is the number of vehicles.
+  DecisionBuilder* MakeSelfDependentDimensionFinalizer(
+      const RoutingDimension* dimension);
+
  private:
   // Local search move operator usable in routing.
-  // TODO(user): Remove this when the corresponding enum is available in
-  // the routing search parameters protobuf.
   enum RoutingLocalSearchOperator {
-    ROUTING_RELOCATE = 0,
-    ROUTING_PAIR_RELOCATE,
-    ROUTING_RELOCATE_NEIGHBORS,
-    ROUTING_EXCHANGE,
-    ROUTING_CROSS,
-    ROUTING_TWO_OPT,
-    ROUTING_OR_OPT,
-    ROUTING_LKH,
-    ROUTING_TSP_OPT,
-    ROUTING_TSP_LNS,
-    ROUTING_PATH_LNS,
-    ROUTING_FULL_PATH_LNS,
-    ROUTING_INACTIVE_LNS,
-    ROUTING_MAKE_ACTIVE,
-    ROUTING_MAKE_INACTIVE,
-    ROUTING_MAKE_CHAIN_INACTIVE,
-    ROUTING_SWAP_ACTIVE,
-    ROUTING_EXTENDED_SWAP_ACTIVE,
-    ROUTING_LOCAL_SEARCH_OPERATOR_COUNTER
+    RELOCATE = 0,
+    RELOCATE_PAIR,
+    RELOCATE_NEIGHBORS,
+    EXCHANGE,
+    CROSS,
+    CROSS_EXCHANGE,
+    TWO_OPT,
+    OR_OPT,
+    LIN_KERNIGHAN,
+    TSP_OPT,
+    MAKE_ACTIVE,
+    MAKE_INACTIVE,
+    MAKE_CHAIN_INACTIVE,
+    SWAP_ACTIVE,
+    EXTENDED_SWAP_ACTIVE,
+    NODE_PAIR_SWAP,
+    PATH_LNS,
+    FULL_PATH_LNS,
+    TSP_LNS,
+    INACTIVE_LNS,
+    LOCAL_SEARCH_OPERATOR_COUNTER
   };
 
   // Structure storing a value for a set of nodes. Is used to store for node
@@ -1145,15 +1065,29 @@ class RoutingModel {
       const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
       int64 capacity, VehicleEvaluator* vehicle_capacity,
       bool fix_start_cumul_to_zero, const std::string& dimension_name);
+  bool AddDimensionDependentDimensionWithVehicleCapacityInternal(
+      const std::vector<NodeEvaluator2*>& pure_transits,
+      const std::vector<VariableNodeEvaluator2*>& dependent_transits,
+      const RoutingDimension* base_dimension, int64 slack_max, int64 capacity,
+      VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+      const std::string& name);
+  bool InitializeDimensionInternal(
+      const std::vector<NodeEvaluator2*>& evaluators,
+      const std::vector<VariableNodeEvaluator2*>& state_dependent_evaluators,
+      int64 slack_max, int64 capacity, VehicleEvaluator* vehicle_capacity,
+      bool fix_start_cumul_to_zero, RoutingDimension* dimension);
   DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
-  uint64 GetFingerprintOfEvaluator(NodeEvaluator2* evaluator) const;
-  void ComputeCostClasses();
+  uint64 GetFingerprintOfEvaluator(NodeEvaluator2* evaluator,
+                                   bool fingerprint_arc_cost_evaluators) const;
+  void ComputeCostClasses(const RoutingSearchParameters& parameters);
   void ComputeVehicleClasses();
   int64 GetArcCostForClassInternal(int64 from_index, int64 to_index,
                                    CostClassIndex cost_class_index);
-  void AppendHomogeneousArcCosts(int node_index,
+  void AppendHomogeneousArcCosts(const RoutingSearchParameters& parameters,
+                                 int node_index,
                                  std::vector<IntVar*>* cost_elements);
-  void AppendArcCosts(int node_index, std::vector<IntVar*>* cost_elements);
+  void AppendArcCosts(const RoutingSearchParameters& parameters, int node_index,
+                      std::vector<IntVar*>* cost_elements);
   Assignment* DoRestoreAssignment();
   static const CostClassIndex kCostClassIndexOfZeroCost;
   int64 SafeGetCostClassInt64OfVehicle(int64 vehicle) const {
@@ -1187,17 +1121,26 @@ class RoutingModel {
                             Assignment* compact_assignment) const;
 
   NodeEvaluator2* NewCachedCallback(NodeEvaluator2* callback);
+  VariableNodeEvaluator2* NewCachedStateDependentCallback(
+      VariableNodeEvaluator2* callback);
   void CheckDepot();
-  void QuietCloseModel() {
+  void QuietCloseModel();
+  void QuietCloseModelWithParameters(
+      const RoutingSearchParameters& parameters) {
     if (!closed_) {
-      CloseModel();
+      CloseModelWithParameters(parameters);
     }
   }
+  // See CompactAssignment. Checks the final solution if
+  // check_compact_assignement is true.
+  Assignment* CompactAssignmentInternal(const Assignment& assignment,
+                                        bool check_compact_assignment) const;
   // Check that current search parameters are valid. If not, the status of the
   // solver is set to ROUTING_INVALID.
-  bool ValidateSearchParameters();
+  bool ValidateSearchParameters(
+      const RoutingSearchParameters& search_parameters);
   // Sets up search objects, such as decision builders and monitors.
-  void SetupSearch();
+  void SetupSearch(const RoutingSearchParameters& search_parameters);
   // Set of auxiliary methods used to setup the search.
   // TODO(user): Document each auxiliary method.
   Assignment* GetOrCreateAssignment();
@@ -1206,22 +1149,28 @@ class RoutingModel {
   SearchLimit* GetOrCreateLargeNeighborhoodSearchLimit();
   LocalSearchOperator* CreateInsertionOperator();
   void CreateNeighborhoodOperators();
-  LocalSearchOperator* GetNeighborhoodOperators() const;
+  LocalSearchOperator* GetNeighborhoodOperators(
+      const RoutingSearchParameters& search_parameters) const;
   const std::vector<LocalSearchFilter*>& GetOrCreateLocalSearchFilters();
   const std::vector<LocalSearchFilter*>& GetOrCreateFeasibilityFilters();
   DecisionBuilder* CreateSolutionFinalizer();
-  void CreateFirstSolutionDecisionBuilders();
-  DecisionBuilder* GetFirstSolutionDecisionBuilder() const;
-  IntVarFilteredDecisionBuilder* GetFilteredFirstSolutionDecisionBuilderOrNull()
-      const;
-  LocalSearchPhaseParameters* CreateLocalSearchParameters();
-  DecisionBuilder* CreateLocalSearchDecisionBuilder();
-  void SetupDecisionBuilders();
-  void SetupMetaheuristics();
+  void CreateFirstSolutionDecisionBuilders(
+      const RoutingSearchParameters& search_parameters);
+  DecisionBuilder* GetFirstSolutionDecisionBuilder(
+      const RoutingSearchParameters& search_parameters) const;
+  IntVarFilteredDecisionBuilder* GetFilteredFirstSolutionDecisionBuilderOrNull(
+      const RoutingSearchParameters& parameters) const;
+  LocalSearchPhaseParameters* CreateLocalSearchParameters(
+      const RoutingSearchParameters& search_parameters);
+  DecisionBuilder* CreateLocalSearchDecisionBuilder(
+      const RoutingSearchParameters& search_parameters);
+  void SetupDecisionBuilders(const RoutingSearchParameters& search_parameters);
+  void SetupMetaheuristics(const RoutingSearchParameters& search_parameters);
   void SetupAssignmentCollector();
   void SetupTrace();
-  void SetupSearchMonitors();
-  bool UsesLightPropagation() const;
+  void SetupSearchMonitors(const RoutingSearchParameters& search_parameters);
+  bool UsesLightPropagation(
+      const RoutingSearchParameters& search_parameters) const;
 
   int64 GetArcCostForCostClassInternal(int64 i, int64 j, int64 cost_class);
   int GetVehicleStartClass(int64 start) const;
@@ -1259,9 +1208,11 @@ class RoutingModel {
 #ifndef SWIG
   ITIVector<VehicleClassIndex, VehicleClass> vehicle_classes_;
 #endif  // SWIG
-  std::unique_ptr<ResultCallback1<int, int64> > vehicle_start_class_callback_;
+  std::function<int(int64)> vehicle_start_class_callback_;
   // Cached callbacks
   hash_map<const NodeEvaluator2*, NodeEvaluator2*> cached_node_callbacks_;
+  hash_map<const VariableNodeEvaluator2*, VariableNodeEvaluator2*>
+      cached_state_dependent_callbacks_;
   // Disjunctions
   ITIVector<DisjunctionIndex, ValuedNodes> disjunctions_;
   std::vector<DisjunctionIndex> node_to_disjunction_;
@@ -1285,10 +1236,8 @@ class RoutingModel {
   std::vector<DecisionBuilder*> first_solution_decision_builders_;
   std::vector<IntVarFilteredDecisionBuilder*>
       first_solution_filtered_decision_builders_;
-  RoutingStrategy first_solution_strategy_;
   Solver::IndexEvaluator2 first_solution_evaluator_;
   std::vector<LocalSearchOperator*> local_search_operators_;
-  RoutingMetaheuristic metaheuristic_;
   std::vector<SearchMonitor*> monitors_;
   SolutionCollector* collect_assignments_;
   DecisionBuilder* solve_db_;
@@ -1308,59 +1257,79 @@ class RoutingModel {
   std::unique_ptr<SweepArranger> sweep_arranger_;
 #endif
 
-  int64 time_limit_ms_;
-  int64 lns_time_limit_ms_;
   SearchLimit* limit_;
   SearchLimit* ls_limit_;
   SearchLimit* lns_limit_;
 
   // Callbacks to be deleted
   hash_set<const NodeEvaluator2*> owned_node_callbacks_;
-  hash_set<TransitEvaluator2*> owned_index_callbacks_;
+  hash_set<const VariableNodeEvaluator2*> owned_state_dependent_callbacks_;
 
   friend class RoutingDimension;
 
   DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
 
+// Routing model visitor.
+class RoutingModelVisitor : public BaseObject {
+ public:
+  // Constraint types.
+  static const char kLightElement[];
+  static const char kLightElement2[];
+};
+
 // Dimensions represent quantities accumulated at nodes along the routes. They
 // represent quantities such as weights or volumes carried along the route, or
 // distance or times.
+//
 // Quantities at a node are represented by "cumul" variables and the increase
 // or decrease of quantities between nodes are represented by "transit"
 // variables. These variables are linked as follows:
-// if j == next(i), cumuls(j) = cumuls(i) + transits(i) + slacks(i)
+//
+// if j == next(i),
+// cumuls(j) = cumuls(i) + transits(i) + slacks(i) + state_dependent_transits(i)
+//
 // where slack is a positive slack variable (can represent waiting times for
-// a time dimension).
+// a time dimension), and state_dependent_transits is a non-purely functional
+// version of transits_. Favour transits over state_dependent_transits when
+// possible, because purely functional callbacks allow more optimisations and
+// make the model faster and easier to solve.
 class RoutingDimension {
  public:
   // Returns the transition value for a given pair of nodes (as var index);
   // this value is the one taken by the corresponding transit variable when
   // the 'next' variable for 'from_index' is bound to 'to_index'.
   int64 GetTransitValue(int64 from_index, int64 to_index, int64 vehicle) const;
+  // Same as above but taking a vehicle class of the dimension instead of a
+  // vehicle (the class of a vehicle can be obtained with vehicle_to_class()).
+  int64 GetTransitValueFromClass(int64 from_index, int64 to_index,
+                                 int64 vehicle_class) const {
+    return class_evaluators_[vehicle_class](from_index, to_index);
+  }
   // Get the cumul, transit and slack variables for the given node (given as
   // int64 var index).
   IntVar* CumulVar(int64 index) const { return cumuls_[index]; }
   IntVar* TransitVar(int64 index) const { return transits_[index]; }
   IntVar* SlackVar(int64 index) const { return slacks_[index]; }
-#if !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+#if !defined(SWIGPYTHON)
   // Like CumulVar(), TransitVar(), SlackVar() but return the whole variable
   // vectors instead (indexed by int64 var index).
   const std::vector<IntVar*>& cumuls() const { return cumuls_; }
   const std::vector<IntVar*>& transits() const { return transits_; }
   const std::vector<IntVar*>& slacks() const { return slacks_; }
-#if !defined(SWIGCSHARP)
+#if !defined(SWIGCSHARP) && !defined(SWIGJAVA)
   // Returns the callback evaluating the capacity for vehicle indices.
   RoutingModel::VehicleEvaluator* capacity_evaluator() const {
     return capacity_evaluator_.get();
   }
   // Returns the callback evaluating the transit value between two node indices
   // for a given vehicle.
-  RoutingModel::TransitEvaluator2* transit_evaluator(int vehicle) const {
-    return transit_evaluators_[vehicle];
+  const RoutingModel::TransitEvaluator2& transit_evaluator(int vehicle) const {
+    return class_evaluators_[vehicle_to_class_[vehicle]];
   }
-#endif  // SWIGCSHARP
-#endif  // !defined(SWIGPYTHON) && !defined(SWIGJAVA)
+  int vehicle_to_class(int vehicle) const { return vehicle_to_class_[vehicle]; }
+#endif  // !defined(SWIGCSHARP) && !defined(SWIGJAVA)
+#endif  // !defined(SWIGPYTHON)
   // Sets an upper bound on the dimension span on a given vehicle. This is the
   // preferred way to limit the "length" of the route of a vehicle according to
   // a dimension.
@@ -1505,6 +1474,16 @@ class RoutingDimension {
   // Returns the cost coefficient of the soft lower bound of a cumul variable
   // for a variable index. If no soft lower bound has been set, 0 is returned.
   int64 GetCumulVarSoftLowerBoundCoefficientFromIndex(int64 index) const;
+  // Returns the parent in the dependency tree if any or nullptr otherwise.
+  const RoutingDimension* base_dimension() const { return base_dimension_; }
+  // It makes sense to use the function only for self-dependent dimension.
+  // For such dimensions the value of the slack of a node determines the
+  // transition cost of the next transit. Provided that
+  //   1. cumul[node] is fixed,
+  //   2. next[node] and next[next[node]] (if exists) are fixed,
+  // the value of slack[node] for which cumul[next[node]] + transit[next[node]]
+  // is minimized can be found in O(1) using this function.
+  int64 ShortestTransitionSlack(int64 node) const;
 
   // Returns the name of the dimension.
   const std::string& name() const { return name_; }
@@ -1538,15 +1517,22 @@ class RoutingDimension {
     int64 coefficient;
   };
 
-  RoutingDimension(RoutingModel* model, const std::string& name);
+  class SelfBased {};
+  RoutingDimension(RoutingModel* model, const std::string& name,
+                   const RoutingDimension* base_dimension);
+  RoutingDimension(RoutingModel* model, const std::string& name, SelfBased);
   void Initialize(
       RoutingModel::VehicleEvaluator* vehicle_capacity, int64 capacity,
       const std::vector<RoutingModel::NodeEvaluator2*>& transit_evaluators,
+      const std::vector<RoutingModel::VariableNodeEvaluator2*>&
+          state_dependent_node_evaluators,
       int64 slack_max);
   void InitializeCumuls(RoutingModel::VehicleEvaluator* vehicle_capacity,
                         int64 capacity);
   void InitializeTransits(
       const std::vector<RoutingModel::NodeEvaluator2*>& transit_evaluators,
+      const std::vector<RoutingModel::VariableNodeEvaluator2*>&
+          state_dependent_transit_evaluators,
       int64 slack_max);
   // Sets up the cost variables related to cumul soft upper bounds.
   void SetupCumulVarSoftUpperBoundCosts(std::vector<IntVar*>* cost_elements) const;
@@ -1555,17 +1541,33 @@ class RoutingDimension {
   // Sets up the cost variables related to the global span and per-vehicle span
   // costs (only for the "slack" part of the latter).
   void SetupGlobalSpanCost(std::vector<IntVar*>* cost_elements) const;
-  void SetupSlackCosts(std::vector<IntVar*>* cost_elements) const;
+  void SetupSlackAndDependentTransitCosts(std::vector<IntVar*>* cost_elements) const;
+  // Finalize the model of the dimension.
+  void CloseModel(bool use_light_propagation);
 
   std::vector<IntVar*> cumuls_;
+  std::vector<IntVar*> capacity_vars_;
   std::unique_ptr<RoutingModel::VehicleEvaluator> capacity_evaluator_;
   std::vector<IntVar*> transits_;
+  std::vector<IntVar*> fixed_transits_;
   // "transit_evaluators_" does the indexing by vehicle, while
   // "class_evaluators_" does the de-duplicated ownership.
-  std::vector<RoutingModel::TransitEvaluator2*> transit_evaluators_;
-  std::vector<std::unique_ptr<RoutingModel::TransitEvaluator2> > class_evaluators_;
+  std::vector<RoutingModel::TransitEvaluator2> class_evaluators_;
   std::vector<int64> vehicle_to_class_;
+
+  // The transits of a dimension may depend on its cumuls or the cumuls of
+  // another dimension. There can be no cycles, except for self loops, a typical
+  // example for this is a time dimension.
+  const RoutingDimension* const base_dimension_;
+
+  // "state_dependent_transit_evaluators_" does the indexing by vehicle, while
+  // "state_dependent_class_evaluators_" does the de-duplicated ownership.
+  std::vector<RoutingModel::VariableIndexEvaluator2>
+      state_dependent_class_evaluators_;
+  std::vector<int64> state_dependent_vehicle_to_class_;
+
   std::vector<IntVar*> slacks_;
+  std::vector<IntVar*> dependent_transits_;
   std::vector<int64> vehicle_span_upper_bounds_;
   int64 global_span_cost_coefficient_;
   std::vector<int64> vehicle_span_cost_coefficients_;
@@ -1973,6 +1975,19 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
   int64 size_squared_;
 };
 
+// Christofides addition heuristic. Initially created to solve TSPs, extended to
+// support any model by extending routes as much as possible following the path
+// found by the heuristic, before starting a new route.
+
+class ChristofidesFilteredDecisionBuilder
+    : public RoutingFilteredDecisionBuilder {
+ public:
+  ChristofidesFilteredDecisionBuilder(
+      RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
+  ~ChristofidesFilteredDecisionBuilder() override {}
+  bool BuildSolution() override;
+};
+
 // Routing filters
 
 class RoutingLocalSearchFilter : public IntVarLocalSearchFilter {
@@ -2053,5 +2068,4 @@ RoutingLocalSearchFilter* MakeNodePrecedenceFilter(
 RoutingLocalSearchFilter* MakeVehicleVarFilter(
     const RoutingModel& routing_model);
 }  // namespace operations_research
-
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_

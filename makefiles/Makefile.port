@@ -20,6 +20,7 @@ ifeq ("$(SYSTEM)","unix")
       DETECTED_PYTHON_VERSION = 2.6
     endif
   endif
+  MCS = $(shell which mcs)
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
     CODEPORT = OpSys-Linux
@@ -69,6 +70,7 @@ ifeq ("$(SYSTEM)","unix")
       /Library/Java/JavaVirtualMachines/jdk1.7.0_51.jdk/Contents/Home/include
 
     SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
+    MAC_MIN_VERSION = 10.8
   endif
 endif
 
@@ -141,3 +143,4 @@ printport:
 	@echo GIT_REVISION = \"$(GIT_REVISION)\"
 	@echo GIT_HASH = $(GIT_HASH)
 	@echo PORT = $(PORT)
+	@echo MCS = $(MCS)

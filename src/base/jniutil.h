@@ -20,8 +20,8 @@
 
 class JNIUtil {
  public:
-  // Creates a java jstring from a null-terminated UTF-8 encoded C String
-  // The caller must delete the jstring reference
+  // Creates a Java jstring from a null-terminated UTF-8 encoded C String.
+  // The caller must delete the jstring reference.
   static jstring MakeJString(JNIEnv* env, const char* cstr) {
     if (cstr == NULL) return NULL;
     return env->NewStringUTF(cstr);
@@ -48,7 +48,7 @@ class JNIUtil {
     jbyte* jba = new jbyte[n];
 
     env->GetByteArrayRegion(a, 0, n, jba);
-    // We make use of the fact that jbyte's are really just chars
+    // We make use of the fact that jbyte's are really just chars.
     // If this changes (different VM, etc.) things will break.
     return reinterpret_cast<char*>(jba);
   }

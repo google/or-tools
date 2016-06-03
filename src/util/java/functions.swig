@@ -120,9 +120,14 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
                            FIRST_ARG(Args), NUM_ARGS_MINUS_1(Args), Args)
 %enddef
 
-// --------- VoidToString ---------
+// For std::function<> involving void either as input or output type,
+// the WRAP_STD_FUNCTION_JAVA macro doesn't work. So we use some
+// custom code here.
+// TODO(user): explain why.
 
-%define WRAP_OTHER_FUNCTIONS_JAVA(ClassPath) 
+//  --------- VoidToString ---------
+
+%define WRAP_STD_FUNCTIONS_WITH_VOID_JAVA(ClassPath)
 %typemap(in) std::function<std::string()> {
   jclass object_class =
     jenv->FindClass(ClassPath "VoidToString");
@@ -171,7 +176,7 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 // This typemap handles the conversion of the jstype to jtype typemap types
 %typemap(javain) std::function<void()> "$javainput"
 
-// --------- VoidToVoid ---------
+// --------- LongToVoid ---------
 
 %typemap(in) std::function<void(int64)> {
   jclass object_class =
@@ -194,19 +199,19 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 
 // This typemap handles the conversion of the jstype to jtype typemap types
 %typemap(javain) std::function<void(int64)> "$javainput"
-%enddef  // WRAP_OTHER_FUNCTIONS_JAVA
+%enddef  // WRAP_STD_FUNCTIONS_WITH_VOID_JAVA
 
-%define WRAP_CLASS_TO_VOID_JAVA(ClassPath, CppClass, Parameter)
+%define WRAP_STD_FUNCTION_JAVA_CLASS_TO_VOID(CppClass, ClassPath, Parameter)
 %typemap(in) std::function<void(operations_research::Parameter*)> {
-  jclass object_class = jenv->FindClass(ClassPath CppClass);
+  jclass object_class = jenv->FindClass(ClassPath "CppClass");
   if (nullptr == object_class) return $null;
   jmethodID method_id = jenv->GetStaticMethodID(
-      object_class, "getCPtr", "(L" ClassPath CppClass";)J");
+      object_class, "getCPtr", "(L" ClassPath "CppClass;)J");
   assert(method_id != nullptr);
   operations_research::swig_util::CppClass* const fun =
       reinterpret_cast<operations_research::swig_util::CppClass*>(
           jenv->CallStaticLongMethod(object_class, method_id, $input));
-  $1 = [fun](Parameter* param) { fun->Run(param); };
+  $1 = [fun](operations_research::Parameter* param) { fun->Run(param); };
 }
 
 // These 3 typemaps tell SWIG what JNI and Java types to use
@@ -219,7 +224,7 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 
 %feature("director") operations_research::swig_util::CppClass;
 %rename (run) operations_research::swig_util::CppClass::Run;
-%enddef  // WRAP_CLASS_TO_VOID_JAVA
+%enddef  // WRAP_STD_FUNCTION_JAVA_CLASS_TO_VOID
 
 // directors
 
@@ -247,5 +252,7 @@ WRAP_STD_FUNCTION_JAVA_AUX(Package, "CppClass", CppClass, ReturnType,
 %rename (run) operations_research::swig_util::LongLongLongToBoolean::Run;
 %feature("director") operations_research::swig_util::LongToVoid;
 %rename (run) operations_research::swig_util::LongToVoid::Run;
+%feature("director") operations_research::swig_util::VoidToVoid;
+%rename (run) operations_research::swig_util::VoidToVoid::Run;
 
 %include "util/functions_swig_helpers.h"

@@ -61,7 +61,7 @@ void IntVarElement::Copy(const IntVarElement& element) {
 }
 
 void IntVarElement::LoadFromProto(
-    const IntVarAssignmentProto& int_var_assignment_proto) {
+    const IntVarAssignment& int_var_assignment_proto) {
   min_ = int_var_assignment_proto.min();
   max_ = int_var_assignment_proto.max();
   if (int_var_assignment_proto.active()) {
@@ -87,7 +87,7 @@ bool IntVarElement::operator==(const IntVarElement& element) const {
 }
 
 void IntVarElement::WriteToProto(
-    IntVarAssignmentProto* int_var_assignment_proto) const {
+    IntVarAssignment* int_var_assignment_proto) const {
   int_var_assignment_proto->set_var_id(var_->name());
   int_var_assignment_proto->set_min(min_);
   int_var_assignment_proto->set_max(max_);
@@ -169,7 +169,7 @@ void IntervalVarElement::Restore() {
 }
 
 void IntervalVarElement::LoadFromProto(
-    const IntervalVarAssignmentProto& interval_var_assignment_proto) {
+    const IntervalVarAssignment& interval_var_assignment_proto) {
   start_min_ = interval_var_assignment_proto.start_min();
   start_max_ = interval_var_assignment_proto.start_max();
   duration_min_ = interval_var_assignment_proto.duration_min();
@@ -186,7 +186,7 @@ void IntervalVarElement::LoadFromProto(
 }
 
 void IntervalVarElement::WriteToProto(
-    IntervalVarAssignmentProto* interval_var_assignment_proto) const {
+    IntervalVarAssignment* interval_var_assignment_proto) const {
   interval_var_assignment_proto->set_var_id(var_->name());
   interval_var_assignment_proto->set_start_min(start_min_);
   interval_var_assignment_proto->set_start_max(start_max_);
@@ -281,7 +281,7 @@ void SequenceVarElement::Restore() {
 }
 
 void SequenceVarElement::LoadFromProto(
-    const SequenceVarAssignmentProto& sequence_var_assignment_proto) {
+    const SequenceVarAssignment& sequence_var_assignment_proto) {
   for (const int32 forward_sequence :
        sequence_var_assignment_proto.forward_sequence()) {
     forward_sequence_.push_back(forward_sequence);
@@ -302,7 +302,7 @@ void SequenceVarElement::LoadFromProto(
 }
 
 void SequenceVarElement::WriteToProto(
-    SequenceVarAssignmentProto* sequence_var_assignment_proto) const {
+    SequenceVarAssignment* sequence_var_assignment_proto) const {
   sequence_var_assignment_proto->set_var_id(var_->name());
   sequence_var_assignment_proto->set_active(Activated());
   for (const int forward_sequence : forward_sequence_) {
@@ -480,8 +480,8 @@ void LoadElement(const hash_map<std::string, E*>& id_to_element_map,
 }  // namespace
 
 bool Assignment::Load(const std::string& filename) {
-  File* file = File::Open(filename, "r");
-  if (file == nullptr) {
+  File* file;
+  if (!file::Open(filename, "r", &file, file::Defaults()).ok()) {
     LOG(INFO) << "Cannot open " << filename;
     return false;
   }
@@ -526,20 +526,20 @@ void RealLoad(const AssignmentProto& assignment_proto,
 }
 
 void Assignment::Load(const AssignmentProto& assignment_proto) {
-  RealLoad<IntVar, IntVarElement, IntVarAssignmentProto, IntContainer>(
+  RealLoad<IntVar, IntVarElement, IntVarAssignment, IntContainer>(
       assignment_proto, &int_var_container_,
       &AssignmentProto::int_var_assignment_size,
       &AssignmentProto::int_var_assignment);
-  RealLoad<IntervalVar, IntervalVarElement, IntervalVarAssignmentProto,
+  RealLoad<IntervalVar, IntervalVarElement, IntervalVarAssignment,
            IntervalContainer>(assignment_proto, &interval_var_container_,
                               &AssignmentProto::interval_var_assignment_size,
                               &AssignmentProto::interval_var_assignment);
-  RealLoad<SequenceVar, SequenceVarElement, SequenceVarAssignmentProto,
+  RealLoad<SequenceVar, SequenceVarElement, SequenceVarAssignment,
            SequenceContainer>(assignment_proto, &sequence_var_container_,
                               &AssignmentProto::sequence_var_assignment_size,
                               &AssignmentProto::sequence_var_assignment);
   if (assignment_proto.has_objective()) {
-    const IntVarAssignmentProto& objective = assignment_proto.objective();
+    const IntVarAssignment& objective = assignment_proto.objective();
     const std::string objective_id = objective.var_id();
     CHECK(!objective_id.empty());
     if (HasObjective() && objective_id.compare(Objective()->name()) == 0) {
@@ -556,8 +556,8 @@ void Assignment::Load(const AssignmentProto& assignment_proto) {
 }
 
 bool Assignment::Save(const std::string& filename) const {
-  File* file = File::Open(filename, "w");
-  if (file == nullptr) {
+  File* file;
+  if (!file::Open(filename, "w", &file, file::Defaults()).ok()) {
     LOG(INFO) << "Cannot open " << filename;
     return false;
   }
@@ -587,20 +587,20 @@ void RealSave(AssignmentProto* const assignment_proto,
 
 void Assignment::Save(AssignmentProto* const assignment_proto) const {
   assignment_proto->Clear();
-  RealSave<IntVar, IntVarElement, IntVarAssignmentProto, IntContainer>(
+  RealSave<IntVar, IntVarElement, IntVarAssignment, IntContainer>(
       assignment_proto, int_var_container_,
       &AssignmentProto::add_int_var_assignment);
-  RealSave<IntervalVar, IntervalVarElement, IntervalVarAssignmentProto,
+  RealSave<IntervalVar, IntervalVarElement, IntervalVarAssignment,
            IntervalContainer>(assignment_proto, interval_var_container_,
                               &AssignmentProto::add_interval_var_assignment);
-  RealSave<SequenceVar, SequenceVarElement, SequenceVarAssignmentProto,
+  RealSave<SequenceVar, SequenceVarElement, SequenceVarAssignment,
            SequenceContainer>(assignment_proto, sequence_var_container_,
                               &AssignmentProto::add_sequence_var_assignment);
   if (HasObjective()) {
     const IntVar* objective = Objective();
     const std::string& name = objective->name();
     if (!name.empty()) {
-      IntVarAssignmentProto* objective = assignment_proto->mutable_objective();
+      IntVarAssignment* objective = assignment_proto->mutable_objective();
       objective->set_var_id(name);
       const int64 obj_min = ObjectiveMin();
       const int64 obj_max = ObjectiveMax();

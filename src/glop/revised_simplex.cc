@@ -77,7 +77,7 @@ RevisedSimplex::RevisedSimplex()
     : problem_status_(ProblemStatus::INIT),
       num_rows_(0),
       num_cols_(0),
-      first_slack_col_(0),
+      first_slack_col_(kInvalidCol),
       current_objective_(),
       objective_(),
       lower_bound_(),
@@ -133,6 +133,10 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&function_stats_);
   DCHECK(lp.IsCleanedUp());
   RETURN_ERROR_IF_NULL(time_limit);
+  if (!lp.IsInEquationForm()) {
+    return Status(Status::ERROR_INVALID_PROBLEM,
+                  "The problem is not in the equations form.");
+  }
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
 
@@ -287,7 +291,7 @@ int64 RevisedSimplex::GetNumberOfIterations() const { return num_iterations_; }
 
 RowIndex RevisedSimplex::GetProblemNumRows() const { return num_rows_; }
 
-ColIndex RevisedSimplex::GetProblemNumCols() const { return first_slack_col_; }
+ColIndex RevisedSimplex::GetProblemNumCols() const { return num_cols_; }
 
 Fractional RevisedSimplex::GetVariableValue(ColIndex col) const {
   return variable_values_.Get(col);
@@ -589,46 +593,45 @@ void RevisedSimplex::UseSingletonColumnInInitialBasis(RowToColMapping* basis) {
 bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
                                                         bool* only_new_rows) {
   SCOPED_TIME_STAT(&function_stats_);
+  DCHECK_NE(only_new_rows, nullptr);
+  DCHECK_NE(kInvalidCol, lp.GetFirstSlackVariable());
   DCHECK_EQ(num_cols_, compact_matrix_.num_cols());
   DCHECK_EQ(num_rows_, compact_matrix_.num_rows());
 
-  // Test if the matrix is unchanged, and if yes, just returns true.
-  if (lp.num_constraints() == num_rows_ &&
-      lp.num_variables() == first_slack_col_ &&
+  // Test if the matrix is unchanged, and if yes, just returns true. Note that
+  // we compare also the columns corresponding to the slack variables.
+  if (lp.num_constraints() == num_rows_ && lp.num_variables() == num_cols_ &&
       AreFirstColumnsAndRowsExactlyEquals(
-          num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_)) {
+          num_rows_, num_cols_, lp.GetSparseMatrix(), compact_matrix_)) {
     // IMPORTANT: we need to recreate matrix_with_slack_ because this matrix
     // view was refering to a previous lp.GetSparseMatrix(). The matrices are
     // the same, but we do need to update the pointers.
     //
     // TODO(user): use compact_matrix_ everywhere instead.
-    matrix_with_slack_.PopulateFromMatrixPair(lp.GetSparseMatrix(),
-                                              identity_matrix_);
+    matrix_with_slack_.PopulateFromMatrix(lp.GetSparseMatrix());
     return true;
   }
 
   // Check if the new matrix can be derived from the old one just by adding
-  // new rows (i.e new constraints).
+  // new rows (i.e new constraints). In this case, we make two separate tests:
+  // first we compare the coefficients for the non-slack variables, and then we
+  // check that the coefficients for slack variables form an identity matrix.
   *only_new_rows =
       lp.num_constraints() > num_rows_ &&
-      lp.num_variables() == first_slack_col_ &&
+      lp.GetFirstSlackVariable() == first_slack_col_ &&
+      lp.num_variables() ==
+          lp.GetFirstSlackVariable() + RowToColIndex(lp.num_constraints()) &&
       AreFirstColumnsAndRowsExactlyEquals(
-          num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_);
+          num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_) &&
+      IsRightMostSquareMatrixIdentity(lp.GetSparseMatrix());
 
-  // Initialize matrix_with_slack_. Note that many of the slack variables may
-  // not be useful at all, but in order not to recompute the matrix from one
-  // Solve() to the next, we include all of them for a given lp matrix.
-  //
-  // TODO(user): investigate the impact on the running time. It seems low
-  // because we almost never iterate on fixed variables.
-  identity_matrix_.PopulateFromIdentity(RowToColIndex(lp.num_constraints()));
-  matrix_with_slack_.PopulateFromMatrixPair(lp.GetSparseMatrix(),
-                                            identity_matrix_);
+  // Initialize matrix_with_slack_.
+  matrix_with_slack_.PopulateFromMatrix(lp.GetSparseMatrix());
+  first_slack_col_ = lp.GetFirstSlackVariable();
 
   // Initialize the new dimensions.
   num_rows_ = lp.num_constraints();
-  first_slack_col_ = lp.num_variables();
-  num_cols_ = lp.num_variables() + RowToColIndex(num_rows_);
+  num_cols_ = lp.num_variables();
 
   // Populate compact_matrix_ and transposed_matrix_ if needed. Note that we
   // already added all the slack variables at this point, so matrix_ will not
@@ -647,7 +650,8 @@ bool RevisedSimplex::InitializeBoundsAndTestIfUnchanged(
   upper_bound_.resize(num_cols_, 0.0);
   bound_perturbation_.assign(num_cols_, 0.0);
 
-  // Variable bounds.
+  // Variable bounds, for both non-slack and slack variables.
+  DCHECK_EQ(lp.num_variables(), num_cols_);
   bool bounds_are_unchanged = true;
   for (ColIndex col(0); col < lp.num_variables(); ++col) {
     if (lower_bound_[col] != lp.variable_lower_bounds()[col] ||
@@ -658,22 +662,12 @@ bool RevisedSimplex::InitializeBoundsAndTestIfUnchanged(
     upper_bound_[col] = lp.variable_upper_bounds()[col];
   }
 
-  // Constraint bounds which are converted to slacks bounds.
-  for (RowIndex row(0); row < num_rows_; ++row) {
-    const ColIndex col = SlackColIndex(row);
-    if (lower_bound_[col] != -lp.constraint_upper_bounds()[row] ||
-        upper_bound_[col] != -lp.constraint_lower_bounds()[row]) {
-      bounds_are_unchanged = false;
-    }
-    lower_bound_[col] = -lp.constraint_upper_bounds()[row];
-    upper_bound_[col] = -lp.constraint_lower_bounds()[row];
-  }
-
   return bounds_are_unchanged;
 }
 
 bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
     const LinearProgram& lp) {
+  DCHECK_EQ(num_cols_, lp.num_variables());
   SCOPED_TIME_STAT(&function_stats_);
   current_objective_.assign(num_cols_, 0.0);
 
@@ -713,34 +707,24 @@ void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
   // signs of limits, which happens automatically when calculating shifted
   // limits. We must also use upper (resp. lower) limit in place of lower
   // (resp. upper) limit when calculating the final objective_limit_.
-  const Fractional shifted_lower_limit =
-      parameters_.objective_lower_limit() / objective_scaling_factor_ -
-      objective_offset_;
-  const Fractional shifted_upper_limit =
-      parameters_.objective_upper_limit() / objective_scaling_factor_ -
-      objective_offset_;
-  if (objective_scaling_factor_ < 0.0) {
-    // The original, user-defined problem was primal maximization (or dual
-    // minimization). Now, it's reversed, so swap the limits.
-    if (parameters_.use_dual_simplex()) {
-      objective_limit_ = shifted_lower_limit *
-                         (1.0 + parameters_.solution_feasibility_tolerance());
-    } else {
-      objective_limit_ = shifted_upper_limit *
-                         (1.0 - parameters_.solution_feasibility_tolerance());
-    }
-
-  } else {
-    // The original, user-defined problem was primal minimization (or dual
-    // minimization). Now, it stays the same, so do not swap the limits.
-    if (parameters_.use_dual_simplex()) {
-      objective_limit_ = shifted_upper_limit *
-                         (1.0 + parameters_.solution_feasibility_tolerance());
-    } else {
-      objective_limit_ = shifted_lower_limit *
-                         (1.0 - parameters_.solution_feasibility_tolerance());
-    }
-  }
+  DCHECK(std::isfinite(objective_offset_));
+  DCHECK(std::isfinite(objective_scaling_factor_));
+  DCHECK_NE(0.0, objective_scaling_factor_);
+  const bool use_dual = parameters_.use_dual_simplex();
+  // Choose lower limit if using the dual simplex and scaling factor is negative
+  // or if using the primal simplex and scaling is nonnegative, upper limit
+  // otherwise.
+  const Fractional limit = (objective_scaling_factor_ >= 0.0) != use_dual
+                               ? parameters_.objective_lower_limit()
+                               : parameters_.objective_upper_limit();
+  const Fractional shifted_limit =
+      limit / objective_scaling_factor_ - objective_offset_;
+  const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+  const Fractional tolerance_factor =
+      use_dual ? 1.0 + tolerance : 1.0 - tolerance;
+  // Avoid generating NaNs with clang in fast-math mode on iOS 9.3.
+  objective_limit_ = std::isfinite(shifted_limit) ? shifted_limit * tolerance_factor
+                                             : shifted_limit;
 }
 
 void RevisedSimplex::InitializeVariableStatusesForWarmStart(
@@ -748,21 +732,16 @@ void RevisedSimplex::InitializeVariableStatusesForWarmStart(
   variables_info_.Initialize();
   RowIndex num_basic_variables(0);
 
-  // Compute the status for all the columns (not that the slack variable are
+  // Compute the status for all the columns (note that the slack variables are
   // already added at the end of the matrix at this stage).
   for (ColIndex col(0); col < num_cols_; ++col) {
     const VariableStatus default_status = ComputeDefaultVariableStatus(col);
 
     // Start with the given "warm" status from the BasisState if it exists.
     VariableStatus status = default_status;
-    if (col < first_slack_col_) {
+    if (col < num_cols_) {
       if (col < state.num_cols) {
         status = state.statuses[col];
-      }
-    } else {
-      const ColIndex slack_index = col - first_slack_col_;
-      if (slack_index < RowToColIndex(state.num_rows)) {
-        status = state.statuses[state.num_cols + slack_index];
       }
     }
 
@@ -1103,7 +1082,7 @@ void RevisedSimplex::DisplayBasicVariableStatistics() {
 void RevisedSimplex::SaveState() {
   DCHECK_EQ(num_cols_, variables_info_.GetStatusRow().size());
   solution_state_.num_rows = num_rows_;
-  solution_state_.num_cols = first_slack_col_;
+  solution_state_.num_cols = num_cols_;
   solution_state_.statuses = variables_info_.GetStatusRow();
   solution_state_has_been_set_externally_ = false;
 }
@@ -1284,9 +1263,9 @@ Fractional RevisedSimplex::ComputeHarrisRatioAndLeavingCandidates(
       // Note that at least lower bounding it by 0.0 is really important on
       // numerically difficult problems because its helps in the choice of a
       // stable pivot.
-      harris_ratio = std::min(
-          harris_ratio,
-          std::max(minimum_delta / magnitude, ratio + harris_tolerance / magnitude));
+      harris_ratio = std::min(harris_ratio,
+                              std::max(minimum_delta / magnitude,
+                                       ratio + harris_tolerance / magnitude));
     }
   }
   return harris_ratio;
@@ -2217,16 +2196,12 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       } else {
         VLOG(1) << "Unbounded problem.";
         problem_status_ = ProblemStatus::PRIMAL_UNBOUNDED;
-        solution_primal_ray_.assign(first_slack_col_, 0.0);
+        solution_primal_ray_.assign(num_cols_, 0.0);
         for (RowIndex row(0); row < num_rows_; ++row) {
           const ColIndex col = basis_[row];
-          if (col < first_slack_col_) {
-            solution_primal_ray_[col] = -direction_[row];
-          }
+          solution_primal_ray_[col] = -direction_[row];
         }
-        if (entering_col < first_slack_col_) {
-          solution_primal_ray_[entering_col] = 1.0;
-        }
+        solution_primal_ray_[entering_col] = 1.0;
         if (step_length == -kInfinity) {
           ChangeSign(&solution_primal_ray_);
         }
@@ -2596,6 +2571,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
 }
 
 ColIndex RevisedSimplex::SlackColIndex(RowIndex row) const {
+  // TODO(user): Remove this function.
   DCHECK_ROW_BOUNDS(row);
   return first_slack_col_ + RowToColIndex(row);
 }

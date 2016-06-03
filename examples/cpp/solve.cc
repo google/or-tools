@@ -30,10 +30,11 @@
 
 DEFINE_string(input, "", "REQUIRED: Input file name.");
 DEFINE_string(solver, "glop",
-              "The solver to use: "
-              "cbc, clp, cplex, cplex_mip, glop, glpk_lp, glpk_mip,"
-	          " gurobi_lp, gurobi_mip, scip.");
-DEFINE_string(params, "", "Solver specific parameters");
+              "The solver to use: bop, cbc, clp, cplex, cplex_mip, glop, glpk_lp, "
+              "glpk_mip, gurobi_lp, gurobi_mip, scip, knapsack.");
+DEFINE_string(params_file, "",
+              "Solver specific parameters file. "
+              "If this flag is set, the --params flag is ignored.");DEFINE_string(params, "", "Solver specific parameters");
 DEFINE_int64(time_limit_ms, 0,
              "If stricitly positive, specifies a limit in ms on the solving"
              " time.");
@@ -57,7 +58,6 @@ static const char kUsageStr[] =
 
 namespace operations_research {
 namespace {
-
 
 void Run() {
   // Create the solver and set its parameters.
@@ -102,9 +102,6 @@ void Run() {
 #endif
 #if defined(USE_BOP)
   } else if (FLAGS_solver == "bop") {
-    LOG(WARNING) << "This version of BOP needs a time limit to be set via "
-                 << "the --params flag. Ex: "
-                 << "--params=max_time_in_seconds:10,log_search_progress:true";
     type = MPSolver::BOP_INTEGER_PROGRAMMING;
 #endif
   } else {
@@ -112,13 +109,20 @@ void Run() {
   }
   MPSolver solver("command line solver", type);
   solver.EnableOutput();
-  if (!FLAGS_params.empty()) {
+  if (!FLAGS_params_file.empty()) {
+    std::string file_contents;
+    CHECK_OK(
+        file::GetContents(FLAGS_params_file, &file_contents, file::Defaults()))
+        << "Could not read parameters file.";
+    CHECK(solver.SetSolverSpecificParametersAsString(file_contents));
+  } else if (!FLAGS_params.empty()) {
     CHECK(solver.SetSolverSpecificParametersAsString(FLAGS_params))
         << "Wrong --params format.";
   }
-  printf("%-12s: %s\n", "Solver", MPModelRequest::SolverType_Name(
-                                      static_cast<MPModelRequest::SolverType>(
-                                          solver.ProblemType())).c_str());
+  printf("%-12s: %s\n", "Solver",
+         MPModelRequest::SolverType_Name(
+             static_cast<MPModelRequest::SolverType>(solver.ProblemType()))
+             .c_str());
 
   // Load the problem into an MPModelProto.
   MPModelProto model_proto;
@@ -130,9 +134,11 @@ void Run() {
     glop::MPSReader mps_reader;
     mps_reader.set_log_errors(FLAGS_forced_mps_format == "free" ||
                               FLAGS_forced_mps_format == "fixed");
-    const bool fixed_read = FLAGS_forced_mps_format != "free" &&
+    const bool fixed_read =
+        FLAGS_forced_mps_format != "free" &&
         mps_reader.LoadFileWithMode(FLAGS_input, false, &linear_program_fixed);
-    const bool free_read = FLAGS_forced_mps_format != "fixed" &&
+    const bool free_read =
+        FLAGS_forced_mps_format != "fixed" &&
         mps_reader.LoadFileWithMode(FLAGS_input, true, &linear_program_free);
     CHECK(fixed_read || free_read)
         << "Error while parsing the mps file '" << FLAGS_input << "' "
@@ -183,17 +189,21 @@ void Run() {
   printf("%-12s: %d x %d\n", "Dimension", solver.NumConstraints(),
          solver.NumVariables());
 
+
   // Solve.
   MPSolverParameters param;
-  MPSolver::ResultStatus solve_status;
+  MPSolver::ResultStatus solve_status = MPSolver::NOT_SOLVED;
   double solving_time_in_sec = 0;
   {
     ScopedWallTime timer(&solving_time_in_sec);
     solve_status = solver.Solve(param);
   }
 
+  const bool has_solution =
+      solve_status == MPSolver::OPTIMAL || solve_status == MPSolver::FEASIBLE;
+
   // If requested, get the solver result and output it.
-  if (!FLAGS_output.empty()) {
+  if (!FLAGS_output.empty() && has_solution) {
     operations_research::MPSolutionResponse result;
     solver.FillSolutionResponseProto(&result);
     if (HasSuffixString(FLAGS_output, ".txt")) {
@@ -202,7 +212,7 @@ void Run() {
       CHECK_OK(file::SetBinaryProto(FLAGS_output, result, file::Defaults()));
     }
   }
-  if (!FLAGS_output_csv.empty()) {
+  if (!FLAGS_output_csv.empty() && has_solution) {
     operations_research::MPSolutionResponse result;
     solver.FillSolutionResponseProto(&result);
     std::string csv_file;
@@ -216,8 +226,10 @@ void Run() {
 
   printf("%-12s: %s\n", "Status",
          MPSolverResponseStatus_Name(
-             static_cast<MPSolverResponseStatus>(solve_status)).c_str());
-  printf("%-12s: %15.15e\n", "Objective", solver.Objective().Value());
+             static_cast<MPSolverResponseStatus>(solve_status))
+             .c_str());
+  printf("%-12s: %15.15e\n", "Objective",
+         has_solution ? solver.Objective().Value() : 0.0);
   printf("%-12s: %-6.4g\n", "Time", solving_time_in_sec);
 }
 }  // namespace

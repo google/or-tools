@@ -65,6 +65,8 @@
 
 """
 
+from __future__ import print_function
+
 from ortools.constraint_solver import pywrapcp
 
 
@@ -151,16 +153,16 @@ def main():
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
-    print "last_name:", [last_name[i].Value() for i in range(n)]
-    print "job      :", [job[i].Value() for i in range(n)]
-    print "score    :", [score[i].Value() for i in range(n)]
+    print("last_name:", [last_name[i].Value() for i in range(n)])
+    print("job      :", [job[i].Value() for i in range(n)])
+    print("score    :", [score[i].Value() for i in range(n)])
     num_solutions += 1
-    print
+    print()
 
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 if __name__ == "__main__":
   main()

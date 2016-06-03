@@ -87,7 +87,9 @@ build_third_party: \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
-	install_scip
+	install_scip \
+	install_bison \
+	install_csharp_protobuf
 
 bin:
 	$(MKDIR_P) bin
@@ -192,7 +194,6 @@ download_third_party: \
 	dependencies/sources/protobuf/autogen.sh \
 	dependencies/sources/sparsehash/autogen.sh \
 	dependencies/archives/swigwin-$(SWIG_TAG).zip \
-	dependencies/sources/google-apputils/README \
 	dependencies/sources/cbc-$(CBC_TAG)/configure
 
 # Directories:
@@ -287,7 +288,7 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependenc
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && ..\..\..\..\..\tools\tar.exe cf include.tar include
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
-	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build	
+	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build
 	tools\sed -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
@@ -303,7 +304,6 @@ dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README:
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/google-apputils/archive/master.zip
 	tools\unzip -d dependencies\sources dependencies\archives\master.zip
 	cd dependencies\sources && move google-apputils-master google-apputils-$(GOOGLE_APPUTILS_TAG)
-
 
 # Install sparsehash.
 install_sparsehash: dependencies\install\include\google\dense_hash_map
@@ -424,7 +424,25 @@ dependencies\install\bin\win_bison.exe: dependencies\archives\win_flex_bison-$(B
 	tools\touch.exe dependencies\install\bin/win_bison.exe
 
 dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
-	tools\wget -P dependencies\archives http://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
+	tools\wget -P dependencies\archives --no-check-certificate https://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
+
+# Install Java protobuf
+
+install_java_protobuf: dependencies/install/lib/protobuf.jar
+
+dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
+	  ..\\..\\..\\install\\bin\\protoc --java_out=src\\main\\java -I..\\src \
+	  ..\\src\\google\\protobuf\\descriptor.proto
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\src\\main\\java && $(JAR_BIN) cvf ..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
+
+# Install C# protobuf
+
+
+install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
+
+dependencies/install/bin/Google.Protobuf.dll:
+	$(COPY) tools\Google.Protobuf.dll dependencies\\install\\bin
 
 # Clean everything.
 clean_third_party:
@@ -442,8 +460,7 @@ clean_third_party:
 makefile_third_party: Makefile.local
 
 # Install python modules
-install_python_modules: install_google_apputils
-	cd dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG) && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
+install_python_modules: install_protobuf
 	copy dependencies\install\bin\protoc.exe dependencies\sources\protobuf-$(PROTOBUF_TAG)\src
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py build
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user

@@ -46,7 +46,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -106,20 +106,20 @@ def main(unused_argv):
                             solver.INT_VALUE_DEFAULT),
                [collector, objective])
 
-  print "z:", collector.ObjectiveValue(0)
-  print "x:", [collector.Value(0, x[i]) for i in range(num_senators)]
+  print("z:", collector.ObjectiveValue(0))
+  print("x:", [collector.Value(0, x[i]) for i in range(num_senators)])
   for j in range(num_senators):
     if collector.Value(0, x[j]) == 1:
-      print "Senator", j + 1, "belongs to these groups:",
+      print("Senator", j + 1, "belongs to these groups:", end=' ')
       for i in range(num_groups):
         if belongs[i][j] == 1:
-          print i + 1,
-      print
+          print(i + 1, end=' ')
+      print()
 
-  print
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 if __name__ == "__main__":

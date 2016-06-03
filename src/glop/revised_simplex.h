@@ -162,6 +162,12 @@ class RevisedSimplex {
 
   // Solves the given linear program.
   //
+  // Expects that the linear program is in the equations form Ax = 0 created by
+  // LinearProgram::AddSlackVariablesForAllRows, i.e. the rightmost square
+  // submatrix of A is an identity matrix, all its columns have been marked as
+  // slack variables, and the bounds of all constraints have been set to [0, 0].
+  // Returns ERROR_INVALID_PROBLEM, if these assumptions are violated.
+  //
   // By default, the algorithm tries to exploit the computation done during the
   // last Solve() call. It will analyze the difference of the new linear program
   // and try to use the previously computed solution as a warm-start. To disable
@@ -305,7 +311,8 @@ class RevisedSimplex {
 
   // Initializes matrix-related internal data. Returns true if this data was
   // unchanged. If not, also sets only_new_rows to true if compared to the
-  // current matrix, the only difference is that new rows have been added.
+  // current matrix, the only difference is that new rows have been added (with
+  // their corresponding extra slack variables).
   bool InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
                                           bool* only_new_rows);
 
@@ -542,23 +549,22 @@ class RevisedSimplex {
   // Current number of columns in the problem.
   ColIndex num_cols_;
 
-  // Index of the first slack variable (= index of last variable
-  // of the initial problem + 1.)
+  // Index of the first slack variable in the input problem. We assume that all
+  // variables with index greater or equal to first_slack_col_ are slack
+  // variables.
   ColIndex first_slack_col_;
 
   // We're using vectors after profiling and looking at the generated assembly
   // it's as fast as scoped_ptr as long as the size is properly reserved
   // beforehand.
 
-  // Temporary view of the matrix given to Solve() with extra slack columns.
-  // The slack columns comes from identity_matrix_. Note that it is an error
+  // Temporary view of the matrix given to Solve(). Note that it is an error
   // to access this view once Solve() is finished since there is no guarantee
   // that the stored pointers are still valid.
-  //
-  // TODO(user): Get rid of this and make all the internal part of the solver
-  // use compact_matrix_ everywhere instead.
+  // TODO(user): The matrix view is identical to the matrix of the linear
+  // program after pre-processing. Investigate if we could get rid of it and use
+  // compact_matrix_ in all places.
   MatrixView matrix_with_slack_;
-  SparseMatrix identity_matrix_;
 
   // The compact version of matrix_with_slack_.
   CompactSparseMatrix compact_matrix_;

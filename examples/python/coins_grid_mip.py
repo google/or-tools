@@ -48,9 +48,9 @@ def main(unused_argv):
 
   # Create the solver.
 
-  # using GLPK
-  solver = pywraplp.Solver('CoinsGridGLPK',
-                           pywraplp.Solver.GLPK_MIXED_INTEGER_PROGRAMMING)
+  # using CBC
+  solver = pywraplp.Solver('CoinsGridCBC',
+                           pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
 
   # Using CLP
   # solver = pywraplp.Solver('CoinsGridCLP',

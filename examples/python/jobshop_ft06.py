@@ -24,14 +24,10 @@ jobs. This is called the makespan.
 
 
 
-from google.apputils import app
-import gflags
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
 
-
-def main(unused_argv):
+def main():
   # Creates the solver.
   solver = pywrapcp.Solver('jobshop ft06')
 
@@ -68,7 +64,7 @@ def main(unused_argv):
                                                           'Job_%i_%i' % (i, j))
 
   # Creates sequence variables and add disjuctive constraints.
-  all_sequences = {}
+  all_sequences = []
   for i in all_machines:
 
     machines_jobs = []
@@ -77,8 +73,11 @@ def main(unused_argv):
         if machines[j][k] == i:
           machines_jobs.append(all_tasks[(j, k)])
     disj = solver.DisjunctiveConstraint(machines_jobs, 'machine %i' % i)
-    all_sequences[i] = disj.SequenceVar()
+    all_sequences.append(disj.SequenceVar())
     solver.Add(disj)
+
+  collector = solver.LastSolutionCollector()
+  collector.Add(all_sequences)
 
   # Makespan objective.
   obj_var = solver.Max([all_tasks[(i, machines_count - 1)].EndExpr()
@@ -106,4 +105,4 @@ def main(unused_argv):
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

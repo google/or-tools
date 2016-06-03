@@ -54,7 +54,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -69,7 +69,7 @@ def main():
 
   # days 0..6, monday 0
   n = 7
-  days = range(n)
+  days = list(range(n))
   need = [17, 13, 15, 19, 14, 16, 11]
 
   # Total cost for the 5 day schedule.
@@ -115,17 +115,17 @@ def main():
 
   while solver.NextSolution():
     num_solutions += 1
-    print 'num_workers:', num_workers.Value()
-    print 'total_cost:', total_cost.Value()
-    print 'x:', [x[i].Value() for i in days]
+    print('num_workers:', num_workers.Value())
+    print('total_cost:', total_cost.Value())
+    print('x:', [x[i].Value() for i in days])
 
   solver.EndSearch()
 
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime()
+  print()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime())
 
 
 if __name__ == '__main__':

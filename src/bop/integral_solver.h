@@ -18,6 +18,7 @@
 #include "bop/bop_parameters.pb.h"
 #include "bop/bop_types.h"
 #include "lp_data/lp_data.h"
+#include "util/time_limit.h"
 
 namespace operations_research {
 namespace bop {
@@ -39,12 +40,17 @@ class IntegralSolver {
   // Solves the given linear program and returns the solve status.
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem)
       MUST_USE_RESULT;
+  BopSolveStatus SolveWithTimeLimit(const glop::LinearProgram& linear_problem,
+                                    TimeLimit* time_limit) MUST_USE_RESULT;
 
   // Same as Solve() but starts from the given solution.
   // TODO(user): Change the API to accept a partial solution instead since the
   // underlying solver supports it.
   BopSolveStatus Solve(const glop::LinearProgram& linear_problem,
                        const glop::DenseRow& initial_solution) MUST_USE_RESULT;
+  BopSolveStatus SolveWithTimeLimit(const glop::LinearProgram& linear_problem,
+                                    const glop::DenseRow& initial_solution,
+                                    TimeLimit* time_limit) MUST_USE_RESULT;
 
   // Returns the objective value of the solution with its offset.
   glop::Fractional objective_value() const { return objective_value_; }
@@ -56,17 +62,11 @@ class IntegralSolver {
   // solution is found.
   const glop::DenseRow& variable_values() const { return variable_values_; }
 
-  // Interrupts the current Solve() execution.
-  // Note that the Solve() call may still linger for a while depending on the
-  // conditions.
-  void InterruptSolve() { interrupt_solve_ = true; }
-
  private:
   BopParameters parameters_;
   glop::DenseRow variable_values_;
   glop::Fractional objective_value_;
   glop::Fractional best_bound_;
-  bool interrupt_solve_;
 
   DISALLOW_COPY_AND_ASSIGN(IntegralSolver);
 };

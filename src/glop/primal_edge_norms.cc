@@ -283,7 +283,8 @@ void PrimalEdgeNorms::UpdateDevexWeights(
   // norms of two vectors to approximate the norm of the sum.
   const Fractional entering_norm = sqrt(PreciseSquaredNorm(direction));
   const Fractional pivot_magnitude = fabs(direction[leaving_row]);
-  const Fractional leaving_norm = std::max(1.0, entering_norm / pivot_magnitude);
+  const Fractional leaving_norm =
+      std::max(1.0, entering_norm / pivot_magnitude);
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     const Fractional coeff = update_row.GetCoefficient(col);
     const Fractional update_vector_norm = fabs(coeff) * leaving_norm;

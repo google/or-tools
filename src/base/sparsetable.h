@@ -18,7 +18,7 @@
 #include "base/logging.h"
 
 namespace operations_research {
-// This class implement a simple block based sparse vector.
+// This class implements a simple block-based sparse vector.
 template <class T>
 class sparsetable {
  public:

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Helper classes to make it easy to implement range-based for loop.
+// Helper classes to make it easy to implement range-based for loops.
 
 #ifndef OR_TOOLS_UTIL_ITERATORS_H_
 #define OR_TOOLS_UTIL_ITERATORS_H_
@@ -32,6 +32,7 @@ namespace operations_research {
 // }
 //
 // And a client will use it like this:
+//
 // for (const ArcIndex arc : graph.OutgoingArcs(node)) { ... }
 template <typename Iterator>
 class BeginEndWrapper {

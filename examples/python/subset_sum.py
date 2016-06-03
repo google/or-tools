@@ -39,7 +39,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-import string
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -63,9 +63,9 @@ def main(coins, total):
   #
   # data
   #
-  print "coins:", coins
-  print "total:", total
-  print
+  print("coins:", coins)
+  print("total:", total)
+  print()
 
   #
   # declare variables
@@ -91,21 +91,21 @@ def main(coins, total):
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
-    print "ss:", ss.Value()
-    print "x: ", [x[i].Value() for i in range(len(x))]
-    print
+    print("ss:", ss.Value())
+    print("x: ", [x[i].Value() for i in range(len(x))])
+    print()
     num_solutions += 1
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 coins = [16, 17, 23, 24, 39, 40]
 total = 100
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    total = string.atoi(sys.argv[1])
+    total = int(sys.argv[1])
   main(coins, total)

@@ -102,7 +102,7 @@ class BopInterface : public MPSolverInterface {
   void SetPresolveMode(int value) override;
   void SetScalingMode(int value) override;
   void SetLpAlgorithm(int value) override;
-  bool ReadParameterFile(const std::string& filename) override;
+  bool SetSolverSpecificParametersAsString(const std::string& parameters) override;
 
  private:
   void NonIncrementalChange();
@@ -113,6 +113,7 @@ class BopInterface : public MPSolverInterface {
   std::vector<MPSolver::BasisStatus> row_status_;
   bop::BopParameters parameters_;
   double best_objective_bound_;
+  bool interrupt_solver_;
 };
 
 BopInterface::BopInterface(MPSolver* const solver)
@@ -121,11 +122,18 @@ BopInterface::BopInterface(MPSolver* const solver)
       bop_solver_(),
       column_status_(),
       row_status_(),
-      parameters_() {}
+      parameters_(),
+      interrupt_solver_(false) {}
 
 BopInterface::~BopInterface() {}
 
 MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
+  // Check whenever the solve has already been stopped by the user.
+  if (interrupt_solver_) {
+    Reset();
+    return MPSolver::NOT_SOLVED;
+  }
+
   // Reset extraction as this interface is not incremental yet.
   Reset();
   ExtractModel();
@@ -159,10 +167,14 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
   solver_->SetSolverSpecificParametersAsString(
       solver_->solver_specific_parameter_string_);
   bop_solver_.SetParameters(parameters_);
+  std::unique_ptr<TimeLimit> time_limit =
+      TimeLimit::FromParameters(parameters_);
+  time_limit->RegisterExternalBooleanAsLimit(&interrupt_solver_);
   const bop::BopSolveStatus status =
       initial_solution.empty()
-          ? bop_solver_.Solve(linear_program_)
-          : bop_solver_.Solve(linear_program_, initial_solution);
+          ? bop_solver_.SolveWithTimeLimit(linear_program_, time_limit.get())
+          : bop_solver_.SolveWithTimeLimit(linear_program_, initial_solution,
+                                           time_limit.get());
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
@@ -195,6 +207,7 @@ MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
 void BopInterface::Reset() {
   ResetExtractionInformation();
   linear_program_.Clear();
+  interrupt_solver_ = false;
 }
 
 void BopInterface::SetOptimizationDirection(bool maximize) {
@@ -275,7 +288,7 @@ std::string BopInterface::SolverVersion() const {
 }
 
 bool BopInterface::InterruptSolve() {
-  bop_solver_.InterruptSolve();
+  interrupt_solver_ = true;
   return true;
 }
 
@@ -362,12 +375,9 @@ void BopInterface::SetPresolveMode(int value) {
   }
 }
 
-bool BopInterface::ReadParameterFile(const std::string& filename) {
-  std::string params;
-  if (!file::GetContents(filename, &params, file::Defaults()).ok()) {
-    return false;
-  }
-  const bool ok = google::protobuf::TextFormat::MergeFromString(params, &parameters_);
+bool BopInterface::SetSolverSpecificParametersAsString(
+    const std::string& parameters) {
+  const bool ok = google::protobuf::TextFormat::MergeFromString(parameters, &parameters_);
   bop_solver_.SetParameters(parameters_);
   return ok;
 }

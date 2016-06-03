@@ -12,21 +12,21 @@
 // limitations under the License.
 
 
-syntax = "proto2";
+syntax = "proto3";
 
 package operations_research;
 
 message DemonRuns {
-  required string demon_id = 1;
+  string demon_id = 1;
   repeated int64 start_time = 2;
   repeated int64 end_time = 3;
-  required int64 failures = 4;
+  int64 failures = 4;
 }
 
 message ConstraintRuns {
-  required string constraint_id = 1;
+  string constraint_id = 1;
   repeated int64 initial_propagation_start_time = 2;
   repeated int64 initial_propagation_end_time = 3;
-  required int64 failures = 4;
+  int64 failures = 4;
   repeated DemonRuns demons = 5;
 }

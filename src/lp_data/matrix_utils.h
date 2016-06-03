@@ -49,6 +49,9 @@ bool AreFirstColumnsAndRowsExactlyEquals(RowIndex num_rows, ColIndex num_cols,
                                          const SparseMatrix& matrix_a,
                                          const CompactSparseMatrix& matrix_b);
 
+// Returns true iff the rightmost square matrix is an identity matrix.
+bool IsRightMostSquareMatrixIdentity(const SparseMatrix& matrix);
+
 }  // namespace glop
 }  // namespace operations_research
 

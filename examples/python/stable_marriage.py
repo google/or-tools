@@ -38,8 +38,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
-import string
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -53,7 +52,7 @@ def main(ranks, problem_name):
   #
   # data
   #
-  print "Problem name:", problem_name
+  print("Problem name:", problem_name)
 
   rankMen = ranks["rankMen"]
   rankWomen = ranks["rankWomen"]
@@ -119,20 +118,20 @@ def main(ranks, problem_name):
   solutions = []
   while solver.NextSolution():
     # solutions.append([x[i].Value() for i in range(x_len)])
-    print "wife   : ", [wife[i].Value() for i in range(n)]
-    print "husband: ", [husband[i].Value() for i in range(n)]
-    print
+    print("wife   : ", [wife[i].Value() for i in range(n)])
+    print("husband: ", [husband[i].Value() for i in range(n)])
+    print()
     num_solutions += 1
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
-  print "#############"
-  print
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
+  print("#############")
+  print()
 
 
 #

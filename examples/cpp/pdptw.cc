@@ -34,7 +34,7 @@
 // http://en.wikipedia.org/wiki/Vehicle_routing_problem
 // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.123.9965&rep=rep1&type=pdf.
 // Reads data in the format defined by Li & Lim
-// (http://www.sintef.no/Projectweb/TOP/PDPTW/Li--Lim-benchmark/Documentation/).
+// (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
 
 #include <vector>
 
@@ -46,14 +46,13 @@
 #include "base/split.h"
 #include "base/mathutil.h"
 #include "constraint_solver/routing.h"
+#include "constraint_solver/routing_flags.h"
 
-DECLARE_bool(routing_no_lns);
 DEFINE_string(pdp_file, "",
               "File containing the Pickup and Delivery Problem to solve.");
 DEFINE_int32(pdp_force_vehicles, 0,
              "Force the number of vehicles used (maximum number of routes.");
-DEFINE_bool(pdp_display_solution, false,
-            "Displays the solution of the Pickup and Delivery Problem.");
+DECLARE_string(routing_first_solution);
 
 namespace operations_research {
 
@@ -165,7 +164,7 @@ bool SafeParseInt64Array(const std::string& str, std::vector<int64>* parsed_int)
 }  // namespace
 
 // Builds and solves a model from a file in the format defined by Li & Lim
-// (http://www.sintef.no/static/am/opti/projects/top/vrp/format_pdp.htm).
+// (https://www.sintef.no/projectweb/top/pdptw/li-lim-benchmark/documentation/).
 bool LoadAndSolve(const std::string& pdp_file) {
   // Load all the lines of the file in RAM (it shouldn't be too large anyway).
   std::vector<std::string> lines;
@@ -279,11 +278,15 @@ bool LoadAndSolve(const std::string& pdp_file) {
   }
 
   // Set up search parameters.
-  routing.set_first_solution_strategy(RoutingModel::ROUTING_ALL_UNPERFORMED);
-  FLAGS_routing_no_lns = true;
+  RoutingSearchParameters parameters = BuildSearchParametersFromFlags();
+  if (FLAGS_routing_first_solution.empty()) {
+    parameters.set_first_solution_strategy(
+        operations_research::FirstSolutionStrategy::ALL_UNPERFORMED);
+  }
+  parameters.mutable_local_search_operators()->set_use_path_lns(false);
 
   // Solve pickup and delivery problem.
-  const Assignment* assignment = routing.Solve(NULL);
+  const Assignment* assignment = routing.SolveWithParameters(parameters);
   if (NULL != assignment) {
     LOG(INFO) << "Cost: " << assignment->ObjectiveValue();
     LOG(INFO) << VerboseOutput(routing, *assignment, coords, service_times);

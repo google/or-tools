@@ -291,55 +291,8 @@ void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 // ---- Solver-specific parameters ----
 
 bool MPSolver::SetSolverSpecificParametersAsString(const std::string& parameters) {
-#ifdef ANDROID_JNI
-  // This is not implemented on Android because there is no default /tmp and a
-  // pointer to the Java environment is require to query for the application
-  // folder or the location of external storage (if any).
-  return false;
-#else
-  if (parameters.empty()) return true;
   solver_specific_parameter_string_ = parameters;
-
-  // Note(user): this method needs to return a success/failure boolean
-  // immediately, so we also perform the actual parameter parsing right away.
-  // Some implementations will keep them forever and won't need to re-parse
-  // them; some (eg. SCIP, Gurobi) need to re-parse the parameters every time
-  // they do Solve(). We just store the parameters std::string anyway.
-  std::string extension = interface_->ValidFileExtensionForParameterFile();
-  #if defined(__linux)
-    int32 tid = static_cast<int32>(pthread_self());
-  #else  // defined(__linux__)
-    int32 tid = 123;
-  #endif  // defined(__linux__)
-  #if !defined(_MSC_VER)
-    int32 pid = static_cast<int32>(getpid());
-  #else  // _MSC_VER
-    int32 pid = 456;
-  #endif  // _MSC_VER
-    int64 now = base::GetCurrentTimeNanos();
-    std::string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
-        tid, pid, now, extension.c_str());
-    bool no_error_so_far = true;
-  if (no_error_so_far) {
-    no_error_so_far =
-        file::SetContents(filename, parameters, file::Defaults()).ok();
-  }
-  if (no_error_so_far) {
-    no_error_so_far = interface_->ReadParameterFile(filename);
-    // We need to clean up the file even if ReadParameterFile() returned
-    // false. In production we can continue even if the deletion failed.
-    if (!file::Delete(filename, file::Defaults()).ok()) {
-      LOG(DFATAL) << "Couldn't delete temporary parameters file: " << filename;
-    }
-  }
-  if (!no_error_so_far) {
-    LOG(WARNING) << "Error in SetSolverSpecificParametersAsString() "
-                 << "for solver type: "
-                 << MPModelRequest::SolverType_Name(
-                        static_cast<MPModelRequest::SolverType>(ProblemType()));
-  }
-  return no_error_so_far;
-#endif
+  return interface_->SetSolverSpecificParametersAsString(parameters);
 }
 
 // ----- Solver -----
@@ -651,7 +604,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     // static_cast<int64> avoids a warning with -Wreal-conversion. This
     // helps catching bugs with unwanted conversions from double to ints.
     solver.set_time_limit(
-        static_cast<int64>(model_request.solver_time_limit_seconds()) * 1000);
+        static_cast<int64>(model_request.solver_time_limit_seconds() * 1000));
   }
   solver.Solve();
   solver.FillSolutionResponseProto(response);
@@ -1348,6 +1301,59 @@ void MPSolverInterface::SetIntegerParamToUnsupportedValue(
     MPSolverParameters::IntegerParam param, int value) const {
   LOG(WARNING) << "Trying to set a supported parameter: " << param
                << " to an unsupported value: " << value;
+}
+
+bool MPSolverInterface::SetSolverSpecificParametersAsString(
+    const std::string& parameters) {
+#ifdef ANDROID_JNI
+  // This is not implemented on Android because there is no default /tmp and a
+  // pointer to the Java environment is require to query for the application
+  // folder or the location of external storage (if any).
+  return false;
+#else
+  if (parameters.empty()) return true;
+
+  // Note(user): this method needs to return a success/failure boolean
+  // immediately, so we also perform the actual parameter parsing right away.
+  // Some implementations will keep them forever and won't need to re-parse
+  // them; some (eg. SCIP, Gurobi) need to re-parse the parameters every time
+  // they do Solve(). We just store the parameters std::string anyway.
+  std::string extension = ValidFileExtensionForParameterFile();
+  #if defined(__linux)
+    int32 tid = static_cast<int32>(pthread_self());
+  #else  // defined(__linux__)
+    int32 tid = 123;
+  #endif  // defined(__linux__)
+  #if !defined(_MSC_VER)
+    int32 pid = static_cast<int32>(getpid());
+  #else  // _MSC_VER
+    int32 pid = 456;
+  #endif  // _MSC_VER
+    int64 now = base::GetCurrentTimeNanos();
+    std::string filename = StringPrintf("/tmp/parameters-tempfile-%x-%d-%llx%s",
+        tid, pid, now, extension.c_str());
+    bool no_error_so_far = true;
+  if (no_error_so_far) {
+    no_error_so_far =
+        file::SetContents(filename, parameters, file::Defaults()).ok();
+  }
+  if (no_error_so_far) {
+    no_error_so_far = ReadParameterFile(filename);
+    // We need to clean up the file even if ReadParameterFile() returned
+    // false. In production we can continue even if the deletion failed.
+    if (!file::Delete(filename, file::Defaults()).ok()) {
+      LOG(DFATAL) << "Couldn't delete temporary parameters file: " << filename;
+    }
+  }
+  if (!no_error_so_far) {
+    LOG(WARNING) << "Error in SetSolverSpecificParametersAsString() "
+                 << "for solver type: "
+                 << MPModelRequest::SolverType_Name(
+                        static_cast<MPModelRequest::SolverType>(
+                            solver_->ProblemType()));
+  }
+  return no_error_so_far;
+#endif
 }
 
 bool MPSolverInterface::ReadParameterFile(const std::string& filename) {

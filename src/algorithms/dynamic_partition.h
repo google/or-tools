@@ -40,7 +40,7 @@ namespace operations_research {
 // See http://en.wikipedia.org/wiki/Partition_refinement .
 // More precisely, the supported edit operations are:
 // - Refine the partition so that a subset S (typically, |S| <<< N)
-//   of elements are all considered non-equivalent to any element in ¬S
+//   of elements are all considered non-equivalent to any element in ¬S.
 //   Typically, this should be done in O(|S|).
 // - Undo the above operations (backtracking).
 //

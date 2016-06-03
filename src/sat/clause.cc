@@ -143,7 +143,6 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       // complexity will be a lot higher than this anyway.
       trail->MutableConflict()->assign(it->clause->begin(), it->clause->end());
       trail->SetFailingSatClause(it->clause);
-      trail->SetFailingResolutionNode(it->clause->ResolutionNodePointer());
       num_inspected_clause_literals_ += it - watchers.begin() + 1;
       watchers.erase(new_it, it);
       return false;
@@ -175,10 +174,6 @@ bool LiteralWatchers::Propagate(Trail* trail) {
 
 ClauseRef LiteralWatchers::Reason(const Trail& trail, int trail_index) const {
   return reasons_[trail_index]->PropagationReason();
-}
-
-ResolutionNode* LiteralWatchers::GetResolutionNode(int trail_index) const {
-  return reasons_[trail_index]->ResolutionNodePointer();
 }
 
 SatClause* LiteralWatchers::ReasonClause(int trail_index) const {
@@ -226,7 +221,7 @@ void LiteralWatchers::CleanUpWatchers() {
 void LiteralWatchers::UpdateStatistics(const SatClause& clause, bool added) {
   SCOPED_TIME_STAT(&stats_);
   for (const Literal literal : clause) {
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     const int direction = added ? 1 : -1;
     statistics_[var].num_appearances += direction;
     statistics_[var].weighted_num_appearances +=
@@ -404,7 +399,7 @@ void BinaryImplicationGraph::MinimizeConflictWithReachability(
 // minimization algorithm can take advantage of that.
 void BinaryImplicationGraph::MinimizeConflictFirst(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<VariableIndex>* marked) {
+    SparseBitset<BooleanVariable>* marked) {
   SCOPED_TIME_STAT(&stats_);
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
   dfs_stack_.clear();
@@ -431,7 +426,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
 // first UIP conflict.
 void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<VariableIndex>* marked, RandomBase* random) {
+    SparseBitset<BooleanVariable>* marked, RandomBase* random) {
   SCOPED_TIME_STAT(&stats_);
   const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
@@ -570,8 +565,8 @@ void BinaryImplicationGraph::RemoveFixedVariables(
 // ----- SatClause -----
 
 // static
-SatClause* SatClause::Create(const std::vector<Literal>& literals, bool is_redundant,
-                             ResolutionNode* node) {
+SatClause* SatClause::Create(const std::vector<Literal>& literals,
+                             bool is_redundant) {
   CHECK_GE(literals.size(), 2);
   SatClause* clause = reinterpret_cast<SatClause*>(
       ::operator new(sizeof(SatClause) + literals.size() * sizeof(Literal)));
@@ -581,17 +576,13 @@ SatClause* SatClause::Create(const std::vector<Literal>& literals, bool is_redun
   }
   clause->is_redundant_ = is_redundant;
   clause->is_attached_ = false;
-#ifdef SAT_ENABLE_RESOLUTION
-  clause->resolution_node_ = node;
-#endif  // SAT_ENABLE_RESOLUTION
   return clause;
 }
 
 // Note that for an attached clause, removing fixed literal is okay because if
 // any of the watched literal is assigned, then the clause is necessarily true.
 bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
-    const VariablesAssignment& assignment, std::vector<Literal>* removed_literals) {
-  removed_literals->clear();
+    const VariablesAssignment& assignment) {
   DCHECK(is_attached_);
   if (assignment.VariableIsAssigned(literals_[0].Variable()) ||
       assignment.VariableIsAssigned(literals_[1].Variable())) {
@@ -605,9 +596,8 @@ bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
   for (int i = j; i < size_; ++i) {
     if (assignment.VariableIsAssigned(literals_[i].Variable())) {
       if (assignment.LiteralIsTrue(literals_[i])) return true;
-      removed_literals->push_back(literals_[i]);
     } else {
-      literals_[j] = literals_[i];
+      std::swap(literals_[j], literals_[i]);
       ++j;
     }
   }
@@ -644,7 +634,7 @@ bool LiteralWithLargerWeightFirst(const WeightedLiteral& wv1,
 }  // namespace
 
 void SatClause::SortLiterals(
-    const ITIVector<VariableIndex, VariableInfo>& statistics,
+    const ITIVector<BooleanVariable, VariableInfo>& statistics,
     const SatParameters& parameters) {
   DCHECK(!IsAttached());
   const SatParameters::LiteralOrdering literal_order =

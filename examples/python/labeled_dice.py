@@ -47,7 +47,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -62,7 +62,7 @@ def main():
   n = 4
   m = 24
   A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, Y = (
-      range(m))
+      list(range(m)))
   letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
              "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "Y"]
 
@@ -120,27 +120,27 @@ def main():
     num_solutions += 1
     # print "dice:", [(letters[i],dice[i].Value()) for i in range(m)]
     for d in range(n):
-      print "die %i:" % d,
+      print("die %i:" % d, end=' ')
       for i in range(m):
         if dice[i].Value() == d:
-          print letters[i],
-      print
+          print(letters[i], end=' ')
+      print()
 
-    print "The words with the cube label:"
+    print("The words with the cube label:")
     for i in range(num_words):
       for j in range(n):
-        print "%s (%i)" % (letters[words[i][j]], dice[words[i][j]].Value()),
-      print
+        print("%s (%i)" % (letters[words[i][j]], dice[words[i][j]].Value()), end=' ')
+      print()
 
-    print
+    print()
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 if __name__ == "__main__":
   main()

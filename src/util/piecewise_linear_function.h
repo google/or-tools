@@ -11,8 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file implements piecewise linear functions over int64. It is build
+// This file implements piecewise linear functions over int64. It is built
 // by inserting segments.
+//
 // This class maintains a minimal internal representation and checks for
 // overflow.
 
@@ -55,10 +56,10 @@ class PiecewiseSegment {
   // Returns the intersection of the segment's extension with the y axis.
   int64 intersection_y() const { return intersection_y_; }
 
-  // Comparison method useful to sort a sequence of segments.
+  // Comparison method useful for sorting a sequence of segments.
   static bool SortComparator(const PiecewiseSegment& segment1,
                              const PiecewiseSegment& segment2);
-  // Comparison method useful to find in which segment a point belongs.
+  // Comparison method useful for finding in which segment a point belongs.
   static bool FindComparator(int64 point, const PiecewiseSegment& segment);
 
   // Expands segment to the specified endpoint, if it is further

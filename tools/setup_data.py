@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name='ortools_examples',
-    version='2.VVVV',
+    version='3.VVVV',
     install_requires = ['ortools'],
     license='Apache 2.0',
     author = 'Google Inc',
@@ -28,8 +28,8 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: Office/Business :: Scheduling',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',

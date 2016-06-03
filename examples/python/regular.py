@@ -38,7 +38,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -91,7 +91,7 @@ def regular(x, Q, S, d, q0, F):
   # (q0), and a[i+1] holds the state we're in after processing
   # x[i].  If a[n] is in F, then we succeed (ie. accept the
   # string).
-  x_range = range(0, len(x))
+  x_range = list(range(0, len(x)))
   m = 0
   n = len(x)
 
@@ -117,9 +117,9 @@ def regular(x, Q, S, d, q0, F):
 def make_transition_matrix(pattern):
 
   p_len = len(pattern)
-  print 'p_len:', p_len
+  print('p_len:', p_len)
   num_states = p_len + sum(pattern)
-  print 'num_states:', num_states
+  print('num_states:', num_states)
   t_matrix = []
   for i in range(num_states):
     row = []
@@ -139,7 +139,7 @@ def make_transition_matrix(pattern):
     if c < num_states - 1:
       c += 1
       tmp[c] = 0
-  print 'tmp:', tmp
+  print('tmp:', tmp)
 
   t_matrix[num_states - 1][0] = num_states
   t_matrix[num_states - 1][1] = 0
@@ -157,12 +157,12 @@ def make_transition_matrix(pattern):
           t_matrix[i][0] = i + 2
           t_matrix[i][1] = 0
 
-  print 'The states:'
+  print('The states:')
   for i in range(num_states):
     for j in range(2):
-      print t_matrix[i][j],
-    print
-  print
+      print(t_matrix[i][j], end=' ')
+    print()
+  print()
 
   return t_matrix
 
@@ -210,15 +210,15 @@ def main():
 
   num_solutions = 0
   while solver.NextSolution():
-    print 'reg_input:', [reg_input[i].Value() - 1 for i in range(this_len)]
+    print('reg_input:', [reg_input[i].Value() - 1 for i in range(this_len)])
     num_solutions += 1
 
   solver.EndSearch()
-  print
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 
 if __name__ == '__main__':

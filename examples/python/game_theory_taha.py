@@ -24,12 +24,12 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 from ortools.linear_solver import pywraplp
 
 
-def main(sol='GLPK'):
+def main(sol='CBC'):
 
   # Create the solver.
 
@@ -71,14 +71,14 @@ def main(sol='GLPK'):
 
   solver.Solve()
 
-  print
-  print 'row player:'
-  print 'v = ', solver.Objective().Value()
-  print 'Strategies: '
+  print()
+  print('row player:')
+  print('v = ', solver.Objective().Value())
+  print('Strategies: ')
   for i in range(rows):
-    print x1[i].SolutionValue(),
-  print
-  print
+    print(x1[i].SolutionValue(), end=' ')
+  print()
+  print()
 
   #
   # For column player:
@@ -97,18 +97,18 @@ def main(sol='GLPK'):
 
   solver.Solve()
 
-  print
-  print 'column player:'
-  print 'v2 = ', solver.Objective().Value()
-  print 'Strategies: '
+  print()
+  print('column player:')
+  print('v2 = ', solver.Objective().Value())
+  print('Strategies: ')
   for i in range(rows):
-    print x2[i].SolutionValue(),
-  print
+    print(x2[i].SolutionValue(), end=' ')
+  print()
 
-  print
-  print 'walltime  :', solver.WallTime(), 'ms'
-  print 'iterations:', solver.Iterations()
-  print
+  print()
+  print('walltime  :', solver.WallTime(), 'ms')
+  print('iterations:', solver.Iterations())
+  print()
 
 if __name__ == '__main__':
 
@@ -116,7 +116,7 @@ if __name__ == '__main__':
   if len(sys.argv) > 1:
     sol = sys.argv[1]
     if sol != 'GLPK' and sol != 'CBC':
-      print 'Solver must be either GLPK or CBC'
+      print('Solver must be either GLPK or CBC')
       sys.exit(1)
 
   main(sol)

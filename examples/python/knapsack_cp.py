@@ -22,7 +22,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -38,15 +38,15 @@ def knapsack(solver, values, weights, n):
 
 def main(values, weights, n):
   # Create the solver.
-  solver = pywrapcp.Solver("n-queens")
+  solver = pywrapcp.Solver("knapsack_cp")
 
   #
   # data
   #
-  print "values:", values
-  print "weights:", weights
-  print "n:", n
-  print
+  print("values:", values)
+  print("weights:", weights)
+  print("n:", n)
+  print()
 
   # declare variables
 
@@ -73,17 +73,17 @@ def main(values, weights, n):
   solver.NewSearch(db, [objective])
   num_solutions = 0
   while solver.NextSolution():
-    print "x:", [x[i].Value() for i in range(len(values))]
-    print "z:", z.Value()
-    print
+    print("x:", [x[i].Value() for i in range(len(values))])
+    print("z:", z.Value())
+    print()
     num_solutions += 1
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 values = [15, 100, 90, 60, 40, 15, 10, 1, 12, 12, 100]

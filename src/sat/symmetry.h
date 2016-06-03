@@ -28,7 +28,7 @@ namespace sat {
 //
 // Basically, each time a literal is propagated, this class tries to detect
 // if another literal could also be propagated by symmetry. Note that this uses
-// an heuristic in order to be efficient and that it is not exhaustive in the
+// a heuristic in order to be efficient and that it is not exhaustive in the
 // sense that it doesn't detect all possible propagations.
 //
 // Algorithm details:
@@ -50,7 +50,7 @@ namespace sat {
 //   Of course, this assume that p is a symmetry of the full problem.
 //   Note that if it is already assigned to false, then we have a conflict.
 //
-// TODO(user): Implements the optimizations mentioned in the paper?
+// TODO(user): Implement the optimizations mentioned in the paper?
 // TODO(user): Instrument and see if the code can be optimized.
 class SymmetryPropagator : public Propagator {
  public:

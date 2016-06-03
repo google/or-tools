@@ -19,15 +19,18 @@ rewritten using the SWIG generated python wrapper.
 Its purpose it to demonstrate how a simple example can be written in all the
 flavors of constraint programming interfaces.
 """
-
-
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver import solver_parameters_pb2
 
 
 def main():
+  parameters = pywrapcp.Solver.DefaultSolverParameters()
+  parameters.trace_search = True
+
   # Create the solver.
-  solver = pywrapcp.Solver('rabbit+pheasant')
+  solver = pywrapcp.Solver('rabbit+pheasant', parameters)
+
 
   # Create the variables.
   pheasant = solver.IntVar(0, 100, 'pheasant')
@@ -47,10 +50,10 @@ def main():
   solver.NextSolution()
 
   # Display output.
-  print pheasant
-  print rabbit
+  print(pheasant)
+  print(rabbit)
   solver.EndSearch()
-  print solver
+  print(solver)
 
 if __name__ == '__main__':
   main()

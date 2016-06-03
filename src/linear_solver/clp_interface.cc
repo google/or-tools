@@ -402,106 +402,112 @@ void CLPInterface::ExtractObjective() {
 
 // Extracts model and solve the LP/MIP. Returns the status of the search.
 MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
-  WallTimer timer;
-  timer.Start();
+  try {
+    WallTimer timer;
+    timer.Start();
 
-  if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
-      MPSolverParameters::INCREMENTALITY_OFF) {
-    Reset();
-  }
+    if (param.GetIntegerParam(MPSolverParameters::INCREMENTALITY) ==
+        MPSolverParameters::INCREMENTALITY_OFF) {
+      Reset();
+    }
 
-  // Set log level.
-  CoinMessageHandler message_handler;
-  clp_->passInMessageHandler(&message_handler);
-  if (quiet_) {
-    message_handler.setLogLevel(1, 0);
-    clp_->setLogLevel(0);
-  } else {
-    message_handler.setLogLevel(1, 1);
-    clp_->setLogLevel(1);
-  }
+    // Set log level.
+    CoinMessageHandler message_handler;
+    clp_->passInMessageHandler(&message_handler);
+    if (quiet_) {
+      message_handler.setLogLevel(1, 0);
+      clp_->setLogLevel(0);
+    } else {
+      message_handler.setLogLevel(1, 1);
+      clp_->setLogLevel(1);
+    }
 
-  // Special case if the model is empty since CLP is not able to
-  // handle this special case by itself.
-  if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
+    // Special case if the model is empty since CLP is not able to
+    // handle this special case by itself.
+    if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
+      sync_status_ = SOLUTION_SYNCHRONIZED;
+      result_status_ = MPSolver::OPTIMAL;
+      objective_value_ = solver_->Objective().offset();
+      return result_status_;
+    }
+
+    ExtractModel();
+    VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
+
+    // Time limit.
+    if (solver_->time_limit() != 0) {
+      VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
+      clp_->setMaximumSeconds(solver_->time_limit_in_secs());
+    } else {
+      clp_->setMaximumSeconds(-1.0);
+    }
+
+    // Start from a fresh set of default parameters and set them to
+    // specified values.
+    options_.reset(new ClpSolve);
+    SetParameters(param);
+
+    // Solve
+    timer.Restart();
+    clp_->initialSolve(*options_);
+    VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
+
+    // Check the status: optimal, infeasible, etc.
+    int tmp_status = clp_->status();
+    VLOG(1) << "clp result status: " << tmp_status;
+    switch (tmp_status) {
+      case CLP_SIMPLEX_FINISHED:
+        result_status_ = MPSolver::OPTIMAL;
+        break;
+      case CLP_SIMPLEX_INFEASIBLE:
+        result_status_ = MPSolver::INFEASIBLE;
+        break;
+      case CLP_SIMPLEX_UNBOUNDED:
+        result_status_ = MPSolver::UNBOUNDED;
+        break;
+      case CLP_SIMPLEX_STOPPED:
+        result_status_ = MPSolver::FEASIBLE;
+        break;
+      default:
+        result_status_ = MPSolver::ABNORMAL;
+        break;
+    }
+
+    if (result_status_ == MPSolver::OPTIMAL ||
+        result_status_ == MPSolver::FEASIBLE) {
+      // Get the results
+      objective_value_ = clp_->objectiveValue();
+      VLOG(1) << "objective=" << objective_value_;
+      const double* const values = clp_->getColSolution();
+      const double* const reduced_costs = clp_->getReducedCost();
+      for (int i = 0; i < solver_->variables_.size(); ++i) {
+        MPVariable* const var = solver_->variables_[i];
+        const int clp_var_index = MPSolverVarIndexToClpVarIndex(var->index());
+        const double val = values[clp_var_index];
+        var->set_solution_value(val);
+        VLOG(3) << var->name() << ": value = " << val;
+        double reduced_cost = reduced_costs[clp_var_index];
+        var->set_reduced_cost(reduced_cost);
+        VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
+      }
+      const double* const dual_values = clp_->getRowPrice();
+      for (int i = 0; i < solver_->constraints_.size(); ++i) {
+        MPConstraint* const ct = solver_->constraints_[i];
+        const int constraint_index = ct->index();
+        const double dual_value = dual_values[constraint_index];
+        ct->set_dual_value(dual_value);
+        VLOG(4) << "row " << ct->index() << " dual value = " << dual_value;
+      }
+    }
+
+    ResetParameters();
     sync_status_ = SOLUTION_SYNCHRONIZED;
-    result_status_ = MPSolver::OPTIMAL;
-    objective_value_ = solver_->Objective().offset();
+    return result_status_;
+  } catch (CoinError e) {
+    LOG(WARNING) << "Caught exception in Coin LP: " << e.message();
+    result_status_ = MPSolver::ABNORMAL;
     return result_status_;
   }
-
-  ExtractModel();
-  VLOG(1) << StringPrintf("Model built in %.3f seconds.", timer.Get());
-
-  // Time limit.
-  if (solver_->time_limit() != 0) {
-    VLOG(1) << "Setting time limit = " << solver_->time_limit() << " ms.";
-    clp_->setMaximumSeconds(solver_->time_limit_in_secs());
-  } else {
-    clp_->setMaximumSeconds(-1.0);
-  }
-
-  // Start from a fresh set of default parameters and set them to
-  // specified values.
-  options_.reset(new ClpSolve);
-  SetParameters(param);
-
-  // Solve
-  timer.Restart();
-  clp_->initialSolve(*options_);
-  VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
-
-  // Check the status: optimal, infeasible, etc.
-  int tmp_status = clp_->status();
-  VLOG(1) << "clp result status: " << tmp_status;
-  switch (tmp_status) {
-    case CLP_SIMPLEX_FINISHED:
-      result_status_ = MPSolver::OPTIMAL;
-      break;
-    case CLP_SIMPLEX_INFEASIBLE:
-      result_status_ = MPSolver::INFEASIBLE;
-      break;
-    case CLP_SIMPLEX_UNBOUNDED:
-      result_status_ = MPSolver::UNBOUNDED;
-      break;
-    case CLP_SIMPLEX_STOPPED:
-      result_status_ = MPSolver::FEASIBLE;
-      break;
-    default:
-      result_status_ = MPSolver::ABNORMAL;
-      break;
-  }
-
-  if (result_status_ == MPSolver::OPTIMAL ||
-      result_status_ == MPSolver::FEASIBLE) {
-    // Get the results
-    objective_value_ = clp_->objectiveValue();
-    VLOG(1) << "objective=" << objective_value_;
-    const double* const values = clp_->getColSolution();
-    const double* const reduced_costs = clp_->getReducedCost();
-    for (int i = 0; i < solver_->variables_.size(); ++i) {
-      MPVariable* const var = solver_->variables_[i];
-      const int clp_var_index = MPSolverVarIndexToClpVarIndex(var->index());
-      const double val = values[clp_var_index];
-      var->set_solution_value(val);
-      VLOG(3) << var->name() << ": value = " << val;
-      double reduced_cost = reduced_costs[clp_var_index];
-      var->set_reduced_cost(reduced_cost);
-      VLOG(4) << var->name() << ": reduced cost = " << reduced_cost;
-    }
-    const double* const dual_values = clp_->getRowPrice();
-    for (int i = 0; i < solver_->constraints_.size(); ++i) {
-      MPConstraint* const ct = solver_->constraints_[i];
-      const int constraint_index = ct->index();
-      const double dual_value = dual_values[constraint_index];
-      ct->set_dual_value(dual_value);
-      VLOG(4) << "row " << ct->index() << " dual value = " << dual_value;
-    }
-  }
-
-  ResetParameters();
-  sync_status_ = SOLUTION_SYNCHRONIZED;
-  return result_status_;
 }
 
 MPSolver::BasisStatus CLPInterface::TransformCLPBasisStatus(

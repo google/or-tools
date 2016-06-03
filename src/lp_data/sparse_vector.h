@@ -18,10 +18,12 @@
 //
 // I.S. Duff, A.M. Erisman and J.K. Reid, "Direct Methods for Sparse Matrices",
 // Clarendon, Oxford, UK, 1987, ISBN 0-19-853421-3,
-// http://www.amazon.com/dp/0198534213
+// http://www.amazon.com/dp/0198534213.
+//
 //
 // T.A. Davis, "Direct methods for Sparse Linear Systems", SIAM, Philadelphia,
-// 2006, ISBN-13: 978-0-898716-13, http://www.amazon.com/dp/0898716136
+// 2006, ISBN-13: 978-0-898716-13, http://www.amazon.com/dp/0898716136.
+//
 //
 // Both books also contain a wealth of references.
 
@@ -179,7 +181,7 @@ class SparseVector {
 
   // Multiplies all entries by its corresponding factor,
   // i.e. entry.coefficient *= factors[entry.index].
-  void ComponentWiseMultiply(const StrictITIVector<Index, Fractional>& factors);
+  void ComponentWiseMultiply(const DenseVector& factors);
 
   // Divides all entries by factor.
   // i.e. entry.coefficient /= factor.
@@ -247,21 +249,21 @@ class SparseVector {
   // Note this method can only be used when the vector has no duplicates.
   Index GetFirstIndex() const {
     DCHECK(CheckNoDuplicates());
-    return entry_.front().index;
+    return GetIndex(EntryIndex(0));
   }
   Fractional GetFirstCoefficient() const {
     DCHECK(CheckNoDuplicates());
-    return entry_.front().coefficient;
+    return GetCoefficient(EntryIndex(0));
   }
 
   // Like GetFirst*, but for the last entry.
   Index GetLastIndex() const {
     DCHECK(CheckNoDuplicates());
-    return entry_.back().index;
+    return GetIndex(num_entries() - 1);
   }
   Fractional GetLastCoefficient() const {
     DCHECK(CheckNoDuplicates());
-    return entry_.back().coefficient;
+    return GetCoefficient(num_entries() - 1);
   }
 
   // Allows to loop over the entry indices like this:
@@ -300,6 +302,18 @@ class SparseVector {
   // EntryCoefficient() in SparseColumn.
   const InternalEntry& entry(EntryIndex i) const { return entry_[i]; }
 
+  // Read-only access to the indices and coefficients of the entries of the
+  // sparse vector.
+  const Index& GetIndex(EntryIndex i) const { return entry_[i].index; }
+  const Fractional& GetCoefficient(EntryIndex i) const {
+    return entry_[i].coefficient;
+  }
+
+  // Mutable access to the indices and coefficients of the entries of the sparse
+  // vector.
+  Index& MutableIndex(EntryIndex i) { return entry_[i].index; }
+  Fractional& MutableCoefficient(EntryIndex i) { return entry_[i].coefficient; }
+
   // Vector of entries. Not necessarily sorted.
   // TODO(user): try splitting the std::vector<InternalEntry> into two vectors
   // of index and coefficient, like it is done in SparseMatrix.
@@ -320,10 +334,8 @@ class SparseVector {
 template <class Index>
 class SparseVector<Index>::Entry {
  public:
-  Index index() const { return sparse_vector_.entry(i_).index; }
-  Fractional coefficient() const {
-    return sparse_vector_.entry(i_).coefficient;
-  }
+  Index index() const { return sparse_vector_.GetIndex(i_); }
+  Fractional coefficient() const { return sparse_vector_.GetCoefficient(i_); }
 
  protected:
   Entry(const SparseVector& sparse_vector, EntryIndex i)
@@ -341,7 +353,7 @@ class SparseVector<Index>::Iterator : private SparseVector<Index>::Entry {
     // Therefore, we prefer to use '<' so that a buggy range iteration which
     // start point is *after* its end point stops immediately, instead of
     // iterating 2^(number of bits of EntryIndex) times.
-    return internal_entry_index() < other.internal_entry_index();
+    return internal_GetIndex() < other.internal_GetIndex();
   }
   const Entry& operator*() const { return *static_cast<const Entry*>(this); }
 
@@ -350,7 +362,7 @@ class SparseVector<Index>::Iterator : private SparseVector<Index>::Entry {
       : Entry(sparse_vector, i) {
     DCHECK(sparse_vector.CheckNoDuplicates());
   }
-  inline EntryIndex internal_entry_index() const { return Entry::i_; }
+  inline EntryIndex internal_GetIndex() const { return Entry::i_; }
   friend class SparseVector;
 };
 
@@ -406,8 +418,8 @@ void SparseVector<IndexType>::CleanUp() {
   EntryIndex new_index(0);
   const EntryIndex num_entries = entry_.size();
   for (EntryIndex i(0); i < num_entries; ++i) {
-    if (i + 1 < num_entries && entry_[i + 1].index == entry_[i].index) continue;
-    if (entry_[i].coefficient != 0.0) {
+    if (i + 1 < num_entries && GetIndex(i + 1) == GetIndex(i)) continue;
+    if (GetCoefficient(i) != 0.0) {
       entry_[new_index] = entry_[i];
       ++new_index;
     }
@@ -420,8 +432,8 @@ template <typename IndexType>
 bool SparseVector<IndexType>::IsCleanedUp() const {
   Index previous_index(-1);
   for (const EntryIndex i : AllEntryIndices()) {
-    const Index index = entry(i).index;
-    if (index <= previous_index || entry(i).coefficient == 0.0) return false;
+    const Index index = GetIndex(i);
+    if (index <= previous_index || GetCoefficient(i) == 0.0) return false;
     previous_index = index;
   }
   may_contain_duplicates_ = false;
@@ -476,7 +488,7 @@ bool SparseVector<IndexType>::CheckNoDuplicates(
 
   may_contain_duplicates_ = false;
   for (const EntryIndex i : AllEntryIndices()) {
-    const Index index = entry(i).index;
+    const Index index = GetIndex(i);
     if ((*boolean_vector)[index]) {
       may_contain_duplicates_ = true;
       break;
@@ -486,7 +498,7 @@ bool SparseVector<IndexType>::CheckNoDuplicates(
 
   // Reset boolean_vector to false.
   for (const EntryIndex i : AllEntryIndices()) {
-    (*boolean_vector)[entry(i).index] = false;
+    (*boolean_vector)[GetIndex(i)] = false;
   }
   return !may_contain_duplicates_;
 }
@@ -516,7 +528,7 @@ void SparseVector<IndexType>::DeleteEntry(Index index) {
   DCHECK(CheckNoDuplicates());
   EntryIndex i(0);
   const EntryIndex end(num_entries());
-  while (i < end && entry(i).index != index) {
+  while (i < end && GetIndex(i) != index) {
     ++i;
   }
   if (i == end) return;
@@ -528,7 +540,7 @@ void SparseVector<IndexType>::RemoveNearZeroEntries(Fractional threshold) {
   DCHECK(CheckNoDuplicates());
   EntryIndex new_index(0);
   for (const EntryIndex i : AllEntryIndices()) {
-    const Fractional magnitude = fabs(entry(i).coefficient);
+    const Fractional magnitude = fabs(GetCoefficient(i));
     if (magnitude > threshold) {
       entry_[new_index] = entry_[i];
       ++new_index;
@@ -543,7 +555,7 @@ void SparseVector<IndexType>::RemoveNearZeroEntriesWithWeights(
   DCHECK(CheckNoDuplicates());
   EntryIndex new_index(0);
   for (const EntryIndex i : AllEntryIndices()) {
-    if (fabs(entry_[i].coefficient) * weights[entry_[i].index] > threshold) {
+    if (fabs(GetCoefficient(i)) * weights[GetIndex(i)] > threshold) {
       entry_[new_index] = entry_[i];
       ++new_index;
     }
@@ -555,7 +567,7 @@ template <typename IndexType>
 void SparseVector<IndexType>::MoveEntryToFirstPosition(Index index) {
   DCHECK(CheckNoDuplicates());
   for (const EntryIndex i : AllEntryIndices()) {
-    if (entry(i).index == index) {
+    if (GetIndex(i) == index) {
       std::swap(entry_[EntryIndex(0)], entry_[i]);
       return;
     }
@@ -566,7 +578,7 @@ template <typename IndexType>
 void SparseVector<IndexType>::MoveEntryToLastPosition(Index index) {
   DCHECK(CheckNoDuplicates());
   for (const EntryIndex i : AllEntryIndices()) {
-    if (entry(i).index == index) {
+    if (GetIndex(i) == index) {
       std::swap(entry_[num_entries() - 1], entry_[i]);
       return;
     }
@@ -576,7 +588,7 @@ void SparseVector<IndexType>::MoveEntryToLastPosition(Index index) {
 template <typename IndexType>
 void SparseVector<IndexType>::MultiplyByConstant(Fractional factor) {
   for (const EntryIndex i : AllEntryIndices()) {
-    entry_[i].coefficient *= factor;
+    MutableCoefficient(i) *= factor;
   }
 }
 
@@ -584,21 +596,21 @@ template <typename IndexType>
 void SparseVector<IndexType>::ComponentWiseMultiply(
     const DenseVector& factors) {
   for (const EntryIndex i : AllEntryIndices()) {
-    entry_[i].coefficient *= factors[entry(i).index];
+    MutableCoefficient(i) *= factors[GetIndex(i)];
   }
 }
 
 template <typename IndexType>
 void SparseVector<IndexType>::DivideByConstant(Fractional factor) {
   for (const EntryIndex i : AllEntryIndices()) {
-    entry_[i].coefficient /= factor;
+    MutableCoefficient(i) /= factor;
   }
 }
 
 template <typename IndexType>
 void SparseVector<IndexType>::ComponentWiseDivide(const DenseVector& factors) {
   for (const EntryIndex i : AllEntryIndices()) {
-    entry_[i].coefficient /= factors[entry(i).index];
+    MutableCoefficient(i) /= factors[GetIndex(i)];
   }
 }
 
@@ -608,7 +620,7 @@ void SparseVector<IndexType>::CopyToDenseVector(
   RETURN_IF_NULL(dense_vector);
   dense_vector->AssignToZero(num_indices);
   for (const EntryIndex i : AllEntryIndices()) {
-    (*dense_vector)[entry(i).index] = entry(i).coefficient;
+    (*dense_vector)[GetIndex(i)] = GetCoefficient(i);
   }
 }
 
@@ -619,7 +631,7 @@ void SparseVector<IndexType>::PermutedCopyToDenseVector(
   RETURN_IF_NULL(dense_vector);
   dense_vector->AssignToZero(num_indices);
   for (const EntryIndex i : AllEntryIndices()) {
-    (*dense_vector)[index_perm[entry(i).index]] = entry(i).coefficient;
+    (*dense_vector)[index_perm[GetIndex(i)]] = GetCoefficient(i);
   }
 }
 
@@ -629,7 +641,7 @@ void SparseVector<IndexType>::AddMultipleToDenseVector(
   RETURN_IF_NULL(dense_vector);
   if (multiplier == 0.0) return;
   for (const EntryIndex i : AllEntryIndices()) {
-    (*dense_vector)[entry(i).index] += multiplier * entry(i).coefficient;
+    (*dense_vector)[GetIndex(i)] += multiplier * GetCoefficient(i);
   }
 }
 
@@ -677,14 +689,14 @@ void SparseVector<IndexType>::AddMultipleToSparseVectorInternal(
   const int size_adjustment = delete_common_index ? -2 : 0;
   c.entry_.resize(size_a + size_b + size_adjustment, InternalEntry());
   while ((ia < size_a) && (ib < size_b)) {
-    const Index index_a = a.entry(ia).index;
-    const Index index_b = b.entry(ib).index;
+    const Index index_a = a.GetIndex(ia);
+    const Index index_b = b.GetIndex(ib);
     // Benchmarks done by fdid@ in 2012 showed that it was faster to put the
     // "if" clauses in that specific order.
     if (index_a == index_b) {
       if (index_a != common_index) {
-        const Fractional a_coeff_mul = multiplier * a.entry(ia).coefficient;
-        const Fractional b_coeff = b.entry(ib).coefficient;
+        const Fractional a_coeff_mul = multiplier * a.GetCoefficient(ia);
+        const Fractional b_coeff = b.GetCoefficient(ib);
         const Fractional sum = a_coeff_mul + b_coeff;
         // We use the factor 2.0 because the error can be slightly greater than
         // 1ulp, and we don't want to leave such near zero entries.
@@ -700,8 +712,7 @@ void SparseVector<IndexType>::AddMultipleToSparseVectorInternal(
       ++ia;
       ++ib;
     } else if (index_a < index_b) {
-      c.entry_[ic] =
-          InternalEntry(index_a, multiplier * a.entry(ia).coefficient);
+      c.entry_[ic] = InternalEntry(index_a, multiplier * a.GetCoefficient(ia));
       ++ia;
       ++ic;
     } else {  // index_b < index_a
@@ -712,7 +723,7 @@ void SparseVector<IndexType>::AddMultipleToSparseVectorInternal(
   }
   while (ia < size_a) {
     c.entry_[ic] =
-        InternalEntry(a.entry(ia).index, multiplier * a.entry(ia).coefficient);
+        InternalEntry(a.GetIndex(ia), multiplier * a.GetCoefficient(ia));
     ++ia;
     ++ic;
   }
@@ -730,7 +741,7 @@ template <typename IndexType>
 void SparseVector<IndexType>::ApplyIndexPermutation(
     const IndexPermutation& index_perm) {
   for (const EntryIndex i : AllEntryIndices()) {
-    entry_[i].index = index_perm[entry_[i].index];
+    MutableIndex(i) = index_perm[GetIndex(i)];
   }
 }
 
@@ -739,10 +750,10 @@ void SparseVector<IndexType>::ApplyPartialIndexPermutation(
     const IndexPermutation& index_perm) {
   EntryIndex new_index(0);
   for (const EntryIndex i : AllEntryIndices()) {
-    const Index index = entry_[i].index;
+    const Index index = GetIndex(i);
     if (index_perm[index] >= 0) {
-      entry_[new_index].index = index_perm[index];
-      entry_[new_index].coefficient = entry_[i].coefficient;
+      MutableIndex(new_index) = index_perm[index];
+      MutableCoefficient(new_index) = GetCoefficient(i);
       ++new_index;
     }
   }
@@ -758,12 +769,12 @@ void SparseVector<IndexType>::MoveTaggedEntriesTo(
   EntryIndex i(0);
   while (true) {
     if (i >= end) return;  // "nothing to do" case.
-    if (index_perm[entry_[i].index] >= 0) break;
+    if (index_perm[GetIndex(i)] >= 0) break;
     ++i;
   }
   output->entry_.push_back(entry_[i]);
   for (EntryIndex j(i + 1); j < end; ++j) {
-    if (index_perm[entry_[j].index] < 0) {
+    if (index_perm[GetIndex(j)] < 0) {
       entry_[i] = entry_[j];
       ++i;
     } else {
@@ -782,12 +793,12 @@ template <typename IndexType>
 Fractional SparseVector<IndexType>::LookUpCoefficient(Index index) const {
   Fractional value(0.0);
   for (const EntryIndex i : AllEntryIndices()) {
-    if (entry(i).index == index) {
+    if (GetIndex(i) == index) {
       // Keep in mind the vector may contains several entries with the same
       // index. In such a case the last one is returned.
       // TODO(user): investigate whether an optimized version of
       // LookUpCoefficient for "clean" columns yields speed-ups.
-      value = entry(i).coefficient;
+      value = GetCoefficient(i);
     }
   }
   return value;
@@ -798,8 +809,8 @@ bool SparseVector<IndexType>::IsEqualTo(const SparseVector& other) const {
   // We do not take into account the mutable value may_contain_duplicates_.
   if (num_entries() != other.num_entries()) return false;
   for (const EntryIndex i : AllEntryIndices()) {
-    if (entry(i).index != other.entry(i).index) return false;
-    if (entry(i).coefficient != other.entry(i).coefficient) return false;
+    if (GetIndex(i) != other.GetIndex(i)) return false;
+    if (GetCoefficient(i) != other.GetCoefficient(i)) return false;
   }
   return true;
 }
@@ -809,7 +820,7 @@ std::string SparseVector<IndexType>::DebugString() const {
   std::string s;
   for (const EntryIndex i : AllEntryIndices()) {
     if (i != 0) s += ", ";
-    StringAppendF(&s, "[%d]=%g", entry(i).index.value(), entry(i).coefficient);
+    StringAppendF(&s, "[%d]=%g", GetIndex(i).value(), GetCoefficient(i));
   }
   return s;
 }

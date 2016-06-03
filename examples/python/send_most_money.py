@@ -38,7 +38,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
+from __future__ import print_function
 
 from ortools.constraint_solver import pywrapcp
 
@@ -100,15 +100,15 @@ def main(MONEY=0):
   num_solutions = collector.SolutionCount()
   money_val = 0
   for s in range(num_solutions):
-    print 'x:', [collector.Value(s, x[i]) for i in range(len(x))]
+    print('x:', [collector.Value(s, x[i]) for i in range(len(x))])
     money_val = collector.Value(s, money)
-    print 'money:', money_val
-    print
+    print('money:', money_val)
+    print()
 
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime()
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime())
 
   if MONEY == 0:
     return money_val
@@ -117,7 +117,7 @@ def main(MONEY=0):
 if __name__ == '__main__':
   # First get the maximised MONEY, and then show all solutions for
   # this value
-  print 'Minimize money...'
+  print('Minimize money...')
   money = main(0)
-  print '\nCheck all solutions for money=%i' % money
+  print('\nCheck all solutions for money=%i' % money)
   main(money)

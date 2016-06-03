@@ -21,26 +21,21 @@ between all marks are all different. The objective is to minimize the length
 of the rule.
 """
 
-
-
-from google.apputils import app
-import gflags
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
 
 # We disable the following warning because it is a false positive on constraints
 # like: solver.Add(x == 0)
 # pylint: disable=g-explicit-bool-comparison
 
 
-def main(unused_argv):
+def main():
   # Create the solver.
   solver = pywrapcp.Solver('golomb ruler')
 
   size = 8
   var_max = size * size
-  all_vars = range(0, size)
+  all_vars = list(range(0, size))
 
   marks = [solver.IntVar(0, var_max, 'marks_%d' % i) for i in all_vars]
 
@@ -68,14 +63,14 @@ def main(unused_argv):
     time = collector.WallTime(i)
     branches = collector.Branches(i)
     failures = collector.Failures(i)
-    print ('Solution #%i: value = %i, failures = %i, branches = %i,'
-           'time = %i ms') % (i, obj_value, failures, branches, time)
+    print(('Solution #%i: value = %i, failures = %i, branches = %i,'
+           'time = %i ms') % (i, obj_value, failures, branches, time))
   time = solver.WallTime()
   branches = solver.Branches()
   failures = solver.Failures()
-  print ('Total run : failures = %i, branches = %i, time = %i ms' %
-         (failures, branches, time))
+  print(('Total run : failures = %i, branches = %i, time = %i ms' %
+         (failures, branches, time)))
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

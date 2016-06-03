@@ -75,7 +75,6 @@ BopSolver::BopSolver(const LinearBooleanProblem& problem)
     : problem_(problem),
       problem_state_(problem),
       parameters_(),
-      external_boolean_as_limit_(nullptr),
       stats_("BopSolver") {
   SCOPED_TIME_STAT(&stats_);
   CHECK_OK(sat::ValidateBooleanProblem(problem));
@@ -86,7 +85,6 @@ BopSolver::~BopSolver() { IF_STATS_ENABLED(VLOG(1) << stats_.StatString()); }
 BopSolveStatus BopSolver::Solve() {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
-  time_limit->RegisterExternalBooleanAsLimit(external_boolean_as_limit_);
   return SolveWithTimeLimit(time_limit.get());
 }
 
@@ -145,7 +143,6 @@ BopSolveStatus BopSolver::InternalMultithreadSolver(TimeLimit* time_limit) {
 BopSolveStatus BopSolver::Solve(const BopSolution& first_solution) {
   std::unique_ptr<TimeLimit> time_limit =
       TimeLimit::FromParameters(parameters_);
-  time_limit->RegisterExternalBooleanAsLimit(external_boolean_as_limit_);
   return SolveWithTimeLimit(first_solution, time_limit.get());
 }
 
@@ -183,11 +180,6 @@ double BopSolver::GetScaledGap() const {
   return 100.0 * std::abs(problem_state_.solution().GetScaledCost() -
                           GetScaledBestBound()) /
          std::abs(problem_state_.solution().GetScaledCost());
-}
-
-void BopSolver::RegisterExternalBooleanAsLimit(
-    const bool* external_boolean_as_limit) {
-  external_boolean_as_limit_ = external_boolean_as_limit;
 }
 
 void BopSolver::UpdateParameters() {

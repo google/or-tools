@@ -22,6 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
+// next id = 53
 message GlopParameters {
 
   // Like a Boolean with an extra value to let the algorithm decide what is the
@@ -161,6 +162,11 @@ message GlopParameters {
 
   // We never follow a basis change with a pivot under this threshold.
   optional double minimum_acceptable_pivot = 15 [default = 1e-6];
+
+  // In order to increase the sparsity of the manipulated vectors, floating
+  // point values with a magnitude smaller than this parameter are set to zero
+  // (only in some places). This parameter should be positive or zero.
+  optional double drop_tolerance = 52 [default = 1e-14];
 
   // Whether or not we scale the matrix A so that the maximum coefficient on
   // each line and each column is 1.0.

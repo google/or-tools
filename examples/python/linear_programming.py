@@ -12,10 +12,7 @@
 # limitations under the License.
 
 """Linear programming examples that show how to use the APIs."""
-
-
-from google.apputils import app
-
+from __future__ import print_function
 from ortools.linear_solver import linear_solver_pb2
 from ortools.linear_solver import pywraplp
 
@@ -38,7 +35,7 @@ def RunLinearExampleNaturalLanguageAPI(optimization_problem_type):
 
   SolveAndPrint(solver, [x1, x2, x3], [c0, c1, c2])
   # Print a linear expression's solution value.
-  print 'Sum of vars: %s = %s' % (sum_of_vars, sum_of_vars.solution_value())
+  print(('Sum of vars: %s = %s' % (sum_of_vars, sum_of_vars.solution_value())))
 
 
 def RunLinearExampleCppStyleAPI(optimization_problem_type):
@@ -81,8 +78,8 @@ def RunLinearExampleCppStyleAPI(optimization_problem_type):
 
 def SolveAndPrint(solver, variable_list, constraint_list):
   """Solve the problem and print the solution."""
-  print 'Number of variables = %d' % solver.NumVariables()
-  print 'Number of constraints = %d' % solver.NumConstraints()
+  print(('Number of variables = %d' % solver.NumVariables()))
+  print(('Number of constraints = %d' % solver.NumConstraints()))
 
   result_status = solver.Solve()
 
@@ -93,29 +90,29 @@ def SolveAndPrint(solver, variable_list, constraint_list):
   # GLOP_LINEAR_PROGRAMMING, verifying the solution is highly recommended!).
   assert solver.VerifySolution(1e-7, True)
 
-  print 'Problem solved in %f milliseconds' % solver.wall_time()
+  print(('Problem solved in %f milliseconds' % solver.wall_time()))
 
   # The objective value of the solution.
-  print 'Optimal objective value = %f' % solver.Objective().Value()
+  print(('Optimal objective value = %f' % solver.Objective().Value()))
 
   # The value of each variable in the solution.
   for variable in variable_list:
-    print '%s = %f' % (variable.name(), variable.solution_value())
+    print(('%s = %f' % (variable.name(), variable.solution_value())))
 
-  print 'Advanced usage:'
-  print 'Problem solved in %d iterations' % solver.iterations()
+  print('Advanced usage:')
+  print(('Problem solved in %d iterations' % solver.iterations()))
   for variable in variable_list:
-    print '%s: reduced cost = %f' % (variable.name(), variable.reduced_cost())
+    print(('%s: reduced cost = %f' % (variable.name(), variable.reduced_cost())))
   activities = solver.ComputeConstraintActivities()
   for i, constraint in enumerate(constraint_list):
-    print ('constraint %d: dual value = %f\n'
-           '               activity = %f' %
-           (i, constraint.dual_value(), activities[constraint.index()]))
+    print(('constraint %d: dual value = %f\n'
+          '               activity = %f' %
+          (i, constraint.dual_value(), activities[constraint.index()])))
 
 
-def main(unused_argv):
+def main():
   all_names_and_problem_types = (
-      linear_solver_pb2.MPModelRequest.SolverType.items())
+      list(linear_solver_pb2.MPModelRequest.SolverType.items()))
   for name, problem_type in all_names_and_problem_types:
     # Skip non-LP problem types.
     if not name.endswith('LINEAR_PROGRAMMING'):
@@ -123,12 +120,12 @@ def main(unused_argv):
     # Skip problem types that aren't supported by the current binary.
     if not pywraplp.Solver.SupportsProblemType(problem_type):
       continue
-    print '\n------ Linear programming example with %s ------' % name
-    print '\n*** Natural language API ***'
+    print(('\n------ Linear programming example with %s ------' % name))
+    print('\n*** Natural language API ***')
     RunLinearExampleNaturalLanguageAPI(problem_type)
-    print '\n*** C++ style API ***'
+    print('\n*** C++ style API ***')
     RunLinearExampleCppStyleAPI(problem_type)
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

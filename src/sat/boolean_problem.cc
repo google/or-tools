@@ -37,7 +37,7 @@ void ExtractAssignment(const LinearBooleanProblem& problem,
   assignemnt->clear();
   for (int i = 0; i < problem.num_variables(); ++i) {
     assignemnt->push_back(
-        solver.Assignment().LiteralIsTrue(Literal(VariableIndex(i), true)));
+        solver.Assignment().LiteralIsTrue(Literal(BooleanVariable(i), true)));
   }
 }
 
@@ -230,8 +230,8 @@ void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
   const LinearObjective& objective = problem.objective();
   double max_weight = 0;
   for (int i = 0; i < objective.literals_size(); ++i) {
-    max_weight =
-        std::max(max_weight, fabs(static_cast<double>(objective.coefficients(i))));
+    max_weight = std::max(max_weight,
+                          fabs(static_cast<double>(objective.coefficients(i))));
   }
   for (int i = 0; i < objective.literals_size(); ++i) {
     const double weight =
@@ -393,7 +393,7 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
 void StoreAssignment(const VariablesAssignment& assignment,
                      BooleanAssignment* output) {
   output->clear_literals();
-  for (VariableIndex var(0); var < assignment.NumberOfVariables(); ++var) {
+  for (BooleanVariable var(0); var < assignment.NumberOfVariables(); ++var) {
     if (assignment.VariableIsAssigned(var)) {
       output->add_literals(
           assignment.GetTrueLiteralForAssignedVariable(var).SignedValue());
@@ -482,7 +482,7 @@ Graph* GenerateGraphForSymmetryDetection(
     // We have two nodes for each variable.
     // Note that the indices are in [0, 2 * num_variables) and in one to one
     // correspondance with the index representation of a literal.
-    const Literal literal = Literal(VariableIndex(i), true);
+    const Literal literal = Literal(BooleanVariable(i), true);
     graph->AddArc(literal.Index().value(), literal.NegatedIndex().value());
     graph->AddArc(literal.NegatedIndex().value(), literal.Index().value());
   }
@@ -752,7 +752,8 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
     }
 
     ITIVector<LiteralIndex, LiteralIndex> equiv_map;
-    ProbeAndFindEquivalentLiteral(&solver, postsolver, &equiv_map);
+    ProbeAndFindEquivalentLiteral(&solver, postsolver, /*drat_writer=*/nullptr,
+                                  &equiv_map);
 
     // We can abort if no information is learned.
     if (equiv_map.empty() && solver.LiteralTrail().Index() == 0) break;
@@ -775,14 +776,14 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
 
     // Remap the variables into a dense set. All the variables for which the
     // equiv_map is not the identity are no longer needed.
-    VariableIndex new_var(0);
-    ITIVector<VariableIndex, VariableIndex> var_map;
-    for (VariableIndex var(0); var < solver.NumVariables(); ++var) {
+    BooleanVariable new_var(0);
+    ITIVector<BooleanVariable, BooleanVariable> var_map;
+    for (BooleanVariable var(0); var < solver.NumVariables(); ++var) {
       if (equiv_map[Literal(var, true).Index()] == Literal(var, true).Index()) {
         var_map.push_back(new_var);
         ++new_var;
       } else {
-        var_map.push_back(VariableIndex(-1));
+        var_map.push_back(BooleanVariable(-1));
       }
     }
 
@@ -791,8 +792,8 @@ void ProbeAndSimplifyProblem(SatPostsolver* postsolver,
     for (LiteralIndex index(0); index < equiv_map.size(); ++index) {
       if (equiv_map[index] >= 0) {
         const Literal l(equiv_map[index]);
-        const VariableIndex image = var_map[l.Variable()];
-        CHECK_NE(image, VariableIndex(-1));
+        const BooleanVariable image = var_map[l.Variable()];
+        CHECK_NE(image, BooleanVariable(-1));
         equiv_map[index] = Literal(image, l.IsPositive()).Index();
       }
     }

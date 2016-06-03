@@ -16,6 +16,7 @@
 //
 // It is particularly complex for a swig file, mostly because it contains a
 // lot of MOE code for the export to the or-tools open-source project at
+// https://github.com/google/or-tools, which benefits from a much more
 // powerful python API thanks to the possible use of directors.
 //
 // USAGE EXAMPLES (most of which are also unit tests):
@@ -32,23 +33,30 @@
 
 %include "base/base.swig"
 
+%include "util/python/proto.swig"
+
 // PY_CONVERT_HELPER_* macros.
 %include "constraint_solver/python/constraint_solver_helpers.swig"
-
-// Callback wrapping. See base/python/callbacks.swig.
-#define FATAL_CALLBACK_EXCEPTION
-%include "base/python/callbacks.swig"
 
 // std::function utilities.
 %include "util/python/functions.swig"
 
-%import "util/python/data.swig"
+%import "util/python/vector.swig"
 
 // We *do* need to use SWIGTYPE_... type names directly, because the
 // (recommended replacement) $descriptor macro fails, as of 2014-06, with
 // types such as operations_research::Solver.
 // The absence of whitespace before 'swiglint' is mandatory.
 //swiglint: disable swigtype-name
+
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../constraint_solver.h" %}.
+namespace operations_research {
+class AssignmentProto;
+class ConstraintSolverParameters;
+class SearchLimitParameters;
+}  // namespace operations_research
 
 %{
 #include <setjmp.h>  // For FailureProtect. See below.
@@ -61,6 +69,9 @@ struct FailureProtect {
 
 // This #includes constraint_solver.h, and inlines some C++ helpers.
 #include "constraint_solver/python/pywrapcp_util.h"
+#include "constraint_solver/assignment.pb.h"
+#include "constraint_solver/search_limit.pb.h"
+#include "constraint_solver/solver_parameters.pb.h"
 %}
 
 // We need to fully support C++ inheritance, because it is heavily used by the
@@ -78,8 +89,6 @@ struct FailureProtect {
 //
 // See the occurrences of "director" in this file.
 %module(directors="1") operations_research
-#pragma SWIG nowarn=473
-
 // The %feature and %exception below let python exceptions that occur within
 // director method propagate to the user as they were originally. See
 // http://www.swig.org/Doc1.3/Python.html#Python_nn36 for example.
@@ -97,6 +106,8 @@ struct FailureProtect {
 // ============= Type conversions ==============
 
 // See ./constraint_solver_helpers.swig
+PY_CONVERT_HELPER_PTR(Decision);
+PY_CONVERT_HELPER_PTR(DecisionBuilder);
 PY_CONVERT_HELPER_PTR(SearchMonitor);
 PY_CONVERT_HELPER_PTR(IntervalVar);
 PY_CONVERT_HELPER_PTR(SequenceVar);
@@ -105,35 +116,6 @@ PY_CONVERT_HELPER_PTR(LocalSearchFilter);
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
 PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntExpr);
 
-// Conversions of DecisionBuilder* are special because we redefine
-// our own python PyDecisionBuilder object.
-// TODO(user): for or-tools, remove this code and use directors instead.
-%pythoncode {
-class PyDecisionBuilder(object):
-  def NextWrapper(self, solver):
-    try:
-      return self.Next(solver)
-    except Exception:
-      return solver.FailDecision()
-
-  def DebugString(self):
-    return "PyDecisionBuilder"
-}  // %pythoncode
-%{
-template<>
-bool PyObjAs(PyObject *py_obj, operations_research::DecisionBuilder** b) {
-  if (SWIG_ConvertPtr(py_obj, reinterpret_cast<void**>(b),
-                      SWIGTYPE_p_operations_research__DecisionBuilder,
-                      SWIG_POINTER_EXCEPTION) == -1) {
-    // If the conversion failed, we try to create our own decision builder
-    // if it looks like we're given one.
-    PyErr_Clear();
-    if (PyObject_GetAttrString(py_obj, "Next") == nullptr) return false;
-    *b = new CallPyDecisionBuilder(py_obj);
-  }
-  return true;
-}
-%}
 
 // Actual conversions. This also includes the conversion to std::vector<Class>.
 %define PY_CONVERT(Class)
@@ -155,6 +137,7 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::Class*, CanConvertTo ## Class,
 %enddef
 PY_CONVERT(IntVar);
 PY_CONVERT(IntExpr);
+PY_CONVERT(Decision);
 PY_CONVERT(DecisionBuilder);
 PY_CONVERT(SearchMonitor);
 PY_CONVERT(IntervalVar);
@@ -164,6 +147,7 @@ PY_CONVERT(LocalSearchFilter);
 #undef PY_CONVERT
 
 // Support passing std::function<void(Solver*)> as argument.
+// See ../utils/python/functions.swig, from which this was copied and adapted.
 
 %{
 static void PyFunctionSolverToVoid(PyObject* pyfunc,
@@ -205,7 +189,16 @@ static void PyFunctionSolverToVoid(PyObject* pyfunc,
   std::string __str__() {
     return $self->DebugString();
   }
+%pythoncode {
+  def Add(self, ct):
+    if isinstance(ct, PyConstraint):
+      self.__python_constraints.append(ct)
+    self.AddConstraint(ct)
+  }  // %pythoncode
 }
+%feature("pythonappend") operations_research::Solver::Solver %{
+  self.__python_constraints = []
+%}
 
 // Extend IntervalVar to provide a nicer pythonic API for precedence
 // and scheduling constraints. The macros below help do that concisely.
@@ -255,6 +248,10 @@ Constraint* PythonMethodName(int64 date) {
   std::string __repr__() {
     return $self->DebugString();
   }
+
+  std::string __str__() {
+    return $self->DebugString();
+  }
 }
 %enddef
 PY_STRINGIFY_DEBUGSTRING(BaseObject);
@@ -285,6 +282,7 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
                            IntVar* const index) {
     return $self->MakeElement(values, index);
   }
+
 
   DecisionBuilder* VarEvalValStrPhase(
       const std::vector<IntVar*>& vars,
@@ -637,6 +635,9 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
       return result
     else:
       raise StopIteration()
+
+  def __next__(self):
+    return self.next()
   }  // %pythoncode
 }
 
@@ -715,75 +716,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // ############ END DUPLICATED CODE BLOCK ############
 
-// ============= Handling C++ flags ==============
-
-// We "convert" the C++ flags to python gflags. We also need to actually
-// pass the value from the python flags to the C++ ones, upon the Solver
-// construction.
-// Phase 1: declare the C++ flags.
-%import "base/commandlineflags.h"
-%{
-DECLARE_bool(cp_trace_propagation);
-DECLARE_bool(cp_trace_search);
-DECLARE_bool(cp_print_model);
-DECLARE_bool(cp_model_stats);
-DECLARE_string(cp_export_file);
-DECLARE_bool(cp_no_solve);
-DECLARE_string(cp_profile_file);
-%}
-// Phase 2: define the python flags.
-%pythoncode {
-import gflags as flags
-FLAGS = flags.FLAGS
-flags.DEFINE_boolean('cp_trace_propagation', False,
-                      'trace all propagation events.')
-flags.DEFINE_boolean('cp_trace_search', False,
-                      'trace all search events.')
-flags.DEFINE_boolean('cp_print_model', False,
-                      'prints the model before solving it.')
-flags.DEFINE_boolean('cp_model_stats', False,
-                      'displays model statistics before solving it.')
-flags.DEFINE_string('cp_export_file', '',
-                     'exports model to file using CPModelProto.')
-flags.DEFINE_boolean('cp_no_solve', False,
-                      'force failures at the beginning of a search.')
-flags.DEFINE_string('cp_profile_file', '',
-                     'exports profiling overview to file.')
-}  // %pythoncode
-// Phase 3: extend the Solver C++ object with a SetFlags() method that sets
-// all the important flags from its input parameters.
-%extend operations_research::Solver {
-  static void SetFlags(bool trace_propagation,
-                       bool trace_search,
-                       bool print_model,
-                       bool model_stats,
-                       const std::string& export_file,
-                       bool no_solve,
-                       const std::string& profile_file) {
-    FLAGS_cp_trace_propagation = trace_propagation;
-    FLAGS_cp_trace_search = trace_search;
-    FLAGS_cp_print_model = print_model;
-    FLAGS_cp_model_stats = model_stats;
-    FLAGS_cp_export_file = export_file;
-    FLAGS_cp_no_solve = no_solve;
-    FLAGS_cp_profile_file = profile_file;
-  }
-}
-// Phase 4: at the beginning of the Solver's constructor code (in python), call
-// SetFlags() with the python flags as parameters.
-// Note: Indentation is critical here as the code is copied verbatim in the
-// python code.
-%feature("pythonprepend") operations_research::Solver::Solver %{
-        Solver.SetFlags(FLAGS.cp_trace_propagation,
-                        FLAGS.cp_trace_search,
-                        FLAGS.cp_print_model,
-                        FLAGS.cp_model_stats,
-                        FLAGS.cp_export_file,
-                        FLAGS.cp_no_solve,
-                        FLAGS.cp_profile_file)
-%}
-
-
 // ============= Exposed C++ API : Solver class ==============
 
 %ignoreall
@@ -796,8 +728,14 @@ namespace operations_research {
 %unignore Solver;
 %unignore Solver::Solver;
 %unignore Solver::~Solver;
-%rename (Add) Solver::AddConstraint;
+%unignore Solver::AddConstraint;
 %unignore Solver::Solve;
+%unignore Solver::DefaultSolverParameters;
+%rename (Parameters) Solver::parameters;
+%unignore Solver::DemonPriority;
+%unignore Solver::DELAYED_PRIORITY;
+%unignore Solver::VAR_PRIORITY;
+%unignore Solver::NORMAL_PRIORITY;
 
 // Solver: Decomposed or specialized Solve() API.
 %unignore Solver::NewSearch;
@@ -808,7 +746,8 @@ namespace operations_research {
 %unignore Solver::SolveAndCommit;
 %unignore Solver::FinishCurrentSearch;
 %unignore Solver::RestartCurrentSearch;
-%unignore Solver::AddBacktrackAction;
+// TOOD(lperron): Support Action in python.
+// %unignore Solver::AddBacktrackAction;
 
 // Solver: Debug and performance counters.
 %rename (WallTime) Solver::wall_time;
@@ -875,6 +814,10 @@ namespace operations_research {
 %rename (MirrorInterval) Solver::MakeMirrorInterval;
 %rename (FixedDurationStartSyncedOnStartIntervalVar)
     Solver::MakeFixedDurationStartSyncedOnStartIntervalVar;
+%rename (FixedDurationStartSyncedOnEndIntervalVar)
+    Solver::MakeFixedDurationStartSyncedOnEndIntervalVar;
+%rename (FixedDurationEndSyncedOnStartIntervalVar)
+    Solver::MakeFixedDurationEndSyncedOnStartIntervalVar;
 %rename (FixedDurationEndSyncedOnEndIntervalVar)
     Solver::MakeFixedDurationEndSyncedOnEndIntervalVar;
 %rename (IntervalRelaxedMin) Solver::MakeIntervalRelaxedMin;
@@ -944,7 +887,6 @@ namespace operations_research {
     Solver::MakeConstraintInitialPropagateCallback;
 %rename (DelayedConstraintInitialPropagateCallback)
     Solver::MakeDelayedConstraintInitialPropagateCallback;
-%rename (ActionDemon) Solver::MakeActionDemon;
 %rename (ClosureDemon) Solver::MakeClosureDemon;
 
 // Solver: Solution Collectors
@@ -969,7 +911,7 @@ namespace operations_research {
 %rename (ConstantRestart) Solver::MakeConstantRestart;
 
 // Solver: Search Limits.
-%unignore Solver::SearchLimitProto;  // search_limit.proto
+%unignore Solver::SearchLimitParameters;  // search_limit.proto
 %rename (Limit) Solver::MakeLimit;
 %rename (TimeLimit) Solver::MakeTimeLimit;
 %rename (BranchesLimit) Solver::MakeBranchesLimit;
@@ -980,6 +922,7 @@ namespace operations_research {
 // Solver: Search logs.
 %rename (SearchLog) Solver::MakeSearchLog;
 %rename (SearchTrace) Solver::MakeSearchTrace;
+%rename (TreeMonitor) Solver::MakeTreeMonitor;
 
 // Solver: Model visitors.
 %unignore Solver::Accept;
@@ -1151,8 +1094,6 @@ namespace operations_research {
 //
 // - MakeNoGoodManager()
 //
-// - MakeTreeMonitor()
-//
 // - MakeVariableDegreeVisitor()
 //
 // - MakeSymmetryManager()
@@ -1203,7 +1144,6 @@ namespace operations_research {
 
 // Unexposed Solver enums:
 // - EvaluatorLocalSearchOperators
-// - DemonPriority
 // - BinaryIntervalRelation (replaced by an ad-hoc API on IntervalVar).
 // - UnaryIntervalRelation (ditto)
 // - DecisionModification
@@ -1220,46 +1160,52 @@ namespace operations_research {
 // - DecisionVisitor
 // - ModelVisitor
 // - CastConstraint
-// - NumericalRev<>
-// - RevArray<>
-// - NumericalRevArray<>
 // - NoGood
 // - NoGoodManager
 // - AssignmentElement
 // - SolutionPool
 
-// SolverParameters
-// Ignored:
-// - Constants:
-//   - kDefaultTrailCompression
-//   - kDefaultTrailBlockSize
-//   - kDefaultArraySplitSize
-//   - kDefaultNameStoring
-//   - kDefaultProfileLevel
-//   - kDefaultTraceLevel
-//   - kDefaultNameAllVariables
-%unignore SolverParameters;
-%unignore SolverParameters::SolverParameters;
+// ConstraintSolverParameters
+%unignore ConstraintSolverParameters;
+%unignore ConstraintSolverParameters::ConstraintSolverParameters;
+%unignore ConstraintSolverParameters::~ConstraintSolverParameters;
 
-// SolverParameters: Enums.
-%unignore SolverParameters::TrailCompression;
-%unignore SolverParameters::NO_COMPRESSION;
-%unignore SolverParameters::COMPRESS_WITH_ZLIB;
-%unignore SolverParameters::ProfileLevel;
-%unignore SolverParameters::NO_PROFILING;
-%unignore SolverParameters::NORMAL_PROFILING;
-%unignore SolverParameters::TraceLevel;
-%unignore SolverParameters::NO_TRACE;
-%unignore SolverParameters::NORMAL_TRACE;
+// ConstraintSolverParameters: Enums.
+%unignore ConstraintSolverParameters::TrailCompression;
+%unignore ConstraintSolverParameters::NO_COMPRESSION;
+%unignore ConstraintSolverParameters::COMPRESS_WITH_ZLIB;
 
-// SolverParameters: data members.
-%unignore SolverParameters::compress_trail;
-%unignore SolverParameters::trail_block_size;
-%unignore SolverParameters::array_split_size;
-%unignore SolverParameters::store_names;
-%unignore SolverParameters::profile_level;
-%unignore SolverParameters::trace_level;
-%unignore SolverParameters::name_all_variables;
+// ConstraintSolverParameters: methods.
+%unignore ConstraintSolverParameters::compress_trail;
+%unignore ConstraintSolverParameters::set_compress_trail;
+%unignore ConstraintSolverParameters::trail_block_size;
+%unignore ConstraintSolverParameters::set_trail_block_size;
+%unignore ConstraintSolverParameters::array_split_size;
+%unignore ConstraintSolverParameters::set_array_split_size;
+%unignore ConstraintSolverParameters::store_names;
+%unignore ConstraintSolverParameters::set_store_names;
+%unignore ConstraintSolverParameters::name_cast_variables;
+%unignore ConstraintSolverParameters::set_name_cast_variables;
+%unignore ConstraintSolverParameters::name_all_variables;
+%unignore ConstraintSolverParameters::set_name_all_variables;
+%unignore ConstraintSolverParameters::profile_propagation;
+%unignore ConstraintSolverParameters::set_profile_propagation;
+%unignore ConstraintSolverParameters::profile_file;
+%unignore ConstraintSolverParameters::set_profile_file;
+%unignore ConstraintSolverParameters::trace_propagation;
+%unignore ConstraintSolverParameters::set_trace_propagation;
+%unignore ConstraintSolverParameters::trace_search;
+%unignore ConstraintSolverParameters::set_trace_search;
+%unignore ConstraintSolverParameters::print_model;
+%unignore ConstraintSolverParameters::set_print_model;
+%unignore ConstraintSolverParameters::print_model_stats;
+%unignore ConstraintSolverParameters::set_print_model_stats;
+%unignore ConstraintSolverParameters::print_added_constraints;
+%unignore ConstraintSolverParameters::set_print_added_constraints;
+%unignore ConstraintSolverParameters::export_file;
+%unignore ConstraintSolverParameters::set_export_file;
+%unignore ConstraintSolverParameters::disable_solve;
+%unignore ConstraintSolverParameters::set_disable_solve;
 
 // DefaultPhaseParameters
 // Ignored:
@@ -1317,51 +1263,63 @@ namespace operations_research {
 // - set_name()
 // - HasName()
 // - Basename()
+
+%feature("director") BaseObject;
+%unignore BaseObject;
+%unignore BaseObject::BaseObject;
+%unignore BaseObject::~BaseObject;
+%unignore BaseObject::DebugString;
+
+%feature("director") PropagationBaseObject;
 %unignore PropagationBaseObject;
+%unignore PropagationBaseObject::PropagationBaseObject;
+%unignore PropagationBaseObject::~PropagationBaseObject;
 %rename (Name) PropagationBaseObject::name;
 %rename (solver) PropagationBaseObject::solver;
+%unignore PropagationBaseObject::DebugString;
+%feature("nodirector") PropagationBaseObject::BaseName;
 
 // Decision
 // Ignored:
 // - DebugString()
 // - Accept()
+%feature ("director") Decision;
 %unignore Decision;
 %unignore Decision::Decision;
 %unignore Decision::~Decision;
-%unignore Decision::Apply;
-%unignore Decision::Refute;
-
+%rename (ApplyWrapper) Decision::Apply;
+%rename (RefuteWrapper) Decision::Refute;
+%feature("nodirector") Decision::Accept;
 
 // DecisionBuilder
-// Ignored:
-// - DebugString()
+%feature("director") DecisionBuilder;
 %unignore DecisionBuilder;
 %unignore DecisionBuilder::DecisionBuilder;
 %unignore DecisionBuilder::~DecisionBuilder;
-%unignore DecisionBuilder::Next;
+%rename (NextWrapper) DecisionBuilder::Next;
+%unignore DecisionBuilder::DebugString;
+%feature("nodirector") DecisionBuilder::Accept;
+%feature("nodirector") DecisionBuilder::AppendMonitors;
 
 
 // Constraint
 // Ignored:
-// - Post()
-// - DebugString()
-// - PostAndPropagate()
 // - Accept()
 // - IsCastConstraint()
-%unignore Constraint;
-%unignore Constraint::Var;
 // Note(user): we prefer setting the 'director' feature on the individual
 // methods of a class that require it, but sometimes we must actually set
 // 'director' on the class itself, because it is a C++ abstract class and
 // the client needs to construct it. In these cases, we don't bother
 // setting the 'director' feature on individual methods, since it is done
 // automatically when setting it on the class.
+%unignore Constraint;
 %feature("director") Constraint;
 %unignore Constraint::Constraint;
 %unignore Constraint::~Constraint;
 %unignore Constraint::Post;
-%unignore Constraint::InitialPropagate;
 %rename (InitialPropagateWrapper) Constraint::InitialPropagate;
+%unignore Constraint::Var;
+%unignore Constraint::DebugString;
 
 
 // SearchMonitor.
@@ -1376,41 +1334,23 @@ namespace operations_research {
 %unignore SearchMonitor::SearchMonitor;
 %unignore SearchMonitor::~SearchMonitor;
 %unignore SearchMonitor::EnterSearch;
-%feature("director") SearchMonitor::EnterSearch;
 %unignore SearchMonitor::RestartSearch;
-%feature("director") SearchMonitor::RestartSearch;
 %unignore SearchMonitor::ExitSearch;
-%feature("director") SearchMonitor::ExitSearch;
 %unignore SearchMonitor::BeginNextDecision;
-%feature("director") SearchMonitor::BeginNextDecision;
 %unignore SearchMonitor::EndNextDecision;
-%feature("director") SearchMonitor::EndNextDecision;
 %unignore SearchMonitor::ApplyDecision;
-%feature("director") SearchMonitor::ApplyDecision;
 %unignore SearchMonitor::RefuteDecision;
-%feature("director") SearchMonitor::RefuteDecision;
 %unignore SearchMonitor::AfterDecision;
-%feature("director") SearchMonitor::AfterDecision;
 %unignore SearchMonitor::BeginFail;
-%feature("director") SearchMonitor::BeginFail;
 %unignore SearchMonitor::EndFail;
-%feature("director") SearchMonitor::EndFail;
 %unignore SearchMonitor::BeginInitialPropagation;
-%feature("director") SearchMonitor::BeginInitialPropagation;
 %unignore SearchMonitor::EndInitialPropagation;
-%feature("director") SearchMonitor::EndInitialPropagation;
 %unignore SearchMonitor::AcceptSolution;
-%feature("director") SearchMonitor::AcceptSolution;
 %unignore SearchMonitor::AtSolution;
-%feature("director") SearchMonitor::AtSolution;
 %unignore SearchMonitor::NoMoreSolutions;
-%feature("director") SearchMonitor::NoMoreSolutions;
 %unignore SearchMonitor::LocalOptimum;
-%feature("director") SearchMonitor::LocalOptimum;
 %unignore SearchMonitor::AcceptDelta;
-%feature("director") SearchMonitor::AcceptDelta;
 %unignore SearchMonitor::AcceptNeighbor;
-%feature("director") SearchMonitor::AcceptNeighbor;
 %rename (solver) SearchMonitor::solver;
 %feature("nodirector") SearchMonitor::solver;
 
@@ -1420,6 +1360,32 @@ namespace operations_research {
 %unignore Rev::Rev;
 %unignore Rev::Value;
 %unignore Rev::SetValue;
+
+// RevArray<>
+%unignore RevArray;
+%unignore RevArray::RevArray;
+%unignore RevArray::Value;
+%unignore RevArray::SetValue;
+%rename (__len__) RevArray::size;
+
+// NumericalRev<>
+%unignore NumericalRev;
+%unignore NumericalRev::NumericalRev;
+%unignore NumericalRev::Add;
+%unignore NumericalRev::Decr;
+%unignore NumericalRev::Incr;
+%unignore NumericalRev::SetValue;
+%unignore NumericalRev::Value;
+
+// NumericalRevArray<>
+%unignore NumericalRevArray;
+%unignore NumericalRevArray::NumericalRevArray;
+%unignore NumericalRevArray::Add;
+%unignore NumericalRevArray::Decr;
+%unignore NumericalRevArray::Incr;
+%unignore NumericalRevArray::SetValue;
+%unignore NumericalRevArray::Value;
+%rename (__len__) NumericalRevArray::size;
 
 // IntExpr
 // Ignored:
@@ -1463,9 +1429,7 @@ namespace operations_research {
 %unignore IntVar::WhenBound;
 %unignore IntVar::WhenDomain;
 %rename (HoleIteratorAux) IntVar::MakeHoleIterator;
-%feature("director") IntVar::MakeHoleIterator;
 %rename (DomainIteratorAux) IntVar::MakeDomainIterator;
-%feature("director") IntVar::MakeDomainIterator;
 %unignore IntVar::OldMin;
 %unignore IntVar::OldMax;
 
@@ -1762,7 +1726,6 @@ namespace operations_research {
 
 // Demon
 // Ignored:
-// - priority()
 // - DebugString()
 %feature("director") Demon;
 %unignore Demon;
@@ -1771,6 +1734,7 @@ namespace operations_research {
 %rename (RunWrapper) Demon::Run;
 %rename (Inhibit) Demon::inhibit;
 %rename (Desinhibit) Demon::desinhibit;
+%rename (Priority) Demon::priority;
 
 // AssignmentElement
 // Ignored:
@@ -1908,7 +1872,18 @@ namespace operations_research {
 
 }  // namespace operations_research
 
+PY_PROTO_TYPEMAP(ortools.constraint_solver.assignment_pb2,
+                 AssignmentProto,
+                 operations_research::AssignmentProto)
+PY_PROTO_TYPEMAP(ortools.constraint_solver.solver_parameters_pb2,
+                 ConstraintSolverParameters,
+                 operations_research::ConstraintSolverParameters)
+PY_PROTO_TYPEMAP(ortools.constraint_solver_search_limit_pb2,
+                 SearchLimitParameters,
+                 operations_research::SearchLimitParameters)
+
 %include "constraint_solver/constraint_solver.h"
+
 
 // Define templates instantiation after wrapping.
 namespace operations_research {
@@ -1917,6 +1892,15 @@ namespace operations_research {
 %unignore Rev<int64>::Value;
 %unignore Rev<int64>::SetValue;
 %template(RevInteger) Rev<int64>;
+
+%rename (NumericalRevInteger) NumericalRev<int64>;
+%rename (NumericalRevInteger) NumericalRev<int64>::NumericalRev;
+%unignore NumericalRev<int64>::Add;
+%unignore NumericalRev<int64>::Decr;
+%unignore NumericalRev<int64>::Incr;
+%unignore NumericalRev<int64>::SetValue;
+%unignore NumericalRev<int64>::Value;
+%template(NumericalRevInteger) NumericalRev<int64>;
 
 %rename (RevBool) Rev<bool>;
 %rename (RevBool) Rev<bool>::Rev;
@@ -1995,9 +1979,6 @@ namespace operations_research {
 %unignore LocalSearchOperator;
 %rename (NextNeighbor) LocalSearchOperator::MakeNextNeighbor;
 %unignore LocalSearchOperator::Start;
-%feature("director") LocalSearchOperator::MakeNextNeighbor;
-%feature("director") LocalSearchOperator::Start;
-
 
 // VarLocalSearchOperator<>
 // Ignored:
@@ -2016,10 +1997,8 @@ namespace operations_research {
 %unignore VarLocalSearchOperator::Size;
 %unignore VarLocalSearchOperator::Value;
 %unignore VarLocalSearchOperator::IsIncremental;
-%feature("director") VarLocalSearchOperator::IsIncremental;
 %unignore VarLocalSearchOperator::IsIncremental;
 %unignore VarLocalSearchOperator::OnStart;
-%feature("director") VarLocalSearchOperator::OnStart;
 %unignore VarLocalSearchOperator::OnStart;
 %unignore VarLocalSearchOperator::OldValue;
 %unignore VarLocalSearchOperator::SetValue;
@@ -2033,14 +2012,13 @@ namespace operations_research {
 %unignore IntVarLocalSearchOperator::IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::~IntVarLocalSearchOperator;
 %unignore IntVarLocalSearchOperator::Size;
-%feature("director") IntVarLocalSearchOperator::MakeOneNeighbor;
 %rename (OneNeighbor) IntVarLocalSearchOperator::MakeOneNeighbor;
 
 
 // BaseLns.
+%unignore BaseLns;
 %feature("director") BaseLns;
 %unignore BaseLns::BaseLns;
-%unignore BaseLns;
 %unignore BaseLns::~BaseLns;
 %unignore BaseLns::InitFragments;
 %unignore BaseLns::NextFragment;
@@ -2079,7 +2057,6 @@ namespace operations_research {
 // - number_of_nexts()
 %unignore PathOperator;
 %rename (Neighbor) PathOperator::MakeNeighbor;
-%feature("director") PathOperator::MakeNeighbor;
 
 
 // LocalSearchFilter
@@ -2147,7 +2124,37 @@ namespace operations_research {
 // (this section must be after the constraint_solver*.h %includes)
 
 %pythoncode {
-class PyDecisionBuilder(object):
+class PyDecision(Decision):
+
+  def __init__(self):
+    Decision.__init__(self)
+
+  def ApplyWrapper(self, solver):
+    try:
+       self.Apply(solver)
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        solver.ShouldFail()
+      else:
+        raise
+
+  def RefuteWrapper(self, solver):
+    try:
+       self.Refute(solver)
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        solver.ShouldFail()
+      else:
+        raise
+
+  def DebugString(self):
+    return "PyDecision"
+
+
+class PyDecisionBuilder(DecisionBuilder):
+
+  def __init__(self):
+    DecisionBuilder.__init__(self)
 
   def NextWrapper(self, solver):
     try:
@@ -2160,21 +2167,6 @@ class PyDecisionBuilder(object):
 
   def DebugString(self):
     return "PyDecisionBuilder"
-
-
-class PyConstraint(Constraint):
-
-  def InitialPropagateWrapper(self):
-    try:
-      self.InitialPropagate()
-    except Exception as e:
-      if 'CP Solver fail' in str(e):
-        self.solver().ShouldFail()
-      else:
-        raise
-
-  def DebugString(self):
-    return "PyConstraint"
 
 
 class PyDemon(Demon):
@@ -2190,4 +2182,61 @@ class PyDemon(Demon):
 
   def DebugString(self):
     return "PyDemon"
+
+
+class PyConstraintDemon(PyDemon):
+
+  def __init__(self, ct, method, delayed, *args):
+    PyDemon.__init__(self)
+    self.__constraint = ct
+    self.__method = method
+    self.__delayed = delayed
+    self.__args = args
+
+  def Run(self, solver):
+    self.__method(self.__constraint, *self.__args)
+
+  def Priority(self):
+    return Solver.DELAYED_PRIORITY if self.__delayed else Solver.NORMAL_PRIORITY
+
+  def DebugString(self):
+    return 'PyConstraintDemon'
+
+
+class PyConstraint(Constraint):
+
+  def __init__(self, solver):
+    Constraint.__init__(self, solver)
+    self.__demons = []
+
+  def Demon(self, method, *args):
+    demon = PyConstraintDemon(self, method, False, *args)
+    self.__demons.append(demon)
+    return demon
+
+  def DelayedDemon(self, method, *args):
+    demon = PyConstraintDemon(self, method, True, *args)
+    self.__demons.append(demon)
+    return demon
+
+  def InitialPropagateDemon(self):
+    return self.solver().ConstraintInitialPropagateCallback(self)
+
+  def DelayedInitialPropagateDemon(self):
+    return self.solver().DelayedConstraintInitialPropagateCallback(self)
+
+  def InitialPropagateWrapper(self):
+    try:
+      self.InitialPropagate()
+    except Exception as e:
+      if 'CP Solver fail' in str(e):
+        self.solver().ShouldFail()
+      else:
+        raise
+
+  def DebugString(self):
+    return "PyConstraint"
+
+
 }  // %pythoncode
+

@@ -50,7 +50,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 39
+// NEXT TAG: 40
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -158,6 +158,11 @@ message BopParameters {
   // information in the middle of the LS, this may make the LS slightly less
   // "complete", but it should be faster.
   optional bool use_transposition_table_in_ls = 22 [default = true];
+
+  // Wheter we keep a list of variable that can potentially repair in one flip
+  // all the current infeasible constraints (such variable must at least appear
+  // in all the infeasible constraints for this to happen).
+  optional bool use_potential_one_flip_repairs_in_ls = 39 [default = false];
 
   // Whether we use the learned binary clauses in the Linear Relaxation.
   optional bool use_learned_binary_clauses_in_lp = 23 [default = true];

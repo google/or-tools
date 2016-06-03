@@ -42,8 +42,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 # converts a number (s) <-> an array of numbers (t) in the specific base.
@@ -94,9 +94,9 @@ def main(base=2, n=3, m=8):
   # the same (and if m mod base = 0)
   check_same_gcc = True
 
-  print "base: %i n: %i m: %i" % (base, n, m)
+  print("base: %i n: %i m: %i" % (base, n, m))
   if check_same_gcc:
-    print "Checks gcc"
+    print("Checks gcc")
 
   # declare variables
   x = [solver.IntVar(0, (base ** n) - 1, "x%i" % i) for i in range(m)]
@@ -139,7 +139,7 @@ def main(base=2, n=3, m=8):
   # (bin_code) has the same occurrences (if check_same_gcc is True
   # and mathematically possible)
   gcc = [solver.IntVar(0, m, "gcc%i" % i) for i in range(base)]
-  solver.Add(solver.Distribute(bin_code, range(base), gcc))
+  solver.Add(solver.Distribute(bin_code, list(range(base)), gcc))
   if check_same_gcc and m % base == 0:
     for i in range(1, base):
       solver.Add(gcc[i] == gcc[i - 1])
@@ -162,10 +162,10 @@ def main(base=2, n=3, m=8):
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print "\nSolution %i" % num_solutions
-    print "x:", [x[i].Value() for i in range(m)]
-    print "gcc:", [gcc[i].Value() for i in range(base)]
-    print "de Bruijn sequence:", [bin_code[i].Value() for i in range(m)]
+    print("\nSolution %i" % num_solutions)
+    print("x:", [int(x[i].Value()) for i in range(m)])
+    print("gcc:", [int(gcc[i].Value()) for i in range(base)])
+    print("de Bruijn sequence:", [int(bin_code[i].Value()) for i in range(m)])
     # for i in range(m):
     #    for j in range(n):
     #        print binary[(i,j)].Value(),
@@ -174,13 +174,13 @@ def main(base=2, n=3, m=8):
   solver.EndSearch()
 
   if num_solutions == 0:
-    print "No solution found"
+    print("No solution found")
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 base = 2
@@ -188,10 +188,10 @@ n = 3
 m = base ** n
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    base = string.atoi(sys.argv[1])
+    base = int(sys.argv[1])
   if len(sys.argv) > 2:
-    n = string.atoi(sys.argv[2])
+    n = int(sys.argv[2])
   if len(sys.argv) > 3:
-    m = string.atoi(sys.argv[3])
+    m = int(sys.argv[3])
 
   main(base, n, m)

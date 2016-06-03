@@ -23,6 +23,8 @@ import java.text.*;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.NodeEvaluator2;
 import com.google.ortools.constraintsolver.RoutingModel;
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.RoutingSearchParameters;
 
 class Tsp {
 
@@ -61,8 +63,6 @@ class Tsp {
   static void solve(int size, int forbidden, int seed)
   {
     RoutingModel routing = new RoutingModel(size, 1);
-    // Setting first solution heuristic (cheapest addition).
-    routing.setFirstSolutionStrategy(RoutingModel.ROUTING_PATH_CHEAPEST_ARC);
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
@@ -93,7 +93,13 @@ class Tsp {
         "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
-    Assignment solution = routing.solve();
+    RoutingSearchParameters search_parameters =
+        RoutingSearchParameters.newBuilder()
+        .mergeFrom(RoutingModel.defaultSearchParameters())
+        .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+        .build();
+
+    Assignment solution = routing.solveWithParameters(search_parameters);
     if (solution != null) {
       // Solution cost.
       System.out.println("Cost = " + solution.objectiveValue());

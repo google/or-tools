@@ -28,7 +28,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -44,7 +44,7 @@ def main():
   start = 0
   end = n - 1
 
-  nodes = range(n)
+  nodes = list(range(n))
 
   # cost matrix
   c = [
@@ -111,19 +111,19 @@ def main():
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print 'total:', total.Value()
-    print 'in_flow:', [in_flow[i].Value() for i in nodes]
-    print 'out_flow:', [out_flow[i].Value() for i in nodes]
+    print('total:', total.Value())
+    print('in_flow:', [in_flow[i].Value() for i in nodes])
+    print('out_flow:', [out_flow[i].Value() for i in nodes])
     for i in nodes:
       for j in nodes:
-        print '%2i' % x[i, j].Value(),
-      print
-    print
+        print('%2i' % x[i, j].Value(), end=' ')
+      print()
+    print()
 
-  print 'num_solutions:', num_solutions
-  print 'failures:', solver.Failures()
-  print 'branches:', solver.Branches()
-  print 'WallTime:', solver.WallTime(), 'ms'
+  print('num_solutions:', num_solutions)
+  print('failures:', solver.Failures())
+  print('branches:', solver.Branches())
+  print('WallTime:', solver.WallTime(), 'ms')
 
 if __name__ == '__main__':
   main()

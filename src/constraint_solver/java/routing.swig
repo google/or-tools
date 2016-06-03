@@ -15,6 +15,14 @@
 
 %include "constraint_solver/java/constraint_solver.swig"
 
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../routing.h" %}.
+namespace operations_research {
+class RoutingModelParameters;
+class RoutingSearchParameters;
+}  // namespace operations_research
+
 // Include the file we want to wrap a first time.
 %{
 #include "constraint_solver/routing.h"
@@ -222,33 +230,30 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
   }
 }
 
-%ignore operations_research::RoutingModel::AddVectorDimension(
-    const int64* values,
-    int64 capacity,
-    const std::string& name);
-
 %ignore operations_research::RoutingModel::AddMatrixDimension(
-    const int64* const* values,
+    std::vector<std::vector<int64> > values,
     int64 capacity,
+    bool fix_start_cumul_to_zero,
     const std::string& name);
 
 %extend operations_research::RoutingModel {
-  void AddVectorDimension(const std::vector<int64>& values,
-                          int64 capacity,
-                          bool fix_start_cumul_to_zero,
+  void addMatrixDimension(const std::vector<std::vector<int64> >& values,
+                          int64 capacity, bool fix_start_cumul_to_zero,
                           const std::string& name) {
-    DCHECK_EQ(values.size(), $self->nodes());
-    $self->AddVectorDimension(values.data(), capacity,
-                              fix_start_cumul_to_zero, name);
+    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 }
 
+%ignore operations_research::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
 %ignore operations_research::RoutingModel::RoutingModel(
     int nodes, int vehicles,
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
 
 // RoutingModel methods.
 %rename (solve) Solve;
+%rename (solveWithParameters) SolveWithParameters;
+%rename (solveFromAssignmentWithParameters) SolveFromAssignmentWithParameters;
 %rename (setArcCostEvaluatorOfAllVehicles) SetArcCostEvaluatorOfAllVehicles;
 %rename (setArcCostEvaluatorOfVehicle) SetArcCostEvaluatorOfVehicle;
 %rename (addDimension) AddDimension;
@@ -273,6 +278,7 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %rename (nexts) Nexts;
 %rename (nextVar) NextVar;
 %rename (vehicleVar) VehicleVar;
+%rename (vehicleVars) VehicleVars;
 %rename (activeVar) ActiveVar;
 %rename (addToAssignment) AddToAssignment;
 %rename (isVehicleUsed) IsVehicleUsed;
@@ -280,15 +286,12 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %rename (compactAssignment) CompactAssignment;
 %rename (size) Size;
 %rename (costVar) CostVar;
-%rename (updateTimeLimit) UpdateTimeLimit;
 %rename (preAssignment) PreAssignment;
-%rename (getFirstSolutionStrategy) first_solution_strategy;
-%rename (setFirstSolutionStrategy) set_first_solution_strategy;
 %rename (setFirstSolutionEvaluator) SetFirstSolutionEvaluator;
-%rename (getMetaheuristic) metaheuristic;
-%rename (setMetaheuristic) set_metaheuristic;
 %rename (routesToAssignment) RoutesToAssignment;
 %rename (closeModel) CloseModel;
+%rename (defaultSearchParameters) DefaultSearchParameters;
+%rename (defaultModelParameters) DefaultModelParameters;
 
 // RoutingDimension methods.
 %rename (cumulVar) CumulVar;
@@ -311,6 +314,18 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %rename (setDimensionSpanCost) SetDimensionSpanCost;
 %rename (getDimensionSpanCost) GetDimensionSpanCost;
 
+
+// Protobuf support
+PROTO_INPUT(operations_research::RoutingSearchParameters,
+            com.google.ortools.constraintsolver.RoutingSearchParameters,
+            search_parameters)
+PROTO_INPUT(operations_research::RoutingModelParameters,
+            com.google.ortools.constraintsolver.RoutingModelParameters,
+            parameters)
+PROTO2_RETURN(operations_research::RoutingSearchParameters,
+              com.google.ortools.constraintsolver.RoutingSearchParameters)
+PROTO2_RETURN(operations_research::RoutingModelParameters,
+              com.google.ortools.constraintsolver.RoutingModelParameters)
 
 // Wrap cp includes
 %include "constraint_solver/routing.h"

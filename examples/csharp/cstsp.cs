@@ -48,8 +48,6 @@ class Tsp
   static void Solve(int size, int forbidden, int seed)
   {
     RoutingModel routing = new RoutingModel(size, 1);
-    // Setting first solution heuristic (cheapest addition).
-    routing.SetFirstSolutionStrategy(RoutingModel.ROUTING_PATH_CHEAPEST_ARC);
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
@@ -79,7 +77,13 @@ class Tsp
                          "dummy");
 
     // Solve, returns a solution if any (owned by RoutingModel).
-    Assignment solution = routing.Solve();
+    RoutingSearchParameters search_parameters =
+        RoutingModel.DefaultSearchParameters();
+    // Setting first solution heuristic (cheapest addition).
+    search_parameters.FirstSolutionStrategy =
+        FirstSolutionStrategy.Types.Value.PATH_CHEAPEST_ARC;
+
+    Assignment solution = routing.SolveWithParameters(search_parameters);
     if (solution != null) {
       // Solution cost.
       Console.WriteLine("Cost = {0}", solution.ObjectiveValue());

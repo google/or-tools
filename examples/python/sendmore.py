@@ -18,20 +18,15 @@ SEND + MORE = MONEY
 Each letter corresponds to one figure and all letters have different values.
 """
 
-
-
-from google.apputils import app
-import gflags
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
 
-
-def main(unused_argv):
+def main():
   # Create the solver.
   solver = pywrapcp.Solver('SEND + MORE = MONEY')
 
-  digits = range(0, 10)
+  digits = list(range(0, 10))
   s = solver.IntVar(digits, 's')
   e = solver.IntVar(digits, 'e')
   n = solver.IntVar(digits, 'n')
@@ -58,9 +53,9 @@ def main(unused_argv):
                                 solver.INT_VAR_DEFAULT,
                                 solver.INT_VALUE_DEFAULT))
   solver.NextSolution()
-  print letters
+  print(letters)
   solver.EndSearch()
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

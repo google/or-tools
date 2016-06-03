@@ -19,11 +19,11 @@
 #ifndef OR_TOOLS_GRAPH_SHORTESTPATHS_H_
 #define OR_TOOLS_GRAPH_SHORTESTPATHS_H_
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/macros.h"
 
@@ -36,7 +36,7 @@ namespace operations_research {
 // will delete it in the end.  This function returns true if
 // 'start_node' and 'end_node' are connected, false otherwise.
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
-                          ResultCallback2<int64, int, int>* const graph,
+                          std::function<int64(int, int)> graph,
                           int64 disconnected_distance, std::vector<int>* nodes);
 
 // Bellman-Ford Shortest path with callback-based description of the
@@ -48,7 +48,7 @@ bool DijkstraShortestPath(int node_count, int start_node, int end_node,
 // true, it will fill the 'nodes' vector with the sequence of nodes on
 // the shortest path between 'start_node' and 'end_node'.
 bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
-                             ResultCallback2<int64, int, int>* const graph,
+                             std::function<int64(int, int)> graph,
                              int64 disconnected_distance, std::vector<int>* nodes);
 }  // namespace operations_research
 

@@ -12,10 +12,10 @@
 // limitations under the License.
 
 
+#include "graph/linear_assignment.h"
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "graph/ebert_graph.h"
-#include "graph/linear_assignment.h"
 
 namespace operations_research {
 
@@ -51,24 +51,23 @@ void AnotherAssignment() {
       {{8, 7, 9, 9}, {5, 2, 7, 8}, {6, 1, 4, 9}, {2, 3, 2, 6}});
   const int kSize = matrice.size();
   ForwardStarGraph graph(2 * kSize, kSize * kSize);
-  LinearSumAssignment<ForwardStarGraph>* assignement =
-      new LinearSumAssignment<ForwardStarGraph>(graph, kSize);
+  LinearSumAssignment<ForwardStarGraph> assignement(graph, kSize);
   for (int i = 0; i < kSize; ++i) {
     CHECK_EQ(kSize, matrice[i].size());
     for (int j = 0; j < kSize; ++j) {
       int arcIndex = graph.AddArc(i, j + kSize);
-      assignement->SetArcCost(arcIndex, matrice[i][j]);
+      assignement.SetArcCost(arcIndex, matrice[i][j]);
     }
   }
 
-  bool succes = assignement->ComputeAssignment();
-  LOG(INFO) << "Cost : " << assignement->GetCost();
+  assignement.ComputeAssignment();
+  LOG(INFO) << "Cost : " << assignement.GetCost();
 }
 
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
   operations_research::AssignmentOn4x4Matrix();
   operations_research::AnotherAssignment();
   return 0;

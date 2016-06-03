@@ -36,6 +36,7 @@
 #include "bop/bop_types.h"
 #include "sat/boolean_problem.pb.h"
 #include "sat/sat_solver.h"
+#include "base/random.h"
 
 namespace operations_research {
 namespace bop {
@@ -191,6 +192,44 @@ class BacktrackableIntegerSet {
   std::vector<int> saved_stack_sizes_;
 };
 
+// A simple and efficient class to hash a given set of integers in [0, n).
+// It uses O(n) memory and produces a good hash (random linear function).
+template <typename IntType>
+class NonOrderedSetHasher {
+ public:
+  NonOrderedSetHasher() : random_("Random seed") {}
+
+  // Initializes the NonOrderedSetHasher to hash sets of integer in [0, n).
+  void Initialize(int size) {
+    hashes_.resize(size);
+    for (IntType i(0); i < size; ++i) hashes_[i] = random_.Rand64();
+  }
+
+  // Ignores the given set element in all subsequent hash computation. Note that
+  // this will be reset by the next call to Initialize().
+  void IgnoreElement(IntType e) { hashes_[e] = 0; }
+
+  // Returns the hash of the given set. The hash is independent of the set
+  // order, but there must be no duplicate element in the set. This uses a
+  // simple random linear function which has really good hashing properties.
+  uint64 Hash(const std::vector<IntType>& set) const {
+    uint64 hash = 0;
+    for (const IntType i : set) hash ^= hashes_[i];
+    return hash;
+  }
+
+  // The hash of a set is simply the XOR of all its elements. This allows
+  // to compute an hash incrementally or without the need of a std::vector<>.
+  uint64 Hash(IntType e) const { return hashes_[e]; }
+
+  // Returns true if Initialize() has been called with a non-zero size.
+  bool IsInitialized() const { return !hashes_.empty(); }
+
+ private:
+  MTRandom random_;
+  ITIVector<IntType, uint64> hashes_;
+};
+
 // This class is used to incrementally maintain an assignment and the
 // feasibility of the constraints of a given LinearBooleanProblem.
 //
@@ -255,6 +294,15 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   void BacktrackOneLevel();
   void BacktrackAll();
 
+  // This returns the list of literal that appear in exactly all the current
+  // infeasible constraints (ignoring the objective) and correspond to a flip in
+  // a good direction for all the infeasible constraint. Performing this flip
+  // may repair the problem without any propagations.
+  //
+  // Important: The returned reference is only valid until the next
+  // PotentialOneFlipRepairs() call.
+  const std::vector<sat::Literal>& PotentialOneFlipRepairs();
+
   // Returns true if there is no infeasible constraint in the current state.
   bool IsFeasible() const { return infeasible_constraint_set_.size() == 0; }
 
@@ -310,6 +358,20 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   std::string DebugString() const;
 
  private:
+  // This is lazily called by PotentialOneFlipRepairs() once.
+  void InitializeConstraintSetHasher();
+
+  // This is used by PotentialOneFlipRepairs(). It encodes a ConstraintIndex
+  // together with a "repair" direction depending on the bound that make a
+  // constraint infeasible. An "up" direction means that the constraint activity
+  // is lower than the lower bound and we need to make the activity move up to
+  // fix the infeasibility.
+  DEFINE_INT_TYPE(ConstraintIndexWithDirection, int32);
+  ConstraintIndexWithDirection FromConstraintIndex(ConstraintIndex index,
+                                                   bool up) const {
+    return ConstraintIndexWithDirection(2 * index.value() + (up ? 1 : 0));
+  }
+
   // Over constrains the objective cost by the given delta. This should only be
   // called on a feasible reference solution and a fully backtracked state.
   void MakeObjectiveConstraintInfeasible(int delta);
@@ -338,6 +400,11 @@ class AssignmentAndConstraintFeasibilityMaintainer {
   // of the first variable flipped after the i-th AddBacktrackingLevel() call.
   std::vector<int> flipped_var_trail_backtrack_levels_;
   std::vector<VariableIndex> flipped_var_trail_;
+
+  // Members used by PotentialOneFlipRepairs().
+  std::vector<sat::Literal> tmp_potential_repairs_;
+  NonOrderedSetHasher<ConstraintIndexWithDirection> constraint_set_hasher_;
+  hash_map<uint64, std::vector<sat::Literal>> hash_to_potential_repairs_;
 
   DISALLOW_COPY_AND_ASSIGN(AssignmentAndConstraintFeasibilityMaintainer);
 };
@@ -432,9 +499,13 @@ class LocalSearchAssignmentIterator {
                                 int max_num_decisions,
                                 int max_num_broken_constraints,
                                 SatWrapper* sat_wrapper);
+  ~LocalSearchAssignmentIterator();
 
-  // Sets whether or not a transposition table is used.
+  // Parameters of the LS algorithm.
   void UseTranspositionTable(bool v) { use_transposition_table_ = v; }
+  void UsePotentialOneFlipRepairs(bool v) {
+    use_potential_one_flip_repairs_ = v;
+  }
 
   // Synchronizes the iterator with the problem state, e.g. set fixed variables,
   // set the reference solution. Call this only when a new solution has been
@@ -468,6 +539,10 @@ class LocalSearchAssignmentIterator {
   std::string DebugString() const;
 
  private:
+  // This is called when a better solution has been found to restore the search
+  // to the new "root" node.
+  void UseCurrentStateAsReference();
+
   // See transposition_table_ below.
   static const size_t kStoredMaxDecisions = 4;
 
@@ -543,11 +618,19 @@ class LocalSearchAssignmentIterator {
   hash_set<std::array<int32, kStoredMaxDecisions>> transposition_table_;
 #endif
 
+  bool use_potential_one_flip_repairs_;
+
   // The number of explored nodes.
   int64 num_nodes_;
 
   // The number of skipped nodes thanks to the transposition table.
   int64 num_skipped_nodes_;
+
+  // The overall number of better solution found. And the ones found by the
+  // use_potential_one_flip_repairs_ heuristic.
+  int64 num_improvements_;
+  int64 num_improvements_by_one_flip_repairs_;
+  int64 num_inspected_one_flip_repairs_;
 
   DISALLOW_COPY_AND_ASSIGN(LocalSearchAssignmentIterator);
 };

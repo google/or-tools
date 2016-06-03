@@ -62,6 +62,8 @@ BopOptimizerBase::Status LocalSearchOptimizer::Optimize(
   double prev_deterministic_time = assignment_iterator_->deterministic_time();
   assignment_iterator_->UseTranspositionTable(
       parameters.use_transposition_table_in_ls());
+  assignment_iterator_->UsePotentialOneFlipRepairs(
+      parameters.use_potential_one_flip_repairs_in_ls());
   int64 num_assignments_to_explore =
       parameters.max_number_of_explored_assignments_per_try_in_ls();
 
@@ -179,7 +181,6 @@ AssignmentAndConstraintFeasibilityMaintainer::
       flipped_var_trail_backtrack_levels_(),
       flipped_var_trail_() {
   // Add the objective constraint as the first constraint.
-  ConstraintIndex num_constraints(0);
   const LinearObjective& objective = problem.objective();
   CHECK_EQ(objective.literals_size(), objective.coefficients_size());
   for (int i = 0; i < objective.literals_size(); ++i) {
@@ -189,13 +190,14 @@ AssignmentAndConstraintFeasibilityMaintainer::
     const VariableIndex var(objective.literals(i) - 1);
     const int64 weight = objective.coefficients(i);
     by_variable_matrix_[var].push_back(
-        ConstraintEntry(num_constraints, weight));
+        ConstraintEntry(kObjectiveConstraint, weight));
   }
   constraint_lower_bounds_.push_back(kint64min);
   constraint_values_.push_back(0);
   constraint_upper_bounds_.push_back(kint64max);
 
   // Add each constraint.
+  ConstraintIndex num_constraints_with_objective(1);
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     if (constraint.literals_size() <= 2) {
       // Infeasible binary constraints are automatically repaired by propagation
@@ -204,19 +206,20 @@ AssignmentAndConstraintFeasibilityMaintainer::
       continue;
     }
 
-    ++num_constraints;
     CHECK_EQ(constraint.literals_size(), constraint.coefficients_size());
     for (int i = 0; i < constraint.literals_size(); ++i) {
       const VariableIndex var(constraint.literals(i) - 1);
       const int64 weight = constraint.coefficients(i);
       by_variable_matrix_[var].push_back(
-          ConstraintEntry(num_constraints, weight));
+          ConstraintEntry(num_constraints_with_objective, weight));
     }
     constraint_lower_bounds_.push_back(
         constraint.has_lower_bound() ? constraint.lower_bound() : kint64min);
     constraint_values_.push_back(0);
     constraint_upper_bounds_.push_back(
         constraint.has_upper_bound() ? constraint.upper_bound() : kint64max);
+
+    ++num_constraints_with_objective;
   }
 
   // Initialize infeasible_constraint_set_;
@@ -331,6 +334,41 @@ void AssignmentAndConstraintFeasibilityMaintainer::BacktrackAll() {
   while (!flipped_var_trail_backtrack_levels_.empty()) BacktrackOneLevel();
 }
 
+const std::vector<sat::Literal>&
+AssignmentAndConstraintFeasibilityMaintainer::PotentialOneFlipRepairs() {
+  if (!constraint_set_hasher_.IsInitialized()) {
+    InitializeConstraintSetHasher();
+  }
+
+  // First, we compute the hash that a Literal should have in order to repair
+  // all the infeasible constraint (ignoring the objective).
+  //
+  // TODO(user): If this starts to show-up in a performance profile, we can
+  // easily maintain this hash incrementally.
+  uint64 hash = 0;
+  for (const ConstraintIndex ci : PossiblyInfeasibleConstraints()) {
+    const int64 value = ConstraintValue(ci);
+    if (value > ConstraintUpperBound(ci)) {
+      hash ^= constraint_set_hasher_.Hash(FromConstraintIndex(ci, false));
+    } else if (value < ConstraintLowerBound(ci)) {
+      hash ^= constraint_set_hasher_.Hash(FromConstraintIndex(ci, true));
+    }
+  }
+
+  tmp_potential_repairs_.clear();
+  const auto it = hash_to_potential_repairs_.find(hash);
+  if (it != hash_to_potential_repairs_.end()) {
+    for (const sat::Literal literal : it->second) {
+      // We only returns the flips.
+      if (assignment_.Value(VariableIndex(literal.Variable().value())) !=
+          literal.IsPositive()) {
+        tmp_potential_repairs_.push_back(literal);
+      }
+    }
+  }
+  return tmp_potential_repairs_;
+}
+
 std::string AssignmentAndConstraintFeasibilityMaintainer::DebugString() const {
   std::string str;
   str += "curr: ";
@@ -353,6 +391,35 @@ std::string AssignmentAndConstraintFeasibilityMaintainer::DebugString() const {
     }
   }
   return str;
+}
+
+void AssignmentAndConstraintFeasibilityMaintainer::
+    InitializeConstraintSetHasher() {
+  const int num_constraints_with_objective = constraint_upper_bounds_.size();
+
+  // Initialize the potential one flip repair. Note that we ignore the
+  // objective constraint completely so that we consider a repair even if the
+  // objective constraint is not infeasible.
+  constraint_set_hasher_.Initialize(2 * num_constraints_with_objective);
+  constraint_set_hasher_.IgnoreElement(
+      FromConstraintIndex(kObjectiveConstraint, true));
+  constraint_set_hasher_.IgnoreElement(
+      FromConstraintIndex(kObjectiveConstraint, false));
+  for (VariableIndex var(0); var < by_variable_matrix_.size(); ++var) {
+    // We add two entries, one for a positive flip (from false to true) and one
+    // for a negative flip (from true to false).
+    for (const bool flip_is_positive : {true, false}) {
+      uint64 hash = 0;
+      for (const ConstraintEntry& entry : by_variable_matrix_[var]) {
+        const bool coeff_is_positive = entry.weight > 0;
+        hash ^= constraint_set_hasher_.Hash(FromConstraintIndex(
+            entry.constraint,
+            /*up=*/flip_is_positive ? coeff_is_positive : !coeff_is_positive));
+      }
+      hash_to_potential_repairs_[hash].push_back(
+          sat::Literal(sat::BooleanVariable(var.value()), flip_is_positive));
+    }
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -441,7 +508,7 @@ ConstraintIndex OneFlipConstraintRepairer::ConstraintToRepair() const {
     int32 num_branches = 0;
     for (const ConstraintTerm& term : by_constraint_matrix_[i]) {
       if (sat_assignment_.VariableIsAssigned(
-              sat::VariableIndex(term.var.value()))) {
+              sat::BooleanVariable(term.var.value()))) {
         continue;
       }
       const int64 new_value =
@@ -481,7 +548,7 @@ TermIndex OneFlipConstraintRepairer::NextRepairingTerm(
     const TermIndex term_index(loop_term_index % terms.size());
     const ConstraintTerm term = terms[term_index];
     if (sat_assignment_.VariableIsAssigned(
-            sat::VariableIndex(term.var.value()))) {
+            sat::BooleanVariable(term.var.value()))) {
       continue;
     }
     const int64 new_value =
@@ -499,7 +566,7 @@ bool OneFlipConstraintRepairer::RepairIsValid(ConstraintIndex ct_index,
   if (maintainer_.ConstraintIsFeasible(ct_index)) return false;
   const ConstraintTerm term = by_constraint_matrix_[ct_index][term_index];
   if (sat_assignment_.VariableIsAssigned(
-          sat::VariableIndex(term.var.value()))) {
+          sat::BooleanVariable(term.var.value()))) {
     return false;
   }
   const int64 new_value =
@@ -515,7 +582,7 @@ sat::Literal OneFlipConstraintRepairer::GetFlip(ConstraintIndex ct_index,
                                                 TermIndex term_index) const {
   const ConstraintTerm term = by_constraint_matrix_[ct_index][term_index];
   const bool value = maintainer_.Assignment(term.var);
-  return sat::Literal(sat::VariableIndex(term.var.value()), !value);
+  return sat::Literal(sat::BooleanVariable(term.var.value()), !value);
 }
 
 void OneFlipConstraintRepairer::SortTermsOfEachConstraints(int num_variables) {
@@ -609,8 +676,21 @@ LocalSearchAssignmentIterator::LocalSearchAssignmentIterator(
           problem_state.original_problem().constraints_size() + 1,
           OneFlipConstraintRepairer::kInitTerm),
       use_transposition_table_(false),
+      use_potential_one_flip_repairs_(false),
       num_nodes_(0),
-      num_skipped_nodes_(0) {}
+      num_skipped_nodes_(0),
+      num_improvements_(0),
+      num_improvements_by_one_flip_repairs_(0),
+      num_inspected_one_flip_repairs_(0) {}
+
+LocalSearchAssignmentIterator::~LocalSearchAssignmentIterator() {
+  VLOG(1) << "LS " << max_num_decisions_
+          << "\n  num improvements: " << num_improvements_
+          << "\n  num improvements with one flip repairs: "
+          << num_improvements_by_one_flip_repairs_
+          << "\n  num inspected one flip repairs: "
+          << num_inspected_one_flip_repairs_;
+}
 
 void LocalSearchAssignmentIterator::Synchronize(
     const ProblemState& problem_state) {
@@ -648,25 +728,56 @@ void LocalSearchAssignmentIterator::SynchronizeSatWrapper() {
   }
 }
 
+void LocalSearchAssignmentIterator::UseCurrentStateAsReference() {
+  better_solution_has_been_found_ = true;
+  maintainer_.UseCurrentStateAsReference();
+  sat_wrapper_->BacktrackAll();
+
+  // Note(user): Here, there should be no discrepancies between the fixed
+  // variable and the new reference, so there is no need to do:
+  // maintainer_.Assign(sat_wrapper_->FullSatTrail());
+
+  for (const SearchNode& node : search_nodes_) {
+    initial_term_index_[node.constraint] = node.term_index;
+  }
+  search_nodes_.clear();
+  transposition_table_.clear();
+  num_nodes_ = 0;
+  num_skipped_nodes_ = 0;
+  ++num_improvements_;
+}
+
 bool LocalSearchAssignmentIterator::NextAssignment() {
   if (sat_wrapper_->IsModelUnsat()) return false;
   if (maintainer_.IsFeasible()) {
-    better_solution_has_been_found_ = true;
-    maintainer_.UseCurrentStateAsReference();
-    sat_wrapper_->BacktrackAll();
-
-    // Note(user): Here, there should be no discrepancies between the fixed
-    // variable and the new reference, so there is no need to do:
-    // maintainer_.Assign(sat_wrapper_->FullSatTrail());
-
-    for (const SearchNode& node : search_nodes_) {
-      initial_term_index_[node.constraint] = node.term_index;
-    }
-    search_nodes_.clear();
-    transposition_table_.clear();
-    num_nodes_ = 0;
-    num_skipped_nodes_ = 0;
+    UseCurrentStateAsReference();
     return true;
+  }
+
+  // We only look for potential one flip repairs if we reached the end of the
+  // LS tree. I tried to do that at every level, but it didn't change the
+  // result much on the set-partitionning example I was using.
+  //
+  // TODO(user): Perform more experiments with this.
+  if (use_potential_one_flip_repairs_ &&
+      search_nodes_.size() == max_num_decisions_) {
+    for (const sat::Literal literal : maintainer_.PotentialOneFlipRepairs()) {
+      if (sat_wrapper_->SatAssignment().VariableIsAssigned(
+              literal.Variable())) {
+        continue;
+      }
+      ++num_inspected_one_flip_repairs_;
+
+      // Temporarily apply the potential repair and see if it worked!
+      ApplyDecision(literal);
+      if (maintainer_.IsFeasible()) {
+        num_improvements_by_one_flip_repairs_++;
+        UseCurrentStateAsReference();
+        return true;
+      }
+      maintainer_.BacktrackOneLevel();
+      sat_wrapper_->BacktrackOneLevel();
+    }
   }
 
   // If possible, go deeper, i.e. take one more decision.
@@ -678,7 +789,7 @@ bool LocalSearchAssignmentIterator::NextAssignment() {
 
   // All nodes have been explored.
   if (search_nodes_.empty()) {
-    VLOG(1) << std::string(25, ' ') + "LS finished."
+    VLOG(1) << std::string(27, ' ') + "LS " << max_num_decisions_ << " finished."
             << " #explored:" << num_nodes_
             << " #stored:" << transposition_table_.size()
             << " #skipped:" << num_skipped_nodes_;

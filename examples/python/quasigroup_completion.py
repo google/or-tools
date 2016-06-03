@@ -53,7 +53,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -83,7 +83,7 @@ def main(puzzle="", n=0):
     puzzle = default_puzzle
     n = default_n
 
-  print "Problem:"
+  print("Problem:")
   print_game(puzzle, n, n)
 
   # declare variables
@@ -130,17 +130,17 @@ def main(puzzle="", n=0):
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print "Solution %i" % num_solutions
+    print("Solution %i" % num_solutions)
     xval = [x[(i, j)].Value() for i in range(n) for j in range(n)]
     for i in range(n):
       for j in range(n):
-        print xval[i * n + j],
-      print
-    print
+        print(xval[i * n + j], end=' ')
+      print()
+    print()
   solver.EndSearch()
 
   if num_solutions == 0:
-    print "No solutions found"
+    print("No solutions found")
 
   # # Note: AllSolution may take very much RAM, hence I choose to
   # # show just the first solution.
@@ -163,11 +163,11 @@ def main(puzzle="", n=0):
   #             print
   #         print
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 #
@@ -194,22 +194,22 @@ def read_problem(file):
 def print_board(x, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print "% 2s" % x[i, j],
-    print ""
+      print("% 2s" % x[i, j], end=' ')
+    print("")
 
 
 def print_game(game, rows, cols):
   for i in range(rows):
     for j in range(cols):
-      print "% 2s" % game[i][j],
-    print ""
+      print("% 2s" % game[i][j], end=' ')
+    print("")
 
 
 if __name__ == "__main__":
 
   if len(sys.argv) > 1:
     file = sys.argv[1]
-    print "Problem instance from", file
+    print("Problem instance from", file)
     [game, n] = read_problem(file)
     main(game, n)
   else:

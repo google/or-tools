@@ -42,8 +42,9 @@
 
 """
 
+from __future__ import print_function
+
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 #
@@ -89,7 +90,7 @@ def main(n=5):
   solver = pywrapcp.Solver("Send most money")
 
   # data
-  print "n:", n
+  print("n:", n)
 
   # declare variables
   # Note: domain should be 0..n-1
@@ -115,19 +116,19 @@ def main(n=5):
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):
-    print "x:", [collector.Value(s, x[i]) for i in range(len(x))]
+    print("x:", [collector.Value(s, x[i]) for i in range(len(x))])
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
-  print
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
+  print()
 
 
 n = 5
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    n = string.atoi(sys.argv[1])
+    n = int(sys.argv[1])
 
   main(n)

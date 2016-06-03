@@ -46,9 +46,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
-import string
 
 from ortools.constraint_solver import pywrapcp
 
@@ -75,12 +74,12 @@ def main(show_all_max=0):
       [0, 0, 1, 1, 0, 0, 0]  # Paul   6
   ]
 
-  print """Preferences:
+  print("""Preferences:
      1. Betty wants to stand next to Gary and Mary.
      2. Chris wants to stand next to Betty and Gary.
      3. Fred wants to stand next to Mary and Donald.
      4. Paul wants to stand next to Fred and Donald.
-    """
+    """)
 
   #
   # declare variables
@@ -108,7 +107,7 @@ def main(show_all_max=0):
   # objective
   objective = solver.Maximize(z, 1)
   if show_all_max != 0:
-    print "Showing all maximum solutions (z == 6).\n"
+    print("Showing all maximum solutions (z == 6).\n")
     solver.Add(z == 6)
 
   #
@@ -125,26 +124,26 @@ def main(show_all_max=0):
 
   num_solutions = 0
   while solver.NextSolution():
-    print "z:", z.Value()
+    print("z:", z.Value())
     p = [positions[i].Value() for i in range(n)]
 
-    print " ".join([persons[j]
-                    for i in range(n) for j in range(n) if p[j] == i])
-    print "Successful preferences:"
+    print(" ".join([persons[j]
+                    for i in range(n) for j in range(n) if p[j] == i]))
+    print("Successful preferences:")
     for i in range(n):
       for j in range(n):
         if preferences[i][j] == 1 and abs(p[i] - p[j]) == 1:
-          print "\t", persons[i], persons[j]
-    print
+          print("\t", persons[i], persons[j])
+    print()
     num_solutions += 1
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 show_all_max = 0  # show all maximal solutions

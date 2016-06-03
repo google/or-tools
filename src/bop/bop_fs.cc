@@ -106,7 +106,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
       for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
         const double value = problem_state.lp_values()[col];
         sat_solver_->SetAssignmentPreference(
-            sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
+            sat::Literal(sat::BooleanVariable(col.value()), round(value) == 1),
             1 - fabs(value - round(value)));
       }
       break;
@@ -117,7 +117,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
     case Policy::kUserGuided:
       for (int i = 0; i < problem_state.assignment_preference().size(); ++i) {
         sat_solver_->SetAssignmentPreference(
-            sat::Literal(sat::VariableIndex(i),
+            sat::Literal(sat::BooleanVariable(i),
                          problem_state.assignment_preference()[i]),
             1.0);
       }
@@ -269,7 +269,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
       for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
         const double value = problem_state.lp_values()[col];
         sat_propagator_->SetAssignmentPreference(
-            sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
+            sat::Literal(sat::BooleanVariable(col.value()), round(value) == 1),
             1 - fabs(value - round(value)));
       }
     }
@@ -558,8 +558,10 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
         // Compute the new min.
         best_lp_objective =
             lp_model_.IsMaximizationProblem()
-                ? std::min(best_lp_objective, std::max(objective_true, objective_false))
-                : std::max(best_lp_objective, std::min(objective_true, objective_false));
+                ? std::min(best_lp_objective,
+                           std::max(objective_true, objective_false))
+                : std::max(best_lp_objective,
+                           std::min(objective_true, objective_false));
       }
     }
 
@@ -568,13 +570,13 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
       // solution than the current one. Set the variable to false.
       lp_model_.SetVariableBounds(col, 0.0, 0.0);
       learned_info->fixed_literals.push_back(
-          sat::Literal(sat::VariableIndex(col.value()), false));
+          sat::Literal(sat::BooleanVariable(col.value()), false));
     } else if (CostIsWorseThanSolution(objective_false, tolerance)) {
       // Having variable col set to false can't possibly lead to and better
       // solution than the current one. Set the variable to true.
       lp_model_.SetVariableBounds(col, 1.0, 1.0);
       learned_info->fixed_literals.push_back(
-          sat::Literal(sat::VariableIndex(col.value()), true));
+          sat::Literal(sat::BooleanVariable(col.value()), true));
     } else {
       // Unset. This is safe to use 0.0 and 1.0 as the variable is not fixed.
       lp_model_.SetVariableBounds(col, 0.0, 1.0);

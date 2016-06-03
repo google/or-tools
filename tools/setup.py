@@ -16,7 +16,7 @@ DELETEUNIX               extra_link_args=['/MANIFEST'],
 
 setup(
     name='ortools',
-    version='2.VVVV',
+    version='3.VVVV',
     packages=[
         'ortools',
         'ortools.algorithms',
@@ -25,9 +25,7 @@ setup(
         'ortools.linear_solver',],
     ext_modules = [dummy_module],
     install_requires = [
-        'google-apputils >= 0.4',
-        'protobuf >= 2.5.0'],
-    dependency_links = ['http://google-apputils-python.googlecode.com/files/'],
+        'protobuf >= 2.8.0'],
     package_data = {
         'ortools.constraint_solver' : ['_pywrapcp.dll'],
         'ortools.linear_solver' : ['_pywraplp.dll'],
@@ -51,7 +49,6 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Office/Business :: Scheduling',
         'Topic :: Scientific/Engineering',

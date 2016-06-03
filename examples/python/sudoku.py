@@ -13,23 +13,17 @@
 
 """This model implements a sudoku solver."""
 
-
-
-from google.apputils import app
-import gflags
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
-FLAGS = gflags.FLAGS
-
-
-def main(unused_argv):
+def main():
   # Create the solver.
   solver = pywrapcp.Solver('sudoku')
 
   cell_size = 3
   line_size = cell_size ** 2
-  line = range(0, line_size)
-  cell = range(0, cell_size)
+  line = list(range(0, line_size))
+  cell = list(range(0, cell_size))
 
   initial_grid = [[0, 6, 0, 0, 5, 0, 0, 2, 0],
                   [0, 0, 0, 3, 0, 0, 0, 9, 0],
@@ -87,8 +81,8 @@ def main(unused_argv):
 
   if collector.SolutionCount() == 1:
     for i in line:
-      print [int(collector.Value(0, grid[(i, j)])) for j in line]
+      print([int(collector.Value(0, grid[(i, j)])) for j in line])
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

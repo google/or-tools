@@ -38,8 +38,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 
@@ -180,45 +180,45 @@ def main(sols=1):
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print "Solution #%i" % num_solutions
-    print "Number working:", num_working.Value()
+    print("Solution #%i" % num_solutions)
+    print("Number working:", num_working.Value())
     for i in range(num_flights):
       for j in range(num_persons):
-        print crew[i, j].Value(),
-      print
-    print
+        print(crew[i, j].Value(), end=' ')
+      print()
+    print()
 
-    print "Flights:"
+    print("Flights:")
     for flight in range(num_flights):
-      print "Flight", flight, "persons:",
+      print("Flight", flight, "persons:", end=' ')
       for person in range(num_persons):
         if crew[flight, person].Value() == 1:
-          print names[person],
-      print
-    print
+          print(names[person], end=' ')
+      print()
+    print()
 
-    print "Crew:"
+    print("Crew:")
     for person in range(num_persons):
-      print "%-10s flights" % names[person],
+      print("%-10s flights" % names[person], end=' ')
       for flight in range(num_flights):
         if crew[flight, person].Value() == 1:
-          print flight,
-      print
-    print
+          print(flight, end=' ')
+      print()
+    print()
 
     if num_solutions >= sols:
       break
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 num_solutions_to_show = 1
 if __name__ == "__main__":
   if (len(sys.argv) > 1):
-    num_solutions_to_show = string.atoi(sys.argv[1])
+    num_solutions_to_show = int(sys.argv[1])
 
   main(num_solutions_to_show)

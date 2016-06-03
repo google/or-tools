@@ -141,7 +141,8 @@ Fractional ReducedCosts::ComputeMaximumDualInfeasibility() const {
     const Fractional rc = reduced_costs_[col];
     if ((can_increase.IsSet(col) && rc < 0.0) ||
         (can_decrease.IsSet(col) && rc > 0.0)) {
-      maximum_dual_infeasibility = std::max(maximum_dual_infeasibility, fabs(rc));
+      maximum_dual_infeasibility =
+          std::max(maximum_dual_infeasibility, fabs(rc));
     }
   }
   return maximum_dual_infeasibility;

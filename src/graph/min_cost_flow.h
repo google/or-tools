@@ -139,7 +139,7 @@
 // Algorithms for the Minimum-Cost Flow Problem", Network flows and matching:
 // First DIMACS implementation challenge, DIMACS Series in Discrete Mathematics
 // and Theoretical Computer Science, (1993) 12:157-198.
-// ftp://dimacs.rutgers.edu/pub/netflow/...mincost/scalmin.ps
+// ftp://dimacs.rutgers.edu/pub/netflow/submit/papers/Goldberg-mincost/scalmin.ps
 // and in:
 // ﻿U. Bunnagel, B. Korte, and J. Vygen. “Efficient implementation of the
 // Goldberg-Tarjan minimum-cost flow algorithm.” Optimization Methods and
@@ -328,7 +328,8 @@ class GenericMinCostFlow : public MinCostFlowBase {
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
-  typedef typename Graph::IncidentArcIterator IncidentArcIterator;
+  typedef typename Graph::OutgoingOrOppositeIncomingArcIterator
+      OutgoingOrOppositeIncomingArcIterator;
   typedef ZVector<ArcIndex> ArcIndexArray;
 
   // Initialize a MinCostFlow instance on the given graph. The graph does not
@@ -431,7 +432,7 @@ class GenericMinCostFlow : public MinCostFlowBase {
   CostValue FastReducedCost(ArcIndex arc, CostValue tail_potential) const;
 
   // Returns the first incident arc of a given node.
-  ArcIndex GetFirstIncidentArc(NodeIndex node) const;
+  ArcIndex GetFirstOutgoingOrOppositeIncomingArc(NodeIndex node) const;
 
   // Checks the consistency of the input, i.e., whether the sum of the supplies
   // for all nodes is equal to zero. To be used in a DCHECK.

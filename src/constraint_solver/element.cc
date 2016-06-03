@@ -13,8 +13,8 @@
 
 
 #include <algorithm>
-#include <numeric>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -30,8 +30,6 @@
 
 DEFINE_bool(cp_disable_element_cache, true,
             "If true, caching for IntElement is disabled.");
-DEFINE_bool(cp_use_element_rmq, true,
-            "If true, rmq's will be used in element expressions.");
 
 namespace operations_research {
 
@@ -376,6 +374,14 @@ class RangeMinimumQueryExprElement : public BaseIntExpr {
                                 var, this);
     return var;
   }
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kValuesArgument,
+                                       min_rmq_.array());
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
+                                            index_);
+    visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
+  }
 
  private:
   int64 IndexMin() const { return std::max(0LL, index_->Min()); }
@@ -629,7 +635,7 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
       result = solver->RegisterIntExpr(solver->RevAlloc(
           new IncreasingIntExprElement(solver, values, index)));
     } else {
-      if (FLAGS_cp_use_element_rmq) {
+      if (solver->parameters().use_element_rmq()) {
         result = solver->RegisterIntExpr(solver->RevAlloc(
             new RangeMinimumQueryExprElement(solver, values, index)));
       } else {
@@ -906,11 +912,20 @@ class IntIntExprFunctionElement : public BaseIntExpr {
 
   void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitIntegerExpression(ModelVisitor::kElement, this);
-    // TODO(user): Implement me.
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndexArgument,
                                             expr1_);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kIndex2Argument,
                                             expr2_);
+    // Warning: This will expand all values into a vector.
+    const int64 expr1_min = expr1_->Min();
+    const int64 expr1_max = expr1_->Max();
+    visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, expr1_min);
+    visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, expr1_max);
+    for (int i = expr1_min; i <= expr1_max; ++i) {
+      visitor->VisitInt64ToInt64Extension(
+          [this, i](int64 j) { return values_(i, j); }, expr2_->Min(),
+          expr2_->Max());
+    }
     visitor->EndVisitIntegerExpression(ModelVisitor::kElement, this);
   }
 
@@ -1377,9 +1392,9 @@ IntExprArrayElementCt::IntExprArrayElementCt(Solver* const s,
                                              std::vector<IntVar*> vars,
                                              IntVar* const index,
                                              IntVar* const target_var)
-    : IntExprEvaluatorElementCt(s, [this](int64 idx) {
-        return vars_[idx];
-      }, 0, vars.size(), index, target_var), vars_(std::move(vars)) {}
+    : IntExprEvaluatorElementCt(s, [this](int64 idx) { return vars_[idx]; }, 0,
+                                vars.size(), index, target_var),
+      vars_(std::move(vars)) {}
 
 std::string IntExprArrayElementCt::DebugString() const {
   int64 size = vars_.size();

@@ -29,9 +29,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 import sys
-import string
 
 from ortools.constraint_solver import pywrapcp
 
@@ -48,9 +47,9 @@ def main(num_sol=3):
   nbOptions = 5
   nbSlots = 10
 
-  Cars = range(nbCars)
-  Options = range(nbOptions)
-  Slots = range(nbSlots)
+  Cars = list(range(nbCars))
+  Options = list(range(nbOptions))
+  Slots = list(range(nbSlots))
 
   #    car 0   1  2  3  4  5
   demand = [1, 1, 2, 2, 2, 2]
@@ -103,7 +102,7 @@ def main(num_sol=3):
 
   for o in Options:
     for i in range(optionDemand[o]):
-      s_range = range(0, nbSlots - (i + 1) * capacity[o][1])
+      s_range = list(range(0, nbSlots - (i + 1) * capacity[o][1]))
       ss = [setup[o, s] for s in s_range]
       cc = optionDemand[o] - (i + 1) * capacity[o][0]
       if len(ss) > 0 and cc >= 0:
@@ -119,14 +118,14 @@ def main(num_sol=3):
   solver.NewSearch(db)
   num_solutions = 0
   while solver.NextSolution():
-    print "slot:%s" % ",".join([str(slot[i].Value()) for i in Slots])
-    print "setup:"
+    print("slot:%s" % ",".join([str(slot[i].Value()) for i in Slots]))
+    print("setup:")
     for o in Options:
-      print "%i/%i:" % (capacity[o][0], capacity[o][1]),
+      print("%i/%i:" % (capacity[o][0], capacity[o][1]), end=' ')
       for s in Slots:
-        print setup[o, s].Value(),
-      print
-    print
+        print(setup[o, s].Value(), end=' ')
+      print()
+    print()
     num_solutions += 1
 
     if num_solutions >= num_sol:
@@ -134,14 +133,14 @@ def main(num_sol=3):
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 num_sol = 3
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    num_sol = string.atoi(sys.argv[1])
+    num_sol = int(sys.argv[1])
   main(num_sol)

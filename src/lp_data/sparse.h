@@ -17,10 +17,12 @@
 //
 // I.S. Duff, A.M. Erisman and J.K. Reid, "Direct Methods for Sparse Matrices",
 // Clarendon, Oxford, UK, 1987, ISBN 0-19-853421-3,
-// http://www.amazon.com/dp/0198534213
+// http://www.amazon.com/dp/0198534213.
+//
 //
 // T.A. Davis, "Direct methods for Sparse Linear Systems", SIAM, Philadelphia,
-// 2006, ISBN-13: 978-0-898716-13, http://www.amazon.com/dp/0898716136
+// 2006, ISBN-13: 978-0-898716-13, http://www.amazon.com/dp/0898716136.
+//
 //
 // Both books also contain a wealth of references.
 
@@ -544,7 +546,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // This also computes the last non-zero row position (if not nullptr).
   void TransposeLowerSolve(DenseColumn* rhs, RowIndex* last_non_zero_row) const;
 
-  // This also compute the non-zero row posisitions (if not nullptr).
+  // This also computes the non-zero row positions (if not nullptr).
   void UpperSolveWithNonZeros(DenseColumn* rhs,
                               RowIndexVector* non_zero_rows) const;
 
@@ -688,7 +690,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // the reachability of any set nor a valid topological ordering of such a set.
   //
   // The concept is known as the transitive reduction of a DAG, see
-  // http://en.wikipedia.org/wiki/Transitive_reduction
+  // http://en.wikipedia.org/wiki/Transitive_reduction.
   //
   // Heuristic algorithm: While doing the DFS to compute Reach(S) and its
   // topological order, each time we process a node, we mark all its adjacent

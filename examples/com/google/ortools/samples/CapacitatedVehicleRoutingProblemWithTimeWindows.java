@@ -19,6 +19,7 @@ import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.NodeEvaluator2;
 import com.google.ortools.constraintsolver.RoutingModel;
+import com.google.ortools.constraintsolver.RoutingEnums.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 
 import java.util.ArrayList;
@@ -229,13 +230,14 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     }
 
     // Solving
-    RoutingSearchParameters parameters = new RoutingSearchParameters();
-    parameters.setNo_lns(true);
-    parameters.setFirst_solution("AllUnperformed");
-    parameters.setTrace(true);
+    RoutingSearchParameters parameters =
+        RoutingSearchParameters.newBuilder()
+        .mergeFrom(RoutingModel.defaultSearchParameters())
+        .setFirstSolutionStrategy(FirstSolutionStrategy.Value.ALL_UNPERFORMED)
+        .build();
 
     logger.info("Search");
-    Assignment solution = model.solveWithParameters(parameters, null);
+    Assignment solution = model.solveWithParameters(parameters);
 
     if (solution != null) {
       String output = "Total cost: " + solution.objectiveValue() + "\n";

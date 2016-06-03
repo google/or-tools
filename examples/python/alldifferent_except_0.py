@@ -49,6 +49,7 @@
 
 """
 
+from __future__ import print_function
 
 from ortools.constraint_solver import pywrapcp
 
@@ -109,14 +110,14 @@ def main(unused_argv):
 
   num_solutions = collector.SolutionCount()
   for s in range(num_solutions):
-    print "x:", [collector.Value(s, x[i]) for i in range(n)]
-    print "z:", collector.Value(s, z)
-    print
+    print("x:", [collector.Value(s, x[i]) for i in range(n)])
+    print("z:", collector.Value(s, z))
+    print()
 
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 if __name__ == "__main__":

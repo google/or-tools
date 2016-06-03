@@ -33,17 +33,12 @@ The Norwegian lives next to the blue house.
 Who owns a zebra and who drinks water?
 """
 
-
-
-from google.apputils import app
-import gflags
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
-
-FLAGS = gflags.FLAGS
 
 
 # pylint: disable=too-many-statements
-def main(unused_argv):
+def main():
   # Create the solver.
   solver = pywrapcp.Solver('zebra')
 
@@ -114,12 +109,12 @@ def main(unused_argv):
     people = [englishman, spaniard, japanese, ukrainian, norwegian]
     water_drinker = [p for p in people if p.Value() == water.Value()][0]
     zebra_owner = [p for p in people if p.Value() == zebra.Value()][0]
-    print 'The %s drinks water.' % water_drinker.Name()
-    print 'The %s owns the zebra.' % zebra_owner.Name()
+    print('The', water_drinker.Name(), 'drinks water.')
+    print('The', zebra_owner.Name(), 'owns the zebra.')
   else:
-    print 'No solutions to the zebra problem, this is unusual!'
+    print('No solutions to the zebra problem, this is unusual!')
   solver.EndSearch()
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

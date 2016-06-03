@@ -91,16 +91,25 @@ class Stat {
   Stat(const std::string& name, StatsGroup* group);
   virtual ~Stat() {}
 
-  // Only used for display purpose.
+  // Only used for display purposes.
   std::string Name() const { return name_; }
 
   // Returns a human-readable formated line of the form "name: ValueAsString()".
   std::string StatString() const;
 
+  // At display, stats are displayed by decreasing priority, then decreasing
+  // Sum(), then alphabetical order.
+  // Used to group the stats per category (timing, ratio, etc..,).
+  virtual int Priority() const { return 0; }
+
+  // By default return 0 for the sum. This makes it possible to sort stats by
+  // decreasing total time.
+  virtual double Sum() const { return 0; }
+
   // Prints information about this statistic.
   virtual std::string ValueAsString() const = 0;
 
-  // Is this stat worth printing? usually false if nothing was measured.
+  // Is this stat worth printing? Usually false if nothing was measured.
   virtual bool WorthPrinting() const = 0;
 
   // Reset this statistic to the same state as if it was newly created.
@@ -157,7 +166,7 @@ class DistributionStat : public Stat {
   std::string ValueAsString() const override = 0;
 
   // Trivial statistics on all the values added so far.
-  double Sum() const { return sum_; }
+  double Sum() const override { return sum_; }
   double Max() const { return max_; }
   double Min() const { return min_; }
   int64 Num() const { return num_; }
@@ -184,10 +193,10 @@ class DistributionStat : public Stat {
 };
 
 // Statistic on the distribution of a sequence of running times.
-// Also provides some facility to measure such time with the cpu cycle counter.
+// Also provides some facility to measure such time with the CPU cycle counter.
 //
 // TODO(user): Since we inherit from DistributionStat, we currently store the
-// sum of cpu cycles as a double internally. A better option is to use int64
+// sum of CPU cycles as a double internally. A better option is to use int64
 // because with the 53 bits of precision of a double, we will run into an issue
 // if the sum of times reaches 52 days for a 2GHz processor.
 class TimeDistribution : public DistributionStat {
@@ -198,7 +207,10 @@ class TimeDistribution : public DistributionStat {
       : DistributionStat(name, group), timer_() {}
   std::string ValueAsString() const override;
 
-  // Internaly the TimeDistribution stores cpu cycles (to do a bit less work
+  // Time distributions have a high priority to be displayed first.
+  int Priority() const override { return 100; }
+
+  // Internaly the TimeDistribution stores CPU cycles (to do a bit less work
   // on each StopTimerAndAddElapsedTime()). Use this function to convert
   // all the statistics of DistributionStat into seconds.
   static double CyclesToSeconds(double num_cycles);
@@ -206,14 +218,14 @@ class TimeDistribution : public DistributionStat {
   // Adds a time in seconds to this distribution.
   void AddTimeInSec(double value);
 
-  // Adds a time in cpu cycles to this distribution.
+  // Adds a time in CPU cycles to this distribution.
   void AddTimeInCycles(double value);
 
   // Starts the timer in preparation of a StopTimerAndAddElapsedTime().
   inline void StartTimer() { timer_.Restart(); }
 
   // Adds the elapsed time since the last StartTimer() to the distribution and
-  // returns this time in cpu cycles.
+  // returns this time in CPU cycles.
   inline double StopTimerAndAddElapsedTime() {
 #ifdef ANDROID_JNI
     return 0.0;
@@ -281,11 +293,11 @@ class ScopedTimeDistributionUpdater {
   }
 
   // Updates another TimeDistribution on destruction. This is useful to split
-  // a total time measurment in different categories:
+  // a total time measurement in different categories:
   //
   // ScopedTimeDistributionUpdater timer(&total_timer);
   // ...
-  // swith (type) {
+  // switch (type) {
   //   case TypeA : timer.AlsoUpdate(&typeA_timer); break;
   //   case TypeB : timer.AlsoUpdate(&typeB_timer); break;
   // }

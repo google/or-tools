@@ -361,6 +361,70 @@ SearchMonitor* Solver::MakeSearchTrace(const std::string& prefix) {
   return RevAlloc(new SearchTrace(this, prefix));
 }
 
+// ---------- Callback-based search monitors ----------
+namespace {
+class AtSolutionCallback : public SearchMonitor {
+ public:
+  AtSolutionCallback(Solver* const solver, std::function<void()> callback)
+      : SearchMonitor(solver), callback_(std::move(callback)) {}
+  ~AtSolutionCallback() override {}
+  bool AtSolution() override;
+
+ private:
+  const std::function<void()> callback_;
+};
+
+bool AtSolutionCallback::AtSolution() {
+  callback_();
+  return false;
+}
+
+}  // namespace
+
+SearchMonitor* Solver::MakeAtSolutionCallback(std::function<void()> callback) {
+  return RevAlloc(new AtSolutionCallback(this, std::move(callback)));
+}
+
+namespace {
+class EnterSearchCallback : public SearchMonitor {
+ public:
+  EnterSearchCallback(Solver* const solver, std::function<void()> callback)
+      : SearchMonitor(solver), callback_(std::move(callback)) {}
+  ~EnterSearchCallback() override {}
+  void EnterSearch() override;
+
+ private:
+  const std::function<void()> callback_;
+};
+
+void EnterSearchCallback::EnterSearch() { callback_(); }
+
+}  // namespace
+
+SearchMonitor* Solver::MakeEnterSearchCallback(std::function<void()> callback) {
+  return RevAlloc(new EnterSearchCallback(this, std::move(callback)));
+}
+
+namespace {
+class ExitSearchCallback : public SearchMonitor {
+ public:
+  ExitSearchCallback(Solver* const solver, std::function<void()> callback)
+      : SearchMonitor(solver), callback_(std::move(callback)) {}
+  ~ExitSearchCallback() override {}
+  void ExitSearch() override;
+
+ private:
+  const std::function<void()> callback_;
+};
+
+void ExitSearchCallback::ExitSearch() { callback_(); }
+
+}  // namespace
+
+SearchMonitor* Solver::MakeExitSearchCallback(std::function<void()> callback) {
+  return RevAlloc(new ExitSearchCallback(this, std::move(callback)));
+}
+
 // ---------- Composite Decision Builder --------
 
 namespace {
@@ -3365,9 +3429,9 @@ BinaryGuidedLocalSearch::BinaryGuidedLocalSearch(
       objective_function_(objective_function) {}
 
 IntExpr* BinaryGuidedLocalSearch::MakeElementPenalty(int index) {
-  return solver()->MakeElement([this, index](int64 i) {
-    return PenalizedValue(index, i);
-  }, vars_[index]);
+  return solver()->MakeElement(
+      [this, index](int64 i) { return PenalizedValue(index, i); },
+      vars_[index]);
 }
 
 int64 BinaryGuidedLocalSearch::AssignmentElementPenalty(
@@ -3449,9 +3513,9 @@ TernaryGuidedLocalSearch::TernaryGuidedLocalSearch(
 }
 
 IntExpr* TernaryGuidedLocalSearch::MakeElementPenalty(int index) {
-  return solver()->MakeElement([this, index](int64 i, int64 j) {
-    return PenalizedValue(index, i, j);
-  }, vars_[index], secondary_vars_[index]);
+  return solver()->MakeElement(
+      [this, index](int64 i, int64 j) { return PenalizedValue(index, i, j); },
+      vars_[index], secondary_vars_[index]);
 }
 
 int64 TernaryGuidedLocalSearch::AssignmentElementPenalty(
@@ -3782,10 +3846,21 @@ SearchLimit* Solver::MakeLimit(int64 time, int64 branches, int64 failures,
                                    smart_time_check, cumulative));
 }
 
-SearchLimit* Solver::MakeLimit(const SearchLimitProto& proto) {
+SearchLimit* Solver::MakeLimit(const SearchLimitParameters& proto) {
   return MakeLimit(proto.time(), proto.branches(), proto.failures(),
                    proto.solutions(), proto.smart_time_check(),
                    proto.cumulative());
+}
+
+SearchLimitParameters Solver::MakeDefaultSearchLimitParameters() const {
+  SearchLimitParameters proto;
+  proto.set_time(kint64max);
+  proto.set_branches(kint64max);
+  proto.set_failures(kint64max);
+  proto.set_solutions(kint64max);
+  proto.set_smart_time_check(false);
+  proto.set_cumulative(false);
+  return proto;
 }
 
 // A limit whose Check function is the OR of two underlying limits.
@@ -3858,8 +3933,8 @@ SearchLimit* Solver::MakeLimit(SearchLimit* const limit_1,
 
 void Solver::UpdateLimits(int64 time, int64 branches, int64 failures,
                           int64 solutions, SearchLimit* limit) {
-  reinterpret_cast<RegularLimit*>(limit)
-      ->UpdateLimits(time, branches, failures, solutions);
+  reinterpret_cast<RegularLimit*>(limit)->UpdateLimits(time, branches, failures,
+                                                       solutions);
 }
 
 int64 Solver::GetTime(SearchLimit* limit) {

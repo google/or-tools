@@ -18,19 +18,32 @@
 %include "std_vector.i"
 
 %include "base/base.swig"
-%include "util/java/proto.swig"
 %include "util/java/tuple_set.swig"
 %include "util/java/vector.swig"
 %include "util/java/functions.swig"
+
+%include "util/java/proto.swig"
 
 // Remove swig warnings
 %warnfilter(473) operations_research::DecisionBuilder;
 // TODO(user): Remove this warnfilter.
 
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../constraint_solver.h" %}.
+namespace operations_research {
+class ConstraintSolverParameters;
+class SearchLimitParameters;
+}  // namespace operations_research
+
+
+// Include the files we want to wrap a first time.
 %{
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/java/javawrapcp_util.h"
+#include "constraint_solver/search_limit.pb.h"
+#include "constraint_solver/solver_parameters.pb.h"
 
 // Supporting structure for the PROTECT_FROM_FAILURE macro.
 #include "setjmp.h"
@@ -94,6 +107,11 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 %module(directors="1", allprotected="1") operations_research;
 
+%typemap(javaimports) operations_research::Solver %{
+import com.google.ortools.constraintsolver.ConstraintSolverParameters;
+import com.google.ortools.constraintsolver.SearchLimitParameters;
+%}
+
 %feature("director") operations_research::DecisionBuilder;
 %feature("director") operations_research::Decision;
 %feature("director") operations_research::SearchMonitor;
@@ -122,13 +140,12 @@ class SolverToVoid {
 
 // Renaming
 
-// Generic rule (to remove)
-%rename("%(lowercamelcase)s", %$isfunction) "";
-
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
+%ignore operations_research::Solver::set_fail_intercept;
+%ignore operations_research::PropagationBaseObject::set_action_on_fail;
 
 // This method causes issues with our std::vector<int64> wrapping. It's not really
 // part of the public API anyway.
@@ -254,6 +271,7 @@ class SolverToVoid {
 %rename (checkAssignment) operations_research::Solver::CheckAssignment;
 %rename (compose) operations_research::Solver::Compose;
 %rename (concatenateOperators) operations_research::Solver::ConcatenateOperators;
+%rename (defaultSolverParameters) operations_research::Solver::DefaultSolverParameters;
 %rename (endSearch) operations_research::Solver::EndSearch;
 %rename (exportProfilingOverview) operations_research::Solver::ExportProfilingOverview;
 %rename (fail) operations_research::Solver::Fail;
@@ -271,13 +289,16 @@ class SolverToVoid {
 %rename (makeBetweenCt) operations_research::Solver::MakeBetweenCt;
 %rename (makeBoolVar) operations_research::Solver::MakeBoolVar;
 %rename (makeBranchesLimit) operations_research::Solver::MakeBranchesLimit;
+%rename (makeClosureDemon) operations_research::Solver::MakeClosureDemon;
 %rename (makeConstantRestart) operations_research::Solver::MakeConstantRestart;
 %rename (makeConvexPiecewiseExpr) operations_research::Solver::MakeConvexPiecewiseExpr;
 %rename (makeCount) operations_research::Solver::MakeCount;
 %rename (makeCumulative) operations_research::Solver::MakeCumulative;
 %rename (makeCustomLimit) operations_research::Solver::MakeCustomLimit;
+%rename (makeDecision) operations_research::Solver::MakeDecision;
 %rename (makeDecisionBuilderFromAssignment) operations_research::Solver::MakeDecisionBuilderFromAssignment;
 %rename (makeDefaultPhase) operations_research::Solver::MakeDefaultPhase;
+%rename (makeDefaultSearchLimitParameters) operations_research::Solver::MakeDefaultSearchLimitParameters;
 %rename (makeDifference) operations_research::Solver::MakeDifference;
 %rename (makeDeviation) operations_research::Solver::MakeDeviation;
 %rename (makeDisjunctiveConstraint) operations_research::Solver::MakeDisjunctiveConstraint;
@@ -411,6 +432,7 @@ class SolverToVoid {
 %rename (removeValue) operations_research::IntVar::RemoveValue;
 %rename (removeValues) operations_research::IntVar::RemoveValues;
 %rename (removeInterval) operations_research::IntVar::RemoveInterval;
+%rename (contains) operations_research::IntVar::Contains;
 
 // Rename rules on Constraint.
 %rename (var) operations_research::Constraint::Var;
@@ -722,22 +744,29 @@ WRAP_STD_FUNCTION_JAVA(
     LongLongLongToBoolean,
     "com/google/ortools/constraintsolver/",
     bool, Boolean, int64, int64, int64)
-WRAP_OTHER_FUNCTIONS_JAVA("com/google/ortools/constraintsolver/")
-WRAP_CLASS_TO_VOID_JAVA("com/google/ortools/constraintsolver/",
-	                SolverToVoid, Solver)
+WRAP_STD_FUNCTIONS_WITH_VOID_JAVA("com/google/ortools/constraintsolver/")
+WRAP_STD_FUNCTION_JAVA_CLASS_TO_VOID(
+    SolverToVoid,
+    "com/google/ortools/constraintsolver/",
+    Solver)
 
-namespace operations_research {
-class LocalSearchPhaseParameters {
- public:
-  LocalSearchPhaseParameters();
-  ~LocalSearchPhaseParameters();
-};
-}  // namespace operations_research
+// Protobuf support
+PROTO_INPUT(operations_research::ConstraintSolverParameters,
+            com.google.ortools.constraintsolver.ConstraintSolverParameters,
+            parameters)
+PROTO2_RETURN(operations_research::ConstraintSolverParameters,
+              com.google.ortools.constraintsolver.ConstraintSolverParameters)
 
+PROTO_INPUT(operations_research::SearchLimitParameters,
+            com.google.ortools.constraintsolver.SearchLimitParameters,
+            proto)
+PROTO2_RETURN(operations_research::SearchLimitParameters,
+              com.google.ortools.constraintsolver.SearchLimitParameters)
 
 // Wrap cp includes
 %include "constraint_solver/constraint_solver.h"
 %include "constraint_solver/constraint_solveri.h"
+%include "constraint_solver/java/javawrapcp_util.h"
 
 namespace operations_research {
 namespace swig_util {

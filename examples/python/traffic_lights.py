@@ -70,8 +70,7 @@
   http://www.hakank.org/google_or_tools/
 
 """
-
-import string
+from __future__ import print_function
 import sys
 
 from ortools.constraint_solver import pywrapcp
@@ -86,7 +85,7 @@ def main(base=10, start=1, len1=1, len2=4):
   # data
   #
   n = 4
-  r, ry, g, y = range(n)
+  r, ry, g, y = list(range(n))
   lights = ["r", "ry", "g", "y"]
 
   # The allowed combinations
@@ -121,18 +120,18 @@ def main(base=10, start=1, len1=1, len2=4):
   num_solutions = 0
   while solver.NextSolution():
     for i in range(n):
-      print "%+2s %+2s" % (lights[V[i].Value()], lights[P[i].Value()]),
-    print
+      print("%+2s %+2s" % (lights[V[i].Value()], lights[P[i].Value()]), end=' ')
+    print()
     num_solutions += 1
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
-  print
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
+  print()
 
 
 if __name__ == "__main__":

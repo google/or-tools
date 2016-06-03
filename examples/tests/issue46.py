@@ -13,7 +13,6 @@
 
 """Code for issue 46 in or-tools."""
 
-from google.apputils import app
 from ortools.constraint_solver import pywrapcp
 
 class AssignToStartMin(pywrapcp.PyDecisionBuilder):
@@ -75,10 +74,10 @@ def Sequence():
         print [collector.EndValue(i, tasks[j]) for j in range(3)]
 
 
-def main(_):
+def main():
     NoSequence()
     Sequence()
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

@@ -31,12 +31,14 @@
 #include "base/macros.h"
 
 // An array class for storing arrays of integers.
+//
 // The range of indices is specified at the construction of the object.
 // The minimum and maximum indices are inclusive.
 // Think of the Pascal syntax array[min_index..max_index] of ...
-// For example ZVector<int32>(-100000,100000) will store 200001 signed
-// integers of 32 bits each, and the possible range of indices will be
-// -100000..100000.
+//
+// For example, ZVector<int32>(-100000,100000) will store 200001
+// signed integers of 32 bits each, and the possible range of indices
+// will be -100000..100000.
 
 namespace operations_research {
 

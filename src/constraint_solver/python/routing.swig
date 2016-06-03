@@ -13,38 +13,26 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
+%include "base/base.swig"
+
 %include "constraint_solver/python/constraint_solver.swig"
+// TODO(user): remove this when we no longer use callbacks in the routing.
+#define FATAL_CALLBACK_EXCEPTION
+%include "base/python/callbacks.swig"
+
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../routing.h" %}.
+namespace operations_research {
+class RoutingModelParameters;
+class RoutingSearchParameters;
+}  // namespace operations_research
 
 // Include the file we want to wrap a first time.
 %{
 #include "constraint_solver/routing.h"
 %}
 
-// We "convert" the C++ flags to python gflags. We also need to actually
-// pass the value from the python flags to the C++ ones, upon the
-// RoutingModel construction. This is a copy paste of the same code on the
-// Solver class in ./constraint_solver.swig.
-
-// As with the solver ctor, at the beginning of the routing model's
-// constructor code (in python), call SetFlags() with the python flags
-// as parameters.
-// Note: Indentation is critical here as the code is copied verbatim in the
-// python code.
-%feature("pythonprepend") operations_research::RoutingModel::RoutingModel %{
-        Solver.SetFlags(FLAGS.cp_trace_propagation,
-                        FLAGS.cp_trace_search,
-                        FLAGS.cp_print_model,
-                        FLAGS.cp_model_stats,
-                        FLAGS.cp_export_file,
-                        FLAGS.cp_no_solve,
-                        FLAGS.cp_profile_file)
-%}
-
-
-// See ./constraint_solver_helpers.swig.
-//PY_CONVERT_HELPER_PTR(SearchMonitor);
-//PY_CONVERT_HELPER_PTR(IntervalVar);
-//PY_CONVERT_HELPER_INTEXPR_OR_INTVAR(IntVar);
 
 // Convert RoutingModel::NodeIndex to (32-bit signed) integers.
 %typemap(in) operations_research::RoutingModel::NodeIndex {
@@ -66,6 +54,8 @@ bool PyObjAs(PyObject *py, operations_research::RoutingModel::NodeIndex* i) {
 %}
 PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
                        PyInt_Check, PyInt_FromLong);
+PY_LIST_LIST_INPUT_TYPEMAP(operations_research::RoutingModel::NodeIndex,
+                           PyInt_Check);
 // TODO(user): also support std::vector<std::vector<>> <-> list of list.
 
 // Create input mapping for NodeEvaluator2
@@ -113,26 +103,30 @@ bool PyObjAs(PyObject* py_obj,
 PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
                        PyCallable_Check, );
 
-%ignore operations_research::RoutingModel::AddVectorDimension(
-    const int64* values,
-    int64 capacity,
-    const std::string& name);
-
 %ignore operations_research::RoutingModel::AddMatrixDimension(
-    const int64* const* values,
+    std::vector<std::vector<int64> > values,
     int64 capacity,
     const std::string& name);
 
 %extend operations_research::RoutingModel {
-  void AddVectorDimension(const std::vector<int64>& values,
-                          int64 capacity,
-                          bool fix_start_cumul_to_zero,
-                          const std::string& name) {
-    DCHECK_EQ(values.size(), $self->nodes());
-    $self->AddVectorDimension(values.data(), capacity,
-                             fix_start_cumul_to_zero, name);
+  void AddMatrixDimension(
+    const std::vector<std::vector<int64> >& values,
+    int64 capacity,
+    bool fix_start_cumul_to_zero,
+    const std::string& name) {
+    $self->AddMatrixDimension(values, capacity, fix_start_cumul_to_zero, name);
   }
 }
+
+%ignore operations_research::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+
+PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
+                 RoutingModelParameters,
+                 operations_research::RoutingModelParameters)
+PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
+                 RoutingSearchParameters,
+                 operations_research::RoutingSearchParameters)
 
 %ignore operations_research::RoutingModel::WrapIndexEvaluator(
     Solver::IndexEvaluator2* evaluator);
@@ -140,6 +134,11 @@ PY_LIST_OUTPUT_TYPEMAP(operations_research::RoutingModel::NodeEvaluator2*,
 %ignore operations_research::RoutingModel::RoutingModel(
     int nodes, int vehicles,
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+
+%ignore operations_research::RoutingModel::RoutingModel(
+    int nodes, int vehicles,
+    const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end,
+    const RoutingModelParameters& parameters);
 
 // Wrap cp includes
 %include "constraint_solver/routing.h"

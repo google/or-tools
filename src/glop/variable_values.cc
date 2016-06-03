@@ -96,9 +96,9 @@ Fractional VariableValues::ComputeMaximumPrimalInfeasibility() const {
   const ColIndex num_cols = matrix_.num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional value = variable_values_[col];
-    primal_infeasibility =
-        std::max(primal_infeasibility,
-            std::max(lower_bounds[col] - value, value - upper_bounds[col]));
+    primal_infeasibility = std::max(
+        primal_infeasibility,
+        std::max(lower_bounds[col] - value, value - upper_bounds[col]));
   }
   return primal_infeasibility;
 }
@@ -111,7 +111,8 @@ Fractional VariableValues::ComputeSumOfPrimalInfeasibilities() const {
   const ColIndex num_cols = matrix_.num_cols();
   for (ColIndex col(0); col < num_cols; ++col) {
     const Fractional value = variable_values_[col];
-    sum += std::max(0.0, std::max(lower_bounds[col] - value, value - upper_bounds[col]));
+    sum += std::max(
+        0.0, std::max(lower_bounds[col] - value, value - upper_bounds[col]));
   }
   return sum;
 }

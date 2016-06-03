@@ -36,8 +36,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 
@@ -67,7 +67,7 @@ def my_cumulative(solver, s, d, r, b):
   tasks = [i for i in range(len(s)) if r[i] > 0 and d[i] > 0]
   times_min = min([s[i].Min() for i in tasks])
   times_max = max([s[i].Max() + max(d) for i in tasks])
-  for t in xrange(times_min, times_max + 1):
+  for t in range(times_min, times_max + 1):
     bb = []
     for i in tasks:
       c1 = solver.IsLessOrEqualCstVar(s[i], t)  # s[i] <= t
@@ -156,20 +156,20 @@ def main():
   num_solutions = 0
   while solver.NextSolution():
     num_solutions += 1
-    print "num_resources:", num_resources.Value()
-    print "start_times  :", [start_times[i].Value() for i in range(n)]
-    print "duration     :", [duration[i] for i in range(n)]
-    print "end_times    :", [end_times[i].Value() for i in range(n)]
-    print "end_time     :", end_time.Value()
-    print
+    print("num_resources:", num_resources.Value())
+    print("start_times  :", [start_times[i].Value() for i in range(n)])
+    print("duration     :", [duration[i] for i in range(n)])
+    print("end_times    :", [end_times[i].Value() for i in range(n)])
+    print("end_time     :", end_time.Value())
+    print()
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 if __name__ == "__main__":
   main()

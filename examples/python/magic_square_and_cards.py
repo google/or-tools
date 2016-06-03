@@ -28,7 +28,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-import string
+from __future__ import print_function
 import sys
 from ortools.constraint_solver import pywrapcp
 
@@ -57,7 +57,7 @@ def main(n=3):
   #
   # constraints
   #
-  solver.Add(solver.Distribute(x_flat, range(14), counts))
+  solver.Add(solver.Distribute(x_flat, list(range(14)), counts))
 
   # the standard magic square constraints (sans all_different)
   [solver.Add(solver.Sum([x[(i, j)] for j in range(n)]) == s) for i in range(n)]
@@ -88,26 +88,26 @@ def main(n=3):
   solver.NewSearch(db, [objective])
   num_solutions = 0
   while solver.NextSolution():
-    print "s:", s.Value()
-    print "counts:", [counts[i].Value() for i in range(14)]
+    print("s:", s.Value())
+    print("counts:", [counts[i].Value() for i in range(14)])
     for i in range(n):
       for j in range(n):
-        print x[(i, j)].Value(),
-      print
+        print(x[(i, j)].Value(), end=' ')
+      print()
 
-    print
+    print()
     num_solutions += 1
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 n = 3
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    n = string.atoi(sys.argv[1])
+    n = int(sys.argv[1])
   main(n)

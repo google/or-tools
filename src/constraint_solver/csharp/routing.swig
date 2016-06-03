@@ -15,6 +15,14 @@
 
 %include "constraint_solver/csharp/constraint_solver.swig"
 
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../routing.h" %}.
+namespace operations_research {
+class RoutingModelParameters;
+class RoutingSearchParameters;
+}  // namespace operations_research
+
 // Include the file we want to wrap a first time.
 %{
 #include "constraint_solver/routing.h"
@@ -111,7 +119,7 @@ CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int)
 
 // Create input mapping for NodeEvaluator2 and LongResultCallbackN
 // Callback wrapping.
-// TODO(viger): split out the callback code; it creates another file since
+// TODO(user): split out the callback code; it creates another file since
 // it uses a different module.
 %{
 class LongResultCallback1 {
@@ -240,6 +248,9 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
     int64 capacity,
     const std::string& name);
 
+%ignore operations_research::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+
 %extend operations_research::RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,
@@ -259,6 +270,18 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
 
 %rename("%(camelcase)s", %$isfunction) "";
+
+// Protobuf support
+PROTO_INPUT(operations_research::RoutingSearchParameters,
+            Google.OrTools.ConstraintSolver.RoutingSearchParameters,
+            search_parameters)
+PROTO_INPUT(operations_research::RoutingModelParameters,
+            Google.OrTools.ConstraintSolver.RoutingModelParameters,
+            parameters)
+PROTO2_RETURN(operations_research::RoutingSearchParameters,
+              Google.OrTools.ConstraintSolver.RoutingSearchParameters)
+PROTO2_RETURN(operations_research::RoutingModelParameters,
+              Google.OrTools.ConstraintSolver.RoutingModelParameters)
 
 // Wrap cp includes
 %include constraint_solver/routing.h

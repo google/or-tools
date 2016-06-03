@@ -204,20 +204,49 @@ bool FzPresolver::PresolveIntNe(FzConstraint* ct) {
 
 // Bound propagation on comparisons: int_le, bool_le, int_lt, bool_lt,
 //                                   int_ge, bool_ge, int_gt, bool_gt.
+//
 // Rule 1:
+// Input : int_XX(c1, c2) or bool_xx(c1, c2) with xx = lt, le, gt, ge
+// Output: True or False constraint
+// Rule 2:
 // Input : int_xx(x, c) or int_xx(c, x) or bool_xx(x, c) or bool_xx(c, x)
 //          with xx == lt, le, gt, ge
 // Action: Reduce domain of x.
 // Output: constraint is inactive.
 //
-// Rule 2:
+// Rule 3:
 // Input : int_xx(x, y) or bool_xx(x, y) with xx == lt, le, gt, ge.
 // Action: Reduce domain of x and y.
 // Output: constraint is still active.
 bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
   const std::string& id = ct->type;
+  if (ct->Arg(0).variables.empty() && ct->Arg(1).variables.empty()) {
+    // Rule 1
+    const int64 left = ct->Arg(0).Value();
+    const int64 right = ct->Arg(1).Value();
+    bool result = true;
+    if (id == "int_le" || id == "bool_le") {
+      result = left <= right;
+    } else if (id == "int_lt" || id == "bool_lt") {
+      result = left < right;
+    } else if (id == "int_ge" || id == "bool_ge") {
+      result = left >= right;
+    } else if (id == "int_gt" || id == "bool_gt") {
+      result = left > right;
+    }
+    if (result) {
+      FZVLOG << "Propagate " << ct->DebugString() << FZENDL;
+      ct->MarkAsInactive();
+    } else {
+      FZVLOG << "Replace " << ct->DebugString() << " by a false constraint"
+             << FZENDL;
+      ct->type = "false_constraint";
+    }
+    return true;
+  }
+
   if (ct->Arg(0).IsVariable() && ct->Arg(1).HasOneValue()) {
-    // Rule 1 where the 'var' is the left operand, eg. var <= 5
+    // Rule 2 where the 'var' is the left operand, eg. var <= 5
     FzIntegerVariable* const var = ct->Arg(0).Var();
     const int64 value = ct->Arg(1).Value();
     if (id == "int_le" || id == "bool_le") {
@@ -232,7 +261,7 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
     ct->MarkAsInactive();
     return true;
   } else if (ct->Arg(0).HasOneValue() && ct->Arg(1).IsVariable()) {
-    // Rule 1 where the 'var' is the right operand, eg 5 <= var
+    // Rule 2 where the 'var' is the right operand, eg 5 <= var
     FzIntegerVariable* const var = ct->Arg(1).Var();
     const int64 value = ct->Arg(0).Value();
     if (id == "int_le" || id == "bool_le") {
@@ -247,7 +276,7 @@ bool FzPresolver::PresolveInequalities(FzConstraint* ct) {
     ct->MarkAsInactive();
     return true;
   }
-  // Rule 2.
+  // Rule 3.
   FzIntegerVariable* const left = ct->Arg(0).Var();
   const int64 left_min = left->Min();
   const int64 left_max = left->Max();
@@ -598,8 +627,19 @@ bool FzPresolver::PresolveBoolEqNeReif(FzConstraint* ct) {
     FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
     const int64 value = ct->Arg(1).Value();
     // Remove boolean value argument.
-    ct->arguments[1] = ct->Arg(2);
-    ct->arguments.pop_back();
+    ct->RemoveArg(1);
+    // Change type.
+    ct->type = ((ct->type == "bool_eq_reif" && value == 1) ||
+                (ct->type == "bool_ne_reif" && value == 0))
+                   ? "bool_eq"
+                   : "bool_not";
+    return true;
+  }
+  if (ct->Arg(0).HasOneValue()) {
+    FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
+    const int64 value = ct->Arg(0).Value();
+    // Remove boolean value argument.
+    ct->RemoveArg(0);
     // Change type.
     ct->type = ((ct->type == "bool_eq_reif" && value == 1) ||
                 (ct->type == "bool_ne_reif" && value == 0))
@@ -667,11 +707,7 @@ bool FzPresolver::SimplifyUnaryLinear(FzConstraint* ct) {
     ct->MutableArg(1)->type = FzArgument::INT_VALUE;
     ct->MutableArg(1)->variables.clear();
     ct->MutableArg(1)->values.push_back(rhs / coefficient);
-    if (ct->arguments.size() == 4) {
-      DCHECK(HasSuffixString(ct->type, "_reif"));
-      ct->arguments[2] = ct->Arg(3);
-    }
-    ct->arguments.pop_back();
+    ct->RemoveArg(2);
     // Change type (remove "_lin" part).
     DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
     ct->type.erase(3, 4);
@@ -712,11 +748,7 @@ bool FzPresolver::SimplifyBinaryLinear(FzConstraint* ct) {
   ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
   ct->MutableArg(1)->variables.clear();
   ct->MutableArg(1)->variables.push_back(second);
-  if (ct->arguments.size() == 4) {
-    DCHECK(HasSuffixString(ct->type, "_reif"));
-    ct->arguments[2] = ct->Arg(3);
-  }
-  ct->arguments.pop_back();
+  ct->RemoveArg(2);
   // Change type (remove "_lin" part).
   DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
   ct->type.erase(3, 4);
@@ -982,10 +1014,10 @@ bool FzPresolver::PresolveLinear(FzConstraint* ct) {
     ct->type = "int_lin_ge";
   } else if (ct->type == "int_lin_lt") {
     ct->type = "int_lin_gt";
-  } else if (ct->type == "int_lin_le") {
-    ct->type = "int_lin_ge";
-  } else if (ct->type == "int_lin_lt") {
-    ct->type = "int_lin_gt";
+  } else if (ct->type == "int_lin_ge") {
+    ct->type = "int_lin_le";
+  } else if (ct->type == "int_lin_gt") {
+    ct->type = "int_lin_lt";
   } else if (ct->type == "int_lin_le_reif") {
     ct->type = "int_lin_ge_reif";
   } else if (ct->type == "int_lin_ge_reif") {
@@ -1276,8 +1308,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
     ct->MutableArg(0)->variables.clear();
     ct->MutableArg(0)->values.push_back(value);
     ct->MutableArg(0)->type = FzArgument::INT_VALUE;
-    *ct->MutableArg(1) = ct->Arg(2);
-    ct->arguments.pop_back();
+    ct->RemoveArg(1);
     FZVLOG << "  -> " << ct->DebugString() << FZENDL;
     return true;
   }
@@ -1298,8 +1329,7 @@ bool FzPresolver::PresolveSimplifyElement(FzConstraint* ct) {
 
     if (start == 1) {
       ct->type = "int_eq";
-      ct->arguments[1] = ct->Arg(2);
-      ct->arguments.pop_back();
+      ct->RemoveArg(1);
     } else {
       // Rewrite constraint into a int_lin_eq
       ct->type = "int_lin_eq";
@@ -1362,8 +1392,7 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
     FZVLOG << "Rewrite " << ct->DebugString() << FZENDL;
     ct->type = "int_eq";
     ct->MutableArg(0)->variables[0] = expr;
-    ct->arguments[1] = ct->Arg(2);
-    ct->arguments.pop_back();
+    ct->RemoveArg(1);
     return true;
   } else if (ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
@@ -1547,7 +1576,7 @@ bool FzPresolver::SimplifyIntNeReif(FzConstraint* ct) {
         int_eq_reif_map_[ct->Arg(0).Var()][ct->Arg(1).Var()];
     ct->MutableArg(0)->variables[0] = opposite;
     ct->MutableArg(1)->variables[0] = ct->Arg(2).Var();
-    ct->arguments.pop_back();
+    ct->RemoveArg(2);
     ct->type = "bool_not";
     FZVLOG << "  -> " << ct->DebugString() << FZENDL;
     return true;
@@ -1593,9 +1622,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
     // Rule 1.
     const int64 value = ct->Arg(0).Value();
     FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
-    ct->arguments[0] = ct->arguments[1];
-    ct->arguments[1] = ct->arguments[2];
-    ct->arguments.pop_back();
+    ct->RemoveArg(0);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
     FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
@@ -1604,8 +1631,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
     // Rule 2.
     const int64 value = ct->Arg(1).Value();
     FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
-    ct->arguments[1] = ct->arguments[2];
-    ct->arguments.pop_back();
+    ct->RemoveArg(1);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
     FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
@@ -1614,7 +1640,7 @@ bool FzPresolver::PresolveBoolXor(FzConstraint* ct) {
     // Rule 3.
     const int64 value = ct->Arg(2).Value();
     FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
-    ct->arguments.pop_back();
+    ct->RemoveArg(2);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
     FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
@@ -1785,7 +1811,7 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
       ct->MutableArg(2)->type = FzArgument::INT_VAR_REF;
       ct->MutableArg(2)->values.clear();
       ct->MutableArg(2)->variables.push_back(target);
-      ct->arguments.pop_back();
+      ct->RemoveArg(3);
       FZVLOG << " -> " << ct->DebugString() << FZENDL;
       return true;
     }
@@ -1800,8 +1826,8 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
         ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
         ct->MutableArg(1)->variables.clear();
         ct->MutableArg(1)->variables.push_back(target);
-        ct->arguments.pop_back();
-        ct->arguments.pop_back();
+        ct->RemoveArg(3);
+        ct->RemoveArg(2);
         FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       } else {
@@ -1814,8 +1840,8 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
         ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
         ct->MutableArg(1)->variables.clear();
         ct->MutableArg(1)->variables.push_back(target);
-        ct->arguments.pop_back();
-        ct->arguments.pop_back();
+        ct->RemoveArg(3);
+        ct->RemoveArg(2);
         FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       }
@@ -1831,8 +1857,8 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
         ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
         ct->MutableArg(1)->variables.clear();
         ct->MutableArg(1)->variables.push_back(target);
-        ct->arguments.pop_back();
-        ct->arguments.pop_back();
+        ct->RemoveArg(3);
+        ct->RemoveArg(2);
         FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       } else {
@@ -1845,8 +1871,8 @@ bool FzPresolver::SimplifyIntLinEqReif(FzConstraint* ct) {
         ct->MutableArg(1)->type = FzArgument::INT_VAR_REF;
         ct->MutableArg(1)->variables.clear();
         ct->MutableArg(1)->variables.push_back(target);
-        ct->arguments.pop_back();
-        ct->arguments.pop_back();
+        ct->RemoveArg(3);
+        ct->RemoveArg(2);
         FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       }

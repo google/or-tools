@@ -42,24 +42,6 @@
 #include "util/saturated_arithmetic.h"
 #include "util/string_array.h"
 
-// TODO(user) Should these remains flags, or should they move to
-// SolverParameters?
-DEFINE_bool(cp_use_cumulative_edge_finder, true,
-            "Use the O(n log n) cumulative edge finding algorithm described "
-            "in 'Edge Finding Filtering Algorithm for Discrete  Cumulative "
-            "Resources in O(kn log n)' by Petr Vilim, CP 2009.");
-DEFINE_bool(cp_use_cumulative_time_table, true,
-            "Use a O(n^2) cumulative time table propagation algorithm.");
-DEFINE_bool(cp_use_sequence_high_demand_tasks, true,
-            "Use a sequence constraints for cumulative tasks that have a "
-            "demand greater than half of the capacity of the resource.");
-DEFINE_bool(cp_use_all_possible_disjunctions, true,
-            "Post temporal disjunctions for all pairs of tasks sharing a "
-            "cumulative resource and that cannot overlap because the sum of "
-            "their demand exceeds the capacity.");
-DEFINE_int32(cp_max_edge_finder_size, 50,
-             "Do not post the edge finder in the cumulative constraints if "
-             "it contains more than this number of tasks");
 
 namespace operations_research {
 namespace {
@@ -769,7 +751,7 @@ class RankedPropagator : public Constraint {
       if (++counter > ranked_first) {
         DCHECK(intervals_[first - 1]->MayBePerformed());
         partial_sequence_.RankFirst(s, first - 1);
-        VLOG(1) << "RankFirst " << first - 1 << " -> "
+        VLOG(2) << "RankFirst " << first - 1 << " -> "
                 << partial_sequence_.DebugString();
       }
     }
@@ -785,7 +767,7 @@ class RankedPropagator : public Constraint {
       last = previous_[last];
       if (++counter > ranked_last) {
         partial_sequence_.RankLast(s, last - 1);
-        VLOG(1) << "RankLast " << last - 1 << " -> "
+        VLOG(2) << "RankLast " << last - 1 << " -> "
                 << partial_sequence_.DebugString();
       }
     }
@@ -1380,21 +1362,16 @@ class EdgeFinder : public Constraint {
              IntVar* const capacity)
       : Constraint(solver),
         capacity_(capacity),
+        tasks_(tasks),
         by_start_min_(tasks.size()),
         by_end_max_(tasks.size()),
         by_end_min_(tasks.size()),
         lt_tree_(tasks.size(), capacity_->Max()),
-        dual_capacity_tree_(tasks.size()) {
-    // Populate
-    for (int i = 0; i < tasks.size(); ++i) {
-      by_start_min_[i] = tasks[i];
-      by_end_max_[i] = tasks[i];
-      by_end_min_[i] = tasks[i];
-    }
-  }
+        dual_capacity_tree_(tasks.size()),
+        has_zero_demand_tasks_(true) {}
 
   ~EdgeFinder() override {
-    STLDeleteElements(&by_start_min_);
+    STLDeleteElements(&tasks_);
     STLDeleteValues(&update_map_);
   }
 
@@ -1402,10 +1379,10 @@ class EdgeFinder : public Constraint {
     // Add the demons
     Demon* const demon = MakeDelayedConstraintDemon0(
         solver(), this, &EdgeFinder::InitialPropagate, "RangeChanged");
-    for (int i = 0; i < by_start_min_.size(); ++i) {
+    for (Task* const task : tasks_) {
       // Delay propagation, as this constraint is not incremental: we pay
       // O(n log n) each time the constraint is awakened.
-      by_start_min_[i]->WhenAnything(demon);
+      task->WhenAnything(demon);
     }
     capacity_->WhenRange(demon);
   }
@@ -1440,7 +1417,28 @@ class EdgeFinder : public Constraint {
   void InitPropagation() {
     // Clear the update stack
     start_min_update_.clear();
-    // sort y start min.
+    // Re_init vectors if has_zero_demand_tasks_ is true
+    if (has_zero_demand_tasks_.Value()) {
+      by_start_min_.clear();
+      by_end_min_.clear();
+      by_end_max_.clear();
+      // Only populate tasks with demand_min > 0.
+      bool zero_demand = false;
+      for (Task* const task : tasks_) {
+        if (task->DemandMin() > 0) {
+          by_start_min_.push_back(task);
+          by_end_min_.push_back(task);
+          by_end_max_.push_back(task);
+        } else {
+          zero_demand = true;
+        }
+      }
+      if (!zero_demand) {
+        has_zero_demand_tasks_.SetValue(solver(), false);
+      }
+    }
+
+    // sort by start min.
     std::sort(by_start_min_.begin(), by_start_min_.end(),
               StartMinLessThan<Task>);
     for (int i = 0; i < by_start_min_.size(); ++i) {
@@ -1597,6 +1595,9 @@ class EdgeFinder : public Constraint {
   // Capacity of the cumulative resource.
   IntVar* const capacity_;
 
+  // Initial vector of tasks
+  std::vector<Task*> tasks_;
+
   // Cumulative tasks, ordered by non-decreasing start min.
   std::vector<Task*> by_start_min_;
 
@@ -1621,6 +1622,9 @@ class EdgeFinder : public Constraint {
   // whose demand is d cannot end before by_end_max_[i], then it cannot start
   // before update_map_[d][i].
   UpdateMap update_map_;
+
+  // Has one task a demand min == 0
+  Rev<bool> has_zero_demand_tasks_;
 
   DISALLOW_COPY_AND_ASSIGN(EdgeFinder);
 };
@@ -1871,18 +1875,19 @@ class CumulativeConstraint : public Constraint {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
-    if (FLAGS_cp_use_cumulative_time_table) {
+    const ConstraintSolverParameters& params = solver()->parameters();
+    if (params.use_cumulative_time_table()) {
       PostOneSidedConstraint(false, false);
       PostOneSidedConstraint(true, false);
     }
-    if (FLAGS_cp_use_cumulative_edge_finder) {
+    if (params.use_cumulative_edge_finder()) {
       PostOneSidedConstraint(false, true);
       PostOneSidedConstraint(true, true);
     }
-    if (FLAGS_cp_use_sequence_high_demand_tasks) {
+    if (params.use_sequence_high_demand_tasks()) {
       PostHighDemandSequenceConstraint();
     }
-    if (FLAGS_cp_use_all_possible_disjunctions) {
+    if (params.use_all_possible_disjunctions()) {
       PostAllDisjunctions();
     }
   }
@@ -1999,7 +2004,8 @@ class CumulativeConstraint : public Constraint {
     } else {
       Solver* const s = solver();
       if (edge_finder) {
-        return useful_tasks.size() < FLAGS_cp_max_edge_finder_size
+        const ConstraintSolverParameters& params = solver()->parameters();
+        return useful_tasks.size() < params.max_edge_finder_size()
                    ? s->RevAlloc(new EdgeFinder<CumulativeTask>(s, useful_tasks,
                                                                 capacity_))
                    : nullptr;
@@ -2052,18 +2058,19 @@ class VariableDemandCumulativeConstraint : public Constraint {
     // For the cumulative constraint, there are many propagators, and they
     // don't dominate each other. So the strongest propagation is obtained
     // by posting a bunch of different propagators.
-    if (FLAGS_cp_use_cumulative_time_table) {
+    const ConstraintSolverParameters& params = solver()->parameters();
+    if (params.use_cumulative_time_table()) {
       PostOneSidedConstraint(false, false);
       PostOneSidedConstraint(true, false);
     }
-    if (FLAGS_cp_use_cumulative_edge_finder) {
+    if (params.use_cumulative_edge_finder()) {
       PostOneSidedConstraint(false, true);
       PostOneSidedConstraint(true, true);
     }
-    if (FLAGS_cp_use_sequence_high_demand_tasks) {
+    if (params.use_sequence_high_demand_tasks()) {
       PostHighDemandSequenceConstraint();
     }
-    if (FLAGS_cp_use_all_possible_disjunctions) {
+    if (params.use_all_possible_disjunctions()) {
       PostAllDisjunctions();
     }
   }

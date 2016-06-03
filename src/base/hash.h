@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_BASE_HASH_H_
 #define OR_TOOLS_BASE_HASH_H_
 
-// Hash maps and hash sets are compiler dependant.
+// Hash maps and hash sets are compiler dependent.
 #if defined(__GNUC__) && !defined(STLPORT)
 #include <ext/hash_map>
 #include <ext/hash_set>
@@ -196,7 +196,7 @@ struct hash<std::array<T, N>> {
   bool operator()(const std::array<T, N>& a, const std::array<T, N>& b) const {
     return a < b;
   }
-  static const size_t bucket_size = 4;  // These are required by MSVC
+  static const size_t bucket_size = 4;  // These are required by MSVC.
   static const size_t min_buckets = 8;  // 4 and 8 are defaults.
 };
 #endif  // STLPORT
@@ -213,8 +213,19 @@ using HASH_NAMESPACE::hash_set;
 // Microsoft Visual C++ port
 // --------------------------------------------------------------------------
 #ifdef _MSC_VER
-// TODO(user): Nuke this section and merge with gcc version.
+// TODO(user): Nuke this section and merge with the gcc version.
 // The following class defines a hash function for std::pair<int64, int64>.
+template <class T> 
+class TypedIntHasher : public stdext::hash_compare<T> {
+ public:
+  size_t operator()(const T& a) const {
+    return static_cast<size_t>(a.value());
+  }
+  bool operator()(const T& a1, const T& a2) const {
+    return a1.value() < a2.value();
+  }
+};
+
 class PairInt64Hasher : public stdext::hash_compare<std::pair<int64, int64> > {
  public:
   size_t operator()(const std::pair<int64, int64>& a) const {
@@ -366,7 +377,7 @@ struct StdArrayHasher : public stdext::hash_compare<std::array<T, N>> {
   bool operator()(const std::array<T, N>& a, const std::array<T, N>& b) const {
     return a < b;
   }
-  static const size_t bucket_size = 4;  // These are required by MSVC
+  static const size_t bucket_size = 4;  // These are required by MSVC.
   static const size_t min_buckets = 8;  // 4 and 8 are defaults.
 };
 

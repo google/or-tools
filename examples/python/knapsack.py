@@ -15,14 +15,10 @@
 
 
 
-from google.apputils import app
-import gflags
 from ortools.algorithms import pywrapknapsack_solver
 
-FLAGS = gflags.FLAGS
 
-
-def main(unused_argv):
+def main():
   # Create the solver.
   solver = pywrapknapsack_solver.KnapsackSolver(
       pywrapknapsack_solver.KnapsackSolver.
@@ -45,8 +41,8 @@ def main(unused_argv):
   solver.Init(profits, weights, capacities)
   computed_profit = solver.Solve()
 
-  print 'optimal profit = ' + str(computed_profit) + '/' + str(optimal_profit)
+  print(('optimal profit = ' + str(computed_profit) + '/' + str(optimal_profit)))
 
 
 if __name__ == '__main__':
-  app.run()
+  main()

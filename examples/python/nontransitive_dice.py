@@ -67,8 +67,8 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
+from __future__ import print_function
 import sys
-import string
 from ortools.constraint_solver import pywrapcp
 
 
@@ -80,8 +80,8 @@ def main(m=3, n=6, minimize_val=0):
   #
   # data
   #
-  print "number of dice:", m
-  print "number of sides:", n
+  print("number of dice:", m)
+  print("number of sides:", n)
 
   #
   # declare variables
@@ -114,7 +114,7 @@ def main(m=3, n=6, minimize_val=0):
   #
 
   # number of occurrences for each number
-  solver.Add(solver.Distribute(dice_flat, range(n * 2 + 1), counts))
+  solver.Add(solver.Distribute(dice_flat, list(range(n * 2 + 1)), counts))
 
   solver.Add(max_win == solver.Max(comp_flat))
   solver.Add(max_val == solver.Max(dice_flat))
@@ -144,7 +144,7 @@ def main(m=3, n=6, minimize_val=0):
 
   # objective
   if minimize_val != 0:
-    print "Minimizing max_val"
+    print("Minimizing max_val")
     objective = solver.Minimize(max_val, 1)
     # other experiments
     # objective = solver.Maximize(max_win, 1)
@@ -164,32 +164,32 @@ def main(m=3, n=6, minimize_val=0):
 
   num_solutions = 0
   while solver.NextSolution():
-    print "gap_sum:", gap_sum.Value()
-    print "gap:", [gap[i].Value() for i in range(m)]
-    print "max_val:", max_val.Value()
-    print "max_win:", max_win.Value()
-    print "dice:"
+    print("gap_sum:", gap_sum.Value())
+    print("gap:", [gap[i].Value() for i in range(m)])
+    print("max_val:", max_val.Value())
+    print("max_win:", max_win.Value())
+    print("dice:")
     for i in range(m):
       for j in range(n):
-        print dice[(i, j)].Value(),
-      print
-    print "comp:"
+        print(dice[(i, j)].Value(), end=' ')
+      print()
+    print("comp:")
     for i in range(m):
       for j in range(2):
-        print comp[(i, j)].Value(),
-      print
-    print "counts:", [counts[i].Value() for i in range(n * 2 + 1)]
-    print
+        print(comp[(i, j)].Value(), end=' ')
+      print()
+    print("counts:", [counts[i].Value() for i in range(n * 2 + 1)])
+    print()
 
     num_solutions += 1
 
   solver.EndSearch()
 
-  print
-  print "num_solutions:", num_solutions
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
+  print()
+  print("num_solutions:", num_solutions)
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
 
 
 m = 3             # number of dice
@@ -197,10 +197,10 @@ n = 6             # number of sides of each die
 minimize_val = 0  # Minimizing max value (0: no, 1: yes)
 if __name__ == "__main__":
   if len(sys.argv) > 1:
-    m = string.atoi(sys.argv[1])
+    m = int(sys.argv[1])
   if len(sys.argv) > 2:
-    n = string.atoi(sys.argv[2])
+    n = int(sys.argv[2])
   if len(sys.argv) > 3:
-    minimize_val = string.atoi(sys.argv[3])
+    minimize_val = int(sys.argv[3])
 
   main(m, n, minimize_val)

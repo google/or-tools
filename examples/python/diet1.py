@@ -44,7 +44,7 @@
   Also see my other Google CP Solver models:
   http://www.hakank.org/google_or_tools/
 """
-
+from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
 
 
@@ -99,13 +99,13 @@ def main(unused_argv):
 
   # get the first (and only) solution
 
-  print "cost:", collector.ObjectiveValue(0)
-  print [("abcdefghij"[i], collector.Value(0, x[i])) for i in range(n)]
-  print
-  print "failures:", solver.Failures()
-  print "branches:", solver.Branches()
-  print "WallTime:", solver.WallTime()
-  print
+  print("cost:", collector.ObjectiveValue(0))
+  print([("abcdefghij"[i], collector.Value(0, x[i])) for i in range(n)])
+  print()
+  print("failures:", solver.Failures())
+  print("branches:", solver.Branches())
+  print("WallTime:", solver.WallTime())
+  print()
 
 
 if __name__ == "__main__":

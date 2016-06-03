@@ -14,10 +14,12 @@
 
 // A reader for files in the MPS format.
 // see http://lpsolve.sourceforge.net/5.5/mps-format.htm
-// and http://www.ici.ro/camo/language/ml11.htm
+// and http://www.ici.ro/camo/language/ml11.htm.
+//
 // MPS stands for Mathematical Programming System.
-// The format was invented by IBM in the 60's, and has become the de-facto
-// standard. We have developed this reader to be able to read benchmark data
+//
+// The format was invented by IBM in the 60's, and has become the de facto
+// standard. We developed this reader to be able to read benchmark data
 // files. Using the MPS file format for new models is discouraged.
 
 #ifndef OR_TOOLS_LP_DATA_MPS_READER_H_
@@ -53,8 +55,8 @@ typedef enum {
 
 // Reads a linear program in the mps format.
 //
-// All Load() methods clear the previously loaded instance and stores the result
-// in the given LinearProgram. They returns false in case of failure to read the
+// All Load() methods clear the previously loaded instance and store the result
+// in the given LinearProgram. They return false in case of failure to read the
 // instance.
 class MPSReader {
  public:
