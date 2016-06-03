@@ -79,7 +79,8 @@ $(GEN_DIR)/ortools/graph/pywrapgraph.py: \
 		$(SRC_DIR)/graph/python/graph.swig \
 		$(SRC_DIR)/graph/min_cost_flow.h \
 		$(SRC_DIR)/graph/max_flow.h \
-		$(SRC_DIR)/graph/ebert_graph.h
+		$(SRC_DIR)/graph/ebert_graph.h \
+		$(SRC_DIR)/graph/shortestpaths.h
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_python_wrap.cc -module pywrapgraph $(SRC_DIR)/graph$Spython$Sgraph.swig
 
 $(GEN_DIR)/ortools/graph/graph_python_wrap.cc: $(GEN_DIR)/ortools/graph/pywrapgraph.py
