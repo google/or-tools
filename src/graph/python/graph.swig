@@ -27,17 +27,19 @@
 // TODO(user): test all the APIs that are currently marked as 'untested'.
 
 %include "base/base.swig"
+%include "util/python/functions.swig"
 
 %import "graph/ebert_graph.h"
 
 // Convert the "std::vector<int>* result" parameters to python outputs.
 // Note: the typemap itself is in "base/base.swig".
-%apply std::vector<int>* OUTPUT {std::vector<int>* result}
+%apply std::vector<int>* OUTPUT {std::vector<int>* nodes}
 
 %{
 #include "graph/assignment.h"
 #include "graph/max_flow.h"
 #include "graph/min_cost_flow.h"
+#include "graph/shortestpaths.h"
 %}
 
 // ############ max_flow.h ############
@@ -137,5 +139,15 @@
 %unignore operations_research::SimpleLinearSumAssignment::AssignmentCost;
 
 %include "graph/assignment.h"
+
+%unignoreall
+
+%ignoreall
+
+%unignore DijkstraShortestPath;
+%unignore BellmanFordShortestPath;
+%unignore AStarShortestPath;
+
+%include "graph/shortestpaths.h"
 
 %unignoreall
