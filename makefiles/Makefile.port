@@ -21,6 +21,14 @@ ifeq ("$(SYSTEM)","unix")
     endif
   endif
   MCS = $(shell which mcs)
+  ifneq ($(MCS),)
+    MCS_VERSION = $(shell $(MCS) --version | grep -P '\d\.\d' -o | head -1)
+
+    ifneq ("4.2", "$(word 1,$(sort 4.2 $(MCS_VERSION)))")
+      MCS := $(null)
+      $(warning mcs version 4.2.0.0 or greater is required, csharp files will not be compiled)
+    endif
+  endif
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
     CODEPORT = OpSys-Linux
