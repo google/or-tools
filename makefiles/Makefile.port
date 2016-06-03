@@ -104,6 +104,7 @@ ifeq ("$(SYSTEM)","win")
     NETPLATFORM = x64
     PORT = VisualStudio$(VISUAL_STUDIO)-64b
     PTRLENGTH = 64
+    ARCH = /DARCH_K8
   else
     PLATFORM = WIN32
     ifeq ("$(VisualStudioVersion)", "14.0")

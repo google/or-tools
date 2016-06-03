@@ -62,7 +62,7 @@ $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.java: $(SRC_DIR
 $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.java: $(SRC_DIR)/constraint_solver/routing_enums.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --java_out=$(GEN_DIR) $(SRC_DIR)$Sconstraint_solver$Srouting_enums.proto
 
-$(LIB_DIR)/protobuf.jar: dependencies$Sinstall$Slib$Sprotobuf.jar
+$(LIB_DIR)/protobuf.jar: dependencies/install/lib/protobuf.jar
 	$(COPY) dependencies$Sinstall$Slib$Sprotobuf.jar $(LIB_DIR)
 
 $(LIB_DIR)/com.google.ortools.jar: \
