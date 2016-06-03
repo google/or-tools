@@ -9,12 +9,15 @@
     <description>.NET Assembly for the OR-Tools project</description>
     <releaseNotes>SVN Release VVVV.</releaseNotes>
     <copyright>Copyright 2016 Google</copyright>
-    <tags>OperationsResearch MathProgramming LinearProgramming C++ Python Java .NET</tags>
+    <tags>OperationsResearch MathProgramming LinearProgramming ConstraintProgramming .NET</tags>
+    <dependencies>
+    <dependency id="Google.Protobuf" version="3.0.0-beta2" />
+    </dependencies>
   </metadata>
   <files>
     <file src="bin\Google.OrTools.dll" target="lib\net40"/>
     <file src="examples\**\*.*" target="examples"/>
-    <file src="data\**\*.*" target="data"/>
+    <file src="examples\data\**\*.*" target="data"/>
     <file src="LICENSE-2.0.txt"/>
   </files>
 </package>

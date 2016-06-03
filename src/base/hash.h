@@ -215,6 +215,17 @@ using HASH_NAMESPACE::hash_set;
 #ifdef _MSC_VER
 // TODO(user): Nuke this section and merge with the gcc version.
 // The following class defines a hash function for std::pair<int64, int64>.
+template <class T> 
+class TypedIntHasher : public stdext::hash_compare<T> {
+ public:
+  size_t operator()(const T& a) const {
+    return static_cast<size_t>(a.value());
+  }
+  bool operator()(const T& a1, const T& a2) const {
+    return a1.value() < a2.value();
+  }
+};
+
 class PairInt64Hasher : public stdext::hash_compare<std::pair<int64, int64> > {
  public:
   size_t operator()(const std::pair<int64, int64>& a) const {

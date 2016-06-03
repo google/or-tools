@@ -412,7 +412,7 @@ ifeq ("$(SYSTEM)","win")
 	copy tools\or-tools.nuspec temp\or-tools
 	$(SED) -i -e "s/VVVV/$(GIT_REVISION)/g" temp\or-tools\or-tools.nuspec
 	cd temp\or-tools && nuget pack or-tools.nuspec
-	cd temp\or-tools && nuget push Google.OrTools.2.0.$(GIT_REVISION).nupkg
+	cd temp\or-tools && nuget push Google.OrTools.2.2.$(GIT_REVISION).nupkg
 endif
 
 dotnet_archive: csharp
