@@ -81,7 +81,7 @@ class Tsp
         RoutingModel.DefaultSearchParameters();
     // Setting first solution heuristic (cheapest addition).
     search_parameters.FirstSolutionStrategy =
-        FirstSolutionStrategy.Types.Value.PATH_CHEAPEST_ARC;
+        FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
     Assignment solution = routing.SolveWithParameters(search_parameters);
     if (solution != null) {
