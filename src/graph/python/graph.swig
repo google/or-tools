@@ -33,6 +33,7 @@
 
 // Convert the "std::vector<int>* result" parameters to python outputs.
 // Note: the typemap itself is in "base/base.swig".
+%apply std::vector<int>* OUTPUT {std::vector<int>* result}
 %apply std::vector<int>* OUTPUT {std::vector<int>* nodes}
 
 %{
