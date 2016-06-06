@@ -145,9 +145,9 @@
 
 %ignoreall
 
-%unignore DijkstraShortestPath;
-%unignore BellmanFordShortestPath;
-%unignore AStarShortestPath;
+%unignore operations_research::DijkstraShortestPath;
+%unignore operations_research::BellmanFordShortestPath;
+%unignore operations_research::AStarShortestPath;
 
 %include "graph/shortestpaths.h"
 
