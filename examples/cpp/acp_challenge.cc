@@ -161,13 +161,13 @@ class AcpData {
   int state_;
 };
 
-class RandomIntervalLns : public BaseLNS {
+class RandomIntervalLns : public BaseLns {
  public:
   RandomIntervalLns(const std::vector<IntVar*>& vars,
                     const std::vector<int> item_to_product,
                     int number_of_variables, int number_of_intervals,
                     int32 seed, int num_product)
-      : BaseLNS(vars),
+      : BaseLns(vars),
         item_to_product_(item_to_product),
         rand_(seed),
         number_of_variables_(number_of_variables),
@@ -183,13 +183,13 @@ class RandomIntervalLns : public BaseLNS {
 
   virtual void InitFragments() { state_ = 0; }
 
-  virtual bool NextFragment(std::vector<int>* fragment) {
+  virtual bool NextFragment() {
     switch (state_) {
       case 0: {
         for (int i = 0; i < number_of_intervals_; ++i) {
           const int start = rand_.Uniform(Size() - number_of_variables_);
           for (int pos = start; pos < start + number_of_variables_; ++pos) {
-            fragment->push_back(pos);
+            AppendToFragment(pos);
           }
         }
         break;
@@ -197,7 +197,7 @@ class RandomIntervalLns : public BaseLNS {
       case 1: {
         for (int i = 0; i < number_of_variables_ * number_of_intervals_; ++i) {
           const int pos = rand_.Uniform(Size());
-          fragment->push_back(pos);
+          AppendToFragment(pos);
         }
         break;
       }
@@ -205,7 +205,7 @@ class RandomIntervalLns : public BaseLNS {
         const int length = number_of_intervals_ * number_of_variables_;
         const int start = rand_.Uniform(Size() - length);
         for (int pos = start; pos < start + length; ++pos) {
-          fragment->push_back(pos);
+          AppendToFragment(pos);
         }
         break;
       }
@@ -216,7 +216,7 @@ class RandomIntervalLns : public BaseLNS {
         }
         for (int i = 0; i < Size(); ++i) {
           if (ContainsKey(to_release, item_to_product_[Value(i)])) {
-            fragment->push_back(i);
+            AppendToFragment(i);
           }
         }
         break;
