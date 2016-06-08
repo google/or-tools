@@ -150,7 +150,7 @@ void SparseMatrix::AppendUnitVector(RowIndex row, Fractional value) {
   DCHECK_LT(row, num_rows_);
   SparseColumn new_col;
   new_col.SetCoefficient(row, value);
-  columns_.push_back(new_col);
+  columns_.push_back(std::move(new_col));
 }
 
 void SparseMatrix::Swap(SparseMatrix* matrix) {

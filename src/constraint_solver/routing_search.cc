@@ -412,7 +412,7 @@ class ChainCumulFilter : public BasePathFilter {
   std::vector<int64> start_to_vehicle_;
   std::vector<int64> start_to_end_;
   std::vector<const RoutingModel::TransitEvaluator2*> evaluators_;
-  RoutingModel::VehicleEvaluator* const capacity_evaluator_;
+  const std::vector<int64> vehicle_capacities_;
   std::vector<int64> current_path_cumul_mins_;
   std::vector<int64> current_max_of_path_end_cumul_mins_;
   std::vector<int64> old_nexts_;
@@ -428,7 +428,7 @@ ChainCumulFilter::ChainCumulFilter(const RoutingModel& routing_model,
                      objective_callback),
       cumuls_(dimension.cumuls()),
       evaluators_(routing_model.vehicles(), nullptr),
-      capacity_evaluator_(dimension.capacity_evaluator()),
+      vehicle_capacities_(dimension.vehicle_capacities()),
       current_path_cumul_mins_(dimension.cumuls().size(), 0),
       current_max_of_path_end_cumul_mins_(dimension.cumuls().size(), 0),
       old_nexts_(routing_model.Size(), kUnassigned),
@@ -479,9 +479,7 @@ void ChainCumulFilter::OnSynchronizePathFromStart(int64 start) {
 bool ChainCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
                                   int64 chain_end) {
   const int vehicle = start_to_vehicle_[path_start];
-  const int64 capacity = capacity_evaluator_ == nullptr
-                             ? kint64max
-                             : capacity_evaluator_->Run(vehicle);
+  const int64 capacity = vehicle_capacities_[vehicle];
   int64 node = chain_start;
   int64 cumul = current_path_cumul_mins_[node];
   while (node != chain_end) {
@@ -631,7 +629,7 @@ class PathCumulFilter : public BasePathFilter {
   std::vector<int64> vehicle_span_cost_coefficients_;
   bool has_nonzero_vehicle_span_cost_coefficients_;
   IntVar* const cost_var_;
-  RoutingModel::VehicleEvaluator* const capacity_evaluator_;
+  const std::vector<int64> vehicle_capacities_;
   // Data reflecting information on paths and cumul variables for the solution
   // to which the filter was synchronized.
   SupportedPathCumul current_min_start_;
@@ -666,7 +664,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
           dimension.vehicle_span_cost_coefficients()),
       has_nonzero_vehicle_span_cost_coefficients_(false),
       cost_var_(routing_model.CostVar()),
-      capacity_evaluator_(dimension.capacity_evaluator()),
+      vehicle_capacities_(dimension.vehicle_capacities()),
       delta_max_end_cumul_(kint64min),
       name_(dimension.name()),
       lns_detected_(false) {
@@ -866,9 +864,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   int64 total_transit = 0;
   const int path = delta_path_transits_.AddPaths(1);
   const int vehicle = start_to_vehicle_[path_start];
-  const int64 capacity = capacity_evaluator_ == nullptr
-                             ? kint64max
-                             : capacity_evaluator_->Run(vehicle);
+  const int64 capacity = vehicle_capacities_[vehicle];
   // Evaluating route length to reserve memory to store transit information.
   int number_of_route_arcs = 0;
   while (node < Size()) {

@@ -442,7 +442,8 @@ class LinearProgram {
       const DenseRow& variable_upper_bounds);
 
   // Returns true if the linear program is in equation form Ax = 0 and all slack
-  // variables have been added.
+  // variables have been added. This is also called "computational form" in some
+  // of the literature.
   bool IsInEquationForm() const;
 
  private:

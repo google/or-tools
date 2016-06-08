@@ -700,31 +700,42 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
 
 void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
   objective_limit_reached_ = false;
-  // NOTE(user): If objective_scaling_factor_ is negative, the optimization
-  // direction was reversed (during preprocessing or inside revised simplex),
-  // i.e., the original problem is maximization. In such case the _meaning_ of
-  // the lower and upper limits is swapped. To this end we must change the
-  // signs of limits, which happens automatically when calculating shifted
-  // limits. We must also use upper (resp. lower) limit in place of lower
-  // (resp. upper) limit when calculating the final objective_limit_.
   DCHECK(std::isfinite(objective_offset_));
   DCHECK(std::isfinite(objective_scaling_factor_));
   DCHECK_NE(0.0, objective_scaling_factor_);
-  const bool use_dual = parameters_.use_dual_simplex();
-  // Choose lower limit if using the dual simplex and scaling factor is negative
-  // or if using the primal simplex and scaling is nonnegative, upper limit
-  // otherwise.
-  const Fractional limit = (objective_scaling_factor_ >= 0.0) != use_dual
-                               ? parameters_.objective_lower_limit()
-                               : parameters_.objective_upper_limit();
-  const Fractional shifted_limit =
-      limit / objective_scaling_factor_ - objective_offset_;
+
+  // This sets dual_objective_limit_ and then primal_objective_limit_.
   const Fractional tolerance = parameters_.solution_feasibility_tolerance();
-  const Fractional tolerance_factor =
-      use_dual ? 1.0 + tolerance : 1.0 - tolerance;
-  // Avoid generating NaNs with clang in fast-math mode on iOS 9.3.
-  objective_limit_ = std::isfinite(shifted_limit) ? shifted_limit * tolerance_factor
-                                             : shifted_limit;
+  for (const bool set_dual : {true, false}) {
+    // NOTE(user): If objective_scaling_factor_ is negative, the optimization
+    // direction was reversed (during preprocessing or inside revised simplex),
+    // i.e., the original problem is maximization. In such case the _meaning_ of
+    // the lower and upper limits is swapped. To this end we must change the
+    // signs of limits, which happens automatically when calculating shifted
+    // limits. We must also use upper (resp. lower) limit in place of lower
+    // (resp. upper) limit when calculating the final objective_limit_.
+    //
+    // Choose lower limit if using the dual simplex and scaling factor is
+    // negative or if using the primal simplex and scaling is nonnegative, upper
+    // limit otherwise.
+    const Fractional limit = (objective_scaling_factor_ >= 0.0) != set_dual
+                                 ? parameters_.objective_lower_limit()
+                                 : parameters_.objective_upper_limit();
+    const Fractional shifted_limit =
+        limit / objective_scaling_factor_ - objective_offset_;
+
+    // The std::isfinite() test is there to avoid generating NaNs with clang in
+    // fast-math mode on iOS 9.3.i.
+    if (set_dual) {
+      dual_objective_limit_ = std::isfinite(shifted_limit)
+                                  ? shifted_limit * (1.0 + tolerance)
+                                  : shifted_limit;
+    } else {
+      primal_objective_limit_ = std::isfinite(shifted_limit)
+                                    ? shifted_limit * (1.0 - tolerance)
+                                    : shifted_limit;
+    }
+  }
 }
 
 void RevisedSimplex::InitializeVariableStatusesForWarmStart(
@@ -2096,10 +2107,11 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       }
 
       // Computing the objective at each iteration takes time, so we just
-      // check objective_limit_ when the basis is refactorized.
-      if (!feasibility_phase_ && ComputeObjectiveValue() < objective_limit_) {
+      // check the limit when the basis is refactorized.
+      if (!feasibility_phase_ &&
+          ComputeObjectiveValue() < primal_objective_limit_) {
         VLOG(1) << "Stopping the primal simplex because"
-                << " the objective limit " << objective_limit_
+                << " the objective limit " << primal_objective_limit_
                 << " has been reached.";
         problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
         objective_limit_reached_ = true;
@@ -2394,10 +2406,10 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
         variable_values_.ResetPrimalInfeasibilityInformation();
 
         // Computing the objective at each iteration takes time, so we just
-        // check objective_limit_ when the basis is refactorized.
-        if (ComputeObjectiveValue() > objective_limit_) {
+        // check the limit when the basis is refactorized.
+        if (ComputeObjectiveValue() > dual_objective_limit_) {
           VLOG(1) << "Stopping the dual simplex because"
-                  << " the objective limit " << objective_limit_
+                  << " the objective limit " << dual_objective_limit_
                   << " has been reached.";
           problem_status_ = ProblemStatus::DUAL_FEASIBLE;
           objective_limit_reached_ = true;

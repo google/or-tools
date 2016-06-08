@@ -217,7 +217,6 @@ class RoutingModel {
   typedef _RoutingModel_DimensionIndex DimensionIndex;
   typedef _RoutingModel_DisjunctionIndex DisjunctionIndex;
   typedef _RoutingModel_VehicleClassIndex VehicleClassIndex;
-  typedef ResultCallback1<int64, int64> VehicleEvaluator;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
   typedef std::function<int64(int64, int64)> TransitEvaluator2;
   typedef std::pair<int, int> NodePair;
@@ -402,12 +401,12 @@ class RoutingModel {
   // Takes ownership of both 'evaluator' and 'vehicle_capacity' callbacks.
   bool AddDimensionWithVehicleCapacity(NodeEvaluator2* evaluator,
                                        int64 slack_max,
-                                       VehicleEvaluator* vehicle_capacity,
+                                       std::vector<int64> vehicle_capacities,
                                        bool fix_start_cumul_to_zero,
                                        const std::string& name);
   bool AddDimensionWithVehicleTransitAndCapacity(
       const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
-      VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+      std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
       const std::string& name);
   // Creates a dimension where the transit variable is constrained to be
   // equal to 'value'; 'capacity' is the upper bound of the cumul variables.
@@ -454,17 +453,17 @@ class RoutingModel {
       const std::vector<NodeEvaluator2*>& pure_transits,
       const std::vector<VariableNodeEvaluator2*>& dependent_transits,
       const RoutingDimension* base_dimension, int64 slack_max,
-      VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+      std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
       const std::string& name) {
     return AddDimensionDependentDimensionWithVehicleCapacityInternal(
-        pure_transits, dependent_transits, base_dimension, slack_max, kint64max,
-        vehicle_capacity, fix_start_cumul_to_zero, name);
+        pure_transits, dependent_transits, base_dimension, slack_max,
+        std::move(vehicle_capacities), fix_start_cumul_to_zero, name);
   }
   // As above, but pure_transits are taken to be zero evaluators.
   bool AddDimensionDependentDimensionWithVehicleCapacity(
       const std::vector<VariableNodeEvaluator2*>& transits,
       const RoutingDimension* base_dimension, int64 slack_max,
-      VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+      std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
       const std::string& name);
   // Homogeneous versions of the functions above.
   bool AddDimensionDependentDimensionWithVehicleCapacity(
@@ -1063,19 +1062,19 @@ class RoutingModel {
   void AddNoCycleConstraintInternal();
   bool AddDimensionWithCapacityInternal(
       const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
-      int64 capacity, VehicleEvaluator* vehicle_capacity,
-      bool fix_start_cumul_to_zero, const std::string& dimension_name);
+      std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
+      const std::string& dimension_name);
   bool AddDimensionDependentDimensionWithVehicleCapacityInternal(
       const std::vector<NodeEvaluator2*>& pure_transits,
       const std::vector<VariableNodeEvaluator2*>& dependent_transits,
-      const RoutingDimension* base_dimension, int64 slack_max, int64 capacity,
-      VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+      const RoutingDimension* base_dimension, int64 slack_max,
+      std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
       const std::string& name);
   bool InitializeDimensionInternal(
       const std::vector<NodeEvaluator2*>& evaluators,
       const std::vector<VariableNodeEvaluator2*>& state_dependent_evaluators,
-      int64 slack_max, int64 capacity, VehicleEvaluator* vehicle_capacity,
-      bool fix_start_cumul_to_zero, RoutingDimension* dimension);
+      int64 slack_max, bool fix_start_cumul_to_zero,
+      RoutingDimension* dimension);
   DimensionIndex GetDimensionIndex(const std::string& dimension_name) const;
   uint64 GetFingerprintOfEvaluator(NodeEvaluator2* evaluator,
                                    bool fingerprint_arc_cost_evaluators) const;
@@ -1318,9 +1317,9 @@ class RoutingDimension {
   const std::vector<IntVar*>& transits() const { return transits_; }
   const std::vector<IntVar*>& slacks() const { return slacks_; }
 #if !defined(SWIGCSHARP) && !defined(SWIGJAVA)
-  // Returns the callback evaluating the capacity for vehicle indices.
-  RoutingModel::VehicleEvaluator* capacity_evaluator() const {
-    return capacity_evaluator_.get();
+  // Returns the capacities for all vehicles.
+  const std::vector<int64>& vehicle_capacities() const {
+    return vehicle_capacities_;
   }
   // Returns the callback evaluating the transit value between two node indices
   // for a given vehicle.
@@ -1518,17 +1517,16 @@ class RoutingDimension {
   };
 
   class SelfBased {};
-  RoutingDimension(RoutingModel* model, const std::string& name,
-                   const RoutingDimension* base_dimension);
-  RoutingDimension(RoutingModel* model, const std::string& name, SelfBased);
+  RoutingDimension(RoutingModel* model, std::vector<int64> vehicle_capacities,
+                   const std::string& name, const RoutingDimension* base_dimension);
+  RoutingDimension(RoutingModel* model, std::vector<int64> vehicle_capacities,
+                   const std::string& name, SelfBased);
   void Initialize(
-      RoutingModel::VehicleEvaluator* vehicle_capacity, int64 capacity,
       const std::vector<RoutingModel::NodeEvaluator2*>& transit_evaluators,
       const std::vector<RoutingModel::VariableNodeEvaluator2*>&
           state_dependent_node_evaluators,
       int64 slack_max);
-  void InitializeCumuls(RoutingModel::VehicleEvaluator* vehicle_capacity,
-                        int64 capacity);
+  void InitializeCumuls();
   void InitializeTransits(
       const std::vector<RoutingModel::NodeEvaluator2*>& transit_evaluators,
       const std::vector<RoutingModel::VariableNodeEvaluator2*>&
@@ -1547,7 +1545,7 @@ class RoutingDimension {
 
   std::vector<IntVar*> cumuls_;
   std::vector<IntVar*> capacity_vars_;
-  std::unique_ptr<RoutingModel::VehicleEvaluator> capacity_evaluator_;
+  const std::vector<int64> vehicle_capacities_;
   std::vector<IntVar*> transits_;
   std::vector<IntVar*> fixed_transits_;
   // "transit_evaluators_" does the indexing by vehicle, while

@@ -1259,53 +1259,57 @@ bool RoutingModel::AddDimension(NodeEvaluator2* evaluator, int64 slack_max,
                                 int64 capacity, bool fix_start_cumul_to_zero,
                                 const std::string& dimension_name) {
   const std::vector<NodeEvaluator2*> evaluators(vehicles_, evaluator);
-  return AddDimensionWithCapacityInternal(evaluators, slack_max, capacity,
-                                          nullptr, fix_start_cumul_to_zero,
-                                          dimension_name);
+  std::vector<int64> capacities(vehicles_, capacity);
+  return AddDimensionWithCapacityInternal(
+      evaluators, slack_max, std::move(capacities), fix_start_cumul_to_zero,
+      dimension_name);
 }
 
 bool RoutingModel::AddDimensionWithVehicleTransits(
     const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max, int64 capacity,
     bool fix_start_cumul_to_zero, const std::string& dimension_name) {
-  return AddDimensionWithCapacityInternal(evaluators, slack_max, capacity,
-                                          nullptr, fix_start_cumul_to_zero,
-                                          dimension_name);
+  std::vector<int64> capacities(vehicles_, capacity);
+  return AddDimensionWithCapacityInternal(
+      evaluators, slack_max, std::move(capacities), fix_start_cumul_to_zero,
+      dimension_name);
 }
 
 bool RoutingModel::AddDimensionWithVehicleCapacity(
     NodeEvaluator2* evaluator, int64 slack_max,
-    VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+    std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
     const std::string& dimension_name) {
   const std::vector<NodeEvaluator2*> evaluators(vehicles_, evaluator);
   return AddDimensionWithCapacityInternal(
-      evaluators, slack_max, kint64max, vehicle_capacity,
+      evaluators, slack_max, std::move(vehicle_capacities),
       fix_start_cumul_to_zero, dimension_name);
 }
 
 bool RoutingModel::AddDimensionWithVehicleTransitAndCapacity(
     const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
-    VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+    std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
     const std::string& dimension_name) {
   return AddDimensionWithCapacityInternal(
-      evaluators, slack_max, kint64max, vehicle_capacity,
+      evaluators, slack_max, std::move(vehicle_capacities),
       fix_start_cumul_to_zero, dimension_name);
 }
 
 bool RoutingModel::AddDimensionWithCapacityInternal(
-    const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max, int64 capacity,
-    VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+    const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
+    std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
     const std::string& dimension_name) {
+  CHECK_EQ(vehicles_, vehicle_capacities.size());
   return InitializeDimensionInternal(
-      evaluators, std::vector<VariableNodeEvaluator2*>(), slack_max, capacity,
-      vehicle_capacity, fix_start_cumul_to_zero,
-      new RoutingDimension(this, dimension_name, nullptr));
+      evaluators, std::vector<VariableNodeEvaluator2*>(), slack_max,
+      fix_start_cumul_to_zero,
+      new RoutingDimension(this, std::move(vehicle_capacities), dimension_name,
+                           nullptr));
 }
 
 bool RoutingModel::InitializeDimensionInternal(
     const std::vector<NodeEvaluator2*>& evaluators,
     const std::vector<VariableNodeEvaluator2*>& state_dependent_evaluators,
-    int64 slack_max, int64 capacity, VehicleEvaluator* vehicle_capacity,
-    bool fix_start_cumul_to_zero, RoutingDimension* dimension) {
+    int64 slack_max, bool fix_start_cumul_to_zero,
+    RoutingDimension* dimension) {
   CHECK(dimension != nullptr);
   CheckDepot();
   CHECK_EQ(vehicles_, evaluators.size());
@@ -1327,8 +1331,8 @@ bool RoutingModel::InitializeDimensionInternal(
       cached_state_dependent_evaluators.push_back(
           NewCachedStateDependentCallback(evaluator));
     }
-    dimension->Initialize(vehicle_capacity, capacity, cached_evaluators,
-                          cached_state_dependent_evaluators, slack_max);
+    dimension->Initialize(cached_evaluators, cached_state_dependent_evaluators,
+                          slack_max);
     solver_->AddConstraint(solver_->MakeDelayedPathCumul(
         nexts_, active_, dimension->cumuls(), dimension->transits()));
     if (fix_start_cumul_to_zero) {
@@ -1347,7 +1351,6 @@ bool RoutingModel::InitializeDimensionInternal(
     hash_set<VariableNodeEvaluator2*> dependent_evaluator_set(
         state_dependent_evaluators.begin(), state_dependent_evaluators.end());
     STLDeleteElements(&dependent_evaluator_set);
-    delete vehicle_capacity;
     return false;
   }
 }
@@ -1465,32 +1468,34 @@ IntExpr* MakeRangeMakeElementExpr(const RangeIntToIntFunction* callback,
 bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacityInternal(
     const std::vector<NodeEvaluator2*>& pure_transits,
     const std::vector<VariableNodeEvaluator2*>& dependent_transits,
-    const RoutingDimension* base_dimension, int64 slack_max, int64 capacity,
-    VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+    const RoutingDimension* base_dimension, int64 slack_max,
+    std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
     const std::string& name) {
+  CHECK_EQ(vehicles_, vehicle_capacities.size());
   RoutingDimension* new_dimension = nullptr;
   if (base_dimension == nullptr) {
-    new_dimension =
-        new RoutingDimension(this, name, RoutingDimension::SelfBased());
+    new_dimension = new RoutingDimension(this, std::move(vehicle_capacities),
+                                         name, RoutingDimension::SelfBased());
   } else {
-    new_dimension = new RoutingDimension(this, name, base_dimension);
+    new_dimension = new RoutingDimension(this, std::move(vehicle_capacities),
+                                         name, base_dimension);
   }
   return InitializeDimensionInternal(pure_transits, dependent_transits,
-                                     slack_max, capacity, vehicle_capacity,
-                                     fix_start_cumul_to_zero, new_dimension);
+                                     slack_max, fix_start_cumul_to_zero,
+                                     new_dimension);
 }
 
 bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
     const std::vector<VariableNodeEvaluator2*>& dependent_evaluators,
     const RoutingDimension* base_dimension, int64 slack_max,
-    VehicleEvaluator* vehicle_capacity, bool fix_start_cumul_to_zero,
+    std::vector<int64> vehicle_capacities, bool fix_start_cumul_to_zero,
     const std::string& name) {
   NodeEvaluator2* const zero_evaluator =
       NewPermanentCallback(&ReturnZero<NodeIndex, NodeIndex>);
   const std::vector<NodeEvaluator2*> pure_transits(vehicles_, zero_evaluator);
   return AddDimensionDependentDimensionWithVehicleCapacity(
       pure_transits, dependent_evaluators, base_dimension, slack_max,
-      vehicle_capacity, fix_start_cumul_to_zero, name);
+      std::move(vehicle_capacities), fix_start_cumul_to_zero, name);
 }
 
 bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
@@ -1500,9 +1505,10 @@ bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
   std::vector<NodeEvaluator2*> pure_evaluators(vehicles_, pure_transits);
   std::vector<VariableNodeEvaluator2*> transit_evaluators(vehicles_,
                                                      dependent_transits);
+  std::vector<int64> vehicle_capacities(vehicles_, vehicle_capacity);
   return AddDimensionDependentDimensionWithVehicleCapacityInternal(
       pure_evaluators, transit_evaluators, base_dimension, slack_max,
-      vehicle_capacity, nullptr, fix_start_cumul_to_zero, name);
+      std::move(vehicle_capacities), fix_start_cumul_to_zero, name);
 }
 
 bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
@@ -1829,9 +1835,7 @@ void RoutingModel::ComputeVehicleClasses() {
       vehicle_class.dimension_end_cumuls_min.push_back(end_cumul_var->Min());
       vehicle_class.dimension_end_cumuls_max.push_back(end_cumul_var->Max());
       vehicle_class.dimension_capacities.push_back(
-          dimension->capacity_evaluator() != nullptr
-              ? dimension->capacity_evaluator()->Run(vehicle)
-              : -1);
+          dimension->vehicle_capacities()[vehicle]);
       vehicle_class.dimension_evaluator_classes.push_back(
           dimension->vehicle_to_class(vehicle));
     }
@@ -4893,9 +4897,12 @@ IntVar* RoutingModel::SlackVar(int64 index, const std::string& name) const {
 const char RoutingModelVisitor::kLightElement[] = "LightElement";
 const char RoutingModelVisitor::kLightElement2[] = "LightElement2";
 
-RoutingDimension::RoutingDimension(RoutingModel* model, const std::string& name,
+RoutingDimension::RoutingDimension(RoutingModel* model,
+                                   std::vector<int64> vehicle_capacities,
+                                   const std::string& name,
                                    const RoutingDimension* base_dimension)
-    : base_dimension_(base_dimension),
+    : vehicle_capacities_(std::move(vehicle_capacities)),
+      base_dimension_(base_dimension),
       global_span_cost_coefficient_(0),
       model_(model),
       name_(name) {
@@ -4904,17 +4911,17 @@ RoutingDimension::RoutingDimension(RoutingModel* model, const std::string& name,
   vehicle_span_cost_coefficients_.assign(model->vehicles(), 0);
 }
 
-RoutingDimension::RoutingDimension(RoutingModel* model, const std::string& name,
-                                   SelfBased)
-    : RoutingDimension(model, name, this) {}
+RoutingDimension::RoutingDimension(RoutingModel* model,
+                                   std::vector<int64> vehicle_capacities,
+                                   const std::string& name, SelfBased)
+    : RoutingDimension(model, std::move(vehicle_capacities), name, this) {}
 
 void RoutingDimension::Initialize(
-    RoutingModel::VehicleEvaluator* vehicle_capacity, int64 capacity,
     const std::vector<RoutingModel::NodeEvaluator2*>& transit_evaluators,
     const std::vector<RoutingModel::VariableNodeEvaluator2*>&
         state_dependent_node_evaluators,
     int64 slack_max) {
-  InitializeCumuls(vehicle_capacity, capacity);
+  InitializeCumuls();
   InitializeTransits(transit_evaluators, state_dependent_node_evaluators,
                      slack_max);
 }
@@ -4990,13 +4997,17 @@ std::string LightRangeLessOrEqual::DebugString() const {
 
 }  // namespace
 
-void RoutingDimension::InitializeCumuls(
-    RoutingModel::VehicleEvaluator* vehicle_capacity, int64 capacity) {
+void RoutingDimension::InitializeCumuls() {
   Solver* const solver = model_->solver();
   const int size = model_->Size() + model_->vehicles();
-  solver->MakeIntVarArray(size, 0LL, capacity, name_, &cumuls_);
+  const auto capacity_range = std::minmax_element(vehicle_capacities_.begin(),
+                                                  vehicle_capacities_.end());
+  const int64 min_capacity = *capacity_range.first;
+  CHECK_GE(min_capacity, 0);
+  const int64 max_capacity = *capacity_range.second;
+  solver->MakeIntVarArray(size, 0LL, max_capacity, name_, &cumuls_);
   capacity_vars_.clear();
-  if (vehicle_capacity != nullptr) {
+  if (min_capacity != max_capacity) {
     solver->MakeIntVarArray(size, 0LL, kint64max, &capacity_vars_);
     for (int i = 0; i < size; ++i) {
       IntVar* const capacity_var = capacity_vars_[i];
@@ -5012,8 +5023,6 @@ void RoutingDimension::InitializeCumuls(
       }
     }
   }
-
-  capacity_evaluator_.reset(vehicle_capacity);
 }
 
 namespace {
@@ -5165,10 +5174,8 @@ void RoutingDimension::InitializeTransits(
 
 void RoutingDimension::CloseModel(bool use_light_propagation) {
   Solver* const solver = model_->solver();
-  RoutingModel::VehicleEvaluator* const vehicle_capacity =
-      capacity_evaluator_.get();
-  const auto capacity_lambda = [vehicle_capacity](int64 vehicle) {
-    return vehicle >= 0 ? vehicle_capacity->Run(vehicle) : kint64max;
+  const auto capacity_lambda = [this](int64 vehicle) {
+    return vehicle >= 0 ? vehicle_capacities_[vehicle] : kint64max;
   };
   for (int i = 0; i < capacity_vars_.size(); ++i) {
     IntVar* const vehicle_var = model_->VehicleVar(i);
