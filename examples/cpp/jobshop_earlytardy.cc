@@ -180,7 +180,7 @@ class TimePlacement : public DecisionBuilder {
     CHECK_EQ(MPSolver::OPTIMAL, mp_solver_.Solve());
 
     // Inject MIP solution into the CP part.
-    VLOG(1) << "MP cost = " << mp_solver_.objective_value();
+    VLOG(1) << "MP cost = " << mp_solver_.Objective().Value();
     for (int j = 0; j < jobs_to_tasks_.size(); ++j) {
       for (int t = 0; t < jobs_to_tasks_[j].size(); ++t) {
         IntervalVar* const first_task = jobs_to_tasks_[j][t];

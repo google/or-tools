@@ -40,10 +40,9 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
-#include "base/file.h"
-#include "base/filelinereader.h"
 #include "base/split.h"
 #include "util/string_array.h"
+#include "util/filelineiter.h"
 
 namespace operations_research {
 // A FlexibleJobShopData parses data files and stores all data internally for
@@ -86,18 +85,11 @@ class FlexibleJobShopData {
   // is only partially checked: bad inputs might cause undefined
   // behavior.
   void Load(const string& filename) {
-    FileLineReader reader(filename.c_str());
-    size_t found = filename.find_last_of("/\\");
-    if (found != string::npos) {
-      name_ = filename.substr(found + 1);
-    } else {
-      name_ = filename;
-    }
-    reader.set_line_callback(
-        NewPermanentCallback(this, &FlexibleJobShopData::ProcessNewLine));
-    reader.Reload();
-    if (!reader.loaded_successfully()) {
-      LOG(ERROR) << "Could not open flexible jobshop file";
+    for (const std::string& line : FileLines(filename)) {
+      if (line.empty()) {
+        continue;
+      }
+      ProcessNewLine(line);
     }
   }
 
@@ -138,10 +130,10 @@ class FlexibleJobShopData {
   }
 
  private:
-  void ProcessNewLine(char* const line) {
+  void ProcessNewLine(const std::string& line) {
     static const char kWordDelimiters[] = " ";
-    std::vector<string> words;
-    SplitStringUsing(line, kWordDelimiters, &words);
+    std::vector<string> words =
+        strings::Split(line, " ", strings::SkipEmpty());
     if (machine_count_ == -1 && words.size() > 1) {
       job_count_ = atoi32(words[0]);
       machine_count_ = atoi32(words[1]);

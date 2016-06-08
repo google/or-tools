@@ -17,7 +17,6 @@
 
 #include "base/commandlineflags.h"
 #include "base/file.h"
-#include "base/filelinereader.h"
 #include "base/hash.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -28,6 +27,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/routing.h"
 #include "util/tuple_set.h"
+#include "util/filelineiter.h"
 
 /* Data format
 15
@@ -80,16 +80,15 @@ class AcpData {
       : num_periods_(-1), num_products_(-1), inventory_cost_(0), state_(0) {}
 
   void Load(const std::string& filename) {
-    FileLineReader reader(filename.c_str());
-    reader.set_line_callback(
-        NewPermanentCallback(this, &AcpData::ProcessNewLine));
-    reader.Reload();
-    if (!reader.loaded_successfully()) {
-      LOG(ERROR) << "Could not open acp challenge file";
+    for (const std::string& line : FileLines(filename)) {
+      if (line.empty()) {
+        continue;
+      }
+      ProcessNewLine(line);
     }
   }
 
-  void ProcessNewLine(char* const line) {
+  void ProcessNewLine(const std::string& line) {
     const std::vector<std::string> words =
         strings::Split(line, " ", strings::SkipEmpty());
     if (words.empty()) return;
