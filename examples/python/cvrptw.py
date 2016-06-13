@@ -410,11 +410,8 @@ class Vehicles():
         self.vehicles = [Vehicle(idx, capacity, cost) for idx, capacity, cost
                          in zip(idxs, capacities, costs)]
 
-    def return_capacity_callback(self):
-
-        def cap_return(a): return(self.vehicles[a].capacity)
-
-        return cap_return
+    def get_vehicle_capacity_array(self):
+        return [vehicle.capacity for vehicle in self.vehicles]
 
     def get_total_capacity(self):
         return(sum([c.capacity for c in self.vehicles]))
@@ -619,8 +616,8 @@ def main():
     # vehicles to cover the demand, there is no point in going further.
     assert(customers.get_total_demand() < vehicles.get_total_capacity())
 
-    # Create callback functions for vehicle capacity
-    cap_fn = vehicles.return_capacity_callback()
+    # Create array of for vehicle capacities
+    cap_fn = vehicles.get_vehicle_capacity_array()
     # Set the starting nodes, and create a callback fn for the starting node.
     start_fn = vehicles.return_starting_callback(customers,
                                                  sameStartFinish=True)
