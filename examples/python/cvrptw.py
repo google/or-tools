@@ -410,9 +410,6 @@ class Vehicles():
         self.vehicles = [Vehicle(idx, capacity, cost) for idx, capacity, cost
                          in zip(idxs, capacities, costs)]
 
-    def get_vehicle_capacity_array(self):
-        return [vehicle.capacity for vehicle in self.vehicles]
-
     def get_total_capacity(self):
         return(sum([c.capacity for c in self.vehicles]))
 
@@ -616,8 +613,6 @@ def main():
     # vehicles to cover the demand, there is no point in going further.
     assert(customers.get_total_demand() < vehicles.get_total_capacity())
 
-    # Create array of for vehicle capacities
-    cap_fn = vehicles.get_vehicle_capacity_array()
     # Set the starting nodes, and create a callback fn for the starting node.
     start_fn = vehicles.return_starting_callback(customers,
                                                  sameStartFinish=True)
@@ -652,7 +647,7 @@ def main():
     null_capacity_slack = 0
     routing.AddDimensionWithVehicleCapacity(dem_fn,  # demand callback
                                             null_capacity_slack,
-                                            cap_fn,  # capacity callback
+                                            capacity,  # capacity array
                                             True,
                                             "Capacity")
     # Add a dimension for time and a limit on the total time_horizon
