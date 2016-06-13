@@ -43,10 +43,9 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
-#include "base/file.h"
-#include "base/filelinereader.h"
 #include "base/random.h"
 #include "base/split.h"
+#include "util/filelineiter.h"
 
 namespace operations_research {
 struct Task {
@@ -81,13 +80,11 @@ class EtJobShopData {
   void LoadJetFile(const std::string& filename) {
     LOG(INFO) << "Reading jet file " << filename;
     name_ = StringPrintf("JetData(%s)", filename.c_str());
-    FileLineReader reader(filename.c_str());
-    reader.set_line_callback(NewPermanentCallback(
-        this,
-        &EtJobShopData::ProcessNewJetLine));
-    reader.Reload();
-    if (!reader.loaded_successfully()) {
-      LOG(ERROR) << "Could not open jobshop file";
+    for (const std::string& line : FileLines(filename)) {
+      if (line.empty()) {
+        continue;
+      }
+      ProcessNewJetLine(line);
     }
   }
 
@@ -155,11 +152,12 @@ class EtJobShopData {
   }
 
  private:
-  void ProcessNewJetLine(char* const line) {
+  void ProcessNewJetLine(const std::string& line) {
     // TODO(user): more robust logic to support single-task jobs.
     static const char kWordDelimiters[] = " ";
-    std::vector<std::string> words;
-    SplitStringUsing(line, kWordDelimiters, &words);
+    std::vector<std::string> words =
+        strings::Split(line, " ", strings::SkipEmpty());
+
     if (words.size() == 2) {
       job_count_ = atoi32(words[0]);
       machine_count_ = atoi32(words[1]);

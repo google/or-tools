@@ -28,10 +28,9 @@ public partial class RoutingModel {
 
   public bool AddDimensionWithVehicleCapacity(
       NodeEvaluator2 evaluator, long slack_max,
-      LongResultCallback1 vehicle_capacity, bool fix_start_cumul_to_zero,
+      long[] vehicle_capacity, bool fix_start_cumul_to_zero,
       string name) {
     pinned_node_evaluator2_.Add(evaluator);
-    pinned_long_result_callback_1_.Add(vehicle_capacity);
     return AddDimensionWithVehicleCapacityAux(
         evaluator, slack_max, vehicle_capacity, fix_start_cumul_to_zero, name);
   }

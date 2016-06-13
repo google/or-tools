@@ -574,10 +574,11 @@ class RevisedSimplex {
 
   // Stop the algorithm and report feasibility if:
   // - The primal simplex is used, the problem is primal-feasible and the
-  //   current objective value is strictly lower than this bound.
+  //   current objective value is strictly lower than primal_objective_limit_.
   // - The dual simplex is used, the problem is dual-feasible and the current
-  //   objective value is strictly greater than this bound.
-  Fractional objective_limit_;
+  //   objective value is strictly greater than dual_objective_limit_.
+  Fractional primal_objective_limit_;
+  Fractional dual_objective_limit_;
 
   // Current objective (feasibility for Phase-I, user-provided for Phase-II).
   DenseRow current_objective_;

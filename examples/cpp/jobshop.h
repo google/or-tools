@@ -41,9 +41,8 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
-#include "base/file.h"
-#include "base/filelinereader.h"
 #include "base/split.h"
+#include "util/filelineiter.h"
 
 namespace operations_research {
 // ----- JobShopData -----
@@ -92,12 +91,11 @@ class JobShopData {
   // is only partially checked: bad inputs might cause undefined
   // behavior.
   void Load(const std::string& filename) {
-    FileLineReader reader(filename.c_str());
-    reader.set_line_callback(
-        NewPermanentCallback(this, &JobShopData::ProcessNewLine));
-    reader.Reload();
-    if (!reader.loaded_successfully()) {
-      LOG(ERROR) << "Could not open jobshop file";
+    for (const std::string& line : FileLines(filename)) {
+      if (line.empty()) {
+        continue;
+      }
+      ProcessNewLine(line);
     }
   }
 
@@ -120,7 +118,7 @@ class JobShopData {
   }
 
  private:
-  void ProcessNewLine(char* const line) {
+  void ProcessNewLine(const std::string& line) {
     // TODO(user): more robust logic to support single-task jobs.
     const std::vector<std::string> words =
         strings::Split(line, " ", strings::SkipEmpty());

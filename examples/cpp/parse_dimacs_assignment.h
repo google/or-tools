@@ -30,6 +30,7 @@
 #include "base/logging.h"
 #include "graph/ebert_graph.h"
 #include "graph/linear_assignment.h"
+#include "util/filelineiter.h"
 
 DECLARE_bool(assignment_maximize_cost);
 DECLARE_bool(assignment_optimize_layout);
@@ -62,30 +63,25 @@ class DimacsAssignmentParser {
                                         GraphType** graph);
 
  private:
-  void ParseProblemLine(const char* line);
+  void ParseProblemLine(const std::string& line);
 
-  void ParseNodeLine(const char* line);
+  void ParseNodeLine(const std::string& line);
 
-  void ParseArcLine(const char* line);
+  void ParseArcLine(const std::string& line);
 
-  void ParseOneLine(char* line);
-
-  void ParseFileByLines(const std::string& filename,
-                        Callback1<char*>* line_parser);
+  void ParseOneLine(const std::string& line);
 
   std::string filename_;
 
   struct ErrorTrackingState {
     ErrorTrackingState()
         : bad(false),
-          expect_last_line(false),
           nodes_described(false),
           reason(NULL),
           num_left_nodes(0),
           num_arcs(0) {}
 
     bool bad;
-    bool expect_last_line;
     bool nodes_described;
     const char* reason;
     NodeIndex num_left_nodes;
@@ -102,7 +98,7 @@ class DimacsAssignmentParser {
 
 // Implementation is below here.
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseProblemLine(const char* line) {
+void DimacsAssignmentParser<GraphType>::ParseProblemLine(const std::string& line) {
   static const char* kIncorrectProblemLine =
       "Incorrect assignment problem line.";
   static const char* kAssignmentProblemType = "asn";
@@ -110,7 +106,8 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(const char* line) {
   NodeIndex num_nodes;
   ArcIndex num_arcs;
 
-  if ((sscanf(line, "%*c%3s%d%d", problem_type, &num_nodes, &num_arcs) != 3) ||
+  if ((sscanf(line.c_str(), "%*c%3s%d%d", problem_type, &num_nodes,
+              &num_arcs) != 3) ||
       (strncmp(kAssignmentProblemType, problem_type,
                strlen(kAssignmentProblemType)) != 0)) {
     state_.bad = true;
@@ -125,9 +122,9 @@ void DimacsAssignmentParser<GraphType>::ParseProblemLine(const char* line) {
 }
 
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseNodeLine(const char* line) {
+void DimacsAssignmentParser<GraphType>::ParseNodeLine(const std::string& line) {
   NodeIndex node_id;
-  if (sscanf(line, "%*c%d", &node_id) != 1) {
+  if (sscanf(line.c_str(), "%*c%d", &node_id) != 1) {
     state_.bad = true;
     state_.reason = "Syntax error in node desciption.";
     state_.bad_line.reset(new std::string(line));
@@ -143,7 +140,7 @@ void DimacsAssignmentParser<GraphType>::ParseNodeLine(const char* line) {
 }
 
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseArcLine(const char* line) {
+void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
   if (graph_builder_ == NULL) {
     state_.bad = true;
     state_.reason =
@@ -160,7 +157,7 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const char* line) {
   NodeIndex tail;
   NodeIndex head;
   CostValue cost;
-  if (sscanf(line, "%*c%d%d%lld", &tail, &head, &cost) != 3) {
+  if (sscanf(line.c_str(), "%*c%d%d%lld", &tail, &head, &cost) != 3) {
     state_.bad = true;
     state_.reason = "Syntax error in arc descriptor.";
     state_.bad_line.reset(new std::string(line));
@@ -172,32 +169,10 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const char* line) {
 // Parameters out of style-guide order because this function is used
 // as a callback that varies the input line.
 template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseOneLine(char* line) {
+void DimacsAssignmentParser<GraphType>::ParseOneLine(const std::string& line) {
   if (state_.bad) {
     return;
   }
-
-  if (state_.expect_last_line) {
-    state_.bad = true;
-    state_.reason = "Input line is too long.";
-    // state_.bad_line was already set when we noticed the line
-    // didn't end with '\n'.
-    return;
-  }
-
-  size_t length = strlen(line);
-  // The final line might not end with newline. Any other line
-  // that seems not to is actually a line that was too long
-  // for our input buffer.
-  if (line[length - 1] != '\n') {
-    state_.expect_last_line = true;
-    // Prepare for the worst; we might need to inform the user of
-    // an error on this line even though we can't detect the error
-    // yet.
-    state_.bad_line.reset(new std::string(line));
-  }
-
-
   switch (line[0]) {
     case 'p': {
       // Problem-specification line
@@ -229,26 +204,6 @@ void DimacsAssignmentParser<GraphType>::ParseOneLine(char* line) {
   }
 }
 
-template <typename GraphType>
-void DimacsAssignmentParser<GraphType>::ParseFileByLines(
-    const std::string& filename,
-    Callback1<char*>* line_parser) {
-  FILE* fp = fopen(filename.c_str(), "r");
-  const int kMaximumLineSize = 1024;
-  char line[kMaximumLineSize];
-  if (fp != NULL) {
-    char* result;
-    do {
-      result = fgets(line, kMaximumLineSize, fp);
-      if (result != NULL) {
-        line_parser->Run(result);
-      }
-    } while (result != NULL);
-  }
-  delete line_parser;
-}
-
-
 // Reads an assignment problem description from the given file in
 // DIMACS format and returns a LinearSumAssignment object representing
 // the problem description. For a description of the format, see
@@ -267,10 +222,13 @@ LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
     std::string* error_message, GraphType** graph_handle) {
   CHECK_NOTNULL(error_message);
   CHECK_NOTNULL(graph_handle);
-  Callback1<char*>* cb = NewPermanentCallback(
-      this, &DimacsAssignmentParser<GraphType>::ParseOneLine);
-  // ParseFileByLines takes ownership of cb and deletes it.
-  ParseFileByLines(filename_, cb);
+
+  for (const std::string& line : FileLines(filename_)) {
+    if (line.empty()) {
+      continue;
+    }
+    ParseOneLine(line);
+  }
 
   if (state_.bad) {
     *error_message = state_.reason;

@@ -135,6 +135,59 @@ static int64 PyFunctionInt64Int64Int64ToInt64(PyObject* pyfunc,
   };
 }
 
+// Wrap std::function<int64(int)>
+
+%{
+static int64 PyFunctionIntToInt64(PyObject* pyfunc, int i) {
+  // () needed to force creation of one-element tuple
+  PyObject* pyresult = PyEval_CallFunction(pyfunc, "(i)", i);
+  int64 result = 0;
+  if (!pyresult) {
+    PyErr_SetString(PyExc_RuntimeError,
+                    "std::function<int64(int)> invocation failed.");
+  } else {
+    result = PyInt_AsLong(pyresult);
+    Py_DECREF(pyresult);
+  }
+  return result;
+}
+%}
+
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int)> {
+  $1 = PyCallable_Check($input);
+}
+
+%typemap(in) std::function<int64(int)> {
+  $1 = [$input](int index) { return PyFunctionIntToInt64($input, index); };
+}
+
+// Wrap std::function<int64(int, int)>
+
+%{
+static int64 PyFunctionIntIntToInt64(PyObject* pyfunc, int i, int j) {
+  PyObject* pyresult = PyEval_CallFunction(pyfunc, "ii", i, j);
+  int64 result = 0;
+  if (!pyresult) {
+    PyErr_SetString(PyExc_RuntimeError,
+                    "std::function<int64(int, int)> invocation failed.");
+  } else {
+    result = PyInt_AsLong(pyresult);
+    Py_DECREF(pyresult);
+  }
+  return result;
+}
+%}
+
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int, int)> {
+  $1 = PyCallable_Check($input);
+}
+
+%typemap(in) std::function<int64(int, int)> {
+  $1 = [$input](int i, int j) {
+    return PyFunctionIntIntToInt64($input, i, j);
+  };
+}
+
 // Wrap std::function<bool(int64)>
 
 %{

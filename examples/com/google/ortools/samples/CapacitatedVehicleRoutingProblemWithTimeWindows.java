@@ -19,7 +19,7 @@ import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.IntVar;
 import com.google.ortools.constraintsolver.NodeEvaluator2;
 import com.google.ortools.constraintsolver.RoutingModel;
-import com.google.ortools.constraintsolver.RoutingEnums.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
 import com.google.ortools.constraintsolver.RoutingSearchParameters;
 
 import java.util.ArrayList;

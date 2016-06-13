@@ -50,6 +50,20 @@ bool DijkstraShortestPath(int node_count, int start_node, int end_node,
 bool BellmanFordShortestPath(int node_count, int start_node, int end_node,
                              std::function<int64(int, int)> graph,
                              int64 disconnected_distance, std::vector<int>* nodes);
-}  // namespace operations_research
 
+// A* Shortest path with function based description of the
+// graph.  The graph function returns the distance between two nodes, a
+// distance of 'disconnected_distance' indicates no arcs between these
+// two nodes. Additionally, the heuristic callback returns a
+// an approximate distance between the node and the target, which guides
+// the search. If the heuristic is admissible (ie. never overestimates cost),
+// the A* algorithm returns an optimal solution.
+// This function returns true if 'start_node' and 'end_node' are
+// connected, false otherwise.
+bool AStarShortestPath(int node_count, int start_node, int end_node,
+                       std::function<int64(int, int)> graph,
+                       std::function<int64(int)> heuristic,
+                       int64 disconnected_distance, std::vector<int>* nodes);
+
+}  // namespace operations_research
 #endif  // OR_TOOLS_GRAPH_SHORTESTPATHS_H_

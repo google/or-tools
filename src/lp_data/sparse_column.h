@@ -44,15 +44,20 @@ class SparseColumn : public SparseVector<RowIndex> {
 template <>
 class SparseVector<RowIndex>::Entry {
  public:
-  RowIndex row() const { return sparse_column_.EntryRow(i_); }
-  Fractional coefficient() const { return sparse_column_.EntryCoefficient(i_); }
+  RowIndex row() const { return index_[i_.value()]; }
+  Fractional coefficient() const { return coefficient_[i_.value()]; }
 
  protected:
-  Entry(const SparseVector<RowIndex>& sparse_vector, EntryIndex i)
-      : sparse_column_(*static_cast<const SparseColumn*>(&sparse_vector)),
-        i_(i) {}
-  const SparseColumn& sparse_column_;
+  Entry(const SparseVector* sparse_vector, EntryIndex i)
+      : i_(i),
+        index_(sparse_vector->index_),
+        coefficient_(sparse_vector->coefficient_) {}
+
   EntryIndex i_;
+  const Index* index_;
+  const Fractional* coefficient_;
+
+  friend class SparseVector<RowIndex>::Iterator;
 };
 
 // TODO(user): create SparseRow and use it where appropriate.

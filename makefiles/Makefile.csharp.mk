@@ -66,13 +66,20 @@ csharpexe: $(CSHARPEXE)
 # Main target.
 ifeq ("$(SYSTEM)","unix")
 ifeq ($(MCS),)
+ifneq ($(REAL_MCS),)
+csharp: warn_mcs
+else   # REAL_MCS
 csharp:
-else #MCS
+endif  # REAL_MCS
+else   # MCS
 csharp: csharportools csharpexe
-endif # MCS
-else # Windows
+endif  # MCS
+else   # Windows
 csharp: csharportools csharpexe
-endif
+endif  # Windows
+
+warn_mcs:
+	$(warning mcs version 4.2.0.0 or greater is required, csharp files will not be compiled)
 
 # Clean target.
 clean_csharp:
