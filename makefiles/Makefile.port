@@ -20,16 +20,6 @@ ifeq ("$(SYSTEM)","unix")
       DETECTED_PYTHON_VERSION = 2.6
     endif
   endif
-  REAL_MCS = $(shell which mcs)
-  ifneq ($(REAL_MCS),)
-    MCS_VERSION = $(shell $(REAL_MCS) --version | grep -P '\d\.\d' -o | head -1)
-
-    ifneq ("4.2", "$(word 1,$(sort 4.2 $(MCS_VERSION)))")
-      MCS := $(null)
-    else
-      MCS := $(REAL_MCS)
-    endif
-  endif
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
     CODEPORT = OpSys-Linux
@@ -80,6 +70,21 @@ ifeq ("$(SYSTEM)","unix")
 
     SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
     MAC_MIN_VERSION = 10.8
+  endif
+
+  # Look at mono compiler.
+  REAL_MCS = $(shell which mcs)
+  ifneq ($(REAL_MCS),)
+    ifeq ($(PLATFORM),LINUX)
+      MCS_VERSION = $(shell $(REAL_MCS) --version | grep -P '\d\.\d' -o | head -1)
+    else # Mac OS X
+      MCS_VERSION = $(shell $(REAL_MCS) --Version | grep -E '\d\.\d' -o | head -1)
+    endif
+    ifneq ("4.2", "$(word 1,$(sort 4.2 $(MCS_VERSION)))")
+      MCS := $(null)
+    else
+      MCS := $(REAL_MCS)
+    endif
   endif
 endif
 
