@@ -184,8 +184,9 @@ class SatPropagator : public Constraint {
   sat::SatSolver* sat() { return &sat_; }
 
   virtual std::string DebugString() const {
-    return StringPrintf("SatConstraint(%d variables, %d constraints)",
-                        sat_.NumVariables(), sat_.NumAddedConstraints());
+    //    return StringPrintf("SatConstraint(%d variables, %d constraints)",
+    //                        sat_.NumVariables(), sat_.NumAddedConstraints());
+    return StringPrintf("SatConstraint(%d variables)", sat_.NumVariables());
   }
 
   void Accept(ModelVisitor* visitor) const {
@@ -532,6 +533,7 @@ SatPropagator* MakeSatPropagator(Solver* solver) {
 }
 
 int NumSatConstraints(SatPropagator* sat) {
-  return sat->sat()->NumAddedConstraints();
+  //  return sat->sat()->NumAddedConstraints();
+  return 0;
 }
 }  // namespace operations_research
