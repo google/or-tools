@@ -44,11 +44,11 @@ class SparseColumn : public SparseVector<RowIndex> {
 template <>
 class SparseVector<RowIndex>::Entry {
  public:
-  RowIndex row() const { return index_[i_.value()]; }
+  RowIndex row() const { return RowIndex(index_[i_.value()]); }
   Fractional coefficient() const { return coefficient_[i_.value()]; }
 
  protected:
-  Entry(const SparseVector* sparse_vector, EntryIndex i)
+  Entry(const SparseVector<RowIndex>* sparse_vector, EntryIndex i)
       : i_(i),
         index_(sparse_vector->index_),
         coefficient_(sparse_vector->coefficient_) {}
