@@ -870,6 +870,7 @@ namespace operations_research {
 %rename (NullIntersectExcept) Solver::MakeNullIntersectExcept;
 %rename (Circuit) Solver::MakeCircuit;
 %rename (MemberCt) Solver::MakeMemberCt;
+%rename (NotMemberCt) Solver::MakeNotMemberCt;
 %rename (SubCircuit) Solver::MakeSubCircuit;
 %rename (PathCumul) Solver::MakePathCumul;
 %rename (DelayedPathCumul) Solver::MakeDelayedPathCumul;
@@ -2239,4 +2240,3 @@ class PyConstraint(Constraint):
 
 
 }  // %pythoncode
-
