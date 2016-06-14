@@ -491,6 +491,10 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   Constraint* Member(const std::vector<int64>& values) {
     return $self->solver()->MakeMemberCt($self->Var(), values);
   }
+  Constraint* NotMember(const std::vector<int64>& starts,
+                        const std::vector<int64>& ends) {
+    return $self->solver()->MakeNotMemberCt($self, starts, ends);
+  }
 }
 
 // Add arithmetic operators to integer expressions.
@@ -2240,3 +2244,4 @@ class PyConstraint(Constraint):
 
 
 }  // %pythoncode
+

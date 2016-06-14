@@ -31,7 +31,9 @@ namespace operations_research {
 // defined in base/swig/python-swig.cc seems to cause issues, so we can't
 // use a generic, templated type checker.
 %define PY_LIST_OUTPUT_TYPEMAP(type, checker, py_converter)
-%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<type>& {
+%typecheck(SWIG_TYPECHECK_POINTER) const std::vector<type>&,
+                                   std::vector<type>,
+                                   const std::vector<type>* {
   if (!PyTuple_Check($input) && !PyList_Check($input)) {
     $1 = 0;
   } else {
