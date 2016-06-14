@@ -194,24 +194,49 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     reduced_costs_.MaintainDualInfeasiblePositions(true);
     RETURN_IF_ERROR(Minimize(time_limit));
     DisplayIterationInfo();
+
+    // After the primal phase I, we need to restore the objective.
+    current_objective_ = objective_;
+    reduced_costs_.ResetForNewObjective();
   }
+
+  // Reduced costs must be explicitly recomputed because DisaplayErrors() is
+  // const.
+  // TODO(user): This API is not really nice.
+  reduced_costs_.GetReducedCosts();
   DisplayErrors();
 
   feasibility_phase_ = false;
   feasibility_time_ = time_limit->GetElapsedTime() - start_time;
+  entering_variable_.SetPricingRule(parameters_.optimization_rule());
   num_feasibility_iterations_ = num_iterations_;
 
-  if (!FLAGS_simplex_stop_after_feasibility &&
-      (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
-       problem_status_ == ProblemStatus::DUAL_FEASIBLE)) {
-    VLOG(1) << "------ Second phase: optimization.";
-    if (!use_dual) {
-      current_objective_ = objective_;
-      reduced_costs_.ResetForNewObjective();
-      entering_variable_.SetPricingRule(parameters_.optimization_rule());
-    }
+  VLOG(1) << "------ Second phase: optimization.";
 
-    RETURN_IF_ERROR(use_dual ? DualMinimize(time_limit) : Minimize(time_limit));
+  // Because of shifts or perturbations, we may need to re-run a dual simplex
+  // after the primal simplex finished, or the opposite.
+  //
+  // We solve the primal (resp. dual) Phase II in the first iteration of the
+  // loop. The second iteration of the loop solves the dual (resp. primal) Phase
+  // II, and it is executed only if time permits and the solution from the first
+  // iteration was not precise after we removed the bound and cost shifts and
+  // perturbations.
+  const int max_num_optims = 2;
+  for (int num_optims = 0;
+       num_optims < max_num_optims && !time_limit->LimitReached() &&
+       !FLAGS_simplex_stop_after_feasibility &&
+       (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
+        problem_status_ == ProblemStatus::DUAL_FEASIBLE);
+       ++num_optims) {
+    if (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE) {
+      // Run the primal simplex.
+      reduced_costs_.MaintainDualInfeasiblePositions(true);
+      RETURN_IF_ERROR(Minimize(time_limit));
+    } else {
+      // Run the dual simplex.
+      reduced_costs_.MaintainDualInfeasiblePositions(false);
+      RETURN_IF_ERROR(DualMinimize(time_limit));
+    }
 
     // Minimize() or DualMinimize() always double check the result with maximum
     // precision by refactoring the basis before exiting (except if an
@@ -220,34 +245,70 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
            problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
            basis_factorization_.IsRefactorized());
 
-    // Remove the shifts.
+    // Remove the bound and cost shifts (or perturbations).
     //
-    // TODO(user): It is theoretically possible to not be at the optimal after
-    // this, deal with that. This is especially true for the
-    // ClearAndRemoveCostShifts() call when using the dual simplex. The standard
-    // algorithm is to re-run primal phase II in this case (since removing the
-    // cost shift does not change the primal feasibility of the current basis).
-    if (!parameters_.use_dual_simplex()) {
-      // Move the non-basic variable to their exact bounds according to their
-      // current statuses.
-      const VariableStatusRow& statuses = variables_info_.GetStatusRow();
-      for (ColIndex col(0); col < num_cols_; ++col) {
-        if (statuses[col] != VariableStatus::BASIC) {
-          SetNonBasicVariableStatusAndDeriveValue(col, statuses[col]);
-        }
+    // Note(user): Currently, we never do both at the same time, so we could
+    // be a bit faster here, but then this is quick anyway.
+    const VariableStatusRow& statuses = variables_info_.GetStatusRow();
+    for (ColIndex col(0); col < num_cols_; ++col) {
+      if (statuses[col] != VariableStatus::BASIC) {
+        SetNonBasicVariableStatusAndDeriveValue(col, statuses[col]);
       }
     }
     RETURN_IF_ERROR(basis_factorization_.Refactorize());
     variable_values_.RecomputeBasicVariableValues();
     reduced_costs_.ClearAndRemoveCostShifts();
 
-    // The first line triggers the recomputation in order to have precise
-    // errors.
+    // Reduced costs must be explicitly recomputed because DisaplayErrors() is
+    // const.
+    // TODO(user): This API is not really nice.
     reduced_costs_.GetReducedCosts();
     DisplayIterationInfo();
     DisplayErrors();
-    if (!SolutionIsPrecise()) {
-      problem_status_ = ProblemStatus::IMPRECISE;
+
+    // Change the status, if after the shift and perturbation removal the
+    // problem is not OPTIMAL anymore.
+    //
+    // TODO(user): We should also confirm the PRIMAL_UNBOUNDED or DUAL_UNBOUNDED
+    // status by checking with the other phase I that the problem is really
+    // DUAL_INFEASIBLE or PRIMAL_INFEASIBLE. For instace we currently report
+    // PRIMAL_UNBOUNDED with the primal on the problem l30.mps instead of
+    // OPTIMAL and the dual does not have issues on this problem.
+    if (problem_status_ == ProblemStatus::OPTIMAL) {
+      const Fractional solution_tolerance =
+          parameters_.solution_feasibility_tolerance();
+      if (variable_values_.ComputeMaximumPrimalResidual() >
+              solution_tolerance ||
+          reduced_costs_.ComputeMaximumDualResidual() > solution_tolerance) {
+        LOG(WARNING) << "OPTIMAL was reported, yet one of the residuals is "
+                        "above the solution feasibility tolerance after the "
+                        "shift/perturbation are removed.";
+        problem_status_ = ProblemStatus::IMPRECISE;
+      } else {
+        // We use the "precise" tolerances here to try to report the best
+        // possible solution.
+        const Fractional primal_tolerance =
+            parameters_.primal_feasibility_tolerance();
+        const Fractional dual_tolerance =
+            parameters_.dual_feasibility_tolerance();
+        const Fractional primal_infeasibility =
+            variable_values_.ComputeMaximumPrimalInfeasibility();
+        const Fractional dual_infeasibility =
+            reduced_costs_.ComputeMaximumDualInfeasibility();
+        if (primal_infeasibility > primal_tolerance &&
+            dual_infeasibility > dual_tolerance) {
+          LOG(WARNING) << "OPTIMAL was reported, yet both of the infeasibility "
+                          "are above the tolerance after the "
+                          "shift/perturbation are removed.";
+          problem_status_ = ProblemStatus::IMPRECISE;
+        } else if (primal_infeasibility > primal_tolerance) {
+          VLOG(1) << "Re-optimizing with dual simplex ... ";
+          problem_status_ = ProblemStatus::DUAL_FEASIBLE;
+        } else if (dual_infeasibility > dual_tolerance) {
+          VLOG(1) << "Re-optimizing with primal simplex ... ";
+          problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
+        }
+      }
     }
   }
 
@@ -1331,12 +1392,11 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
     // First pass of the Harris ratio test. If 'harris_tolerance' is zero, this
     // actually computes the minimum leaving ratio of all the variables. This is
     // the same as the 'classic' ratio test.
-    SparseColumn leaving_candidates;
     const Fractional harris_ratio =
         (reduced_cost > 0.0) ? ComputeHarrisRatioAndLeavingCandidates<true>(
-                                   current_ratio, &leaving_candidates)
+                                   current_ratio, &leaving_candidates_)
                              : ComputeHarrisRatioAndLeavingCandidates<false>(
-                                   current_ratio, &leaving_candidates);
+                                   current_ratio, &leaving_candidates_);
 
     // If the bound-flip is a viable solution (i.e. it doesn't move the basic
     // variable too much out of bounds), we take it as it is always stable and
@@ -1356,7 +1416,7 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
     stats_num_leaving_choices = 0;
     *leaving_row = kInvalidRow;
     equivalent_leaving_choices_.clear();
-    for (const SparseColumn::Entry e : leaving_candidates) {
+    for (const SparseColumn::Entry e : leaving_candidates_) {
       const Fractional ratio = e.coefficient();
       if (ratio > harris_ratio) continue;
       ++stats_num_leaving_choices;
@@ -2672,15 +2732,6 @@ void RevisedSimplex::DisplayErrors() const {
           << reduced_costs_.ComputeMaximumDualInfeasibility();
   VLOG(1) << "Dual residual |c_B - y.B| = "
           << reduced_costs_.ComputeMaximumDualResidual();
-}
-
-bool RevisedSimplex::SolutionIsPrecise() const {
-  if (problem_status_ != ProblemStatus::OPTIMAL) return true;
-  const Fractional tolerance = parameters_.solution_feasibility_tolerance();
-  return variable_values_.ComputeMaximumPrimalInfeasibility() <= tolerance &&
-         variable_values_.ComputeMaximumPrimalResidual() <= tolerance &&
-         reduced_costs_.ComputeMaximumDualInfeasibility() <= tolerance &&
-         reduced_costs_.ComputeMaximumDualResidual() <= tolerance;
 }
 
 namespace {

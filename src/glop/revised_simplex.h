@@ -523,11 +523,6 @@ class RevisedSimplex {
   // TODO(user): remove duplicate code between the two functions.
   Status DualMinimize(TimeLimit* time_limit) MUST_USE_RESULT;
 
-  // Computes primal and dual infeasibilities and residuals of an OPTIMAL
-  // solution, and returns whether they are all within solution feasibility
-  // tolerance. Returns true if solution status is different than OPTIMAL.
-  bool SolutionIsPrecise() const;
-
   // Utility functions to return the current ColIndex of the slack column with
   // given number. Note that currently, such columns are always present in the
   // internal representation of a linear program.
@@ -754,6 +749,9 @@ class RevisedSimplex {
   // given tolerance on the internal objective may no longer be reached when the
   // objective scaling and offset are taken into account).
   bool objective_limit_reached_;
+
+  // Temporary SparseColumn used by ChooseLeavingVariableRow().
+  SparseColumn leaving_candidates_;
 
   // Temporary vector used to hold the best leaving column candidates that are
   // tied using the current choosing criteria. We actually only store the tied
