@@ -258,7 +258,7 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 	           -G "NMake Makefiles" \
 	           .
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && nmake install
-	$(TOUCH) dependencies/install/lib/gflags.lib
+	$(TOUCH) dependencies/install/lib/gflags_static.lib
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
 	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
