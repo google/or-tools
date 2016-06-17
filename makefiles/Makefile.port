@@ -24,9 +24,12 @@ ifeq ("$(SYSTEM)","unix")
     PLATFORM = LINUX
     CODEPORT = OpSys-Linux
     LBITS = $(shell getconf LONG_BIT)
+    DISTRIBUTION_ID = $(shell lsb_release -i -s)
+    DISTRIBUTION_NUMBER = $(shell lsb_release -r -s)
+    DISTRIBUTION = $(DISTRIBUTION_ID)-$(DISTRIBUTION_NUMBER)
     ifeq ($(LBITS),64)
       NETPLATFORM = anycpu
-      PORT = Linux64
+      PORT = $(DISTRIBUTION)-64bit
       PTRLENGTH = 64
       GUROBI_PLATFORM=linux64
       CANDIDATE_JDK_ROOTS = \
@@ -41,7 +44,7 @@ ifeq ("$(SYSTEM)","unix")
         /usr/lib/jvm/java-9-openjdk-amd64
     else
       NETPLATFORM = x86
-      PORT = Linux32
+      PORT = $(DISTRIBUTION)-32bit
       PTRLENGTH = 32
       GUROBI_PLATFORM=linux32
       CANDIDATE_JDK_ROOTS = \
@@ -58,7 +61,8 @@ ifeq ("$(SYSTEM)","unix")
   endif
   ifeq ($(OS),Darwin) # Assume Mac Os X
     PLATFORM = MACOSX
-    PORT = MacOsX64
+    OS_VERSION = $(shell sw_vers -productVersion)
+    PORT = MacOsX-$(OS_VERSION)
     CODEPORT = OpSys-OSX
     NETPLATFORM = x64
     PTRLENGTH = 64
