@@ -122,7 +122,7 @@ ifeq ("$(SYSTEM)","win")
     CBC_PLATFORM = x64-$(VS_RELEASE)-Release
     GLPK_PLATFORM = w64
     NETPLATFORM = x64
-    PORT = VisualStudio$(VISUAL_STUDIO)-64b
+    PORT = VisualStudio$(VISUAL_STUDIO)-64bit
     PTRLENGTH = 64
     ARCH = /DARCH_K8
   else
@@ -136,7 +136,7 @@ ifeq ("$(SYSTEM)","win")
     GLPK_PLATFORM = w32
     NETPLATFORM = x86
     PLATFORM = Win32
-    PORT = VisualStudio$(VISUAL_STUDIO)-32b
+    PORT = VisualStudio$(VISUAL_STUDIO)-32bit
     PTRLENGTH = 32
   endif
   OS = Windows
