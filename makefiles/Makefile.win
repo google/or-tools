@@ -42,7 +42,7 @@ CMAKE = cmake
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
-ifeq ("$(VISUAL_STUDIO)","2015")
+ifeq ("$(VISUAL_STUDIO_YEAR)","2015")
 CCC=cl /EHsc /MD /nologo /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
 else
 CCC=cl /EHsc /MD /nologo
