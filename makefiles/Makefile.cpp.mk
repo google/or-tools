@@ -1718,111 +1718,111 @@ ifeq "$(SYSTEM)" "win"
 cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	-$(DELREC) temp
 	mkdir temp
-	mkdir temp\\or-tools.$(PORT)
-	mkdir temp\\or-tools.$(PORT)\\bin
-	mkdir temp\\or-tools.$(PORT)\\examples
-	mkdir temp\\or-tools.$(PORT)\\examples\\cpp
-	mkdir temp\\or-tools.$(PORT)\\examples\\data
-	mkdir temp\\or-tools.$(PORT)\\include
-	mkdir temp\\or-tools.$(PORT)\\include\\algorithms
-	mkdir temp\\or-tools.$(PORT)\\include\\base
-	mkdir temp\\or-tools.$(PORT)\\include\\constraint_solver
-	mkdir temp\\or-tools.$(PORT)\\include\\gflags
-	mkdir temp\\or-tools.$(PORT)\\include\\glop
-	mkdir temp\\or-tools.$(PORT)\\include\\google
-	mkdir temp\\or-tools.$(PORT)\\include\\graph
-	mkdir temp\\or-tools.$(PORT)\\include\\linear_solver
-	mkdir temp\\or-tools.$(PORT)\\include\\util
-	mkdir temp\\or-tools.$(PORT)\\lib
-	mkdir temp\\or-tools.$(PORT)\\objs
-	copy LICENSE-2.0.txt temp\\or-tools.$(PORT)
-	copy tools\\README.cc temp\\or-tools.$(PORT)\\README
-	copy tools\\Makefile.cc temp\\or-tools.$(PORT)\\Makefile
-	copy lib\\ortools.lib temp\\or-tools.$(PORT)\\lib
-	copy examples\\cpp\\*.cc temp\\or-tools.$(PORT)\\examples\\cpp
-	copy examples\\cpp\\*.h temp\\or-tools.$(PORT)\\examples\\cpp
-	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
-	copy src\\algorithms\\*.h temp\\or-tools.$(PORT)\\include\\algorithms
-	copy src\\base\\*.h temp\\or-tools.$(PORT)\\include\\base
-	copy src\\constraint_solver\\*.h temp\\or-tools.$(PORT)\\include\\constraint_solver
-	copy src\\gen\\constraint_solver\\*.pb.h temp\\or-tools.$(PORT)\\include\\constraint_solver
-	copy src\\graph\\*.h temp\\or-tools.$(PORT)\\include\\graph
-	copy src\\bop\\*.h temp\\or-tools.$(PORT)\\include\\bop
-	copy src\\gen\\bop\\*.pb.h temp\\or-tools.$(PORT)\\include\\bop
-	copy src\\glop\\*.h temp\\or-tools.$(PORT)\\include\\glop
-	copy src\\gen\\glop\\*.h temp\\or-tools.$(PORT)\\include\\glop
-	copy src\\linear_solver\\*.h temp\\or-tools.$(PORT)\\include\\linear_solver
-	copy src\\gen\\linear_solver\\*.pb.h temp\\or-tools.$(PORT)\\include\\linear_solver
-	copy src\\sat\\*.h temp\\or-tools.$(PORT)\\include\\sat
-	copy src\\gen\\sat\\*.pb.h temp\\or-tools.$(PORT)\\include\\sat
-	copy src\\util\\*.h temp\\or-tools.$(PORT)\\include\\util
-	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v gflags | ..\..\..\tools\tar.exe xvm
-	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v google | ..\..\..\tools\tar.exe xvm
-	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v sparsehash | ..\..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
+	mkdir temp\\$(INSTALL_DIR)
+	mkdir temp\\$(INSTALL_DIR)\\bin
+	mkdir temp\\$(INSTALL_DIR)\\examples
+	mkdir temp\\$(INSTALL_DIR)\\examples\\cpp
+	mkdir temp\\$(INSTALL_DIR)\\examples\\data
+	mkdir temp\\$(INSTALL_DIR)\\include
+	mkdir temp\\$(INSTALL_DIR)\\include\\algorithms
+	mkdir temp\\$(INSTALL_DIR)\\include\\base
+	mkdir temp\\$(INSTALL_DIR)\\include\\constraint_solver
+	mkdir temp\\$(INSTALL_DIR)\\include\\gflags
+	mkdir temp\\$(INSTALL_DIR)\\include\\glop
+	mkdir temp\\$(INSTALL_DIR)\\include\\google
+	mkdir temp\\$(INSTALL_DIR)\\include\\graph
+	mkdir temp\\$(INSTALL_DIR)\\include\\linear_solver
+	mkdir temp\\$(INSTALL_DIR)\\include\\util
+	mkdir temp\\$(INSTALL_DIR)\\lib
+	mkdir temp\\$(INSTALL_DIR)\\objs
+	copy LICENSE-2.0.txt temp\\$(INSTALL_DIR)
+	copy tools\\README.cc temp\\$(INSTALL_DIR)\\README
+	copy tools\\Makefile.cc temp\\$(INSTALL_DIR)\\Makefile
+	copy lib\\ortools.lib temp\\$(INSTALL_DIR)\\lib
+	copy examples\\cpp\\*.cc temp\\$(INSTALL_DIR)\\examples\\cpp
+	copy examples\\cpp\\*.h temp\\$(INSTALL_DIR)\\examples\\cpp
+	cd temp\$(INSTALL_DIR) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
+	copy src\\algorithms\\*.h temp\\$(INSTALL_DIR)\\include\\algorithms
+	copy src\\base\\*.h temp\\$(INSTALL_DIR)\\include\\base
+	copy src\\constraint_solver\\*.h temp\\$(INSTALL_DIR)\\include\\constraint_solver
+	copy src\\gen\\constraint_solver\\*.pb.h temp\\$(INSTALL_DIR)\\include\\constraint_solver
+	copy src\\graph\\*.h temp\\$(INSTALL_DIR)\\include\\graph
+	copy src\\bop\\*.h temp\\$(INSTALL_DIR)\\include\\bop
+	copy src\\gen\\bop\\*.pb.h temp\\$(INSTALL_DIR)\\include\\bop
+	copy src\\glop\\*.h temp\\$(INSTALL_DIR)\\include\\glop
+	copy src\\gen\\glop\\*.h temp\\$(INSTALL_DIR)\\include\\glop
+	copy src\\linear_solver\\*.h temp\\$(INSTALL_DIR)\\include\\linear_solver
+	copy src\\gen\\linear_solver\\*.pb.h temp\\$(INSTALL_DIR)\\include\\linear_solver
+	copy src\\sat\\*.h temp\\$(INSTALL_DIR)\\include\\sat
+	copy src\\gen\\sat\\*.pb.h temp\\$(INSTALL_DIR)\\include\\sat
+	copy src\\util\\*.h temp\\$(INSTALL_DIR)\\include\\util
+	cd temp\\$(INSTALL_DIR)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v gflags | ..\..\..\tools\tar.exe xvm
+	cd temp\\$(INSTALL_DIR)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v google | ..\..\..\tools\tar.exe xvm
+	cd temp\\$(INSTALL_DIR)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v sparsehash | ..\..\..\tools\tar.exe xvm
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 	-$(DELREC) temp
 else
 cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	-$(DELREC) temp
 	mkdir temp
-	mkdir temp/or-tools.$(PORT)
-	mkdir temp/or-tools.$(PORT)/bin
-	mkdir temp/or-tools.$(PORT)/examples
-	mkdir temp/or-tools.$(PORT)/examples/cpp
-	mkdir temp/or-tools.$(PORT)/examples/data
-	mkdir temp/or-tools.$(PORT)/examples/data/et_jobshop
-	mkdir temp/or-tools.$(PORT)/examples/data/flexible_jobshop
-	mkdir temp/or-tools.$(PORT)/examples/data/jobshop
-	mkdir temp/or-tools.$(PORT)/examples/data/multidim_knapsack
-	mkdir temp/or-tools.$(PORT)/examples/data/cvrptw
-	mkdir temp/or-tools.$(PORT)/examples/data/pdptw
-	mkdir temp/or-tools.$(PORT)/include
-	mkdir temp/or-tools.$(PORT)/include/algorithms
-	mkdir temp/or-tools.$(PORT)/include/base
-	mkdir temp/or-tools.$(PORT)/include/constraint_solver
-	mkdir temp/or-tools.$(PORT)/include/gflags
-	mkdir temp/or-tools.$(PORT)/include/bop
-	mkdir temp/or-tools.$(PORT)/include/glop
-	mkdir temp/or-tools.$(PORT)/include/google
-	mkdir temp/or-tools.$(PORT)/include/graph
-	mkdir temp/or-tools.$(PORT)/include/linear_solver
-	mkdir temp/or-tools.$(PORT)/include/sat
-	mkdir temp/or-tools.$(PORT)/include/util
-	mkdir temp/or-tools.$(PORT)/lib
-	mkdir temp/or-tools.$(PORT)/objs
-	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
-	cp tools/README.cc temp/or-tools.$(PORT)/README
-	cp tools/Makefile.cc temp/or-tools.$(PORT)/Makefile
-	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/or-tools.$(PORT)/lib
+	mkdir temp/$(INSTALL_DIR)
+	mkdir temp/$(INSTALL_DIR)/bin
+	mkdir temp/$(INSTALL_DIR)/examples
+	mkdir temp/$(INSTALL_DIR)/examples/cpp
+	mkdir temp/$(INSTALL_DIR)/examples/data
+	mkdir temp/$(INSTALL_DIR)/examples/data/et_jobshop
+	mkdir temp/$(INSTALL_DIR)/examples/data/flexible_jobshop
+	mkdir temp/$(INSTALL_DIR)/examples/data/jobshop
+	mkdir temp/$(INSTALL_DIR)/examples/data/multidim_knapsack
+	mkdir temp/$(INSTALL_DIR)/examples/data/cvrptw
+	mkdir temp/$(INSTALL_DIR)/examples/data/pdptw
+	mkdir temp/$(INSTALL_DIR)/include
+	mkdir temp/$(INSTALL_DIR)/include/algorithms
+	mkdir temp/$(INSTALL_DIR)/include/base
+	mkdir temp/$(INSTALL_DIR)/include/constraint_solver
+	mkdir temp/$(INSTALL_DIR)/include/gflags
+	mkdir temp/$(INSTALL_DIR)/include/bop
+	mkdir temp/$(INSTALL_DIR)/include/glop
+	mkdir temp/$(INSTALL_DIR)/include/google
+	mkdir temp/$(INSTALL_DIR)/include/graph
+	mkdir temp/$(INSTALL_DIR)/include/linear_solver
+	mkdir temp/$(INSTALL_DIR)/include/sat
+	mkdir temp/$(INSTALL_DIR)/include/util
+	mkdir temp/$(INSTALL_DIR)/lib
+	mkdir temp/$(INSTALL_DIR)/objs
+	cp LICENSE-2.0.txt temp/$(INSTALL_DIR)
+	cp tools/README.cc temp/$(INSTALL_DIR)/README
+	cp tools/Makefile.cc temp/$(INSTALL_DIR)/Makefile
+	cp lib/libortools.$(DYNAMIC_LIB_SUFFIX) temp/$(INSTALL_DIR)/lib
 ifeq ($(PLATFORM),MACOSX)
-	cp tools/install_libortools_mac.sh temp/or-tools.$(PORT)
+	cp tools/install_libortools_mac.sh temp/$(INSTALL_DIR)
 endif
-	cp examples/cpp/*.cc temp/or-tools.$(PORT)/examples/cpp
-	cp examples/cpp/*.h temp/or-tools.$(PORT)/examples/cpp
-	cp -R examples/data/et_jobshop/* temp/or-tools.$(PORT)/examples/data/et_jobshop
-	cp -R examples/data/flexible_jobshop/* temp/or-tools.$(PORT)/examples/data/flexible_jobshop
-	cp -R examples/data/jobshop/* temp/or-tools.$(PORT)/examples/data/jobshop
-	cp -R examples/data/multidim_knapsack/* temp/or-tools.$(PORT)/examples/data/multidim_knapsack
-	cp -R examples/data/cvrptw/* temp/or-tools.$(PORT)/examples/data/cvrptw
-	cp -R examples/data/pdptw/* temp/or-tools.$(PORT)/examples/data/pdptw
-	cp src/algorithms/*.h temp/or-tools.$(PORT)/include/algorithms
-	cp src/base/*.h temp/or-tools.$(PORT)/include/base
-	cp src/constraint_solver/*.h temp/or-tools.$(PORT)/include/constraint_solver
-	cp src/gen/constraint_solver/*.pb.h temp/or-tools.$(PORT)/include/constraint_solver
-	cp src/bop/*.h temp/or-tools.$(PORT)/include/bop
-	cp src/gen/bop/*.pb.h temp/or-tools.$(PORT)/include/bop
-	cp src/glop/*.h temp/or-tools.$(PORT)/include/glop
-	cp src/gen/glop/*.pb.h temp/or-tools.$(PORT)/include/glop
-	cp src/graph/*.h temp/or-tools.$(PORT)/include/graph
-	cp src/linear_solver/*.h temp/or-tools.$(PORT)/include/linear_solver
-	cp src/gen/linear_solver/*.pb.h temp/or-tools.$(PORT)/include/linear_solver
-	cp src/sat/*.h temp/or-tools.$(PORT)/include/sat
-	cp src/gen/sat/*.pb.h temp/or-tools.$(PORT)/include/sat
-	cp src/util/*.h temp/or-tools.$(PORT)/include/util
-	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v gflags | tar xvm
-	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v google | tar xvm
-	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v sparsehash | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.cc.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
+	cp examples/cpp/*.cc temp/$(INSTALL_DIR)/examples/cpp
+	cp examples/cpp/*.h temp/$(INSTALL_DIR)/examples/cpp
+	cp -R examples/data/et_jobshop/* temp/$(INSTALL_DIR)/examples/data/et_jobshop
+	cp -R examples/data/flexible_jobshop/* temp/$(INSTALL_DIR)/examples/data/flexible_jobshop
+	cp -R examples/data/jobshop/* temp/$(INSTALL_DIR)/examples/data/jobshop
+	cp -R examples/data/multidim_knapsack/* temp/$(INSTALL_DIR)/examples/data/multidim_knapsack
+	cp -R examples/data/cvrptw/* temp/$(INSTALL_DIR)/examples/data/cvrptw
+	cp -R examples/data/pdptw/* temp/$(INSTALL_DIR)/examples/data/pdptw
+	cp src/algorithms/*.h temp/$(INSTALL_DIR)/include/algorithms
+	cp src/base/*.h temp/$(INSTALL_DIR)/include/base
+	cp src/constraint_solver/*.h temp/$(INSTALL_DIR)/include/constraint_solver
+	cp src/gen/constraint_solver/*.pb.h temp/$(INSTALL_DIR)/include/constraint_solver
+	cp src/bop/*.h temp/$(INSTALL_DIR)/include/bop
+	cp src/gen/bop/*.pb.h temp/$(INSTALL_DIR)/include/bop
+	cp src/glop/*.h temp/$(INSTALL_DIR)/include/glop
+	cp src/gen/glop/*.pb.h temp/$(INSTALL_DIR)/include/glop
+	cp src/graph/*.h temp/$(INSTALL_DIR)/include/graph
+	cp src/linear_solver/*.h temp/$(INSTALL_DIR)/include/linear_solver
+	cp src/gen/linear_solver/*.pb.h temp/$(INSTALL_DIR)/include/linear_solver
+	cp src/sat/*.h temp/$(INSTALL_DIR)/include/sat
+	cp src/gen/sat/*.pb.h temp/$(INSTALL_DIR)/include/sat
+	cp src/util/*.h temp/$(INSTALL_DIR)/include/util
+	cd temp/$(INSTALL_DIR)/include && tar -C ../../../dependencies/install/include -c -v gflags | tar xvm
+	cd temp/$(INSTALL_DIR)/include && tar -C ../../../dependencies/install/include -c -v google | tar xvm
+	cd temp/$(INSTALL_DIR)/include && tar -C ../../../dependencies/install/include -c -v sparsehash | tar xvm
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.cc.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 	-$(DELREC) temp
 endif
 
@@ -1830,27 +1830,27 @@ ifeq "$(SYSTEM)" "win"
 fz_archive: fz
 	-$(DELREC) temp
 	mkdir temp
-	mkdir temp\\or-tools.$(PORT)
-	mkdir temp\\or-tools.$(PORT)\\bin
-	mkdir temp\\or-tools.$(PORT)\\share
-	mkdir temp\\or-tools.$(PORT)\\share\\minizinc
-	copy LICENSE-2.0.txt temp\\or-tools.$(PORT)
-	copy bin\\fz.exe temp\\or-tools.$(PORT)\\bin\\fzn-or-tools.exe
-	copy src\\flatzinc\\mznlib\\*.mzn temp\\or-tools.$(PORT)\\share\\minizinc
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
+	mkdir temp\\$(INSTALL_DIR)
+	mkdir temp\\$(INSTALL_DIR)\\bin
+	mkdir temp\\$(INSTALL_DIR)\\share
+	mkdir temp\\$(INSTALL_DIR)\\share\\minizinc
+	copy LICENSE-2.0.txt temp\\$(INSTALL_DIR)
+	copy bin\\fz.exe temp\\$(INSTALL_DIR)\\bin\\fzn-or-tools.exe
+	copy src\\flatzinc\\mznlib\\*.mzn temp\\$(INSTALL_DIR)\\share\\minizinc
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.flatzinc.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 	-$(DELREC) temp
 else
 fz_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	-$(DELREC) temp
 	mkdir temp
-	mkdir temp/or-tools.$(PORT)
-	mkdir temp/or-tools.$(PORT)/bin
-	mkdir temp/or-tools.$(PORT)/share
-	mkdir temp/or-tools.$(PORT)/share/minizinc
-	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
-	cp bin/fz temp/or-tools.$(PORT)/bin/fzn-or-tools
-	cp src/flatzinc/mznlib/* temp/or-tools.$(PORT)/share/minizinc
-	cd temp && tar cvzf ../Google.OrTools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
+	mkdir temp/$(INSTALL_DIR)
+	mkdir temp/$(INSTALL_DIR)/bin
+	mkdir temp/$(INSTALL_DIR)/share
+	mkdir temp/$(INSTALL_DIR)/share/minizinc
+	cp LICENSE-2.0.txt temp/$(INSTALL_DIR)
+	cp bin/fz temp/$(INSTALL_DIR)/bin/fzn-or-tools
+	cp src/flatzinc/mznlib/* temp/$(INSTALL_DIR)/share/minizinc
+	cd temp && tar cvzf ../Google.OrTools.flatzinc.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 	-$(DELREC) temp
 endif
 

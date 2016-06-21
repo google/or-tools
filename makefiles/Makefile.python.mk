@@ -209,48 +209,48 @@ endif
 python_archive: python
 	-$(DELREC) temp
 	$(MKDIR) temp
-	$(MKDIR) temp$Sor-tools.$(PORT)
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sexamples
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sexamples$Sdata
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sdummy
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Sgraph
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sortools$Salgorithms
-	$(COPY) src$Sgen$Sortools$Sconstraint_solver$S*.py temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
-	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
-	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$Sor-tools.$(PORT)$Sortools$Sgraph
-	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$Sor-tools.$(PORT)$Sortools$Salgorithms
-	$(COPY) examples$Spython$S*.py temp$Sor-tools.$(PORT)$Sexamples
-	$(TOUCH) temp$Sor-tools.$(PORT)$Sortools$S__init__.py
-	$(TOUCH) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver$S__init__.py
-	$(TOUCH) temp$Sor-tools.$(PORT)$Sortools$Slinear_solver$S__init__.py
-	$(TOUCH) temp$Sor-tools.$(PORT)$Sortools$Sgraph$S__init__.py
-	$(TOUCH) temp$Sor-tools.$(PORT)$Sortools$Salgorithms$S__init__.py
-	$(COPY) tools$SREADME.python temp$Sor-tools.$(PORT)$SREADME
-	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
-	$(COPY) tools$Ssetup.py temp$Sor-tools.$(PORT)
-	$(COPY) tools$Sdummy_ortools_dependency.cc temp$Sor-tools.$(PORT)$Sdummy
-	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sor-tools.$(PORT)$Ssetup.py
+	$(MKDIR) temp$S$(INSTALL_DIR)
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sdummy
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sortools
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sortools$Sconstraint_solver
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sortools$Slinear_solver
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sortools$Sgraph
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sortools$Salgorithms
+	$(COPY) src$Sgen$Sortools$Sconstraint_solver$S*.py temp$S$(INSTALL_DIR)$Sortools$Sconstraint_solver
+	$(COPY) src$Sgen$Sortools$Slinear_solver$Spywraplp.py temp$S$(INSTALL_DIR)$Sortools$Slinear_solver
+	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py temp$S$(INSTALL_DIR)$Sortools$Sgraph
+	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py temp$S$(INSTALL_DIR)$Sortools$Salgorithms
+	$(COPY) examples$Spython$S*.py temp$S$(INSTALL_DIR)$Sexamples
+	$(TOUCH) temp$S$(INSTALL_DIR)$Sortools$S__init__.py
+	$(TOUCH) temp$S$(INSTALL_DIR)$Sortools$Sconstraint_solver$S__init__.py
+	$(TOUCH) temp$S$(INSTALL_DIR)$Sortools$Slinear_solver$S__init__.py
+	$(TOUCH) temp$S$(INSTALL_DIR)$Sortools$Sgraph$S__init__.py
+	$(TOUCH) temp$S$(INSTALL_DIR)$Sortools$Salgorithms$S__init__.py
+	$(COPY) tools$SREADME.python temp$S$(INSTALL_DIR)$SREADME
+	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
+	$(COPY) tools$Ssetup.py temp$S$(INSTALL_DIR)
+	$(COPY) tools$Sdummy_ortools_dependency.cc temp$S$(INSTALL_DIR)$Sdummy
+	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$S$(INSTALL_DIR)$Ssetup.py
 ifeq ($(SYSTEM),win)
-	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
-	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
-	copy src\gen\ortools\graph\_pywrapgraph.pyd temp$Sor-tools.$(PORT)$Sortools$Sgraph
-	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$Sor-tools.$(PORT)$Sortools$Salgorithms
-	$(SED) -i -e 's/\.dll/\.pyd/' temp/or-tools.$(PORT)/setup.py
-	-del temp\or-tools.$(PORT)\setup.py-e
-	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
+	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$S$(INSTALL_DIR)$Sortools$Sconstraint_solver
+	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$S$(INSTALL_DIR)$Sortools$Slinear_solver
+	copy src\gen\ortools\graph\_pywrapgraph.pyd temp$S$(INSTALL_DIR)$Sortools$Sgraph
+	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd temp$S$(INSTALL_DIR)$Sortools$Salgorithms
+	$(SED) -i -e 's/\.dll/\.pyd/' temp/$(INSTALL_DIR)/setup.py
+	-del temp\$(INSTALL_DIR)\setup.py-e
+	cd temp\$(INSTALL_DIR) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 else
-	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
-	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
-	cp lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Sgraph
-	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Salgorithms
-	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools.$(PORT)/setup.py
-	-rm temp/or-tools.$(PORT)/setup.py-e
-	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
+	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sortools$Sconstraint_solver
+	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sortools$Slinear_solver
+	cp lib$S_pywrapgraph.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sortools$Sgraph
+	cp lib$S_pywrapknapsack_solver.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sortools$Salgorithms
+	$(SED) -i -e 's/\.dll/\.so/' temp/$(INSTALL_DIR)/setup.py
+	-rm temp/$(INSTALL_DIR)/setup.py-e
+	cd temp/$(INSTALL_DIR) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 endif
 
 python_examples_archive:

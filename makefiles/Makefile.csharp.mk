@@ -426,57 +426,57 @@ dotnet_archive: csharp
 	-$(DELREC) temp
 ifeq ("$(SYSTEM)","win")
 	tools\mkdir temp
-	tools\mkdir temp\or-tools.$(PORT)
-	tools\mkdir temp\or-tools.$(PORT)\bin
-	tools\mkdir temp\or-tools.$(PORT)\examples
-	tools\mkdir temp\or-tools.$(PORT)\examples\solution
-	tools\mkdir temp\or-tools.$(PORT)\examples\solution\Properties
-	tools\mkdir temp\or-tools.$(PORT)\examples\data
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\discrete_tomography
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\fill_a_pix
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\minesweeper
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\rogo
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\survo_puzzle
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\quasigroup_completion
-	copy LICENSE-2.0.txt temp$Sor-tools.$(PORT)
-	copy tools\README.dotnet temp\or-tools.$(PORT)\README
-	copy bin\Google.Protobuf.dll temp\or-tools.$(PORT)\bin
-	copy bin\$(CLR_DLL_NAME).dll temp\or-tools.$(PORT)\bin
-	copy examples\csharp\*.cs temp\or-tools.$(PORT)\examples
-	copy examples\csharp\*.sln temp\or-tools.$(PORT)\examples
-	copy examples\csharp\solution\*.csproj temp\or-tools.$(PORT)\examples\solution
-	copy examples\csharp\solution\Properties\*.cs temp\or-tools.$(PORT)\examples\solution\Properties
-	copy examples\data\discrete_tomography\* temp\or-tools.$(PORT)\examples\data\discrete_tomography
-	copy examples\data\fill_a_pix\* temp\or-tools.$(PORT)\examples\data\fill_a_pix
-	copy examples\data\minesweeper\* temp\or-tools.$(PORT)\examples\data\minesweeper
-	copy examples\data\rogo\* temp\or-tools.$(PORT)\examples\data\rogo
-	copy examples\data\survo_puzzle\* temp\or-tools.$(PORT)\examples\data\survo_puzzle
-	copy examples\data\quasigroup_completion\* temp\or-tools.$(PORT)\examples\data\quasigroup_completion
-	cd temp && ..\tools\zip$(CLR_EXE_SUFFIX).exe -r ..\$(CLR_DLL_NAME).NET.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
+	tools\mkdir temp\$(INSTALL_DIR)
+	tools\mkdir temp\$(INSTALL_DIR)\bin
+	tools\mkdir temp\$(INSTALL_DIR)\examples
+	tools\mkdir temp\$(INSTALL_DIR)\examples\solution
+	tools\mkdir temp\$(INSTALL_DIR)\examples\solution\Properties
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\discrete_tomography
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\fill_a_pix
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\minesweeper
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\rogo
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\survo_puzzle
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\quasigroup_completion
+	copy LICENSE-2.0.txt temp$S$(INSTALL_DIR)
+	copy tools\README.dotnet temp\$(INSTALL_DIR)\README
+	copy bin\Google.Protobuf.dll temp\$(INSTALL_DIR)\bin
+	copy bin\$(CLR_DLL_NAME).dll temp\$(INSTALL_DIR)\bin
+	copy examples\csharp\*.cs temp\$(INSTALL_DIR)\examples
+	copy examples\csharp\*.sln temp\$(INSTALL_DIR)\examples
+	copy examples\csharp\solution\*.csproj temp\$(INSTALL_DIR)\examples\solution
+	copy examples\csharp\solution\Properties\*.cs temp\$(INSTALL_DIR)\examples\solution\Properties
+	copy examples\data\discrete_tomography\* temp\$(INSTALL_DIR)\examples\data\discrete_tomography
+	copy examples\data\fill_a_pix\* temp\$(INSTALL_DIR)\examples\data\fill_a_pix
+	copy examples\data\minesweeper\* temp\$(INSTALL_DIR)\examples\data\minesweeper
+	copy examples\data\rogo\* temp\$(INSTALL_DIR)\examples\data\rogo
+	copy examples\data\survo_puzzle\* temp\$(INSTALL_DIR)\examples\data\survo_puzzle
+	copy examples\data\quasigroup_completion\* temp\$(INSTALL_DIR)\examples\data\quasigroup_completion
+	cd temp && ..\tools\zip$(CLR_EXE_SUFFIX).exe -r ..\$(CLR_DLL_NAME).NET.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 else
 	mkdir temp
-	mkdir temp/or-tools.$(PORT)
-	mkdir temp/or-tools.$(PORT)/bin
-	mkdir temp/or-tools.$(PORT)/examples
-	mkdir temp/or-tools.$(PORT)/examples/data
-	mkdir temp/or-tools.$(PORT)/examples/data/discrete_tomography
-	mkdir temp/or-tools.$(PORT)/examples/data/fill_a_pix
-	mkdir temp/or-tools.$(PORT)/examples/data/minesweeper
-	mkdir temp/or-tools.$(PORT)/examples/data/rogo
-	mkdir temp/or-tools.$(PORT)/examples/data/survo_puzzle
-	mkdir temp/or-tools.$(PORT)/examples/data/quasigroup_completion
-	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
-	cp tools/README.dotnet temp/or-tools.$(PORT)/README
-	cp bin/Google.Protobuf.dll temp/or-tools.$(PORT)/bin
-	cp bin/$(CLR_DLL_NAME).dll temp/or-tools.$(PORT)/bin
-	cp lib/lib$(CLR_DLL_NAME).so temp/or-tools.$(PORT)/bin
-	cp examples/csharp/*.cs temp/or-tools.$(PORT)/examples
-	cp examples/data/discrete_tomography/* temp/or-tools.$(PORT)/examples/data/discrete_tomography
-	cp examples/data/fill_a_pix/* temp/or-tools.$(PORT)/examples/data/fill_a_pix
-	cp examples/data/minesweeper/* temp/or-tools.$(PORT)/examples/data/minesweeper
-	cp examples/data/rogo/* temp/or-tools.$(PORT)/examples/data/rogo
-	cp examples/data/survo_puzzle/* temp/or-tools.$(PORT)/examples/data/survo_puzzle
-	cp examples/data/quasigroup_completion/* temp/or-tools.$(PORT)/examples/data/quasigroup_completion
-	cd temp && tar -c -v -z --no-same-owner -f ../$(CLR_DLL_NAME).NET.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
+	mkdir temp/$(INSTALL_DIR)
+	mkdir temp/$(INSTALL_DIR)/bin
+	mkdir temp/$(INSTALL_DIR)/examples
+	mkdir temp/$(INSTALL_DIR)/examples/data
+	mkdir temp/$(INSTALL_DIR)/examples/data/discrete_tomography
+	mkdir temp/$(INSTALL_DIR)/examples/data/fill_a_pix
+	mkdir temp/$(INSTALL_DIR)/examples/data/minesweeper
+	mkdir temp/$(INSTALL_DIR)/examples/data/rogo
+	mkdir temp/$(INSTALL_DIR)/examples/data/survo_puzzle
+	mkdir temp/$(INSTALL_DIR)/examples/data/quasigroup_completion
+	cp LICENSE-2.0.txt temp/$(INSTALL_DIR)
+	cp tools/README.dotnet temp/$(INSTALL_DIR)/README
+	cp bin/Google.Protobuf.dll temp/$(INSTALL_DIR)/bin
+	cp bin/$(CLR_DLL_NAME).dll temp/$(INSTALL_DIR)/bin
+	cp lib/lib$(CLR_DLL_NAME).so temp/$(INSTALL_DIR)/bin
+	cp examples/csharp/*.cs temp/$(INSTALL_DIR)/examples
+	cp examples/data/discrete_tomography/* temp/$(INSTALL_DIR)/examples/data/discrete_tomography
+	cp examples/data/fill_a_pix/* temp/$(INSTALL_DIR)/examples/data/fill_a_pix
+	cp examples/data/minesweeper/* temp/$(INSTALL_DIR)/examples/data/minesweeper
+	cp examples/data/rogo/* temp/$(INSTALL_DIR)/examples/data/rogo
+	cp examples/data/survo_puzzle/* temp/$(INSTALL_DIR)/examples/data/survo_puzzle
+	cp examples/data/quasigroup_completion/* temp/$(INSTALL_DIR)/examples/data/quasigroup_completion
+	cd temp && tar -c -v -z --no-same-owner -f ../$(CLR_DLL_NAME).NET.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 endif
 	-$(DELREC) temp

@@ -160,6 +160,7 @@ GIT_HASH:= $(shell git log --pretty=format:'%h' -n 1)
 endif
 OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION)
 OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
+INSTALL_DIR=or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
 
 printport:
 	@echo SHELL = $(SHELL)

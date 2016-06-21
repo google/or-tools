@@ -381,69 +381,69 @@ rjava: $(OBJ_DIR)/com/google/ortools/samples/$(EX).class javaortools
 java_archive: java
 	-$(DELREC) temp
 	$(MKDIR) temp
-	$(MKDIR) temp$Sor-tools.$(PORT)
-	$(MKDIR) temp$Sor-tools.$(PORT)$Slib
-	$(MKDIR) temp$Sor-tools.$(PORT)$Sobjs
-	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
-	$(COPY) tools$SREADME.java temp$Sor-tools.$(PORT)$SREADME
-	$(COPY) lib$S*.jar temp$Sor-tools.$(PORT)$Slib
-	$(COPY) lib$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT) temp$Sor-tools.$(PORT)$Slib
+	$(MKDIR) temp$S$(INSTALL_DIR)
+	$(MKDIR) temp$S$(INSTALL_DIR)$Slib
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sobjs
+	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
+	$(COPY) tools$SREADME.java temp$S$(INSTALL_DIR)$SREADME
+	$(COPY) lib$S*.jar temp$S$(INSTALL_DIR)$Slib
+	$(COPY) lib$S$(LIBPREFIX)jni*.$(JNI_LIB_EXT) temp$S$(INSTALL_DIR)$Slib
 ifeq ("$(SYSTEM)","win")
-	tools\mkdir temp\or-tools.$(PORT)\examples
-	tools\mkdir temp\or-tools.$(PORT)\examples\com
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\algorithms
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\constraintsolver
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\graph
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\linearsolver
-	tools\mkdir temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	tools\mkdir temp\or-tools.$(PORT)\examples\data
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\discrete_tomography
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\fill_a_pix
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\minesweeper
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\rogo
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\survo_puzzle
-	tools\mkdir temp\or-tools.$(PORT)\examples\data\quasigroup_completion
-	copy examples\data\discrete_tomography\* temp\or-tools.$(PORT)\examples\data\discrete_tomography
-	copy examples\data\fill_a_pix\* temp\or-tools.$(PORT)\examples\data\fill_a_pix
-	copy examples\data\minesweeper\* temp\or-tools.$(PORT)\examples\data\minesweeper
-	copy examples\data\rogo\* temp\or-tools.$(PORT)\examples\data\rogo
-	copy examples\data\survo_puzzle\* temp\or-tools.$(PORT)\examples\data\survo_puzzle
-	copy examples\data\quasigroup_completion\* temp\or-tools.$(PORT)\examples\data\quasigroup_completion
-	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
+	tools\mkdir temp\$(INSTALL_DIR)\examples
+	tools\mkdir temp\$(INSTALL_DIR)\examples\com
+	tools\mkdir temp\$(INSTALL_DIR)\examples\com\google
+	tools\mkdir temp\$(INSTALL_DIR)\examples\com\google\ortools
+	tools\mkdir temp\$(INSTALL_DIR)\examples\com\google\ortools\algorithms
+	tools\mkdir temp\$(INSTALL_DIR)\examples\com\google\ortools\constraintsolver
+	tools\mkdir temp\$(INSTALL_DIR)\examples\com\google\ortools\graph
+	tools\mkdir temp\$(INSTALL_DIR)\examples\com\google\ortools\linearsolver
+	tools\mkdir temp\$(INSTALL_DIR)\examples\com\google\ortools\samples
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\discrete_tomography
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\fill_a_pix
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\minesweeper
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\rogo
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\survo_puzzle
+	tools\mkdir temp\$(INSTALL_DIR)\examples\data\quasigroup_completion
+	copy examples\data\discrete_tomography\* temp\$(INSTALL_DIR)\examples\data\discrete_tomography
+	copy examples\data\fill_a_pix\* temp\$(INSTALL_DIR)\examples\data\fill_a_pix
+	copy examples\data\minesweeper\* temp\$(INSTALL_DIR)\examples\data\minesweeper
+	copy examples\data\rogo\* temp\$(INSTALL_DIR)\examples\data\rogo
+	copy examples\data\survo_puzzle\* temp\$(INSTALL_DIR)\examples\data\survo_puzzle
+	copy examples\data\quasigroup_completion\* temp\$(INSTALL_DIR)\examples\data\quasigroup_completion
+	copy examples\com\google\ortools\samples\*.java temp\$(INSTALL_DIR)\examples\com\google\ortools\samples
+	copy examples\com\google\ortools\samples\*.java temp\$(INSTALL_DIR)\examples\com\google\ortools\samples
+	copy examples\com\google\ortools\samples\*.java temp\$(INSTALL_DIR)\examples\com\google\ortools\samples
+	copy examples\com\google\ortools\samples\*.java temp\$(INSTALL_DIR)\examples\com\google\ortools\samples
+	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 else
-	mkdir temp/or-tools.$(PORT)/examples
-	mkdir temp/or-tools.$(PORT)/examples/com
-	mkdir temp/or-tools.$(PORT)/examples/com/google
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/algorithms
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/constraintsolver
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/graph
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/linearsolver
-	mkdir temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	mkdir temp/or-tools.$(PORT)/examples/data
-	mkdir temp/or-tools.$(PORT)/examples/data/discrete_tomography
-	mkdir temp/or-tools.$(PORT)/examples/data/fill_a_pix
-	mkdir temp/or-tools.$(PORT)/examples/data/minesweeper
-	mkdir temp/or-tools.$(PORT)/examples/data/rogo
-	mkdir temp/or-tools.$(PORT)/examples/data/survo_puzzle
-	mkdir temp/or-tools.$(PORT)/examples/data/quasigroup_completion
-	cp examples/data/discrete_tomography/* temp/or-tools.$(PORT)/examples/data/discrete_tomography
-	cp examples/data/fill_a_pix/* temp/or-tools.$(PORT)/examples/data/fill_a_pix
-	cp examples/data/minesweeper/* temp/or-tools.$(PORT)/examples/data/minesweeper
-	cp examples/data/rogo/* temp/or-tools.$(PORT)/examples/data/rogo
-	cp examples/data/survo_puzzle/* temp/or-tools.$(PORT)/examples/data/survo_puzzle
-	cp examples/data/quasigroup_completion/* temp/or-tools.$(PORT)/examples/data/quasigroup_completion
-	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.java.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
+	mkdir temp/$(INSTALL_DIR)/examples
+	mkdir temp/$(INSTALL_DIR)/examples/com
+	mkdir temp/$(INSTALL_DIR)/examples/com/google
+	mkdir temp/$(INSTALL_DIR)/examples/com/google/ortools
+	mkdir temp/$(INSTALL_DIR)/examples/com/google/ortools/algorithms
+	mkdir temp/$(INSTALL_DIR)/examples/com/google/ortools/constraintsolver
+	mkdir temp/$(INSTALL_DIR)/examples/com/google/ortools/graph
+	mkdir temp/$(INSTALL_DIR)/examples/com/google/ortools/linearsolver
+	mkdir temp/$(INSTALL_DIR)/examples/com/google/ortools/samples
+	mkdir temp/$(INSTALL_DIR)/examples/data
+	mkdir temp/$(INSTALL_DIR)/examples/data/discrete_tomography
+	mkdir temp/$(INSTALL_DIR)/examples/data/fill_a_pix
+	mkdir temp/$(INSTALL_DIR)/examples/data/minesweeper
+	mkdir temp/$(INSTALL_DIR)/examples/data/rogo
+	mkdir temp/$(INSTALL_DIR)/examples/data/survo_puzzle
+	mkdir temp/$(INSTALL_DIR)/examples/data/quasigroup_completion
+	cp examples/data/discrete_tomography/* temp/$(INSTALL_DIR)/examples/data/discrete_tomography
+	cp examples/data/fill_a_pix/* temp/$(INSTALL_DIR)/examples/data/fill_a_pix
+	cp examples/data/minesweeper/* temp/$(INSTALL_DIR)/examples/data/minesweeper
+	cp examples/data/rogo/* temp/$(INSTALL_DIR)/examples/data/rogo
+	cp examples/data/survo_puzzle/* temp/$(INSTALL_DIR)/examples/data/survo_puzzle
+	cp examples/data/quasigroup_completion/* temp/$(INSTALL_DIR)/examples/data/quasigroup_completion
+	cp examples/com/google/ortools/samples/*.java temp/$(INSTALL_DIR)/examples/com/google/ortools/samples
+	cp examples/com/google/ortools/samples/*.java temp/$(INSTALL_DIR)/examples/com/google/ortools/samples
+	cp examples/com/google/ortools/samples/*.java temp/$(INSTALL_DIR)/examples/com/google/ortools/samples
+	cp examples/com/google/ortools/samples/*.java temp/$(INSTALL_DIR)/examples/com/google/ortools/samples
+	cp examples/com/google/ortools/samples/*.java temp/$(INSTALL_DIR)/examples/com/google/ortools/samples
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.java.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 endif
 	-$(DELREC) temp
