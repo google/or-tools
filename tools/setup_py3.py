@@ -16,7 +16,7 @@ DELETEUNIX               extra_link_args=['/MANIFEST'],
 
 setup(
     name='py3-ortools',
-    version='3.VVVV',
+    version='VVVV',
     packages=[
         'ortools',
         'ortools.algorithms',

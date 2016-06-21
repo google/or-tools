@@ -232,7 +232,7 @@ python_archive: python
 	$(COPY) LICENSE-2.0.txt temp$Sor-tools.$(PORT)
 	$(COPY) tools$Ssetup.py temp$Sor-tools.$(PORT)
 	$(COPY) tools$Sdummy_ortools_dependency.cc temp$Sor-tools.$(PORT)$Sdummy
-	$(SED) -i -e 's/VVVV/$(GIT_REVISION)/' temp$Sor-tools.$(PORT)$Ssetup.py
+	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sor-tools.$(PORT)$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
@@ -241,7 +241,7 @@ ifeq ($(SYSTEM),win)
 	$(SED) -i -e 's/\.dll/\.pyd/' temp/or-tools.$(PORT)/setup.py
 	-del temp\or-tools.$(PORT)\setup.py-e
 	cd temp\or-tools.$(PORT) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
 else
 	cp lib$S_pywrapcp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Sconstraint_solver
 	cp lib$S_pywraplp.$(DYNAMIC_SWIG_LIB_SUFFIX) temp$Sor-tools.$(PORT)$Sortools$Slinear_solver
@@ -250,7 +250,7 @@ else
 	$(SED) -i -e 's/\.dll/\.so/' temp/or-tools.$(PORT)/setup.py
 	-rm temp/or-tools.$(PORT)/setup.py-e
 	cd temp/or-tools.$(PORT) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
 endif
 
 python_examples_archive:
@@ -268,10 +268,10 @@ python_examples_archive:
 	-$(DEL) temp$Sortools_examples$Ssetup.py-e
 ifeq ($(SYSTEM),win)
 	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples.$(GIT_REVISION).zip ortools_examples
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples-$(OR_TOOLS_VERSION).zip ortools_examples
 else
 	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.examples.$(GIT_REVISION).tar.gz ortools_examples
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.examples-$(OR_TOOLS_VERSION).tar.gz ortools_examples
 endif
 
 pypi2_archive: python $(PATCHELF)
@@ -298,7 +298,7 @@ pypi2_archive: python $(PATCHELF)
 	$(COPY) tools$SREADME.pypi temp$Sortools$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools
 	$(COPY) tools$Ssetup.py temp$Sortools
-	$(SED) -i -e 's/VVVV/$(GIT_REVISION)/' temp$Sortools$Ssetup.py
+	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sortools$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sortools$Sortools$Sconstraint_solver
 	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sortools$Sortools$Slinear_solver
@@ -360,7 +360,7 @@ pypi3_archive: python $(PATCHELF)
 	$(COPY) tools$SREADME.pypi temp$Sortools$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools
 	$(COPY) tools$Ssetup_py3.py temp$Sortools$Ssetup.py
-	$(SED) -i -e 's/VVVV/$(GIT_REVISION)/' temp$Sortools$Ssetup.py
+	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sortools$Ssetup.py
 ifeq ($(SYSTEM),win)
 	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd temp$Sortools$Sortools$Sconstraint_solver
 	copy src\gen\ortools\linear_solver\_pywraplp.pyd temp$Sortools$Sortools$Slinear_solver

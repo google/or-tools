@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Google.OrTools</id>
-    <version>2.2.VVVV</version>
+    <version>VVVV</version>
     <authors>Google</authors>
     <licenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</licenseUrl>
     <projectUrl>https://developers.google.com/optimization</projectUrl>
@@ -11,7 +11,7 @@
     <copyright>Copyright 2016 Google</copyright>
     <tags>OperationsResearch MathProgramming LinearProgramming ConstraintProgramming .NET</tags>
     <dependencies>
-    <dependency id="Google.Protobuf" version="3.0.0-beta2" />
+    <dependency id="Google.Protobuf" version="3.0.0-beta3" />
     </dependencies>
   </metadata>
   <files>

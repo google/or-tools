@@ -110,7 +110,7 @@ clean_csharp:
 	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 
-$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/google/ortools/SvnVersion$(GIT_REVISION).txt
+$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_SHORT_VERSION).txt
 ifeq ("$(SYSTEM)","win")
 	@echo using System.Reflection; > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo using System.Runtime.CompilerServices; >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
@@ -122,9 +122,9 @@ ifeq ("$(SYSTEM)","win")
 	@echo [assembly: System.Reflection.AssemblyProduct( "OR-Tools" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly: System.Reflection.AssemblyCopyright( "Copyright (c) 2010-2015 Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly: System.Reflection.AssemblyCulture( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyVersion( "2.0.$(GIT_REVISION).*" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyFileVersion( "2.0.$(GIT_REVISION).0" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyInformationalVersion( "OR-Tools 2.0.$(GIT_REVISION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyVersion( "$(OR_TOOLS_SHORT_VERSION).*" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyFileVersion( "$(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly: System.Reflection.AssemblyInformationalVersion( "OR-Tools $(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly: ComVisible(false)] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly: Guid("0a227c4c-8bb3-4db0-808f-55dae227d8c5")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 else
@@ -138,15 +138,15 @@ else
 	@echo "[assembly: System.Reflection.AssemblyProduct( \"OR-Tools\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly: System.Reflection.AssemblyCopyright( \"Copyright (c) 2010-2015 Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly: System.Reflection.AssemblyCulture( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyVersion( \"2.0.$(GIT_REVISION).*\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyFileVersion( \"2.0.$(GIT_REVISION).0\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyInformationalVersion( \"OR-Tools 2.0.$(GIT_REVISION)-r$(GIT_HASH)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyVersion( \"$(OR_TOOLS_SHORT_VERSION).*\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyFileVersion( \"$(OR_TOOLS_SHORT_VERSION).0\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly: System.Reflection.AssemblyInformationalVersion( \"OR-Tools $(OR_TOOLS_SHORT_VERSION)-r$(GIT_HASH)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly: ComVisible(false)]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly: Guid(\"0a227c4c-8bb3-4db0-808f-55dae227d8c5\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 endif
 
-$(GEN_DIR)/com/google/ortools/SvnVersion$(GIT_REVISION).txt:
-	@echo $(GIT_REVISION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$SSvnVersion$(GIT_REVISION).txt
+$(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_SHORT_VERSION).txt:
+	@echo $(OR_TOOLS_SHORT_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$SSvnVersion$(OR_TOOLS_SHORT_VERSION).txt
 
 # csharportools
 
@@ -417,9 +417,9 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\data\survo_puzzle\* temp\or-tools\examples\data\survo_puzzle
 	copy examples\data\quasigroup_completion\* temp\or-tools\examples\data\quasigroup_completion
 	copy tools\or-tools.nuspec temp\or-tools
-	$(SED) -i -e "s/VVVV/$(GIT_REVISION)/g" temp\or-tools\or-tools.nuspec
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/g" temp\or-tools\or-tools.nuspec
 	cd temp\or-tools && nuget pack or-tools.nuspec
-	cd temp\or-tools && nuget push Google.OrTools.2.2.$(GIT_REVISION).nupkg
+	cd temp\or-tools && nuget push Google.OrTools-$(OR_TOOLS_VERSION).nupkg
 endif
 
 dotnet_archive: csharp
@@ -452,7 +452,7 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\data\rogo\* temp\or-tools.$(PORT)\examples\data\rogo
 	copy examples\data\survo_puzzle\* temp\or-tools.$(PORT)\examples\data\survo_puzzle
 	copy examples\data\quasigroup_completion\* temp\or-tools.$(PORT)\examples\data\quasigroup_completion
-	cd temp && ..\tools\zip$(CLR_EXE_SUFFIX).exe -r ..\$(CLR_DLL_NAME).NET.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
+	cd temp && ..\tools\zip$(CLR_EXE_SUFFIX).exe -r ..\$(CLR_DLL_NAME).NET.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
 else
 	mkdir temp
 	mkdir temp/or-tools.$(PORT)
@@ -477,6 +477,6 @@ else
 	cp examples/data/rogo/* temp/or-tools.$(PORT)/examples/data/rogo
 	cp examples/data/survo_puzzle/* temp/or-tools.$(PORT)/examples/data/survo_puzzle
 	cp examples/data/quasigroup_completion/* temp/or-tools.$(PORT)/examples/data/quasigroup_completion
-	cd temp && tar -c -v -z --no-same-owner -f ../$(CLR_DLL_NAME).NET.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	cd temp && tar -c -v -z --no-same-owner -f ../$(CLR_DLL_NAME).NET.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
 endif
 	-$(DELREC) temp

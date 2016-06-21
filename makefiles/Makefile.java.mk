@@ -415,7 +415,7 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
 	copy examples\com\google\ortools\samples\*.java temp\or-tools.$(PORT)\examples\com\google\ortools\samples
-	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
+	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.java.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
 else
 	mkdir temp/or-tools.$(PORT)/examples
 	mkdir temp/or-tools.$(PORT)/examples/com
@@ -444,6 +444,6 @@ else
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
 	cp examples/com/google/ortools/samples/*.java temp/or-tools.$(PORT)/examples/com/google/ortools/samples
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.java.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.java.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
 endif
 	-$(DELREC) temp

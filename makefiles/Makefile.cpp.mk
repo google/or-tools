@@ -1759,7 +1759,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v gflags | ..\..\..\tools\tar.exe xvm
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v google | ..\..\..\tools\tar.exe xvm
 	cd temp\\or-tools.$(PORT)\\include && ..\..\..\tools\tar.exe -C ..\\..\\..\\dependencies\\install\\include -c -v sparsehash | ..\..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
 	-$(DELREC) temp
 else
 cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
@@ -1822,7 +1822,7 @@ endif
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v gflags | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v google | tar xvm
 	cd temp/or-tools.$(PORT)/include && tar -C ../../../dependencies/install/include -c -v sparsehash | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.cc.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.cc.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
 	-$(DELREC) temp
 endif
 
@@ -1837,7 +1837,7 @@ fz_archive: fz
 	copy LICENSE-2.0.txt temp\\or-tools.$(PORT)
 	copy bin\\fz.exe temp\\or-tools.$(PORT)\\bin\\fzn-or-tools.exe
 	copy src\\flatzinc\\mznlib\\*.mzn temp\\or-tools.$(PORT)\\share\\minizinc
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.flatzinc.$(PORT).$(GIT_REVISION).zip or-tools.$(PORT)
+	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).zip or-tools.$(PORT)
 	-$(DELREC) temp
 else
 fz_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
@@ -1850,7 +1850,7 @@ fz_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(DYNAMIC_LIB_SUFFIX)
 	cp LICENSE-2.0.txt temp/or-tools.$(PORT)
 	cp bin/fz temp/or-tools.$(PORT)/bin/fzn-or-tools
 	cp src/flatzinc/mznlib/* temp/or-tools.$(PORT)/share/minizinc
-	cd temp && tar cvzf ../Google.OrTools.flatzinc.$(PORT).$(GIT_REVISION).tar.gz or-tools.$(PORT)
+	cd temp && tar cvzf ../Google.OrTools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).tar.gz or-tools.$(PORT)
 	-$(DELREC) temp
 endif
 
