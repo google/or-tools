@@ -1,3 +1,16 @@
+# TODO:
+#  - merge DYNAMIC and STATIC, only one
+#  - ORTOOLS_DEPS_LIBS : contains DYNAMIC_LD_FLAGS and DYNAMIC_LD_LP_DEPS
+#  - ORTOOLS_LIBS: contains base, cp, lp, sat, ... but not ORTOOLS_DEPS_LIBS
+#  - Remove all *_{BASE, LP, ALGORITHMS, SPLIT, CP, GRAPH, ROUTING, SAT, BOP}_{LIBS, DEPS, LNK} and use ORTOOLS_{LIBS,DEPS, LNK}
+#  - keep FAP, CVRPTW, DIMACS, and FLATZINC libs
+#  - make sure java, python, csharp uses ORTOOLS_LIBS and ORTOOLS_DEPS_LIBS
+#
+#  - OR_TOOLS_DEPS: libortools.so and libortools-deps.so on unix
+#                   ortools.lib and ortools-deps.lib on windows
+#  - OR_TOOLS_LNK: command line argument for the linker
+#                  links with above libraries with paths, and LD_FLAGS
+
 #### DYNAMIC link and libs ####
 
 # List libraries by module.
@@ -144,6 +157,7 @@ DYNAMIC_FLATZINC_LNK = \
         $(DYNAMIC_PRE_LIB)fz$(DYNAMIC_POST_LIB)\
         $(DYNAMIC_CP_LNK)
 
+# Libraries for examples
 DYNAMIC_CVRPTW_LNK = \
         $(DYNAMIC_PRE_LIB)cvrptw_lib$(DYNAMIC_POST_LIB) \
         $(DYNAMIC_CP_LNK) \
