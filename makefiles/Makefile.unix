@@ -9,7 +9,7 @@ MKDIR = mkdir
 MKDIR_P = mkdir -p
 COPY = cp
 TOUCH = touch
-LIBPREFIX = lib
+LIB_PREFIX = lib
 ifeq ($(PLATFORM),MACOSX)
 # Keep the path in the lib as it is stored upon construction.
 LIB_DIR = $(OR_ROOT_FULL)/lib

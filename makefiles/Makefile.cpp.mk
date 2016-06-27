@@ -8,21 +8,21 @@
 # List libraries by module.
 
 ORTOOLS_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX)
+        $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 
 
 # to keep
 FLATZINC_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)fz.$(LIB_SUFFIX)
+        $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX)
 
 CVRPTW_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)cvrptw_lib.$(LIB_SUFFIX)
+        $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
 
 DIMACS_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)dimacs.$(LIB_SUFFIX)
+        $(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
 
 FAP_LIBS = \
-        $(LIB_DIR)/$(LIBPREFIX)fap.$(LIB_SUFFIX)
+        $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
 
 # Lib dependencies.
 
@@ -30,7 +30,7 @@ FAP_LIBS = \
 ORTOOLS_DEPS  = \
 		$(GEN_DIR)/linear_solver/linear_solver.pb.h \
 		$(GEN_DIR)/glop/parameters.pb.h \
-		$(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX)
+		$(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 
 FLATZINC_DEPS = $(FLATZINC_LIBS) \
         $(CP_DEPS)
@@ -114,21 +114,21 @@ cc: ortoolslibs cpexe lpexe
 # Clean target
 
 clean_cc:
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)base.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)util.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)constraint_solver.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)linear_solver.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)bop.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)glop.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)graph.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)routing.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)algorithms.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)cvrptw_lib.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)dimacs.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)fz.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)sat.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)shortestpaths.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIBPREFIX)ortools.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)base.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)util.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)constraint_solver.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)linear_solver.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)bop.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)glop.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)graph.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)routing.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)algorithms.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)sat.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)shortestpaths.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
@@ -840,8 +840,8 @@ CVRPTW_LIB_OBJS=\
 $(OBJ_DIR)/cvrptw_lib.$O:$(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h $(SRC_DIR)/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
 
-$(LIB_DIR)/$(LIBPREFIX)cvrptw_lib.$(LIB_SUFFIX): $(CVRPTW_LIB_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)cvrptw_lib.$(LIB_SUFFIX) $(CVRPTW_LIB_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX): $(CVRPTW_LIB_OBJS)
+	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) $(CVRPTW_LIB_OBJS)
 
 # DIMACS challenge problem format library
 
@@ -851,8 +851,8 @@ DIMACS_LIB_OBJS=\
 $(OBJ_DIR)/parse_dimacs_assignment.$O:$(EX_DIR)/cpp/parse_dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/parse_dimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sparse_dimacs_assignment.$O
 
-$(LIB_DIR)/$(LIBPREFIX)dimacs.$(LIB_SUFFIX): $(DIMACS_LIB_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)dimacs.$(LIB_SUFFIX) $(DIMACS_LIB_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX): $(DIMACS_LIB_OBJS)
+	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) $(DIMACS_LIB_OBJS)
 
 # FAP challenge problem format library
 
@@ -929,8 +929,8 @@ $(OBJ_DIR)/flatzinc/sequential_support.$O:$(SRC_DIR)/flatzinc/sequential_support
 $(OBJ_DIR)/flatzinc/solver.$O:$(SRC_DIR)/flatzinc/solver.cc $(SRC_DIR)/flatzinc/model.h $(SRC_DIR)/flatzinc/solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver.$O
 
-$(LIB_DIR)/$(LIBPREFIX)fz.$(LIB_SUFFIX): $(FLATZINC_LIB_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIBPREFIX)fz.$(LIB_SUFFIX) $(FLATZINC_LIB_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX): $(FLATZINC_LIB_OBJS)
+	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(FLATZINC_LIB_OBJS)
 
 $(OBJ_DIR)/flatzinc/fz.$O:$(SRC_DIR)/flatzinc/fz.cc $(SRC_DIR)/flatzinc/model.h $(SRC_DIR)/flatzinc/solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz.$O
@@ -1350,9 +1350,9 @@ $(OBJ_DIR)/bop/integral_solver.$O: $(SRC_DIR)/bop/integral_solver.cc $(SRC_DIR)/
 
 # OR Tools unique library.
 
-$(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(BOP_LIB_OBJS) $(GLOP_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(SPLIT_LIB_OBJS) $(SAT_LIB_OBJS) $(BASE_LIB_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(BOP_LIB_OBJS) $(GLOP_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(SPLIT_LIB_OBJS) $(SAT_LIB_OBJS) $(BASE_LIB_OBJS)
 	$(LINK_CMD) \
-	  $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)ortools.$(LIB_SUFFIX) \
+	  $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) \
 	  $(ALGORITHMS_LIB_OBJS) \
 	  $(SPLIT_LIB_OBJS) \
 	  $(BASE_LIB_OBJS) \
@@ -1372,7 +1372,7 @@ $(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LI
 # Target for archives
 
 ifeq "$(SYSTEM)" "win"
-cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX)
+cc_archive: $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 	-$(DELREC) temp
 	mkdir temp
 	mkdir temp\\$(INSTALL_DIR)
@@ -1419,7 +1419,7 @@ cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX)
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.cc.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 	-$(DELREC) temp
 else
-cc_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX)
+cc_archive: $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 	-$(DELREC) temp
 	mkdir temp
 	mkdir temp/$(INSTALL_DIR)
@@ -1497,7 +1497,7 @@ fz_archive: fz
 	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.flatzinc.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 	-$(DELREC) temp
 else
-fz_archive: $(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX)
+fz_archive: $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 	-$(DELREC) temp
 	mkdir temp
 	mkdir temp/$(INSTALL_DIR)
