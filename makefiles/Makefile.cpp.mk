@@ -1,17 +1,9 @@
 # TODO:
-#  - merge DYNAMIC and STATIC, only one
-#  - ORTOOLS_DEPS_LIBS : contains LD_FLAGS
-#  - ORTOOLS_LIBS: contains base, cp, lp, sat, ... but not ORTOOLS_DEPS_LIBS
-#  - Remove all *_{BASE, LP, ALGORITHMS, SPLIT, CP, GRAPH, ROUTING, SAT, BOP}_{LIBS, DEPS, LNK} and use ORTOOLS_{LIBS,DEPS, LNK}
-#  - keep FAP, CVRPTW, DIMACS, and FLATZINC libs
-#  - make sure java, python, csharp uses ORTOOLS_LIBS and ORTOOLS_DEPS_LIBS
-#
 #  - ORTOOLS_DEPS: libortools.so on unix
 #                   ortools.lib on windows
 #  - ORTOOLS_LNK: command line argument for the linker
 #                  links with above libraries with paths, and LD_FLAGS
 
-#### DYNAMIC link and libs ####
 
 # List libraries by module.
 
@@ -831,13 +823,13 @@ $(OBJ_DIR)/glop/mps_driver.$O:$(EX_DIR)/cpp/mps_driver.cc $(GEN_DIR)/glop/parame
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Smps_driver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smps_driver.$O
 
 $(BIN_DIR)/mps_driver$E: $(OBJ_DIR)/glop/mps_driver.$O $(ORTOOLS_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Smps_driver.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smps_driver$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Smps_driver.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smps_driver$E
 
 $(OBJ_DIR)/glop/solve.$O:$(EX_DIR)/cpp/solve.cc $(GEN_DIR)/glop/parameters.pb.h $(GEN_DIR)/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssolve.$O
 
 $(BIN_DIR)/solve$E: $(OBJ_DIR)/glop/solve.$O $(ORTOOLS_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Ssolve.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssolve$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Ssolve.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssolve$E
 
 
 # CVRPTW common library
@@ -949,10 +941,10 @@ $(OBJ_DIR)/flatzinc/parser_main.$O:$(SRC_DIR)/flatzinc/parser_main.cc $(SRC_DIR)
 fz : $(BIN_DIR)/fz$E $(BIN_DIR)/parser_main$E
 
 $(BIN_DIR)/fz$E: $(OBJ_DIR)/flatzinc/fz.$O $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sfz.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfz$E
 
 $(BIN_DIR)/parser_main$E: $(OBJ_DIR)/flatzinc/parser_main.$O $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sparser_main.$O $(FLATZINC_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sparser_main$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sflatzinc$Sparser_main.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sparser_main$E
 
 # Flow and linear assignment cpp
 
@@ -960,19 +952,19 @@ $(OBJ_DIR)/linear_assignment_api.$O:$(EX_DIR)/cpp/linear_assignment_api.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_assignment_api.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_assignment_api.$O
 
 $(BIN_DIR)/linear_assignment_api$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/linear_assignment_api.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_assignment_api.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_assignment_api$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_assignment_api.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_assignment_api$E
 
 $(OBJ_DIR)/flow_api.$O:$(EX_DIR)/cpp/flow_api.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/flow_api.cc $(OBJ_OUT)$(OBJ_DIR)$Sflow_api.$O
 
 $(BIN_DIR)/flow_api$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/flow_api.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/flow_api.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sflow_api$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/flow_api.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sflow_api$E
 
 $(OBJ_DIR)/dimacs_assignment.$O:$(EX_DIR)/cpp/dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/dimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
 
 $(BIN_DIR)/dimacs_assignment$E: $(DIMACS_DEPS) $(OBJ_DIR)/dimacs_assignment.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/dimacs_assignment.$O $(DIMACS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/dimacs_assignment.$O $(DIMACS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sdimacs_assignment$E
 
 # Pure CP and Routing Examples
 
@@ -980,145 +972,145 @@ $(OBJ_DIR)/acp_challenge.$O:$(EX_DIR)/cpp/acp_challenge.cc $(SRC_DIR)/constraint
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/acp_challenge.cc $(OBJ_OUT)$(OBJ_DIR)$Sacp_challenge.$O
 
 $(BIN_DIR)/acp_challenge$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/acp_challenge.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge$E
 
 $(OBJ_DIR)/acp_challenge_routing.$O:$(EX_DIR)/cpp/acp_challenge_routing.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/acp_challenge_routing.cc $(OBJ_OUT)$(OBJ_DIR)$Sacp_challenge_routing.$O
 
 $(BIN_DIR)/acp_challenge_routing$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/acp_challenge_routing.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge_routing.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge_routing$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge_routing.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge_routing$E
 
 $(OBJ_DIR)/costas_array.$O: $(EX_DIR)/cpp/costas_array.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/costas_array.cc $(OBJ_OUT)$(OBJ_DIR)$Scostas_array.$O
 
 $(BIN_DIR)/costas_array$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/costas_array.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/costas_array.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scostas_array$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/costas_array.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scostas_array$E
 
 $(OBJ_DIR)/cryptarithm.$O:$(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cryptarithm.cc $(OBJ_OUT)$(OBJ_DIR)$Scryptarithm.$O
 
 $(BIN_DIR)/cryptarithm$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/cryptarithm.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cryptarithm.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scryptarithm$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cryptarithm.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scryptarithm$E
 
 $(OBJ_DIR)/cvrptw.$O: $(EX_DIR)/cpp/cvrptw.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw.$O
 
 $(BIN_DIR)/cvrptw$E: $(ORTOOLS_DEPS) $(CVRPTW_DEPS) $(OBJ_DIR)/cvrptw.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(ORTOOLS_LNK) $(CVRPTW_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(ORTOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
 
 $(OBJ_DIR)/cvrptw_with_refueling.$O: $(EX_DIR)/cpp/cvrptw_with_refueling.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_refueling.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_refueling.$O
 
 $(BIN_DIR)/cvrptw_with_refueling$E: $(ORTOOLS_DEPS) $(CVRPTW_DEPS) $(OBJ_DIR)/cvrptw_with_refueling.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(ORTOOLS_LNK) $(CVRPTW_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_refueling.$O $(ORTOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_refueling$E
 
 $(OBJ_DIR)/cvrptw_with_resources.$O: $(EX_DIR)/cpp/cvrptw_with_resources.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_resources.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_resources.$O
 
 $(BIN_DIR)/cvrptw_with_resources$E: $(ORTOOLS_DEPS) $(CVRPTW_DEPS) $(OBJ_DIR)/cvrptw_with_resources.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_resources.$O $(ORTOOLS_LNK) $(CVRPTW_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_resources.$O $(ORTOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_resources$E
 
 $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O: $(EX_DIR)/cpp/cvrptw_with_stop_times_and_resources.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h $(EX_DIR)/cpp/cvrptw_lib.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_stop_times_and_resources.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_stop_times_and_resources.$O
 
 $(BIN_DIR)/cvrptw_with_stop_times_and_resources$E: $(ORTOOLS_DEPS) $(CVRPTW_DEPS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(ORTOOLS_LNK) $(CVRPTW_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(ORTOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_stop_times_and_resources$E
 
 $(OBJ_DIR)/dobble_ls.$O:$(EX_DIR)/cpp/dobble_ls.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/dobble_ls.cc $(OBJ_OUT)$(OBJ_DIR)$Sdobble_ls.$O
 
 $(BIN_DIR)/dobble_ls$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/dobble_ls.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/dobble_ls.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sdobble_ls$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/dobble_ls.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sdobble_ls$E
 
 $(OBJ_DIR)/flexible_jobshop.$O:$(EX_DIR)/cpp/flexible_jobshop.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(EX_DIR)/cpp/flexible_jobshop.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/flexible_jobshop.cc $(OBJ_OUT)$(OBJ_DIR)$Sflexible_jobshop.$O
 
 $(BIN_DIR)/flexible_jobshop$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/flexible_jobshop.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/flexible_jobshop.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sflexible_jobshop$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/flexible_jobshop.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sflexible_jobshop$E
 
 $(OBJ_DIR)/golomb.$O:$(EX_DIR)/cpp/golomb.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/golomb.cc $(OBJ_OUT)$(OBJ_DIR)$Sgolomb.$O
 
 $(BIN_DIR)/golomb$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/golomb.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/golomb.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sgolomb$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/golomb.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sgolomb$E
 
 $(OBJ_DIR)/jobshop.$O:$(EX_DIR)/cpp/jobshop.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop.cc $(OBJ_OUT)$(OBJ_DIR)$Sjobshop.$O
 
 $(BIN_DIR)/jobshop$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/jobshop.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop$E
 
 $(OBJ_DIR)/jobshop_ls.$O:$(EX_DIR)/cpp/jobshop_ls.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_ls.cc $(OBJ_OUT)$(OBJ_DIR)$Sjobshop_ls.$O
 
 $(BIN_DIR)/jobshop_ls$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/jobshop_ls.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_ls.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_ls$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_ls.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_ls$E
 
 $(OBJ_DIR)/jobshop_earlytardy.$O:$(EX_DIR)/cpp/jobshop_earlytardy.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(EX_DIR)/cpp/jobshop_earlytardy.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_earlytardy.cc $(OBJ_OUT)$(OBJ_DIR)$Sjobshop_earlytardy.$O
 
 $(BIN_DIR)/jobshop_earlytardy$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/jobshop_earlytardy.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_earlytardy.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_earlytardy$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_earlytardy.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_earlytardy$E
 
 $(OBJ_DIR)/magic_square.$O:$(EX_DIR)/cpp/magic_square.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/magic_square.cc $(OBJ_OUT)$(OBJ_DIR)$Smagic_square.$O
 
 $(BIN_DIR)/magic_square$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/magic_square.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/magic_square.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smagic_square$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/magic_square.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smagic_square$E
 
 $(OBJ_DIR)/model_util.$O:$(EX_DIR)/cpp/model_util.cc $(GEN_DIR)/constraint_solver/model.pb.h $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/model_util.cc $(OBJ_OUT)$(OBJ_DIR)$Smodel_util.$O
 
 $(BIN_DIR)/model_util$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/model_util.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/model_util.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smodel_util$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/model_util.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smodel_util$E
 
 $(OBJ_DIR)/multidim_knapsack.$O:$(EX_DIR)/cpp/multidim_knapsack.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/multidim_knapsack.cc $(OBJ_OUT)$(OBJ_DIR)$Smultidim_knapsack.$O
 
 $(BIN_DIR)/multidim_knapsack$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/multidim_knapsack.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/multidim_knapsack.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smultidim_knapsack$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/multidim_knapsack.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smultidim_knapsack$E
 
 $(OBJ_DIR)/network_routing.$O:$(EX_DIR)/cpp/network_routing.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/network_routing.cc $(OBJ_OUT)$(OBJ_DIR)$Snetwork_routing.$O
 
 $(BIN_DIR)/network_routing$E: $(ORTOOLS_DEPS) $(ORTOOLS_DEPS) $(OBJ_DIR)/network_routing.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/network_routing.$O $(ORTOOLS_LNK) $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snetwork_routing$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/network_routing.$O $(ORTOOLS_LNK) $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snetwork_routing$E
 
 $(OBJ_DIR)/nqueens.$O: $(EX_DIR)/cpp/nqueens.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/nqueens.cc $(OBJ_OUT)$(OBJ_DIR)$Snqueens.$O
 
 $(BIN_DIR)/nqueens$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/nqueens.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens$E
 
 $(OBJ_DIR)/nqueens2.$O: $(EX_DIR)/cpp/nqueens2.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/nqueens2.cc $(OBJ_OUT)$(OBJ_DIR)$Snqueens2.$O
 
 $(BIN_DIR)/nqueens2$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/nqueens2.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens2.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens2$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens2.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens2$E
 
 $(OBJ_DIR)/pdptw.$O: $(EX_DIR)/cpp/pdptw.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/pdptw.cc $(OBJ_OUT)$(OBJ_DIR)$Spdptw.$O
 
 $(BIN_DIR)/pdptw$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/pdptw.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/pdptw.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Spdptw$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/pdptw.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Spdptw$E
 
 $(OBJ_DIR)/slitherlink.$O:$(EX_DIR)/cpp/slitherlink.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/slitherlink.cc $(OBJ_OUT)$(OBJ_DIR)$Sslitherlink.$O
 
 $(BIN_DIR)/slitherlink$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/slitherlink.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/slitherlink.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sslitherlink$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/slitherlink.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sslitherlink$E
 
 $(OBJ_DIR)/sports_scheduling.$O:$(EX_DIR)/cpp/sports_scheduling.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/sports_scheduling.cc $(OBJ_OUT)$(OBJ_DIR)$Ssports_scheduling.$O
 
 $(BIN_DIR)/sports_scheduling$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/sports_scheduling.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/sports_scheduling.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssports_scheduling$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/sports_scheduling.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssports_scheduling$E
 
 $(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(SRC_DIR)/constraint_solver/constraint_solver.h $(SRC_DIR)/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/tsp.cc $(OBJ_OUT)$(OBJ_DIR)$Stsp.$O
 
 $(BIN_DIR)/tsp$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/tsp.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/tsp.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Stsp$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/tsp.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Stsp$E
 
 # CP tests.
 
@@ -1126,67 +1118,67 @@ $(OBJ_DIR)/bug_pack.$O:$(EX_DIR)/tests/bug_pack.cc $(SRC_DIR)/constraint_solver/
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/bug_pack.cc $(OBJ_OUT)$(OBJ_DIR)$Sbug_pack.$O
 
 $(BIN_DIR)/bug_pack$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/bug_pack.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_pack.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_pack$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_pack.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_pack$E
 
 $(OBJ_DIR)/bug_fz1.$O:$(EX_DIR)/tests/bug_fz1.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/bug_fz1.cc $(OBJ_OUT)$(OBJ_DIR)$Sbug_fz1.$O
 
 $(BIN_DIR)/bug_fz1$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/bug_fz1.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_fz1.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_fz1$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_fz1.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_fz1$E
 
 $(OBJ_DIR)/ac4r_table_test.$O:$(EX_DIR)/tests/ac4r_table_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/ac4r_table_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sac4r_table_test.$O
 
 $(BIN_DIR)/ac4r_table_test$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/ac4r_table_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/ac4r_table_test.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sac4r_table_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/ac4r_table_test.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sac4r_table_test$E
 
 $(OBJ_DIR)/forbidden_intervals_test.$O:$(EX_DIR)/tests/forbidden_intervals_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/forbidden_intervals_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sforbidden_intervals_test.$O
 
 $(BIN_DIR)/forbidden_intervals_test$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/forbidden_intervals_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/forbidden_intervals_test.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sforbidden_intervals_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/forbidden_intervals_test.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sforbidden_intervals_test$E
 
 $(OBJ_DIR)/gcc_test.$O:$(EX_DIR)/tests/gcc_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/gcc_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sgcc_test.$O
 
 $(BIN_DIR)/gcc_test$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/gcc_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/gcc_test.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sgcc_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/gcc_test.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sgcc_test$E
 
 $(OBJ_DIR)/min_max_test.$O:$(EX_DIR)/tests/min_max_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/min_max_test.cc $(OBJ_OUT)$(OBJ_DIR)$Smin_max_test.$O
 
 $(BIN_DIR)/min_max_test$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/min_max_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/min_max_test.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smin_max_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/min_max_test.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smin_max_test$E
 
 $(OBJ_DIR)/issue57.$O:$(EX_DIR)/tests/issue57.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/issue57.cc $(OBJ_OUT)$(OBJ_DIR)$Sissue57.$O
 
 $(BIN_DIR)/issue57$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/issue57.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue57.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue57$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue57.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue57$E
 
 $(OBJ_DIR)/issue173.$O:$(EX_DIR)/tests/issue173.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/issue173.cc $(OBJ_OUT)$(OBJ_DIR)$Sissue173.$O
 
 $(BIN_DIR)/issue173$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/issue173.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue173.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue173$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue173.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue173$E
 
 $(OBJ_DIR)/visitor_test.$O:$(EX_DIR)/tests/visitor_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/visitor_test.cc $(OBJ_OUT)$(OBJ_DIR)$Svisitor_test.$O
 
 $(BIN_DIR)/visitor_test$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/visitor_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/visitor_test.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Svisitor_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/visitor_test.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Svisitor_test$E
 
 $(OBJ_DIR)/boolean_test.$O:$(EX_DIR)/tests/boolean_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/boolean_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_test.$O
 
 $(BIN_DIR)/boolean_test$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/boolean_test.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/boolean_test.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sboolean_test$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/boolean_test.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sboolean_test$E
 
 $(OBJ_DIR)/ls_api.$O:$(EX_DIR)/cpp/ls_api.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/ls_api.cc $(OBJ_OUT)$(OBJ_DIR)$Sls_api.$O
 
 $(BIN_DIR)/ls_api$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/ls_api.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/ls_api.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sls_api$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/ls_api.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sls_api$E
 
 $(OBJ_DIR)/cpp11_test.$O:$(EX_DIR)/tests/cpp11_test.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/cpp11_test.cc $(OBJ_OUT)$(OBJ_DIR)$Scpp11_test.$O
@@ -1200,7 +1192,7 @@ $(OBJ_DIR)/frequency_assignment_problem.$O:$(EX_DIR)/cpp/frequency_assignment_pr
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/frequency_assignment_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Sfrequency_assignment_problem.$O
 
 $(BIN_DIR)/frequency_assignment_problem$E: $(FAP_DEPS) $(OBJ_DIR)/frequency_assignment_problem.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/frequency_assignment_problem.$O $(FAP_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sfrequency_assignment_problem$E
 
 # Linear Programming Examples
 
@@ -1208,25 +1200,25 @@ $(OBJ_DIR)/strawberry_fields_with_column_generation.$O: $(EX_DIR)/cpp/strawberry
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/strawberry_fields_with_column_generation.cc $(OBJ_OUT)$(OBJ_DIR)$Sstrawberry_fields_with_column_generation.$O
 
 $(BIN_DIR)/strawberry_fields_with_column_generation$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/strawberry_fields_with_column_generation.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/strawberry_fields_with_column_generation.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sstrawberry_fields_with_column_generation$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/strawberry_fields_with_column_generation.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sstrawberry_fields_with_column_generation$E
 
 $(OBJ_DIR)/linear_programming.$O: $(EX_DIR)/cpp/linear_programming.cc $(SRC_DIR)/linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_programming.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_programming.$O
 
 $(BIN_DIR)/linear_programming$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/linear_programming.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_programming.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_programming$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_programming.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_programming$E
 
 $(OBJ_DIR)/linear_solver_protocol_buffers.$O: $(EX_DIR)/cpp/linear_solver_protocol_buffers.cc $(SRC_DIR)/linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/linear_solver_protocol_buffers.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver_protocol_buffers.$O
 
 $(BIN_DIR)/linear_solver_protocol_buffers$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/linear_solver_protocol_buffers.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_solver_protocol_buffers.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_solver_protocol_buffers$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_solver_protocol_buffers.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Slinear_solver_protocol_buffers$E
 
 $(OBJ_DIR)/integer_programming.$O: $(EX_DIR)/cpp/integer_programming.cc $(SRC_DIR)/linear_solver/linear_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/integer_programming.cc $(OBJ_OUT)$(OBJ_DIR)$Sinteger_programming.$O
 
 $(BIN_DIR)/integer_programming$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/integer_programming.$O
-	$(CCC) $(CFLAGS) $(OBJ_DIR)/integer_programming.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sinteger_programming$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/integer_programming.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sinteger_programming$E
 
 # Sat solver
 
@@ -1302,7 +1294,7 @@ $(OBJ_DIR)/sat/sat_runner.$O:$(EX_DIR)/cpp/sat_runner.cc $(SRC_DIR)/sat/sat_solv
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssat_runner.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssat_runner.$O
 
 $(BIN_DIR)/sat_runner$E: $(ORTOOLS_DEPS) $(OBJ_DIR)/sat/sat_runner.$O
-	$(CCC) $(CFLAGS) $(OR_TOOLS_STATIC) $(OBJ_DIR)$Ssat$Ssat_runner.$O $(ORTOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Ssat$Ssat_runner.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
 
 # Bop solver
 BOP_LIB_OBJS = \
@@ -1376,7 +1368,6 @@ $(LIB_DIR)/$(LIBPREFIX)ortools.$(LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LI
 	  $(OR_TOOLS_THIRD_PARTY_DEPS) \
 	  $(OR_TOOLS_LD_FLAGS)
 
-	
 
 # Target for archives
 

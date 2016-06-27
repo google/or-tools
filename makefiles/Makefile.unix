@@ -117,24 +117,19 @@ ifeq ($(PLATFORM),LINUX)
   MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
 
   # This is needed to find libgflags.a
-  DYNAMIC_GFLAGS_LNK = -Wl,-rpath $(UNIX_GFLAGS_DIR)/lib -L$(UNIX_GFLAGS_DIR)/lib -lgflags
-  STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
+  GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   # This is needed to find libz.a
   ZLIB_LNK = -lz
   # This is needed to find libprotobuf.a
-  DYNAMIC_PROTOBUF_LNK = -Wl,-rpath $(UNIX_PROTOBUF_DIR)/lib -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf -lpthread
-  STATIC_PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
+  PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
   ifdef UNIX_GLPK_DIR
-    DYNAMIC_GLPK_LNK = -Wl,-rpath $(UNIX_GLPK_DIR)/lib -L$(UNIX_GLPK_DIR)/lib -lglpk
-    STATIC_GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
+  GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_CLP_DIR
-    DYNAMIC_CLP_LNK = -Wl,-rpath $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
-    STATIC_CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
+  CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
   endif
   ifdef UNIX_CBC_DIR
-    DYNAMIC_CBC_LNK = -Wl,-rpath $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
-    STATIC_CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCgl.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsi.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiClp.a
+  CBC_LNK = $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbcSolver.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libCgl.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsi.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiCbc.a $(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN)/libOsiClp.a
   endif
   ifdef UNIX_SCIP_DIR
     ifeq ($(PTRLENGTH),64)
@@ -142,33 +137,27 @@ ifeq ($(PLATFORM),LINUX)
     else
       SCIP_ARCH = linux.x86.gnu.opt
     endif
-    STATIC_SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+    SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
   endif
   ifdef UNIX_SLM_DIR
     ifeq ($(PTRLENGTH),64)
-      DYNAMIC_SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux64/bin/ -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
-      STATIC_SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux64/bin/ -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
+      SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux64/bin/ -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
     else
-      DYNAMIC_SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux32/bin/ -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
-      STATIC_SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux32/bin/ -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
+      SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux32/bin/ -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
     endif
   endif
   ifdef UNIX_GUROBI_DIR
     ifeq ($(PTRLENGTH),64)
-      DYNAMIC_GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux64/lib/ -L$(UNIX_GUROBI_DIR)/linux64/lib/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
-      STATIC_GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux64/lib/ -L$(UNIX_GUROBI_DIR)/linux64/lib/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
+      GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux64/lib/ -L$(UNIX_GUROBI_DIR)/linux64/lib/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
     else
-      DYNAMIC_GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux32/lib/ -L$(UNIX_GUROBI_DIR)/linux32/lib/ -m32 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
-      STATIC_GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux32/lib/ -L$(UNIX_GUROBI_DIR)/linux32/lib/ -m32 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
+      GUROBI_LNK = -Wl,-rpath $(UNIX_GUROBI_DIR)/linux32/lib/ -L$(UNIX_GUROBI_DIR)/linux32/lib/ -m32 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
     endif
   endif
   ifdef UNIX_CPLEX_DIR
     ifeq ($(PTRLENGTH),64)
-      DYNAMIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic/libcplex.a -lm -lpthread
-      STATIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic/libcplex.a -lm -lpthread
+      CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_linux/static_pic/libcplex.a -lm -lpthread
     else
-      DYNAMIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic/libcplex.a -lm -lpthread
-      STATIC_CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic/libcplex.a -lm -lpthread
+      CPLEX_LNK = $(UNIX_CPLEX_DIR)/cplex/lib/x86_linux/static_pic/libcplex.a -lm -lpthread
     endif
   endif
   SYS_LNK = -lrt -lpthread
@@ -208,11 +197,9 @@ ifeq ($(PLATFORM),MACOSX)
   CSC = mcs
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono64
 
-  DYNAMIC_GFLAGS_LNK = -L$(UNIX_GFLAGS_DIR)/lib -lgflags
-  STATIC_GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
+  GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   ZLIB_LNK = -lz
-  DYNAMIC_PROTOBUF_LNK = -L$(UNIX_PROTOBUF_DIR)/lib -lprotobuf
-  STATIC_PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
+  PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
   ARCH = -DARCH_K8
   SYS_LNK =
 
@@ -234,33 +221,27 @@ ifeq ($(PLATFORM),MACOSX)
   STATIC_LINK_PREFIX =
 
   ifdef UNIX_GLPK_DIR
-    DYNAMIC_GLPK_LNK = -L$(UNIX_GLPK_DIR)/lib -lglpk
-    STATIC_GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
+    GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
   ifdef UNIX_CLP_DIR
-    DYNAMIC_CLP_LNK = -L$(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN) -lClp -lCoinUtils
-    STATIC_CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
+    CLP_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libClp.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCoinUtils.a
   endif
   ifdef UNIX_CBC_DIR
-    DYNAMIC_CBC_LNK = -L$(UNIX_CBC_DIR)/lib$(UNIX_CBC_COIN) -lCbcSolver -lCbc -lCgl -lOsi -lOsiCbc -lOsiClp
-    STATIC_CBC_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbcSolver.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCgl.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsi.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
+    CBC_LNK = $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbcSolver.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libCgl.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsi.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiCbc.a $(UNIX_CLP_DIR)/lib$(UNIX_CLP_COIN)/libOsiClp.a
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_ARCH = darwin.x86_64.gnu.opt
-    STATIC_SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
     SCIP_LNK = -lreadline
   endif
   ifdef UNIX_GUROBI_DIR
-    DYNAMIC_GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/lib/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
-    STATIC_GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/bin/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
+    GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/bin/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
   endif
   ifdef UNIX_CPLEX_DIR
-    STATIC_CPLEX_LNK = -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a -lm -lpthread -framework CoreFoundation -framework IOKit
-    DYNAMIC_CPLEX_LNK = $(STATIC_CPLEX_LNK)
+    CPLEX_LNK = -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a -lm -lpthread -framework CoreFoundation -framework IOKit
   endif
   ifdef UNIX_SLM_DIR
-      DYNAMIC_SLM_LNK = -rpath $(UNIX_SLM_DIR)/mac64/bin/ -L$(UNIX_SLM_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
-      STATIC_SLM_LNK = -rpath $(UNIX_SLM_DIR)/mac64/bin/ -L$(UNIX_SLM_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
+      SLM_LNK = -rpath $(UNIX_SLM_DIR)/mac64/bin/ -L$(UNIX_SLM_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
   endif
   BISON = dependencies/install/bin/bison
   FLEX = dependencies/install/bin/flex
@@ -272,7 +253,5 @@ CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
 
 JNIFLAGS = $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP
-LD_FLAGS = $(DYNAMIC_GFLAGS_LNK) $(ZLIB_LNK) $(DYNAMIC_PROTOBUF_LNK) $(SYS_LNK)
-STATIC_LD_FLAGS = $(STATIC_GFLAGS_LNK) $(ZLIB_LNK) $(STATIC_PROTOBUF_LNK) $(SYS_LNK)
-OR_TOOLS_THIRD_PARTY_DEPS = $(STATIC_GLPK_LNK) $(STATIC_CBC_LNK) $(STATIC_CLP_LNK) $(STATIC_SCIP_LNK) $(STATIC_SLM_LNK) $(STATIC_GUROBI_LNK) $(STATIC_CPLEX_LNK) $(STATIC_GFLAGS_LNK) $(STATIC_PROTOBUF_LNK)
+OR_TOOLS_THIRD_PARTY_DEPS = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK) $(LM_LNK) $(GUROBI_LNK) $(CPLEX_LNK) $(GFLAGS_LNK) $(PROTOBUF_LNK)
 OR_TOOLS_LD_FLAGS = $(ZLIB_LNK) $(SYS_LNK)
