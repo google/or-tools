@@ -115,34 +115,34 @@ ifeq ("$(SYSTEM)","win")
 	@echo using System.Reflection; > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo using System.Runtime.CompilerServices; >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo using System.Runtime.InteropServices; >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyTitle( "OR-Tools Assembly" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyDescription( ".NET Assembly for the OR-Tools project" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyConfiguration( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyCompany( "Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyProduct( "OR-Tools" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyCopyright( "Copyright (c) 2010-2015 Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyCulture( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyVersion( "$(OR_TOOLS_SHORT_VERSION).*" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyFileVersion( "$(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: System.Reflection.AssemblyInformationalVersion( "OR-Tools $(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: ComVisible(false)] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly: Guid("0a227c4c-8bb3-4db0-808f-55dae227d8c5")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyTitle( "OR-Tools Assembly" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyDescription( ".NET Assembly for the OR-Tools project" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyConfiguration( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyCompany( "Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyProduct( "OR-Tools" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyCopyright( "Copyright (c) 2010-2015 Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyCulture( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyVersion( "$(OR_TOOLS_SHORT_VERSION).*" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyFileVersion( "$(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyInformationalVersion( "OR-Tools $(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:ComVisible(false)] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:Guid("0a227c4c-8bb3-4db0-808f-55dae227d8c5")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 else
 	@echo "using System.Reflection;" > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "using System.Runtime.CompilerServices;" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "using System.Runtime.InteropServices;" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyTitle( \"OR-Tools Assembly\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyDescription( \".NET Assembly for the OR-Tools project\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyConfiguration( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyCompany( \"Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyProduct( \"OR-Tools\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyCopyright( \"Copyright (c) 2010-2015 Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyCulture( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyVersion( \"$(OR_TOOLS_SHORT_VERSION).*\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyFileVersion( \"$(OR_TOOLS_SHORT_VERSION).0\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: System.Reflection.AssemblyInformationalVersion( \"OR-Tools $(OR_TOOLS_SHORT_VERSION)-r$(GIT_HASH)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: ComVisible(false)]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly: Guid(\"0a227c4c-8bb3-4db0-808f-55dae227d8c5\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyTitle( \"OR-Tools Assembly\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyDescription( \".NET Assembly for the OR-Tools project\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyConfiguration( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyCompany( \"Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyProduct( \"OR-Tools\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyCopyright( \"Copyright (c) 2010-2015 Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyCulture( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyVersion( \"$(OR_TOOLS_SHORT_VERSION).*\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyFileVersion( \"$(OR_TOOLS_SHORT_VERSION).0\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyInformationalVersion( \"OR-Tools $(OR_TOOLS_SHORT_VERSION)-r$(GIT_HASH)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:ComVisible(false)]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:Guid(\"0a227c4c-8bb3-4db0-808f-55dae227d8c5\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 endif
 
 $(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_SHORT_VERSION).txt:
@@ -158,8 +158,7 @@ $(BIN_DIR)/Google.Protobuf.dll: dependencies/install/bin/Google.Protobuf.dll
 $(GEN_DIR)/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/linear_solver/csharp/linear_solver.swig \
 	$(SRC_DIR)/base/base.swig $(SRC_DIR)/util/csharp/proto.swig \
-	$(SRC_DIR)/linear_solver/linear_solver.h \
-	$(GEN_DIR)/linear_solver/linear_solver.pb.h
+	$(LP_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research_linear_solver -namespace $(BASE_CLR_DLL_NAME).LinearSolver -dllimport "$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)/linear_solver$Scsharp$Slinear_solver.swig
 
 $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O: $(GEN_DIR)/linear_solver/linear_solver_csharp_wrap.cc
@@ -171,7 +170,7 @@ $(GEN_DIR)/constraint_solver/constraint_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/base/base.swig \
 	$(SRC_DIR)/util/csharp/proto.swig \
 	$(SRC_DIR)/util/csharp/functions.swig \
-	$(SRC_DIR)/constraint_solver/constraint_solver.h
+	$(CP_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sconstraint_solver$Sconstraint_solver_csharp_wrap.cc -module operations_research_constraint_solver -namespace $(BASE_CLR_DLL_NAME).ConstraintSolver -dllimport "$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver $(SRC_DIR)$Sconstraint_solver$Scsharp$Srouting.swig
 	$(SED) -i -e 's/CSharp_new_Solver/CSharp_new_CpSolver/g' $(GEN_DIR)/com/google/ortools/constraintsolver/*cs $(GEN_DIR)/constraint_solver/constraint_solver_csharp_wrap.*
 	$(SED) -i -e 's/CSharp_delete_Solver/CSharp_delete_CpSolver/g' $(GEN_DIR)/com/google/ortools/constraintsolver/*cs $(GEN_DIR)/constraint_solver/constraint_solver_csharp_wrap.*
@@ -198,8 +197,7 @@ $(GEN_DIR)/graph/graph_csharp_wrap.cc: \
 	$(SRC_DIR)/graph/csharp/graph.swig \
 	$(SRC_DIR)/base/base.swig \
 	$(SRC_DIR)/util/csharp/proto.swig \
-	$(SRC_DIR)/graph/max_flow.h \
-	$(SRC_DIR)/graph/min_cost_flow.h
+	$(GRAPH_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sgraph$Sgraph_csharp_wrap.cc -module operations_research_graph -namespace $(BASE_CLR_DLL_NAME).Graph -dllimport "$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph $(SRC_DIR)$Sgraph$Scsharp$Sgraph.swig
 
 $(OBJ_DIR)/swig/graph_csharp_wrap.$O: $(GEN_DIR)/graph/graph_csharp_wrap.cc
@@ -246,13 +244,13 @@ $(BIN_DIR)/$(CLR_DLL_NAME).dll: \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
-	$(ORTOOLS_DEPS)
+	$(OR_TOOLS_LIBS)
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).netmodule /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(SRC_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_DLL_NAME).dll $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_DLL_NAME).dll $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_DLL_NAME).dll /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(SRC_DIR)/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 endif
 
 # csharp linear solver examples
@@ -360,7 +358,8 @@ csharpfz: \
 
 $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc: \
 	$(SRC_DIR)/flatzinc/csharp/flatzinc.swig \
-	$(SRC_DIR)/base/base.swig $(SRC_DIR)/util/csharp/proto.swig
+	$(SRC_DIR)/base/base.swig $(SRC_DIR)/util/csharp/proto.swig \
+	$(FLATZINC_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace $(BASE_CLR_DLL_NAME).Flatzinc -dllimport "Google.OrTools.Flatzinc.$(DYNAMIC_SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)/flatzinc$Scsharp$Sflatzinc.swig
 
 $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc
@@ -369,7 +368,7 @@ $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: $(GEN_DIR)/flatzinc/flatzinc_csharp_wra
 $(BIN_DIR)/Google.OrTools.Flatzinc.dll: \
 	$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O \
 	$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs \
-	$(FLATZINC_DEPS)
+	$(FLATZINC_LIBS)
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$SGoogle.OrTools.Flatzinc.dll $(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
