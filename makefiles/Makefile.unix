@@ -178,15 +178,16 @@ ifeq ($(PLATFORM),LINUX)
   JAR_BIN = $(LINUX_JDK_ROOT)/bin/jar
   JNI_LIB_EXT = so
   DYNAMIC_LIB_SUFFIX = so
+  LIB_SUFFIX = so
   DYNAMIC_SWIG_LIB_SUFFIX = so
-  DYNAMIC_LINK_CMD = g++ -shared
-  DYNAMIC_LINK_PREFIX = -o # Need the space.
+  LINK_CMD = g++ -shared
+  LINK_PREFIX = -o # Need the space.
   LINKPREFIX = -o # Need the space.
   STATIC_LIB_SUFFIX = a
   STATIC_LINK_CMD = ar rv
   STATIC_LINK_PREFIX =
-  DYNAMIC_PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
-  DYNAMIC_POST_LIB =
+  PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
+  POST_LIB =
   STATIC_PRE_LIB = $(OR_ROOT_FULL)/lib/lib
   STATIC_POST_LIB = .a
   BISON = dependencies/install/bin/bison
@@ -194,7 +195,7 @@ ifeq ($(PLATFORM),LINUX)
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
   CCC = clang++ -fPIC -std=c++11 -mmacosx-version-min=$(MAC_MIN_VERSION) -stdlib=libc++
-  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
+  DYNAMIC_LD = ld -arch x86_64 -bundle -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_SHORT_VERSION)
 
   CMAKE := $(shell which cmake)
   ifeq ($(CMAKE),)
@@ -220,14 +221,14 @@ ifeq ($(PLATFORM),MACOSX)
   JAVA_BIN = java
   JAR_BIN = jar
 
-  DYNAMIC_PRE_LIB = -L$(OR_ROOT)lib -l
-  DYNAMIC_POST_LIB =
+  PRE_LIB = -L$(OR_ROOT)lib -l
+  POST_LIB =
   STATIC_PRE_LIB = $(OR_ROOT)lib/lib
   STATIC_POST_LIB = .a
-  DYNAMIC_LIB_SUFFIX = dylib
+  LIB_SUFFIX = dylib
   DYNAMIC_SWIG_LIB_SUFFIX = so# To overcome a bug in Mac OS X loader.
-  DYNAMIC_LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_VERSION)
-  DYNAMIC_LINK_PREFIX = -o # Space needed.
+  LINK_CMD = ld -arch x86_64 -dylib -flat_namespace -undefined suppress -macosx_version_min $(MAC_MIN_VERSION) -lSystem -compatibility_version 1.0 -current_version $(OR_TOOLS_SHORT_VERSION)
+  LINK_PREFIX = -o # Space needed.
   STATIC_LIB_SUFFIX = a
   STATIC_LINK_CMD = ar -r -v
   STATIC_LINK_PREFIX =
@@ -271,7 +272,7 @@ CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
 
 JNIFLAGS = $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP
-DYNAMIC_LD_FLAGS = $(DYNAMIC_GFLAGS_LNK) $(ZLIB_LNK) $(DYNAMIC_PROTOBUF_LNK) $(SYS_LNK)
-DYNAMIC_LD_LP_DEPS = $(DYNAMIC_GLPK_LNK) $(DYNAMIC_CBC_LNK) $(DYNAMIC_CLP_LNK) $(DYNAMIC_SLM_LNK) $(DYNAMIC_GUROBI_LNK) $(DYNAMIC_CPLEX_LNK)
+LD_FLAGS = $(DYNAMIC_GFLAGS_LNK) $(ZLIB_LNK) $(DYNAMIC_PROTOBUF_LNK) $(SYS_LNK)
 STATIC_LD_FLAGS = $(STATIC_GFLAGS_LNK) $(ZLIB_LNK) $(STATIC_PROTOBUF_LNK) $(SYS_LNK)
-STATIC_LD_LP_DEPS = $(STATIC_GLPK_LNK) $(STATIC_CBC_LNK) $(STATIC_CLP_LNK) $(STATIC_SCIP_LNK) $(STATIC_SLM_LNK) $(STATIC_GUROBI_LNK) $(STATIC_CPLEX_LNK)
+OR_TOOLS_THIRD_PARTY_DEPS = $(STATIC_GLPK_LNK) $(STATIC_CBC_LNK) $(STATIC_CLP_LNK) $(STATIC_SCIP_LNK) $(STATIC_SLM_LNK) $(STATIC_GUROBI_LNK) $(STATIC_CPLEX_LNK) $(STATIC_GFLAGS_LNK) $(STATIC_PROTOBUF_LNK)
+OR_TOOLS_LD_FLAGS = $(ZLIB_LNK) $(SYS_LNK)

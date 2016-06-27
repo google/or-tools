@@ -83,8 +83,8 @@ $(LIB_DIR)/$(LIBPREFIX)jniortools.$(JNI_LIB_EXT): \
 	$(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O \
 	$(OBJ_DIR)/swig/graph_java_wrap.$O \
 	$(OBJ_DIR)/swig/linear_solver_java_wrap.$O \
-	$(STATIC_ALL_DEPS)
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jniortools.$(JNI_LIB_EXT) $(OBJ_DIR)$Sswig$Sconstraint_solver_java_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O $(OBJ_DIR)/swig/graph_java_wrap.$O $(OBJ_DIR)/swig/linear_solver_java_wrap.$O $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
+	$(ORTOOLS_DEPS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)jniortools.$(JNI_LIB_EXT) $(OBJ_DIR)$Sswig$Sconstraint_solver_java_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_java_wrap.$O $(OBJ_DIR)/swig/graph_java_wrap.$O $(OBJ_DIR)/swig/linear_solver_java_wrap.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 
 # Java CP Examples
 

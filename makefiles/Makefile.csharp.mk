@@ -246,13 +246,13 @@ $(BIN_DIR)/$(CLR_DLL_NAME).dll: \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
-	$(STATIC_ALL_DEPS)
+	$(ORTOOLS_DEPS)
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).netmodule /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(SRC_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_DLL_NAME).dll $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_DLL_NAME).dll $(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_DLL_NAME).dll /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(SRC_DIR)/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(STATIC_ALL_LNK) $(STATIC_LD_FLAGS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIBPREFIX)$(CLR_DLL_NAME).$(DYNAMIC_SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(ORTOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 endif
 
 # csharp linear solver examples
@@ -369,7 +369,7 @@ $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: $(GEN_DIR)/flatzinc/flatzinc_csharp_wra
 $(BIN_DIR)/Google.OrTools.Flatzinc.dll: \
 	$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O \
 	$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs \
-	$(STATIC_FLATZINC_DEPS)
+	$(FLATZINC_DEPS)
 ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$SGoogle.OrTools.Flatzinc.dll $(LIB_DIR)$S$(LIBPREFIX)Google.OrTools.Flatzinc.netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(STATIC_FLATZINC_LNK) $(STATIC_LD_FLAGS)

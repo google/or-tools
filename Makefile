@@ -63,3 +63,5 @@ include $(OR_ROOT)makefiles/Makefile.test.$(SYSTEM)
 
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
+
+print-%  : ; @echo $* = $($*)
