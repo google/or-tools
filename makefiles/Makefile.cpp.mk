@@ -98,7 +98,8 @@ CVRPTW_DEPS = \
 
 DIMACS_DEPS = \
 	$(EX_DIR)/cpp/parse_dimacs_assignment.h \
-	$(EX_DIR)/cpp/print_dimacs_assignment.h
+	$(EX_DIR)/cpp/print_dimacs_assignment.h \
+	$(GRAPH_DEPS)
 
 FAP_DEPS = \
 	$(EX_DIR)/cpp/fap_model_printer.h \
@@ -109,24 +110,15 @@ FAP_DEPS = \
 
 # Link flags
 
-OR_TOOLS_LNK = \
-        $(PRE_LIB)ortools$(POST_LIB)
+OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB)
 
-FLATZINC_LNK = \
-        $(PRE_LIB)fz$(POST_LIB)\
-        $(OR_TOOLS_LNK)
+FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
 
-CVRPTW_LNK = \
-        $(PRE_LIB)cvrptw_lib$(POST_LIB) \
-        $(OR_TOOLS_LNK)
+CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
 
-DIMACS_LNK = \
-        $(PRE_LIB)dimacs$(POST_LIB) \
-        $(OR_TOOLS_LNK)
+DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
 
-FAP_LNK = \
-        $(PRE_LIB)fap$(POST_LIB) \
-        $(OR_TOOLS_LNK)
+FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
 
 # Binaries
 
