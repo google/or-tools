@@ -21,7 +21,8 @@ CP_DEPS = \
 	$(GEN_DIR)/constraint_solver/search_limit.pb.h \
 	$(GEN_DIR)/constraint_solver/solver_parameters.pb.h \
 	$(SRC_DIR)/constraint_solver/constraint_solver.h \
-	$(SRC_DIR)/constraint_solver/constraint_solveri.h
+	$(SRC_DIR)/constraint_solver/constraint_solveri.h \
+	$(GEN_DIR)/glop/parameters.pb.h \
 
 ROUTING_DEPS = \
 	$(CP_DEPS) \
