@@ -313,11 +313,11 @@ else
 	cp lib/_pywraplp.$(SWIG_LIB_SUFFIX) temp/ortools/ortools/linear_solver
 	cp lib/_pywrapgraph.$(SWIG_LIB_SUFFIX) temp/ortools/ortools/graph
 	cp lib/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) temp/ortools/ortools/algorithms
-	cp lib/libortools.$(PYTHON_LIB_SUFFIX) temp/ortools/ortools
+	cp lib/libortools.$(LIB_SUFFIX) temp/ortools/ortools
 	$(SED) -i -e 's/\.dll/\.so/' temp/ortools/setup.py
 	$(SED) -i -e 's/DELETEWIN //g' temp/ortools/setup.py
 	$(SED) -i -e '/DELETEUNIX/d' temp/ortools/setup.py
-	$(SED) -i -e 's/DLL/$(PYTHON_LIB_SUFFIX)/g' temp/ortools/setup.py
+	$(SED) -i -e 's/DLL/$(LIB_SUFFIX)/g' temp/ortools/setup.py
 	-rm temp/ortools/setup.py-e
 ifeq ($(PLATFORM),MACOSX)
 	tools/fix_python_libraries_on_mac.sh
@@ -375,11 +375,11 @@ else
 	cp lib/_pywraplp.$(SWIG_LIB_SUFFIX) temp/ortools/ortools/linear_solver
 	cp lib/_pywrapgraph.$(SWIG_LIB_SUFFIX) temp/ortools/ortools/graph
 	cp lib/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) temp/ortools/ortools/algorithms
-	cp lib/libortools.$(PYTHON_LIB_SUFFIX) temp/ortools/ortools
+	cp lib/libortools.$(LIB_SUFFIX) temp/ortools/ortools
 	$(SED) -i -e 's/\.dll/\.so/' temp/ortools/setup.py
 	$(SED) -i -e 's/DELETEWIN //g' temp/ortools/setup.py
 	$(SED) -i -e '/DELETEUNIX/d' temp/ortools/setup.py
-	$(SED) -i -e 's/DLL/$(PYTHON_LIB_SUFFIX)/g' temp/ortools/setup.py
+	$(SED) -i -e 's/DLL/$(LIB_SUFFIX)/g' temp/ortools/setup.py
 	-rm temp/ortools/setup.py-e
 ifeq ($(PLATFORM),MACOSX)
 	tools/fix_python_libraries_on_mac.sh
