@@ -331,9 +331,13 @@ pypi2_upload: pypi2_archive
 	@echo Uploading Pypi module for python2.
 ifeq ($(SYSTEM),win)
 	@echo Do not forget to run: set VS90COMNTOOLS="$(VS$(VS_COMTOOLS)COMNTOOLS)
-	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_egg bdist_wininst upload"
+	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_wheel bdist_wininst upload"
 else
+  ifeq ($(PLATFORM),MACOSX)
+	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_wheel upload
+  else
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_egg upload
+  endif
 endif
 
 pypi3_archive: python $(PATCHELF)
@@ -393,9 +397,13 @@ pypi3_upload: pypi3_archive
 	@echo Uploading Pypi module for python3.
 ifeq ($(SYSTEM),win)
 	@echo Do not forget to run: set VS90COMNTOOLS="$(VS$(VS_COMTOOLS)COMNTOOLS)
-	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_egg bdist_wininst upload"
+	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py bdist_wheel bdist_wininst upload"
 else
+  ifeq ($(PLATFORM),MACOSX)
+	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_wheel upload
+  else
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py bdist_egg upload
+  endif
 endif
 
 ifeq ($(PYTHON3),true)
