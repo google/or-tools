@@ -85,6 +85,7 @@ FLATZINC_DEPS = \
 	$(SRC_DIR)/flatzinc/flatzinc_constraints.h \
 	$(SRC_DIR)/flatzinc/model.h \
 	$(SRC_DIR)/flatzinc/parser.h \
+	$(GEN_DIR)/flatzinc/parser.tab.hh \
 	$(SRC_DIR)/flatzinc/presolve.h \
 	$(SRC_DIR)/flatzinc/sat_constraint.h \
 	$(SRC_DIR)/flatzinc/search.h \
@@ -122,7 +123,7 @@ FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
 
 # Binaries
 
-CPBINARIES = \
+CP_BINARIES = \
 	$(BIN_DIR)/costas_array$E \
 	$(BIN_DIR)/cryptarithm$E \
 	$(BIN_DIR)/cvrptw$E \
@@ -146,7 +147,7 @@ CPBINARIES = \
 	$(BIN_DIR)/sports_scheduling$E \
 	$(BIN_DIR)/tsp$E
 
-LPBINARIES = \
+LP_BINARIES = \
 	$(BIN_DIR)/integer_programming$E \
 	$(BIN_DIR)/linear_programming$E \
 	$(BIN_DIR)/linear_solver_protocol_buffers$E \
@@ -165,21 +166,11 @@ cc: ortoolslibs cpexe lpexe
 # Clean target
 
 clean_cc:
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)base.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)util.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)constraint_solver.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)linear_solver.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)bop.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)glop.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)graph.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)routing.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)algorithms.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)sat.$(LIB_SUFFIX)
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)shortestpaths.$(LIB_SUFFIX)
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)*.a
 	-$(DEL) $(OBJ_DIR)$S*.$O
 	-$(DEL) $(OBJ_DIR)$Salgorithms$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sbase$S*.$O
@@ -194,8 +185,8 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sutil$S*.$O
 	-$(DEL) $(BIN_DIR)$Sfz$E
 	-$(DEL) $(BIN_DIR)$Ssat_runner$E
-	-$(DEL) $(CPBINARIES)
-	-$(DEL) $(LPBINARIES)
+	-$(DEL) $(CP_BINARIES)
+	-$(DEL) $(LP_BINARIES)
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pb.*
 	-$(DEL) $(GEN_DIR)$Sgraph$S*.pb.*
@@ -217,14 +208,13 @@ clean_compat:
 	-$(DELREC) $(OR_ROOT)graph
 	-$(DELREC) $(OR_ROOT)gen
 
-
 # Individual targets.
 
 ortoolslibs: $(OR_TOOLS_LIBS)
 
-cpexe: $(CPBINARIES)
+cpexe: $(CP_BINARIES)
 
-lpexe: $(LPBINARIES)
+lpexe: $(LP_BINARIES)
 
 cvrptwlibs: $(CVRPTW_LIBS)
 
@@ -234,7 +224,7 @@ faplibs: $(FAP_LIBS)
 
 # Constraint Solver Lib.
 
-CONSTRAINT_SOLVER_LIB_OBJS = \
+CONSTRAINT_SOLVER_OBJS = \
 	$(OBJ_DIR)/constraint_solver/alldiff_cst.$O\
 	$(OBJ_DIR)/constraint_solver/assignment.$O\
 	$(OBJ_DIR)/constraint_solver/assignment.pb.$O\
@@ -439,7 +429,7 @@ $(OBJ_DIR)/constraint_solver/visitor.$O: $(SRC_DIR)/constraint_solver/visitor.cc
 
 # Linear Solver Library
 
-LINEAR_SOLVER_LIB_OBJS = \
+LINEAR_SOLVER_OBJS = \
 	$(OBJ_DIR)/linear_solver/bop_interface.$O \
 	$(OBJ_DIR)/linear_solver/glop_interface.$O \
 	$(OBJ_DIR)/linear_solver/cbc_interface.$O \
@@ -501,7 +491,7 @@ $(OBJ_DIR)/linear_solver/sulum_interface.$O: $(SRC_DIR)/linear_solver/sulum_inte
 
 # Util library.
 
-UTIL_LIB_OBJS=\
+UTIL_OBJS=\
 	$(OBJ_DIR)/util/bitset.$O \
 	$(OBJ_DIR)/util/cached_log.$O \
 	$(OBJ_DIR)/util/fp_utils.$O \
@@ -554,7 +544,7 @@ $(OBJ_DIR)/util/xml_helper.$O: $(SRC_DIR)/util/xml_helper.cc
 
 # Graph library.
 
-GRAPH_LIB_OBJS=\
+GRAPH_OBJS=\
 	$(OBJ_DIR)/graph/simple_assignment.$O \
 	$(OBJ_DIR)/graph/linear_assignment.$O \
 	$(OBJ_DIR)/graph/cliques.$O \
@@ -589,7 +579,7 @@ $(OBJ_DIR)/graph/min_cost_flow.$O: $(SRC_DIR)/graph/min_cost_flow.cc $(GRAPH_DEP
 
 # Shortestpaths library.
 
-SHORTESTPATHS_LIB_OBJS=\
+SHORTESTPATHS_OBJS=\
 	$(OBJ_DIR)/graph/bellman_ford.$O \
 	$(OBJ_DIR)/graph/dijkstra.$O \
 	$(OBJ_DIR)/graph/astar.$O \
@@ -610,7 +600,7 @@ $(OBJ_DIR)/graph/shortestpaths.$O: $(SRC_DIR)/graph/shortestpaths.cc
 
 # Routing library.
 
-ROUTING_LIB_OBJS=\
+ROUTING_OBJS=\
 	$(OBJ_DIR)/constraint_solver/routing.$O \
 	$(OBJ_DIR)/constraint_solver/routing_enums.pb.$O \
 	$(OBJ_DIR)/constraint_solver/routing_flags.$O \
@@ -645,13 +635,13 @@ $(OBJ_DIR)/constraint_solver/routing_search.$O: $(SRC_DIR)/constraint_solver/rou
 
 # Algorithms library.
 
-SPLIT_LIB_OBJS=\
+SPLIT_OBJS=\
 	$(OBJ_DIR)/algorithms/dynamic_partition.$O \
 	$(OBJ_DIR)/algorithms/dynamic_permutation.$O \
 	$(OBJ_DIR)/algorithms/sparse_permutation.$O \
 	$(OBJ_DIR)/algorithms/find_graph_symmetries.$O
 
-ALGORITHMS_LIB_OBJS=\
+ALGORITHMS_OBJS=\
 	$(OBJ_DIR)/algorithms/hungarian.$O \
 	$(OBJ_DIR)/algorithms/knapsack_solver.$O
 
@@ -676,7 +666,7 @@ $(OBJ_DIR)/algorithms/find_graph_symmetries.$O: $(SRC_DIR)/algorithms/find_graph
 
 # Base library.
 
-BASE_LIB_OBJS=\
+BASE_OBJS=\
 	$(OBJ_DIR)/base/bitmap.$O\
 	$(OBJ_DIR)/base/callback.$O\
 	$(OBJ_DIR)/base/file.$O\
@@ -781,7 +771,7 @@ $(OBJ_DIR)/lp_data/sparse.$O: $(SRC_DIR)/lp_data/sparse.cc
 $(OBJ_DIR)/lp_data/sparse_column.$O: $(SRC_DIR)/lp_data/sparse_column.cc
 	 $(CCC) $(CFLAGS) -c $(SRC_DIR)$Slp_data$Ssparse_column.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Ssparse_column.$O
 
-GLOP_LIB_OBJS= $(LP_DATA_OBJS) \
+GLOP_OBJS= $(LP_DATA_OBJS) \
   $(OBJ_DIR)/glop/basis_representation.$O \
   $(OBJ_DIR)/glop/dual_edge_norms.$O \
   $(OBJ_DIR)/glop/entering_variable.$O \
@@ -877,29 +867,29 @@ $(BIN_DIR)/solve$E: $(OBJ_DIR)/glop/solve.$O $(OR_TOOLS_LIBS)
 
 # CVRPTW common library
 
-CVRPTW_LIB_OBJS=\
+CVRPTW_OBJS=\
 	$(OBJ_DIR)/cvrptw_lib.$O
 
 $(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h $(ROUTING_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX): $(CVRPTW_LIB_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) $(CVRPTW_LIB_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX): $(CVRPTW_OBJS)
+	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) $(CVRPTW_OBJS)
 
 # DIMACS challenge problem format library
 
-DIMACS_LIB_OBJS=\
+DIMACS_OBJS=\
 	$(OBJ_DIR)/parse_dimacs_assignment.$O
 
 $(OBJ_DIR)/parse_dimacs_assignment.$O: $(EX_DIR)/cpp/parse_dimacs_assignment.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/parse_dimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sparse_dimacs_assignment.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX): $(DIMACS_LIB_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) $(DIMACS_LIB_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX): $(DIMACS_OBJS)
+	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) $(DIMACS_OBJS)
 
 # FAP challenge problem format library
 
-FAP_LIB_OBJS=\
+FAP_OBJS=\
 	$(OBJ_DIR)/fap_model_printer.$O\
 	$(OBJ_DIR)/fap_parser.$O\
 	$(OBJ_DIR)/fap_utilities.$O
@@ -914,7 +904,7 @@ $(OBJ_DIR)/fap_utilities.$O: $(EX_DIR)/cpp/fap_utilities.cc
 
 # Flatzinc code
 
-FLATZINC_LIB_OBJS=\
+FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/constraints.$O\
 	$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O\
 	$(OBJ_DIR)/flatzinc/model.$O\
@@ -972,8 +962,8 @@ $(OBJ_DIR)/flatzinc/sequential_support.$O: $(SRC_DIR)/flatzinc/sequential_suppor
 $(OBJ_DIR)/flatzinc/solver.$O: $(SRC_DIR)/flatzinc/solver.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver.$O
 
-$(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX): $(FLATZINC_LIB_OBJS)
-	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(FLATZINC_LIB_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX): $(FLATZINC_OBJS)
+	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(FLATZINC_OBJS)
 
 $(OBJ_DIR)/flatzinc/fz.$O: $(SRC_DIR)/flatzinc/fz.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz.$O
@@ -1267,7 +1257,7 @@ $(BIN_DIR)/integer_programming$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/integer_programmin
 
 sat: bin/sat_runner$E
 
-SAT_LIB_OBJS = \
+SAT_OBJS = \
 	$(OBJ_DIR)/sat/boolean_problem.$O\
 	$(OBJ_DIR)/sat/boolean_problem.pb.$O \
 	$(OBJ_DIR)/sat/clause.$O\
@@ -1340,7 +1330,7 @@ $(BIN_DIR)/sat_runner$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/sat/sat_runner.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Ssat$Ssat_runner.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssat_runner$E
 
 # Bop solver
-BOP_LIB_OBJS = \
+BOP_OBJS = \
 	$(OBJ_DIR)/bop/bop_base.$O\
 	$(OBJ_DIR)/bop/bop_fs.$O\
 	$(OBJ_DIR)/bop/bop_lns.$O\
@@ -1393,22 +1383,22 @@ $(OBJ_DIR)/bop/integral_solver.$O: $(SRC_DIR)/bop/integral_solver.cc $(BOP_DEPS)
 
 # OR Tools unique library.
 
-$(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): $(CONSTRAINT_SOLVER_LIB_OBJS) $(LINEAR_SOLVER_LIB_OBJS) $(UTIL_LIB_OBJS) $(GRAPH_LIB_OBJS) $(SHORTESTPATHS_LIB_OBJS) $(ROUTING_LIB_OBJS) $(BOP_LIB_OBJS) $(GLOP_LIB_OBJS) $(ALGORITHMS_LIB_OBJS) $(SPLIT_LIB_OBJS) $(SAT_LIB_OBJS) $(BASE_LIB_OBJS)
+$(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): $(CONSTRAINT_SOLVER_OBJS) $(LINEAR_SOLVER_OBJS) $(UTIL_OBJS) $(GRAPH_OBJS) $(SHORTESTPATHS_OBJS) $(ROUTING_OBJS) $(BOP_OBJS) $(GLOP_OBJS) $(ALGORITHMS_OBJS) $(SPLIT_OBJS) $(SAT_OBJS) $(BASE_OBJS)
 	$(LINK_CMD) \
 	  $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) \
-	  $(ALGORITHMS_LIB_OBJS) \
-	  $(SPLIT_LIB_OBJS) \
-	  $(BASE_LIB_OBJS) \
-	  $(CONSTRAINT_SOLVER_LIB_OBJS) \
-	  $(GRAPH_LIB_OBJS) \
-	  $(LINEAR_SOLVER_LIB_OBJS) \
-	  $(BOP_LIB_OBJS) \
-	  $(GLOP_LIB_OBJS) \
-	  $(ROUTING_LIB_OBJS) \
-	  $(SAT_LIB_OBJS) \
-	  $(SHORTESTPATHS_LIB_OBJS) \
-	  $(UTIL_LIB_OBJS) \
-	  $(OR_TOOLS_THIRD_PARTY_DEPS) \
+	  $(ALGORITHMS_OBJS) \
+	  $(SPLIT_OBJS) \
+	  $(BASE_OBJS) \
+	  $(CONSTRAINT_SOLVER_OBJS) \
+	  $(GRAPH_OBJS) \
+	  $(LINEAR_SOLVER_OBJS) \
+	  $(BOP_OBJS) \
+	  $(GLOP_OBJS) \
+	  $(ROUTING_OBJS) \
+	  $(SAT_OBJS) \
+	  $(SHORTESTPATHS_OBJS) \
+	  $(UTIL_OBJS) \
+	  $(DEPENDENCIES_LNK) \
 	  $(OR_TOOLS_LD_FLAGS)
 
 
