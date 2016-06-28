@@ -1,12 +1,11 @@
 # tags of dependencies to checkout.
 GFLAGS_TAG = master
 PROTOBUF_TAG = 3.0.0-beta-3
-GOOGLE_APPUTILS_TAG = 0.4.2
 SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.8
 ZLIB_TAG = 1.2.8
 ZLIB_ARCHIVE_TAG = 128
-SWIG_TAG = 3.0.7
+SWIG_TAG = 3.0.10
 BISON_FLEX_TAG = 2.5.5
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
@@ -262,7 +261,7 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
 	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
-	$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
+	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
 #	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
@@ -297,14 +296,6 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 #	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
-
-# Intall Google Apputils Python.
-install_google_apputils: dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README
-
-dependencies\sources\google-apputils-$(GOOGLE_APPUTILS_TAG)\README:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/google-apputils/archive/master.zip
-	tools\unzip -d dependencies\sources dependencies\archives\master.zip
-	cd dependencies\sources && move google-apputils-master google-apputils-$(GOOGLE_APPUTILS_TAG)
 
 # Install sparsehash.
 install_sparsehash: dependencies\install\include\google\dense_hash_map
