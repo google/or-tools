@@ -165,7 +165,9 @@ ifeq ($(PLATFORM),LINUX)
   JAVA_BIN = $(LINUX_JDK_ROOT)/bin/java
   JAR_BIN = $(LINUX_JDK_ROOT)/bin/jar
   JNI_LIB_EXT = so
-  DYNAMIC_LIB_SUFFIX = so
+  # Swig made python library may have a different suffix than standard
+  # shared libraries.
+  PYTHON_LIB_SUFFIX = so
   LIB_SUFFIX = so
   SWIG_LIB_SUFFIX = so
   LINK_CMD = g++ -shared
