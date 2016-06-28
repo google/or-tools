@@ -32,7 +32,8 @@ ROUTING_DEPS = \
 LP_DEPS = \
 	$(GEN_DIR)/glop/parameters.pb.h \
 	$(GEN_DIR)/linear_solver/linear_solver.pb.h \
-	$(SRC_DIR)/linear_solver/linear_solver.h
+	$(SRC_DIR)/linear_solver/linear_solver.h \
+	$(BOP_DEPS)
 
 GRAPH_DEPS = \
 	$(GEN_DIR)/graph/flow_problem.pb.h \
