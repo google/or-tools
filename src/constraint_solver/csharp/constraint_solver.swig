@@ -676,19 +676,24 @@ namespace operations_research {
 %ignore Pack::AddWeightedSumEqualVarDimension(Solver::IndexEvaluator2 weights,
                                               const std::vector<IntVar*>& loads);
 %extend Pack {
-void Pack::AddWeightedSumLessOrEqualConstantDimension(
+void AddWeightedSumLessOrEqualConstantDimension(
     swig_util::LongToLong* weights, const std::vector<int64>& bounds) {
-  return $self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i) { return weights->Run(i); }, bounds);
+  operations_research::Solver::IndexEvaluator1 eval = [weights](int64 i) {
+    return weights->Run(i); 
+  };
+  return $self->AddWeightedSumLessOrEqualConstantDimension(eval, bounds);
 }
-void Pack::AddWeightedSumLessOrEqualConstantDimension(
+
+void AddWeightedSumLessOrEqualConstantDimension(
     swig_util::LongLongToLong* weights, const std::vector<int64>& bounds) {
-    return $self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i, int64 j) { return weights->Run(i, j); }, bounds);
+  operations_research::Solver::IndexEvaluator2 eval =
+      [weights](int64 i, int64 j) { return weights->Run(i, j); };
+  return $self->AddWeightedSumLessOrEqualConstantDimension(eval, bounds);
 }
-void Pack::AddWeightedSumEqualVarDimension(
+void AddWeightedSumEqualVarDimension(
     swig_util::LongLongToLong* weights, const std::vector<IntVar*>& loads) {
   return $self->AddWeightedSumEqualVarDimension([weights](int64 i, int64 j) { return weights->Run(i, j); }, loads);
 }
-
 }  // extend Pack
 
 // No custom wrapping for this method, we simply ignore it.
