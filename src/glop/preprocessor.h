@@ -952,6 +952,45 @@ class AddSlackVariablesPreprocessor : public Preprocessor {
   DISALLOW_COPY_AND_ASSIGN(AddSlackVariablesPreprocessor);
 };
 
+// --------------------------------------------------------
+// SolowHalimPreprocessor
+// --------------------------------------------------------
+// Modifies the problem by changing variables to begin
+// geometrically near to the optimal solution according to the suggestion of
+// Solow & Halim.
+// Variable changes have a very simple form :
+// x_j' =  upper_bound(j) - x_j if cost(j) >  0
+// x_j' = -lower_bound(j) + x_j if cost(j) <  0
+// for a maximization problem
+//
+// reference:
+// Improving the Efficiency of the Simplex Algorithm Based on a
+// Geometric Explanation of Phase 1
+// https://weatherhead.case.edu/faculty/research/library/detail?id=12128593921
+// DOI: 10.1504/IJOR.2009.025701
+class SolowHalimPreprocessor : public Preprocessor {
+ public:
+  SolowHalimPreprocessor() {}
+  ~SolowHalimPreprocessor() final {}
+  bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
+  void RecoverSolution(ProblemSolution* solution) const final;
+
+ private:
+  typedef enum {
+    NOT_MODIFIED = 0,
+    SHIFTED = 1,
+    SHIFTED_OPPOSITE_DIRECTION = 2
+  } ColumnTransformType;
+
+  // Contains the coordinate change information for each column
+  ITIVector<ColIndex, ColumnTransformType> column_transform_;
+
+  // Contains the initial problem bounds.
+  DenseRow variable_initial_lbs_;
+  DenseRow variable_initial_ubs_;
+  DISALLOW_COPY_AND_ASSIGN(SolowHalimPreprocessor);
+};
+
 }  // namespace glop
 }  // namespace operations_research
 
