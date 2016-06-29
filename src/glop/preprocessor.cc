@@ -3514,7 +3514,7 @@ void SolowHalimPreprocessor::RecoverSolution(ProblemSolution* solution) const {
   const ColIndex num_cols = solution->variable_statuses.size();
   for (ColIndex col(0); col < num_cols; ++col) {
 
-    VLOG(2) << "col = " << col << "\t" << column_transform_[col] << endl;
+    VLOG(2) << "col = " << col << "\t" << column_transform_[col];
     VLOG(2) << "\tinitial range : \t [" <<  variable_initial_lbs_[col]
             << " ; " << variable_initial_ubs_[col] << "]";
     VLOG(2) << "\tstatus : " <<  solution->variable_statuses[col]
@@ -3562,7 +3562,7 @@ void SolowHalimPreprocessor::RecoverSolution(ProblemSolution* solution) const {
         }
         break;
     }
-    VLOG(2) << " recover value : " << solution->primal_values[col] << endl;
+    VLOG(2) << " recover value : " << solution->primal_values[col];
 
   }
 }
