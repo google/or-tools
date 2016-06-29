@@ -351,4 +351,13 @@ message GlopParameters {
   // not create any OMP threads and will remain single-threaded.
   optional int32 num_omp_threads = 44 [default = 1];
 
+  // Whether or not use Solow-Halim preprocessor. It tries to begin the phase 1
+  // with a closer point to the optimal solution.
+  //
+  // Reference: Improving the Efficiency of the Simplex Algorithm Based on a
+  // Geometric Explanation of Phase 1
+  // https://weatherhead.case.edu/faculty/research/library/detail?id=12128593921
+  // DOI: 10.1504/IJOR.2009.025701
+  optional bool use_solowhalim = 46 [default = false];
+
 }
