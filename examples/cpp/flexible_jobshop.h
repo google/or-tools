@@ -67,8 +67,8 @@ class FlexibleJobShopData {
     }
 
     int job_id;
-    vector<int> machines;
-    vector<int> durations;
+    std::vector<int> machines;
+    std::vector<int> durations;
   };
 
   FlexibleJobShopData()
@@ -145,8 +145,8 @@ class FlexibleJobShopData {
       const int operations_count = atoi32(words[0]);
       int index = 1;
       for (int operation = 0; operation < operations_count; ++operation) {
-        vector<int> machines;
-        vector<int> durations;
+        std::vector<int> machines;
+        std::vector<int> durations;
         const int alternatives_count = atoi32(words[index++]);
         for (int alt = 0; alt < alternatives_count; alt++) {
           // Machine id are 1 based.

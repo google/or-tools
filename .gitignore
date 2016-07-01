@@ -11,26 +11,23 @@ dependencies/archives/libtool-2.4.6.tar.gz
 dependencies/archives/mono-4.0.1.tar.bz2
 dependencies/archives/patchelf-0.8.tar.gz
 dependencies/archives/swig-3.0.10.tar.gz
+dependencies/archives/gflags-master.zip
+dependencies/archives/sparsehash-2.0.3.zip
+dependencies/archives/swigwin-3.0.10.zip
+dependencies/archives/v3.0.0-beta-3.zip
+dependencies/archives/win_flex_bison-2.5.5.zip
+dependencies/archives/zlib128.zip
 dependencies/install/
-dependencies/sources/autoconf-2.69/
-dependencies/sources/automake-1.15/
-dependencies/sources/bison-3.0.4/
-dependencies/sources/cbc-2.9.8/
-dependencies/sources/flex-2.6.0/
-dependencies/sources/gflags-2.1.2/
-dependencies/sources/google-apputils-0.4.2/
-dependencies/sources/help2man-1.43.3/
-dependencies/sources/libtool-2.4.6/
-dependencies/sources/mono-4.0.1
-dependencies/sources/pcre-8.37/
-dependencies/sources/protobuf-3.0.0-beta-3/
-dependencies/sources/sparsehash-2.0.3/
-dependencies/sources/swig-3.0.10/
+dependencies/sources/
 
 *.a
 *.o
 *.so
 *.py[co]
+*.lib
+*.exp
+*.pdb
 
 bin/
 src/gen/
+objs/

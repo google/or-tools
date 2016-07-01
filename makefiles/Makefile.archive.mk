@@ -3,8 +3,9 @@ archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs 
 ifeq "$(SYSTEM)" "win"
 	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 else 
-	cd temp && tar -c -v -z --no-same-owner -f ..$SGoogle.OrTools.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
+	cd temp && tar -c -v -z --no-dirsame-owner -f ..$SGoogle.OrTools.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 endif
+	-$(DELREC) temp
 
 
 create_dirs:
@@ -52,14 +53,16 @@ create_dirs:
 	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 
 
-	#credits
+#credits
 	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
 	$(COPY) tools$SREADME.cc.java.csharp temp$S$(INSTALL_DIR)$SREADME
 	$(COPY) tools$SMakefile.cc temp$S$(INSTALL_DIR)$SMakefile
 
 cc_archive: create_dirs
 
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)*.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) examples$Scpp$S*.cc temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) examples$Scpp$S*.h temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) src$Salgorithms$S*.h temp$S$(INSTALL_DIR)$Sinclude$Salgorithms
@@ -103,10 +106,10 @@ ifeq ($(PLATFORM),MACOSX)
 endif
 endif
 
-dotnet_archive: 
+dotnet_archive: create_dirs
 
-	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Slib$Scsharp
-	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Slib$Scsharp
+	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin$Scsharp
+	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin$Scsharp
 	$(COPY) examples$Scsharp$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Scsharp$Ssolution$SProperties$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
 	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
@@ -123,9 +126,10 @@ else
 	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Slib
 endif
 
-java_archive:
+java_archive: create_dirs
 	$(COPY) lib$S*.jar temp$S$(INSTALL_DIR)$Slib
 	$(COPY) lib$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT) temp$S$(INSTALL_DIR)$Slib
+	$(COPY) lib$S$(LIB_PREFIX)jni*.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 
 	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 	$(COPY) examples$Sdata$Sfill_a_pix$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
