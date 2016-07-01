@@ -57,6 +57,7 @@ include $(OR_ROOT)makefiles/Makefile.python.mk
 include $(OR_ROOT)makefiles/Makefile.java.mk
 include $(OR_ROOT)makefiles/Makefile.csharp.mk
 include $(OR_ROOT)makefiles/Makefile.doc.mk
+include $(OR_ROOT)makefiles/Makefile.archive.mk
 
 # Include test
 include $(OR_ROOT)makefiles/Makefile.test.$(SYSTEM)
