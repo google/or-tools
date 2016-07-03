@@ -145,7 +145,7 @@ ifeq ("$(SYSTEM)","win")
   # Third party specific
   CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
   SCIP_MAKEFILE = \# SCIP not compiled
-
+g
   # Java specific
   SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
 endif
