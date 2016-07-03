@@ -2,8 +2,8 @@
 archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs cc_archive dotnet_archive java_archive
 ifeq "$(SYSTEM)" "win"
 	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
-else 
-	cd temp && tar -c -v -z --no-dirsame-owner -f ..$SGoogle.OrTools.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
+else
+	cd temp && tar -c -v -z --no-same-owner -f ..$SGoogle.OrTools.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 endif
 	-$(DELREC) temp
 
@@ -80,7 +80,7 @@ cc_archive: create_dirs
 	$(COPY) src$Sgen$Ssat$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Ssat
 	$(COPY) src$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sutil
 
-	
+
 
 
 ifeq "$(SYSTEM)" "win"
@@ -129,7 +129,6 @@ endif
 java_archive: create_dirs
 	$(COPY) lib$S*.jar temp$S$(INSTALL_DIR)$Slib
 	$(COPY) lib$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT) temp$S$(INSTALL_DIR)$Slib
-	$(COPY) lib$S$(LIB_PREFIX)jni*.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 
 	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 	$(COPY) examples$Sdata$Sfill_a_pix$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
@@ -138,7 +137,7 @@ java_archive: create_dirs
 	$(COPY) examples$Sdata$Ssurvo_puzzle$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
 	$(COPY) examples$Sdata$Squasigroup_completion$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 	$(COPY) examples$Scom$Sgoogle$Sortools$Ssamples$S*.java temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
-	
+
 
 
 ifeq "$(SYSTEM)" "win"
