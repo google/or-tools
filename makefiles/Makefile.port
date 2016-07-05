@@ -140,12 +140,17 @@ ifeq ("$(SYSTEM)","win")
   PORT = VisualStudio$(VISUAL_STUDIO_YEAR)-$(PTRLENGTH)bit
   VS_RELEASE = v$(VISUAL_STUDIO_MAJOR)0
   VS_COMTOOLS = $(VISUAL_STUDIO_MAJOR)0
-  CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR) $(CMAKE_SUFFIX)"
+ 
+  ifeq ("$(CMAKE_SUFFIX)","")
+    CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR)"
+  else
+    CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR) $(CMAKE_SUFFIX)"
+  endif
 
   # Third party specific
   CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
   SCIP_MAKEFILE = \# SCIP not compiled
-g
+
   # Java specific
   SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
 endif
