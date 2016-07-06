@@ -12,7 +12,7 @@ def read(fname):
 setup(
     name='ortools_examples',
     version='VVVV',
-    install_requires = ['ortools'],
+    install_requires = ['ortools >= VVVV'],
     license='Apache 2.0',
     author = 'Google Inc',
     author_email = 'lperron@google.com',
