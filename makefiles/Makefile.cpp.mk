@@ -129,6 +129,7 @@ FAP_LNK = $(PRE_LIB)fap$(POST_LIB) $(OR_TOOLS_LNK)
 CP_BINARIES = \
 	$(BIN_DIR)/costas_array$E \
 	$(BIN_DIR)/cryptarithm$E \
+	$(BIN_DIR)/cvrp_disjoint_tw$E \
 	$(BIN_DIR)/cvrptw$E \
 	$(BIN_DIR)/cvrptw_with_refueling$E \
 	$(BIN_DIR)/cvrptw_with_resources$E \
@@ -1027,6 +1028,12 @@ $(OBJ_DIR)/cryptarithm.$O: $(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)/constraint_so
 
 $(BIN_DIR)/cryptarithm$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/cryptarithm.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/cryptarithm.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scryptarithm$E
+
+$(OBJ_DIR)/cvrp_disjoint_tw.$O: $(EX_DIR)/cpp/cvrp_disjoint_tw.cc $(CVRPTW_DEPS)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrp_disjoint_tw.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrp_disjoint_tw.$O
+
+$(BIN_DIR)/cvrp_disjoint_tw$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrp_disjoint_tw.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrp_disjoint_tw.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrp_disjoint_tw$E
 
 $(OBJ_DIR)/cvrptw.$O: $(EX_DIR)/cpp/cvrptw.cc $(CVRPTW_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw.$O
