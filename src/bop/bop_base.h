@@ -116,6 +116,8 @@ class ProblemState {
     parameters_ = parameters;
   }
 
+  const BopParameters& GetParameters() const { return parameters_; }
+
   // Sets an assignment preference for each variable.
   // This is only used for warm start.
   void set_assignment_preference(const std::vector<bool>& a) {

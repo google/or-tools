@@ -174,6 +174,7 @@
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/routing_parameters.pb.h"
 #include "util/range_query_function.h"
+#include "util/sorted_interval_list.h"
 #include "base/adjustable_priority_queue-inl.h"
 #include "base/adjustable_priority_queue.h"
 
@@ -519,31 +520,33 @@ class RoutingModel {
   // Note: passing a vector with a single node will model an optional node
   // with a penalty cost if it is not visited.
   void AddDisjunction(const std::vector<NodeIndex>& nodes, int64 penalty);
-  // Returns the index of the disjunction to which a node belongs; if it doesn't
-  // belong to a disjunction, the function returns false, true otherwise.
-  bool GetDisjunctionIndexFromNode(NodeIndex node,
-                                   DisjunctionIndex* disjunction_index) const {
-    return GetDisjunctionIndexFromVariableIndex(NodeToIndex(node),
-                                                disjunction_index);
+  // Same as above except that instead of allowing at most one of the nodes to
+  // be active, the maximum number of active nodes is max_cardinality.
+  void AddDisjunction(const std::vector<NodeIndex>& nodes, int64 penalty,
+                      int64 max_cardinality);
+  // Returns the indices of the disjunctions to which a node belongs.
+  const std::vector<DisjunctionIndex>& GetDisjunctionIndicesFromNode(
+      NodeIndex node) const {
+    return GetDisjunctionIndicesFromVariableIndex(NodeToIndex(node));
   }
-  bool GetDisjunctionIndexFromVariableIndex(
-      int64 index, DisjunctionIndex* disjunction_index) const {
-    if (index < node_to_disjunction_.size()) {
-      *disjunction_index = node_to_disjunction_[index];
-      return *disjunction_index != kNoDisjunction;
-    } else {
-      return false;
-    }
+  const std::vector<DisjunctionIndex>& GetDisjunctionIndicesFromVariableIndex(
+      int64 index) const {
+    return node_to_disjunctions_[index];
   }
-  // Returns the variable indices of the nodes in the same disjunction as the
-  // node corresponding to the variable of index 'index'.
-  std::vector<int> GetDisjunctionIndicesFromIndex(int64 index) const {
-    std::vector<int> disjunction_indices;
-    DisjunctionIndex disjunction = kNoDisjunction;
-    if (GetDisjunctionIndexFromVariableIndex(index, &disjunction)) {
-      disjunction_indices = disjunctions_[disjunction].nodes;
+  // Calls f for each variable index of nodes in the same disjunctions as the
+  // node corresponding to the variable index 'index'; only disjunctions of
+  // cardinality 'cardinality' are considered.
+  template <typename F>
+  void ForEachNodeInDisjunctionWithMaxCardinalityFromIndex(
+      int64 index, int64 max_cardinality, F f) const {
+    for (const DisjunctionIndex disjunction :
+         GetDisjunctionIndicesFromVariableIndex(index)) {
+      if (disjunctions_[disjunction].value.max_cardinality == max_cardinality) {
+        for (const int node : disjunctions_[disjunction].nodes) {
+          f(node);
+        }
+      }
     }
-    return disjunction_indices;
   }
 #if !defined(SWIGPYTHON)
   // Returns the variable indices of the nodes in the disjunction of index
@@ -554,7 +557,12 @@ class RoutingModel {
 #endif  // !defined(SWIGPYTHON)
   // Returns the penalty of the node disjunction of index 'index'.
   int64 GetDisjunctionPenalty(DisjunctionIndex index) const {
-    return disjunctions_[index].value;
+    return disjunctions_[index].value.penalty;
+  }
+  // Returns the maximum number of possible active nodes of the node disjunction
+  // of index 'index'.
+  int64 GetDisjunctionMaxCardinality(DisjunctionIndex index) const {
+    return disjunctions_[index].value.max_cardinality;
   }
   // Returns the number of node disjunctions in the model.
   int GetNumberOfDisjunctions() const { return disjunctions_.size(); }
@@ -1036,12 +1044,18 @@ class RoutingModel {
     LOCAL_SEARCH_OPERATOR_COUNTER
   };
 
-  // Structure storing a value for a set of nodes. Is used to store for node
-  // disjunction information (nodes and penalty when unperformed).
+  // Structure storing a value for a set of nodes. Is used to store data for
+  // node disjunctions (nodes, max_cardinality and penalty when unperformed).
+  template <typename T>
   struct ValuedNodes {
     std::vector<int> nodes;
-    int64 value;
+    T value;
   };
+  struct DisjunctionValues {
+    int64 penalty;
+    int64 max_cardinality;
+  };
+  typedef ValuedNodes<DisjunctionValues> Disjunction;
 
   // Storage of a cost cache element corresponding to a cost arc ending at
   // node 'index' and on the cost class 'cost_class'.
@@ -1058,7 +1072,8 @@ class RoutingModel {
   // Internal methods.
   void Initialize();
   void SetStartEnd(const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
-  void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty);
+  void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty,
+                              int64 max_cardinality);
   void AddNoCycleConstraintInternal();
   bool AddDimensionWithCapacityInternal(
       const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
@@ -1213,10 +1228,10 @@ class RoutingModel {
   hash_map<const VariableNodeEvaluator2*, VariableNodeEvaluator2*>
       cached_state_dependent_callbacks_;
   // Disjunctions
-  ITIVector<DisjunctionIndex, ValuedNodes> disjunctions_;
-  std::vector<DisjunctionIndex> node_to_disjunction_;
+  ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
+  std::vector<std::vector<DisjunctionIndex> > node_to_disjunctions_;
   // Same vehicle costs
-  std::vector<ValuedNodes> same_vehicle_costs_;
+  std::vector<ValuedNodes<int64> > same_vehicle_costs_;
   // Pickup and delivery
   NodePairs pickup_delivery_pairs_;
   // Index management
@@ -1317,6 +1332,10 @@ class RoutingDimension {
   const std::vector<IntVar*>& transits() const { return transits_; }
   const std::vector<IntVar*>& slacks() const { return slacks_; }
 #if !defined(SWIGCSHARP) && !defined(SWIGJAVA)
+  // Returns forbidden intervals for each node.
+  const std::vector<SortedDisjointIntervalList>& forbidden_intervals() const {
+    return forbidden_intervals_;
+  }
   // Returns the capacities for all vehicles.
   const std::vector<int64>& vehicle_capacities() const {
     return vehicle_capacities_;
@@ -1544,6 +1563,7 @@ class RoutingDimension {
   void CloseModel(bool use_light_propagation);
 
   std::vector<IntVar*> cumuls_;
+  std::vector<SortedDisjointIntervalList> forbidden_intervals_;
   std::vector<IntVar*> capacity_vars_;
   const std::vector<int64> vehicle_capacities_;
   std::vector<IntVar*> transits_;
@@ -1575,6 +1595,7 @@ class RoutingDimension {
   const std::string name_;
 
   friend class RoutingModel;
+  friend class RoutingModelInspector;
 
   DISALLOW_COPY_AND_ASSIGN(RoutingDimension);
 };

@@ -60,8 +60,8 @@ class GLPKInformation {
 
 // Function to be called in the GLPK callback
 void GLPKGatherInformationCallback(glp_tree* tree, void* info) {
-  CHECK_NOTNULL(tree);
-  CHECK_NOTNULL(info);
+  CHECK(tree != nullptr);
+  CHECK(info != nullptr);
   GLPKInformation* glpk_info = reinterpret_cast<GLPKInformation*>(info);
   switch (glp_ios_reason(tree)) {
     // The best bound and the number of nodes change only when GLPK
@@ -70,7 +70,7 @@ void GLPKGatherInformationCallback(glp_tree* tree, void* info) {
     case GLP_IROWGEN:
     case GLP_IBINGO: {
       // Get total number of nodes
-      glp_ios_tree_size(tree, NULL, NULL, &glpk_info->num_all_nodes_);
+      glp_ios_tree_size(tree, nullptr, nullptr, &glpk_info->num_all_nodes_);
       // Get best bound
       int node_id = glp_ios_best_node(tree);
       if (node_id > 0) {
@@ -213,7 +213,7 @@ class GLPKInterface : public MPSolverInterface {
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GLPKInterface::GLPKInterface(MPSolver* const solver, bool mip)
-    : MPSolverInterface(solver), lp_(NULL), mip_(mip) {
+    : MPSolverInterface(solver), lp_(nullptr), mip_(mip) {
   lp_ = glp_create_prob();
   glp_set_prob_name(lp_, solver_->name_.c_str());
   glp_set_obj_dir(lp_, GLP_MIN);
@@ -222,13 +222,13 @@ GLPKInterface::GLPKInterface(MPSolver* const solver, bool mip)
 
 // Frees the LP memory allocations.
 GLPKInterface::~GLPKInterface() {
-  CHECK_NOTNULL(lp_);
+  CHECK(lp_ != nullptr);
   glp_delete_prob(lp_);
-  lp_ = NULL;
+  lp_ = nullptr;
 }
 
 void GLPKInterface::Reset() {
-  CHECK_NOTNULL(lp_);
+  CHECK(lp_ != nullptr);
   glp_delete_prob(lp_);
   lp_ = glp_create_prob();
   glp_set_prob_name(lp_, solver_->name_.c_str());
@@ -252,7 +252,7 @@ void GLPKInterface::SetVariableBounds(int mpsolver_var_index, double lb,
     return;
   }
   // Not cached if the variable has been extracted.
-  DCHECK(lp_ != NULL);
+  DCHECK(lp_ != nullptr);
   const double infinity = solver_->infinity();
   const int glpk_var_index = MPSolverIndexToGlpkIndex(mpsolver_var_index);
   if (lb != -infinity) {
@@ -295,7 +295,7 @@ void GLPKInterface::SetConstraintBounds(int mpsolver_constraint_index,
   // Not cached if the row has been extracted
   const int glpk_constraint_index =
       MPSolverIndexToGlpkIndex(mpsolver_constraint_index);
-  DCHECK(lp_ != NULL);
+  DCHECK(lp_ != nullptr);
   const double infinity = solver_->infinity();
   if (lb != -infinity) {
     if (ub != infinity) {
@@ -337,8 +337,8 @@ void GLPKInterface::ClearConstraint(MPConstraint* const constraint) {
   InvalidateSolutionSynchronization();
   // Constraint may have not been extracted yet.
   if (constraint_is_extracted(constraint->index())) {
-    glp_set_mat_row(lp_, MPSolverIndexToGlpkIndex(constraint->index()), 0, NULL,
-                    NULL);
+    glp_set_mat_row(lp_, MPSolverIndexToGlpkIndex(constraint->index()), 0,
+                    nullptr, nullptr);
   }
 }
 

@@ -50,7 +50,7 @@ message BopSolverOptimizerSet {
 // Contains the definitions for all the bop algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 40
+// NEXT TAG: 41
 message BopParameters {
   // Maximum time allowed in seconds to solve a problem.
   // The counter will starts as soon as Solve() is called.
@@ -141,6 +141,13 @@ message BopParameters {
   // enough to be negligeable for most problem. Or at least support a time
   // limit.
   optional bool use_symmetry = 17 [default = false];
+
+  // If true, find and exploit symmetries in proving satisfiability in the first
+  // problem.
+  // This feature is experimental. On some problems, computing symmetries may
+  // run forever. You may also run into unforseen problems as this feature was
+  // not extensively tested.
+  optional bool exploit_symmetry_in_sat_first_solution = 40 [default = false];
 
   // The number of conflicts the SAT solver has to generate a random solution.
   optional int32 max_number_of_conflicts_in_random_solution_generation = 20

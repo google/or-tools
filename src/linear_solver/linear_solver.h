@@ -323,6 +323,10 @@ class MPSolver {
   // Solves the problem using the specified parameter values.
   ResultStatus Solve(const MPSolverParameters& param);
 
+  // Writes the model using the solver internal write function.  Currently only
+  // available for Gurobi.
+  void Write(const std::string& file_name);
+
   // Advanced usage: compute the "activities" of all constraints, which are the
   // sums of their linear terms. The activities are returned in the same order
   // as constraints(), which is the order in which constraints were added; but
@@ -441,6 +445,9 @@ class MPSolver {
   // wrong (you can check the log if you suspect an issue there). This seems to
   // be a bug in SCIP though.
   bool SetSolverSpecificParametersAsString(const std::string& parameters);
+  std::string GetSolverSpecificParametersAsString() const {
+    return solver_specific_parameter_string_;
+  }
 
   // Advanced usage: possible basis status values for a variable and the
   // slack variable of a linear constraint.
@@ -1094,6 +1101,10 @@ class MPSolverInterface {
   // Solves problem with specified parameter values. Returns true if the
   // solution is optimal.
   virtual MPSolver::ResultStatus Solve(const MPSolverParameters& param) = 0;
+
+  // Writes the model using the solver internal write function.  Currently only
+  // available for GurobiInterface.
+  virtual void Write(const std::string& filename);
 
   // ----- Model modifications and extraction -----
   // Resets extracted model.

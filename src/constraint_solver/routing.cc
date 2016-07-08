@@ -308,6 +308,9 @@ class PathWithPreviousNodesOperator : public PathOperator {
     return prevs_[node_index];
   }
   bool IsPathStart(int64 node_index) const { return prevs_[node_index] == -1; }
+  std::string DebugString() const override {
+    return "PathWithPreviousNodesOperator";
+  }
 
  protected:
   void OnNodeInitialization() override {
@@ -583,6 +586,7 @@ class PairRelocateOperator : public PathOperator {
   }
   ~PairRelocateOperator() override {}
   bool MakeNeighbor() override;
+  std::string DebugString() const override { return "PairRelocateOperator"; }
 
  protected:
   bool OnSamePathAsPreviousBase(int64 base_index) override {
@@ -1158,7 +1162,7 @@ void RoutingModel::Initialize() {
   // Next variables
   solver_->MakeIntVarArray(size, 0, size + vehicles_ - 1, "Nexts", &nexts_);
   solver_->AddConstraint(solver_->MakeAllDifferent(nexts_, false));
-  node_to_disjunction_.resize(size, kNoDisjunction);
+  node_to_disjunctions_.resize(size + vehicles_);
   // Vehicle variables. In case that node i is not active, vehicle_vars_[i] is
   // bound to -1.
   solver_->MakeIntVarArray(size + vehicles_, -1, vehicles_ - 1, "Vehicles",
@@ -1861,17 +1865,24 @@ void RoutingModel::ComputeVehicleClasses() {
 }
 
 void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes) {
-  AddDisjunctionInternal(nodes, kNoPenalty);
+  AddDisjunctionInternal(nodes, kNoPenalty, 1);
 }
 
 void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes,
                                   int64 penalty) {
+  AddDisjunction(nodes, penalty, 1);
+}
+
+void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes, int64 penalty,
+                                  int64 max_cardinality) {
   CHECK_GE(penalty, 0) << "Penalty must be positive";
-  AddDisjunctionInternal(nodes, penalty);
+  CHECK_GE(max_cardinality, 1);
+  AddDisjunctionInternal(nodes, penalty, max_cardinality);
 }
 
 void RoutingModel::AddDisjunctionInternal(const std::vector<NodeIndex>& nodes,
-                                          int64 penalty) {
+                                          int64 penalty,
+                                          int64 max_cardinality) {
   const int size = disjunctions_.size();
   disjunctions_.resize(size + 1);
   std::vector<int>& disjunction_nodes = disjunctions_.back().nodes;
@@ -1880,26 +1891,32 @@ void RoutingModel::AddDisjunctionInternal(const std::vector<NodeIndex>& nodes,
     CHECK_NE(kUnassigned, node_to_index_[nodes[i]]);
     disjunction_nodes[i] = node_to_index_[nodes[i]];
   }
-  disjunctions_.back().value = penalty;
+  disjunctions_.back().value.penalty = penalty;
+  disjunctions_.back().value.max_cardinality = max_cardinality;
   for (const NodeIndex node : nodes) {
-    // TODO(user): support multiple disjunction per node
-    node_to_disjunction_[node_to_index_[node]] = DisjunctionIndex(size);
+    node_to_disjunctions_[node_to_index_[node]].push_back(
+        DisjunctionIndex(size));
   }
 }
 
 IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
   const std::vector<int>& nodes = disjunctions_[disjunction].nodes;
   const int nodes_size = nodes.size();
-  std::vector<IntVar*> disjunction_vars(nodes_size + 1);
+  std::vector<IntVar*> disjunction_vars(nodes_size);
   for (int i = 0; i < nodes_size; ++i) {
     const int node = nodes[i];
     CHECK_LT(node, Size());
     disjunction_vars[i] = ActiveVar(node);
   }
+  const int64 max_cardinality =
+      disjunctions_[disjunction].value.max_cardinality;
   IntVar* no_active_var = solver_->MakeBoolVar();
-  disjunction_vars[nodes_size] = no_active_var;
-  solver_->AddConstraint(solver_->MakeSumEquality(disjunction_vars, 1));
-  const int64 penalty = disjunctions_[disjunction].value;
+  IntVar* number_active_vars = solver_->MakeIntVar(0, max_cardinality);
+  solver_->AddConstraint(
+      solver_->MakeSumEquality(disjunction_vars, number_active_vars));
+  solver_->AddConstraint(solver_->MakeIsDifferentCstCt(
+      number_active_vars, max_cardinality, no_active_var));
+  const int64 penalty = disjunctions_[disjunction].value.penalty;
   if (penalty < 0) {
     no_active_var->SetMax(0);
     return nullptr;
@@ -1911,7 +1928,7 @@ IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
 void RoutingModel::AddSoftSameVehicleConstraint(const std::vector<NodeIndex>& nodes,
                                                 int64 cost) {
   if (!nodes.empty()) {
-    ValuedNodes same_vehicle_cost;
+    ValuedNodes<int64> same_vehicle_cost;
     for (const NodeIndex node : nodes) {
       same_vehicle_cost.nodes.push_back(node_to_index_[node]);
     }
@@ -2132,6 +2149,72 @@ void RoutingModel::CloseModel() {
   CloseModelWithParameters(DefaultSearchParameters());
 }
 
+class RoutingModelInspector : public ModelVisitor {
+ public:
+  explicit RoutingModelInspector(RoutingModel* model) {
+    for (const std::string& name : model->GetAllDimensionNames()) {
+      RoutingDimension* const dimension = model->GetMutableDimension(name);
+      const std::vector<IntVar*>& cumuls = dimension->cumuls();
+      for (int i = 0; i < cumuls.size(); ++i) {
+        cumul_to_dim_indices_[cumuls[i]] = {dimension, i};
+      }
+    }
+    RegisterInspectors();
+  }
+  ~RoutingModelInspector() override {}
+  void EndVisitConstraint(const std::string& type_name,
+                          const Constraint* const constraint) override {
+    FindWithDefault(constraint_inspectors_, type_name, []() {})();
+  }
+  void VisitIntegerExpressionArgument(const std::string& type_name,
+                                      IntExpr* const expr) override {
+    FindWithDefault(expr_inspectors_, type_name,
+                    [](const IntExpr* expr) {})(expr);
+  }
+  void VisitIntegerArrayArgument(const std::string& arg_name,
+                                 const std::vector<int64>& values) override {
+    FindWithDefault(array_inspectors_, arg_name,
+                    [](const std::vector<int64>& int_array) {})(values);
+  }
+
+ private:
+  using ExprInspector = std::function<void(const IntExpr*)>;
+  using ArrayInspector = std::function<void(const std::vector<int64>&)>;
+  using ConstraintInspector = std::function<void()>;
+
+  void RegisterInspectors() {
+    expr_inspectors_[kExpressionArgument] = [this](const IntExpr* expr) {
+      expr_ = expr;
+    };
+    array_inspectors_[kStartsArgument] = [this](
+        const std::vector<int64>& int_array) { starts_argument_ = int_array; };
+    array_inspectors_[kEndsArgument] = [this](const std::vector<int64>& int_array) {
+      ends_argument_ = int_array;
+    };
+    constraint_inspectors_[kNotMember] = [this]() {
+      const auto dim_index = cumul_to_dim_indices_[expr_];
+      RoutingDimension* const dimension = dim_index.first;
+      const int index = dim_index.second;
+      dimension->forbidden_intervals_[index].InsertIntervals(starts_argument_,
+                                                             ends_argument_);
+      VLOG(2) << dimension->name() << " " << index << ": "
+              << dimension->forbidden_intervals_[index].DebugString();
+      expr_ = nullptr;
+      starts_argument_.clear();
+      ends_argument_.clear();
+    };
+  }
+
+  hash_map<const IntExpr*, std::pair<RoutingDimension*, int>>
+      cumul_to_dim_indices_;
+  hash_map<std::string, ExprInspector> expr_inspectors_;
+  hash_map<std::string, ArrayInspector> array_inspectors_;
+  hash_map<std::string, ConstraintInspector> constraint_inspectors_;
+  const IntExpr* expr_ = nullptr;
+  std::vector<int64> starts_argument_;
+  std::vector<int64> ends_argument_;
+};
+
 void RoutingModel::CloseModelWithParameters(
     const RoutingSearchParameters& parameters) {
   if (closed_) {
@@ -2245,6 +2328,11 @@ void RoutingModel::CloseModelWithParameters(
   }
   cost_ = solver_->MakeSum(cost_elements)->Var();
   cost_->set_name("Cost");
+
+  // Detect constraints
+  std::unique_ptr<RoutingModelInspector> inspector(
+      new RoutingModelInspector(this));
+  solver_->Accept(inspector.get());
 
   // Keep this out of SetupSearch as this contains static search objects.
   // This will allow calling SetupSearch multiple times with different search
@@ -3073,14 +3161,13 @@ class FastOnePathBuilder : public DecisionBuilder {
       added_[index] = true;
       container->FastAdd(nexts[index])->SetValue(next);
       index = next;
-      const std::vector<int> alternates =
-          model_->GetDisjunctionIndicesFromIndex(index);
-      for (const int alternate : alternates) {
-        if (index != alternate) {
-          added_[alternate] = true;
-          container->FastAdd(nexts[alternate])->SetValue(alternate);
-        }
-      }
+      model_->ForEachNodeInDisjunctionWithMaxCardinalityFromIndex(
+          index, 1, [this, index, container, nexts](int alternate) {
+            if (index != alternate) {
+              added_[alternate] = true;
+              container->FastAdd(nexts[alternate])->SetValue(alternate);
+            }
+          });
       next = FindCheapestValue(index);
     }
     // Make unassigned nexts loop to themselves.
@@ -3957,15 +4044,16 @@ int64 RoutingModel::UnperformedPenalty(int64 var_index) const {
 int64 RoutingModel::UnperformedPenaltyOrValue(int64 default_value,
                                               int64 var_index) const {
   if (active_[var_index]->Min() == 1) return kint64max;  // Forced active.
-  DisjunctionIndex disjunction_index = kNoDisjunction;
-  GetDisjunctionIndexFromVariableIndex(var_index, &disjunction_index);
-  if (disjunction_index == kNoDisjunction) return default_value;
+  const std::vector<DisjunctionIndex>& disjunction_indices =
+      GetDisjunctionIndicesFromVariableIndex(var_index);
+  if (disjunction_indices.size() != 1) return default_value;
+  const DisjunctionIndex disjunction_index = disjunction_indices[0];
   if (disjunctions_[disjunction_index].nodes.size() != 1) return default_value;
   DCHECK_EQ(var_index, disjunctions_[disjunction_index].nodes[0]);
   // The disjunction penalty can't be kNoPenalty, otherwise we would have
   // caught it earlier (the node would be forced active).
-  DCHECK_GE(disjunctions_[disjunction_index].value, 0);
-  return disjunctions_[disjunction_index].value;
+  DCHECK_GE(disjunctions_[disjunction_index].value.penalty, 0);
+  return disjunctions_[disjunction_index].value.penalty;
 }
 
 std::string RoutingModel::DebugOutputAssignment(
@@ -5006,6 +5094,7 @@ void RoutingDimension::InitializeCumuls() {
   CHECK_GE(min_capacity, 0);
   const int64 max_capacity = *capacity_range.second;
   solver->MakeIntVarArray(size, 0LL, max_capacity, name_, &cumuls_);
+  forbidden_intervals_.resize(size);
   capacity_vars_.clear();
   if (min_capacity != max_capacity) {
     solver->MakeIntVarArray(size, 0LL, kint64max, &capacity_vars_);

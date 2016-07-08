@@ -22,7 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
-// next id = 53
+// next id = 56
 message GlopParameters {
 
   // Like a Boolean with an extra value to let the algorithm decide what is the
@@ -359,5 +359,18 @@ message GlopParameters {
   // https://weatherhead.case.edu/faculty/research/library/detail?id=12128593921
   // DOI: 10.1504/IJOR.2009.025701
   optional bool use_solowhalim = 46 [default = false];
+
+  // When this is true, then the costs are randomly perturbed before the dual
+  // simplex is even started. This has been shown to improve the dual simplex
+  // performance. For a good reference, see Huangfu Q (2013) "High performance
+  // simplex solver", Ph.D, dissertation, University of Edinburgh.
+  optional bool perturb_costs_in_dual_simplex = 53 [default = false];
+
+  // The magnitude of the cost perturbation is given by
+  // RandomIn(1.0, 2.0) * (
+  //     relative_cost_perturbation * cost
+  //   + relative_max_cost_perturbation * max_cost);
+  optional double relative_cost_perturbation = 54 [default = 1e-5];
+  optional double relative_max_cost_perturbation = 55 [default = 1e-7];
 
 }

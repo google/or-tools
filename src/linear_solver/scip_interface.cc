@@ -123,7 +123,7 @@ class SCIPInterface : public MPSolverInterface {
   }
 
   bool InterruptSolve() override {
-    if (scip_ != NULL) SCIPinterruptSolve(scip_);
+    if (scip_ != nullptr) SCIPinterruptSolve(scip_);
     return true;
   }
 
@@ -154,7 +154,7 @@ class SCIPInterface : public MPSolverInterface {
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 SCIPInterface::SCIPInterface(MPSolver* const solver)
-    : MPSolverInterface(solver), scip_(NULL) {
+    : MPSolverInterface(solver), scip_(nullptr) {
   CreateSCIP();
 }
 
@@ -181,23 +181,25 @@ void SCIPInterface::CreateSCIP() {
   // times() which is very expensive.
   ORTOOLS_SCIP_CALL(SCIPsetIntParam(scip_, "timing/clocktype",
                                     /* Wall clock time */ 2));
-  ORTOOLS_SCIP_CALL(SCIPcreateProb(scip_, solver_->name_.c_str(), NULL, NULL,
-                                   NULL, NULL, NULL, NULL, NULL));
+  ORTOOLS_SCIP_CALL(SCIPcreateProb(scip_, solver_->name_.c_str(), nullptr,
+                                   nullptr, nullptr, nullptr, nullptr, nullptr,
+                                   nullptr));
   ORTOOLS_SCIP_CALL(SCIPsetObjsense(
       scip_, maximize_ ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE));
   // SCIPaddObjoffset cannot be used at the problem building stage. So
   // we handle the objective offset by creating a dummy variable.
-  objective_offset_variable_ = NULL;
+  objective_offset_variable_ = nullptr;
   // The true objective coefficient will be set in ExtractObjective.
   double dummy_obj_coef = 0.0;
-  ORTOOLS_SCIP_CALL(SCIPcreateVar(
-      scip_, &objective_offset_variable_, "dummy", 1.0, 1.0, dummy_obj_coef,
-      SCIP_VARTYPE_CONTINUOUS, true, false, NULL, NULL, NULL, NULL, NULL));
+  ORTOOLS_SCIP_CALL(SCIPcreateVar(scip_, &objective_offset_variable_, "dummy",
+                                  1.0, 1.0, dummy_obj_coef,
+                                  SCIP_VARTYPE_CONTINUOUS, true, false, nullptr,
+                                  nullptr, nullptr, nullptr, nullptr));
   ORTOOLS_SCIP_CALL(SCIPaddVar(scip_, objective_offset_variable_));
 }
 
 void SCIPInterface::DeleteSCIP() {
-  CHECK_NOTNULL(scip_);
+  CHECK(scip_ != nullptr);
   ORTOOLS_SCIP_CALL(SCIPreleaseVar(scip_, &objective_offset_variable_));
   for (int i = 0; i < scip_variables_.size(); ++i) {
     ORTOOLS_SCIP_CALL(SCIPreleaseVar(scip_, &scip_variables_[i]));
@@ -208,7 +210,7 @@ void SCIPInterface::DeleteSCIP() {
   }
   scip_constraints_.clear();
   ORTOOLS_SCIP_CALL(SCIPfree(&scip_));
-  scip_ = NULL;
+  scip_ = nullptr;
 }
 
 // ------ Model modifications and extraction -----
@@ -355,14 +357,14 @@ void SCIPInterface::ExtractNewVariables() {
       MPVariable* const var = solver_->variables_[j];
       DCHECK(!variable_is_extracted(j));
       set_variable_as_extracted(j, true);
-      SCIP_VAR* scip_var = NULL;
+      SCIP_VAR* scip_var = nullptr;
       // The true objective coefficient will be set later in ExtractObjective.
       double tmp_obj_coef = 0.0;
       ORTOOLS_SCIP_CALL(SCIPcreateVar(
           scip_, &scip_var, var->name().c_str(), var->lb(), var->ub(),
           tmp_obj_coef,
           var->integer() ? SCIP_VARTYPE_INTEGER : SCIP_VARTYPE_CONTINUOUS, true,
-          false, NULL, NULL, NULL, NULL, NULL));
+          false, nullptr, nullptr, nullptr, nullptr, nullptr));
       ORTOOLS_SCIP_CALL(SCIPaddVar(scip_, scip_var));
       scip_variables_.push_back(scip_var);
     }
@@ -414,7 +416,7 @@ void SCIPInterface::ExtractNewConstraints() {
         coefs[j] = entry.second;
         j++;
       }
-      SCIP_CONS* scip_constraint = NULL;
+      SCIP_CONS* scip_constraint = nullptr;
       const bool is_lazy = ct->is_lazy();
       // See
       // http://scip.zib.de/doc/html/cons__linear_8h.php#aa7aed137a4130b35b168812414413481
@@ -550,7 +552,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
 
   // Get the results.
   SCIP_SOL* solution = SCIPgetBestSol(scip_);
-  if (solution != NULL) {
+  if (solution != nullptr) {
     // if optimal or feasible solution is found.
     objective_value_ = SCIPgetSolOrigObj(scip_, solution);
     VLOG(1) << "objective=" << objective_value_;
@@ -588,7 +590,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
       result_status_ = MPSolver::INFEASIBLE;
       break;
     default:
-      if (solution != NULL) {
+      if (solution != nullptr) {
         result_status_ = MPSolver::FEASIBLE;
       } else {
         // TODO(user): We could introduce additional values for the

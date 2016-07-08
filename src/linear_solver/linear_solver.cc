@@ -606,6 +606,8 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
     solver.set_time_limit(
         static_cast<int64>(model_request.solver_time_limit_seconds() * 1000));
   }
+  solver.SetSolverSpecificParametersAsString(
+      model_request.solver_specific_parameters());
   solver.Solve();
   solver.FillSolutionResponseProto(response);
 }
@@ -886,6 +888,8 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
   return status;
 }
 
+void MPSolver::Write(const std::string& file_name) { interface_->Write(file_name); }
+
 namespace {
 std::string PrettyPrintVar(const MPVariable& var) {
   const std::string prefix = "Variable '" + var.name() + "': domain = ";
@@ -1152,6 +1156,10 @@ MPSolverInterface::MPSolverInterface(MPSolver* const solver)
       quiet_(true) {}
 
 MPSolverInterface::~MPSolverInterface() {}
+
+void MPSolverInterface::Write(const std::string& filename) {
+  LOG(WARNING) << "Writing model not implemented in this solver interface.";
+}
 
 void MPSolverInterface::ExtractModel() {
   switch (sync_status_) {
