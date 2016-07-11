@@ -212,6 +212,27 @@ inline void PermuteAndComputeNonZeros(
   }
 }
 
+// Same as PermuteAndComputeNonZeros() except that we assume that the given
+// non-zeros are the initial non-zeros positions of output.
+template <typename IndexType>
+inline void PermuteWithKnownNonZeros(
+    const Permutation<IndexType>& permutation,
+    StrictITIVector<IndexType, Fractional>* zero_scratchpad,
+    StrictITIVector<IndexType, Fractional>* output,
+    std::vector<IndexType>* non_zeros) {
+  DCHECK(IsAllZero(*zero_scratchpad));
+  zero_scratchpad->swap(*output);
+  output->resize(zero_scratchpad->size(), 0.0);
+  for (IndexType& index_ref : *non_zeros) {
+    const Fractional value = (*zero_scratchpad)[index_ref];
+    DCHECK_NE(value, 0.0);
+    (*zero_scratchpad)[index_ref] = 0.0;
+    const IndexType permuted_index(permutation[index_ref]);
+    (*output)[permuted_index] = value;
+    index_ref = permuted_index;
+  }
+}
+
 // Same algorithm as PermuteAndComputeNonZeros() above when the non-zeros are
 // not needed. This should be faster than a simple ApplyPermutation() if the
 // input vector is relatively sparse. The input is the initial value of output.

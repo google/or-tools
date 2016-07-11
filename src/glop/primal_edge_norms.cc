@@ -162,15 +162,17 @@ void PrimalEdgeNorms::ComputeDirectionLeftInverse(
     }
   } else {
     direction_left_inverse_ = Transpose(direction.dense_column);
+    direction_left_inverse_non_zeros_.clear();
   }
 
   // Depending on the sparsity of the input, we decide which version to use.
   if (direction.non_zero_rows.size() < kThreshold) {
+    direction_left_inverse_non_zeros_ =
+        *reinterpret_cast<ColIndexVector const*>(&direction.non_zero_rows);
     basis_factorization_.LeftSolveWithNonZeros(
         &direction_left_inverse_, &direction_left_inverse_non_zeros_);
   } else {
     basis_factorization_.LeftSolve(&direction_left_inverse_);
-    direction_left_inverse_non_zeros_.clear();
   }
 
   // TODO(user): Refactorize if estimated accuracy above a threshold.

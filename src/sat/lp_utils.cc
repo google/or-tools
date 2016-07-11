@@ -67,8 +67,8 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
       } else if (lb <= 0.0 && ub >= 0.0) {
         // Fixed variable at 0.
         LinearBooleanConstraint* constraint = problem->add_constraints();
-        constraint->set_lower_bound(1);
-        constraint->set_upper_bound(1);
+        constraint->set_lower_bound(0);
+        constraint->set_upper_bound(0);
         constraint->add_literals(var_id + 1);
         constraint->add_coefficients(1);
       } else {

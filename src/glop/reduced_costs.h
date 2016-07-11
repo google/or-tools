@@ -23,6 +23,7 @@
 #include "lp_data/lp_data.h"
 #include "lp_data/lp_types.h"
 #include "util/stats.h"
+#include "base/random.h"
 
 namespace operations_research {
 namespace glop {
@@ -49,7 +50,8 @@ class ReducedCosts {
   ReducedCosts(const CompactSparseMatrix& matrix_, const DenseRow& objective,
                const RowToColMapping& basis,
                const VariablesInfo& variables_info,
-               const BasisFactorization& basis_factorization);
+               const BasisFactorization& basis_factorization,
+               RandomBase* random);
 
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
@@ -115,6 +117,14 @@ class ReducedCosts {
   // refactorization first).
   void MakeReducedCostsPrecise();
 
+  // Randomly perturb the costs. Both Koberstein and Huangfu recommend doing
+  // that before the dual simplex starts in their Phd thesis.
+  //
+  // The perturbation follows what is explained in Huangfu Q (2013) "High
+  // performance simplex solver", Ph.D, dissertation, University of Edinburgh,
+  // section 3.2.3, page 58.
+  void PerturbCosts();
+
   // Shifts the cost of the given non-basic column such that its current reduced
   // cost becomes 0.0. Actually, this shifts the cost a bit more, so that the
   // reduced cost becomes slightly of the other sign.
@@ -126,8 +136,9 @@ class ReducedCosts {
   // infeasible, it will be selected and shifted in subsequent iterations.
   void ShiftCost(ColIndex col);
 
-  // Removes any cost shifts and forces a recomputation of all the derived
-  // quantities. This effectively resets the class to its initial state.
+  // Removes any cost shift and cost perturbation. This also lazily forces a
+  // recomputation of all the derived quantities. This effectively resets the
+  // class to its initial state.
   void ClearAndRemoveCostShifts();
 
   // Invalidates all internal structure that depends on the objective function.
@@ -167,6 +178,11 @@ class ReducedCosts {
 
   // Does basic checking of an entering candidate. To be used in DCHECK().
   bool IsValidPrimalEnteringCandidate(ColIndex col) const;
+
+  // Visible for testing.
+  const DenseRow& GetCostPerturbations() const {
+    return objective_perturbation_;
+  }
 
  private:
   // Statistics about this class.
@@ -218,6 +234,7 @@ class ReducedCosts {
   const RowToColMapping& basis_;
   const VariablesInfo& variables_info_;
   const BasisFactorization& basis_factorization_;
+  RandomBase* random_;
 
   // Internal data.
   GlopParameters parameters_;
@@ -239,6 +256,9 @@ class ReducedCosts {
 
   // Perturbations to the objective function. This may be introduced to
   // counter degenerecency. It will be removed at the end of the algorithm.
+  //
+  // TODO(user): rename this cost_perturbations_ to be more consistent with
+  // the literature.
   DenseRow objective_perturbation_;
 
   // Reduced costs of the relevant columns of A.

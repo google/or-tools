@@ -26,12 +26,14 @@ ReducedCosts::ReducedCosts(const CompactSparseMatrix& matrix,
                            const DenseRow& objective,
                            const RowToColMapping& basis,
                            const VariablesInfo& variables_info,
-                           const BasisFactorization& basis_factorization)
+                           const BasisFactorization& basis_factorization,
+                           RandomBase* random)
     : matrix_(matrix),
       objective_(objective),
       basis_(basis),
       variables_info_(variables_info),
       basis_factorization_(basis_factorization),
+      random_(random),
       parameters_(),
       stats_(),
       must_refactorize_basis_(false),
@@ -227,6 +229,58 @@ void ReducedCosts::MakeReducedCostsPrecise() {
   must_refactorize_basis_ = true;
   recompute_basic_objective_left_inverse_ = true;
   recompute_reduced_costs_ = true;
+}
+
+void ReducedCosts::PerturbCosts() {
+  SCOPED_TIME_STAT(&stats_);
+  VLOG(1) << "Perturbing the costs ... ";
+
+  // Note(user): The max_cost_magnitude should be 1.0 when cost scaling is on.
+  Fractional max_cost_magnitude = 0.0;
+  const ColIndex structural_size =
+      matrix_.num_cols() - RowToColIndex(matrix_.num_rows());
+  for (ColIndex col(0); col < structural_size; ++col) {
+    max_cost_magnitude =
+        std::max(max_cost_magnitude, std::abs(objective_[col]));
+  }
+
+  objective_perturbation_.assign(matrix_.num_cols(), 0.0);
+  for (ColIndex col(0); col < structural_size; ++col) {
+    const Fractional objective = objective_[col];
+    const Fractional magnitude =
+        (1.0 + random_->UniformDouble(1.0)) *
+        (parameters_.relative_cost_perturbation() * std::abs(objective) +
+         parameters_.relative_max_cost_perturbation() * max_cost_magnitude);
+    DCHECK_GE(magnitude, 0.0);
+
+    // The perturbation direction is such that a dual-feasible solution stays
+    // feasible. This is important.
+    const VariableType type = variables_info_.GetTypeRow()[col];
+    switch (type) {
+      case VariableType::UNCONSTRAINED:
+        break;
+      case VariableType::FIXED_VARIABLE:
+        break;
+      case VariableType::LOWER_BOUNDED:
+        objective_perturbation_[col] = magnitude;
+        break;
+      case VariableType::UPPER_BOUNDED:
+        objective_perturbation_[col] = -magnitude;
+        break;
+      case VariableType::UPPER_AND_LOWER_BOUNDED:
+        // Here we don't necessarily maintain the dual-feasibility of a dual
+        // feasible solution, however we can always shift the variable to its
+        // other bound (because it is boxed) to restore dual-feasiblity. This is
+        // done by MakeBoxedVariableDualFeasible() at the end of the dual
+        // phase-I algorithm.
+        if (objective > 0.0) {
+          objective_perturbation_[col] = magnitude;
+        } else if (objective < 0.0) {
+          objective_perturbation_[col] = -magnitude;
+        }
+        break;
+    }
+  }
 }
 
 void ReducedCosts::ShiftCost(ColIndex col) {

@@ -325,8 +325,8 @@ void BasisFactorization::LeftSolveWithNonZeros(
   RETURN_IF_NULL(y);
   BumpDeterministicTimeForSolve(matrix_.num_rows().value());
   if (use_middle_product_form_update_) {
-    lu_factorization_.LeftSolveU(y);
-    rank_one_factorization_.LeftSolve(y);
+    lu_factorization_.LeftSolveUWithNonZeros(y, non_zeros);
+    rank_one_factorization_.LeftSolveWithNonZeros(y, non_zeros);
     lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, nullptr);
   } else {
     eta_factorization_.LeftSolve(y);
@@ -357,6 +357,11 @@ void BasisFactorization::RightSolveWithNonZeros(
   if (use_middle_product_form_update_) {
     lu_factorization_.RightSolveL(d);
     rank_one_factorization_.RightSolve(d);
+
+    // We need to clear non-zeros because at this point in the code, they don't
+    // correspond to the zeros of d. An empty non_zeros means that
+    // RightSolveWithNonZeros() will recompute them.
+    non_zeros->clear();
     lu_factorization_.RightSolveUWithNonZeros(d, non_zeros);
   } else {
     lu_factorization_.RightSolve(d);
@@ -376,12 +381,21 @@ DenseColumn* BasisFactorization::RightSolveForTau(ScatteredColumnReference a)
       // can no longer use the optimized algorithm.
       tau_computation_can_be_optimized_ = false;
       lu_factorization_.RightSolveLWithPermutedInput(a.dense_column, &tau_);
+      tau_non_zeros_.clear();
     } else {
-      tau_ = a.dense_column;
-      lu_factorization_.RightSolveL(&tau_);
+      if (tau_non_zeros_.empty()) {
+        tau_.assign(matrix_.num_rows(), 0);
+      } else {
+        tau_.resize(matrix_.num_rows(), 0);
+        for (const RowIndex row : tau_non_zeros_) {
+          tau_[row] = 0.0;
+        }
+      }
+      lu_factorization_.RightSolveLForScatteredColumn(a, &tau_,
+                                                      &tau_non_zeros_);
     }
-    rank_one_factorization_.RightSolve(&tau_);
-    lu_factorization_.RightSolveU(&tau_);
+    rank_one_factorization_.RightSolveWithNonZeros(&tau_, &tau_non_zeros_);
+    lu_factorization_.RightSolveUWithNonZeros(&tau_, &tau_non_zeros_);
   } else {
     tau_ = a.dense_column;
     lu_factorization_.RightSolve(&tau_);
@@ -410,7 +424,7 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j, DenseRow* y,
   // If the leaving index is the same, we can reuse the column! Note also that
   // since we do a left solve for a unit row using an upper triangular matrix,
   // all positions in front of the unit will be zero (modulo the column
-  // permutation).  if (left_pool_mapping_[j] == kInvalidCol) {
+  // permutation).
   if (left_pool_mapping_[j] == kInvalidCol) {
     const ColIndex start =
         lu_factorization_.LeftSolveUForUnitRow(j, y, non_zeros);
@@ -419,20 +433,24 @@ void BasisFactorization::LeftSolveForUnitRow(ColIndex j, DenseRow* y,
           storage_.AddDenseColumnPrefix(Transpose(*y), ColToRowIndex(start));
     } else {
       left_pool_mapping_[j] = storage_.AddDenseColumnWithNonZeros(
-          Transpose(*y), *reinterpret_cast<std::vector<RowIndex>*>(non_zeros));
+          Transpose(*y), *reinterpret_cast<RowIndexVector*>(non_zeros));
     }
   } else {
     DenseColumn* const x = reinterpret_cast<DenseColumn*>(y);
-    storage_.ColumnCopyToClearedDenseColumn(left_pool_mapping_[j], x);
+    RowIndexVector* const nz = reinterpret_cast<RowIndexVector*>(non_zeros);
+    storage_.ColumnCopyToClearedDenseColumnWithNonZeros(left_pool_mapping_[j],
+                                                        x, nz);
   }
-  rank_one_factorization_.LeftSolve(y);
+
+  rank_one_factorization_.LeftSolveWithNonZeros(y, non_zeros);
 
   // We only keep the intermediate result needed for the optimized tau_
   // computation if it was computed after the last time this was called.
   if (tau_is_computed_) {
     tau_is_computed_ = false;
-    tau_computation_can_be_optimized_ = true;
-    lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, &tau_);
+    tau_computation_can_be_optimized_ =
+        lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, &tau_);
+    tau_non_zeros_.clear();
   } else {
     tau_computation_can_be_optimized_ = false;
     lu_factorization_.LeftSolveLWithNonZeros(y, non_zeros, nullptr);
@@ -455,9 +473,18 @@ void BasisFactorization::RightSolveForProblemColumn(
   // TODO(user): if right_pool_mapping_[col] != kInvalidCol, we can reuse it and
   // just apply the last rank one update since it was computed.
   ClearAndResizeVectorWithNonZeros(matrix_.num_rows(), d, non_zeros);
-  lu_factorization_.RightSolveLForSparseColumn(matrix_.column(col), d);
-  rank_one_factorization_.RightSolve(d);
-  right_pool_mapping_[col] = right_storage_.AddDenseColumn(*d);
+  lu_factorization_.RightSolveLForSparseColumn(matrix_.column(col), d,
+                                               non_zeros);
+  rank_one_factorization_.RightSolveWithNonZeros(d, non_zeros);
+  if (non_zeros->empty()) {
+    right_pool_mapping_[col] = right_storage_.AddDenseColumn(*d);
+  } else {
+    // The sort is needed if we want to have the same behavior for the sparse or
+    // hyper-sparse version.
+    std::sort(non_zeros->begin(), non_zeros->end());
+    right_pool_mapping_[col] =
+        right_storage_.AddDenseColumnWithNonZeros(*d, *non_zeros);
+  }
   lu_factorization_.RightSolveUWithNonZeros(d, non_zeros);
 }
 

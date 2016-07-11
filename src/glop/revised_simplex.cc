@@ -96,7 +96,7 @@ RevisedSimplex::RevisedSimplex()
       update_row_(compact_matrix_, transposed_matrix_, variables_info_, basis_,
                   basis_factorization_),
       reduced_costs_(compact_matrix_, current_objective_, basis_,
-                     variables_info_, basis_factorization_),
+                     variables_info_, basis_factorization_, &random_),
       entering_variable_(variables_info_, &random_, &reduced_costs_,
                          &primal_edge_norms_),
       num_iterations_(0),
@@ -179,6 +179,10 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   VLOG(1) << "------ First phase: feasibility.";
   entering_variable_.SetPricingRule(parameters_.feasibility_rule());
   if (use_dual) {
+    if (parameters_.perturb_costs_in_dual_simplex()) {
+      reduced_costs_.PerturbCosts();
+    }
+
     variables_info_.MakeBoxedVariableRelevant(false);
     RETURN_IF_ERROR(DualMinimize(time_limit));
     DisplayIterationInfo();
@@ -200,7 +204,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     reduced_costs_.ResetForNewObjective();
   }
 
-  // Reduced costs must be explicitly recomputed because DisaplayErrors() is
+  // Reduced costs must be explicitly recomputed because DisplayErrors() is
   // const.
   // TODO(user): This API is not really nice.
   reduced_costs_.GetReducedCosts();
@@ -259,21 +263,31 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     variable_values_.RecomputeBasicVariableValues();
     reduced_costs_.ClearAndRemoveCostShifts();
 
-    // Reduced costs must be explicitly recomputed because DisaplayErrors() is
+    // Reduced costs must be explicitly recomputed because DisplayErrors() is
     // const.
     // TODO(user): This API is not really nice.
     reduced_costs_.GetReducedCosts();
     DisplayIterationInfo();
     DisplayErrors();
 
-    // Change the status, if after the shift and perturbation removal the
-    // problem is not OPTIMAL anymore.
-    //
     // TODO(user): We should also confirm the PRIMAL_UNBOUNDED or DUAL_UNBOUNDED
     // status by checking with the other phase I that the problem is really
     // DUAL_INFEASIBLE or PRIMAL_INFEASIBLE. For instace we currently report
     // PRIMAL_UNBOUNDED with the primal on the problem l30.mps instead of
     // OPTIMAL and the dual does not have issues on this problem.
+    if (problem_status_ == ProblemStatus::DUAL_UNBOUNDED) {
+      const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+      if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
+          variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
+          reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
+        LOG(WARNING) << "DUAL_UNBOUNDED was reported, but the residual and/or"
+                     << "dual infeasibility is above the tolerance";
+      }
+      break;
+    }
+
+    // Change the status, if after the shift and perturbation removal the
+    // problem is not OPTIMAL anymore.
     if (problem_status_ == ProblemStatus::OPTIMAL) {
       const Fractional solution_tolerance =
           parameters_.solution_feasibility_tolerance();

@@ -1385,7 +1385,10 @@ class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
       return;
     }
     const auto last_interval_it = intervals_.LastIntervalLessOrEqual(vmax);
-    CHECK(last_interval_it != intervals_.end());
+    if (last_interval_it == intervals_.end()) {
+      // No interval intersects the variable's range. Nothing to do.
+      return;
+    }
     // TODO(user): Quick fail if first_interval_it == last_interval_it, which
     // would imply that the interval contains the entire range of the variable?
     if (vmin >= first_interval_it->start) {

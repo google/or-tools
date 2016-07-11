@@ -685,7 +685,7 @@ def main():
     #                 partial[1,:].tolist(),
     #                 partial[2,:].tolist(),
     #                 partial[3,:].tolist(),
-    #                 [],[],[],[],[]]
+    #                 [],[],[],[]]
     # print(routing.ApplyLocksToAllVehicles(partial_list, False))
 
     # Solve the problem !

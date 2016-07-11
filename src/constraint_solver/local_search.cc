@@ -508,12 +508,14 @@ bool PathOperator::IncrementPosition() {
 void PathOperator::InitializePathStarts() {
   // Detect nodes which do not have any possible predecessor in a path; these
   // nodes are path starts.
+  int max_next = -1;
   std::vector<bool> has_prevs(number_of_nexts_, false);
   for (int i = 0; i < number_of_nexts_; ++i) {
     const int next = OldNext(i);
     if (next < number_of_nexts_) {
       has_prevs[next] = true;
     }
+    max_next = std::max(max_next, next);
   }
   // Create a list of path starts, dropping equivalent path starts of
   // currently empty paths.
@@ -535,30 +537,55 @@ void PathOperator::InitializePathStarts() {
       new_path_starts.push_back(i);
     }
   }
-  // Re-adjust current base_nodes and base_paths to take into account new
-  // path starts (there could be fewer if a new path was made empty, or more
-  // if nodes were added to a formerly empty path).
-  int new_index = 0;
-  hash_set<int> found_bases;
-  for (int i = 0; i < path_starts_.size(); ++i) {
-    int index = new_index;
-    while (index < new_path_starts.size() &&
-           new_path_starts[index] < path_starts_[i]) {
-      ++index;
-    }
-    const bool found = (index < new_path_starts.size() &&
-                        new_path_starts[index] == path_starts_[i]);
-    if (found) {
-      new_index = index;
+  if (!first_start_) {
+    // Synchronizing base_paths_ with base node positions. When the last move
+    // was performed a base node could have been moved to a new route in which
+    // case base_paths_ needs to be updated. This needs to be done on the path
+    // starts before we re-adjust base nodes for new path starts.
+    std::vector<int> node_paths(max_next + 1, -1);
+    for (int i = 0; i < path_starts_.size(); ++i) {
+      int node = path_starts_[i];
+      while (!IsPathEnd(node)) {
+        node_paths[node] = i;
+        node = OldNext(node);
+      }
+      node_paths[node] = i;
     }
     for (int j = 0; j < base_nodes_.size(); ++j) {
-      if (base_paths_[j] == i && !ContainsKey(found_bases, j)) {
-        found_bases.insert(j);
-        base_paths_[j] = new_index;
-        // If the current position of the base node is a removed empty path,
-        // readjusting it to the last visited path start.
-        if (!found) {
-          base_nodes_[j] = new_path_starts[new_index];
+      if (IsInactive(base_nodes_[j])) {
+        // Base node was made inactive, reposition the base node to the start of
+        // the path on which it was.
+        base_nodes_[j] = path_starts_[base_paths_[j]];
+      } else {
+        base_paths_[j] = node_paths[base_nodes_[j]];
+      }
+    }
+    // Re-adjust current base_nodes and base_paths to take into account new
+    // path starts (there could be fewer if a new path was made empty, or more
+    // if nodes were added to a formerly empty path).
+    int new_index = 0;
+    hash_set<int> found_bases;
+    for (int i = 0; i < path_starts_.size(); ++i) {
+      int index = new_index;
+      // Note: old and new path starts are sorted by construction.
+      while (index < new_path_starts.size() &&
+             new_path_starts[index] < path_starts_[i]) {
+        ++index;
+      }
+      const bool found = (index < new_path_starts.size() &&
+                          new_path_starts[index] == path_starts_[i]);
+      if (found) {
+        new_index = index;
+      }
+      for (int j = 0; j < base_nodes_.size(); ++j) {
+        if (base_paths_[j] == i && !ContainsKey(found_bases, j)) {
+          found_bases.insert(j);
+          base_paths_[j] = new_index;
+          // If the current position of the base node is a removed empty path,
+          // readjusting it to the last visited path start.
+          if (!found) {
+            base_nodes_[j] = new_path_starts[new_index];
+          }
         }
       }
     }
@@ -574,8 +601,9 @@ void PathOperator::InitializeInactives() {
 }
 
 void PathOperator::InitializeBaseNodes() {
-  InitializePathStarts();
+  // Inactive nodes must be detected before determining new path starts.
   InitializeInactives();
+  InitializePathStarts();
   if (first_start_ || InitPosition()) {
     // Only do this once since the following starts will continue from the
     // preceding position
@@ -602,6 +630,7 @@ void PathOperator::InitializeBaseNodes() {
       const int64 base_node = base_nodes_[i - 1];
       base_nodes_[i] = base_node;
       end_nodes_[i] = base_node;
+      base_paths_[i] = base_paths_[i - 1];
     }
   }
   just_started_ = true;
