@@ -1366,8 +1366,8 @@ class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
  public:
   SortedDisjointForbiddenIntervalsConstraint(
       Solver* const solver, IntVar* const var,
-      const SortedDisjointIntervalList& intervals)
-      : Constraint(solver), var_(var), intervals_(intervals) {}
+      SortedDisjointIntervalList intervals)
+      : Constraint(solver), var_(var), intervals_(std::move(intervals)) {}
 
   ~SortedDisjointForbiddenIntervalsConstraint() override {}
 
@@ -1431,15 +1431,19 @@ class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
 
 Constraint* Solver::MakeNotMemberCt(IntExpr* const expr, std::vector<int64> starts,
                                     std::vector<int64> ends) {
-  SortedDisjointIntervalList intervals(starts, ends);
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
-      this, expr->Var(), intervals));
+      this, expr->Var(), {std::move(starts), std::move(ends)}));
 }
 
 Constraint* Solver::MakeNotMemberCt(IntExpr* const expr, std::vector<int> starts,
                                     std::vector<int> ends) {
-  SortedDisjointIntervalList intervals(starts, ends);
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
-      this, expr->Var(), intervals));
+      this, expr->Var(), {std::move(starts), std::move(ends)}));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    SortedDisjointIntervalList intervals) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), std::move(intervals)));
 }
 }  // namespace operations_research

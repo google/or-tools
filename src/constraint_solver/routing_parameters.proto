@@ -21,6 +21,7 @@ option java_multiple_files = true;
 option csharp_namespace = "Google.OrTools.ConstraintSolver";
 
 import "constraint_solver/routing_enums.proto";
+import "constraint_solver/solver_parameters.proto";
 
 package operations_research;
 
@@ -257,9 +258,14 @@ message RoutingModelParameters {
   // result in significant speedups.
   bool reduce_vehicle_cost_model = 1;
   // Algorithm to use to compress the constraint solver trail.
+  // TODO(user): This field is obsolete as it is redudant with the
+  // solver_parameters field which contains trail compression settings.
+  // Remove it.
   enum TrailCompression {
     NONE = 0;
     ZLIB = 1;
   }
   TrailCompression trail_compression = 2;
+  // Parameters to use in the underlying constraint solver.
+  ConstraintSolverParameters solver_parameters = 3;
 }

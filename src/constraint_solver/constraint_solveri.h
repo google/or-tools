@@ -2276,7 +2276,7 @@ class RevIntSet {
   void Insert(Solver* const solver, const T& elt) {
     const int position = num_elements_.Value();
     DCHECK_LT(position, capacity_);          // Valid.
-    DCHECK_EQ(position_[elt], kNoInserted);  // Not already added.
+    DCHECK(NotAlreadyInserted(elt));
     elements_[position] = elt;
     position_[elt] = position;
     num_elements_.Incr(solver);
@@ -2295,6 +2295,16 @@ class RevIntSet {
   void Clear(Solver* const solver) { num_elements_.SetValue(solver, 0); }
 
  private:
+  // Used in DCHECK.
+  bool NotAlreadyInserted(const T& elt) {
+    for (int i = 0; i < num_elements_.Value(); ++i) {
+      if (elt == elements_[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void SwapTo(T value_index, int next_position) {
     const int current_position = position_[value_index];
     if (current_position != next_position) {
@@ -2428,6 +2438,53 @@ class RevPartialSequence {
   const int size_;
   // Reverse mapping.
   std::unique_ptr<int[]> position_;
+};
+
+// This class represents a reversible bitset. It is meant to represent a set of
+// active bits. It does not offer direct access, but just methods that can
+// reversibly substract another bitset, or check if the current active bitset
+// intersects with another bitset.
+class UnsortedNullableRevBitset {
+ public:
+  // Size is the number of bits to store in the bitset.
+  explicit UnsortedNullableRevBitset(int bit_size);
+
+  ~UnsortedNullableRevBitset() {}
+
+  // This methods overwrites the active bitset with the mask. This method should
+  // be called only once.
+  void Init(Solver* const solver, const std::vector<uint64>& mask);
+
+  // This method substracts the mask from the active bitset. It returns true if
+  // the active bitset was changed in the process.
+  bool RevSubtract(Solver* const solver, const std::vector<uint64>& mask);
+
+  // This method returns the number of non null 64 bit words in the bitset
+  // representation.
+  int ActiveWordSize() const { return active_words_.Size(); }
+
+  // This method returns true if the active bitset is null.
+  bool Empty() const { return active_words_.Size() == 0; }
+
+  // This method returns true iff the mask and the active bitset have a non
+  // null intersection. support_index is used as an accelerator:
+  //   - The first word tested to check the intersection will be the
+  //     '*support_index'th one.
+  //   - If the intersection is not null, the support_index will be filled with
+  //     the index of the word that does intersect with the mask. This can be
+  //     reused later to speed-up the check.
+  bool Intersects(const std::vector<uint64>& mask, int* support_index);
+
+  // Returns the number of bits given in the constructor of the bitset.
+  int64 bit_size() const { return bit_size_; }
+  // Returns the number of 64 bit words used to store the bitset.
+  int64 word_size() const { return word_size_; }
+
+ private:
+  const int64 bit_size_;
+  const int64 word_size_;
+  RevArray<uint64> bits_;
+  RevIntSet<int> active_words_;
 };
 
 // ---------- Helpers ----------

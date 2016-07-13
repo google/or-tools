@@ -55,8 +55,6 @@ struct AffineTransformation {  // y == a*x + b.
   int64 a;
   int64 b;
 
-  bool Identity() const { return a == 1 && b == 0; }
-
   bool Reverse(int64 value, int64* const reverse) const {
     const int64 temp = value - b;
     if (temp % a == 0) {
@@ -222,6 +220,17 @@ class BasePositiveTableConstraint : public Constraint {
         tuples_.Value(tuple_index, var_index));
   }
 
+  bool IsTupleSupported(int tuple_index) {
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      int64 value = 0;
+      if (!TupleValue(tuple_index, var_index, &value) ||
+          !vars_[var_index]->Contains(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   const int tuple_count_;
   const int arity_;
   std::vector<IntVar*> vars_;
@@ -239,28 +248,15 @@ class BasePositiveTableConstraint : public Constraint {
 
 class PositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  typedef hash_map<int, uint64*> ValueBitset;
+  typedef hash_map<int, std::vector<uint64>> ValueBitset;
 
   PositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                           const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
-        length_(BitLength64(tuples.NumTuples())),
-        active_tuples_(new uint64[length_]),
-        stamps_(new uint64[length_]) {
-    masks_.clear();
-    masks_.resize(arity_);
-    for (int i = 0; i < tuple_count_; ++i) {
-      InitializeMask(i);
-    }
-  }
+        word_length_(BitLength64(tuples.NumTuples())),
+        active_tuples_(tuples.NumTuples()) {}
 
-  ~PositiveTableConstraint() override {
-    for (int var_index = 0; var_index < arity_; ++var_index) {
-      for (const auto& it : masks_[var_index]) {
-        delete[] it.second;
-      }
-    }
-  }
+  ~PositiveTableConstraint() override {}
 
   void Post() override {
     Demon* d = MakeDelayedConstraintDemon0(
@@ -271,10 +267,20 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
           solver(), this, &PositiveTableConstraint::Update, "Update", i);
       vars_[i]->WhenDomain(u);
     }
-    for (int i = 0; i < length_; ++i) {
-      stamps_[i] = 0;
-      active_tuples_[i] = ~GG_ULONGLONG(0);
+    // Initialize masks.
+    masks_.clear();
+    masks_.resize(arity_);
+    for (int i = 0; i < tuple_count_; ++i) {
+      InitializeMask(i);
     }
+    // Initialize the active tuple bitset.
+    std::vector<uint64> actives(word_length_, 0);
+    for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
+      if (IsTupleSupported(tuple_index)) {
+        SetBit64(actives.data(), tuple_index);
+      }
+    }
+    active_tuples_.Init(solver(), actives);
   }
 
   void InitialPropagate() override {
@@ -282,20 +288,11 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     for (int var_index = 0; var_index < arity_; ++var_index) {
       for (const auto& it : masks_[var_index]) {
         if (!vars_[var_index]->Contains(it.first)) {
-          for (int i = 0; i < length_; ++i) {
-            active_tuples_[i] &= ~it.second[i];
-          }
+          active_tuples_.RevSubtract(solver(), it.second);
         }
       }
     }
-    bool found_one = false;
-    for (int i = 0; i < length_; ++i) {
-      if (active_tuples_[i] != 0) {
-        found_one = true;
-        break;
-      }
-    }
-    if (!found_one) {
+    if (active_tuples_.Empty()) {
       solver()->Fail();
     }
     // Remove unreached values.
@@ -330,34 +327,35 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void Update(int index) {
-    const ValueBitset& mask = masks_[index];
+    const ValueBitset& var_masks = masks_[index];
     IntVar* const var = vars_[index];
     const int64 old_max = var->OldMax();
     const int64 vmin = var->Min();
     const int64 vmax = var->Max();
     for (int64 value = var->OldMin(); value < vmin; ++value) {
-      BlankActives(FindPtrOrNull(mask, value));
+      const auto& it = var_masks.find(value);
+      if (it != var_masks.end()) {
+        BlankActives(it->second);
+      }
     }
     for (const int64 value : InitAndGetValues(holes_[index])) {
-      BlankActives(FindPtrOrNull(mask, value));
+      const auto& it = var_masks.find(value);
+      if (it != var_masks.end()) {
+        BlankActives(it->second);
+      }
     }
     for (int64 value = vmax + 1; value <= old_max; ++value) {
-      BlankActives(FindPtrOrNull(mask, value));
+      const auto& it = var_masks.find(value);
+      if (it != var_masks.end()) {
+        BlankActives(it->second);
+      }
     }
   }
 
-  void BlankActives(uint64* const mask) {
-    if (mask != nullptr) {
-      bool empty = true;
-      for (int offset = 0; offset < length_; ++offset) {
-        if ((mask[offset] & active_tuples_[offset]) != 0) {
-          AndActiveTuples(offset, ~mask[offset]);
-        }
-        if (active_tuples_[offset] != 0) {
-          empty = false;
-        }
-      }
-      if (empty) {
+  void BlankActives(const std::vector<uint64>& mask) {
+    if (!mask.empty()) {
+      active_tuples_.RevSubtract(solver(), mask);
+      if (active_tuples_.Empty()) {
         solver()->Fail();
       }
     }
@@ -367,13 +365,9 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     DCHECK_GE(var_index, 0);
     DCHECK_LT(var_index, arity_);
     DCHECK(ContainsKey(masks_[var_index], value));
-    uint64* const mask = masks_[var_index][value];
-    for (int offset = 0; offset < length_; ++offset) {
-      if ((mask[offset] & active_tuples_[offset]) != 0LL) {
-        return true;
-      }
-    }
-    return false;
+    const std::vector<uint64>& mask = masks_[var_index][value];
+    int tmp = 0;
+    return active_tuples_.Intersects(mask, &tmp);
   }
 
   std::string DebugString() const override {
@@ -391,30 +385,18 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
     }
     for (int var_index = 0; var_index < arity_; ++var_index) {
       const int64 value = cache[var_index];
-      uint64* mask = FindPtrOrNull(masks_[var_index], value);
-      if (mask == nullptr) {
-        mask = new uint64[length_];
-        memset(mask, 0, length_ * sizeof(*mask));
-        masks_[var_index][value] = mask;
+      std::vector<uint64>& mask = masks_[var_index][value];
+      if (mask.empty()) {
+        mask.assign(word_length_, 0);
       }
-      SetBit64(mask, tuple_index);
+      SetBit64(mask.data(), tuple_index);
     }
   }
 
-  void AndActiveTuples(int offset, uint64 mask) {
-    const uint64 current_stamp = solver()->stamp();
-    if (stamps_[offset] < current_stamp) {
-      stamps_[offset] = current_stamp;
-      solver()->SaveValue(&active_tuples_[offset]);
-    }
-    active_tuples_[offset] &= mask;
-  }
-
-  const int length_;
-  // TODO(user): create bitset64 class and use it.
-  std::unique_ptr<uint64[]> active_tuples_;
-  std::unique_ptr<uint64[]> stamps_;
+  const int word_length_;
+  UnsortedNullableRevBitset active_tuples_;
   std::vector<ValueBitset> masks_;
+  std::vector<uint64> temp_mask_;
 };
 
 // ----- Compact Tables -----
@@ -424,16 +406,16 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   CompactPositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                                  const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
-        length_(0),
-        active_tuples_(nullptr),
-        stamps_(nullptr),
-        original_min_(new int64[arity_]),
-        temp_mask_(nullptr),
+        word_length_(BitLength64(tuples.NumTuples())),
+        active_tuples_(tuples.NumTuples()),
+        masks_(arity_),
+        mask_starts_(arity_),
+        mask_ends_(arity_),
+        original_min_(arity_, 0),
+        supports_(arity_),
         demon_(nullptr),
         touched_var_(-1),
-        var_sizes_(arity_, 0),
-        first_active_(0),
-        last_active_(-1) {}
+        var_sizes_(arity_, 0) {}
 
   ~CompactPositiveTableConstraint() override {}
 
@@ -452,17 +434,16 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void InitialPropagate() override {
-    BuildStructures();
     BuildMasks();
-    FillMasks();
-    ComputeMasksBoundaries();
+    FillMasksAndActiveTuples();
     RemoveUnsupportedValues();
+    ComputeMasksBoundaries();
+    BuildSupports();
   }
 
   // ----- Propagation -----
 
   void Propagate() {
-    UpdateFirstAndLast();
     // Reset touch_var_ if in mode (more than 1 variable was modified).
     if (touched_var_ == -2) {
       touched_var_ = -1;
@@ -572,7 +553,6 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     if (vars_[var_index]->Size() == var_sizes_.Value(var_index)) {
       return;
     }
-    UpdateFirstAndLast();
     // This method will update the set of active tuples by masking out all
     // tuples attached to values of the variables that have been removed.
 
@@ -617,8 +597,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           for (int64 value = var_max + 1; value <= old_max; ++value) {
             OrTempMask(var_index, value - omin);
           }
-          // Then we substract this mask from the active_tuples_.
-          changed = SubstractTempMaskFromActive();
+          // Then we Subtract this mask from the active_tuples_.
+          changed = SubtractTempMaskFromActive();
         } else {
           // Let's build the mask of supported tuples from the current
           // domain.
@@ -641,21 +621,17 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
     // And check active_tuples_ is still not empty, we fail otherwise.
     if (changed) {
-      const int first = first_active_.Value();
-      const int last = last_active_.Value();
-      for (int offset = first; offset <= last; ++offset) {
-        if (active_tuples_[offset]) {
-          // We push the propagate method only if something has changed.
-          if (touched_var_ == -1 || touched_var_ == var_index) {
-            touched_var_ = var_index;
-          } else {
-            touched_var_ = -2;  // more than one var.
-          }
-          EnqueueDelayedDemon(demon_);
-          return;
+      if (active_tuples_.Empty()) {
+        solver()->Fail();
+      } else {
+        // We push the propagate method only if something has changed.
+        if (touched_var_ == -1 || touched_var_ == var_index) {
+          touched_var_ = var_index;
+        } else {
+          touched_var_ = -2;  // more than one var.
         }
+        EnqueueDelayedDemon(demon_);
       }
-      solver()->Fail();
     }
   }
 
@@ -667,101 +643,34 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
  private:
   // ----- Initialization -----
 
-  bool IsTupleSupported(int tuple_index) {
-    for (int var_index = 0; var_index < arity_; ++var_index) {
-      int64 value = 0;
-      if (!TupleValue(tuple_index, var_index, &value) ||
-          !vars_[var_index]->Contains(value)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  void BuildStructures() {
-    // build list of valid tuples.
-    valid_tuples_.clear();
-    for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
-      if (IsTupleSupported(tuple_index)) {
-        valid_tuples_.push_back(tuple_index);
-      }
-    }
-    if (valid_tuples_.empty()) {
-      solver()->Fail();
-    }
-    length_ = BitLength64(valid_tuples_.size());
-  }
-
   void BuildMasks() {
     // Build masks.
-    temp_mask_.reset(new uint64[length_]);
-    masks_.clear();
-    masks_.resize(arity_);
     for (int i = 0; i < arity_; ++i) {
       original_min_[i] = vars_[i]->Min();
       const int64 span = vars_[i]->Max() - original_min_[i] + 1;
-      masks_[i].resize(span, nullptr);
+      masks_[i].resize(span);
     }
   }
 
-  void FillMasks() {
-    active_tuples_.reset(new uint64[length_]);
-    stamps_.reset(new uint64[length_]);
-    for (int i = 0; i < length_; ++i) {
-      stamps_[i] = 0;
-      active_tuples_[i] = 0;
-    }
-    last_active_.SetValue(solver(), length_ - 1);
-
-    for (int valid_index = 0; valid_index < valid_tuples_.size();
-         ++valid_index) {
-      const int tuple_index = valid_tuples_[valid_index];
-      SetBit64(active_tuples_.get(), valid_index);
-      for (int var_index = 0; var_index < arity_; ++var_index) {
-        const int64 value = UnsafeTupleValue(tuple_index, var_index);
-        const int64 value_index = value - original_min_[var_index];
-        DCHECK_GE(value_index, 0);
-        DCHECK_LT(value_index, masks_[var_index].size());
-        uint64* mask = masks_[var_index][value_index];
-        if (!mask) {
-          mask = solver()->RevAllocArray(new uint64[length_]);
-          memset(mask, 0, length_ * sizeof(*mask));
-          masks_[var_index][value_index] = mask;
-        }
-        SetBit64(mask, valid_index);
-      }
-    }
-    valid_tuples_.clear();
-  }
-
-  void ComputeMasksBoundaries() {
-    // Store boundaries of non zero parts of masks.
-    starts_.clear();
-    starts_.resize(arity_);
-    ends_.clear();
-    ends_.resize(arity_);
-    supports_.clear();
-    supports_.resize(arity_);
-    for (int var_index = 0; var_index < arity_; ++var_index) {
-      const int64 span = vars_[var_index]->Max() - original_min_[var_index] + 1;
-      starts_[var_index].resize(span);
-      ends_[var_index].resize(span);
-      supports_[var_index].resize(span);
-      for (int value_index = 0; value_index < span; ++value_index) {
-        const uint64* const mask = masks_[var_index][value_index];
-        if (mask != nullptr) {
-          starts_[var_index][value_index] = 0;
-          while (!mask[starts_[var_index][value_index]]) {
-            starts_[var_index][value_index]++;
+  void FillMasksAndActiveTuples() {
+    std::vector<uint64> actives(word_length_, 0);
+    for (int tuple_index = 0; tuple_index < tuple_count_; ++tuple_index) {
+      if (IsTupleSupported(tuple_index)) {
+        SetBit64(actives.data(), tuple_index);
+        // Fill in all masks.
+        for (int var_index = 0; var_index < arity_; ++var_index) {
+          const int64 value = UnsafeTupleValue(tuple_index, var_index);
+          const int64 value_index = value - original_min_[var_index];
+          DCHECK_GE(value_index, 0);
+          DCHECK_LT(value_index, masks_[var_index].size());
+          if (masks_[var_index][value_index].empty()) {
+            masks_[var_index][value_index].assign(word_length_, 0);
           }
-          supports_[var_index][value_index] = starts_[var_index][value_index];
-          ends_[var_index][value_index] = length_ - 1;
-          while (!mask[ends_[var_index][value_index]]) {
-            ends_[var_index][value_index]--;
-          }
+          SetBit64(masks_[var_index][value_index].data(), tuple_index);
         }
       }
     }
+    active_tuples_.Init(solver(), actives);
   }
 
   void RemoveUnsupportedValues() {
@@ -770,7 +679,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       IntVar* const var = vars_[var_index];
       to_remove_.clear();
       for (const int64 value : InitAndGetValues(iterators_[var_index])) {
-        if (!masks_[var_index][value - original_min_[var_index]]) {
+        if (masks_[var_index][value - original_min_[var_index]].empty()) {
           to_remove_.push_back(value);
         }
       }
@@ -780,135 +689,97 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
   }
 
-  void UpdateFirstAndLast() {
-    int first = first_active_.Value();
-    int last = last_active_.Value();
-    while (first <= last && active_tuples_[first] == 0) {
-      first++;
+  void ComputeMasksBoundaries() {
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      mask_starts_[var_index].resize(masks_[var_index].size());
+      mask_ends_[var_index].resize(masks_[var_index].size());
+      for (int value_index = 0; value_index < masks_[var_index].size();
+           ++value_index) {
+        const std::vector<uint64>& mask = masks_[var_index][value_index];
+        if (mask.empty()) {
+          continue;
+        }
+        int start = 0;
+        while (start < word_length_ && mask[start] == 0) {
+          start++;
+        }
+        DCHECK_LT(start, word_length_);
+        int end = word_length_ - 1;
+        while (end > start && mask[end] == 0) {
+          end--;
+        }
+        DCHECK_LE(start, end);
+        DCHECK_NE(mask[start], 0);
+        DCHECK_NE(mask[end], 0);
+        mask_starts_[var_index][value_index] = start;
+        mask_ends_[var_index][value_index] = end;
+      }
     }
-    Solver* const s = solver();
-    if (first > last) {  // If we fail, this will be detected by now.
-      s->Fail();
-    }
-    while (last > first && active_tuples_[last] == 0) {
-      last--;
-    }
-    first_active_.SetValue(s, first);
-    last_active_.SetValue(s, last);
   }
 
-  // Helpers during propagation.
+  void BuildSupports() {
+    for (int var_index = 0; var_index < arity_; ++var_index) {
+      supports_[var_index].resize(masks_[var_index].size());
+    }
+  }
+
+  // ----- Helpers during propagation -----
 
   bool AndTempMaskWithActive() {
-    const int first = first_active_.Value();
-    const int last = last_active_.Value();
-    bool changed = false;
-    for (int offset = first; offset <= last; ++offset) {
-      if ((~temp_mask_[offset] & active_tuples_[offset]) != 0) {
-        AndActiveTuples(offset, temp_mask_[offset]);
-        changed = true;
-      }
+    for (int i = 0; i < temp_mask_.size(); ++i) {
+      temp_mask_[i] = ~temp_mask_[i];
     }
-    return changed;
+    return active_tuples_.RevSubtract(solver(), temp_mask_);
   }
 
-  bool SubstractTempMaskFromActive() {
-    const int first = first_active_.Value();
-    const int last = last_active_.Value();
-    bool changed = false;
-    for (int offset = first; offset <= last; ++offset) {
-      if ((temp_mask_[offset] & active_tuples_[offset]) != 0) {
-        AndActiveTuples(offset, ~temp_mask_[offset]);
-        changed = true;
-      }
-    }
-    return changed;
+  bool SubtractTempMaskFromActive() {
+    return active_tuples_.RevSubtract(solver(), temp_mask_);
   }
 
   bool Supported(int var_index, int64 value_index) {
     DCHECK_GE(var_index, 0);
     DCHECK_LT(var_index, arity_);
     DCHECK_GE(value_index, 0);
-    DCHECK(masks_[var_index][value_index]);
-    const uint64* const mask = masks_[var_index][value_index];
-    const int support = supports_[var_index][value_index];
-    if ((mask[support] & active_tuples_[support]) != 0) {
-      return true;
-    }
-    const int loop_start =
-        std::max(first_active_.Value(), starts_[var_index][value_index]);
-    const int loop_end =
-        std::min(last_active_.Value(), ends_[var_index][value_index]);
-    for (int offset = support + 1; offset <= loop_end; ++offset) {
-      if ((mask[offset] & active_tuples_[offset]) != 0) {
-        supports_[var_index][value_index] = offset;
-        return true;
-      }
-    }
-    for (int offset = loop_start; offset < support; ++offset) {
-      if ((mask[offset] & active_tuples_[offset]) != 0) {
-        supports_[var_index][value_index] = offset;
-        return true;
-      }
-    }
-    return false;
+    DCHECK(!masks_[var_index][value_index].empty());
+    const std::vector<uint64>& mask = masks_[var_index][value_index];
+    return active_tuples_.Intersects(mask, &supports_[var_index][value_index]);
   }
 
   void OrTempMask(int var_index, int64 value_index) {
-    const uint64* const mask = masks_[var_index][value_index];
-    if (mask) {
-      const int start =
-          std::max(first_active_.Value(), starts_[var_index][value_index]);
-      const int end =
-          std::min(ends_[var_index][value_index], last_active_.Value());
-      for (int offset = start; offset <= end; ++offset) {
+    const std::vector<uint64>& mask = masks_[var_index][value_index];
+    if (!mask.empty()) {
+      for (int offset = mask_starts_[var_index][value_index];
+           offset <= mask_ends_[var_index][value_index]; ++offset) {
         temp_mask_[offset] |= mask[offset];
       }
     }
   }
 
   void SetTempMask(int var_index, int64 value_index) {
-    memcpy(temp_mask_.get(), masks_[var_index][value_index],
-           length_ * sizeof(*temp_mask_.get()));
+    temp_mask_ = masks_[var_index][value_index];
   }
 
-  void ClearTempMask() {
-    memset(temp_mask_.get(), 0, length_ * sizeof(*temp_mask_.get()));
-  }
+  void ClearTempMask() { temp_mask_.assign(word_length_, 0); }
 
-  void AndActiveTuples(int offset, uint64 mask) {
-    const uint64 current_stamp = solver()->stamp();
-    if (stamps_[offset] < current_stamp) {
-      stamps_[offset] = current_stamp;
-      solver()->SaveValue(&active_tuples_[offset]);
-    }
-    active_tuples_[offset] &= mask;
-  }
-
-  // Length of bitsets in double words.
-  int length_;
-  // Bitset of active tuples.
-  std::unique_ptr<uint64[]> active_tuples_;
-  // Array of stamps, one per 64 tuples.
-  std::unique_ptr<uint64[]> stamps_;
+  // The length in 64 bit words of the number of tuples.
+  int64 word_length_;
+  // The active bitset.
+  UnsortedNullableRevBitset active_tuples_;
   // The masks per value per variable.
-  std::vector<std::vector<uint64*>> masks_;
+  std::vector<std::vector<std::vector<uint64>>> masks_;
+  // The range of active indices in the masks.
+  std::vector<std::vector<int>> mask_starts_;
+  std::vector<std::vector<int>> mask_ends_;
   // The min on the vars at creation time.
-  std::unique_ptr<int64[]> original_min_;
-  // The starts of active bitsets.
-  std::vector<std::vector<int>> starts_;
-  // The ends of the active bitsets.x
-  std::vector<std::vector<int>> ends_;
+  std::vector<int64> original_min_;
   // A temporary mask use for computation.
-  std::unique_ptr<uint64[]> temp_mask_;
-  // The portion of the active tuples supporting each value per variable.
+  std::vector<uint64> temp_mask_;
+  // The index of the word in the active bitset supporting each value per
+  // variable.
   std::vector<std::vector<int>> supports_;
   Demon* demon_;
   int touched_var_;
   RevArray<int64> var_sizes_;
-  Rev<int> first_active_;
-  Rev<int> last_active_;
-  std::vector<int> valid_tuples_;
 };
 
 // ----- Small Compact Table. -----
@@ -923,23 +794,16 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       : BasePositiveTableConstraint(s, vars, tuples),
         active_tuples_(0),
         stamp_(0),
-        masks_(new uint64* [arity_]),
-        original_min_(new int64[arity_]),
+        masks_(arity_),
+        original_min_(arity_, 0),
         demon_(nullptr),
         touched_var_(-1) {
     CHECK_GE(tuple_count_, 0);
     CHECK_GE(arity_, 0);
     CHECK_LE(tuples.NumTuples(), kBitsInUint64);
-    // Zero masks
-    memset(masks_.get(), 0, arity_ * sizeof(*masks_.get()));
   }
 
-  ~SmallCompactPositiveTableConstraint() override {
-    for (int i = 0; i < arity_; ++i) {
-      delete[] masks_[i];
-      masks_[i] = nullptr;
-    }
-  }
+  ~SmallCompactPositiveTableConstraint() override {}
 
   void Post() override {
     demon_ = solver()->RegisterDemon(MakeDelayedConstraintDemon0(
@@ -961,8 +825,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
     for (int i = 0; i < arity_; ++i) {
       original_min_[i] = vars_[i]->Min();
       const int64 span = vars_[i]->Max() - original_min_[i] + 1;
-      masks_[i] = new uint64[span];
-      memset(masks_[i], 0, span * sizeof(*masks_[i]));
+      masks_[i].assign(span, 0);
     }
   }
 
@@ -1042,7 +905,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
         touched_var_ = -1;  // Clean it, it is a one time flag.
         continue;
       }
-      const uint64* const var_mask = masks_[var_index];
+      const std::vector<uint64>& var_mask = masks_[var_index];
       const int64 original_min = original_min_[var_index];
       IntVar* const var = vars_[var_index];
       const int64 var_size = var->Size();
@@ -1149,7 +1012,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
       default: {
         // We first collect the complete set of tuples to blank out in
         // temp_mask.
-        const uint64* const var_mask = masks_[var_index];
+        const std::vector<uint64>& var_mask = masks_[var_index];
         const int64 old_min = var->OldMin();
         const int64 old_max = var->OldMax();
         const int64 var_min = var->Min();
@@ -1240,30 +1103,15 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // Stamp of the active_tuple bitset.
   uint64 stamp_;
   // The masks per value per variable.
-  std::unique_ptr<uint64 * []> masks_;
+  std::vector<std::vector<uint64>> masks_;
   // The min on the vars at creation time.
-  std::unique_ptr<int64[]> original_min_;
+  std::vector<int64> original_min_;
   Demon* demon_;
   int touched_var_;
 };
 
 bool HasCompactDomains(const std::vector<IntVar*>& vars) {
-  return true;
-  int64 sum_of_spans = 0LL;
-  int64 sum_of_sizes = 0LL;
-  for (IntVar* const var : vars) {
-    IntExpr* inner = nullptr;
-    int64 coef = 1;
-    if (var->solver()->IsProduct(var, &inner, &coef) && inner->IsVar()) {
-      IntVar* const nvar = inner->Var();
-      sum_of_sizes += nvar->Size();
-      sum_of_spans += nvar->Max() - nvar->Min() + 1;
-    } else {
-      sum_of_sizes += var->Size();
-      sum_of_spans += var->Max() - var->Min() + 1;
-    }
-  }
-  return sum_of_spans < 16 * sum_of_sizes;
+  return true; // Always assume compact table.
 }
 
 // ---------- Deterministic Finite Automaton ----------

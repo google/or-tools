@@ -22,6 +22,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include "base/random.h"
 
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"

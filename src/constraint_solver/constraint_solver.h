@@ -83,6 +83,7 @@
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/solver_parameters.pb.h"
+#include "util/sorted_interval_list.h"
 #include "util/tuple_set.h"
 #include "base/random.h"
 
@@ -1443,6 +1444,10 @@ class Solver {
   // v should not be in the list of forbidden intervals [start[i]..end[i]].
   Constraint* MakeNotMemberCt(IntExpr* const v, std::vector<int> starts,
                               std::vector<int> ends);
+#if !defined(SWIG)
+  // v should not be in the list of forbidden intervals.
+  Constraint* MakeNotMemberCt(IntExpr* v, SortedDisjointIntervalList intervals);
+#endif  // !defined(SWIG)
 
   // |{i | v[i] == value}| == count
   Constraint* MakeCount(const std::vector<IntVar*>& v, int64 value, int64 count);

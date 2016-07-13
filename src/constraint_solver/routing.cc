@@ -1044,7 +1044,8 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       lns_limit_(nullptr) {
   VLOG(1) << "Model parameters:\n" << parameters.DebugString();
   ConstraintSolverParameters solver_parameters =
-      Solver::DefaultSolverParameters();
+      parameters.has_solver_parameters() ? parameters.solver_parameters()
+                                         : Solver::DefaultSolverParameters();
   solver_parameters.set_compress_trail(
       GetTrailCompression(parameters.trail_compression()));
   solver_.reset(new Solver("Routing", solver_parameters));
@@ -1086,7 +1087,8 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       lns_limit_(nullptr) {
   VLOG(1) << "Model parameters:\n" << parameters.DebugString();
   ConstraintSolverParameters solver_parameters =
-      Solver::DefaultSolverParameters();
+      parameters.has_solver_parameters() ? parameters.solver_parameters()
+                                         : Solver::DefaultSolverParameters();
   solver_parameters.set_compress_trail(
       GetTrailCompression(parameters.trail_compression()));
   solver_.reset(new Solver("Routing", solver_parameters));
@@ -1138,7 +1140,8 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       lns_limit_(nullptr) {
   VLOG(1) << "Model parameters:\n" << parameters.DebugString();
   ConstraintSolverParameters solver_parameters =
-      Solver::DefaultSolverParameters();
+      parameters.has_solver_parameters() ? parameters.solver_parameters()
+                                         : Solver::DefaultSolverParameters();
   solver_parameters.set_compress_trail(
       GetTrailCompression(parameters.trail_compression()));
   solver_.reset(new Solver("Routing", solver_parameters));

@@ -45,6 +45,7 @@
 #include "base/split.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "base/random.h"
 
 namespace operations_research {
 // ----- Exchange 2 intervals on a sequence variable -----

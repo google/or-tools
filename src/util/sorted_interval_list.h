@@ -60,6 +60,9 @@ class SortedDisjointIntervalList {
   SortedDisjointIntervalList(const std::vector<int>& starts,
                              const std::vector<int>& ends);
 
+  // Builds the complement of the interval list on the interval [start, end].
+  SortedDisjointIntervalList BuildComplementOnInterval(int64 start, int64 end);
+
   // Adds the interval [start..end] to the list, and merges overlapping or
   // immediately adjacent intervals ([2, 5] and [6, 7] are adjacent, but
   // [2, 5] and [7, 8] are not).

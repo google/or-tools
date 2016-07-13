@@ -17,6 +17,7 @@
 
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "util/saturated_arithmetic.h"
 
 namespace operations_research {
 
@@ -30,6 +31,25 @@ SortedDisjointIntervalList::SortedDisjointIntervalList(
 SortedDisjointIntervalList::SortedDisjointIntervalList(
     const std::vector<int>& starts, const std::vector<int>& ends) {
   InsertIntervals(starts, ends);
+}
+
+SortedDisjointIntervalList
+SortedDisjointIntervalList::BuildComplementOnInterval(int64 start, int64 end) {
+  SortedDisjointIntervalList interval_list;
+  int64 next_start = start;
+  for (auto it = FirstIntervalGreaterOrEqual(start); it != this->end(); ++it) {
+    const Interval& interval = *it;
+    const int64 next_end = CapSub(interval.start, 1);
+    if (next_end > end) break;
+    if (next_start <= next_end) {
+      interval_list.InsertInterval(next_start, next_end);
+    }
+    next_start = CapAdd(interval.end, 1);
+  }
+  if (next_start <= end) {
+    interval_list.InsertInterval(next_start, end);
+  }
+  return interval_list;
 }
 
 SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
