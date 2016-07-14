@@ -2295,7 +2295,7 @@ class RevIntSet {
   void Clear(Solver* const solver) { num_elements_.SetValue(solver, 0); }
 
   // Iterators on the indices.
-  typedef T* const_iterator;
+  typedef const T* const_iterator;
   const_iterator begin() const { return elements_.get(); }
   const_iterator end() const { return elements_.get() + num_elements_.Value(); }
 

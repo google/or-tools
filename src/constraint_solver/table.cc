@@ -436,9 +436,9 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   void InitialPropagate() override {
     BuildMasks();
     FillMasksAndActiveTuples();
-    RemoveUnsupportedValues();
     ComputeMasksBoundaries();
     BuildSupports();
+    RemoveUnsupportedValues();
   }
 
   // ----- Propagation -----
@@ -575,7 +575,6 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         break;
       }
       default: {
-        ClearTempMask();
         const int64 estimated_hole_size =
             var_sizes_.Value(var_index) - var_size;
         const int64 old_min = var->OldMin();
@@ -589,17 +588,16 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         if (number_of_operations < var_size) {
           // Let's scan the removed values since last run.
           for (int64 value = old_min; value < var_min; ++value) {
-            OrTempMask(var_index, value - omin);
+            changed |= SubtractMaskFromActive(var_index, value - omin);
           }
           for (const int64 value : InitAndGetValues(holes_[var_index])) {
-            OrTempMask(var_index, value - omin);
+            changed |= SubtractMaskFromActive(var_index, value - omin);
           }
           for (int64 value = var_max + 1; value <= old_max; ++value) {
-            OrTempMask(var_index, value - omin);
+            changed |= SubtractMaskFromActive(var_index, value - omin);
           }
-          // Then we Subtract this mask from the active_tuples_.
-          changed = SubtractTempMaskFromActive();
         } else {
+          ClearTempMask();
           // Let's build the mask of supported tuples from the current
           // domain.
           if (var_max - var_min + 1 == var_size) {  // Contiguous.
@@ -621,17 +619,13 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     }
     // And check active_tuples_ is still not empty, we fail otherwise.
     if (changed) {
-      if (active_tuples_.Empty()) {
-        solver()->Fail();
+      // We push the propagate method only if something has changed.
+      if (touched_var_ == -1 || touched_var_ == var_index) {
+        touched_var_ = var_index;
       } else {
-        // We push the propagate method only if something has changed.
-        if (touched_var_ == -1 || touched_var_ == var_index) {
-          touched_var_ = var_index;
-        } else {
-          touched_var_ = -2;  // more than one var.
-        }
-        EnqueueDelayedDemon(demon_);
+        touched_var_ = -2;  // more than one var.
       }
+      EnqueueDelayedDemon(demon_);
     }
   }
 
@@ -729,11 +723,20 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     for (int i : active_tuples_.active_words()) {
       temp_mask_[i] = ~temp_mask_[i];
     }
-    return active_tuples_.RevSubtract(solver(), temp_mask_);
+    const bool result = active_tuples_.RevSubtract(solver(), temp_mask_);
+    if (active_tuples_.Empty()) {
+      solver()->Fail();
+    }
+    return result;
   }
 
-  bool SubtractTempMaskFromActive() {
-    return active_tuples_.RevSubtract(solver(), temp_mask_);
+  bool SubtractMaskFromActive(int var_index, int64 value_index) {
+    const bool result =
+        active_tuples_.RevSubtract(solver(), masks_[var_index][value_index]);
+    if (active_tuples_.Empty()) {
+      solver()->Fail();
+    }
+    return result;
   }
 
   bool Supported(int var_index, int64 value_index) {
@@ -741,8 +744,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     DCHECK_LT(var_index, arity_);
     DCHECK_GE(value_index, 0);
     DCHECK(!masks_[var_index][value_index].empty());
-    const std::vector<uint64>& mask = masks_[var_index][value_index];
-    return active_tuples_.Intersects(mask, &supports_[var_index][value_index]);
+    return active_tuples_.Intersects(masks_[var_index][value_index],
+                                     &supports_[var_index][value_index]);
   }
 
   void OrTempMask(int var_index, int64 value_index) {
