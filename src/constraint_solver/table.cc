@@ -726,7 +726,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // ----- Helpers during propagation -----
 
   bool AndTempMaskWithActive() {
-    for (int i = 0; i < temp_mask_.size(); ++i) {
+    for (int i : active_tuples_.active_words()) {
       temp_mask_[i] = ~temp_mask_[i];
     }
     return active_tuples_.RevSubtract(solver(), temp_mask_);
@@ -748,18 +748,41 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   void OrTempMask(int var_index, int64 value_index) {
     const std::vector<uint64>& mask = masks_[var_index][value_index];
     if (!mask.empty()) {
-      for (int offset = mask_starts_[var_index][value_index];
-           offset <= mask_ends_[var_index][value_index]; ++offset) {
-        temp_mask_[offset] |= mask[offset];
+      const int mask_span =
+          mask_ends_[var_index][value_index] -
+          mask_starts_[var_index][value_index] + 1;
+      if (active_tuples_.ActiveWordSize() < mask_span) {
+        for (int i : active_tuples_.active_words()) {
+          temp_mask_[i] |= mask[i];
+        }
+      } else {
+        for (int i = mask_starts_[var_index][value_index];
+             i <= mask_ends_[var_index][value_index]; ++i) {
+          temp_mask_[i] |= mask[i];
+        }
       }
     }
   }
 
   void SetTempMask(int var_index, int64 value_index) {
-    temp_mask_ = masks_[var_index][value_index];
+    if (active_tuples_.ActiveWordSize() < word_length_ / 4) {
+      for (int i : active_tuples_.active_words()) {
+        temp_mask_[i] = masks_[var_index][value_index][i];
+      }
+    } else {
+      temp_mask_ = masks_[var_index][value_index];
+    }
   }
 
-  void ClearTempMask() { temp_mask_.assign(word_length_, 0); }
+  void ClearTempMask() {
+    if (active_tuples_.ActiveWordSize() < word_length_ / 4) {
+      for (int i : active_tuples_.active_words()) {
+        temp_mask_[i] = 0;
+      }
+    } else {
+      temp_mask_.assign(word_length_, 0);
+    }
+  }
 
   // The length in 64 bit words of the number of tuples.
   int64 word_length_;

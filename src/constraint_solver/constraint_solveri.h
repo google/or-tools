@@ -2294,6 +2294,11 @@ class RevIntSet {
 
   void Clear(Solver* const solver) { num_elements_.SetValue(solver, 0); }
 
+  // Iterators on the indices.
+  typedef T* const_iterator;
+  const_iterator begin() const { return elements_.get(); }
+  const_iterator end() const { return elements_.get() + num_elements_.Value(); }
+
  private:
   // Used in DCHECK.
   bool NotAlreadyInserted(const T& elt) {
@@ -2479,6 +2484,8 @@ class UnsortedNullableRevBitset {
   int64 bit_size() const { return bit_size_; }
   // Returns the number of 64 bit words used to store the bitset.
   int64 word_size() const { return word_size_; }
+  // Returns the set of active word indices.
+  const RevIntSet<int>& active_words() const { return active_words_; }
 
  private:
   const int64 bit_size_;
