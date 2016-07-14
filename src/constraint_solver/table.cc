@@ -748,9 +748,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   void OrTempMask(int var_index, int64 value_index) {
     const std::vector<uint64>& mask = masks_[var_index][value_index];
     if (!mask.empty()) {
-      const int mask_span =
-          mask_ends_[var_index][value_index] -
-          mask_starts_[var_index][value_index] + 1;
+      const int mask_span = mask_ends_[var_index][value_index] -
+                            mask_starts_[var_index][value_index] + 1;
       if (active_tuples_.ActiveWordSize() < mask_span) {
         for (int i : active_tuples_.active_words()) {
           temp_mask_[i] |= mask[i];
