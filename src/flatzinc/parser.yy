@@ -437,6 +437,7 @@ optional_var_or_value:
 
 optional_var_or_value_array:
   '=' '[' var_or_value_array ']' { $$ = $3; }
+| '=' '[' ']' { $$ = nullptr; }
 | /*empty*/ { $$ = nullptr; }
 
 var_or_value_array:  // Cannot be empty.
