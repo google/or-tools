@@ -263,13 +263,20 @@ bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
   bool changed = false;
   to_remove_.clear();
   for (int index : active_words_) {
-    if (bits_[index] & ~mask[index]) {
-      changed = true;
-      const uint64 result = bits_[index] & mask[index];
-      bits_.SetValue(solver, index, result);
-      if (result == 0) {
-        to_remove_.push_back(index);
+    if (index < mask.size()) {
+      if (bits_[index] & ~mask[index]) {
+        changed = true;
+        const uint64 result = bits_[index] & mask[index];
+        bits_.SetValue(solver, index, result);
+        if (result == 0) {
+          to_remove_.push_back(index);
+        }
       }
+    } else {
+      // Zero the word as the mask is implicitely null.
+      changed = true;
+      bits_.SetValue(solver, index, 0);
+      to_remove_.push_back(index);
     }
   }
   // We remove indices of null words in reverse order, as this may be a simpler
