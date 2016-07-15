@@ -239,18 +239,40 @@ void UnsortedNullableRevBitset::Init(Solver* const solver,
 bool UnsortedNullableRevBitset::RevSubtract(Solver* const solver,
                                             const std::vector<uint64>& mask) {
   bool changed = false;
-  for (int i = 0; i < active_words_.Size(); ++i) {
-    const int index = active_words_.Element(i);
+  for (int index : active_words_) {
     if (bits_[index] & mask[index]) {
       changed = true;
       bits_.SetValue(solver, index, bits_[index] & ~mask[index]);
     }
   }
   // Update active_words_ in reverse order.
-  for (int i = active_words_.Size() - 1; i >= 0; --i) {
-    const int index = active_words_.Element(i);
-    if (!bits_[index]) {
-      active_words_.Remove(solver, index);
+  if (changed) {
+    for (int i = active_words_.Size() - 1; i >= 0; --i) {
+      const int index = active_words_.Element(i);
+      if (!bits_[index]) {
+        active_words_.Remove(solver, index);
+      }
+    }
+  }
+  return changed;
+}
+
+bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
+                                       const std::vector<uint64>& mask) {
+  bool changed = false;
+  for (int index : active_words_) {
+    if (bits_[index] & ~mask[index]) {
+      changed = true;
+      bits_.SetValue(solver, index, bits_[index] & mask[index]);
+    }
+  }
+  // Update active_words_ in reverse order.
+  if (changed) {
+    for (int i = active_words_.Size() - 1; i >= 0; --i) {
+      const int index = active_words_.Element(i);
+      if (!bits_[index]) {
+        active_words_.Remove(solver, index);
+      }
     }
   }
   return changed;
@@ -263,8 +285,7 @@ bool UnsortedNullableRevBitset::Intersects(const std::vector<uint64>& mask,
   if (mask[*support_index] & bits_[*support_index]) {
     return true;
   }
-  for (int i = 0; i < active_words_.Size(); ++i) {
-    const int index = active_words_.Element(i);
+  for (int index : active_words_) {
     if (bits_[index] & mask[index]) {
       *support_index = index;
       return true;

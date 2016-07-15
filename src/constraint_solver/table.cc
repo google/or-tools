@@ -566,6 +566,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
       case 1: {
         SetTempMask(var_index, var->Min() - omin);
         changed = AndTempMaskWithActive();
+        //        changed = AndMaskWithActive(var_index, var->Min() - omin);
         break;
       }
       case 2: {
@@ -720,10 +721,17 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   // ----- Helpers during propagation -----
 
   bool AndTempMaskWithActive() {
-    for (int i : active_tuples_.active_words()) {
-      temp_mask_[i] = ~temp_mask_[i];
+    const bool result = active_tuples_.RevAnd(solver(), temp_mask_);
+    if (active_tuples_.Empty()) {
+      solver()->Fail();
     }
-    const bool result = active_tuples_.RevSubtract(solver(), temp_mask_);
+    return result;
+  }
+
+  bool AndMaskWithActive(int var_index, int64 value_index) {
+    CHECK_EQ(masks_[var_index][value_index].size(), word_length_);
+    const bool result =
+        active_tuples_.RevAnd(solver(), masks_[var_index][value_index]);
     if (active_tuples_.Empty()) {
       solver()->Fail();
     }

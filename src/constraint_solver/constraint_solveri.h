@@ -2464,6 +2464,11 @@ class UnsortedNullableRevBitset {
   // the active bitset was changed in the process.
   bool RevSubtract(Solver* const solver, const std::vector<uint64>& mask);
 
+  // This method ands the mask with the active bitset. It returns true if
+  // the active bitset was changed in the process.
+  bool RevAnd(Solver* const solver, const std::vector<uint64>& mask);
+
+
   // This method returns the number of non null 64 bit words in the bitset
   // representation.
   int ActiveWordSize() const { return active_words_.Size(); }
