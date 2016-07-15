@@ -241,7 +241,7 @@ bool UnsortedNullableRevBitset::RevSubtract(Solver* const solver,
   bool changed = false;
   to_remove_.clear();
   for (int index : active_words_) {
-    if (index < mask.size() && bits_[index] & mask[index]) {
+    if (index < mask.size() && (bits_[index] & mask[index]) != 0) {
       changed = true;
       const uint64 result = bits_[index] & ~mask[index];
       bits_.SetValue(solver, index, result);
@@ -264,7 +264,7 @@ bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
   to_remove_.clear();
   for (int index : active_words_) {
     if (index < mask.size()) {
-      if (bits_[index] & ~mask[index]) {
+      if ((bits_[index] & ~mask[index]) != 0) {
         changed = true;
         const uint64 result = bits_[index] & mask[index];
         bits_.SetValue(solver, index, result);
