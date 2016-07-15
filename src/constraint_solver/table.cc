@@ -412,6 +412,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         mask_starts_(arity_),
         mask_ends_(arity_),
         original_min_(arity_, 0),
+        temp_mask_(word_length_, 0),
         supports_(arity_),
         demon_(nullptr),
         touched_var_(-1),
@@ -564,9 +565,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
 
     switch (var_size) {
       case 1: {
-        SetTempMask(var_index, var->Min() - omin);
-        changed = AndTempMaskWithActive();
-        //        changed = AndMaskWithActive(var_index, var->Min() - omin);
+        changed = AndMaskWithActive(var_index, var->Min() - omin);
         break;
       }
       case 2: {
