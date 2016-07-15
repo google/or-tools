@@ -581,6 +581,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
             var_sizes_.Value(var_index) - var_size;
         const int64 old_min = var->OldMin();
         const int64 old_max = var->OldMax();
+
         // Rough estimation of the number of operation if we scan
         // deltas in the domain of the variable.
         const int64 number_of_operations =
@@ -727,7 +728,6 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   bool AndMaskWithActive(int var_index, int64 value_index) {
-    CHECK_EQ(masks_[var_index][value_index].size(), word_length_);
     const bool result =
         active_tuples_.RevAnd(solver(), masks_[var_index][value_index]);
     if (active_tuples_.Empty()) {
