@@ -140,7 +140,7 @@ ifeq ("$(SYSTEM)","win")
   PORT = VisualStudio$(VISUAL_STUDIO_YEAR)-$(PTRLENGTH)bit
   VS_RELEASE = v$(VISUAL_STUDIO_MAJOR)0
   VS_COMTOOLS = $(VISUAL_STUDIO_MAJOR)0
- 
+
   ifeq ("$(CMAKE_SUFFIX)","")
     CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR)"
   else
@@ -173,7 +173,7 @@ printport:
 	@echo SYSTEM = $(SYSTEM)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PTRLENGTH = $(PTRLENGTH)
-	@echo GIT_REVISION = \"$(GIT_REVISION)\"
+	@echo GIT_REVISION = $(GIT_REVISION)
 	@echo GIT_HASH = $(GIT_HASH)
 	@echo PORT = $(PORT)
 	@echo OR_TOOLS_VERSION = $(OR_TOOLS_VERSION)
