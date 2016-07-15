@@ -562,15 +562,17 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     bool changed = false;
     const int64 omin = original_min_[var_index];
     const int64 var_size = var->Size();
+    const int64 var_min = var->Min();
+    const int64 var_max = var->Max();
 
     switch (var_size) {
       case 1: {
-        changed = AndMaskWithActive(var_index, var->Min() - omin);
+        changed = AndMaskWithActive(var_index, var_min - omin);
         break;
       }
       case 2: {
-        SetTempMask(var_index, var->Min() - omin);
-        OrTempMask(var_index, var->Max() - omin);
+        SetTempMask(var_index, var_min - omin);
+        OrTempMask(var_index, var_max - omin);
         changed = AndTempMaskWithActive();
         break;
       }
@@ -579,8 +581,6 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
             var_sizes_.Value(var_index) - var_size;
         const int64 old_min = var->OldMin();
         const int64 old_max = var->OldMax();
-        const int64 var_min = var->Min();
-        const int64 var_max = var->Max();
         // Rough estimation of the number of operation if we scan
         // deltas in the domain of the variable.
         const int64 number_of_operations =
@@ -617,9 +617,8 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         var_sizes_.SetValue(solver(), var_index, var_size);
       }
     }
-    // And check active_tuples_ is still not empty, we fail otherwise.
+    // We push the propagate method only if something has changed.
     if (changed) {
-      // We push the propagate method only if something has changed.
       if (touched_var_ == -1 || touched_var_ == var_index) {
         touched_var_ = var_index;
       } else {

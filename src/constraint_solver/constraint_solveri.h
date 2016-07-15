@@ -2497,6 +2497,7 @@ class UnsortedNullableRevBitset {
   const int64 word_size_;
   RevArray<uint64> bits_;
   RevIntSet<int> active_words_;
+  vector<int> to_remove_;
 };
 
 // ---------- Helpers ----------
