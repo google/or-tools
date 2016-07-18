@@ -1,9 +1,9 @@
 
 archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs cc_archive dotnet_archive java_archive
 ifeq "$(SYSTEM)" "win"
-	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.$(PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
+	cd temp && ..$Stools$Szip.exe -r ..$S$(INSTALL_DIR).zip $(INSTALL_DIR)
 else
-	cd temp && tar -c -v -z --no-same-owner -f ..$SGoogle.OrTools.$(PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
+	cd temp && tar -c -v -z --no-same-owner -f ..$S$(INSTALL_DIR).tar.gz $(INSTALL_DIR)
 endif
 	-$(DELREC) temp
 
