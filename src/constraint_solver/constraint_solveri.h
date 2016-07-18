@@ -2464,7 +2464,7 @@ class UnsortedNullableRevBitset {
   // the active bitset was changed in the process.
   bool RevSubtract(Solver* const solver, const std::vector<uint64>& mask);
 
-  // This method ands the mask with the active bitset. It returns true if
+  // This method ANDs the mask with the active bitset. It returns true if
   // the active bitset was changed in the process.
   bool RevAnd(Solver* const solver, const std::vector<uint64>& mask);
 
@@ -2492,6 +2492,8 @@ class UnsortedNullableRevBitset {
   const RevIntSet<int>& active_words() const { return active_words_; }
 
  private:
+  void CleanUpActives(Solver* const solver);
+
   const int64 bit_size_;
   const int64 word_size_;
   RevArray<uint64> bits_;

@@ -250,12 +250,17 @@ bool UnsortedNullableRevBitset::RevSubtract(Solver* const solver,
       }
     }
   }
+
+  CleanUpActives(solver);
+  return changed;
+}
+
+void UnsortedNullableRevBitset::CleanUpActives(Solver* const solver) {
   // We remove indices of null words in reverse order, as this may be a simpler
   // operations on the RevIntSet (no actual swap).
   for (int i = to_remove_.size() - 1; i >= 0; --i) {
     active_words_.Remove(solver, to_remove_[i]);
   }
-  return changed;
 }
 
 bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
@@ -279,11 +284,7 @@ bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
       to_remove_.push_back(index);
     }
   }
-  // We remove indices of null words in reverse order, as this may be a simpler
-  // operations on the RevIntSet (no actual swap).
-  for (int i = to_remove_.size() - 1; i >= 0; --i) {
-    active_words_.Remove(solver, to_remove_[i]);
-  }
+  CleanUpActives(solver);
   return changed;
 }
 

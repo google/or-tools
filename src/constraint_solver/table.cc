@@ -567,13 +567,13 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
 
     switch (var_size) {
       case 1: {
-        changed = AndMaskWithActive(var_index, var_min - omin);
+        changed = AndMaskWithActive(masks_[var_index][var_min - omin]);
         break;
       }
       case 2: {
         SetTempMask(var_index, var_min - omin);
         OrTempMask(var_index, var_max - omin);
-        changed = AndTempMaskWithActive();
+        changed = AndMaskWithActive(temp_mask_);
         break;
       }
       default: {
@@ -581,7 +581,6 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
             var_sizes_.Value(var_index) - var_size;
         const int64 old_min = var->OldMin();
         const int64 old_max = var->OldMax();
-
         // Rough estimation of the number of operation if we scan
         // deltas in the domain of the variable.
         const int64 number_of_operations =
@@ -589,13 +588,13 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
         if (number_of_operations < var_size) {
           // Let's scan the removed values since last run.
           for (int64 value = old_min; value < var_min; ++value) {
-            changed |= SubtractMaskFromActive(var_index, value - omin);
+            changed |= SubtractMaskFromActive(masks_[var_index][value - omin]);
           }
           for (const int64 value : InitAndGetValues(holes_[var_index])) {
-            changed |= SubtractMaskFromActive(var_index, value - omin);
+            changed |= SubtractMaskFromActive(masks_[var_index][value - omin]);
           }
           for (int64 value = var_max + 1; value <= old_max; ++value) {
-            changed |= SubtractMaskFromActive(var_index, value - omin);
+            changed |= SubtractMaskFromActive(masks_[var_index][value - omin]);
           }
         } else {
           ClearTempMask();
@@ -611,7 +610,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
             }
           }
           // Then we and this mask with active_tuples_.
-          changed = AndTempMaskWithActive();
+          changed = AndMaskWithActive(temp_mask_);
         }
         // We maintain the size of the variables incrementally (when it
         // is > 2).
@@ -719,26 +718,16 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
 
   // ----- Helpers during propagation -----
 
-  bool AndTempMaskWithActive() {
-    const bool result = active_tuples_.RevAnd(solver(), temp_mask_);
+  bool AndMaskWithActive(const std::vector<uint64>& mask) {
+    const bool result = active_tuples_.RevAnd(solver(), mask);
     if (active_tuples_.Empty()) {
       solver()->Fail();
     }
     return result;
   }
 
-  bool AndMaskWithActive(int var_index, int64 value_index) {
-    const bool result =
-        active_tuples_.RevAnd(solver(), masks_[var_index][value_index]);
-    if (active_tuples_.Empty()) {
-      solver()->Fail();
-    }
-    return result;
-  }
-
-  bool SubtractMaskFromActive(int var_index, int64 value_index) {
-    const bool result =
-        active_tuples_.RevSubtract(solver(), masks_[var_index][value_index]);
+  bool SubtractMaskFromActive(const std::vector<uint64>& mask) {
+    const bool result = active_tuples_.RevSubtract(solver(), mask);
     if (active_tuples_.Empty()) {
       solver()->Fail();
     }
@@ -749,9 +738,10 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
     DCHECK_GE(var_index, 0);
     DCHECK_LT(var_index, arity_);
     DCHECK_GE(value_index, 0);
-    DCHECK(!masks_[var_index][value_index].empty());
-    return active_tuples_.Intersects(masks_[var_index][value_index],
-                                     &supports_[var_index][value_index]);
+    DCHECK_LT(value_index, masks_[var_index].size());
+    const std::vector<uint64>& mask = masks_[var_index][value_index];
+    DCHECK(!mask.empty());
+    return active_tuples_.Intersects(mask, &supports_[var_index][value_index]);
   }
 
   void OrTempMask(int var_index, int64 value_index) {
@@ -773,6 +763,11 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void SetTempMask(int var_index, int64 value_index) {
+    // We assume memset is much faster that looping and assigning.
+    // Still we do want to stay sparse if possible.
+    // Thus we switch between dense and sparse initialization by
+    // comparing the number of operations in both case, with constant factor.
+    // TODO(user): experiment with different constant values.
     if (active_tuples_.ActiveWordSize() < word_length_ / 4) {
       for (int i : active_tuples_.active_words()) {
         temp_mask_[i] = masks_[var_index][value_index][i];
@@ -783,6 +778,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
   }
 
   void ClearTempMask() {
+    // See comment above.
     if (active_tuples_.ActiveWordSize() < word_length_ / 4) {
       for (int i : active_tuples_.active_words()) {
         temp_mask_[i] = 0;
