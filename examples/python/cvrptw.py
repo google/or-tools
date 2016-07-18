@@ -618,11 +618,21 @@ def main():
                                                  sameStartFinish=True)
 
 
+    # Set model parameters
+    model_parameters = pywrapcp.RoutingModel.DefaultModelParameters()
+
+    # The solver parameters can be accessed from the model parameters. For example :
+#   model_parameters.solver_parameters.CopyFrom(
+#       pywrapcp.Solver.DefaultSolverParameters())
+#    model_parameters.solver_parameters.trace_propagation = True
+
+
     # Make the routing model instance.
     routing = pywrapcp.RoutingModel(customers.number,  # int number
                                     vehicles.number,  # int number
                                     vehicles.starts,  # List of int start depot
-                                    vehicles.ends)  # List of int end depot
+                                    vehicles.ends,  # List of int end depot
+                                    model_parameters)
 
     parameters = routing.DefaultSearchParameters()
     # Setting first solution heuristic (cheapest addition).
