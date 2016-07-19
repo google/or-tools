@@ -1,6 +1,6 @@
-lib_name=$1_LIB_OBJS
 main_dir=$2
 
+# Generate XXX_DEPS macro
 echo $1_DEPS= \\
 for dir in ${@:2}
 do
@@ -17,24 +17,26 @@ done
 echo
 echo
 
-echo $lib_name = \\
-for i in src/$main_dir/*.cc
+# generate CCC_LIB_OBJS macro
+echo $1_LIB_OBJS = \\
+for i in src/$2/*.cc
 do
     file=`basename $i .cc`
-    echo \ \ \ \ \$\(OBJ_DIR\)/$main_dir/$file.\$O: \\
+    echo \ \ \ \ \$\(OBJ_DIR\)/$2/$file.\$O: \\
 done
-for i in src/$main_dir/*.proto
+for i in src/$2/*.proto
 do
     file=`basename $i .proto`
-    echo \ \ \ \ \$\(OBJ_DIR\)/$main_dir/$file.pb.\$O \\
+    echo \ \ \ \ \$\(OBJ_DIR\)/$2/$file.pb.\$O \\
 done
 echo
 echo
 
-for i in src/$main_dir/*.h
+# Generate dependencies for .h files
+for i in src/$2/*.h
 do
     file=`basename $i .h`
-    echo \$\(SRC_DIR\)/$main_dir/$file.h: \\
+    echo \$\(SRC_DIR\)/$2/$file.h: \\
     for dir in ${@:2}
     do
         for deps in `grep -e "\#include \"$dir" $i | cut -d '"' -f 2`
@@ -51,10 +53,11 @@ do
     echo
 done
 
-for i in src/$main_dir/*.cc
+# Generate dependencies and compilation command for .cc files
+for i in src/$2/*.cc
 do
     file=`basename $i .cc`
-    echo \$\(OBJ_DIR\)/$main_dir/$file.\$O: \\
+    echo \$\(OBJ_DIR\)/$2/$file.\$O: \\
     for dir in ${@:2}
     do
         for deps in `grep -e "\#include \"$dir" $i | cut -d '"' -f 2`
@@ -68,20 +71,23 @@ do
         done
     done
     echo
-    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(SRC_DIR\)/$main_dir/$file.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$main_dir$\S$file.\$O
+    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(SRC_DIR\)/$2/$file.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$file.\$O
     echo
 done
 
-for i in src/$main_dir/*proto
+# Generate dependencies, compulation, and protoc command for .proto files.
+for i in src/$2/*proto
 do
     file=`basename $i .proto`
     echo
-    echo \$\(GEN_DIR\)/$main_dir/$file.pb.cc: \$\(SRC_DIR\)/$main_dir/$file.proto
-    echo -e '\t'\$\(PROTOBUF_DIR\)/bin/protoc --proto_path=\$\(INC_DIR\) --cpp_out=\$\(GEN_DIR\) \$\(SRC_DIR\)/$main_dir/$file.proto
+    echo \$\(GEN_DIR\)/$2/$file.pb.cc: \$\(SRC_DIR\)/$2/$file.proto
+    echo -e '\t'\$\(PROTOBUF_DIR\)/bin/protoc --proto_path=\$\(INC_DIR\) --cpp_out=\$\(GEN_DIR\) \$\(SRC_DIR\)/$2/$file.proto
     echo
-    echo \$\(GEN_DIR\)/$main_dir/$file.pb.h: \$\(GEN_DIR\)/$main_dir/$file.pb.cc
+    echo \$\(GEN_DIR\)/$2/$file.pb.h: \$\(GEN_DIR\)/$2/$file.pb.cc
     echo
-    echo \$\(OBJ_DIR\)/$main_dir/$file.pb.\$O: \$\(GEN_DIR\)/$main_dir/$file.pb.cc
-    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(GEN_DIR\)/$main_dir/$file.pb.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$main_dir$\S$file.pb.\$O
+    echo \$\(OBJ_DIR\)/$2/$file.pb.\$O: \$\(GEN_DIR\)/$2/$file.pb.cc
+    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(GEN_DIR\)/$2/$file.pb.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$file.pb.\$O
     echo
 done
+
+#TODO: Generate inter-proto dependencies.
