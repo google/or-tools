@@ -1,6 +1,22 @@
 lib_name=$1_LIB_OBJS
 main_dir=$2
 
+echo $1_DEPS= \\
+for dir in ${@:2}
+do
+    for deps in `grep -e "\#include \"$dir" src/$dir/*.h | cut -d '"' -f 2 | sort -u`
+    do
+        if [[ $deps == *pb.h ]]
+        then
+            echo \ \ \ \ \$\(GEN_DIR\)/$deps \\
+        else
+            echo \ \ \ \ \$\(SRC_DIR\)/$deps \\
+        fi
+    done
+done
+echo
+echo
+
 echo $lib_name = \\
 for i in src/$main_dir/*.cc
 do
