@@ -25,14 +25,17 @@ for i in src/$main_dir/*.cc
 do
     file=`basename $i .cc`
     line=\$\(OBJ_DIR\)/$main_dir/$file.\$O:
-    for deps in `grep -e "\#include \"$main_dir" $i | cut -d '"' -f 2`
+    for dir in ${@:2}
     do
-        if [[ $deps == *pb.h ]]
-        then
-            line=$line\ \$\(GEN_DIR\)/$deps
-        else
-            line=$line\ \$\(SRC_DIR\)/$deps
-        fi
+        for deps in `grep -e "\#include \"$dir" $i | cut -d '"' -f 2`
+        do
+            if [[ $deps == *pb.h ]]
+            then
+                line=$line\ \$\(GEN_DIR\)/$deps
+            else
+                line=$line\ \$\(SRC_DIR\)/$deps
+            fi
+        done
     done
     echo
     echo $line \$\($deps_decl\)
