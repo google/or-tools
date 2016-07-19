@@ -14,6 +14,7 @@ do
     echo \ \ \ \ \$\(OBJ_DIR\)/$main_dir/$file.pb.\$O \\
 done
 echo
+echo
 
 for i in src/$main_dir/*.h
 do
