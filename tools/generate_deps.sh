@@ -17,7 +17,7 @@ done
 echo
 echo
 
-# generate CCC_LIB_OBJS macro
+# generate XXX_LIB_OBJS macro
 echo $1_LIB_OBJS = \\
 for i in src/$2/*.cc
 do
