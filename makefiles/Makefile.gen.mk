@@ -1294,8 +1294,10 @@ SAT_DEPS = \
     $(SRC_DIR)/sat/clause.h \
     $(SRC_DIR)/sat/drat.h \
     $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/sat/pb_constraint.h \
+    $(SRC_DIR)/sat/precedences.h \
     $(SRC_DIR)/sat/sat_base.h \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
     $(SRC_DIR)/sat/sat_solver.h \
@@ -1355,12 +1357,17 @@ SAT_DEPS = \
 SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/boolean_problem.$O \
     $(OBJ_DIR)/sat/clause.$O \
+    $(OBJ_DIR)/sat/disjunctive.$O \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
     $(OBJ_DIR)/sat/integer.$O \
+    $(OBJ_DIR)/sat/integer_sum.$O \
+    $(OBJ_DIR)/sat/intervals.$O \
     $(OBJ_DIR)/sat/lp_utils.$O \
+    $(OBJ_DIR)/sat/no_cycle.$O \
     $(OBJ_DIR)/sat/optimization.$O \
     $(OBJ_DIR)/sat/pb_constraint.$O \
+    $(OBJ_DIR)/sat/precedences.$O \
     $(OBJ_DIR)/sat/sat_solver.$O \
     $(OBJ_DIR)/sat/simplification.$O \
     $(OBJ_DIR)/sat/symmetry.$O \
@@ -1388,6 +1395,14 @@ $(SRC_DIR)/sat/clause.h: \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/stats.h
 
+$(SRC_DIR)/sat/disjunctive.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/precedences.h \
+    $(SRC_DIR)/sat/sat_base.h \
+    $(SRC_DIR)/util/stats.h
+
 $(SRC_DIR)/sat/drat.h: \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/sat/sat_base.h \
@@ -1405,6 +1420,18 @@ $(SRC_DIR)/sat/integer.h: \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/iterators.h
 
+$(SRC_DIR)/sat/integer_sum.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h
+
+$(SRC_DIR)/sat/intervals.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/precedences.h \
+    $(SRC_DIR)/sat/sat_base.h \
+    $(SRC_DIR)/sat/sat_solver.h
+
 $(SRC_DIR)/sat/lp_utils.h: \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/sat_solver.h \
@@ -1414,6 +1441,11 @@ $(SRC_DIR)/sat/lp_utils.h: \
 $(SRC_DIR)/sat/model.h: \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/typeid.h
+
+$(SRC_DIR)/sat/no_cycle.h: \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h \
+    $(SRC_DIR)/sat/sat_solver.h
 
 $(SRC_DIR)/sat/optimization.h: \
     $(SRC_DIR)/sat/boolean_problem.h \
@@ -1425,6 +1457,13 @@ $(SRC_DIR)/sat/pb_constraint.h: \
     $(SRC_DIR)/sat/sat_base.h \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
     $(SRC_DIR)/util/stats.h
+
+$(SRC_DIR)/sat/precedences.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h \
+    $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/util/bitset.h
 
 $(SRC_DIR)/sat/sat_base.h: \
     $(SRC_DIR)/base/int_type.h \
@@ -1486,6 +1525,11 @@ $(OBJ_DIR)/sat/clause.$O: \
     $(SRC_DIR)/util/time_limit.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sclause.$O
 
+$(OBJ_DIR)/sat/disjunctive.$O: \
+    $(SRC_DIR)/sat/disjunctive.h \
+    $(SRC_DIR)/sat/sat_solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/disjunctive.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdisjunctive.$O
+
 $(OBJ_DIR)/sat/drat.$O: \
     $(SRC_DIR)/sat/drat.h \
     $(SRC_DIR)/base/commandlineflags.h
@@ -1500,6 +1544,14 @@ $(OBJ_DIR)/sat/integer.$O: \
     $(SRC_DIR)/base/stl_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger.$O
 
+$(OBJ_DIR)/sat/integer_sum.$O: \
+    $(SRC_DIR)/sat/integer_sum.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer_sum.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_sum.$O
+
+$(OBJ_DIR)/sat/intervals.$O: \
+    $(SRC_DIR)/sat/intervals.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/intervals.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sintervals.$O
+
 $(OBJ_DIR)/sat/lp_utils.$O: \
     $(SRC_DIR)/sat/boolean_problem.h \
     $(SRC_DIR)/sat/lp_utils.h \
@@ -1507,6 +1559,11 @@ $(OBJ_DIR)/sat/lp_utils.$O: \
     $(SRC_DIR)/lp_data/lp_print_utils.h \
     $(SRC_DIR)/glop/lp_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/lp_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slp_utils.$O
+
+$(OBJ_DIR)/sat/no_cycle.$O: \
+    $(SRC_DIR)/sat/no_cycle.h \
+    $(SRC_DIR)/base/stl_util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/no_cycle.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sno_cycle.$O
 
 $(OBJ_DIR)/sat/optimization.$O: \
     $(SRC_DIR)/sat/encoding.h \
@@ -1518,6 +1575,12 @@ $(OBJ_DIR)/sat/pb_constraint.$O: \
     $(SRC_DIR)/base/thorough_hash.h \
     $(SRC_DIR)/util/saturated_arithmetic.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/pb_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Spb_constraint.$O
+
+$(OBJ_DIR)/sat/precedences.$O: \
+    $(SRC_DIR)/sat/precedences.h \
+    $(SRC_DIR)/base/cleanup.h \
+    $(SRC_DIR)/base/stl_util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/precedences.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sprecedences.$O
 
 $(OBJ_DIR)/sat/sat_solver.$O: \
     $(SRC_DIR)/sat/sat_solver.h \
@@ -1611,8 +1674,10 @@ BOP_DEPS = \
     $(SRC_DIR)/sat/clause.h \
     $(SRC_DIR)/sat/drat.h \
     $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/sat/pb_constraint.h \
+    $(SRC_DIR)/sat/precedences.h \
     $(SRC_DIR)/sat/sat_base.h \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
     $(SRC_DIR)/sat/sat_solver.h \
@@ -2128,8 +2193,10 @@ CP_DEPS = \
     $(SRC_DIR)/sat/clause.h \
     $(SRC_DIR)/sat/drat.h \
     $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/sat/pb_constraint.h \
+    $(SRC_DIR)/sat/precedences.h \
     $(SRC_DIR)/sat/sat_base.h \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
     $(SRC_DIR)/sat/sat_solver.h \

@@ -1,7 +1,7 @@
 # Makefile targets.
 
 # Main target
-cc: ortoolslibs cpexe lpexe
+cc: ortoolslibs ccexe
 
 # Clean target
 
@@ -101,7 +101,7 @@ FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
 
 # Binaries
 
-CP_BINARIES = \
+CC_BINARIES = \
 	$(BIN_DIR)/costas_array$E \
 	$(BIN_DIR)/cryptarithm$E \
 	$(BIN_DIR)/cvrp_disjoint_tw$E \
@@ -114,6 +114,8 @@ CP_BINARIES = \
 	$(BIN_DIR)/golomb$E \
 	$(BIN_DIR)/jobshop$E \
 	$(BIN_DIR)/jobshop_ls$E \
+	$(BIN_DIR)/jobshop_sat$E \
+	$(BIN_DIR)/jobshop_earlytardy \
 	$(BIN_DIR)/linear_assignment_api$E \
 	$(BIN_DIR)/ls_api$E \
 	$(BIN_DIR)/magic_square$E \
@@ -124,9 +126,8 @@ CP_BINARIES = \
 	$(BIN_DIR)/pdptw$E \
 	$(BIN_DIR)/dimacs_assignment$E \
 	$(BIN_DIR)/sports_scheduling$E \
-	$(BIN_DIR)/tsp$E
-
-LP_BINARIES = \
+	$(BIN_DIR)/tsp$E \
+	$(BIN_DIR)/weighted_tardiness_sat \
 	$(BIN_DIR)/integer_programming$E \
 	$(BIN_DIR)/linear_programming$E \
 	$(BIN_DIR)/linear_solver_protocol_buffers$E \
@@ -134,9 +135,7 @@ LP_BINARIES = \
 	$(BIN_DIR)/mps_driver$E \
 	$(BIN_DIR)/solve$E
 
-cpexe: $(CP_BINARIES)
-
-lpexe: $(LP_BINARIES)
+ccexe: $(CC_BINARIES)
 
 # CVRPTW common library
 
@@ -364,6 +363,12 @@ $(OBJ_DIR)/jobshop_earlytardy.$O: $(EX_DIR)/cpp/jobshop_earlytardy.cc $(EX_DIR)/
 $(BIN_DIR)/jobshop_earlytardy$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/jobshop_earlytardy.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_earlytardy.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_earlytardy$E
 
+$(OBJ_DIR)/jobshop_sat.$O: $(EX_DIR)/cpp/jobshop_sat.cc $(CP_DEPS)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/jobshop_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Sjobshop_sat.$O
+
+$(BIN_DIR)/jobshop_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/jobshop_sat.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/jobshop_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sjobshop_sat$E
+
 $(OBJ_DIR)/magic_square.$O: $(EX_DIR)/cpp/magic_square.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/magic_square.cc $(OBJ_OUT)$(OBJ_DIR)$Smagic_square.$O
 
@@ -423,6 +428,12 @@ $(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(ROUTING_DEPS)
 
 $(BIN_DIR)/tsp$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/tsp.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/tsp.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Stsp$E
+
+$(OBJ_DIR)/weighted_tardiness_sat.$O: $(EX_DIR)/cpp/weighted_tardiness_sat.cc $(CP_DEPS)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/weighted_tardiness_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Sweighted_tardiness_sat.$O
+
+$(BIN_DIR)/weighted_tardiness_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/weighted_tardiness_sat.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/weighted_tardiness_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sweighted_tardiness_sat$E
 
 # CP tests.
 
