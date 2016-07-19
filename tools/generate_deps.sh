@@ -4,42 +4,42 @@ main_dir=$2
 for i in src/$main_dir/*.h
 do
     file=`basename $i .h`
-    line=\$\(SRC_DIR\)/$main_dir/$file.h:
+    echo \$\(SRC_DIR\)/$main_dir/$file.h: \\
     for dir in ${@:2}
     do
         for deps in `grep -e "\#include \"$dir" $i | cut -d '"' -f 2`
         do
             if [[ $deps == *pb.h ]]
             then
-                line=$line\ \$\(GEN_DIR\)/$deps
+                echo \ \ \ \ \$\(GEN_DIR\)/$deps \\
             else
-                line=$line\ \$\(SRC_DIR\)/$deps
+                echo \ \ \ \ \$\(SRC_DIR\)/$deps \\
             fi
         done
     done
     echo
-    echo $line
+    echo
 done
 
 for i in src/$main_dir/*.cc
 do
     file=`basename $i .cc`
-    line=\$\(OBJ_DIR\)/$main_dir/$file.\$O:
+    echo \$\(OBJ_DIR\)/$main_dir/$file.\$O: \\
     for dir in ${@:2}
     do
         for deps in `grep -e "\#include \"$dir" $i | cut -d '"' -f 2`
         do
             if [[ $deps == *pb.h ]]
             then
-                line=$line\ \$\(GEN_DIR\)/$deps
+                echo \ \ \ \ \$\(GEN_DIR\)/$deps \\
             else
-                line=$line\ \$\(SRC_DIR\)/$deps
+                echo \ \ \ \ \$\(SRC_DIR\)/$deps \\
             fi
         done
     done
-    echo
-    echo $line \$\($deps_decl\)
+    echo \ \ \ \ \$\($deps_decl\)
     echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(SRC_DIR\)/$main_dir/$file.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$main_dir$\S$file.\$O
+    echo
 done
 
 for i in src/$main_dir/*proto
@@ -53,4 +53,5 @@ do
     echo
     echo \$\(OBJ_DIR\)/$main_dir/$file.pb.\$O: \$\(GEN_DIR\)/$main_dir/$file.pb.cc \$\($deps_decl\)
     echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(GEN_DIR\)/$main_dir/$file.pb.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$main_dir$\S$file.pb.\$O
+    echo
 done
