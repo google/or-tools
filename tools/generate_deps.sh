@@ -1,4 +1,3 @@
-deps_decl=$1_DEPS
 lib_name=$1_LIB_OBJS
 main_dir=$2
 
@@ -52,7 +51,7 @@ do
             fi
         done
     done
-    echo \ \ \ \ \$\($deps_decl\)
+    echo
     echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(SRC_DIR\)/$main_dir/$file.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$main_dir$\S$file.\$O
     echo
 done
@@ -66,7 +65,7 @@ do
     echo
     echo \$\(GEN_DIR\)/$main_dir/$file.pb.h: \$\(GEN_DIR\)/$main_dir/$file.pb.cc
     echo
-    echo \$\(OBJ_DIR\)/$main_dir/$file.pb.\$O: \$\(GEN_DIR\)/$main_dir/$file.pb.cc \$\($deps_decl\)
+    echo \$\(OBJ_DIR\)/$main_dir/$file.pb.\$O: \$\(GEN_DIR\)/$main_dir/$file.pb.cc
     echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(GEN_DIR\)/$main_dir/$file.pb.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$main_dir$\S$file.pb.\$O
     echo
 done
