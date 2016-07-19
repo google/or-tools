@@ -26,8 +26,11 @@ do
 done
 for i in src/$2/*.proto
 do
-    file=`basename $i .proto`
-    echo \ \ \ \ \$\(OBJ_DIR\)/$2/$file.pb.\$O \\
+    if [[ -f $i ]]
+    then
+        file=`basename $i .proto`
+        echo \ \ \ \ \$\(OBJ_DIR\)/$2/$file.pb.\$O \\
+    fi
 done
 echo
 echo
@@ -78,16 +81,18 @@ done
 # Generate dependencies, compulation, and protoc command for .proto files.
 for i in src/$2/*proto
 do
-    file=`basename $i .proto`
-    echo
-    echo \$\(GEN_DIR\)/$2/$file.pb.cc: \$\(SRC_DIR\)/$2/$file.proto
-    echo -e '\t'\$\(PROTOBUF_DIR\)/bin/protoc --proto_path=\$\(INC_DIR\) --cpp_out=\$\(GEN_DIR\) \$\(SRC_DIR\)/$2/$file.proto
-    echo
-    echo \$\(GEN_DIR\)/$2/$file.pb.h: \$\(GEN_DIR\)/$2/$file.pb.cc
-    echo
-    echo \$\(OBJ_DIR\)/$2/$file.pb.\$O: \$\(GEN_DIR\)/$2/$file.pb.cc
-    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(GEN_DIR\)/$2/$file.pb.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$file.pb.\$O
-    echo
+    if [[ -f $i ]]
+    then
+        file=`basename $i .proto`
+        echo
+        echo \$\(GEN_DIR\)/$2/$file.pb.cc: \$\(SRC_DIR\)/$2/$file.proto
+        echo -e '\t'\$\(PROTOBUF_DIR\)/bin/protoc --proto_path=\$\(INC_DIR\) --cpp_out=\$\(GEN_DIR\) \$\(SRC_DIR\)/$2/$file.proto
+        echo
+        echo \$\(GEN_DIR\)/$2/$file.pb.h: \$\(GEN_DIR\)/$2/$file.pb.cc
+        echo
+        echo \$\(OBJ_DIR\)/$2/$file.pb.\$O: \$\(GEN_DIR\)/$2/$file.pb.cc
+        echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(GEN_DIR\)/$2/$file.pb.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$file.pb.\$O
+        echo
+    fi
 done
-
 #TODO: Generate inter-proto dependencies.

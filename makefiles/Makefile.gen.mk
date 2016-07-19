@@ -36,7 +36,6 @@ BASE_LIB_OBJS = \
     $(OBJ_DIR)/base/threadpool.$O: \
     $(OBJ_DIR)/base/time_support.$O: \
     $(OBJ_DIR)/base/timer.$O: \
-    $(OBJ_DIR)/base/*.pb.$O \
 
 
 $(SRC_DIR)/base/accurate_sum.h: \
@@ -343,15 +342,6 @@ $(OBJ_DIR)/base/timer.$O: \
 
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/timer.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Stimer.$O
 
-
-$(GEN_DIR)/base/*proto.pb.cc: $(SRC_DIR)/base/*proto.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/base/*proto.proto
-
-$(GEN_DIR)/base/*proto.pb.h: $(GEN_DIR)/base/*proto.pb.cc
-
-$(OBJ_DIR)/base/*proto.pb.$O: $(GEN_DIR)/base/*proto.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/base/*proto.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$S*proto.pb.$O
-
 UTIL_DEPS= \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/running_stat.h \
@@ -388,7 +378,6 @@ UTIL_LIB_OBJS = \
     $(OBJ_DIR)/util/stats.$O: \
     $(OBJ_DIR)/util/time_limit.$O: \
     $(OBJ_DIR)/util/xml_helper.$O: \
-    $(OBJ_DIR)/util/*.pb.$O \
 
 
 $(SRC_DIR)/util/bitset.h: \
@@ -619,15 +608,6 @@ $(OBJ_DIR)/util/xml_helper.$O: \
 
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/xml_helper.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sxml_helper.$O
 
-
-$(GEN_DIR)/util/*proto.pb.cc: $(SRC_DIR)/util/*proto.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/util/*proto.proto
-
-$(GEN_DIR)/util/*proto.pb.h: $(GEN_DIR)/util/*proto.pb.cc
-
-$(OBJ_DIR)/util/*proto.pb.$O: $(GEN_DIR)/util/*proto.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/util/*proto.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$S*proto.pb.$O
-
 LP_DATA_DEPS= \
     $(SRC_DIR)/lp_data/lp_data.h \
     $(SRC_DIR)/lp_data/lp_types.h \
@@ -673,7 +653,6 @@ LP_DATA_LIB_OBJS = \
     $(OBJ_DIR)/lp_data/png_dump.$O: \
     $(OBJ_DIR)/lp_data/sparse.$O: \
     $(OBJ_DIR)/lp_data/sparse_column.$O: \
-    $(OBJ_DIR)/lp_data/*.pb.$O \
 
 
 $(SRC_DIR)/lp_data/lp_data.h: \
@@ -877,15 +856,6 @@ $(OBJ_DIR)/lp_data/sparse_column.$O: \
     $(SRC_DIR)/base/stringprintf.h \
 
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/lp_data/sparse_column.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Ssparse_column.$O
-
-
-$(GEN_DIR)/lp_data/*proto.pb.cc: $(SRC_DIR)/lp_data/*proto.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/lp_data/*proto.proto
-
-$(GEN_DIR)/lp_data/*proto.pb.h: $(GEN_DIR)/lp_data/*proto.pb.cc
-
-$(OBJ_DIR)/lp_data/*proto.pb.$O: $(GEN_DIR)/lp_data/*proto.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/lp_data/*proto.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$S*proto.pb.$O
 
 GLOP_DEPS= \
     $(SRC_DIR)/glop/basis_representation.h \
@@ -1542,7 +1512,6 @@ ALGORITHMS_LIB_OBJS = \
     $(OBJ_DIR)/algorithms/hungarian.$O: \
     $(OBJ_DIR)/algorithms/knapsack_solver.$O: \
     $(OBJ_DIR)/algorithms/sparse_permutation.$O: \
-    $(OBJ_DIR)/algorithms/*.pb.$O \
 
 
 $(SRC_DIR)/algorithms/dense_doubly_linked_list.h: \
@@ -1631,15 +1600,6 @@ $(OBJ_DIR)/algorithms/sparse_permutation.$O: \
     $(SRC_DIR)/base/join.h \
 
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/algorithms/sparse_permutation.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Ssparse_permutation.$O
-
-
-$(GEN_DIR)/algorithms/*proto.pb.cc: $(SRC_DIR)/algorithms/*proto.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/algorithms/*proto.proto
-
-$(GEN_DIR)/algorithms/*proto.pb.h: $(GEN_DIR)/algorithms/*proto.pb.cc
-
-$(OBJ_DIR)/algorithms/*proto.pb.$O: $(GEN_DIR)/algorithms/*proto.pb.cc
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)/algorithms/*proto.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$S*proto.pb.$O
 
 SAT_DEPS= \
     $(SRC_DIR)/sat/boolean_problem.h \
