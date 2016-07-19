@@ -1,5 +1,19 @@
-deps_decl=$1
+deps_decl=$1_DEPS
+lib_name=$1_LIB_OBJS
 main_dir=$2
+
+echo $lib_name = \\
+for i in src/$main_dir/*.cc
+do
+    file=`basename $i .cc`
+    echo \ \ \ \ \$\(OBJ_DIR\)/$main_dir/$file.\$O: \\
+done
+for i in src/$main_dir/*.proto
+do
+    file=`basename $i .proto`
+    echo \ \ \ \ \$\(OBJ_DIR\)/$main_dir/$file.pb.\$O \\
+done
+echo
 
 for i in src/$main_dir/*.h
 do
