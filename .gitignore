@@ -27,7 +27,9 @@ dependencies/sources/
 *.lib
 *.exp
 *.pdb
+*.ass
 
 bin/
 src/gen/
 objs/
+temp/
