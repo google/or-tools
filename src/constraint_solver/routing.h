@@ -1181,7 +1181,7 @@ class RoutingModel {
   void SetupDecisionBuilders(const RoutingSearchParameters& search_parameters);
   void SetupMetaheuristics(const RoutingSearchParameters& search_parameters);
   void SetupAssignmentCollector();
-  void SetupTrace();
+  void SetupTrace(const RoutingSearchParameters& search_parameters);
   void SetupSearchMonitors(const RoutingSearchParameters& search_parameters);
   bool UsesLightPropagation(
       const RoutingSearchParameters& search_parameters) const;

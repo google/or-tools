@@ -4755,15 +4755,14 @@ void RoutingModel::SetupAssignmentCollector() {
   monitors_.push_back(collect_assignments_);
 }
 
-void RoutingModel::SetupTrace() {
-  if (FLAGS_routing_trace) {
+void RoutingModel::SetupTrace(
+    const RoutingSearchParameters& search_parameters) {
+  if (FLAGS_routing_trace || search_parameters.log_search()) {
     const int kLogPeriod = 10000;
-    SearchMonitor* trace = solver_->MakeSearchLog(kLogPeriod, cost_);
-    monitors_.push_back(trace);
+    monitors_.push_back(solver_->MakeSearchLog(kLogPeriod, cost_));
   }
   if (FLAGS_routing_search_trace) {
-    SearchMonitor* trace = solver_->MakeSearchTrace("Routing ");
-    monitors_.push_back(trace);
+    monitors_.push_back(solver_->MakeSearchTrace("Routing "));
   }
 }
 
@@ -4772,7 +4771,7 @@ void RoutingModel::SetupSearchMonitors(
   monitors_.push_back(GetOrCreateLimit());
   SetupMetaheuristics(search_parameters);
   SetupAssignmentCollector();
-  SetupTrace();
+  SetupTrace(search_parameters);
 }
 
 bool RoutingModel::UsesLightPropagation(

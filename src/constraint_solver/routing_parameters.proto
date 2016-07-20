@@ -242,12 +242,22 @@ message RoutingSearchParameters {
   bool use_light_propagation = 11;
 
   // --- Miscellaneous ---
-  // These are advanced settings which should not be modified unless you know
-  // what you are doing.
+  // Some of these are advanced settings which should not be modified unless you
+  // know what you are doing.
   // If true, arc cost evaluators will be fingerprinted. The fingerprint will
   // be used when computing vehicle cost equivalent classes, otherwise the
   // address of the evaluator will be used.
   bool fingerprint_arc_cost_evaluators = 12;
+  // Activates search logging. For each solution found during the search, the
+  // following will be displayed: its objective value, the maximum objective
+  // value since the beginning of the search, the elapsed time since the
+  // beginning of the search, the number of branches explored in the search
+  // tree, the number of failures in the search tree, the depth of the search
+  // tree, the number of local search neighbors explored, the number of local
+  // search neighbors filtered by local search filters, the number of local
+  // search neighbors accepted, the total memory used and the percentage of the
+  // search done.
+  bool log_search = 13;
 }
 
 // Parameters which have to be set when creating a RoutingModel.

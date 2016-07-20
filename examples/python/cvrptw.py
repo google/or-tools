@@ -643,6 +643,7 @@ def main():
 #    parameters.no_tsp = True
     parameters.time_limit_ms = 10 * 1000  # 10 seconds
     parameters.use_light_propagation = False
+#    parameters.log_search = True
 
 
     # Set the cost function (distance callback) for each arc, homogenious for
