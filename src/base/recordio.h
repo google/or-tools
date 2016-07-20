@@ -111,7 +111,7 @@ class RecordReader {
         return false;
       }
       compressed_buffer[csize] = '\0';
-      Uncompress(compressed_buffer.get(), usize, buffer.get(), usize);
+      Uncompress(compressed_buffer.get(), csize, buffer.get(), usize);
     } else {
       if (file_->Read(buffer.get(), usize) != usize) {
         return false;
