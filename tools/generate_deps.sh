@@ -101,6 +101,7 @@ do
     done
     # Print makefile command.
     echo \$\(OBJ_DIR\)/$2/$name.\$O: \\
+    echo \ \ \ \ \$\(SRC_DIR\)/$2/$name.cc \\
     print_include_list "$all_deps_str"
     echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(SRC_DIR\)/$2/$name.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$name.\$O
     echo
