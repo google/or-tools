@@ -115,7 +115,7 @@ CC_BINARIES = \
 	$(BIN_DIR)/jobshop$E \
 	$(BIN_DIR)/jobshop_ls$E \
 	$(BIN_DIR)/jobshop_sat$E \
-	$(BIN_DIR)/jobshop_earlytardy \
+	$(BIN_DIR)/jobshop_earlytardy$E \
 	$(BIN_DIR)/linear_assignment_api$E \
 	$(BIN_DIR)/ls_api$E \
 	$(BIN_DIR)/magic_square$E \
