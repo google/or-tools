@@ -241,7 +241,7 @@ ifeq ($(SYSTEM),win)
 	$(SED) -i -e 's/\.dll/\.pyd/' temp/$(INSTALL_DIR)/setup.py
 	-del temp\$(INSTALL_DIR)\setup.py-e
 	cd temp\$(INSTALL_DIR) && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
+	cd temp && ..\tools\zip.exe -r ..\or-tools.python.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 else
 	cp lib$S_pywrapcp.$(SWIG_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sortools$Sconstraint_solver
 	cp lib$S_pywraplp.$(SWIG_LIB_SUFFIX) temp$S$(INSTALL_DIR)$Sortools$Slinear_solver
@@ -250,7 +250,7 @@ else
 	$(SED) -i -e 's/\.dll/\.so/' temp/$(INSTALL_DIR)/setup.py
 	-rm temp/$(INSTALL_DIR)/setup.py-e
 	cd temp/$(INSTALL_DIR) && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
+	cd temp && tar -c -v -z --no-same-owner -f ../or-tools.python.$(INSTALL_PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 endif
 
 python_examples_archive:
@@ -268,10 +268,10 @@ python_examples_archive:
 	-$(DEL) temp$Sortools_examples$Ssetup.py-e
 ifeq ($(SYSTEM),win)
 	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\Google.OrTools.python.examples-$(OR_TOOLS_VERSION).zip ortools_examples
+	cd temp && ..\tools\zip.exe -r ..\or-tools.python.examples-$(OR_TOOLS_VERSION).zip ortools_examples
 else
 	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../Google.OrTools.python.examples-$(OR_TOOLS_VERSION).tar.gz ortools_examples
+	cd temp && tar -c -v -z --no-same-owner -f ../or-tools.python.examples-$(OR_TOOLS_VERSION).tar.gz ortools_examples
 endif
 
 pypi2_archive: python $(PATCHELF)

@@ -151,7 +151,7 @@ fz_archive: fz
 	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
 	$(COPY) bin$Sfz.exe temp$S$(INSTALL_DIR)$Sbin$Sfzn-or-tools.exe
 	$(COPY) src$Sflatzinc$Smznlib$S*.mzn temp$S$(INSTALL_DIR)$Sshare$Sminizinc
-	cd temp && ..$Stools$Szip.exe -r ..$SGoogle.OrTools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
+	cd temp && ..$Stools$Szip.exe -r ..$Sor-tools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
 	-$(DELREC) temp
 else
 fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
@@ -164,6 +164,6 @@ fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
 	$(COPY) bin$Sfz temp$S$(INSTALL_DIR)$Sbin$Sfzn-or-tools
 	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(INSTALL_DIR)$Sshare$Sminizinc
-	cd temp && tar cvzf ..$SGoogle.OrTools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
+	cd temp && tar cvzf ..$Sor-tools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 	-$(DELREC) temp
 endif
