@@ -127,7 +127,7 @@ CC_BINARIES = \
 	$(BIN_DIR)/dimacs_assignment$E \
 	$(BIN_DIR)/sports_scheduling$E \
 	$(BIN_DIR)/tsp$E \
-	$(BIN_DIR)/weighted_tardiness_sat \
+	$(BIN_DIR)/weighted_tardiness_sat$E \
 	$(BIN_DIR)/integer_programming$E \
 	$(BIN_DIR)/linear_programming$E \
 	$(BIN_DIR)/linear_solver_protocol_buffers$E \
