@@ -451,7 +451,12 @@ CSHARP_PROTOBUF_SRC = $(shell grep Compile dependencies/sources/protobuf-$(PROTO
 install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
 
 dependencies/install/bin/Google.Protobuf.dll: install_protobuf
+ifdef PROTOBUF_KEYFILE
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo /keyfile:$(PROTOBUF_KEYFILE) -d:SIGNED $(CSHARP_PROTOBUF_SRC)
+
+else
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo $(CSHARP_PROTOBUF_SRC)
+endif
 
 # Clean everything.
 clean_third_party:

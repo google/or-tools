@@ -12,13 +12,11 @@
 # For delay signing, use for example:
 # make CLR_KEYFILE="c:\full\path\to\keyfile_pub.snk" CLR_DELAYSIGN=1
 
-ifeq ($(SYSTEM),win)
 ifdef CLR_KEYFILE
 ifdef CLR_DELAYSIGN
 SIGNING_FLAGS:= /keyfile:"$(CLR_KEYFILE)" /delaysign
 else
 SIGNING_FLAGS:= /keyfile:"$(CLR_KEYFILE)"
-endif
 endif
 endif
 
@@ -111,7 +109,7 @@ clean_csharp:
 	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 
-$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_SHORT_VERSION).txt
+$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_VERSION).txt
 ifeq ("$(SYSTEM)","win")
 	@echo using System.Reflection; > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo using System.Runtime.CompilerServices; >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
@@ -141,13 +139,16 @@ else
 	@echo "[assembly:System.Reflection.AssemblyCulture( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyVersion( \"$(OR_TOOLS_SHORT_VERSION).*\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyFileVersion( \"$(OR_TOOLS_SHORT_VERSION).0\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyInformationalVersion( \"OR-Tools $(OR_TOOLS_SHORT_VERSION)-r$(GIT_HASH)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyInformationalVersion( \"OR-Tools $(OR_TOOLS_VERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:ComVisible(false)]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:Guid(\"0a227c4c-8bb3-4db0-808f-55dae227d8c5\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+ifdef CLR_KEYFILE
+	@echo "[assembly:AssemblyKeyFile (\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+endif
 endif
 
-$(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_SHORT_VERSION).txt:
-	@echo $(OR_TOOLS_SHORT_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$SSvnVersion$(OR_TOOLS_SHORT_VERSION).txt
+$(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_VERSION).txt:
+	@echo $(OR_TOOLS_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$SSvnVersion$(OR_TOOLS_VERSION).txt
 
 # csharportools
 
