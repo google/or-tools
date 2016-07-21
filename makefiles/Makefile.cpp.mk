@@ -50,7 +50,7 @@ clean_compat:
 
 # All libraries and dependecies
 
-include makefiles/Makefile.gen.mk
+include $(OR_ROOT)/makefiles/Makefile.gen.mk
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 OR_TOOLS_LNK = $(PRE_LIB)ortools$(POST_LIB)
