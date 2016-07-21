@@ -13,22 +13,40 @@
 
 namespace Google.OrTools {
 
-using System;
-using System.Collections.Generic;
+	using System;
+	using System.Collections.Generic;
 
-public static class NestedArrayHelper
-{
-  public static T[] GetFlatArray<T>(T[,] arr) {
-    int flatLength = arr.GetLength(0) * arr.GetLength(1);
-    int idx = 0;
-    T[] flat = new T[flatLength];
+	public static class NestedArrayHelper
+	{
+		public static T[] GetFlatArray<T>(T[][] arr)
+		{
+			int flatLength = 0;
+			for (var i = 0; i < arr.GetLength(0); i++)
+				flatLength += arr[i].GetLength(0);
 
-    for (int i = 0; i < arr.GetLength(0); i++)
-      for (int j = 0; j < arr.GetLength(1); j++)
-        flat[idx++] = arr[i,j];
+			int idx = 0;
+			T[] flat = new T[flatLength];
 
-    return flat;
-  }
-}
+			for (int i = 0; i < arr.GetLength(0); i++)
+			{
+				for (int j = 0; j < arr[i].GetLength(0); j++)
+					flat[idx++] = arr[i][j];
+			}
+				
+
+			return flat;
+		}
+		
+		public static int[] GetArraySecondSize<T>(T[][]arr)
+		{
+			var result = new int[arr.GetLength(0)]; 
+			for (var i=0; i<arr.GetLength(0); i++) 
+			{
+				if (arr[i] != null)
+					result[i] = arr[i].Length; 
+			} 
+			return result;
+		}
+	}
 
 }  // namespace Google.OrTools
