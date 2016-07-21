@@ -41,7 +41,7 @@ ifeq ("$(SYSTEM)","unix")
     # Defines OR_TOOLS_TOP if it is not already defined.
     OR_TOOLS_TOP ?= $(shell pwd)
     OR_TOOLS_LIB_PRE = -Wl,-rpath $(OR_TOOLS_TOP)/lib -L$(OR_TOOLS_TOP)/lib
-    ORTOOLS_LIB = $(OR_TOOLS_LIB_PRE) -lortools $(OR_TOOLS_LIB_PRE) -lcvrptw_lib $(OR_TOOLS_LIB_PRE) -lfz $(OR_TOOLS_LIB_PRE) -ldimacs
+    ORTOOLS_LIB = $(OR_TOOLS_LIB_PRE) -lcvrptw_lib $(OR_TOOLS_LIB_PRE) -ldimacs $(OR_TOOLS_LIB_PRE) -lortools
     LBITS = $(shell getconf LONG_BIT)
     ifeq ($(LBITS),64)
       PORT = Linux64
@@ -53,7 +53,7 @@ ifeq ("$(SYSTEM)","unix")
   ifeq ($(OS),Darwin) # Assume Mac Os X
     CCC = clang++ -fPIC -std=c++11
     LD_FLAGS = -lz
-    ORTOOLS_LIB = -L$(OR_ROOT)lib -lortools -L$(OR_ROOT)lib -lcvrptw_lib -L$(OR_ROOT)lib -lfz -L$(OR_ROOT)lib -ldimacs
+    ORTOOLS_LIB = -L$(OR_ROOT)lib -lcvrptw_lib -L$(OR_ROOT)lib -ldimacs -L$(OR_ROOT)lib -lortools
     ARCH = -DARCH_K8
     PORT = MacOsX64
   endif
@@ -89,12 +89,12 @@ ifeq ("$(SYSTEM)","win")
   CBC_INC = -DUSE_CBC
   GLOP_INC = -DUSE_GLOP
   BOP_INC = -DUSE_BOP
-  CFLAGS= /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS -nologo $(DEBUG) $(CBC_INC) $(CLP_INC)\
-    /D__WIN32__ /I$(INC_DIR)\\src\\windows /DGFLAGS_DLL_DECL= \
-    /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG= \
+  CFLAGS= /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS -nologo $(DEBUG) \
+    $(CBC_INC) $(CLP_INC) /D__WIN32__ /I$(INC_DIR)\\src\\windows \
+    /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG= \
     /I$(INC_DIR) /I$(INC_EX_DIR) /D $(GLOP_INC) $(BOP_INC)
   LD_FLAGS = psapi.lib ws2_32.lib
-	ORTOOLS_LIB = lib\\ortools.lib lib\\cvrptw.lib lib\\fz.lib lib\\dimacs.lib
+  ORTOOLS_LIB = lib\\cvrptw.lib lib\\dimacs.lib lib\\ortools.lib
   O=obj
   E=.exe
   OBJ_OUT = /Fo
