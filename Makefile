@@ -8,7 +8,7 @@ help:
 	@echo "  - all: all test clean"
 
 OR_TOOLS_MAJOR = 4
-OR_TOOLS_MINOR = 1
+OR_TOOLS_MINOR = 2
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
