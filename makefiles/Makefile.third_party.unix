@@ -452,7 +452,7 @@ install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
 
 dependencies/install/bin/Google.Protobuf.dll: install_protobuf
 ifdef PROTOBUF_KEYFILE
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo /keyfile:$(PROTOBUF_KEYFILE) -d:SIGNED $(CSHARP_PROTOBUF_SRC)
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo /keyfile:$(OR_TOOLS_TOP)/$(PROTOBUF_KEYFILE) -d:SIGNED $(CSHARP_PROTOBUF_SRC)
 
 else
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo $(CSHARP_PROTOBUF_SRC)
