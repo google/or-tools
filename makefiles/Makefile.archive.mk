@@ -1,8 +1,11 @@
 
-archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs cc_archive dotnet_archive java_archive
+archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) csharp java create_dirs cc_archive dotnet_archive java_archive  $(PATCHELF)
 ifeq "$(SYSTEM)" "win"
 	cd temp && ..$Stools$Szip.exe -r ..$S$(INSTALL_DIR).zip $(INSTALL_DIR)
 else
+ifeq ($(PLATFORM),LINUX)
+	tools/fix_libraries_on_linux.sh
+endif
 	cd temp && tar -c -v -z --no-same-owner -f ..$S$(INSTALL_DIR).tar.gz $(INSTALL_DIR)
 endif
 	-$(DELREC) temp
@@ -157,7 +160,6 @@ fz_archive: fz
 	-$(DELREC) temp
 else
 fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
-	
 	mkdir temp
 	mkdir temp$S$(INSTALL_DIR)
 	mkdir temp$S$(INSTALL_DIR)$Sbin
@@ -182,5 +184,3 @@ else
 endif
 	cd temp$S$(INSTALL_DIR) && $(MAKE) all test
 	-$(DELREC) $(INSTALL_DIR)
-	
-
