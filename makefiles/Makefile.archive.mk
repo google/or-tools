@@ -176,11 +176,11 @@ test_archive: archive
 	-$(DELREC) temp
 	$(MKDIR) temp
 ifeq "$(SYSTEM)" "win"
-	$Stools$Sunzip.exe $(INSTALL_DIR).zip temp
+	tools$Sunzip.exe $(INSTALL_DIR).zip -d temp
 else
 	tar -x -v -f $(INSTALL_DIR).tar.gz -C temp
 endif
-	cd temp$S$(INSTALL_DIR) && make all test
+	cd temp$S$(INSTALL_DIR) && $(MAKE) all test
 	-$(DELREC) $(INSTALL_DIR)
 	
 
