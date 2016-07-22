@@ -102,7 +102,8 @@ else
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v sparsehash | tar xvm
 
 ifeq ($(PLATFORM),MACOSX)
-	$(COPY) tools$Sinstall_libortools_mac.sh temp$S$(INSTALL_DIR)
+	$(COPY) tools/install_libortools_mac.sh temp/$(INSTALL_DIR)
+	chmod 775 temp/$(INSTALL_DIR)/install_libortools_mac.sh
 endif
 endif
 
