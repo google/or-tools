@@ -191,6 +191,12 @@ $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O: $(EX_DIR)/cvrptw_with_stop_t
 $(BIN_DIR)/cpp/cvrptw_with_stop_times_and_resources$E: $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_stop_times_and_resources.$O $(CVRPTW_LIBS) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scpp$Scvrptw_with_stop_times_and_resources$E
 
+$(OBJ_DIR)/dimacs_assignment.$O:$(EX_DIR)/dimacs_assignment.cc $(INC_DIR)/constraint_solver/constraint_solver.h
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Sdimacs_assignment.cc $(OBJ_OUT)$(OBJ_DIR)$Sdimacs_assignment.$O
+
+$(BIN_DIR)/cpp/dimacs_assignment$E: $(OBJ_DIR)/dimacs_assignment.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/dimacs_assignment.$O $(DIMACS_LIBS) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scpp$Sdimacs_assignment$E
+
 $(OBJ_DIR)/dobble_ls.$O:$(EX_DIR)/dobble_ls.cc $(INC_DIR)/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Sdobble_ls.cc $(OBJ_OUT)$(OBJ_DIR)$Sdobble_ls.$O
 
