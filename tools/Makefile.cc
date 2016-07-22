@@ -148,6 +148,22 @@ clean:
 	$(DEL) $(BIN_DIR)$Scpp$S*
 	$(DEL) $(OBJ_DIR)$S*$O
 
+test:
+	$(BIN_DIR)$Scpp$Scostas_array$E
+	$(BIN_DIR)$Scpp$Scryptarithm$E
+	$(BIN_DIR)$Scpp$Scvrp_disjoint_tw$E
+	$(BIN_DIR)$Scpp$Scvrptw$E
+	$(BIN_DIR)$Scpp$Sgolomb$E
+	$(BIN_DIR)$Scpp$Sjobshop$E --data_file examples$Sdata$Syn1.txt
+	$(BIN_DIR)$Scpp$Smagic_square$E
+	$(BIN_DIR)$Scpp$Snqueens$E
+	$(BIN_DIR)$Scpp$Stsp$E
+	$(BIN_DIR)$Scpp$Slinear_assignment_api$E
+	$(BIN_DIR)$Scpp$Slinear_programming$E
+	$(BIN_DIR)$Scpp$Slinear_solver_protocol_buffers$E
+	$(BIN_DIR)$Scpp$Sinteger_programming$E 
+	$(BIN_DIR)$Scpp$Sflow_api$E
+
 # Constraint Programming and Routing examples.
 
 $(OBJ_DIR)/costas_array.$O: $(EX_DIR)/costas_array.cc $(INC_DIR)/constraint_solver/constraint_solver.h
