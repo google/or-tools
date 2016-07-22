@@ -121,6 +121,7 @@ all: \
 	$(BIN_DIR)/cpp/cvrptw_with_refueling$E\
 	$(BIN_DIR)/cpp/cvrptw_with_resources$E\
 	$(BIN_DIR)/cpp/cvrptw_with_stop_times_and_resources$E\
+	$(BIN_DIR)/cpp/dimacs_assignment$E\
 	$(BIN_DIR)/cpp/dobble_ls$E\
 	$(BIN_DIR)/cpp/flexible_jobshop$E\
 	$(BIN_DIR)/cpp/golomb$E\
