@@ -157,7 +157,7 @@ fz_archive: fz
 	-$(DELREC) temp
 else
 fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
-	-$(DELREC) temp
+	
 	mkdir temp
 	mkdir temp$S$(INSTALL_DIR)
 	mkdir temp$S$(INSTALL_DIR)$Sbin
@@ -169,3 +169,18 @@ fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 	cd temp && tar cvzf ..$Sor-tools.flatzinc.$(PORT)-$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
 	-$(DELREC) temp
 endif
+
+
+
+test_archive: archive
+	-$(DELREC) temp
+	$(MKDIR) temp
+ifeq "$(SYSTEM)" "win"
+	$Stools$Sunzip.exe $(INSTALL_DIR).zip temp
+else
+	tar -x -v -f $(INSTALL_DIR).tar.gz -C temp
+endif
+	cd temp$S$(INSTALL_DIR) && make all test
+	-$(DELREC) $(INSTALL_DIR)
+	
+
