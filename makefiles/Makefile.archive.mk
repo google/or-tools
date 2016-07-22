@@ -58,7 +58,7 @@ create_dirs:
 	$(COPY) tools$SREADME.cc.java.csharp temp$S$(INSTALL_DIR)$SREADME
 	$(COPY) tools$SMakefile.cc temp$S$(INSTALL_DIR)$SMakefile
 
-cc_archive: create_dirs
+cc_archive:
 
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
@@ -108,7 +108,7 @@ ifeq ($(PLATFORM),MACOSX)
 endif
 endif
 
-dotnet_archive: create_dirs
+dotnet_archive:
 
 	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin$Scsharp
 	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin$Scsharp
@@ -128,7 +128,7 @@ else
 	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Slib
 endif
 
-java_archive: create_dirs
+java_archive:
 	$(COPY) lib$S*.jar temp$S$(INSTALL_DIR)$Slib
 	$(COPY) lib$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT) temp$S$(INSTALL_DIR)$Slib
 
