@@ -131,32 +131,32 @@ endif
 .PHONY: all clean
 
 all: \
-	$(CPP_BIN_DIR)$Scostas_array$E\
-	$(CPP_BIN_DIR)$Scryptarithm$E\
-	$(CPP_BIN_DIR)$Scvrp_disjoint_tw$E\
-	$(CPP_BIN_DIR)$Scvrptw$E\
-	$(CPP_BIN_DIR)$Scvrptw_with_refueling$E\
-	$(CPP_BIN_DIR)$Scvrptw_with_resources$E\
-	$(CPP_BIN_DIR)$Scvrptw_with_stop_times_and_resources$E\
-	$(CPP_BIN_DIR)$Sdimacs_assignment$E\
-	$(CPP_BIN_DIR)$Sdobble_ls$E\
-	$(CPP_BIN_DIR)$Sflexible_jobshop$E\
-	$(CPP_BIN_DIR)$Sgolomb$E\
-	$(CPP_BIN_DIR)$Sjobshop$E\
-	$(CPP_BIN_DIR)$Sjobshop_ls$E\
-	$(CPP_BIN_DIR)$Sjobshop_earlytardy$E\
-	$(CPP_BIN_DIR)$Smagic_square$E\
-	$(CPP_BIN_DIR)$Smodel_util$E\
-	$(CPP_BIN_DIR)$Smultidim_knapsack$E\
-	$(CPP_BIN_DIR)$Snetwork_routing$E\
-	$(CPP_BIN_DIR)$Snqueens$E\
-	$(CPP_BIN_DIR)$Spdptw$E\
-	$(CPP_BIN_DIR)$Ssports_scheduling$E\
-	$(CPP_BIN_DIR)$Stsp$E\
-	$(CPP_BIN_DIR)$Slinear_assignment_api$E\
-	$(CPP_BIN_DIR)$Sstrawberry_fields_with_column_generation$E\
-	$(CPP_BIN_DIR)$Slinear_programming$E\
-	$(CPP_BIN_DIR)$Slinear_solver_protocol_buffers$E\
+	$(CPP_BIN_DIR)$Scostas_array$E \
+	$(CPP_BIN_DIR)$Scryptarithm$E \
+	$(CPP_BIN_DIR)$Scvrp_disjoint_tw$E \
+	$(CPP_BIN_DIR)$Scvrptw$E \
+	$(CPP_BIN_DIR)$Scvrptw_with_refueling$E \
+	$(CPP_BIN_DIR)$Scvrptw_with_resources$E \
+	$(CPP_BIN_DIR)$Scvrptw_with_stop_times_and_resources$E \
+	$(CPP_BIN_DIR)$Sdimacs_assignment$E \
+	$(CPP_BIN_DIR)$Sdobble_ls$E \
+	$(CPP_BIN_DIR)$Sflexible_jobshop$E \
+	$(CPP_BIN_DIR)$Sgolomb$E \
+	$(CPP_BIN_DIR)$Sjobshop$E \
+	$(CPP_BIN_DIR)$Sjobshop_ls$E \
+	$(CPP_BIN_DIR)$Sjobshop_earlytardy$E \
+	$(CPP_BIN_DIR)$Smagic_square$E \
+	$(CPP_BIN_DIR)$Smodel_util$E \
+	$(CPP_BIN_DIR)$Smultidim_knapsack$E \
+	$(CPP_BIN_DIR)$Snetwork_routing$E \
+	$(CPP_BIN_DIR)$Snqueens$E \
+	$(CPP_BIN_DIR)$Spdptw$E \
+	$(CPP_BIN_DIR)$Ssports_scheduling$E \
+	$(CPP_BIN_DIR)$Stsp$E \
+	$(CPP_BIN_DIR)$Slinear_assignment_api$E \
+	$(CPP_BIN_DIR)$Sstrawberry_fields_with_column_generation$E \
+	$(CPP_BIN_DIR)$Slinear_programming$E \
+	$(CPP_BIN_DIR)$Slinear_solver_protocol_buffers$E \
 	$(CPP_BIN_DIR)$Sinteger_programming$E \
 	$(CPP_BIN_DIR)$Sflow_api$E
 
