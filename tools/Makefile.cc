@@ -368,7 +368,7 @@ rjava: $(OBJ_DIR)$Scom$Sgoogle$Sortools$Ssamples$S$(EX).class
 # .NET generic compilation command.
 
 ccs: $(CS_EX_DIR)$S$(EX).cs
-	$(CSC) $Starget:exe $Sout:$(CS_BIN_DIR)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(CPP_BIN_DIR)$Scsharp /r:Google.OrTools.dll /r:Google.Protobuf.dll $(CS_EX_DIR)$S$(EX).cs
+	$(CSC) $Starget:exe $Sout:$(CS_BIN_DIR)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(CS_BIN_DIR) /r:Google.OrTools.dll /r:Google.Protobuf.dll $(CS_EX_DIR)$S$(EX).cs
 
 rcs: ccs
 	$(MONO) $(CS_BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe $(ARGS)
