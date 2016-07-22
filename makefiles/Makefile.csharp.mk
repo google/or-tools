@@ -119,7 +119,7 @@ ifeq ("$(SYSTEM)","win")
 	@echo [assembly:System.Reflection.AssemblyConfiguration( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly:System.Reflection.AssemblyCompany( "Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly:System.Reflection.AssemblyProduct( "OR-Tools" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyCopyright( "Copyright (c) 2010-2015 Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo [assembly:System.Reflection.AssemblyCopyright( "Copyright (c) 2010-2016 Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly:System.Reflection.AssemblyCulture( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly:System.Reflection.AssemblyVersion( "$(OR_TOOLS_SHORT_VERSION).*" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo [assembly:System.Reflection.AssemblyFileVersion( "$(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
@@ -138,7 +138,7 @@ else
 	@echo "[assembly:System.Reflection.AssemblyCopyright( \"Copyright (c) 2010-2015 Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyCulture( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyVersion( \"$(OR_TOOLS_SHORT_VERSION).*\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyFileVersion( \"$(OR_TOOLS_SHORT_VERSION).0\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyFileVersion( \"$(OR_TOOLS_VERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyInformationalVersion( \"OR-Tools $(OR_TOOLS_VERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:ComVisible(false)]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:Guid(\"0a227c4c-8bb3-4db0-808f-55dae227d8c5\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
