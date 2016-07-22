@@ -99,7 +99,7 @@ ifeq ("$(SYSTEM)","win")
     /I$(INC_DIR) /I$(INC_EX_DIR) /D $(GLOP_INC) $(BOP_INC)
   LD_FLAGS = psapi.lib ws2_32.lib
   OR_TOOLS_LIBS = lib\\ortools.lib
-  CVRPTW_LIBS = lib\\cvrptw.lib lib\\ortools.lib
+  CVRPTW_LIBS = lib\\cvrptw_lib.lib lib\\ortools.lib
   DIMACS_LIBS = lib\\dimacs.lib lib\\ortools.lib
   O=obj
   E=.exe
@@ -350,3 +350,5 @@ printport:
 # Include user makefile
 
 -include $(OR_ROOT)Makefile.user
+
+print-%  : ; @echo $* = $($*)
