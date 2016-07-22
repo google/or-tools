@@ -140,7 +140,7 @@ all: \
 	$(BIN_DIR)/cpp/strawberry_fields_with_column_generation$E\
 	$(BIN_DIR)/cpp/linear_programming$E\
 	$(BIN_DIR)/cpp/linear_solver_protocol_buffers$E\
-	$(BIN_DIR)/cpp/integer_programming$E
+	$(BIN_DIR)/cpp/integer_programming$E \
 	$(BIN_DIR)/cpp/flow_api$E
 
 
