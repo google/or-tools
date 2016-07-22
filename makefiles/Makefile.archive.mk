@@ -74,6 +74,7 @@ cc_archive: create_dirs
 	$(COPY) src$Sglop$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sglop
 	$(COPY) src$Sgen$Sglop$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sglop
 	$(COPY) src$Sgraph$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sgraph
+	$(COPY) src$Sgen$Sgraph$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sgraph
 	$(COPY) src$Slinear_solver$S*.h temp$S$(INSTALL_DIR)$Sinclude$Slinear_solver
 	$(COPY) src$Sgen$Slinear_solver$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Slinear_solver
 	$(COPY) src$Ssat$S*.h temp$S$(INSTALL_DIR)$Sinclude$Ssat

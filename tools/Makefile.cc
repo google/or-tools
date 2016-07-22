@@ -141,7 +141,7 @@ all: \
 	$(BIN_DIR)/cpp/linear_programming$E\
 	$(BIN_DIR)/cpp/linear_solver_protocol_buffers$E\
 	$(BIN_DIR)/cpp/integer_programming$E
-  # TODO(dlahlou) $(BIN_DIR)/cpp/flow_api$E
+	$(BIN_DIR)/cpp/flow_api$E
 
 
 clean:
@@ -290,12 +290,11 @@ $(OBJ_DIR)/linear_assignment_api.$O:$(EX_DIR)/linear_assignment_api.cc
 $(BIN_DIR)/cpp/linear_assignment_api$E: $(OBJ_DIR)/linear_assignment_api.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/linear_assignment_api.$O $(OR_TOOLS_LIBS) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scpp$Slinear_assignment_api$E
 
-#TODO(dlahlou)
-#$(OBJ_DIR)/flow_api.$O:$(EX_DIR)/flow_api.cc
-#	$(CCC) $(CFLAGS) -c $(EX_DIR)$Sflow_api.cc $(OBJ_OUT)$(OBJ_DIR)$Sflow_api.$O
+$(OBJ_DIR)/flow_api.$O:$(EX_DIR)/flow_api.cc
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Sflow_api.cc $(OBJ_OUT)$(OBJ_DIR)$Sflow_api.$O
 
-#$(BIN_DIR)/cpp/flow_api$E: $(OBJ_DIR)/flow_api.$O
-#	$(CCC) $(CFLAGS) $(OBJ_DIR)/flow_api.$O $(OR_TOOLS_LIBS) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scpp$Sflow_api$E
+$(BIN_DIR)/cpp/flow_api$E: $(OBJ_DIR)/flow_api.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/flow_api.$O $(OR_TOOLS_LIBS) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scpp$Sflow_api$E
 
 # Linear Programming Examples
 
