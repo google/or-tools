@@ -2,7 +2,7 @@
 # a new position.
 
 export N=`pwd`/lib
-export B=`pwd`/bin
+export B=`pwd`/bin/csharp
 export O=`otool -L lib/libortools.dylib | grep -v ':' | grep libortools | cut -d '(' -f 1`
 echo install library in path $N
 install_name_tool -id $B/libGoogle.OrTools.so bin/libGoogle.OrTools.so
