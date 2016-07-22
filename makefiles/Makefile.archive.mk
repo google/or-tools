@@ -125,7 +125,7 @@ ifeq "$(SYSTEM)" "win"
 	$(COPY) examples$Scsharp$S*.sln temp$S$(INSTALL_DIR)$Sexamples
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 else
-	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Slib
+	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin$Scsharp
 endif
 
 java_archive:

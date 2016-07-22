@@ -55,7 +55,7 @@ bin\csharp\csflow.exe
 
   - on linux (mono comes from the distribution, on ubuntu 16.04 and up):
 mcs /target:exe /out:bin/csharp/csflow.exe /platform:anycpu /lib:bin/csharp /r:Google.OrTools.dll examples/csharp/csflow.cs
-MONO_PATH=lib mono bin/csharp/csflow.exe
+MONO_PATH=bin/csharp mono bin/csharp/csflow.exe
 
   - on Mac OS X (Use installer with version 4.2.1 or up):
 mcs /target:exe /out:bin/csharp/csflow.exe /platform:anycpu /lib:bin/csharp /r:Google.OrTools.dll examples/csharp/csflow.cs
