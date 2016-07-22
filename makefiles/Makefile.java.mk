@@ -364,8 +364,6 @@ compile_MultiThreadIntegerProgramming: $(OBJ_DIR)/com/google/ortools/samples/Mul
 $(OBJ_DIR)/com/google/ortools/samples/MultiThreadTest.class: javaortools $(EX_DIR)/com/google/ortools/samples/MultiThreadTest.java
 	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$SMultiThreadTest.java
 
-
-
 # Compile and Run CP java example:
 
 $(OBJ_DIR)/com/google/ortools/samples/$(EX).class: javaortools $(EX_DIR)/com/google/ortools/samples/$(EX).java
