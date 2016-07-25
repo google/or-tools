@@ -330,6 +330,13 @@ void FzPresolver::Unreify(FzConstraint* ct) {
     FZVLOG << "Unreify " << ct->DebugString() << FZENDL;
     ct->RemoveTargetVariable();
     ct->arguments.pop_back();
+  } else if (ct->type == "set_in" || ct->type == "set_not_in") {
+    // Rule 2.
+    FZVLOG << "Unreify and inverse " << ct->DebugString() << FZENDL;
+    ct->RemoveTargetVariable();
+    ct->arguments.pop_back();
+    ct->type.resize(ct->type.size() - 2);
+    ct->type += "not_in";
   } else {
     // Rule 2.
     FZVLOG << "Unreify and inverse " << ct->DebugString() << FZENDL;

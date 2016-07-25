@@ -2580,6 +2580,7 @@ const char ModelVisitor::kMinEqual[] = "MinEqual";
 const char ModelVisitor::kModulo[] = "Modulo";
 const char ModelVisitor::kNoCycle[] = "NoCycle";
 const char ModelVisitor::kNonEqual[] = "NonEqual";
+const char ModelVisitor::kNotBetween[] = "NotBetween";
 const char ModelVisitor::kNotMember[] = "NotMember";
 const char ModelVisitor::kNullIntersect[] = "NullIntersect";
 const char ModelVisitor::kOpposite[] = "Opposite";

@@ -138,7 +138,7 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output, bool stor
                                    output.bounds[i].min_value,
                                    output.bounds[i].max_value));
       } else {
-        result.append(",");
+        result.append("{},");
       }
     }
     result.append("[");

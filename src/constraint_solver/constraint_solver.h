@@ -1421,6 +1421,9 @@ class Solver {
   // (l <= b <= u)
   Constraint* MakeBetweenCt(IntExpr* const v, int64 l, int64 u);
 
+    // (b < l || b > u)
+  Constraint* MakeNotBetweenCt(IntExpr* const v, int64 l, int64 u);
+
   // b == (l <= v <= u)
   Constraint* MakeIsBetweenCt(IntExpr* const v, int64 l, int64 u,
                               IntVar* const b);
@@ -1437,6 +1440,12 @@ class Solver {
   // creates holes in the domain of the variable.
   Constraint* MakeMemberCt(IntExpr* const v, const std::vector<int64>& values);
   Constraint* MakeMemberCt(IntExpr* const v, const std::vector<int>& values);
+
+  // v not in set.
+  Constraint* MakeNotMemberCt(IntExpr* const v,
+                              const std::vector<int64>& values);
+  Constraint* MakeNotMemberCt(IntExpr* const v,
+                              const std::vector<int>& values);
 
   // v should not be in the list of forbidden intervals [start[i]..end[i]].
   Constraint* MakeNotMemberCt(IntExpr* const v, std::vector<int64> starts,
@@ -3331,6 +3340,7 @@ class ModelVisitor : public BaseObject {
   static const char kModulo[];
   static const char kNoCycle[];
   static const char kNonEqual[];
+  static const char kNotBetween[];
   static const char kNotMember[];
   static const char kNullIntersect[];
   static const char kOpposite[];

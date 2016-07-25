@@ -1767,6 +1767,20 @@ Constraint* BuildNonEqual(CpModelLoader* const builder,
   return nullptr;
 }
 
+// ----- kNotBetween -----
+
+Constraint* BuildNotBetween(CpModelLoader* const builder,
+                            const CpConstraint& proto) {
+  int64 value_min = 0;
+  VERIFY(builder->ScanArguments(ModelVisitor::kMinArgument, proto, &value_min));
+  int64 value_max = 0;
+  VERIFY(builder->ScanArguments(ModelVisitor::kMaxArgument, proto, &value_max));
+  IntExpr* expr = nullptr;
+  VERIFY(
+      builder->ScanArguments(ModelVisitor::kExpressionArgument, proto, &expr));
+  return builder->solver()->MakeNotBetweenCt(expr->Var(), value_min, value_max);
+}
+
 // ----- kNotMember -----
 
 Constraint* BuildNotMember(CpModelLoader* const builder,
@@ -2619,6 +2633,8 @@ void Solver::InitBuilders() {
   REGISTER(kMinEqual, ConstraintBuilder(BuildMinEqual));
   REGISTER(kNoCycle, ConstraintBuilder(BuildNoCycle));
   REGISTER(kNonEqual, ConstraintBuilder(BuildNonEqual));
+  REGISTER(kNotBetween, ConstraintBuilder(BuildNotBetween));
+  REGISTER(kNotMember, ConstraintBuilder(BuildNotMember));
   REGISTER(kNullIntersect, ConstraintBuilder(BuildNullIntersect));
   REGISTER(kOpposite, IntegerExpressionBuilder(BuildOpposite));
   REGISTER(kPack, ConstraintBuilder(BuildPack));

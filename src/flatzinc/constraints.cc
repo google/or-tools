@@ -2579,6 +2579,34 @@ void ExtractSetIn(FzSolver* fzsolver, FzConstraint* ct) {
   }
 }
 
+void ExtractSetNotIn(FzSolver* fzsolver, FzConstraint* ct) {
+  Solver* const solver = fzsolver->solver();
+  IntExpr* const expr = fzsolver->GetExpression(ct->Arg(0));
+  const FzArgument& arg = ct->Arg(1);
+  switch (arg.type) {
+    case FzArgument::INT_VALUE: {
+      Constraint* const constraint =
+          solver->MakeNonEquality(expr, arg.values[0]);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    case FzArgument::INT_INTERVAL: {
+      if (expr->Min() < arg.values[0] || expr->Max() > arg.values[1]) {
+        Constraint* const constraint =
+            solver->MakeNotBetweenCt(expr, arg.values[0], arg.values[1]);
+        AddConstraint(solver, ct, constraint);
+      }
+      break;
+    }
+    case FzArgument::INT_LIST: {
+      Constraint* const constraint = solver->MakeNotMemberCt(expr, arg.values);
+      AddConstraint(solver, ct, constraint);
+      break;
+    }
+    default: { LOG(FATAL) << "Invalid constraint " << ct->DebugString(); }
+  }
+}
+
 void ExtractSetInReif(FzSolver* fzsolver, FzConstraint* ct) {
   Solver* const solver = fzsolver->solver();
   IntExpr* const expr = fzsolver->GetExpression(ct->Arg(0));
@@ -2881,6 +2909,8 @@ void FzSolver::ExtractConstraint(FzConstraint* ct) {
     ExtractRegularNfa(this, ct);
   } else if (type == "set_in" || type == "int_in") {
     ExtractSetIn(this, ct);
+  } else if (type == "set_not_in" || type == "int_not_in") {
+    ExtractSetNotIn(this, ct);
   } else if (type == "set_in_reif") {
     ExtractSetInReif(this, ct);
   } else if (type == "sliding_sum") {
