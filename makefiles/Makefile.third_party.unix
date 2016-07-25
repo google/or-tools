@@ -235,7 +235,7 @@ dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GF
 	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
 		 -D BUILD_STATIC_LIBS=ON \
 	         -D CMAKE_INSTALL_PREFIX=../../install \
-		 -D CMAKE_CXX_FLAGS=-fPIC \
+		 -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
 	         .
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
 	$(SET_COMPILER) make -j 4 && \
