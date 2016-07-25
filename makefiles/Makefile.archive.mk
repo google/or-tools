@@ -183,6 +183,9 @@ ifeq "$(SYSTEM)" "win"
 else
 	tar -x -v -f $(INSTALL_DIR).tar.gz -C temp
 endif
+ifeq ($(PLATFORM),MACOSX)
+	cd temp$S$(INSTALL_DIR) && ./install_libortools_mac.sh
+endif
 	cd temp$S$(INSTALL_DIR) && $(MAKE) test
 	-$(DELREC) $(INSTALL_DIR)
 	$(RENAME) lib2 lib
