@@ -1453,6 +1453,11 @@ bool FzPresolver::PresolveSimplifyExprElement(FzConstraint* ct) {
 // Output: inactive constraint.
 //
 // Rule 2:
+// Input: int_eq_reif(b1, c, b0) or bool_eq_reif(b1, c, b0)
+//        or int_eq_reif(c, b1, b0) or bool_eq_reif(c, b1, b0)
+// Outout: bool_eq(b1, b0) or bool_not(b1, b0) depending on the parity.
+//
+// Rule 3:
 // Input : int_xx_reif(x, c, b) or bool_xx_reif(b1, t, b) or
 //         int_xx_reif(c, x, b) or bool_xx_reif(t, b2, b)
 // Action: Assign b to true or false if this can be decided from the of x and
@@ -1491,62 +1496,80 @@ bool FzPresolver::PropagateReifiedComparisons(FzConstraint* ct) {
     reverse = true;
   }
   if (var != nullptr) {
-    int state = 2;  // 0 force_false, 1 force true, 2 unknown.
-    if (id == "int_eq_reif" || id == "bool_eq_reif") {
-      if (var->domain.Contains(value)) {
-        if (var->HasOneValue()) {
-          state = 1;
-        }
-      } else {
-        state = 0;
+    if (Has01Values(var) && (id == "int_eq_reif" || id == "int_ne_reif" ||
+                             id == "bool_eq_reif" || id == "bool_ne_reif") &&
+        (value == 0 || value == 1)) {
+      // Rule 2.
+      bool parity = (id == "int_eq_reif" || id == "bool_eq_reif");
+      if (value == 0) {
+        parity = !parity;
       }
-    } else if (id == "int_ne_reif" || id == "bool_ne_reif") {
-      if (var->domain.Contains(value)) {
-        if (var->HasOneValue()) {
+      FZVLOG << "Simplify " << ct->DebugString() << FZENDL;
+      FzArgument target = ct->Arg(2);
+      ct->arguments.clear();
+      ct->arguments.push_back(FzArgument::IntVarRef(var));
+      ct->arguments.push_back(target);
+      ct->type = parity ? "bool_eq" : "bool_not";
+      FZVLOG << "  - into " << ct->DebugString() << FZENDL;
+    } else {
+      // Rule 3.
+      int state = 2;  // 0 force_false, 1 force true, 2 unknown.
+      if (id == "int_eq_reif" || id == "bool_eq_reif") {
+        if (var->domain.Contains(value)) {
+          if (var->HasOneValue()) {
+            state = 1;
+          }
+        } else {
           state = 0;
         }
-      } else {
-        state = 1;
+      } else if (id == "int_ne_reif" || id == "bool_ne_reif") {
+        if (var->domain.Contains(value)) {
+          if (var->HasOneValue()) {
+            state = 0;
+          }
+        } else {
+          state = 1;
+        }
+      } else if ((((id == "int_lt_reif" || id == "bool_lt_reif") && reverse) ||
+                  ((id == "int_gt_reif" || id == "bool_gt_reif") && !reverse)) &&
+                 !var->IsAllInt64()) {  // int_gt
+        if (var->Min() > value) {
+          state = 1;
+        } else if (var->Max() <= value) {
+          state = 0;
+        }
+      } else if ((((id == "int_lt_reif" || id == "bool_lt_reif") && !reverse) ||
+                  ((id == "int_gt_reif" || id == "bool_gt_reif") && reverse)) &&
+                 !var->IsAllInt64()) {  // int_lt
+        if (var->Max() < value) {
+          state = 1;
+        } else if (var->Min() >= value) {
+          state = 0;
+        }
+      } else if ((((id == "int_le_reif" || id == "bool_le_reif") && reverse) ||
+                  ((id == "int_ge_reif" || id == "bool_ge_reif") && !reverse)) &&
+                 !var->IsAllInt64()) {  // int_ge
+        if (var->Min() >= value) {
+          state = 1;
+        } else if (var->Max() < value) {
+          state = 0;
+        }
+      } else if ((((id == "int_le_reif" || id == "bool_le_reif") && !reverse) ||
+                  ((id == "int_ge_reif" || id == "bool_ge_reif") && reverse)) &&
+                 !var->IsAllInt64()) {  // int_le
+        if (var->Max() <= value) {
+          state = 1;
+        } else if (var->Min() > value) {
+          state = 0;
+        }
       }
-    } else if ((((id == "int_lt_reif" || id == "bool_lt_reif") && reverse) ||
-                ((id == "int_gt_reif" || id == "bool_gt_reif") && !reverse)) &&
-               !var->IsAllInt64()) {  // int_gt
-      if (var->Min() > value) {
-        state = 1;
-      } else if (var->Max() <= value) {
-        state = 0;
+      if (state != 2) {
+        FZVLOG << "Assign boolvar to " << state << " in " << ct->DebugString()
+               << FZENDL;
+        ct->Arg(2).Var()->domain.IntersectWithInterval(state, state);
+        ct->MarkAsInactive();
+        return true;
       }
-    } else if ((((id == "int_lt_reif" || id == "bool_lt_reif") && !reverse) ||
-                ((id == "int_gt_reif" || id == "bool_gt_reif") && reverse)) &&
-               !var->IsAllInt64()) {  // int_lt
-      if (var->Max() < value) {
-        state = 1;
-      } else if (var->Min() >= value) {
-        state = 0;
-      }
-    } else if ((((id == "int_le_reif" || id == "bool_le_reif") && reverse) ||
-                ((id == "int_ge_reif" || id == "bool_ge_reif") && !reverse)) &&
-               !var->IsAllInt64()) {  // int_ge
-      if (var->Min() >= value) {
-        state = 1;
-      } else if (var->Max() < value) {
-        state = 0;
-      }
-    } else if ((((id == "int_le_reif" || id == "bool_le_reif") && !reverse) ||
-                ((id == "int_ge_reif" || id == "bool_ge_reif") && reverse)) &&
-               !var->IsAllInt64()) {  // int_le
-      if (var->Max() <= value) {
-        state = 1;
-      } else if (var->Min() > value) {
-        state = 0;
-      }
-    }
-    if (state != 2) {
-      FZVLOG << "Assign boolvar to " << state << " in " << ct->DebugString()
-             << FZENDL;
-      ct->Arg(2).Var()->domain.IntersectWithInterval(state, state);
-      ct->MarkAsInactive();
-      return true;
     }
   }
   return false;
