@@ -1343,6 +1343,7 @@ class UpdatesForADemand {
   void Reset() { up_to_date_ = false; }
   void SetUpdate(int index, int64 update) {
     DCHECK(!up_to_date_);
+    DCHECK_LT(index, updates_.size());
     updates_[index] = update;
   }
   bool up_to_date() const { return up_to_date_; }
@@ -1407,7 +1408,7 @@ class EdgeFinder : public Constraint {
   UpdatesForADemand* GetOrMakeUpdate(int64 demand_min) {
     UpdatesForADemand* update = FindPtrOrNull(update_map_, demand_min);
     if (update == nullptr) {
-      update = new UpdatesForADemand(by_start_min_.size());
+      update = new UpdatesForADemand(tasks_.size());
       update_map_[demand_min] = update;
     }
     return update;
