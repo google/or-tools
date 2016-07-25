@@ -1960,12 +1960,8 @@ void ExtractIntLinNe(FzSolver* fzsolver, FzConstraint* ct) {
     std::vector<int64> coeffs;
     int64 rhs = 0;
     ParseLongIntLin(fzsolver, ct, &vars, &coeffs, &rhs);
-    if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
-      PostBooleanSumInRange(fzsolver->Sat(), solver, vars, rhs, size);
-    } else {
-      AddConstraint(solver, ct, solver->MakeNonEquality(
-                                    solver->MakeScalProd(vars, coeffs), rhs));
-    }
+    AddConstraint(solver, ct, solver->MakeNonEquality(
+        solver->MakeScalProd(vars, coeffs), rhs));
   }
 }
 
