@@ -1972,6 +1972,8 @@ bool FzPresolver::PresolveOneConstraint(FzConstraint* ct) {
   if (HasPrefixString(id, "int_lin_")) {
     changed |= RegroupLinear(ct);
     changed |= SimplifyUnaryLinear(ct);
+  }
+  if (HasPrefixString(id, "int_lin_")) {
     changed |= SimplifyBinaryLinear(ct);
   }
   if (id == "int_lin_eq" || id == "int_lin_le" || id == "int_lin_ge") {
