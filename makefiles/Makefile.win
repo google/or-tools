@@ -31,6 +31,7 @@ S = \\
 CPSEP =;
 DEL = del
 DELREC = tools\rm.exe -rf
+RENAME = rename
 MKDIR = md
 MKDIR_P = tools\mkdir.exe -p
 COPY = copy

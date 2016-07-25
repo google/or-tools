@@ -174,13 +174,16 @@ endif
 
 
 
-test_archive: archive
+test_archive: $(INSTALL_DIR).tar.gz
 	-$(DELREC) temp
 	$(MKDIR) temp
+#this is to make sure the archive tests don't use the root libraries
+	$(RENAME) lib lib2
 ifeq "$(SYSTEM)" "win"
 	tools$Sunzip.exe $(INSTALL_DIR).zip -d temp
 else
 	tar -x -v -f $(INSTALL_DIR).tar.gz -C temp
 endif
-	cd temp$S$(INSTALL_DIR) && $(MAKE) all test
+	cd temp$S$(INSTALL_DIR) && $(MAKE) test
 	-$(DELREC) $(INSTALL_DIR)
+	$(RENAME) lib2 lib

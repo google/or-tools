@@ -5,24 +5,24 @@
 
 # Let's discover something about where we run
 ifeq "$(SHELL)" "cmd.exe"
-  SYSTEM = win
+	SYSTEM = win
 else
-  ifeq "$(SHELL)" "sh.exe"
-    SYSTEM = win
-  else
-    SYSTEM = unix
-  endif
+	ifeq "$(SHELL)" "sh.exe"
+		SYSTEM = win
+	else
+		SYSTEM = unix
+	endif
 endif
 
 # Define the OR_ROOT directory.
 ifeq ($(OR_TOOLS_TOP),)
-  OR_ROOT =
+	OR_ROOT =
 else
-  ifeq "$(SYSTEM)" "win"
-    OR_ROOT = $(OR_TOOLS_TOP)\\
-  else
-    OR_ROOT = $(OR_TOOLS_TOP)/
-  endif
+	ifeq "$(SYSTEM)" "win"
+		OR_ROOT = $(OR_TOOLS_TOP)\\
+	else
+		OR_ROOT = $(OR_TOOLS_TOP)/
+	endif
 endif
 
 # Useful directories.
@@ -38,97 +38,97 @@ LIB_DIR = $(OR_ROOT)lib
 
 # Unix specific part.
 ifeq ("$(SYSTEM)","unix")
-  OS = $(shell uname -s)
-  ifeq ($(OS),Linux)
-    CCC = g++ -fPIC -std=c++0x
-    LD_FLAGS = -lz -lrt -lpthread
-    # Defines OR_TOOLS_TOP if it is not already defined.
-    OR_TOOLS_TOP ?= $(shell pwd)
-    LIB_PREFIX = -Wl,-rpath $(OR_TOOLS_TOP)/lib -L$(OR_TOOLS_TOP)/lib
-    OR_TOOLS_LIBS = $(LIB_PREFIX) -lortools
-    CVRPTW_LIBS = $(LIB_PREFIX) -lcvrptw_lib $(LIB_PREFIX) -lortools
-    DIMACS_LIBS = $(LIB_PREFIX) -ldimacs $(LIB_PREFIX) -lortools
-    LBITS = $(shell getconf LONG_BIT)
-    ifeq ($(LBITS),64)
-      PORT = Linux64
-      ARCH = -DARCH_K8
-      NETPLATFORM = anycpu
-    else
-      PORT = Linux32
-      NETPLATFORM = x86
-    endif
-    CSC = mcs
-    MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
-  endif
-  ifeq ($(OS),Darwin) # Assume Mac Os X
-    CCC = clang++ -fPIC -std=c++11
-    LD_FLAGS = -lz
-    OR_TOOLS_LIBS = -L$(OR_ROOT)lib -lortools
-    CVRPTW_LIBS = -L$(OR_ROOT)lib -lcvrptw_lib -lortools
-    DIMACS_LIBS = -L$(OR_ROOT)lib -ldimacs -lortools
-    ARCH = -DARCH_K8
-    PORT = MacOsX64
-    CSC = mcs
-    MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono64
-    NETPLATFORM = x64
-  endif
-  O = o
-  E =
-  OBJ_OUT = -o #
-  EXE_OUT = -o #
-  DEL = rm -f
-  S = /
-  CPSEP = :
-  CLP_INC = -DUSE_CLP
-  CBC_INC = -DUSE_CBC
-  GLOP_INC = -DUSE_GLOP
-  BOP_INT = -DUSE_BOP
-  DEBUG = -O4 -DNDEBUG
-  CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(INC_EX_DIR) $(ARCH) -Wno-deprecated \
-    $(CBC_INC) $(CLP_INC) $(GLOP_INC) $(BOP_INC)
+	OS = $(shell uname -s)
+	ifeq ($(OS),Linux)
+		CCC = g++ -fPIC -std=c++0x
+		LD_FLAGS = -lz -lrt -lpthread
+		# Defines OR_TOOLS_TOP if it is not already defined.
+		OR_TOOLS_TOP ?= $(shell pwd)
+		LIB_PREFIX = -Wl,-rpath $(OR_TOOLS_TOP)/lib -L$(OR_TOOLS_TOP)/lib
+		OR_TOOLS_LIBS = $(LIB_PREFIX) -lortools
+		CVRPTW_LIBS = $(LIB_PREFIX) -lcvrptw_lib $(LIB_PREFIX) -lortools
+		DIMACS_LIBS = $(LIB_PREFIX) -ldimacs $(LIB_PREFIX) -lortools
+		LBITS = $(shell getconf LONG_BIT)
+		ifeq ($(LBITS),64)
+			PORT = Linux64
+			ARCH = -DARCH_K8
+			NETPLATFORM = anycpu
+		else
+			PORT = Linux32
+			NETPLATFORM = x86
+		endif
+		CSC = mcs
+		MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
+	endif
+	ifeq ($(OS),Darwin) # Assume Mac Os X
+		CCC = clang++ -fPIC -std=c++11
+		LD_FLAGS = -lz
+		OR_TOOLS_LIBS = -L$(OR_ROOT)lib -lortools
+		CVRPTW_LIBS = -L$(OR_ROOT)lib -lcvrptw_lib -lortools
+		DIMACS_LIBS = -L$(OR_ROOT)lib -ldimacs -lortools
+		ARCH = -DARCH_K8
+		PORT = MacOsX64
+		CSC = mcs
+		MONO =	DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono64
+		NETPLATFORM = x64
+	endif
+	O = o
+	E =
+	OBJ_OUT = -o #
+	EXE_OUT = -o #
+	DEL = rm -f
+	S = /
+	CPSEP = :
+	CLP_INC = -DUSE_CLP
+	CBC_INC = -DUSE_CBC
+	GLOP_INC = -DUSE_GLOP
+	BOP_INT = -DUSE_BOP
+	DEBUG = -O4 -DNDEBUG
+	CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(INC_EX_DIR) $(ARCH) -Wno-deprecated \
+		$(CBC_INC) $(CLP_INC) $(GLOP_INC) $(BOP_INC)
 endif
 
 # Windows specific part.
 ifeq ("$(SYSTEM)","win")
-  ifeq ("$(Platform)", "X64")
-    PLATFORM = Win64
-  endif
-  ifeq ("$(Platform)", "x64")
-    PLATFORM = Win64
-  endif
-  ifeq ("$(PLATFORM)", "Win64")
-    PORT = VisualStudio$(VISUAL_STUDIO)-64b
-    NETPLATFORM = x64
-  else
-    PORT = VisualStudio$(VISUAL_STUDIO)-32b
-    NETPLATFORM = x86
-  endif
-  CLP_INC = -DUSE_CLP
-  CBC_INC = -DUSE_CBC
-  GLOP_INC = -DUSE_GLOP
-  BOP_INC = -DUSE_BOP
-  CFLAGS= /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS -nologo $(DEBUG) \
-    $(CBC_INC) $(CLP_INC) /D__WIN32__ /I$(INC_DIR)\\src\\windows \
-    /DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG= \
-    /I$(INC_DIR) /I$(INC_EX_DIR) /D $(GLOP_INC) $(BOP_INC)
-  LD_FLAGS = psapi.lib ws2_32.lib
-  OR_TOOLS_LIBS = lib\\ortools.lib
-  CVRPTW_LIBS = lib\\cvrptw_lib.lib lib\\ortools.lib
-  DIMACS_LIBS = lib\\dimacs.lib lib\\ortools.lib
-  O=obj
-  E=.exe
-  OBJ_OUT = /Fo
-  EXE_OUT = /Fe
-  DEL = del
-  S = \\
-  CPSEP = ;
-  DEBUG=/O2 -DNDEBUG
-  CCC=cl /EHsc /MD /nologo
-  CSC=csc
-  MONO=
+	ifeq ("$(Platform)", "X64")
+		PLATFORM = Win64
+	endif
+	ifeq ("$(Platform)", "x64")
+		PLATFORM = Win64
+	endif
+	ifeq ("$(PLATFORM)", "Win64")
+		PORT = VisualStudio$(VISUAL_STUDIO)-64b
+		NETPLATFORM = x64
+	else
+		PORT = VisualStudio$(VISUAL_STUDIO)-32b
+		NETPLATFORM = x86
+	endif
+	CLP_INC = -DUSE_CLP
+	CBC_INC = -DUSE_CBC
+	GLOP_INC = -DUSE_GLOP
+	BOP_INC = -DUSE_BOP
+	CFLAGS= /D_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS -nologo $(DEBUG) \
+		$(CBC_INC) $(CLP_INC) /D__WIN32__ /I$(INC_DIR)\\src\\windows \
+		/DGFLAGS_DLL_DECL= /DGFLAGS_DLL_DECLARE_FLAG= /DGFLAGS_DLL_DEFINE_FLAG= \
+		/I$(INC_DIR) /I$(INC_EX_DIR) /D $(GLOP_INC) $(BOP_INC)
+	LD_FLAGS = psapi.lib ws2_32.lib
+	OR_TOOLS_LIBS = lib\\ortools.lib
+	CVRPTW_LIBS = lib\\cvrptw_lib.lib lib\\ortools.lib
+	DIMACS_LIBS = lib\\dimacs.lib lib\\ortools.lib
+	O=obj
+	E=.exe
+	OBJ_OUT = /Fo
+	EXE_OUT = /Fe
+	DEL = del
+	S = \\
+	CPSEP = ;
+	DEBUG=/O2 -DNDEBUG
+	CCC=cl /EHsc /MD /nologo
+	CSC=csc
+	MONO=
 endif
 
-.PHONY: all clean
+.PHONY: all clean test
 
 all: \
 	$(CPP_BIN_DIR)$Scostas_array$E \
@@ -165,21 +165,26 @@ clean:
 	$(DEL) $(CPP_BIN_DIR)$S*
 	$(DEL) $(OBJ_DIR)$S*$O
 
-test:
-	$(CPP_BIN_DIR)$Scostas_array$E
-	$(CPP_BIN_DIR)$Scryptarithm$E
-	$(CPP_BIN_DIR)$Scvrp_disjoint_tw$E
-	$(CPP_BIN_DIR)$Scvrptw$E
+test_cc: $(CPP_BIN_DIR)$Sgolomb$E
 	$(CPP_BIN_DIR)$Sgolomb$E
-	$(CPP_BIN_DIR)$Sjobshop$E --data_file examples$Sdata$Syn1.txt
-	$(CPP_BIN_DIR)$Smagic_square$E
-	$(CPP_BIN_DIR)$Snqueens$E
-	$(CPP_BIN_DIR)$Stsp$E
-	$(CPP_BIN_DIR)$Slinear_assignment_api$E
-	$(CPP_BIN_DIR)$Slinear_programming$E
-	$(CPP_BIN_DIR)$Slinear_solver_protocol_buffers$E
-	$(CPP_BIN_DIR)$Sinteger_programming$E
-	$(CPP_BIN_DIR)$Sflow_api$E
+
+test_java: EX:=Tsp
+test_java: 
+	javac -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(JAVA_EX_DIR)$Sgoogle$Sortools$Ssamples$S$(EX).java
+	java -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.$(EX) $(ARGS)
+
+test_cs: EX:=csflow
+test_cs: 
+	$(CSC) $Starget:exe $Sout:$(CS_BIN_DIR)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(CS_BIN_DIR) /r:Google.OrTools.dll /r:Google.Protobuf.dll $(CS_EX_DIR)$S$(EX).cs
+	$(MONO) $(CS_BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe $(ARGS)
+
+test: test_cc test_java test_cs
+
+
+#test_csharp:
+# make rcs EX=csflow
+
+
 
 # Constraint Programming and Routing examples.
 
@@ -386,4 +391,4 @@ printport:
 
 -include $(OR_ROOT)Makefile.user
 
-print-%  : ; @echo $* = $($*)
+print-%	: ; @echo $* = $($*)
