@@ -173,8 +173,7 @@ fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
 endif
 
 
-
-test_archive: $(INSTALL_DIR).tar.gz
+test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
 	-$(DELREC) temp
 	$(MKDIR) temp
 #this is to make sure the archive tests don't use the root libraries

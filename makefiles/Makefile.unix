@@ -35,6 +35,7 @@ RENAME = mv
 S = /
 CPSEP = :
 SED = sed
+ARCHIVE_EXT = .tar.gz
 
 # This is needed to find python.h
 PYTHON_INC = -I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER) $(ADD_PYTHON_INC)
