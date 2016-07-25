@@ -175,7 +175,7 @@ test_java:
 
 test_cs: EX:=csflow
 test_cs: 
-	$(CSC) $Starget:exe $Sout:$(CS_BIN_DIR)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(CS_BIN_DIR) /r:Google.OrTools.dll /r:Google.Protobuf.dll $(CS_EX_DIR)$S$(EX).cs
+	$(CSC) /target:exe /out:$(CS_BIN_DIR)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(CS_BIN_DIR) /r:Google.OrTools.dll /r:Google.Protobuf.dll $(CS_EX_DIR)$S$(EX).cs
 	$(MONO) $(CS_BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe $(ARGS)
 
 test: test_cc test_java test_cs
