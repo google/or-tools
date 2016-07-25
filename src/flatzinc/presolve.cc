@@ -2053,14 +2053,12 @@ void FzPresolver::MergeIntEqNe(FzModel* model) {
         FzIntegerVariable* boolvar = ct->Arg(2).Var();
         FzIntegerVariable* stored = FindPtrOrNull(int_eq_reif_map[var], value);
         if (stored == nullptr) {
+          FZVLOG << "Store " << ct->DebugString() << FZENDL;
           int_eq_reif_map[var][value] = boolvar;
         } else {
           FZVLOG << "Merge " << ct->DebugString() << FZENDL;
-          ct->type = "bool_eq";
-          ct->arguments.clear();
-          ct->arguments.push_back(FzArgument::IntVarRef(stored));
-          ct->arguments.push_back(FzArgument::IntVarRef(boolvar));
-          FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+          ct->MarkAsInactive();
+          AddVariableSubstition(stored, boolvar);
         }
       }
     }
@@ -2079,14 +2077,12 @@ void FzPresolver::MergeIntEqNe(FzModel* model) {
         FzIntegerVariable* boolvar = ct->Arg(2).Var();
         FzIntegerVariable* stored = FindPtrOrNull(int_ne_reif_map[var], value);
         if (stored == nullptr) {
+          FZVLOG << "Store " << ct->DebugString() << FZENDL;
           int_ne_reif_map[var][value] = boolvar;
         } else {
           FZVLOG << "Merge " << ct->DebugString() << FZENDL;
-          ct->type = "bool_eq";
-          ct->arguments.clear();
-          ct->arguments.push_back(FzArgument::IntVarRef(stored));
-          ct->arguments.push_back(FzArgument::IntVarRef(boolvar));
-          FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+          ct->MarkAsInactive();
+          AddVariableSubstition(stored, boolvar);
         }
       }
     }
@@ -2124,6 +2120,11 @@ bool FzPresolver::Run(FzModel* model) {
   FirstPassModelScan(model);
 
   MergeIntEqNe(model);
+  if (!var_representative_map_.empty()) {
+    // Some new substitutions were introduced. Let's process them.
+    SubstituteEverywhere(model);
+    var_representative_map_.clear();
+  }
 
   bool changed_since_start = false;
   // Let's presolve the bool2int predicates first.
