@@ -446,16 +446,16 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
 
 # Install C# protobuf
 
-CSHARP_PROTOBUF_SRC = $(shell grep Compile dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf/Google.Protobuf.csproj | cut -d\" -f 2 | sed -e 's/\\/\//g')
+CSHARP_PROTOBUF_SRC = $(shell find dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf -name \*.cs -print)
 
 install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
 
 dependencies/install/bin/Google.Protobuf.dll: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh
 ifdef PROTOBUF_KEYFILE
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo /keyfile:$(OR_TOOLS_TOP)/$(PROTOBUF_KEYFILE) -d:SIGNED $(CSHARP_PROTOBUF_SRC)
+	$(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo /keyfile:$(OR_TOOLS_TOP)/$(PROTOBUF_KEYFILE) -d:SIGNED $(CSHARP_PROTOBUF_SRC)
 
 else
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo $(CSHARP_PROTOBUF_SRC)
+	$(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo $(CSHARP_PROTOBUF_SRC)
 endif
 
 # Clean everything.
