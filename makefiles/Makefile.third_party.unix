@@ -67,7 +67,7 @@ endif
 
 # Main target.
 .PHONY: makefile_third_party missing_directories install_java_protobuf
-third_party: install_third_party makefile_third_party
+third_party: makefile_third_party install_third_party
 
 # Create missing directories
 
@@ -446,11 +446,18 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
 
 # Install C# protobuf
 
+#create .snk file if strong named dll is required (this is the default behaviour)
+$(PROTOBUF_KEYFILE):
+ifdef PROTOBUF_KEYFILE
+	sn -k $(PROTOBUF_KEYFILE)
+endif
+
 CSHARP_PROTOBUF_SRC = $(shell find dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf -name \*.cs -print)
 
 install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
 
-dependencies/install/bin/Google.Protobuf.dll: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh
+dependencies/install/bin/Google.Protobuf.dll: $(PROTOBUF_KEYFILE) \
+	dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh
 ifdef PROTOBUF_KEYFILE
 	$(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo /keyfile:$(OR_TOOLS_TOP)/$(PROTOBUF_KEYFILE) -d:SIGNED $(CSHARP_PROTOBUF_SRC)
 
@@ -500,6 +507,8 @@ Makefile.local:
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
 	@echo UNIX_SCIP_TAG = $(SCIP_TAG) >> Makefile.local
+	@echo CLR_KEYFILE = bin/or-tools.snk >> Makefile.local
+	@echo PROTOBUF_KEYFILE = bin/protobuf.snk >> Makefile.local
 	@echo UNIX_SULUM_VERSION = $(SULUM_TAG) >> Makefile.local
 	@echo \# Please define UNIX_SLM_DIR to use Sulum Optimization. >> Makefile.local
 	@echo \# Please define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local

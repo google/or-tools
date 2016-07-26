@@ -221,7 +221,13 @@ $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs: $(SRC_DIR)/con
 
 # Main DLL
 
+$(CLR_KEYFILE):
+ifdef CLR_KEYFILE
+	sn -k $(CLR_KEYFILE)
+endif
+
 $(BIN_DIR)/$(CLR_DLL_NAME).dll: \
+	$(CLR_KEYFILE) \
 	$(BIN_DIR)/Google.Protobuf.dll \
 	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
 	$(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O \
