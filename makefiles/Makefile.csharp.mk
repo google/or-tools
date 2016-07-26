@@ -8,8 +8,7 @@
 # If you would like to use none strongly named DLLs,
 # then please do the following :
 # make clean_csharp
-# remove the definition of CLR_KEYFILE and PROTOBUF_KEYFILE from Makefile.local
-# (The two lines must be removed or commented)
+# remove the definition of CLR_KEYFILE from Makefile.local
 # make csharp
 #
 # For delay signing, use for example:
