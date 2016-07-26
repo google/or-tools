@@ -388,7 +388,7 @@ dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/help2man/help2man-$(HELP2MAN_TAG).tar.gz
 
 # Install libtool
-dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile
+dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile dependencies/install/bin/help2man
 	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && $(SET_PATH) make install
 
 dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile: dependencies/sources/libtool-$(LIBTOOL_TAG)/configure
