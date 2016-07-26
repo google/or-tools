@@ -107,10 +107,6 @@ MISSING_DIRECTORIES = \
 
 missing_directories: $(MISSING_DIRECTORIES)
 
-ifneq ($(MCS),)
-CSHARP_THIRD_PARTY = install_csharp_protobuf
-endif
-
 install_third_party: \
 	missing_directories \
 	install_gflags \
@@ -450,19 +446,6 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
 $(PROTOBUF_KEYFILE):
 ifdef PROTOBUF_KEYFILE
 	sn -k $(PROTOBUF_KEYFILE)
-endif
-
-CSHARP_PROTOBUF_SRC = $(shell find dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf -name \*.cs -print)
-
-install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
-
-dependencies/install/bin/Google.Protobuf.dll: $(PROTOBUF_KEYFILE) \
-	dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh
-ifdef PROTOBUF_KEYFILE
-	$(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo /keyfile:$(OR_TOOLS_TOP)/$(PROTOBUF_KEYFILE) -d:SIGNED $(CSHARP_PROTOBUF_SRC)
-
-else
-	$(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo $(CSHARP_PROTOBUF_SRC)
 endif
 
 # Clean everything.

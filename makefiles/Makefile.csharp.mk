@@ -3,10 +3,10 @@
 # Assembly Signing
 # ----------------
 # All C# assemblies are strongly named by default. This includes the
-# DLLs and the test case EXEs. 
+# DLLs and the test case EXEs.
 #
 # If you would like to use none strongly named DLLs,
-# then please do the following : 
+# then please do the following :
 # make clean_csharp
 # remove the definition of CLR_KEYFILE and PROTOBUF_KEYFILE from Makefile.local
 # (The two lines must be removed or commented)
@@ -86,7 +86,6 @@ warn_mcs:
 clean_csharp:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).$(SWIG_LIB_SUFFIX)
 	-$(DEL) $(BIN_DIR)$S$(CLR_DLL_NAME)*.dll
-	-$(DEL) dependencies$Sinstall$Sbin$SGoogle.Protobuf.dll
 	-$(DEL) $(BIN_DIR)$S$(CLR_DLL_NAME)*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME)*.lib
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME)*.pdb
@@ -158,8 +157,8 @@ $(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_VERSION).txt:
 
 csharportools: $(BIN_DIR)/$(CLR_DLL_NAME).dll $(BIN_DIR)/Google.Protobuf.dll
 
-$(BIN_DIR)/Google.Protobuf.dll: dependencies/install/bin/Google.Protobuf.dll
-	$(COPY) dependencies$Sinstall$Sbin$SGoogle.Protobuf.dll $(BIN_DIR)
+$(BIN_DIR)/Google.Protobuf.dll: tools/Google.Protobuf.dll
+	$(COPY) tools$SGoogle.Protobuf.dll $(BIN_DIR)
 
 $(GEN_DIR)/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/linear_solver/csharp/linear_solver.swig \

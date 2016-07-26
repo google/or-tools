@@ -87,8 +87,7 @@ build_third_party: \
 	install_coin_cbc \
 	install_glpk \
 	install_scip \
-	install_bison \
-	install_csharp_protobuf
+	install_bison
 
 bin:
 	$(MKDIR_P) bin
@@ -427,14 +426,6 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
 	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
 	  ../src/google/protobuf/descriptor.proto
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && $(JAR_BIN) cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
-
-# Install C# protobuf
-
-
-install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
-
-dependencies/install/bin/Google.Protobuf.dll:
-	$(COPY) tools\Google.Protobuf.dll dependencies\\install\\bin
 
 # Clean everything.
 clean_third_party:
