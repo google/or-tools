@@ -2,12 +2,15 @@
 
 # Assembly Signing
 # ----------------
-# All C# assemblies can optionally be signed. This includes the
-# DLLs and the test case EXEs. Signing is currently supported only
-# on Windows with the .NET framework.
+# All C# assemblies are strongly named by default. This includes the
+# DLLs and the test case EXEs. 
 #
-# To get signed assemblies, use for example:
-# make CLR_KEYFILE="c:\full\path\to\keyfile.snk" csharp
+# If you would like to use none strongly named DLLs,
+# then please do the following : 
+# make clean_csharp
+# remove the definition of CLR_KEYFILE and PROTOBUF_KEYFILE from Makefile.local
+# (The two lines must be removed or commented)
+# make csharp
 #
 # For delay signing, use for example:
 # make CLR_KEYFILE="c:\full\path\to\keyfile_pub.snk" CLR_DELAYSIGN=1
@@ -83,6 +86,7 @@ warn_mcs:
 clean_csharp:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).$(SWIG_LIB_SUFFIX)
 	-$(DEL) $(BIN_DIR)$S$(CLR_DLL_NAME)*.dll
+	-$(DEL) dependencies$Sinstall$Sbin$SGoogle.Protobuf.dll
 	-$(DEL) $(BIN_DIR)$S$(CLR_DLL_NAME)*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME)*.lib
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME)*.pdb
