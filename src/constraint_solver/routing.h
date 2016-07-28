@@ -1162,6 +1162,7 @@ class RoutingModel {
   SearchLimit* GetOrCreateLocalSearchLimit();
   SearchLimit* GetOrCreateLargeNeighborhoodSearchLimit();
   LocalSearchOperator* CreateInsertionOperator();
+  LocalSearchOperator* CreateMakeInactiveOperator();
   void CreateNeighborhoodOperators();
   LocalSearchOperator* GetNeighborhoodOperators(
       const RoutingSearchParameters& search_parameters) const;

@@ -25,24 +25,20 @@
 #include "lp_data/lp_print_utils.h"
 #include "sat/boolean_problem.h"
 #include "sat/lp_utils.h"
-#include "sat/optimization.h"
 #include "sat/sat_solver.h"
 #include "sat/symmetry.h"
+#include "sat/util.h"
 #include "util/bitset.h"
-
-using operations_research::glop::ColIndex;
-using operations_research::glop::DenseRow;
-using operations_research::glop::GlopParameters;
-using operations_research::glop::LinearProgram;
-using operations_research::glop::LPSolver;
-using operations_research::glop::RowIndex;
-using operations_research::LinearBooleanProblem;
-using operations_research::LinearBooleanConstraint;
-using operations_research::LinearObjective;
 
 namespace operations_research {
 namespace bop {
 namespace {
+
+using ::operations_research::glop::ColIndex;
+using ::operations_research::glop::DenseRow;
+using ::operations_research::glop::GlopParameters;
+using ::operations_research::glop::RowIndex;
+
 BopOptimizerBase::Status SolutionStatus(const BopSolution& solution,
                                         int64 lower_bound) {
   // The lower bound might be greater that the cost of a feasible solution due

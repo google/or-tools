@@ -345,6 +345,9 @@ class SatSolver {
   // satisfy this saved assignement.
   void SaveDebugAssignment();
 
+  // Returns true iff the loaded problem only contains clauses.
+  bool ProblemIsPureSat() const { return problem_is_pure_sat_; }
+
   void SetDratWriter(DratWriter* drat_writer) { drat_writer_ = drat_writer; }
 
  private:
@@ -505,6 +508,12 @@ class SatSolver {
       int max_trail_index, std::vector<Literal>* conflict,
       std::vector<Literal>* reason_used_to_infer_the_conflict,
       std::vector<SatClause*>* subsumed_clauses);
+
+  // Fills literals with all the literals in the reasons of the literals in the
+  // given input. The output vector will have no duplicates and will not contain
+  // the literals already present in the input.
+  void ComputeUnionOfReasons(const std::vector<Literal>& input,
+                             std::vector<Literal>* literals);
 
   // Given an assumption (i.e. literal) currently assigned to false, this will
   // returns the set of all assumptions that caused this particular assignment.
@@ -755,6 +764,19 @@ class SatSolver {
   AdjustablePriorityQueue<WeightedVarQueueElement> var_ordering_;
   ITIVector<BooleanVariable, WeightedVarQueueElement> queue_elements_;
 
+  // This is used for the branching heuristic described in "Learning Rate Based
+  // Branching Heuristic for SAT solvers", J.H.Liang, V. Ganesh, P. Poupart,
+  // K.Czarnecki, SAT 2016.
+  //
+  // The entries are sorted by trail index, and one can get the number of
+  // conflicts during which a variable at a given trail index i was assigned by
+  // summing the entry.count for all entries with a trail index greater than i.
+  struct NumConflictsStackEntry {
+    int trail_index;
+    int64 count;
+  };
+  std::vector<NumConflictsStackEntry> num_conflicts_stack_;
+
   // Whether the priority of the given variable needs to be updated in
   // var_ordering_. Note that this is only accessed for assigned variables and
   // that for efficiency it is indexed by trail indices. If
@@ -767,8 +789,10 @@ class SatSolver {
   double variable_activity_increment_;
   double clause_activity_increment_;
 
-  // Stores variable activity.
+  // Stores variable activity and the number of time each variable was "bumped".
+  // The later is only used with the ERWA heuristic.
   ITIVector<BooleanVariable, double> activities_;
+  ITIVector<BooleanVariable, int64> num_bumps_;
 
   // Used by NextBranch() to choose the polarity of the next decision. For the
   // phase saving, the last polarity is stored in trail_.Info(var).
@@ -797,6 +821,7 @@ class SatSolver {
   // Temporary members used during conflict analysis.
   SparseBitset<BooleanVariable> is_marked_;
   SparseBitset<BooleanVariable> is_independent_;
+  SparseBitset<BooleanVariable> tmp_mark_;
   std::vector<int> min_trail_index_per_level_;
 
   // Temporary members used by CanBeInferedFromConflictVariables().
@@ -813,6 +838,7 @@ class SatSolver {
   // Temporary vectors used by EnqueueDecisionAndBackjumpOnConflict().
   std::vector<Literal> learned_conflict_;
   std::vector<Literal> reason_used_to_infer_the_conflict_;
+  std::vector<Literal> extra_reason_literals_;
   std::vector<SatClause*> subsumed_clauses_;
 
   // "cache" to avoid inspecting many times the same reason during conflict
@@ -844,6 +870,9 @@ class SatSolver {
   // it is necessary to keep track of the last time the time was advanced.
   double deterministic_time_at_last_advanced_time_limit_;
 
+  // This is true iff the loaded problem only contains clauses.
+  bool problem_is_pure_sat_;
+
   DratWriter* drat_writer_;
 
   mutable StatsGroup stats_;
@@ -856,6 +885,32 @@ inline std::function<void(Model*)> BooleanLinearConstraint(
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
         /*use_lower_bound=*/true, Coefficient(lower_bound),
         /*use_upper_bound=*/true, Coefficient(upper_bound), cst);
+  };
+}
+
+inline std::function<void(Model*)> ExactlyOneConstraint(
+    const std::vector<Literal>& literals) {
+  return [=](Model* model) {
+    std::vector<LiteralWithCoeff> cst;
+    for (const Literal l : literals) {
+      cst.push_back(LiteralWithCoeff(l, Coefficient(1)));
+    }
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/true, Coefficient(1),
+        /*use_upper_bound=*/true, Coefficient(1), &cst);
+  };
+}
+
+inline std::function<void(Model*)> ClauseConstraint(
+    const std::vector<Literal>& literals) {
+  return [=](Model* model) {
+    std::vector<LiteralWithCoeff> cst;
+    for (const Literal l : literals) {
+      cst.push_back(LiteralWithCoeff(l, Coefficient(1)));
+    }
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/true, Coefficient(1),
+        /*use_upper_bound=*/false, Coefficient(1), &cst);
   };
 }
 

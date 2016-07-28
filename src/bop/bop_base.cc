@@ -19,10 +19,10 @@
 
 #include "sat/boolean_problem.h"
 
-using operations_research::LinearBooleanProblem;
-
 namespace operations_research {
 namespace bop {
+
+using ::operations_research::LinearBooleanProblem;
 
 BopOptimizerBase::BopOptimizerBase(const std::string& name)
     : name_(name),

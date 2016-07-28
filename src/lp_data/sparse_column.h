@@ -22,11 +22,27 @@ namespace glop {
 // TODO(user): Consider using kInvalidRow for this?
 const RowIndex kNonPivotal(-1);
 
+// Specialization of SparseVectorEntry and SparseColumnIterator for the
+// SparseColumn class. In addtion to index(), it also provides row() for better
+// readability on the client side.
+class SparseColumnEntry : public SparseVectorEntry<RowIndex> {
+ public:
+  // Returns the row of the current entry.
+  RowIndex row() const { return index(); }
+
+ protected:
+  SparseColumnEntry(const RowIndex* indices, const Fractional* coefficients,
+                    EntryIndex i)
+      : SparseVectorEntry<RowIndex>(indices, coefficients, i) {}
+};
+using SparseColumnIterator = SparseVectorIterator<SparseColumnEntry>;
+
 // A SparseColumn is a SparseVector<RowIndex>, with a few methods renamed
 // to help readability on the client side.
-class SparseColumn : public SparseVector<RowIndex> {
+class SparseColumn : public SparseVector<RowIndex, SparseColumnIterator> {
  public:
-  SparseColumn() : SparseVector<RowIndex>() {}
+  SparseColumn() : SparseVector<RowIndex, SparseColumnIterator>() {}
+
   // Use a separate API to get the row and coefficient of entry #i.
   RowIndex EntryRow(EntryIndex i) const { return GetIndex(i); }
   Fractional EntryCoefficient(EntryIndex i) const { return GetCoefficient(i); }
@@ -38,26 +54,6 @@ class SparseColumn : public SparseVector<RowIndex> {
   void ApplyPartialRowPermutation(const RowPermutation& p) {
     ApplyPartialIndexPermutation(p);
   }
-};
-
-// Specialization of the Entry API for SparseColumn, to gain the 'row' accessor.
-template <>
-class SparseVector<RowIndex>::Entry {
- public:
-  RowIndex row() const { return index_[i_.value()]; }
-  Fractional coefficient() const { return coefficient_[i_.value()]; }
-
- protected:
-  Entry(const SparseVector<RowIndex>* sparse_vector, EntryIndex i)
-      : i_(i),
-        index_(sparse_vector->index_),
-        coefficient_(sparse_vector->coefficient_) {}
-
-  EntryIndex i_;
-  const RowIndex* index_;
-  const Fractional* coefficient_;
-
-  friend class SparseVector<RowIndex>::Iterator;
 };
 
 // TODO(user): create SparseRow and use it where appropriate.

@@ -66,9 +66,6 @@ DEFINE_int64(routing_max_cache_size, 1000,
              "Maximum cache size when callback caching is on.");
 
 // Trace settings
-DEFINE_bool(routing_trace, false, "Routing: trace search.");
-DEFINE_bool(routing_search_trace, false,
-            "Routing: use SearchTrace for monitoring search.");
 
 // TODO(user): Move most of the following settings to a model parameter
 // proto.
@@ -551,6 +548,53 @@ LocalSearchOperator* MakePairActive(
       vars, secondary_vars, std::move(start_empty_path_class), pairs));
 }
 
+// Operator which makes pairs of active nodes inactive.
+class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
+ public:
+  MakePairInactiveOperator(const std::vector<IntVar*>& vars,
+                           const std::vector<IntVar*>& secondary_vars,
+                           std::function<int(int64)> start_empty_path_class,
+                           const RoutingModel::NodePairs& node_pairs)
+      : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
+                                      std::move(start_empty_path_class)) {
+    int max_pair_index = -1;
+    for (const auto& node_pair : node_pairs) {
+      max_pair_index = std::max(max_pair_index, node_pair.first);
+      max_pair_index = std::max(max_pair_index, node_pair.second);
+    }
+    pairs_.resize(max_pair_index + 1, -1);
+    for (const auto& node_pair : node_pairs) {
+      pairs_[node_pair.first] = node_pair.second;
+      pairs_[node_pair.second] = node_pair.first;
+    }
+  }
+  std::string DebugString() const override { return "MakePairInActive"; }
+  bool MakeNeighbor() override {
+    const int64 base = BaseNode(0);
+    if (IsPathEnd(base)) {
+      return false;
+    }
+    const int64 next = Next(base);
+    if (next < pairs_.size() && pairs_[next] != -1) {
+      return MakeChainInactive(Prev(pairs_[next]), pairs_[next]) &&
+             MakeChainInactive(base, next);
+    }
+    return false;
+  }
+
+ private:
+  std::vector<int> pairs_;
+};
+
+LocalSearchOperator* MakePairInactive(
+    Solver* const solver, const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    std::function<int(int64)> start_empty_path_class,
+    const RoutingModel::NodePairs& pairs) {
+  return solver->RevAlloc(new MakePairInactiveOperator(
+      vars, secondary_vars, std::move(start_empty_path_class), pairs));
+}
+
 // Operator which moves a pair of nodes to another position where the first
 // node of the pair must be before the second node on the same path.
 // Possible neighbors for the path 1 -> A -> B -> 2 -> 3 (where (1, 3) are
@@ -655,7 +699,7 @@ LocalSearchOperator* MakePairRelocate(
 }
 
 // Operator which inserts inactive nodes into a path and makes a pair of
-// inactive nodes inactive.
+// active nodes inactive.
 class NodePairSwapActiveOperator : public PathWithPreviousNodesOperator {
  public:
   NodePairSwapActiveOperator(const std::vector<IntVar*>& vars,
@@ -4188,6 +4232,24 @@ LocalSearchOperator* RoutingModel::CreateInsertionOperator() {
   return insertion_operator;
 }
 
+LocalSearchOperator* RoutingModel::CreateMakeInactiveOperator() {
+  std::vector<IntVar*> empty;
+  LocalSearchOperator* make_inactive_operator =
+      MakeLocalSearchOperator<MakeInactiveOperator>(
+          solver_.get(), nexts_,
+          CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
+          vehicle_start_class_callback_);
+  if (!pickup_delivery_pairs_.empty()) {
+    make_inactive_operator = solver_->ConcatenateOperators(
+        {MakePairInactive(
+             solver_.get(), nexts_,
+             CostsAreHomogeneousAcrossVehicles() ? empty : vehicle_vars_,
+             vehicle_start_class_callback_, pickup_delivery_pairs_),
+         make_inactive_operator});
+  }
+  return make_inactive_operator;
+}
+
 #define CP_ROUTING_ADD_OPERATOR(operator_type, cp_operator_type)    \
   if (CostsAreHomogeneousAcrossVehicles()) {                        \
     local_search_operators_[operator_type] =                        \
@@ -4249,7 +4311,7 @@ void RoutingModel::CreateNeighborhoodOperators() {
   CP_ROUTING_ADD_OPERATOR(OR_OPT, OROPT);
   CP_ROUTING_ADD_CALLBACK_OPERATOR(LIN_KERNIGHAN, LK);
   local_search_operators_[MAKE_ACTIVE] = CreateInsertionOperator();
-  CP_ROUTING_ADD_OPERATOR2(MAKE_INACTIVE, MakeInactiveOperator);
+  local_search_operators_[MAKE_INACTIVE] = CreateMakeInactiveOperator();
   CP_ROUTING_ADD_OPERATOR2(MAKE_CHAIN_INACTIVE, MakeChainInactiveOperator);
   CP_ROUTING_ADD_OPERATOR2(SWAP_ACTIVE, SwapActiveOperator);
   CP_ROUTING_ADD_OPERATOR2(EXTENDED_SWAP_ACTIVE, ExtendedSwapActiveOperator);
@@ -4757,12 +4819,9 @@ void RoutingModel::SetupAssignmentCollector() {
 
 void RoutingModel::SetupTrace(
     const RoutingSearchParameters& search_parameters) {
-  if (FLAGS_routing_trace || search_parameters.log_search()) {
+  if (search_parameters.log_search()) {
     const int kLogPeriod = 10000;
     monitors_.push_back(solver_->MakeSearchLog(kLogPeriod, cost_));
-  }
-  if (FLAGS_routing_search_trace) {
-    monitors_.push_back(solver_->MakeSearchTrace("Routing "));
   }
 }
 

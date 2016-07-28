@@ -64,8 +64,14 @@ message ConstraintSolverParameters {
   // Activate propagation profiling.
   bool profile_propagation = 7;
 
-  // Export profiling info to file.
+  // Export propagation profiling data to file.
   string profile_file = 8;
+
+  // Activate local search profiling.
+  bool profile_local_search = 16;
+
+  // Print local search profiling data after solving.
+  bool print_local_search_profile = 17;
 
   // Activate propagate tracing.
   bool trace_propagation = 9;

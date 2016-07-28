@@ -55,6 +55,7 @@ SatSolver::SatSolver()
       is_relevant_for_core_computation_(true),
       time_limit_(TimeLimit::Infinite()),
       deterministic_time_at_last_advanced_time_limit_(0.0),
+      problem_is_pure_sat_(true),
       drat_writer_(nullptr),
       stats_("SatSolver") {
   trail_.RegisterPropagator(&binary_implication_graph_);
@@ -84,7 +85,8 @@ void SatSolver::SetNumVariables(int num_variables) {
   same_reason_identifier_.Resize(num_variables);
 
   // Used by NextBranch() for the decision heuristic.
-  activities_.resize(num_variables, 0.0);
+  activities_.resize(num_variables, parameters_.initial_variables_activity());
+  num_bumps_.resize(num_variables, 0);
   pq_need_update_for_var_at_trail_index_.IncreaseSize(num_variables);
   weighted_sign_.resize(num_variables, 0.0);
   queue_elements_.resize(num_variables);
@@ -275,6 +277,8 @@ bool SatSolver::AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>&
     return AddProblemClauseInternal(literals_scratchpad_);
   }
 
+  problem_is_pure_sat_ = false;
+
   // TODO(user): If this constraint forces all its literal to false (when rhs is
   // zero for instance), we still add it. Optimize this?
   const bool result = pb_constraints_.AddConstraint(cst, rhs, &trail_);
@@ -391,6 +395,7 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
 
 void SatSolver::AddPropagator(std::unique_ptr<Propagator> propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
+  problem_is_pure_sat_ = false;
   trail_.RegisterPropagator(propagator.get());
   external_propagators_.push_back(std::move(propagator));
   InitializePropagators();
@@ -399,6 +404,7 @@ void SatSolver::AddPropagator(std::unique_ptr<Propagator> propagator) {
 void SatSolver::AddLastPropagator(std::unique_ptr<Propagator> propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   CHECK(last_propagator_ == nullptr);
+  problem_is_pure_sat_ = false;
   trail_.RegisterPropagator(propagator.get());
   last_propagator_ = std::move(propagator);
   InitializePropagators();
@@ -553,6 +559,10 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
                             : 0;
   BumpVariableActivities(learned_conflict_, lbd_limit);
   BumpVariableActivities(reason_used_to_infer_the_conflict_, lbd_limit);
+  if (parameters_.also_bump_variables_in_conflict_reasons()) {
+    ComputeUnionOfReasons(learned_conflict_, &extra_reason_literals_);
+    BumpVariableActivities(extra_reason_literals_, lbd_limit);
+  }
 
   // Bump the clause activities.
   // Note that the activity of the learned clause will be bumped too
@@ -735,6 +745,9 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   }
 
   // Backtrack and add the reason to the set of learned clause.
+  if (parameters_.use_erwa_heuristic()) {
+    num_conflicts_stack_.push_back({trail_.Index(), 1});
+  }
   counters_.num_literals_learned += learned_conflict_.size();
   Backtrack(ComputeBacktrackLevel(learned_conflict_));
   DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
@@ -913,6 +926,10 @@ SatSolver::Status SatSolver::Solve() {
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   if (is_model_unsat_) return MODEL_UNSAT;
+
+  // TODO(user): Because the counter are not reset to zero, this cause the
+  // metrics / sec to be completely broken except when the solver is used
+  // for exactly one Solve().
   timer_.Restart();
 
   // This is done this way, so heuristics like the weighted_sign_ one can
@@ -1141,6 +1158,16 @@ std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
 void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
                                        int bump_again_lbd_limit) {
   SCOPED_TIME_STAT(&stats_);
+  if (parameters_.use_erwa_heuristic()) {
+    for (const Literal literal : literals) {
+      // Note that we don't really need to bump level 0 variables since they
+      // will never be backtracked over. However it is faster to simply bump
+      // them.
+      ++num_bumps_[literal.Variable()];
+    }
+    return;
+  }
+
   const double max_activity_value = parameters_.max_variable_activity_value();
   for (const Literal literal : literals) {
     const BooleanVariable var = literal.Variable();
@@ -1753,7 +1780,9 @@ void SatSolver::ResetDecisionHeuristic() {
   ResetPolarity(/*from=*/BooleanVariable(0));
 
   // Reset the branching variable heuristic.
-  activities_.assign(num_variables_.value(), 0.0);
+  activities_.assign(num_variables_.value(),
+                     parameters_.initial_variables_activity());
+  num_bumps_.assign(num_variables_.value(), 0);
   var_ordering_is_initialized_ = false;
 
   // Reset the tie breaking.
@@ -1785,16 +1814,56 @@ void SatSolver::Untrail(int target_trail_index) {
                       : -1;
   DCHECK_LT(to_update, trail_.Index());
 
+  // The ERWA parameter between the new estimation of the learning rate and the
+  // old one. TODO(user): Expose parameters for these values. Note that
+  // num_failures() count the number of failures since the solver creation.
+  const double alpha = std::max(0.06, 0.4 - 1e-6 * num_failures());
+
+  // This counts the number of conflicts since the assignment of the variable at
+  // the current trail_index that we are about to untrail.
+  int num_conflicts = 0;
+  int next_num_conflicts_update = num_conflicts_stack_.empty()
+                                      ? -1
+                                      : num_conflicts_stack_.back().trail_index;
+
+  // Note(user): Depending on the value of use_erwa_heuristic(), we could
+  // optimize a bit more this loop, but the extra tests didn't seems to change
+  // the run time that much.
   while (trail_.Index() > target_trail_index) {
+    if (next_num_conflicts_update == trail_.Index()) {
+      num_conflicts += num_conflicts_stack_.back().count;
+      num_conflicts_stack_.pop_back();
+      next_num_conflicts_update = num_conflicts_stack_.empty()
+                                      ? -1
+                                      : num_conflicts_stack_.back().trail_index;
+    }
     const BooleanVariable var = trail_.Dequeue().Variable();
     DCHECK_EQ(trail_.Index(), trail_.Info(var).trail_index);
 
+    bool update_pq = false;
+    if (parameters_.use_erwa_heuristic()) {
+      // TODO(user): This heuristic can make this code quite slow because
+      // all the untrailed variable will cause a priority queue update.
+      const int64 num_bumps = num_bumps_[var];
+      double new_rate = 0.0;
+      if (num_bumps > 0) {
+        DCHECK_GT(num_conflicts, 0);
+        num_bumps_[var] = 0;
+        new_rate = static_cast<double>(num_bumps) / num_conflicts;
+      }
+      activities_[var] = alpha * new_rate + (1 - alpha) * activities_[var];
+      update_pq = true;
+    } else {
+      if (trail_.Index() == to_update) {
+        pq_need_update_for_var_at_trail_index_.ClearTop();
+        to_update = pq_need_update_for_var_at_trail_index_.Top();
+        update_pq = true;
+      }
+    }
+
     // Update the priority queue if needed. Note that the to_update logic is
     // just here for optimization and that the code works without it.
-    if (trail_.Index() == to_update) {
-      pq_need_update_for_var_at_trail_index_.ClearTop();
-      to_update = pq_need_update_for_var_at_trail_index_.Top();
-
+    if (update_pq) {
       WeightedVarQueueElement* element = &(queue_elements_[var]);
       if (var_ordering_.Contains(element)) {
         // Note that because of the pq_need_update_for_var_at_trail_index_
@@ -1809,6 +1878,14 @@ void SatSolver::Untrail(int target_trail_index) {
     } else if (DEBUG_MODE && var_ordering_is_initialized_) {
       DCHECK(var_ordering_.Contains(&(queue_elements_[var])));
       DCHECK_EQ(activities_[var], queue_elements_[var].weight);
+    }
+  }
+  if (num_conflicts > 0) {
+    if (!num_conflicts_stack_.empty() &&
+        num_conflicts_stack_.back().trail_index == trail_.Index()) {
+      num_conflicts_stack_.back().count += num_conflicts;
+    } else {
+      num_conflicts_stack_.push_back({trail_.Index(), num_conflicts});
     }
   }
 }
@@ -1963,6 +2040,23 @@ void SatSolver::ComputeFirstUIPConflict(
     --num_literal_at_highest_level_that_needs_to_be_processed;
     --trail_index;
   }
+}
+
+void SatSolver::ComputeUnionOfReasons(const std::vector<Literal>& input,
+                                      std::vector<Literal>* literals) {
+  tmp_mark_.ClearAndResize(num_variables_);
+  literals->clear();
+  for (const Literal l : input) tmp_mark_.Set(l.Variable());
+  for (const Literal l : input) {
+    for (const Literal r : trail_.Reason(l.Variable())) {
+      if (!tmp_mark_[r.Variable()]) {
+        tmp_mark_.Set(r.Variable());
+        literals->push_back(r);
+      }
+    }
+  }
+  for (const Literal l : input) tmp_mark_.Clear(l.Variable());
+  for (const Literal l : *literals) tmp_mark_.Clear(l.Variable());
 }
 
 // TODO(user): Remove the literals assigned at level 0.

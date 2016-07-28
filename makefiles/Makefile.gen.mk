@@ -1441,6 +1441,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/sat_solver.$O \
     $(OBJ_DIR)/sat/simplification.$O \
     $(OBJ_DIR)/sat/symmetry.$O \
+    $(OBJ_DIR)/sat/util.$O \
     $(OBJ_DIR)/sat/boolean_problem.pb.$O \
     $(OBJ_DIR)/sat/sat_parameters.pb.$O
 
@@ -1574,6 +1575,10 @@ $(SRC_DIR)/sat/symmetry.h: \
     $(SRC_DIR)/util/stats.h \
     $(SRC_DIR)/algorithms/sparse_permutation.h
 
+$(SRC_DIR)/sat/util.h: \
+    $(GEN_DIR)/sat/sat_parameters.pb.h \
+    $(SRC_DIR)/base/random.h
+
 $(OBJ_DIR)/sat/boolean_problem.$O: \
     $(SRC_DIR)/sat/boolean_problem.cc \
     $(SRC_DIR)/sat/boolean_problem.h \
@@ -1648,7 +1653,8 @@ $(OBJ_DIR)/sat/no_cycle.$O: \
 $(OBJ_DIR)/sat/optimization.$O: \
     $(SRC_DIR)/sat/optimization.cc \
     $(SRC_DIR)/sat/encoding.h \
-    $(SRC_DIR)/sat/optimization.h
+    $(SRC_DIR)/sat/optimization.h \
+    $(SRC_DIR)/sat/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/optimization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soptimization.$O
 
 $(OBJ_DIR)/sat/pb_constraint.$O: \
@@ -1680,6 +1686,8 @@ $(OBJ_DIR)/sat/sat_solver.$O: \
 $(OBJ_DIR)/sat/simplification.$O: \
     $(SRC_DIR)/sat/simplification.cc \
     $(SRC_DIR)/sat/simplification.h \
+    $(SRC_DIR)/sat/util.h \
+    $(SRC_DIR)/base/random.h \
     $(SRC_DIR)/base/stl_util.h \
     $(SRC_DIR)/base/strongly_connected_components.h \
     $(SRC_DIR)/base/timer.h \
@@ -1690,6 +1698,11 @@ $(OBJ_DIR)/sat/symmetry.$O: \
     $(SRC_DIR)/sat/symmetry.cc \
     $(SRC_DIR)/sat/symmetry.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/symmetry.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssymmetry.$O
+
+$(OBJ_DIR)/sat/util.$O: \
+    $(SRC_DIR)/sat/util.cc \
+    $(SRC_DIR)/sat/util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/util.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sutil.$O
 
 $(GEN_DIR)/sat/boolean_problem.pb.cc: $(SRC_DIR)/sat/boolean_problem.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/sat/boolean_problem.proto
@@ -1915,9 +1928,9 @@ $(OBJ_DIR)/bop/bop_fs.$O: \
     $(SRC_DIR)/glop/lp_solver.h \
     $(SRC_DIR)/sat/boolean_problem.h \
     $(SRC_DIR)/sat/lp_utils.h \
-    $(SRC_DIR)/sat/optimization.h \
     $(SRC_DIR)/sat/sat_solver.h \
-    $(SRC_DIR)/sat/symmetry.h
+    $(SRC_DIR)/sat/symmetry.h \
+    $(SRC_DIR)/sat/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/bop/bop_fs.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_fs.$O
 
 $(OBJ_DIR)/bop/bop_lns.$O: \

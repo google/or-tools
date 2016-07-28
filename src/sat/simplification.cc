@@ -19,6 +19,8 @@
 #include "base/strongly_connected_components.h"
 #include "base/stl_util.h"
 #include "algorithms/dynamic_partition.h"
+#include "sat/util.h"
+#include "base/random.h"
 
 namespace operations_research {
 namespace sat {
@@ -1087,6 +1089,128 @@ void ProbeAndFindEquivalentLiteral(
             << solver->LiteralTrail().Index() - num_already_fixed_vars
             << " equiv " << num_equiv / 2 << " total "
             << solver->NumVariables();
+}
+
+SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
+                                    std::vector<bool>* solution,
+                                    DratWriter* drat_writer) {
+  // We save the initial parameters.
+  const SatParameters parameters = (*solver)->parameters();
+  std::unique_ptr<TimeLimit> time_limit = TimeLimit::FromParameters(parameters);
+  SatPostsolver postsolver((*solver)->NumVariables());
+
+  // Some problems are formulated in such a way that our SAT heuristics
+  // simply works without conflict. Get them out of the way first because it
+  // is possible that the presolve lose this "lucky" ordering. This is in
+  // particular the case on the SAT14.crafted.complete-xxx-... problems.
+  {
+    MTRandom random("A random seed.");
+    SatParameters new_params = parameters;
+    new_params.set_log_search_progress(false);
+    new_params.set_max_number_of_conflicts(1);
+    const int num_times = 1000;
+    for (int i = 0; i < num_times && !time_limit->LimitReached(); ++i) {
+      (*solver)->SetParameters(new_params);
+      const SatSolver::Status result =
+          (*solver)->SolveWithTimeLimit(time_limit.get());
+      if (result != SatSolver::LIMIT_REACHED) {
+        if (result == SatSolver::MODEL_SAT) {
+          LOG(INFO) << "Problem solved by trivial heuristic!";
+          solution->clear();
+          for (int i = 0; i < (*solver)->NumVariables(); ++i) {
+            solution->push_back((*solver)->Assignment().LiteralIsTrue(
+                Literal(BooleanVariable(i), true)));
+          }
+        }
+        return result;
+      }
+
+      // We randomize at the end so that the default params is executed
+      // at least once.
+      (*solver)->RestoreSolverToAssumptionLevel();
+      if ((*solver)->IsModelUnsat()) {
+        LOG(INFO) << "UNSAT during random decision heuritics.";
+        return SatSolver::MODEL_UNSAT;
+      }
+
+      RandomizeDecisionHeuristic(&random, &new_params);
+      new_params.set_random_seed(i);
+      (*solver)->SetParameters(new_params);
+      (*solver)->ResetDecisionHeuristic();
+    }
+
+    // Restore the initial parameters.
+    (*solver)->SetParameters(parameters);
+    (*solver)->ResetDecisionHeuristic();
+  }
+
+  // We use a new block so the memory used by the presolver can be
+  // reclaimed as soon as it is no longer needed.
+  const int max_num_passes = 4;
+  for (int i = 0; i < max_num_passes && !time_limit->LimitReached(); ++i) {
+    const int saved_num_variables = (*solver)->NumVariables();
+
+    // Probe + find equivalent literals.
+    // TODO(user): Use a derived time limit in the probing phase.
+    ITIVector<LiteralIndex, LiteralIndex> equiv_map;
+    ProbeAndFindEquivalentLiteral((*solver).get(), &postsolver, drat_writer,
+                                  &equiv_map);
+    if ((*solver)->IsModelUnsat()) {
+      LOG(INFO) << "UNSAT during probing.";
+      return SatSolver::MODEL_UNSAT;
+    }
+
+    // The rest of the presolve only work on pure SAT problem.
+    if (!(*solver)->ProblemIsPureSat()) {
+      LOG(INFO) << "The problem is not a pure SAT problem, skipping the SAT "
+                   "specific presolve.";
+      break;
+    }
+
+    // Register the fixed variables with the presolver.
+    // TODO(user): Find a better place for this?
+    (*solver)->Backtrack(0);
+    for (int i = 0; i < (*solver)->LiteralTrail().Index(); ++i) {
+      postsolver.FixVariable((*solver)->LiteralTrail()[i]);
+    }
+
+    // TODO(user): Pass the time_limit to the presolver.
+    SatPresolver presolver(&postsolver);
+    presolver.SetParameters(parameters);
+    presolver.SetDratWriter(drat_writer);
+    presolver.SetEquivalentLiteralMapping(equiv_map);
+    (*solver)->ExtractClauses(&presolver);
+    (*solver).release();
+    if (!presolver.Presolve()) {
+      LOG(INFO) << "UNSAT during presolve.";
+
+      // This is just here to reset the SatSolver::Solve() satistics.
+      (*solver).reset(new SatSolver());
+      return SatSolver::MODEL_UNSAT;
+    }
+
+    postsolver.ApplyMapping(presolver.VariableMapping());
+    if (drat_writer != nullptr) {
+      drat_writer->ApplyMapping(presolver.VariableMapping());
+    }
+
+    // Load the presolved problem in a new solver.
+    (*solver).reset(new SatSolver());
+    (*solver)->SetDratWriter(drat_writer);
+    (*solver)->SetParameters(parameters);
+    presolver.LoadProblemIntoSatSolver((*solver).get());
+
+    // Stop if a fixed point has been reached.
+    if ((*solver)->NumVariables() == saved_num_variables) break;
+  }
+
+  // Solve.
+  const SatSolver::Status result =
+      (*solver)->SolveWithTimeLimit(time_limit.get());
+  if (result == SatSolver::MODEL_SAT) {
+    *solution = postsolver.ExtractAndPostsolveSolution(**solver);
+  }
+  return result;
 }
 
 }  // namespace sat

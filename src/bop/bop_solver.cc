@@ -33,19 +33,14 @@
 #include "sat/sat_solver.h"
 #include "util/bitset.h"
 
-using operations_research::glop::ColIndex;
-using operations_research::glop::DenseRow;
-using operations_research::glop::GlopParameters;
-using operations_research::glop::LinearProgram;
-using operations_research::glop::LPSolver;
-using operations_research::LinearBooleanProblem;
-using operations_research::LinearBooleanConstraint;
-using operations_research::LinearObjective;
-using operations_research::glop::ProblemStatus;
-
 namespace operations_research {
 namespace bop {
 namespace {
+
+using ::operations_research::LinearBooleanProblem;
+using ::operations_research::glop::ColIndex;
+using ::operations_research::glop::DenseRow;
+
 // Updates the problem_state when the solution is proved optimal or the problem
 // is proved infeasible.
 // Returns true when the problem_state has been changed.

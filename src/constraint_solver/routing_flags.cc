@@ -82,6 +82,7 @@ DEFINE_bool(routing_use_light_propagation, true,
 DEFINE_bool(routing_fingerprint_arc_cost_evaluators, true,
             "Compare arc-cost evaluators using the fingerprint of their "
             "corresponding matrix instead of evaluator addresses.");
+DEFINE_bool(routing_trace, false, "Routing: trace search.");
 
 // --- Routing model flags ---
 DEFINE_bool(routing_use_homogeneous_costs, true,
@@ -181,6 +182,7 @@ void SetMiscellaneousParametersFromFlags(RoutingSearchParameters* parameters) {
   parameters->set_use_light_propagation(FLAGS_routing_use_light_propagation);
   parameters->set_fingerprint_arc_cost_evaluators(
       FLAGS_routing_fingerprint_arc_cost_evaluators);
+  parameters->set_log_search(FLAGS_routing_trace);
 }
 
 RoutingSearchParameters BuildSearchParametersFromFlags() {

@@ -36,10 +36,6 @@ namespace sat {
 // core.
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 
-// Randomizes the decision heuristic of the given SatParameters.
-// This is what SolveWithRandomParameters() below currently use.
-void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters);
-
 // Because the Solve*() functions below are also used in scripts that requires a
 // special output format, we use this to tell them whether or not to use the
 // default logging framework or simply stdout. Most users should just use

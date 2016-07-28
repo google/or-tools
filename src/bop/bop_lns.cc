@@ -29,17 +29,15 @@
 #include "sat/sat_solver.h"
 #include "util/bitset.h"
 
-using operations_research::glop::ColIndex;
-using operations_research::glop::DenseRow;
-using operations_research::glop::GlopParameters;
-using operations_research::glop::LinearProgram;
-using operations_research::glop::LPSolver;
-using operations_research::LinearBooleanProblem;
-using operations_research::LinearBooleanConstraint;
-using operations_research::LinearObjective;
-
 namespace operations_research {
 namespace bop {
+
+using ::operations_research::LinearBooleanConstraint;
+using ::operations_research::LinearBooleanProblem;
+using ::operations_research::glop::ColIndex;
+using ::operations_research::glop::DenseRow;
+using ::operations_research::glop::LinearProgram;
+using ::operations_research::glop::LPSolver;
 
 //------------------------------------------------------------------------------
 // BopCompleteLNSOptimizer

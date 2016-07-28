@@ -1518,6 +1518,32 @@ class PropagationMonitor : public SearchMonitor {
   void Install() override;
 };
 
+// ---------- LocalSearchMonitor ----------
+
+class LocalSearchMonitor : public SearchMonitor {
+  // TODO(user): Add monitoring of local search filters.
+ public:
+  explicit LocalSearchMonitor(Solver* const solver);
+  ~LocalSearchMonitor() override;
+
+  // Local search operator events.
+  virtual void BeginOperatorStart() = 0;
+  virtual void EndOperatorStart() = 0;
+  virtual void BeginMakeNextNeighbor(const LocalSearchOperator* op) = 0;
+  virtual void EndMakeNextNeighbor(const LocalSearchOperator* op,
+                                   bool neighbor_found, const Assignment* delta,
+                                   const Assignment* deltadelta) = 0;
+  virtual void BeginFilterNeighbor(const LocalSearchOperator* op) = 0;
+  virtual void EndFilterNeighbor(const LocalSearchOperator* op,
+                                 bool neighbor_found) = 0;
+  virtual void BeginAcceptNeighbor(const LocalSearchOperator* op) = 0;
+  virtual void EndAcceptNeighbor(const LocalSearchOperator* op,
+                                 bool neighbor_found) = 0;
+
+  // Install itself on the solver.
+  void Install() override;
+};
+
 // ----- Boolean Variable -----
 
 class BooleanVar : public IntVar {
@@ -2275,7 +2301,7 @@ class RevIntSet {
 
   void Insert(Solver* const solver, const T& elt) {
     const int position = num_elements_.Value();
-    DCHECK_LT(position, capacity_);          // Valid.
+    DCHECK_LT(position, capacity_);  // Valid.
     DCHECK(NotAlreadyInserted(elt));
     elements_[position] = elt;
     position_[elt] = position;

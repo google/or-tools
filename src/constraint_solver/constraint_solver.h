@@ -109,7 +109,7 @@ class DecisionBuilder;
 class DecisionVisitor;
 class Demon;
 class DemonProfiler;
-class DemonProfiler;
+class LocalSearchProfiler;
 class Dimension;
 class DisjunctiveConstraint;
 class ExpressionCache;
@@ -132,6 +132,7 @@ class OptimizeVar;
 class Pack;
 class PropagationBaseObject;
 class PropagationMonitor;
+class LocalSearchMonitor;
 class Queue;
 class RevBitMatrix;
 class RevBitSet;
@@ -2819,6 +2820,11 @@ class Solver {
   // set to true.
   void ExportProfilingOverview(const std::string& filename);
 
+  // Returns local search profiling information in a human readable format.
+  // TODO(user): Add a profiling protocol buffer and merge demon and local
+  // search profiles.
+  std::string LocalSearchProfile() const;
+
   // Returns true whether the current search has been
   // created using a Solve() call instead of a NewSearch one. It
   // returns false if the solver is not in search at all.
@@ -2868,6 +2874,8 @@ class Solver {
   bool InstrumentsDemons() const;
   // Returns whether we are profiling the solver.
   bool IsProfilingEnabled() const;
+  // Returns whether we are profiling local search.
+  bool IsLocalSearchProfilingEnabled() const;
   // Returns whether we are tracing variables.
   bool InstrumentsVariables() const;
   // Returns whether all variables should be named.
@@ -2879,6 +2887,11 @@ class Solver {
   // Adds the propagation monitor to the solver. This is called internally when
   // a propagation monitor is passed to the Solve() or NewSearch() method.
   void AddPropagationMonitor(PropagationMonitor* const monitor);
+  // Returns the local search monitor.
+  LocalSearchMonitor* GetLocalSearchMonitor() const;
+  // Adds the local search monitor to the solver. This is called internally when
+  // a propagation monitor is passed to the Solve() or NewSearch() method.
+  void AddLocalSearchMonitor(LocalSearchMonitor* monitor);
 
   // Unsafe temporary vector. It is used to avoid leaks in operations
   // that need storage and that may fail. See IntVar::SetValues() for
@@ -2896,6 +2909,7 @@ class Solver {
   friend class SearchMonitor;
   friend class SearchLimit;
   friend class RoutingModel;
+  friend class LocalSearchProfiler;
 
 #if !defined(SWIG)
   friend void InternalSaveBooleanVarValue(Solver* const, IntVar* const);
@@ -3057,6 +3071,8 @@ class Solver {
   std::function<void()> fail_intercept_;
   // Demon monitor
   DemonProfiler* const demon_profiler_;
+  // Local search profiler monitor
+  LocalSearchProfiler* const local_search_profiler_;
 
   // interval of constants cached, inclusive:
   enum { MIN_CACHED_INT_CONST = -8, MAX_CACHED_INT_CONST = 8 };
@@ -3080,6 +3096,7 @@ class Solver {
   std::unique_ptr<ModelCache> model_cache_;
   std::unique_ptr<PropagationMonitor> propagation_monitor_;
   PropagationMonitor* print_trace_;
+  std::unique_ptr<LocalSearchMonitor> local_search_monitor_;
   int anonymous_variable_index_;
   bool should_fail_;
 

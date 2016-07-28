@@ -54,6 +54,8 @@ DEFINE_string(cp_export_file, "", "Export model to file using CpModel.");
 DEFINE_bool(cp_disable_solve, false,
             "Force failure at the beginning of a search.");
 DEFINE_string(cp_profile_file, "", "Export profiling overview to file.");
+DEFINE_bool(cp_print_local_search_profile, false,
+            "Print local search profiling data after solving.");
 DEFINE_bool(cp_name_variables, false, "Force all variables to have names.");
 DEFINE_bool(cp_name_cast_variables, false,
             "Name variables casted from expressions");
@@ -96,6 +98,19 @@ void ConstraintSolverFailsHere() { VLOG(3) << "Fail"; }
 
 namespace operations_research {
 
+namespace {
+// Calls the given method with the provided arguments on all objects in the
+// collection.
+template <typename T, typename MethodPointer, typename... Args>
+void ForAll(const std::vector<T*>& objects, MethodPointer method,
+            const Args&... args) {
+  for (T* const object : objects) {
+    DCHECK(object != nullptr);
+    (object->*method)(args...);
+  }
+}
+}  // namespace
+
 // ----- ConstraintSolverParameters -----
 
 ConstraintSolverParameters Solver::DefaultSolverParameters() {
@@ -109,6 +124,8 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_trace_search(FLAGS_cp_trace_search);
   params.set_name_all_variables(FLAGS_cp_name_variables);
   params.set_profile_file(FLAGS_cp_profile_file);
+  params.set_profile_local_search(FLAGS_cp_print_local_search_profile);
+  params.set_print_local_search_profile(FLAGS_cp_print_local_search_profile);
   params.set_print_model(FLAGS_cp_print_model);
   params.set_print_model_stats(FLAGS_cp_model_stats);
   params.set_export_file(FLAGS_cp_export_file);
@@ -136,6 +153,9 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
 extern DemonProfiler* BuildDemonProfiler(Solver* const solver);
 extern void DeleteDemonProfiler(DemonProfiler* const monitor);
 extern void InstallDemonProfiler(DemonProfiler* const monitor);
+extern LocalSearchProfiler* BuildLocalSearchProfiler(Solver* solver);
+extern void DeleteLocalSearchProfiler(LocalSearchProfiler* monitor);
+extern void InstallLocalSearchProfiler(LocalSearchProfiler* monitor);
 
 // TODO(user): remove this complex logic.
 // We need the double test because parameters are set too late when using
@@ -147,6 +167,11 @@ bool Solver::InstrumentsDemons() const {
 bool Solver::IsProfilingEnabled() const {
   return parameters_.profile_propagation() ||
          !parameters_.profile_file().empty();
+}
+
+bool Solver::IsLocalSearchProfilingEnabled() const {
+  return parameters_.profile_local_search() ||
+         parameters_.print_local_search_profile();
 }
 
 bool Solver::InstrumentsVariables() const {
@@ -351,7 +376,8 @@ class Queue {
     if (!in_add_) {
       in_add_ = true;
       // We cannot store to_add_.size() as constraints can add other
-      // constraints.
+      // constraints. For the same reason a range-based for loop cannot be used.
+      // TODO(user): Make to_add_ a queue to make the behavior more obvious.
       for (int counter = 0; counter < to_add_.size(); ++counter) {
         Constraint* const constraint = to_add_[counter];
         // TODO(user): Add profiling to initial propagation
@@ -565,8 +591,8 @@ class CompressedTrail {
       : block_size_(block_size),
         blocks_(nullptr),
         free_blocks_(nullptr),
-        data_(new addrval<T>[block_size]),
-        buffer_(new addrval<T>[block_size]),
+        data_(new addrval<T>[ block_size ]),
+        buffer_(new addrval<T>[ block_size ]),
         buffer_used_(false),
         current_(0),
         size_(0) {
@@ -1155,88 +1181,59 @@ void Search::EnterSearch() {
   // top-level search.
   solution_counter_ = 0;
 
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->EnterSearch();
-  }
+  ForAll(monitors_, &SearchMonitor::EnterSearch);
 }
 
 void Search::ExitSearch() {
   // Backtrack to the correct state.
-
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->ExitSearch();
-  }
+  ForAll(monitors_, &SearchMonitor::ExitSearch);
 }
 
 void Search::RestartSearch() {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->RestartSearch();
-  }
+  ForAll(monitors_, &SearchMonitor::RestartSearch);
 }
 
 void Search::BeginNextDecision(DecisionBuilder* const db) {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->BeginNextDecision(db);
-  }
+  ForAll(monitors_, &SearchMonitor::BeginNextDecision, db);
   CheckFail();
 }
 
 void Search::EndNextDecision(DecisionBuilder* const db, Decision* const d) {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->EndNextDecision(db, d);
-  }
+  ForAll(monitors_, &SearchMonitor::EndNextDecision, db, d);
   CheckFail();
 }
 
 void Search::ApplyDecision(Decision* const d) {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->ApplyDecision(d);
-  }
+  ForAll(monitors_, &SearchMonitor::ApplyDecision, d);
   CheckFail();
 }
 
 void Search::AfterDecision(Decision* const d, bool apply) {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->AfterDecision(d, apply);
-  }
+  ForAll(monitors_, &SearchMonitor::AfterDecision, d, apply);
   CheckFail();
 }
 
 void Search::RefuteDecision(Decision* const d) {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->RefuteDecision(d);
-  }
+  ForAll(monitors_, &SearchMonitor::RefuteDecision, d);
   CheckFail();
 }
 
-void Search::BeginFail() {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->BeginFail();
-  }
-}
+void Search::BeginFail() { ForAll(monitors_, &SearchMonitor::BeginFail); }
 
-void Search::EndFail() {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->EndFail();
-  }
-}
+void Search::EndFail() { ForAll(monitors_, &SearchMonitor::EndFail); }
 
 void Search::BeginInitialPropagation() {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->BeginInitialPropagation();
-  }
+  ForAll(monitors_, &SearchMonitor::BeginInitialPropagation);
 }
 
 void Search::EndInitialPropagation() {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->EndInitialPropagation();
-  }
+  ForAll(monitors_, &SearchMonitor::EndInitialPropagation);
 }
 
 bool Search::AcceptSolution() {
   bool valid = true;
-  for (int index = 0; index < monitors_.size(); ++index) {
-    if (!monitors_[index]->AcceptSolution()) {
+  for (SearchMonitor* const monitor : monitors_) {
+    if (!monitor->AcceptSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
       // a chance to look at the solution.
@@ -1248,8 +1245,8 @@ bool Search::AcceptSolution() {
 
 bool Search::AtSolution() {
   bool should_continue = false;
-  for (int index = 0; index < monitors_.size(); ++index) {
-    if (monitors_[index]->AtSolution()) {
+  for (SearchMonitor* const monitor : monitors_) {
+    if (monitor->AtSolution()) {
       // Even though we know the return value, we cannot return yet: this would
       // break the contract we have with solution monitors. They all deserve
       // a chance to look at the solution.
@@ -1260,15 +1257,13 @@ bool Search::AtSolution() {
 }
 
 void Search::NoMoreSolutions() {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->NoMoreSolutions();
-  }
+  ForAll(monitors_, &SearchMonitor::NoMoreSolutions);
 }
 
 bool Search::LocalOptimum() {
   bool res = false;
-  for (int index = 0; index < monitors_.size(); ++index) {
-    if (monitors_[index]->LocalOptimum()) {
+  for (SearchMonitor* const monitor : monitors_) {
+    if (monitor->LocalOptimum()) {
       res = true;
     }
   }
@@ -1277,8 +1272,8 @@ bool Search::LocalOptimum() {
 
 bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
   bool accept = true;
-  for (int index = 0; index < monitors_.size(); ++index) {
-    if (!monitors_[index]->AcceptDelta(delta, deltadelta)) {
+  for (SearchMonitor* const monitor : monitors_) {
+    if (!monitor->AcceptDelta(delta, deltadelta)) {
       accept = false;
     }
   }
@@ -1286,30 +1281,23 @@ bool Search::AcceptDelta(Assignment* delta, Assignment* deltadelta) {
 }
 
 void Search::AcceptNeighbor() {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->AcceptNeighbor();
-  }
+  ForAll(monitors_, &SearchMonitor::AcceptNeighbor);
 }
 
 void Search::PeriodicCheck() {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    monitors_[index]->PeriodicCheck();
-  }
+  ForAll(monitors_, &SearchMonitor::PeriodicCheck);
 }
 
 int Search::ProgressPercent() {
   int progress = SearchMonitor::kNoProgress;
-  for (int index = 0; index < monitors_.size(); ++index) {
-    progress = std::max(progress, monitors_[index]->ProgressPercent());
+  for (SearchMonitor* const monitor : monitors_) {
+    progress = std::max(progress, monitor->ProgressPercent());
   }
   return progress;
 }
 
 void Search::Accept(ModelVisitor* const visitor) const {
-  for (int index = 0; index < monitors_.size(); ++index) {
-    DCHECK(monitors_[index] != nullptr);
-    monitors_[index]->Accept(visitor);
-  }
+  ForAll(monitors_, &SearchMonitor::Accept, visitor);
   if (decision_builder_ != nullptr) {
     decision_builder_->Accept(visitor);
   }
@@ -1362,6 +1350,7 @@ enum SentinelMarker {
 }  // namespace
 
 extern PropagationMonitor* BuildTrace(Solver* const s);
+extern LocalSearchMonitor* BuildLocalSearchMonitorMaster(Solver* const s);
 extern ModelCache* BuildModelCache(Solver* const solver);
 
 std::string Solver::model_name() const { return name_; }
@@ -1377,7 +1366,8 @@ Solver::Solver(const std::string& name, const ConstraintSolverParameters& parame
     : name_(name),
       parameters_(parameters),
       random_(ACMRandom::DeterministicSeed()),
-      demon_profiler_(BuildDemonProfiler(this)) {
+      demon_profiler_(BuildDemonProfiler(this)),
+      local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
 }
 
@@ -1385,7 +1375,8 @@ Solver::Solver(const std::string& name)
     : name_(name),
       parameters_(DefaultSolverParameters()),
       random_(ACMRandom::DeterministicSeed()),
-      demon_profiler_(BuildDemonProfiler(this)) {
+      demon_profiler_(BuildDemonProfiler(this)),
+      local_search_profiler_(BuildLocalSearchProfiler(this)) {
   Init();
 }
 
@@ -1413,6 +1404,7 @@ void Solver::Init() {
   additional_constraint_index_ = 0;
   num_int_vars_ = 0;
   propagation_monitor_.reset(BuildTrace(this));
+  local_search_monitor_.reset(BuildLocalSearchMonitorMaster(this));
   print_trace_ = nullptr;
   anonymous_variable_index_ = 0;
   should_fail_ = false;
@@ -1428,6 +1420,8 @@ void Solver::Init() {
   timer_->Restart();
   model_cache_.reset(BuildModelCache(this));
   AddPropagationMonitor(reinterpret_cast<PropagationMonitor*>(demon_profiler_));
+  AddLocalSearchMonitor(
+      reinterpret_cast<LocalSearchMonitor*>(local_search_profiler_));
 }
 
 Solver::~Solver() {
@@ -1443,6 +1437,7 @@ Solver::~Solver() {
   DCHECK_EQ(info.int_info, SOLVER_CTOR_SENTINEL);
   STLDeleteElements(&searches_);
   DeleteDemonProfiler(demon_profiler_);
+  DeleteLocalSearchProfiler(local_search_profiler_);
   DeleteBuilders();
 }
 
@@ -1642,16 +1637,11 @@ void Solver::Accept(ModelVisitor* const visitor,
                     const std::vector<SearchMonitor*>& monitors,
                     DecisionBuilder* const db) const {
   visitor->BeginVisitModel(name_);
-  for (int index = 0; index < constraints_list_.size(); ++index) {
-    Constraint* const constraint = constraints_list_[index];
-    constraint->Accept(visitor);
-  }
+  ForAll(constraints_list_, &Constraint::Accept, visitor);
   if (state_ == IN_ROOT_NODE) {
     TopLevelSearch()->Accept(visitor);
   } else {
-    for (int i = 0; i < monitors.size(); ++i) {
-      monitors[i]->Accept(visitor);
-    }
+    ForAll(monitors, &SearchMonitor::Accept, visitor);
   }
   if (db != nullptr) {
     db->Accept(visitor);
@@ -1821,8 +1811,6 @@ void Solver::NewSearch(DecisionBuilder* const db,
                        const std::vector<SearchMonitor*>& monitors) {
   // TODO(user) : reset statistics
 
-  const int size = monitors.size();
-
   CHECK(db != nullptr);
   const bool nested = state_ == IN_SEARCH;
 
@@ -1850,16 +1838,20 @@ void Solver::NewSearch(DecisionBuilder* const db,
 
   // ----- manages all monitors -----
 
-  // Always install the main propagation monitor.
+  // Always install the main propagation and local search monitors.
   propagation_monitor_->Install();
   if (demon_profiler_ != nullptr) {
     InstallDemonProfiler(demon_profiler_);
   }
+  local_search_monitor_->Install();
+  if (local_search_profiler_ != nullptr) {
+    InstallLocalSearchProfiler(local_search_profiler_);
+  }
 
   // Push monitors and enter search.
-  for (int i = 0; i < size; ++i) {
-    if (monitors[i] != nullptr) {
-      monitors[i]->Install();
+  for (SearchMonitor* const monitor : monitors) {
+    if (monitor != nullptr) {
+      monitor->Install();
     }
   }
   std::vector<SearchMonitor*> extras;
@@ -2255,6 +2247,9 @@ void Solver::EndSearch() {
       const std::string& file_name = parameters_.profile_file();
       LOG(INFO) << "Exporting profile to " << file_name;
       ExportProfilingOverview(file_name);
+    }
+    if (parameters_.print_local_search_profile()) {
+      LOG(INFO) << LocalSearchProfile();
     }
   } else {  // We clean the nested Search.
     delete search;
@@ -2765,9 +2760,7 @@ void ModelVisitor::VisitIntegerVariableEvaluatorArgument(
 
 void ModelVisitor::VisitIntegerVariableArrayArgument(
     const std::string& arg_name, const std::vector<IntVar*>& arguments) {
-  for (int i = 0; i < arguments.size(); ++i) {
-    arguments[i]->Accept(this);
-  }
+  ForAll(arguments, &IntVar::Accept, this);
 }
 
 void ModelVisitor::VisitIntervalArgument(const std::string& arg_name,
@@ -2777,9 +2770,7 @@ void ModelVisitor::VisitIntervalArgument(const std::string& arg_name,
 
 void ModelVisitor::VisitIntervalArrayArgument(
     const std::string& arg_name, const std::vector<IntervalVar*>& arguments) {
-  for (int i = 0; i < arguments.size(); ++i) {
-    arguments[i]->Accept(this);
-  }
+  ForAll(arguments, &IntervalVar::Accept, this);
 }
 
 void ModelVisitor::VisitSequenceArgument(const std::string& arg_name,
@@ -2789,9 +2780,7 @@ void ModelVisitor::VisitSequenceArgument(const std::string& arg_name,
 
 void ModelVisitor::VisitSequenceArrayArgument(
     const std::string& arg_name, const std::vector<SequenceVar*>& arguments) {
-  for (int i = 0; i < arguments.size(); ++i) {
-    arguments[i]->Accept(this);
-  }
+  ForAll(arguments, &SequenceVar::Accept, this);
 }
 
 // ----- Helpers -----
@@ -2871,11 +2860,22 @@ PropagationMonitor::PropagationMonitor(Solver* const s) : SearchMonitor(s) {}
 
 PropagationMonitor::~PropagationMonitor() {}
 
-// A propagation monitor listens to search events as well as
-// propagation events.
+// A propagation monitor listens to search events as well as propagation events.
 void PropagationMonitor::Install() {
   SearchMonitor::Install();
   solver()->AddPropagationMonitor(this);
+}
+
+// ---------- Local Search Monitor -----------
+LocalSearchMonitor::LocalSearchMonitor(Solver* const s) : SearchMonitor(s) {}
+
+LocalSearchMonitor::~LocalSearchMonitor() {}
+
+// A local search monitor listens to search events as well as local search
+// events.
+void LocalSearchMonitor::Install() {
+  SearchMonitor::Install();
+  solver()->AddLocalSearchMonitor(this);
 }
 
 // ---------- Trace ----------
@@ -2888,235 +2888,182 @@ class Trace : public PropagationMonitor {
 
   void BeginConstraintInitialPropagation(
       Constraint* const constraint) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->BeginConstraintInitialPropagation(constraint);
-    }
+    ForAll(monitors_, &PropagationMonitor::BeginConstraintInitialPropagation,
+           constraint);
   }
 
   void EndConstraintInitialPropagation(Constraint* const constraint) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EndConstraintInitialPropagation(constraint);
-    }
+    ForAll(monitors_, &PropagationMonitor::EndConstraintInitialPropagation,
+           constraint);
   }
 
   void BeginNestedConstraintInitialPropagation(
       Constraint* const parent, Constraint* const nested) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->BeginNestedConstraintInitialPropagation(parent, nested);
-    }
+    ForAll(monitors_,
+           &PropagationMonitor::BeginNestedConstraintInitialPropagation, parent,
+           nested);
   }
 
   void EndNestedConstraintInitialPropagation(
       Constraint* const parent, Constraint* const nested) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EndNestedConstraintInitialPropagation(parent, nested);
-    }
+    ForAll(monitors_,
+           &PropagationMonitor::EndNestedConstraintInitialPropagation, parent,
+           nested);
   }
 
   void RegisterDemon(Demon* const demon) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RegisterDemon(demon);
-    }
+    ForAll(monitors_, &PropagationMonitor::RegisterDemon, demon);
   }
 
   void BeginDemonRun(Demon* const demon) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->BeginDemonRun(demon);
-    }
+    ForAll(monitors_, &PropagationMonitor::BeginDemonRun, demon);
   }
 
   void EndDemonRun(Demon* const demon) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EndDemonRun(demon);
-    }
+    ForAll(monitors_, &PropagationMonitor::EndDemonRun, demon);
   }
 
   void StartProcessingIntegerVariable(IntVar* const var) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->StartProcessingIntegerVariable(var);
-    }
+    ForAll(monitors_, &PropagationMonitor::StartProcessingIntegerVariable, var);
   }
 
   void EndProcessingIntegerVariable(IntVar* const var) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->EndProcessingIntegerVariable(var);
-    }
+    ForAll(monitors_, &PropagationMonitor::EndProcessingIntegerVariable, var);
   }
 
   void PushContext(const std::string& context) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->PushContext(context);
-    }
+    ForAll(monitors_, &PropagationMonitor::PushContext, context);
   }
 
   void PopContext() override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->PopContext();
-    }
+    ForAll(monitors_, &PropagationMonitor::PopContext);
   }
 
   // IntExpr modifiers.
   void SetMin(IntExpr* const expr, int64 new_min) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetMin(expr, new_min);
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetMin(expr, new_min);
     }
   }
 
   void SetMax(IntExpr* const expr, int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetMax(expr, new_max);
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetMax(expr, new_max);
     }
   }
 
   void SetRange(IntExpr* const expr, int64 new_min, int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetRange(expr, new_min, new_max);
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetRange(expr, new_min, new_max);
     }
   }
 
   // IntVar modifiers.
   void SetMin(IntVar* const var, int64 new_min) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetMin(var, new_min);
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetMin(var, new_min);
     }
   }
 
   void SetMax(IntVar* const var, int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetMax(var, new_max);
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetMax(var, new_max);
     }
   }
 
   void SetRange(IntVar* const var, int64 new_min, int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetRange(var, new_min, new_max);
+    for (PropagationMonitor* const monitor : monitors_) {
+      monitor->SetRange(var, new_min, new_max);
     }
   }
 
   void RemoveValue(IntVar* const var, int64 value) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RemoveValue(var, value);
-    }
+    ForAll(monitors_, &PropagationMonitor::RemoveValue, var, value);
   }
 
   void SetValue(IntVar* const var, int64 value) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetValue(var, value);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetValue, var, value);
   }
 
   void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RemoveInterval(var, imin, imax);
-    }
+    ForAll(monitors_, &PropagationMonitor::RemoveInterval, var, imin, imax);
   }
 
   void SetValues(IntVar* const var, const std::vector<int64>& values) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetValues(var, values);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetValues, var, values);
   }
 
   void RemoveValues(IntVar* const var, const std::vector<int64>& values) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RemoveValues(var, values);
-    }
+    ForAll(monitors_, &PropagationMonitor::RemoveValues, var, values);
   }
 
   // IntervalVar modifiers.
   void SetStartMin(IntervalVar* const var, int64 new_min) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetStartMin(var, new_min);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetStartMin, var, new_min);
   }
 
   void SetStartMax(IntervalVar* const var, int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetStartMax(var, new_max);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetStartMax, var, new_max);
   }
 
   void SetStartRange(IntervalVar* const var, int64 new_min,
                      int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetStartRange(var, new_min, new_max);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetStartRange, var, new_min,
+           new_max);
   }
 
   void SetEndMin(IntervalVar* const var, int64 new_min) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetEndMin(var, new_min);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetEndMin, var, new_min);
   }
 
   void SetEndMax(IntervalVar* const var, int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetEndMax(var, new_max);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetEndMax, var, new_max);
   }
 
   void SetEndRange(IntervalVar* const var, int64 new_min,
                    int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetEndRange(var, new_min, new_max);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetEndRange, var, new_min, new_max);
   }
 
   void SetDurationMin(IntervalVar* const var, int64 new_min) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetDurationMin(var, new_min);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetDurationMin, var, new_min);
   }
 
   void SetDurationMax(IntervalVar* const var, int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetDurationMax(var, new_max);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetDurationMax, var, new_max);
   }
 
   void SetDurationRange(IntervalVar* const var, int64 new_min,
                         int64 new_max) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetDurationRange(var, new_min, new_max);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetDurationRange, var, new_min,
+           new_max);
   }
 
   void SetPerformed(IntervalVar* const var, bool value) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->SetPerformed(var, value);
-    }
+    ForAll(monitors_, &PropagationMonitor::SetPerformed, var, value);
   }
 
   void RankFirst(SequenceVar* const var, int index) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RankFirst(var, index);
-    }
+    ForAll(monitors_, &PropagationMonitor::RankFirst, var, index);
   }
 
   void RankNotFirst(SequenceVar* const var, int index) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RankNotFirst(var, index);
-    }
+    ForAll(monitors_, &PropagationMonitor::RankNotFirst, var, index);
   }
 
   void RankLast(SequenceVar* const var, int index) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RankLast(var, index);
-    }
+    ForAll(monitors_, &PropagationMonitor::RankLast, var, index);
   }
 
   void RankNotLast(SequenceVar* const var, int index) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RankNotLast(var, index);
-    }
+    ForAll(monitors_, &PropagationMonitor::RankNotLast, var, index);
   }
 
   void RankSequence(SequenceVar* const var, const std::vector<int>& rank_first,
                     const std::vector<int>& rank_last,
                     const std::vector<int>& unperformed) override {
-    for (int i = 0; i < monitors_.size(); ++i) {
-      monitors_[i]->RankSequence(var, rank_first, rank_last, unperformed);
-    }
+    ForAll(monitors_, &PropagationMonitor::RankSequence, var, rank_first,
+           rank_last, unperformed);
   }
 
   // Does not take ownership of monitor.
@@ -3145,6 +3092,75 @@ void Solver::AddPropagationMonitor(PropagationMonitor* const monitor) {
 
 PropagationMonitor* Solver::GetPropagationMonitor() const {
   return propagation_monitor_.get();
+}
+
+// ---------- Local Search Monitor Master ----------
+
+class LocalSearchMonitorMaster : public LocalSearchMonitor {
+ public:
+  explicit LocalSearchMonitorMaster(Solver* solver)
+      : LocalSearchMonitor(solver) {}
+
+  void BeginOperatorStart() override {
+    ForAll(monitors_, &LocalSearchMonitor::BeginOperatorStart);
+  }
+  void EndOperatorStart() override {
+    ForAll(monitors_, &LocalSearchMonitor::EndOperatorStart);
+  }
+  void BeginMakeNextNeighbor(const LocalSearchOperator* op) override {
+    ForAll(monitors_, &LocalSearchMonitor::BeginMakeNextNeighbor, op);
+  }
+  void EndMakeNextNeighbor(const LocalSearchOperator* op, bool neighbor_found,
+                           const Assignment* delta,
+                           const Assignment* deltadelta) override {
+    ForAll(monitors_, &LocalSearchMonitor::EndMakeNextNeighbor, op,
+           neighbor_found, delta, deltadelta);
+  }
+  void BeginFilterNeighbor(const LocalSearchOperator* op) override {
+    ForAll(monitors_, &LocalSearchMonitor::BeginFilterNeighbor, op);
+  }
+  void EndFilterNeighbor(const LocalSearchOperator* op,
+                         bool neighbor_found) override {
+    ForAll(monitors_, &LocalSearchMonitor::EndFilterNeighbor, op,
+           neighbor_found);
+  }
+  void BeginAcceptNeighbor(const LocalSearchOperator* op) override {
+    ForAll(monitors_, &LocalSearchMonitor::BeginAcceptNeighbor, op);
+  }
+  void EndAcceptNeighbor(const LocalSearchOperator* op,
+                         bool neighbor_found) override {
+    ForAll(monitors_, &LocalSearchMonitor::EndAcceptNeighbor, op,
+           neighbor_found);
+  }
+
+  // Does not take ownership of monitor.
+  void Add(LocalSearchMonitor* monitor) {
+    if (monitor != nullptr) {
+      monitors_.push_back(monitor);
+    }
+  }
+
+  // The trace will dispatch propagation events. It needs to listen to search
+  // events.
+  void Install() override { SearchMonitor::Install(); }
+
+  std::string DebugString() const override { return "LocalSearchMonitorMaster"; }
+
+ private:
+  std::vector<LocalSearchMonitor*> monitors_;
+};
+
+LocalSearchMonitor* BuildLocalSearchMonitorMaster(Solver* const s) {
+  return new LocalSearchMonitorMaster(s);
+}
+
+void Solver::AddLocalSearchMonitor(LocalSearchMonitor* const monitor) {
+  reinterpret_cast<class LocalSearchMonitorMaster*>(local_search_monitor_.get())
+      ->Add(monitor);
+}
+
+LocalSearchMonitor* Solver::GetLocalSearchMonitor() const {
+  return local_search_monitor_.get();
 }
 
 // ----------------- Constraint class -------------------

@@ -401,7 +401,7 @@ void SCIPInterface::ExtractNewConstraints() {
         max_row_length = ct->coefficients_.size();
       }
     }
-    std::unique_ptr<SCIP_VAR * []> vars(new SCIP_VAR* [max_row_length]);
+    std::unique_ptr<SCIP_VAR* []> vars(new SCIP_VAR*[max_row_length]);
     std::unique_ptr<double[]> coefs(new double[max_row_length]);
     // Add each new constraint.
     for (int i = last_constraint_index_; i < total_num_rows; ++i) {
@@ -546,7 +546,8 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
   // Solve.
   timer.Restart();
   if (SCIPsolve(scip_) != SCIP_OKAY) {
-    return MPSolver::ABNORMAL;
+    result_status_ = MPSolver::ABNORMAL;
+    return result_status_;
   }
   VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
 

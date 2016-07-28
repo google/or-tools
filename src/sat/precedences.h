@@ -286,6 +286,18 @@ inline void PrecedencesPropagator::AddPrecedenceWithVariableOffset(
   AddArc(i1, i2, /*offset=*/0, offset_var, /*l=*/kNoLiteralIndex);
 }
 
+// =============================================================================
+// Model based functions.
+// =============================================================================
+
+inline std::function<void(Model*)> ConditionalPrecedenceWithOffset(
+    IntegerVariable i1, IntegerVariable i2, int offset, Literal l) {
+  return [=](Model* model) {
+    return model->GetOrCreate<PrecedencesPropagator>()
+        ->AddConditionalPrecedenceWithOffset(i1, i2, offset, l);
+  };
+}
+
 }  // namespace sat
 }  // namespace operations_research
 

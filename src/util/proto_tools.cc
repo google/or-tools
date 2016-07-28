@@ -21,12 +21,12 @@
 #include "google/protobuf/text_format.h"
 #include "base/join.h"
 
-using google::protobuf::Descriptor;
-using google::protobuf::FieldDescriptor;
-using google::protobuf::Reflection;
-using google::protobuf::TextFormat;
-
 namespace operations_research {
+
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::FieldDescriptor;
+using ::google::protobuf::Reflection;
+using ::google::protobuf::TextFormat;
 
 bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto) {
   std::string data;

@@ -18,6 +18,7 @@
 
 #include "google/protobuf/descriptor.h"
 #include "sat/encoding.h"
+#include "sat/util.h"
 
 namespace operations_research {
 namespace sat {
@@ -711,26 +712,6 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
       }
     }
   }
-}
-
-void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters) {
-  // Random preferred variable order.
-  const google::protobuf::EnumDescriptor* order_d =
-      SatParameters::VariableOrder_descriptor();
-  parameters->set_preferred_variable_order(
-      static_cast<SatParameters::VariableOrder>(
-          order_d->value(random->Uniform(order_d->value_count()))->number()));
-
-  // Random polarity initial value.
-  const google::protobuf::EnumDescriptor* polarity_d =
-      SatParameters::Polarity_descriptor();
-  parameters->set_initial_polarity(static_cast<SatParameters::Polarity>(
-      polarity_d->value(random->Uniform(polarity_d->value_count()))->number()));
-
-  // Other random parameters.
-  parameters->set_use_phase_saving(random->OneIn(2));
-  parameters->set_random_polarity_ratio(random->OneIn(2) ? 0.01 : 0.0);
-  parameters->set_random_branches_ratio(random->OneIn(2) ? 0.01 : 0.0);
 }
 
 SatSolver::Status SolveWithRandomParameters(LogBehavior log,

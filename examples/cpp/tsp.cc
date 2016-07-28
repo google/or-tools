@@ -36,12 +36,6 @@
 #include "constraint_solver/routing_flags.h"
 #include "base/random.h"
 
-using operations_research::Assignment;
-using operations_research::RoutingModel;
-using operations_research::RoutingSearchParameters;
-using operations_research::ACMRandom;
-using operations_research::StrAppend;
-
 DEFINE_int32(tsp_size, 10, "Size of Traveling Salesman Problem instance.");
 DEFINE_bool(tsp_use_random_matrix, true, "Use random cost matrix.");
 DEFINE_int32(tsp_random_forbidden_connections, 0,
