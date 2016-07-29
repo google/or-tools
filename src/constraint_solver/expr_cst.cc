@@ -1192,12 +1192,11 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values
     }
     copied_values.resize(num_kept);
   }
-  // Catch singletons or empty value sets.
+  // Catch empty set.
   if (copied_values.empty()) return MakeFalseConstraint();
-  if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
   // Sort and remove duplicates.
   STLSortAndRemoveDuplicates(&copied_values);
-  // Re-catch singletons.
+  // Special case for singleton.
   if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
   // Catch contiguous intervals.
   if (copied_values.size() ==
@@ -1263,12 +1262,11 @@ Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
     }
     copied_values.resize(num_kept);
   }
-  // Catch singletons or empty value sets.
+  // Catch empty set.
   if (copied_values.empty()) return MakeTrueConstraint();
-  if (copied_values.size() == 1) return MakeNonEquality(expr, copied_values[0]);
   // Sort and remove duplicates.
   STLSortAndRemoveDuplicates(&copied_values);
-  // Re-catch singletons.
+  // Special case for singleton.
   if (copied_values.size() == 1) return MakeNonEquality(expr, copied_values[0]);
   // Catch contiguous intervals.
   if (copied_values.size() ==
@@ -1277,7 +1275,7 @@ Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
   }
   // If the set of values in [expr.Min(), expr.Max()] that are *not* in
   // "values" is smaller than "values", then it's more efficient to use
-  // NotMemberCt. Catch that case here.
+  // MemberCt. Catch that case here.
   const int64 min = expr->Min();
   const int64 max = expr->Max();
   if (max - min < 2 * copied_values.size()) {
