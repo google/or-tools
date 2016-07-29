@@ -862,10 +862,8 @@ class NotBetweenCt : public Constraint {
       : Constraint(s), expr_(v), min_(l), max_(u), demon_(nullptr) {}
 
   void Post() override {
-    if (!expr_->IsVar()) {
-      demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-      expr_->WhenRange(demon_);
-    }
+    demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+    expr_->WhenRange(demon_);
   }
 
   void InitialPropagate() override {
@@ -878,7 +876,7 @@ class NotBetweenCt : public Constraint {
       expr_->SetMax(min_ - 1);
     }
 
-    if (demon_ != nullptr && (emax < min_ || emin > max_)) {
+    if (!expr_->IsVar() && (emax < min_ || emin > max_)) {
       demon_->inhibit(solver());
     }
   }
