@@ -21,8 +21,8 @@ LIBTOOL_TAG = 2.4.6
 #
 # The GLPK archive should be glpk-4.57.tar.gz
 GLPK_TAG = 4.57
-# The SCIP archive should be scipoptsuite-3.2.0.tgz
-SCIP_TAG = 3.2.0
+# The SCIP archive should be scipoptsuite-3.2.1.tgz
+SCIP_TAG = 3.2.1
 # Version of Sulum
 SULUM_TAG = 43
 
