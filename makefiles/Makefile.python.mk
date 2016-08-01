@@ -268,10 +268,10 @@ python_examples_archive:
 	-$(DEL) temp$Sortools_examples$Ssetup.py-e
 ifeq ($(SYSTEM),win)
 	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
-	cd temp && ..\tools\zip.exe -r ..\or-tools.python.examples-$(OR_TOOLS_VERSION).zip ortools_examples
+	cd temp && ..\tools\zip.exe -r ..\or-tools.python.examples_$(OR_TOOLS_VERSION).zip ortools_examples
 else
 	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../or-tools.python.examples-$(OR_TOOLS_VERSION).tar.gz ortools_examples
+	cd temp && tar -c -v -z --no-same-owner -f ../or-tools.python.examples_$(OR_TOOLS_VERSION).tar.gz ortools_examples
 endif
 
 pypi2_archive: python $(PATCHELF)
