@@ -427,6 +427,7 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\data\quasigroup_completion\* temp\or-tools\examples\data\quasigroup_completion
 	copy tools\or-tools.nuspec temp\or-tools
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/g" temp\or-tools\or-tools.nuspec
+	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/g" temp\or-tools\or-tools.nuspec
 	cd temp\or-tools && nuget pack or-tools.nuspec
 	cd temp\or-tools && nuget push Google.OrTools-$(OR_TOOLS_VERSION).nupkg
 endif

@@ -11,7 +11,7 @@
     <copyright>Copyright 2016 Google</copyright>
     <tags>OperationsResearch MathProgramming LinearProgramming ConstraintProgramming .NET</tags>
     <dependencies>
-    <dependency id="Google.Protobuf" version="3.0.0-beta3" />
+    <dependency id="Google.Protobuf" version="PROTOBUF_TAG" />
     </dependencies>
   </metadata>
   <files>

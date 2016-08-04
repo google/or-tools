@@ -1,4 +1,15 @@
-from setuptools import setup, Extension
+from sys import executable
+
+setuptools_import_error_message = """setuptools is not installed for """ + executable + """
+Please follow this link for installing instructions :
+https://pypi.python.org/pypi/setuptools
+make sure you use \"""" + sys.executable + """\" during the installation"""
+
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    raise ImportError(setuptools_import_error_message)
+
 from os.path import join as pjoin
 from os.path import dirname
 
@@ -25,7 +36,7 @@ setup(
         'ortools.linear_solver',],
     ext_modules = [dummy_module],
     install_requires = [
-        'protobuf >= 3.0.0'],
+        'protobuf >= PROTOBUF_TAG'],
     package_data = {
         'ortools.constraint_solver' : ['_pywrapcp.dll'],
         'ortools.linear_solver' : ['_pywraplp.dll'],
