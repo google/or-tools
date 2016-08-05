@@ -70,7 +70,6 @@ import java.lang.reflect.*;
 
 // Add java code on MPSolver.
 %typemap(javacode) operations_research::MPSolver %{
-
   public MPVariable[] makeVarArray(int count, double lb, double ub, boolean integer) {
     MPVariable[] array = new MPVariable[count];
     for (int i = 0; i < count; ++i) {

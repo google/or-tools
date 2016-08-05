@@ -856,6 +856,8 @@ class BetweenCt : public Constraint {
   Demon* demon_;
 };
 
+// ----- NonMember constraint -----
+
 class NotBetweenCt : public Constraint {
  public:
   NotBetweenCt(Solver* const s, IntExpr* const v, int64 l, int64 u)
@@ -882,8 +884,8 @@ class NotBetweenCt : public Constraint {
   }
 
   std::string DebugString() const override {
-    return StringPrintf("NotBetweenCt(%s, %" GG_LL_FORMAT "d, %"
-                        GG_LL_FORMAT "d)",
+    return StringPrintf("NotBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
+                        "d)",
                         expr_->DebugString().c_str(), min_, max_);
   }
 
@@ -1183,15 +1185,14 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values
     copied_values.resize(num_kept);
   }
   // Filter out the values that are outside the [Min, Max] interval.
-  {
-    int num_kept = 0;
-    const int64 min = expr->Min();
-    const int64 max = expr->Max();
-    for (const int64 v : copied_values) {
-      if (v >= min && v <= max) copied_values[num_kept++] = v;
-    }
-    copied_values.resize(num_kept);
+  int num_kept = 0;
+  int64 emin;
+  int64 emax;
+  expr->Range(&emin, &emax);
+  for (const int64 v : copied_values) {
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
   }
+  copied_values.resize(num_kept);
   // Catch empty set.
   if (copied_values.empty()) return MakeFalseConstraint();
   // Sort and remove duplicates.
@@ -1207,15 +1208,15 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values
   // If the set of values in [expr.Min(), expr.Max()] that are *not* in
   // "values" is smaller than "values", then it's more efficient to use
   // NotMemberCt. Catch that case here.
-  const int64 min = expr->Min();
-  const int64 max = expr->Max();
-  if (max - min < 2 * copied_values.size()) {
+  if (emax - emin < 2 * copied_values.size()) {
     // Convert "copied_values" to list the values *not* allowed.
-    std::vector<bool> is_among_input_values(max - min + 1, false);
-    for (const int64 v : copied_values) is_among_input_values[v - min] = true;
+    std::vector<bool> is_among_input_values(emax - emin + 1, false);
+    for (const int64 v : copied_values) is_among_input_values[v - emin] = true;
+    // We use the zero valued indices of is_among_input_values to build the
+    // complement of copied_values.
     copied_values.clear();
     for (int64 v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
-      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + min);
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
     }
     // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
     // "values" input) was caught earlier, by the "contiguous interval" case.
@@ -1253,15 +1254,14 @@ Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
     copied_values.resize(num_kept);
   }
   // Filter out the values that are outside the [Min, Max] interval.
-  {
-    int num_kept = 0;
-    const int64 min = expr->Min();
-    const int64 max = expr->Max();
-    for (const int64 v : copied_values) {
-      if (v >= min && v <= max) copied_values[num_kept++] = v;
-    }
-    copied_values.resize(num_kept);
+  int num_kept = 0;
+  int64 emin;
+  int64 emax;
+  expr->Range(&emin, &emax);
+  for (const int64 v : copied_values) {
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
   }
+  copied_values.resize(num_kept);
   // Catch empty set.
   if (copied_values.empty()) return MakeTrueConstraint();
   // Sort and remove duplicates.
@@ -1276,15 +1276,15 @@ Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
   // If the set of values in [expr.Min(), expr.Max()] that are *not* in
   // "values" is smaller than "values", then it's more efficient to use
   // MemberCt. Catch that case here.
-  const int64 min = expr->Min();
-  const int64 max = expr->Max();
-  if (max - min < 2 * copied_values.size()) {
-    // Convert "copied_values" to list the values *not* allowed.
-    std::vector<bool> is_among_input_values(max - min + 1, false);
-    for (const int64 v : copied_values) is_among_input_values[v - min] = true;
+  if (emax - emin < 2 * copied_values.size()) {
+    // Convert "copied_values" to a dense boolean vector.
+    std::vector<bool> is_among_input_values(emax - emin + 1, false);
+    for (const int64 v : copied_values) is_among_input_values[v - emin] = true;
+    // Use zero valued indices for is_among_input_values to build the
+    // complement of copied_values.
     copied_values.clear();
     for (int64 v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
-      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + min);
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
     }
     // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
     // "values" input) was caught earlier, by the "contiguous interval" case.

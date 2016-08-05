@@ -2589,7 +2589,6 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     int accepted_neighbors = 0;
     double seconds = 0;
   };
-
   WallTimer timer_;
   std::string last_operator_;
   std::map<std::string, OperatorStats> operator_stats_;

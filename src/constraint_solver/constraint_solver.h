@@ -1419,10 +1419,15 @@ class Solver {
   // Creates a demon from a closure.
   Demon* MakeClosureDemon(Closure closure);
 
-  // (l <= b <= u)
+  // ----- Between and related constraints -----
+
+  // (l <= v <= u)
   Constraint* MakeBetweenCt(IntExpr* const v, int64 l, int64 u);
 
-    // (b < l || b > u)
+  // (v < l || v > u)
+  // This constraint is lazy as it will not make holes in the domain of
+  // variables. It will propagate only when expr->Min() >= l
+  // or expr->Max() <= u.
   Constraint* MakeNotBetweenCt(IntExpr* const v, int64 l, int64 u);
 
   // b == (l <= v <= u)
@@ -1430,23 +1435,16 @@ class Solver {
                               IntVar* const b);
   IntVar* MakeIsBetweenVar(IntExpr* const v, int64 l, int64 u);
 
-  // b == (v in set)
-  Constraint* MakeIsMemberCt(IntExpr* const v, const std::vector<int64>& values,
-                             IntVar* const b);
-  Constraint* MakeIsMemberCt(IntExpr* const v, const std::vector<int>& values,
-                             IntVar* const b);
-  IntVar* MakeIsMemberVar(IntExpr* const v, const std::vector<int64>& values);
-  IntVar* MakeIsMemberVar(IntExpr* const v, const std::vector<int>& values);
+  // ----- Member and related constraints -----
+
   // v in set. Propagation is lazy, i.e. this constraint does not
   // creates holes in the domain of the variable.
   Constraint* MakeMemberCt(IntExpr* const v, const std::vector<int64>& values);
   Constraint* MakeMemberCt(IntExpr* const v, const std::vector<int>& values);
 
   // v not in set.
-  Constraint* MakeNotMemberCt(IntExpr* const v,
-                              const std::vector<int64>& values);
-  Constraint* MakeNotMemberCt(IntExpr* const v,
-                              const std::vector<int>& values);
+  Constraint* MakeNotMemberCt(IntExpr* const v, const std::vector<int64>& values);
+  Constraint* MakeNotMemberCt(IntExpr* const v, const std::vector<int>& values);
 
   // v should not be in the list of forbidden intervals [start[i]..end[i]].
   Constraint* MakeNotMemberCt(IntExpr* const v, std::vector<int64> starts,
@@ -1458,6 +1456,14 @@ class Solver {
   // v should not be in the list of forbidden intervals.
   Constraint* MakeNotMemberCt(IntExpr* v, SortedDisjointIntervalList intervals);
 #endif  // !defined(SWIG)
+
+  // b == (v in set)
+  Constraint* MakeIsMemberCt(IntExpr* const v, const std::vector<int64>& values,
+                             IntVar* const b);
+  Constraint* MakeIsMemberCt(IntExpr* const v, const std::vector<int>& values,
+                             IntVar* const b);
+  IntVar* MakeIsMemberVar(IntExpr* const v, const std::vector<int64>& values);
+  IntVar* MakeIsMemberVar(IntExpr* const v, const std::vector<int>& values);
 
   // |{i | v[i] == value}| == count
   Constraint* MakeCount(const std::vector<IntVar*>& v, int64 value, int64 count);

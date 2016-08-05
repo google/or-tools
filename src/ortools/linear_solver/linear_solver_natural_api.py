@@ -225,6 +225,6 @@ class LinearConstraint(object):
       ub = self.__ub - constant
 
     constraint = solver.RowConstraint(lb, ub, name)
-    for v, c, in sorted(coeffs.items()):
+    for v, c, in coeffs.iteritems():
       constraint.SetCoefficient(v, float(c))
     return constraint

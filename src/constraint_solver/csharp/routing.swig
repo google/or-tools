@@ -111,7 +111,6 @@ CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
 	  actualIndex++;
     }
   }
-  
 
   $1 = &result;
 %}
