@@ -586,6 +586,7 @@ class RoutingModel {
   //
   // TODO(user): Remove this when model introspection detects linked nodes.
   void AddPickupAndDelivery(NodeIndex node1, NodeIndex node2) {
+    CheckDepot();
     pickup_delivery_pairs_.push_back(
         std::make_pair(NodeToIndex(node1), NodeToIndex(node2)));
   }
