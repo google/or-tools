@@ -1,0 +1,41 @@
+This file describes how to use the or-tools .NET binary archive.
+
+OR-Tools is located at https://developers.google.com/optimization
+
+These modules have been tested under:
+  - ubuntu 14.04 and up (32 and 64 bit).
+  - Mac OS X El Capitan and up with xcode 4.x (64 bit).
+  - Microsoft Visual studio 2013 and 2015 (32 and 64 bit).
+
+Upon decompressing the archive, you will get the following structure:
+
+or-tools/
+  LICENSE-2.0.txt  <- Apache License
+  README           <- This file
+  data/            <- Data for the examples
+  examples/        <- C# examples
+  bin/             <- Directory containing assemblies and native libraries
+
+Running the examples will involve compiling them, then running them.
+We have provided a makefile target to help you. You need to have the
+compiler tools accessible from the command line.
+
+make rcs EX=csflow
+
+This is equivalent to compiling and running examples/csflow.cs and running it:
+
+  - on windows 32 bit:
+csc /target:exe /out:bin\csharp\csflow.exe /platform:x86 /lib:bin\csharp /r:Google.OrTools.dll examples\csharp\csflow.cs
+bin\csharp\csflow.exe
+
+  - on windows 64 bit:
+csc /target:exe /out:bin/csharp/csflow.exe /platform:x64 /lib:bin\csharp /r:Google.OrTools.dll  examples\csharp\csflow.cs
+bin\csharp\csflow.exe
+
+  - on linux (mono comes from the distribution, on ubuntu 16.04 and up):
+mcs /target:exe /out:bin/csharp/csflow.exe /platform:anycpu /lib:bin/csharp /r:Google.OrTools.dll examples/csharp/csflow.cs
+MONO_PATH=bin/csharp mono bin/csharp/csflow.exe
+
+  - on Mac OS X (Use installer with version 4.2.1 or up):
+mcs /target:exe /out:bin/csharp/csflow.exe /platform:anycpu /lib:bin/csharp /r:Google.OrTools.dll examples/csharp/csflow.cs
+DYLD_FALLBACK_LIBRARY_PATH=lib mono64 bin/csharp/csflow.exe
