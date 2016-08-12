@@ -462,7 +462,7 @@ def vehicle_output_string(routing, plan):
 
     """
     dropped = []
-    for order in range(routing.nodes()):
+    for order in range(routing.Size()):
         if (plan.Value(routing.NextVar(order)) == order):
             dropped.append(str(order))
 
@@ -615,7 +615,7 @@ def main():
 
     # Set the starting nodes, and create a callback fn for the starting node.
     start_fn = vehicles.return_starting_callback(customers,
-                                                 sameStartFinish=True)
+                                                 sameStartFinish=False)
 
 
     # Set model parameters
@@ -671,7 +671,7 @@ def main():
     time_dimension = routing.GetDimensionOrDie("Time")
     for cust in customers.customers:
         if cust.tw_open is not None:
-            time_dimension.CumulVar(int(cust.index)).SetRange(
+            time_dimension.CumulVar(routing.NodeToIndex(cust.index)).SetRange(
                 cust.tw_open.seconds,
                 cust.tw_close.seconds)
     """
