@@ -199,29 +199,18 @@ download_third_party: \
 install_directories: dependencies\install\bin dependencies\install\lib\coin dependencies\install\include\coin
 
 dependencies\install\bin: dependencies\install
-ifeq ($(wildcard dependencies\install),)
 	-$(MKDIR_P) dependencies\install\bin
-endif
 
 dependencies\install\lib: dependencies\install
-ifeq ($(wildcard dependencies\install\lib),)
 	-$(MKDIR_P) dependencies\install\lib
-endif
 
 dependencies\install\lib\coin: dependencies\install\lib
-ifeq ($(wildcard dependencies\install\lib\coin),)
 	-$(MKDIR_P) dependencies\install\lib\coin
-endif
-
 dependencies\install\include: dependencies\install
-ifeq ($(wildcard dependencies\install\include),)
 	-$(MKDIR_P) dependencies\install\include
-endif
 
 dependencies\install\include\coin: dependencies\install\include
-ifeq ($(wildcard dependencies\install\include\coin),)
 	-$(MKDIR_P) dependencies\install\include\coin
-endif
 
 dependencies\install:
 	-$(MKDIR_P) dependencies\install
@@ -229,7 +218,7 @@ dependencies\install:
 # Install zlib
 install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
 
-dependencies\install\include\zlib.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
+dependencies\install\include\zlib.h: dependencies\install\include dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
 	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h dependencies\install\include
 
 dependencies\install\include\zconf.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
@@ -411,7 +400,7 @@ install_bison: dependencies\install\bin\win_bison.exe
 dependencies\install\bin\win_flex.exe: dependencies\install\bin\win_bison.exe
 
 dependencies\install\bin\win_bison.exe: dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
-	tools\unzip -d dependencies/install\bin dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
+	tools\unzip -d dependencies\install\bin dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
 	tools\touch.exe dependencies\install\bin/win_bison.exe
 
 dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
@@ -425,7 +414,7 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
 	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
 	  ../src/google/protobuf/descriptor.proto
-	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && $(JAR_BIN) cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && jar cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
 
 # Clean everything.
 clean_third_party:
