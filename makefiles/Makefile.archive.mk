@@ -173,14 +173,17 @@ fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(LIB_DIR)$S$(LIB_PRE
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
 	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
+ifeq ($(PLATFORM),LINUX)
+	$(DEP_BIN_DIR)$Spatchelf --set-rpath '$$ORIGIN/../lib' temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
+endif
 ifeq ($(PLATFORM),MACOSX)
-	$(COPY) tools$Sfz_install_libs_mac.sh temp$S$(FZ_INSTALL_DIR)
-	chmod u+x temp/$(FZ_INSTALL_DIR)/fz_install_libs_mac.sh
-	cd temp$S$(FZ_INSTALL_DIR) && ./fz_install_libs_mac.sh
-	$(RM) temp$S$(FZ_INSTALL_DIR)$Sfz_install_libs_mac.sh
+	$(COPY) tools$Sfix_fz_libraries_on_mac.sh temp$S$(FZ_INSTALL_DIR)
+	chmod u+x temp/$(FZ_INSTALL_DIR)$Sfix_fz_libraries_on_mac.sh
+	cd temp$S$(FZ_INSTALL_DIR) && .$Sfix_fz_libraries_on_mac.sh
+	$(RM) temp$S$(FZ_INSTALL_DIR)$Sfix_fz_libraries_on_mac.sh
 endif
 	cd temp && tar cvzf ..$S$(FZ_INSTALL_DIR).tar.gz $(FZ_INSTALL_DIR)
-#	-$(DELREC) temp
+	-$(DELREC) temp
 endif
 
 
