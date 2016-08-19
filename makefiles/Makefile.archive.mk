@@ -146,16 +146,20 @@ java_archive:
 
 ifeq "$(SYSTEM)" "win"
 fz_archive: fz
-	-$(DELREC) temp
 	mkdir temp
 	mkdir temp$S$(FZ_INSTALL_DIR)
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
+	mkdir temp$S$(FZ_INSTALL_DIR)$Slib
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
 	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
-	$(COPY) bin$Sfz.exe temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools.exe
-	$(COPY) src$Sflatzinc$Smznlib$S*.mzn temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
-	cd temp && ..$Stools$Szip.exe -r ..$Sor-tools.flatzinc.$(PORT)_$(OR_TOOLS_VERSION).zip $(FZ_INSTALL_DIR)
+	$(COPY) bin$Sfz$E temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
+	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
+	cd temp && ..$Stools$Szip.exe -r ..$S$(FZ_INSTALL_DIR).zip $(FZ_INSTALL_DIR)
 	-$(DELREC) temp
 else
 fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
@@ -168,7 +172,7 @@ fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(LIB_DIR)$S$(LIB_PRE
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
 	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
-	$(COPY) bin$Sfz temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
+	$(COPY) bin$Sfz$E temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
