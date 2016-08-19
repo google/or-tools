@@ -24,6 +24,7 @@ EX_DIR  = $(OR_ROOT)examples
 INC_DIR = $(OR_ROOT)src
 DEP_BIN_DIR = $(OR_ROOT)dependencies/install/bin
 
+
 O = o
 E =
 LDOUT = -o # need the space.
@@ -36,6 +37,7 @@ S = /
 CPSEP = :
 SED = sed
 ARCHIVE_EXT = .tar.gz
+FZ_EXE = fzn-or-tools$E
 
 # This is needed to find python.h
 PYTHON_INC = -I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER) $(ADD_PYTHON_INC)

@@ -144,32 +144,43 @@ java_archive:
 	$(COPY) examples$Scom$Sgoogle$Sortools$Ssamples$S*.java temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
 
 
-
 ifeq "$(SYSTEM)" "win"
 fz_archive: fz
 	-$(DELREC) temp
 	mkdir temp
-	mkdir temp$S$(INSTALL_DIR)
-	mkdir temp$S$(INSTALL_DIR)$Sbin
-	mkdir temp$S$(INSTALL_DIR)$Sshare
-	mkdir temp$S$(INSTALL_DIR)$Sshare$Sminizinc
-	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
-	$(COPY) bin$Sfz.exe temp$S$(INSTALL_DIR)$Sbin$Sfzn-or-tools.exe
-	$(COPY) src$Sflatzinc$Smznlib$S*.mzn temp$S$(INSTALL_DIR)$Sshare$Sminizinc
-	cd temp && ..$Stools$Szip.exe -r ..$Sor-tools.flatzinc.$(PORT)_$(OR_TOOLS_VERSION).zip $(INSTALL_DIR)
+	mkdir temp$S$(FZ_INSTALL_DIR)
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
+	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
+	$(COPY) bin$Sfz.exe temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools.exe
+	$(COPY) src$Sflatzinc$Smznlib$S*.mzn temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
+	cd temp && ..$Stools$Szip.exe -r ..$Sor-tools.flatzinc.$(PORT)_$(OR_TOOLS_VERSION).zip $(FZ_INSTALL_DIR)
 	-$(DELREC) temp
 else
-fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
-	mkdir temp
-	mkdir temp$S$(INSTALL_DIR)
-	mkdir temp$S$(INSTALL_DIR)$Sbin
-	mkdir temp$S$(INSTALL_DIR)$Sshare
-	mkdir temp$S$(INSTALL_DIR)$Sshare$Sminizinc
-	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
-	$(COPY) bin$Sfz temp$S$(INSTALL_DIR)$Sbin$Sfzn-or-tools
-	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(INSTALL_DIR)$Sshare$Sminizinc
-	cd temp && tar cvzf ..$Sor-tools.flatzinc.$(PORT)_$(OR_TOOLS_VERSION).tar.gz $(INSTALL_DIR)
+fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
 	-$(DELREC) temp
+	mkdir temp
+	mkdir temp$S$(FZ_INSTALL_DIR)
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
+	mkdir temp$S$(FZ_INSTALL_DIR)$Slib
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
+	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
+	$(COPY) bin$Sfz temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
+	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
+ifeq ($(PLATFORM),MACOSX)
+	$(COPY) tools$Sfz_install_libs_mac.sh temp$S$(FZ_INSTALL_DIR)
+	chmod u+x temp/$(FZ_INSTALL_DIR)/fz_install_libs_mac.sh
+	cd temp$S$(FZ_INSTALL_DIR) && ./fz_install_libs_mac.sh
+	$(RM) temp$S$(FZ_INSTALL_DIR)$Sfz_install_libs_mac.sh
+endif
+	cd temp && tar cvzf ..$S$(FZ_INSTALL_DIR).tar.gz $(FZ_INSTALL_DIR)
+#	-$(DELREC) temp
 endif
 
 
@@ -187,5 +198,19 @@ ifeq ($(PLATFORM),MACOSX)
 	cd temp$S$(INSTALL_DIR) && ./install_libortools_mac.sh
 endif
 	cd temp$S$(INSTALL_DIR) && $(MAKE) test
+	-$(DELREC) $(INSTALL_DIR)
+	$(RENAME) lib2 lib
+
+test_fz_archive: $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
+	-$(DELREC) temp
+	$(MKDIR) temp
+#this is to make sure the archive tests don't use the root libraries
+	$(RENAME) lib lib2
+ifeq "$(SYSTEM)" "win"
+	tools$Sunzip.exe $(FZ_INSTALL_DIR).zip -d temp
+else
+	tar -x -v -f $(FZ_INSTALL_DIR).tar.gz -C temp
+endif
+	cd temp$S$(FZ_INSTALL_DIR) && .$Sbin$S$(FZ_EXE) examples$Scircuit_test.fzn
 	-$(DELREC) $(INSTALL_DIR)
 	$(RENAME) lib2 lib

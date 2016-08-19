@@ -41,6 +41,7 @@ BISON = dependencies\install\bin\win_bison.exe
 FLEX = dependencies\install\bin\win_flex.exe
 CMAKE = cmake
 ARCHIVE_EXT = .zip
+FZ_EXE = fzn-or-tools$E
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
