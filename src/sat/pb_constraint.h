@@ -168,14 +168,14 @@ class MutableUpperBoundedLinearConstraint {
   void ClearAll();
 
   // Returns the coefficient (>= 0) of the given variable.
-  Coefficient GetCoefficient(VariableIndex var) const {
+  Coefficient GetCoefficient(BooleanVariable var) const {
     return AbsCoefficient(terms_[var]);
   }
 
   // Returns the literal under which the given variable appear in the
   // constraint. Note that if GetCoefficient(var) == 0 this just returns
   // Literal(var, true).
-  Literal GetLiteral(VariableIndex var) const {
+  Literal GetLiteral(BooleanVariable var) const {
     return Literal(var, terms_[var] > 0);
   }
 
@@ -192,7 +192,7 @@ class MutableUpperBoundedLinearConstraint {
 
   // Same as ReduceCoefficients() but only consider the coefficient of the given
   // variable.
-  void ReduceGivenCoefficient(VariableIndex var) {
+  void ReduceGivenCoefficient(BooleanVariable var) {
     const Coefficient bound = max_sum_ - rhs_;
     const Coefficient diff = GetCoefficient(var) - bound;
     if (diff > 0) {
@@ -259,7 +259,7 @@ class MutableUpperBoundedLinearConstraint {
   // The encoding used internally is described below in the terms_ comment.
   void AddTerm(Literal literal, Coefficient coeff) {
     CHECK_GT(coeff, 0);
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     const Coefficient term_encoding = literal.IsPositive() ? coeff : -coeff;
     if (literal != GetLiteral(var)) {
       // The two terms are of opposite sign, a "cancelation" happens.
@@ -282,14 +282,14 @@ class MutableUpperBoundedLinearConstraint {
   // Returns the "cancelation" amount of AddTerm(literal, coeff).
   Coefficient CancelationAmount(Literal literal, Coefficient coeff) const {
     DCHECK_GT(coeff, 0);
-    const VariableIndex var = literal.Variable();
+    const BooleanVariable var = literal.Variable();
     if (literal == GetLiteral(var)) return Coefficient(0);
     return std::min(coeff, AbsCoefficient(terms_[var]));
   }
 
   // Returns a set of positions that contains all the non-zeros terms of the
   // constraint. Note that this set can also contains some zero terms.
-  const std::vector<VariableIndex>& PossibleNonZeros() const {
+  const std::vector<BooleanVariable>& PossibleNonZeros() const {
     return non_zeros_.PositionsSetAtLeastOnce();
   }
 
@@ -305,7 +305,7 @@ class MutableUpperBoundedLinearConstraint {
   // The encoding is special:
   // - If terms_[x] > 0, then the associated term is 'terms_[x] . x'
   // - If terms_[x] < 0, then the associated term is 'terms_[x] . (x - 1)'
-  ITIVector<VariableIndex, Coefficient> terms_;
+  ITIVector<BooleanVariable, Coefficient> terms_;
 
   // The right hand side of the constraint (sum terms <= rhs_).
   Coefficient rhs_;
@@ -315,7 +315,7 @@ class MutableUpperBoundedLinearConstraint {
   Coefficient max_sum_;
 
   // Contains the possibly non-zeros terms_ value.
-  SparseBitset<VariableIndex> non_zeros_;
+  SparseBitset<BooleanVariable> non_zeros_;
 };
 
 // A simple "helper" class to enqueue a propagated literal on the trail and
@@ -343,7 +343,8 @@ struct PbConstraintsEnqueueHelper {
   std::vector<ReasonInfo> reasons;
 };
 
-// This class contains "half" the propagation logic for a constraint of the form
+// This class contains half the propagation logic for a constraint of the form
+//
 //   sum ci * li <= rhs, ci positive coefficients, li literals.
 //
 // The other half is implemented by the PbConstraints class below which takes
@@ -358,8 +359,7 @@ struct PbConstraintsEnqueueHelper {
 class UpperBoundedLinearConstraint {
  public:
   // Takes a pseudo-Boolean formula in canonical form.
-  UpperBoundedLinearConstraint(const std::vector<LiteralWithCoeff>& cst,
-                               ResolutionNode* node);
+  explicit UpperBoundedLinearConstraint(const std::vector<LiteralWithCoeff>& cst);
 
   // Returns true if the given terms are the same as the one in this constraint.
   bool HasIdenticalTerms(const std::vector<LiteralWithCoeff>& cst);
@@ -412,11 +412,11 @@ class UpperBoundedLinearConstraint {
   // better to use during conflict minimization (namely the one already in the
   // 1-UIP conflict).
   void FillReason(const Trail& trail, int source_trail_index,
-                  VariableIndex propagated_variable, std::vector<Literal>* reason);
+                  BooleanVariable propagated_variable, std::vector<Literal>* reason);
 
   // Same operation as SatSolver::ResolvePBConflict(), the only difference is
   // that here the reason for var is *this.
-  void ResolvePBConflict(const Trail& trail, VariableIndex var,
+  void ResolvePBConflict(const Trail& trail, BooleanVariable var,
                          MutableUpperBoundedLinearConstraint* conflict,
                          Coefficient* conflict_slack);
 
@@ -436,18 +436,11 @@ class UpperBoundedLinearConstraint {
       const Trail& trail, int trail_index,
       const MutableUpperBoundedLinearConstraint& conflict);
 
-  // Returns the resolution node associated to this constraint. Note that it can
-  // be nullptr if the solver is not configured to compute the reason for an
-  // unsatisfiable problem or if this constraint is not relevant for the current
-  // core computation.
-  ResolutionNode* ResolutionNodePointer() const { return node_; }
-  void ChangeResolutionNode(ResolutionNode* node) { node_ = node; }
-
   // API to mark a constraint for deletion before actually deleting it.
   void MarkForDeletion() { is_marked_for_deletion_ = true; }
   bool is_marked_for_deletion() const { return is_marked_for_deletion_; }
 
-  // Only learned constraint are considered for deletion during the constraint
+  // Only learned constraints are considered for deletion during the constraint
   // cleanup phase. We also can't delete variables used as a reason.
   void set_is_learned(bool is_learned) { is_learned_ = is_learned; }
   bool is_learned() const { return is_learned_; }
@@ -498,9 +491,6 @@ class UpperBoundedLinearConstraint {
   std::vector<Literal> literals_;
   Coefficient rhs_;
 
-  // This is only used for UNSAT core computation.
-  ResolutionNode* node_;
-
   int64 hash_;
 };
 
@@ -528,7 +518,6 @@ class PbConstraints : public Propagator {
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
   ClauseRef Reason(const Trail& trail, int trail_index) const final;
-  ResolutionNode* GetResolutionNode(int trail_index) const final;
 
   // Changes the number of variables.
   void Resize(int num_variables) {
@@ -541,7 +530,7 @@ class PbConstraints : public Propagator {
     }
   }
 
-  // Parameters management.
+  // Parameter management.
   void SetParameters(const SatParameters& parameters) {
     parameters_ = parameters;
   }
@@ -557,13 +546,12 @@ class PbConstraints : public Propagator {
   // - The constraint cannot be conflicting.
   // - The constraint cannot have propagated at an earlier decision level.
   bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
-                     ResolutionNode* node, Trail* trail);
+                     Trail* trail);
 
   // Same as AddConstraint(), but also marks the added constraint as learned
   // so that it can be deleted during the constraint cleanup phase.
   bool AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cst,
-                            Coefficient rhs, ResolutionNode* node,
-                            Trail* trail);
+                            Coefficient rhs, Trail* trail);
 
   // Returns the number of constraints managed by this class.
   int NumberOfConstraints() const { return constraints_.size(); }
@@ -571,7 +559,7 @@ class PbConstraints : public Propagator {
   // ConflictingConstraint() returns the last PB constraint that caused a
   // conflict. Calling ClearConflictingConstraint() reset this to nullptr.
   //
-  // TODO(user): This is an hack to get the PB conflict, because the rest of
+  // TODO(user): This is a hack to get the PB conflict, because the rest of
   // the solver API assume only clause conflict. Find a cleaner way?
   void ClearConflictingConstraint() { conflicting_constraint_index_ = -1; }
   UpperBoundedLinearConstraint* ConflictingConstraint() {
@@ -686,7 +674,7 @@ class VariableWithSameReasonIdentifier {
 
   void Resize(int num_variables) {
     first_variable_.resize(num_variables);
-    seen_.ClearAndResize(VariableIndex(num_variables));
+    seen_.ClearAndResize(BooleanVariable(num_variables));
   }
 
   // Clears the cache. Call this before each conflict analysis.
@@ -695,9 +683,10 @@ class VariableWithSameReasonIdentifier {
   // Returns the first variable with exactly the same reason as 'var' on which
   // this function was called since the last Clear(). Note that if no variable
   // had the same reason, then var is returned.
-  VariableIndex FirstVariableWithSameReason(VariableIndex var) {
+  BooleanVariable FirstVariableWithSameReason(BooleanVariable var) {
     if (seen_[var]) return first_variable_[var];
-    const VariableIndex reference_var = trail_.ReferenceVarWithSameReason(var);
+    const BooleanVariable reference_var =
+        trail_.ReferenceVarWithSameReason(var);
     if (reference_var == var) return var;
     if (seen_[reference_var]) return first_variable_[reference_var];
     seen_.Set(reference_var);
@@ -707,8 +696,8 @@ class VariableWithSameReasonIdentifier {
 
  private:
   const Trail& trail_;
-  ITIVector<VariableIndex, VariableIndex> first_variable_;
-  SparseBitset<VariableIndex> seen_;
+  ITIVector<BooleanVariable, BooleanVariable> first_variable_;
+  SparseBitset<BooleanVariable> seen_;
 
   DISALLOW_COPY_AND_ASSIGN(VariableWithSameReasonIdentifier);
 };

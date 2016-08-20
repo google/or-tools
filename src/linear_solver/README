@@ -13,8 +13,16 @@ linear programming and integer programming.
 - *_interface.cc: each file corresponds to one of the solver accessible
    through the wrapper.
 
-- *.swig: the SWIG code that makes the wrapper available in Java and
-  Python.
+- linear_solver_test.cc: the C++ tests for the wrapper.
+
+- python/... : the SWIG code that makes the wrapper available in Python,
+  and its unit tests.
+
+- java/... : the SWIG code that makes the wrapper available in Java,
+  and its unit tests.
+
+- csharp/... : the SWIG code that makes the wrapper available in C#,
+  and its unit tests.
 
 - linear_solver.proto: the protocol buffer for mathematical
   programming problems.

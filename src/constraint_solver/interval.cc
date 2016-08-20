@@ -1280,15 +1280,15 @@ int64 StartVarPerformedIntervalVar::EndMax() const {
 }
 
 void StartVarPerformedIntervalVar::SetEndMin(int64 m) {
-  SetStartMin(m - duration_);
+  SetStartMin(CapSub(m, duration_));
 }
 
 void StartVarPerformedIntervalVar::SetEndMax(int64 m) {
-  SetStartMax(m - duration_);
+  SetStartMax(CapSub(m, duration_));
 }
 
 void StartVarPerformedIntervalVar::SetEndRange(int64 mi, int64 ma) {
-  SetStartRange(mi - duration_, ma - duration_);
+  SetStartRange(CapSub(mi, duration_), CapSub(ma, duration_));
 }
 
 void StartVarPerformedIntervalVar::SetDurationRange(int64 mi, int64 ma) {
@@ -1751,12 +1751,12 @@ class VariableDurationIntervalVar : public BaseIntervalVar {
                               int64 end_min, int64 end_max, bool optional,
                               const std::string& name)
       : BaseIntervalVar(s, name),
-        start_(s, this, std::max(start_min, end_min - duration_max),
-               std::min(start_max, end_max - duration_min)),
-        duration_(s, this, std::max(duration_min, end_min - start_max),
-                  std::min(duration_max, end_max - start_min)),
-        end_(s, this, std::max(end_min, start_min + duration_min),
-             std::min(end_max, start_max + duration_max)),
+        start_(s, this, std::max(start_min, CapSub(end_min, duration_max)),
+               std::min(start_max, CapSub(end_max, duration_min))),
+        duration_(s, this, std::max(duration_min, CapSub(end_min, start_max)),
+                  std::min(duration_max, CapSub(end_max, start_min))),
+        end_(s, this, std::max(end_min, CapAdd(start_min, duration_min)),
+             std::min(end_max, CapAdd(start_max, duration_max))),
         performed_(s, this, optional) {}
 
   ~VariableDurationIntervalVar() override {}
@@ -2414,13 +2414,13 @@ IntervalVar* Solver::MakeFixedDurationEndSyncedOnStartIntervalVar(
     IntervalVar* const interval_var, int64 duration, int64 offset) {
   return RegisterIntervalVar(
       RevAlloc(new FixedDurationIntervalVarStartSyncedOnStart(
-          interval_var, duration, offset - duration)));
+          interval_var, duration, CapSub(offset, duration))));
 }
 
 IntervalVar* Solver::MakeFixedDurationEndSyncedOnEndIntervalVar(
     IntervalVar* const interval_var, int64 duration, int64 offset) {
   return RegisterIntervalVar(
       RevAlloc(new FixedDurationIntervalVarStartSyncedOnEnd(
-          interval_var, duration, offset - duration)));
+          interval_var, duration, CapSub(offset, duration))));
 }
 }  // namespace operations_research

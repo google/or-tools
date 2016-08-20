@@ -22,6 +22,7 @@ syntax = "proto2";
 
 package operations_research.glop;
 
+// next id = 56
 message GlopParameters {
 
   // Like a Boolean with an extra value to let the algorithm decide what is the
@@ -161,6 +162,11 @@ message GlopParameters {
 
   // We never follow a basis change with a pivot under this threshold.
   optional double minimum_acceptable_pivot = 15 [default = 1e-6];
+
+  // In order to increase the sparsity of the manipulated vectors, floating
+  // point values with a magnitude smaller than this parameter are set to zero
+  // (only in some places). This parameter should be positive or zero.
+  optional double drop_tolerance = 52 [default = 1e-14];
 
   // Whether or not we scale the matrix A so that the maximum coefficient on
   // each line and each column is 1.0.
@@ -344,5 +350,27 @@ message GlopParameters {
   // Number of threads in the OMP parallel sections. If left to 1, the code will
   // not create any OMP threads and will remain single-threaded.
   optional int32 num_omp_threads = 44 [default = 1];
+
+  // Whether or not use Solow-Halim preprocessor. It tries to begin the phase 1
+  // with a closer point to the optimal solution.
+  //
+  // Reference: Improving the Efficiency of the Simplex Algorithm Based on a
+  // Geometric Explanation of Phase 1
+  // https://weatherhead.case.edu/faculty/research/library/detail?id=12128593921
+  // DOI: 10.1504/IJOR.2009.025701
+  optional bool use_solowhalim = 46 [default = false];
+
+  // When this is true, then the costs are randomly perturbed before the dual
+  // simplex is even started. This has been shown to improve the dual simplex
+  // performance. For a good reference, see Huangfu Q (2013) "High performance
+  // simplex solver", Ph.D, dissertation, University of Edinburgh.
+  optional bool perturb_costs_in_dual_simplex = 53 [default = false];
+
+  // The magnitude of the cost perturbation is given by
+  // RandomIn(1.0, 2.0) * (
+  //     relative_cost_perturbation * cost
+  //   + relative_max_cost_perturbation * max_cost);
+  optional double relative_cost_perturbation = 54 [default = 1e-5];
+  optional double relative_max_cost_perturbation = 55 [default = 1e-7];
 
 }

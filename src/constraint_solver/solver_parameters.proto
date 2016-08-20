@@ -1,0 +1,131 @@
+// Copyright 2010-2014 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// This file contains protocol buffers for all parameters of the CP solver.
+
+syntax = "proto3";
+option java_package = "com.google.ortools.constraintsolver";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.ConstraintSolver";
+
+package operations_research;
+
+// Solver parameters.
+message ConstraintSolverParameters {
+  //
+  // Internal parameters of the solver.
+  //
+  enum TrailCompression {
+    NO_COMPRESSION = 0;
+        COMPRESS_WITH_ZLIB = 1;
+  };
+
+  // This parameter indicates if the solver should compress the trail
+  // during the search. No compression means that the solver will be faster,
+  // but will use more memory.
+  TrailCompression compress_trail = 1;
+
+  // This parameter indicates the default size of a block of the trail.
+  // Compression applies at the block level.
+  int32 trail_block_size = 2;
+
+  // When a sum/min/max operation is applied on a large array, this
+  // array is recursively split into blocks of size 'array_split_size'.
+  int32 array_split_size = 3;
+
+  //
+  // Control naming of the variables..
+  //
+
+  // This parameters indicates if the solver should store the names of
+  // the objets it manages.
+  bool store_names = 4;
+
+  // Create names for cast variables.
+  bool name_cast_variables = 5;
+
+  // Should anonymous variables be given a name.
+  bool name_all_variables = 6;
+
+  //
+  // Control monitoring of the solver and the model.
+  //
+
+  // Activate propagation profiling.
+  bool profile_propagation = 7;
+
+  // Export propagation profiling data to file.
+  string profile_file = 8;
+
+  // Activate local search profiling.
+  bool profile_local_search = 16;
+
+  // Print local search profiling data after solving.
+  bool print_local_search_profile = 17;
+
+  // Activate propagate tracing.
+  bool trace_propagation = 9;
+
+  // Trace search.
+  bool trace_search = 10;
+
+  // Print the model before solving.
+  bool print_model = 11;
+
+  // Print model statistics before solving.
+  bool print_model_stats = 12;
+
+  // Print added constraints.
+  bool print_added_constraints = 13;
+
+  // Export model to file.
+  string export_file = 14;
+
+  //
+  // Control search.
+  //
+
+  // Disable solving.
+
+  bool disable_solve = 15;
+
+  // The following flags are meant for internal use only.
+
+  //
+  // Control the implementation of the table constraint.
+  //
+  bool use_compact_table = 100;
+  bool use_small_table = 101;
+  bool use_sat_table = 102;
+  int32 ac4r_table_threshold = 103;
+  bool use_mdd_table = 104;
+
+  //
+  // Control the propagation of the cumulative constraint.
+  //
+  bool use_cumulative_edge_finder = 105;
+  bool use_cumulative_time_table = 106;
+  bool use_sequence_high_demand_tasks = 107;
+  bool use_all_possible_disjunctions = 108;
+  int32 max_edge_finder_size = 109;
+
+  //
+  // Control the propagation of the diffn constraint.
+  //
+  bool diffn_use_cumulative = 110;
+
+  //
+  // Control the implementation of the element constraint.
+  //
+  bool use_element_rmq = 111;
+};

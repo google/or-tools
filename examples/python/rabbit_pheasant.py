@@ -21,11 +21,16 @@ flavors of constraint programming interfaces.
 """
 from __future__ import print_function
 from ortools.constraint_solver import pywrapcp
+from ortools.constraint_solver import solver_parameters_pb2
 
 
 def main():
+  parameters = pywrapcp.Solver.DefaultSolverParameters()
+  parameters.trace_search = True
+
   # Create the solver.
-  solver = pywrapcp.Solver('rabbit+pheasant')
+  solver = pywrapcp.Solver('rabbit+pheasant', parameters)
+
 
   # Create the variables.
   pheasant = solver.IntVar(0, 100, 'pheasant')

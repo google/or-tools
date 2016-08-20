@@ -1,14 +1,13 @@
 # SVN tags of dependencies to checkout.
 
 GFLAGS_TAG = 2.1.2
-PROTOBUF_TAG = 3.0.0-beta-2
+PROTOBUF_TAG = 3.0.0
 SPARSEHASH_TAG = 2.0.3
-CBC_TAG = 2.9.7
-SWIG_TAG = 3.0.7
+CBC_TAG = 2.9.8
+SWIG_TAG = 3.0.10
 PCRE_TAG = 8.37
 # BISON, FLEX
 BISON_TAG = 3.0.4
-# Flex 2.5.39 is broken on mac.
 FLEX_TAG = 2.6.0
 # help2man is needed by bison
 HELP2MAN_TAG = 1.43.3
@@ -22,8 +21,8 @@ LIBTOOL_TAG = 2.4.6
 #
 # The GLPK archive should be glpk-4.57.tar.gz
 GLPK_TAG = 4.57
-# The SCIP archive should be scipoptsuite-3.2.0.tgz
-SCIP_TAG = 3.2.0
+# The SCIP archive should be scipoptsuite-3.2.1.tgz
+SCIP_TAG = 3.2.1
 # Version of Sulum
 SULUM_TAG = 43
 
@@ -62,10 +61,13 @@ ACLOCAL_TARGET = \
 	dependencies/install/bin/libtool
 
 SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
+ifeq ($(PLATFORM), MACOSX)
+  SET_COMPILER = CXX="$(CCC)"
+endif
 
 # Main target.
-.PHONY: makefile_third_party missing_directories
-third_party: install_third_party makefile_third_party
+.PHONY: makefile_third_party missing_directories install_java_protobuf
+third_party: makefile_third_party install_third_party
 
 # Create missing directories
 
@@ -104,10 +106,6 @@ MISSING_DIRECTORIES = \
 	src/gen/sat
 
 missing_directories: $(MISSING_DIRECTORIES)
-
-ifneq ($(MCS),)
-CSHARP_THIRD_PARTY = install_csharp_protobuf
-endif
 
 install_third_party: \
 	missing_directories \
@@ -229,14 +227,14 @@ ifeq ($(PLATFORM),MACOSX)
 endif
 
 dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md check_cmake
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
+	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_COMPILER) \
 	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
 		 -D BUILD_STATIC_LIBS=ON \
 	         -D CMAKE_INSTALL_PREFIX=../../install \
-		 -D CMAKE_CXX_FLAGS=-fPIC \
+		 -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
 	         .
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
-	make -j 4 && \
+	$(SET_COMPILER) make -j 4 && \
 	make install
 	$(TOUCH) dependencies/install/bin/gflags_completions.sh
 ifeq ($(PLATFORM),MACOSX)
@@ -251,13 +249,13 @@ dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md:
 install_protobuf: dependencies/install/bin/protoc
 
 dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) make install
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) make install
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile: dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) ./autogen.sh
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) ./autogen.sh
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
 	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
@@ -266,13 +264,13 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
 install_sparsehash: dependencies/install/include/google/dense_hash_map
 
 dependencies/install/include/google/dense_hash_map: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) make install
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) make install
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) ./autogen.sh
+	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) ./autogen.sh
 
 dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
@@ -281,10 +279,10 @@ dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
 install_cbc: dependencies/install/bin/cbc
 
 dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) make install
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) $(SET_COMPILER) make install
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT"
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
@@ -390,7 +388,7 @@ dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/help2man/help2man-$(HELP2MAN_TAG).tar.gz
 
 # Install libtool
-dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile
+dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile dependencies/install/bin/help2man
 	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && $(SET_PATH) make install
 
 dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile: dependencies/sources/libtool-$(LIBTOOL_TAG)/configure
@@ -432,15 +430,19 @@ dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure: dependencies/archives/a
 dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/autoconf/autoconf-$(AUTOCONF_TAG).tar.gz
 
+# Install Java protobuf
+
+install_java_protobuf: dependencies/install/lib/protobuf.jar
+
+dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
+	  ../../../install/bin/protoc --java_out=core/src/main/java -I../src \
+	  ../src/google/protobuf/descriptor.proto
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/core/src/main/java && jar cvf ../../../../../../../install/lib/protobuf.jar com/google/protobuf/*java
+
 # Install C# protobuf
 
-CSHARP_PROTOBUF_SRC = $(shell grep Compile dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf/Google.Protobuf.csproj | cut -d\" -f 2 | sed -e 's/\\/\//g')
-
-install_csharp_protobuf: dependencies/install/bin/Google.Protobuf.dll
-
-dependencies/install/bin/Google.Protobuf.dll: install_protobuf
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/csharp/src/Google.Protobuf && $(CSC) /target:library /out:$(OR_TOOLS_TOP)/dependencies/install/bin/Google.Protobuf.dll /warn:0 /nologo $(CSHARP_PROTOBUF_SRC)
-
+#create .snk file if strong named dll is required (this is the default behaviour)
 # Clean everything.
 clean_third_party:
 	-$(DEL) Makefile.local
@@ -483,6 +485,7 @@ Makefile.local:
 	@echo $(GLPK_MAKEFILE) >> Makefile.local
 	@echo $(SCIP_MAKEFILE) >> Makefile.local
 	@echo UNIX_SCIP_TAG = $(SCIP_TAG) >> Makefile.local
+	@echo CLR_KEYFILE = bin/or-tools.snk >> Makefile.local
 	@echo UNIX_SULUM_VERSION = $(SULUM_TAG) >> Makefile.local
 	@echo \# Please define UNIX_SLM_DIR to use Sulum Optimization. >> Makefile.local
 	@echo \# Please define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local

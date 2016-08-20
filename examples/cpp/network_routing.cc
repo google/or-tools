@@ -118,7 +118,8 @@ class NetworkRoutingData {
   // Returns the capacity of an arc, and 0 if the arc is not defined.
   int Capacity(int node1, int node2) const {
     return FindWithDefault(
-        all_arcs_, std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
+        all_arcs_,
+        std::make_pair(std::min(node1, node2), std::max(node1, node2)), 0);
   }
 
   // Returns the demand between the source and the destination, and 0 if
@@ -131,7 +132,8 @@ class NetworkRoutingData {
   // External building API.
   void set_num_nodes(int num_nodes) { num_nodes_ = num_nodes; }
   void AddArc(int node1, int node2, int capacity) {
-    all_arcs_[std::make_pair(std::min(node1, node2), std::max(node1, node2))] = capacity;
+    all_arcs_[std::make_pair(std::min(node1, node2), std::max(node1, node2))] =
+        capacity;
   }
   void AddDemand(int source, int destination, int traffic) {
     all_demands_[std::make_pair(source, destination)] = traffic;
@@ -476,11 +478,9 @@ class NetworkRoutingSolver {
     for (int demand_index = 0; demand_index < num_demands; ++demand_index) {
       paths.clear();
       const Demand& demand = demands_array_[demand_index];
-      ResultCallback2<int64, int, int>* const graph_callback =
-          NewPermanentCallback(this, &NetworkRoutingSolver::HasArc);
       CHECK(DijkstraShortestPath(num_nodes_, demand.source, demand.destination,
-                                 graph_callback, kDisconnectedDistance,
-                                 &paths));
+                                 [this](int x, int y) { return HasArc(x, y); },
+                                 kDisconnectedDistance, &paths));
       all_min_path_lengths_.push_back(paths.size() - 1);
     }
 
@@ -801,12 +801,13 @@ class NetworkRoutingSolver {
     }
 
     // DecisionBuilder.
-    Solver::IndexEvaluator2 value_evaluator = 
-      [this, &usage_costs](int64 var, int64 value) {
+    Solver::IndexEvaluator2 eval_marginal_cost = [this, &usage_costs](
+        int64 var, int64 value) {
       return EvaluateMarginalCost(usage_costs, var, value);
     };
-    DecisionBuilder* const db =
-      solver.MakePhase(decision_vars, Solver::CHOOSE_RANDOM, value_evaluator);
+
+    DecisionBuilder* const db = solver.MakePhase(
+        decision_vars, Solver::CHOOSE_RANDOM, eval_marginal_cost);
 
     // Limits.
     if (time_limit != 0 || fail_limit != 0) {
@@ -833,12 +834,8 @@ class NetworkRoutingSolver {
                          actual_usage_costs));
     SearchLimit* const lns_limit =
         solver.MakeLimit(kint64max, kint64max, FLAGS_lns_limit, kint64max);
-    Solver::IndexEvaluator2 marginal_evaluator = 
-      [this, &usage_costs](int64 var, int64 value) {
-      return EvaluateMarginalCost(usage_costs, var, value);
-    };
     DecisionBuilder* const inner_db = solver.MakePhase(
-       decision_vars, Solver::CHOOSE_RANDOM, marginal_evaluator);
+        decision_vars, Solver::CHOOSE_RANDOM, eval_marginal_cost);
 
     DecisionBuilder* const apply = solver.RevAlloc(new ApplyMaxDiscrepancy);
     DecisionBuilder* const max_discrepency_db = solver.Compose(apply, inner_db);

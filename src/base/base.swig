@@ -66,7 +66,7 @@
 // type names.  Google typedefs are placed at the very end along with
 // the necessary %apply macros.  See COPY_TYPEMAPS below for details.
 
-%include <std_string.i>
+%include "std_string.i"
 
 // Support for those popular buffer-pointer/length input pairs
 %typemap(in) (void *INPUT, unsigned int LENGTH) (Py_ssize_t len) {

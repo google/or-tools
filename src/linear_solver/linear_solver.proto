@@ -179,6 +179,20 @@ message MPModelRequest {
   // WARNING: if you set this on a request to prod servers, it will be rejected
   // and yield the RPC Application Error code MPSOLVER_SOLVER_TYPE_UNAVAILABLE.
   optional bool enable_internal_solver_output = 4 [default = false];
+
+  // Advanced usage. Solver-specific parameters in the solver's own format,
+  // different for each solver. For example, if you use SCIP and you want to
+  // stop the solve earlier than the time limit if it reached a solution that is
+  // at most 1% away from the optimal, you can set this to "limits/gap=0.01".
+  //
+  // Note however that there is no "security" mechanism in place so it is up to
+  // the client to make sure that the given options don't make the solve
+  // non thread safe or use up too much memory for instance.
+  //
+  // If the option format is not understood by the solver, the request will be
+  // rejected and yield an RPC Application error with code
+  // MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS.
+  optional string solver_specific_parameters = 5;
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to
@@ -247,6 +261,8 @@ enum MPSolverResponseStatus {
   // Something is wrong with the fields "solution_hint_var_index" and/or
   // "solution_hint_var_value".
   MPSOLVER_MODEL_INVALID_SOLUTION_HINT = 0x54;
+  // Something is wrong with the solver_specific_parameters request field.
+  MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS = 0x55;
 
   // Implementation error: the requested solver implementation is not
   // available (see MPModelRequest.solver_type).
@@ -254,12 +270,6 @@ enum MPSolverResponseStatus {
   // eg //linear_solver:linear_solver_scip for SCIP.
   MPSOLVER_SOLVER_TYPE_UNAVAILABLE = 0x7;
 
-
-  // OBSOLETE: DO NOT USE.
-  // TODO(user): Remove those.
-  MPSOLVER_MODEL_INVALID_NUM_VARS_AND_NUM_COEFFS_DIFFER_IN_CONSTRAINT = 0x51;
-  MPSOLVER_MODEL_INVALID_VAR_INDEX_OUT_OF_RANGE_IN_CONSTRAINT = 0x52;
-  MPSOLVER_MODEL_INVALID_DUPLICATE_VAR_IN_CONSTRAINT = 0x53;
 };
 
 message MPSolutionResponse {

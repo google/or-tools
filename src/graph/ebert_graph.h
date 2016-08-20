@@ -480,7 +480,7 @@ class StarGraphBase {
   ArcIndexType FirstOutgoingArc(const NodeIndexType node) const {
     DCHECK(IsNodeValid(node));
     return ThisAsDerived()->FindNextOutgoingArc(
-        ThisAsDerived()->FirstIncidentArc(node));
+        ThisAsDerived()->FirstOutgoingOrOppositeIncomingArc(node));
   }
 
   // The maximum number of nodes that the graph can hold.
@@ -648,10 +648,10 @@ class ForwardStaticGraph
       first_incident_arc_[kFirstNode + input_arcs[arc].first] += 1;
       // Take this opportunity to see how many nodes are really
       // mentioned in the arc list.
-      num_nodes_ = std::max(num_nodes_,
-                       static_cast<NodeIndexType>(input_arcs[arc].first + 1));
-      num_nodes_ = std::max(num_nodes_,
-                       static_cast<NodeIndexType>(input_arcs[arc].second + 1));
+      num_nodes_ = std::max(
+          num_nodes_, static_cast<NodeIndexType>(input_arcs[arc].first + 1));
+      num_nodes_ = std::max(
+          num_nodes_, static_cast<NodeIndexType>(input_arcs[arc].second + 1));
     }
     ArcIndexType next_arc = kFirstArc;
     for (NodeIndexType node = 0; node < num_nodes; ++node) {
@@ -862,7 +862,7 @@ class ForwardStaticGraph
   }
 
   // Returns the first arc in node's incidence list.
-  ArcIndexType FirstIncidentArc(const NodeIndexType node) const {
+  ArcIndexType FirstOutgoingOrOppositeIncomingArc(NodeIndexType node) const {
     DCHECK(RepresentationClean());
     DCHECK(IsNodeValid(node));
     ArcIndexType result = first_incident_arc_[node];
@@ -1120,7 +1120,8 @@ class EbertGraphBase
   }
 
   // Returns the first arc in node's incidence list.
-  ArcIndexType FirstIncidentArc(const NodeIndexType node) const {
+  ArcIndexType FirstOutgoingOrOppositeIncomingArc(
+      const NodeIndexType node) const {
     DCHECK(representation_clean_);
     DCHECK(IsNodeValid(node));
     return first_incident_arc_[node];
@@ -1193,7 +1194,7 @@ class EbertGraph
                              EbertGraph<NodeIndexType, ArcIndexType> >;
 
   using Base::ArcDebugString;
-  using Base::FirstIncidentArc;
+  using Base::FirstOutgoingOrOppositeIncomingArc;
   using Base::Initialize;
   using Base::NextAdjacentArc;
   using Base::NodeDebugString;
@@ -1232,19 +1233,21 @@ class EbertGraph
 #if !SWIG
   // Iterator class for traversing the arcs incident to a given node in the
   // graph.
-  class IncidentArcIterator {
+  class OutgoingOrOppositeIncomingArcIterator {
    public:
-    IncidentArcIterator(const EbertGraph& graph, NodeIndexType node)
+    OutgoingOrOppositeIncomingArcIterator(const EbertGraph& graph,
+                                          NodeIndexType node)
         : graph_(graph),
           node_(graph_.StartNode(node)),
-          arc_(graph_.StartArc(graph_.FirstIncidentArc(node))) {
+          arc_(graph_.StartArc(
+              graph_.FirstOutgoingOrOppositeIncomingArc(node))) {
       DCHECK(CheckInvariant());
     }
 
     // This constructor takes an arc as extra argument and makes the iterator
     // start at arc.
-    IncidentArcIterator(const EbertGraph& graph, NodeIndexType node,
-                        ArcIndexType arc)
+    OutgoingOrOppositeIncomingArcIterator(const EbertGraph& graph,
+                                          NodeIndexType node, ArcIndexType arc)
         : graph_(graph),
           node_(graph_.StartNode(node)),
           arc_(graph_.StartArc(arc)) {
@@ -1252,7 +1255,7 @@ class EbertGraph
     }
 
     // Can only assign from an iterator on the same graph.
-    void operator=(const IncidentArcIterator& iterator) {
+    void operator=(const OutgoingOrOppositeIncomingArcIterator& iterator) {
       DCHECK(&iterator.graph_ == &graph_);
       node_ = iterator.node_;
       arc_ = iterator.arc_;
@@ -1277,7 +1280,7 @@ class EbertGraph
       if (arc_ == kNilArc) {
         return true;  // This occurs when the iterator has reached the end.
       }
-      DCHECK(graph_.IsIncident(arc_, node_));
+      DCHECK(graph_.IsOutgoingOrOppositeIncoming(arc_, node_));
       return true;
     }
     // A reference to the current EbertGraph considered.
@@ -1291,11 +1294,6 @@ class EbertGraph
   };
 
   // Iterator class for traversing the incoming arcs associated to a given node.
-  // Note that the indices of these arc are negative, i.e. it's actually
-  // their corresponding direct arcs that are incoming to the node.
-  // The API has been designed in this way to have the set of arcs iterated
-  // by IncidentArcIterator to be the union of the sets of arcs iterated by
-  // IncomingArcIterator and OutgoingArcIterator.
   class IncomingArcIterator {
    public:
     IncomingArcIterator(const EbertGraph& graph, NodeIndexType node)
@@ -1311,7 +1309,8 @@ class EbertGraph
                         ArcIndexType arc)
         : graph_(graph),
           node_(graph_.StartNode(node)),
-          arc_(graph_.StartArc(arc)) {
+          arc_(arc == kNilArc ? kNilArc
+                              : graph_.StartArc(graph_.Opposite(arc))) {
       DCHECK(CheckInvariant());
     }
 
@@ -1332,7 +1331,9 @@ class EbertGraph
     }
 
     // Returns the index of the arc currently pointed to by the iterator.
-    ArcIndexType Index() const { return arc_; }
+    ArcIndexType Index() const {
+      return arc_ == kNilArc ? kNilArc : graph_.Opposite(arc_);
+    }
 
    private:
     // Returns true if the invariant for the iterator is verified.
@@ -1341,7 +1342,7 @@ class EbertGraph
       if (arc_ == kNilArc) {
         return true;  // This occurs when the iterator has reached the end.
       }
-      DCHECK(graph_.IsIncoming(arc_, node_));
+      DCHECK(graph_.IsIncoming(Index(), node_));
       return true;
     }
     // A reference to the current EbertGraph considered.
@@ -1424,18 +1425,19 @@ class EbertGraph
   }
 
   // Returns true if arc is incident to node.
-  bool IsIncident(ArcIndexType arc, NodeIndexType node) const {
-    return IsIncoming(arc, node) || IsOutgoing(arc, node);
+  bool IsOutgoingOrOppositeIncoming(ArcIndexType arc,
+                                    NodeIndexType node) const {
+    return Tail(arc) == node;
   }
 
   // Returns true if arc is incoming to node.
   bool IsIncoming(ArcIndexType arc, NodeIndexType node) const {
-    return DirectArcHead(arc) == node;
+    return IsDirect(arc) && Head(arc) == node;
   }
 
   // Returns true if arc is outgoing from node.
   bool IsOutgoing(ArcIndexType arc, NodeIndexType node) const {
-    return DirectArcTail(arc) == node;
+    return IsDirect(arc) && Tail(arc) == node;
   }
 
   // Recreates the next_adjacent_arc_ and first_incident_arc_ variables from
@@ -1493,7 +1495,7 @@ class EbertGraph
   ArcIndexType FirstIncomingArc(const NodeIndexType node) const {
     DCHECK_LE(kFirstNode, node);
     DCHECK_GE(max_num_nodes_, node);
-    return FindNextIncomingArc(FirstIncidentArc(node));
+    return FindNextIncomingArc(FirstOutgoingOrOppositeIncomingArc(node));
   }
 
   // Returns the incoming arc following the argument in the adjacency list.
@@ -1631,7 +1633,7 @@ class ForwardEbertGraph
 
   // Returns true if arc is incoming to node.
   bool IsIncoming(ArcIndexType arc, NodeIndexType node) const {
-    return Head(arc) == node;
+    return IsDirect(arc) && Head(arc) == node;
   }
 
   // Recreates the next_adjacent_arc_ and first_incident_arc_

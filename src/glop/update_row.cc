@@ -160,9 +160,9 @@ void UpdateRow::ComputeUpdatesRowWise() {
   }
 
   non_zero_position_list_.clear();
+  const Fractional drop_tolerance = parameters_.drop_tolerance();
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
-    // TODO(user): use a threshold?
-    if (fabs(coefficient_[col]) > 0.0) {
+    if (fabs(coefficient_[col]) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
     }
   }
@@ -196,14 +196,13 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
   // Only keep in non_zero_position_set_ the relevant positions.
   non_zero_position_set_.Intersection(variables_info_.GetIsRelevantBitRow());
   non_zero_position_list_.clear();
+  const Fractional drop_tolerance = parameters_.drop_tolerance();
   for (const ColIndex col : non_zero_position_set_) {
     // TODO(user): Since the solution is really sparse, maybe storing the
     // non-zero coefficients contiguously in a vector is better than keeping
     // them as they are. Note however that we will iterate only twice on the
     // update row coefficients during an iteration.
-    //
-    // TODO(user): use a threshold?
-    if (fabs(coefficient_[col]) > 0.0) {
+    if (fabs(coefficient_[col]) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
     }
   }
@@ -213,29 +212,28 @@ void UpdateRow::ComputeUpdatesColumnWise() {
   SCOPED_TIME_STAT(&stats_);
 
   const ColIndex num_cols = matrix_.num_cols();
+  const Fractional drop_tolerance = parameters_.drop_tolerance();
   coefficient_.resize(num_cols, 0.0);
   non_zero_position_list_.clear();
 #ifdef OMP
   const int num_omp_threads = parameters_.num_omp_threads();
-#else
-  const int num_omp_threads = 1;
-#endif
   if (num_omp_threads == 1) {
+#endif
     for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
       // Coefficient of the column right inverse on the 'leaving_row'.
       const Fractional coeff =
           matrix_.ColumnScalarProduct(col, unit_row_left_inverse_);
-      // Nothing to do if 'coeff' is zero which does happen due to sparsity.
-      //
-      // TODO(user): Be more aggresive and use a threshold to counter
-      // computation errors and be a bit faster?
-      if (fabs(coeff) > 0.0) {
+      // Nothing to do if 'coeff' is (almost) zero which does happen due to
+      // sparsity. Note that it shouldn't be too bad to use a non-zero drop
+      // tolerance here because even if we introduce some precision issues, the
+      // quantities updated by this update row will eventually be recomputed.
+      if (fabs(coeff) > drop_tolerance) {
         non_zero_position_list_.push_back(col);
         coefficient_[col] = coeff;
       }
     }
-  } else {
 #ifdef OMP
+  } else {
     // In the multi-threaded case, perform the same computation as in the
     // single-threaded case above.
     const DenseBitRow& is_relevant = variables_info_.GetIsRelevantBitRow();
@@ -248,14 +246,14 @@ void UpdateRow::ComputeUpdatesColumnWise() {
             matrix_.ColumnScalarProduct(col, unit_row_left_inverse_);
       }
     }
-    // end of omp parallel for
+    // End of omp parallel for.
     for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
-      if (fabs(coefficient_[col]) > 0.0) {
+      if (fabs(coefficient_[col]) > drop_tolerance) {
         non_zero_position_list_.push_back(col);
       }
     }
-#endif  // OMP
   }
+#endif  // OMP
 }
 
 }  // namespace glop

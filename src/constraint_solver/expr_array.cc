@@ -40,7 +40,7 @@ class TreeArrayConstraint : public CastConstraint {
                       IntVar* const sum_var)
       : CastConstraint(solver, sum_var),
         vars_(vars),
-        block_size_(solver->parameters().array_split_size) {
+        block_size_(solver->parameters().array_split_size()) {
     std::vector<int> lengths;
     lengths.push_back(vars_.size());
     while (lengths.back() > 1) {
@@ -3046,7 +3046,7 @@ IntExpr* MakeSumArrayAux(Solver* const solver, const std::vector<IntVar*>& vars,
     if (AreAllBooleans(vars)) {
       solver->AddConstraint(
           solver->RevAlloc(new SumBooleanEqualToVar(solver, vars, sum_var)));
-    } else if (size <= solver->parameters().array_split_size) {
+    } else if (size <= solver->parameters().array_split_size()) {
       solver->AddConstraint(
           solver->RevAlloc(new SmallSumConstraint(solver, vars, sum_var)));
     } else {
@@ -3287,7 +3287,7 @@ IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
           new_max = std::min(new_max, vars[i]->Max());
         }
         IntVar* const new_var = MakeIntVar(new_min, new_max);
-        if (size <= parameters_.array_split_size) {
+        if (size <= parameters_.array_split_size()) {
           AddConstraint(RevAlloc(new SmallMinConstraint(this, vars, new_var)));
         } else {
           AddConstraint(RevAlloc(new MinConstraint(this, vars, new_var)));
@@ -3328,7 +3328,7 @@ IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
           new_max = std::max(new_max, vars[i]->Max());
         }
         IntVar* const new_var = MakeIntVar(new_min, new_max);
-        if (size <= parameters_.array_split_size) {
+        if (size <= parameters_.array_split_size()) {
           AddConstraint(RevAlloc(new SmallMaxConstraint(this, vars, new_var)));
         } else {
           AddConstraint(RevAlloc(new MaxConstraint(this, vars, new_var)));
@@ -3347,7 +3347,7 @@ Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
   if (size > 2) {
     if (AreAllBooleans(vars)) {
       return RevAlloc(new ArrayBoolAndEq(this, vars, min_var));
-    } else if (size <= parameters_.array_split_size) {
+    } else if (size <= parameters_.array_split_size()) {
       return RevAlloc(new SmallMinConstraint(this, vars, min_var));
     } else {
       return RevAlloc(new MinConstraint(this, vars, min_var));
@@ -3367,7 +3367,7 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
   if (size > 2) {
     if (AreAllBooleans(vars)) {
       return RevAlloc(new ArrayBoolOrEq(this, vars, max_var));
-    } else if (size <= parameters_.array_split_size) {
+    } else if (size <= parameters_.array_split_size()) {
       return RevAlloc(new SmallMaxConstraint(this, vars, max_var));
     } else {
       return RevAlloc(new MaxConstraint(this, vars, max_var));
@@ -3421,7 +3421,7 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst)
     }
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, MakeIntConst(cst)));
-    } else if (size <= parameters_.array_split_size) {
+    } else if (size <= parameters_.array_split_size()) {
       return RevAlloc(new SmallSumConstraint(this, vars, MakeIntConst(cst)));
     } else {
       return RevAlloc(new SumConstraint(this, vars, MakeIntConst(cst)));
@@ -3446,7 +3446,7 @@ Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
   } else {
     if (DetectSumOverflow(vars)) {
       return RevAlloc(new SafeSumConstraint(this, vars, var));
-    } else if (size <= parameters_.array_split_size) {
+    } else if (size <= parameters_.array_split_size()) {
       return RevAlloc(new SmallSumConstraint(this, vars, var));
     } else {
       return RevAlloc(new SumConstraint(this, vars, var));

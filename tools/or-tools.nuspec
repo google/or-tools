@@ -2,19 +2,22 @@
 <package >
   <metadata>
     <id>Google.OrTools</id>
-    <version>2.1.VVVV</version>
+    <version>VVVV</version>
     <authors>Google</authors>
     <licenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</licenseUrl>
     <projectUrl>https://developers.google.com/optimization</projectUrl>
     <description>.NET Assembly for the OR-Tools project</description>
     <releaseNotes>SVN Release VVVV.</releaseNotes>
-    <copyright>Copyright 2015 Google</copyright>
-    <tags>OperationsResearch MathProgramming LinearProgramming C++ Python Java .NET</tags>
+    <copyright>Copyright 2016 Google</copyright>
+    <tags>OperationsResearch MathProgramming LinearProgramming ConstraintProgramming .NET</tags>
+    <dependencies>
+    <dependency id="Google.Protobuf" version="PROTOBUF_TAG" />
+    </dependencies>
   </metadata>
   <files>
     <file src="bin\Google.OrTools.dll" target="lib\net40"/>
     <file src="examples\**\*.*" target="examples"/>
-    <file src="data\**\*.*" target="data"/>
+    <file src="examples\data\**\*.*" target="data"/>
     <file src="LICENSE-2.0.txt"/>
   </files>
 </package>

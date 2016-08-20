@@ -45,7 +45,7 @@
 #if defined(_MSC_VER)
 static inline double isnan(double value) { return _isnan(value); }
 static inline double round(double value) { return floor(value + 0.5); }
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || __GNUC__ >= 5
 using std::isnan;
 #endif
 

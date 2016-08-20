@@ -20,14 +20,16 @@ ifeq ("$(SYSTEM)","unix")
       DETECTED_PYTHON_VERSION = 2.6
     endif
   endif
-  MCS = $(shell which mcs)
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
     CODEPORT = OpSys-Linux
     LBITS = $(shell getconf LONG_BIT)
+    DISTRIBUTION_ID = $(shell lsb_release -i -s)
+    DISTRIBUTION_NUMBER = $(shell lsb_release -r -s)
+    DISTRIBUTION = $(DISTRIBUTION_ID)-$(DISTRIBUTION_NUMBER)
     ifeq ($(LBITS),64)
       NETPLATFORM = anycpu
-      PORT = Linux64
+      PORT = $(DISTRIBUTION)-64bit
       PTRLENGTH = 64
       GUROBI_PLATFORM=linux64
       CANDIDATE_JDK_ROOTS = \
@@ -37,10 +39,12 @@ ifeq ("$(SYSTEM)","unix")
 	/usr/lib64/jvm/java-6-sun-1.6.0.26 \
         /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64 \
         /usr/lib/jvm/java-6-openjdk-amd64 \
-        /usr/lib/jvm/java-7-openjdk-amd64
+        /usr/lib/jvm/java-7-openjdk-amd64 \
+        /usr/lib/jvm/java-8-openjdk-amd64 \
+        /usr/lib/jvm/java-9-openjdk-amd64
     else
       NETPLATFORM = x86
-      PORT = Linux32
+      PORT = $(DISTRIBUTION)-32bit
       PTRLENGTH = 32
       GUROBI_PLATFORM=linux32
       CANDIDATE_JDK_ROOTS = \
@@ -57,7 +61,8 @@ ifeq ("$(SYSTEM)","unix")
   endif
   ifeq ($(OS),Darwin) # Assume Mac Os X
     PLATFORM = MACOSX
-    PORT = MacOsX64
+    OS_VERSION = $(shell sw_vers -productVersion)
+    PORT = MacOsX-$(OS_VERSION)
     CODEPORT = OpSys-OSX
     NETPLATFORM = x64
     PTRLENGTH = 64
@@ -72,53 +77,85 @@ ifeq ("$(SYSTEM)","unix")
     SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
     MAC_MIN_VERSION = 10.8
   endif
+
+  # Look at mono compiler.
+  REAL_MCS = $(shell which mcs)
+  ifneq ($(REAL_MCS),)
+    ifeq ($(PLATFORM),LINUX)
+      MCS_VERSION = $(shell $(REAL_MCS) --version | grep -P '\d\.\d' -o | head -1)
+    else # Mac OS X
+      MCS_VERSION = $(shell $(REAL_MCS) --Version | grep -E '\d\.\d' -o | head -1)
+    endif
+    ifneq ("4.2", "$(word 1,$(sort 4.2 $(MCS_VERSION)))")
+      MCS := $(null)
+    else
+      MCS := $(REAL_MCS)
+    endif
+  endif
 endif
 
 # Windows specific part.
 ifeq ("$(SYSTEM)","win")
-  SCIP_MAKEFILE = \# SCIP not compiled
-  SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
-  CODEPORT = OpSys-Windows
-  ifeq ("$(VisualStudioVersion)", "12.0")
-    VISUAL_STUDIO=2013
-    VS_RELEASE=v120
-    VS_COMTOOLS=120
-  else
-    ifeq ("$(VisualStudioVersion)", "11.0")
-      VISUAL_STUDIO=2012
-      VS_RELEASE=v110
-      VS_COMTOOLS=110
-    else
-      VISUAL_STUDIO=2010
-      VS_RELEASE=v100
-      VS_COMTOOLS=100
-    endif
-  endif
+  # Detect 32/64bit
   ifeq ("$(Platform)", "X64")
-    PLATFORM = x64
-  endif
-  ifeq ("$(Platform)", "x64")
-    PLATFORM = x64
-  endif
-  ifeq ("$(PLATFORM)", "x64")
-    CBC_PLATFORM = x64-$(VS_RELEASE)-Release
+    PLATFORM = WIN64
+    PTRLENGTH = 64
+    CMAKE_SUFFIX = Win64
+    ARCH= /DARCH_K8
+    CBC_PLATFORM_PREFIX = x64
     GLPK_PLATFORM = w64
     NETPLATFORM = x64
-    PORT = VisualStudio$(VISUAL_STUDIO)-64b
-    PTRLENGTH = 64
   else
-    CBC_PLATFORM = Win32-$(VS_RELEASE)-Release
+    PLATFORM = Win32
+    PTRLENGTH = 32
+    CMAKE_SUFFIX =
+    ARCH =
+    CBC_PLATFORM_PREFIX = Win32
     GLPK_PLATFORM = w32
     NETPLATFORM = x86
-    PLATFORM = Win32
-    PORT = VisualStudio$(VISUAL_STUDIO)-32b
-    PTRLENGTH = 32
   endif
+
+  # Detect visual studio version
+  ifeq ("$(VisualStudioVersion)", "12.0")
+    VISUAL_STUDIO_YEAR = 2013
+    VISUAL_STUDIO_MAJOR = 12
+  else
+    ifeq ("$(VisualStudioVersion)", "14.0")
+      VISUAL_STUDIO_YEAR = 2015
+      VISUAL_STUDIO_MAJOR = 14
+    else
+      $(warning "Unrecognized visual studio version")
+    endif
+  endif
+
+  # Set common windows variables
+
+  # OS Specific
   OS = Windows
   OR_TOOLS_TOP_AUX = $(shell cd)
   OR_TOOLS_TOP = $(shell echo $(OR_TOOLS_TOP_AUX) | tools\\sed.exe -e "s/\\/\\\\/g" | tools\\sed.exe -e "s/ //g")
+  CODEPORT = OpSys-Windows
+
+  # Compiler specific
+  PORT = VisualStudio$(VISUAL_STUDIO_YEAR)-$(PTRLENGTH)bit
+  VS_RELEASE = v$(VISUAL_STUDIO_MAJOR)0
+  VS_COMTOOLS = $(VISUAL_STUDIO_MAJOR)0
+
+  ifeq ("$(CMAKE_SUFFIX)","")
+    CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR)"
+  else
+    CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR) $(CMAKE_SUFFIX)"
+  endif
+
+  # Third party specific
+  CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
+  SCIP_MAKEFILE = \# SCIP not compiled
+
+  # Java specific
+  SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
 endif
 
+# Get github revision level
 ifeq ("$(SYSTEM)","unix")
 GIT_REVISION:= $(shell git log --oneline | wc -l | tr -d ' ')
 GIT_HASH:= $(shell git log --pretty=format:'%h' -n 1)
@@ -126,7 +163,10 @@ else
 GIT_REVISION:= $(shell git log --oneline | find /C " ")
 GIT_HASH:= $(shell git log --pretty=format:'%h' -n 1)
 endif
-OR_TOOLS_VERSION := $(GIT_REVISION)
+OR_TOOLS_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR).$(GIT_REVISION)
+OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
+INSTALL_DIR=or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
+FZ_INSTALL_DIR=or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
 
 printport:
 	@echo SHELL = $(SHELL)
@@ -134,9 +174,15 @@ printport:
 	@echo SYSTEM = $(SYSTEM)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PTRLENGTH = $(PTRLENGTH)
-	@echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
-	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
-	@echo GIT_REVISION = \"$(GIT_REVISION)\"
+	@echo GIT_REVISION = $(GIT_REVISION)
 	@echo GIT_HASH = $(GIT_HASH)
 	@echo PORT = $(PORT)
+	@echo OR_TOOLS_VERSION = $(OR_TOOLS_VERSION)
+	@echo OR_TOOLS_SHORT_VERSION = $(OR_TOOLS_SHORT_VERSION)
+ifeq ("$(SYSTEM)","unix")
 	@echo MCS = $(MCS)
+	@echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
+	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
+else
+	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
+endif

@@ -24,12 +24,7 @@
 #include "base/hash.h"
 
 namespace operations_research {
-
-template <typename NodeIndex>
-const double BronKerboschAlgorithm<NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
-
 namespace {
-
 // Encapsulates graph->Run() to make all nodes self-connected.
 inline bool Connects(ResultCallback2<bool, int, int>* const graph, int i,
                      int j) {
@@ -198,7 +193,8 @@ class FindAndEliminate {
       : graph_(graph), node_count_(node_count), callback_(callback) {}
 
   bool GraphCallback(int node1, int node2) {
-    if (visited_.find(std::make_pair(std::min(node1, node2), std::max(node1, node2))) !=
+    if (visited_.find(
+            std::make_pair(std::min(node1, node2), std::max(node1, node2))) !=
         visited_.end()) {
       return false;
     }

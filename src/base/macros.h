@@ -15,7 +15,7 @@
 #define OR_TOOLS_BASE_MACROS_H_
 
 #if (defined(COMPILER_GCC3) || defined(OS_MACOSX)) && !defined(SWIG)
-#define ATTRIBUTE_UNUSED __attribute__((unused))
+#define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
 #else  // GCC
 #define ATTRIBUTE_UNUSED
 #endif  // GCC

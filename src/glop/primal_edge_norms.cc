@@ -162,15 +162,17 @@ void PrimalEdgeNorms::ComputeDirectionLeftInverse(
     }
   } else {
     direction_left_inverse_ = Transpose(direction.dense_column);
+    direction_left_inverse_non_zeros_.clear();
   }
 
   // Depending on the sparsity of the input, we decide which version to use.
   if (direction.non_zero_rows.size() < kThreshold) {
+    direction_left_inverse_non_zeros_ =
+        *reinterpret_cast<ColIndexVector const*>(&direction.non_zero_rows);
     basis_factorization_.LeftSolveWithNonZeros(
         &direction_left_inverse_, &direction_left_inverse_non_zeros_);
   } else {
     basis_factorization_.LeftSolve(&direction_left_inverse_);
-    direction_left_inverse_non_zeros_.clear();
   }
 
   // TODO(user): Refactorize if estimated accuracy above a threshold.
@@ -283,7 +285,8 @@ void PrimalEdgeNorms::UpdateDevexWeights(
   // norms of two vectors to approximate the norm of the sum.
   const Fractional entering_norm = sqrt(PreciseSquaredNorm(direction));
   const Fractional pivot_magnitude = fabs(direction[leaving_row]);
-  const Fractional leaving_norm = std::max(1.0, entering_norm / pivot_magnitude);
+  const Fractional leaving_norm =
+      std::max(1.0, entering_norm / pivot_magnitude);
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     const Fractional coeff = update_row.GetCoefficient(col);
     const Fractional update_vector_norm = fabs(coeff) * leaving_norm;

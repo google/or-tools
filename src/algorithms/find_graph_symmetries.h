@@ -63,8 +63,8 @@ class GraphSymmetryFinder {
 
   // Find a set of generators of the automorphism subgroup of the graph that
   // respects the given node equivalence classes. The generators are themselves
-  // permutations of the nodes: see http://en.wikipedia.org/wiki/Automorphism;
-  // and these permutations may only map a node onto a node of its equivalence
+  // permutations of the nodes: see http://en.wikipedia.org/wiki/Automorphism.
+  // These permutations may only map a node onto a node of its equivalence
   // class: two nodes i and j are in the same equivalence class iff
   // node_equivalence_classes_io[i] == node_equivalence_classes_io[j];
   //

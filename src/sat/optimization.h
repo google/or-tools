@@ -20,6 +20,8 @@
 #define OR_TOOLS_SAT_OPTIMIZATION_H_
 
 #include "sat/boolean_problem.h"
+#include "sat/integer.h"
+#include "sat/model.h"
 #include "sat/sat_solver.h"
 
 namespace operations_research {
@@ -33,10 +35,6 @@ namespace sat {
 // Important: The given SatSolver must be the one that just produced the given
 // core.
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
-
-// Randomizes the decision heuristic of the given SatParameters.
-// This is what SolveWithRandomParameters() below currently use.
-void RandomizeDecisionHeuristic(MTRandom* random, SatParameters* parameters);
 
 // Because the Solve*() functions below are also used in scripts that requires a
 // special output format, we use this to tell them whether or not to use the
@@ -111,6 +109,16 @@ SatSolver::Status SolveWithCardinalityEncoding(
 SatSolver::Status SolveWithCardinalityEncodingAndCore(
     LogBehavior log, const LinearBooleanProblem& problem, SatSolver* solver,
     std::vector<bool>* solution);
+
+// Model-based API, for now we just provide a basic algorithm that minimize a
+// given IntegerVariable by solving a sequence of decision problem.
+//
+// The "observer" function will be called each time a new feasible solution is
+// found.
+SatSolver::Status MinimizeIntegerVariableWithLinearScan(
+    IntegerVariable objective_var,
+    const std::function<void(const Model&)>& feasible_solution_observer,
+    Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -1004,9 +1004,9 @@ void RunOneBop(const BopParameters& parameters, int problem_index,
   }
   // TODO(user): Investigate a better approximation of the time needed to
   //              solve the problem than just the number of variables.
-  const double total_num_variables =
-      std::max(1.0, static_cast<double>(
-                   decomposer->original_problem().num_variables().value()));
+  const double total_num_variables = std::max(
+      1.0, static_cast<double>(
+               decomposer->original_problem().num_variables().value()));
   const double time_per_variable =
       parameters.max_time_in_seconds() / total_num_variables;
   const double deterministic_time_per_variable =

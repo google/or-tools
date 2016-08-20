@@ -46,7 +46,7 @@ bool InternalLoadStateProblemToSatSolver(const ProblemState& problem_state,
   for (VariableIndex var(0); var < problem_state.is_fixed().size(); ++var) {
     if (problem_state.is_fixed()[var]) {
       if (!sat_solver->AddUnitClause(
-              sat::Literal(sat::VariableIndex(var.value()),
+              sat::Literal(sat::BooleanVariable(var.value()),
                            problem_state.fixed_values()[var]))) {
         return false;
       }
@@ -124,7 +124,7 @@ void SatAssignmentToBopSolution(const sat::VariablesAssignment& assignment,
 
   // Only extract the variables of the initial problem.
   CHECK_LE(solution->Size(), assignment.NumberOfVariables());
-  for (sat::VariableIndex var(0); var < solution->Size(); ++var) {
+  for (sat::BooleanVariable var(0); var < solution->Size(); ++var) {
     CHECK(assignment.VariableIsAssigned(var));
     const bool value = assignment.LiteralIsTrue(sat::Literal(var, true));
     const VariableIndex bop_var_id(var.value());

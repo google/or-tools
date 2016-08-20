@@ -22,16 +22,30 @@ namespace glop {
 // TODO(user): Consider using kInvalidRow for this?
 const RowIndex kNonPivotal(-1);
 
+// Specialization of SparseVectorEntry and SparseColumnIterator for the
+// SparseColumn class. In addtion to index(), it also provides row() for better
+// readability on the client side.
+class SparseColumnEntry : public SparseVectorEntry<RowIndex> {
+ public:
+  // Returns the row of the current entry.
+  RowIndex row() const { return index(); }
+
+ protected:
+  SparseColumnEntry(const RowIndex* indices, const Fractional* coefficients,
+                    EntryIndex i)
+      : SparseVectorEntry<RowIndex>(indices, coefficients, i) {}
+};
+using SparseColumnIterator = SparseVectorIterator<SparseColumnEntry>;
+
 // A SparseColumn is a SparseVector<RowIndex>, with a few methods renamed
 // to help readability on the client side.
-class SparseColumn : public SparseVector<RowIndex> {
+class SparseColumn : public SparseVector<RowIndex, SparseColumnIterator> {
  public:
-  SparseColumn() : SparseVector<RowIndex>() {}
+  SparseColumn() : SparseVector<RowIndex, SparseColumnIterator>() {}
+
   // Use a separate API to get the row and coefficient of entry #i.
-  RowIndex EntryRow(EntryIndex i) const { return entry(i).index; }
-  Fractional EntryCoefficient(EntryIndex i) const {
-    return entry(i).coefficient;
-  }
+  RowIndex EntryRow(EntryIndex i) const { return GetIndex(i); }
+  Fractional EntryCoefficient(EntryIndex i) const { return GetCoefficient(i); }
   RowIndex GetFirstRow() const { return GetFirstIndex(); }
   RowIndex GetLastRow() const { return GetLastIndex(); }
   void ApplyRowPermutation(const RowPermutation& p) {
@@ -40,21 +54,6 @@ class SparseColumn : public SparseVector<RowIndex> {
   void ApplyPartialRowPermutation(const RowPermutation& p) {
     ApplyPartialIndexPermutation(p);
   }
-};
-
-// Specialization of the Entry API for SparseColumn, to gain the 'row' accessor.
-template <>
-class SparseVector<RowIndex>::Entry {
- public:
-  RowIndex row() const { return sparse_column_.EntryRow(i_); }
-  Fractional coefficient() const { return sparse_column_.EntryCoefficient(i_); }
-
- protected:
-  Entry(const SparseVector<RowIndex>& sparse_vector, EntryIndex i)
-      : sparse_column_(*static_cast<const SparseColumn*>(&sparse_vector)),
-        i_(i) {}
-  const SparseColumn& sparse_column_;
-  EntryIndex i_;
 };
 
 // TODO(user): create SparseRow and use it where appropriate.

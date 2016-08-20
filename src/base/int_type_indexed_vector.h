@@ -12,11 +12,11 @@
 // limitations under the License.
 
 // This file provides the ITIVector container that wraps around the STL vector.
-// The wrapper restrict indexing to a pre-specified type-safe integer type or
+// The wrapper restricts indexing to a pre-specified type-safe integer type or
 // IntType (see base/int_type.h).  It prevents accidental indexing
 // by different "logical" integer-like types (e.g.  another IntType) or native
 // integer types.  The wrapper is useful as C++ and the standard template
-// library allows the user to mix "logical" integral indices that might have a
+// library allow the user to mix "logical" integral indices that might have a
 // different role.
 //
 // The container can only be indexed by an instance of an IntType class, which
@@ -29,8 +29,8 @@
 // uint64 (see base/int_type.h for details).
 //
 // The wrapper exposes all public methods of STL vector and behaves mostly as
-// pass-through.  The only method modified to ensure type-safety is the operator
-// [] and the at() method.
+// a pass-through. The only method modified to ensure type-safety is the
+// operator [] and the at() method.
 //
 // EXAMPLES --------------------------------------------------------------------
 //
@@ -50,8 +50,9 @@
 //    vec[logical_index] = ...;        <-- fails to compile.
 //    vec.at(logical_index) = ...;     <-- fails to compile.
 //
-// NB: Iterator arithmetic is not allowed as the iterators are not wrapped
-// themselves.  Therefore, the following caveat is possible:
+// N.B.: Since the iterators are not wrapped themselves, it's possible
+// (but certainly not recommended) to perform arithmetic on them:
+//
 //    *(vec.begin() + 0) = ...;
 
 #ifndef OR_TOOLS_BASE_INT_TYPE_INDEXED_VECTOR_H_

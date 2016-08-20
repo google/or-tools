@@ -17,10 +17,12 @@
 //
 // I.S. Duff, A.M. Erisman and J.K. Reid, "Direct Methods for Sparse Matrices",
 // Clarendon, Oxford, UK, 1987, ISBN 0-19-853421-3,
-// http://www.amazon.com/dp/0198534213
+// http://www.amazon.com/dp/0198534213.
+//
 //
 // T.A. Davis, "Direct methods for Sparse Linear Systems", SIAM, Philadelphia,
-// 2006, ISBN-13: 978-0-898716-13, http://www.amazon.com/dp/0898716136
+// 2006, ISBN-13: 978-0-898716-13, http://www.amazon.com/dp/0898716136.
+//
 //
 // Both books also contain a wealth of references.
 
@@ -404,6 +406,25 @@ class CompactSparseMatrix {
     }
   }
 
+  // Same as ColumnAddMultipleToDenseColumn() but also adds the new non-zeros to
+  // the non_zeros vector. A non-zero is "new" if is_non_zero[row] was false,
+  // and we update dense_column[row]. This functions also updates is_non_zero.
+  void ColumnAddMultipleToDenseColumnAndUpdateNonZeros(
+      ColIndex col, Fractional multiplier, DenseColumn* dense_column,
+      StrictITIVector<RowIndex, bool>* is_non_zero,
+      std::vector<RowIndex>* non_zeros) const {
+    if (multiplier == 0.0) return;
+    RETURN_IF_NULL(dense_column);
+    for (const EntryIndex i : Column(col)) {
+      const RowIndex row = EntryRow(i);
+      (*dense_column)[row] += multiplier * EntryCoefficient(i);
+      if (!(*is_non_zero)[row]) {
+        (*is_non_zero)[row] = true;
+        non_zeros->push_back(row);
+      }
+    }
+  }
+
   // Copies the given column of this matrix into the given dense_column.
   // This function is declared in the .h for efficiency.
   void ColumnCopyToDenseColumn(ColIndex col, DenseColumn* dense_column) const {
@@ -420,6 +441,20 @@ class CompactSparseMatrix {
     dense_column->resize(num_rows_, 0.0);
     for (const EntryIndex i : Column(col)) {
       (*dense_column)[EntryRow(i)] = EntryCoefficient(i);
+    }
+  }
+
+  // Same as ColumnCopyToClearedDenseColumn() but also fills non_zeros.
+  void ColumnCopyToClearedDenseColumnWithNonZeros(
+      ColIndex col, DenseColumn* dense_column,
+      RowIndexVector* non_zeros) const {
+    RETURN_IF_NULL(dense_column);
+    dense_column->resize(num_rows_, 0.0);
+    non_zeros->clear();
+    for (const EntryIndex i : Column(col)) {
+      const RowIndex row = EntryRow(i);
+      (*dense_column)[row] = EntryCoefficient(i);
+      non_zeros->push_back(row);
     }
   }
 
@@ -544,30 +579,59 @@ class TriangularMatrix : private CompactSparseMatrix {
   // This also computes the last non-zero row position (if not nullptr).
   void TransposeLowerSolve(DenseColumn* rhs, RowIndex* last_non_zero_row) const;
 
-  // This also compute the non-zero row posisitions (if not nullptr).
+  // This also computes the non-zero row positions (if not nullptr).
   void UpperSolveWithNonZeros(DenseColumn* rhs,
                               RowIndexVector* non_zero_rows) const;
 
-  // Hyper-sparse version of the triangular solve functions.
-  // The passed non_zero_rows should contain the positions of the non-zeros of
-  // the result in the REVERSE order in which they need to be accessed. It can
-  // be computed by TriangularComputeRowsToConsider().
+  // Hyper-sparse version of the triangular solve functions. The passed
+  // non_zero_rows should contain the positions of the symbolic non-zeros of the
+  // result in the order in which they need to be accessed (or in the reverse
+  // order for the Reverse*() versions).
+  //
+  // The non-zero vector is mutable so that the symbolic non-zeros that are
+  // actually zero because of numerical cancelations can be removed.
+  //
+  // The non-zeros can be computed by one of these two methods:
+  // - ComputeRowsToConsiderWithDfs() which will give them in the reverse order
+  //   of the one they need to be accessed in. This is only a topological order,
+  //   and it will not necessarily be "sorted".
+  // - ComputeRowsToConsiderInSortedOrder() which will always give them in
+  //   increasing order.
+  //
+  // Note that if the non-zeros are given in a sorted order, then the
+  // hyper-sparse functions will return EXACTLY the same results as the non
+  // hyper-sparse version above.
+  //
+  // For a given solve, here is the required order:
+  // - For a lower solve, increasing non-zeros order.
+  // - For an upper solve, decreasing non-zeros order.
+  // - for a transpose lower solve, decreasing non-zeros order.
+  // - for a transpose upper solve, increasing non_zeros order.
   //
   // For a general discussion of hyper-sparsity in LP, see:
   // J.A.J. Hall, K.I.M. McKinnon, "Exploiting hyper-sparsity in the revised
   // simplex method", December 1999, MS 99-014.
   // http://www.maths.ed.ac.uk/hall/MS-99/MS9914.pdf
-  void SparseTriangularSolve(const RowIndexVector& non_zero_rows,
-                             DenseColumn* rhs) const;
-  void TransposeSparseTriangularSolve(const RowIndexVector& non_zero_rows,
-                                      DenseColumn* rhs) const;
+  void HyperSparseSolve(DenseColumn* rhs, RowIndexVector* non_zero_rows) const;
+  void HyperSparseSolveWithReversedNonZeros(
+      DenseColumn* rhs, RowIndexVector* non_zero_rows) const;
+  void TransposeHyperSparseSolve(DenseColumn* rhs,
+                                 RowIndexVector* non_zero_rows) const;
+  void TransposeHyperSparseSolveWithReversedNonZeros(
+      DenseColumn* rhs, RowIndexVector* non_zero_rows) const;
 
   // Given the positions of the non-zeros of a vector, computes the non-zero
   // positions of the vector after a solve by this triangular matrix. The order
   // of the returned non-zero positions will be in the REVERSE elimination
   // order. If the function detects that there are too many non-zeros, then it
   // aborts early and non_zero_rows is cleared.
-  void TriangularComputeRowsToConsider(RowIndexVector* non_zero_rows) const;
+  void ComputeRowsToConsiderWithDfs(RowIndexVector* non_zero_rows) const;
+
+  // Same as TriangularComputeRowsToConsider() but always returns the non-zeros
+  // sorted by rows. It is up to the client to call the direct or reverse
+  // hyper-sparse solve function depending if the matrix is upper or lower
+  // triangular.
+  void ComputeRowsToConsiderInSortedOrder(RowIndexVector* non_zero_rows) const;
 
   // This is currently only used for testing. It achieves the same result as
   // PermutedLowerSparseSolve() below, but the latter exploits the sparsity of
@@ -632,10 +696,10 @@ class TriangularMatrix : private CompactSparseMatrix {
   // graph will likely be pruned. As a result, the symbolic phase will be
   // negligeable compared to the numerical phase so we don't really need a dense
   // version of PermutedLowerSparseSolve().
-  void ComputeRowsToConsider(const SparseColumn& rhs,
-                             const RowPermutation& row_perm,
-                             RowIndexVector* lower_column_rows,
-                             RowIndexVector* upper_column_rows);
+  void PermutedComputeRowsToConsider(const SparseColumn& rhs,
+                                     const RowPermutation& row_perm,
+                                     RowIndexVector* lower_column_rows,
+                                     RowIndexVector* upper_column_rows);
 
  private:
   // Internal versions of some Solve() functions to avoid code duplication.
@@ -688,7 +752,7 @@ class TriangularMatrix : private CompactSparseMatrix {
   // the reachability of any set nor a valid topological ordering of such a set.
   //
   // The concept is known as the transitive reduction of a DAG, see
-  // http://en.wikipedia.org/wiki/Transitive_reduction
+  // http://en.wikipedia.org/wiki/Transitive_reduction.
   //
   // Heuristic algorithm: While doing the DFS to compute Reach(S) and its
   // topological order, each time we process a node, we mark all its adjacent

@@ -87,7 +87,7 @@ class FileLines {
     file_ = File::Open(filename, "r");
   }
   ~FileLines() {
-    if (file_ != nullptr) file_->Close();
+    if (file_ != nullptr) file_->Close(file::Defaults()).IgnoreError();
   }
   FileLineIterator begin() { return FileLineIterator(file_); }
   FileLineIterator end() const { return FileLineIterator(nullptr); }

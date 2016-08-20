@@ -50,19 +50,21 @@ class RangeIntToIntFunction {
 };
 
 // RangeMinMaxIndexFunction is different from RangeIntToIntFunction in two ways:
+//
 //   1. It does not support codomain or value queries.
+//
 //   2. For domain queries it returns an argument where the minimum/maximum is
 //      attained, rather than the minimum/maximum value.
 class RangeMinMaxIndexFunction {
  public:
-  // Suppose f is the abstract underlying function.
   virtual ~RangeMinMaxIndexFunction() = default;
-  // Returns an x from [from, to), such that f(x) <= f(y) for every y from
-  // [from, to).
-  virtual int64 RangeMinArgument(int64 from, int64 to) const = 0;
+  // Suppose f is the abstract underlying function.
   // Returns an x from [from, to), such that f(x) => f(y) for every y from
   // [from, to).
   virtual int64 RangeMaxArgument(int64 from, int64 to) const = 0;
+  // Returns an x from [from, to), such that f(x) <= f(y) for every y from
+  // [from, to).
+  virtual int64 RangeMinArgument(int64 from, int64 to) const = 0;
 };
 
 // A copy of f is going to be stored in the returned object, so its closure

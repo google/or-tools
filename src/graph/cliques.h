@@ -17,7 +17,7 @@
 // and
 // C. Bron and J. Kerbosch, Joep, "Algorithm 457: finding all cliques of an
 // undirected graph", CACM 16 (9): 575–577, 1973.
-// http://dl.acm.org/citation.cfm?id=362367&bnc=1
+// http://dl.acm.org/citation.cfm?id=362367&bnc=1.
 //
 // Keywords: undirected graph, clique, clique cover, Bron, Kerbosch.
 
@@ -554,6 +554,9 @@ BronKerboschAlgorithmStatus BronKerboschAlgorithm<NodeIndex>::Run() {
   return RunIterations(kint64max);
 }
 
+template <typename NodeIndex>
+const double BronKerboschAlgorithm<
+    NodeIndex>::kPushStateDeterministicTimeSecondsPerCandidate = 0.54663e-7;
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_GRAPH_CLIQUES_H_

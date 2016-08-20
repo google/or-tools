@@ -19,11 +19,40 @@ For examples leveraging the code defined here, see ./pywraplp_test.py and
 """
 
 import numbers
-import types
+from six import iteritems
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See the top-level comment for examples.
+
+
+inf = float('inf')
+
+
+class _FakeMPVariableRepresentingTheConstantOffset(object):
+  """A dummy class for a singleton instance used to represent the constant.
+
+  To represent linear expressions, we store a dictionary
+  MPVariable->coefficient. To represent the constant offset of the expression,
+  we use this class as a substitute: its coefficient will be the offset. To
+  properly be evaluated, its solution_value() needs to be 1.
+  """
+
+  def solution_value(self):  # pylint: disable=invalid-name
+    return 1
+
+  def __repr__(self):
+    return 'OFFSET_KEY'
+
+
+OFFSET_KEY = _FakeMPVariableRepresentingTheConstantOffset()
+
+
+def CastToLinExp(v):
+  if isinstance(v, numbers.Number):
+    return Constant(v)
+  else:
+    return v
 
 
 class LinearExpr(object):
@@ -34,109 +63,90 @@ class LinearExpr(object):
   floating-point value).
   """
 
-  def IsConstant(self, expr):
-    return isinstance(expr, numbers.Number)
-
-  def Visit(self, coeffs):
-    """Fills the coefficient dictionary, and returns the offset."""
-    return self.DoVisit(coeffs, 1.0)
-
-  def DoVisit(self, coeffs, multiplier):
-    """Like Visit, but do that with a global floating-point multiplier."""
-    raise NotImplementedError
+  SUPPORTED_OPERATOR_METHODS = [
+      '__%s__' % opname
+      for opname in ['add', 'radd', 'sub', 'rsub', 'mul', 'rmul', 'div',
+                     'truediv', 'neg', 'eq', 'ge', 'le']
+  ]
 
   def solution_value(self):  # pylint: disable=invalid-name
     """Value of this linear expr, using the solution_value of its vars."""
+    coeffs = self.GetCoeffs()
+    return sum(var.solution_value() * coeff for var, coeff in coeffs.items())
+
+  def AddSelfToCoeffMap(self, coeffs, multiplier):
+    raise NotImplementedError
+
+  def GetCoeffs(self):
     coeffs = {}
-    constant = self.Visit(coeffs)
-    return constant + sum(
-        var.solution_value() * coeff for var, coeff in sorted(coeffs.items()))
+    self.AddSelfToCoeffMap(coeffs, 1.0)
+    return coeffs
 
   def __add__(self, expr):
-    if self.IsConstant(expr):
-      return SumCst(self, expr)
-    else:
-      return Sum(self, expr)
+    return Sum(self, expr)
 
   def __radd__(self, cst):
-    if self.IsConstant(cst):
-      return SumCst(self, cst)
-    else:
-      raise TypeError
+    return Sum(self, cst)
 
   def __sub__(self, expr):
-    if self.IsConstant(expr):
-      return SumCst(self, -expr)
-    else:
-      return Sum(self, ProductCst(expr, -1))
+    return Sum(self, -expr)
 
   def __rsub__(self, cst):
-    if self.IsConstant(cst):
-      return SumCst(ProductCst(self, -1), cst)
-    else:
-      raise TypeError
+    return Sum(-self, cst)
 
   def __mul__(self, cst):
-    if self.IsConstant(cst):
-      return ProductCst(self, cst)
-    else:
-      raise TypeError
+    return ProductCst(self, cst)
 
   def __rmul__(self, cst):
-    if self.IsConstant(cst):
-      return ProductCst(self, cst)
-    else:
-      raise TypeError
+    return ProductCst(self, cst)
 
   def __div__(self, cst):
-    if self.IsConstant(cst):
-      if cst == 0.0:
-        raise ZeroDivisionError
-      else:
-        return ProductCst(self, 1.0 / cst)
-    else:
-      raise TypeError
+    return ProductCst(self, 1.0 / cst)
 
   def __truediv__(self, cst):
-    if self.IsConstant(cst):
-      if cst == 0.0:
-        raise ZeroDivisionError
-      else:
-        return ProductCst(self, 1.0 / cst)
-    else:
-      raise TypeError
+    return ProductCst(self, 1.0 / cst)
 
   def __neg__(self):
     return ProductCst(self, -1)
 
   def __eq__(self, arg):
-    if self.IsConstant(arg):
+    if isinstance(arg, numbers.Number):
       return LinearConstraint(self, arg, arg)
     else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 0.0)
-
-  def __hash__(self):
-    return object.__hash__(self)
+      return LinearConstraint(self - arg, 0.0, 0.0)
 
   def __ge__(self, arg):
-    if self.IsConstant(arg):
-      return LinearConstraint(self, arg, 1e308)
+    if isinstance(arg, numbers.Number):
+      return LinearConstraint(self, arg, inf)
     else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), 0.0, 1e308)
+      return LinearConstraint(self - arg, 0.0, inf)
 
   def __le__(self, arg):
-    if self.IsConstant(arg):
-      return LinearConstraint(self, -1e308, arg)
+    if isinstance(arg, numbers.Number):
+      return LinearConstraint(self, -inf, arg)
     else:
-      return LinearConstraint(Sum(self, ProductCst(arg, -1)), -1e308, 0.0)
+      return LinearConstraint(self - arg, -inf, 0.0)
+
+
+class VariableExpr(LinearExpr):
+  """Represents a LinearExpr containing only a single variable."""
+
+  def __init__(self, mpvar):
+    self.__var = mpvar
+
+  def AddSelfToCoeffMap(self, coeffs, multiplier):
+    coeffs[self.__var] = coeffs.get(self.__var, 0.0) + multiplier
 
 
 class ProductCst(LinearExpr):
   """Represents the product of a LinearExpr by a constant."""
 
   def __init__(self, expr, coef):
-    self.__expr = expr
-    self.__coef = coef
+    self.__expr = CastToLinExp(expr)
+    if isinstance(coef, numbers.Number):
+      self.__coef = coef
+    else:
+      raise TypeError
 
   def __str__(self):
     if self.__coef == -1:
@@ -144,64 +154,42 @@ class ProductCst(LinearExpr):
     else:
       return '(' + str(self.__coef) + ' * ' + str(self.__expr) + ')'
 
-  def DoVisit(self, coeffs, multiplier):
+  def AddSelfToCoeffMap(self, coeffs, multiplier):
     current_multiplier = multiplier * self.__coef
     if current_multiplier:
-      return self.__expr.DoVisit(coeffs, current_multiplier)
-    return 0.0
+      self.__expr.AddSelfToCoeffMap(coeffs, current_multiplier)
 
 
-class Sum(LinearExpr):
-  """Represents the sum of two LinearExpr."""
+class Constant(LinearExpr):
 
-  def __init__(self, left, right):
-    self.__left = left
-    self.__right = right
+  def __init__(self, val):
+    self.__val = val
 
   def __str__(self):
-    return '(' + str(self.__left) + ' + ' + str(self.__right) + ')'
+    return str(self.__val)
 
-  def DoVisit(self, coeffs, multiplier):
-    constant = self.__left.DoVisit(coeffs, multiplier)
-    constant += self.__right.DoVisit(coeffs, multiplier)
-    return constant
+  def AddSelfToCoeffMap(self, coeffs, multiplier):
+    coeffs[OFFSET_KEY] = coeffs.get(OFFSET_KEY, 0.0) + self.__val * multiplier
 
 
 class SumArray(LinearExpr):
-  """Represents the sum of an array of objects (constants or LinearExpr)."""
+  """Represents the sum of a list of LinearExpr."""
 
   def __init__(self, array):
-    if type(array) is types.GeneratorType:
-      self.__array = [x for x in array]
-    else:
-      self.__array = array
+    self.__array = map(CastToLinExp, array)
 
   def __str__(self):
-    return 'Sum(' + str(self.__array) + ')'
+    return '({})'.format(' + '.join(map(str, self.__array)))
 
-  def DoVisit(self, coeffs, multiplier):
-    constant = 0.0
-    for t in self.__array:
-      if self.IsConstant(t):
-        constant += t * multiplier
-      else:
-        constant += t.DoVisit(coeffs, multiplier)
-    return constant
+  def AddSelfToCoeffMap(self, coeffs, multiplier):
+    for arg in self.__array:
+      arg.AddSelfToCoeffMap(coeffs, multiplier)
 
 
-class SumCst(LinearExpr):
-  """Represents the sum of a LinearExpr and a constant."""
+def Sum(*args):
+  return SumArray(args)
 
-  def __init__(self, expr, cst):
-    self.__expr = expr
-    self.__cst = cst
-
-  def __str__(self):
-    return '(' + str(self.__expr) + ' + ' + str(self.__cst) + ')'
-
-  def DoVisit(self, coeffs, multiplier):
-    constant = self.__expr.DoVisit(coeffs, multiplier)
-    return constant + self.__cst * multiplier
+SumCst = Sum  # pylint: disable=invalid-name
 
 
 class LinearConstraint(object):
@@ -213,31 +201,31 @@ class LinearConstraint(object):
     self.__ub = ub
 
   def __str__(self):
-    if self.__lb > -1e308 and self.__ub < 1e308:
+    if self.__lb > -inf and self.__ub < inf:
       if self.__lb == self.__ub:
         return str(self.__expr) + ' == ' + str(self.__lb)
       else:
         return (str(self.__lb) + ' <= ' + str(self.__expr) +
                 ' <= ' + str(self.__ub))
-    elif self.__lb > -1e308:
+    elif self.__lb > -inf:
       return str(self.__expr) + ' >= ' + str(self.__lb)
-    elif self.__ub < 1e308:
+    elif self.__ub < inf:
       return str(self.__expr) + ' <= ' + str(self.__ub)
     else:
       return 'Trivial inequality (always true)'
 
   def Extract(self, solver, name=''):
     """Performs the actual creation of the constraint object."""
-    coeffs = {}
-    constant = self.__expr.Visit(coeffs)
+    coeffs = self.__expr.GetCoeffs()
+    constant = coeffs.pop(OFFSET_KEY, 0.0)
     lb = -solver.infinity()
     ub = solver.infinity()
-    if self.__lb > -1e308:
+    if self.__lb > -inf:
       lb = self.__lb - constant
-    if self.__ub < 1e308:
+    if self.__ub < inf:
       ub = self.__ub - constant
 
     constraint = solver.RowConstraint(lb, ub, name)
-    for v, c, in sorted(coeffs.items()):
+    for v, c, in iteritems(coeffs):
       constraint.SetCoefficient(v, float(c))
     return constraint

@@ -217,6 +217,93 @@ void RevBitMatrix::ClearAll(Solver* const solver) {
   RevBitSet::ClearAll(solver);
 }
 
+// ----- UnsortedNullableRevBitset -----
+
+UnsortedNullableRevBitset::UnsortedNullableRevBitset(int bit_size)
+    : bit_size_(bit_size),
+      word_size_(BitLength64(bit_size)),
+      bits_(word_size_, 0),
+      active_words_(word_size_) {}
+
+void UnsortedNullableRevBitset::Init(Solver* const solver,
+                                     const std::vector<uint64>& mask) {
+  CHECK_LE(mask.size(), word_size_);
+  for (int i = 0; i < mask.size(); ++i) {
+    if (mask[i]) {
+      bits_.SetValue(solver, i, mask[i]);
+      active_words_.Insert(solver, i);
+    }
+  }
+}
+
+bool UnsortedNullableRevBitset::RevSubtract(Solver* const solver,
+                                            const std::vector<uint64>& mask) {
+  bool changed = false;
+  to_remove_.clear();
+  for (int index : active_words_) {
+    if (index < mask.size() && (bits_[index] & mask[index]) != 0) {
+      changed = true;
+      const uint64 result = bits_[index] & ~mask[index];
+      bits_.SetValue(solver, index, result);
+      if (result == 0) {
+        to_remove_.push_back(index);
+      }
+    }
+  }
+
+  CleanUpActives(solver);
+  return changed;
+}
+
+void UnsortedNullableRevBitset::CleanUpActives(Solver* const solver) {
+  // We remove indices of null words in reverse order, as this may be a simpler
+  // operations on the RevIntSet (no actual swap).
+  for (int i = to_remove_.size() - 1; i >= 0; --i) {
+    active_words_.Remove(solver, to_remove_[i]);
+  }
+}
+
+bool UnsortedNullableRevBitset::RevAnd(Solver* const solver,
+                                       const std::vector<uint64>& mask) {
+  bool changed = false;
+  to_remove_.clear();
+  for (int index : active_words_) {
+    if (index < mask.size()) {
+      if ((bits_[index] & ~mask[index]) != 0) {
+        changed = true;
+        const uint64 result = bits_[index] & mask[index];
+        bits_.SetValue(solver, index, result);
+        if (result == 0) {
+          to_remove_.push_back(index);
+        }
+      }
+    } else {
+      // Zero the word as the mask is implicitely null.
+      changed = true;
+      bits_.SetValue(solver, index, 0);
+      to_remove_.push_back(index);
+    }
+  }
+  CleanUpActives(solver);
+  return changed;
+}
+
+bool UnsortedNullableRevBitset::Intersects(const std::vector<uint64>& mask,
+                                           int* support_index) {
+  DCHECK_GE(*support_index, 0);
+  DCHECK_LT(*support_index, word_size_);
+  if (mask[*support_index] & bits_[*support_index]) {
+    return true;
+  }
+  for (int index : active_words_) {
+    if (bits_[index] & mask[index]) {
+      *support_index = index;
+      return true;
+    }
+  }
+  return false;
+}
+
 // ----- PrintModelVisitor -----
 
 namespace {

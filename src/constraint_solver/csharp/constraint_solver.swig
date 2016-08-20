@@ -23,11 +23,24 @@ using System.Collections;
 %include "std_vector.i"
 %include "util/csharp/tuple_set.swig"
 %include "util/csharp/functions.swig"
+%include "util/csharp/proto.swig"
+
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../constraint_solver.h" %}.
+namespace operations_research {
+class ConstraintSolverParameters;
+class SearchLimitParameters;
+}  // namespace operations_research
 
 %module(directors="1", allprotected="1") operations_research;
 #pragma SWIG nowarn=473
 
-%feature("director") Action;
+%typemap(javaimports) operations_research::Solver %{
+import com.google.ortools.constraintsolver.ConstraintSolverParameters;
+import com.google.ortools.constraintsolver.SearchLimitParameters;
+%}
+
 %feature("director") BaseLns;
 %feature("director") Decision;
 %feature("director") DecisionBuilder;
@@ -39,7 +52,6 @@ using System.Collections;
 %feature("director") SearchMonitor;
 %feature("director") SequenceVarLocalSearchOperator;
 %feature("director") SymmetryBreaker;
-
 %{
 #include <setjmp.h>
 
@@ -51,6 +63,8 @@ using System.Collections;
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/functions_swig_helpers.h"
+#include "constraint_solver/search_limit.pb.h"
+#include "constraint_solver/solver_parameters.pb.h"
 
 namespace operations_research {
 class LocalSearchPhaseParameters {
@@ -149,6 +163,7 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %ignore operations_research::Solver::MakeBoolVarArray;
 %ignore operations_research::Solver::MakeFixedDurationIntervalVarArray;
 %ignore operations_research::IntVarLocalSearchFilter::FindIndex;
+%ignore operations_research::PropagationBaseObject::set_action_on_fail;
 
 // Generic rename rule.
 %rename("%(camelcase)s", %$isfunction) "";
@@ -173,6 +188,10 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 
 // Rename rule on DecisionBuilder;
 %rename (NextWrapper) operations_research::DecisionBuilder::Next;
+
+// Rename rule on DecisionBuilder;
+%rename (ApplyWrapper) operations_research::Decision::Apply;
+%rename (RefuteWrapper) operations_research::Decision::Refute;
 
 // Rename rule on SearchLimit
 %rename (IsCrossed) operations_research::SearchLimit::crossed;
@@ -319,6 +338,7 @@ namespace operations_research {
     OptimizeVar* const objective,
     std::function<std::string()> display_callback);
 
+%ignore Solver::MakeActionDemon;
 %ignore Solver::MakeCustomLimit(std::function<bool()> limiter);
 %ignore Solver::MakeElement(IndexEvaluator1 values, IntVar* const index);
 %ignore Solver::MakeMonotonicElement(IndexEvaluator1 values, bool increasing,
@@ -408,6 +428,7 @@ namespace operations_research {
     const std::vector<LocalSearchOperator*>& ops,
     std::function<int64(int, int)> evaluator);
 %ignore Solver::MakeClosureDemon(std::function<void()> closure);
+%ignore Solver::set_fail_intercept;
 
 %extend Solver {
   IntExpr* MakeElement(swig_util::LongToLong* values, IntVar* const index) {
@@ -655,18 +676,25 @@ namespace operations_research {
 %ignore Pack::AddWeightedSumEqualVarDimension(Solver::IndexEvaluator2 weights,
                                               const std::vector<IntVar*>& loads);
 %extend Pack {
-void Pack::AddWeightedSumLessOrEqualConstantDimension(
+void AddWeightedSumLessOrEqualConstantDimension(
     swig_util::LongToLong* weights, const std::vector<int64>& bounds) {
-  return [$self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i) { return weights->Run(i); }, bounds);
+  operations_research::Solver::IndexEvaluator1 eval = [weights](int64 i) {
+    return weights->Run(i);
+  };
+  return $self->AddWeightedSumLessOrEqualConstantDimension(eval, bounds);
 }
-void Pack::AddWeightedSumLessOrEqualConstantDimension(
+
+void AddWeightedSumLessOrEqualConstantDimension(
     swig_util::LongLongToLong* weights, const std::vector<int64>& bounds) {
-    return $self->AddWeightedSumLessOrEqualConstantDimension([weights](int64 i) { return weights->Run(i); }, bounds);
+  operations_research::Solver::IndexEvaluator2 eval =
+      [weights](int64 i, int64 j) { return weights->Run(i, j); };
+  return $self->AddWeightedSumLessOrEqualConstantDimension(eval, bounds);
 }
-void Pack::AddWeightedSumEqualVarDimension(
+void AddWeightedSumEqualVarDimension(
     swig_util::LongLongToLong* weights, const std::vector<IntVar*>& loads) {
-  return $self->AddWeightedSumEqualVarDimension([weights](int64 i) { return weights->Run(i); }, loads);
+  return $self->AddWeightedSumEqualVarDimension([weights](int64 i, int64 j) { return weights->Run(i, j); }, loads);
 }
+
 }  // extend Pack
 
 // No custom wrapping for this method, we simply ignore it.
@@ -836,6 +864,19 @@ class LocalSearchPhaseParameters {
   ~LocalSearchPhaseParameters();
 };
 }  // namespace operations_research
+
+// Protobuf support
+PROTO_INPUT(operations_research::ConstraintSolverParameters,
+            Google.OrTools.ConstraintSolver.ConstraintSolverParameters,
+            parameters)
+PROTO2_RETURN(operations_research::ConstraintSolverParameters,
+              Google.OrTools.ConstraintSolver.ConstraintSolverParameters)
+
+PROTO_INPUT(operations_research::SearchLimitParameters,
+            Google.OrTools.ConstraintSolver.SearchLimitParameters,
+            proto)
+PROTO2_RETURN(operations_research::SearchLimitParameters,
+              Google.OrTools.ConstraintSolver.SearchLimitParameters)
 
 // Wrap cp includes
 %include "constraint_solver/constraint_solver.h"

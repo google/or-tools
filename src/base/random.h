@@ -19,7 +19,7 @@
 
 namespace operations_research {
 
-// ACM minimal standard random number generator.  (re-entrant.)
+// ACM minimal standard random number generator.  (Re-entrant.)
 class ACMRandom {
  public:
   explicit ACMRandom(int32 seed) : seed_(seed) {}
@@ -57,7 +57,7 @@ class ACMRandom {
   // Returns a double in [a, b). The distribution is uniform.
   double UniformDouble(double a, double b) { return a + (b - a) * RndDouble(); }
 
-  // Returns true with probability 1/n. If n=0; always returns true.
+  // Returns true with probability 1/n. If n=0, always returns true.
   bool OneIn(int n) { return Uniform(n) == 0; }
 
   void Reset(int32 seed) { seed_ = seed; }
@@ -89,6 +89,7 @@ class MTRandom : public ACMRandom {
       : ACMRandom(GenerateInt32SeedFromString(str_seed)) {}
 
   MTRandom() : ACMRandom(ACMRandom::HostnamePidTimeSeed()) {}
+  uint64 Rand64() { return static_cast<uint64>(Next64()); }
 
  private:
   int32 GenerateInt32SeedFromString(const std::string& str) {

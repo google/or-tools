@@ -1,4 +1,15 @@
-from setuptools import setup, Extension
+from sys import executable
+
+setuptools_import_error_message = """setuptools is not installed for """ + executable + """
+Please follow this link for installing instructions :
+https://pypi.python.org/pypi/setuptools
+make sure you use \"""" + sys.executable + """\" during the installation"""
+
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    raise ImportError(setuptools_import_error_message)
+
 from os.path import join as pjoin
 from os.path import dirname
 
@@ -16,7 +27,7 @@ DELETEUNIX               extra_link_args=['/MANIFEST'],
 
 setup(
     name='ortools',
-    version='2.VVVV',
+    version='VVVV',
     packages=[
         'ortools',
         'ortools.algorithms',
@@ -25,7 +36,7 @@ setup(
         'ortools.linear_solver',],
     ext_modules = [dummy_module],
     install_requires = [
-        'protobuf >= 2.8.0'],
+        'protobuf >= PROTOBUF_TAG'],
     package_data = {
         'ortools.constraint_solver' : ['_pywrapcp.dll'],
         'ortools.linear_solver' : ['_pywraplp.dll'],
@@ -49,6 +60,8 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Office/Business :: Scheduling',
         'Topic :: Scientific/Engineering',

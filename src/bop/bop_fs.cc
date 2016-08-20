@@ -20,27 +20,25 @@
 #include "base/stringprintf.h"
 #include "google/protobuf/text_format.h"
 #include "base/stl_util.h"
+#include "algorithms/sparse_permutation.h"
 #include "glop/lp_solver.h"
 #include "lp_data/lp_print_utils.h"
 #include "sat/boolean_problem.h"
 #include "sat/lp_utils.h"
-#include "sat/optimization.h"
 #include "sat/sat_solver.h"
+#include "sat/symmetry.h"
+#include "sat/util.h"
 #include "util/bitset.h"
-
-using operations_research::glop::ColIndex;
-using operations_research::glop::DenseRow;
-using operations_research::glop::GlopParameters;
-using operations_research::glop::LinearProgram;
-using operations_research::glop::LPSolver;
-using operations_research::glop::RowIndex;
-using operations_research::LinearBooleanProblem;
-using operations_research::LinearBooleanConstraint;
-using operations_research::LinearObjective;
 
 namespace operations_research {
 namespace bop {
 namespace {
+
+using ::operations_research::glop::ColIndex;
+using ::operations_research::glop::DenseRow;
+using ::operations_research::glop::GlopParameters;
+using ::operations_research::glop::RowIndex;
+
 BopOptimizerBase::Status SolutionStatus(const BopSolution& solution,
                                         int64 lower_bound) {
   // The lower bound might be greater that the cost of a feasible solution due
@@ -93,7 +91,23 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
   state_update_stamp_ = problem_state.update_stamp();
 
   // Create the sat_solver if not already done.
-  if (!sat_solver_) sat_solver_.reset(new sat::SatSolver());
+  if (!sat_solver_) {
+    sat_solver_.reset(new sat::SatSolver());
+
+    // Add in symmetries.
+    if (problem_state.GetParameters()
+            .exploit_symmetry_in_sat_first_solution()) {
+      std::vector<std::unique_ptr<SparsePermutation>> generators;
+      sat::FindLinearBooleanProblemSymmetries(problem_state.original_problem(),
+                                              &generators);
+      std::unique_ptr<sat::SymmetryPropagator> propagator(
+          new sat::SymmetryPropagator);
+      for (int i = 0; i < generators.size(); ++i) {
+        propagator->AddSymmetry(std::move(generators[i]));
+      }
+      sat_solver_->AddPropagator(std::move(propagator));
+    }
+  }
 
   const BopOptimizerBase::Status load_status =
       LoadStateProblemToSatSolver(problem_state, sat_solver_.get());
@@ -106,7 +120,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
       for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
         const double value = problem_state.lp_values()[col];
         sat_solver_->SetAssignmentPreference(
-            sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
+            sat::Literal(sat::BooleanVariable(col.value()), round(value) == 1),
             1 - fabs(value - round(value)));
       }
       break;
@@ -117,7 +131,7 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
     case Policy::kUserGuided:
       for (int i = 0; i < problem_state.assignment_preference().size(); ++i) {
         sat_solver_->SetAssignmentPreference(
-            sat::Literal(sat::VariableIndex(i),
+            sat::Literal(sat::BooleanVariable(i),
                          problem_state.assignment_preference()[i]),
             1.0);
       }
@@ -269,7 +283,7 @@ BopOptimizerBase::Status BopRandomFirstSolutionGenerator::Optimize(
       for (ColIndex col(0); col < problem_state.lp_values().size(); ++col) {
         const double value = problem_state.lp_values()[col];
         sat_propagator_->SetAssignmentPreference(
-            sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
+            sat::Literal(sat::BooleanVariable(col.value()), round(value) == 1),
             1 - fabs(value - round(value)));
       }
     }
@@ -558,8 +572,10 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
         // Compute the new min.
         best_lp_objective =
             lp_model_.IsMaximizationProblem()
-                ? std::min(best_lp_objective, std::max(objective_true, objective_false))
-                : std::max(best_lp_objective, std::min(objective_true, objective_false));
+                ? std::min(best_lp_objective,
+                           std::max(objective_true, objective_false))
+                : std::max(best_lp_objective,
+                           std::min(objective_true, objective_false));
       }
     }
 
@@ -568,13 +584,13 @@ double LinearRelaxation::ComputeLowerBoundUsingStrongBranching(
       // solution than the current one. Set the variable to false.
       lp_model_.SetVariableBounds(col, 0.0, 0.0);
       learned_info->fixed_literals.push_back(
-          sat::Literal(sat::VariableIndex(col.value()), false));
+          sat::Literal(sat::BooleanVariable(col.value()), false));
     } else if (CostIsWorseThanSolution(objective_false, tolerance)) {
       // Having variable col set to false can't possibly lead to and better
       // solution than the current one. Set the variable to true.
       lp_model_.SetVariableBounds(col, 1.0, 1.0);
       learned_info->fixed_literals.push_back(
-          sat::Literal(sat::VariableIndex(col.value()), true));
+          sat::Literal(sat::BooleanVariable(col.value()), true));
     } else {
       // Unset. This is safe to use 0.0 and 1.0 as the variable is not fixed.
       lp_model_.SetVariableBounds(col, 0.0, 1.0);

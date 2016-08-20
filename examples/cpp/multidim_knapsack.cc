@@ -23,11 +23,10 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
-#include "base/file.h"
-#include "base/filelinereader.h"
 #include "base/split.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/hybrid.h"
+#include "util/filelineiter.h"
 
 DEFINE_string(
     data_file, "",
@@ -59,12 +58,11 @@ class MultiDimKnapsackData {
         problem_type_(-1) {}
 
   void Load(const std::string& filename) {
-    FileLineReader reader(filename.c_str());
-    reader.set_line_callback(
-        NewPermanentCallback(this, &MultiDimKnapsackData::ProcessNewLine));
-    reader.Reload();
-    if (!reader.loaded_successfully()) {
-      LOG(ERROR) << "Could not open multi dimensional knapsack file";
+    for (const std::string& line : FileLines(filename)) {
+      if (line.empty()) {
+        continue;
+      }
+      ProcessNewLine(line);
     }
     if (optimal_value_ == 0) {
       LOG(INFO) << "Successfully loaded problem " << name_ << " with "
@@ -91,7 +89,7 @@ class MultiDimKnapsackData {
   int optimal_value() const { return optimal_value_; }
 
   // Used internally.
-  void ProcessNewLine(char* const line) {
+  void ProcessNewLine(const std::string& line) {
     const std::vector<std::string> words =
         strings::Split(line, " ", strings::SkipEmpty());
     line_read_++;

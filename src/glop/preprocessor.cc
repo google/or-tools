@@ -96,6 +96,7 @@ bool MainLpPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
     // preprocessor so that the rhs/objective of the dual are with a good
     // magnitude.
     RUN_PREPROCESSOR(DualizerPreprocessor);
+    RUN_PREPROCESSOR(SolowHalimPreprocessor);
     if (old_stack_size != preprocessors_.size()) {
       RUN_PREPROCESSOR(SingletonPreprocessor);
       RUN_PREPROCESSOR(FreeConstraintPreprocessor);
@@ -109,6 +110,7 @@ bool MainLpPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   // use_preprocessing() parameter.
   RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
   RUN_PREPROCESSOR(ScalingPreprocessor);
+  RUN_PREPROCESSOR(AddSlackVariablesPreprocessor);
 
   return !preprocessors_.empty();
 }
@@ -317,10 +319,10 @@ Fractional ComputeMaxVariableBoundsMagnitude(const LinearProgram& lp) {
   Fractional max_bounds_magnitude = 0.0;
   const ColIndex num_cols = lp.num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
-    max_bounds_magnitude =
-        std::max(max_bounds_magnitude,
-            std::max(MagnitudeOrZeroIfInfinite(lp.variable_lower_bounds()[col]),
-                MagnitudeOrZeroIfInfinite(lp.variable_upper_bounds()[col])));
+    max_bounds_magnitude = std::max(
+        max_bounds_magnitude,
+        std::max(MagnitudeOrZeroIfInfinite(lp.variable_lower_bounds()[col]),
+                 MagnitudeOrZeroIfInfinite(lp.variable_upper_bounds()[col])));
   }
   return max_bounds_magnitude;
 }
@@ -355,11 +357,10 @@ bool EmptyColumnPreprocessor::Run(LinearProgram* linear_program,
       } else {
         value = objective_coefficient > 0 ? lower_bound : upper_bound;
         if (!IsFinite(value)) {
-          VLOG(1)
-              << "Problem INFEASIBLE_OR_UNBOUNDED, empty column "
-              << col << " has a minimization cost of " << objective_coefficient
-              << " and bounds"
-              << " [" << lower_bound << "," << upper_bound << "]";
+          VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED, empty column " << col
+                  << " has a minimization cost of " << objective_coefficient
+                  << " and bounds"
+                  << " [" << lower_bound << "," << upper_bound << "]";
           status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
           return false;
         }
@@ -971,9 +972,9 @@ void ProportionalRowPreprocessor::RecoverSolution(
     // ConstraintStatus::AT_LOWER_BOUND depending on the corresponding dual
     // variable sign.
     if (status == ConstraintStatus::FIXED_VALUE) {
-      const Fractional corrected_dual_value =
-          lp_is_maximization_problem_ ? -solution->dual_values[row]
-                                      : solution->dual_values[row];
+      const Fractional corrected_dual_value = lp_is_maximization_problem_
+                                                  ? -solution->dual_values[row]
+                                                  : solution->dual_values[row];
       if (corrected_dual_value != 0.0) {
         status = corrected_dual_value > 0.0 ? ConstraintStatus::AT_LOWER_BOUND
                                             : ConstraintStatus::AT_UPPER_BOUND;
@@ -1762,9 +1763,9 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp,
       // ProblemStatus::INFEASIBLE_OR_UNBOUNDED.
       if (!IsFinite(target_bound)) {
         if (cost != 0.0) {
-          VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED, variable "
-                  << col << " can move to " << target_bound
-                  << " and its cost is " << cost << ".";
+          VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED, variable " << col
+                  << " can move to " << target_bound << " and its cost is "
+                  << cost << ".";
           status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
           return false;
         } else {
@@ -1922,8 +1923,8 @@ bool EmptyConstraintPreprocessor::Run(LinearProgram* lp,
               lp->constraint_lower_bounds()[row], 0) ||
           !IsSmallerWithinFeasibilityTolerance(
               0, lp->constraint_upper_bounds()[row])) {
-        VLOG(1) << "Problem PRIMAL_INFEASIBLE, constraint "
-                << row << " is empty and its range ["
+        VLOG(1) << "Problem PRIMAL_INFEASIBLE, constraint " << row
+                << " is empty and its range ["
                 << lp->constraint_lower_bounds()[row] << ","
                 << lp->constraint_upper_bounds()[row] << "] doesn't contain 0.";
         status_ = ProblemStatus::PRIMAL_INFEASIBLE;
@@ -2014,8 +2015,8 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
   undo_stack_.push_back(SingletonUndo(SingletonUndo::SINGLETON_ROW, *lp, e,
                                       ConstraintStatus::FREE));
   if (deleted_columns_.column(e.col).IsEmpty()) {
-    deleted_columns_.mutable_column(e.col)
-        ->PopulateFromSparseVector(lp->GetSparseColumn(e.col));
+    deleted_columns_.mutable_column(e.col)->PopulateFromSparseVector(
+        lp->GetSparseColumn(e.col));
   }
   lp->SetVariableBounds(e.col, new_lower_bound, new_upper_bound);
 }
@@ -2070,12 +2071,12 @@ void SingletonUndo::SingletonRowUndo(const SparseMatrix& deleted_columns,
   // the new reduced cost of the variable will be equal to:
   //     old_reduced_cost - coeff * solution->dual_values[row]
   solution->dual_values[e_.row] = reduced_cost / e_.coeff;
-  ConstraintStatus new_constraint_status =  VariableToConstraintStatus(status);
+  ConstraintStatus new_constraint_status = VariableToConstraintStatus(status);
   if (status == VariableStatus::FIXED_VALUE &&
       (!lower_bound_changed || !upper_bound_changed)) {
-    new_constraint_status =
-        lower_bound_changed ? ConstraintStatus::AT_LOWER_BOUND
-                            : ConstraintStatus::AT_UPPER_BOUND;
+    new_constraint_status = lower_bound_changed
+                                ? ConstraintStatus::AT_LOWER_BOUND
+                                : ConstraintStatus::AT_UPPER_BOUND;
   }
   if (e_.coeff < 0.0) {
     if (new_constraint_status == ConstraintStatus::AT_LOWER_BOUND) {
@@ -2382,8 +2383,9 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
     if (status_ == ProblemStatus::INFEASIBLE_OR_UNBOUNDED) {
       DCHECK_EQ(ub, kInfinity);
       VLOG(1) << "Problem ProblemStatus::INFEASIBLE_OR_UNBOUNDED, singleton "
-                 "variable " << e.col << " has a cost (for minimization) of "
-              << cost << " and is unbounded towards kInfinity.";
+                 "variable "
+              << e.col << " has a cost (for minimization) of " << cost
+              << " and is unbounded towards kInfinity.";
       return false;
     }
 
@@ -2423,8 +2425,9 @@ bool SingletonPreprocessor::MakeConstraintAnEqualityIfPossible(
     if (status_ == ProblemStatus::INFEASIBLE_OR_UNBOUNDED) {
       DCHECK_EQ(lb, -kInfinity);
       VLOG(1) << "Problem ProblemStatus::INFEASIBLE_OR_UNBOUNDED, singleton "
-                 "variable " << e.col << " has a cost (for minimization) of "
-              << cost << " and is unbounded towards -kInfinity.";
+                 "variable "
+              << e.col << " has a cost (for minimization) of " << cost
+              << " and is unbounded towards -kInfinity.";
       return false;
     }
 
@@ -2606,11 +2609,12 @@ bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp,
     // TODO(user): Write a small class that takes a matrix, its transpose, row
     // and column bounds, and "propagate" the bounds as much as possible so we
     // can use this better estimate here and remove more near-zero entries.
-    const Fractional max_magnitude = std::max(fabs(lower_bound), fabs(upper_bound));
+    const Fractional max_magnitude =
+        std::max(fabs(lower_bound), fabs(upper_bound));
     if (max_magnitude == kInfinity || max_magnitude == 0) continue;
     const Fractional threshold = allowed_impact / max_magnitude;
-    lp->GetMutableSparseColumn(col)
-        ->RemoveNearZeroEntriesWithWeights(threshold, row_degree);
+    lp->GetMutableSparseColumn(col)->RemoveNearZeroEntriesWithWeights(
+        threshold, row_degree);
 
     if (lp->objective_coefficients()[col] != 0.0 &&
         num_non_zero_objective_coefficients *
@@ -3372,6 +3376,196 @@ bool ToMinimizationPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
 
 void ToMinimizationPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {}
+
+// --------------------------------------------------------
+// AddSlackVariablesPreprocessor
+// --------------------------------------------------------
+
+bool AddSlackVariablesPreprocessor::Run(LinearProgram* lp,
+                                        TimeLimit* time_limit) {
+  RETURN_VALUE_IF_NULL(lp, false);
+  lp->AddSlackVariablesForAllRows(true);
+  first_slack_col_ = lp->GetFirstSlackVariable();
+  return true;
+}
+
+void AddSlackVariablesPreprocessor::RecoverSolution(
+    ProblemSolution* solution) const {
+  RETURN_IF_NULL(solution);
+
+  // Compute constraint statuses from statuses of slack variables.
+  const RowIndex num_rows = solution->dual_values.size();
+  for (RowIndex row(0); row < num_rows; ++row) {
+    const ColIndex slack_col = first_slack_col_ + RowToColIndex(row);
+    const VariableStatus variable_status =
+        solution->variable_statuses[slack_col];
+    ConstraintStatus constraint_status = ConstraintStatus::FREE;
+    // The slack variables have reversed bounds - if the value of the variable
+    // is at one bound, the value of the constraint is at the opposite bound.
+    switch (variable_status) {
+      case VariableStatus::AT_LOWER_BOUND:
+        constraint_status = ConstraintStatus::AT_UPPER_BOUND;
+        break;
+      case VariableStatus::AT_UPPER_BOUND:
+        constraint_status = ConstraintStatus::AT_LOWER_BOUND;
+        break;
+      default:
+        constraint_status = VariableToConstraintStatus(variable_status);
+        break;
+    }
+    solution->constraint_statuses[row] = constraint_status;
+  }
+
+  // Drop the primal values and variable statuses for slack variables.
+  solution->primal_values.resize(first_slack_col_, 0.0);
+  solution->variable_statuses.resize(first_slack_col_, VariableStatus::FREE);
+}
+
+// --------------------------------------------------------
+// SolowHalimPreprocessor
+// --------------------------------------------------------
+bool SolowHalimPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
+  RETURN_VALUE_IF_NULL(lp, false);
+  if (!parameters_.use_solowhalim()){
+    return false;
+  }
+
+  // mip context not implemented
+  // TODO : in order to manage mip context we must take care
+  // of truncated offsets
+  if (in_mip_context_){
+    return false;
+  }
+
+  const bool lp_is_maximization_problem = lp->IsMaximizationProblem();
+  const ColIndex num_cols = lp->num_variables();
+  const RowIndex num_rows = lp->num_constraints();
+  ColIndex num_shifted_cols(0);
+  ColIndex num_shifted_opposite_cols(0);
+
+  variable_initial_lbs_.assign(num_cols, 0.0);
+  variable_initial_ubs_.assign(num_cols, 0.0);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    variable_initial_lbs_[col] = lp->variable_lower_bounds()[col];
+    variable_initial_ubs_[col] = lp->variable_upper_bounds()[col];
+  }
+
+  KahanSum objective_offset;
+  ITIVector<RowIndex, KahanSum> row_offsets(num_rows.value());
+  column_transform_.resize(num_cols.value(), NOT_MODIFIED);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    const Fractional coeff = lp->objective_coefficients()[col];
+    if (coeff != 0.0){
+      bool coeff_opposite_direction =
+          ( (coeff < 0.0 && !lp_is_maximization_problem) ||
+            (coeff > 0.0 &&  lp_is_maximization_problem));
+
+      const Fractional ub = lp->variable_upper_bounds()[col];
+      const Fractional lb = lp->variable_lower_bounds()[col];
+      if (IsFinite(ub) && IsFinite(lb)){
+        ColumnTransformType column_transform = NOT_MODIFIED;
+        double shift_value = 0.0;
+
+        if (coeff_opposite_direction) {
+          SparseColumn* mutable_sparse_column = lp->GetMutableSparseColumn(col);
+          for (const SparseColumn::Entry e : (*mutable_sparse_column) ) {
+            row_offsets[e.row()].Add(e.coefficient() * ub);
+          }
+          mutable_sparse_column->MultiplyByConstant(-1);
+          lp->SetObjectiveCoefficient(col, -coeff);
+          shift_value = ub;
+          column_transform = SHIFTED_OPPOSITE_DIRECTION;
+          num_shifted_opposite_cols++;
+        } else {
+          const SparseColumn& sparse_column = lp->GetSparseColumn(col);
+          for (const SparseColumn::Entry e : sparse_column) {
+            row_offsets[e.row()].Add(e.coefficient() * lb);
+          }
+          shift_value = lb;
+          column_transform = SHIFTED;
+          num_shifted_cols++;
+        }
+
+        if (column_transform != NOT_MODIFIED){
+          column_transform_[col] = column_transform;
+          objective_offset.Add(coeff * shift_value);
+          lp->SetVariableBounds(col, 0, ub - lb);
+        }
+      }
+    }
+  }
+
+  for (RowIndex row(0); row < num_rows; ++row) {
+    lp->SetConstraintBounds(
+        row, lp->constraint_lower_bounds()[row] - row_offsets[row].Value(),
+        lp->constraint_upper_bounds()[row] - row_offsets[row].Value());
+  }
+  lp->SetObjectiveOffset(lp->objective_offset() + objective_offset.Value());
+
+  VLOG(1) << "Shifted " << num_shifted_cols << " variables.";
+  VLOG(1) << "Shifted opposite " << num_shifted_opposite_cols << " variables.";
+  VLOG(1) << "Objective offset : " << objective_offset.Value();
+
+  return true;
+}
+
+void SolowHalimPreprocessor::RecoverSolution(ProblemSolution* solution) const {
+  RETURN_IF_NULL(solution);
+  const ColIndex num_cols = solution->variable_statuses.size();
+  for (ColIndex col(0); col < num_cols; ++col) {
+
+    VLOG(2) << "col = " << col << "\t" << column_transform_[col];
+    VLOG(2) << "\tinitial range : \t [" <<  variable_initial_lbs_[col]
+            << " ; " << variable_initial_ubs_[col] << "]";
+    VLOG(2) << "\tstatus : " <<  solution->variable_statuses[col]
+            << "\t raw value : " << solution->primal_values[col];
+
+    switch (column_transform_[col]){
+      case NOT_MODIFIED:
+        break;
+      case SHIFTED:
+        switch (solution->variable_statuses[col]) {
+          case VariableStatus::AT_LOWER_BOUND:
+            solution->primal_values[col] = variable_initial_lbs_[col];
+            break;
+          case VariableStatus::AT_UPPER_BOUND:
+            solution->primal_values[col] = variable_initial_ubs_[col];
+            break;
+          case VariableStatus::BASIC:
+            solution->primal_values[col] =
+              variable_initial_lbs_[col] + solution->primal_values[col];
+            break;
+          case VariableStatus::FIXED_VALUE:
+            FALLTHROUGH_INTENDED;
+          case VariableStatus::FREE:
+            break;
+        }
+        break;
+      case SHIFTED_OPPOSITE_DIRECTION:
+        switch (solution->variable_statuses[col]) {
+          case VariableStatus::AT_LOWER_BOUND:
+            solution->primal_values[col] = variable_initial_ubs_[col];
+            solution->variable_statuses[col] = VariableStatus::AT_UPPER_BOUND;
+            break;
+          case VariableStatus::AT_UPPER_BOUND:
+            solution->primal_values[col] = variable_initial_lbs_[col];
+            solution->variable_statuses[col] = VariableStatus::AT_LOWER_BOUND;
+            break;
+          case VariableStatus::BASIC:
+            solution->primal_values[col] =
+              variable_initial_ubs_[col] - solution->primal_values[col];
+            break;
+          case VariableStatus::FIXED_VALUE:
+            FALLTHROUGH_INTENDED;
+          case VariableStatus::FREE:
+            break;
+        }
+        break;
+    }
+    VLOG(2) << " recover value : " << solution->primal_values[col];
+
+  }
+}
 
 }  // namespace glop
 }  // namespace operations_research

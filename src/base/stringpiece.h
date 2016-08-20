@@ -103,18 +103,18 @@ class StringPiece {
   void CopyToString(std::string* target) const;
   void AppendToString(std::string* target) const;
 
-  // Does "this" start with "x"
+  // Does "this" start with "x"?
   bool starts_with(const StringPiece& x) const {
     return ((length_ >= x.length_) && (memcmp(ptr_, x.ptr_, x.length_) == 0));
   }
 
-  // Does "this" end with "x"
+  // Does "this" end with "x"?
   bool ends_with(const StringPiece& x) const {
     return ((length_ >= x.length_) &&
             (memcmp(ptr_ + (length_ - x.length_), x.ptr_, x.length_) == 0));
   }
 
-  // standard STL container boilerplate
+  // Standard STL container boilerplate.
   typedef char value_type;
   typedef const char* pointer;
   typedef const char& reference;
@@ -132,7 +132,7 @@ class StringPiece {
     return const_reverse_iterator(ptr_ + length_);
   }
   const_reverse_iterator rend() const { return const_reverse_iterator(ptr_); }
-  // STLS says return size_type, but Google says return int
+  // STL says return size_type, but Google says return int.
   int max_size() const { return length_; }
   int capacity() const { return length_; }
 
@@ -174,7 +174,7 @@ inline bool operator>=(const operations_research::StringPiece& x,
   return !(x < y);
 }
 
-// allow StringPiece to be logged
+// Allow StringPiece to be logged.
 extern std::ostream& operator<<(std::ostream& o,
                                 const operations_research::StringPiece& piece);
 

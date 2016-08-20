@@ -18,7 +18,7 @@ import random
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--data', default = 'data/steel_mill/steel_mill_slab.txt',
+parser.add_argument('--data', default = 'examples/data/steel_mill/steel_mill_slab.txt',
                     help = 'path to data file')
 parser.add_argument('--time_limit', default = 20000, type = int,
                     help = 'global time limit')

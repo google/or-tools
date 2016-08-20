@@ -18,34 +18,34 @@
 // of the library.
 //
 // The main objects that define extensions are:
-//   - BaseIntExpr the base class of all expressions that are not variables.
-//   - SimpleRevFIFO a reversible FIFO list with templatized values.
+//   - BaseIntExpr, the base class of all expressions that are not variables.
+//   - SimpleRevFIFO, a reversible FIFO list with templatized values.
 //     A reversible data structure is a data structure that reverts its
 //     modifications when the search is going up in the search tree, usually
 //     after a failure occurs.
-//   - RevImmutableMultiMap a reversible immutable multimap.
+//   - RevImmutableMultiMap, a reversible immutable multimap.
 //   - MakeConstraintDemon<n> and MakeDelayedConstraintDemon<n> to wrap methods
 //     of a constraint as a demon.
-//   - RevSwitch, one reversible flip once switch.
+//   - RevSwitch, a reversible flip-once switch.
 //   - SmallRevBitSet, RevBitSet, and RevBitMatrix: reversible 1D or 2D
 //     bitsets.
 //   - LocalSearchOperator, IntVarLocalSearchOperator, ChangeValue and
-//     PathOperator to create new local search operators.
-//   - LocalSearchFilter and IntVarLocalSearchFilter to create new local
+//     PathOperator, to create new local search operators.
+//   - LocalSearchFilter and IntVarLocalSearchFilter, to create new local
 //     search filters.
-//   - BaseLns to write Large Neighborhood Search operators.
-//   - SymmetryBreaker to describe model symmetries that will be broken during
+//   - BaseLns, to write Large Neighborhood Search operators.
+//   - SymmetryBreaker, to describe model symmetries that will be broken during
 //     search using the 'Symmetry Breaking During Search' framework
 //     see Gent, I. P., Harvey, W., & Kelsey, T. (2002).
 //     Groups and Constraints: Symmetry Breaking During Search.
 //     Principles and Practice of Constraint Programming CP2002
 //     (Vol. 2470, pp. 415-430). Springer. Retrieved from
-//     http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.11.1442
+//     http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.11.1442.
 //
 // Then, there are some internal classes that are used throughout the solver
 // and exposed in this file:
-//   - SearchLog the root class of all periodic outputs during search.
-//   - ModelCache A caching layer to avoid creating twice the same object.
+//   - SearchLog, the root class of all periodic outputs during search.
+//   - ModelCache, A caching layer to avoid creating twice the same object.
 
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVERI_H_
@@ -59,7 +59,6 @@
 #include <string>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -70,12 +69,10 @@
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/model.pb.h"
 #include "util/bitset.h"
 #include "util/tuple_set.h"
 #include "util/vector_map.h"
-
-template <typename T>
-class ResultCallback;
 
 class WallTimer;
 
@@ -86,19 +83,22 @@ class CPIntegerExpressionProto;
 class CPIntervalVariableProto;
 
 // This is the base class for all expressions that are not variables.
-// It proposes a basic 'CastToVar()' implementation.
+// It provides a basic 'CastToVar()' implementation.
+//
 // The class of expressions represent two types of objects: variables
 // and subclasses of BaseIntExpr. Variables are stateful objects that
 // provide a rich API (remove values, WhenBound...). On the other hand,
 // subclasses of BaseIntExpr represent range-only stateless objects.
-// That is the std::min(A + B) is recomputed each time as std::min(A) + std::min(B).
+// That is, std::min(A + B) is recomputed each time as std::min(A) + std::min(B).
+//
 // Furthermore, sometimes, the propagation on an expression is not complete,
 // and Min(), Max() are not monotonic with respect to SetMin() and SetMax().
-// For instance, A is a var with domain [0 .. 5], and B another variable
-// with domain [0 .. 5]. Then Plus(A, B) has domain [0, 10].
-// If we apply SetMax(Plus(A, B), 4)). Then we will deduce that both A
-// and B will have domain [0 .. 4]. In that case, Max(Plus(A, B)) is 8
-// and not 4.  To get back monotonicity, we will 'cast' the expression
+// For instance, if A is a var with domain [0 .. 5], and B another variable
+// with domain [0 .. 5], then Plus(A, B) has domain [0, 10].
+//
+// If we apply SetMax(Plus(A, B), 4)), we will deduce that both A
+// and B have domain [0 .. 4]. In that case, Max(Plus(A, B)) is 8
+// and not 4.  To get back monotonicity, we 'cast' the expression
 // into a variable using the Var() method (that will call CastToVar()
 // internally). The resulting variable will be stateful and monotonic.
 //
@@ -251,7 +251,7 @@ inline uint64 Hash1(int64 value) { return Hash1(static_cast<uint64>(value)); }
 inline uint64 Hash1(int value) { return Hash1(static_cast<uint32>(value)); }
 
 inline uint64 Hash1(void* const ptr) {
-#if defined(ARCH_K8) || defined(__powerpc64__)
+#if defined(ARCH_K8) || defined(__powerpc64__) || defined(__aarch64__)
   return Hash1(reinterpret_cast<uint64>(ptr));
 #else
   return Hash1(reinterpret_cast<uint32>(ptr));
@@ -479,9 +479,9 @@ class RevBitMatrix : private RevBitSet {
   RevBitMatrix(int64 rows, int64 columns);
   ~RevBitMatrix();
 
-  // Sets the 'column' bit in the 'row' row..
+  // Sets the 'column' bit in the 'row' row.
   void SetToOne(Solver* const solver, int64 row, int64 column);
-  // Erases the 'column' bit in the 'row' row..
+  // Erases the 'column' bit in the 'row' row.
   void SetToZero(Solver* const solver, int64 row, int64 column);
   // Returns whether the 'column' bit in the 'row' row is set.
   bool IsSet(int64 row, int64 column) const {
@@ -789,18 +789,22 @@ Demon* MakeDelayedConstraintDemon2(Solver* const s, T* const ct,
 // ---------- Local search operators ----------
 
 // The base class for all local search operators.
-// A local search operator is an object which defines the neighborhood of a
-// solution; in other words, a neighborhood is the set of solutions which can
+//
+// A local search operator is an object that defines the neighborhood of a
+// solution. In other words, a neighborhood is the set of solutions which can
 // be reached from a given solution using an operator.
-// The behavior of the LocalSearchOperator class is similar to the one of an
-// iterator. The operator is synchronized with an assignment (gives the
+//
+// The behavior of the LocalSearchOperator class is similar to iterators.
+// The operator is synchronized with an assignment (gives the
 // current values of the variables); this is done in the Start() method.
+//
 // Then one can iterate over the neighbors using the MakeNextNeighbor method.
 // This method returns an assignment which represents the incremental changes
 // to the current solution. It also returns a second assignment representing the
 // changes to the last solution defined by the neighborhood operator; this
-// assignment is empty is the neighborhood operator cannot track this
+// assignment is empty if the neighborhood operator cannot track this
 // information.
+//
 // TODO(user): rename Start to Synchronize ?
 // TODO(user): decouple the iterating from the defining of a neighbor.
 class LocalSearchOperator : public BaseObject {
@@ -913,7 +917,6 @@ class VarLocalSearchOperator : public LocalSearchOperator {
 
   // OnStart() should really be protected, but then SWIG doesn't see it. So we
   // make it public, but only subclasses should access to it (to override it).
-
  protected:
   void MarkChange(int64 index) {
     delta_changes_.Set(index);
@@ -988,10 +991,12 @@ class IntVarLocalSearchHandler {
                                  IntVarLocalSearchHandler>::OnStart;
 #endif  // SWIGPYTHON
 
+// clang-format off
 %rename(IntVarLocalSearchOperatorTemplate)
-    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
 %template(IntVarLocalSearchOperatorTemplate)
-    VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+        VarLocalSearchOperator<IntVar, int64, IntVarLocalSearchHandler>;
+// clang-format on
 #endif  // SWIG
 
 class IntVarLocalSearchOperator
@@ -1048,10 +1053,12 @@ class SequenceVarLocalSearchHandler {
 // derived C++ class.
 // TODO(user): find a way to move this code back to the .swig file, where it
 // belongs.
+// clang-format off
 %rename(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
       SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
 %template(SequenceVarLocalSearchOperatorTemplate) VarLocalSearchOperator<
       SequenceVar, std::vector<int>, SequenceVarLocalSearchHandler>;
+// clang-format on
 #endif
 
 typedef VarLocalSearchOperator<SequenceVar, std::vector<int>,
@@ -1153,7 +1160,7 @@ class BaseLns : public IntVarLocalSearchOperator {
   explicit BaseLns(const std::vector<IntVar*>& vars);
   ~BaseLns() override;
   virtual void InitFragments();
-  virtual bool NextFragment();
+  virtual bool NextFragment() = 0;
   void AppendToFragment(int index);
   int FragmentSize() const;
 
@@ -1210,8 +1217,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   // 'number_of_base_nodes' is the number of nodes needed to define a
   // neighbor. 'start_empty_path_class' is a callback returning an index such
   // that if
-  // c1 = start_empty_path_class->Run(StartNode(p1)),
-  // c2 = start_empty_path_class->Run(StartNode(p2)),
+  // c1 = start_empty_path_class(StartNode(p1)),
+  // c2 = start_empty_path_class(StartNode(p2)),
   // p1 and p2 are path indices,
   // then if c1 == c2, p1 and p2 are equivalent if they are empty.
   // This is used to remove neighborhood symmetries on equivalent empty paths;
@@ -1219,13 +1226,9 @@ class PathOperator : public IntVarLocalSearchOperator {
   // moving the same node to equivalent empty paths will be skipped.
   // 'start_empty_path_class' can be nullptr in which case no symmetries will be
   // removed.
-  // Ownership of 'start_empty_path_class' is not taken by this class and
-  // therefore must be explicitly deleted by the caller.
-  // 'start_empty_path_class' must remain alive during the lifespan of the
-  // path operator.
   PathOperator(const std::vector<IntVar*>& next_vars,
                const std::vector<IntVar*>& path_vars, int number_of_base_nodes,
-               ResultCallback1<int, int64>* start_empty_path_class);
+               std::function<int(int64)> start_empty_path_class);
   ~PathOperator() override {}
   virtual bool MakeNeighbor() = 0;
 
@@ -1362,7 +1365,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::vector<bool> inactives_;
   bool just_started_;
   bool first_start_;
-  ResultCallback1<int, int64>* start_empty_path_class_;
+  std::function<int(int64)> start_empty_path_class_;
 };
 
 // ----- Operator Factories ------
@@ -1371,7 +1374,7 @@ template <class T>
 LocalSearchOperator* MakeLocalSearchOperator(
     Solver* solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
-    ResultCallback1<int, int64>* start_empty_path_class);
+    std::function<int(int64)> start_empty_path_class);
 
 // Classes to which this template function can be applied to as of 04/2014.
 // Usage: LocalSearchOperator* op = MakeLocalSearchOperator<Relocate>(...);
@@ -1511,6 +1514,32 @@ class PropagationMonitor : public SearchMonitor {
                             const std::vector<int>& rank_first,
                             const std::vector<int>& rank_last,
                             const std::vector<int>& unperformed) = 0;
+  // Install itself on the solver.
+  void Install() override;
+};
+
+// ---------- LocalSearchMonitor ----------
+
+class LocalSearchMonitor : public SearchMonitor {
+  // TODO(user): Add monitoring of local search filters.
+ public:
+  explicit LocalSearchMonitor(Solver* const solver);
+  ~LocalSearchMonitor() override;
+
+  // Local search operator events.
+  virtual void BeginOperatorStart() = 0;
+  virtual void EndOperatorStart() = 0;
+  virtual void BeginMakeNextNeighbor(const LocalSearchOperator* op) = 0;
+  virtual void EndMakeNextNeighbor(const LocalSearchOperator* op,
+                                   bool neighbor_found, const Assignment* delta,
+                                   const Assignment* deltadelta) = 0;
+  virtual void BeginFilterNeighbor(const LocalSearchOperator* op) = 0;
+  virtual void EndFilterNeighbor(const LocalSearchOperator* op,
+                                 bool neighbor_found) = 0;
+  virtual void BeginAcceptNeighbor(const LocalSearchOperator* op) = 0;
+  virtual void EndAcceptNeighbor(const LocalSearchOperator* op,
+                                 bool neighbor_found) = 0;
+
   // Install itself on the solver.
   void Install() override;
 };
@@ -1992,6 +2021,142 @@ class ModelParser : public ModelVisitor {
  private:
   std::vector<ArgumentHolder*> holders_;
 };
+
+// ---------- CpModelLoader -----------
+
+// The class CpModelLoader is responsible for reading a protocol
+// buffer representing a CP model and creating the corresponding CP
+// model with the expressions and constraints. It should not be used directly.
+class CpModelLoader {
+ public:
+  explicit CpModelLoader(Solver* const solver) : solver_(solver) {}
+  ~CpModelLoader() {}
+
+  Solver* solver() const { return solver_; }
+
+  // Builds integer expression from proto and stores it. It returns
+  // true upon success.
+  bool BuildFromProto(const CpIntegerExpression& proto);
+  // Builds constraint from proto and returns it.
+  Constraint* BuildFromProto(const CpConstraint& proto);
+  // Builds interval variable from proto and stores it. It returns
+  // true upon success.
+  bool BuildFromProto(const CpIntervalVariable& proto);
+  // Builds sequence variable from proto and stores it. It returns
+  // true upon success.
+  bool BuildFromProto(const CpSequenceVariable& proto);
+
+  // Returns stored integer expression.
+  IntExpr* IntegerExpression(int index) const;
+  // Returns stored interval variable.
+  IntervalVar* IntervalVariable(int index) const;
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       int64* to_fill);
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       IntExpr** to_fill);
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       std::vector<int64>* to_fill);
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       IntTupleSet* to_fill);
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       std::vector<IntVar*>* to_fill);
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       IntervalVar** to_fill);
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       std::vector<IntervalVar*>* to_fill);
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       SequenceVar** to_fill);
+
+  bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
+                       std::vector<SequenceVar*>* to_fill);
+
+  template <class P, class A>
+  bool ScanArguments(const std::string& type, const P& proto, A* to_fill) {
+    const int index = tags_.Index(type);
+    for (int i = 0; i < proto.arguments_size(); ++i) {
+      if (ScanOneArgument(index, proto.arguments(i), to_fill)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  int TagIndex(const std::string& tag) const { return tags_.Index(tag); }
+
+  void AddTag(const std::string& tag) { tags_.Add(tag); }
+
+  // TODO(user): Use.
+  void SetSequenceVariable(int index, SequenceVar* const var) {}
+
+ private:
+  Solver* const solver_;
+  std::vector<IntExpr*> expressions_;
+  std::vector<IntervalVar*> intervals_;
+  std::vector<SequenceVar*> sequences_;
+  VectorMap<std::string> tags_;
+};
+
+// ----- Utility Class for Callbacks -----
+
+template <class T>
+class ArrayWithOffset : public BaseObject {
+ public:
+  ArrayWithOffset(int64 index_min, int64 index_max)
+      : index_min_(index_min),
+        index_max_(index_max),
+        values_(new T[index_max - index_min + 1]) {
+    DCHECK_LE(index_min, index_max);
+  }
+
+  ~ArrayWithOffset() override {}
+
+  virtual T Evaluate(int64 index) const {
+    DCHECK_GE(index, index_min_);
+    DCHECK_LE(index, index_max_);
+    return values_[index - index_min_];
+  }
+
+  void SetValue(int64 index, T value) {
+    DCHECK_GE(index, index_min_);
+    DCHECK_LE(index, index_max_);
+    values_[index - index_min_] = value;
+  }
+
+  std::string DebugString() const override { return "ArrayWithOffset"; }
+
+ private:
+  const int64 index_min_;
+  const int64 index_max_;
+  std::unique_ptr<T[]> values_;
+};
+
+template <class T>
+std::function<T(int64)> MakeFunctionFromProto(CpModelLoader* const builder,
+                                              const CpExtension& proto,
+                                              int tag_index) {
+  DCHECK_EQ(tag_index, proto.type_index());
+  Solver* const solver = builder->solver();
+  int64 index_min = 0;
+  CHECK(builder->ScanArguments(ModelVisitor::kMinArgument, proto, &index_min));
+  int64 index_max = 0;
+  CHECK(builder->ScanArguments(ModelVisitor::kMaxArgument, proto, &index_max));
+  std::vector<int64> values;
+  CHECK(builder->ScanArguments(ModelVisitor::kValuesArgument, proto, &values));
+  ArrayWithOffset<T>* const array =
+      solver->RevAlloc(new ArrayWithOffset<T>(index_min, index_max));
+  for (int i = index_min; i <= index_max; ++i) {
+    array->SetValue(i, values[i - index_min]);
+  }
+  return [array](int64 index) { return array->Evaluate(index); };
+}
 #endif  // SWIG
 
 // This class is a reversible growing array. In can grow in both
@@ -2136,8 +2301,8 @@ class RevIntSet {
 
   void Insert(Solver* const solver, const T& elt) {
     const int position = num_elements_.Value();
-    DCHECK_LT(position, capacity_);          // Valid.
-    DCHECK_EQ(position_[elt], kNoInserted);  // Not already added.
+    DCHECK_LT(position, capacity_);  // Valid.
+    DCHECK(NotAlreadyInserted(elt));
     elements_[position] = elt;
     position_[elt] = position;
     num_elements_.Incr(solver);
@@ -2155,7 +2320,22 @@ class RevIntSet {
 
   void Clear(Solver* const solver) { num_elements_.SetValue(solver, 0); }
 
+  // Iterators on the indices.
+  typedef const T* const_iterator;
+  const_iterator begin() const { return elements_.get(); }
+  const_iterator end() const { return elements_.get() + num_elements_.Value(); }
+
  private:
+  // Used in DCHECK.
+  bool NotAlreadyInserted(const T& elt) {
+    for (int i = 0; i < num_elements_.Value(); ++i) {
+      if (elt == elements_[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void SwapTo(T value_index, int next_position) {
     const int current_position = position_[value_index];
     if (current_position != next_position) {
@@ -2289,6 +2469,62 @@ class RevPartialSequence {
   const int size_;
   // Reverse mapping.
   std::unique_ptr<int[]> position_;
+};
+
+// This class represents a reversible bitset. It is meant to represent a set of
+// active bits. It does not offer direct access, but just methods that can
+// reversibly substract another bitset, or check if the current active bitset
+// intersects with another bitset.
+class UnsortedNullableRevBitset {
+ public:
+  // Size is the number of bits to store in the bitset.
+  explicit UnsortedNullableRevBitset(int bit_size);
+
+  ~UnsortedNullableRevBitset() {}
+
+  // This methods overwrites the active bitset with the mask. This method should
+  // be called only once.
+  void Init(Solver* const solver, const std::vector<uint64>& mask);
+
+  // This method substracts the mask from the active bitset. It returns true if
+  // the active bitset was changed in the process.
+  bool RevSubtract(Solver* const solver, const std::vector<uint64>& mask);
+
+  // This method ANDs the mask with the active bitset. It returns true if
+  // the active bitset was changed in the process.
+  bool RevAnd(Solver* const solver, const std::vector<uint64>& mask);
+
+  // This method returns the number of non null 64 bit words in the bitset
+  // representation.
+  int ActiveWordSize() const { return active_words_.Size(); }
+
+  // This method returns true if the active bitset is null.
+  bool Empty() const { return active_words_.Size() == 0; }
+
+  // This method returns true iff the mask and the active bitset have a non
+  // null intersection. support_index is used as an accelerator:
+  //   - The first word tested to check the intersection will be the
+  //     '*support_index'th one.
+  //   - If the intersection is not null, the support_index will be filled with
+  //     the index of the word that does intersect with the mask. This can be
+  //     reused later to speed-up the check.
+  bool Intersects(const std::vector<uint64>& mask, int* support_index);
+
+  // Returns the number of bits given in the constructor of the bitset.
+  int64 bit_size() const { return bit_size_; }
+  // Returns the number of 64 bit words used to store the bitset.
+  int64 word_size() const { return word_size_; }
+  // Returns the set of active word indices.
+  const RevIntSet<int>& active_words() const { return active_words_; }
+
+ private:
+  void CleanUpActives(Solver* const solver);
+
+  const int64 bit_size_;
+  const int64 word_size_;
+  RevArray<uint64> bits_;
+  RevIntSet<int> active_words_;
+  std::vector<int> to_remove_;
 };
 
 // ---------- Helpers ----------

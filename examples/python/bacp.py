@@ -17,7 +17,7 @@ from ortools.constraint_solver import pywrapcp
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--data', default = 'data/bacp/bacp12.txt',
+parser.add_argument('--data', default = 'examples/data/bacp/bacp12.txt',
                     help = 'path to data file')
 
 #----------------helper for binpacking posting----------------

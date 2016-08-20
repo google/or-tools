@@ -17,8 +17,6 @@ or-tools/
 
 
 To install the package, please run:
-  sudo python setup.py install
-or
   python setup.py install --user
 
 This will pull ortools binary modules from Pypi and install them.

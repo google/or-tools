@@ -28,6 +28,8 @@
 import random
 import argparse
 from ortools.constraint_solver import pywrapcp
+# You need to import routing_enums_pb2 after pywrapcp!
+from ortools.constraint_solver import routing_enums_pb2
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--tsp_size', default = 10, type = int,
@@ -75,23 +77,16 @@ class RandomMatrix(object):
 def main(args):
   # Create routing model
   if args.tsp_size > 0:
-    # Set a global parameter.
-    param = pywrapcp.RoutingParameters()
-    param.use_light_propagation = args.light_propagation
-    pywrapcp.RoutingModel.SetGlobalParameters(param)
-
     # TSP of size args.tsp_size
     # Second argument = 1 to build a single tour (it's a TSP).
     # Nodes are indexed from 0 to parser_tsp_size - 1, by default the start of
     # the route is node 0.
     routing = pywrapcp.RoutingModel(args.tsp_size, 1)
 
-    parameters = pywrapcp.RoutingSearchParameters()
+    search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
     # Setting first solution heuristic (cheapest addition).
-    parameters.first_solution = 'PathCheapestArc'
-    # Disabling Large Neighborhood Search, comment out to activate it.
-    parameters.no_lns = True
-    parameters.no_tsp = False
+    search_parameters.first_solution_strategy = (
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
 
     # Setting the cost function.
     # Put a callback to the distance accessor here. The callback takes two
@@ -116,7 +111,8 @@ def main(args):
         forbidden_connections += 1
 
     # Solve, returns a solution if any.
-    assignment = routing.SolveWithParameters(parameters, None)
+#    assignment = routing.SolveWithParameters(search_parameters)
+    assignment = routing.Solve()
     if assignment:
       # Solution cost.
       print(assignment.ObjectiveValue())

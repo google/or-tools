@@ -1,11 +1,11 @@
 # tags of dependencies to checkout.
-GFLAGS_TAG = 2.1.2
-PROTOBUF_TAG = 3.0.0-beta-2
+GFLAGS_TAG = master
+PROTOBUF_TAG = 3.0.0
 SPARSEHASH_TAG = 2.0.3
-CBC_TAG = 2.9.7
+CBC_TAG = 2.9.8
 ZLIB_TAG = 1.2.8
 ZLIB_ARCHIVE_TAG = 128
-SWIG_TAG = 3.0.7
+SWIG_TAG = 3.0.10
 BISON_FLEX_TAG = 2.5.5
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
@@ -86,7 +86,8 @@ build_third_party: \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
-	install_scip
+	install_scip \
+	install_bison
 
 bin:
 	$(MKDIR_P) bin
@@ -198,29 +199,18 @@ download_third_party: \
 install_directories: dependencies\install\bin dependencies\install\lib\coin dependencies\install\include\coin
 
 dependencies\install\bin: dependencies\install
-ifeq ($(wildcard dependencies\install),)
 	-$(MKDIR_P) dependencies\install\bin
-endif
 
 dependencies\install\lib: dependencies\install
-ifeq ($(wildcard dependencies\install\lib),)
 	-$(MKDIR_P) dependencies\install\lib
-endif
 
 dependencies\install\lib\coin: dependencies\install\lib
-ifeq ($(wildcard dependencies\install\lib\coin),)
 	-$(MKDIR_P) dependencies\install\lib\coin
-endif
-
 dependencies\install\include: dependencies\install
-ifeq ($(wildcard dependencies\install\include),)
 	-$(MKDIR_P) dependencies\install\include
-endif
 
 dependencies\install\include\coin: dependencies\install\include
-ifeq ($(wildcard dependencies\install\include\coin),)
 	-$(MKDIR_P) dependencies\install\include\coin
-endif
 
 dependencies\install:
 	-$(MKDIR_P) dependencies\install
@@ -228,7 +218,7 @@ dependencies\install:
 # Install zlib
 install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
 
-dependencies\install\include\zlib.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
+dependencies\install\include\zlib.h: dependencies\install\include dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
 	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h dependencies\install\include
 
 dependencies\install\include\zconf.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
@@ -255,15 +245,16 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 	           -G "NMake Makefiles" \
 	           .
 	cd dependencies/sources/gflags-$(GFLAGS_TAG) && nmake install
-	$(TOUCH) dependencies/install/lib/gflags.lib
+	$(TOUCH) dependencies/install/lib/gflags_static.lib
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
 	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
-	$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
+	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/schuhschuh/gflags/archive/v$(GFLAGS_TAG).zip
-	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
+#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/master.zip
+	cd dependencies/archives && rename master.zip gflags-$(GFLAGS_TAG).zip
 
 
 # Install protocol buffers.
@@ -287,17 +278,12 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependenc
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
 	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build
 	tools\sed -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
-ifeq ("$(PTRLENGTH)", "64")
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013 Win64" -DBUILD_TESTING=OFF ..
-else
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G "Visual Studio 12 2013" -DBUILD_TESTING=OFF ..
-endif
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 #	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
-
 
 # Install sparsehash.
 install_sparsehash: dependencies\install\include\google\dense_hash_map
@@ -338,17 +324,15 @@ dependencies\install\bin\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisu
 	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
 
 dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\configure
-ifeq ("$(VisualStudioVersion)", "12.0")
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj
-endif
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj $(VS_RELEASE)
 	sed -i 's/CBC_BUILD;/CBC_BUILD;CBC_THREAD_SAFE;CBC_NO_INTERRUPT;/g' dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
 	cd dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:cbc /p:Configuration=Release;BuildCmd=ReBuild
 
@@ -393,10 +377,8 @@ dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG
 #	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
 	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -d scip-$(SCIP_TAG).tgz
 	- cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\tar.exe xvmf scip-$(SCIP_TAG).tar
-ifeq ("$(VisualStudioVersion)", "12.0")
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj
-	tools\upgrade_to_vs2013.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj
-endif
+	tools\upgrade_vs_project.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj $(VS_RELEASE)
 	cd dependencies\solutions\Scip && msbuild /t:soplex
 	cd dependencies\solutions\Scip && msbuild /t:scip
 	-mkdir dependencies\install\include
@@ -409,10 +391,8 @@ endif
 	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\lpi\*.h dependencies\install\include\scip\lpi
 	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\nlpi\*.h dependencies\install\include\scip\nlpi
 	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\blockmemshell\*.h dependencies\install\include\scip\blockmemshell
-ifeq ("$(VisualStudioVersion)", "12.0")
 	git checkout dependencies/solutions/Scip/soplex/soplex.vcxproj
 	git checkout dependencies/solutions/Scip/scip/scip.vcxproj
-endif
 
 # Install bison and flex in one package.
 install_bison: dependencies\install\bin\win_bison.exe
@@ -420,11 +400,21 @@ install_bison: dependencies\install\bin\win_bison.exe
 dependencies\install\bin\win_flex.exe: dependencies\install\bin\win_bison.exe
 
 dependencies\install\bin\win_bison.exe: dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
-	tools\unzip -d dependencies/install\bin dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
+	tools\unzip -d dependencies\install\bin dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
 	tools\touch.exe dependencies\install\bin/win_bison.exe
 
 dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
-	tools\wget -P dependencies\archives http://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
+	tools\wget -P dependencies\archives --no-check-certificate https://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
+
+# Install Java protobuf
+
+install_java_protobuf: dependencies/install/lib/protobuf.jar
+
+dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
+	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
+	  ../src/google/protobuf/descriptor.proto
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && jar cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
 
 # Clean everything.
 clean_third_party:
@@ -459,6 +449,7 @@ Makefile.local:
 	@echo WINDOWS_CBC_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo $(GLPK_MAKEFILE)>> Makefile.local
 	@echo $(SCIP_MAKEFILE)>> Makefile.local
+	@echo CLR_KEYFILE = bin\\or-tools.snk >> Makefile.local
 	@echo WINDOWS_SULUM_VERSION = $(SULUM_TAG) >> Makefile.local
 	@echo # Please define WINDOWS_SLM_DIR to use Sulum Optimization. >> Makefile.local
 	@echo # Please define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local

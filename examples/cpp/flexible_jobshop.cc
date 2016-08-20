@@ -225,7 +225,7 @@ void FlexibleJobshop(const FlexibleJobShopData& data) {
     for (int m = 0; m < machine_count; ++m) {
       SequenceVar* const seq = all_sequences[m];
       LOG(INFO) << seq->name() << ": "
-                << IntVectorToString(collector->ForwardSequence(0, seq), ", ");
+                << strings::Join(collector->ForwardSequence(0, seq), ", ");
     }
   }
 }

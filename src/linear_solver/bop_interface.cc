@@ -128,6 +128,12 @@ BopInterface::BopInterface(MPSolver* const solver)
 BopInterface::~BopInterface() {}
 
 MPSolver::ResultStatus BopInterface::Solve(const MPSolverParameters& param) {
+  // Check whenever the solve has already been stopped by the user.
+  if (interrupt_solver_) {
+    Reset();
+    return MPSolver::NOT_SOLVED;
+  }
+
   // Reset extraction as this interface is not incremental yet.
   Reset();
   ExtractModel();

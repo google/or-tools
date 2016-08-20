@@ -74,11 +74,11 @@
 
 %enddef // PROTO_INPUT
 
-%define PROTO2_RETURN(CppProtoType, JavaProtoType, giveOwnership)
-%typemap(jni) CppProtoType* "jbyteArray"
-%typemap(jtype) CppProtoType* "byte[]"
-%typemap(jstype) CppProtoType* "JavaProtoType"
-%typemap(javaout) CppProtoType* {
+%define PROTO2_RETURN(CppProtoType, JavaProtoType)
+%typemap(jni) CppProtoType "jbyteArray"
+%typemap(jtype) CppProtoType "byte[]"
+%typemap(jstype) CppProtoType "JavaProtoType"
+%typemap(javaout) CppProtoType {
   byte[] buf = $jnicall;
   if (buf == null || buf.length == 0) {
     return null;
@@ -90,14 +90,9 @@
         "Unable to parse JavaProtoType protocol message.");
   }
 }
-%typemap(out) CppProtoType* {
-  std::unique_ptr<char[]> buf(new char[$1->ByteSize()]);
-  $1->SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
-  $result = JNIUtil::MakeJByteArray(jenv, buf.get(), $1->ByteSize());
-  if (giveOwnership) {
-    // To prevent a memory leak.
-    delete $1;
-    $1 = NULL;
-  }
+%typemap(out) CppProtoType {
+  std::unique_ptr<char[]> buf(new char[$1.ByteSize()]);
+  $1.SerializeWithCachedSizesToArray(reinterpret_cast<uint8*>(buf.get()));
+  $result = JNIUtil::MakeJByteArray(jenv, buf.get(), $1.ByteSize());
 }
 %enddef // PROTO2_RETURN

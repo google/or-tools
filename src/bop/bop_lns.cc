@@ -29,17 +29,15 @@
 #include "sat/sat_solver.h"
 #include "util/bitset.h"
 
-using operations_research::glop::ColIndex;
-using operations_research::glop::DenseRow;
-using operations_research::glop::GlopParameters;
-using operations_research::glop::LinearProgram;
-using operations_research::glop::LPSolver;
-using operations_research::LinearBooleanProblem;
-using operations_research::LinearBooleanConstraint;
-using operations_research::LinearObjective;
-
 namespace operations_research {
 namespace bop {
+
+using ::operations_research::LinearBooleanConstraint;
+using ::operations_research::LinearBooleanProblem;
+using ::operations_research::glop::ColIndex;
+using ::operations_research::glop::DenseRow;
+using ::operations_research::glop::LinearProgram;
+using ::operations_research::glop::LPSolver;
 
 //------------------------------------------------------------------------------
 // BopCompleteLNSOptimizer
@@ -50,7 +48,7 @@ void UseBopSolutionForSatAssignmentPreference(const BopSolution& solution,
                                               sat::SatSolver* solver) {
   for (int i = 0; i < solution.Size(); ++i) {
     solver->SetAssignmentPreference(
-        sat::Literal(sat::VariableIndex(i), solution.Value(VariableIndex(i))),
+        sat::Literal(sat::BooleanVariable(i), solution.Value(VariableIndex(i))),
         1.0);
   }
 }
@@ -87,11 +85,11 @@ BopOptimizerBase::Status BopCompleteLNSOptimizer::SynchronizeIfNeeded(
   for (BopConstraintTerm term : objective_terms_) {
     if (problem_state.solution().Value(term.var_id) && term.weight < 0) {
       cst.push_back(sat::LiteralWithCoeff(
-          sat::Literal(sat::VariableIndex(term.var_id.value()), false), 1.0));
+          sat::Literal(sat::BooleanVariable(term.var_id.value()), false), 1.0));
     } else if (!problem_state.solution().Value(term.var_id) &&
                term.weight > 0) {
       cst.push_back(sat::LiteralWithCoeff(
-          sat::Literal(sat::VariableIndex(term.var_id.value()), true), 1.0));
+          sat::Literal(sat::BooleanVariable(term.var_id.value()), true), 1.0));
     }
   }
   sat_solver_->AddLinearConstraint(
@@ -201,7 +199,7 @@ bool UseLinearRelaxationForSatAssignmentPreference(
   for (ColIndex col(0); col < lp_solver.variable_values().size(); ++col) {
     const double value = lp_solver.variable_values()[col];
     sat_solver->SetAssignmentPreference(
-        sat::Literal(sat::VariableIndex(col.value()), round(value) == 1),
+        sat::Literal(sat::BooleanVariable(col.value()), round(value) == 1),
         1 - fabs(value - round(value)));
   }
   return true;
@@ -241,8 +239,8 @@ BopOptimizerBase::Status BopAdaptiveLNSOptimizer::Optimize(
 
   // Set-up a sat_propagator_ cleanup task to catch all the exit cases.
   const double initial_dt = sat_propagator_->deterministic_time();
-  auto sat_propagator_cleanup = ::operations_research::util::MakeCleanup(
-      [initial_dt, this, &learned_info, &time_limit]() {
+  auto sat_propagator_cleanup =
+      ::operations_research::util::MakeCleanup([initial_dt, this, &learned_info, &time_limit]() {
         if (!sat_propagator_->IsModelUnsat()) {
           sat_propagator_->SetAssumptionLevel(0);
           sat_propagator_->RestoreSolverToAssumptionLevel();
@@ -420,7 +418,7 @@ std::vector<sat::Literal> ObjectiveVariablesAssignedToTheirLowCostValue(
     if (((problem_state.solution().Value(term.var_id) && term.weight < 0) ||
          (!problem_state.solution().Value(term.var_id) && term.weight > 0))) {
       result.push_back(
-          sat::Literal(sat::VariableIndex(term.var_id.value()),
+          sat::Literal(sat::BooleanVariable(term.var_id.value()),
                        problem_state.solution().Value(term.var_id)));
     }
   }
@@ -569,7 +567,7 @@ void RelationGraphBasedNeighborhood::GenerateNeighborhood(
   // propagate any relaxed variables.
   DCHECK(problem_state.solution().IsFeasible());
   sat_propagator->Backtrack(0);
-  for (sat::VariableIndex var(0); var < num_variables; ++var) {
+  for (sat::BooleanVariable var(0); var < num_variables; ++var) {
     const sat::Literal literal(
         var, problem_state.solution().Value(VariableIndex(var.value())));
     if (variable_is_relaxed[literal.Variable().value()]) continue;

@@ -282,7 +282,8 @@ bool GenericMaxFlow<Graph>::AugmentingPathExists() const {
   while (!to_process.empty()) {
     const NodeIndex node = to_process.back();
     to_process.pop_back();
-    for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
+    for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
+         it.Next()) {
       const ArcIndex arc = it.Index();
       if (residual_arc_capacity_[arc] > 0) {
         const NodeIndex head = graph_->Head(arc);
@@ -299,7 +300,8 @@ bool GenericMaxFlow<Graph>::AugmentingPathExists() const {
 template <typename Graph>
 bool GenericMaxFlow<Graph>::CheckRelabelPrecondition(NodeIndex node) const {
   DCHECK(IsActive(node));
-  for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
+  for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
+       it.Next()) {
     const ArcIndex arc = it.Index();
     DCHECK(!IsAdmissible(arc)) << DebugString("CheckRelabelPrecondition:", arc);
   }
@@ -540,11 +542,11 @@ void GenericMaxFlow<Graph>::PushFlowExcessBackToSource() {
     const NodeIndex node = reverse_topological_order[i];
     if (node_excess_[node] == 0) continue;
     for (IncomingArcIterator it(*graph_, node); it.Ok(); it.Next()) {
-      const ArcIndex arc = it.Index();
-      if (residual_arc_capacity_[arc] > 0) {
+      const ArcIndex opposite_arc = Opposite(it.Index());
+      if (residual_arc_capacity_[opposite_arc] > 0) {
         const FlowQuantity flow =
-            std::min(node_excess_[node], residual_arc_capacity_[arc]);
-        PushFlow(flow, arc);
+            std::min(node_excess_[node], residual_arc_capacity_[opposite_arc]);
+        PushFlow(flow, opposite_arc);
         if (node_excess_[node] == 0) break;
       }
     }
@@ -584,7 +586,8 @@ void GenericMaxFlow<Graph>::GlobalUpdate() {
       const NodeIndex node = bfs_queue_[queue_index];
       ++queue_index;
       const NodeIndex candidate_distance = node_potential_[node] + 1;
-      for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
+      for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
+           it.Next()) {
         const ArcIndex arc = it.Index();
         const NodeIndex head = Head(arc);
 
@@ -614,8 +617,8 @@ void GenericMaxFlow<Graph>::GlobalUpdate() {
           // Note(user): I haven't seen this anywhere in the literature.
           // TODO(user): Investigate more and maybe write a publication :)
           if (node_excess_[head] > 0) {
-            const FlowQuantity flow =
-                std::min(node_excess_[head], residual_arc_capacity_[opposite_arc]);
+            const FlowQuantity flow = std::min(
+                node_excess_[head], residual_arc_capacity_[opposite_arc]);
             PushFlow(flow, opposite_arc);
 
             // If the arc became saturated, it is no longer in the residual
@@ -839,7 +842,8 @@ void GenericMaxFlow<Graph>::Discharge(NodeIndex node) {
   const NodeIndex num_nodes = graph_->num_nodes();
   while (true) {
     DCHECK(IsActive(node));
-    for (IncidentArcIterator it(*graph_, node, first_admissible_arc_[node]);
+    for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node,
+                                                  first_admissible_arc_[node]);
          it.Ok(); it.Next()) {
       const ArcIndex arc = it.Index();
       if (IsAdmissible(arc)) {
@@ -872,7 +876,8 @@ void GenericMaxFlow<Graph>::Relabel(NodeIndex node) {
   // DCHECK(CheckRelabelPrecondition(node));
   NodeHeight min_height = std::numeric_limits<NodeHeight>::max();
   ArcIndex first_admissible_arc = Graph::kNilArc;
-  for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
+  for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
+       it.Next()) {
     const ArcIndex arc = it.Index();
     if (residual_arc_capacity_[arc] > 0) {
       // Update min_height only for arcs with available capacity.
@@ -937,7 +942,8 @@ void GenericMaxFlow<Graph>::ComputeReachableNodes(NodeIndex start,
   while (queue_index != bfs_queue_.size()) {
     const NodeIndex node = bfs_queue_[queue_index];
     ++queue_index;
-    for (IncidentArcIterator it(*graph_, node); it.Ok(); it.Next()) {
+    for (OutgoingOrOppositeIncomingArcIterator it(*graph_, node); it.Ok();
+         it.Next()) {
       const ArcIndex arc = it.Index();
       const NodeIndex head = Head(arc);
       if (node_in_bfs_queue_[head]) continue;

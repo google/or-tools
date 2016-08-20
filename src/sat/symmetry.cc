@@ -77,7 +77,8 @@ bool SymmetryPropagator::PropagateNext(Trail* trail) {
 
       // If the first non-symmetric literal is a decision, then we can't deduce
       // anything. Otherwise, it is either a conflict or a propagation.
-      const VariableIndex non_symmetric_var = non_symmetric.literal.Variable();
+      const BooleanVariable non_symmetric_var =
+          non_symmetric.literal.Variable();
       const AssignmentInfo& assignment_info = trail->Info(non_symmetric_var);
       if (trail->AssignmentType(non_symmetric_var) ==
           AssignmentType::kSearchDecision) {

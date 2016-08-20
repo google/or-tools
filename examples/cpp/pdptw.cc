@@ -46,14 +46,13 @@
 #include "base/split.h"
 #include "base/mathutil.h"
 #include "constraint_solver/routing.h"
+#include "constraint_solver/routing_flags.h"
 
-DECLARE_bool(routing_no_lns);
 DEFINE_string(pdp_file, "",
               "File containing the Pickup and Delivery Problem to solve.");
 DEFINE_int32(pdp_force_vehicles, 0,
              "Force the number of vehicles used (maximum number of routes.");
-DEFINE_bool(pdp_display_solution, false,
-            "Displays the solution of the Pickup and Delivery Problem.");
+DECLARE_string(routing_first_solution);
 
 namespace operations_research {
 
@@ -279,11 +278,15 @@ bool LoadAndSolve(const std::string& pdp_file) {
   }
 
   // Set up search parameters.
-  routing.set_first_solution_strategy(RoutingModel::ROUTING_ALL_UNPERFORMED);
-  FLAGS_routing_no_lns = true;
+  RoutingSearchParameters parameters = BuildSearchParametersFromFlags();
+  if (FLAGS_routing_first_solution.empty()) {
+    parameters.set_first_solution_strategy(
+        operations_research::FirstSolutionStrategy::ALL_UNPERFORMED);
+  }
+  parameters.mutable_local_search_operators()->set_use_path_lns(false);
 
   // Solve pickup and delivery problem.
-  const Assignment* assignment = routing.Solve(NULL);
+  const Assignment* assignment = routing.SolveWithParameters(parameters);
   if (NULL != assignment) {
     LOG(INFO) << "Cost: " << assignment->ObjectiveValue();
     LOG(INFO) << VerboseOutput(routing, *assignment, coords, service_times);

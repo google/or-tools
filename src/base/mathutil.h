@@ -63,7 +63,7 @@ class MathUtil {
     return floor_of_ratio;
   }
 
-  // Returns the greatest common divisor of two unsigned integers x and y
+  // Returns the greatest common divisor of two unsigned integers x and y.
   static unsigned int GCD(unsigned int x, unsigned int y) {
     while (y != 0) {
       unsigned int r = x % y;
@@ -85,7 +85,7 @@ class MathUtil {
     }
   }
 
-  // Absolute value of x
+  // Absolute value of x.
   // Works correctly for unsigned types and
   // for special floating point values.
   // Note: 0.0 and -0.0 are not differentiated by Abs (Abs(0.0) is -0.0),
@@ -95,14 +95,14 @@ class MathUtil {
     return x > 0 ? x : -x;
   }
 
-  // Returns the square of x
+  // Returns the square of x.
   template <typename T>
   static T Square(const T x) {
     return x * x;
   }
 
   // Euclid's Algorithm.
-  // Returns: the greatest common divisor of two unsigned integers x and y
+  // Returns: the greatest common divisor of two unsigned integers x and y.
   static int64 GCD64(int64 x, int64 y) {
     DCHECK_GE(x, 0);
     DCHECK_GE(y, 0);

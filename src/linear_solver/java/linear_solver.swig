@@ -70,7 +70,6 @@ import java.lang.reflect.*;
 
 // Add java code on MPSolver.
 %typemap(javacode) operations_research::MPSolver %{
-
   public MPVariable[] makeVarArray(int count, double lb, double ub, boolean integer) {
     MPVariable[] array = new MPVariable[count];
     for (int i = 0; i < count; ++i) {
@@ -134,6 +133,7 @@ import java.lang.reflect.*;
 %unignore operations_research::MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
 %unignore operations_research::MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+%unignore operations_research::MPSolver::BOP_INTEGER_PROGRAMMING;
 // These aren't unit tested, as they only run on machines with a Gurobi license.
 %unignore operations_research::MPSolver::GUROBI_LINEAR_PROGRAMMING;
 %unignore operations_research::MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;

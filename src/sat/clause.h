@@ -57,7 +57,7 @@ struct VariableInfo {
   double weighted_num_appearances;
 };
 
-// This is how the SatSolver store a clause. A clause is just a disjunction of
+// This is how the SatSolver stores a clause. A clause is just a disjunction of
 // literals. In many places, we just use std::vector<literal> to encode one. However,
 // the solver needs to keep a few extra fields attached to each clause.
 class SatClause {
@@ -65,8 +65,12 @@ class SatClause {
   // Creates a sat clause. There must be at least 2 literals. Smaller clause are
   // treated separatly and never constructed. A redundant clause can be removed
   // without changing the problem.
-  static SatClause* Create(const std::vector<Literal>& literals, bool is_redundant,
-                           ResolutionNode* node);
+  static SatClause* Create(const std::vector<Literal>& literals, bool is_redundant);
+
+  // Non-sized delete because this is a tail-padded class.
+  void operator delete(void* p) {
+    ::operator delete(p);  // non-sized delete
+  }
 
   // Number of literals in the clause.
   int Size() const { return size_; }
@@ -96,8 +100,10 @@ class SatClause {
   // Removes literals that are fixed. This should only be called at level 0
   // where a literal is fixed iff it is assigned. Aborts and returns true if
   // they are not all false.
-  bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment,
-                                        std::vector<Literal>* removed_literals);
+  //
+  // Note that the removed literal can still be accessed in the portion [size,
+  // old_size) of literals().
+  bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
 
   // True if the clause can be safely removed without changing the current
   // problem. Usually the clause we learn during the search are redundant since
@@ -111,7 +117,7 @@ class SatClause {
 
   // Sorts the literals of the clause depending on the given parameters and
   // statistics. Do not call this on an attached clause.
-  void SortLiterals(const ITIVector<VariableIndex, VariableInfo>& statistics,
+  void SortLiterals(const ITIVector<BooleanVariable, VariableInfo>& statistics,
                     const SatParameters& parameters);
 
   // Sets up the 2-watchers data structure. It selects two non-false literals
@@ -129,16 +135,6 @@ class SatClause {
   // and actually detach it.
   void LazyDetach() { is_attached_ = false; }
 
-  // Returns the node of the resolution DAG associated to this clause.
-  // This will always be nullptr if the parameter unsat_proof() is false.
-#ifdef SAT_ENABLE_RESOLUTION
-  ResolutionNode* ResolutionNodePointer() const { return resolution_node_; }
-  void ChangeResolutionNode(ResolutionNode* node) { resolution_node_ = node; }
-#else   // SAT_ENABLE_RESOLUTION
-  ResolutionNode* ResolutionNodePointer() const { return nullptr; }
-  void ChangeResolutionNode(ResolutionNode* node) {}
-#endif  // SAT_ENABLE_RESOLUTION
-
   std::string DebugString() const;
 
  private:
@@ -149,15 +145,6 @@ class SatClause {
   bool is_redundant_ : 1;
   bool is_attached_ : 1;
   unsigned int size_ : 30;
-
-#ifdef SAT_ENABLE_RESOLUTION
-  // This is only needed when the parameter unsat_proof() is true.
-  //
-  // TODO(user): It is possible to use less memory when this is not the case
-  // by some tweaks in Create() and in the way we access it. Note that not
-  // storing this seems to gain about 2% in speed overall.
-  ResolutionNode* resolution_node_;
-#endif  // SAT_ENABLE_RESOLUTION
 
   // This class store the literals inline, and literals_ mark the starts of the
   // variable length portion.
@@ -176,7 +163,6 @@ class LiteralWatchers : public Propagator {
 
   bool Propagate(Trail* trail) final;
   ClauseRef Reason(const Trail& trail, int trail_index) const final;
-  ResolutionNode* GetResolutionNode(int trail_index) const final;
 
   // Resizes the data structure.
   void Resize(int num_variables);
@@ -206,7 +192,7 @@ class LiteralWatchers : public Propagator {
 
   // Returns some statistics on the number of appearance of this variable in
   // all the attached clauses.
-  const VariableInfo& VariableStatistic(VariableIndex var) const {
+  const VariableInfo& VariableStatistic(BooleanVariable var) const {
     return statistics_[var];
   }
 
@@ -258,7 +244,7 @@ class LiteralWatchers : public Propagator {
   SparseBitset<LiteralIndex> needs_cleaning_;
   bool is_clean_;
 
-  ITIVector<VariableIndex, VariableInfo> statistics_;
+  ITIVector<BooleanVariable, VariableInfo> statistics_;
   SatParameters parameters_;
   int64 num_inspected_clauses_;
   int64 num_inspected_clause_literals_;
@@ -385,10 +371,10 @@ class BinaryImplicationGraph : public Propagator {
   void MinimizeConflictWithReachability(std::vector<Literal>* c);
   void MinimizeConflictExperimental(const Trail& trail, std::vector<Literal>* c);
   void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
-                             SparseBitset<VariableIndex>* marked);
+                             SparseBitset<BooleanVariable>* marked);
   void MinimizeConflictFirstWithTransitiveReduction(
       const Trail& trail, std::vector<Literal>* c,
-      SparseBitset<VariableIndex>* marked, RandomBase* random);
+      SparseBitset<BooleanVariable>* marked, RandomBase* random);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:

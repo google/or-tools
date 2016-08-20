@@ -12,11 +12,11 @@
 // limitations under the License.
 
 
+#include <functional>
 #include "base/hash.h"
 #include <memory>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/adjustable_priority_queue.h"
 
@@ -49,16 +49,13 @@ class DijkstraSP {
   static const int64 kInfinity = kint64max / 2;
 
   DijkstraSP(int node_count, int start_node,
-             ResultCallback2<int64, int, int>* const graph,
-             int64 disconnected_distance)
+             std::function<int64(int, int)> graph, int64 disconnected_distance)
       : node_count_(node_count),
         start_node_(start_node),
-        graph_(graph),
+        graph_(std::move(graph)),
         disconnected_distance_(disconnected_distance),
         predecessor_(new int[node_count]),
-        elements_(node_count) {
-    graph->CheckIsRepeatable();
-  }
+        elements_(node_count) {}
   bool ShortestPath(int end_node, std::vector<int>* nodes);
 
  private:
@@ -69,7 +66,7 @@ class DijkstraSP {
 
   const int node_count_;
   const int start_node_;
-  std::unique_ptr<ResultCallback2<int64, int, int> > graph_;
+  std::function<int64(int, int)> graph_;
   const int64 disconnected_distance_;
   std::unique_ptr<int[]> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
@@ -106,7 +103,7 @@ void DijkstraSP::Update(int node) {
   for (hash_set<int>::const_iterator it = not_visited_.begin();
        it != not_visited_.end(); ++it) {
     const int other_node = *it;
-    const int64 graph_node_i = graph_->Run(node, other_node);
+    const int64 graph_node_i = graph_(node, other_node);
     if (graph_node_i != disconnected_distance_) {
       if (added_to_the_frontier_.find(other_node) ==
           added_to_the_frontier_.end()) {
@@ -154,9 +151,10 @@ bool DijkstraSP::ShortestPath(int end_node, std::vector<int>* nodes) {
 }
 
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
-                          ResultCallback2<int64, int, int>* const graph,
+                          std::function<int64(int, int)> graph,
                           int64 disconnected_distance, std::vector<int>* nodes) {
-  DijkstraSP bf(node_count, start_node, graph, disconnected_distance);
+  DijkstraSP bf(node_count, start_node, std::move(graph),
+                disconnected_distance);
   return bf.ShortestPath(end_node, nodes);
 }
 }  // namespace operations_research

@@ -311,7 +311,8 @@ void CLPInterface::ExtractNewVariables() {
         set_variable_as_extracted(j, true);
         // The true objective coefficient will be set later in ExtractObjective.
         double tmp_obj_coef = 0.0;
-        clp_->addColumn(0, NULL, NULL, var->lb(), var->ub(), tmp_obj_coef);
+        clp_->addColumn(0, nullptr, nullptr, var->lb(), var->ub(),
+                        tmp_obj_coef);
         if (!var->name().empty()) {
           std::string name = var->name();
           clp_->setColumnName(MPSolverVarIndexToClpVarIndex(j), name);

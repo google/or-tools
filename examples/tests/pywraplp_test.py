@@ -56,7 +56,8 @@ def test_proto():
                            pywraplp.Solver.CBC_MIXED_INTEGER_PROGRAMMING)
   print input_proto
   # For now, create the model from the proto by parsing the proto
-  solver.LoadModelFromProto(input_proto.model)
+  errors = solver.LoadModelFromProto(input_proto.model)
+  assert not errors
   solver.EnableOutput()
   solver.Solve()
   # Fill solution

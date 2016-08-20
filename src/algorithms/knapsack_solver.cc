@@ -326,7 +326,7 @@ int64 KnapsackCapacityPropagator::GetAdditionalProfit(int64 remaining_capacity,
   }
 
   const int64 additional_profit = std::max(additional_profit_when_no_break_item,
-                                      additional_profit_when_break_item);
+                                           additional_profit_when_break_item);
   CHECK_GE(additional_profit, 0);
   return additional_profit;
 }
@@ -1142,6 +1142,12 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
           MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING, solver_name));
       break;
     #endif  // USE_GLPK
+    #if defined(USE_SCIP)
+    case KNAPSACK_MULTIDIMENSION_SCIP_MIP_SOLVER:
+      solver_.reset(new KnapsackMIPSolver(
+          MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING, solver_name));
+      break;
+    #endif  // USE_SCIP
     default:
       LOG(FATAL) << "Unknown knapsack solver type.";
   }

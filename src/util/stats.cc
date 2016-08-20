@@ -68,9 +68,16 @@ void StatsGroup::Reset() {
 }
 
 namespace {
-bool CompareStatPointerByName(Stat* s1, Stat* s2) {
-  return s1->Name() < s2->Name();
+
+bool CompareStatPointers(Stat* s1, Stat* s2) {
+  if (s1->Priority() == s2->Priority()) {
+    if (s1->Sum() == s2->Sum()) return s1->Name() < s2->Name();
+    return (s1->Sum() > s2->Sum());
+  } else {
+    return (s1->Priority() > s2->Priority());
+  }
 }
+
 }  // namespace
 
 std::string StatsGroup::StatString() const {
@@ -89,7 +96,7 @@ std::string StatsGroup::StatString() const {
     longest_name_size = std::max(longest_name_size, size);
     sorted_stats.push_back(stats_[i]);
   }
-  std::sort(sorted_stats.begin(), sorted_stats.end(), CompareStatPointerByName);
+  std::sort(sorted_stats.begin(), sorted_stats.end(), CompareStatPointers);
 
   // Do not display groups without print-worthy stats.
   if (sorted_stats.empty()) return "";

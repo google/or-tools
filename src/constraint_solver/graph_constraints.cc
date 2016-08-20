@@ -16,7 +16,6 @@
 #include <string>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "constraint_solver/constraint_solver.h"
@@ -836,7 +835,8 @@ bool PathCumul::AcceptLink(int i, int j) const {
 }
 
 namespace {
-template <class T> class StampedVector {
+template <class T>
+class StampedVector {
  public:
   StampedVector() : stamp_(0) {}
   const std::vector<T>& Values(Solver* solver) {
@@ -866,10 +866,8 @@ template <class T> class StampedVector {
 
 class DelayedPathCumul : public Constraint {
  public:
-  DelayedPathCumul(Solver* const solver,
-                   const std::vector<IntVar*>& nexts,
-                   const std::vector<IntVar*>& active,
-                   const std::vector<IntVar*>& cumuls,
+  DelayedPathCumul(Solver* const solver, const std::vector<IntVar*>& nexts,
+                   const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
                    const std::vector<IntVar*>& transits)
       : Constraint(solver),
         nexts_(nexts),
@@ -903,17 +901,15 @@ class DelayedPathCumul : public Constraint {
     solver()->RegisterDemon(path_demon_);
     for (int i = 0; i < nexts_.size(); ++i) {
       if (!nexts_[i]->Bound()) {
-        Demon* const demon =
-            MakeConstraintDemon1(solver(), this, &DelayedPathCumul::NextBound,
-                                 "NextBound", i);
+        Demon* const demon = MakeConstraintDemon1(
+            solver(), this, &DelayedPathCumul::NextBound, "NextBound", i);
         nexts_[i]->WhenBound(demon);
       }
     }
     for (int i = 0; i < active_.size(); ++i) {
       if (!active_[i]->Bound()) {
-        Demon* const demon =
-            MakeConstraintDemon1(solver(), this, &DelayedPathCumul::ActiveBound,
-                                 "ActiveBound", i);
+        Demon* const demon = MakeConstraintDemon1(
+            solver(), this, &DelayedPathCumul::ActiveBound, "ActiveBound", i);
         active_[i]->WhenBound(demon);
       }
     }
@@ -1023,7 +1019,7 @@ class DelayedPathCumul : public Constraint {
   }
 
   void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kPathCumul, this);
+    visitor->BeginVisitConstraint(ModelVisitor::kDelayedPathCumul, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kNextsArgument,
                                                nexts_);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kActiveArgument,
@@ -1032,7 +1028,7 @@ class DelayedPathCumul : public Constraint {
                                                cumuls_);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kTransitsArgument,
                                                transits_);
-    visitor->EndVisitConstraint(ModelVisitor::kPathCumul, this);
+    visitor->EndVisitConstraint(ModelVisitor::kDelayedPathCumul, this);
   }
 
   std::string DebugString() const override {
@@ -1098,7 +1094,7 @@ class DelayedPathCumul : public Constraint {
     IntVar* const next_cumul_var = cumuls_[next];
     IntVar* const transit = transits_[index];
     return transit->Min() <= CapSub(next_cumul_var->Max(), cumul_var->Min()) &&
-        CapSub(next_cumul_var->Min(), cumul_var->Max()) <= transit->Max();
+           CapSub(next_cumul_var->Min(), cumul_var->Max()) <= transit->Max();
   }
 
   const std::vector<IntVar*> nexts_;

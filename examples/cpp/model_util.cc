@@ -73,10 +73,10 @@ std::string ConstraintLabel(int index) { return StringPrintf("ct_%i", index); }
 
 // Scans argument to add links in the graph.
 template <class T>
-void ExportLinks(const CPModelProto& model, const std::string& source,
-                 const T& proto, GraphExporter* const exporter) {
+void ExportLinks(const CpModel& model, const std::string& source, const T& proto,
+                 GraphExporter* const exporter) {
   const std::string& arg_name = model.tags(proto.argument_index());
-  if (proto.has_integer_expression_index()) {
+  if (proto.type() == CpArgument::EXPRESSION) {
     exporter->WriteLink(source, ExprLabel(proto.integer_expression_index()),
                         arg_name);
   }
@@ -84,7 +84,7 @@ void ExportLinks(const CPModelProto& model, const std::string& source,
     exporter->WriteLink(source, ExprLabel(proto.integer_expression_array(i)),
                         arg_name);
   }
-  if (proto.has_interval_index()) {
+  if (proto.type() == CpArgument::INTERVAL) {
     exporter->WriteLink(source, IntervalLabel(proto.interval_index()),
                         arg_name);
   }
@@ -92,7 +92,7 @@ void ExportLinks(const CPModelProto& model, const std::string& source,
     exporter->WriteLink(source, IntervalLabel(proto.interval_array(i)),
                         arg_name);
   }
-  if (proto.has_sequence_index()) {
+  if (proto.type() == CpArgument::SEQUENCE) {
     exporter->WriteLink(source, SequenceLabel(proto.sequence_index()),
                         arg_name);
   }
@@ -104,8 +104,7 @@ void ExportLinks(const CPModelProto& model, const std::string& source,
 
 // Scans the expression protobuf to see if it corresponds to an
 // integer variable with min_value == max_value.
-bool GetValueIfConstant(const CPModelProto& model,
-                        const CPIntegerExpressionProto& proto,
+bool GetValueIfConstant(const CpModel& model, const CpIntegerExpression& proto,
                         int64* const value) {
   CHECK_NOTNULL(value);
   const int expr_type = proto.type_index();
@@ -115,12 +114,12 @@ bool GetValueIfConstant(const CPModelProto& model,
   if (proto.arguments_size() != 2) {
     return false;
   }
-  const CPArgumentProto& arg1_proto = proto.arguments(0);
+  const CpArgument& arg1_proto = proto.arguments(0);
   if (model.tags(arg1_proto.argument_index()) != ModelVisitor::kMinArgument) {
     return false;
   }
   const int64 value1 = arg1_proto.integer_value();
-  const CPArgumentProto& arg2_proto = proto.arguments(1);
+  const CpArgument& arg2_proto = proto.arguments(1);
   if (model.tags(arg2_proto.argument_index()) != ModelVisitor::kMaxArgument) {
     return false;
   }
@@ -134,12 +133,12 @@ bool GetValueIfConstant(const CPModelProto& model,
 }
 
 // Declares a labelled expression in the graph file.
-void DeclareExpression(int index, const CPModelProto& proto,
+void DeclareExpression(int index, const CpModel& proto,
                        GraphExporter* const exporter) {
-  const CPIntegerExpressionProto& expr = proto.expressions(index);
+  const CpIntegerExpression& expr = proto.expressions(index);
   const std::string label = ExprLabel(index);
   int64 value = 0;
-  if (expr.has_name()) {
+  if (!expr.name().empty()) {
     exporter->WriteNode(label, expr.name(), "oval", kGreen1);
   } else if (GetValueIfConstant(proto, expr, &value)) {
     exporter->WriteNode(label, StringPrintf("%lld", value), "oval", kYellow);
@@ -149,11 +148,11 @@ void DeclareExpression(int index, const CPModelProto& proto,
   }
 }
 
-void DeclareInterval(int index, const CPModelProto& proto,
+void DeclareInterval(int index, const CpModel& proto,
                      GraphExporter* const exporter) {
-  const CPIntervalVariableProto& interval = proto.intervals(index);
+  const CpIntervalVariable& interval = proto.intervals(index);
   const std::string label = IntervalLabel(index);
-  if (interval.has_name()) {
+  if (!interval.name().empty()) {
     exporter->WriteNode(label, interval.name(), "circle", kGreen2);
   } else {
     const std::string& type = proto.tags(interval.type_index());
@@ -161,11 +160,11 @@ void DeclareInterval(int index, const CPModelProto& proto,
   }
 }
 
-void DeclareSequence(int index, const CPModelProto& proto,
+void DeclareSequence(int index, const CpModel& proto,
                      GraphExporter* const exporter) {
-  const CPSequenceVariableProto& sequence = proto.sequences(index);
+  const CpSequenceVariable& sequence = proto.sequences(index);
   const std::string label = SequenceLabel(index);
-  if (sequence.has_name()) {
+  if (!sequence.name().empty()) {
     exporter->WriteNode(label, sequence.name(), "circle", kGreen3);
   } else {
     const std::string& type = proto.tags(sequence.type_index());
@@ -173,16 +172,16 @@ void DeclareSequence(int index, const CPModelProto& proto,
   }
 }
 
-void DeclareConstraint(int index, const CPModelProto& proto,
+void DeclareConstraint(int index, const CpModel& proto,
                        GraphExporter* const exporter) {
-  const CPConstraintProto& ct = proto.constraints(index);
+  const CpConstraint& ct = proto.constraints(index);
   const std::string& type = proto.tags(ct.type_index());
   const std::string label = ConstraintLabel(index);
   exporter->WriteNode(label, type, "rectangle", kBlue);
 }
 
 // Parses the proto and exports it to a graph file.
-void ExportToGraphFile(const CPModelProto& proto, File* const file,
+void ExportToGraphFile(const CpModel& proto, File* const file,
                        GraphExporter::GraphFormat format) {
   std::unique_ptr<GraphExporter> exporter(
       GraphExporter::MakeFileExporter(file, format));
@@ -210,7 +209,7 @@ void ExportToGraphFile(const CPModelProto& proto, File* const file,
   }
 
   for (int i = 0; i < proto.expressions_size(); ++i) {
-    const CPIntegerExpressionProto& expr = proto.expressions(i);
+    const CpIntegerExpression& expr = proto.expressions(i);
     const std::string label = ExprLabel(i);
     for (int j = 0; j < expr.arguments_size(); ++j) {
       ExportLinks(proto, label, expr.arguments(j), exporter.get());
@@ -218,7 +217,7 @@ void ExportToGraphFile(const CPModelProto& proto, File* const file,
   }
 
   for (int i = 0; i < proto.intervals_size(); ++i) {
-    const CPIntervalVariableProto& interval = proto.intervals(i);
+    const CpIntervalVariable& interval = proto.intervals(i);
     const std::string label = IntervalLabel(i);
     for (int j = 0; j < interval.arguments_size(); ++j) {
       ExportLinks(proto, label, interval.arguments(j), exporter.get());
@@ -226,7 +225,7 @@ void ExportToGraphFile(const CPModelProto& proto, File* const file,
   }
 
   for (int i = 0; i < proto.sequences_size(); ++i) {
-    const CPSequenceVariableProto& sequence = proto.sequences(i);
+    const CpSequenceVariable& sequence = proto.sequences(i);
     const std::string label = SequenceLabel(i);
     for (int j = 0; j < sequence.arguments_size(); ++j) {
       ExportLinks(proto, label, sequence.arguments(j), exporter.get());
@@ -234,7 +233,7 @@ void ExportToGraphFile(const CPModelProto& proto, File* const file,
   }
 
   for (int i = 0; i < proto.constraints_size(); ++i) {
-    const CPConstraintProto& ct = proto.constraints(i);
+    const CpConstraint& ct = proto.constraints(i);
     const std::string label = ConstraintLabel(i);
     for (int j = 0; j < ct.arguments_size(); ++j) {
       ExportLinks(proto, label, ct.arguments(j), exporter.get());
@@ -242,7 +241,7 @@ void ExportToGraphFile(const CPModelProto& proto, File* const file,
   }
 
   if (proto.has_objective()) {
-    const CPObjectiveProto& obj = proto.objective();
+    const CpObjective& obj = proto.objective();
     exporter->WriteLink(kObjLabel, ExprLabel(obj.objective_index()),
                         ModelVisitor::kExpressionArgument);
   }
@@ -254,13 +253,13 @@ void ExportToGraphFile(const CPModelProto& proto, File* const file,
 int Run() {
   // ----- Load input file into protobuf -----
 
-  File* const file = File::Open(FLAGS_input, "r");
-  if (file == NULL) {
+  File* file;
+  if (!file::Open(FLAGS_input, "r", &file, file::Defaults()).ok()) {
     LOG(WARNING) << "Cannot open " << FLAGS_input;
     return kProblem;
   }
 
-  CPModelProto model_proto;
+  CpModel model_proto;
   RecordReader reader(file);
   if (!(reader.ReadProtocolMessage(&model_proto) && reader.Close())) {
     LOG(INFO) << "No model found in " << file->filename();
@@ -270,7 +269,7 @@ int Run() {
   // ----- Display loaded protobuf -----
 
   LOG(INFO) << "Read model " << model_proto.model();
-  if (model_proto.has_license_text()) {
+  if (!model_proto.license_text().empty()) {
     LOG(INFO) << "License = " << model_proto.license_text();
   }
 
@@ -296,8 +295,9 @@ int Run() {
   }
 
   if (!FLAGS_insert_license.empty()) {
-    File* const license = File::Open(FLAGS_insert_license, "rb");
-    if (license == NULL) {
+    File* license;
+    if (!file::Open(FLAGS_insert_license, "rb", &license, file::Defaults())
+             .ok()) {
       LOG(WARNING) << "Cannot open " << FLAGS_insert_license;
       return kProblem;
     }
@@ -306,7 +306,7 @@ int Run() {
     license->Read(text, size);
     text[size] = '\0';
     model_proto.set_license_text(text);
-    license->Close();
+    license->Close(file::Defaults()).IgnoreError();
   }
 
   // ----- Reporting -----
@@ -355,8 +355,8 @@ int Run() {
   // ----- Output -----
 
   if (!FLAGS_output.empty()) {
-    File* const output = File::Open(FLAGS_output, "wb");
-    if (output == NULL) {
+    File* output;
+    if (!file::Open(FLAGS_output, "wb", &output, file::Defaults()).ok()) {
       LOG(INFO) << "Cannot open " << FLAGS_output;
       return kProblem;
     }
@@ -369,23 +369,23 @@ int Run() {
   }
 
   if (!FLAGS_dot_file.empty()) {
-    File* const dot_file = File::Open(FLAGS_dot_file, "w");
-    if (dot_file == NULL) {
+    File* dot_file;
+    if (!file::Open(FLAGS_dot_file, "w", &dot_file, file::Defaults()).ok()) {
       LOG(INFO) << "Cannot open " << FLAGS_dot_file;
       return kProblem;
     }
     ExportToGraphFile(model_proto, dot_file, GraphExporter::DOT_FORMAT);
-    dot_file->Close();
+    dot_file->Close(file::Defaults()).IgnoreError();
   }
 
   if (!FLAGS_gml_file.empty()) {
-    File* const gml_file = File::Open(FLAGS_gml_file, "w");
-    if (gml_file == NULL) {
+    File* gml_file;
+    if (!file::Open(FLAGS_gml_file, "w", &gml_file, file::Defaults()).ok()) {
       LOG(INFO) << "Cannot open " << FLAGS_gml_file;
       return kProblem;
     }
     ExportToGraphFile(model_proto, gml_file, GraphExporter::GML_FORMAT);
-    gml_file->Close();
+    gml_file->Close(file::Defaults()).IgnoreError();
   }
   return kOk;
 }

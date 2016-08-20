@@ -67,8 +67,8 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
       } else if (lb <= 0.0 && ub >= 0.0) {
         // Fixed variable at 0.
         LinearBooleanConstraint* constraint = problem->add_constraints();
-        constraint->set_lower_bound(1);
-        constraint->set_upper_bound(1);
+        constraint->set_lower_bound(0);
+        constraint->set_upper_bound(0);
         constraint->add_literals(var_id + 1);
         constraint->add_coefficients(1);
       } else {
@@ -273,7 +273,7 @@ int FixVariablesFromSat(const SatSolver& solver, glop::LinearProgram* lp) {
   int num_fixed_variables = 0;
   const Trail& trail = solver.LiteralTrail();
   for (int i = 0; i < trail.Index(); ++i) {
-    const VariableIndex var = trail[i].Variable();
+    const BooleanVariable var = trail[i].Variable();
     const int value = trail[i].IsPositive() ? 1.0 : 0.0;
     if (trail.Info(var).level == 0) {
       ++num_fixed_variables;
@@ -299,7 +299,7 @@ bool SolveLpAndUseSolutionForSatAssignmentPreference(
   for (ColIndex col(0); col < lp.num_variables(); ++col) {
     const Fractional& value = solver.variable_values()[col];
     sat_solver->SetAssignmentPreference(
-        Literal(VariableIndex(col.value()), round(value) == 1),
+        Literal(BooleanVariable(col.value()), round(value) == 1),
         1 - fabs(value - round(value)));
   }
   return true;

@@ -42,11 +42,10 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/strtoint.h"
-#include "base/file.h"
-#include "base/filelinereader.h"
 #include "base/split.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "base/random.h"
 
 namespace operations_research {
 // ----- Exchange 2 intervals on a sequence variable -----

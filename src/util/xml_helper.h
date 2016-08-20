@@ -22,17 +22,17 @@
 
 namespace operations_research {
 
-// Lightweight XML writer that is optimized for CPViz output. As it only
-// supports the features required by CPViz, it should not be used to generate
+// Lightweight XML writer optimized for CPViz output. As it supports only
+// the features required by CPViz, it should not be used to generate
 // general-purpose XML data.
 class XmlHelper {
  public:
   XmlHelper();
 
-  // Starts a new XML document
+  // Starts a new XML document.
   void StartDocument();
 
-  // Starts a new element
+  // Starts a new element.
   void StartElement(const std::string& name);
 
   // Adds a key-value pair to the current element.

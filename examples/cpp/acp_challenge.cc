@@ -17,7 +17,6 @@
 
 #include "base/commandlineflags.h"
 #include "base/file.h"
-#include "base/filelinereader.h"
 #include "base/hash.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -28,6 +27,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/routing.h"
 #include "util/tuple_set.h"
+#include "util/filelineiter.h"
 
 /* Data format
 15
@@ -80,16 +80,15 @@ class AcpData {
       : num_periods_(-1), num_products_(-1), inventory_cost_(0), state_(0) {}
 
   void Load(const std::string& filename) {
-    FileLineReader reader(filename.c_str());
-    reader.set_line_callback(
-        NewPermanentCallback(this, &AcpData::ProcessNewLine));
-    reader.Reload();
-    if (!reader.loaded_successfully()) {
-      LOG(ERROR) << "Could not open acp challenge file";
+    for (const std::string& line : FileLines(filename)) {
+      if (line.empty()) {
+        continue;
+      }
+      ProcessNewLine(line);
     }
   }
 
-  void ProcessNewLine(char* const line) {
+  void ProcessNewLine(const std::string& line) {
     const std::vector<std::string> words =
         strings::Split(line, " ", strings::SkipEmpty());
     if (words.empty()) return;
@@ -162,13 +161,13 @@ class AcpData {
   int state_;
 };
 
-class RandomIntervalLns : public BaseLNS {
+class RandomIntervalLns : public BaseLns {
  public:
   RandomIntervalLns(const std::vector<IntVar*>& vars,
                     const std::vector<int> item_to_product,
                     int number_of_variables, int number_of_intervals,
                     int32 seed, int num_product)
-      : BaseLNS(vars),
+      : BaseLns(vars),
         item_to_product_(item_to_product),
         rand_(seed),
         number_of_variables_(number_of_variables),
@@ -184,13 +183,13 @@ class RandomIntervalLns : public BaseLNS {
 
   virtual void InitFragments() { state_ = 0; }
 
-  virtual bool NextFragment(std::vector<int>* fragment) {
+  virtual bool NextFragment() {
     switch (state_) {
       case 0: {
         for (int i = 0; i < number_of_intervals_; ++i) {
           const int start = rand_.Uniform(Size() - number_of_variables_);
           for (int pos = start; pos < start + number_of_variables_; ++pos) {
-            fragment->push_back(pos);
+            AppendToFragment(pos);
           }
         }
         break;
@@ -198,7 +197,7 @@ class RandomIntervalLns : public BaseLNS {
       case 1: {
         for (int i = 0; i < number_of_variables_ * number_of_intervals_; ++i) {
           const int pos = rand_.Uniform(Size());
-          fragment->push_back(pos);
+          AppendToFragment(pos);
         }
         break;
       }
@@ -206,7 +205,7 @@ class RandomIntervalLns : public BaseLNS {
         const int length = number_of_intervals_ * number_of_variables_;
         const int start = rand_.Uniform(Size() - length);
         for (int pos = start; pos < start + length; ++pos) {
-          fragment->push_back(pos);
+          AppendToFragment(pos);
         }
         break;
       }
@@ -217,7 +216,7 @@ class RandomIntervalLns : public BaseLNS {
         }
         for (int i = 0; i < Size(); ++i) {
           if (ContainsKey(to_release, item_to_product_[Value(i)])) {
-            fragment->push_back(i);
+            AppendToFragment(i);
           }
         }
         break;

@@ -24,14 +24,14 @@ namespace operations_research {
 // This class appends a protocol buffer to a file in a binary format.
 // The data written in the file follows the following format (sequentially):
 // - MagicNumber (32 bits) to recognize this format.
-// - Uncompressed data payload size (64 bits)
+// - Uncompressed data payload size (64 bits).
 // - Compressed data payload size (64 bits), or 0 if the
 //   data is not compressed.
 // - Payload, possibly compressed. See RecordWriter::Compress()
-//   and RecordReader::Uncompress
+//   and RecordReader::Uncompress.
 class RecordWriter {
  public:
-  // Magic number when writing and reading protocol buffers.
+  // Magic number when reading and writing protocol buffers.
   static const int kMagicNumber;
 
   explicit RecordWriter(File* const file);
@@ -111,7 +111,7 @@ class RecordReader {
         return false;
       }
       compressed_buffer[csize] = '\0';
-      Uncompress(compressed_buffer.get(), usize, buffer.get(), usize);
+      Uncompress(compressed_buffer.get(), csize, buffer.get(), usize);
     } else {
       if (file_->Read(buffer.get(), usize) != usize) {
         return false;

@@ -371,11 +371,7 @@ void CostasSoft(const int dim) {
 
 // Computes a Costas Array.
 void CostasHard(const int dim) {
-  SolverParameters parameters;
-  if (!FLAGS_export_profile.empty()) {
-    parameters.profile_level = SolverParameters::NORMAL_PROFILING;
-  }
-  Solver solver("costas", parameters);
+  Solver solver("costas");
 
   // create the variables
   std::vector<IntVar*> vars;

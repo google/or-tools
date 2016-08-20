@@ -542,7 +542,6 @@ class Bitset64 {
     memcpy(data_.data(), other.data_.data(), data_.size() * sizeof(uint64));
   }
 
-
   // Sets "this" to be the intersection of "this" and "other". The
   // bitsets do not have to be the same size. If other is smaller, all
   // the higher order bits are assumed to be 0.
@@ -674,6 +673,62 @@ class Bitset64 {
   const Iterator end_;
 
   DISALLOW_COPY_AND_ASSIGN(Bitset64);
+};
+
+// Specialized version of Bitset64 that allows to query the last bit set more
+// efficiently.
+class BitQueue64 {
+ public:
+  BitQueue64() : size_(), top_(-1), data_() {}
+  explicit BitQueue64(int size)
+      : size_(size), top_(-1), data_(BitLength64(size), 0) {}
+
+  void IncreaseSize(int size) {
+    CHECK_GE(size, size_);
+    size_ = size;
+    data_.resize(BitLength64(size), 0);
+  }
+
+  void ClearAndResize(int size) {
+    top_ = -1;
+    size_ = size;
+    data_.assign(BitLength64(size), 0);
+  }
+
+  void Set(int i) {
+    DCHECK_GE(i, 0);
+    DCHECK_LT(i, size_);
+    top_ = std::max(top_, i);
+    data_[BitOffset64(i)] |= OneBit64(BitPos64(i));
+  }
+
+  // Returns the position of the highest bit set in O(1) or -1 if no bit is set.
+  int Top() const { return top_; }
+
+  // Clears the Top() bit and recomputes the position of the next Top().
+  void ClearTop() {
+    DCHECK_NE(top_, -1);
+    int bucket_index = BitOffset64(top_);
+    uint64 bucket = data_[bucket_index] &= ~OneBit64(BitPos64(top_));
+    while (!bucket) {
+      if (bucket_index == 0) {
+        top_ = -1;
+        return;
+      }
+      bucket = data_[--bucket_index];
+    }
+
+    // Note(user): I experimented with reversing the bit order in a bucket to
+    // use LeastSignificantBitPosition64() and it is only slightly faster at the
+    // cost of a lower Set() speed. So I prefered this version.
+    top_ = BitShift64(bucket_index) + MostSignificantBitPosition64(bucket);
+  }
+
+ private:
+  int size_;
+  int top_;
+  std::vector<uint64> data_;
+  DISALLOW_COPY_AND_ASSIGN(BitQueue64);
 };
 
 // The specialization of Value() for IntType and int64.

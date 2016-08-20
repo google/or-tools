@@ -27,6 +27,8 @@
 #include "base/stl_util.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
+#include "util/saturated_arithmetic.h"
+#include "util/sorted_interval_list.h"
 
 DEFINE_int32(cache_initial_size, 1024,
              "Initial size of the array of the hash "
@@ -854,6 +856,55 @@ class BetweenCt : public Constraint {
   Demon* demon_;
 };
 
+// ----- NonMember constraint -----
+
+class NotBetweenCt : public Constraint {
+ public:
+  NotBetweenCt(Solver* const s, IntExpr* const v, int64 l, int64 u)
+      : Constraint(s), expr_(v), min_(l), max_(u), demon_(nullptr) {}
+
+  void Post() override {
+    demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
+    expr_->WhenRange(demon_);
+  }
+
+  void InitialPropagate() override {
+    int64 emin = 0;
+    int64 emax = 0;
+    expr_->Range(&emin, &emax);
+    if (emin >= min_) {
+      expr_->SetMin(max_ + 1);
+    } else if (emax <= max_) {
+      expr_->SetMax(min_ - 1);
+    }
+
+    if (!expr_->IsVar() && (emax < min_ || emin > max_)) {
+      demon_->inhibit(solver());
+    }
+  }
+
+  std::string DebugString() const override {
+    return StringPrintf("NotBetweenCt(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT
+                        "d)",
+                        expr_->DebugString().c_str(), min_, max_);
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kNotBetween, this);
+    visitor->VisitIntegerArgument(ModelVisitor::kMinArgument, min_);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            expr_);
+    visitor->VisitIntegerArgument(ModelVisitor::kMaxArgument, max_);
+    visitor->EndVisitConstraint(ModelVisitor::kBetween, this);
+  }
+
+ private:
+  IntExpr* const expr_;
+  int64 min_;
+  int64 max_;
+  Demon* demon_;
+};
+
 int64 ExtractExprProductCoeff(IntExpr** expr) {
   int64 prod = 1;
   int64 coeff = 1;
@@ -893,6 +944,40 @@ Constraint* Solver::MakeBetweenCt(IntExpr* e, int64 l, int64 u) {
     // No further reduction is possible.
     return RevAlloc(new BetweenCt(this, e, l, u));
   }
+}
+
+Constraint* Solver::MakeNotBetweenCt(IntExpr* e, int64 l, int64 u) {
+  DCHECK_EQ(this, e->solver());
+  // Catch empty interval.
+  if (l > u) {
+    return MakeTrueConstraint();
+  }
+
+  int64 emin = 0;
+  int64 emax = 0;
+  e->Range(&emin, &emax);
+  // Catch the trivial cases first.
+  if (emax < l || emin > u) return MakeTrueConstraint();
+  if (emin >= l && emax <= u) return MakeFalseConstraint();
+  // Catch one-sided constraints.
+  if (emin >= l) return MakeGreater(e, u);
+  if (emax <= u) return MakeLess(e, l);
+  // // Simplify the common factor, if any.
+  // TODO(user): Add back simplification.
+  // int64 coeff = ExtractExprProductCoeff(&e);
+  // if (coeff != 1) {
+  //   CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
+  //   if (coeff < 0) {
+  //     std::swap(u, l);
+  //     u = -u;
+  //     l = -l;
+  //     coeff = -coeff;
+  //   }
+  //   return MakeBetweenCt(e, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff));
+  // } else {
+    // No further reduction is possible.
+    return RevAlloc(new NotBetweenCt(this, e, l, u));
+  // }
 }
 
 // ----- is_between_cst Constraint -----
@@ -1050,7 +1135,6 @@ class MemberCt : public Constraint {
   const std::vector<int64> values_;
 };
 
-// TODO(user): Implement Solver::MakeNotMemberCt().
 class NotMemberCt : public Constraint {
  public:
   NotMemberCt(Solver* const s, IntVar* const v,
@@ -1101,21 +1185,19 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values
     copied_values.resize(num_kept);
   }
   // Filter out the values that are outside the [Min, Max] interval.
-  {
-    int num_kept = 0;
-    const int64 min = expr->Min();
-    const int64 max = expr->Max();
-    for (const int64 v : copied_values) {
-      if (v >= min && v <= max) copied_values[num_kept++] = v;
-    }
-    copied_values.resize(num_kept);
+  int num_kept = 0;
+  int64 emin;
+  int64 emax;
+  expr->Range(&emin, &emax);
+  for (const int64 v : copied_values) {
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
   }
-  // Catch singletons or empty value sets.
+  copied_values.resize(num_kept);
+  // Catch empty set.
   if (copied_values.empty()) return MakeFalseConstraint();
-  if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
   // Sort and remove duplicates.
   STLSortAndRemoveDuplicates(&copied_values);
-  // Re-catch singletons.
+  // Special case for singleton.
   if (copied_values.size() == 1) return MakeEquality(expr, copied_values[0]);
   // Catch contiguous intervals.
   if (copied_values.size() ==
@@ -1126,15 +1208,15 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values
   // If the set of values in [expr.Min(), expr.Max()] that are *not* in
   // "values" is smaller than "values", then it's more efficient to use
   // NotMemberCt. Catch that case here.
-  const int64 min = expr->Min();
-  const int64 max = expr->Max();
-  if (max - min < 2 * copied_values.size()) {
+  if (emax - emin < 2 * copied_values.size()) {
     // Convert "copied_values" to list the values *not* allowed.
-    std::vector<bool> is_among_input_values(max - min + 1, false);
-    for (const int64 v : copied_values) is_among_input_values[v - min] = true;
+    std::vector<bool> is_among_input_values(emax - emin + 1, false);
+    for (const int64 v : copied_values) is_among_input_values[v - emin] = true;
+    // We use the zero valued indices of is_among_input_values to build the
+    // complement of copied_values.
     copied_values.clear();
     for (int64 v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
-      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + min);
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
     }
     // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
     // "values" input) was caught earlier, by the "contiguous interval" case.
@@ -1151,6 +1233,74 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values
 Constraint* Solver::MakeMemberCt(IntExpr* const expr,
                                  const std::vector<int>& values) {
   return MakeMemberCt(expr, ToInt64Vector(values));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    const std::vector<int64>& values) {
+  const int64 coeff = ExtractExprProductCoeff(&expr);
+  if (coeff == 0) {
+    return std::find(values.begin(), values.end(), 0) == values.end()
+        ? MakeTrueConstraint()
+        : MakeFalseConstraint();
+  }
+  std::vector<int64> copied_values = values;
+  // If the expression is a non-trivial product, we filter out the values that
+  // aren't multiples of "coeff", and divide them.
+  if (coeff != 1) {
+    int num_kept = 0;
+    for (const int64 v : copied_values) {
+      if (v % coeff == 0) copied_values[num_kept++] = v / coeff;
+    }
+    copied_values.resize(num_kept);
+  }
+  // Filter out the values that are outside the [Min, Max] interval.
+  int num_kept = 0;
+  int64 emin;
+  int64 emax;
+  expr->Range(&emin, &emax);
+  for (const int64 v : copied_values) {
+    if (v >= emin && v <= emax) copied_values[num_kept++] = v;
+  }
+  copied_values.resize(num_kept);
+  // Catch empty set.
+  if (copied_values.empty()) return MakeTrueConstraint();
+  // Sort and remove duplicates.
+  STLSortAndRemoveDuplicates(&copied_values);
+  // Special case for singleton.
+  if (copied_values.size() == 1) return MakeNonEquality(expr, copied_values[0]);
+  // Catch contiguous intervals.
+  if (copied_values.size() ==
+      copied_values.back() - copied_values.front() + 1) {
+    return MakeNotBetweenCt(expr, copied_values.front(), copied_values.back());
+  }
+  // If the set of values in [expr.Min(), expr.Max()] that are *not* in
+  // "values" is smaller than "values", then it's more efficient to use
+  // MemberCt. Catch that case here.
+  if (emax - emin < 2 * copied_values.size()) {
+    // Convert "copied_values" to a dense boolean vector.
+    std::vector<bool> is_among_input_values(emax - emin + 1, false);
+    for (const int64 v : copied_values) is_among_input_values[v - emin] = true;
+    // Use zero valued indices for is_among_input_values to build the
+    // complement of copied_values.
+    copied_values.clear();
+    for (int64 v_off = 0; v_off < is_among_input_values.size(); ++v_off) {
+      if (!is_among_input_values[v_off]) copied_values.push_back(v_off + emin);
+    }
+    // The empty' case (all values in range [expr.Min(), expr.Max()] are in the
+    // "values" input) was caught earlier, by the "contiguous interval" case.
+    DCHECK_GE(copied_values.size(), 1);
+    if (copied_values.size() == 1) {
+      return MakeEquality(expr, copied_values[0]);
+    }
+    return RevAlloc(new MemberCt(this, expr->Var(), copied_values));
+  }
+  // Otherwise, just use NotMemberCt. No further reduction is possible.
+  return RevAlloc(new NotMemberCt(this, expr->Var(), copied_values));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
+                                    const std::vector<int>& values) {
+  return MakeNotMemberCt(expr, ToInt64Vector(values));
 }
 
 // ----- IsMemberCt -----
@@ -1360,20 +1510,14 @@ IntVar* Solver::MakeIsMemberVar(IntExpr* const expr,
 }
 
 namespace {
-class ForbiddenIntervals : public Constraint {
+class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
  public:
-  ForbiddenIntervals(Solver* const solver, IntVar* var, std::vector<int64> starts,
-          const std::vector<int64>& ends)
-      : Constraint(solver),
-        var_(var),
-        starts_(std::move(starts)),
-        ends_(std::move(ends)),
-        first_active_interval_(0),
-        last_active_interval_(starts_.size() - 1) {
-    CHECK_EQ(starts_.size(), ends_.size());
-  }
+  SortedDisjointForbiddenIntervalsConstraint(
+      Solver* const solver, IntVar* const var,
+      SortedDisjointIntervalList intervals)
+      : Constraint(solver), var_(var), intervals_(std::move(intervals)) {}
 
-  ~ForbiddenIntervals() override {}
+  ~SortedDisjointForbiddenIntervalsConstraint() override {}
 
   void Post() override {
     Demon* const demon = solver()->MakeConstraintInitialPropagateCallback(this);
@@ -1383,61 +1527,71 @@ class ForbiddenIntervals : public Constraint {
   void InitialPropagate() override {
     const int64 vmin = var_->Min();
     const int64 vmax = var_->Max();
-    int first = first_active_interval_.Value();
-    int last = last_active_interval_.Value();
-    while (first <= last) {
-      if (ends_[first] < vmin) {
-        first++;
-      } else {
-        break;
-      }
-    }
-
-    while (first <= last) {
-      if (starts_[last] > vmax) {
-        last--;
-      } else {
-        break;
-      }
-    }
-
-    first_active_interval_.SetValue(solver(), first);
-    last_active_interval_.SetValue(solver(), last);
-
-    if (first > last) {  // no active interval
+    const auto first_interval_it = intervals_.FirstIntervalGreaterOrEqual(vmin);
+    if (first_interval_it == intervals_.end()) {
+      // No interval intersects the variable's range. Nothing to do.
       return;
     }
+    const auto last_interval_it = intervals_.LastIntervalLessOrEqual(vmax);
+    if (last_interval_it == intervals_.end()) {
+      // No interval intersects the variable's range. Nothing to do.
+      return;
+    }
+    // TODO(user): Quick fail if first_interval_it == last_interval_it, which
+    // would imply that the interval contains the entire range of the variable?
+    if (vmin >= first_interval_it->start) {
+      // The variable's minimum is inside a forbidden interval. Move it to the
+      // interval's end.
+      var_->SetMin(CapAdd(first_interval_it->end, 1));
+    }
+    if (vmax <= last_interval_it->end) {
+      // Ditto, on the other side.
+      var_->SetMax(CapSub(last_interval_it->start, 1));
+    }
+  }
 
-    // Should we propagate?
-    if (vmin >= starts_[first]) {
-      var_->SetMin(ends_[first] + 1);
+  std::string DebugString() const override {
+    return StringPrintf("ForbiddenIntervalCt(%s, %s)",
+                        var_->DebugString().c_str(),
+                        intervals_.DebugString().c_str());
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kNotMember, this);
+    visitor->VisitIntegerExpressionArgument(ModelVisitor::kExpressionArgument,
+                                            var_);
+    std::vector<int64> starts;
+    std::vector<int64> ends;
+    for (auto& interval : intervals_) {
+      starts.push_back(interval.start);
+      ends.push_back(interval.end);
     }
-    if (vmax <= ends_[last]) {
-      var_->SetMax(starts_[last] - 1);
-    }
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kStartsArgument, starts);
+    visitor->VisitIntegerArrayArgument(ModelVisitor::kEndsArgument, ends);
+    visitor->EndVisitConstraint(ModelVisitor::kNotMember, this);
   }
 
  private:
   IntVar* const var_;
-  std::vector<int64> starts_;
-  std::vector<int64> ends_;
-  Rev<int> first_active_interval_;
-  Rev<int> last_active_interval_;
+  const SortedDisjointIntervalList intervals_;
 };
 }  // namespace
 
-Constraint* Solver::MakeForbiddenIntervalCt(IntExpr* const expr,
-                                            std::vector<int64> starts,
-                                            std::vector<int64> ends) {
-  return RevAlloc(new ForbiddenIntervals(this, expr->Var(),
-                                         std::move(starts), std::move(ends)));
+Constraint* Solver::MakeNotMemberCt(IntExpr* const expr, std::vector<int64> starts,
+                                    std::vector<int64> ends) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), {std::move(starts), std::move(ends)}));
 }
 
-Constraint* Solver::MakeForbiddenIntervalCt(IntExpr* const expr,
-                                            std::vector<int> starts,
-                                            std::vector<int> ends) {
-  return RevAlloc(new ForbiddenIntervals(this, expr->Var(),
-                                         ToInt64Vector(starts),
-                                         ToInt64Vector(ends)));
+Constraint* Solver::MakeNotMemberCt(IntExpr* const expr, std::vector<int> starts,
+                                    std::vector<int> ends) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), {std::move(starts), std::move(ends)}));
+}
+
+Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
+                                    SortedDisjointIntervalList intervals) {
+  return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
+      this, expr->Var(), std::move(intervals)));
 }
 }  // namespace operations_research

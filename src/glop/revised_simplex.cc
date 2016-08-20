@@ -77,7 +77,7 @@ RevisedSimplex::RevisedSimplex()
     : problem_status_(ProblemStatus::INIT),
       num_rows_(0),
       num_cols_(0),
-      first_slack_col_(0),
+      first_slack_col_(kInvalidCol),
       current_objective_(),
       objective_(),
       lower_bound_(),
@@ -96,7 +96,7 @@ RevisedSimplex::RevisedSimplex()
       update_row_(compact_matrix_, transposed_matrix_, variables_info_, basis_,
                   basis_factorization_),
       reduced_costs_(compact_matrix_, current_objective_, basis_,
-                     variables_info_, basis_factorization_),
+                     variables_info_, basis_factorization_, &random_),
       entering_variable_(variables_info_, &random_, &reduced_costs_,
                          &primal_edge_norms_),
       num_iterations_(0),
@@ -133,6 +133,10 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&function_stats_);
   DCHECK(lp.IsCleanedUp());
   RETURN_ERROR_IF_NULL(time_limit);
+  if (!lp.IsInEquationForm()) {
+    return Status(Status::ERROR_INVALID_PROBLEM,
+                  "The problem is not in the equations form.");
+  }
   Cleanup update_deterministic_time_on_return(
       [this, time_limit]() { AdvanceDeterministicTime(time_limit); });
 
@@ -175,6 +179,10 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   VLOG(1) << "------ First phase: feasibility.";
   entering_variable_.SetPricingRule(parameters_.feasibility_rule());
   if (use_dual) {
+    if (parameters_.perturb_costs_in_dual_simplex()) {
+      reduced_costs_.PerturbCosts();
+    }
+
     variables_info_.MakeBoxedVariableRelevant(false);
     RETURN_IF_ERROR(DualMinimize(time_limit));
     DisplayIterationInfo();
@@ -190,24 +198,49 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     reduced_costs_.MaintainDualInfeasiblePositions(true);
     RETURN_IF_ERROR(Minimize(time_limit));
     DisplayIterationInfo();
+
+    // After the primal phase I, we need to restore the objective.
+    current_objective_ = objective_;
+    reduced_costs_.ResetForNewObjective();
   }
+
+  // Reduced costs must be explicitly recomputed because DisplayErrors() is
+  // const.
+  // TODO(user): This API is not really nice.
+  reduced_costs_.GetReducedCosts();
   DisplayErrors();
 
   feasibility_phase_ = false;
   feasibility_time_ = time_limit->GetElapsedTime() - start_time;
+  entering_variable_.SetPricingRule(parameters_.optimization_rule());
   num_feasibility_iterations_ = num_iterations_;
 
-  if (!FLAGS_simplex_stop_after_feasibility &&
-      (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
-       problem_status_ == ProblemStatus::DUAL_FEASIBLE)) {
-    VLOG(1) << "------ Second phase: optimization.";
-    if (!use_dual) {
-      current_objective_ = objective_;
-      reduced_costs_.ResetForNewObjective();
-      entering_variable_.SetPricingRule(parameters_.optimization_rule());
-    }
+  VLOG(1) << "------ Second phase: optimization.";
 
-    RETURN_IF_ERROR(use_dual ? DualMinimize(time_limit) : Minimize(time_limit));
+  // Because of shifts or perturbations, we may need to re-run a dual simplex
+  // after the primal simplex finished, or the opposite.
+  //
+  // We solve the primal (resp. dual) Phase II in the first iteration of the
+  // loop. The second iteration of the loop solves the dual (resp. primal) Phase
+  // II, and it is executed only if time permits and the solution from the first
+  // iteration was not precise after we removed the bound and cost shifts and
+  // perturbations.
+  const int max_num_optims = 2;
+  for (int num_optims = 0;
+       num_optims < max_num_optims && !time_limit->LimitReached() &&
+       !FLAGS_simplex_stop_after_feasibility &&
+       (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
+        problem_status_ == ProblemStatus::DUAL_FEASIBLE);
+       ++num_optims) {
+    if (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE) {
+      // Run the primal simplex.
+      reduced_costs_.MaintainDualInfeasiblePositions(true);
+      RETURN_IF_ERROR(Minimize(time_limit));
+    } else {
+      // Run the dual simplex.
+      reduced_costs_.MaintainDualInfeasiblePositions(false);
+      RETURN_IF_ERROR(DualMinimize(time_limit));
+    }
 
     // Minimize() or DualMinimize() always double check the result with maximum
     // precision by refactoring the basis before exiting (except if an
@@ -216,34 +249,80 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
            problem_status_ == ProblemStatus::DUAL_FEASIBLE ||
            basis_factorization_.IsRefactorized());
 
-    // Remove the shifts.
+    // Remove the bound and cost shifts (or perturbations).
     //
-    // TODO(user): It is theoretically possible to not be at the optimal after
-    // this, deal with that. This is especially true for the
-    // ClearAndRemoveCostShifts() call when using the dual simplex. The standard
-    // algorithm is to re-run primal phase II in this case (since removing the
-    // cost shift does not change the primal feasibility of the current basis).
-    if (!parameters_.use_dual_simplex()) {
-      // Move the non-basic variable to their exact bounds according to their
-      // current statuses.
-      const VariableStatusRow& statuses = variables_info_.GetStatusRow();
-      for (ColIndex col(0); col < num_cols_; ++col) {
-        if (statuses[col] != VariableStatus::BASIC) {
-          SetNonBasicVariableStatusAndDeriveValue(col, statuses[col]);
-        }
+    // Note(user): Currently, we never do both at the same time, so we could
+    // be a bit faster here, but then this is quick anyway.
+    const VariableStatusRow& statuses = variables_info_.GetStatusRow();
+    for (ColIndex col(0); col < num_cols_; ++col) {
+      if (statuses[col] != VariableStatus::BASIC) {
+        SetNonBasicVariableStatusAndDeriveValue(col, statuses[col]);
       }
     }
     RETURN_IF_ERROR(basis_factorization_.Refactorize());
     variable_values_.RecomputeBasicVariableValues();
     reduced_costs_.ClearAndRemoveCostShifts();
 
-    // The first line triggers the recomputation in order to have precise
-    // errors.
+    // Reduced costs must be explicitly recomputed because DisplayErrors() is
+    // const.
+    // TODO(user): This API is not really nice.
     reduced_costs_.GetReducedCosts();
     DisplayIterationInfo();
     DisplayErrors();
-    if (!SolutionIsPrecise()) {
-      problem_status_ = ProblemStatus::IMPRECISE;
+
+    // TODO(user): We should also confirm the PRIMAL_UNBOUNDED or DUAL_UNBOUNDED
+    // status by checking with the other phase I that the problem is really
+    // DUAL_INFEASIBLE or PRIMAL_INFEASIBLE. For instace we currently report
+    // PRIMAL_UNBOUNDED with the primal on the problem l30.mps instead of
+    // OPTIMAL and the dual does not have issues on this problem.
+    if (problem_status_ == ProblemStatus::DUAL_UNBOUNDED) {
+      const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+      if (reduced_costs_.ComputeMaximumDualResidual() > tolerance ||
+          variable_values_.ComputeMaximumPrimalResidual() > tolerance ||
+          reduced_costs_.ComputeMaximumDualInfeasibility() > tolerance) {
+        LOG(WARNING) << "DUAL_UNBOUNDED was reported, but the residual and/or"
+                     << "dual infeasibility is above the tolerance";
+      }
+      break;
+    }
+
+    // Change the status, if after the shift and perturbation removal the
+    // problem is not OPTIMAL anymore.
+    if (problem_status_ == ProblemStatus::OPTIMAL) {
+      const Fractional solution_tolerance =
+          parameters_.solution_feasibility_tolerance();
+      if (variable_values_.ComputeMaximumPrimalResidual() >
+              solution_tolerance ||
+          reduced_costs_.ComputeMaximumDualResidual() > solution_tolerance) {
+        LOG(WARNING) << "OPTIMAL was reported, yet one of the residuals is "
+                        "above the solution feasibility tolerance after the "
+                        "shift/perturbation are removed.";
+        problem_status_ = ProblemStatus::IMPRECISE;
+      } else {
+        // We use the "precise" tolerances here to try to report the best
+        // possible solution.
+        const Fractional primal_tolerance =
+            parameters_.primal_feasibility_tolerance();
+        const Fractional dual_tolerance =
+            parameters_.dual_feasibility_tolerance();
+        const Fractional primal_infeasibility =
+            variable_values_.ComputeMaximumPrimalInfeasibility();
+        const Fractional dual_infeasibility =
+            reduced_costs_.ComputeMaximumDualInfeasibility();
+        if (primal_infeasibility > primal_tolerance &&
+            dual_infeasibility > dual_tolerance) {
+          LOG(WARNING) << "OPTIMAL was reported, yet both of the infeasibility "
+                          "are above the tolerance after the "
+                          "shift/perturbation are removed.";
+          problem_status_ = ProblemStatus::IMPRECISE;
+        } else if (primal_infeasibility > primal_tolerance) {
+          VLOG(1) << "Re-optimizing with dual simplex ... ";
+          problem_status_ = ProblemStatus::DUAL_FEASIBLE;
+        } else if (dual_infeasibility > dual_tolerance) {
+          VLOG(1) << "Re-optimizing with primal simplex ... ";
+          problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
+        }
+      }
     }
   }
 
@@ -287,7 +366,7 @@ int64 RevisedSimplex::GetNumberOfIterations() const { return num_iterations_; }
 
 RowIndex RevisedSimplex::GetProblemNumRows() const { return num_rows_; }
 
-ColIndex RevisedSimplex::GetProblemNumCols() const { return first_slack_col_; }
+ColIndex RevisedSimplex::GetProblemNumCols() const { return num_cols_; }
 
 Fractional RevisedSimplex::GetVariableValue(ColIndex col) const {
   return variable_values_.Get(col);
@@ -589,46 +668,45 @@ void RevisedSimplex::UseSingletonColumnInInitialBasis(RowToColMapping* basis) {
 bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
                                                         bool* only_new_rows) {
   SCOPED_TIME_STAT(&function_stats_);
+  DCHECK_NE(only_new_rows, nullptr);
+  DCHECK_NE(kInvalidCol, lp.GetFirstSlackVariable());
   DCHECK_EQ(num_cols_, compact_matrix_.num_cols());
   DCHECK_EQ(num_rows_, compact_matrix_.num_rows());
 
-  // Test if the matrix is unchanged, and if yes, just returns true.
-  if (lp.num_constraints() == num_rows_ &&
-      lp.num_variables() == first_slack_col_ &&
+  // Test if the matrix is unchanged, and if yes, just returns true. Note that
+  // we compare also the columns corresponding to the slack variables.
+  if (lp.num_constraints() == num_rows_ && lp.num_variables() == num_cols_ &&
       AreFirstColumnsAndRowsExactlyEquals(
-          num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_)) {
+          num_rows_, num_cols_, lp.GetSparseMatrix(), compact_matrix_)) {
     // IMPORTANT: we need to recreate matrix_with_slack_ because this matrix
     // view was refering to a previous lp.GetSparseMatrix(). The matrices are
     // the same, but we do need to update the pointers.
     //
     // TODO(user): use compact_matrix_ everywhere instead.
-    matrix_with_slack_.PopulateFromMatrixPair(lp.GetSparseMatrix(),
-                                              identity_matrix_);
+    matrix_with_slack_.PopulateFromMatrix(lp.GetSparseMatrix());
     return true;
   }
 
   // Check if the new matrix can be derived from the old one just by adding
-  // new rows (i.e new constraints).
+  // new rows (i.e new constraints). In this case, we make two separate tests:
+  // first we compare the coefficients for the non-slack variables, and then we
+  // check that the coefficients for slack variables form an identity matrix.
   *only_new_rows =
       lp.num_constraints() > num_rows_ &&
-      lp.num_variables() == first_slack_col_ &&
+      lp.GetFirstSlackVariable() == first_slack_col_ &&
+      lp.num_variables() ==
+          lp.GetFirstSlackVariable() + RowToColIndex(lp.num_constraints()) &&
       AreFirstColumnsAndRowsExactlyEquals(
-          num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_);
+          num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_) &&
+      IsRightMostSquareMatrixIdentity(lp.GetSparseMatrix());
 
-  // Initialize matrix_with_slack_. Note that many of the slack variables may
-  // not be useful at all, but in order not to recompute the matrix from one
-  // Solve() to the next, we include all of them for a given lp matrix.
-  //
-  // TODO(user): investigate the impact on the running time. It seems low
-  // because we almost never iterate on fixed variables.
-  identity_matrix_.PopulateFromIdentity(RowToColIndex(lp.num_constraints()));
-  matrix_with_slack_.PopulateFromMatrixPair(lp.GetSparseMatrix(),
-                                            identity_matrix_);
+  // Initialize matrix_with_slack_.
+  matrix_with_slack_.PopulateFromMatrix(lp.GetSparseMatrix());
+  first_slack_col_ = lp.GetFirstSlackVariable();
 
   // Initialize the new dimensions.
   num_rows_ = lp.num_constraints();
-  first_slack_col_ = lp.num_variables();
-  num_cols_ = lp.num_variables() + RowToColIndex(num_rows_);
+  num_cols_ = lp.num_variables();
 
   // Populate compact_matrix_ and transposed_matrix_ if needed. Note that we
   // already added all the slack variables at this point, so matrix_ will not
@@ -647,7 +725,8 @@ bool RevisedSimplex::InitializeBoundsAndTestIfUnchanged(
   upper_bound_.resize(num_cols_, 0.0);
   bound_perturbation_.assign(num_cols_, 0.0);
 
-  // Variable bounds.
+  // Variable bounds, for both non-slack and slack variables.
+  DCHECK_EQ(lp.num_variables(), num_cols_);
   bool bounds_are_unchanged = true;
   for (ColIndex col(0); col < lp.num_variables(); ++col) {
     if (lower_bound_[col] != lp.variable_lower_bounds()[col] ||
@@ -658,22 +737,12 @@ bool RevisedSimplex::InitializeBoundsAndTestIfUnchanged(
     upper_bound_[col] = lp.variable_upper_bounds()[col];
   }
 
-  // Constraint bounds which are converted to slacks bounds.
-  for (RowIndex row(0); row < num_rows_; ++row) {
-    const ColIndex col = SlackColIndex(row);
-    if (lower_bound_[col] != -lp.constraint_upper_bounds()[row] ||
-        upper_bound_[col] != -lp.constraint_lower_bounds()[row]) {
-      bounds_are_unchanged = false;
-    }
-    lower_bound_[col] = -lp.constraint_upper_bounds()[row];
-    upper_bound_[col] = -lp.constraint_lower_bounds()[row];
-  }
-
   return bounds_are_unchanged;
 }
 
 bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
     const LinearProgram& lp) {
+  DCHECK_EQ(num_cols_, lp.num_variables());
   SCOPED_TIME_STAT(&function_stats_);
   current_objective_.assign(num_cols_, 0.0);
 
@@ -706,39 +775,40 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
 
 void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
   objective_limit_reached_ = false;
-  // NOTE(user): If objective_scaling_factor_ is negative, the optimization
-  // direction was reversed (during preprocessing or inside revised simplex),
-  // i.e., the original problem is maximization. In such case the _meaning_ of
-  // the lower and upper limits is swapped. To this end we must change the
-  // signs of limits, which happens automatically when calculating shifted
-  // limits. We must also use upper (resp. lower) limit in place of lower
-  // (resp. upper) limit when calculating the final objective_limit_.
-  const Fractional shifted_lower_limit =
-      parameters_.objective_lower_limit() / objective_scaling_factor_ -
-      objective_offset_;
-  const Fractional shifted_upper_limit =
-      parameters_.objective_upper_limit() / objective_scaling_factor_ -
-      objective_offset_;
-  if (objective_scaling_factor_ < 0.0) {
-    // The original, user-defined problem was primal maximization (or dual
-    // minimization). Now, it's reversed, so swap the limits.
-    if (parameters_.use_dual_simplex()) {
-      objective_limit_ = shifted_lower_limit *
-                         (1.0 + parameters_.solution_feasibility_tolerance());
-    } else {
-      objective_limit_ = shifted_upper_limit *
-                         (1.0 - parameters_.solution_feasibility_tolerance());
-    }
+  DCHECK(std::isfinite(objective_offset_));
+  DCHECK(std::isfinite(objective_scaling_factor_));
+  DCHECK_NE(0.0, objective_scaling_factor_);
 
-  } else {
-    // The original, user-defined problem was primal minimization (or dual
-    // minimization). Now, it stays the same, so do not swap the limits.
-    if (parameters_.use_dual_simplex()) {
-      objective_limit_ = shifted_upper_limit *
-                         (1.0 + parameters_.solution_feasibility_tolerance());
+  // This sets dual_objective_limit_ and then primal_objective_limit_.
+  const Fractional tolerance = parameters_.solution_feasibility_tolerance();
+  for (const bool set_dual : {true, false}) {
+    // NOTE(user): If objective_scaling_factor_ is negative, the optimization
+    // direction was reversed (during preprocessing or inside revised simplex),
+    // i.e., the original problem is maximization. In such case the _meaning_ of
+    // the lower and upper limits is swapped. To this end we must change the
+    // signs of limits, which happens automatically when calculating shifted
+    // limits. We must also use upper (resp. lower) limit in place of lower
+    // (resp. upper) limit when calculating the final objective_limit_.
+    //
+    // Choose lower limit if using the dual simplex and scaling factor is
+    // negative or if using the primal simplex and scaling is nonnegative, upper
+    // limit otherwise.
+    const Fractional limit = (objective_scaling_factor_ >= 0.0) != set_dual
+                                 ? parameters_.objective_lower_limit()
+                                 : parameters_.objective_upper_limit();
+    const Fractional shifted_limit =
+        limit / objective_scaling_factor_ - objective_offset_;
+
+    // The std::isfinite() test is there to avoid generating NaNs with clang in
+    // fast-math mode on iOS 9.3.i.
+    if (set_dual) {
+      dual_objective_limit_ = std::isfinite(shifted_limit)
+                                  ? shifted_limit * (1.0 + tolerance)
+                                  : shifted_limit;
     } else {
-      objective_limit_ = shifted_lower_limit *
-                         (1.0 - parameters_.solution_feasibility_tolerance());
+      primal_objective_limit_ = std::isfinite(shifted_limit)
+                                    ? shifted_limit * (1.0 - tolerance)
+                                    : shifted_limit;
     }
   }
 }
@@ -748,21 +818,16 @@ void RevisedSimplex::InitializeVariableStatusesForWarmStart(
   variables_info_.Initialize();
   RowIndex num_basic_variables(0);
 
-  // Compute the status for all the columns (not that the slack variable are
+  // Compute the status for all the columns (note that the slack variables are
   // already added at the end of the matrix at this stage).
   for (ColIndex col(0); col < num_cols_; ++col) {
     const VariableStatus default_status = ComputeDefaultVariableStatus(col);
 
     // Start with the given "warm" status from the BasisState if it exists.
     VariableStatus status = default_status;
-    if (col < first_slack_col_) {
+    if (col < num_cols_) {
       if (col < state.num_cols) {
         status = state.statuses[col];
-      }
-    } else {
-      const ColIndex slack_index = col - first_slack_col_;
-      if (slack_index < RowToColIndex(state.num_rows)) {
-        status = state.statuses[state.num_cols + slack_index];
       }
     }
 
@@ -1103,7 +1168,7 @@ void RevisedSimplex::DisplayBasicVariableStatistics() {
 void RevisedSimplex::SaveState() {
   DCHECK_EQ(num_cols_, variables_info_.GetStatusRow().size());
   solution_state_.num_rows = num_rows_;
-  solution_state_.num_cols = first_slack_col_;
+  solution_state_.num_cols = num_cols_;
   solution_state_.statuses = variables_info_.GetStatusRow();
   solution_state_has_been_set_externally_ = false;
 }
@@ -1284,9 +1349,9 @@ Fractional RevisedSimplex::ComputeHarrisRatioAndLeavingCandidates(
       // Note that at least lower bounding it by 0.0 is really important on
       // numerically difficult problems because its helps in the choice of a
       // stable pivot.
-      harris_ratio = std::min(
-          harris_ratio,
-          std::max(minimum_delta / magnitude, ratio + harris_tolerance / magnitude));
+      harris_ratio = std::min(harris_ratio,
+                              std::max(minimum_delta / magnitude,
+                                       ratio + harris_tolerance / magnitude));
     }
   }
   return harris_ratio;
@@ -1341,12 +1406,11 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
     // First pass of the Harris ratio test. If 'harris_tolerance' is zero, this
     // actually computes the minimum leaving ratio of all the variables. This is
     // the same as the 'classic' ratio test.
-    SparseColumn leaving_candidates;
     const Fractional harris_ratio =
         (reduced_cost > 0.0) ? ComputeHarrisRatioAndLeavingCandidates<true>(
-                                   current_ratio, &leaving_candidates)
+                                   current_ratio, &leaving_candidates_)
                              : ComputeHarrisRatioAndLeavingCandidates<false>(
-                                   current_ratio, &leaving_candidates);
+                                   current_ratio, &leaving_candidates_);
 
     // If the bound-flip is a viable solution (i.e. it doesn't move the basic
     // variable too much out of bounds), we take it as it is always stable and
@@ -1366,7 +1430,7 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
     stats_num_leaving_choices = 0;
     *leaving_row = kInvalidRow;
     equivalent_leaving_choices_.clear();
-    for (const SparseColumn::Entry e : leaving_candidates) {
+    for (const SparseColumn::Entry e : leaving_candidates_) {
       const Fractional ratio = e.coefficient();
       if (ratio > harris_ratio) continue;
       ++stats_num_leaving_choices;
@@ -2117,10 +2181,11 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       }
 
       // Computing the objective at each iteration takes time, so we just
-      // check objective_limit_ when the basis is refactorized.
-      if (!feasibility_phase_ && ComputeObjectiveValue() < objective_limit_) {
+      // check the limit when the basis is refactorized.
+      if (!feasibility_phase_ &&
+          ComputeObjectiveValue() < primal_objective_limit_) {
         VLOG(1) << "Stopping the primal simplex because"
-                << " the objective limit " << objective_limit_
+                << " the objective limit " << primal_objective_limit_
                 << " has been reached.";
         problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
         objective_limit_reached_ = true;
@@ -2217,16 +2282,12 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       } else {
         VLOG(1) << "Unbounded problem.";
         problem_status_ = ProblemStatus::PRIMAL_UNBOUNDED;
-        solution_primal_ray_.assign(first_slack_col_, 0.0);
+        solution_primal_ray_.assign(num_cols_, 0.0);
         for (RowIndex row(0); row < num_rows_; ++row) {
           const ColIndex col = basis_[row];
-          if (col < first_slack_col_) {
-            solution_primal_ray_[col] = -direction_[row];
-          }
+          solution_primal_ray_[col] = -direction_[row];
         }
-        if (entering_col < first_slack_col_) {
-          solution_primal_ray_[entering_col] = 1.0;
-        }
+        solution_primal_ray_[entering_col] = 1.0;
         if (step_length == -kInfinity) {
           ChangeSign(&solution_primal_ray_);
         }
@@ -2419,10 +2480,10 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
         variable_values_.ResetPrimalInfeasibilityInformation();
 
         // Computing the objective at each iteration takes time, so we just
-        // check objective_limit_ when the basis is refactorized.
-        if (ComputeObjectiveValue() > objective_limit_) {
+        // check the limit when the basis is refactorized.
+        if (ComputeObjectiveValue() > dual_objective_limit_) {
           VLOG(1) << "Stopping the dual simplex because"
-                  << " the objective limit " << objective_limit_
+                  << " the objective limit " << dual_objective_limit_
                   << " has been reached.";
           problem_status_ = ProblemStatus::DUAL_FEASIBLE;
           objective_limit_reached_ = true;
@@ -2596,6 +2657,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
 }
 
 ColIndex RevisedSimplex::SlackColIndex(RowIndex row) const {
+  // TODO(user): Remove this function.
   DCHECK_ROW_BOUNDS(row);
   return first_slack_col_ + RowToColIndex(row);
 }
@@ -2684,15 +2746,6 @@ void RevisedSimplex::DisplayErrors() const {
           << reduced_costs_.ComputeMaximumDualInfeasibility();
   VLOG(1) << "Dual residual |c_B - y.B| = "
           << reduced_costs_.ComputeMaximumDualResidual();
-}
-
-bool RevisedSimplex::SolutionIsPrecise() const {
-  if (problem_status_ != ProblemStatus::OPTIMAL) return true;
-  const Fractional tolerance = parameters_.solution_feasibility_tolerance();
-  return variable_values_.ComputeMaximumPrimalInfeasibility() <= tolerance &&
-         variable_values_.ComputeMaximumPrimalResidual() <= tolerance &&
-         reduced_costs_.ComputeMaximumDualInfeasibility() <= tolerance &&
-         reduced_costs_.ComputeMaximumDualResidual() <= tolerance;
 }
 
 namespace {

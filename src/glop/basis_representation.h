@@ -321,6 +321,7 @@ class BasisFactorization {
   // the last LeftSolveForUnitRow() and also the final result of
   // RightSolveForTau().
   mutable DenseColumn tau_;
+  mutable std::vector<RowIndex> tau_non_zeros_;
 
   // Booleans controlling the interaction between LeftSolveForUnitRow() that may
   // or may not keep its intermediate results for the optimized

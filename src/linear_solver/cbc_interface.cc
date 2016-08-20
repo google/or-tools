@@ -263,18 +263,18 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       Reset();
       CoinModel build;
       // Create dummy variable for objective offset.
-      build.addColumn(0, NULL, NULL, 1.0, 1.0, solver_->Objective().offset(),
-                      "dummy", false);
+      build.addColumn(0, nullptr, nullptr, 1.0, 1.0,
+                      solver_->Objective().offset(), "dummy", false);
       const int nb_vars = solver_->variables_.size();
       for (int i = 0; i < nb_vars; ++i) {
         MPVariable* const var = solver_->variables_[i];
         set_variable_as_extracted(i, true);
         const double obj_coeff = solver_->Objective().GetCoefficient(var);
         if (var->name().empty()) {
-          build.addColumn(0, NULL, NULL, var->lb(), var->ub(), obj_coeff, NULL,
-                          var->integer());
+          build.addColumn(0, nullptr, nullptr, var->lb(), var->ub(), obj_coeff,
+                          nullptr, var->integer());
         } else {
-          build.addColumn(0, NULL, NULL, var->lb(), var->ub(), obj_coeff,
+          build.addColumn(0, nullptr, nullptr, var->lb(), var->ub(), obj_coeff,
                           var->name().c_str(), var->integer());
         }
       }
@@ -401,7 +401,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
       }
       break;
     case 1:
-      if (model.bestSolution() != NULL) {
+      if (model.bestSolution() != nullptr) {
         result_status_ = MPSolver::FEASIBLE;
       } else {
         result_status_ = MPSolver::NOT_SOLVED;
@@ -418,7 +418,7 @@ MPSolver::ResultStatus CBCInterface::Solve(const MPSolverParameters& param) {
     objective_value_ = model.getObjValue();
     VLOG(1) << "objective=" << objective_value_;
     const double* const values = model.bestSolution();
-    if (values != NULL) {
+    if (values != nullptr) {
       // if optimal or feasible solution is found.
       for (int i = 0; i < solver_->variables_.size(); ++i) {
         MPVariable* const var = solver_->variables_[i];

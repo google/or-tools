@@ -21,17 +21,18 @@
 
 namespace operations_research {
 
-// A compact representation for permutations of {0..N-1} that displace few
-// elements: it needs O(K) memory for a permutation that displace K elements.
+// A compact representation for permutations of {0..N-1} that displaces few
+// elements: it needs only O(K) memory for a permutation that displaces
+// K elements.
 class SparsePermutation {
  public:
   explicit SparsePermutation(int size) : size_(size) {}  // Identity.
 
-  // TODO(user, fdid): complete the reader API.
+  // TODO(user,user): complete the reader API.
   int Size() const { return size_; }
   int NumCycles() const { return cycle_ends_.size(); }
 
-  // Returns the "support" of this permutation, that is the set of elements
+  // Returns the "support" of this permutation; that is, the set of elements
   // displaced by it.
   const std::vector<int>& Support() const { return cycles_; }
 
@@ -41,7 +42,8 @@ class SparsePermutation {
   struct Iterator;
   Iterator Cycle(int i) const;
 
-  // This is useful to iterate over the pair {element, image} of a permutation:
+  // This is useful for iterating over the pair {element, image}
+  // of a permutation:
   //
   // for (int c = 0; c < perm.NumCycles(); ++c) {
   //   int element = LastElementInCycle(c);
@@ -52,7 +54,7 @@ class SparsePermutation {
   //   }
   // }
   //
-  // TODO(user): Provide a full iterator for this? note that we have more
+  // TODO(user): Provide a full iterator for this? Note that we have more
   // information with the loop above. Not sure it is needed though.
   int LastElementInCycle(int i) const;
 

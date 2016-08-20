@@ -27,11 +27,13 @@
 #include "base/strutil.h"
 #include "algorithms/sparse_permutation.h"
 #include "sat/boolean_problem.h"
+#include "sat/drat.h"
 #include "cpp/opb_reader.h"
 #include "sat/optimization.h"
 #include "cpp/sat_cnf_reader.h"
 #include "sat/sat_solver.h"
 #include "sat/simplification.h"
+#include "sat/symmetry.h"
 #include "util/time_limit.h"
 #include "base/random.h"
 #include "base/status.h"
@@ -94,16 +96,11 @@ DEFINE_bool(use_symmetry, false,
             "If true, find and exploit the eventual symmetries "
             "of the problem.");
 
-DEFINE_bool(presolve, false,
+DEFINE_bool(presolve, true,
             "Only work on pure SAT problem. If true, presolve the problem.");
 
 DEFINE_bool(probing, false, "If true, presolve the problem using probing.");
 
-
-DEFINE_bool(refine_core, false,
-            "If true, turn on the unsat_proof parameters and if the problem is "
-            "UNSAT, refine as much as possible its UNSAT core in order to get "
-            "a small one.");
 
 DEFINE_bool(reduce_memory_usage, false,
             "If true, do not keep a copy of the original problem in memory."
@@ -152,8 +149,8 @@ void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
 std::string SolutionString(const LinearBooleanProblem& problem,
                       const std::vector<bool>& assignment) {
   std::string output;
-  VariableIndex limit(problem.original_num_variables());
-  for (VariableIndex index(0); index < limit; ++index) {
+  BooleanVariable limit(problem.original_num_variables());
+  for (BooleanVariable index(0); index < limit; ++index) {
     if (index > 0) output += " ";
     output += StringPrintf(
         "%d", Literal(index, assignment[index.value()]).SignedValue());
@@ -178,15 +175,16 @@ int Run() {
         << FLAGS_params;
   }
 
-  // Enforce some parameters if we are looking for UNSAT core.
-  if (FLAGS_refine_core) {
-    parameters.set_unsat_proof(true);
-    parameters.set_treat_binary_clauses_separately(false);
-  }
+  Model model;
+  DratWriter* drat_writer = model.GetOrCreate<DratWriter>();
 
   // Initialize the solver.
   std::unique_ptr<SatSolver> solver(new SatSolver());
+  solver->SetDratWriter(drat_writer);
   solver->SetParameters(parameters);
+
+  // The global time limit.
+  std::unique_ptr<TimeLimit> time_limit(TimeLimit::FromParameters(parameters));
 
   // Read the problem.
   LinearBooleanProblem problem;
@@ -232,13 +230,25 @@ int Run() {
     LOG(INFO) << "UNSAT when setting the objective constraint.";
   }
 
+  if (drat_writer != nullptr) {
+    drat_writer->SetNumVariables(solver->NumVariables());
+  }
+
   // Symmetries!
+  //
+  // TODO(user): To make this compatible with presolve, we just need to run
+  // it after the presolve step.
   if (FLAGS_use_symmetry) {
     CHECK(!FLAGS_reduce_memory_usage) << "incompatible";
+    CHECK(!FLAGS_presolve) << "incompatible";
     LOG(INFO) << "Finding symmetries of the problem.";
     std::vector<std::unique_ptr<SparsePermutation>> generators;
     FindLinearBooleanProblemSymmetries(problem, &generators);
-    solver->AddSymmetries(&generators);
+    std::unique_ptr<SymmetryPropagator> propagator(new SymmetryPropagator);
+    for (int i = 0; i < generators.size(); ++i) {
+      propagator->AddSymmetry(std::move(generators[i]));
+    }
+    solver->AddPropagator(std::move(propagator));
   }
 
   // Optimize?
@@ -274,67 +284,9 @@ int Run() {
     // Only solve the decision version.
     parameters.set_log_search_progress(true);
     solver->SetParameters(parameters);
-
-    // Presolve.
     if (FLAGS_presolve) {
-      SatPostsolver postsolver(problem.num_variables());
-
-      // We use a new block so the memory used by the presolver can be
-      // reclaimed as soon as it is no longer needed.
-      //
-      // TODO(user): Automatically adapt the number of iterations.
-      result = SatSolver::MODEL_SAT;
-      for (int i = 0; i < 4; ++i) {
-        const int saved_num_variables = solver->NumVariables();
-
-        // Probe + find equivalent literals.
-        ITIVector<LiteralIndex, LiteralIndex> equiv_map;
-        ProbeAndFindEquivalentLiteral(solver.get(), &postsolver, &equiv_map);
-        if (solver->IsModelUnsat()) {
-          printf("c unsat during probing!\n");
-          result = SatSolver::MODEL_UNSAT;
-          break;
-        }
-
-        // Register the fixed variables with the presolver.
-        // TODO(user): Find a better place for this?
-        solver->Backtrack(0);
-        for (int i = 0; i < solver->LiteralTrail().Index(); ++i) {
-          postsolver.FixVariable(solver->LiteralTrail()[i]);
-        }
-
-        SatPresolver presolver(&postsolver);
-        presolver.SetParameters(parameters);
-        presolver.SetEquivalentLiteralMapping(equiv_map);
-        solver->ExtractClauses(&presolver);
-        solver.release();
-        if (!presolver.Presolve()) {
-          printf("c unsat during presolve!\n");
-
-          // This is just here for the satistics display below to work.
-          solver.reset(new SatSolver());
-          result = SatSolver::MODEL_UNSAT;
-          break;
-        }
-
-        // Load the presolved problem in a new solver.
-        solver.reset(new SatSolver());
-        solver->SetParameters(parameters);
-        presolver.LoadProblemIntoSatSolver(solver.get());
-        postsolver.ApplyMapping(presolver.VariableMapping());
-
-        // Stop if a fixed point has been reached.
-        if (solver->NumVariables() == saved_num_variables) break;
-      }
-
-      // Solve.
-      if (result != SatSolver::MODEL_UNSAT) {
-        result = solver->Solve();
-      }
-
-      // Recover the solution.
+      result = SolveWithPresolve(&solver, &solution, drat_writer);
       if (result == SatSolver::MODEL_SAT) {
-        solution = postsolver.ExtractAndPostsolveSolution(*solver);
         CHECK(IsAssignmentValid(problem, solution));
       }
     } else {
@@ -342,40 +294,6 @@ int Run() {
       if (result == SatSolver::MODEL_SAT) {
         ExtractAssignment(problem, *solver, &solution);
         CHECK(IsAssignmentValid(problem, solution));
-      }
-
-      // Unsat with verification.
-      // Note(user): For now we just compute an UNSAT core and check it.
-      if (result == SatSolver::MODEL_UNSAT && parameters.unsat_proof()) {
-        CHECK(!FLAGS_reduce_memory_usage) << "incompatible";
-        std::vector<int> core;
-        solver->ComputeUnsatCore(&core);
-        LOG(INFO) << "UNSAT. Identified a core of " << core.size()
-                  << " constraints.";
-
-        // The following block is mainly for testing the UNSAT core feature.
-        if (FLAGS_refine_core) {
-          int old_core_size = core.size();
-          LinearBooleanProblem old_problem;
-          LinearBooleanProblem core_unsat_problem;
-          old_problem = problem;
-          int i = 1;
-          do {
-            ExtractSubproblem(old_problem, core, &core_unsat_problem);
-            core_unsat_problem.set_name(StringPrintf("Subproblem #%d", i));
-            old_core_size = core.size();
-            old_problem = core_unsat_problem;
-            SatSolver new_solver;
-            new_solver.SetParameters(parameters);
-            CHECK(LoadBooleanProblem(core_unsat_problem, &new_solver));
-            CHECK_EQ(new_solver.Solve(), SatSolver::MODEL_UNSAT)
-                << "Wrong core!";
-            new_solver.ComputeUnsatCore(&core);
-            LOG(INFO) << "Core #" << i << " checked, next size is "
-                      << core.size();
-            ++i;
-          } while (core.size() != old_core_size);
-        }
       }
     }
   }

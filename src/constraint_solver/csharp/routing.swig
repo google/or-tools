@@ -15,6 +15,14 @@
 
 %include "constraint_solver/csharp/constraint_solver.swig"
 
+// We need to forward-declare the proto here, so that PROTO_INPUT involving it
+// works correctly. The order matters very much: this declaration needs to be
+// before the %{ #include ".../routing.h" %}.
+namespace operations_research {
+class RoutingModelParameters;
+class RoutingSearchParameters;
+}  // namespace operations_research
+
 // Include the file we want to wrap a first time.
 %{
 #include "constraint_solver/routing.h"
@@ -79,27 +87,28 @@ CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
 // std::vector<std::vector<TypeB>>.
 %define CS_TYPEMAP_STDVECTOR_IN1(TYPE, CTYPE, CSHARPTYPE)
 %typemap(ctype)  const std::vector<std::vector<TYPE> >&  %{
-  int len$argnum_1, int len$argnum_2, CTYPE*
+  int len$argnum_1, int len$argnum_2[], CTYPE*
 %}
 %typemap(imtype) const std::vector<std::vector<TYPE> >&  %{
-  int len$argnum_1, int len$argnum_2, CSHARPTYPE[]
+  int len$argnum_1, int[] len$argnum_2, CSHARPTYPE[]
 %}
-%typemap(cstype) const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[,] %}
-%typemap(csin)   const std::vector<std::vector<TYPE> >&  "$csinput.GetLength(0),$csinput.GetLength(1), NestedArrayHelper.GetFlatArray($csinput)"
+%typemap(cstype) const std::vector<std::vector<TYPE> >&  %{ CSHARPTYPE[][] %}
+%typemap(csin)   const std::vector<std::vector<TYPE> >&  "$csinput.GetLength(0), NestedArrayHelper.GetArraySecondSize($csinput), NestedArrayHelper.GetFlatArray($csinput)"
 %typemap(in)     const std::vector<std::vector<TYPE> >&  (std::vector<std::vector<TYPE> > result) %{
-  const int size_x = len$argnum_1;
-  const int size_y = len$argnum_2;
 
   result.clear();
-  result.resize(size_x);
+  result.resize(len$argnum_1);
 
   TYPE* inner_array = reinterpret_cast<TYPE*>($input);
 
-  for (int index1 = 0; index1 < size_x; ++index1) {
-    result[index1].reserve(size_y);
-    for (int index2 = 0; index2 < size_y; ++index2) {
-      const TYPE value = inner_array[index1 * size_y + index2];
+  int actualIndex = 0;
+  for (int index1 = 0; index1 < len$argnum_1; ++index1) {
+    result[index1].reserve(len$argnum_2[index1]);
+	
+    for (int index2 = 0; index2 < len$argnum_2[index1]; ++index2) {
+      const TYPE value = inner_array[actualIndex];
       result[index1].emplace_back(value);
+	  actualIndex++;
     }
   }
 
@@ -111,7 +120,7 @@ CS_TYPEMAP_STDVECTOR_IN1(operations_research::RoutingModel::NodeIndex, int, int)
 
 // Create input mapping for NodeEvaluator2 and LongResultCallbackN
 // Callback wrapping.
-// TODO(viger): split out the callback code; it creates another file since
+// TODO(user): split out the callback code; it creates another file since
 // it uses a different module.
 %{
 class LongResultCallback1 {
@@ -240,6 +249,9 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
     int64 capacity,
     const std::string& name);
 
+%ignore operations_research::RoutingModel::MakeStateDependentTransit;
+%ignore operations_research::RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity;
+
 %extend operations_research::RoutingModel {
   void AddVectorDimension(const std::vector<int64>& values,
                           int64 capacity,
@@ -259,6 +271,18 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
 
 %rename("%(camelcase)s", %$isfunction) "";
+
+// Protobuf support
+PROTO_INPUT(operations_research::RoutingSearchParameters,
+            Google.OrTools.ConstraintSolver.RoutingSearchParameters,
+            search_parameters)
+PROTO_INPUT(operations_research::RoutingModelParameters,
+            Google.OrTools.ConstraintSolver.RoutingModelParameters,
+            parameters)
+PROTO2_RETURN(operations_research::RoutingSearchParameters,
+              Google.OrTools.ConstraintSolver.RoutingSearchParameters)
+PROTO2_RETURN(operations_research::RoutingModelParameters,
+              Google.OrTools.ConstraintSolver.RoutingModelParameters)
 
 // Wrap cp includes
 %include constraint_solver/routing.h

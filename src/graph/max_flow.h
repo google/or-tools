@@ -21,10 +21,14 @@
 // graph.
 //
 // Each arc (v,w) is associated a capacity c(v,w).
+//
 // A flow is a function from E to R such that:
-// a) f(v,w) <= c(v,w) for all (v,w) in E (capacity constraint.)
-// b) f(v,w) = -f(w,v) for all (v,w) in E (flow antisymmetry constraint.)
-// c) sum on v f(v,w) = 0  (flow conservation.)
+//
+//  a) f(v,w) <= c(v,w) for all (v,w) in E (capacity constraint.)
+//
+//  b) f(v,w) = -f(w,v) for all (v,w) in E (flow antisymmetry constraint.)
+//
+//  c) sum on v f(v,w) = 0  (flow conservation.)
 //
 // The goal of this algorithm is to find the maximum flow from s to t, i.e.
 // for example to maximize sum v f(s,v).
@@ -32,17 +36,21 @@
 // The starting reference for this class of algorithms is:
 // A.V. Goldberg and R.E. Tarjan. A new approach to the maximum flow problem.
 // ACM Symposium on Theory of Computing, pp. 136-146.
-// http://portal.acm.org/citation.cfm?id=12144
+// http://portal.acm.org/citation.cfm?id=12144.
 //
 // The basic idea of the algorithm is to handle preflows instead of flows,
 // and to refine preflows until a maximum flow is obtained.
 // A preflow is like a flow, except that the inflow can be larger than the
 // outflow. If it is the case at a given node v, it is said that there is an
 // excess at node v, and inflow = outflow + excess.
+//
 // More formally, a preflow is a function f such that:
+//
 // 1) f(v,w) <= c(v,w) for all (v,w) in E  (capacity constraint). c(v,w)  is a
 //    value representing the maximum capacity for arc (v,w).
+//
 // 2) f(v,w) = -f(w,v) for all (v,w) in E (flow antisymmetry constraint)
+//
 // 3) excess(v) = sum on u f(u,v) >= 0 is the excess at node v, the
 //    algebraic sum of all the incoming preflows at this node.
 //
@@ -57,7 +65,9 @@
 // nodes. This has not been tried in this implementation.
 //
 // A node v is said to be *active* if excess(v) > 0.
+//
 // In this case the following operations can be applied to it:
+//
 // - if there are *admissible* incident arcs, i.e. arcs which are not saturated,
 //   and whose tail's height is lower than the height of the active node
 //   considered, a PushFlow operation can be applied. It consists in sending as
@@ -77,8 +87,6 @@
 // the excesses at all nodes are equal to zero. In this case, a maximum flow is
 // obtained.
 //
-// TODO(user): implement the following active node choice rule.
-//
 // The complexity of this algorithm depends amongst other things on the choice
 // of the next active node. It has been shown, for example in:
 // L. Tuncel, "On the Complexity of Preflow-Push Algorithms for Maximum-Flow
@@ -89,19 +97,21 @@
 // 69(5):239-242 (1999).
 // http://www.math.uwaterloo.ca/~jcheriya/PS_files/me3.0.ps
 //
-// that choosing the active node with the highest level yields a complexity of
-// O(n^2 * sqrt(m)).
+// ...that choosing the active node with the highest level yields a
+// complexity of O(n^2 * sqrt(m)).
+//
+// TODO(user): implement the above active node choice rule.
 //
 // This has been validated experimentally in:
 // R.K. Ahuja, M. Kodialam, A.K. Mishra, and J.B. Orlin, "Computational
 // Investigations of Maximum Flow Algorithms", EJOR 97:509-542(1997).
-// http://jorlin.scripts.mit.edu/docs/publications/
-//     58-comput%20investigations%20of.pdf
+// http://jorlin.scripts.mit.edu/docs/publications/58-comput%20investigations%20of.pdf.
+//
 //
 // TODO(user): an alternative would be to evaluate:
 // A.V. Goldberg, "The Partial Augment-Relabel Algorithm for the Maximum Flow
 // Problem.” In Proceedings of Algorithms ESA, LNCS 5193:466-477, Springer 2008.
-// www.springerlink.com/index/5535k2j1mt646338.pdf
+// http://www.springerlink.com/index/5535k2j1mt646338.pdf
 //
 // An interesting general reference on network flows is:
 // R. K. Ahuja, T. L. Magnanti, J. B. Orlin, "Network Flows: Theory, Algorithms,
@@ -257,8 +267,8 @@ class PriorityQueueWithRestrictedPush {
   // Clears the queue.
   void Clear();
 
-  // Push a new element in the queue, its priority must be greater or equal to
-  // the highest priority present in the queue minus one. This condition is
+  // Push a new element in the queue. Its priority must be greater or equal to
+  // the highest priority present in the queue, minus one. This condition is
   // DCHECKed, and violating it yields erroneous queue behavior in NDEBUG mode.
   void Push(Element index, IntegerPriority priority);
 
@@ -303,7 +313,8 @@ class GenericMaxFlow : public MaxFlowStatusClass {
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::OutgoingArcIterator OutgoingArcIterator;
-  typedef typename Graph::IncidentArcIterator IncidentArcIterator;
+  typedef typename Graph::OutgoingOrOppositeIncomingArcIterator
+      OutgoingOrOppositeIncomingArcIterator;
   typedef typename Graph::IncomingArcIterator IncomingArcIterator;
   typedef ZVector<ArcIndex> ArcIndexArray;
 
@@ -631,9 +642,9 @@ class GenericMaxFlow : public MaxFlowStatusClass {
 
 #if !SWIG
 
-// Default instance MaxFlow that use StarGraph. Note that we cannot just use a
+// Default instance MaxFlow that uses StarGraph. Note that we cannot just use a
 // typedef because of dependent code expecting MaxFlow to be a real class.
-// TODO(user): Modify these codes and remove this.
+// TODO(user): Modify this code and remove it.
 class MaxFlow : public GenericMaxFlow<StarGraph> {
  public:
   MaxFlow(const StarGraph* graph, NodeIndex source, NodeIndex target)

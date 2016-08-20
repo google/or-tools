@@ -133,9 +133,13 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output, bool stor
     std::string result =
         StringPrintf("%s = array%dd(", output.name.c_str(), bound_size);
     for (int i = 0; i < bound_size; ++i) {
-      result.append(StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
-                                 output.bounds[i].min_value,
-                                 output.bounds[i].max_value));
+      if (output.bounds[i].max_value != 0) {
+        result.append(StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
+                                   output.bounds[i].min_value,
+                                   output.bounds[i].max_value));
+      } else {
+        result.append("{},");
+      }
     }
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {

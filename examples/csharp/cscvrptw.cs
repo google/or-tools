@@ -259,13 +259,13 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
     }
 
     // Solving
-    RoutingSearchParameters parameters = new RoutingSearchParameters();
-    parameters.no_lns = true;
-    parameters.first_solution = "AllUnperformed";
-    parameters.trace = true;
+    RoutingSearchParameters search_parameters =
+        RoutingModel.DefaultSearchParameters();
+    search_parameters.FirstSolutionStrategy =
+        FirstSolutionStrategy.Types.Value.AllUnperformed;
 
     Console.WriteLine("Search");
-    Assignment solution = model.SolveWithParameters(parameters, null);
+    Assignment solution = model.SolveWithParameters(search_parameters);
 
     if (solution != null) {
       String output = "Total cost: " + solution.ObjectiveValue() + "\n";
