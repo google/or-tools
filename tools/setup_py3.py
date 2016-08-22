@@ -2,7 +2,8 @@ from sys import executable
 
 setuptools_import_error_message = """setuptools is not installed for """ + executable + """
 Please follow this link for installing instructions :
-https://pypi.python.org/pypi/setuptools"""
+https://pypi.python.org/pypi/setuptools
+make sure you use \"""" + executable + """\" during the installation"""
 
 try:
     from setuptools import setup, Extension
