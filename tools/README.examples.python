@@ -1,25 +1,32 @@
-This file describes how to install the or-tools python examples archive.
+This file describes how to install the or-tools python binary archive.
 
 OR-Tools is located at https://developers.google.com/optimization
 
-These module will pull ortools from pypi. Or-tools is delivered under:
-  - ubuntu 12.04 and up (32 and 64 bit).
-  - Mac OS X Lion with xcode 5.x (64 bit).
-  - Microsoft Windows with Visual Studio 2012 and 2013 (32 and 64 bit).
+These modules have been tested under:
+  - ubuntu 14.04 and up (32 and 64 bit).
+  - Mac OS X El Capitan with xcode 4.x (64 bit).
+  - Microsoft Windows with Visual Studio 2013 and 2015 (64 bit).
 
 Upon decompressing the archive, you will get the following structure:
 
 or-tools/
   LICENSE-2.0.txt      <- Apache License
-  README.txt           <- This file
+  check_python_deps.py <- Python script to check the dependencies
+  README               <- This file
   data/                <- Data for the examples.
   examples/            <- Python examples
+  ortools/             <- ortools package
+    algorithms/        <- Directory containing non-graph algorithms.
+    constraint_solver/ <- The main directory for the constraint library.
+    graph/             <- Graph algorithms.
+    linear_solver/     <- Linear solver wrapper.
 
 
 To install the package, please run:
   python setup.py install --user
 
-This will pull ortools binary modules from Pypi and install them.
+Then check the dependecies by running : 
+  python check_python_deps.py
 
 Once this is done, you can run the samples in the examples/ directory.
 As in python examples/hidato_puzzle.py
