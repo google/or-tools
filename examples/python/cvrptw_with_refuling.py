@@ -47,8 +47,8 @@ def distance(x1, y1, x2, y2):
 
     return dist
 
-# Distance callback
 
+# Distance callback
 class CreateDistanceCallback(object):
     """Create callback to calculate distances and travel times between points.
     """
@@ -81,7 +81,7 @@ class CreateDistanceCallback(object):
         for from_node in self.matrix:
             for to_node in self.matrix[from_node]:
                 dist = self.Distance(from_node, to_node)
-                if  dist > maxdist:
+                if dist > maxdist:
                     maxdist = dist
         return(maxdist)
 
@@ -127,8 +127,9 @@ def IsRefuelNode(node):
     Returns true if node is a refueling node,
     based on node / refuel node ratio.
     """
-    refuel_node_ratio = 4
+    refuel_node_ratio = 5
     return(node % refuel_node_ratio == 0)
+
 
 def DisplayPlan(routing, assignment):
 
@@ -138,8 +139,9 @@ def DisplayPlan(routing, assignment):
     for order in range(1, routing.nodes()):
         if assignment.Value(routing.NextVar(order)) == order:
             if len(dropped) == 0:
-                dropped += "{0}".format(order)
-            else: dropped += ", {0}".format(order)
+                dropped += "{0}[{1}]".format(order, IsRefuelNode(order))
+            else:
+                dropped += ", {0}[{1}]".format(order, IsRefuelNode(order))
 
     if len(dropped):
         plan_output += "Dropped orders:" + dropped + "\n"
@@ -150,14 +152,19 @@ def DisplayPlan(routing, assignment):
 def main():
 
     # Create the data.
-    data = create_data_array()
-    locations = data[0]
-    demands = [dem * (1 - IsRefuelNode(node))  for node, dem in enumerate(data[1])]
-    start_times = data[2]
+    locations, demands, start_times = create_data_array()
+    # In the case of refuling nodes, we may not want them to also have demands,
+    # in which case zero them out.
+    demands = [dem * (1 - IsRefuelNode(node)) for node, dem in
+               enumerate(demands)]
+
     num_locations = len(locations)
+    # Set the depot node
     depot = 0
-    num_vehicles = 5
-    search_time_limit = 40
+    demands[depot] = 0
+    # Set the number of vehicles.
+    num_vehicles = 4
+    search_time_limit = 40000
 
     # Create routing model.
     if num_locations > 0:
@@ -186,11 +193,12 @@ def main():
         dist_callback = dist_between_locations.Distance
 
         routing.SetArcCostEvaluatorOfAllVehicles(dist_callback)
+
         demands_at_locations = CreateDemandCallback(demands)
         demands_callback = demands_at_locations.Demand
 
         # Adding capacity dimension constraints.
-        VehicleCapacity = 100
+        VehicleCapacity = 150
         NullCapacitySlack = 0
         fix_start_cumul_to_zero = True
         capacity = "Capacity"
@@ -201,13 +209,11 @@ def main():
                              fix_start_cumul_to_zero,
                              capacity)
 
-
-
         # Adding time dimension constraints.
         time_per_demand_unit = 300
         horizon = 24 * 3600
         time = "Time"
-        tw_duration = 5 * 3600
+        tw_duration = 4 * 3600
         speed = 10
 
         service_times = CreateServiceTimeCallback(demands,
@@ -231,57 +237,60 @@ def main():
         # Add limit on size of the time windows.
         time_dimension = routing.GetDimensionOrDie(time)
 
-        for order in range(1, num_locations):
-            start = start_times[order]
-            time_dimension.CumulVar(order).SetRange(start, start + tw_duration)
+        for order in range(0, routing.Size()):
+            if not routing.IsStart(order):
+                start = start_times[order]
+                time_dimension.CumulVar(order).SetRange(start,
+                                                        start + tw_duration)
+            elif IsRefuelNode(order):
+                # The refuling nodes can be visited any time.
+                time_dimension.CumulVar(order).SetRange(0, 24 * 3600)
 
-        # Adding fuel dimension. This dimension consumes a quantity equal to the
-        # distance traveled. Only refuel nodes can make the quantity of dimension
-        # increase by letting slack variable replenish the fuel.
-        
-        fuel = "Fuel"
+        # Adding fuel dimension. This dimension consumes a quantity equal to
+        # the distance traveled. Only refuel nodes can make the quantity of
+        # dimension increase by letting slack variable replenish the fuel.
+
         fuel_capacity = dist_between_locations.MaxDistance()
+        fuel_capacity = 200 
         negdist_callback = dist_between_locations.NegDistance
 
         routing.AddDimension(negdist_callback,  # negative dist callback
                              fuel_capacity,
                              fuel_capacity,
                              False, # fix_start_cumul_to_zero
-                             fuel)
+                             "Fuel")
         # Only let slack free for refueling nodes.
-        fuel_dimension = routing.GetDimensionOrDie(fuel)
+        fuel_dimension = routing.GetDimensionOrDie("Fuel")
+
         for order in range(0, routing.Size()):
             if (not IsRefuelNode(order) or routing.IsStart(order)):
                 fuel_dimension.SlackVar(order).SetValue(0)
-                if not routing.IsStart(order):
-                    routing.AddDisjunction([int(order)], 40000) 
-            else:
+            # Don't add disjunctions to start nodes.
+            if not routing.IsStart(order):
                 # Allow the refuling nodes to be skipped with no penalty
-                print(order)
-                routing.AddDisjunction([int(order)], 0)
-                    
+                if IsRefuelNode(order):
+                    routing.AddDisjunction([order], 0)
+                else:
+                    routing.AddDisjunction([order], 5000)
 
             # Needed to instantiate fuel quantity at each node.
             routing.AddVariableMinimizedByFinalizer(fuel_dimension.CumulVar(order))
-        
-        
+      
         # To allow the skipping of refuling nodes, we add disjunctions to all
         # nodes. Each disjunction is a list of 1 index, which allows that customer to
         # be active or not, with a penalty if not. The penalty should be larger
         # than the cost of servicing that customer, or it will always be dropped!
 
-
-
         # Solve displays a solution if any.
         assignment = routing.SolveWithParameters(search_parameters)
         if assignment:
-            data = create_data_array()
-            locations = data[0]
-            demands = [dem * (1 - IsRefuelNode(node))  for node, dem in enumerate(data[1])]
-            print(demands)
+            # data = create_data_array()
+            # locations = data[0]
+            # demands = [dem * (1 - IsRefuelNode(node))  for node, dem in enumerate(data[1])]
+            # print(demands)
 
-            start_times = data[2]
-            size = len(locations)
+            # start_times = data[2]
+            # size = len(locations)
             # Solution cost.
             print("Total distance of all routes: " + str(assignment.ObjectiveValue()) + "\n")
             plan_output = DisplayPlan(routing, assignment)
@@ -289,7 +298,7 @@ def main():
             # Inspect solution.
             capacity_dimension = routing.GetDimensionOrDie(capacity)
             time_dimension = routing.GetDimensionOrDie(time)
-            fuel_dimension = routing.GetDimensionOrDie(fuel)
+            fuel_dimension = routing.GetDimensionOrDie("Fuel")
 
             for vehicle_nbr in range(num_vehicles):
                 index = routing.Start(vehicle_nbr)
@@ -340,7 +349,7 @@ def create_data_array():
                  [61, 62], [9, 97], [80, 55], [57, 69], [23, 15], [20, 70],
                  [85, 60], [98, 5]]
 
-    demands = [0, 19, 21, 6, 19, 7, 12, 16, 6, 16, 8, 14, 21, 16, 3, 22, 18,
+    demands = [4, 19, 21, 6, 19, 7, 12, 16, 6, 16, 8, 14, 21, 16, 3, 22, 18,
                19, 1, 24, 8, 12, 4, 8, 24, 24, 2, 20, 15, 2, 14, 9]
 
     start_times = [28842, 50891, 10351, 49370, 22553, 53131, 8908,
