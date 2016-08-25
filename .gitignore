@@ -33,3 +33,4 @@ bin/
 src/gen/
 objs/
 temp/
+lib/
