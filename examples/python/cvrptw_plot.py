@@ -135,21 +135,21 @@ class Customers():
         lons = (self.extents['llcrnrlon'] + np.random.randn(num_stops) *
                 (self.extents['urcrnrlon'] - self.extents['llcrnrlon']) / stdv)
         # uniformly distributed integer demands.
-        demmands = np.random.randint(min_demand, max_demand, num_stops)
+        demmands = np.random.randint(min_demand, max_demand + 1, num_stops)
 
         self.time_horizon = 24 * 60 ** 2  # A 24 hour period.
 
         # The customers demand min_tw to max_tw hour time window for each
         # delivery
-        time_windows = np.random.random_integers(min_tw * 3600,
-                                                 max_tw * 3600, num_stops)
+        time_windows = np.random.randint(min_tw * 3600,
+                                         max_tw * 3600 + 1, num_stops)
         # The last time a delivery window can start
         latest_time = self.time_horizon - time_windows
         start_times = [None for o in time_windows]
         stop_times = [None for o in time_windows]
         # Make random timedeltas, nominaly from the start of the day.
         for idx in range(self.number):
-            stime = int(np.random.random_integers(0, latest_time[idx]))
+            stime = int(np.random.randint(0, latest_time[idx] + 1))
             start_times[idx] = timedelta(seconds=stime)
             stop_times[idx] = (start_times[idx] +
                                timedelta(seconds=int(time_windows[idx])))
