@@ -655,7 +655,7 @@ def main():
 
     # Set vehicle costs for each vehicle, not homogenious.
     for veh in vehicles.vehicles:
-        routing.SetVehicleFixedCost(int(veh.index), veh.cost)
+        routing.SetFixedCostOfVehicle(veh.cost, int(veh.index))
 
     # Add a dimension for vehicle capacities
     null_capacity_slack = 0
