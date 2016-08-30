@@ -258,7 +258,7 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/pr
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) ./autogen.sh
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
-	git clone -b v$(PROTOBUF_TAG) https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG)
+	git clone https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && dependencies/sources/protobuf-$(PROTOBUF_TAG) && git checkout 3d9d1a1
 
 # Install sparsehash.
 install_sparsehash: dependencies/install/include/google/dense_hash_map
