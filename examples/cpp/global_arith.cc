@@ -31,7 +31,7 @@ class SubstitutionMap {
   };
 
   void AddSubstitution(int left_var, int right_var, int64 right_offset) {
-    // TODO(lperron) : Perform transitive closure.
+    // TODO(user) : Perform transitive closure.
     substitutions_[left_var] = Offset(right_var, right_offset);
   }
 
@@ -252,7 +252,7 @@ class RowConstraint : public ArithmeticConstraint {
   virtual ~RowConstraint() {}
 
   void AddTerm(int var_index, int64 coefficient) {
-    // TODO(lperron): Check not present.
+    // TODO(user): Check not present.
     coefficients_[var_index] = coefficient;
   }
 

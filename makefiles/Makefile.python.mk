@@ -150,7 +150,7 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(GEN_DIR)/constraint_solver/search_limit.pb.h
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/constraint_solver$Spython$Srouting.swig
 
-# TODO(lperron): Support pywraprouting as well.
+# TODO(user): Support pywraprouting as well.
 
 $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc: $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py
 
