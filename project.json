@@ -1,0 +1,34 @@
+{
+  "version": "4.2.3790",
+  "buildOptions": {
+    "debugType": "portable",
+    "emitEntryPoint": true
+  },
+  "dependencies": {
+    "Google.Protobuf": "3.0.0"
+  },
+  "buildOptions": {
+    "compile": {
+      "include": ["./src/com/google/ortools/util/*.cs", "./src/gen/com/google/ortools/linearsolver/*.cs", "./src/com/google/ortools/linearsolver/*.cs", "./src/gen/com/google/ortools/constraintsolver/*.cs", "./src/com/google/ortools/constraintsolver/*.cs", "./src/com/google/ortools/algorithms/*.cs", "./src/gen/com/google/ortools/algorithms/*.cs", "./src/gen/com/google/ortools/graph/*.cs", "./src/gen/com/google/ortools/CommonAssemblyAttributes.cs"]
+    }
+  },
+  "frameworks": {
+    "dotnet": {
+      "dependencies": {
+        "System.Runtime.InteropServices": "4.0.0"
+      }
+    },
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+         "type": "platform",
+         "version": "1.0.0"
+        }
+      }
+    }
+  }
+}
+
+
+
+
