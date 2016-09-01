@@ -104,7 +104,7 @@ endif
 
 # pywrapcp
 
-pycp: $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py
+pycp: $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX)
 
 $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: $(SRC_DIR)/constraint_solver/search_limit.proto
 	$(COPY) $(SRC_DIR)$Sconstraint_solver$Ssearch_limit.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
@@ -147,7 +147,8 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 		$(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py \
 		$(GEN_DIR)/constraint_solver/assignment.pb.h \
 		$(GEN_DIR)/constraint_solver/model.pb.h \
-		$(GEN_DIR)/constraint_solver/search_limit.pb.h
+		$(GEN_DIR)/constraint_solver/search_limit.pb.h \
+		$(CP_LIB_OBJS)
 	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/constraint_solver$Spython$Srouting.swig
 
 # TODO(user): Support pywraprouting as well.
