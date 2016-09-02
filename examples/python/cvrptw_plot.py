@@ -638,12 +638,15 @@ def main():
     # Setting first solution heuristic (cheapest addition).
     parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
-    # Disabling Large Neighborhood Search, comment out to activate it.
-#    parameters.no_lns = False
-#    parameters.no_tsp = True
+    # Disabling Large Neighborhood Search, (this is the default behaviour)
+    parameters.local_search_operators.use_path_lns = False
+    parameters.local_search_operators.use_inactive_lns = False
+    # Routing: forbids use of TSPOpt neighborhood, 
+    parameters.local_search_operators.use_tsp_opt = False
+
     parameters.time_limit_ms = 10 * 1000  # 10 seconds
     parameters.use_light_propagation = False
-#    parameters.log_search = True
+    # parameters.log_search = True
 
 
     # Set the cost function (distance callback) for each arc, homogenious for
