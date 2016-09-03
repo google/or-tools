@@ -16,7 +16,7 @@ using Google.OrTools.ConstraintSolver;
 
 public class CsTestCpOperator
 {
-  // TODO(lperron): Add proper tests.
+  // TODO(user): Add proper tests.
 
   static int error_count_ = 0;
 

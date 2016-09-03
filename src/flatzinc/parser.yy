@@ -82,7 +82,7 @@ struct VariableRefOrValueArray {
 };
 
 // Class needed to pass information from the lexer to the parser.
-// TODO(lperron): Use std::unique_ptr<std::vector< >> to ease memory management.
+// TODO(user): Use std::unique_ptr<std::vector< >> to ease memory management.
 struct LexerInfo {
   int64 integer_value;
   double double_value;
@@ -159,7 +159,7 @@ bool AreAllSingleton(const std::vector<FzDomain>& domains) {
 // Array in flatzinc are 1 based. We use this trivial wrapper for all flatzinc
 // arrays.
 template<class T> const T& FzLookup(const std::vector<T>& v, int index) {
-  // TODO(lperron): replace this by a macro for better logging.
+  // TODO(user): replace this by a macro for better logging.
   CHECK_GE(index, 1);
   CHECK_LE(index, v.size());
   return v[index - 1];
@@ -227,7 +227,7 @@ predicates:
 | predicates error ';' { yyerrok; }  // Minimal error recovery.
 | /* empty */
 
-// TODO(lperron): Implement better error recovery.
+// TODO(user): Implement better error recovery.
 
 predicate:
   PREDICATE IDENTIFIER '(' predicate_arguments ')'
@@ -269,7 +269,7 @@ variable_or_constant_declaration:
 
 
   if (!assignment.IsSingleton()) {
-    // TODO(lperron): Check that the assignment is included in the domain.
+    // TODO(user): Check that the assignment is included in the domain.
     context->domain_map[identifier] = assignment;
   } else {
     const int64 value = assignment.values.front();
@@ -288,7 +288,7 @@ variable_or_constant_declaration:
   const std::vector<int64>* const assignments = $14;
   CHECK(assignments != nullptr);
   CHECK_EQ(num_constants, assignments->size());
-  // TODO(lperron): CHECK all values within domain.
+  // TODO(user): CHECK all values within domain.
   context->integer_array_map[identifier] = *assignments;
   delete assignments;
   delete annotations;
@@ -317,7 +317,7 @@ variable_or_constant_declaration:
 
   if (!AreAllSingleton(*assignments)) {
     context->domain_array_map[identifier] = *assignments;
-    // TODO(lperron): check that all assignments are included in the domain.
+    // TODO(user): check that all assignments are included in the domain.
   } else {
     std::vector<int64> values(num_constants);
     for (int i = 0; i < num_constants; ++i) {
@@ -503,8 +503,8 @@ set_domain:
 }
 
 float_domain:
-  FLOAT { $$ = FzDomain::AllInt64(); }  // TODO(lperron): implement floats.
-| DVALUE DOTDOT DVALUE { $$ = FzDomain::AllInt64(); }  // TODO(lperron): floats.
+  FLOAT { $$ = FzDomain::AllInt64(); }  // TODO(user): implement floats.
+| DVALUE DOTDOT DVALUE { $$ = FzDomain::AllInt64(); }  // TODO(user): floats.
 
 
 domain:
@@ -532,7 +532,7 @@ const_literal:
   delete $2;
 }
 | '{' '}' { $$ = FzDomain::EmptyDomain(); }
-| DVALUE { $$ = FzDomain::AllInt64(); }  // TODO(lperron): floats.
+| DVALUE { $$ = FzDomain::AllInt64(); }  // TODO(user): floats.
 | IDENTIFIER { $$ = FzDomain::Singleton(FindOrDie(context->integer_map, $1)); }
 | IDENTIFIER '[' IVALUE ']' {
   $$ = FzDomain::Singleton(
