@@ -23,6 +23,9 @@ ifeq ("$(PYTHON_VERSION)","35")
   SWIG_PYTHON3_FLAG=-py3 -DPY3
 endif
 
+
+OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$Ssrc$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
+
 # Main target
 python: pyinit pycp pyalgorithms pygraph pylp
 
@@ -204,10 +207,10 @@ endif
 rpy: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(EX_DIR)/python/$(EX).py
 ifeq ($(SYSTEM),win)
 	@echo Running python$S$(EX).py
-	@set PYTHONPATH=$(OR_ROOT_FULL)\\src && $(WINDOWS_PYTHON_PATH)$Spython $(EX_DIR)/python$S$(EX).py $(ARGS)
+	@set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) && $(WINDOWS_PYTHON_PATH)$Spython $(EX_DIR)/python$S$(EX).py $(ARGS)
 else
 	@echo Running python$S$(EX).py
-	@PYTHONPATH=$(OR_ROOT_FULL)/src python$(PYTHON_VERSION) $(EX_DIR)/python$S$(EX).py $(ARGS)
+	@PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python$S$(EX).py $(ARGS)
 endif
 
 

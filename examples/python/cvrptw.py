@@ -32,7 +32,6 @@
 
    The optimization engine uses local search to improve solutions, first
    solutions being generated using a cheapest addition heuristic.
-   Numpy and Matplotlib are required for the problem creation and display.
 
 """
 
