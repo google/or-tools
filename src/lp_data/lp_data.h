@@ -64,6 +64,12 @@ class LinearProgram {
   // By default, the column bounds will be [0, infinity).
   ColIndex CreateNewVariable();
 
+  // Creates a new slack variable and returns its index. Do not use this method
+  // to create non-slack variables.
+  ColIndex CreateNewSlackVariable(bool is_integer_slack_variable,
+                                  Fractional lower_bound,
+                                  Fractional upper_bound, const std::string& name);
+
   // Creates a new constraint and returns its index.
   // By default, the constraint bounds will be [0, 0].
   RowIndex CreateNewConstraint();
@@ -317,15 +323,15 @@ class LinearProgram {
   //      Entries in column (Max / average / std, dev.): 4 / 2.59 / 0.96
   std::string GetPrettyNonZeroStats() const;
 
-  // Adds slack variables to the problem for all rows. The new slack variables
-  // have bounds set to opposite of the bounds of the corresponding constraint,
-  // and changes all constraints to equality constraints with both bounds set to
-  // 0.0. If a constraint uses only integer variables and all their coefficients
-  // are integer, it will mark the slack variable as integer too.
+  // Adds slack variables to the problem for all rows which don't have slack
+  // variables. The new slack variables have bounds set to opposite of the
+  // bounds of the corresponding constraint, and changes all constraints to
+  // equality constraints with both bounds set to 0.0. If a constraint uses only
+  // integer variables and all their coefficients are integer, it will mark the
+  // slack variable as integer too.
   //
-  // This method may be called only once for one linear program. It is also an
-  // error to call CreateNewVariable() or CreateNewConstraint() on a linear
-  // program on which this method was called.
+  // It is an error to call CreateNewVariable() or CreateNewConstraint() on a
+  // linear program on which this method was called.
   //
   // Note that many of the slack variables may not be useful at all, but in
   // order not to recompute the matrix from one Solve() to the next, we always
@@ -333,7 +339,7 @@ class LinearProgram {
   //
   // TODO(user): investigate the impact on the running time. It seems low
   // because we almost never iterate on fixed variables.
-  void AddSlackVariablesForAllRows(bool detect_integer_constraints);
+  void AddSlackVariablesWhereNecessary(bool detect_integer_constraints);
 
   // Returns the index of the first slack variable in the linear program.
   // Returns kInvalidCol if slack variables were not injected into the problem
@@ -404,6 +410,14 @@ class LinearProgram {
                       const DenseColumn& left_hand_sides,
                       const DenseColumn& right_hand_sides,
                       const StrictITIVector<RowIndex, std::string>& names);
+
+  // Calls the AddConstraints method. After adding the constraints it adds slack
+  // variables to the constraints.
+  void AddConstraintsWithSlackVariables(
+      const SparseMatrix& coefficients, const DenseColumn& left_hand_sides,
+      const DenseColumn& right_hand_sides,
+      const StrictITIVector<RowIndex, std::string>& names,
+      bool detect_integer_constraints_for_slack);
 
   // Swaps the content of this LinearProgram with the one passed as argument.
   // Works in O(1).
