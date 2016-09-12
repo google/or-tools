@@ -158,7 +158,21 @@ struct ThetaNode {
   // Single interval element
   explicit ThetaNode(const IntervalVar* const interval)
       : total_processing(interval->DurationMin()),
-        total_ect(interval->EndMin()) {}
+        total_ect(interval->StartMin() + interval->DurationMin()) {
+    // NOTE(user): Petr Vilim's thesis assumes that all tasks in the
+    // scheduling problem have fixed duration and that propagation already
+    // updated the bounds of the start/end times accordingly.
+    // The problem in this case is that the recursive formula for computing
+    // total_ect was only proved for the case where the duration is fixed; in
+    // our case, we use StartMin() + DurationMin() for the earliest completion
+    // time of a task, which should not break any assumptions, but may give
+    // bounds that are too loose.
+    // LOG_IF_FIRST_N(WARNING,
+    //                (interval->DurationMin() != interval->DurationMax()), 1)
+    //     << "You are using the Theta-tree on tasks having variable durations. "
+    //        "This may lead to unexpected results, such as discarding valid "
+    //        "solutions or allowing invalid ones.";
+  }
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
     total_processing = left.total_processing + right.total_processing;
@@ -171,9 +185,8 @@ struct ThetaNode {
   }
 
   std::string DebugString() const {
-    return StringPrintf("ThetaNode{ p = %" GG_LL_FORMAT "d, e = %" GG_LL_FORMAT
-                        "d }",
-                        total_processing, total_ect < 0LL ? -1LL : total_ect);
+    return StrCat("ThetaNode{ p = ", total_processing, ", e = ",
+                  total_ect < 0LL ? -1LL : total_ect, " }");
   }
 
   int64 total_processing;

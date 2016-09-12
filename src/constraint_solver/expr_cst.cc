@@ -962,22 +962,8 @@ Constraint* Solver::MakeNotBetweenCt(IntExpr* e, int64 l, int64 u) {
   // Catch one-sided constraints.
   if (emin >= l) return MakeGreater(e, u);
   if (emax <= u) return MakeLess(e, l);
-  // // Simplify the common factor, if any.
-  // TODO(user): Add back simplification.
-  // int64 coeff = ExtractExprProductCoeff(&e);
-  // if (coeff != 1) {
-  //   CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
-  //   if (coeff < 0) {
-  //     std::swap(u, l);
-  //     u = -u;
-  //     l = -l;
-  //     coeff = -coeff;
-  //   }
-  //   return MakeBetweenCt(e, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff));
-  // } else {
-    // No further reduction is possible.
-    return RevAlloc(new NotBetweenCt(this, e, l, u));
-  // }
+  // TODO(user): Add back simplification code if e is constant * other_expr.
+  return RevAlloc(new NotBetweenCt(this, e, l, u));
 }
 
 // ----- is_between_cst Constraint -----
@@ -1171,8 +1157,8 @@ Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values
   const int64 coeff = ExtractExprProductCoeff(&expr);
   if (coeff == 0) {
     return std::find(values.begin(), values.end(), 0) == values.end()
-        ? MakeFalseConstraint()
-        : MakeTrueConstraint();
+               ? MakeFalseConstraint()
+               : MakeTrueConstraint();
   }
   std::vector<int64> copied_values = values;
   // If the expression is a non-trivial product, we filter out the values that
@@ -1240,8 +1226,8 @@ Constraint* Solver::MakeNotMemberCt(IntExpr* expr,
   const int64 coeff = ExtractExprProductCoeff(&expr);
   if (coeff == 0) {
     return std::find(values.begin(), values.end(), 0) == values.end()
-        ? MakeTrueConstraint()
-        : MakeFalseConstraint();
+               ? MakeTrueConstraint()
+               : MakeFalseConstraint();
   }
   std::vector<int64> copied_values = values;
   // If the expression is a non-trivial product, we filter out the values that

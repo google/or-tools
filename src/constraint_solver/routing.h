@@ -173,6 +173,7 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/routing_parameters.pb.h"
+#include "graph/graph.h"
 #include "util/range_query_function.h"
 #include "util/sorted_interval_list.h"
 #include "base/adjustable_priority_queue-inl.h"
@@ -586,6 +587,9 @@ class RoutingModel {
   //
   // TODO(user): Remove this when model introspection detects linked nodes.
   void AddPickupAndDelivery(NodeIndex node1, NodeIndex node2) {
+    // TODO(user): Checking the depot ensures indices are up-to-date but sets
+    // the depot to node 0 if it has not been set already; find a way to avoid
+    // this.
     CheckDepot();
     pickup_delivery_pairs_.push_back(
         std::make_pair(NodeToIndex(node1), NodeToIndex(node2)));
@@ -874,6 +878,11 @@ class RoutingModel {
   }
   // Returns the number of different vehicle classes in the model.
   int GetVehicleClassesCount() const { return vehicle_classes_.size(); }
+  // Returns variable indices of nodes constrained to be on the same route.
+  const std::vector<int>& GetSameVehicleIndicesOfIndex(int node) const {
+    DCHECK(closed_);
+    return same_vehicle_groups_[same_vehicle_group_[node]];
+  }
   // Returns whether the arc from->to1 is more constrained than from->to2,
   // taking into account, in order:
   // - whether the destination node isn't an end node
@@ -1191,6 +1200,15 @@ class RoutingModel {
   int64 GetArcCostForCostClassInternal(int64 i, int64 j, int64 cost_class);
   int GetVehicleStartClass(int64 start) const;
 
+  void InitSameVehicleGroups(int number_of_groups) {
+    same_vehicle_group_.assign(Size(), 0);
+    same_vehicle_groups_.assign(number_of_groups, {});
+  }
+  void SetSameVehicleGroup(int index, int group) {
+    same_vehicle_group_[index] = group;
+    same_vehicle_groups_[group].push_back(index);
+  }
+
   // Model
   std::unique_ptr<Solver> solver_;
   int nodes_;
@@ -1236,6 +1254,10 @@ class RoutingModel {
   std::vector<ValuedNodes<int64> > same_vehicle_costs_;
   // Pickup and delivery
   NodePairs pickup_delivery_pairs_;
+  // Same vehicle group to which a node belongs.
+  std::vector<int> same_vehicle_group_;
+  // Same vehicle node groups.
+  std::vector<std::vector<int> > same_vehicle_groups_;
   // Index management
   std::vector<NodeIndex> index_to_node_;
   ITIVector<NodeIndex, int> node_to_index_;
@@ -1282,6 +1304,7 @@ class RoutingModel {
   hash_set<const VariableNodeEvaluator2*> owned_state_dependent_callbacks_;
 
   friend class RoutingDimension;
+  friend class RoutingModelInspector;
 
   DISALLOW_COPY_AND_ASSIGN(RoutingModel);
 };
@@ -1509,6 +1532,12 @@ class RoutingDimension {
   const std::string& name() const { return name_; }
 
   // Accessors.
+#ifndef SWIG
+  const ReverseArcListGraph<int, int>& GetPrecedenceGraph() const {
+    return precedence_graph_;
+  }
+#endif
+
   int64 GetSpanUpperBoundForVehicle(int vehicle) const {
     return vehicle_span_upper_bounds_[vehicle];
   }
@@ -1574,6 +1603,9 @@ class RoutingDimension {
   // "class_evaluators_" does the de-duplicated ownership.
   std::vector<RoutingModel::TransitEvaluator2> class_evaluators_;
   std::vector<int64> vehicle_to_class_;
+#ifndef SWIG
+  ReverseArcListGraph<int, int> precedence_graph_;
+#endif
 
   // The transits of a dimension may depend on its cumuls or the cumuls of
   // another dimension. There can be no cycles, except for self loops, a typical
