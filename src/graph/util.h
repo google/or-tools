@@ -22,6 +22,7 @@
 #include <string>
 
 #include "base/numbers.h"
+#include "base/hash.h"
 #include "base/split.h"
 #include "base/join.h"
 #include "base/murmur.h"
@@ -34,8 +35,7 @@ namespace operations_research {
 
 // Diagnoses whether a graph is symmetric. A graph is symmetric iff
 // for all (a, b), the number of arcs a->b is equal to the number of arcs b->a.
-// If it returns "false", the graph is certainly not symmetric; if it returns
-// "true" then the graph is most likely symmetric. It works in O(graph size).
+// Works in O(graph size).
 template <class Graph>
 bool GraphIsSymmetric(const Graph& graph);
 
@@ -46,6 +46,16 @@ bool GraphIsSymmetric(const Graph& graph);
 template <class Graph>
 util::StatusOr<Graph*> RemapGraph(const Graph& graph,
                                   const std::vector<int>& new_node_index);
+
+// Returns a std::string representation of a graph: one arc per line. Eg.:
+// "1->2\n3->3" for a graph with 4 nodes and 2 arcs (1->2) and (3->3).
+// Arcs are sorted by their tail, then by the order of OutgoingArcs().
+template <class Graph>
+std::string GraphToString(const Graph& graph);
+
+// Returns a copy of "graph", without self-arcs and duplicate arcs.
+template <class Graph>
+std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph);
 
 // Read a graph file in the simple ".g" format: the file should be a text file
 // containing only space-separated integers, whose first line is:
@@ -164,6 +174,36 @@ util::StatusOr<Graph*> RemapGraph(const Graph& old_graph,
   }
   new_graph->Build();
   return new_graph.release();
+}
+
+template <class Graph>
+std::string GraphToString(const Graph& graph) {
+  std::string out;
+  for (const typename Graph::NodeIndex node : graph.AllNodes()) {
+    for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
+      if (!out.empty()) out += '\n';
+      StrAppend(&out, node, "->", graph.Head(arc));
+    }
+  }
+  return out;
+}
+
+template <class Graph>
+std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph) {
+  std::unique_ptr<Graph> g(new Graph(graph.num_nodes(), graph.num_arcs()));
+  typedef typename Graph::ArcIndex ArcIndex;
+  typedef typename Graph::NodeIndex NodeIndex;
+  hash_set<std::pair<NodeIndex, NodeIndex>> arcs;
+  for (const NodeIndex tail : graph.AllNodes()) {
+    for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
+      const NodeIndex head = graph.Head(arc);
+      if (head != tail && arcs.insert({tail, head}).second) {
+        g->AddArc(tail, head);
+      }
+    }
+  }
+  g->Build();
+  return g;
 }
 
 template <class Graph>

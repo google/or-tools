@@ -27,15 +27,14 @@
 // anywhere, but you have to return to your start location.
 //
 // By complete we mean that the algorithm guarantees to compute the optimal
-// solution.
-// The algorithm uses dynamic programming. Its time complexity is
-// O(n * 2 ^ (n - 1)), where n is the number of nodes to be visited, and '^'
-// denotes exponentiation. Its space complexity is also O(n * 2 ^ (n - 1)).
+// solution. The algorithm uses dynamic programming. Its time complexity is
+// O(n^2 * 2^(n-1)), where n is the number of nodes to be visited, and '^'
+// denotes exponentiation. Its space complexity is O(n * 2 ^ (n - 1)).
 //
 // Note that the naive implementation of the SHPP
 // exploring all permutations without memorizing intermediate results would
 // have a complexity of (n - 1)! (factorial of (n - 1) ), which is much higher
-// than n * 2 ^ (n - 1). To convince oneself of this, just use Stirling's
+// than n^2 * 2^(n-1). To convince oneself of this, just use Stirling's
 // formula: n! ~ sqrt(2 * pi * n)*( n / exp(1)) ^ n.
 // Because of these complexity figures, the algorithm is not practical for
 // problems with more than 20 nodes.
