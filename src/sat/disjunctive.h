@@ -25,8 +25,11 @@ namespace operations_research {
 namespace sat {
 
 // Enforces a disjunctive (or no overlap) constraints on the given interval
-// variables and create a Boolean variables for all the possible precedences of
-// the form (task i is before task j).
+// variables.
+std::function<void(Model*)> Disjunctive(const std::vector<IntervalVariable>& vars);
+
+// Same as Disjunctive() but also creates a Boolean variables for all the
+// possible precedences of the form (task i is before task j).
 std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
     const std::vector<IntervalVariable>& vars);
 
@@ -39,8 +42,8 @@ class TaskSet {
   TaskSet() : optimized_restart_(0) {}
   struct Entry {
     int task;
-    int min_start;
-    int min_duration;
+    IntegerValue min_start;
+    IntegerValue min_duration;
 
     // Note that the tie-breaking is not important here.
     bool operator<(Entry other) const { return min_start < other.min_start; }
@@ -84,7 +87,7 @@ class TaskSet {
   // It is possible to behave like if one task was not in the set by setting
   // task_to_ignore to the id of this task. This returns 0 if the set is empty
   // in which case critical_index will be left unchanged.
-  int ComputeMinEnd(int task_to_ignore, int* critical_index) const;
+  IntegerValue ComputeMinEnd(int task_to_ignore, int* critical_index) const;
   const std::vector<Entry>& SortedTasks() const { return sorted_tasks_; }
 
  private:
@@ -129,22 +132,26 @@ class DisjunctiveConstraint : public PropagatorInterface {
   //      [(min-duration)       ...      (min-duration)]
   //      ^             ^                ^             ^
   //   min-start     min-end          max-start     max-end
-  int MinDuration(int t) const {
-    return duration_vars_[t] == kNoLbVar
+  IntegerValue MinDuration(int t) const {
+    return duration_vars_[t] == kNoIntegerVariable
                ? fixed_durations_[t]
-               : integer_trail_->Value(duration_vars_[t]);
+               : integer_trail_->LowerBound(duration_vars_[t]);
   }
-  int MinStart(int t) const { return integer_trail_->Value(start_vars_[t]); }
-  int MaxEnd(int t) const { return -integer_trail_->Value(minus_end_vars_[t]); }
-  int MaxStart(int t) const { return MaxEnd(t) - MinDuration(t); }
-  int MinEnd(int t) const { return MinStart(t) + MinDuration(t); }
+  IntegerValue MinStart(int t) const {
+    return integer_trail_->LowerBound(start_vars_[t]);
+  }
+  IntegerValue MaxEnd(int t) const {
+    return integer_trail_->UpperBound(end_vars_[t]);
+  }
+  IntegerValue MaxStart(int t) const { return MaxEnd(t) - MinDuration(t); }
+  IntegerValue MinEnd(int t) const { return MinStart(t) + MinDuration(t); }
 
   // Helper functions to compute the reason of a propagation.
   // Append to literal_reason_ and integer_reason_ the corresponding reason.
   void AddPresenceAndDurationReason(int t);
   void AddMinDurationReason(int t);
-  void AddMinStartReason(int t, int lower_bound);
-  void AddMaxEndReason(int t, int upper_bound);
+  void AddMinStartReason(int t, IntegerValue lower_bound);
+  void AddMaxEndReason(int t, IntegerValue upper_bound);
 
   // Checks that the interval [min_start_t, max_end_t] is larger than
   // min_duration_t. Returns false and report an conflict otherwise.
@@ -175,22 +182,25 @@ class DisjunctiveConstraint : public PropagatorInterface {
   void UpdateTaskByDecreasingMaxStart();
   void UpdateTaskByDecreasingMaxEnd();
 
-  // The LbVar of each tasks that must be considered for this constraint (note
-  // that the index is not an IntevalVariable but a new one local to this
-  // constraint). For optional tasks, we don't list the one that are already
-  // known to be absent.
-  std::vector<LbVar> start_vars_;
-  std::vector<LbVar> end_vars_;
-  std::vector<LbVar> minus_start_vars_;
-  std::vector<LbVar> minus_end_vars_;
-  std::vector<LbVar> duration_vars_;
-  std::vector<int> fixed_durations_;
+  // The IntegerVariable of each tasks that must be considered for this
+  // constraint (note that the index is not an IntevalVariable but a new one
+  // local to this constraint). For optional tasks, we don't list the one that
+  // are already known to be absent.
+  std::vector<IntegerVariable> start_vars_;
+  std::vector<IntegerVariable> end_vars_;
+  std::vector<IntegerVariable> duration_vars_;
+  std::vector<IntegerValue> fixed_durations_;
   std::vector<LiteralIndex> reason_for_presence_;
+
+  // The negation of the start/end variable so that SwitchToMirrorProblem()
+  // can do its job in O(1) instead of calling NegationOf() on each entry.
+  std::vector<IntegerVariable> minus_start_vars_;
+  std::vector<IntegerVariable> minus_end_vars_;
 
   // This is used by PrecedencePass().
   std::vector<LiteralIndex> reason_for_beeing_before_;
-  std::vector<PrecedencesPropagator::LbVarPrecedences> before_;
-  std::vector<PrecedencesPropagator::LbVarPrecedences> after_;
+  std::vector<PrecedencesPropagator::IntegerPrecedences> before_;
+  std::vector<PrecedencesPropagator::IntegerPrecedences> after_;
 
   // True for the optional tasks that are known to be present and false for the
   // one we don't know yet. The one that are known to be absent are not listed.

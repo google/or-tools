@@ -1431,7 +1431,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
     $(OBJ_DIR)/sat/integer.$O \
-    $(OBJ_DIR)/sat/integer_sum.$O \
+    $(OBJ_DIR)/sat/integer_expr.$O \
     $(OBJ_DIR)/sat/intervals.$O \
     $(OBJ_DIR)/sat/lp_utils.$O \
     $(OBJ_DIR)/sat/no_cycle.$O \
@@ -1491,7 +1491,7 @@ $(SRC_DIR)/sat/integer.h: \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/iterators.h
 
-$(SRC_DIR)/sat/integer_sum.h: \
+$(SRC_DIR)/sat/integer_expr.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/sat/sat_base.h
@@ -1625,10 +1625,10 @@ $(OBJ_DIR)/sat/integer.$O: \
     $(SRC_DIR)/base/stl_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger.$O
 
-$(OBJ_DIR)/sat/integer_sum.$O: \
-    $(SRC_DIR)/sat/integer_sum.cc \
-    $(SRC_DIR)/sat/integer_sum.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer_sum.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_sum.$O
+$(OBJ_DIR)/sat/integer_expr.$O: \
+    $(SRC_DIR)/sat/integer_expr.cc \
+    $(SRC_DIR)/sat/integer_expr.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_expr.$O
 
 $(OBJ_DIR)/sat/intervals.$O: \
     $(SRC_DIR)/sat/intervals.cc \
@@ -3024,4 +3024,3 @@ $(GEN_DIR)/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/constraint_solve
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

@@ -3384,7 +3384,7 @@ void ToMinimizationPreprocessor::RecoverSolution(
 bool AddSlackVariablesPreprocessor::Run(LinearProgram* lp,
                                         TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
-  lp->AddSlackVariablesForAllRows(true);
+  lp->AddSlackVariablesWhereNecessary(/*detect_integer_constraints=*/true);
   first_slack_col_ = lp->GetFirstSlackVariable();
   return true;
 }

@@ -19,21 +19,20 @@ namespace sat {
 IntervalVariable IntervalsRepository::CreateNewInterval() {
   const IntervalVariable task_id(start_vars_.size());
 
-  // TODO(user): clean-up the upper bound and make sure we don't have any
-  // overflow when creating task. We cannot use std::numeric_limits<int>::max()
-  // because we may add a size to this bound, and we don't want any overflow
-  // when we do that.
-  const int ub = std::numeric_limits<int>::max() / 2;
-  start_vars_.push_back(integer_trail_->AddIntegerVariable(0, ub));
-  end_vars_.push_back(integer_trail_->AddIntegerVariable(0, ub));
+  // Our interval always starts at zero.
+  // TODO(user): there is no reason for this, let the user decide.
+  const IntegerValue lb(0);
+  const IntegerValue ub(kMaxIntegerValue);
+  start_vars_.push_back(integer_trail_->AddIntegerVariable(lb, ub));
+  end_vars_.push_back(integer_trail_->AddIntegerVariable(lb, ub));
   size_vars_.push_back(kNoIntegerVariable);
-  fixed_sizes_.push_back(0);
+  fixed_sizes_.push_back(IntegerValue(0));
   is_present_.push_back(kNoLiteralIndex);
   return task_id;
 }
 
-IntervalVariable IntervalsRepository::CreateInterval(int min_size,
-                                                     int max_size) {
+IntervalVariable IntervalsRepository::CreateInterval(IntegerValue min_size,
+                                                     IntegerValue max_size) {
   CHECK_LE(min_size, max_size);
   if (min_size == max_size) {
     return CreateIntervalWithFixedSize(min_size);
@@ -41,13 +40,14 @@ IntervalVariable IntervalsRepository::CreateInterval(int min_size,
   const IntervalVariable t = CreateNewInterval();
   size_vars_.back() = integer_trail_->AddIntegerVariable(min_size, max_size);
   precedences_->AddPrecedenceWithVariableOffset(StartVar(t), EndVar(t),
-                                                LbVarOf(SizeVar(t)));
+                                                SizeVar(t));
   precedences_->AddPrecedenceWithVariableOffset(EndVar(t), StartVar(t),
-                                                MinusUbVarOf(SizeVar(t)));
+                                                NegationOf(SizeVar(t)));
   return t;
 }
 
-IntervalVariable IntervalsRepository::CreateIntervalWithFixedSize(int size) {
+IntervalVariable IntervalsRepository::CreateIntervalWithFixedSize(
+    IntegerValue size) {
   const IntervalVariable t = CreateNewInterval();
   fixed_sizes_.back() = size;
   precedences_->AddPrecedenceWithOffset(StartVar(t), EndVar(t), size);
@@ -56,11 +56,13 @@ IntervalVariable IntervalsRepository::CreateIntervalWithFixedSize(int size) {
 }
 
 IntervalVariable IntervalsRepository::CreateOptionalIntervalWithFixedSize(
-    int size, Literal is_present) {
+    IntegerValue size, Literal is_present) {
   const IntervalVariable t = CreateIntervalWithFixedSize(size);
   is_present_.back() = is_present.Index();
   precedences_->MarkIntegerVariableAsOptional(StartVar(t), is_present);
+  integer_trail_->MarkIntegerVariableAsOptional(StartVar(t), is_present);
   precedences_->MarkIntegerVariableAsOptional(EndVar(t), is_present);
+  integer_trail_->MarkIntegerVariableAsOptional(EndVar(t), is_present);
   return t;
 }
 

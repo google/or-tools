@@ -66,14 +66,14 @@ class PrecedencesPropagator : public Propagator {
   // Add a precedence relation (i1 + offset <= i2) between integer variables.
   void AddPrecedence(IntegerVariable i1, IntegerVariable i2);
   void AddPrecedenceWithOffset(IntegerVariable i1, IntegerVariable i2,
-                               int offset);
+                               IntegerValue offset);
 
   // Same as above, but the relation is only true when the given literal is.
   void AddConditionalPrecedence(IntegerVariable i1, IntegerVariable i2,
                                 Literal l);
   void AddConditionalPrecedenceWithOffset(IntegerVariable i1,
-                                          IntegerVariable i2, int offset,
-                                          Literal l);
+                                          IntegerVariable i2,
+                                          IntegerValue offset, Literal l);
 
   // Note that we currently do not support marking a variable appearing as
   // an offset_var as optional (with MarkIntegerVariableAsOptional()). We could
@@ -85,7 +85,7 @@ class PrecedencesPropagator : public Propagator {
   // TODO(user): the variable offset should probably be tested more because
   // when I wrote this, I just had a couple of problems to test this on.
   void AddPrecedenceWithVariableOffset(IntegerVariable i1, IntegerVariable i2,
-                                       LbVar offset_var);
+                                       IntegerVariable offset_var);
 
   // An optional integer variable has a special behavior:
   // - If the bounds on i cross each other, then is_present must be false.
@@ -94,14 +94,19 @@ class PrecedencesPropagator : public Propagator {
   // TODO(user): Accept a BinaryImplicationGraph* here, so that and arc
   // (tail -> head) can still propagate if tail.is_present => head.is_present.
   // Note that such propagation is only useful if the status of tail presence
-  // is still undecided. Or at least propagate if both tail and head is_present
-  // are the same literal.
+  // is still undecided. Note that we do propagate if tail and head have the
+  // same presence literal (see ArcShouldPropagate()).
+  //
+  // TODO(user): use instead integer_trail_->VariableIsOptional()? Note that the
+  // meaning is not exactly the same, because here we also do not propagate the
+  // outgoing arcs. And we need to watch the is_present variable, so we still
+  // need to call this function.
   void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_present);
 
-  // Finds all the LbVar that are "after" one of the LbVar in to_consider.
-  // Returns a vector of these precedences relation sorted by
-  // LbVarPrecedences.var so that it is efficient to find all the LbVar "before"
-  // another one.
+  // Finds all the IntegerVariable that are "after" one of the IntegerVariable
+  // in vars. Returns a vector of these precedences relation sorted by
+  // IntegerPrecedences.var so that it is efficient to find all the
+  // IntegerVariable "before" another one.
   //
   // Note that we only consider direct precedences here. Given our usage, it may
   // be better to compute the full reachability in the precedence graph, but in
@@ -110,31 +115,32 @@ class PrecedencesPropagator : public Propagator {
   // both notion should be the same since we automatically work on the
   // transitive closure.
   //
-  // Note that the LbVar in the vector are also returned in topological order
-  // for a more efficient propagation in
+  // Note that the IntegerVariable in the vector are also returned in
+  // topological order for a more efficient propagation in
   // DisjunctiveConstraint::PrecedencesPass() where this is used.
-  struct LbVarPrecedences {
-    int index;            // in to_consider.
-    LbVar var;            // An LbVar that is >= to to_consider[index].
+  struct IntegerPrecedences {
+    int index;            // in vars.
+    IntegerVariable var;  // An IntegerVariable that is >= to vars[index].
     LiteralIndex reason;  // The reaon for it to be >= or kNoLiteralIndex.
 
     // Only needed for testing.
-    bool operator==(const LbVarPrecedences& o) const {
+    bool operator==(const IntegerPrecedences& o) const {
       return index == o.index && var == o.var && reason == o.reason;
     }
   };
-  void ComputePrecedences(const std::vector<LbVar>& to_consider,
-                          std::vector<LbVarPrecedences>* output);
+  void ComputePrecedences(const std::vector<IntegerVariable>& vars,
+                          const std::vector<bool>& to_consider,
+                          std::vector<IntegerPrecedences>* output);
 
  private:
   // Information about an individual arc.
   struct ArcInfo {
-    LbVar tail_var;
-    LbVar head_var;
+    IntegerVariable tail_var;
+    IntegerVariable head_var;
 
-    int offset;
-    LbVar offset_var;         // kNoLbVar if none.
-    LiteralIndex presence_l;  // kNoLiteralIndex if none.
+    IntegerValue offset;
+    IntegerVariable offset_var;  // kNoIntegerVariable if none.
+    LiteralIndex presence_l;     // kNoLiteralIndex if none.
 
     // Used temporarily by our implementation of the Bellman-Ford algorithm. It
     // should be false at the beginning of BellmanFordTarjan().
@@ -142,20 +148,32 @@ class PrecedencesPropagator : public Propagator {
   };
 
   // Internal functions to add new precedence relations.
+  //
+  // Note that internally, we only propagate lower bounds, so each time we add
+  // an arc, we actually create two of them: one on the given variables, and one
+  // on their negation.
   void AdjustSizeFor(IntegerVariable i);
-  void AddArc(IntegerVariable tail, IntegerVariable head, int offset,
-              LbVar offset_var, LiteralIndex l);
+  void AddArc(IntegerVariable tail, IntegerVariable head, IntegerValue offset,
+              IntegerVariable offset_var, LiteralIndex l);
 
   // Helper function for a slightly more readable code.
-  LiteralIndex OptionalLiteralOf(LbVar var) const {
-    return optional_literals_[IntegerVariableOf(var)];
+  LiteralIndex OptionalLiteralOf(IntegerVariable var) const {
+    return optional_literals_[var];
   }
 
   // Enqueue a new lower bound for the variable arc.head_lb that was deduced
   // from the current value of arc.tail_lb and the offset of this arc.
-  bool EnqueueAndCheck(const ArcInfo& arc, int new_head_lb, Trail* trail);
+  bool EnqueueAndCheck(const ArcInfo& arc, IntegerValue new_head_lb,
+                       Trail* trail);
   bool PropagateMaxOffsetIfNeeded(const ArcInfo& arc, Trail* trail);
-  int ArcOffset(const ArcInfo& arc) const;
+  IntegerValue ArcOffset(const ArcInfo& arc) const;
+
+  // Returns true iff this arc should propagate. For now, this is true when:
+  // - tail node is non-optional
+  // - tail node is optional and present.
+  // - tail node is optional, its presence is unknown, and its presence literal
+  //   is the same as the one of head.
+  bool ArcShouldPropagate(const ArcInfo& arc, const Trail& trail) const;
 
   // Inspect all the optional arcs that needs inspection (to stay sparse) and
   // check if their presence literal can be propagated to false.
@@ -163,11 +181,11 @@ class PrecedencesPropagator : public Propagator {
 
   // The core algorithm implementation is split in these functions. One must
   // first call InitializeBFQueueWithModifiedNodes() that will push all the
-  // LbVar that have been modified since the last call. Then,
-  // BellmanFordTarjan() will take care of all the propagation and returns false
-  // in case of conflict. Internally, it uses DisassembleSubtree() which is the
-  // Tarjan variant to detect a possible positive cycle. Before exiting, it will
-  // call CleanUpMarkedArcsAndParents().
+  // IntegerVariable whose lower bound has been modified since the last call.
+  // Then, BellmanFordTarjan() will take care of all the propagation and returns
+  // false in case of conflict. Internally, it uses DisassembleSubtree() which
+  // is the Tarjan variant to detect a possible positive cycle. Before exiting,
+  // it will call CleanUpMarkedArcsAndParents().
   //
   // The Tarjan version of the Bellam-Ford algorithm is really nice in our
   // context because it was really easy to make it incremental. Moreover, it
@@ -187,15 +205,16 @@ class PrecedencesPropagator : public Propagator {
   // This is only meant to be used in a DCHECK() and is not optimized.
   bool NoPropagationLeft(const Trail& trail) const;
 
-  // External class needed to get the LbVar values and Enqueue new ones.
+  // External class needed to get the IntegerVariable lower bounds and Enqueue
+  // new ones.
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
   int watcher_id_;
 
   // The key to our incrementality. This will be cleared once the propagation
   // is done, and automatically updated by the integer_trail_ with all the
-  // LbVar that changed since the last clear.
-  SparseBitset<LbVar> modified_vars_;
+  // IntegerVariable that changed since the last clear.
+  SparseBitset<IntegerVariable> modified_vars_;
 
   // An arc needs to be inspected for propagation (i.e. is impacted) if:
   // - Its tail_var changed.
@@ -207,21 +226,21 @@ class PrecedencesPropagator : public Propagator {
   // whereas the second vector (impacted_potential_arcs_) list all the potential
   // arcs (the one not allways present) and is just used for propagation of the
   // arc presence literals.
-  ITIVector<LbVar, std::vector<int>> impacted_arcs_;
-  ITIVector<LbVar, std::vector<int>> impacted_potential_arcs_;
+  ITIVector<IntegerVariable, std::vector<int>> impacted_arcs_;
+  ITIVector<IntegerVariable, std::vector<int>> impacted_potential_arcs_;
 
   // Temporary vectors used by ComputePrecedences().
-  ITIVector<LbVar, int> lbvar_to_degree_;
-  ITIVector<LbVar, int> lbvar_to_last_index_;
-  struct SortedLbVar {
-    LbVar var;
-    int lower_bound;
-    bool operator<(const SortedLbVar& other) const {
+  ITIVector<IntegerVariable, int> var_to_degree_;
+  ITIVector<IntegerVariable, int> var_to_last_index_;
+  struct SortedVar {
+    IntegerVariable var;
+    IntegerValue lower_bound;
+    bool operator<(const SortedVar& other) const {
       return lower_bound < other.lower_bound;
     }
   };
-  std::vector<SortedLbVar> tmp_sorted_lbvars_;
-  std::vector<LbVarPrecedences> tmp_precedences_;
+  std::vector<SortedVar> tmp_sorted_vars_;
+  std::vector<IntegerPrecedences> tmp_precedences_;
 
   // The set of arcs that must be added to impacted_arcs_ when a literal become
   // true.
@@ -242,7 +261,7 @@ class PrecedencesPropagator : public Propagator {
   std::vector<IntegerLiteral> integer_reason_;
 
   // Temp vectors for the Bellman-Ford algorithm. The graph in which this
-  // algorithm works is in one to one correspondance with the LbVar in
+  // algorithm works is in one to one correspondance with the IntegerVariable in
   // impacted_arcs_.
   std::deque<int> bf_queue_;
   std::vector<bool> bf_in_queue_;
@@ -261,40 +280,56 @@ class PrecedencesPropagator : public Propagator {
 
 inline void PrecedencesPropagator::AddPrecedence(IntegerVariable i1,
                                                  IntegerVariable i2) {
-  AddArc(i1, i2, /*offset=*/0, /*offset_var=*/kNoLbVar, /*l=*/kNoLiteralIndex);
+  AddArc(i1, i2, /*offset=*/IntegerValue(0), /*offset_var=*/kNoIntegerVariable,
+         /*l=*/kNoLiteralIndex);
 }
 
-inline void PrecedencesPropagator::AddPrecedenceWithOffset(IntegerVariable i1,
-                                                           IntegerVariable i2,
-                                                           int offset) {
-  AddArc(i1, i2, offset, /*offset_var=*/kNoLbVar, /*l=*/kNoLiteralIndex);
+inline void PrecedencesPropagator::AddPrecedenceWithOffset(
+    IntegerVariable i1, IntegerVariable i2, IntegerValue offset) {
+  AddArc(i1, i2, offset, /*offset_var=*/kNoIntegerVariable,
+         /*l=*/kNoLiteralIndex);
 }
 
 inline void PrecedencesPropagator::AddConditionalPrecedence(IntegerVariable i1,
                                                             IntegerVariable i2,
                                                             Literal l) {
-  AddArc(i1, i2, /*offset=*/0, /*offset_var=*/kNoLbVar, l.Index());
+  AddArc(i1, i2, /*offset=*/IntegerValue(0), /*offset_var=*/kNoIntegerVariable,
+         l.Index());
 }
 
 inline void PrecedencesPropagator::AddConditionalPrecedenceWithOffset(
-    IntegerVariable i1, IntegerVariable i2, int offset, Literal l) {
-  AddArc(i1, i2, offset, /*offset_var=*/kNoLbVar, l.Index());
+    IntegerVariable i1, IntegerVariable i2, IntegerValue offset, Literal l) {
+  AddArc(i1, i2, offset, /*offset_var=*/kNoIntegerVariable, l.Index());
 }
 
 inline void PrecedencesPropagator::AddPrecedenceWithVariableOffset(
-    IntegerVariable i1, IntegerVariable i2, LbVar offset_var) {
-  AddArc(i1, i2, /*offset=*/0, offset_var, /*l=*/kNoLiteralIndex);
+    IntegerVariable i1, IntegerVariable i2, IntegerVariable offset_var) {
+  AddArc(i1, i2, /*offset=*/IntegerValue(0), offset_var, /*l=*/kNoLiteralIndex);
 }
 
 // =============================================================================
 // Model based functions.
 // =============================================================================
 
+inline std::function<void(Model*)> LowerOrEqual(IntegerVariable i1,
+                                                IntegerVariable i2) {
+  return [=](Model* model) {
+    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(i1, i2);
+  };
+}
+
+inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable i1,
+                                                  IntegerVariable i2) {
+  return [=](Model* model) {
+    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(i2, i1);
+  };
+}
+
 inline std::function<void(Model*)> ConditionalPrecedenceWithOffset(
-    IntegerVariable i1, IntegerVariable i2, int offset, Literal l) {
+    IntegerVariable i1, IntegerVariable i2, int64 offset, Literal l) {
   return [=](Model* model) {
     return model->GetOrCreate<PrecedencesPropagator>()
-        ->AddConditionalPrecedenceWithOffset(i1, i2, offset, l);
+        ->AddConditionalPrecedenceWithOffset(i1, i2, IntegerValue(offset), l);
   };
 }
 

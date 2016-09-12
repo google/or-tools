@@ -32,6 +32,9 @@
 
 DEFINE_string(input, "", "Jobshop data file name.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");
+DEFINE_bool(use_boolean_precedences, false,
+            "Whether we create Boolean variables for all the possible "
+            "precedences between tasks on the same machine, or not.");
 
 namespace {
 struct Task {
@@ -70,6 +73,9 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
 
+  // This is only used with --nouse_boolean_precedences.
+  std::vector<IntegerVariable> decision_variables;
+
   const IntegerVariable makespan = model.Add(NewIntegerVariable(0, horizon));
   std::vector<std::vector<IntervalVariable>> machine_to_intervals(num_machines);
   for (const std::vector<Task>& tasks : tasks_per_job) {
@@ -88,6 +94,7 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
       }
       const IntervalVariable interval =
           model.Add(NewIntervalWithVariableSize(min_duration, max_duration));
+      decision_variables.push_back(model.Get(StartVar(interval)));
 
       // Chain the task belonging to the same job.
       if (previous_interval != kNoIntervalVariable) {
@@ -116,19 +123,26 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
 
   // Add all the potential precedences between tasks on the same machine.
   for (int m = 0; m < num_machines; ++m) {
-    model.Add(DisjunctiveWithBooleanPrecedences(machine_to_intervals[m]));
+    if (FLAGS_use_boolean_precedences) {
+      model.Add(DisjunctiveWithBooleanPrecedences(machine_to_intervals[m]));
+    } else {
+      model.Add(Disjunctive(machine_to_intervals[m]));
+    }
   }
 
   LOG(INFO) << "#machines:" << num_machines;
   LOG(INFO) << "#jobs:" << tasks_per_job.size();
   LOG(INFO) << "#tasks:" << model.Get<IntervalsRepository>()->NumIntervals();
 
-  MinimizeIntegerVariableWithLinearScan(
-      makespan,
+  if (FLAGS_use_boolean_precedences) {
+    // We disable the lazy encoding in this case.
+    decision_variables.clear();
+  }
+  MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
+      makespan, decision_variables,
       /*feasible_solution_observer=*/
       [makespan](const Model& model) {
-        const IntegerTrail* integer_trail = model.Get<IntegerTrail>();
-        LOG(INFO) << "Makespan " << integer_trail->LowerBound(makespan);
+        LOG(INFO) << "Makespan " << model.Get(LowerBound(makespan));
       },
       &model);
 }
@@ -175,7 +189,7 @@ void LoadAndSolve() {
   }
 
   // Solve it.
-  operations_research::sat::Solve(data, horizon);
+  sat::Solve(data, horizon);
 }
 }  // namespace operations_research
 

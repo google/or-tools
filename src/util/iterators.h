@@ -37,6 +37,9 @@ namespace operations_research {
 template <typename Iterator>
 class BeginEndWrapper {
  public:
+  using const_iterator = Iterator;
+  using value_type = typename std::iterator_traits<Iterator>::value_type;
+
   BeginEndWrapper(Iterator begin, Iterator end) : begin_(begin), end_(end) {}
   Iterator begin() const { return begin_; }
   Iterator end() const { return end_; }
