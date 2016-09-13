@@ -5,6 +5,10 @@ ifeq "$(SYSTEM)" "win"
 else
 ifeq ($(PLATFORM),LINUX)
 	tools/fix_libraries_on_linux.sh
+else
+	$(COPY) tools/install_libortools_mac.sh temp/$(INSTALL_DIR)
+	chmod 775 temp/$(INSTALL_DIR)/install_libortools_mac.sh
+	cd temp/$(INSTALL_DIR) && ./install_libortools_mac.sh && rm install_libortools_mac.sh
 endif
 	cd temp && tar -c -v -z --no-same-owner -f ..$S$(INSTALL_DIR).tar.gz $(INSTALL_DIR)
 endif
@@ -104,11 +108,6 @@ else
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | tar xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v google | tar xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v sparsehash | tar xvm
-
-ifeq ($(PLATFORM),MACOSX)
-	$(COPY) tools/install_libortools_mac.sh temp/$(INSTALL_DIR)
-	chmod 775 temp/$(INSTALL_DIR)/install_libortools_mac.sh
-endif
 endif
 
 dotnet_archive:
@@ -200,9 +199,6 @@ ifeq "$(SYSTEM)" "win"
 	tools$Sunzip.exe $(INSTALL_DIR).zip -d temp
 else
 	tar -x -v -f $(INSTALL_DIR).tar.gz -C temp
-endif
-ifeq ($(PLATFORM),MACOSX)
-	cd temp$S$(INSTALL_DIR) && ./install_libortools_mac.sh
 endif
 	cd temp$S$(INSTALL_DIR) && $(MAKE) test
 	-$(DELREC) $(INSTALL_DIR)
