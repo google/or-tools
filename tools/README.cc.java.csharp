@@ -20,10 +20,6 @@ or-tools/
   objs/            <- directory containing C++ compiled object files (*.o)
   bin/             <- directory containing executable files, and .NET assemblies
 
- ##########################  Setup   ###########################
-
-On mac OS X, please run install_libortools_mac.sh
-
  ##########################  C++   ###########################
 
 Use Makefile:

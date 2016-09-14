@@ -38,16 +38,16 @@ LIB_DIR = $(OR_ROOT)lib
 
 # Unix specific part.
 ifeq ("$(SYSTEM)","unix")
+	# Defines OR_TOOLS_TOP if it is not already defined.
+	OR_TOOLS_TOP ?= $(shell pwd)
 	OS = $(shell uname -s)
+	LIB_PREFIX = -Wl,-rpath $(OR_TOOLS_TOP)/lib -L$(OR_TOOLS_TOP)/lib
+	OR_TOOLS_LIBS = $(LIB_PREFIX) -lortools
+	CVRPTW_LIBS = $(LIB_PREFIX) -lcvrptw_lib $(LIB_PREFIX) -lortools
+	DIMACS_LIBS = $(LIB_PREFIX) -ldimacs $(LIB_PREFIX) -lortools
 	ifeq ($(OS),Linux)
 		CCC = g++ -fPIC -std=c++0x
 		LD_FLAGS = -lz -lrt -lpthread
-		# Defines OR_TOOLS_TOP if it is not already defined.
-		OR_TOOLS_TOP ?= $(shell pwd)
-		LIB_PREFIX = -Wl,-rpath $(OR_TOOLS_TOP)/lib -L$(OR_TOOLS_TOP)/lib
-		OR_TOOLS_LIBS = $(LIB_PREFIX) -lortools
-		CVRPTW_LIBS = $(LIB_PREFIX) -lcvrptw_lib $(LIB_PREFIX) -lortools
-		DIMACS_LIBS = $(LIB_PREFIX) -ldimacs $(LIB_PREFIX) -lortools
 		LBITS = $(shell getconf LONG_BIT)
 		ifeq ($(LBITS),64)
 			PORT = Linux64
@@ -63,9 +63,6 @@ ifeq ("$(SYSTEM)","unix")
 	ifeq ($(OS),Darwin) # Assume Mac Os X
 		CCC = clang++ -fPIC -std=c++11
 		LD_FLAGS = -lz
-		OR_TOOLS_LIBS = -L$(OR_ROOT)lib -lortools
-		CVRPTW_LIBS = -L$(OR_ROOT)lib -lcvrptw_lib -lortools
-		DIMACS_LIBS = -L$(OR_ROOT)lib -ldimacs -lortools
 		ARCH = -DARCH_K8
 		PORT = MacOsX64
 		CSC = mcs
@@ -165,8 +162,10 @@ clean:
 	$(DEL) $(CPP_BIN_DIR)$S*
 	$(DEL) $(OBJ_DIR)$S*$O
 
-test_cc: $(CPP_BIN_DIR)/golomb$E
+test_cc: $(CPP_BIN_DIR)/golomb$E $(CPP_BIN_DIR)/cvrptw$E
 	$(CPP_BIN_DIR)$Sgolomb$E
+	$(CPP_BIN_DIR)/cvrptw$E
+
 
 test_java: EX:=Tsp
 test_java: 
