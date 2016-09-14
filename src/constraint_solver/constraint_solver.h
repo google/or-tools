@@ -1663,6 +1663,12 @@ class Solver {
                             const std::vector<IntVar*>& cumuls,
                             const std::vector<IntVar*>& slacks,
                             IndexEvaluator2 transit_evaluator);
+  // Constraint enforcing that status[i] is true iff there's a path defined on
+  // next variables from sources[i] to sinks[i].
+  // TODO(user): Only does checking on WhenBound events on next variables.
+  // Check whether more propagation is needed.
+  Constraint* MakePathConnected(std::vector<IntVar*> nexts, std::vector<int64> sources,
+                                std::vector<int64> sinks, std::vector<IntVar*> status);
   // This constraint maps the domain of 'var' onto the array of
   // variables 'vars'. That is
   // for all i in [0 .. size - 1]: vars[i] == 1 <=> var->Contains(i);

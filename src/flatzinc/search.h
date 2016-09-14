@@ -18,7 +18,8 @@
 #include "flatzinc/model.h"
 
 namespace operations_research {
-struct FzSolverParameters {
+namespace fz {
+struct FlatzincParameters {
   enum SearchType {
     DEFAULT,
     IBS,
@@ -28,7 +29,7 @@ struct FzSolverParameters {
     RANDOM_MAX,
   };
 
-  FzSolverParameters();
+  FlatzincParameters();
 
   bool all_solutions;
   bool free_search;
@@ -56,7 +57,7 @@ struct FzSolverParameters {
 //    - Create specific search objects (Objective(), Limit(), Log()).
 //    - Report solution (SatSolution(), OptimizeSolution(), FinalOutput(),
 //                       EndSearch(), BestSolution(), Interrupted()).
-class FzParallelSupportInterface {
+class ParallelSupportInterface {
  public:
   enum Type {
     UNDEF,
@@ -65,8 +66,8 @@ class FzParallelSupportInterface {
     MAXIMIZE,
   };
 
-  FzParallelSupportInterface() : num_solutions_(0) {}
-  virtual ~FzParallelSupportInterface() {}
+  ParallelSupportInterface() : num_solutions_(0) {}
+  virtual ~ParallelSupportInterface() {}
   // Initialize the interface for a given worker id.
   // In sequential mode, the worker id is always -1.
   // In parallel mode, it ranges from 0 to num_workers - 1.
@@ -113,11 +114,12 @@ class FzParallelSupportInterface {
 };
 
 // Create an interface suitable for a sequential search.
-FzParallelSupportInterface* MakeSequentialSupport(bool print_all,
-                                                  int num_solutions);
+ParallelSupportInterface* MakeSequentialSupport(bool print_all,
+                                                int num_solutions);
 // Creates an interface suitable for a multi-threaded search.
-FzParallelSupportInterface* MakeMtSupport(bool print_all, int num_solutions,
-                                          bool verbose);
+ParallelSupportInterface* MakeMtSupport(bool print_all, int num_solutions,
+                                        bool verbose);
+}  // namespace fz
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_FLATZINC_SEARCH_H_

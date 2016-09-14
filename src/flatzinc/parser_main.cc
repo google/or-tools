@@ -30,6 +30,7 @@ DEFINE_bool(statistics, false, "Print model statistics");
 DECLARE_bool(fz_logging);
 
 namespace operations_research {
+namespace fz {
 void ParseFile(const std::string& filename, bool presolve) {
   FZLOG << "Parsing " << filename << FZENDL;
   std::string problem_name(filename);
@@ -40,15 +41,15 @@ void ParseFile(const std::string& filename, bool presolve) {
   if (found != std::string::npos) {
     problem_name = problem_name.substr(found + 1);
   }
-  FzModel model(problem_name);
+  Model model(problem_name);
   CHECK(ParseFlatzincFile(filename, &model));
   if (presolve) {
-    FzPresolver presolve;
+    Presolver presolve;
     presolve.CleanUpModelForTheCpSolver(&model, /*use_sat=*/true);
     presolve.Run(&model);
   }
   if (FLAGS_statistics) {
-    FzModelStatistics stats(model);
+    ModelStatistics stats(model);
     stats.BuildStatistics();
     stats.PrintStatistics();
   }
@@ -56,6 +57,7 @@ void ParseFile(const std::string& filename, bool presolve) {
     FZLOG << model.DebugString() << FZENDL;
   }
 }
+}  // namespace fz
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
@@ -65,6 +67,6 @@ int main(int argc, char** argv) {
       "human-readable format";
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::ParseFile(FLAGS_file, FLAGS_presolve);
+  operations_research::fz::ParseFile(FLAGS_file, FLAGS_presolve);
   return 0;
 }

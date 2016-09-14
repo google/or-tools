@@ -18,6 +18,7 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/join.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "util/saturated_arithmetic.h"
@@ -1311,5 +1312,114 @@ Constraint* Solver::MakeDelayedPathCumul(const std::vector<IntVar*>& nexts,
   CHECK_EQ(nexts.size(), active.size());
   CHECK_EQ(transits.size(), nexts.size());
   return RevAlloc(new DelayedPathCumul(this, nexts, active, cumuls, transits));
+}
+
+// Constraint enforcing that status[i] is true iff there's a path defined on
+// next variables from sources[i] to sinks[i].
+namespace {
+class PathConnectedConstraint : public Constraint {
+ public:
+  PathConnectedConstraint(Solver* solver, std::vector<IntVar*> nexts,
+                          const std::vector<int64>& sources, std::vector<int64> sinks,
+                          std::vector<IntVar*> status)
+      : Constraint(solver),
+        sources_(sources.size(), -1),
+        index_to_path_(nexts.size(), -1),
+        sinks_(std::move(sinks)),
+        nexts_(std::move(nexts)),
+        status_(std::move(status)),
+        touched_(nexts_.size()) {
+    CHECK_EQ(status_.size(), sources_.size());
+    CHECK_EQ(status_.size(), sinks_.size());
+    for (int i = 0; i < status_.size(); ++i) {
+      const int64 source = sources[i];
+      sources_.SetValue(solver, i, source);
+      if (source < index_to_path_.size()) {
+        index_to_path_.SetValue(solver, source, i);
+      }
+    }
+  }
+  void Post() override {
+    for (int i = 0; i < nexts_.size(); ++i) {
+      nexts_[i]->WhenBound(MakeConstraintDemon1(
+          solver(), this, &PathConnectedConstraint::NextBound, "NextValue", i));
+    }
+    for (int i = 0; i < status_.size(); ++i) {
+      if (sources_[i] < nexts_.size()) {
+        status_[i]->SetRange(0, 1);
+      } else {
+        status_[i]->SetValue(0);
+      }
+    }
+  }
+  void InitialPropagate() override {
+    for (int i = 0; i < status_.size(); ++i) {
+      EvaluatePath(i);
+    }
+  }
+  std::string DebugString() const override {
+    std::string output = "PathConnected(";
+    std::vector<std::string> elements;
+    for (IntVar* const next : nexts_) {
+      elements.push_back(next->DebugString());
+    }
+    for (int i = 0; i < sources_.size(); ++i) {
+      elements.push_back(StrCat(sources_[i]));
+    }
+    for (int64 sink : sinks_) {
+      elements.push_back(StrCat(sink));
+    }
+    for (IntVar* const status : status_) {
+      elements.push_back(status->DebugString());
+    }
+    output += strings::Join(elements, ",") + ")";
+    return output;
+  }
+
+ private:
+  void NextBound(int index) {
+    const int path = index_to_path_[index];
+    if (path >= 0) {
+      EvaluatePath(path);
+    }
+  }
+  void EvaluatePath(int path) {
+    touched_.SparseClearAll();
+    int64 source = sources_[path];
+    const int64 end = sinks_[path];
+    while (source != end) {
+      if (source >= nexts_.size() || touched_[source]) {
+        status_[path]->SetValue(0);
+        return;
+      }
+      touched_.Set(source);
+      IntVar* const next = nexts_[source];
+      if (next->Bound()) {
+        source = next->Min();
+      } else {
+        sources_.SetValue(solver(), path, source);
+        index_to_path_.SetValue(solver(), source, path);
+        return;
+      }
+    }
+    status_[path]->SetValue(1);
+  }
+
+  RevArray<int64> sources_;
+  RevArray<int> index_to_path_;
+  const std::vector<int64> sinks_;
+  const std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> status_;
+  SparseBitset<int64> touched_;
+};
+}  // namespace
+
+Constraint* Solver::MakePathConnected(std::vector<IntVar*> nexts,
+                                      std::vector<int64> sources,
+                                      std::vector<int64> sinks,
+                                      std::vector<IntVar*> status) {
+  return RevAlloc(
+      new PathConnectedConstraint(this, std::move(nexts), std::move(sources),
+                                  std::move(sinks), std::move(status)));
 }
 }  // namespace operations_research

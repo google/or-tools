@@ -26,11 +26,11 @@
 DECLARE_bool(fz_logging);
 
 namespace operations_research {
-namespace {
+namespace fz {
 class MtOptimizeVar : public OptimizeVar {
  public:
   MtOptimizeVar(Solver* s, bool maximize, IntVar* v, int64 step,
-                FzParallelSupportInterface* support, int worker_id)
+                ParallelSupportInterface* support, int worker_id)
       : OptimizeVar(s, maximize, v, step),
         support_(support),
         worker_id_(worker_id) {}
@@ -51,13 +51,13 @@ class MtOptimizeVar : public OptimizeVar {
   }
 
  private:
-  FzParallelSupportInterface* const support_;
+  ParallelSupportInterface* const support_;
   const int worker_id_;
 };
 
 class MtCustomLimit : public SearchLimit {
  public:
-  MtCustomLimit(Solver* s, FzParallelSupportInterface* support, int worker_id)
+  MtCustomLimit(Solver* s, ParallelSupportInterface* support, int worker_id)
       : SearchLimit(s), support_(support), worker_id_(worker_id) {}
 
   virtual ~MtCustomLimit() {}
@@ -77,11 +77,11 @@ class MtCustomLimit : public SearchLimit {
   virtual SearchLimit* MakeClone() const { return nullptr; }
 
  private:
-  FzParallelSupportInterface* const support_;
+  ParallelSupportInterface* const support_;
   const int worker_id_;
 };
 
-class MtSupportInterface : public FzParallelSupportInterface {
+class MtSupportInterface : public ParallelSupportInterface {
  public:
   MtSupportInterface(bool print_all, int num_solutions, bool verbose)
       : print_all_(print_all),
@@ -231,10 +231,10 @@ class MtSupportInterface : public FzParallelSupportInterface {
   bool should_finish_;
   bool interrupted_;
 };
-}  // namespace
 
-FzParallelSupportInterface* MakeMtSupport(bool print_all, int num_solutions,
-                                          bool verbose) {
+ParallelSupportInterface* MakeMtSupport(bool print_all, int num_solutions,
+                                        bool verbose) {
   return new MtSupportInterface(print_all, num_solutions, verbose);
 }
+}  // namespace fz
 }  // namespace operations_research

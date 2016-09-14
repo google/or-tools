@@ -12,12 +12,14 @@
 // limitations under the License.
 
 #include "flatzinc/parser.h"
+
 #include <cstdio>
+
 #include "flatzinc/parser.tab.hh"
 
 // Declare external functions in the flatzinc.tab.cc generated file.
-extern int orfz_parse(operations_research::FzParserContext* parser,
-                      operations_research::FzModel* model, bool* ok,
+extern int orfz_parse(operations_research::fz::ParserContext* parser,
+                      operations_research::fz::Model* model, bool* ok,
                       void* scanner);
 extern int orfz_lex_init(void** scanner);
 extern int orfz_lex_destroy(void* scanner);
@@ -30,16 +32,17 @@ extern yy_buffer_state* orfz__scan_bytes(const char* input, size_t size,
 extern void orfz__delete_buffer(yy_buffer_state* b, void* scanner);
 
 namespace operations_research {
+namespace fz {
 // ----- public parsing API -----
 
-bool ParseFlatzincFile(const std::string& filename, FzModel* const model) {
+bool ParseFlatzincFile(const std::string& filename, Model* model) {
   // Init.
   FILE* const input = fopen(filename.c_str(), "r");
   if (input == nullptr) {
     LOG(INFO) << "Could not open file '" << filename << "'";
     return false;
   }
-  FzParserContext context;
+  ParserContext context;
   bool ok = true;
   void* scanner = nullptr;
   orfz_lex_init(&scanner);
@@ -54,9 +57,9 @@ bool ParseFlatzincFile(const std::string& filename, FzModel* const model) {
   return ok;
 }
 
-bool ParseFlatzincString(const std::string& input, FzModel* const model) {
+bool ParseFlatzincString(const std::string& input, Model* model) {
   // Init.
-  FzParserContext context;
+  ParserContext context;
   bool ok = true;
   void* scanner = nullptr;
   orfz_lex_init(&scanner);
@@ -73,4 +76,5 @@ bool ParseFlatzincString(const std::string& input, FzModel* const model) {
   }
   return ok;
 }
+}  // namespace fz
 }  // namespace operations_research

@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "flatzinc/solver.h"
 #include <string>
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -19,7 +20,6 @@
 #include "constraint_solver/constraint_solver.h"
 #include "flatzinc/model.h"
 #include "flatzinc/sat_constraint.h"
-#include "flatzinc/solver.h"
 #include "util/string_array.h"
 
 DECLARE_bool(fz_logging);
@@ -28,12 +28,13 @@ DECLARE_bool(fz_debug);
 DEFINE_bool(use_sat, true, "Use a sat solver for propagating on booleans.");
 
 namespace operations_research {
-IntExpr* FzSolver::GetExpression(const FzArgument& arg) {
+namespace fz {
+IntExpr* Solver::GetExpression(const Argument& arg) {
   switch (arg.type) {
-    case FzArgument::INT_VALUE: {
+    case Argument::INT_VALUE: {
       return solver_.MakeIntConst(arg.Value());
     }
-    case FzArgument::INT_VAR_REF: {
+    case Argument::INT_VAR_REF: {
       return Extract(arg.variables[0]);
     }
     default: {
@@ -43,19 +44,19 @@ IntExpr* FzSolver::GetExpression(const FzArgument& arg) {
   }
 }
 
-std::vector<IntVar*> FzSolver::GetVariableArray(const FzArgument& arg) {
+std::vector<IntVar*> Solver::GetVariableArray(const Argument& arg) {
   std::vector<IntVar*> result;
-  if (arg.type == FzArgument::INT_VAR_REF_ARRAY) {
+  if (arg.type == Argument::INT_VAR_REF_ARRAY) {
     result.resize(arg.variables.size());
     for (int i = 0; i < arg.variables.size(); ++i) {
       result[i] = Extract(arg.variables[i])->Var();
     }
-  } else if (arg.type == FzArgument::INT_LIST) {
+  } else if (arg.type == Argument::INT_LIST) {
     result.resize(arg.values.size());
     for (int i = 0; i < arg.values.size(); ++i) {
       result[i] = solver_.MakeIntConst(arg.values[i]);
     }
-  } else if (arg.type == FzArgument::VOID_ARGUMENT) {
+  } else if (arg.type == Argument::VOID_ARGUMENT) {
     // Nothing to do.
   } else {
     LOG(FATAL) << "Cannot extract " << arg.DebugString()
@@ -64,19 +65,19 @@ std::vector<IntVar*> FzSolver::GetVariableArray(const FzArgument& arg) {
   return result;
 }
 
-IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
+IntExpr* Solver::Extract(IntegerVariable* var) {
   IntExpr* result = FindPtrOrNull(extracted_map_, var);
   if (result != nullptr) {
     return result;
   }
-  if (var->domain.IsSingleton()) {
+  if (var->domain.HasOneValue()) {
     result = solver_.MakeIntConst(var->domain.values.back());
-  } else if (var->IsAllInt64()) {
+  } else if (var->domain.IsAllInt64()) {
     result = solver_.MakeIntVar(kint32min, kint32max, var->name);
   } else if (var->domain.is_interval) {
-    result =
-        solver_.MakeIntVar(std::max<int64>(var->Min(), kint32min),
-                           std::min<int64>(var->Max(), kint32max), var->name);
+    result = solver_.MakeIntVar(std::max<int64>(var->domain.Min(), kint32min),
+                                std::min<int64>(var->domain.Max(), kint32max),
+                                var->name);
   } else {
     result = solver_.MakeIntVar(var->domain.values, var->name);
   }
@@ -86,7 +87,7 @@ IntExpr* FzSolver::Extract(FzIntegerVariable* var) {
   return result;
 }
 
-void FzSolver::SetExtracted(FzIntegerVariable* fz_var, IntExpr* expr) {
+void Solver::SetExtracted(IntegerVariable* fz_var, IntExpr* expr) {
   CHECK(!ContainsKey(extracted_map_, fz_var));
   if (!expr->IsVar() && !fz_var->domain.is_interval) {
     FZVLOG << "  - lift to var" << FZENDL;
@@ -95,7 +96,7 @@ void FzSolver::SetExtracted(FzIntegerVariable* fz_var, IntExpr* expr) {
   extracted_map_[fz_var] = expr;
 }
 
-int64 FzSolver::SolutionValue(FzIntegerVariable* var) {
+int64 Solver::SolutionValue(IntegerVariable* var) {
   IntExpr* const result = FindPtrOrNull(extracted_map_, var);
   if (result != nullptr) {
     if (result->IsVar()) {
@@ -109,13 +110,13 @@ int64 FzSolver::SolutionValue(FzIntegerVariable* var) {
       return emin;
     }
   } else {
-    CHECK(var->domain.IsSingleton());
+    CHECK(var->domain.HasOneValue());
     return var->domain.values[0];
   }
 }
 
 // The format is fixed in the flatzinc specification.
-std::string FzSolver::SolutionString(const FzOnSolutionOutput& output, bool store) {
+std::string Solver::SolutionString(const OnSolutionOutput& output, bool store) {
   if (output.variable != nullptr) {
     const int64 value = SolutionValue(output.variable);
     if (store) {
@@ -144,7 +145,7 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output, bool stor
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
       const int64 value = SolutionValue(output.flat_variables[i]);
-      FzIntegerVariable* const var = output.flat_variables[i];
+      IntegerVariable* const var = output.flat_variables[i];
       if (output.display_as_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {
@@ -165,16 +166,16 @@ std::string FzSolver::SolutionString(const FzOnSolutionOutput& output, bool stor
 
 namespace {
 struct ConstraintWithIo {
-  FzConstraint* ct;
+  Constraint* ct;
   int index;
-  hash_set<FzIntegerVariable*> required;
+  hash_set<IntegerVariable*> required;
 
-  ConstraintWithIo(FzConstraint* cte, int i,
-                   const hash_set<FzIntegerVariable*>& defined)
+  ConstraintWithIo(Constraint* cte, int i,
+                   const hash_set<IntegerVariable*>& defined)
       : ct(cte), index(i) {
     // Collect required variables.
-    for (const FzArgument& arg : ct->arguments) {
-      for (FzIntegerVariable* const var : arg.variables) {
+    for (const Argument& arg : ct->arguments) {
+      for (IntegerVariable* const var : arg.variables) {
         if (var != cte->target_variable && ContainsKey(defined, var)) {
           required.insert(var);
         }
@@ -203,12 +204,13 @@ struct ConstraintWithIoComparator {
 };
 }  // namespace
 
-bool FzSolver::Extract() {
+bool Solver::Extract() {
   // Create the sat solver.
   if (FLAGS_use_sat) {
     FZLOG << "  - Use sat" << FZENDL;
     sat_ = MakeSatPropagator(&solver_);
-    solver_.AddConstraint(reinterpret_cast<Constraint*>(sat_));
+    solver_.AddConstraint(
+        reinterpret_cast<operations_research::Constraint*>(sat_));
   } else {
     sat_ = nullptr;
   }
@@ -219,11 +221,11 @@ bool FzSolver::Extract() {
   int extracted_variables = 0;
   int extracted_constants = 0;
   int skipped_variables = 0;
-  hash_set<FzIntegerVariable*> defined_variables;
-  for (FzIntegerVariable* const var : model_.variables()) {
+  hash_set<IntegerVariable*> defined_variables;
+  for (IntegerVariable* const var : model_.variables()) {
     if (var->defining_constraint == nullptr && var->active) {
       Extract(var);
-      if (var->domain.IsSingleton()) {
+      if (var->domain.HasOneValue()) {
         extracted_constants++;
       } else {
         extracted_variables++;
@@ -243,23 +245,23 @@ bool FzSolver::Extract() {
   FZLOG << "  - " << skipped_variables << " variables skipped" << FZENDL;
   // Parse model to store info.
   FZLOG << "Extract constraints" << FZENDL;
-  for (FzConstraint* const ct : model_.constraints()) {
+  for (Constraint* const ct : model_.constraints()) {
     if (ct->type == "all_different_int") {
-      StoreAllDifferent(ct->Arg(0).variables);
+      StoreAllDifferent(ct->arguments[0].variables);
     }
   }
   // Sort constraints such that defined variables are created before the
   // extraction of the constraints that use them.
   int index = 0;
   std::vector<ConstraintWithIo*> to_sort;
-  std::vector<FzConstraint*> sorted;
-  hash_map<const FzIntegerVariable*, std::vector<ConstraintWithIo*>> dependencies;
-  for (FzConstraint* ct : model_.constraints()) {
+  std::vector<Constraint*> sorted;
+  hash_map<const IntegerVariable*, std::vector<ConstraintWithIo*>> dependencies;
+  for (Constraint* ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
       ConstraintWithIo* const ctio =
           new ConstraintWithIo(ct, index++, defined_variables);
       to_sort.push_back(ctio);
-      for (FzIntegerVariable* const var : ctio->required) {
+      for (IntegerVariable* const var : ctio->required) {
         dependencies[var].push_back(ctio);
       }
     }
@@ -279,9 +281,9 @@ bool FzSolver::Extract() {
     if (!ctio->required.empty()) {
       // Recovery. We pick the last constraint (min number of required variable)
       // And we clean all of them (mark as non target).
-      std::vector<FzIntegerVariable*> required_vars(ctio->required.begin(),
-                                               ctio->required.end());
-      for (FzIntegerVariable* const fz_var : required_vars) {
+      std::vector<IntegerVariable*> required_vars(ctio->required.begin(),
+                                             ctio->required.end());
+      for (IntegerVariable* const fz_var : required_vars) {
         FZDLOG << "  - clean " << fz_var->DebugString() << FZENDL;
         if (fz_var->defining_constraint != nullptr) {
           fz_var->defining_constraint->target_variable = nullptr;
@@ -298,7 +300,7 @@ bool FzSolver::Extract() {
     CHECK(ctio->required.empty());
     // TODO(user): Implement recovery mode.
     sorted.push_back(ctio->ct);
-    FzIntegerVariable* const var = ctio->ct->target_variable;
+    IntegerVariable* const var = ctio->ct->target_variable;
     if (var != nullptr && ContainsKey(dependencies, var)) {
       FZDLOG << "  - clean " << var->DebugString() << FZENDL;
       for (ConstraintWithIo* const to_clean : dependencies[var]) {
@@ -307,7 +309,7 @@ bool FzSolver::Extract() {
     }
     delete ctio;
   }
-  for (FzConstraint* const ct : sorted) {
+  for (Constraint* const ct : sorted) {
     ExtractConstraint(ct);
   }
   FZLOG << "  - " << sorted.size() << " constraints parsed" << FZENDL;
@@ -327,9 +329,9 @@ bool FzSolver::Extract() {
 
   // Add domain constraints to created expressions.
   int domain_constraints = 0;
-  for (FzIntegerVariable* const var : model_.variables()) {
+  for (IntegerVariable* const var : model_.variables()) {
     if (var->defining_constraint != nullptr && var->active) {
-      const FzDomain& domain = var->domain;
+      const Domain& domain = var->domain;
       if (!domain.is_interval && domain.values.size() == 2 &&
           domain.values[0] == 0 && domain.values[1] == 1) {
         // Canonicalize domains: {0, 1} -> [0 ,, 1]
@@ -373,9 +375,9 @@ bool FzSolver::Extract() {
 
 // ----- Alldiff info support -----
 
-void FzSolver::StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs) {
+void Solver::StoreAllDifferent(const std::vector<IntegerVariable*>& diffs) {
   if (!diffs.empty()) {
-    std::vector<FzIntegerVariable*> local(diffs);
+    std::vector<IntegerVariable*> local(diffs);
     std::sort(local.begin(), local.end());
     FZVLOG << "Store AllDifferent info for [" << JoinDebugStringPtr(diffs, ", ")
            << "]" << FZENDL;
@@ -394,18 +396,18 @@ bool EqualVector(const std::vector<T>& v1, const std::vector<T>& v2) {
 }
 }  // namespace
 
-bool FzSolver::IsAllDifferent(const std::vector<FzIntegerVariable*>& diffs) const {
-  std::vector<FzIntegerVariable*> local(diffs);
+bool Solver::IsAllDifferent(const std::vector<IntegerVariable*>& diffs) const {
+  std::vector<IntegerVariable*> local(diffs);
   std::sort(local.begin(), local.end());
-  const FzIntegerVariable* const start = local.front();
+  const IntegerVariable* const start = local.front();
   if (!ContainsKey(alldiffs_, start)) return false;
-  const std::vector<std::vector<FzIntegerVariable*>>& stored =
-      FindOrDie(alldiffs_, start);
-  for (const std::vector<FzIntegerVariable*>& one_diff : stored) {
+  const std::vector<std::vector<IntegerVariable*>>& stored = FindOrDie(alldiffs_, start);
+  for (const std::vector<IntegerVariable*>& one_diff : stored) {
     if (EqualVector(local, one_diff)) {
       return true;
     }
   }
   return false;
 }
+}  // namespace fz
 }  // namespace operations_research

@@ -21,12 +21,13 @@
 namespace operations_research {
 class SatPropagator;
 
+namespace fz {
 // The main class to search for a solution in a flatzinc model.  It is
 // responsible for parsing the search annotations, setting up the
 // search state and perform the actual search.
-class FzSolver {
+class Solver {
  public:
-  explicit FzSolver(const FzModel& model)
+  explicit Solver(const Model& model)
       : model_(model),
         statistics_(model),
         solver_(model.name()),
@@ -39,34 +40,33 @@ class FzSolver {
   // parameters.
   // The parallel context (sequential, multi-threaded) is encapsulated
   // in the parallel support interface.
-  void Solve(FzSolverParameters p,
-             FzParallelSupportInterface* parallel_support);
+  void Solve(FlatzincParameters p, ParallelSupportInterface* parallel_support);
 
   // Extraction support.
   bool Extract();
 #if !defined(SWIG)
-  IntExpr* GetExpression(const FzArgument& argument);
-  std::vector<IntVar*> GetVariableArray(const FzArgument& argument);
-  IntExpr* Extract(FzIntegerVariable* var);
-  void SetExtracted(FzIntegerVariable* var, IntExpr* expr);
-  bool IsAllDifferent(const std::vector<FzIntegerVariable*>& diffs) const;
+  IntExpr* GetExpression(const Argument& argument);
+  std::vector<IntVar*> GetVariableArray(const Argument& argument);
+  IntExpr* Extract(IntegerVariable* var);
+  void SetExtracted(IntegerVariable* var, IntExpr* expr);
+  bool IsAllDifferent(const std::vector<IntegerVariable*>& diffs) const;
 #endif
 
   // Output support.
-  std::string SolutionString(const FzOnSolutionOutput& output, bool store);
+  std::string SolutionString(const OnSolutionOutput& output, bool store);
 
-  int64 SolutionValue(FzIntegerVariable* var);
+  int64 SolutionValue(IntegerVariable* var);
 
 #if !defined(SWIG)
   // Returns the cp solver.
-  Solver* solver() { return &solver_; }
+  operations_research::Solver* solver() { return &solver_; }
 
   // Returns the sat constraint.
   SatPropagator* Sat() const { return sat_; }
 #endif
 
   int NumStoredSolutions() const { return stored_values_.size(); }
-  int64 StoredValue(int solution_index, FzIntegerVariable* var) {
+  int64 StoredValue(int solution_index, IntegerVariable* var) {
     CHECK_GE(solution_index, 0);
     CHECK_LT(solution_index, stored_values_.size());
     CHECK(ContainsKey(stored_values_[solution_index], var));
@@ -74,7 +74,7 @@ class FzSolver {
   }
 
  private:
-  void ExtractConstraint(FzConstraint* ct);
+  void ExtractConstraint(Constraint* ct);
   bool HasSearchAnnotations() const;
   void ParseSearchAnnotations(bool ignore_unknown,
                               std::vector<DecisionBuilder*>* defined,
@@ -86,32 +86,32 @@ class FzSolver {
                                      const std::vector<IntVar*>& active_variables,
                                      SearchLimit* limit,
                                      std::vector<DecisionBuilder*>* builders);
-  DecisionBuilder* CreateDecisionBuilders(const FzSolverParameters& p,
+  DecisionBuilder* CreateDecisionBuilders(const FlatzincParameters& p,
                                           SearchLimit* limit);
   void CollectOutputVariables(std::vector<IntVar*>* output_variables);
   void SyncWithModel();
 
-  const FzModel& model_;
-  FzModelStatistics statistics_;
-  Solver solver_;
-  hash_map<FzIntegerVariable*, IntExpr*> extracted_map_;
+  const Model& model_;
+  ModelStatistics statistics_;
+  operations_research::Solver solver_;
+  hash_map<IntegerVariable*, IntExpr*> extracted_map_;
   std::vector<IntVar*> active_variables_;
   hash_map<IntVar*, int> extracted_occurrences_;
-  hash_set<FzIntegerVariable*> implied_variables_;
+  hash_set<IntegerVariable*> implied_variables_;
   std::string search_name_;
   IntVar* objective_var_;
   OptimizeVar* objective_monitor_;
   // Alldiff info before extraction
-  void StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs);
-  hash_map<const FzIntegerVariable*, std::vector<std::vector<FzIntegerVariable*>>>
-      alldiffs_;
+  void StoreAllDifferent(const std::vector<IntegerVariable*>& diffs);
+  hash_map<const IntegerVariable*, std::vector<std::vector<IntegerVariable*>>> alldiffs_;
   // Sat constraint.
   SatPropagator* sat_;
   // Default Search Phase (to get stats).
   DecisionBuilder* default_phase_;
   // Stored solutions.
-  std::vector<hash_map<FzIntegerVariable*, int64>> stored_values_;
+  std::vector<hash_map<IntegerVariable*, int64>> stored_values_;
 };
+}  // namespace fz
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_FLATZINC_SOLVER_H_

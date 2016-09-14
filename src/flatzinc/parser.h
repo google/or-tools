@@ -19,8 +19,10 @@
 #include "flatzinc/model.h"
 
 namespace operations_research {
+namespace fz {
 // Public parsing API.
-bool ParseFlatzincFile(const std::string& filename, FzModel* const model);
-bool ParseFlatzincString(const std::string& input, FzModel* const model);
+bool ParseFlatzincFile(const std::string& filename, Model* model);
+bool ParseFlatzincString(const std::string& input, Model* model);
+}  // namespace fz
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_PARSER_H_

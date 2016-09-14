@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "flatzinc/search.h"
 #include <iostream>  // NOLINT
 #include <string>
 #include "base/integral_types.h"
@@ -21,7 +22,6 @@
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "flatzinc/model.h"
-#include "flatzinc/search.h"
 #include "flatzinc/solver.h"
 
 DECLARE_bool(fz_logging);
@@ -29,15 +29,15 @@ DECLARE_bool(fz_verbose);
 
 namespace operations_research {
 extern std::string DefaultPhaseStatString(DecisionBuilder* db);
-
+namespace fz {
 namespace {
 // The Flatzinc SearchLog is just like a regular SearchLog, except
-// that it uses stdout instead of LOG(INFO).
-class FzLog : public SearchLog {
+// that it uses stdout with a "%% " prefix instead of LOG(INFO).
+class Log : public SearchLog {
  public:
-  FzLog(Solver* s, OptimizeVar* obj, int period)
+  Log(operations_research::Solver* s, OptimizeVar* obj, int period)
       : SearchLog(s, obj, nullptr, nullptr, period) {}
-  virtual ~FzLog() {}
+  virtual ~Log() {}
 
  protected:
   virtual void OutputLine(const std::string& line) {
@@ -47,10 +47,10 @@ class FzLog : public SearchLog {
 
 static bool ControlC = false;
 
-class FzInterrupt : public SearchLimit {
+class Interrupt : public SearchLimit {
  public:
-  FzInterrupt(Solver* const solver) : SearchLimit(solver) {}
-  virtual ~FzInterrupt() {}
+  Interrupt(operations_research::Solver* const solver) : SearchLimit(solver) {}
+  virtual ~Interrupt() {}
 
   virtual bool Check() { return ControlC; }
 
@@ -59,21 +59,9 @@ class FzInterrupt : public SearchLimit {
   virtual void Copy(const SearchLimit* const limit) {}
 
   virtual SearchLimit* MakeClone() const {
-    return solver()->RevAlloc(new FzInterrupt(solver()));
+    return solver()->RevAlloc(new Interrupt(solver()));
   }
 };
-
-// Flatten Search annotations.
-void FlattenAnnotations(const FzAnnotation& ann, std::vector<FzAnnotation>* out) {
-  if (ann.type == FzAnnotation::ANNOTATION_LIST ||
-      ann.IsFunctionCallWithIdentifier("seq_search")) {
-    for (const FzAnnotation& inner : ann.annotations) {
-      FlattenAnnotations(inner, out);
-    }
-  } else {
-    out->push_back(ann);
-  }
-}
 
 // Comparison helpers. This one sorts in a decreasing way.
 struct VarDegreeIndexSize {
@@ -120,12 +108,12 @@ void SortVariableByDegree(const std::vector<int>& occurrences, bool use_size,
 }
 
 // Report memory usage in a nice way.
-std::string FzMemoryUsage() {
+std::string MemoryUsage() {
   static const int64 kDisplayThreshold = 2;
   static const int64 kKiloByte = 1024;
   static const int64 kMegaByte = kKiloByte * kKiloByte;
   static const int64 kGigaByte = kMegaByte * kKiloByte;
-  const int64 memory_usage = Solver::MemoryUsage();
+  const int64 memory_usage = operations_research::Solver::MemoryUsage();
   if (memory_usage > kDisplayThreshold * kGigaByte) {
     return StringPrintf("%.2lf GB", memory_usage * 1.0 / kGigaByte);
   } else if (memory_usage > kDisplayThreshold * kMegaByte) {
@@ -137,9 +125,20 @@ std::string FzMemoryUsage() {
   }
 }
 
+// Flatten Search annotations.
+void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out) {
+  if (ann.type == Annotation::ANNOTATION_LIST ||
+      ann.IsFunctionCallWithIdentifier("seq_search")) {
+    for (const Annotation& inner : ann.annotations) {
+      FlattenAnnotations(inner, out);
+    }
+  } else {
+    out->push_back(ann);
+  }
+}
 }  // namespace
 
-FzSolverParameters::FzSolverParameters()
+FlatzincParameters::FlatzincParameters()
     : all_solutions(false),
       free_search(false),
       last_conflict(false),
@@ -157,35 +156,35 @@ FzSolverParameters::FzSolverParameters()
       time_limit_in_ms(0),
       search_type(MIN_SIZE) {}
 
-void MarkComputedVariables(FzConstraint* ct,
-                           hash_set<FzIntegerVariable*>* marked) {
+void MarkComputedVariables(Constraint* ct, hash_set<IntegerVariable*>* marked) {
   const std::string& id = ct->type;
   if (id == "global_cardinality") {
     FZVLOG << "  - marking " << ct->DebugString() << FZENDL;
-    for (FzIntegerVariable* const var : ct->Arg(2).variables) {
+    for (IntegerVariable* const var : ct->arguments[2].variables) {
       marked->insert(var);
     }
   }
 
   if (id == "array_var_int_element" && ct->target_variable == nullptr) {
     FZVLOG << "  - marking " << ct->DebugString() << FZENDL;
-    marked->insert(ct->Arg(2).Var());
+    marked->insert(ct->arguments[2].Var());
   }
 
-  if (id == "maximum_int" && ct->Arg(0).IsVariable() &&
+  if (id == "maximum_int" && ct->arguments[0].IsVariable() &&
       ct->target_variable == nullptr) {
-    marked->insert(ct->Arg(0).Var());
+    marked->insert(ct->arguments[0].Var());
   }
 
-  if (id == "minimum_int" && ct->Arg(0).IsVariable() &&
+  if (id == "minimum_int" && ct->arguments[0].IsVariable() &&
       ct->target_variable == nullptr) {
-    marked->insert(ct->Arg(0).Var());
+    marked->insert(ct->arguments[0].Var());
   }
 
   if (id == "int_lin_eq" && ct->target_variable == nullptr) {
-    const std::vector<int64>& array_coefficients = ct->Arg(0).values;
+    const std::vector<int64>& array_coefficients = ct->arguments[0].values;
     const int size = array_coefficients.size();
-    const std::vector<FzIntegerVariable*>& array_variables = ct->Arg(1).variables;
+    const std::vector<IntegerVariable*>& array_variables =
+        ct->arguments[1].variables;
     bool todo = true;
     if (size == 0) {
       return;
@@ -255,31 +254,31 @@ void MarkComputedVariables(FzConstraint* ct,
   }
 }
 
-void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
-                                      std::vector<DecisionBuilder*>* defined,
-                                      std::vector<IntVar*>* defined_variables,
-                                      std::vector<IntVar*>* active_variables,
-                                      std::vector<int>* defined_occurrences,
-                                      std::vector<int>* active_occurrences) {
-  std::vector<FzAnnotation> flat_annotations;
-  for (const FzAnnotation& ann : model_.search_annotations()) {
+void Solver::ParseSearchAnnotations(bool ignore_unknown,
+                                    std::vector<DecisionBuilder*>* defined,
+                                    std::vector<IntVar*>* defined_variables,
+                                    std::vector<IntVar*>* active_variables,
+                                    std::vector<int>* defined_occurrences,
+                                    std::vector<int>* active_occurrences) {
+  std::vector<Annotation> flat_annotations;
+  for (const Annotation& ann : model_.search_annotations()) {
     FlattenAnnotations(ann, &flat_annotations);
   }
 
   FZLOG << "  - parsing search annotations" << std::endl;
   hash_set<IntVar*> added;
-  for (const FzAnnotation& ann : flat_annotations) {
+  for (const Annotation& ann : flat_annotations) {
     FZLOG << "  - parse " << ann.DebugString() << FZENDL;
     if (ann.IsFunctionCallWithIdentifier("int_search")) {
-      const std::vector<FzAnnotation>& args = ann.annotations;
-      const FzAnnotation& vars = args[0];
+      const std::vector<Annotation>& args = ann.annotations;
+      const Annotation& vars = args[0];
       std::vector<IntVar*> int_vars;
       std::vector<int> occurrences;
-      std::vector<FzIntegerVariable*> fz_vars;
-      vars.GetAllIntegerVariables(&fz_vars);
-      for (FzIntegerVariable* const fz_var : fz_vars) {
+      std::vector<IntegerVariable*> fz_vars;
+      vars.AppendAllIntegerVariables(&fz_vars);
+      for (IntegerVariable* const fz_var : fz_vars) {
         IntVar* const to_add = Extract(fz_var)->Var();
-        const int occ = statistics_.VariableOccurrences(fz_var);
+        const int occ = statistics_.NumVariableOccurrences(fz_var);
         if (!ContainsKey(added, to_add) && !to_add->Bound()) {
           added.insert(to_add);
           int_vars.push_back(to_add);
@@ -288,63 +287,65 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
           defined_occurrences->push_back(occ);
         }
       }
-      const FzAnnotation& choose = args[1];
-      Solver::IntVarStrategy str = Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
+      const Annotation& choose = args[1];
+      operations_research::Solver::IntVarStrategy str =
+          operations_research::Solver::CHOOSE_MIN_SIZE_LOWEST_MIN;
       if (choose.id == "input_order") {
-        str = Solver::CHOOSE_FIRST_UNBOUND;
+        str = operations_research::Solver::CHOOSE_FIRST_UNBOUND;
       }
       if (choose.id == "first_fail") {
-        str = Solver::CHOOSE_MIN_SIZE;
+        str = operations_research::Solver::CHOOSE_MIN_SIZE;
       }
       if (choose.id == "anti_first_fail") {
-        str = Solver::CHOOSE_MAX_SIZE;
+        str = operations_research::Solver::CHOOSE_MAX_SIZE;
       }
       if (choose.id == "smallest") {
-        str = Solver::CHOOSE_LOWEST_MIN;
+        str = operations_research::Solver::CHOOSE_LOWEST_MIN;
       }
       if (choose.id == "largest") {
-        str = Solver::CHOOSE_HIGHEST_MAX;
+        str = operations_research::Solver::CHOOSE_HIGHEST_MAX;
       }
       if (choose.id == "max_regret") {
-        str = Solver::CHOOSE_MAX_REGRET_ON_MIN;
+        str = operations_research::Solver::CHOOSE_MAX_REGRET_ON_MIN;
       }
       if (choose.id == "occurrence") {
         SortVariableByDegree(occurrences, false, &int_vars);
-        str = Solver::CHOOSE_FIRST_UNBOUND;
+        str = operations_research::Solver::CHOOSE_FIRST_UNBOUND;
       }
       if (choose.id == "most_constrained") {
         SortVariableByDegree(occurrences, false, &int_vars);
-        str = Solver::CHOOSE_MIN_SIZE;
+        str = operations_research::Solver::CHOOSE_MIN_SIZE;
       }
-      const FzAnnotation& select = args[2];
-      Solver::IntValueStrategy vstr = Solver::ASSIGN_MIN_VALUE;
+      const Annotation& select = args[2];
+      operations_research::Solver::IntValueStrategy vstr =
+          operations_research::Solver::ASSIGN_MIN_VALUE;
       if (select.id == "indomain_max") {
-        vstr = Solver::ASSIGN_MAX_VALUE;
+        vstr = operations_research::Solver::ASSIGN_MAX_VALUE;
       }
       if (select.id == "indomain_median" || select.id == "indomain_middle") {
-        vstr = Solver::ASSIGN_CENTER_VALUE;
+        vstr = operations_research::Solver::ASSIGN_CENTER_VALUE;
       }
       if (select.id == "indomain_random") {
-        vstr = Solver::ASSIGN_RANDOM_VALUE;
+        vstr = operations_research::Solver::ASSIGN_RANDOM_VALUE;
       }
       if (select.id == "indomain_split") {
-        vstr = Solver::SPLIT_LOWER_HALF;
+        vstr = operations_research::Solver::SPLIT_LOWER_HALF;
       }
       if (select.id == "indomain_reverse_split") {
-        vstr = Solver::SPLIT_UPPER_HALF;
+        vstr = operations_research::Solver::SPLIT_UPPER_HALF;
       }
       DecisionBuilder* const db = solver()->MakePhase(int_vars, str, vstr);
       defined->push_back(db);
     } else if (ann.IsFunctionCallWithIdentifier("bool_search")) {
-      const std::vector<FzAnnotation>& args = ann.annotations;
-      const FzAnnotation& vars = args[0];
+      const std::vector<Annotation>& args = ann.annotations;
+      const Annotation& vars = args[0];
       std::vector<IntVar*> bool_vars;
       std::vector<int> occurrences;
-      std::vector<FzIntegerVariable*> fz_vars;
-      vars.GetAllIntegerVariables(&fz_vars);
-      for (FzIntegerVariable* const fz_var : fz_vars) {
+      std::vector<IntegerVariable*> fz_vars;
+      vars.AppendAllIntegerVariables(&fz_vars);
+      for (IntegerVariable* const fz_var : fz_vars) {
         IntVar* const to_add = Extract(fz_var)->Var();
-        const int occ = statistics_.VariableOccurrences(fz_var);
+        const int occ = statistics_.NumVariableOccurrences(fz_var);
         if (!ContainsKey(added, to_add) && !to_add->Bound()) {
           added.insert(to_add);
           bool_vars.push_back(to_add);
@@ -353,19 +354,21 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
           defined_occurrences->push_back(occ);
         }
       }
-      const FzAnnotation& choose = args[1];
-      Solver::IntVarStrategy str = Solver::CHOOSE_FIRST_UNBOUND;
+      const Annotation& choose = args[1];
+      operations_research::Solver::IntVarStrategy str =
+          operations_research::Solver::CHOOSE_FIRST_UNBOUND;
       if (choose.id == "occurrence") {
         SortVariableByDegree(occurrences, false, &bool_vars);
-        str = Solver::CHOOSE_FIRST_UNBOUND;
+        str = operations_research::Solver::CHOOSE_FIRST_UNBOUND;
       }
-      const FzAnnotation& select = args[2];
-      Solver::IntValueStrategy vstr = Solver::ASSIGN_MAX_VALUE;
+      const Annotation& select = args[2];
+      operations_research::Solver::IntValueStrategy vstr =
+          operations_research::Solver::ASSIGN_MAX_VALUE;
       if (select.id == "indomain_min") {
-        vstr = Solver::ASSIGN_MIN_VALUE;
+        vstr = operations_research::Solver::ASSIGN_MIN_VALUE;
       }
       if (select.id == "indomain_random") {
-        vstr = Solver::ASSIGN_RANDOM_VALUE;
+        vstr = operations_research::Solver::ASSIGN_RANDOM_VALUE;
       }
       if (!bool_vars.empty()) {
         defined->push_back(solver()->MakePhase(bool_vars, str, vstr));
@@ -396,14 +399,14 @@ void FzSolver::ParseSearchAnnotations(bool ignore_unknown,
          << JoinDebugStringPtr(*active_variables, ", ") << "]" << FZENDL;
 }
 
-void FzSolver::CollectOutputVariables(std::vector<IntVar*>* out) {
-  for (const FzOnSolutionOutput& output : model_.output()) {
+void Solver::CollectOutputVariables(std::vector<IntVar*>* out) {
+  for (const OnSolutionOutput& output : model_.output()) {
     if (output.variable != nullptr) {
       if (!ContainsKey(implied_variables_, output.variable)) {
         out->push_back(Extract(output.variable)->Var());
       }
     }
-    for (FzIntegerVariable* const var : output.flat_variables) {
+    for (IntegerVariable* const var : output.flat_variables) {
       if (var->defining_constraint == nullptr &&
           !ContainsKey(implied_variables_, var)) {
         out->push_back(Extract(var)->Var());
@@ -413,7 +416,7 @@ void FzSolver::CollectOutputVariables(std::vector<IntVar*>* out) {
 }
 
 // Add completion goals to be robust to incomplete search specifications.
-void FzSolver::AddCompletionDecisionBuilders(
+void Solver::AddCompletionDecisionBuilders(
     const std::vector<IntVar*>& defined_variables,
     const std::vector<IntVar*>& active_variables, SearchLimit* limit,
     std::vector<DecisionBuilder*>* builders) {
@@ -434,14 +437,15 @@ void FzSolver::AddCompletionDecisionBuilders(
   }
   if (!secondary_vars.empty()) {
     builders->push_back(solver()->MakeSolveOnce(
-        solver()->MakePhase(secondary_vars, Solver::CHOOSE_FIRST_UNBOUND,
-                            Solver::ASSIGN_MIN_VALUE),
+        solver()->MakePhase(secondary_vars,
+                            operations_research::Solver::CHOOSE_FIRST_UNBOUND,
+                            operations_research::Solver::ASSIGN_MIN_VALUE),
         limit));
   }
 }
 
-DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
-                                                  SearchLimit* limit) {
+DecisionBuilder* Solver::CreateDecisionBuilders(const FlatzincParameters& p,
+                                                SearchLimit* limit) {
   FZLOG << "Defining search" << (p.free_search ? "  (free)" : "  (fixed)")
         << std::endl;
   // Fill builders_ with predefined search.
@@ -472,40 +476,44 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
     DefaultPhaseParameters parameters;
     DecisionBuilder* inner_builder = nullptr;
     switch (p.search_type) {
-      case FzSolverParameters::DEFAULT: {
+      case FlatzincParameters::DEFAULT: {
         if (defined.empty()) {
           SortVariableByDegree(defined_occurrences, true, &defined_variables);
-          inner_builder =
-              solver()->MakePhase(defined_variables, Solver::CHOOSE_MIN_SIZE,
-                                  Solver::ASSIGN_MIN_VALUE);
+          inner_builder = solver()->MakePhase(
+              defined_variables, operations_research::Solver::CHOOSE_MIN_SIZE,
+              operations_research::Solver::ASSIGN_MIN_VALUE);
         } else {
           inner_builder = solver()->Compose(defined);
         }
         break;
       }
-      case FzSolverParameters::IBS: {
+      case FlatzincParameters::IBS: {
         break;
       }
-      case FzSolverParameters::FIRST_UNBOUND: {
-        inner_builder =
-            solver()->MakePhase(defined_variables, Solver::CHOOSE_FIRST_UNBOUND,
-                                Solver::ASSIGN_MIN_VALUE);
-        break;
-      }
-      case FzSolverParameters::MIN_SIZE: {
-        inner_builder = solver()->MakePhase(defined_variables,
-                                            Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
-                                            Solver::ASSIGN_MIN_VALUE);
-        break;
-      }
-      case FzSolverParameters::RANDOM_MIN: {
+      case FlatzincParameters::FIRST_UNBOUND: {
         inner_builder = solver()->MakePhase(
-            defined_variables, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MIN_VALUE);
+            defined_variables,
+            operations_research::Solver::CHOOSE_FIRST_UNBOUND,
+            operations_research::Solver::ASSIGN_MIN_VALUE);
         break;
       }
-      case FzSolverParameters::RANDOM_MAX: {
+      case FlatzincParameters::MIN_SIZE: {
         inner_builder = solver()->MakePhase(
-            defined_variables, Solver::CHOOSE_RANDOM, Solver::ASSIGN_MAX_VALUE);
+            defined_variables,
+            operations_research::Solver::CHOOSE_MIN_SIZE_LOWEST_MIN,
+            operations_research::Solver::ASSIGN_MIN_VALUE);
+        break;
+      }
+      case FlatzincParameters::RANDOM_MIN: {
+        inner_builder = solver()->MakePhase(
+            defined_variables, operations_research::Solver::CHOOSE_RANDOM,
+            operations_research::Solver::ASSIGN_MIN_VALUE);
+        break;
+      }
+      case FlatzincParameters::RANDOM_MAX: {
+        inner_builder = solver()->MakePhase(
+            defined_variables, operations_research::Solver::CHOOSE_RANDOM,
+            operations_research::Solver::ASSIGN_MAX_VALUE);
       }
     }
     parameters.use_last_conflict = p.last_conflict;
@@ -527,7 +535,7 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
         DefaultPhaseParameters::SELECT_MIN_IMPACT;
     parameters.random_seed = p.random_seed;
     if (inner_builder == nullptr) {
-      CHECK_EQ(FzSolverParameters::IBS, p.search_type);
+      CHECK_EQ(FlatzincParameters::IBS, p.search_type);
       parameters.decision_builder = nullptr;
     } else {
       parameters.decision_builder = inner_builder;
@@ -542,9 +550,10 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
   } else if (model_.objective() != nullptr) {
     // The model contains an objective, but the obj_db was not built.
     IntVar* const obj_var = Extract(model_.objective())->Var();
-    obj_db = solver()->MakePhase(obj_var, Solver::CHOOSE_FIRST_UNBOUND,
-                                 model_.maximize() ? Solver::ASSIGN_MAX_VALUE
-                                                   : Solver::ASSIGN_MIN_VALUE);
+    obj_db = solver()->MakePhase(
+        obj_var, operations_research::Solver::CHOOSE_FIRST_UNBOUND,
+        model_.maximize() ? operations_research::Solver::ASSIGN_MAX_VALUE
+                          : operations_research::Solver::ASSIGN_MIN_VALUE);
     builders.push_back(obj_db);
     FZVLOG << "  - adding objective decision builder = "
            << obj_db->DebugString() << FZENDL;
@@ -559,14 +568,14 @@ DecisionBuilder* FzSolver::CreateDecisionBuilders(const FzSolverParameters& p,
   return solver()->Compose(builders);
 }
 
-void FzSolver::SyncWithModel() {
-  for (FzConstraint* const ct : model_.constraints()) {
+void Solver::SyncWithModel() {
+  for (Constraint* const ct : model_.constraints()) {
     if (ct->active) {
       MarkComputedVariables(ct, &implied_variables_);
     }
   }
 
-  for (FzIntegerVariable* const fz_var : model_.variables()) {
+  for (IntegerVariable* const fz_var : model_.variables()) {
     if (!fz_var->active || fz_var->defining_constraint != nullptr ||
         ContainsKey(implied_variables_, fz_var)) {
       continue;
@@ -576,7 +585,7 @@ void FzSolver::SyncWithModel() {
       continue;
     }
     IntVar* const var = expr->Var();
-    extracted_occurrences_[var] = statistics_.VariableOccurrences(fz_var);
+    extracted_occurrences_[var] = statistics_.NumVariableOccurrences(fz_var);
     active_variables_.push_back(var);
   }
   if (model_.objective() != nullptr) {
@@ -584,17 +593,17 @@ void FzSolver::SyncWithModel() {
   }
 }
 
-void FzSolver::Solve(FzSolverParameters p,
-                     FzParallelSupportInterface* parallel_support) {
+void Solver::Solve(FlatzincParameters p,
+                   ParallelSupportInterface* parallel_support) {
   SyncWithModel();
   SearchLimit* const limit = p.time_limit_in_ms > 0
                                  ? solver()->MakeTimeLimit(p.time_limit_in_ms)
                                  : nullptr;
 
   SearchLimit* const shadow =
-      limit == nullptr ? nullptr
-                       : solver()->MakeCustomLimit(
-                             [limit]() { return limit->Check(); });
+      limit == nullptr
+          ? nullptr
+          : solver()->MakeCustomLimit([limit]() { return limit->Check(); });
   DecisionBuilder* const db = CreateDecisionBuilders(p, shadow);
   std::vector<SearchMonitor*> monitors;
   if (model_.objective() != nullptr) {
@@ -603,23 +612,22 @@ void FzSolver::Solve(FzSolverParameters p,
     SearchMonitor* const log =
         p.use_log
             ? solver()->RevAlloc(
-                  new FzLog(solver(), objective_monitor_, p.log_period))
+                  new Log(solver(), objective_monitor_, p.log_period))
             : nullptr;
-    SearchLimit* const ctrl_c = solver()->RevAlloc(new FzInterrupt(solver()));
+    SearchLimit* const ctrl_c = solver()->RevAlloc(new Interrupt(solver()));
     monitors.push_back(log);
     monitors.push_back(objective_monitor_);
     monitors.push_back(ctrl_c);
     parallel_support->StartSearch(
-        p.worker_id, model_.maximize() ? FzParallelSupportInterface::MAXIMIZE
-                                       : FzParallelSupportInterface::MINIMIZE);
+        p.worker_id, model_.maximize() ? ParallelSupportInterface::MAXIMIZE
+                                       : ParallelSupportInterface::MINIMIZE);
   } else {
     SearchMonitor* const log =
-        p.use_log
-            ? solver()->RevAlloc(new FzLog(solver(), nullptr, p.log_period))
-            : nullptr;
+        p.use_log ? solver()->RevAlloc(new Log(solver(), nullptr, p.log_period))
+                  : nullptr;
     monitors.push_back(log);
     parallel_support->StartSearch(p.worker_id,
-                                  FzParallelSupportInterface::SATISFY);
+                                  ParallelSupportInterface::SATISFY);
   }
   // Custom limit in case of parallelism.
   monitors.push_back(parallel_support->Limit(solver(), p.worker_id));
@@ -660,7 +668,7 @@ void FzSolver::Solve(FzSolverParameters p,
       solution_string.clear();
       if (!model_.output().empty()) {
         stored_values_.resize(stored_values_.size() + 1);
-        for (const FzOnSolutionOutput& output : model_.output()) {
+        for (const OnSolutionOutput& output : model_.output()) {
           solution_string.append(SolutionString(output, p.store_all_solutions));
           solution_string.append("\n");
         }
@@ -724,12 +732,12 @@ void FzSolver::Solve(FzSolverParameters p,
         StringPrintf("%%%%  solutions:            %d\n", num_solutions));
     final_output.append(StringPrintf("%%%%  constraints:          %d\n",
                                      solver()->constraints()));
-    final_output.append(
-        StringPrintf("%%%%  normal propagations:  %" GG_LL_FORMAT "d\n",
-                     solver()->demon_runs(Solver::NORMAL_PRIORITY)));
-    final_output.append(
-        StringPrintf("%%%%  delayed propagations: %" GG_LL_FORMAT "d\n",
-                     solver()->demon_runs(Solver::DELAYED_PRIORITY)));
+    final_output.append(StringPrintf(
+        "%%%%  normal propagations:  %" GG_LL_FORMAT "d\n",
+        solver()->demon_runs(operations_research::Solver::NORMAL_PRIORITY)));
+    final_output.append(StringPrintf(
+        "%%%%  delayed propagations: %" GG_LL_FORMAT "d\n",
+        solver()->demon_runs(operations_research::Solver::DELAYED_PRIORITY)));
     final_output.append(
         StringPrintf("%%%%  branches:             %" GG_LL_FORMAT "d\n",
                      solver()->branches()));
@@ -737,7 +745,7 @@ void FzSolver::Solve(FzSolverParameters p,
         StringPrintf("%%%%  failures:             %" GG_LL_FORMAT "d\n",
                      solver()->failures()));
     final_output.append(StringPrintf("%%%%  memory:               %s\n",
-                                     FzMemoryUsage().c_str()));
+                                     MemoryUsage().c_str()));
     const int64 best = parallel_support->BestSolution();
     if (model_.objective() != nullptr) {
       if (!model_.maximize() && num_solutions > 0) {
@@ -780,15 +788,16 @@ void FzSolver::Solve(FzSolverParameters p,
         model_.name().c_str(), status_string.c_str(), obj_string.c_str(),
         num_solutions, solve_time, build_time, solver()->branches(),
         solver()->failures(), solver()->constraints(),
-        solver()->demon_runs(Solver::NORMAL_PRIORITY),
-        solver()->demon_runs(Solver::DELAYED_PRIORITY), FzMemoryUsage().c_str(),
-        search_name_.c_str()));
+        solver()->demon_runs(operations_research::Solver::NORMAL_PRIORITY),
+        solver()->demon_runs(operations_research::Solver::DELAYED_PRIORITY),
+        MemoryUsage().c_str(), search_name_.c_str()));
     parallel_support->FinalOutput(p.worker_id, final_output);
   }
 }
+}  // namespace fz
 }  // namespace operations_research
 
 void interrupt_handler(int s) {
   FZLOG << "Ctrl-C caught" << FZENDL;
-  operations_research::ControlC = true;
+  operations_research::fz::ControlC = true;
 }

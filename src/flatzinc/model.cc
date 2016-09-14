@@ -31,40 +31,42 @@ DEFINE_bool(fz_debug, false,
 
 
 namespace operations_research {
-// ----- FzDomain -----
+namespace fz {
+// ----- Domain -----
 
-FzDomain FzDomain::IntegerList(std::vector<int64> values) {
-  FzDomain result;
+Domain Domain::IntegerList(std::vector<int64> values) {
+  Domain result;
   result.is_interval = false;
   result.values = std::move(values);
+  STLSortAndRemoveDuplicates(&result.values);
   result.display_as_boolean = false;
   return result;
 }
 
-FzDomain FzDomain::EmptyDomain() {
-  FzDomain result;
+Domain Domain::EmptyDomain() {
+  Domain result;
   result.is_interval = false;
   result.display_as_boolean = false;
   return result;
 }
 
-FzDomain FzDomain::AllInt64() {
-  FzDomain result;
+Domain Domain::AllInt64() {
+  Domain result;
   result.is_interval = true;
   result.display_as_boolean = false;
   return result;
 }
 
-FzDomain FzDomain::Singleton(int64 value) {
-  FzDomain result;
+Domain Domain::Singleton(int64 value) {
+  Domain result;
   result.is_interval = false;
   result.values.push_back(value);
   result.display_as_boolean = false;
   return result;
 }
 
-FzDomain FzDomain::Interval(int64 included_min, int64 included_max) {
-  FzDomain result;
+Domain Domain::Interval(int64 included_min, int64 included_max) {
+  Domain result;
   result.is_interval = true;
   result.display_as_boolean = false;
   result.values.push_back(included_min);
@@ -72,8 +74,8 @@ FzDomain FzDomain::Interval(int64 included_min, int64 included_max) {
   return result;
 }
 
-FzDomain FzDomain::Boolean() {
-  FzDomain result;
+Domain Domain::Boolean() {
+  Domain result;
   result.is_interval = false;
   result.display_as_boolean = true;
   result.values.push_back(0);
@@ -81,7 +83,7 @@ FzDomain FzDomain::Boolean() {
   return result;
 }
 
-void FzDomain::IntersectWithFzDomain(const FzDomain& other) {
+void Domain::IntersectWithDomain(const Domain& other) {
   if (other.is_interval) {
     if (!other.values.empty()) {
       IntersectWithInterval(other.values[0], other.values[1]);
@@ -104,30 +106,42 @@ void FzDomain::IntersectWithFzDomain(const FzDomain& other) {
   IntersectWithListOfIntegers(other.values);
 }
 
-void FzDomain::IntersectWithInterval(int64 imin, int64 imax) {
-  if (is_interval) {
+void Domain::IntersectWithInterval(int64 imin, int64 imax) {
+  if (imin > imax) {  // Empty interval -> empty domain.
+    is_interval = false;
+    values.clear();
+  } else if (is_interval) {
     if (values.empty()) {
       values.push_back(imin);
       values.push_back(imax);
     } else {
       values[0] = std::max(values[0], imin);
       values[1] = std::min(values[1], imax);
-    }
-  } else {
-    std::sort(values.begin(), values.end());
-    std::vector<int64> new_values;
-    new_values.reserve(values.size());
-    for (const int64 val : values) {
-      if (val > imax) break;
-      if (val >= imin && (new_values.empty() || val != new_values.back())) {
-        new_values.push_back(val);
+      if (values[0] > values[1]) {
+        values.clear();
+        is_interval = false;
+      } else if (values[0] == values[1]) {
+        is_interval = false;
+        values.pop_back();
       }
     }
-    values.swap(new_values);
+  } else {
+    if (!values.empty()) {
+      std::sort(values.begin(), values.end());
+      std::vector<int64> new_values;
+      new_values.reserve(values.size());
+      for (const int64 val : values) {
+        if (val > imax) break;
+        if (val >= imin && (new_values.empty() || val != new_values.back())) {
+          new_values.push_back(val);
+        }
+      }
+      values.swap(new_values);
+    }
   }
 }
 
-void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
+void Domain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
   if (is_interval) {
     const int64 dmin = values.empty() ? kint64min : values[0];
     const int64 dmax = values.empty() ? kint64max : values[1];
@@ -165,11 +179,28 @@ void FzDomain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
   }
 }
 
-bool FzDomain::IsSingleton() const {
+bool Domain::HasOneValue() const {
   return (values.size() == 1 || (values.size() == 2 && values[0] == values[1]));
 }
 
-bool FzDomain::Contains(int64 value) const {
+bool Domain::empty() const { return values.size() == 0 && !is_interval; }
+
+int64 Domain::Min() const {
+  CHECK(!empty());
+  return is_interval && values.empty() ? kint64min : values.front();
+}
+
+int64 Domain::Max() const {
+  CHECK(!empty());
+  return is_interval && values.empty() ? kint64max : values.back();
+}
+
+bool Domain::IsAllInt64() const {
+  return is_interval &&
+         (values.empty() || (values[0] == kint64min && values[1] == kint64max));
+}
+
+bool Domain::Contains(int64 value) const {
   if (is_interval) {
     if (values.empty()) {
       return true;
@@ -181,7 +212,7 @@ bool FzDomain::Contains(int64 value) const {
   }
 }
 
-bool FzDomain::RemoveValue(int64 value) {
+bool Domain::RemoveValue(int64 value) {
   if (is_interval) {
     if (values.empty()) {
       return false;
@@ -209,7 +240,7 @@ bool FzDomain::RemoveValue(int64 value) {
   return false;
 }
 
-std::string FzDomain::DebugString() const {
+std::string Domain::DebugString() const {
   if (is_interval) {
     if (values.empty()) {
       return "int";
@@ -218,76 +249,76 @@ std::string FzDomain::DebugString() const {
                           values[1]);
     }
   } else if (values.size() == 1) {
-    return StringPrintf("% " GG_LL_FORMAT "d", values.back());
+    return StringPrintf("%" GG_LL_FORMAT "d", values.back());
   } else {
     return StringPrintf("[%s]", strings::Join(values, ", ").c_str());
   }
 }
 
-// ----- FzArgument -----
+// ----- Argument -----
 
-FzArgument FzArgument::IntegerValue(int64 value) {
-  FzArgument result;
+Argument Argument::IntegerValue(int64 value) {
+  Argument result;
   result.type = INT_VALUE;
   result.values.push_back(value);
   return result;
 }
 
-FzArgument FzArgument::Interval(int64 imin, int64 imax) {
-  FzArgument result;
+Argument Argument::Interval(int64 imin, int64 imax) {
+  Argument result;
   result.type = INT_INTERVAL;
   result.values.push_back(imin);
   result.values.push_back(imax);
   return result;
 }
 
-FzArgument FzArgument::IntegerList(std::vector<int64> values) {
-  FzArgument result;
+Argument Argument::IntegerList(std::vector<int64> values) {
+  Argument result;
   result.type = INT_LIST;
   result.values = std::move(values);
   return result;
 }
 
-FzArgument FzArgument::DomainList(std::vector<FzDomain> domains) {
-  FzArgument result;
+Argument Argument::DomainList(std::vector<Domain> domains) {
+  Argument result;
   result.type = DOMAIN_LIST;
   result.domains = std::move(domains);
   return result;
 }
 
-FzArgument FzArgument::IntVarRef(FzIntegerVariable* const var) {
-  FzArgument result;
+Argument Argument::IntVarRef(IntegerVariable* const var) {
+  Argument result;
   result.type = INT_VAR_REF;
   result.variables.push_back(var);
   return result;
 }
 
-FzArgument FzArgument::IntVarRefArray(std::vector<FzIntegerVariable*> vars) {
-  FzArgument result;
+Argument Argument::IntVarRefArray(std::vector<IntegerVariable*> vars) {
+  Argument result;
   result.type = INT_VAR_REF_ARRAY;
   result.variables = std::move(vars);
   return result;
 }
 
-FzArgument FzArgument::VoidArgument() {
-  FzArgument result;
+Argument Argument::VoidArgument() {
+  Argument result;
   result.type = VOID_ARGUMENT;
   return result;
 }
 
-FzArgument FzArgument::FromDomain(const FzDomain& domain) {
+Argument Argument::FromDomain(const Domain& domain) {
   if (domain.is_interval) {
     if (domain.values.empty()) {
-      return FzArgument::Interval(kint64min, kint64max);
+      return Argument::Interval(kint64min, kint64max);
     } else {
-      return FzArgument::Interval(domain.values[0], domain.values[1]);
+      return Argument::Interval(domain.values[0], domain.values[1]);
     }
   } else {
-    return FzArgument::IntegerList(domain.values);
+    return Argument::IntegerList(domain.values);
   }
 }
 
-std::string FzArgument::DebugString() const {
+std::string Argument::DebugString() const {
   switch (type) {
     case INT_VALUE:
       return StringPrintf("% " GG_LL_FORMAT "d", values[0]);
@@ -315,16 +346,16 @@ std::string FzArgument::DebugString() const {
   return "";
 }
 
-bool FzArgument::IsVariable() const { return type == INT_VAR_REF; }
+bool Argument::IsVariable() const { return type == INT_VAR_REF; }
 
-bool FzArgument::HasOneValue() const {
+bool Argument::HasOneValue() const {
   return (type == INT_VALUE || (type == INT_LIST && values.size() == 1) ||
           (type == INT_INTERVAL && values[0] == values[1]) ||
-          (type == INT_VAR_REF && variables[0]->domain.IsSingleton()));
+          (type == INT_VAR_REF && variables[0]->domain.HasOneValue()));
 }
 
-int64 FzArgument::Value() const {
-  DCHECK(HasOneValue()) << "Value() called on unbound FzArgument: "
+int64 Argument::Value() const {
+  DCHECK(HasOneValue()) << "Value() called on unbound Argument: "
                         << DebugString();
   switch (type) {
     case INT_VALUE:
@@ -338,14 +369,14 @@ int64 FzArgument::Value() const {
   }
 }
 
-FzIntegerVariable* FzArgument::Var() const {
+IntegerVariable* Argument::Var() const {
   return type == INT_VAR_REF ? variables[0] : nullptr;
 }
 
-// ----- FzIntegerVariable -----
+// ----- IntegerVariable -----
 
-FzIntegerVariable::FzIntegerVariable(const std::string& name_,
-                                     const FzDomain& domain_, bool temporary_)
+IntegerVariable::IntegerVariable(const std::string& name_, const Domain& domain_,
+                                 bool temporary_)
     : name(name_),
       domain(domain_),
       defining_constraint(nullptr),
@@ -356,10 +387,10 @@ FzIntegerVariable::FzIntegerVariable(const std::string& name_,
   }
 }
 
-bool FzIntegerVariable::Merge(const std::string& other_name,
-                              const FzDomain& other_domain,
-                              FzConstraint* const other_constraint,
-                              bool other_temporary) {
+bool IntegerVariable::Merge(const std::string& other_name,
+                            const Domain& other_domain,
+                            Constraint* const other_constraint,
+                            bool other_temporary) {
   if (defining_constraint != nullptr && other_constraint != nullptr) {
     // Both are defined, we cannot merge the two variables.
     return false;
@@ -371,29 +402,11 @@ bool FzIntegerVariable::Merge(const std::string& other_name,
   if (defining_constraint == nullptr) {
     defining_constraint = other_constraint;
   }
-  domain.IntersectWithFzDomain(other_domain);
+  domain.IntersectWithDomain(other_domain);
   return true;
 }
 
-int64 FzIntegerVariable::Min() const {
-  return domain.is_interval && domain.values.empty() ? kint64min
-                                                     : domain.values.front();
-}
-
-int64 FzIntegerVariable::Max() const {
-  return domain.is_interval && domain.values.empty() ? kint64max
-                                                     : domain.values.back();
-}
-
-bool FzIntegerVariable::IsAllInt64() const {
-  return domain.is_interval &&
-         (domain.values.empty() ||
-          (domain.values[0] == kint64min && domain.values[1] == kint64max));
-}
-
-bool FzIntegerVariable::HasOneValue() const { return domain.IsSingleton(); }
-
-std::string FzIntegerVariable::DebugString() const {
+std::string IntegerVariable::DebugString() const {
   if (!domain.is_interval && domain.values.size() == 1) {
     return StringPrintf("% " GG_LL_FORMAT "d", domain.values.back());
   } else {
@@ -405,9 +418,9 @@ std::string FzIntegerVariable::DebugString() const {
   }
 }
 
-// ----- FzConstraint -----
+// ----- Constraint -----
 
-std::string FzConstraint::DebugString() const {
+std::string Constraint::DebugString() const {
   const std::string strong = strong_propagation ? "strong propagation" : "";
   const std::string presolve_status_str =
       active ? "" : (presolve_propagation_done ? "[propagated during presolve]"
@@ -421,18 +434,23 @@ std::string FzConstraint::DebugString() const {
                       strong.c_str(), presolve_status_str.c_str());
 }
 
-void FzConstraint::RemoveArg(int arg_pos) {
+void Constraint::RemoveArg(int arg_pos) {
   arguments.erase(arguments.begin() + arg_pos);
 }
 
-void FzConstraint::MarkAsInactive() {
+void Constraint::MarkAsInactive() {
   RemoveTargetVariable();
-  FZVLOG << "  - marking " << DebugString() << " as inactive" << FZENDL;
   active = false;
   // TODO(user): Reclaim arguments and memory.
 }
 
-void FzConstraint::RemoveTargetVariable() {
+void Constraint::SetAsFalse() {
+  RemoveTargetVariable();
+  type = "false_constraint";
+  arguments.clear();
+}
+
+void Constraint::RemoveTargetVariable() {
   if (target_variable != nullptr) {
     if (target_variable->defining_constraint == this) {
       FZVLOG << "  - remove target_variable from " << DebugString() << FZENDL;
@@ -445,18 +463,18 @@ void FzConstraint::RemoveTargetVariable() {
   }
 }
 
-// ----- FzAnnotation -----
+// ----- Annotation -----
 
-FzAnnotation FzAnnotation::Empty() {
-  FzAnnotation result;
+Annotation Annotation::Empty() {
+  Annotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
   result.interval_max = 0;
   return result;
 }
 
-FzAnnotation FzAnnotation::AnnotationList(std::vector<FzAnnotation> list) {
-  FzAnnotation result;
+Annotation Annotation::AnnotationList(std::vector<Annotation> list) {
+  Annotation result;
   result.type = ANNOTATION_LIST;
   result.interval_min = 0;
   result.interval_max = 0;
@@ -464,8 +482,8 @@ FzAnnotation FzAnnotation::AnnotationList(std::vector<FzAnnotation> list) {
   return result;
 }
 
-FzAnnotation FzAnnotation::Identifier(const std::string& id) {
-  FzAnnotation result;
+Annotation Annotation::Identifier(const std::string& id) {
+  Annotation result;
   result.type = IDENTIFIER;
   result.interval_min = 0;
   result.interval_max = 0;
@@ -473,9 +491,9 @@ FzAnnotation FzAnnotation::Identifier(const std::string& id) {
   return result;
 }
 
-FzAnnotation FzAnnotation::FunctionCallWithArguments(
-    const std::string& id, std::vector<FzAnnotation> args) {
-  FzAnnotation result;
+Annotation Annotation::FunctionCallWithArguments(const std::string& id,
+                                                 std::vector<Annotation> args) {
+  Annotation result;
   result.type = FUNCTION_CALL;
   result.interval_min = 0;
   result.interval_max = 0;
@@ -484,8 +502,8 @@ FzAnnotation FzAnnotation::FunctionCallWithArguments(
   return result;
 }
 
-FzAnnotation FzAnnotation::FunctionCall(const std::string& id) {
-  FzAnnotation result;
+Annotation Annotation::FunctionCall(const std::string& id) {
+  Annotation result;
   result.type = FUNCTION_CALL;
   result.interval_min = 0;
   result.interval_max = 0;
@@ -493,23 +511,23 @@ FzAnnotation FzAnnotation::FunctionCall(const std::string& id) {
   return result;
 }
 
-FzAnnotation FzAnnotation::Interval(int64 interval_min, int64 interval_max) {
-  FzAnnotation result;
+Annotation Annotation::Interval(int64 interval_min, int64 interval_max) {
+  Annotation result;
   result.type = INTERVAL;
   result.interval_min = interval_min;
   result.interval_max = interval_max;
   return result;
 }
 
-FzAnnotation FzAnnotation::IntegerValue(int64 value) {
-  FzAnnotation result;
+Annotation Annotation::IntegerValue(int64 value) {
+  Annotation result;
   result.type = INT_VALUE;
   result.interval_min = value;
   return result;
 }
 
-FzAnnotation FzAnnotation::Variable(FzIntegerVariable* const var) {
-  FzAnnotation result;
+Annotation Annotation::Variable(IntegerVariable* const var) {
+  Annotation result;
   result.type = INT_VAR_REF;
   result.interval_min = 0;
   result.interval_max = 0;
@@ -517,8 +535,8 @@ FzAnnotation FzAnnotation::Variable(FzIntegerVariable* const var) {
   return result;
 }
 
-FzAnnotation FzAnnotation::VariableList(std::vector<FzIntegerVariable*> variables) {
-  FzAnnotation result;
+Annotation Annotation::VariableList(std::vector<IntegerVariable*> variables) {
+  Annotation result;
   result.type = INT_VAR_REF_ARRAY;
   result.interval_min = 0;
   result.interval_max = 0;
@@ -526,26 +544,26 @@ FzAnnotation FzAnnotation::VariableList(std::vector<FzIntegerVariable*> variable
   return result;
 }
 
-FzAnnotation FzAnnotation::String(const std::string& str) {
-  FzAnnotation result;
+Annotation Annotation::String(const std::string& str) {
+  Annotation result;
   result.type = STRING_VALUE;
   result.interval_min = 0;
   result.interval_max = 0;
-  result.string_value_ = str;
+  result.string_value = str;
   return result;
 }
 
-void FzAnnotation::GetAllIntegerVariables(
-    std::vector<FzIntegerVariable*>* const vars) const {
-  for (const FzAnnotation& ann : annotations) {
-    ann.GetAllIntegerVariables(vars);
+void Annotation::AppendAllIntegerVariables(
+    std::vector<IntegerVariable*>* const vars) const {
+  for (const Annotation& ann : annotations) {
+    ann.AppendAllIntegerVariables(vars);
   }
   if (!variables.empty()) {
     vars->insert(vars->end(), variables.begin(), variables.end());
   }
 }
 
-std::string FzAnnotation::DebugString() const {
+std::string Annotation::DebugString() const {
   switch (type) {
     case ANNOTATION_LIST: {
       return StringPrintf("[%s]", JoinDebugString(annotations, ", ").c_str());
@@ -576,34 +594,34 @@ std::string FzAnnotation::DebugString() const {
       return result;
     }
     case STRING_VALUE: {
-      return StringPrintf("\"%s\"", string_value_.c_str());
+      return StringPrintf("\"%s\"", string_value.c_str());
     }
   }
   LOG(FATAL) << "Unhandled case in DebugString " << static_cast<int>(type);
   return "";
 }
 
-// ----- FzOnSolutionOutput -----
+// ----- OnSolutionOutput -----
 
-std::string FzOnSolutionOutput::Bounds::DebugString() const {
+std::string OnSolutionOutput::Bounds::DebugString() const {
   return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min_value,
                       max_value);
 }
 
-FzOnSolutionOutput FzOnSolutionOutput::SingleVariable(
-    const std::string& name, FzIntegerVariable* const variable,
-    bool display_as_boolean) {
-  FzOnSolutionOutput result;
+OnSolutionOutput OnSolutionOutput::SingleVariable(const std::string& name,
+                                                  IntegerVariable* variable,
+                                                  bool display_as_boolean) {
+  OnSolutionOutput result;
   result.name = name;
   result.variable = variable;
   result.display_as_boolean = display_as_boolean;
   return result;
 }
 
-FzOnSolutionOutput FzOnSolutionOutput::MultiDimensionalArray(
+OnSolutionOutput OnSolutionOutput::MultiDimensionalArray(
     const std::string& name, std::vector<Bounds> bounds,
-    std::vector<FzIntegerVariable*> flat_variables, bool display_as_boolean) {
-  FzOnSolutionOutput result;
+    std::vector<IntegerVariable*> flat_variables, bool display_as_boolean) {
+  OnSolutionOutput result;
   result.variable = nullptr;
   result.name = name;
   result.bounds = std::move(bounds);
@@ -612,14 +630,14 @@ FzOnSolutionOutput FzOnSolutionOutput::MultiDimensionalArray(
   return result;
 }
 
-FzOnSolutionOutput FzOnSolutionOutput::VoidOutput() {
-  FzOnSolutionOutput result;
+OnSolutionOutput OnSolutionOutput::VoidOutput() {
+  OnSolutionOutput result;
   result.variable = nullptr;
   result.display_as_boolean = false;
   return result;
 }
 
-std::string FzOnSolutionOutput::DebugString() const {
+std::string OnSolutionOutput::DebugString() const {
   if (variable != nullptr) {
     return StringPrintf("output_var(%s)", variable->name.c_str());
   } else {
@@ -629,54 +647,63 @@ std::string FzOnSolutionOutput::DebugString() const {
   }
 }
 
-// ----- FzModel -----
+// ----- Model -----
 
-FzModel::~FzModel() {
+Model::~Model() {
   STLDeleteElements(&variables_);
   STLDeleteElements(&constraints_);
 }
 
-FzIntegerVariable* FzModel::AddVariable(const std::string& name,
-                                        const FzDomain& domain, bool defined) {
-  FzIntegerVariable* const var = new FzIntegerVariable(name, domain, defined);
+IntegerVariable* Model::AddVariable(const std::string& name, const Domain& domain,
+                                    bool defined) {
+  IntegerVariable* const var = new IntegerVariable(name, domain, defined);
   variables_.push_back(var);
   return var;
 }
 
-void FzModel::AddConstraint(const std::string& id, std::vector<FzArgument> arguments,
-                            bool is_domain, FzIntegerVariable* const defines) {
-  FzConstraint* const constraint =
-      new FzConstraint(id, std::move(arguments), is_domain, defines);
+// TODO(user): Create only once constant per value.
+IntegerVariable* Model::AddConstant(int64 value) {
+  IntegerVariable* const var =
+      new IntegerVariable(StringPrintf("%" GG_LL_FORMAT "d", value),
+                          Domain::Singleton(value), true);
+  variables_.push_back(var);
+  return var;
+}
+
+void Model::AddConstraint(const std::string& id, std::vector<Argument> arguments,
+                          bool is_domain, IntegerVariable* defines) {
+  Constraint* const constraint =
+      new Constraint(id, std::move(arguments), is_domain, defines);
   constraints_.push_back(constraint);
   if (defines != nullptr) {
     defines->defining_constraint = constraint;
   }
 }
 
-void FzModel::AddOutput(const FzOnSolutionOutput& output) {
-  output_.push_back(output);
+void Model::AddOutput(OnSolutionOutput output) {
+  output_.push_back(std::move(output));
 }
 
-void FzModel::Satisfy(std::vector<FzAnnotation> search_annotations) {
+void Model::Satisfy(std::vector<Annotation> search_annotations) {
   objective_ = nullptr;
   search_annotations_ = std::move(search_annotations);
 }
 
-void FzModel::Minimize(FzIntegerVariable* obj,
-                       std::vector<FzAnnotation> search_annotations) {
+void Model::Minimize(IntegerVariable* obj,
+                     std::vector<Annotation> search_annotations) {
   objective_ = obj;
   maximize_ = false;
   search_annotations_ = std::move(search_annotations);
 }
 
-void FzModel::Maximize(FzIntegerVariable* obj,
-                       std::vector<FzAnnotation> search_annotations) {
+void Model::Maximize(IntegerVariable* obj,
+                     std::vector<Annotation> search_annotations) {
   objective_ = obj;
   maximize_ = true;
   search_annotations_ = std::move(search_annotations);
 }
 
-std::string FzModel::DebugString() const {
+std::string Model::DebugString() const {
   std::string output = StringPrintf("Model %s\nVariables\n", name_.c_str());
   for (int i = 0; i < variables_.size(); ++i) {
     StringAppendF(&output, "  %s\n", variables_[i]->DebugString().c_str());
@@ -705,10 +732,8 @@ std::string FzModel::DebugString() const {
 
 // ----- Model statistics -----
 
-void FzModelStatistics::PrintStatistics() {
-  BuildStatistics();
+void ModelStatistics::PrintStatistics() const {
   FZLOG << "Model " << model_.name() << FZENDL;
-  BuildStatistics();
   for (const auto& it : constraints_per_type_) {
     FZLOG << "  - " << it.first << ": " << it.second.size() << FZENDL;
   }
@@ -720,22 +745,23 @@ void FzModelStatistics::PrintStatistics() {
   }
 }
 
-void FzModelStatistics::BuildStatistics() {
+void ModelStatistics::BuildStatistics() {
   constraints_per_type_.clear();
   constraints_per_variables_.clear();
-  for (FzConstraint* const ct : model_.constraints()) {
+  for (Constraint* const ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
       constraints_per_type_[ct->type].push_back(ct);
-      hash_set<const FzIntegerVariable*> marked;
-      for (const FzArgument& arg : ct->arguments) {
-        for (FzIntegerVariable* const var : arg.variables) {
+      hash_set<const IntegerVariable*> marked;
+      for (const Argument& arg : ct->arguments) {
+        for (IntegerVariable* const var : arg.variables) {
           marked.insert(var);
         }
       }
-      for (const FzIntegerVariable* const var : marked) {
+      for (const IntegerVariable* const var : marked) {
         constraints_per_variables_[var].push_back(ct);
       }
     }
   }
 }
+}  // namespace fz
 }  // namespace operations_research

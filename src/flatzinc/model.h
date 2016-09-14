@@ -14,9 +14,9 @@
 #ifndef OR_TOOLS_FLATZINC_MODEL_H_
 #define OR_TOOLS_FLATZINC_MODEL_H_
 
-#include <iostream>  // NOLINT
-#include <string>
 #include "base/hash.h"
+#include <iostream>
+#include <string>
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -26,9 +26,10 @@
 #include "util/string_array.h"
 
 namespace operations_research {
-class FzConstraint;
-class FzModel;
-class FzIntegerVariable;
+namespace fz {
+class Constraint;
+class Model;
+class IntegerVariable;
 
 #define FZENDL std::endl
 #define FZLOG \
@@ -41,52 +42,65 @@ class FzIntegerVariable;
   if (FLAGS_fz_debug) std::cout << "%%%%%% "
 
 // A domain represents the possible values of a variable, and its type
-// (which carries display information, i.e. a boolean will be displayed
+// (which carries display information, i.e. a Boolean will be displayed
 // differently than an integer with domain {0, 1}).
 // It can be:
 //  - an explicit list of all possible values, in which case is_interval is
-//    false.
+//    false. If the list is empty, then the domain is empty.
 //  - an interval, in which case is_interval is true and values.size() == 2,
 //    and the interval is [values[0], values[1]].
 //  - all integers, in which case values is empty, and is_interval is true.
-// Note that semi-infinite intervals aren't supported.
-// - A boolean domain({ 0, 1 } with boolean display tag).
-struct FzDomain {
-  static FzDomain IntegerList(std::vector<int64> values);
-  static FzDomain AllInt64();
-  static FzDomain Singleton(int64 value);
-  static FzDomain Interval(int64 included_min, int64 included_max);
-  static FzDomain Boolean();
-  static FzDomain EmptyDomain();
+//    Note that semi-infinite intervals aren't supported.
+//  - a Boolean domain({ 0, 1 } with Boolean display tag).
+// TODO(user): Rework domains, all int64 should be kintmin..kint64max.
+//                It is a bit tricky though as we must take care of overflows.
+struct Domain {
+  // The values will be sorted and duplicate values will be removed.
+  static Domain IntegerList(std::vector<int64> values);
+  static Domain AllInt64();
+  static Domain Singleton(int64 value);
+  static Domain Interval(int64 included_min, int64 included_max);
+  static Domain Boolean();
+  static Domain EmptyDomain();
 
-  bool IsSingleton() const;
-  void IntersectWithFzDomain(const FzDomain& domain);
+  bool HasOneValue() const;
+  bool empty() const;
+
+  // Returns the min of the domain.
+  int64 Min() const;
+
+  // Returns the max of the domain.
+  int64 Max() const;
+
+  // Returns true if the domain is [kint64min..kint64max]
+  bool IsAllInt64() const;
+
+  bool Contains(int64 value) const;
+
+  // All the following modifiers change the internal representation
+  //   list to interval or interval to list.
+  void IntersectWithDomain(const Domain& domain);
   void IntersectWithInterval(int64 interval_min, int64 interval_max);
   void IntersectWithListOfIntegers(const std::vector<int64>& values);
-  bool Contains(int64 value) const;
+
   // Returns true iff the value did belong to the domain, and was removed.
+  // Try to remove the value. It returns true if it was actually removed.
+  // If the value is inside a large interval, then it will not be removed.
   bool RemoveValue(int64 value);
   std::string DebugString() const;
 
+  // These should never be modified from outside the class.
   std::vector<int64> values;
   bool is_interval;
-
   bool display_as_boolean;
-  // TODO(user): Rework domains, all int64 should be kintmin..kint64max.
-  // Empty should means invalid.
 };
 
 // An int var is a name with a domain of possible values, along with
-// some tags. Typically, a FzIntegerVariable is on the heap, and owned by the
-// global FzModel object.
-struct FzIntegerVariable {
-  static FzIntegerVariable* Constant(int64 value) {
-    return new FzIntegerVariable(StringPrintf("%" GG_LL_FORMAT "d", value),
-                                 FzDomain::Singleton(value), true);
-  }
-
+// some tags. Typically, an IntegerVariable is on the heap, and owned by the
+// global Model object.
+struct IntegerVariable {
   // This method tries to unify two variables. This can happen during the
-  // parsing of the model or during presolve. This is possible is at least one
+  // parsing of the model or during presolve. This is possible if at least one
   // of the two variable is not the target of a constraint. (otherwise it
   // returns false).
   // The semantic of the merge is the following:
@@ -97,25 +111,17 @@ struct FzIntegerVariable {
   //   - if one variable is temporary, the name is the name of the other
   //     variable. If both variables are temporary or both variables are not
   //     temporary, the name is chosen arbitrarily between the two names.
-  bool Merge(const std::string& other_name, const FzDomain& other_domain,
-             FzConstraint* const other_constraint, bool other_temporary);
-  // Returns true if the domain has one value.
-  bool HasOneValue() const;
-  // Returns the min of the domain.
-  int64 Min() const;
-  // Returns the max of the domain.
-  int64 Max() const;
-  // Returns true if the domain is [kint64min..kint64max]
-  bool IsAllInt64() const;
+  bool Merge(const std::string& other_name, const Domain& other_domain,
+             Constraint* const other_constraint, bool other_temporary);
 
   std::string DebugString() const;
 
   std::string name;
-  FzDomain domain;
+  Domain domain;
   // The constraint that defines this variable, if any, and nullptr otherwise.
-  // This is the reverse field of FzConstraint::target_variable. This constraint
+  // This is the reverse field of Constraint::target_variable. This constraint
   // is not owned by the variable.
-  FzConstraint* defining_constraint;
+  Constraint* defining_constraint;
   // Indicates if the variable is a temporary variable created when flattening
   // the model. For instance, if you write x == y * z + y, then it will be
   // expanded into y * z == t and x = t + y. And t will be a temporary variable.
@@ -125,16 +131,15 @@ struct FzIntegerVariable {
   // there is no need to create it.
   bool active : 1;
 
-  friend class FzModel;
-
  private:
-  FzIntegerVariable(const std::string& name_, const FzDomain& domain_,
-                    bool temporary_);
+  friend class Model;
+
+  IntegerVariable(const std::string& name_, const Domain& domain_, bool temporary_);
 };
 
 // An argument is either an integer value, an integer domain, a
 // reference to a variable, or an array of variable references.
-struct FzArgument {
+struct Argument {
   enum Type {
     INT_VALUE,
     INT_INTERVAL,
@@ -145,23 +150,16 @@ struct FzArgument {
     VOID_ARGUMENT,
   };
 
-  static FzArgument IntegerValue(int64 value);
-  static FzArgument Interval(int64 imin, int64 imax);
-  static FzArgument IntegerList(std::vector<int64> values);
-  static FzArgument DomainList(std::vector<FzDomain> domains);
-  static FzArgument IntVarRef(FzIntegerVariable* const var);
-  static FzArgument IntVarRefArray(std::vector<FzIntegerVariable*> vars);
-  static FzArgument VoidArgument();
-  static FzArgument FromDomain(const FzDomain& domain);
+  static Argument IntegerValue(int64 value);
+  static Argument Interval(int64 imin, int64 imax);
+  static Argument IntegerList(std::vector<int64> values);
+  static Argument DomainList(std::vector<Domain> domains);
+  static Argument IntVarRef(IntegerVariable* const var);
+  static Argument IntVarRefArray(std::vector<IntegerVariable*> vars);
+  static Argument VoidArgument();
+  static Argument FromDomain(const Domain& domain);
 
   std::string DebugString() const;
-
-  Type type;
-  std::vector<int64> values;
-  std::vector<FzIntegerVariable*> variables;
-  std::vector<FzDomain> domains;
-
-  // Helpers
 
   // Returns true if the argument is a variable.
   bool IsVariable() const;
@@ -170,34 +168,48 @@ struct FzArgument {
   bool HasOneValue() const;
   // Returns the value of the argument. Does DCHECK(HasOneValue()).
   int64 Value() const;
-  // Returns the variable inside the argument, or nullptr if there is no
-  // variable.
-  FzIntegerVariable* Var() const;
+  // Returns the variable inside the argument if the type is INT_VAR_REF,
+  // or nullptr otherwise.
+  IntegerVariable* Var() const;
+
+  Type type;
+  std::vector<int64> values;
+  std::vector<IntegerVariable*> variables;
+  std::vector<Domain> domains;
 };
 
 // A constraint has a type, some arguments, and a few tags. Typically, a
-// FzConstraint is on the heap, and owned by the global FzModel object.
-struct FzConstraint {
-  FzConstraint(const std::string& type_, std::vector<FzArgument> arguments_,
-               bool strong_propagation_,
-               FzIntegerVariable* const target_variable_)
-      : type(type_),
-        arguments(std::move(arguments_)),
-        target_variable(target_variable_),
-        strong_propagation(strong_propagation_),
+// Constraint is on the heap, and owned by the global Model object.
+struct Constraint {
+  Constraint(const std::string& t, std::vector<Argument> args, bool strong_propag,
+             IntegerVariable* target)
+      : type(t),
+        arguments(std::move(args)),
+        target_variable(target),
+        strong_propagation(strong_propag),
         active(true),
         presolve_propagation_done(false) {}
 
   std::string DebugString() const;
 
+  // Helpers to be used during presolve.
+  void MarkAsInactive();
+  // Cleans the field target_variable, as well as the field defining_constraint
+  // on the target_variable.
+  void RemoveTargetVariable();
+  // Helper method to remove one argument.
+  void RemoveArg(int arg_pos);
+  // Set as a False constraint.
+  void SetAsFalse();
+
   // The flatzinc type of the constraint (i.e. "int_eq" for integer equality)
   // stored as a std::string.
   std::string type;
-  std::vector<FzArgument> arguments;
+  std::vector<Argument> arguments;
   // Indicates if the constraint actually propagates towards a target variable
   // (target_variable will be nullptr otherwise). This is the reverse field of
-  // FzIntegerVariable::defining_constraint.
-  FzIntegerVariable* target_variable;
+  // IntegerVariable::defining_constraint.
+  IntegerVariable* target_variable;
   // Is true if the constraint should use the strongest level of propagation.
   // This is a hint in the model. For instance, in the AllDifferent constraint,
   // there are different algorithms to propagate with different pruning/speed
@@ -210,31 +222,15 @@ struct FzConstraint {
   // presolve.
   bool active : 1;
 
-  // The following boolean are used to trace presolve. They are used to avoid
-  // repeating the same presolve rule again and again.
-
   // Indicates if presolve has finished propagating this constraint.
   bool presolve_propagation_done : 1;
-
-  // Helpers
-  void MarkAsInactive();
-  // Cleans the field target_variable, as well as the field defining_constraint
-  // on the target_variable.
-  void RemoveTargetVariable();
-  // Helper method to remove one argument.
-  void RemoveArg(int arg_pos);
-
-  const FzArgument& Arg(int arg_pos) const { return arguments[arg_pos]; }
-#if !defined(SWIG)
-  FzArgument* MutableArg(int arg_pos) { return &arguments[arg_pos]; }
-#endif
 };
 
 // An annotation is a set of information. It has two use cases. One during
 // parsing to store intermediate information on model objects (i.e. the defines
 // part of a constraint). The other use case is to store all search
 // declarations. This persists after model parsing.
-struct FzAnnotation {
+struct Annotation {
   enum Type {
     ANNOTATION_LIST,
     IDENTIFIER,
@@ -246,17 +242,17 @@ struct FzAnnotation {
     STRING_VALUE,
   };
 
-  static FzAnnotation Empty();
-  static FzAnnotation AnnotationList(std::vector<FzAnnotation> list);
-  static FzAnnotation Identifier(const std::string& id);
-  static FzAnnotation FunctionCallWithArguments(const std::string& id,
-                                                std::vector<FzAnnotation> args);
-  static FzAnnotation FunctionCall(const std::string& id);
-  static FzAnnotation Interval(int64 interval_min, int64 interval_max);
-  static FzAnnotation IntegerValue(int64 value);
-  static FzAnnotation Variable(FzIntegerVariable* const var);
-  static FzAnnotation VariableList(std::vector<FzIntegerVariable*> vars);
-  static FzAnnotation String(const std::string& str);
+  static Annotation Empty();
+  static Annotation AnnotationList(std::vector<Annotation> list);
+  static Annotation Identifier(const std::string& id);
+  static Annotation FunctionCallWithArguments(const std::string& id,
+                                              std::vector<Annotation> args);
+  static Annotation FunctionCall(const std::string& id);
+  static Annotation Interval(int64 interval_min, int64 interval_max);
+  static Annotation IntegerValue(int64 value);
+  static Annotation Variable(IntegerVariable* const var);
+  static Annotation VariableList(std::vector<IntegerVariable*> vars);
+  static Annotation String(const std::string& str);
 
   std::string DebugString() const;
   bool IsFunctionCallWithIdentifier(const std::string& identifier) const {
@@ -265,20 +261,20 @@ struct FzAnnotation {
   // Copy all the variable references contained in this annotation (and its
   // children). Depending on the type of this annotation, there can be zero,
   // one, or several.
-  void GetAllIntegerVariables(std::vector<FzIntegerVariable*>* const vars) const;
+  void AppendAllIntegerVariables(std::vector<IntegerVariable*>* vars) const;
 
   Type type;
   int64 interval_min;
   int64 interval_max;
   std::string id;
-  std::vector<FzAnnotation> annotations;
-  std::vector<FzIntegerVariable*> variables;
-  std::string string_value_;
+  std::vector<Annotation> annotations;
+  std::vector<IntegerVariable*> variables;
+  std::string string_value;
 };
 
 // Information on what should be displayed when a solution is found.
 // It follows the flatzinc specification (www.minizinc.org).
-struct FzOnSolutionOutput {
+struct OnSolutionOutput {
   struct Bounds {
     Bounds(int64 min_value_, int64 max_value_)
         : min_value(min_value_), max_value(max_value_) {}
@@ -288,74 +284,73 @@ struct FzOnSolutionOutput {
   };
 
   // Will output: name = <variable value>.
-  static FzOnSolutionOutput SingleVariable(const std::string& name,
-                                           FzIntegerVariable* const variable,
-                                           bool display_as_boolean);
+  static OnSolutionOutput SingleVariable(const std::string& name,
+                                         IntegerVariable* variable,
+                                         bool display_as_boolean);
   // Will output (for example):
   //     name = array2d(min1..max1, min2..max2, [list of variable values])
   // for a 2d array (bounds.size() == 2).
-  static FzOnSolutionOutput MultiDimensionalArray(
+  static OnSolutionOutput MultiDimensionalArray(
       const std::string& name, std::vector<Bounds> bounds,
-      std::vector<FzIntegerVariable*> flat_variables, bool display_as_boolean);
+      std::vector<IntegerVariable*> flat_variables, bool display_as_boolean);
   // Empty output.
-  static FzOnSolutionOutput VoidOutput();
+  static OnSolutionOutput VoidOutput();
 
   std::string DebugString() const;
 
   std::string name;
-  FzIntegerVariable* variable;
-  std::vector<FzIntegerVariable*> flat_variables;
+  IntegerVariable* variable;
+  std::vector<IntegerVariable*> flat_variables;
   // These are the starts and ends of intervals for displaying (potentially
   // multi-dimensional) arrays.
   std::vector<Bounds> bounds;
   bool display_as_boolean;
 };
 
-class FzModel {
+class Model {
  public:
-  explicit FzModel(const std::string& name)
+  explicit Model(const std::string& name)
       : name_(name), objective_(nullptr), maximize_(true) {}
-  ~FzModel();
+  ~Model();
 
   // ----- Builder methods -----
 
-  // The objects returned by AddVariable() and AddConstraint() are owned by the
-  // FzModel and will remain live for its lifetime.
-  FzIntegerVariable* AddVariable(const std::string& name, const FzDomain& domain,
-                                 bool temporary);
-  void AddConstraint(const std::string& type, std::vector<FzArgument> arguments,
-                     bool is_domain, FzIntegerVariable* const target_variable);
-  void AddOutput(const FzOnSolutionOutput& output);
+  // The objects returned by AddVariable(), AddConstant(),  and AddConstraint()
+  // are owned by the model and will remain live for its lifetime.
+  IntegerVariable* AddVariable(const std::string& name, const Domain& domain,
+                               bool temporary);
+  IntegerVariable* AddConstant(int64 value);
+  void AddConstraint(const std::string& type, std::vector<Argument> arguments,
+                     bool is_domain, IntegerVariable* target_variable);
+  void AddOutput(OnSolutionOutput output);
 
   // Set the search annotations and the objective: either simply satisfy the
   // problem, or minimize or maximize the given variable (which must have been
   // added with AddVariable() already).
-  void Satisfy(std::vector<FzAnnotation> search_annotations);
-  void Minimize(FzIntegerVariable* obj,
-                std::vector<FzAnnotation> search_annotations);
-  void Maximize(FzIntegerVariable* obj,
-                std::vector<FzAnnotation> search_annotations);
+  void Satisfy(std::vector<Annotation> search_annotations);
+  void Minimize(IntegerVariable* obj, std::vector<Annotation> search_annotations);
+  void Maximize(IntegerVariable* obj, std::vector<Annotation> search_annotations);
 
   // ----- Accessors and mutators -----
 
-  const std::vector<FzIntegerVariable*>& variables() const { return variables_; }
-  const std::vector<FzConstraint*>& constraints() const { return constraints_; }
-  const std::vector<FzAnnotation>& search_annotations() const {
+  const std::vector<IntegerVariable*>& variables() const { return variables_; }
+  const std::vector<Constraint*>& constraints() const { return constraints_; }
+  const std::vector<Annotation>& search_annotations() const {
     return search_annotations_;
   }
 #if !defined(SWIG)
-  MutableVectorIteration<FzAnnotation> mutable_search_annotations() {
-    return MutableVectorIteration<FzAnnotation>(&search_annotations_);
+  MutableVectorIteration<Annotation> mutable_search_annotations() {
+    return MutableVectorIteration<Annotation>(&search_annotations_);
   }
 #endif
-  const std::vector<FzOnSolutionOutput>& output() const { return output_; }
+  const std::vector<OnSolutionOutput>& output() const { return output_; }
 #if !defined(SWIG)
-  MutableVectorIteration<FzOnSolutionOutput> mutable_output() {
-    return MutableVectorIteration<FzOnSolutionOutput>(&output_);
+  MutableVectorIteration<OnSolutionOutput> mutable_output() {
+    return MutableVectorIteration<OnSolutionOutput>(&output_);
   }
 #endif
   bool maximize() const { return maximize_; }
-  FzIntegerVariable* objective() const { return objective_; }
+  IntegerVariable* objective() const { return objective_; }
 
   // Services.
   std::string DebugString() const;
@@ -365,33 +360,37 @@ class FzModel {
  private:
   const std::string name_;
   // owned.
-  std::vector<FzIntegerVariable*> variables_;
+  // TODO(user): use unique_ptr
+  std::vector<IntegerVariable*> variables_;
   // owned.
-  std::vector<FzConstraint*> constraints_;
+  // TODO(user): use unique_ptr
+  std::vector<Constraint*> constraints_;
   // The objective variable (it belongs to variables_).
-  FzIntegerVariable* objective_;
+  IntegerVariable* objective_;
   bool maximize_;
-  // All search annotations are stored as a vector of FzAnnotation.
-  std::vector<FzAnnotation> search_annotations_;
-  std::vector<FzOnSolutionOutput> output_;
+  // All search annotations are stored as a vector of Annotation.
+  std::vector<Annotation> search_annotations_;
+  std::vector<OnSolutionOutput> output_;
 };
 
 // Stand-alone statistics class on the model.
-class FzModelStatistics {
+// TODO(user): Clean up API to pass a Model* in argument.
+class ModelStatistics {
  public:
-  explicit FzModelStatistics(const FzModel& model) : model_(model) {}
-  int VariableOccurrences(FzIntegerVariable* const var) {
+  explicit ModelStatistics(const Model& model) : model_(model) {}
+  int NumVariableOccurrences(IntegerVariable* var) {
     return constraints_per_variables_[var].size();
   }
   void BuildStatistics();
-  void PrintStatistics();
+  void PrintStatistics() const;
 
  private:
-  const FzModel& model_;
-  hash_map<std::string, std::vector<FzConstraint*> > constraints_per_type_;
-  hash_map<const FzIntegerVariable*, std::vector<FzConstraint*> >
+  const Model& model_;
+  hash_map<std::string, std::vector<Constraint*>> constraints_per_type_;
+  hash_map<const IntegerVariable*, std::vector<Constraint*>>
       constraints_per_variables_;
 };
+}  // namespace fz
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_FLATZINC_MODEL_H_

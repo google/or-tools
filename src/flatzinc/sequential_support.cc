@@ -24,8 +24,8 @@
 DECLARE_bool(fz_logging);
 
 namespace operations_research {
-namespace {
-class SequentialSupportInterface : public FzParallelSupportInterface {
+namespace fz {
+class SequentialSupportInterface : public ParallelSupportInterface {
  public:
   SequentialSupportInterface(bool print_all, int num_solutions)
       : print_all_(print_all),
@@ -103,10 +103,10 @@ class SequentialSupportInterface : public FzParallelSupportInterface {
   int64 best_solution_;
   bool interrupted_;
 };
-}  // namespace
 
-FzParallelSupportInterface* MakeSequentialSupport(bool print_all,
-                                                  int num_solutions) {
+ParallelSupportInterface* MakeSequentialSupport(bool print_all,
+                                                int num_solutions) {
   return new SequentialSupportInterface(print_all, num_solutions);
 }
+}  // namespace fz
 }  // namespace operations_research
