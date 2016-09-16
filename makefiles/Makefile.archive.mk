@@ -220,7 +220,7 @@ endif
 ifeq "$(PYTHON3)" "true"
     build_release: clean python test_python
     pre_release: pypi_archive
-    release: 
+    release: pypi_uplaod
 else #platform check
 
 ifeq "$(SYSTEM)" "win"
@@ -232,7 +232,7 @@ ifeq "$(VISUAL_STUDIO_YEAR)" "2013"
 else ifeq "$(VISUAL_STUDIO_YEAR)" "2015"
     build_release: clean all test fz
     pre_release: archive test_archive fz_archive test_fz_archive python_examples_archive pypi_archive
-    release: pypi_upload
+    release: pypi_upload nuget_upload
 
 endif # ifeq"$(VISUAL_STUDIO_YEAR)" "2013"
 else # unix
