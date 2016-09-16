@@ -229,7 +229,7 @@ ifeq "$(VISUAL_STUDIO_YEAR)" "2013"
     build_release: clean all test
     pre_release: archive test_archive
     release:
-else ifeq "$(VISUAL_STUDIO_YEAR)" "2015"
+else "$(VISUAL_STUDIO_YEAR)" "2015"
     build_release: clean all test fz
     pre_release: archive test_archive fz_archive test_fz_archive python_examples_archive pypi_archive
     release: pypi_upload nuget_upload
@@ -242,7 +242,7 @@ ifeq "$(DISTRIBUTION_NUMBER)" "14.04"
     build_release: clean all test fz
     pre_release: archive test_archive fz_archive test_fz_archive python_examples_archive pypi_archive
     release: pypi_upload
-else ifeq "$(DISTRIBUTION_NUMBER)" "16.04"
+else "$(DISTRIBUTION_NUMBER)" "16.04"
     build_release: clean all test
     pre_release: archive test_archive
     release:
