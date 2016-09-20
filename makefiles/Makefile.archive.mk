@@ -147,6 +147,7 @@ java_archive:
 
 ifeq "$(SYSTEM)" "win"
 fz_archive: fz
+	-$(DELREC) temp
 	mkdir temp
 	mkdir temp$S$(FZ_INSTALL_DIR)
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
@@ -214,13 +215,13 @@ ifeq "$(SYSTEM)" "win"
 else
 	tar -x -v -f $(FZ_INSTALL_DIR).tar.gz -C temp
 endif
-	cd temp$S$(FZ_INSTALL_DIR) && .$Sbin$S$(FZ_EXE) examples$Scircuit_test.fzn && $(RENAME) ..$S..$Slib2 ..$S..$Slib && echo "fz archive test succeeded" || ( $(RENAME) ..$S..$Slib2 ..$S..$Slib && echo "fz archive test failed" && exit 1)
+	cd temp$S$(FZ_INSTALL_DIR) && .$Sbin$S$(FZ_EXE) examples$Scircuit_test.fzn && cd ../.. && $(RENAME) lib2 lib && echo "fz archive test succeeded" || ( cd ../.. && $(RENAME) lib2 lib && echo "fz archive test failed" && exit 1)
 
 
 ifeq "$(PYTHON3)" "true"
     build_release: clean python test_python
     pre_release: pypi_archive
-    release: pypi_uplaod
+    release: pypi_upload
 else #platform check
 
 ifeq "$(SYSTEM)" "win"
@@ -247,8 +248,8 @@ ifeq "$(DISTRIBUTION_NUMBER)" "14.04"
     release: pypi_upload
 else 
 ifeq "$(DISTRIBUTION_NUMBER)" "16.0"
-    build_release: clean all test
-    pre_release: archive test_archive
+    build_release: clean all test fz
+    pre_release: archive test_archive fz_archive test_fz_archive
     release:
 endif # ifeq "$(DISTRIBUTION_NUMBER)" "16.04"
 endif # ifeq "$(DISTRIBUTION_NUMBER)" "14.04"
