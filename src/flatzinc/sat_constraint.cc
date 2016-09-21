@@ -166,7 +166,7 @@ class SatPropagator : public Constraint {
     return StringPrintf("SatConstraint(%d variables)", sat_.NumVariables());
   }
 
-  void Accept(ModelVisitor* visitor) const {
+  void Accept(ModelVisitor* visitor) const override {
     VLOG(1) << "Should Not Be Visited";
   }
 

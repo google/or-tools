@@ -92,6 +92,7 @@ FLATZINC_DEPS = \
 	$(SRC_DIR)/flatzinc/logging.h \
 	$(SRC_DIR)/flatzinc/model.h \
 	$(SRC_DIR)/flatzinc/parser.h \
+	$(GEN_DIR)/flatzinc/parser.tab.hh \
 	$(SRC_DIR)/flatzinc/presolve.h \
 	$(SRC_DIR)/flatzinc/reporting.h \
 	$(SRC_DIR)/flatzinc/sat_constraint.h \
