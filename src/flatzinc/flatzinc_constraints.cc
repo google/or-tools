@@ -471,7 +471,7 @@ class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
   int64 StartMax() const override;
   void SetStartMin(int64 m) override;
   void SetStartMax(int64 m) override;
-  void SetStartRange(int64 mi, int64 ma);
+  void SetStartRange(int64 mi, int64 ma) override;
   int64 OldStartMin() const override { return start_->OldMin(); }
   int64 OldStartMax() const override { return start_->OldMax(); }
   void WhenStartRange(Demon* const d) override { start_->WhenRange(d); }
