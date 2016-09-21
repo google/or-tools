@@ -32,7 +32,9 @@ std::vector<std::string> Split(const std::string& full, const char* delim, int f
 //
 // Hack: the int64 allow the C++ compiler to distinguish the two functions. It
 // is possible to implement this more cleanly at the cost of more complexity.
-std::vector<::operations_research::StringPiece> Split(const std::string& full, const char* delim, int64 flags);
+std::vector<::operations_research::StringPiece> Split(const std::string& full,
+                                                 const char* delim,
+                                                 int64 flags);
 
 namespace delimiter {
 inline const char* AnyOf(const char* x) { return x; }
