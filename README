@@ -1,7 +1,7 @@
-These libraries have been tested under:
-  - Ubuntu 12.04 and up (32- and 64-bit).
-  - Mac OS X Mavericks and Yosemite with Xcode 5.x (64 bit).
-  - Microsoft Windows with Visual Studio 2013 (32- and 64-bit)
+These modules have been tested under:
+  - Ubuntu 14.04 and 16.04 up (64-bit).
+  - Mac OS X El Capitan with Xcode 7.x (64 bit).
+  - Microsoft Windows with Visual Studio 2013 and 2015 (64-bit)
 
 Upon checking out the repository, you will get the following structure:
 
