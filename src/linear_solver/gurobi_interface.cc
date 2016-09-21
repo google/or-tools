@@ -321,6 +321,10 @@ double GurobiInterface::best_objective_bound() const {
     if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
       // Special case for empty model.
       return solver_->Objective().offset();
+    } else if (result_status_ == MPSolver::OPTIMAL) {
+      // Special case for when presolve removes all the variables so the model
+      // becomes empty after the presolve phase.
+      return objective_value_;
     } else {
       double value;
       CheckedGurobiCall(GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &value));
