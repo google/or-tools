@@ -23,6 +23,25 @@
 #include "base/logging.h"
 #include "base/stringpiece.h"
 
+namespace strings {
+std::vector<std::string> Split(const std::string& full, const char* delim, int flags);
+
+// StringPiece version. Its advantages is that it avoids creating a lot of
+// small strings. Note however that the full std::string must outlive the usage
+// of the result.
+//
+// Hack: the int64 allow the C++ compiler to distinguish the two functions. It
+// is possible to implement this more cleanly at the cost of more complexity.
+std::vector<::operations_research::StringPiece> Split(const std::string& full, const char* delim, int64 flags);
+
+namespace delimiter {
+inline const char* AnyOf(const char* x) { return x; }
+}  // namespace delimiter
+
+inline int SkipEmpty() { return 0xDEADBEEF; }
+
+}  // namespace strings
+
 namespace operations_research {
 // Split a std::string using a nul-terminated list of character
 // delimiters.  For each component, parse using the provided
@@ -47,24 +66,6 @@ bool SplitStringAndParse(StringPiece source, const std::string& delim,
 // character, this is fine, but if it contains more, then the meaning is
 // different: Split() should interpret the whole std::string as a delimiter. Fix
 // this.
-namespace strings {
-std::vector<std::string> Split(const std::string& full, const char* delim, int flags);
-
-// StringPiece version. Its advantages is that it avoids creating a lot of
-// small strings. Note however that the full std::string must outlive the usage
-// of the result.
-//
-// Hack: the int64 allow the C++ compiler to distinguish the two functions. It
-// is possible to implement this more cleanly at the cost of more complexity.
-std::vector<StringPiece> Split(const std::string& full, const char* delim, int64 flags);
-
-namespace delimiter {
-inline const char* AnyOf(const char* x) { return x; }
-}  // namespace delimiter
-
-inline int SkipEmpty() { return 0xDEADBEEF; }
-}  // namespace strings
-
 // ###################### TEMPLATE INSTANTIATIONS BELOW #######################
 template <class T>
 bool SplitStringAndParse(const std::string& source, const std::string& delim,
@@ -74,8 +75,8 @@ bool SplitStringAndParse(const std::string& source, const std::string& delim,
   CHECK(nullptr != result);
   CHECK_GT(delim.size(), 0);
   const std::vector<StringPiece> pieces =
-      strings::Split(source, strings::delimiter::AnyOf(delim.c_str()),
-                     static_cast<int64>(strings::SkipEmpty()));
+      ::strings::Split(source, strings::delimiter::AnyOf(delim.c_str()),
+                       static_cast<int64>(strings::SkipEmpty()));
   T t;
   for (StringPiece piece : pieces) {
     if (!parse(piece.as_string(), &t)) return false;
@@ -85,4 +86,5 @@ bool SplitStringAndParse(const std::string& source, const std::string& delim,
 }
 
 }  // namespace operations_research
+
 #endif  // OR_TOOLS_BASE_SPLIT_H_

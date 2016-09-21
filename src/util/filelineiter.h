@@ -24,6 +24,7 @@
 
 #include "base/logging.h"
 #include "base/file.h"
+#include "base/stringpiece_utils.h"
 #include "base/strutil.h"
 
 namespace operations_research {

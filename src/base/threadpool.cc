@@ -16,9 +16,9 @@
 namespace operations_research {
 void RunWorker(void* data) {
   ThreadPool* const thread_pool = reinterpret_cast<ThreadPool*>(data);
-  Closure* work = thread_pool->GetNextTask();
+  std::function<void()> work = thread_pool->GetNextTask();
   while (work != NULL) {
-    work->Run();
+    work();
     work = thread_pool->GetNextTask();
   }
 }
@@ -45,24 +45,24 @@ void ThreadPool::StartWorkers() {
   }
 }
 
-Closure* ThreadPool::GetNextTask() {
+std::function<void()> ThreadPool::GetNextTask() {
   std::unique_lock<std::mutex> lock(mutex_);
   for (;;) {
     if (!tasks_.empty()) {
-      Closure* const task = tasks_.front();
+      std::function<void()> task = tasks_.front();
       tasks_.pop_front();
       return task;
     }
     if (waiting_to_finish_) {
-      return NULL;
+      return nullptr;
     } else {
       condition_.wait(lock);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
-void ThreadPool::Add(Closure* const closure) {
+void ThreadPool::Schedule(std::function<void()> closure) {
   std::unique_lock<std::mutex> lock(mutex_);
   tasks_.push_back(closure);
   if (started_) {

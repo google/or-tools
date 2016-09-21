@@ -129,6 +129,7 @@ void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
                const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
                const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
                const AlphaNum& i, const AlphaNum& j, const AlphaNum& k);
+}  // namespace operations_research
 
 namespace strings {
 template <class Iterable>
@@ -136,11 +137,10 @@ std::string Join(const Iterable& elements, const std::string& separator) {
   std::string out;
   for (const auto& e : elements) {
     if (!out.empty()) out += separator;
-    StrAppend(&out, e);
+    ::operations_research::StrAppend(&out, e);
   }
   return out;
 }
 }  // namespace strings
 
-}  // namespace operations_research
 #endif  // OR_TOOLS_BASE_JOIN_H_
