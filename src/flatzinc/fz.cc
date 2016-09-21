@@ -80,38 +80,30 @@ FlatzincParameters SingleThreadParameters() {
   FlatzincParameters parameters;
   parameters.all_solutions = FLAGS_all_solutions;
   parameters.free_search = FLAGS_free_search;
-  parameters.last_conflict = FLAGS_last_conflict;
   parameters.heuristic_period = FLAGS_heuristic_period;
   parameters.ignore_unknown = false;
+  parameters.last_conflict = FLAGS_last_conflict;
+  parameters.logging = FLAGS_fz_logging;
   parameters.log_period = FLAGS_log_period;
   parameters.luby_restart = FLAGS_luby_restart;
   parameters.num_solutions = FixedNumberOfSolutions();
+  parameters.random_seed = 0;
   parameters.restart_log_size = FLAGS_restart_log_size;
-  parameters.threads = FLAGS_threads;
-  parameters.time_limit_in_ms = FLAGS_time_limit;
-  parameters.logging = FLAGS_fz_logging;
-  parameters.statistics = FLAGS_statistics;
-  parameters.verbose_impact = FLAGS_verbose_impact;
-  parameters.thread_id = -1;
   parameters.search_type =
       FLAGS_use_impact ? FlatzincParameters::IBS : FlatzincParameters::DEFAULT;
+  parameters.statistics = FLAGS_statistics;
+  parameters.threads = FLAGS_threads;
+  parameters.thread_id = -1;
+  parameters.time_limit_in_ms = FLAGS_time_limit;
+  parameters.verbose_impact = FLAGS_verbose_impact;
   return parameters;
 }
 
 FlatzincParameters MultiThreadParameters(int thread_id) {
-  FlatzincParameters parameters;
-  parameters.all_solutions = FLAGS_all_solutions;
-  parameters.heuristic_period = FLAGS_heuristic_period;
-  parameters.ignore_unknown = false;
-  parameters.log_period = FLAGS_log_period;
-  parameters.luby_restart = -1;
-  parameters.num_solutions = FixedNumberOfSolutions();
-  parameters.random_seed = thread_id * 10;
-  parameters.threads = FLAGS_threads;
-  parameters.time_limit_in_ms = FLAGS_time_limit;
+  FlatzincParameters parameters = SingleThreadParameters();
   parameters.logging = thread_id == 0;
-  parameters.statistics = FLAGS_statistics;
-  parameters.verbose_impact = false;
+  parameters.luby_restart = -1;
+  parameters.random_seed = thread_id * 10;
   parameters.thread_id = thread_id;
   switch (thread_id) {
     case 0: {

@@ -43,7 +43,7 @@ using operations_research::fz::Domain;
 using operations_research::fz::IntegerVariable;
 using operations_research::fz::Lookup;
 using operations_research::fz::Model;
-using operations_research::fz::OnSolutionOutput;
+using operations_research::fz::SolutionOutputSpecs;
 using operations_research::fz::ParserContext;
 using operations_research::fz::VariableRefOrValue;
 using operations_research::fz::VariableRefOrValueArray;
@@ -239,7 +239,7 @@ variable_or_constant_declaration:
   context->variable_map[identifier] = var;
   if (ContainsId(annotations, "output_var")) {
     model->AddOutput(
-        OnSolutionOutput::SingleVariable(identifier, var,
+        SolutionOutputSpecs::SingleVariable(identifier, var,
                                            domain.display_as_boolean));
   }
   delete annotations;
@@ -296,16 +296,16 @@ variable_or_constant_declaration:
         CHECK_EQ(Annotation::ANNOTATION_LIST, ann.annotations.back().type);
         const Annotation& list = ann.annotations.back();
         // Let's build the vector of bounds.
-        std::vector<OnSolutionOutput::Bounds> bounds;
+        std::vector<SolutionOutputSpecs::Bounds> bounds;
         for (int a = 0; a < list.annotations.size(); ++a) {
           const Annotation& bound = list.annotations[a];
           CHECK_EQ(Annotation::INTERVAL, bound.type);
           bounds.emplace_back(
-              OnSolutionOutput::Bounds(bound.interval_min, bound.interval_max));
+              SolutionOutputSpecs::Bounds(bound.interval_min, bound.interval_max));
         }
         // We add the output information.
         model->AddOutput(
-            OnSolutionOutput::MultiDimensionalArray(identifier, bounds, vars,
+            SolutionOutputSpecs::MultiDimensionalArray(identifier, bounds, vars,
       domain.display_as_boolean));
       }
     }

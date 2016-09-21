@@ -2309,7 +2309,7 @@ void Presolver::SubstituteEverywhere(Model* model) {
     SubstituteAnnotation(ann);
   }
   // Rewrite the output.
-  for (OnSolutionOutput* const output : model->mutable_output()) {
+  for (SolutionOutputSpecs* const output : model->mutable_output()) {
     output->variable = FindRepresentativeOfVar(output->variable);
     for (int i = 0; i < output->flat_variables.size(); ++i) {
       output->flat_variables[i] =
