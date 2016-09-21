@@ -14,7 +14,6 @@
 #include "flatzinc/sat_constraint.h"
 
 #include <algorithm>
-#include <iostream>  // NOLINT
 #include <string>
 #include <vector>
 
@@ -27,14 +26,18 @@
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
-
+#include "flatzinc/logging.h"
 #include "sat/pb_constraint.h"
 #include "sat/sat_base.h"
 #include "sat/sat_solver.h"
 
 // #define SAT_DEBUG
-DECLARE_bool(fz_verbose);
-DECLARE_bool(fz_debug);
+#if defined(SAT_DEBUG)
+#define SATDLOG FZDLOG
+#else
+#define SATDLOG \
+  if (false) FZDLOG
+#endif
 
 namespace operations_research {
 // Constraint that tight together boolean variables in the CP solver to sat
@@ -44,17 +47,17 @@ class SatPropagator : public Constraint {
   explicit SatPropagator(Solver* solver)
       : Constraint(solver), sat_decision_level_(0) {}
 
-  ~SatPropagator() {}
+  ~SatPropagator() override {}
 
-  bool IsExpressionBoolean(IntExpr* expr) const {
+  bool ExpressionIsBoolean(IntExpr* expr) const {
     IntVar* expr_var = nullptr;
     bool expr_negated = false;
     return solver()->IsBooleanVar(expr, &expr_var, &expr_negated);
   }
 
-  bool AllVariablesBoolean(const std::vector<IntVar*>& vars) const {
+  bool AllVariablesAreBoolean(const std::vector<IntVar*>& vars) const {
     for (int i = 0; i < vars.size(); ++i) {
-      if (!IsExpressionBoolean(vars[i])) {
+      if (!ExpressionIsBoolean(vars[i])) {
         return false;
       }
     }
@@ -62,42 +65,34 @@ class SatPropagator : public Constraint {
   }
 
   // Converts a constraint solver literal to the SatSolver representation.
-  sat::Literal Literal(IntExpr* expr) {
+  sat::Literal GetOrCreateLiteral(IntExpr* expr) {
     IntVar* expr_var = nullptr;
     bool expr_negated = false;
     CHECK(solver()->IsBooleanVar(expr, &expr_var, &expr_negated));
-#ifdef SAT_DEBUG
-    FZDLOG << "  - SAT: Parse " << expr->DebugString() << " to "
-           << expr_var->DebugString() << "/" << expr_negated << FZENDL;
-#endif
+    SATDLOG << "  - SAT: Parse " << expr->DebugString() << " to "
+            << expr_var->DebugString() << "/" << expr_negated << FZENDL;
     if (ContainsKey(indices_, expr_var)) {
       return sat::Literal(indices_[expr_var], !expr_negated);
-    } else {
-      const int num_vars = sat_.NumVariables();
-      sat_.SetNumVariables(num_vars + 1);
-      const sat::BooleanVariable var(num_vars);
-      DCHECK_EQ(vars_.size(), var.value());
-      vars_.push_back(expr_var);
-      indices_[expr_var] = var;
-      sat::Literal literal(var, !expr_negated);
-#ifdef SAT_DEBUG
-      FZDLOG << "    - created var = " << var.value()
-             << ", literal = " << literal.SignedValue() << FZENDL;
-#endif
-      return literal;
     }
+    const sat::BooleanVariable var = sat_.NewBooleanVariable();
+    vars_.push_back(expr_var);
+    indices_[expr_var] = var;
+    const sat::Literal literal(var, !expr_negated);
+    SATDLOG << "    - created var = " << var.value()
+            << ", literal = " << literal.SignedValue() << FZENDL;
+    return literal;
   }
 
-  void PullSatAssignmentFrom(int from_index) {
+  // Queries the sat solver for all newly assigned literals, and propagates
+  // the values to the CP variables.
+  void QueryAssignedSatLiterals(int from_index) {
     const int to_index = sat_.LiteralTrail().Index();
     for (int index = from_index; index < to_index; ++index) {
       const sat::Literal literal = sat_.LiteralTrail()[index];
       const sat::BooleanVariable var = literal.Variable();
       const bool assigned_bool = literal.IsPositive();
-#ifdef SAT_DEBUG
-      FZDLOG << " - var " << var << " was assigned to " << assigned_bool
-             << " from literal " << literal.SignedValue() << FZENDL;
-#endif
+      SATDLOG << " - var " << var << " was assigned to " << assigned_bool
+              << " from literal " << literal.SignedValue() << FZENDL;
       demons_[var.value()]->inhibit(solver());
       vars_[var.value()]->SetValue(assigned_bool);
     }
@@ -105,85 +100,69 @@ class SatPropagator : public Constraint {
 
   // This method is called during the processing of the CP solver queue when
   // a boolean variable is bound.
-  void BooleanVariableBound(int index) {
+  void OnBooleanVariableFixed(int index) {
     if (sat_decision_level_.Value() < sat_.CurrentDecisionLevel()) {
-#ifdef SAT_DEBUG
-      FZDLOG << "After failure, sat_decision_level = "
-             << sat_decision_level_.Value()
-             << ", sat decision level = " << sat_.CurrentDecisionLevel()
-             << FZENDL;
-#endif
+      SATDLOG << "After failure, sat_decision_level = "
+              << sat_decision_level_.Value()
+              << ", sat decision level = " << sat_.CurrentDecisionLevel()
+              << FZENDL;
       sat_.Backtrack(sat_decision_level_.Value());
       DCHECK_EQ(sat_decision_level_.Value(), sat_.CurrentDecisionLevel());
     }
     const sat::BooleanVariable var = sat::BooleanVariable(index);
-#ifdef SAT_DEBUG
-    FZDLOG << "BooleanVariableBound: " << vars_[index]->DebugString()
-           << " with sat variable " << var << FZENDL;
-#endif
+    SATDLOG << "OnBooleanVariableFixed: " << vars_[index]->DebugString()
+            << " with sat variable " << var << FZENDL;
     const bool new_value = vars_[index]->Value() != 0;
-    sat::Literal literal(var, new_value);
+    const sat::Literal literal(var, new_value);
     if (sat_.Assignment().VariableIsAssigned(var)) {
       if (sat_.Assignment().LiteralIsTrue(literal)) {
-#ifdef SAT_DEBUG
-        FZDLOG << " - literal = " << literal.SignedValue()
-               << " already processed" << FZENDL;
-#endif
+        SATDLOG << " - literal = " << literal.SignedValue()
+                << " already processed" << FZENDL;
         return;
       } else {
-#ifdef SAT_DEBUG
-        FZDLOG << " - literal = " << literal.SignedValue()
-               << " assign opposite value" << FZENDL;
-#endif
+        SATDLOG << " - literal = " << literal.SignedValue()
+                << " assign opposite value" << FZENDL;
         solver()->Fail();
       }
     }
-#ifdef SAT_DEBUG
-    FZDLOG << " - enqueue literal = " << literal.SignedValue() << " at depth "
-           << sat_decision_level_.Value() << FZENDL;
-#endif
+    SATDLOG << " - enqueue literal = " << literal.SignedValue() << " at depth "
+            << sat_decision_level_.Value() << FZENDL;
     const int trail_index = sat_.LiteralTrail().Index();
     if (!sat_.EnqueueDecisionIfNotConflicting(literal)) {
-#ifdef SAT_DEBUG
-      FZDLOG << " - failure detected, should backtrack" << FZENDL;
-#endif
+      SATDLOG << " - failure detected, should backtrack" << FZENDL;
       solver()->Fail();
     } else {
       sat_decision_level_.SetValue(solver(), sat_.CurrentDecisionLevel());
-      PullSatAssignmentFrom(trail_index);
+      QueryAssignedSatLiterals(trail_index);
     }
   }
 
-  virtual void Post() {
+  void Post() override {
     demons_.resize(vars_.size());
     for (int i = 0; i < vars_.size(); ++i) {
       demons_[i] = MakeConstraintDemon1(solver(), this,
-                                        &SatPropagator::BooleanVariableBound,
-                                        "BooleanVariableBound", i);
+                                        &SatPropagator::OnBooleanVariableFixed,
+                                        "OnBooleanVariableFixed", i);
       vars_[i]->WhenDomain(demons_[i]);
     }
   }
 
-  virtual void InitialPropagate() {
-#ifdef SAT_DEBUG
-    FZDLOG << "Initial propagation on sat solver" << FZENDL;
-#endif
-    PullSatAssignmentFrom(0);
+  void InitialPropagate() override {
+    SATDLOG << "Initial propagation on sat solver" << FZENDL;
+    QueryAssignedSatLiterals(0);
 
     for (int i = 0; i < vars_.size(); ++i) {
       IntVar* const var = vars_[i];
       if (var->Bound()) {
-        BooleanVariableBound(i);
+        OnBooleanVariableFixed(i);
       }
     }
-#ifdef SAT_DEBUG
-    FZDLOG << " - done" << FZENDL;
-#endif
+    SATDLOG << " - done" << FZENDL;
   }
 
   sat::SatSolver* sat() { return &sat_; }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("SatConstraint(%d variables)", sat_.NumVariables());
   }
 
@@ -201,38 +180,33 @@ class SatPropagator : public Constraint {
   std::vector<sat::Literal> early_deductions_;
 };
 
-void DeclareBooleanVariable(SatPropagator* sat, IntVar* var) {
-  CHECK(sat->IsExpressionBoolean(var));
-  sat->Literal(var);
-}
-
 bool AddBoolEq(SatPropagator* sat, IntExpr* left, IntExpr* right) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
   sat->sat()->AddBinaryClause(left_literal.Negated(), right_literal);
   sat->sat()->AddBinaryClause(left_literal, right_literal.Negated());
   return true;
 }
 
 bool AddBoolLe(SatPropagator* sat, IntExpr* left, IntExpr* right) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
   sat->sat()->AddBinaryClause(left_literal.Negated(), right_literal);
   return true;
 }
 
 bool AddBoolNot(SatPropagator* sat, IntExpr* left, IntExpr* right) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
   sat->sat()->AddBinaryClause(left_literal.Negated(), right_literal.Negated());
   sat->sat()->AddBinaryClause(left_literal, right_literal);
   return true;
@@ -240,51 +214,51 @@ bool AddBoolNot(SatPropagator* sat, IntExpr* left, IntExpr* right) {
 
 bool AddBoolOrArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                          IntExpr* target) {
-  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
+  if (!sat->AllVariablesAreBoolean(vars) || !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   std::vector<sat::Literal> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]);
+    lits[i] = sat->GetOrCreateLiteral(vars[i]);
   }
   lits[vars.size()] = target_literal.Negated();
   sat->sat()->AddProblemClause(lits);
   for (int i = 0; i < vars.size(); ++i) {
     sat->sat()->AddBinaryClause(target_literal,
-                                sat->Literal(vars[i]).Negated());
+                                sat->GetOrCreateLiteral(vars[i]).Negated());
   }
   return true;
 }
 
 bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                           IntExpr* target) {
-  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
+  if (!sat->AllVariablesAreBoolean(vars) || !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   std::vector<sat::Literal> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]).Negated();
+    lits[i] = sat->GetOrCreateLiteral(vars[i]).Negated();
   }
   lits[vars.size()] = target_literal;
   sat->sat()->AddProblemClause(lits);
   for (int i = 0; i < vars.size(); ++i) {
     sat->sat()->AddBinaryClause(target_literal.Negated(),
-                                sat->Literal(vars[i]));
+                                sat->GetOrCreateLiteral(vars[i]));
   }
   return true;
 }
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
                                  const std::vector<IntVar*>& vars, IntExpr* target) {
-  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
+  if (!sat->AllVariablesAreBoolean(vars) || !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   std::vector<sat::Literal> lits(vars.size() + 1);
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]);
+    lits[i] = sat->GetOrCreateLiteral(vars[i]);
   }
   lits[vars.size()] = target_literal.Negated();
   sat->sat()->AddProblemClause(lits);
@@ -293,50 +267,26 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
 
 bool AddMaxBoolArrayLessEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                               IntExpr* target) {
-  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
+  if (!sat->AllVariablesAreBoolean(vars) || !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  const sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   for (int i = 0; i < vars.size(); ++i) {
-    const sat::Literal literal = sat->Literal(vars[i]).Negated();
+    const sat::Literal literal = sat->GetOrCreateLiteral(vars[i]).Negated();
     sat->sat()->AddBinaryClause(target_literal, literal);
   }
   return true;
 }
 
-bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
-                               IntExpr* target) {
-  if (vars.size() == 1) {
-    return AddBoolLe(sat, vars[0], target);
-  }
-  if (!sat->AllVariablesBoolean(vars) || !sat->IsExpressionBoolean(target)) {
-    return false;
-  }
-  IntVar* const extra = target->solver()->MakeBoolVar();
-  sat::Literal target_literal = sat->Literal(target);
-  sat::Literal extra_literal = sat->Literal(extra);
-  std::vector<sat::Literal> lits(vars.size() + 1);
-  for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]);
-  }
-  lits[vars.size()] = extra_literal.Negated();
-  sat->sat()->AddProblemClause(lits);
-  for (int i = 0; i < vars.size(); ++i) {
-    sat->sat()->AddBinaryClause(extra_literal, sat->Literal(vars[i]).Negated());
-  }
-  sat->sat()->AddBinaryClause(extra_literal.Negated(), target_literal);
-  return true;
-}
-
 bool AddBoolOrEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
                     IntExpr* target) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right) ||
+      !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   sat->sat()->AddTernaryClause(left_literal, right_literal,
                                target_literal.Negated());
   sat->sat()->AddBinaryClause(left_literal.Negated(), target_literal);
@@ -346,13 +296,13 @@ bool AddBoolOrEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
 
 bool AddBoolAndEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
                      IntExpr* target) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right) ||
+      !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   sat->sat()->AddTernaryClause(left_literal.Negated(), right_literal.Negated(),
                                target_literal);
   sat->sat()->AddBinaryClause(left_literal, target_literal.Negated());
@@ -362,13 +312,13 @@ bool AddBoolAndEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
 
 bool AddBoolIsEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
                     IntExpr* target) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right) ||
+      !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   sat->sat()->AddTernaryClause(left_literal.Negated(), right_literal,
                                target_literal.Negated());
   sat->sat()->AddTernaryClause(left_literal, right_literal.Negated(),
@@ -381,13 +331,13 @@ bool AddBoolIsEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
 
 bool AddBoolIsNEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
                      IntExpr* target) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right) ||
+      !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   sat->sat()->AddTernaryClause(left_literal.Negated(), right_literal,
                                target_literal);
   sat->sat()->AddTernaryClause(left_literal, right_literal.Negated(),
@@ -401,13 +351,13 @@ bool AddBoolIsNEqVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
 
 bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
                     IntExpr* target) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right) ||
+      !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   sat->sat()->AddTernaryClause(left_literal.Negated(), right_literal,
                                target_literal.Negated());
   sat->sat()->AddBinaryClause(left_literal, target_literal);
@@ -416,12 +366,12 @@ bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
 }
 
 bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars) {
-  if (!sat->AllVariablesBoolean(vars)) {
+  if (!sat->AllVariablesAreBoolean(vars)) {
     return false;
   }
   std::vector<sat::Literal> lits(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]);
+    lits[i] = sat->GetOrCreateLiteral(vars[i]);
   }
   sat->sat()->AddProblemClause(lits);
   return true;
@@ -429,24 +379,24 @@ bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& var
 
 bool AddBoolAndArrayEqualFalse(SatPropagator* sat,
                                const std::vector<IntVar*>& vars) {
-  if (!sat->AllVariablesBoolean(vars)) {
+  if (!sat->AllVariablesAreBoolean(vars)) {
     return false;
   }
   std::vector<sat::Literal> lits(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]).Negated();
+    lits[i] = sat->GetOrCreateLiteral(vars[i]).Negated();
   }
   sat->sat()->AddProblemClause(lits);
   return true;
 }
 
 bool AddAtMostOne(SatPropagator* sat, const std::vector<IntVar*>& vars) {
-  if (!sat->AllVariablesBoolean(vars)) {
+  if (!sat->AllVariablesAreBoolean(vars)) {
     return false;
   }
   std::vector<sat::Literal> lits(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]).Negated();
+    lits[i] = sat->GetOrCreateLiteral(vars[i]).Negated();
   }
   for (int i = 0; i < lits.size() - 1; ++i) {
     for (int j = i + 1; j < lits.size(); ++j) {
@@ -457,19 +407,19 @@ bool AddAtMostOne(SatPropagator* sat, const std::vector<IntVar*>& vars) {
 }
 
 bool AddAtMostNMinusOne(SatPropagator* sat, const std::vector<IntVar*>& vars) {
-  if (!sat->AllVariablesBoolean(vars)) {
+  if (!sat->AllVariablesAreBoolean(vars)) {
     return false;
   }
   std::vector<sat::Literal> lits(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
-    lits[i] = sat->Literal(vars[i]).Negated();
+    lits[i] = sat->GetOrCreateLiteral(vars[i]).Negated();
   }
   sat->sat()->AddProblemClause(lits);
   return true;
 }
 
 bool AddArrayXor(SatPropagator* sat, const std::vector<IntVar*>& vars) {
-  if (!sat->AllVariablesBoolean(vars)) {
+  if (!sat->AllVariablesAreBoolean(vars)) {
     return false;
   }
   return false;
@@ -477,13 +427,13 @@ bool AddArrayXor(SatPropagator* sat, const std::vector<IntVar*>& vars) {
 
 bool AddIntEqReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
                   IntExpr* target) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right) ||
+      !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right);
-  sat::Literal target_literal = sat->Literal(target);
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
   sat->sat()->AddTernaryClause(left_literal, right_literal, target_literal);
   sat->sat()->AddTernaryClause(left_literal.Negated(), right_literal.Negated(),
                                target_literal);
@@ -496,19 +446,20 @@ bool AddIntEqReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
 
 bool AddIntNeReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
                   IntExpr* target) {
-  if (!sat->IsExpressionBoolean(left) || !sat->IsExpressionBoolean(right) ||
-      !sat->IsExpressionBoolean(target)) {
+  if (!sat->ExpressionIsBoolean(left) || !sat->ExpressionIsBoolean(right) ||
+      !sat->ExpressionIsBoolean(target)) {
     return false;
   }
-  sat::Literal left_literal = sat->Literal(left);
-  sat::Literal right_literal = sat->Literal(right).Negated();
-  sat::Literal target_literal = sat->Literal(target);
-  sat->sat()->AddTernaryClause(left_literal, right_literal, target_literal);
-  sat->sat()->AddTernaryClause(left_literal.Negated(), right_literal.Negated(),
+  const sat::Literal left_literal = sat->GetOrCreateLiteral(left);
+  const sat::Literal right_literal = sat->GetOrCreateLiteral(right);
+  const sat::Literal target_literal = sat->GetOrCreateLiteral(target);
+  sat->sat()->AddTernaryClause(left_literal, right_literal.Negated(),
                                target_literal);
   sat->sat()->AddTernaryClause(left_literal.Negated(), right_literal,
+                               target_literal);
+  sat->sat()->AddTernaryClause(left_literal.Negated(), right_literal.Negated(),
                                target_literal.Negated());
-  sat->sat()->AddTernaryClause(left_literal, right_literal.Negated(),
+  sat->sat()->AddTernaryClause(left_literal, right_literal,
                                target_literal.Negated());
   return true;
 }
@@ -517,7 +468,7 @@ bool AddSumInRange(SatPropagator* sat, const std::vector<IntVar*>& vars,
                    int64 range_min, int64 range_max) {
   std::vector<sat::LiteralWithCoeff> terms(vars.size());
   for (int i = 0; i < vars.size(); ++i) {
-    const sat::Literal lit = sat->Literal(vars[i]);
+    const sat::Literal lit = sat->GetOrCreateLiteral(vars[i]);
     terms[i] = sat::LiteralWithCoeff(lit, 1);
   }
   sat->sat()->AddLinearConstraint(range_min > 0, sat::Coefficient(range_min),
@@ -530,5 +481,5 @@ SatPropagator* MakeSatPropagator(Solver* solver) {
   return solver->RevAlloc(new SatPropagator(solver));
 }
 
-int NumSatConstraints(SatPropagator* sat) { return 0; }
+#undef SATDLOG
 }  // namespace operations_research

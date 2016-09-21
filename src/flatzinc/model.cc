@@ -14,21 +14,13 @@
 #include "flatzinc/model.h"
 
 #include "base/hash.h"
-#include <iostream>  // NOLINT
 #include <set>
 #include <vector>
 
 #include "base/join.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
-
-DEFINE_bool(fz_logging, false,
-            "Print logging information from the flatzinc interpreter.");
-DEFINE_bool(fz_verbose, false,
-            "Print verbose logging information from the flatzinc interpreter.");
-DEFINE_bool(fz_debug, false,
-            "Print debug logging information from the flatzinc interpreter.");
-
+#include "flatzinc/logging.h"
 
 namespace operations_research {
 namespace fz {
@@ -104,6 +96,10 @@ void Domain::IntersectWithDomain(const Domain& other) {
   }
   // now deal with the intersection of two lists of values
   IntersectWithListOfIntegers(other.values);
+}
+
+void Domain::IntersectWithSingleton(int64 value) {
+  IntersectWithInterval(value, value);
 }
 
 void Domain::IntersectWithInterval(int64 imin, int64 imax) {
@@ -678,6 +674,10 @@ void Model::AddConstraint(const std::string& id, std::vector<Argument> arguments
   if (defines != nullptr) {
     defines->defining_constraint = constraint;
   }
+}
+
+void Model::AddConstraint(const std::string& id, std::vector<Argument> arguments) {
+  AddConstraint(id, std::move(arguments), false, nullptr);
 }
 
 void Model::AddOutput(OnSolutionOutput output) {

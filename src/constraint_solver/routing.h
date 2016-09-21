@@ -1335,6 +1335,8 @@ class RoutingModelVisitor : public BaseObject {
 // make the model faster and easier to solve.
 class RoutingDimension {
  public:
+  // Returns the model on which the dimension was created.
+  RoutingModel* model() const { return model_; }
   // Returns the transition value for a given pair of nodes (as var index);
   // this value is the one taken by the corresponding transit variable when
   // the 'next' variable for 'from_index' is bound to 'to_index'.
@@ -1349,6 +1351,7 @@ class RoutingDimension {
   // int64 var index).
   IntVar* CumulVar(int64 index) const { return cumuls_[index]; }
   IntVar* TransitVar(int64 index) const { return transits_[index]; }
+  IntVar* FixedTransitVar(int64 index) const { return fixed_transits_[index]; }
   IntVar* SlackVar(int64 index) const { return slacks_[index]; }
 #if !defined(SWIGPYTHON)
   // Like CumulVar(), TransitVar(), SlackVar() but return the whole variable

@@ -20,6 +20,7 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/stringpiece_utils.h"
 #include "base/hash.h"
 #include "flatzinc/model.h"
 
@@ -27,6 +28,8 @@ namespace operations_research {
 namespace fz {
 // The Presolver "pre-solves" a Model by applying some iterative
 // transformations to it, which may simplify and/or shrink the model.
+//
+// TODO(user): Error reporting of unfeasible models.
 class Presolver {
  public:
   // Recursively apply all the pre-solve rules to the model, until exhaustion.
@@ -44,11 +47,10 @@ class Presolver {
   // TODO(user): Returns the number of rules applied instead.
   bool Run(Model* model);
 
-  // TODO(user): Error reporting of unfeasible models.
-
   // Cleans the model for the CP solver.
-  // In particular, it knows about the sat connection and will remove the link
-  // (defining_constraint, target_variable) for boolean constraints.
+  // In particular, it knows if we use a sat solver inside the CP
+  // solver. In that case, for Boolean constraints, it remove the link
+  // (defining_constraint, target_variable) for Boolean constraints.
   void CleanUpModelForTheCpSolver(Model* model, bool use_sat);
 
   // Returns true iff the model was modified.
@@ -106,14 +108,15 @@ class Presolver {
   // expensive.
   void MergeIntEqNe(Model* model);
 
-  // First pass scan helpers.
+  // Parse constraint x == y - z (and z == y - x) and store the info.
+  // It will be useful to transform x == 0 into x == z in the first case.
   void StoreDifference(Constraint* ct);
 
   // Substitution support.
   void SubstituteEverywhere(Model* model);
   void SubstituteAnnotation(Annotation* ann);
 
-  // Presolve rules. They returns true iff that some presolve has been
+  // Presolve rules. They returns true iff some presolve has been
   // performed. These methods are called by the PresolveOneConstraint() method.
   bool PresolveBool2Int(Constraint* ct, std::string* log);
   bool PresolveIntEq(Constraint* ct, std::string* log);
@@ -152,6 +155,7 @@ class Presolver {
   // Helpers.
   void IntersectDomainWith(const Argument& arg, Domain* domain);
 
+  // This method wraps each rule, calls it and log its effect.
   bool ApplyRule(Constraint* ct, const std::string& rule_name,
                  std::function<bool(Constraint* ct, std::string*)> rule);
 
@@ -180,17 +184,17 @@ class Presolver {
       difference_map_;
 
   // Stores (x == y) == b
-  hash_map<IntegerVariable*, hash_map<IntegerVariable*, IntegerVariable*>>
+  hash_map<const IntegerVariable*, hash_map<IntegerVariable*, IntegerVariable*>>
       int_eq_reif_map_;
 
   // Stores all variables defined in the search annotations.
-  hash_set<IntegerVariable*> decision_variables_;
+  hash_set<const IntegerVariable*> decision_variables_;
 
   // For all variables, stores all constraints it appears in.
   hash_map<const IntegerVariable*, hash_set<Constraint*>> var_to_constraints_;
 
   // Count applications of presolve rules.
-  hash_map<const std::string, int> successful_rules_;
+  hash_map<std::string, int> successful_rules_;
 };
 }  // namespace fz
 }  // namespace operations_research

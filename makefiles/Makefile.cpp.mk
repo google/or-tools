@@ -87,14 +87,17 @@ faplibs: $(FAP_LIBS)
 
 FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX)
 FLATZINC_DEPS = \
+	$(SRC_DIR)/flatzinc/constraints.h \
 	$(SRC_DIR)/flatzinc/flatzinc_constraints.h \
+	$(SRC_DIR)/flatzinc/logging.h \
 	$(SRC_DIR)/flatzinc/model.h \
 	$(SRC_DIR)/flatzinc/parser.h \
-	$(GEN_DIR)/flatzinc/parser.tab.hh \
 	$(SRC_DIR)/flatzinc/presolve.h \
+	$(SRC_DIR)/flatzinc/reporting.h \
 	$(SRC_DIR)/flatzinc/sat_constraint.h \
-	$(SRC_DIR)/flatzinc/search.h \
+	$(SRC_DIR)/flatzinc/solver_data.h \
 	$(SRC_DIR)/flatzinc/solver.h \
+	$(SRC_DIR)/flatzinc/solver_util.h \
 	$(CP_DEPS) \
 	$(SAT_DEPS)
 FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
@@ -162,8 +165,8 @@ $(LIB_DIR)/$(LIB_PREFIX)dimacs.$(LIB_SUFFIX): $(DIMACS_OBJS)
 # FAP challenge problem format library
 
 FAP_OBJS=\
-	$(OBJ_DIR)/fap_model_printer.$O\
-	$(OBJ_DIR)/fap_parser.$O\
+	$(OBJ_DIR)/fap_model_printer.$O \
+	$(OBJ_DIR)/fap_parser.$O \
 	$(OBJ_DIR)/fap_utilities.$O
 
 $(OBJ_DIR)/fap_model_printer.$O: $(EX_DIR)/cpp/fap_model_printer.cc
@@ -177,18 +180,20 @@ $(OBJ_DIR)/fap_utilities.$O: $(EX_DIR)/cpp/fap_utilities.cc
 # Flatzinc code
 
 FLATZINC_OBJS=\
-	$(OBJ_DIR)/flatzinc/constraints.$O\
-	$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O\
-	$(OBJ_DIR)/flatzinc/model.$O\
-	$(OBJ_DIR)/flatzinc/parallel_support.$O\
-	$(OBJ_DIR)/flatzinc/parser.$O\
-	$(OBJ_DIR)/flatzinc/parser.tab.$O\
-	$(OBJ_DIR)/flatzinc/parser.yy.$O\
-	$(OBJ_DIR)/flatzinc/presolve.$O\
-	$(OBJ_DIR)/flatzinc/sat_constraint.$O\
-	$(OBJ_DIR)/flatzinc/search.$O\
-	$(OBJ_DIR)/flatzinc/sequential_support.$O\
-	$(OBJ_DIR)/flatzinc/solver.$O
+	$(OBJ_DIR)/flatzinc/constraints.$O \
+	$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O \
+	$(OBJ_DIR)/flatzinc/logging.$O \
+	$(OBJ_DIR)/flatzinc/model.$O \
+	$(OBJ_DIR)/flatzinc/parser.$O \
+	$(OBJ_DIR)/flatzinc/parser.tab.$O \
+	$(OBJ_DIR)/flatzinc/parser.yy.$O \
+	$(OBJ_DIR)/flatzinc/presolve.$O \
+	$(OBJ_DIR)/flatzinc/reporting.$O \
+	$(OBJ_DIR)/flatzinc/sat_constraint.$O \
+	$(OBJ_DIR)/flatzinc/solver.$O \
+	$(OBJ_DIR)/flatzinc/solver_data.$O \
+	$(OBJ_DIR)/flatzinc/solver_util.$O
+
 
 $(GEN_DIR)/flatzinc/parser.yy.cc: $(SRC_DIR)/flatzinc/parser.lex $(FLEX)
 	$(FLEX) -o$(GEN_DIR)/flatzinc/parser.yy.cc $(SRC_DIR)/flatzinc/parser.lex
@@ -204,11 +209,11 @@ $(OBJ_DIR)/flatzinc/constraints.$O: $(SRC_DIR)/flatzinc/constraints.cc $(FLATZIN
 $(OBJ_DIR)/flatzinc/flatzinc_constraints.$O: $(SRC_DIR)/flatzinc/flatzinc_constraints.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc_constraints.$O
 
+$(OBJ_DIR)/flatzinc/logging.$O: $(SRC_DIR)/flatzinc/logging.cc $(SRC_DIR)/flatzinc/logging.h $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Slogging.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Slogging.$O
+
 $(OBJ_DIR)/flatzinc/model.$O: $(SRC_DIR)/flatzinc/model.cc $(SRC_DIR)/flatzinc/model.h $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Smodel.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Smodel.$O
-
-$(OBJ_DIR)/flatzinc/parallel_support.$O: $(SRC_DIR)/flatzinc/parallel_support.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparallel_support.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparallel_support.$O
 
 $(OBJ_DIR)/flatzinc/parser.$O: $(SRC_DIR)/flatzinc/parser.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.$O
@@ -222,17 +227,20 @@ $(OBJ_DIR)/flatzinc/parser.yy.$O: $(GEN_DIR)/flatzinc/parser.yy.cc $(FLATZINC_DE
 $(OBJ_DIR)/flatzinc/presolve.$O: $(SRC_DIR)/flatzinc/presolve.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Spresolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Spresolve.$O
 
+$(OBJ_DIR)/flatzinc/reporting.$O: $(SRC_DIR)/flatzinc/reporting.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sreporting.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sreporting.$O
+
 $(OBJ_DIR)/flatzinc/sat_constraint.$O: $(SRC_DIR)/flatzinc/sat_constraint.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssat_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssat_constraint.$O
 
-$(OBJ_DIR)/flatzinc/search.$O: $(SRC_DIR)/flatzinc/search.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssearch.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssearch.$O
-
-$(OBJ_DIR)/flatzinc/sequential_support.$O: $(SRC_DIR)/flatzinc/sequential_support.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssequential_support.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssequential_support.$O
-
 $(OBJ_DIR)/flatzinc/solver.$O: $(SRC_DIR)/flatzinc/solver.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver.$O
+
+$(OBJ_DIR)/flatzinc/solver_data.$O: $(SRC_DIR)/flatzinc/solver_data.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver_data.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver_data.$O
+
+$(OBJ_DIR)/flatzinc/solver_util.$O: $(SRC_DIR)/flatzinc/solver_util.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver_util.$O
 
 $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX): $(FLATZINC_OBJS)
 	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(FLATZINC_OBJS)

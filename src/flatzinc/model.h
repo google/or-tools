@@ -15,9 +15,8 @@
 #define OR_TOOLS_FLATZINC_MODEL_H_
 
 #include "base/hash.h"
-#include <iostream>
 #include <string>
-#include "base/commandlineflags.h"
+
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
@@ -27,19 +26,9 @@
 
 namespace operations_research {
 namespace fz {
-class Constraint;
+
+struct Constraint;
 class Model;
-class IntegerVariable;
-
-#define FZENDL std::endl
-#define FZLOG \
-  if (FLAGS_fz_logging) std::cout << "%% "
-
-#define FZVLOG \
-  if (FLAGS_fz_verbose) std::cout << "%%%% "
-
-#define FZDLOG \
-  if (FLAGS_fz_debug) std::cout << "%%%%%% "
 
 // A domain represents the possible values of a variable, and its type
 // (which carries display information, i.e. a Boolean will be displayed
@@ -79,6 +68,7 @@ struct Domain {
 
   // All the following modifiers change the internal representation
   //   list to interval or interval to list.
+  void IntersectWithSingleton(int64 value);
   void IntersectWithDomain(const Domain& domain);
   void IntersectWithInterval(int64 interval_min, int64 interval_max);
   void IntersectWithListOfIntegers(const std::vector<int64>& values);
@@ -320,8 +310,12 @@ class Model {
   IntegerVariable* AddVariable(const std::string& name, const Domain& domain,
                                bool temporary);
   IntegerVariable* AddConstant(int64 value);
+  // Creates and add a constraint to the model.
+  // The parameter strong is an indication from the model that prefers stronger
+  // (and more expensive version of the propagator).
   void AddConstraint(const std::string& type, std::vector<Argument> arguments,
-                     bool is_domain, IntegerVariable* target_variable);
+                     bool strong, IntegerVariable* target_variable);
+  void AddConstraint(const std::string& type, std::vector<Argument> arguments);
   void AddOutput(OnSolutionOutput output);
 
   // Set the search annotations and the objective: either simply satisfy the
