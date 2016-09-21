@@ -33,6 +33,8 @@ https://pypi.python.org/pypi/setuptools
 make sure you use \"""" + sys.executable + """\" during the installation""")
     raise SystemExit
 
+from pkg_resources import parse_version
+
 #try to import ortools
 try:
 	import ortools
@@ -49,7 +51,7 @@ except ImportError:
 
 #check ortools version
 try:
-	if current_ortools_version > ortools.__version__:
+	if parse_version(current_ortools_version) > parse_version(ortools.__version__):
 		raise Exception
 	print_ ("or-tools version : " + ortools.__version__)
 	print_ (inspect.getfile(ortools) + "\n")
@@ -60,7 +62,7 @@ except (AttributeError, Exception):
 #check protobuf version
 #print_(cmp(minimum_protobuf_version, google.protobuf.__version__) + "\n")
 try:
-	if minimum_protobuf_version > google.protobuf.__version__:
+	if parse_version(minimum_protobuf_version) > parse_version(google.protobuf.__version__):
 		raise Exception
 	print_ ("protobuf version : " + google.protobuf.__version__)
 	print_ (inspect.getfile(google.protobuf) + "\n")
