@@ -33,6 +33,7 @@
 #include "flatzinc/parser.h"
 #include "flatzinc/presolve.h"
 #include "flatzinc/reporting.h"
+#include "flatzinc/sat_fz_solver.h"
 #include "flatzinc/solver.h"
 #include "flatzinc/solver_util.h"
 
@@ -61,6 +62,8 @@ DEFINE_bool(
     verbose_impact, false,
     "Increase verbosity of the impact based search when used in free search.");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread.");
+
+DEFINE_bool(use_fz_sat, false, "Use the SAT/CP solver.");
 
 DECLARE_bool(log_prefix);
 DECLARE_bool(use_sat);
@@ -300,6 +303,12 @@ int main(int argc, char** argv) {
   operations_research::fz::Model model =
       operations_research::fz::ParseFlatzincModel(input,
                                                   !FLAGS_read_from_stdin);
-  operations_research::fz::Solve(model);
+
+  if (FLAGS_use_fz_sat) {
+    operations_research::sat::SolveWithSat(
+        model, operations_research::fz::SingleThreadParameters());
+  } else {
+    operations_research::fz::Solve(model);
+  }
   return EXIT_SUCCESS;
 }

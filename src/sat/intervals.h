@@ -201,9 +201,6 @@ inline std::function<void(Model*)> EndAtEnd(IntervalVariable i1,
   };
 }
 
-// TODO(user): Add a propagator on the interval duration depending
-// on the set of alternatives that are currently not executable.
-//
 // This requires that all the alternatives are optional tasks.
 inline std::function<void(Model*)> IntervalWithAlternatives(
     IntervalVariable master, const std::vector<IntervalVariable>& members) {

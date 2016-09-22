@@ -1649,10 +1649,10 @@ bool Presolver::SimplifyIntNeReif(Constraint* ct, std::string* log) {
       ContainsKey(int_eq_reif_map_[ct->arguments[0].Var()],
                   ct->arguments[1].Var())) {
     log->append("merge constraint with opposite constraint");
-    IntegerVariable* const opposite =
+    IntegerVariable* const opposite_boolvar =
         int_eq_reif_map_[ct->arguments[0].Var()][ct->arguments[1].Var()];
-    ct->arguments[0] = Argument::IntVarRef(opposite);
-    ct->arguments[1] = Argument::IntVarRef(ct->arguments[1].Var());
+    ct->arguments[0] = Argument::IntVarRef(opposite_boolvar);
+    ct->arguments[1] = Argument::IntVarRef(ct->arguments[2].Var());
     ct->RemoveArg(2);
     ct->type = "bool_not";
     return true;

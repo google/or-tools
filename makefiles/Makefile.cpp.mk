@@ -96,6 +96,7 @@ FLATZINC_DEPS = \
 	$(SRC_DIR)/flatzinc/presolve.h \
 	$(SRC_DIR)/flatzinc/reporting.h \
 	$(SRC_DIR)/flatzinc/sat_constraint.h \
+	$(SRC_DIR)/flatzinc/sat_fz_solver.h \
 	$(SRC_DIR)/flatzinc/solver_data.h \
 	$(SRC_DIR)/flatzinc/solver.h \
 	$(SRC_DIR)/flatzinc/solver_util.h \
@@ -191,6 +192,7 @@ FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/presolve.$O \
 	$(OBJ_DIR)/flatzinc/reporting.$O \
 	$(OBJ_DIR)/flatzinc/sat_constraint.$O \
+	$(OBJ_DIR)/flatzinc/sat_fz_solver.$O \
 	$(OBJ_DIR)/flatzinc/solver.$O \
 	$(OBJ_DIR)/flatzinc/solver_data.$O \
 	$(OBJ_DIR)/flatzinc/solver_util.$O
@@ -233,6 +235,9 @@ $(OBJ_DIR)/flatzinc/reporting.$O: $(SRC_DIR)/flatzinc/reporting.cc $(FLATZINC_DE
 
 $(OBJ_DIR)/flatzinc/sat_constraint.$O: $(SRC_DIR)/flatzinc/sat_constraint.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssat_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssat_constraint.$O
+
+$(OBJ_DIR)/flatzinc/sat_fz_solver.$O: $(SRC_DIR)/flatzinc/sat_fz_solver.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssat_fz_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssat_fz_solver.$O
 
 $(OBJ_DIR)/flatzinc/solver.$O: $(SRC_DIR)/flatzinc/solver.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver.$O

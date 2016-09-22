@@ -206,12 +206,12 @@ bool IsOneOfPropagator::Propagate(Trail* trail) {
         std::vector<Literal>* literal_reason;
         std::vector<IntegerLiteral>* integer_reason;
         if (current_min > values_[i]) {
-          integer_trail_->EnqueueLiteral(
-              selectors_[i].Negated(), &literal_reason, &integer_reason, trail);
+          integer_trail_->EnqueueLiteral(selectors_[i].Negated(),
+                                         &literal_reason, &integer_reason);
           integer_reason->push_back(integer_trail_->LowerBoundAsLiteral(var_));
         } else if (current_max < values_[i]) {
-          integer_trail_->EnqueueLiteral(
-              selectors_[i].Negated(), &literal_reason, &integer_reason, trail);
+          integer_trail_->EnqueueLiteral(selectors_[i].Negated(),
+                                         &literal_reason, &integer_reason);
           integer_reason->push_back(integer_trail_->UpperBoundAsLiteral(var_));
         }
       }

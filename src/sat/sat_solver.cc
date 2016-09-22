@@ -1617,7 +1617,7 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
   decisions_[current_decision_level_] = Decision(trail_->Index(), literal);
   ++current_decision_level_;
   trail_->SetDecisionLevel(current_decision_level_);
-  trail_->EnqueueSeachDecision(literal);
+  trail_->EnqueueSearchDecision(literal);
 }
 
 Literal SatSolver::NextBranch() {

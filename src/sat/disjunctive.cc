@@ -213,6 +213,9 @@ bool DisjunctiveConstraint::Propagate(Trail* trail) {
 
   // Loop until we reach the fixed-point. It should be unique (see Petr Villim
   // PhD).
+  //
+  // TODO(user): Some of these passes are idempotent, so there is no need to
+  // call them if their input didn't change! Improve that.
   while (true) {
     const int64 old_timestamp = integer_trail_->num_enqueues();
 
@@ -292,44 +295,57 @@ void DisjunctiveConstraint::AddMaxEndReason(int t, IntegerValue upper_bound) {
       IntegerLiteral::LowerOrEqual(end_vars_[t], upper_bound));
 }
 
-bool DisjunctiveConstraint::CheckIntervalForConflict(int t, Trail* trail) {
-  // TODO(user): instead of this, we could propagate MinEnd()/MaxStart() and
-  // let the code in integer.h detect empty domains.
-  if (CapAdd(MinStart(t), MinDuration(t)) > MaxEnd(t)) {
-    integer_reason_.clear();
-    integer_reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(start_vars_[t]));
-    integer_reason_.push_back(
-        integer_trail_->UpperBoundAsLiteral(end_vars_[t]));
-    if (duration_vars_[t] != kNoIntegerVariable) {
-      integer_reason_.push_back(
-          integer_trail_->LowerBoundAsLiteral(duration_vars_[t]));
-    }
+void DisjunctiveConstraint::AddMaxStartReason(int t, IntegerValue upper_bound) {
+  integer_reason_.push_back(
+      IntegerLiteral::LowerOrEqual(start_vars_[t], upper_bound));
+}
 
-    if (!task_is_currently_present_[t]) {
-      // We can propagate reason_for_presence_[t] to false.
-      // Note that it could have been already propagated in which case we do
-      // nothing.
-      if (trail->Assignment().LiteralIsFalse(
-              Literal(reason_for_presence_[t]))) {
-        return true;
-      }
-      DCHECK_NE(reason_for_presence_[t], kNoLiteralIndex);
-      literal_reason_.clear();
-      integer_trail_->EnqueueLiteral(Literal(reason_for_presence_[t]).Negated(),
-                                     literal_reason_, integer_reason_, trail);
-      return true;
-    } else {
-      // Conflict.
-      std::vector<Literal>* conflict = trail->MutableConflict();
-      conflict->clear();
-      if (reason_for_presence_[t] != kNoLiteralIndex) {
-        conflict->push_back(Literal(reason_for_presence_[t]).Negated());
-      }
-      integer_trail_->MergeReasonInto(integer_reason_, conflict);
+bool DisjunctiveConstraint::IncreaseMinStart(int t,
+                                             IntegerValue new_min_start) {
+  if (!integer_trail_->Enqueue(
+          IntegerLiteral::GreaterOrEqual(start_vars_[t], new_min_start),
+          literal_reason_, integer_reason_)) {
+    return false;
+  }
+
+  // We propagate right away the new min-end lower-bound we have.
+  const IntegerValue min_end_lb = new_min_start + MinDuration(t);
+  if (MinEnd(t) < min_end_lb) {
+    integer_reason_.clear();
+    literal_reason_.clear();
+    AddMinStartReason(t, new_min_start);
+    AddMinDurationReason(t);
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::GreaterOrEqual(end_vars_[t], min_end_lb),
+            literal_reason_, integer_reason_)) {
       return false;
     }
   }
+
+  return true;
+}
+
+bool DisjunctiveConstraint::DecreaseMaxEnd(int t, IntegerValue new_max_end) {
+  if (!integer_trail_->Enqueue(
+          IntegerLiteral::LowerOrEqual(end_vars_[t], new_max_end),
+          literal_reason_, integer_reason_)) {
+    return false;
+  }
+
+  // We propagate right away the new max-start upper-bound we have.
+  const IntegerValue max_start_ub = new_max_end - MinDuration(t);
+  if (MaxStart(t) > max_start_ub) {
+    integer_reason_.clear();
+    literal_reason_.clear();
+    AddMaxEndReason(t, new_max_end);
+    AddMinDurationReason(t);
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::LowerOrEqual(start_vars_[t], max_start_ub),
+            literal_reason_, integer_reason_)) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -441,7 +457,7 @@ bool DisjunctiveConstraint::OverloadCheckingPass(IntegerTrail* integer_trail,
         DCHECK_NE(reason_for_presence_[t], kNoLiteralIndex);
         integer_trail->EnqueueLiteral(
             Literal(reason_for_presence_[t]).Negated(), literal_reason_,
-            integer_reason_, trail);
+            integer_reason_);
       }
     }
 
@@ -509,7 +525,7 @@ bool DisjunctiveConstraint::DetectablePrecedencePass(
       integer_reason_.clear();
 
       // We need:
-      // - MaxStart(ct) < MinEnd(t) for the detectable precedence
+      // - MaxStart(ct) < MinEnd(t) for the detectable precedence.
       // - MinStart(ct) > window_start for the min_end_of_critical_tasks reason.
       const IntegerValue window_start = sorted_tasks[critical_index].min_start;
       for (int i = critical_index; i < sorted_tasks.size(); ++i) {
@@ -520,10 +536,7 @@ bool DisjunctiveConstraint::DetectablePrecedencePass(
         DCHECK_LT(MaxStart(ct), min_end);
         AddPresenceAndDurationReason(ct);
         AddMinStartReason(ct, window_start);
-
-        // TODO(user): Add the reason on MaxStart() instead, it will be more
-        // correct for task with non-fixed duration.
-        AddMaxEndReason(ct, CapAdd(min_end, MinDuration(ct) - 1));
+        AddMaxStartReason(ct, min_end - 1);
       }
 
       // Add the reason for t (we don't need the max-end or presence reason).
@@ -532,13 +545,7 @@ bool DisjunctiveConstraint::DetectablePrecedencePass(
 
       // This augment the min-start of t and subsequently it can augment the
       // next min_end_of_critical_tasks, but our deduction is still valid.
-      if (!integer_trail->Enqueue(
-              IntegerLiteral::GreaterOrEqual(start_vars_[t],
-                                             min_end_of_critical_tasks),
-              literal_reason_, integer_reason_)) {
-        return false;
-      }
-      if (!CheckIntervalForConflict(t, trail)) return false;
+      if (!IncreaseMinStart(t, min_end_of_critical_tasks)) return false;
 
       // We need to reorder t inside task_set_.
       task_set_.NotifyEntryIsNowLastIfPresent({t, MinStart(t), MinDuration(t)});
@@ -587,16 +594,13 @@ bool DisjunctiveConstraint::PrecedencePass(IntegerTrail* integer_trail,
               Literal(reason_for_beeing_before_[ct]).Negated());
         }
       }
+
+      // TODO(user): If var is actually a min-start of an interval, we
+      // could push the min-end and check the interval consistency right away.
       if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, min_end),
                                   literal_reason_, integer_reason_)) {
         return false;
       }
-
-      // TODO(user): for non-optional intervals, we could check right away that
-      // the domain of var is non-empty. Or for a var that correspond to one
-      // of the interval bounds, we could detect infeasibility early with
-      // CheckIntervalForConflict(). Not doing should be fine, it just postpone
-      // a bit the conflict detection.
     }
   }
   return true;
@@ -632,8 +636,8 @@ bool DisjunctiveConstraint::NotLastPass(IntegerTrail* integer_trail,
     // [(critical tasks)
     //              (duration_t)]
     //
-    // So we can deduce that the max-end of t is smaller that the largest
-    // max-start of the critical tasks.
+    // So we can deduce that the max-end of t is smaller than or equal to the
+    // largest max-start of the critical tasks.
     //
     // Note that this works as well when task_is_currently_present_[t] is false.
     int critical_index = 0;
@@ -641,49 +645,37 @@ bool DisjunctiveConstraint::NotLastPass(IntegerTrail* integer_trail,
         task_set_.ComputeMinEnd(/*task_to_ignore=*/t, &critical_index);
     if (min_end_of_critical_tasks <= MaxStart(t)) continue;
 
-    // Find the largest max-start of the critical tasks (excluding t). This
-    // will be a valid new max-end for t.
-    IntegerValue new_max_end = kMinIntegerValue;
-    int task_responsible_for_new_max_end = -1;
+    // Find the largest max-start of the critical tasks (excluding t). The
+    // max-end for t need to be smaller than or equal to this.
+    IntegerValue largest_ct_max_start = kMinIntegerValue;
     const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
     for (int i = critical_index; i < sorted_tasks.size(); ++i) {
       const int ct = sorted_tasks[i].task;
       if (t == ct) continue;
       const IntegerValue max_start = MaxStart(ct);
-      if (max_start > new_max_end) {
-        new_max_end = max_start;
-        task_responsible_for_new_max_end = ct;
+      if (max_start > largest_ct_max_start) {
+        largest_ct_max_start = max_start;
       }
     }
-    if (max_end > new_max_end) {
+    if (max_end > largest_ct_max_start) {
       literal_reason_.clear();
       integer_reason_.clear();
 
-      // We don't need the max-end reason of the critical tasks except the
-      // one for the task responsible for new_max_end.
       const IntegerValue window_start = sorted_tasks[critical_index].min_start;
       for (int i = critical_index; i < sorted_tasks.size(); ++i) {
         const int ct = sorted_tasks[i].task;
         if (ct == t) continue;
         AddPresenceAndDurationReason(ct);
         AddMinStartReason(ct, window_start);
-        if (ct == task_responsible_for_new_max_end) {
-          AddMaxEndReason(ct, MaxEnd(ct));
-        }
+        AddMaxStartReason(ct, largest_ct_max_start);
       }
 
-      // Add the reason for t (we don't need the min-start or presence reason).
-      AddMinDurationReason(t);
-      AddMaxEndReason(t, CapAdd(min_end_of_critical_tasks, MinDuration(t) - 1));
+      // Add the reason for t, we only need the max-start.
+      AddMaxStartReason(t, min_end_of_critical_tasks - 1);
 
       // Enqueue the new max-end for t.
       // Note that changing it will not influence the rest of the loop.
-      if (!integer_trail->Enqueue(
-              IntegerLiteral::LowerOrEqual(end_vars_[t], new_max_end),
-              literal_reason_, integer_reason_)) {
-        return false;
-      }
-      if (!CheckIntervalForConflict(t, trail)) return false;
+      if (!DecreaseMaxEnd(t, largest_ct_max_start)) return false;
     }
   }
   return true;
@@ -859,13 +851,9 @@ bool DisjunctiveConstraint::EdgeFindingPass(IntegerTrail* integer_trail,
         // TODO(user): propagate the precedence Boolean here too? I think it
         // will be more powerful. Even if eventually all these precedence will
         // become detectable (see Petr Villim PhD).
-        if (!integer_trail->Enqueue(
-                IntegerLiteral::GreaterOrEqual(start_vars_[gray_task],
-                                               min_end_of_critical_tasks),
-                literal_reason_, integer_reason_)) {
+        if (!IncreaseMinStart(gray_task, min_end_of_critical_tasks)) {
           return false;
         }
-        if (!CheckIntervalForConflict(gray_task, trail)) return false;
       }
 
       // Remove the gray_task from sorted_tasks_.

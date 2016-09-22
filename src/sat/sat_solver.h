@@ -322,15 +322,17 @@ class SatSolver {
   const std::vector<BinaryClause>& NewlyAddedBinaryClauses();
   void ClearNewlyAddedBinaryClauses();
 
-  // Various getters of the current solver state.
   struct Decision {
     Decision() : trail_index(-1) {}
     Decision(int i, Literal l) : trail_index(i), literal(l) {}
     int trail_index;
     Literal literal;
   };
-  int CurrentDecisionLevel() const { return current_decision_level_; }
+
+  // Note that the Decisions() vector is always of size NumVariables(), and that
+  // only the first CurrentDecisionLevel() entries have a meaning.
   const std::vector<Decision>& Decisions() const { return decisions_; }
+  int CurrentDecisionLevel() const { return current_decision_level_; }
   const Trail& LiteralTrail() const { return *trail_; }
   const VariablesAssignment& Assignment() const { return trail_->Assignment(); }
 
@@ -371,6 +373,10 @@ class SatSolver {
     CHECK(!trail_->Assignment().LiteralIsFalse(b));
     binary_implication_graph_.AddBinaryClause(a, b);
   }
+
+  // Performs propagation of the recently enqueued elements.
+  // Mainly visible for testing.
+  bool Propagate();
 
  private:
   // Calls Propagate() and returns true if no conflict occured. Otherwise,
@@ -486,8 +492,7 @@ class SatSolver {
   // True and Enqueue() this change.
   void EnqueueNewDecision(Literal literal);
 
-  // Performs propagation of the recently enqueued elements.
-  bool Propagate();
+  // Returns true if everything has been propagated.
   bool PropagationIsDone() const;
 
   // Update the propagators_ list with the relevant propagators.
@@ -940,6 +945,32 @@ inline std::function<void(Model*)> ClauseConstraint(
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
         /*use_lower_bound=*/true, Coefficient(1),
         /*use_upper_bound=*/false, Coefficient(1), &cst);
+  };
+}
+
+// The a => b constraint.
+inline std::function<void(Model*)> Implication(Literal a, Literal b) {
+  return [=](Model* model) {
+    model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
+  };
+}
+
+// This can be used to enumerate all the solutions. After each SAT call to
+// Solve(), calling this will reset the solver and exclude the current solution
+// so that the next call to Solve() will give a new solution or UNSAT is there
+// is no more new solutions.
+inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
+  return [=](Model* model) {
+    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+
+    // Note that we only exclude the current decisions, which is an efficient
+    // way to not get the same SAT assignment.
+    std::vector<Literal> exlude_solution;
+    for (int i = 0; i < sat_solver->CurrentDecisionLevel(); ++i) {
+      exlude_solution.push_back(sat_solver->Decisions()[i].literal.Negated());
+    }
+    sat_solver->Backtrack(0);
+    model->Add(ClauseConstraint(exlude_solution));
   };
 }
 

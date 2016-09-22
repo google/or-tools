@@ -18,6 +18,65 @@
 namespace operations_research {
 namespace sat {
 
+void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var,
+                                         std::vector<IntegerValue> values) {
+  CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
+  CHECK(!values.empty());  // UNSAT problem. We don't deal with that here.
+
+  STLSortAndRemoveDuplicates(&values);
+
+  // TODO(user): This case is annoying, not sure yet how to best fix the
+  // variable. There is certainly no need to create a Boolean variable, but
+  // one needs to talk to IntegerTrail to fix the variable and we don't want
+  // the encoder to depend on this. So for now we fail here and it is up to
+  // the caller to deal with this case.
+  CHECK_NE(values.size(), 1);
+
+  // If the variable has already been fully encoded, for now we check that
+  // the sets of value is the same.
+  //
+  // TODO(user): Take the intersection, and handle that case in the constraints
+  // creation functions.
+  if (ContainsKey(full_encoding_index_, i_var)) {
+    const std::vector<ValueLiteralPair>& encoding = FullDomainEncoding(i_var);
+    CHECK_EQ(values.size(), encoding.size());
+    for (int i = 0; i < values.size(); ++i) {
+      CHECK_EQ(values[i], encoding[i].value);
+    }
+    return;
+  }
+
+  std::vector<ValueLiteralPair> encoding;
+  if (values.size() == 2) {
+    const BooleanVariable var = sat_solver_->NewBooleanVariable();
+    encoding.push_back({values[0], Literal(var, true)});
+    encoding.push_back({values[1], Literal(var, false)});
+  } else {
+    std::vector<sat::LiteralWithCoeff> cst;
+    for (const IntegerValue value : values) {
+      const BooleanVariable var = sat_solver_->NewBooleanVariable();
+      encoding.push_back({value, Literal(var, true)});
+      cst.push_back(LiteralWithCoeff(Literal(var, true), Coefficient(1)));
+    }
+    CHECK(sat_solver_->AddLinearConstraint(true, sat::Coefficient(1), true,
+                                           sat::Coefficient(1), &cst));
+  }
+
+  full_encoding_index_[i_var] = full_encoding_.size();
+  full_encoding_.push_back(encoding);  // copy because we need it below.
+
+  // Deal with NegationOf(i_var).
+  //
+  // TODO(user): This seems a bit wasted, but it does simplify the code at a
+  // somehow small cost.
+  std::reverse(encoding.begin(), encoding.end());
+  for (auto& entry : encoding) {
+    entry.value = -entry.value;  // Reverse the value.
+  }
+  full_encoding_index_[NegationOf(i_var)] = full_encoding_.size();
+  full_encoding_.push_back(std::move(encoding));
+}
+
 void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
   if (i_lit.var >= encoding_by_var_.size()) {
     encoding_by_var_.resize(i_lit.var + 1);
@@ -89,21 +148,94 @@ bool IntegerTrail::Propagate(Trail* trail) {
     CHECK_EQ(trail->CurrentDecisionLevel(), integer_decision_levels_.size());
   }
 
+  // Value encoder.
+  //
+  // TODO(user): There is no need to maintain the bounds of such variable if
+  // they are never used in any constraint!
+  //
+  // Algorithm:
+  //  1/ See if new variables are fully encoded and initialize them.
+  //  2/ In the loop below, each time a "min" variable was assigned to false,
+  //     update the associated variable bounds, and change the watched "min".
+  //     This step is is O(num variables at false between the old and new min).
+  //
+  // The data structure are reversible.
+  watched_min_.SetLevel(trail->CurrentDecisionLevel());
+  current_min_.SetLevel(trail->CurrentDecisionLevel());
+  if (encoder_->GetFullyEncodedVariables().size() != num_encoded_variables_) {
+    num_encoded_variables_ = encoder_->GetFullyEncodedVariables().size();
+
+    // for now this is only supported at level zero. Otherwise we need to
+    // inspect the trail to properly compute all the min.
+    //
+    // TODO(user): Don't rescan all the variables from scratch, we could only
+    // scan the new ones. But then we need a mecanism to detect the new ones.
+    CHECK_EQ(trail->CurrentDecisionLevel(), 0);
+    for (const auto& entry : encoder_->GetFullyEncodedVariables()) {
+      IntegerVariable var = entry.first;
+      const auto& encoding = encoder_->FullDomainEncoding(var);
+      for (int i = 0; i < encoding.size(); ++i) {
+        if (!trail_->Assignment().LiteralIsFalse(encoding[i].literal)) {
+          watched_min_.Set(encoding[i].literal.NegatedIndex(), {var, i});
+          current_min_.Set(var, i);
+
+          // No reason because we are at level zero.
+          if (!Enqueue(IntegerLiteral::GreaterOrEqual(var, encoding[i].value),
+                       {}, {})) {
+            return false;
+          }
+          break;
+        }
+      }
+    }
+  }
+
   // Process all the "associated" literals and Enqueue() the corresponding
   // bounds.
   while (propagation_trail_index_ < trail->Index()) {
     const Literal literal = (*trail)[propagation_trail_index_++];
-    const IntegerLiteral i_lit = encoder_->GetIntegerLiteral(literal);
-    if (i_lit.var < 0) continue;
 
-    // The reason is simply the associated literal.
-    if (!Enqueue(i_lit, {literal.Negated()}, {})) return false;
+    // Bound encoder.
+    const IntegerLiteral i_lit = encoder_->GetIntegerLiteral(literal);
+    if (i_lit.var >= 0) {
+      // The reason is simply the associated literal.
+      if (!Enqueue(i_lit, {literal.Negated()}, {})) return false;
+    }
+
+    // Value encoder.
+    if (watched_min_.ContainsKey(literal.Index())) {
+      // A watched min value just became false.
+      const auto pair = watched_min_.FindOrDie(literal.Index());
+      const IntegerVariable var = pair.first;
+      const int min = pair.second;
+      const auto& encoding = encoder_->FullDomainEncoding(var);
+      std::vector<Literal> literal_reason = {literal.Negated()};
+      for (int i = min + 1; i < encoding.size(); ++i) {
+        if (!trail_->Assignment().LiteralIsFalse(encoding[i].literal)) {
+          watched_min_.EraseOrDie(literal.Index());
+          watched_min_.Set(encoding[i].literal.NegatedIndex(), {var, i});
+          current_min_.Set(var, i);
+
+          // Note that we also need the fact that all smaller value are false
+          // for the propagation. We use the current lower bound for that.
+          if (!Enqueue(IntegerLiteral::GreaterOrEqual(var, encoding[i].value),
+                       literal_reason, {LowerBoundAsLiteral(var)})) {
+            return false;
+          }
+          break;
+        } else {
+          literal_reason.push_back(encoding[i].literal);
+        }
+      }
+    }
   }
 
   return true;
 }
 
 void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
+  watched_min_.SetLevel(trail.CurrentDecisionLevel());
+  current_min_.SetLevel(trail.CurrentDecisionLevel());
   propagation_trail_index_ =
       std::min(propagation_trail_index_, literal_trail_index);
 
@@ -171,6 +303,28 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
   return prev_trail_index;
 }
 
+bool IntegerTrail::EnqueueAssociatedLiteral(
+    Literal literal, IntegerLiteral i_lit,
+    const std::vector<Literal>& literals_reason,
+    const std::vector<IntegerLiteral>& bounds_reason) {
+  if (!trail_->Assignment().VariableIsAssigned(literal.Variable())) {
+    // The reason is simply i_lit and will be expanded lazily when needed.
+    std::vector<Literal>* unused;
+    std::vector<IntegerLiteral>* integer_reason;
+    EnqueueLiteral(literal, &unused, &integer_reason);
+    integer_reason->push_back(i_lit);
+    return true;
+  }
+  if (trail_->Assignment().LiteralIsFalse(literal)) {
+    std::vector<Literal>* conflict = trail_->MutableConflict();
+    *conflict = literals_reason;
+    conflict->push_back(literal);
+    MergeReasonInto(bounds_reason, conflict);
+    return false;
+  }
+  return true;
+}
+
 bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
                            const std::vector<Literal>& literals_reason,
                            const std::vector<IntegerLiteral>& bounds_reason) {
@@ -178,8 +332,58 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   if (i_lit.bound <= vars_[i_lit.var].current_bound) return true;
   ++num_enqueues_;
 
-  // Check if the integer variable has an empty domain.
+  // Deal with fully encoded variable. We want to do that first because this may
+  // make the IntegerLiteral bound stronger.
   const IntegerVariable var(i_lit.var);
+  if (current_min_.ContainsKey(var)) {
+    // Recover the current min, and propagate to false all the values that
+    // are in [min, i_lit.value). All these literals have the same reason, so
+    // we use the "same reason as" mecanism.
+    const int min_index = current_min_.FindOrDie(var);
+    const auto& encoding = encoder_->FullDomainEncoding(var);
+    if (i_lit.bound > encoding[min_index].value) {
+      const Literal negated_min = encoding[min_index].literal.Negated();
+      if (!EnqueueAssociatedLiteral(negated_min, i_lit, literals_reason,
+                                    bounds_reason)) {
+        return false;
+      }
+
+      int i = min_index + 1;
+      for (; i < encoding.size(); ++i) {
+        if (i_lit.bound <= encoding[i].value) break;
+        const Literal literal = encoding[i].literal.Negated();
+        if (!trail_->Assignment().VariableIsAssigned(literal.Variable())) {
+          trail_->EnqueueWithSameReasonAs(literal, negated_min.Variable());
+        } else if (trail_->Assignment().LiteralIsFalse(literal)) {
+          // Conflict.
+          std::vector<Literal>* conflict = trail_->MutableConflict();
+          *conflict = literals_reason;
+          conflict->push_back(literal);
+          MergeReasonInto(bounds_reason, conflict);
+          return false;
+        }
+      }
+
+      if (i == encoding.size()) {
+        // Conflict: no possible values left.
+        std::vector<Literal>* conflict = trail_->MutableConflict();
+        *conflict = literals_reason;
+        MergeReasonInto(bounds_reason, conflict);
+        return false;
+      } else {
+        // We have a new min.
+        watched_min_.EraseOrDie(encoding[min_index].literal.NegatedIndex());
+        watched_min_.Set(encoding[i].literal.NegatedIndex(), {var, i});
+        current_min_.Set(var, i);
+
+        // Adjust the bound of i_lit !
+        CHECK_GE(encoding[i].value, i_lit.bound);
+        i_lit.bound = encoding[i].value.value();
+      }
+    }
+  }
+
+  // Check if the integer variable has an empty domain.
   if (i_lit.bound > UpperBound(var)) {
     if (!IsOptional(var) ||
         trail_->Assignment().LiteralIsFalse(Literal(is_empty_literals_[var]))) {
@@ -199,8 +403,7 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
       if (!trail_->Assignment().LiteralIsTrue(is_empty)) {
         std::vector<Literal>* literal_reason_ptr;
         std::vector<IntegerLiteral>* integer_reason_ptr;
-        EnqueueLiteral(is_empty, &literal_reason_ptr, &integer_reason_ptr,
-                       trail_);
+        EnqueueLiteral(is_empty, &literal_reason_ptr, &integer_reason_ptr);
         *literal_reason_ptr = literals_reason;
         *integer_reason_ptr = bounds_reason;
         integer_reason_ptr->push_back(UpperBoundAsLiteral(var));
@@ -217,18 +420,8 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   const LiteralIndex literal_index =
       encoder_->SearchForLiteralAtOrBefore(i_lit);
   if (literal_index != kNoLiteralIndex) {
-    const Literal literal(literal_index);
-    if (!trail_->Assignment().VariableIsAssigned(literal.Variable())) {
-      std::vector<Literal>* literal_reason;
-      std::vector<IntegerLiteral>* integer_reason;
-      EnqueueLiteral(literal, &literal_reason, &integer_reason, trail_);
-      integer_reason->push_back(i_lit);
-    } else if (trail_->Assignment().LiteralIsFalse(literal)) {
-      // Conflict.
-      std::vector<Literal>* conflict = trail_->MutableConflict();
-      *conflict = literals_reason;
-      conflict->push_back(literal);
-      MergeReasonInto(bounds_reason, conflict);
+    if (!EnqueueAssociatedLiteral(Literal(literal_index), i_lit,
+                                  literals_reason, bounds_reason)) {
       return false;
     }
   }
@@ -385,9 +578,8 @@ ClauseRef IntegerTrail::Reason(const Trail& trail, int trail_index) const {
 
 void IntegerTrail::EnqueueLiteral(Literal literal,
                                   std::vector<Literal>** literal_reason,
-                                  std::vector<IntegerLiteral>** integer_reason,
-                                  Trail* trail) {
-  const int trail_index = trail->Index();
+                                  std::vector<IntegerLiteral>** integer_reason) {
+  const int trail_index = trail_->Index();
   if (trail_index >= literal_reasons_.size()) {
     literal_reasons_.resize(trail_index + 1);
     integer_reasons_.resize(trail_index + 1);
@@ -400,16 +592,15 @@ void IntegerTrail::EnqueueLiteral(Literal literal,
   if (integer_reason != nullptr) {
     *integer_reason = &integer_reasons_[trail_index];
   }
-  trail->Enqueue(literal, propagator_id_);
+  trail_->Enqueue(literal, propagator_id_);
 }
 
-void IntegerTrail::EnqueueLiteral(Literal literal,
-                                  const std::vector<Literal>& literal_reason,
-                                  const std::vector<IntegerLiteral>& integer_reason,
-                                  Trail* trail) {
+void IntegerTrail::EnqueueLiteral(
+    Literal literal, const std::vector<Literal>& literal_reason,
+    const std::vector<IntegerLiteral>& integer_reason) {
   std::vector<Literal>* literal_reason_ptr;
   std::vector<IntegerLiteral>* integer_reason_ptr;
-  EnqueueLiteral(literal, &literal_reason_ptr, &integer_reason_ptr, trail);
+  EnqueueLiteral(literal, &literal_reason_ptr, &integer_reason_ptr);
   *literal_reason_ptr = literal_reason;
   *integer_reason_ptr = integer_reason;
 }

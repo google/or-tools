@@ -19,11 +19,13 @@
 #include "base/port.h"
 #include "base/join.h"
 #include "base/int_type.h"
+#include "base/map_util.h"
 #include "sat/model.h"
 #include "sat/sat_base.h"
 #include "sat/sat_solver.h"
 #include "util/bitset.h"
 #include "util/iterators.h"
+#include "util/rev.h"
 #include "util/saturated_arithmetic.h"
 
 namespace operations_research {
@@ -146,8 +148,10 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
 // these variables activity and so on. These variables can also be propagated
 // directly by the learned clauses.
 //
-// TODO(user): Add support for creating literals encoding x == v? for now this
-// is not used though.
+// This class also support a non-lazy full domain encoding which will create one
+// literal per possible value in the domain. See FullyEncodeVariable(). This is
+// meant to be called by constraints that directly work on the variable values
+// like a table constraint or an all-diff constraint.
 //
 // TODO(user): We could also lazily create precedences Booleans between two
 // arbitrary IntegerVariable. This is better done in the PrecedencesPropagator
@@ -166,6 +170,58 @@ class IntegerEncoder {
     IntegerEncoder* encoder = new IntegerEncoder(sat_solver);
     model->TakeOwnership(encoder);
     return encoder;
+  }
+
+  // This has 3 effects:
+  // 1/ It restricts the given variable to only take values amongst the given
+  //    ones.
+  // 2/ It creates one Boolean variable per value that convey the fact that the
+  //    var is equal to this value iff the Boolean is true. If there is only
+  //    2 values, then just one Boolean variable is created. For more than two
+  //    values, a constraint is also added to enforce that exactly one Boolean
+  //    variable is true.
+  // 3/ The encoding for NegationOf(var) is automatically created too. It reuses
+  //    the same Boolean variable as the encoding of var.
+  //
+  // Calling this more than once is an error (Checked).
+  // TODO(user): we could instead only keep the intersection and fix the now
+  // impossible values to zero.
+  //
+  // Note(user): There is currently no relation here between
+  // FullyEncodeVariable() and CreateAssociatedLiteral(). However the
+  // IntegerTrail class will automatically link the two representations and do
+  // the right thing.
+  //
+  // Note(user): Calling this with just one value will cause a CHECK fail. One
+  // need to fix the IntegerVariable inside the IntegerTrail instead of calling
+  // this.
+  //
+  // TODO(user): It is currently only possible to call that at the decision
+  // level zero. This is Checked.
+  void FullyEncodeVariable(IntegerVariable var, std::vector<IntegerValue> values);
+
+  // Gets the full encoding of a variable on which FullyEncodeVariable() has
+  // been called. The returned elements are always sorted by increasing
+  // IntegerValue. Once created, the encoding never changes, but some Boolean
+  // variable may become fixed.
+  struct ValueLiteralPair {
+    ValueLiteralPair(IntegerValue v, Literal l) : value(v), literal(l) {}
+    bool operator==(const ValueLiteralPair& o) const {
+      return value == o.value && literal == o.literal;
+    }
+    IntegerValue value;
+    Literal literal;
+  };
+  const std::vector<ValueLiteralPair>& FullDomainEncoding(
+      IntegerVariable var) const {
+    return full_encoding_[FindOrDie(full_encoding_index_, var)];
+  }
+
+  // Returns the set of variable encoded as the keys in a map. The map values
+  // only have an internal meaning. The set of encoded variables is returned
+  // with this "weird" api for efficiency.
+  const hash_map<IntegerVariable, int>& GetFullyEncodedVariables() const {
+    return full_encoding_index_;
   }
 
   // Creates a new Boolean variable 'var' such that
@@ -218,14 +274,18 @@ class IntegerEncoder {
   // doesn't correspond to an IntegerLiteral.
   ITIVector<LiteralIndex, IntegerLiteral> reverse_encoding_;
 
+  // Full domain encoding. The map contains the index in full_encoding_ of
+  // the fully encoded variable. Each entry in full_encoding_ is sorted by
+  // IntegerValue and contains the encoding of one IntegerVariable.
+  hash_map<IntegerVariable, int> full_encoding_index_;
+  std::vector<std::vector<ValueLiteralPair>> full_encoding_;
+
   DISALLOW_COPY_AND_ASSIGN(IntegerEncoder);
 };
 
 // This class maintains a set of integer variables with their current bounds.
 // Bounds can be propagated from an external "source" and this class helps
 // to maintain the reason for each propagation.
-//
-// TODO(user): Add support for a lazy encoding of the integer variable in SAT.
 class IntegerTrail : public Propagator {
  public:
   IntegerTrail(IntegerEncoder* encoder, Trail* trail)
@@ -323,10 +383,9 @@ class IntegerTrail : public Propagator {
   // assignment. They are only valid just after this is called. The full literal
   // reason will be computed lazily when it becomes needed.
   void EnqueueLiteral(Literal literal, std::vector<Literal>** literal_reason,
-                      std::vector<IntegerLiteral>** integer_reason, Trail* trail);
+                      std::vector<IntegerLiteral>** integer_reason);
   void EnqueueLiteral(Literal literal, const std::vector<Literal>& literal_reason,
-                      const std::vector<IntegerLiteral>& integer_reason,
-                      Trail* trail);
+                      const std::vector<IntegerLiteral>& integer_reason);
 
   // Returns the reason (as set of Literal currently false) for a given integer
   // literal. Note that the bound must be less restrictive than the current
@@ -355,6 +414,12 @@ class IntegerTrail : public Propagator {
   }
 
  private:
+  // Helper used by Enqueue() to propagate one of the literal associated to
+  // the given i_lit and maintained by encoder_.
+  bool EnqueueAssociatedLiteral(Literal literal, IntegerLiteral i_lit,
+                                const std::vector<Literal>& literals_reason,
+                                const std::vector<IntegerLiteral>& bounds_reason);
+
   // Returns a lower bound on the given var that will always be valid.
   IntegerValue LevelZeroBound(int var) const {
     // The level zero bounds are stored at the begining of the trail and they
@@ -409,6 +474,13 @@ class IntegerTrail : public Propagator {
 
   // The "is_empty" literal of the optional variables or kNoLiteralIndex.
   ITIVector<IntegerVariable, LiteralIndex> is_empty_literals_;
+
+  // Data used to support the propagation of fully encoded variable. We keep
+  // for each variable the index in encoder_.GetDomainEncoding() of the first
+  // literal that is not assigned to false, and call this the "min".
+  int64 num_encoded_variables_ = 0;
+  RevMap<hash_map<LiteralIndex, std::pair<IntegerVariable, int>>> watched_min_;
+  RevMap<hash_map<IntegerVariable, int>> current_min_;
 
   // Temporary data used by MergeReasonInto().
   mutable std::vector<int> tmp_queue_;
@@ -590,6 +662,15 @@ inline std::function<int64(const Model&)> LowerBound(IntegerVariable v) {
 inline std::function<int64(const Model&)> UpperBound(IntegerVariable v) {
   return [=](const Model& model) {
     return model.Get<IntegerTrail>()->UpperBound(v).value();
+  };
+}
+
+// This checks that the variable is fixed.
+inline std::function<int64(const Model&)> Value(IntegerVariable v) {
+  return [=](const Model& model) {
+    const IntegerTrail* trail = model.Get<IntegerTrail>();
+    CHECK_EQ(trail->LowerBound(v), trail->UpperBound(v));
+    return trail->LowerBound(v).value();
   };
 }
 

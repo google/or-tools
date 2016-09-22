@@ -612,8 +612,7 @@ void FindLinearBooleanProblemSymmetries(
     for (int node = 0; node < graph->num_nodes(); ++node) {
       new_node_index[node] = next_index_by_class[equivalence_classes[node]]++;
     }
-    std::unique_ptr<Graph> remapped_graph(
-        RemapGraph(*graph, new_node_index).ValueOrDie());
+    std::unique_ptr<Graph> remapped_graph = RemapGraph(*graph, new_node_index);
     const util::Status status = WriteGraphToFile(
         *remapped_graph, FLAGS_debug_dump_symmetry_graph_to_file,
         /*directed=*/false, class_size);
