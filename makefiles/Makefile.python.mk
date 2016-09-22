@@ -204,13 +204,12 @@ endif
 
 # Run a single example
 
-rpy: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(EX_DIR)/python/$(EX).py
+rpy: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(EX)
+	@echo Running $(EX)
 ifeq ($(SYSTEM),win)
-	@echo Running python$S$(EX).py
-	@set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) && $(WINDOWS_PYTHON_PATH)$Spython $(EX_DIR)/python$S$(EX).py $(ARGS)
+	@set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) && $(WINDOWS_PYTHON_PATH)$Spython $(EX) $(ARGS)
 else
-	@echo Running python$S$(EX).py
-	@PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python$S$(EX).py $(ARGS)
+	@PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX) $(ARGS)
 endif
 
 
@@ -225,6 +224,7 @@ python_examples_archive:
 	$(MKDIR) temp$Sortools_examples$Sexamples$Sdata
 	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples$Spython
 	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
+	$(COPY) tools$SMakefile.python temp$Sortools_examples$SMakefile
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
 	$(COPY) tools$Ssetup_data.py temp$Sortools_examples$Ssetup.py
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sortools_examples$Ssetup.py
