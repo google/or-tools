@@ -20,26 +20,34 @@
 #include "sat/integer_expr.h"
 #include "sat/intervals.h"
 #include "sat/model.h"
+#include "sat/optimization.h"
 #include "sat/sat_solver.h"
 #include "sat/table.h"
 
 namespace operations_research {
 namespace sat {
 
+// Hold the sat::Model and the correspondance between flatzinc and sat vars.
+struct SatModel {
+  Model model;
+  hash_map<fz::IntegerVariable*, IntegerVariable> var_map;
+
+  // Utility function to conver an fz::Argument to sat::IntegerVariable(s).
+  IntegerVariable LookupVar(const fz::Argument& argument) const;
+  std::vector<IntegerVariable> LookupVars(const fz::Argument& argument) const;
+};
+
 // TODO(user): deal with constant variables.
 // In a first version we could create constant IntegerVariable in the solver.
-IntegerVariable LookupVar(
-    const hash_map<fz::IntegerVariable*, IntegerVariable>& var_map,
-    const fz::Argument& argument) {
+IntegerVariable SatModel::LookupVar(const fz::Argument& argument) const {
   CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF);
   return FindOrDie(var_map, argument.variables[0]);
 }
 
 // TODO(user): deal with constant variables.
 // In a first version we could create constant IntegerVariable in the solver.
-std::vector<IntegerVariable> LookupVars(
-    const hash_map<fz::IntegerVariable*, IntegerVariable>& var_map,
-    const fz::Argument& argument) {
+std::vector<IntegerVariable> SatModel::LookupVars(
+    const fz::Argument& argument) const {
   CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
   std::vector<IntegerVariable> result;
   for (fz::IntegerVariable* var : argument.variables) {
@@ -48,30 +56,48 @@ std::vector<IntegerVariable> LookupVars(
   return result;
 }
 
-void ExtractIntMin(
-    const fz::Constraint& ct,
-    const hash_map<fz::IntegerVariable*, IntegerVariable>& var_map,
-    Model* sat_model) {
-  const IntegerVariable a = LookupVar(var_map, ct.arguments[0]);
-  const IntegerVariable b = LookupVar(var_map, ct.arguments[1]);
-  const IntegerVariable c = LookupVar(var_map, ct.arguments[2]);
-  sat_model->Add(IsEqualToMinOf(c, {a, b}));
+// =============================================================================
+// Constraints extraction.
+// =============================================================================
+
+void ExtractIntMin(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  const IntegerVariable c = m->LookupVar(ct.arguments[2]);
+  m->model.Add(IsEqualToMinOf(c, {a, b}));
 }
 
-void ExtractIntAbs(
-    const fz::Constraint& ct,
-    const hash_map<fz::IntegerVariable*, IntegerVariable>& var_map,
-    Model* sat_model) {
-  const IntegerVariable v = LookupVar(var_map, ct.arguments[0]);
-  const IntegerVariable abs = LookupVar(var_map, ct.arguments[1]);
-  sat_model->Add(IsEqualToMaxOf(abs, {v, NegationOf(v)}));
+// TODO(user): Optimize when num_vars is 1, 2, or vars contains const...
+void ExtractArrayIntMinimum(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable min = m->LookupVar(ct.arguments[0]);
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  m->model.Add(IsEqualToMinOf(min, vars));
 }
 
-void ExtractRegular(
-    const fz::Constraint& ct,
-    const hash_map<fz::IntegerVariable*, IntegerVariable>& var_map,
-    Model* sat_model) {
-  const std::vector<IntegerVariable> vars = LookupVars(var_map, ct.arguments[0]);
+void ExtractIntAbs(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable v = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable abs = m->LookupVar(ct.arguments[1]);
+  m->model.Add(IsEqualToMaxOf(abs, {v, NegationOf(v)}));
+}
+
+// TODO(user): simplify when some variable are fixed!
+void ExtractIntLinEq(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const std::vector<int64>& coeffs = ct.arguments[0].values;
+  const int rhs = ct.arguments[2].values[0];
+  m->model.Add(FixedWeightedSum(vars, coeffs, rhs));
+}
+
+// TODO(user): simplify when some variable are fixed!
+void ExtractIntLinLe(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const std::vector<int64>& coeffs = ct.arguments[0].values;
+  const int rhs = ct.arguments[2].values[0];
+  m->model.Add(WeightedSumLowerOrEqual(vars, coeffs, rhs));
+}
+
+void ExtractRegular(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[0]);
   const int64 num_states = ct.arguments[1].Value();
   const int64 num_values = ct.arguments[2].Value();
 
@@ -106,9 +132,33 @@ void ExtractRegular(
     default: { LOG(FATAL) << "Wrong constraint " << ct.DebugString(); }
   }
 
-  sat_model->Add(
+  m->model.Add(
       TransitionConstraint(vars, transitions, initial_state, final_states));
 }
+
+// Returns false iff the constraint type is not supported.
+bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
+  if (ct.type == "int_min") {
+    ExtractIntMin(ct, m);
+  } else if (ct.type == "array_int_minimum") {
+    ExtractArrayIntMinimum(ct, m);
+  } else if (ct.type == "int_abs") {
+    ExtractIntAbs(ct, m);
+  } else if (ct.type == "int_lin_eq") {
+    ExtractIntLinEq(ct, m);
+  } else if (ct.type == "int_lin_le") {
+    ExtractIntLinLe(ct, m);
+  } else if (ct.type == "regular") {
+    ExtractRegular(ct, m);
+  } else {
+    return false;
+  }
+  return true;
+}
+
+// =============================================================================
+// SAT/CP flatzinc solver.
+// =============================================================================
 
 // The format is fixed in the flatzinc specification.
 std::string SolutionString(
@@ -157,37 +207,35 @@ std::string SolutionString(
   return "";
 }
 
-void SolveWithSat(const fz::Model& model, const fz::FlatzincParameters& p) {
-  Model sat_model;
-
-  // Correspondance between a fz::IntegerVariable and a sat::IntegerVariable.
-  hash_map<fz::IntegerVariable*, IntegerVariable> var_map;
+void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p) {
+  SatModel m;
 
   // Extract all the variables.
-  FZLOG << "Extracting " << model.variables().size() << " variables. "
+  FZLOG << "Extracting " << fz_model.variables().size() << " variables. "
         << FZENDL;
-  for (fz::IntegerVariable* var : model.variables()) {
+  for (fz::IntegerVariable* var : fz_model.variables()) {
     if (!var->active) continue;
-    var_map[var] =
-        sat_model.Add(NewIntegerVariable(var->domain.Min(), var->domain.Max()));
+    m.var_map[var] =
+        m.model.Add(NewIntegerVariable(var->domain.Min(), var->domain.Max()));
 
-    // TODO(user): encode if it is a list of value? This way constraint using
-    // it will get the intersection with the proper interval.
+    // We fully encode a variable if it is given as a list of values. Otherwise,
+    // we will lazily-encode it depending on the constraints it appears in or if
+    // needed to fully specify a solution.
+    if (!var->domain.is_interval) {
+      m.model.GetOrCreate<IntegerEncoder>()->FullyEncodeVariable(
+          FindOrDie(m.var_map, var),
+          std::vector<IntegerValue>(var->domain.values.begin(),
+                               var->domain.values.end()));
+    }
   }
 
   // Extract all the constraints.
-  FZLOG << "Extracting " << model.constraints().size() << " constraints. "
+  FZLOG << "Extracting " << fz_model.constraints().size() << " constraints. "
         << FZENDL;
   std::set<std::string> unsupported_types;
-  for (fz::Constraint* ct : model.constraints()) {
+  for (fz::Constraint* ct : fz_model.constraints()) {
     if (ct != nullptr && ct->active) {
-      if (ct->type == "int_min") {
-        ExtractIntMin(*ct, var_map, &sat_model);
-      } else if (ct->type == "int_abs") {
-        ExtractIntAbs(*ct, var_map, &sat_model);
-      } else if (ct->type == "regular") {
-        ExtractRegular(*ct, var_map, &sat_model);
-      } else {
+      if (!ExtractConstraint(*ct, &m)) {
         unsupported_types.insert(ct->type);
       }
     }
@@ -200,28 +248,64 @@ void SolveWithSat(const fz::Model& model, const fz::FlatzincParameters& p) {
     return;
   }
 
-  // For now assume a decision problem!
-  //
-  // TODO(user): deal with other kind of search (optim, all solutions, ...).
-  //
-  // TODO(user): Encode IntegerVariable that are not fixed at the end of the
-  // search.
-  CHECK(model.objective() == nullptr);
-  CHECK_EQ(1, p.num_solutions);
-  FZLOG << "Solving..." << FZENDL;
-  const SatSolver::Status status = sat_model.GetOrCreate<SatSolver>()->Solve();
-  FZLOG << "Status: " << status << FZENDL;
-
-  // Output!
   std::string solution_string;
-  for (const fz::SolutionOutputSpecs& output : model.output()) {
-    solution_string.append(SolutionString(sat_model, var_map, output));
-    solution_string.append("\n");
+  std::string search_status;
+
+  // TODO(user): deal with other search parameters.
+  FZLOG << "Solving..." << FZENDL;
+  if (fz_model.objective() == nullptr) {
+    // Decision problem.
+    CHECK_EQ(1, p.num_solutions);
+
+    // TODO(user): Encode IntegerVariable that are not fixed at the end of the
+    // search.
+    const SatSolver::Status status = m.model.GetOrCreate<SatSolver>()->Solve();
+    FZLOG << "Status: " << status << FZENDL;
+
+    if (status == SatSolver::MODEL_SAT) {
+      for (const fz::SolutionOutputSpecs& output : fz_model.output()) {
+        solution_string.append(SolutionString(m.model, m.var_map, output));
+        solution_string.append("\n");
+      }
+    } else {
+      search_status = "=====UNSATISFIABLE=====";
+    }
+  } else {
+    // Optimization problem.
+    int solution_number = 0;
+    const IntegerVariable objective_var =
+        FindOrDie(m.var_map, fz_model.objective());
+    std::vector<IntegerVariable> decision_vars;
+    for (const auto& entry : m.var_map) decision_vars.push_back(entry.second);
+    MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
+        /*log_info=*/false, objective_var, decision_vars,
+        [objective_var, &solution_number, &solution_string, &m,
+         &fz_model](const Model& sat_model) {
+          // Overwrite solution_string with the new (better) solution.
+          FZLOG << "Solution #" << ++solution_number
+                << " obj:" << sat_model.Get(LowerBound(objective_var))
+                << " num_bool:" << sat_model.Get<SatSolver>()->NumVariables()
+                << FZENDL;
+          solution_string.clear();
+          for (const fz::SolutionOutputSpecs& output : fz_model.output()) {
+            solution_string.append(
+                SolutionString(sat_model, m.var_map, output));
+            solution_string.append("\n");
+          }
+        },
+        &m.model);
+    if (solution_number > 0) {
+      search_status = "==========";
+    } else {
+      search_status = "=====UNSATISFIABLE=====";
+    }
   }
 
   // Print the solution.
-  // The "----------" is needed by minizinc.
   std::cout << solution_string << "----------" << std::endl;
+  if (!search_status.empty()) {
+    std::cout << search_status << std::endl;
+  }
 }
 
 }  // namespace sat

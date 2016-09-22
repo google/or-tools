@@ -1141,11 +1141,11 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScan(
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model) {
   return MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-      objective_var, {}, feasible_solution_observer, model);
+      true, objective_var, {}, feasible_solution_observer, model);
 }
 
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-    IntegerVariable objective_var,
+    bool log_info, IntegerVariable objective_var,
     const std::vector<IntegerVariable>& var_for_lazy_encoding,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model) {
@@ -1158,7 +1158,9 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-  LOG(INFO) << "#Boolean_variables:" << sat_solver->NumVariables();
+  if (log_info) {
+    LOG(INFO) << "#Boolean_variables:" << sat_solver->NumVariables();
+  }
 
   // Simple linear scan algorithm to find the optimal.
   SatSolver::Status result;
@@ -1212,6 +1214,8 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
       break;
     }
   }
+
+  if (!log_info) return result;
 
   // Display summary.
   if (model_is_feasible) {
