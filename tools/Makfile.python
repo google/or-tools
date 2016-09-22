@@ -9,7 +9,7 @@ WINDOWS_OR_TOOLS_PYTHONPATH =
 ###############################Unix specific part################################
 
 # Set this variable to use a different python version. Example : PYTHON_VERSION = 3.5 or PYTHON_VERSION = 2
-PYTHON_VERSION = 3
+PYTHON_VERSION =
 
 # Set this variable to use it as PYTHONPATH
 UNIX_OR_TOOLS_PYTHONPATH = 
