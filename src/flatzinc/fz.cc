@@ -12,14 +12,13 @@
 // limitations under the License.
 
 // This is the skeleton for the official flatzinc interpreter.  Much
-// of the funcionnalities are fixed (name of parameters, format of the
+// of the funcionalities are fixed (name of parameters, format of the
 // input): see http://www.minizinc.org/downloads/doc-1.6/flatzinc-spec.pdf
 
 #if defined(__GNUC__)  // Linux or Mac OS X.
 #include <signal.h>
 #endif  // __GNUC__
 
-#include <iostream>  // NOLINT
 #include <string>
 #include <vector>
 
@@ -29,87 +28,92 @@
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/threadpool.h"
+#include "flatzinc/logging.h"
 #include "flatzinc/model.h"
 #include "flatzinc/parser.h"
 #include "flatzinc/presolve.h"
-#include "flatzinc/search.h"
+#include "flatzinc/reporting.h"
+#include "flatzinc/sat_fz_solver.h"
 #include "flatzinc/solver.h"
+#include "flatzinc/solver_util.h"
 
-DEFINE_int32(log_period, 10000000, "Search log period");
-DEFINE_bool(all, false, "Search for all solutions");
-DEFINE_bool(free, false, "Ignore search annotations");
-DEFINE_bool(last_conflict, false, "Use last conflict search hints");
-DEFINE_int32(num_solutions, 0, "Number of solution to search for");
-DEFINE_int32(time_limit, 0, "time limit in ms");
-DEFINE_int32(workers, 0, "Number of workers");
-DEFINE_bool(use_impact, false, "Use impact based search");
-DEFINE_double(restart_log_size, -1, "Restart log size for impact search");
-DEFINE_int32(luby_restart, -1, "Luby restart factor, <= 0 = no luby");
-DEFINE_int32(heuristic_period, 100, "Period to call heuristics in free search");
-DEFINE_bool(verbose_impact, false, "Verbose impact");
-DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread");
-DEFINE_bool(presolve, true, "Use presolve.");
-DEFINE_bool(read_from_stdin, false, "Read the FlatZinc from stdin, not from a file");
+DEFINE_int32(time_limit, 0, "time limit in ms.");
+DEFINE_bool(all_solutions, false, "Search for all solutions.");
+DEFINE_int32(num_solutions, 0,
+             "Maximum number of solution to search for, 0 means unspecified.");
+DEFINE_bool(free_search, false,
+            "Ignore search annotations in the flatzinc model.");
+DEFINE_int32(threads, 0, "Number of threads the solver will use.");
+DEFINE_bool(presolve, true, "Presolve the model to simplify it.");
+DEFINE_bool(statistics, false, "Print solver statistics after search.");
+DEFINE_bool(read_from_stdin, false,
+            "Read the FlatZinc from stdin, not from a file.");
+DEFINE_int32(log_period, 10000000, "Search log period in the CP search.");
+DEFINE_bool(use_impact, false, "Use impact based search in free search.");
+DEFINE_double(restart_log_size, -1,
+              "Restart log size parameter for impact search.");
+DEFINE_bool(last_conflict, false,
+            "Use last conflict search hints in free search.");
+DEFINE_int32(luby_restart, -1,
+             "Luby restart factor, <= 0 = no luby in free search.");
+DEFINE_int32(heuristic_period, 100,
+             "Period to call heuristics in free search.");
+DEFINE_bool(
+    verbose_impact, false,
+    "Increase verbosity of the impact based search when used in free search.");
+DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread.");
 
-DECLARE_bool(fz_logging);
+DEFINE_bool(use_fz_sat, false, "Use the SAT/CP solver.");
+
 DECLARE_bool(log_prefix);
 DECLARE_bool(use_sat);
 
 using operations_research::ThreadPool;
-extern void interrupt_handler(int s);
 
 namespace operations_research {
-void Solve(const FzModel* const model, const FzSolverParameters& parameters,
-           FzParallelSupportInterface* parallel_support) {
-  FzSolver solver(*model);
-  CHECK(solver.Extract());
-  solver.Solve(parameters, parallel_support);
+namespace fz {
+
+int FixedNumberOfSolutions() {
+  return FLAGS_num_solutions == 0 ?  // Not fixed.
+             (FLAGS_num_solutions = FLAGS_all_solutions ? kint32max : 1)
+                                  : FLAGS_num_solutions;
 }
 
-void SequentialRun(const FzModel* model) {
-  FzSolverParameters parameters;
-  parameters.all_solutions = FLAGS_all;
-  parameters.free_search = FLAGS_free;
-  parameters.last_conflict = FLAGS_last_conflict;
+FlatzincParameters SingleThreadParameters() {
+  FlatzincParameters parameters;
+  parameters.all_solutions = FLAGS_all_solutions;
+  parameters.free_search = FLAGS_free_search;
   parameters.heuristic_period = FLAGS_heuristic_period;
   parameters.ignore_unknown = false;
+  parameters.last_conflict = FLAGS_last_conflict;
+  parameters.logging = FLAGS_fz_logging;
   parameters.log_period = FLAGS_log_period;
   parameters.luby_restart = FLAGS_luby_restart;
-  parameters.num_solutions = FLAGS_num_solutions;
+  parameters.num_solutions = FixedNumberOfSolutions();
+  parameters.random_seed = 0;
   parameters.restart_log_size = FLAGS_restart_log_size;
-  parameters.threads = FLAGS_workers;
-  parameters.time_limit_in_ms = FLAGS_time_limit;
-  parameters.use_log = FLAGS_fz_logging;
-  parameters.verbose_impact = FLAGS_verbose_impact;
-  parameters.worker_id = -1;
   parameters.search_type =
-      FLAGS_use_impact ? FzSolverParameters::IBS : FzSolverParameters::DEFAULT;
-
-  std::unique_ptr<FzParallelSupportInterface> parallel_support(
-      MakeSequentialSupport(FLAGS_all, FLAGS_num_solutions));
-  Solve(model, parameters, parallel_support.get());
+      FLAGS_use_impact ? FlatzincParameters::IBS : FlatzincParameters::DEFAULT;
+  parameters.statistics = FLAGS_statistics;
+  parameters.threads = FLAGS_threads;
+  parameters.thread_id = -1;
+  parameters.time_limit_in_ms = FLAGS_time_limit;
+  parameters.verbose_impact = FLAGS_verbose_impact;
+  return parameters;
 }
 
-void ParallelRun(const FzModel* const model, int worker_id,
-                 FzParallelSupportInterface* parallel_support) {
-  FzSolverParameters parameters;
-  parameters.all_solutions = FLAGS_all;
-  parameters.heuristic_period = FLAGS_heuristic_period;
-  parameters.ignore_unknown = false;
-  parameters.log_period = 0;
+FlatzincParameters MultiThreadParameters(int thread_id) {
+  FlatzincParameters parameters = SingleThreadParameters();
+  parameters.logging = thread_id == 0;
   parameters.luby_restart = -1;
-  parameters.num_solutions = FLAGS_num_solutions;
-  parameters.random_seed = worker_id * 10;
-  parameters.threads = FLAGS_workers;
-  parameters.time_limit_in_ms = FLAGS_time_limit;
-  parameters.use_log = false;
-  parameters.verbose_impact = false;
-  parameters.worker_id = worker_id;
-  switch (worker_id) {
+  parameters.random_seed = thread_id * 10;
+  parameters.thread_id = thread_id;
+  switch (thread_id) {
     case 0: {
       parameters.free_search = false;
       parameters.last_conflict = false;
-      parameters.search_type = operations_research::FzSolverParameters::DEFAULT;
+      parameters.search_type =
+          operations_research::fz::FlatzincParameters::DEFAULT;
       parameters.restart_log_size = -1.0;
       break;
     }
@@ -117,14 +121,14 @@ void ParallelRun(const FzModel* const model, int worker_id,
       parameters.free_search = true;
       parameters.last_conflict = false;
       parameters.search_type =
-          operations_research::FzSolverParameters::MIN_SIZE;
+          operations_research::fz::FlatzincParameters::MIN_SIZE;
       parameters.restart_log_size = -1.0;
       break;
     }
     case 2: {
       parameters.free_search = true;
       parameters.last_conflict = false;
-      parameters.search_type = operations_research::FzSolverParameters::IBS;
+      parameters.search_type = operations_research::fz::FlatzincParameters::IBS;
       parameters.restart_log_size = FLAGS_restart_log_size;
       break;
     }
@@ -132,7 +136,7 @@ void ParallelRun(const FzModel* const model, int worker_id,
       parameters.free_search = true;
       parameters.last_conflict = false;
       parameters.search_type =
-          operations_research::FzSolverParameters::FIRST_UNBOUND;
+          operations_research::fz::FlatzincParameters::FIRST_UNBOUND;
       parameters.restart_log_size = -1.0;
       parameters.heuristic_period = 10000000;
       break;
@@ -140,7 +144,8 @@ void ParallelRun(const FzModel* const model, int worker_id,
     case 4: {
       parameters.free_search = true;
       parameters.last_conflict = false;
-      parameters.search_type = operations_research::FzSolverParameters::DEFAULT;
+      parameters.search_type =
+          operations_research::fz::FlatzincParameters::DEFAULT;
       parameters.restart_log_size = -1.0;
       parameters.heuristic_period = 30;
       parameters.run_all_heuristics = true;
@@ -150,23 +155,25 @@ void ParallelRun(const FzModel* const model, int worker_id,
       parameters.free_search = true;
       parameters.last_conflict = false;
       parameters.search_type =
-          worker_id % 2 == 0
-              ? operations_research::FzSolverParameters::RANDOM_MIN
-              : operations_research::FzSolverParameters::RANDOM_MAX;
+          thread_id % 2 == 0
+              ? operations_research::fz::FlatzincParameters::RANDOM_MIN
+              : operations_research::fz::FlatzincParameters::RANDOM_MAX;
       parameters.restart_log_size = -1.0;
       parameters.luby_restart = 250;
     }
   }
-  Solve(model, parameters, parallel_support);
+  return parameters;
 }
 
 void FixAndParseParameters(int* argc, char*** argv) {
   FLAGS_log_prefix = false;
-  char all_param[] = "--all";
-  char free_param[] = "--free";
-  char workers_param[] = "--workers";
+
+  char all_param[] = "--all_solutions";
+  char free_param[] = "--free_search";
+  char threads_param[] = "--threads";
   char solutions_param[] = "--num_solutions";
   char logging_param[] = "--fz_logging";
+  char statistics_param[] = "--statistics";
   char verbose_param[] = "--fz_verbose";
   char debug_param[] = "--fz_debug";
   for (int i = 1; i < *argc; ++i) {
@@ -177,13 +184,16 @@ void FixAndParseParameters(int* argc, char*** argv) {
       (*argv)[i] = free_param;
     }
     if (strcmp((*argv)[i], "-p") == 0) {
-      (*argv)[i] = workers_param;
+      (*argv)[i] = threads_param;
     }
     if (strcmp((*argv)[i], "-n") == 0) {
       (*argv)[i] = solutions_param;
     }
     if (strcmp((*argv)[i], "-l") == 0) {
       (*argv)[i] = logging_param;
+    }
+    if (strcmp((*argv)[i], "-s") == 0) {
+      (*argv)[i] = statistics_param;
     }
     if (strcmp((*argv)[i], "-v") == 0) {
       (*argv)[i] = verbose_param;
@@ -197,35 +207,33 @@ void FixAndParseParameters(int* argc, char*** argv) {
 
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(argc, argv, true);
-
-  // Fix the number of solutions.
-  if (FLAGS_num_solutions == 0) {  // not specified
-    FLAGS_num_solutions = FLAGS_all ? kint32max : 1;
-  }
 }
 
-void ParseAndRun(const std::string& input, int num_workers, bool input_is_filename) {
+Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
   WallTimer timer;
   timer.Start();
-  std::string problem_name(input_is_filename ? input : "stdin");
+  // Read model.
+  std::string problem_name = input_is_filename ? input : "stdin";
   if (input_is_filename) {
+    CHECK(strings::EndsWith(problem_name, ".fzn"));
     problem_name.resize(problem_name.size() - 4);
-    size_t found = problem_name.find_last_of("/\\");
+    const size_t found = problem_name.find_last_of("/\\");
     if (found != std::string::npos) {
       problem_name = problem_name.substr(found + 1);
     }
   }
-  FzModel model(problem_name);
+  Model model(problem_name);
   if (input_is_filename) {
     CHECK(ParseFlatzincFile(input, &model));
   } else {
     CHECK(ParseFlatzincString(input, &model));
   }
 
-  FZLOG << "File " << (input_is_filename ? input : "stdin")
-        << " parsed in " << timer.GetInMs() << " ms"
-        << FZENDL;
-  FzPresolver presolve;
+  FZLOG << "File " << (input_is_filename ? input : "stdin") << " parsed in "
+        << timer.GetInMs() << " ms" << FZENDL;
+
+  // Presolve the model.
+  Presolver presolve;
   presolve.CleanUpModelForTheCpSolver(&model, FLAGS_use_sat);
   if (FLAGS_presolve) {
     FZLOG << "Presolve model" << FZENDL;
@@ -234,46 +242,73 @@ void ParseAndRun(const std::string& input, int num_workers, bool input_is_filena
     presolve.Run(&model);
     FZLOG << "  - done in " << timer.GetInMs() << " ms" << FZENDL;
   }
-  FzModelStatistics stats(model);
+
+  // Print statistics.
+  ModelStatistics stats(model);
+  stats.BuildStatistics();
   stats.PrintStatistics();
 
 #if defined(__GNUC__)
-  signal(SIGINT, &interrupt_handler);
+  signal(SIGINT, &operations_research::fz::Interrupt::ControlCHandler);
 #endif
 
-  if (num_workers == 0) {
-    operations_research::SequentialRun(&model);
+  return model;
+}
+
+void Solve(const Model& model) {
+  if (FLAGS_threads == 0) {
+    Solver solver(model);
+    CHECK(solver.Extract());
+    MonoThreadReporting reporting(FLAGS_all_solutions,
+                                  FixedNumberOfSolutions());
+    solver.Solve(SingleThreadParameters(), &reporting);
   } else {
-    std::unique_ptr<operations_research::FzParallelSupportInterface>
-        parallel_support(operations_research::MakeMtSupport(
-            FLAGS_all, FLAGS_num_solutions, FLAGS_verbose_mt));
+    MultiThreadReporting reporting(FLAGS_all_solutions,
+                                   FixedNumberOfSolutions(), FLAGS_verbose_mt);
     {
-      ThreadPool pool("Parallel FlatZinc", num_workers);
-      for (int w = 0; w < num_workers; ++w) {
-        pool.Add(NewCallback(ParallelRun, &model, w, parallel_support.get()));
-      }
+      ThreadPool pool("Parallel_FlatZinc", FLAGS_threads);
       pool.StartWorkers();
+      for (int thread_id = 0; thread_id < FLAGS_threads; ++thread_id) {
+        pool.Schedule([&model, thread_id, &reporting]() {
+          Solver solver(model);
+          CHECK(solver.Extract());
+          solver.Solve(MultiThreadParameters(thread_id), &reporting);
+        });
+      }
     }
   }
 }
+
+}  // namespace fz
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  operations_research::FixAndParseParameters(&argc, &argv);
-  if (FLAGS_read_from_stdin) { // allow users to pipe in the FlatZinc via stdin
-    std::string inputText = "";
+  // Flatzinc specifications require single dash parameters (-a, -f, -p).
+  // We need to fix parameters before parsing them.
+  operations_research::fz::FixAndParseParameters(&argc, &argv);
+  // We allow piping model through stdin.
+  std::string input;
+  if (FLAGS_read_from_stdin) {
     std::string currentLine;
     while (std::getline(std::cin, currentLine)) {
-      inputText.append(currentLine);
+      input.append(currentLine);
     }
-
-    operations_research::ParseAndRun(inputText, FLAGS_workers, false);
   } else {
     if (argc <= 1) {
       LOG(ERROR) << "Usage: " << argv[0] << " <file>";
-      exit(EXIT_FAILURE);
+      return EXIT_FAILURE;
     }
-    operations_research::ParseAndRun(argv[1], FLAGS_workers, true);
+    input = argv[1];
   }
-  return 0;
+  operations_research::fz::Model model =
+      operations_research::fz::ParseFlatzincModel(input,
+                                                  !FLAGS_read_from_stdin);
+
+  if (FLAGS_use_fz_sat) {
+    operations_research::sat::SolveWithSat(
+        model, operations_research::fz::SingleThreadParameters());
+  } else {
+    operations_research::fz::Solve(model);
+  }
+  return EXIT_SUCCESS;
 }

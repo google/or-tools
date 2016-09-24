@@ -14,52 +14,62 @@
 #ifndef OR_TOOLS_FLATZINC_PRESOLVE_H_
 #define OR_TOOLS_FLATZINC_PRESOLVE_H_
 
-#include <string>
+#include <functional>
 #include "base/hash.h"
+#include <string>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/stringpiece_utils.h"
 #include "base/hash.h"
 #include "flatzinc/model.h"
 
 namespace operations_research {
-// The FzPresolver "pre-solves" a FzModel by applying some iterative
-// transformations to it, which may simplify and/or reduce the model.
-class FzPresolver {
+namespace fz {
+// The Presolver "pre-solves" a Model by applying some iterative
+// transformations to it, which may simplify and/or shrink the model.
+//
+// TODO(user): Error reporting of unfeasible models.
+class Presolver {
  public:
   // Recursively apply all the pre-solve rules to the model, until exhaustion.
   // The reduced model will:
-  // - Have some unused variables
+  // - Have some unused variables.
   // - Have some unused constraints (marked as inactive).
   // - Have some modified constraints (for example, they will no longer
-  //   refer to unused variables)
+  //   refer to unused variables).
+  //
   // TODO(user): compute on the fly, and add an API to access the set of
   // unused variables.
   //
   // This method returns true iff some transformations were applied to the
   // model.
   // TODO(user): Returns the number of rules applied instead.
-  bool Run(FzModel* model);
-
-  // TODO(user): Error reporting of unfeasible models.
+  bool Run(Model* model);
 
   // Cleans the model for the CP solver.
-  // In particular, it knows about the sat connection and will remove the link
-  // (defining_constraint, target_variable) for boolean constraints.
-  void CleanUpModelForTheCpSolver(FzModel* model, bool use_sat);
+  // In particular, it knows if we use a sat solver inside the CP
+  // solver. In that case, for Boolean constraints, it remove the link
+  // (defining_constraint, target_variable) for Boolean constraints.
+  void CleanUpModelForTheCpSolver(Model* model, bool use_sat);
+
+  // Returns true iff the model was modified.
+  // This method is public for tests.
+  bool PresolveOneConstraint(Constraint* ct);
 
  private:
   // This struct stores the affine mapping of one variable:
   // it represents new_var = var * coefficient + offset. It also stores the
   // constraint that defines this mapping.
   struct AffineMapping {
-    FzIntegerVariable* variable;
+    IntegerVariable* variable;
     int64 coefficient;
     int64 offset;
-    FzConstraint* constraint;
+    Constraint* constraint;
 
     AffineMapping()
         : variable(nullptr), coefficient(0), offset(0), constraint(nullptr) {}
-    AffineMapping(FzIntegerVariable* v, int64 c, int64 o, FzConstraint* ct)
+    AffineMapping(IntegerVariable* v, int64 c, int64 o, Constraint* ct)
         : variable(v), coefficient(c), offset(o), constraint(ct) {}
   };
 
@@ -69,11 +79,11 @@ class FzPresolver {
   // offset.
   // Eg. new_index_var = index_var1 * int_coeff + index_var2 + int_offset
   struct Array2DIndexMapping {
-    FzIntegerVariable* variable1;
+    IntegerVariable* variable1;
     int64 coefficient;
-    FzIntegerVariable* variable2;
+    IntegerVariable* variable2;
     int64 offset;
-    FzConstraint* constraint;
+    Constraint* constraint;
 
     Array2DIndexMapping()
         : variable1(nullptr),
@@ -81,8 +91,8 @@ class FzPresolver {
           variable2(nullptr),
           offset(0),
           constraint(nullptr) {}
-    Array2DIndexMapping(FzIntegerVariable* v1, int64 c, FzIntegerVariable* v2,
-                        int64 o, FzConstraint* ct)
+    Array2DIndexMapping(IntegerVariable* v1, int64 c, IntegerVariable* v2,
+                        int64 o, Constraint* ct)
         : variable1(v1),
           coefficient(c),
           variable2(v2),
@@ -92,60 +102,62 @@ class FzPresolver {
 
   // First pass of model scanning. Useful to get information that will
   // prevent some destructive modifications of the model.
-  void FirstPassModelScan(FzModel* model);
+  void FirstPassModelScan(Model* model);
   // This rule is applied globally in the first pass because maintaining the
   // associated data structures w.r.t. variable substitutions would be
   // expensive.
-  void MergeIntEqNe(FzModel* model);
+  void MergeIntEqNe(Model* model);
 
-  // First pass scan helpers.
-  void StoreDifference(FzConstraint* ct);
-
-  // Returns true iff the model was modified.
-  bool PresolveOneConstraint(FzConstraint* ct);
+  // Parse constraint x == y - z (and z == y - x) and store the info.
+  // It will be useful to transform x == 0 into x == z in the first case.
+  void StoreDifference(Constraint* ct);
 
   // Substitution support.
-  void SubstituteEverywhere(FzModel* model);
-  void SubstituteAnnotation(FzAnnotation* ann);
+  void SubstituteEverywhere(Model* model);
+  void SubstituteAnnotation(Annotation* ann);
 
-  // Presolve rules. They returns true iff that some presolve has been
+  // Presolve rules. They returns true iff some presolve has been
   // performed. These methods are called by the PresolveOneConstraint() method.
-  bool PresolveBool2Int(FzConstraint* ct);
-  bool PresolveIntEq(FzConstraint* ct);
-  void Unreify(FzConstraint* ct);
-  bool PresolveInequalities(FzConstraint* ct);
-  bool PresolveIntNe(FzConstraint* ct);
-  bool PresolveSetIn(FzConstraint* ct);
-  bool PresolveArrayBoolAnd(FzConstraint* ct);
-  bool PresolveArrayBoolOr(FzConstraint* ct);
-  bool PresolveBoolEqNeReif(FzConstraint* ct);
-  bool PresolveArrayIntElement(FzConstraint* ct);
-  bool PresolveIntDiv(FzConstraint* ct);
-  bool PresolveIntTimes(FzConstraint* ct);
-  bool PresolveIntLinGt(FzConstraint* ct);
-  bool PresolveIntLinLt(FzConstraint* ct);
-  bool PresolveLinear(FzConstraint* ct);
-  bool RegroupLinear(FzConstraint* ct);
-  bool PropagatePositiveLinear(FzConstraint* ct, bool upper);
-  bool PresolveStoreMapping(FzConstraint* ct);
-  bool PresolveSimplifyElement(FzConstraint* ct);
-  bool PresolveSimplifyExprElement(FzConstraint* ct);
-  bool PropagateReifiedComparisons(FzConstraint* ct);
-  bool RemoveAbsFromIntLinReif(FzConstraint* ct);
-  bool SimplifyUnaryLinear(FzConstraint* ct);
-  bool SimplifyBinaryLinear(FzConstraint* ct);
-  bool CheckIntLinReifBounds(FzConstraint* ct);
-  bool CreateLinearTarget(FzConstraint* ct);
-  bool PresolveBoolNot(FzConstraint* ct);
-  bool PresolveBoolXor(FzConstraint* ct);
-  bool SimplifyIntLinEqReif(FzConstraint* ct);
-  bool PresolveIntMod(FzConstraint* ct);
-  bool PresolveBoolClause(FzConstraint* ct);
-  bool StoreIntEqReif(FzConstraint* ct);
-  bool SimplifyIntNeReif(FzConstraint* ct);
+  bool PresolveBool2Int(Constraint* ct, std::string* log);
+  bool PresolveIntEq(Constraint* ct, std::string* log);
+  bool Unreify(Constraint* ct, std::string* log);
+  bool PresolveInequalities(Constraint* ct, std::string* log);
+  bool PresolveIntNe(Constraint* ct, std::string* log);
+  bool PresolveSetIn(Constraint* ct, std::string* log);
+  bool PresolveArrayBoolAnd(Constraint* ct, std::string* log);
+  bool PresolveArrayBoolOr(Constraint* ct, std::string* log);
+  bool PresolveBoolEqNeReif(Constraint* ct, std::string* log);
+  bool PresolveArrayIntElement(Constraint* ct, std::string* log);
+  bool PresolveIntDiv(Constraint* ct, std::string* log);
+  bool PresolveIntTimes(Constraint* ct, std::string* log);
+  bool PresolveIntLinGt(Constraint* ct, std::string* log);
+  bool PresolveIntLinLt(Constraint* ct, std::string* log);
+  bool PresolveLinear(Constraint* ct, std::string* log);
+  bool RegroupLinear(Constraint* ct, std::string* log);
+  bool PropagatePositiveLinear(Constraint* ct, std::string* log);
+  bool PresolveStoreMapping(Constraint* ct, std::string* log);
+  bool PresolveSimplifyElement(Constraint* ct, std::string* log);
+  bool PresolveSimplifyExprElement(Constraint* ct, std::string* log);
+  bool PropagateReifiedComparisons(Constraint* ct, std::string* log);
+  bool RemoveAbsFromIntLeReif(Constraint* ct, std::string* log);
+  bool SimplifyUnaryLinear(Constraint* ct, std::string* log);
+  bool SimplifyBinaryLinear(Constraint* ct, std::string* log);
+  bool CheckIntLinReifBounds(Constraint* ct, std::string* log);
+  bool CreateLinearTarget(Constraint* ct, std::string* log);
+  bool PresolveBoolNot(Constraint* ct, std::string* log);
+  bool PresolveBoolXor(Constraint* ct, std::string* log);
+  bool SimplifyIntLinEqReif(Constraint* ct, std::string* log);
+  bool PresolveIntMod(Constraint* ct, std::string* log);
+  bool PresolveBoolClause(Constraint* ct, std::string* log);
+  bool StoreIntEqReif(Constraint* ct, std::string* log);
+  bool SimplifyIntNeReif(Constraint* ct, std::string* log);
 
   // Helpers.
-  void IntersectDomainWith(const FzArgument& arg, FzDomain* domain);
+  void IntersectDomainWith(const Argument& arg, Domain* domain);
+
+  // This method wraps each rule, calls it and log its effect.
+  bool ApplyRule(Constraint* ct, const std::string& rule_name,
+                 std::function<bool(Constraint* ct, std::string*)> rule);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same
@@ -153,35 +165,38 @@ class FzPresolver {
   // See http://en.wikipedia.org/wiki/Disjoint-set_data_structure.
   // Note that the equivalence is directed. We prefer to replace all instances
   // of 'from' with 'to', rather than the opposite.
-  void AddVariableSubstition(FzIntegerVariable* from, FzIntegerVariable* to);
-  FzIntegerVariable* FindRepresentativeOfVar(FzIntegerVariable* var);
-  hash_map<const FzIntegerVariable*, FzIntegerVariable*>
-      var_representative_map_;
+  void AddVariableSubstition(IntegerVariable* from, IntegerVariable* to);
+  IntegerVariable* FindRepresentativeOfVar(IntegerVariable* var);
+  hash_map<const IntegerVariable*, IntegerVariable*> var_representative_map_;
 
   // Stores abs_map_[x] = y if x = abs(y).
-  hash_map<const FzIntegerVariable*, FzIntegerVariable*> abs_map_;
+  hash_map<const IntegerVariable*, IntegerVariable*> abs_map_;
 
   // Stores affine_map_[x] = a * y + b.
-  hash_map<const FzIntegerVariable*, AffineMapping> affine_map_;
+  hash_map<const IntegerVariable*, AffineMapping> affine_map_;
 
   // Stores array2d_index_map_[z] = a * x + y + b.
-  hash_map<const FzIntegerVariable*, Array2DIndexMapping> array2d_index_map_;
+  hash_map<const IntegerVariable*, Array2DIndexMapping> array2d_index_map_;
 
   // Stores x == (y - z).
-  hash_map<const FzIntegerVariable*,
-           std::pair<FzIntegerVariable*, FzIntegerVariable*>> difference_map_;
+  hash_map<const IntegerVariable*,
+           std::pair<IntegerVariable*, IntegerVariable*>>
+      difference_map_;
 
   // Stores (x == y) == b
-  hash_map<FzIntegerVariable*, hash_map<FzIntegerVariable*, FzIntegerVariable*>>
+  hash_map<const IntegerVariable*, hash_map<IntegerVariable*, IntegerVariable*>>
       int_eq_reif_map_;
 
   // Stores all variables defined in the search annotations.
-  hash_set<FzIntegerVariable*> decision_variables_;
+  hash_set<const IntegerVariable*> decision_variables_;
 
   // For all variables, stores all constraints it appears in.
-  hash_map<const FzIntegerVariable*, hash_set<FzConstraint*>>
-      var_to_constraints_;
+  hash_map<const IntegerVariable*, hash_set<Constraint*>> var_to_constraints_;
+
+  // Count applications of presolve rules.
+  hash_map<std::string, int> successful_rules_;
 };
+}  // namespace fz
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_FLATZINC_PRESOLVE_H_

@@ -114,55 +114,6 @@ std::string RangeLessOrEqual::DebugString() const {
 }
 
 //-----------------------------------------------------------------------------
-// RangeGreaterOrEqual
-
-class RangeGreaterOrEqual : public Constraint {
- public:
-  RangeGreaterOrEqual(Solver* const s, IntExpr* const l, IntExpr* const r);
-  ~RangeGreaterOrEqual() override {}
-  void Post() override;
-  void InitialPropagate() override;
-  std::string DebugString() const override;
-  IntVar* Var() override {
-    return solver()->MakeIsGreaterOrEqualVar(left_, right_);
-  }
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->EndVisitConstraint(ModelVisitor::kGreaterOrEqual, this);
-  }
-
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* demon_;
-};
-
-RangeGreaterOrEqual::RangeGreaterOrEqual(Solver* const s, IntExpr* const l,
-                                         IntExpr* const r)
-    : Constraint(s), left_(l), right_(r), demon_(nullptr) {}
-
-void RangeGreaterOrEqual::Post() {
-  demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-  left_->WhenRange(demon_);
-  right_->WhenRange(demon_);
-}
-
-void RangeGreaterOrEqual::InitialPropagate() {
-  left_->SetMin(right_->Min());
-  right_->SetMax(left_->Max());
-  if (left_->Min() >= right_->Max()) {
-    demon_->inhibit(solver());
-  }
-}
-
-std::string RangeGreaterOrEqual::DebugString() const {
-  return left_->DebugString() + " >= " + right_->DebugString();
-}
-
-//-----------------------------------------------------------------------------
 // RangeLess
 
 class RangeLess : public Constraint {
@@ -206,52 +157,6 @@ void RangeLess::InitialPropagate() {
 
 std::string RangeLess::DebugString() const {
   return left_->DebugString() + " < " + right_->DebugString();
-}
-
-//-----------------------------------------------------------------------------
-// RangeGreater
-
-class RangeGreater : public Constraint {
- public:
-  RangeGreater(Solver* const s, IntExpr* const l, IntExpr* const r);
-  ~RangeGreater() override {}
-  void Post() override;
-  void InitialPropagate() override;
-  std::string DebugString() const override;
-  IntVar* Var() override { return solver()->MakeIsGreaterVar(left_, right_); }
-  void Accept(ModelVisitor* const visitor) const override {
-    visitor->BeginVisitConstraint(ModelVisitor::kGreater, this);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kLeftArgument, left_);
-    visitor->VisitIntegerExpressionArgument(ModelVisitor::kRightArgument,
-                                            right_);
-    visitor->EndVisitConstraint(ModelVisitor::kGreater, this);
-  }
-
- private:
-  IntExpr* const left_;
-  IntExpr* const right_;
-  Demon* demon_;
-};
-
-RangeGreater::RangeGreater(Solver* const s, IntExpr* const l, IntExpr* const r)
-    : Constraint(s), left_(l), right_(r), demon_(nullptr) {}
-
-void RangeGreater::Post() {
-  demon_ = solver()->MakeConstraintInitialPropagateCallback(this);
-  left_->WhenRange(demon_);
-  right_->WhenRange(demon_);
-}
-
-void RangeGreater::InitialPropagate() {
-  left_->SetMin(right_->Min() + 1);
-  right_->SetMax(left_->Max() - 1);
-  if (left_->Min() > right_->Max()) {
-    demon_->inhibit(solver());
-  }
-}
-
-std::string RangeGreater::DebugString() const {
-  return left_->DebugString() + " > " + right_->DebugString();
 }
 
 //-----------------------------------------------------------------------------
@@ -637,19 +542,7 @@ Constraint* Solver::MakeLessOrEqual(IntExpr* const l, IntExpr* const r) {
 }
 
 Constraint* Solver::MakeGreaterOrEqual(IntExpr* const l, IntExpr* const r) {
-  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l == r) {
-    return MakeTrueConstraint();
-  } else if (l->Bound()) {
-    return MakeLessOrEqual(r, l->Min());
-  } else if (r->Bound()) {
-    return MakeGreaterOrEqual(l, r->Min());
-  } else {
-    return RevAlloc(new RangeGreaterOrEqual(this, l, r));
-  }
+  return MakeLessOrEqual(r, l);
 }
 
 Constraint* Solver::MakeLess(IntExpr* const l, IntExpr* const r) {
@@ -667,17 +560,7 @@ Constraint* Solver::MakeLess(IntExpr* const l, IntExpr* const r) {
 }
 
 Constraint* Solver::MakeGreater(IntExpr* const l, IntExpr* const r) {
-  CHECK(l != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK(r != nullptr) << "left expression nullptr, maybe a bad cast";
-  CHECK_EQ(this, l->solver());
-  CHECK_EQ(this, r->solver());
-  if (l->Bound()) {
-    return MakeLess(r, l->Min());
-  } else if (r->Bound()) {
-    return MakeGreater(l, r->Min());
-  } else {
-    return RevAlloc(new RangeGreater(this, l, r));
-  }
+  return MakeLess(r, l);
 }
 
 Constraint* Solver::MakeNonEquality(IntExpr* const l, IntExpr* const r) {

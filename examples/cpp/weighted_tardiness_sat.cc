@@ -24,19 +24,22 @@
 #include "base/strutil.h"
 #include "base/strtoint.h"
 #include "sat/disjunctive.h"
-#include "sat/integer_sum.h"
+#include "sat/integer_expr.h"
 #include "sat/intervals.h"
 #include "sat/model.h"
 #include "sat/optimization.h"
 #include "sat/precedences.h"
 #include "util/filelineiter.h"
 
-
 DEFINE_string(input, "examples/data/weighted_tardiness/wt40.txt",
               "wt data file name.");
 DEFINE_int32(size, 40, "Size of the problem in the wt file.");
 DEFINE_int32(n, 28, "1-based instance number in the wt file.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");
+DEFINE_bool(use_boolean_precedences, false,
+            "Whether we create Boolean variables for all the possible "
+            "precedences between tasks on the same machine, or not.");
+DEFINE_int32(upper_bound, -1, "If positive, look for a solution <= this.");
 
 namespace operations_research {
 namespace sat {
@@ -55,16 +58,35 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
     LOG(INFO) << "#" << i << " duration:" << durations[i]
               << " due_date:" << due_dates[i] << " weight:" << weights[i];
   }
-  int trivial_bound = 0;
+
+  // An simple heuristic solution: We choose the tasks from last to first, and
+  // always take the one with smallest cost.
+  std::vector<bool> is_taken(num_tasks, false);
+  int heuristic_bound = 0;
+  int end = horizon;
   for (int i = 0; i < num_tasks; ++i) {
-    trivial_bound += weights[i] * std::max(0, horizon - due_dates[i]);
+    int next_task = -1;
+    int64 next_cost;
+    for (int j = 0; j < num_tasks; ++j) {
+      if (is_taken[j]) continue;
+      const int64 cost = weights[j] * std::max(0, end - due_dates[j]);
+      if (next_task == -1 || cost < next_cost) {
+        next_task = j;
+        next_cost = cost;
+      }
+    }
+    CHECK_NE(-1, next_task);
+    is_taken[next_task] = true;
+    end -= durations[next_task];
+    heuristic_bound += next_cost;
   }
   LOG(INFO) << "num_tasks: " << num_tasks;
   LOG(INFO) << "The time horizon is " << horizon;
-  LOG(INFO) << "Trival cost bound = " << trivial_bound;
+  LOG(INFO) << "Trival cost bound = " << heuristic_bound;
 
   // Create the model.
   Model model;
+  std::vector<IntegerVariable> decision_vars;
   std::vector<IntervalVariable> tasks(num_tasks);
   std::vector<IntegerVariable> tardiness_vars(num_tasks);
   for (int i = 0; i < num_tasks; ++i) {
@@ -78,10 +100,34 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
       model.Add(
           EndBeforeWithOffset(tasks[i], tardiness_vars[i], -due_dates[i]));
     }
+
+    // Experiments showed that the heuristic of choosing first the task that
+    // comes last (because of the NegationOf()) works a lot better. This make
+    // sense because these are the task with the most influence on the cost.
+    decision_vars.push_back(NegationOf(model.Get(StartVar(tasks[i]))));
   }
-  model.Add(DisjunctiveWithBooleanPrecedences(tasks));
+  if (FLAGS_use_boolean_precedences) {
+    model.Add(DisjunctiveWithBooleanPrecedences(tasks));
+  } else {
+    model.Add(Disjunctive(tasks));
+  }
+
+  // Set a known upper bound (or use the flag). This has a bigger impact than
+  // can be expected at first:
+  // - It avoid spending time finding not so good solution.
+  // - More importantly, because we lazily create the associated Boolean
+  //   variables, we end up creating less of them, and that speed up the search
+  //   for the optimal and the proof of optimality.
+  //
+  // Note however than for big problem, this will drastically augment the time
+  // to get a first feasible solution (but then the heuristic gave one to us).
   const IntegerVariable objective_var =
       model.Add(NewWeightedSum(weights, tardiness_vars));
+  if (FLAGS_upper_bound >= 0) {
+    model.Add(LowerOrEqual(objective_var, FLAGS_upper_bound));
+  } else {
+    model.Add(LowerOrEqual(objective_var, heuristic_bound));
+  }
 
   // Optional preprocessing: add precedences that don't change the optimal
   // solution value.
@@ -96,6 +142,13 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
       if (i == j) continue;
       if (due_dates[i] <= due_dates[j] && durations[i] <= durations[j] &&
           weights[i] >= weights[j]) {
+        // If two jobs have exactly the same specs, we don't add both
+        // precedences!
+        if (due_dates[i] == due_dates[j] && durations[i] == durations[j] &&
+            weights[i] == weights[j] && i > j) {
+          continue;
+        }
+
         ++num_added_precedences;
         model.Add(EndBeforeStart(tasks[i], tasks[j]));
       }
@@ -104,33 +157,36 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   LOG(INFO) << "Added " << num_added_precedences
             << " precedences that will not affect the optimal solution value.";
 
+  if (FLAGS_use_boolean_precedences) {
+    // We disable the lazy encoding in this case.
+    decision_vars.clear();
+  }
+
   // Solve it.
   model.Add(NewSatParameters(FLAGS_params));
-  MinimizeIntegerVariableWithLinearScan(
-      objective_var,
+  MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
+      /*log_info=*/true, objective_var, decision_vars,
       /*feasible_solution_observer=*/
       [&](const Model& model) {
-        const IntegerTrail* integer_trail = model.Get<IntegerTrail>();
-        const IntervalsRepository* intervals = model.Get<IntervalsRepository>();
-
-        const int objective = integer_trail->LowerBound(objective_var);
+        const int64 objective = model.Get(LowerBound(objective_var));
         LOG(INFO) << "Cost " << objective;
 
         // Debug code.
         {
-          int tardiness_objective = 0;
+          int64 tardiness_objective = 0;
           for (int i = 0; i < num_tasks; ++i) {
             tardiness_objective +=
-                weights[i] * std::max(0, integer_trail->LowerBound(
-                                             intervals->EndVar(tasks[i])) -
-                                             due_dates[i]);
+                weights[i] *
+                std::max(0ll,
+                         model.Get(LowerBound(model.Get(EndVar(tasks[i])))) -
+                             due_dates[i]);
           }
           CHECK_EQ(objective, tardiness_objective);
 
           tardiness_objective = 0;
           for (int i = 0; i < num_tasks; ++i) {
             tardiness_objective +=
-                weights[i] * integer_trail->LowerBound(tardiness_vars[i]);
+                weights[i] * model.Get(LowerBound(tardiness_vars[i]));
           }
           CHECK_EQ(objective, tardiness_objective);
         }
@@ -138,26 +194,25 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
         // Print the current solution.
         std::vector<IntervalVariable> sorted_tasks = tasks;
         std::sort(sorted_tasks.begin(), sorted_tasks.end(),
-                  [integer_trail, &intervals](IntervalVariable v1,
-                                              IntervalVariable v2) {
-                    return integer_trail->LowerBound(intervals->StartVar(v1)) <
-                           integer_trail->LowerBound(intervals->StartVar(v2));
+                  [&model](IntervalVariable v1, IntervalVariable v2) {
+                    return model.Get(LowerBound(model.Get(StartVar(v1)))) <
+                           model.Get(LowerBound(model.Get(StartVar(v2))));
                   });
         std::string solution = "0";
         int end = 0;
         for (const IntervalVariable v : sorted_tasks) {
-          const int cost = weights[v.value()] *
-                           integer_trail->LowerBound(tardiness_vars[v.value()]);
+          const int64 cost = weights[v.value()] *
+                             model.Get(LowerBound(tardiness_vars[v.value()]));
           solution += StringPrintf("| #%d ", v.value());
           if (cost > 0) {
             // Display the cost in red.
-            solution += StringPrintf("\033[1;31m(+%d) \033[0m", cost);
+            solution += StringPrintf("\033[1;31m(+%lld) \033[0m", cost);
           }
-          solution += StringPrintf(
-              "|%d", integer_trail->LowerBound(intervals->EndVar(v)));
-          CHECK_EQ(end, integer_trail->LowerBound(intervals->StartVar(v)));
+          solution += StringPrintf("|%lld",
+                                   model.Get(LowerBound(model.Get(EndVar(v)))));
+          CHECK_EQ(end, model.Get(LowerBound(model.Get(StartVar(v)))));
           end += durations[v.value()];
-          CHECK_EQ(end, integer_trail->LowerBound(intervals->EndVar(v)));
+          CHECK_EQ(end, model.Get(LowerBound(model.Get(EndVar(v)))));
         }
         LOG(INFO) << "solution: " << solution;
       },

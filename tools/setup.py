@@ -26,7 +26,7 @@ DELETEUNIX               extra_link_args=['/MANIFEST'],
                         )
 
 setup(
-    name='ortools',
+    name='ORTOOLS_PYTHON_VERSION',
     version='VVVV',
     packages=[
         'ortools',
@@ -63,6 +63,9 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Topic :: Office/Business :: Scheduling',
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Mathematics',

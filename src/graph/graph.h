@@ -1029,8 +1029,14 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
                                            t##ArcIterator(*this, node, e));   \
   }
 
-// Adapt our old iteration style to support range-based for loops.
+// Adapt our old iteration style to support range-based for loops. Add typedefs
+// required by std::iterator_traits.
 #define DEFINE_STL_ITERATOR_FUNCTIONS(iterator_class_name)  \
+  using iterator_category = std::input_iterator_tag;        \
+  using difference_type = ptrdiff_t;                        \
+  using pointer = const ArcIndexType*;                      \
+  using reference = const ArcIndexType&;                    \
+  using value_type = ArcIndexType;                          \
   bool operator!=(const iterator_class_name& other) const { \
     return index_ != other.index_;                          \
   }                                                         \
@@ -1152,6 +1158,12 @@ class ListGraph<NodeIndexType, ArcIndexType>::OutgoingArcIterator {
 template <typename NodeIndexType, typename ArcIndexType>
 class ListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
  public:
+  using iterator_category = std::input_iterator_tag;
+  using difference_type = ptrdiff_t;
+  using pointer = const NodeIndexType*;
+  using reference = const NodeIndexType&;
+  using value_type = NodeIndexType;
+
   OutgoingHeadIterator(const ListGraph& graph, NodeIndexType node)
       : graph_(graph), index_(graph.start_[node]) {
     DCHECK(graph.IsNodeValid(node));
@@ -1583,13 +1595,8 @@ class ReverseArcListGraph<NodeIndexType, ArcIndexType>::OutgoingHeadIterator {
     DCHECK(Ok());
     index_ = graph_->next_[index_];
   }
-  bool operator!=(
-      const typename ReverseArcListGraph<
-          NodeIndexType, ArcIndexType>::OutgoingHeadIterator& other) const {
-    return index_ != other.index_;
-  }
-  ArcIndexType operator*() const { return Index(); }
-  void operator++() { Next(); }
+
+  DEFINE_STL_ITERATOR_FUNCTIONS(OutgoingHeadIterator);
 
  private:
   const ReverseArcListGraph* graph_;
@@ -2156,6 +2163,23 @@ class CompleteBipartiteGraph
                                                       ArcIndexType from) const;
   IntegerRange<NodeIndexType> operator[](NodeIndexType node) const;
 
+  // Deprecated interface.
+  class OutgoingArcIterator {
+   public:
+    OutgoingArcIterator(const CompleteBipartiteGraph& graph, NodeIndexType node)
+        : index_(graph.right_nodes_ * node),
+          limit_(node >= graph.left_nodes_ ? index_
+                                           : graph.right_nodes_ * (node + 1)) {}
+
+    bool Ok() const { return index_ < limit_; }
+    ArcIndexType Index() const { return index_; }
+    void Next() { index_++; }
+
+   private:
+    ArcIndexType index_;
+    const ArcIndexType limit_;
+  };
+
  private:
   const NodeIndexType left_nodes_;
   const NodeIndexType right_nodes_;
@@ -2165,7 +2189,7 @@ template <typename NodeIndexType, typename ArcIndexType>
 NodeIndexType CompleteBipartiteGraph<NodeIndexType, ArcIndexType>::Head(
     ArcIndexType arc) const {
   DCHECK(this->IsArcValid(arc));
-  return arc % right_nodes_;
+  return left_nodes_ + arc % right_nodes_;
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -2207,7 +2231,7 @@ template <typename NodeIndexType, typename ArcIndexType>
 IntegerRange<NodeIndexType> CompleteBipartiteGraph<
     NodeIndexType, ArcIndexType>::operator[](NodeIndexType node) const {
   if (node < left_nodes_) {
-    return IntegerRange<NodeIndexType>(0, right_nodes_);
+    return IntegerRange<NodeIndexType>(left_nodes_, left_nodes_ + right_nodes_);
   } else {
     return IntegerRange<NodeIndexType>(0, 0);
   }

@@ -3262,7 +3262,9 @@ IntExpr* Solver::MakeSum(const std::vector<IntVar*>& vars) {
 IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
   const int size = vars.size();
   if (size == 0) {
-    return MakeIntConst(0LL);
+    LOG(WARNING) << "operations_research::Solver::MakeMin() was called with an "
+                    "empty list of variables. Was this intentional?";
+    return MakeIntConst(kint64max);
   } else if (size == 1) {
     return vars[0];
   } else if (size == 2) {
@@ -3303,7 +3305,9 @@ IntExpr* Solver::MakeMin(const std::vector<IntVar*>& vars) {
 IntExpr* Solver::MakeMax(const std::vector<IntVar*>& vars) {
   const int size = vars.size();
   if (size == 0) {
-    return MakeIntConst(0LL);
+    LOG(WARNING) << "operations_research::Solver::MakeMax() was called with an "
+                    "empty list of variables. Was this intentional?";
+    return MakeIntConst(kint64min);
   } else if (size == 1) {
     return vars[0];
   } else if (size == 2) {
@@ -3357,7 +3361,9 @@ Constraint* Solver::MakeMinEquality(const std::vector<IntVar*>& vars,
   } else if (size == 1) {
     return MakeEquality(vars[0], min_var);
   } else {
-    return MakeEquality(min_var, Zero());
+    LOG(WARNING) << "operations_research::Solver::MakeMinEquality() was called "
+                    "with an empty list of variables. Was this intentional?";
+    return MakeEquality(min_var, kint64max);
   }
 }
 
@@ -3377,7 +3383,9 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
   } else if (size == 1) {
     return MakeEquality(vars[0], max_var);
   } else {
-    return MakeEquality(max_var, Zero());
+    LOG(WARNING) << "operations_research::Solver::MakeMaxEquality() was called "
+                    "with an empty list of variables. Was this intentional?";
+    return MakeEquality(max_var, kint64min);
   }
 }
 

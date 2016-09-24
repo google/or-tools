@@ -20,7 +20,7 @@ using operations_research::atoi64;
 #endif
 %}
 
-/* Rules that parse the bottom-line string tokens of a .fz file and
+/* Rules that parse the bottom-line std::string tokens of a .fz file and
    convert them into YACC tokens, which may carry a value. See the
    LexerInfo struct and the %token declarations in ./parser.yy. */
 

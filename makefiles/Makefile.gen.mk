@@ -6,8 +6,8 @@ BASE_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -32,16 +32,16 @@ BASE_LIB_OBJS = \
     $(OBJ_DIR)/base/stringprintf.$O \
     $(OBJ_DIR)/base/sysinfo.$O \
     $(OBJ_DIR)/base/threadpool.$O \
-    $(OBJ_DIR)/base/time_support.$O \
-    $(OBJ_DIR)/base/timer.$O
-
-$(SRC_DIR)/base/adjustable_priority_queue-inl.h: \
-    $(SRC_DIR)/base/adjustable_priority_queue.h
+    $(OBJ_DIR)/base/timer.$O \
+    $(OBJ_DIR)/base/time_support.$O
 
 $(SRC_DIR)/base/adjustable_priority_queue.h: \
     $(SRC_DIR)/base/basictypes.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h
+
+$(SRC_DIR)/base/adjustable_priority_queue-inl.h: \
+    $(SRC_DIR)/base/adjustable_priority_queue.h
 
 $(SRC_DIR)/base/basictypes.h: \
     $(SRC_DIR)/base/integral_types.h \
@@ -128,6 +128,9 @@ $(SRC_DIR)/base/status.h: \
 $(SRC_DIR)/base/statusor.h: \
     $(SRC_DIR)/base/status.h
 
+$(SRC_DIR)/base/stringpiece_utils.h: \
+    $(SRC_DIR)/base/stringpiece.h
+
 $(SRC_DIR)/base/stringprintf.h: \
     $(SRC_DIR)/base/stringpiece.h
 
@@ -150,17 +153,14 @@ $(SRC_DIR)/base/sysinfo.h: \
 $(SRC_DIR)/base/thorough_hash.h: \
     $(SRC_DIR)/base/integral_types.h
 
-$(SRC_DIR)/base/threadpool.h: \
-    $(SRC_DIR)/base/callback.h
-
-$(SRC_DIR)/base/time_support.h: \
-    $(SRC_DIR)/base/integral_types.h
-
 $(SRC_DIR)/base/timer.h: \
     $(SRC_DIR)/base/basictypes.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/base/time_support.h
+
+$(SRC_DIR)/base/time_support.h: \
+    $(SRC_DIR)/base/integral_types.h
 
 $(OBJ_DIR)/base/bitmap.$O: \
     $(SRC_DIR)/base/bitmap.cc \
@@ -249,15 +249,15 @@ $(OBJ_DIR)/base/threadpool.$O: \
     $(SRC_DIR)/base/threadpool.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/threadpool.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sthreadpool.$O
 
-$(OBJ_DIR)/base/time_support.$O: \
-    $(SRC_DIR)/base/time_support.cc \
-    $(SRC_DIR)/base/time_support.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/time_support.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Stime_support.$O
-
 $(OBJ_DIR)/base/timer.$O: \
     $(SRC_DIR)/base/timer.cc \
     $(SRC_DIR)/base/timer.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/timer.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Stimer.$O
+
+$(OBJ_DIR)/base/time_support.$O: \
+    $(SRC_DIR)/base/time_support.cc \
+    $(SRC_DIR)/base/time_support.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/base/time_support.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Stime_support.$O
 
 UTIL_DEPS = \
     $(SRC_DIR)/util/bitset.h \
@@ -270,8 +270,8 @@ UTIL_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -308,6 +308,7 @@ $(SRC_DIR)/util/cached_log.h: \
 $(SRC_DIR)/util/filelineiter.h: \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/logging.h \
+    $(SRC_DIR)/base/stringpiece_utils.h \
     $(SRC_DIR)/base/strutil.h
 
 $(SRC_DIR)/util/fp_utils.h: \
@@ -349,6 +350,10 @@ $(SRC_DIR)/util/range_query_function.h: \
 $(SRC_DIR)/util/rational_approximation.h: \
     $(SRC_DIR)/base/integral_types.h
 
+$(SRC_DIR)/util/rev.h: \
+    $(SRC_DIR)/base/logging.h \
+    $(SRC_DIR)/base/map_util.h
+
 $(SRC_DIR)/util/running_stat.h: \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h
@@ -370,8 +375,8 @@ $(SRC_DIR)/util/time_limit.h: \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/base/port.h \
-    $(SRC_DIR)/base/time_support.h \
-    $(SRC_DIR)/base/timer.h
+    $(SRC_DIR)/base/timer.h \
+    $(SRC_DIR)/base/time_support.h
 
 $(SRC_DIR)/util/tuple_set.h: \
     $(SRC_DIR)/base/hash.h \
@@ -490,8 +495,8 @@ LP_DATA_DEPS = \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/lp_data/matrix_scaler.h \
     $(SRC_DIR)/lp_data/permutation.h \
-    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_column.h \
+    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_vector.h \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/running_stat.h \
@@ -503,8 +508,8 @@ LP_DATA_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -561,8 +566,8 @@ $(SRC_DIR)/lp_data/lp_utils.h: \
 
 $(SRC_DIR)/lp_data/matrix_scaler.h: \
     $(SRC_DIR)/lp_data/lp_types.h \
-    $(SRC_DIR)/base/int_type_indexed_vector.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type_indexed_vector.h \
     $(SRC_DIR)/base/macros.h
 
 $(SRC_DIR)/lp_data/matrix_utils.h: \
@@ -583,15 +588,15 @@ $(SRC_DIR)/lp_data/permutation.h: \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/util/return_macros.h
 
+$(SRC_DIR)/lp_data/sparse_column.h: \
+    $(SRC_DIR)/lp_data/sparse_vector.h
+
 $(SRC_DIR)/lp_data/sparse.h: \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/lp_data/permutation.h \
     $(SRC_DIR)/lp_data/sparse_column.h \
     $(SRC_DIR)/util/return_macros.h \
     $(SRC_DIR)/base/integral_types.h
-
-$(SRC_DIR)/lp_data/sparse_column.h: \
-    $(SRC_DIR)/lp_data/sparse_vector.h
 
 $(SRC_DIR)/lp_data/sparse_vector.h: \
     $(SRC_DIR)/lp_data/lp_types.h \
@@ -704,8 +709,8 @@ GLOP_DEPS = \
     $(SRC_DIR)/glop/revised_simplex.h \
     $(SRC_DIR)/glop/status.h \
     $(SRC_DIR)/glop/update_row.h \
-    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/glop/variables_info.h \
+    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/running_stat.h \
     $(SRC_DIR)/util/saturated_arithmetic.h \
@@ -716,8 +721,8 @@ GLOP_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -729,8 +734,8 @@ GLOP_DEPS = \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/lp_data/matrix_scaler.h \
     $(SRC_DIR)/lp_data/permutation.h \
-    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_column.h \
+    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_vector.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h
@@ -750,8 +755,8 @@ GLOP_LIB_OBJS = \
     $(OBJ_DIR)/glop/revised_simplex.$O \
     $(OBJ_DIR)/glop/status.$O \
     $(OBJ_DIR)/glop/update_row.$O \
-    $(OBJ_DIR)/glop/variable_values.$O \
     $(OBJ_DIR)/glop/variables_info.$O \
+    $(OBJ_DIR)/glop/variable_values.$O \
     $(OBJ_DIR)/glop/parameters.pb.$O
 
 $(SRC_DIR)/glop/basis_representation.h: \
@@ -860,8 +865,8 @@ $(SRC_DIR)/glop/revised_simplex.h: \
     $(SRC_DIR)/glop/reduced_costs.h \
     $(SRC_DIR)/glop/status.h \
     $(SRC_DIR)/glop/update_row.h \
-    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/glop/variables_info.h \
+    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/util/time_limit.h \
     $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/macros.h \
@@ -881,15 +886,15 @@ $(SRC_DIR)/glop/update_row.h: \
     $(SRC_DIR)/util/stats.h \
     $(SRC_DIR)/lp_data/lp_types.h
 
+$(SRC_DIR)/glop/variables_info.h: \
+    $(SRC_DIR)/lp_data/lp_types.h \
+    $(SRC_DIR)/lp_data/sparse.h
+
 $(SRC_DIR)/glop/variable_values.h: \
     $(SRC_DIR)/glop/basis_representation.h \
     $(SRC_DIR)/glop/variables_info.h \
     $(SRC_DIR)/util/stats.h \
     $(SRC_DIR)/lp_data/lp_types.h
-
-$(SRC_DIR)/glop/variables_info.h: \
-    $(SRC_DIR)/lp_data/lp_types.h \
-    $(SRC_DIR)/lp_data/sparse.h
 
 $(OBJ_DIR)/glop/basis_representation.$O: \
     $(SRC_DIR)/glop/basis_representation.cc \
@@ -1006,17 +1011,17 @@ $(OBJ_DIR)/glop/update_row.$O: \
     $(SRC_DIR)/lp_data/lp_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/update_row.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Supdate_row.$O
 
+$(OBJ_DIR)/glop/variables_info.$O: \
+    $(SRC_DIR)/glop/variables_info.cc \
+    $(SRC_DIR)/glop/variables_info.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/variables_info.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Svariables_info.$O
+
 $(OBJ_DIR)/glop/variable_values.$O: \
     $(SRC_DIR)/glop/variable_values.cc \
     $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/util/iterators.h \
     $(SRC_DIR)/lp_data/lp_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/variable_values.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Svariable_values.$O
-
-$(OBJ_DIR)/glop/variables_info.$O: \
-    $(SRC_DIR)/glop/variables_info.cc \
-    $(SRC_DIR)/glop/variables_info.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/variables_info.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Svariables_info.$O
 
 $(GEN_DIR)/glop/parameters.pb.cc: $(SRC_DIR)/glop/parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/glop/parameters.proto
@@ -1040,8 +1045,8 @@ GRAPH_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -1154,6 +1159,7 @@ $(SRC_DIR)/graph/shortestpaths.h: \
 $(SRC_DIR)/graph/util.h: \
     $(SRC_DIR)/graph/graph.h \
     $(SRC_DIR)/base/join.h \
+    $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/murmur.h \
     $(SRC_DIR)/base/numbers.h \
     $(SRC_DIR)/base/split.h \
@@ -1249,8 +1255,8 @@ ALGORITHMS_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -1363,6 +1369,7 @@ SAT_DEPS = \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/clause.h \
     $(SRC_DIR)/sat/drat.h \
+    $(SRC_DIR)/sat/integer_expr.h \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
@@ -1379,8 +1386,8 @@ SAT_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -1403,8 +1410,8 @@ SAT_DEPS = \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/lp_data/matrix_scaler.h \
     $(SRC_DIR)/lp_data/permutation.h \
-    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_column.h \
+    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_vector.h \
     $(SRC_DIR)/glop/basis_representation.h \
     $(SRC_DIR)/glop/dual_edge_norms.h \
@@ -1419,8 +1426,8 @@ SAT_DEPS = \
     $(SRC_DIR)/glop/revised_simplex.h \
     $(SRC_DIR)/glop/status.h \
     $(SRC_DIR)/glop/update_row.h \
-    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/glop/variables_info.h \
+    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
@@ -1431,7 +1438,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
     $(OBJ_DIR)/sat/integer.$O \
-    $(OBJ_DIR)/sat/integer_sum.$O \
+    $(OBJ_DIR)/sat/integer_expr.$O \
     $(OBJ_DIR)/sat/intervals.$O \
     $(OBJ_DIR)/sat/lp_utils.$O \
     $(OBJ_DIR)/sat/no_cycle.$O \
@@ -1441,6 +1448,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/sat_solver.$O \
     $(OBJ_DIR)/sat/simplification.$O \
     $(OBJ_DIR)/sat/symmetry.$O \
+    $(OBJ_DIR)/sat/table.$O \
     $(OBJ_DIR)/sat/util.$O \
     $(OBJ_DIR)/sat/boolean_problem.pb.$O \
     $(OBJ_DIR)/sat/sat_parameters.pb.$O
@@ -1456,9 +1464,9 @@ $(SRC_DIR)/sat/clause.h: \
     $(SRC_DIR)/sat/sat_base.h \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
     $(SRC_DIR)/base/hash.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/random.h \
     $(SRC_DIR)/base/stringprintf.h \
@@ -1483,20 +1491,27 @@ $(SRC_DIR)/sat/encoding.h: \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/sat_solver.h
 
+$(SRC_DIR)/sat/integer_expr.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/precedences.h \
+    $(SRC_DIR)/sat/sat_base.h
+
 $(SRC_DIR)/sat/integer.h: \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/sat/sat_base.h \
     $(SRC_DIR)/sat/sat_solver.h \
     $(SRC_DIR)/base/int_type.h \
+    $(SRC_DIR)/base/join.h \
+    $(SRC_DIR)/base/map_util.h \
+    $(SRC_DIR)/base/port.h \
     $(SRC_DIR)/util/bitset.h \
-    $(SRC_DIR)/util/iterators.h
-
-$(SRC_DIR)/sat/integer_sum.h: \
-    $(SRC_DIR)/sat/integer.h \
-    $(SRC_DIR)/sat/model.h \
-    $(SRC_DIR)/sat/sat_base.h
+    $(SRC_DIR)/util/iterators.h \
+    $(SRC_DIR)/util/rev.h \
+    $(SRC_DIR)/util/saturated_arithmetic.h
 
 $(SRC_DIR)/sat/intervals.h: \
+    $(SRC_DIR)/sat/integer_expr.h \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/sat/precedences.h \
@@ -1537,6 +1552,7 @@ $(SRC_DIR)/sat/precedences.h: \
     $(SRC_DIR)/util/bitset.h
 
 $(SRC_DIR)/sat/sat_base.h: \
+    $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
     $(SRC_DIR)/base/stringprintf.h \
@@ -1550,9 +1566,9 @@ $(SRC_DIR)/sat/sat_solver.h: \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
     $(SRC_DIR)/base/adjustable_priority_queue.h \
     $(SRC_DIR)/base/hash.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/random.h \
@@ -1574,6 +1590,10 @@ $(SRC_DIR)/sat/symmetry.h: \
     $(SRC_DIR)/sat/sat_base.h \
     $(SRC_DIR)/util/stats.h \
     $(SRC_DIR)/algorithms/sparse_permutation.h
+
+$(SRC_DIR)/sat/table.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h
 
 $(SRC_DIR)/sat/util.h: \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
@@ -1625,10 +1645,10 @@ $(OBJ_DIR)/sat/integer.$O: \
     $(SRC_DIR)/base/stl_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger.$O
 
-$(OBJ_DIR)/sat/integer_sum.$O: \
-    $(SRC_DIR)/sat/integer_sum.cc \
-    $(SRC_DIR)/sat/integer_sum.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer_sum.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_sum.$O
+$(OBJ_DIR)/sat/integer_expr.$O: \
+    $(SRC_DIR)/sat/integer_expr.cc \
+    $(SRC_DIR)/sat/integer_expr.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/integer_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sinteger_expr.$O
 
 $(OBJ_DIR)/sat/intervals.$O: \
     $(SRC_DIR)/sat/intervals.cc \
@@ -1699,6 +1719,13 @@ $(OBJ_DIR)/sat/symmetry.$O: \
     $(SRC_DIR)/sat/symmetry.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/symmetry.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssymmetry.$O
 
+$(OBJ_DIR)/sat/table.$O: \
+    $(SRC_DIR)/sat/table.cc \
+    $(SRC_DIR)/sat/table.h \
+    $(SRC_DIR)/base/map_util.h \
+    $(SRC_DIR)/base/stl_util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/table.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stable.$O
+
 $(OBJ_DIR)/sat/util.$O: \
     $(SRC_DIR)/sat/util.cc \
     $(SRC_DIR)/sat/util.h
@@ -1734,8 +1761,8 @@ BOP_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -1750,8 +1777,8 @@ BOP_DEPS = \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/lp_data/matrix_scaler.h \
     $(SRC_DIR)/lp_data/permutation.h \
-    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_column.h \
+    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_vector.h \
     $(SRC_DIR)/glop/basis_representation.h \
     $(SRC_DIR)/glop/dual_edge_norms.h \
@@ -1766,12 +1793,13 @@ BOP_DEPS = \
     $(SRC_DIR)/glop/revised_simplex.h \
     $(SRC_DIR)/glop/status.h \
     $(SRC_DIR)/glop/update_row.h \
-    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/glop/variables_info.h \
+    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/sat/boolean_problem.h \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/clause.h \
     $(SRC_DIR)/sat/drat.h \
+    $(SRC_DIR)/sat/integer_expr.h \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
@@ -1813,9 +1841,9 @@ $(SRC_DIR)/bop/bop_fs.h: \
     $(SRC_DIR)/bop/bop_types.h \
     $(SRC_DIR)/bop/bop_util.h \
     $(SRC_DIR)/base/basictypes.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/util/time_limit.h \
@@ -1830,9 +1858,9 @@ $(SRC_DIR)/bop/bop_lns.h: \
     $(SRC_DIR)/bop/bop_types.h \
     $(SRC_DIR)/bop/bop_util.h \
     $(SRC_DIR)/base/basictypes.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/util/stats.h \
@@ -1873,9 +1901,9 @@ $(SRC_DIR)/bop/bop_solver.h: \
     $(SRC_DIR)/bop/bop_solution.h \
     $(SRC_DIR)/bop/bop_types.h \
     $(SRC_DIR)/base/basictypes.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/util/stats.h \
@@ -2037,8 +2065,8 @@ LP_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -2053,8 +2081,8 @@ LP_DEPS = \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/lp_data/matrix_scaler.h \
     $(SRC_DIR)/lp_data/permutation.h \
-    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_column.h \
+    $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_vector.h \
     $(SRC_DIR)/glop/basis_representation.h \
     $(SRC_DIR)/glop/dual_edge_norms.h \
@@ -2069,8 +2097,8 @@ LP_DEPS = \
     $(SRC_DIR)/glop/revised_simplex.h \
     $(SRC_DIR)/glop/status.h \
     $(SRC_DIR)/glop/update_row.h \
-    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/glop/variables_info.h \
+    $(SRC_DIR)/glop/variable_values.h \
     $(SRC_DIR)/bop/bop_base.h \
     $(SRC_DIR)/bop/bop_lns.h \
     $(GEN_DIR)/bop/bop_parameters.pb.h \
@@ -2093,14 +2121,6 @@ LP_LIB_OBJS = \
     $(OBJ_DIR)/linear_solver/sulum_interface.$O \
     $(OBJ_DIR)/linear_solver/linear_solver.pb.$O
 
-$(SRC_DIR)/linear_solver/linear_solver.h: \
-    $(GEN_DIR)/linear_solver/linear_solver.pb.h \
-    $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/integral_types.h \
-    $(SRC_DIR)/base/logging.h \
-    $(SRC_DIR)/base/timer.h \
-    $(GEN_DIR)/glop/parameters.pb.h
-
 $(SRC_DIR)/linear_solver/linear_solver_ext.h: \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(SRC_DIR)/base/commandlineflags.h \
@@ -2111,6 +2131,14 @@ $(SRC_DIR)/linear_solver/linear_solver_ext.h: \
     $(SRC_DIR)/base/sparsetable.h \
     $(SRC_DIR)/base/strutil.h \
     $(SRC_DIR)/base/timer.h
+
+$(SRC_DIR)/linear_solver/linear_solver.h: \
+    $(GEN_DIR)/linear_solver/linear_solver.pb.h \
+    $(SRC_DIR)/base/hash.h \
+    $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/logging.h \
+    $(SRC_DIR)/base/timer.h \
+    $(GEN_DIR)/glop/parameters.pb.h
 
 $(SRC_DIR)/linear_solver/model_exporter.h: \
     $(SRC_DIR)/base/hash.h \
@@ -2289,8 +2317,8 @@ CP_DEPS = \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -2313,6 +2341,7 @@ CP_DEPS = \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/clause.h \
     $(SRC_DIR)/sat/drat.h \
+    $(SRC_DIR)/sat/integer_expr.h \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
@@ -2329,8 +2358,8 @@ CP_LIB_OBJS = \
     $(OBJ_DIR)/constraint_solver/alldiff_cst.$O \
     $(OBJ_DIR)/constraint_solver/assignment.$O \
     $(OBJ_DIR)/constraint_solver/collect_variables.$O \
-    $(OBJ_DIR)/constraint_solver/constraint_solver.$O \
     $(OBJ_DIR)/constraint_solver/constraints.$O \
+    $(OBJ_DIR)/constraint_solver/constraint_solver.$O \
     $(OBJ_DIR)/constraint_solver/count_cst.$O \
     $(OBJ_DIR)/constraint_solver/default_search.$O \
     $(OBJ_DIR)/constraint_solver/demon_profiler.$O \
@@ -2408,26 +2437,27 @@ $(SRC_DIR)/constraint_solver/constraint_solveri.h: \
 $(SRC_DIR)/constraint_solver/hybrid.h: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h
 
+$(SRC_DIR)/constraint_solver/routing_flags.h: \
+    $(GEN_DIR)/constraint_solver/routing_parameters.pb.h \
+    $(SRC_DIR)/base/commandlineflags.h
+
 $(SRC_DIR)/constraint_solver/routing.h: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/constraint_solveri.h \
     $(GEN_DIR)/constraint_solver/routing_parameters.pb.h \
-    $(SRC_DIR)/base/adjustable_priority_queue-inl.h \
     $(SRC_DIR)/base/adjustable_priority_queue.h \
+    $(SRC_DIR)/base/adjustable_priority_queue-inl.h \
     $(SRC_DIR)/base/callback.h \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/hash.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/util/range_query_function.h \
-    $(SRC_DIR)/util/sorted_interval_list.h
-
-$(SRC_DIR)/constraint_solver/routing_flags.h: \
-    $(GEN_DIR)/constraint_solver/routing_parameters.pb.h \
-    $(SRC_DIR)/base/commandlineflags.h
+    $(SRC_DIR)/util/sorted_interval_list.h \
+    $(SRC_DIR)/graph/graph.h
 
 $(SRC_DIR)/constraint_solver/sat_constraint.h: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
@@ -2441,9 +2471,9 @@ $(OBJ_DIR)/constraint_solver/ac4_mdd_reset_table.$O: \
     $(SRC_DIR)/constraint_solver/ac4_mdd_reset_table.cc \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/constraint_solveri.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/base/map_util.h \
@@ -2455,9 +2485,9 @@ $(OBJ_DIR)/constraint_solver/ac4r_table.$O: \
     $(SRC_DIR)/constraint_solver/ac4r_table.cc \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/constraint_solveri.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/base/map_util.h \
@@ -2499,6 +2529,16 @@ $(OBJ_DIR)/constraint_solver/collect_variables.$O: \
     $(SRC_DIR)/base/stl_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/collect_variables.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Scollect_variables.$O
 
+$(OBJ_DIR)/constraint_solver/constraints.$O: \
+    $(SRC_DIR)/constraint_solver/constraints.cc \
+    $(SRC_DIR)/constraint_solver/constraint_solver.h \
+    $(SRC_DIR)/constraint_solver/constraint_solveri.h \
+    $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/logging.h \
+    $(SRC_DIR)/util/saturated_arithmetic.h \
+    $(SRC_DIR)/util/string_array.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraints.$O
+
 $(OBJ_DIR)/constraint_solver/constraint_solver.$O: \
     $(SRC_DIR)/constraint_solver/constraint_solver.cc \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
@@ -2517,16 +2557,6 @@ $(OBJ_DIR)/constraint_solver/constraint_solver.$O: \
     $(SRC_DIR)/base/stringprintf.h \
     $(SRC_DIR)/util/tuple_set.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraint_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraint_solver.$O
-
-$(OBJ_DIR)/constraint_solver/constraints.$O: \
-    $(SRC_DIR)/constraint_solver/constraints.cc \
-    $(SRC_DIR)/constraint_solver/constraint_solver.h \
-    $(SRC_DIR)/constraint_solver/constraint_solveri.h \
-    $(SRC_DIR)/base/integral_types.h \
-    $(SRC_DIR)/base/logging.h \
-    $(SRC_DIR)/util/saturated_arithmetic.h \
-    $(SRC_DIR)/util/string_array.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraints.$O
 
 $(OBJ_DIR)/constraint_solver/count_cst.$O: \
     $(SRC_DIR)/constraint_solver/count_cst.cc \
@@ -2583,9 +2613,9 @@ $(OBJ_DIR)/constraint_solver/diffn.$O: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/constraint_solveri.h \
     $(SRC_DIR)/base/hash.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/stringprintf.h \
     $(SRC_DIR)/util/string_array.h
@@ -2652,9 +2682,9 @@ $(OBJ_DIR)/constraint_solver/gcc.$O: \
     $(SRC_DIR)/constraint_solver/gcc.cc \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/constraint_solveri.h \
+    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
@@ -2669,6 +2699,7 @@ $(OBJ_DIR)/constraint_solver/graph_constraints.$O: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/constraint_solveri.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/util/saturated_arithmetic.h \
     $(SRC_DIR)/util/string_array.h
@@ -2803,6 +2834,7 @@ $(OBJ_DIR)/constraint_solver/routing.$O: \
     $(SRC_DIR)/base/stl_util.h \
     $(SRC_DIR)/base/thorough_hash.h \
     $(SRC_DIR)/util/saturated_arithmetic.h \
+    $(SRC_DIR)/graph/connectivity.h \
     $(SRC_DIR)/graph/linear_assignment.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting.$O
 

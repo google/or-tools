@@ -57,10 +57,12 @@ const int kUnsatTrailIndex = -1;
 class SatSolver {
  public:
   SatSolver();
+  explicit SatSolver(Trail* trail);
   ~SatSolver();
 
   static SatSolver* CreateInModel(Model* model) {
-    SatSolver* solver = new SatSolver();
+    Trail* trail = model->GetOrCreate<Trail>();
+    SatSolver* solver = new SatSolver(trail);
     model->TakeOwnership(solver);
     return solver;
   }
@@ -81,6 +83,9 @@ class SatSolver {
   int NumVariables() const { return num_variables_.value(); }
   BooleanVariable NewBooleanVariable() {
     const int num_vars = NumVariables();
+
+    // We need to be able to encode the variable as a literal.
+    CHECK_LT(2 * num_vars, std::numeric_limits<int32>::max());
     SetNumVariables(num_vars + 1);
     return BooleanVariable(num_vars);
   }
@@ -158,6 +163,7 @@ class SatSolver {
       const std::vector<std::pair<Literal, double>>& prefs);
 
   // Solves the problem and returns its status.
+  // An empty problem is considered to be SAT.
   //
   // Note that the conflict limit applies only to this function and starts
   // counting from the time it is called.
@@ -236,8 +242,8 @@ class SatSolver {
   // - The conflict is learned.
   // - The decisions are potentially backtracked to the first decision that
   //   propagates more variables because of the newly learned conflict.
-  // - The returned value is equal to trail_.Index() after this backtracking and
-  //   just before the new propagation (due to the conflict) which is also
+  // - The returned value is equal to trail_->Index() after this backtracking
+  //   and just before the new propagation (due to the conflict) which is also
   //   performed by this function.
   int EnqueueDecisionAndBackjumpOnConflict(Literal true_literal);
 
@@ -294,7 +300,7 @@ class SatSolver {
 
     // It is important to process the newly fixed variables, so they are not
     // present in the clauses we export.
-    if (num_processed_fixed_variables_ < trail_.Index()) {
+    if (num_processed_fixed_variables_ < trail_->Index()) {
       ProcessNewlyFixedVariables();
     }
     DeleteDetachedClauses();
@@ -316,17 +322,19 @@ class SatSolver {
   const std::vector<BinaryClause>& NewlyAddedBinaryClauses();
   void ClearNewlyAddedBinaryClauses();
 
-  // Various getters of the current solver state.
   struct Decision {
     Decision() : trail_index(-1) {}
     Decision(int i, Literal l) : trail_index(i), literal(l) {}
     int trail_index;
     Literal literal;
   };
-  int CurrentDecisionLevel() const { return current_decision_level_; }
+
+  // Note that the Decisions() vector is always of size NumVariables(), and that
+  // only the first CurrentDecisionLevel() entries have a meaning.
   const std::vector<Decision>& Decisions() const { return decisions_; }
-  const Trail& LiteralTrail() const { return trail_; }
-  const VariablesAssignment& Assignment() const { return trail_.Assignment(); }
+  int CurrentDecisionLevel() const { return current_decision_level_; }
+  const Trail& LiteralTrail() const { return *trail_; }
+  const VariablesAssignment& Assignment() const { return trail_->Assignment(); }
 
   // Some statistics since the creation of the solver.
   int64 num_branches() const;
@@ -349,6 +357,26 @@ class SatSolver {
   bool ProblemIsPureSat() const { return problem_is_pure_sat_; }
 
   void SetDratWriter(DratWriter* drat_writer) { drat_writer_ = drat_writer; }
+
+  // This function is here to deal with the case where a SAT/CP model is found
+  // to be trivially UNSAT while the user is constructing the model. Instead of
+  // having to test the status of all the lines adding a constraint, one can
+  // just check if the solver is not UNSAT once the model is constructed. Note
+  // that we usually log a warning on the first constraint that caused a
+  // "trival" unsatisfiability.
+  void NotifyThatModelIsUnsat() { is_model_unsat_ = true; }
+
+  // TODO(user): This internal function should probably not be exposed here.
+  void AddBinaryClauseDuringSearch(Literal a, Literal b) {
+    // The new clause should not propagate.
+    CHECK(!trail_->Assignment().LiteralIsFalse(a));
+    CHECK(!trail_->Assignment().LiteralIsFalse(b));
+    binary_implication_graph_.AddBinaryClause(a, b);
+  }
+
+  // Performs propagation of the recently enqueued elements.
+  // Mainly visible for testing.
+  bool Propagate();
 
  private:
   // Calls Propagate() and returns true if no conflict occured. Otherwise,
@@ -407,7 +435,7 @@ class SatSolver {
 
   // Returns the decision level of a given variable.
   int DecisionLevel(BooleanVariable var) const {
-    return trail_.Info(var).level;
+    return trail_->Info(var).level;
   }
 
   // Returns the relevant pointer if the given variable was propagated by the
@@ -438,8 +466,8 @@ class SatSolver {
   // have the same behavior if we change the implementation.
   bool ClauseIsUsedAsReason(SatClause* clause) const {
     const BooleanVariable var = clause->PropagatedLiteral().Variable();
-    return trail_.Info(var).trail_index < trail_.Index() &&
-           trail_[trail_.Info(var).trail_index].Variable() == var &&
+    return trail_->Info(var).trail_index < trail_->Index() &&
+           (*trail_)[trail_->Info(var).trail_index].Variable() == var &&
            ReasonClauseOrNull(var) == clause;
   }
 
@@ -464,8 +492,7 @@ class SatSolver {
   // True and Enqueue() this change.
   void EnqueueNewDecision(Literal literal);
 
-  // Performs propagation of the recently enqueued elements.
-  bool Propagate();
+  // Returns true if everything has been propagated.
   bool PropagationIsDone() const;
 
   // Update the propagators_ list with the relevant propagators.
@@ -654,7 +681,10 @@ class SatSolver {
   BinaryClauseManager binary_clauses_;
 
   // The solver trail.
-  Trail trail_;
+  Trail* trail_;
+
+  // This is used by the non-model constructor to properly cleanup trail_.
+  std::unique_ptr<Trail> owned_trail_;
 
   // Used for debugging only. See SaveDebugAssignment().
   VariablesAssignment debug_assignment_;
@@ -722,6 +752,10 @@ class SatSolver {
 
   // Variable ordering (priority will be adjusted dynamically). queue_elements_
   // holds the elements used by var_ordering_ (it uses pointers).
+  //
+  // Note that we recover the variable that a WeightedVarQueueElement refers to
+  // by its position in the queue_elements_ vector, and we can recover the later
+  // using (pointer - &queue_elements_[0]).
   struct WeightedVarQueueElement {
     WeightedVarQueueElement() : heap_index(-1), tie_breaker(0.0), weight(0.0) {}
 
@@ -780,7 +814,7 @@ class SatSolver {
   // Whether the priority of the given variable needs to be updated in
   // var_ordering_. Note that this is only accessed for assigned variables and
   // that for efficiency it is indexed by trail indices. If
-  // pq_need_update_for_var_at_trail_index_[trail_.Info(var).trail_index] is
+  // pq_need_update_for_var_at_trail_index_[trail_->Info(var).trail_index] is
   // true when we untrail var, then either var need to be inserted in the queue,
   // or we need to notify that its priority has changed.
   BitQueue64 pq_need_update_for_var_at_trail_index_;
@@ -795,7 +829,7 @@ class SatSolver {
   ITIVector<BooleanVariable, int64> num_bumps_;
 
   // Used by NextBranch() to choose the polarity of the next decision. For the
-  // phase saving, the last polarity is stored in trail_.Info(var).
+  // phase saving, the last polarity is stored in trail_->Info(var).
   bool decision_heuristic_is_initialized_;
   ITIVector<BooleanVariable, bool> var_use_phase_saving_;
   ITIVector<BooleanVariable, bool> var_polarity_;
@@ -914,6 +948,32 @@ inline std::function<void(Model*)> ClauseConstraint(
   };
 }
 
+// The a => b constraint.
+inline std::function<void(Model*)> Implication(Literal a, Literal b) {
+  return [=](Model* model) {
+    model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
+  };
+}
+
+// This can be used to enumerate all the solutions. After each SAT call to
+// Solve(), calling this will reset the solver and exclude the current solution
+// so that the next call to Solve() will give a new solution or UNSAT is there
+// is no more new solutions.
+inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
+  return [=](Model* model) {
+    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+
+    // Note that we only exclude the current decisions, which is an efficient
+    // way to not get the same SAT assignment.
+    std::vector<Literal> exlude_solution;
+    for (int i = 0; i < sat_solver->CurrentDecisionLevel(); ++i) {
+      exlude_solution.push_back(sat_solver->Decisions()[i].literal.Negated());
+    }
+    sat_solver->Backtrack(0);
+    model->Add(ClauseConstraint(exlude_solution));
+  };
+}
+
 inline std::function<SatParameters(Model*)> NewSatParameters(std::string params) {
   return [=](Model* model) {
     sat::SatParameters parameters;
@@ -922,6 +982,12 @@ inline std::function<SatParameters(Model*)> NewSatParameters(std::string params)
       model->GetOrCreate<SatSolver>()->SetParameters(parameters);
     }
     return parameters;
+  };
+}
+
+inline std::function<int64(const Model&)> ValueOf(Literal l) {
+  return [=](const Model& model) {
+    return model.Get<SatSolver>()->Assignment().LiteralIsTrue(l);
   };
 }
 

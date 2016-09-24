@@ -19,9 +19,13 @@
 namespace operations_research {
 class SatPropagator;
 
+// Creates a special instance of CP constraint that connects to a sat solver.
+// Ownership of the constraint belongs to the CP solver.
 SatPropagator* MakeSatPropagator(Solver* solver);
 
-int NumSatConstraints(SatPropagator* sat);
+// All the functions below add the constraint described by the function name to
+// a SatPropagator. All the IntExpr or IntVar must refer to Boolean variables,
+// if not the functions will return false.
 
 bool AddBoolEq(SatPropagator* sat, IntExpr* left, IntExpr* right);
 
@@ -37,9 +41,6 @@ bool AddBoolOrArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
                                  const std::vector<IntVar*>& vars, IntExpr* target);
-
-bool AddSumBoolArrayLessEqKVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
-                               IntExpr* target);
 
 bool AddMaxBoolArrayLessEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
                               IntExpr* target);
@@ -77,6 +78,5 @@ bool AddIntNeReif(SatPropagator* sat, IntExpr* left, IntExpr* right,
 bool AddSumInRange(SatPropagator* sat, const std::vector<IntVar*>& vars,
                    int64 range_min, int64 range_max);
 
-void DeclareVariable(SatPropagator* sat, IntVar* var);
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_SAT_CONSTRAINT_H_

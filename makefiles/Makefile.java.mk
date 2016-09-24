@@ -1,6 +1,8 @@
 # Main target
 java: javaortools
 
+.PHONY: java javaortools rjava cjava
+
 # Clean target
 clean_java:
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
@@ -371,5 +373,5 @@ $(OBJ_DIR)/com/google/ortools/samples/$(EX).class: javaortools $(EX_DIR)/com/goo
 
 cjava: $(OBJ_DIR)/com/google/ortools/samples/$(EX).class
 
-rjava: $(OBJ_DIR)/com/google/ortools/samples/$(EX).class javaortools
+rjava: cjava javaortools
 	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.$(EX) $(ARGS)

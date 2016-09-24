@@ -33,6 +33,7 @@
 #include "base/thorough_hash.h"
 #include "base/hash.h"
 #include "constraint_solver/model.pb.h"
+#include "graph/connectivity.h"
 #include "graph/linear_assignment.h"
 #include "util/saturated_arithmetic.h"
 
@@ -2198,7 +2199,8 @@ void RoutingModel::CloseModel() {
 
 class RoutingModelInspector : public ModelVisitor {
  public:
-  explicit RoutingModelInspector(RoutingModel* model) {
+  explicit RoutingModelInspector(RoutingModel* model) : model_(model) {
+    same_vehicle_components_.Init(model->Size());
     for (const std::string& name : model->GetAllDimensionNames()) {
       RoutingDimension* const dimension = model->GetMutableDimension(name);
       const std::vector<IntVar*>& cumuls = dimension->cumuls();
@@ -2206,9 +2208,35 @@ class RoutingModelInspector : public ModelVisitor {
         cumul_to_dim_indices_[cumuls[i]] = {dimension, i};
       }
     }
+    const std::vector<IntVar*>& vehicle_vars = model->VehicleVars();
+    for (int i = 0; i < vehicle_vars.size(); ++i) {
+      vehicle_var_to_indices_[vehicle_vars[i]] = i;
+    }
     RegisterInspectors();
   }
   ~RoutingModelInspector() override {}
+  void EndVisitModel(const std::string& solver_name) override {
+    // Compact same vehicle component indices.
+    hash_map<int, int> component_indices;
+    int component_index = 0;
+    for (int node = 0; node < model_->Size(); ++node) {
+      const int component =
+          same_vehicle_components_.GetClassRepresentative(node);
+      if (InsertIfNotPresent(&component_indices, component, component_index)) {
+        ++component_index;
+      }
+    }
+    model_->InitSameVehicleGroups(component_indices.size());
+    for (int node = 0; node < model_->Size(); ++node) {
+      const int component =
+          same_vehicle_components_.GetClassRepresentative(node);
+      DCHECK(ContainsKey(component_indices, component));
+      model_->SetSameVehicleGroup(
+          node, FindWithDefault(component_indices, component, 0));
+    }
+    // TODO(user): Perform transitive closure of dimension precedence graphs.
+    // TODO(user): Have a single annotated precedence graph.
+  }
   void EndVisitConstraint(const std::string& type_name,
                           const Constraint* const constraint) override {
     FindWithDefault(constraint_inspectors_, type_name, []() {})();
@@ -2233,31 +2261,73 @@ class RoutingModelInspector : public ModelVisitor {
     expr_inspectors_[kExpressionArgument] = [this](const IntExpr* expr) {
       expr_ = expr;
     };
+    expr_inspectors_[kLeftArgument] = [this](const IntExpr* expr) {
+      left_ = expr;
+    };
+    expr_inspectors_[kRightArgument] = [this](const IntExpr* expr) {
+      right_ = expr;
+    };
     array_inspectors_[kStartsArgument] = [this](
         const std::vector<int64>& int_array) { starts_argument_ = int_array; };
     array_inspectors_[kEndsArgument] = [this](const std::vector<int64>& int_array) {
       ends_argument_ = int_array;
     };
     constraint_inspectors_[kNotMember] = [this]() {
-      const auto dim_index = cumul_to_dim_indices_[expr_];
-      RoutingDimension* const dimension = dim_index.first;
-      const int index = dim_index.second;
-      dimension->forbidden_intervals_[index].InsertIntervals(starts_argument_,
-                                                             ends_argument_);
-      VLOG(2) << dimension->name() << " " << index << ": "
-              << dimension->forbidden_intervals_[index].DebugString();
+      std::pair<RoutingDimension*, int> dim_index;
+      if (FindCopy(cumul_to_dim_indices_, expr_, &dim_index)) {
+        RoutingDimension* const dimension = dim_index.first;
+        const int index = dim_index.second;
+        dimension->forbidden_intervals_[index].InsertIntervals(starts_argument_,
+                                                               ends_argument_);
+        VLOG(2) << dimension->name() << " " << index << ": "
+                << dimension->forbidden_intervals_[index].DebugString();
+      }
       expr_ = nullptr;
       starts_argument_.clear();
       ends_argument_.clear();
     };
+    constraint_inspectors_[kEquality] = [this]() {
+      int left_index = 0;
+      int right_index = 0;
+      if (FindCopy(vehicle_var_to_indices_, left_, &left_index) &&
+          FindCopy(vehicle_var_to_indices_, right_, &right_index)) {
+        VLOG(2) << "Vehicle variables for " << left_index << " and "
+                << right_index << " are equal.";
+        same_vehicle_components_.AddArc(left_index, right_index);
+      }
+      left_ = nullptr;
+      right_ = nullptr;
+    };
+    constraint_inspectors_[kLessOrEqual] = [this]() {
+      std::pair<RoutingDimension*, int> left_index;
+      std::pair<RoutingDimension*, int> right_index;
+      if (FindCopy(cumul_to_dim_indices_, left_, &left_index) &&
+          FindCopy(cumul_to_dim_indices_, right_, &right_index)) {
+        RoutingDimension* const dimension = left_index.first;
+        if (dimension == right_index.first) {
+          VLOG(2) << "For dimension " << dimension->name() << ", cumul for "
+                  << left_index.second << " is less than " << right_index.second
+                  << ".";
+          dimension->precedence_graph_.AddArc(left_index.second,
+                                              right_index.second);
+        }
+      }
+      left_ = nullptr;
+      right_ = nullptr;
+    };
   }
 
+  RoutingModel* const model_;
+  ConnectedComponents<int, int> same_vehicle_components_;
   hash_map<const IntExpr*, std::pair<RoutingDimension*, int>>
       cumul_to_dim_indices_;
+  hash_map<const IntExpr*, int> vehicle_var_to_indices_;
   hash_map<std::string, ExprInspector> expr_inspectors_;
   hash_map<std::string, ArrayInspector> array_inspectors_;
   hash_map<std::string, ConstraintInspector> constraint_inspectors_;
   const IntExpr* expr_ = nullptr;
+  const IntExpr* left_ = nullptr;
+  const IntExpr* right_ = nullptr;
   std::vector<int64> starts_argument_;
   std::vector<int64> ends_argument_;
 };

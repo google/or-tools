@@ -16,57 +16,92 @@
 
 #include "constraint_solver/constraint_solver.h"
 #include "flatzinc/model.h"
-#include "flatzinc/search.h"
+#include "flatzinc/reporting.h"
+#include "flatzinc/solver_data.h"
+#include "flatzinc/solver_util.h"
 
 namespace operations_research {
 class SatPropagator;
 
+namespace fz {
+// Search parameter for the flatzinc solver.
+struct FlatzincParameters {
+  enum SearchType {
+    DEFAULT,
+    IBS,
+    FIRST_UNBOUND,
+    MIN_SIZE,
+    RANDOM_MIN,
+    RANDOM_MAX,
+  };
+
+  FlatzincParameters();
+
+  bool all_solutions;
+  bool free_search;
+  bool last_conflict;
+  bool ignore_annotations;
+  bool ignore_unknown;
+  bool logging;
+  bool statistics;
+  bool verbose_impact;
+  double restart_log_size;
+  bool run_all_heuristics;
+  int heuristic_period;
+  int log_period;
+  int luby_restart;
+  int num_solutions;
+  int random_seed;
+  int threads;
+  int thread_id;
+  // TODO(user): Store time limit in seconds (double).
+  int64 time_limit_in_ms;
+  SearchType search_type;
+  bool store_all_solutions;
+};
+
 // The main class to search for a solution in a flatzinc model.  It is
 // responsible for parsing the search annotations, setting up the
-// search state and perform the actual search.
-class FzSolver {
+// search state and performing the actual search.
+class Solver {
  public:
-  explicit FzSolver(const FzModel& model)
+  explicit Solver(const Model& model)
       : model_(model),
         statistics_(model),
-        solver_(model.name()),
-        sat_(nullptr),
-        default_phase_(nullptr) {}
+        data_(model.name()),
+        objective_var_(nullptr),
+        objective_monitor_(nullptr),
+        default_phase_(nullptr) {
+    solver_ = data_.solver();
+  }
 
-  // Search for for solutions in the model passed at construction
+  // Searches for for solutions in the model passed at construction
   // time.  The exact search context (search for optimal solution, for
-  // n solutions, for the first solution) are specified in the
+  // n solutions, for the first solution) is specified in the
   // parameters.
   // The parallel context (sequential, multi-threaded) is encapsulated
-  // in the parallel support interface.
-  void Solve(FzSolverParameters p,
-             FzParallelSupportInterface* parallel_support);
+  // in the search reporting interface.
+  void Solve(FlatzincParameters p, SearchReportingInterface* report);
 
   // Extraction support.
   bool Extract();
-#if !defined(SWIG)
-  IntExpr* GetExpression(const FzArgument& argument);
-  std::vector<IntVar*> GetVariableArray(const FzArgument& argument);
-  IntExpr* Extract(FzIntegerVariable* var);
-  void SetExtracted(FzIntegerVariable* var, IntExpr* expr);
-  bool IsAllDifferent(const std::vector<FzIntegerVariable*>& diffs) const;
-#endif
 
-  // Output support.
-  std::string SolutionString(const FzOnSolutionOutput& output, bool store);
+  // String output for the minizinc interface.
+  std::string SolutionString(const SolutionOutputSpecs& output) const;
 
-  int64 SolutionValue(FzIntegerVariable* var);
+  // Query the value of the variable. This must be called during search, when
+  // a solution is found.
+  int64 SolutionValue(IntegerVariable* var) const;
 
-#if !defined(SWIG)
-  // Returns the cp solver.
-  Solver* solver() { return &solver_; }
+  // Programmatic interface to read the solutions.
 
-  // Returns the sat constraint.
-  SatPropagator* Sat() const { return sat_; }
-#endif
-
+  // Returns the number of solutions stored. You need to set store_all_solution
+  // to true in the parameters, otherwise this method will always return 0.
   int NumStoredSolutions() const { return stored_values_.size(); }
-  int64 StoredValue(int solution_index, FzIntegerVariable* var) {
+  // Returns the stored value for the given variable in the solution_index'th
+  // stored solution.
+  // A variable is stored only if it appears in the output part of the model.
+  int64 StoredValue(int solution_index, IntegerVariable* var) {
     CHECK_GE(solution_index, 0);
     CHECK_LT(solution_index, stored_values_.size());
     CHECK(ContainsKey(stored_values_[solution_index], var));
@@ -74,7 +109,7 @@ class FzSolver {
   }
 
  private:
-  void ExtractConstraint(FzConstraint* ct);
+  void StoreSolution();
   bool HasSearchAnnotations() const;
   void ParseSearchAnnotations(bool ignore_unknown,
                               std::vector<DecisionBuilder*>* defined,
@@ -86,32 +121,27 @@ class FzSolver {
                                      const std::vector<IntVar*>& active_variables,
                                      SearchLimit* limit,
                                      std::vector<DecisionBuilder*>* builders);
-  DecisionBuilder* CreateDecisionBuilders(const FzSolverParameters& p,
+  DecisionBuilder* CreateDecisionBuilders(const FlatzincParameters& p,
                                           SearchLimit* limit);
   void CollectOutputVariables(std::vector<IntVar*>* output_variables);
   void SyncWithModel();
 
-  const FzModel& model_;
-  FzModelStatistics statistics_;
-  Solver solver_;
-  hash_map<FzIntegerVariable*, IntExpr*> extracted_map_;
+  const Model& model_;
+  ModelStatistics statistics_;
+  SolverData data_;
   std::vector<IntVar*> active_variables_;
   hash_map<IntVar*, int> extracted_occurrences_;
-  hash_set<FzIntegerVariable*> implied_variables_;
+  hash_set<IntegerVariable*> implied_variables_;
   std::string search_name_;
   IntVar* objective_var_;
   OptimizeVar* objective_monitor_;
-  // Alldiff info before extraction
-  void StoreAllDifferent(const std::vector<FzIntegerVariable*>& diffs);
-  hash_map<const FzIntegerVariable*, std::vector<std::vector<FzIntegerVariable*>>>
-      alldiffs_;
-  // Sat constraint.
-  SatPropagator* sat_;
   // Default Search Phase (to get stats).
   DecisionBuilder* default_phase_;
   // Stored solutions.
-  std::vector<hash_map<FzIntegerVariable*, int64>> stored_values_;
+  std::vector<hash_map<IntegerVariable*, int64>> stored_values_;
+  operations_research::Solver* solver_;
 };
+}  // namespace fz
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_FLATZINC_SOLVER_H_

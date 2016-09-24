@@ -354,10 +354,14 @@ techtalk_scheduling: $(BIN_DIR)/techtalk_scheduling$(CLR_EXE_SUFFIX).exe
 
 # Build and compile custome CP examples
 
-ccs: $(BIN_DIR)/$(CLR_DLL_NAME).dll $(EX_DIR)/csharp/$(EX).cs
+
+
+$(BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/$(CLR_DLL_NAME).dll $(EX_DIR)/csharp/$(EX).cs
 	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_DLL_NAME).dll /r:Google.Protobuf.dll $(EX_DIR)$Scsharp$S$(EX).cs
 
-rcs: ccs
+csc: $(BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe
+
+rcs: $(BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$S$(EX)$(CLR_EXE_SUFFIX).exe $(ARGS)
 
 # C# Fz support
@@ -426,8 +430,8 @@ ifeq ("$(SYSTEM)","win")
 	copy examples\data\survo_puzzle\* temp\or-tools\examples\data\survo_puzzle
 	copy examples\data\quasigroup_completion\* temp\or-tools\examples\data\quasigroup_completion
 	copy tools\or-tools.nuspec temp\or-tools
-	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/g" temp\or-tools\or-tools.nuspec
-	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/g" temp\or-tools\or-tools.nuspec
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" temp\or-tools\or-tools.nuspec
+	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/" temp\or-tools\or-tools.nuspec
 	cd temp\or-tools && nuget pack or-tools.nuspec
 	cd temp\or-tools && nuget push Google.OrTools-$(OR_TOOLS_VERSION).nupkg
 endif

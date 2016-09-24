@@ -19,6 +19,7 @@
 
 #include "base/commandlineflags.h"
 #include "base/commandlineflags.h"
+#include "flatzinc/logging.h"
 #include "flatzinc/model.h"
 #include "flatzinc/parser.h"
 #include "flatzinc/presolve.h"
@@ -27,28 +28,31 @@ DEFINE_string(file, "", "Input file in the flatzinc format.");
 DEFINE_bool(print, false, "Print model.");
 DEFINE_bool(presolve, false, "Presolve loaded file.");
 DEFINE_bool(statistics, false, "Print model statistics");
-DECLARE_bool(fz_logging);
 
 namespace operations_research {
+namespace fz {
 void ParseFile(const std::string& filename, bool presolve) {
   FZLOG << "Parsing " << filename << FZENDL;
-  std::string problem_name(filename);
+
+  std::string problem_name = filename;
   // Remove the .fzn extension.
+  CHECK(strings::EndsWith(problem_name, ".fzn"));
   problem_name.resize(problem_name.size() - 4);
   // Remove the leading path if present.
-  size_t found = problem_name.find_last_of("/\\");
+  const size_t found = problem_name.find_last_of("/\\");
   if (found != std::string::npos) {
     problem_name = problem_name.substr(found + 1);
   }
-  FzModel model(problem_name);
+
+  Model model(problem_name);
   CHECK(ParseFlatzincFile(filename, &model));
   if (presolve) {
-    FzPresolver presolve;
+    Presolver presolve;
     presolve.CleanUpModelForTheCpSolver(&model, /*use_sat=*/true);
     presolve.Run(&model);
   }
   if (FLAGS_statistics) {
-    FzModelStatistics stats(model);
+    ModelStatistics stats(model);
     stats.BuildStatistics();
     stats.PrintStatistics();
   }
@@ -56,6 +60,7 @@ void ParseFile(const std::string& filename, bool presolve) {
     FZLOG << model.DebugString() << FZENDL;
   }
 }
+}  // namespace fz
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
@@ -65,6 +70,6 @@ int main(int argc, char** argv) {
       "human-readable format";
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  operations_research::ParseFile(FLAGS_file, FLAGS_presolve);
+  operations_research::fz::ParseFile(FLAGS_file, FLAGS_presolve);
   return 0;
 }

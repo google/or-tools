@@ -15,27 +15,26 @@
 #define OR_TOOLS_BASE_THREADPOOL_H_
 
 #include <condition_variable>  // NOLINT
+#include <functional>
 #include <list>
 #include <mutex>  // NOLINT
 #include <string>
-#include <vector>
 #include <thread>  // NOLINT
-
-#include "base/callback.h"
+#include <vector>
 
 namespace operations_research {
 class ThreadPool {
  public:
-  explicit ThreadPool(const std::string& prefix, int num_threads);
+  ThreadPool(const std::string& prefix, int num_threads);
   ~ThreadPool();
 
   void StartWorkers();
-  void Add(Closure* const closure);
-  Closure* GetNextTask();
+  void Schedule(std::function<void()> closure);
+  std::function<void()> GetNextTask();
 
  private:
   const int num_workers_;
-  std::list<Closure*> tasks_;
+  std::list<std::function<void()>> tasks_;
   std::mutex mutex_;
   std::condition_variable condition_;
   bool waiting_to_finish_;

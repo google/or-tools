@@ -17,6 +17,7 @@
 #ifndef OR_TOOLS_SAT_CLAUSE_H_
 #define OR_TOOLS_SAT_CLAUSE_H_
 
+#include <deque>
 #include "base/hash.h"
 #include <memory>
 #include <queue>
@@ -425,8 +426,9 @@ class BinaryImplicationGraph : public Propagator {
   // Remove any literal whose negation is marked (except the first one).
   void RemoveRedundantLiterals(std::vector<Literal>* conflict);
 
-  // Binary reasons by trail_index.
-  std::vector<Literal> reasons_;
+  // Binary reasons by trail_index. We need a deque because we kept pointers to
+  // elements of this array and this can dynamically change size.
+  std::deque<Literal> reasons_;
 
   // This is indexed by the Index() of a literal. Each list stores the
   // literals that are implied if the index literal becomes true.

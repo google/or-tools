@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_INTERVALS_H_
 
 #include "sat/integer.h"
+#include "sat/integer_expr.h"
 #include "sat/model.h"
 #include "sat/precedences.h"
 #include "sat/sat_base.h"
@@ -49,9 +50,9 @@ class IntervalsRepository {
   int NumIntervals() const { return start_vars_.size(); }
 
   // Functions to add a new interval to the repository.
-  IntervalVariable CreateInterval(int min_size, int max_size);
-  IntervalVariable CreateIntervalWithFixedSize(int size);
-  IntervalVariable CreateOptionalIntervalWithFixedSize(int size,
+  IntervalVariable CreateInterval(IntegerValue min_size, IntegerValue max_size);
+  IntervalVariable CreateIntervalWithFixedSize(IntegerValue size);
+  IntervalVariable CreateOptionalIntervalWithFixedSize(IntegerValue size,
                                                        Literal is_present);
 
   // Returns whether or not a interval is optional and the associated literal.
@@ -74,7 +75,7 @@ class IntervalsRepository {
   IntegerVariable EndVar(IntervalVariable i) const { return end_vars_[i]; }
 
   // Only meaningfull if SizeVar(i) == kNoIntegerVariable.
-  int FixedSize(IntervalVariable i) const { return fixed_sizes_[i]; }
+  IntegerValue FixedSize(IntervalVariable i) const { return fixed_sizes_[i]; }
 
  private:
   // Creates a new interval and returns its id.
@@ -92,7 +93,7 @@ class IntervalsRepository {
   ITIVector<IntervalVariable, IntegerVariable> start_vars_;
   ITIVector<IntervalVariable, IntegerVariable> end_vars_;
   ITIVector<IntervalVariable, IntegerVariable> size_vars_;
-  ITIVector<IntervalVariable, int> fixed_sizes_;
+  ITIVector<IntervalVariable, IntegerValue> fixed_sizes_;
 
   DISALLOW_COPY_AND_ASSIGN(IntervalsRepository);
 };
@@ -121,26 +122,26 @@ inline std::function<IntegerVariable(const Model&)> SizeVar(
   };
 }
 
-inline std::function<IntervalVariable(Model*)> NewInterval(int size) {
+inline std::function<IntervalVariable(Model*)> NewInterval(int64 size) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()
-        ->CreateIntervalWithFixedSize(size);
+        ->CreateIntervalWithFixedSize(IntegerValue(size));
   };
 }
 
 inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
-    int min_size, int max_size) {
+    int64 min_size, int64 max_size) {
   return [=](Model* model) {
-    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(min_size,
-                                                                     max_size);
+    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+        IntegerValue(min_size), IntegerValue(max_size));
   };
 }
 
 inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
-    int size, Literal is_present) {
+    int64 size, Literal is_present) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()
-        ->CreateOptionalIntervalWithFixedSize(size, is_present);
+        ->CreateOptionalIntervalWithFixedSize(IntegerValue(size), is_present);
   };
 }
 
@@ -156,12 +157,13 @@ inline std::function<void(Model*)> EndBefore(IntervalVariable i1,
 
 inline std::function<void(Model*)> EndBeforeWithOffset(IntervalVariable i1,
                                                        IntegerVariable ivar,
-                                                       int offset) {
+                                                       int64 offset) {
   return [=](Model* model) {
     IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
     PrecedencesPropagator* precedences =
         model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedenceWithOffset(intervals->EndVar(i1), ivar, offset);
+    precedences->AddPrecedenceWithOffset(intervals->EndVar(i1), ivar,
+                                         IntegerValue(offset));
   };
 }
 
@@ -199,14 +201,14 @@ inline std::function<void(Model*)> EndAtEnd(IntervalVariable i1,
   };
 }
 
-// TODO(user): Add a propagator on the interval duration depending
-// on the set of alternatives that are currently not executable.
-//
 // This requires that all the alternatives are optional tasks.
 inline std::function<void(Model*)> IntervalWithAlternatives(
     IntervalVariable master, const std::vector<IntervalVariable>& members) {
   return [=](Model* model) {
     IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
+
+    std::vector<Literal> presences;
+    std::vector<IntegerValue> durations;
 
     // Create an "exactly one executed" constraint on the alternatives.
     std::vector<LiteralWithCoeff> sat_ct;
@@ -216,6 +218,14 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
       sat_ct.push_back({is_present, Coefficient(1)});
       model->Add(StartAtStart(master, member));
       model->Add(EndAtEnd(member, master));
+
+      // TODO(user): This only work for members with fixed size. Generalize.
+      CHECK_EQ(intervals->SizeVar(member), kNoIntegerVariable);
+      presences.push_back(is_present);
+      durations.push_back(intervals->FixedSize(member));
+    }
+    if (intervals->SizeVar(master) != kNoIntegerVariable) {
+      model->Add(IsOneOf(intervals->SizeVar(master), presences, durations));
     }
     model->Add(BooleanLinearConstraint(1, 1, &sat_ct));
   };

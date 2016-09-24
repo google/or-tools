@@ -51,6 +51,8 @@
 #include "util/proto_tools.h"
 #endif
 
+// TODO(user): Clean up includes. E.g., parameters.pb.h seems not used.
+
 DEFINE_bool(verify_solution, false,
             "Systematically verify the solution when calling Solve()"
             ", and change the return value of Solve() to ABNORMAL if"

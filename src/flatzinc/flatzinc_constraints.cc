@@ -15,14 +15,11 @@
 
 #include "base/commandlineflags.h"
 #include "constraint_solver/constraint_solveri.h"
-#include "flatzinc/model.h"
-#include "flatzinc/sat_constraint.h"
+#include "flatzinc/logging.h"
 #include "util/string_array.h"
 
 DECLARE_bool(cp_trace_search);
 DECLARE_bool(cp_trace_propagation);
-DECLARE_bool(use_sat);
-DECLARE_bool(fz_verbose);
 
 namespace operations_research {
 namespace {
@@ -34,9 +31,9 @@ class BooleanSumOdd : public Constraint {
         num_possible_true_vars_(0),
         num_always_true_vars_(0) {}
 
-  virtual ~BooleanSumOdd() {}
+  ~BooleanSumOdd() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const u = MakeConstraintDemon1(
@@ -46,7 +43,7 @@ class BooleanSumOdd : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     int num_always_true = 0;
     int num_possible_true = 0;
     int possible_true_index = -1;
@@ -105,12 +102,12 @@ class BooleanSumOdd : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("BooleanSumOdd([%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -123,20 +120,20 @@ class BooleanSumOdd : public Constraint {
   NumericalRev<int> num_always_true_vars_;
 };
 
-class BoundModulo : public Constraint {
+class FixedModulo : public Constraint {
  public:
-  BoundModulo(Solver* const s, IntVar* x, IntVar* const m, int64 r)
+  FixedModulo(Solver* const s, IntVar* x, IntVar* const m, int64 r)
       : Constraint(s), var_(x), mod_(m), residual_(r) {}
 
-  virtual ~BoundModulo() {}
+  ~FixedModulo() override {}
 
-  virtual void Post() {
+  void Post() override {
     Demon* const d = solver()->MakeConstraintInitialPropagateCallback(this);
     var_->WhenRange(d);
     mod_->WhenBound(d);
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     if (mod_->Bound()) {
       const int64 d = std::abs(mod_->Min());
       if (d == 0) {
@@ -152,7 +149,7 @@ class BoundModulo : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("(%s %% %s == %" GG_LL_FORMAT "d)",
                         var_->DebugString().c_str(),
                         mod_->DebugString().c_str(), residual_);
@@ -169,16 +166,16 @@ class VariableParity : public Constraint {
   VariableParity(Solver* const s, IntVar* const var, bool odd)
       : Constraint(s), var_(var), odd_(odd) {}
 
-  virtual ~VariableParity() {}
+  ~VariableParity() override {}
 
-  virtual void Post() {
+  void Post() override {
     if (!var_->Bound()) {
       Demon* const u = solver()->MakeConstraintInitialPropagateCallback(this);
       var_->WhenRange(u);
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     const int64 vmax = var_->Max();
     const int64 vmin = var_->Min();
     int64 new_vmax = vmax;
@@ -201,11 +198,11 @@ class VariableParity : public Constraint {
     var_->SetRange(new_vmin, new_vmax);
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("VarParity(%s, %d)", var_->DebugString().c_str(), odd_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint("VarParity", this);
     visitor->VisitIntegerExpressionArgument(ModelVisitor::kVariableArgument,
                                             var_);
@@ -230,9 +227,9 @@ class IsBooleanSumInRange : public Constraint {
         num_possible_true_vars_(0),
         num_always_true_vars_(0) {}
 
-  virtual ~IsBooleanSumInRange() {}
+  ~IsBooleanSumInRange() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const u = MakeConstraintDemon1(
@@ -247,7 +244,7 @@ class IsBooleanSumInRange : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     int num_always_true = 0;
     int num_possible_true = 0;
     for (int i = 0; i < vars_.size(); ++i) {
@@ -304,14 +301,14 @@ class IsBooleanSumInRange : public Constraint {
     }
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
                         "d] == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
                         range_max_, target_->DebugString().c_str());
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -364,9 +361,9 @@ class BooleanSumInRange : public Constraint {
         num_possible_true_vars_(0),
         num_always_true_vars_(0) {}
 
-  virtual ~BooleanSumInRange() {}
+  ~BooleanSumInRange() override {}
 
-  virtual void Post() {
+  void Post() override {
     for (int i = 0; i < vars_.size(); ++i) {
       if (!vars_[i]->Bound()) {
         Demon* const u = MakeConstraintDemon1(
@@ -376,7 +373,7 @@ class BooleanSumInRange : public Constraint {
     }
   }
 
-  virtual void InitialPropagate() {
+  void InitialPropagate() override {
     int num_always_true = 0;
     int num_possible_true = 0;
     int possible_true_index = -1;
@@ -423,13 +420,13 @@ class BooleanSumInRange : public Constraint {
     Check();
   }
 
-  virtual std::string DebugString() const {
+  std::string DebugString() const override {
     return StringPrintf("Sum([%s]) in [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]",
                         JoinDebugStringPtr(vars_, ", ").c_str(), range_min_,
                         range_max_);
   }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->BeginVisitConstraint(ModelVisitor::kSumEqual, this);
     visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
                                                vars_);
@@ -468,68 +465,68 @@ class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
   StartVarDurationVarPerformedIntervalVar(Solver* const s, IntVar* const start,
                                           IntVar* const duration,
                                           const std::string& name);
-  virtual ~StartVarDurationVarPerformedIntervalVar() {}
+  ~StartVarDurationVarPerformedIntervalVar() override {}
 
-  virtual int64 StartMin() const;
-  virtual int64 StartMax() const;
-  virtual void SetStartMin(int64 m);
-  virtual void SetStartMax(int64 m);
-  virtual void SetStartRange(int64 mi, int64 ma);
-  virtual int64 OldStartMin() const { return start_->OldMin(); }
-  virtual int64 OldStartMax() const { return start_->OldMax(); }
-  virtual void WhenStartRange(Demon* const d) { start_->WhenRange(d); }
-  virtual void WhenStartBound(Demon* const d) { start_->WhenBound(d); }
+  int64 StartMin() const override;
+  int64 StartMax() const override;
+  void SetStartMin(int64 m) override;
+  void SetStartMax(int64 m) override;
+  void SetStartRange(int64 mi, int64 ma) override;
+  int64 OldStartMin() const override { return start_->OldMin(); }
+  int64 OldStartMax() const override { return start_->OldMax(); }
+  void WhenStartRange(Demon* const d) override { start_->WhenRange(d); }
+  void WhenStartBound(Demon* const d) override { start_->WhenBound(d); }
 
-  virtual int64 DurationMin() const;
-  virtual int64 DurationMax() const;
-  virtual void SetDurationMin(int64 m);
-  virtual void SetDurationMax(int64 m);
-  virtual void SetDurationRange(int64 mi, int64 ma);
-  virtual int64 OldDurationMin() const { return duration_->Min(); }
-  virtual int64 OldDurationMax() const { return duration_->Max(); }
-  virtual void WhenDurationRange(Demon* const d) { duration_->WhenRange(d); }
-  virtual void WhenDurationBound(Demon* const d) { duration_->WhenBound(d); }
+  int64 DurationMin() const override;
+  int64 DurationMax() const override;
+  void SetDurationMin(int64 m) override;
+  void SetDurationMax(int64 m) override;
+  void SetDurationRange(int64 mi, int64 ma) override;
+  int64 OldDurationMin() const override { return duration_->Min(); }
+  int64 OldDurationMax() const override { return duration_->Max(); }
+  void WhenDurationRange(Demon* const d) override { duration_->WhenRange(d); }
+  void WhenDurationBound(Demon* const d) override { duration_->WhenBound(d); }
 
-  virtual int64 EndMin() const;
-  virtual int64 EndMax() const;
-  virtual void SetEndMin(int64 m);
-  virtual void SetEndMax(int64 m);
-  virtual void SetEndRange(int64 mi, int64 ma);
-  virtual int64 OldEndMin() const {
+  int64 EndMin() const override;
+  int64 EndMax() const override;
+  void SetEndMin(int64 m) override;
+  void SetEndMax(int64 m) override;
+  void SetEndRange(int64 mi, int64 ma) override;
+  int64 OldEndMin() const override {
     return start_->OldMin() + duration_->OldMin();
   }
-  virtual int64 OldEndMax() const {
+  int64 OldEndMax() const override {
     return start_->OldMax() + duration_->OldMax();
   }
-  virtual void WhenEndRange(Demon* const d) {
+  void WhenEndRange(Demon* const d) override {
     start_->WhenRange(d);
     duration_->WhenRange(d);
   }
-  virtual void WhenEndBound(Demon* const d) {
+  void WhenEndBound(Demon* const d) override {
     start_->WhenBound(d);
     duration_->WhenBound(d);
   }
 
-  virtual bool MustBePerformed() const;
-  virtual bool MayBePerformed() const;
-  virtual void SetPerformed(bool val);
-  virtual bool WasPerformedBound() const { return true; }
-  virtual void WhenPerformedBound(Demon* const d) {}
-  virtual std::string DebugString() const;
+  bool MustBePerformed() const override;
+  bool MayBePerformed() const override;
+  void SetPerformed(bool val) override;
+  bool WasPerformedBound() const override { return true; }
+  void WhenPerformedBound(Demon* const d) override {}
+  std::string DebugString() const override;
 
-  virtual IntExpr* StartExpr() { return start_; }
-  virtual IntExpr* DurationExpr() { return duration_; }
-  virtual IntExpr* EndExpr() { return solver()->MakeSum(start_, duration_); }
-  virtual IntExpr* PerformedExpr() { return solver()->MakeIntConst(1); }
-  virtual IntExpr* SafeStartExpr(int64 unperformed_value) {
+  IntExpr* StartExpr() override { return start_; }
+  IntExpr* DurationExpr() override { return duration_; }
+  IntExpr* EndExpr() override { return solver()->MakeSum(start_, duration_); }
+  IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
+  IntExpr* SafeStartExpr(int64 unperformed_value) override {
     return StartExpr();
   }
-  virtual IntExpr* SafeDurationExpr(int64 unperformed_value) {
+  IntExpr* SafeDurationExpr(int64 unperformed_value) override {
     return DurationExpr();
   }
-  virtual IntExpr* SafeEndExpr(int64 unperformed_value) { return EndExpr(); }
+  IntExpr* SafeEndExpr(int64 unperformed_value) override { return EndExpr(); }
 
-  virtual void Accept(ModelVisitor* const visitor) const {
+  void Accept(ModelVisitor* const visitor) const override {
     visitor->VisitIntervalVariable(this, "", 0, nullptr);
   }
 
@@ -872,6 +869,7 @@ Constraint* MakeBooleanSumInRange(Solver* const solver,
   return solver->RevAlloc(
       new BooleanSumInRange(solver, variables, range_min, range_max));
 }
+
 Constraint* MakeBooleanSumOdd(Solver* const solver,
                               const std::vector<IntVar*>& variables) {
   return solver->RevAlloc(new BooleanSumOdd(solver, variables));
@@ -916,112 +914,9 @@ Constraint* MakeVariableEven(Solver* const s, IntVar* const var) {
   return s->RevAlloc(new VariableParity(s, var, false));
 }
 
-Constraint* MakeBoundModulo(Solver* const s, IntVar* const var,
+Constraint* MakeFixedModulo(Solver* const s, IntVar* const var,
                             IntVar* const mod, int64 residual) {
-  return s->RevAlloc(new BoundModulo(s, var, mod, residual));
-}
-
-void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables, int64 range_min,
-                           int64 range_max) {
-  const int64 size = variables.size();
-  range_min = std::max(0LL, range_min);
-  range_max = std::min(size, range_max);
-  int true_vars = 0;
-  std::vector<IntVar*> alt;
-  for (int i = 0; i < size; ++i) {
-    if (!variables[i]->Bound()) {
-      alt.push_back(variables[i]);
-    } else if (variables[i]->Min() == 1) {
-      true_vars++;
-    }
-  }
-  const int possible_vars = alt.size();
-  range_min -= true_vars;
-  range_max -= true_vars;
-
-  if (range_max < 0 || range_min > possible_vars) {
-    Constraint* const ct = solver->MakeFalseConstraint();
-    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
-    solver->AddConstraint(ct);
-  } else if (range_min <= 0 && range_max >= possible_vars) {
-    FZVLOG << "  - ignore true constraint" << FZENDL;
-  } else if (FLAGS_use_sat && AddSumInRange(sat, alt, range_min, range_max)) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 0 && range_max == 1 &&
-             AddAtMostOne(sat, alt)) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 0 && range_max == size - 1 &&
-             AddAtMostNMinusOne(sat, alt)) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 1 && range_max == 1 &&
-             AddBoolOrArrayEqualTrue(sat, alt) && AddAtMostOne(sat, alt)) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 1 && range_max == possible_vars &&
-             AddBoolOrArrayEqualTrue(sat, alt)) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else {
-    Constraint* const ct =
-        MakeBooleanSumInRange(solver, alt, range_min, range_max);
-    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
-    solver->AddConstraint(ct);
-  }
-}
-
-void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables, int64 range_min,
-                             int64 range_max, IntVar* target) {
-  const int64 size = variables.size();
-  range_min = std::max(0LL, range_min);
-  range_max = std::min(size, range_max);
-  int true_vars = 0;
-  int possible_vars = 0;
-  for (int i = 0; i < size; ++i) {
-    if (variables[i]->Max() == 1) {
-      possible_vars++;
-      if (variables[i]->Min() == 1) {
-        true_vars++;
-      }
-    }
-  }
-  if (true_vars > range_max || possible_vars < range_min) {
-    target->SetValue(0);
-    FZVLOG << "  - set target to 0" << FZENDL;
-  } else if (true_vars >= range_min && possible_vars <= range_max) {
-    target->SetValue(1);
-    FZVLOG << "  - set target to 1" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == size &&
-             AddBoolAndArrayEqVar(sat, variables, target)) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_max == 0 &&
-             AddBoolOrArrayEqVar(sat, variables,
-                                 solver->MakeDifference(1, target)->Var())) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 1 && range_max == size &&
-             AddBoolOrArrayEqVar(sat, variables, target)) {
-    FZVLOG << "  - posted to sat" << FZENDL;
-  } else {
-    Constraint* const ct = MakeIsBooleanSumInRange(solver, variables, range_min,
-                                                   range_max, target);
-    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
-    solver->AddConstraint(ct);
-  }
-}
-
-void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
-                               const std::vector<IntVar*>& variables, int64 value,
-                               IntVar* target) {
-  const int64 size = variables.size();
-  if (value == 0) {
-    PostIsBooleanSumInRange(sat, solver, variables, 1, size, target);
-  } else if (value == size) {
-    PostIsBooleanSumInRange(sat, solver, variables, 0, size - 1, target);
-  } else {
-    Constraint* const ct =
-        solver->MakeIsDifferentCstCt(solver->MakeSum(variables), value, target);
-    FZVLOG << "  - posted " << ct->DebugString() << FZENDL;
-    solver->AddConstraint(ct);
-  }
+  return s->RevAlloc(new FixedModulo(s, var, mod, residual));
 }
 
 IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,

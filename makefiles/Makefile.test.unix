@@ -1,5 +1,3 @@
-TESTPYTHONPATH = $(OR_ROOT_FULL)$Ssrc:$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
-
 .PHONY : test
 test: test_cc test_python test_java test_csharp
 
@@ -11,14 +9,14 @@ test_cc: cc
 	$(BIN_DIR)/integer_programming
 
 test_python: python
-	PYTHONPATH=$(TESTPYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/hidato_table.py
-	PYTHONPATH=$(TESTPYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/tsp.py
-	PYTHONPATH=$(TESTPYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/pyflow_example.py
-	PYTHONPATH=$(TESTPYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/knapsack.py
-	PYTHONPATH=$(TESTPYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/linear_programming.py
-	PYTHONPATH=$(TESTPYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/integer_programming.py
-	PYTHONPATH=$(TESTPYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/tests/test_cp_api.py
-	PYTHONPATH=$(TESTPYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/tests/test_lp_api.py
+	PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/hidato_table.py
+	PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/tsp.py
+	PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/pyflow_example.py
+	PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/knapsack.py
+	PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/linear_programming.py
+	PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/python/integer_programming.py
+	PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/tests/test_cp_api.py
+	PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX_DIR)/tests/test_lp_api.py
 
 test_java: java run_RabbitsPheasants run_FlowExample run_Tsp run_LinearProgramming run_IntegerProgramming run_Knapsack run_MultiThreadIntegerProgramming
 

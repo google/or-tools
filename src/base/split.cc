@@ -18,8 +18,7 @@
 #endif  // _MSC_VER
 #include "base/logging.h"
 
-namespace operations_research {
-
+namespace strings {
 namespace {
 
 // ----------------------------------------------------------------------
@@ -32,8 +31,7 @@ namespace {
 // ----------------------------------------------------------------------
 template <typename ITR>
 static inline void InternalSplitStringUsing(const std::string& full,
-                                            const char* delim,
-                                            ITR* result) {
+                                            const char* delim, ITR* result) {
   // Optimize the common case where delim is a single character.
   if (delim[0] != '\0' && delim[1] == '\0') {
     char c = delim[0];
@@ -44,7 +42,8 @@ static inline void InternalSplitStringUsing(const std::string& full,
         ++p;
       } else {
         const char* start = p;
-        while (++p != end && *p != c) {}
+        while (++p != end && *p != c) {
+        }
         result->emplace_back(start, p - start);
       }
     }
@@ -67,8 +66,6 @@ static inline void InternalSplitStringUsing(const std::string& full,
 
 }  // namespace
 
-namespace strings {
-
 std::vector<std::string> Split(const std::string& full, const char* delim, int flags) {
   CHECK_EQ(SkipEmpty(), flags);
   std::vector<std::string> out;
@@ -76,13 +73,13 @@ std::vector<std::string> Split(const std::string& full, const char* delim, int f
   return out;
 }
 
-std::vector<StringPiece> Split(const std::string& full, const char* delim, int64 flags) {
+std::vector<::operations_research::StringPiece> Split(const std::string& full,
+                                                 const char* delim,
+                                                 int64 flags) {
   CHECK_EQ(SkipEmpty(), flags);
-  std::vector<StringPiece> out;
+  std::vector<::operations_research::StringPiece> out;
   InternalSplitStringUsing(full, delim, &out);
   return out;
 }
 
 }  // namespace strings
-
-}  // namespace operations_research

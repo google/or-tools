@@ -16,13 +16,15 @@
 #ifndef OR_TOOLS_SAT_SAT_BASE_H_
 #define OR_TOOLS_SAT_SAT_BASE_H_
 
+#include <deque>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "base/stringprintf.h"
-#include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
+#include "base/int_type_indexed_vector.h"
+#include "sat/model.h"
 #include "util/bitset.h"
 
 namespace operations_research {
@@ -241,6 +243,12 @@ class Trail {
     current_info_.level = 0;
   }
 
+  static Trail* CreateInModel(Model* model) {
+    Trail* trail = new Trail();
+    model->TakeOwnership(trail);
+    return trail;
+  }
+
   void Resize(int num_variables);
 
   // Registers a propagator. This assigns a unique id to this propagator and
@@ -261,7 +269,7 @@ class Trail {
   }
 
   // Specific Enqueue() version for the search decision.
-  void EnqueueSeachDecision(Literal true_literal) {
+  void EnqueueSearchDecision(Literal true_literal) {
     Enqueue(true_literal, AssignmentType::kSearchDecision);
   }
 
@@ -402,7 +410,11 @@ class Trail {
   // TODO(user): An alternative would be to change the sign of the type. This
   // would remove the need for a separate old_type_ vector, but it requires
   // more bits for the type filed in AssignmentInfo.
-  mutable std::vector<std::vector<Literal>> reasons_repository_;
+  //
+  // Note that we use a deque for the reason repository so that if we add
+  // variables, the memory address of the vectors (kept in reasons_) are still
+  // valid.
+  mutable std::deque<std::vector<Literal>> reasons_repository_;
   mutable ITIVector<BooleanVariable, ClauseRef> reasons_;
   mutable ITIVector<BooleanVariable, int> old_type_;
 

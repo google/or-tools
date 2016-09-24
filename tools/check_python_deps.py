@@ -1,26 +1,8 @@
 import sys
-from six import print_
 import inspect
 from sys import executable
-
-current_ortools_version = "VVVV"
-minimum_protobuf_version = "PROTOBUF_TAG"
-print_ ("Python path : " + sys.executable)
-print_ ("Python version : " + sys.version + "\n")
-
-def notinstalled(modulename):
-	return modulename + """ is not installed for \"""" + sys.executable + """\"
-Please run \"easy_install --user """ + modulename + """\""""
-
-def wrong_version(module, modulename, required_version):
-	return """
-You're using an old version of """ + modulename + """ : """ + inspect.getfile(module) + """
-The minimum required version is : """ + required_version + """
-Please run \"""" + str(sys.executable) + """ setup.py install --user\" to upgrade
-If the problem persits, then """ + inspect.getfile(module) + """ is binding the newely installed version of """ + modulename + """
-You should either remove it, or use PYTHONPATH to manage your sys.path. If you decide to use PYTHONPATH, please do it to run the ortools examples as well.
-Please check https://docs.python.org/3/tutorial/modules.html#the-module-search-path from more information."""
-
+from sys import version_info
+import logging, sys
 
 #try to import setuptools
 try:
@@ -33,37 +15,82 @@ https://pypi.python.org/pypi/setuptools
 make sure you use \"""" + sys.executable + """\" during the installation""")
     raise SystemExit
 
-#try to import ortools
-try:
-	import ortools
-except ImportError:
-    print_ (notinstalled("ortools"))
-    raise SystemExit
+from pkg_resources import parse_version
 
-#try to import protobuf
-try:
-	import google.protobuf
-except ImportError:
-    print_ (notinstalled("protobuf"))
-    raise SystemExit
 
-#check ortools version
-try:
-	if current_ortools_version > ortools.__version__:
-		raise Exception
-	print_ ("or-tools version : " + ortools.__version__)
-	print_ (inspect.getfile(ortools) + "\n")
-except (AttributeError, Exception):
-	print_ (wrong_version(ortools, "ortools", current_ortools_version))
-	raise SystemExit
+current_ortools_version = "VVVV"
+minimum_protobuf_version = "PROTOBUF_TAG"
 
-#check protobuf version
-#print_(cmp(minimum_protobuf_version, google.protobuf.__version__) + "\n")
-try:
-	if minimum_protobuf_version > google.protobuf.__version__:
-		raise Exception
-	print_ ("protobuf version : " + google.protobuf.__version__)
-	print_ (inspect.getfile(google.protobuf) + "\n")
-except (AttributeError, Exception):
-	print_ (wrong_version(google.protobuf, "protobuf", minimum_protobuf_version))
-	raise SystemExit
+def notinstalled(modulename):
+	return modulename + """ is not installed for \"""" + sys.executable + """\"
+Please run \"""" + str(sys.executable) + """ setup.py install --user\""""
+
+def wrong_version(module, modulename, minimum_version, installed_version):
+	return """
+You are using """ + modulename + """-""" + installed_version + """ : """ + inspect.getfile(module) + """
+The minimum required version is : """ + minimum_version + """
+Please run \"""" + str(sys.executable) + """ setup.py install --user\" to upgrade
+If the problem persits, then """ + inspect.getfile(module) + """ is binding the newely installed version of """ + modulename + """
+You should either remove it, or use PYTHONPATH to manage your sys.path. If you decide to use PYTHONPATH, do it to run the ortools examples as well.
+Check https://docs.python.org/3/tutorial/modules.html#the-module-search-path from more information."""
+
+if __name__ == '__main__':
+	from optparse import OptionParser
+	parser = OptionParser('Test logging')
+	parser.add_option('-l','--log',type='string',help='Available levels are CRITICAL (3), ERROR (2), WARNING (1), INFO (0), DEBUG (-1)',default='INFO')
+	options,args = parser.parse_args()
+ 
+	try:
+		loglevel = getattr(logging,options.log.upper())
+	except AttributeError:
+		loglevel = {3:logging.CRITICAL,
+					2:logging.ERROR,
+					1:logging.WARNING,
+					0:logging.INFO,
+					-1:logging.DEBUG,
+					}[int(options.log)]
+	
+	logging.basicConfig(stream=sys.stdout, level=loglevel)
+	
+	logging.info("Python path : " + sys.executable)
+	logging.info("Python version : " + sys.version + "\n")
+
+	if version_info[0] >= 3:
+		ortools_name = "py3-ortools"
+	else:
+		ortools_name = "ortools"
+	#try to import ortools
+	try:
+		import ortools
+	except ImportError:
+	    logging.error (notinstalled(ortools_name))
+	    raise SystemExit
+
+	#try to import protobuf
+	try:
+		import google.protobuf
+	except ImportError:
+	    logging.error (notinstalled("protobuf"))
+	    raise SystemExit
+
+	#check ortools version
+	try:
+		if parse_version(current_ortools_version) > parse_version(ortools.__version__):
+			raise Exception
+		logging.info("or-tools version : " + ortools.__version__)
+		logging.info(inspect.getfile(ortools) + "\n")
+	except (AttributeError, Exception):
+		logging.error (wrong_version(ortools, ortools_name, current_ortools_version, ortools.__version__))
+		raise SystemExit
+
+	#check protobuf version
+	try:
+		if parse_version(minimum_protobuf_version) > parse_version(google.protobuf.__version__):
+			raise Exception
+		logging.info("protobuf version : " + google.protobuf.__version__)
+		logging.info(inspect.getfile(google.protobuf) + "\n")
+	except (AttributeError, Exception):
+		logging.error(wrong_version(google.protobuf, "protobuf", minimum_protobuf_version, google.protobuf.__version__))
+		raise SystemExit
+
+
