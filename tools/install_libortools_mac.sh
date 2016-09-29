@@ -1,6 +1,6 @@
 
 export N=`pwd`/lib
-export B=`pwd`/bin/csharp
+export B=`pwd`/bin
 export O=`otool -L lib/libortools.dylib | grep -v ':' | grep libortools | cut -d '(' -f 1`
 echo install library in path $N
 echo "$O"

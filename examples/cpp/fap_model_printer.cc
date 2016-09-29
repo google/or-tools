@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 #include "base/stringprintf.h"
-#include "base/concise_iterator.h"
 
 namespace operations_research {
 
@@ -41,27 +40,27 @@ void FapModelPrinter::PrintFapVariables() {
   int mobility_cost;
 
   LOG(INFO) << "Variable File:";
-  for (ConstIter<std::map<int, FapVariable> > it(variables_); !it.at_end(); ++it) {
+  for (const auto& it : variables_) {
     LOG(INFO) << "Variable ";
 
-    key = it->first;
+    key = it.first;
     LOG(INFO) << StringPrintf("%3d: ", key);
 
-    domain_index = it->second.domain_index_;
+    domain_index = it.second.domain_index_;
     LOG(INFO) << StringPrintf("%3d", domain_index);
 
-    initial_position = it->second.initial_position_;
+    initial_position = it.second.initial_position_;
     LOG(INFO) << StringPrintf("%3d", initial_position);
 
-    mobility_index = it->second.mobility_index_;
+    mobility_index = it.second.mobility_index_;
     LOG(INFO) << StringPrintf("%3d", mobility_index);
 
-    mobility_cost = it->second.mobility_cost_;
+    mobility_cost = it.second.mobility_cost_;
     LOG(INFO) << StringPrintf("%8d", mobility_cost);
 
     LOG(INFO) << StringPrintf(" { ");
-    for (int i = 0; i < it->second.domain_.size(); ++i)
-      LOG(INFO) << StringPrintf("%d ", it->second.domain_[i]);
+    for (int i = 0; i < it.second.domain_.size(); ++i)
+      LOG(INFO) << StringPrintf("%d ", it.second.domain_[i]);
     LOG(INFO) << "}";
 
     LOG(INFO) << "\n";
@@ -79,29 +78,29 @@ void FapModelPrinter::PrintFapConstraints() {
   int weight_cost;
 
   LOG(INFO) << "Constraint File:";
-  for (ConstIter<std::vector<FapConstraint> > it(constraints_); !it.at_end(); ++it) {
-    variable1 = it->variable1_;
+  for (const auto& constraint : constraints_) {
+    variable1 = constraint.variable1_;
     LOG(INFO) << StringPrintf("%3d ", variable1);
 
-    variable2 = it->variable2_;
+    variable2 = constraint.variable2_;
     LOG(INFO) << StringPrintf("%3d ", variable2);
 
-    type = it->type_;
+    type = constraint.type_;
     LOG(INFO) << type;
 
-    operation = it->operator_;
+    operation = constraint.operator_;
     LOG(INFO) << operation;
 
-    value = it->value_;
+    value = constraint.value_;
     LOG(INFO) << StringPrintf("%3d", value);
 
-    weight_index = it->weight_index_;
+    weight_index = constraint.weight_index_;
     LOG(INFO) << StringPrintf("%3d", weight_index);
 
-    weight_cost = it->weight_cost_;
+    weight_cost = constraint.weight_cost_;
     LOG(INFO) << StringPrintf("%8d", weight_cost);
 
-    if (it->hard_) {
+    if (constraint.hard_) {
       LOG(INFO) << " hard";
     }
 
@@ -115,8 +114,8 @@ void FapModelPrinter::PrintFapObjective() {
 
 void FapModelPrinter::PrintFapValues() {
   LOG(INFO) << StringPrintf("Values(%d):  ", static_cast<int>(values_.size()));
-  for (ConstIter<std::vector<int> > it(values_); !it.at_end(); ++it) {
-    LOG(INFO) << *it;
+  for (int value : values_) {
+    LOG(INFO) << value;
   }
 }
 

@@ -25,12 +25,12 @@ or-tools/
 Use Makefile:
 
   - on unix:
-make bin/cpp/golomb
-./bin/cpp/golomb
+make bin/golomb
+./bin/golomb
 
   - on windows:
-make bin\\cpp\\golomb.exe
-bin\\cpp\golomb.exe
+make bin\\golomb.exe
+bin\\golomb.exe
 
 
  ##########################  java   ##########################
@@ -64,17 +64,17 @@ make rcs EX=csflow
 This is equivalent to compiling and running examples/csflow.cs and running it:
 
   - on windows 32 bit:
-csc /target:exe /out:bin\csharp\csflow.exe /platform:x86 /lib:bin\csharp /r:Google.OrTools.dll examples\csharp\csflow.cs
-bin\csharp\csflow.exe
+csc /target:exe /out:bin\csflow.exe /platform:x86 /lib:bin /r:Google.OrTools.dll examples\csharp\csflow.cs
+bin\csflow.exe
 
   - on windows 64 bit:
-csc /target:exe /out:bin/csharp/csflow.exe /platform:x64 /lib:bin\csharp /r:Google.OrTools.dll  examples\csharp\csflow.cs
-bin\csharp\csflow.exe
+csc /target:exe /out:bin/csflow.exe /platform:x64 /lib:bin /r:Google.OrTools.dll  examples\csharp\csflow.cs
+bin\csflow.exe
 
   - on linux (mono comes from the distribution, on ubuntu 16.04 and up):
-mcs /target:exe /out:bin/csharp/csflow.exe /platform:anycpu /lib:bin/csharp /r:Google.OrTools.dll examples/csharp/csflow.cs
-MONO_PATH=bin/csharp mono bin/csharp/csflow.exe
+mcs /target:exe /out:bin/csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.dll examples/csharp/csflow.cs
+MONO_PATH=bin mono bin/csflow.exe
 
   - on Mac OS X (Use installer with version 4.2.1 or up):
-mcs /target:exe /out:bin/csharp/csflow.exe /platform:anycpu /lib:bin/csharp /r:Google.OrTools.dll examples/csharp/csflow.cs
-DYLD_FALLBACK_LIBRARY_PATH=lib mono64 bin/csharp/csflow.exe
+mcs /target:exe /out:bin/csflow.exe /platform:anycpu /lib:bin /r:Google.OrTools.dll examples/csharp/csflow.cs
+DYLD_FALLBACK_LIBRARY_PATH=lib mono64 bin/csflow.exe
