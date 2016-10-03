@@ -303,8 +303,8 @@ endif
 pypi_upload: pypi_archive
 	@echo Uploading Pypi module for python$(PYTHON_VERSION).
 ifeq ($(SYSTEM),win)
-	@echo Do not forget to run: set VS90COMNTOOLS="$(VS$(VS_COMTOOLS)COMNTOOLS)
-	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py register bdist_egg bdist_wheel bdist_wininst upload"
+	set VS90COMNTOOLS=$(VS$(VS_COMTOOLS)COMNTOOLS)
+	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py register bdist_egg bdist_wheel bdist_wininst upload
 else
   ifeq ($(PLATFORM),MACOSX)
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py register bdist_egg bdist_wheel upload
