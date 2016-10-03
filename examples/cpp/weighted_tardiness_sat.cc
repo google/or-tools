@@ -165,7 +165,7 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   // Solve it.
   model.Add(NewSatParameters(FLAGS_params));
   MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-      objective_var, decision_vars,
+      /*log_info=*/true, objective_var, decision_vars,
       /*feasible_solution_observer=*/
       [&](const Model& model) {
         const int64 objective = model.Get(LowerBound(objective_var));

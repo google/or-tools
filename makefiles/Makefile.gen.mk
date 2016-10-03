@@ -128,6 +128,9 @@ $(SRC_DIR)/base/status.h: \
 $(SRC_DIR)/base/statusor.h: \
     $(SRC_DIR)/base/status.h
 
+$(SRC_DIR)/base/stringpiece_utils.h: \
+    $(SRC_DIR)/base/stringpiece.h
+
 $(SRC_DIR)/base/stringprintf.h: \
     $(SRC_DIR)/base/stringpiece.h
 
@@ -149,9 +152,6 @@ $(SRC_DIR)/base/sysinfo.h: \
 
 $(SRC_DIR)/base/thorough_hash.h: \
     $(SRC_DIR)/base/integral_types.h
-
-$(SRC_DIR)/base/threadpool.h: \
-    $(SRC_DIR)/base/callback.h
 
 $(SRC_DIR)/base/timer.h: \
     $(SRC_DIR)/base/basictypes.h \
@@ -349,6 +349,10 @@ $(SRC_DIR)/util/range_query_function.h: \
 
 $(SRC_DIR)/util/rational_approximation.h: \
     $(SRC_DIR)/base/integral_types.h
+
+$(SRC_DIR)/util/rev.h: \
+    $(SRC_DIR)/base/logging.h \
+    $(SRC_DIR)/base/map_util.h
 
 $(SRC_DIR)/util/running_stat.h: \
     $(SRC_DIR)/base/logging.h \
@@ -1154,8 +1158,8 @@ $(SRC_DIR)/graph/shortestpaths.h: \
 
 $(SRC_DIR)/graph/util.h: \
     $(SRC_DIR)/graph/graph.h \
-    $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/join.h \
+    $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/murmur.h \
     $(SRC_DIR)/base/numbers.h \
     $(SRC_DIR)/base/split.h \
@@ -1444,6 +1448,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/sat_solver.$O \
     $(OBJ_DIR)/sat/simplification.$O \
     $(OBJ_DIR)/sat/symmetry.$O \
+    $(OBJ_DIR)/sat/table.$O \
     $(OBJ_DIR)/sat/util.$O \
     $(OBJ_DIR)/sat/boolean_problem.pb.$O \
     $(OBJ_DIR)/sat/sat_parameters.pb.$O
@@ -1498,9 +1503,11 @@ $(SRC_DIR)/sat/integer.h: \
     $(SRC_DIR)/sat/sat_solver.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
+    $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/port.h \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/iterators.h \
+    $(SRC_DIR)/util/rev.h \
     $(SRC_DIR)/util/saturated_arithmetic.h
 
 $(SRC_DIR)/sat/intervals.h: \
@@ -1583,6 +1590,10 @@ $(SRC_DIR)/sat/symmetry.h: \
     $(SRC_DIR)/sat/sat_base.h \
     $(SRC_DIR)/util/stats.h \
     $(SRC_DIR)/algorithms/sparse_permutation.h
+
+$(SRC_DIR)/sat/table.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h
 
 $(SRC_DIR)/sat/util.h: \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
@@ -1707,6 +1718,13 @@ $(OBJ_DIR)/sat/symmetry.$O: \
     $(SRC_DIR)/sat/symmetry.cc \
     $(SRC_DIR)/sat/symmetry.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/symmetry.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Ssymmetry.$O
+
+$(OBJ_DIR)/sat/table.$O: \
+    $(SRC_DIR)/sat/table.cc \
+    $(SRC_DIR)/sat/table.h \
+    $(SRC_DIR)/base/map_util.h \
+    $(SRC_DIR)/base/stl_util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/table.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stable.$O
 
 $(OBJ_DIR)/sat/util.$O: \
     $(SRC_DIR)/sat/util.cc \
@@ -3038,3 +3056,4 @@ $(GEN_DIR)/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/constraint_solve
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+

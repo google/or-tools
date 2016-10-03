@@ -1596,6 +1596,18 @@ void ParseShortIntLin(fz::SolverData* data, fz::Constraint* ct, IntExpr** left,
   *left = nullptr;
   *right = nullptr;
 
+  if (fzvars.empty() && size != 0) {
+    // We have a constant array.
+    CHECK_EQ(ct->arguments[1].values.size(), size);
+    int64 result = 0;
+    for (int i = 0; i < size; ++i) {
+      result += coefficients[i] * ct->arguments[1].values[i];
+    }
+    *left = solver->MakeIntConst(result);
+    *right = solver->MakeIntConst(rhs);
+    return;
+  }
+
   switch (size) {
     case 0: {
       *left = solver->MakeIntConst(0);
@@ -1727,7 +1739,8 @@ bool AreAllVariablesBoolean(fz::SolverData* data, fz::Constraint* ct) {
 bool ExtractLinAsShort(fz::SolverData* data, fz::Constraint* ct) {
   const int size = ct->arguments[0].values.size();
   if (ct->arguments[1].variables.empty()) {
-    return false;
+    // Constant linear scalprods will be treated correctly by ParseShortLin.
+    return true;
   }
   switch (size) {
     case 0:
@@ -2086,7 +2099,6 @@ void ExtractIntLinLeReif(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractIntLinNe(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
-  const int size = ct->arguments[0].values.size();
   if (ExtractLinAsShort(data, ct)) {
     IntExpr* left = nullptr;
     IntExpr* right = nullptr;
@@ -2097,12 +2109,8 @@ void ExtractIntLinNe(fz::SolverData* data, fz::Constraint* ct) {
     std::vector<int64> coeffs;
     int64 rhs = 0;
     ParseLongIntLin(data, ct, &vars, &coeffs, &rhs);
-    if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
-      PostBooleanSumInRange(data->Sat(), solver, vars, rhs, size);
-    } else {
-      AddConstraint(solver, ct, solver->MakeNonEquality(
-                                    solver->MakeScalProd(vars, coeffs), rhs));
-    }
+    AddConstraint(solver, ct, solver->MakeNonEquality(
+                                  solver->MakeScalProd(vars, coeffs), rhs));
   }
 }
 

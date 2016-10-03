@@ -24,19 +24,19 @@
 namespace operations_research {
 namespace sat {
 
-// Enforces a disjunctive (or no overlap) constraints on the given interval
+// Enforces a disjunctive (or no overlap) constraint on the given interval
 // variables.
 std::function<void(Model*)> Disjunctive(const std::vector<IntervalVariable>& vars);
 
-// Same as Disjunctive() but also creates a Boolean variables for all the
+// Same as Disjunctive() but also creates a Boolean variable for all the
 // possible precedences of the form (task i is before task j).
 std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
     const std::vector<IntervalVariable>& vars);
 
 // Helper class to compute the min-end of a set of tasks given their min-start
-// and min-duration. In Petr Vilim PhD "Global Constraints in Scheduling", this
-// corresponds to his Theta-tree except that we use a O(n) implementation for
-// most of the function here, not a O(log(n)) one.
+// and min-duration. In Petr Vilim's PhD "Global Constraints in Scheduling",
+// this corresponds to his Theta-tree except that we use a O(n) implementation
+// for most of the function here, not a O(log(n)) one.
 class TaskSet {
  public:
   TaskSet() : optimized_restart_(0) {}
@@ -75,9 +75,10 @@ class TaskSet {
   //
   //   [Bunch of tasks]   ...   [Bunch of tasks]     ...    [critical tasks].
   //
-  // We call "critical tasks" the last group. These tasks will be the sole
-  // responsible for the min-end of the whole set. The returned critical_index
-  // will be the index of the first critical task in SortedTasks().
+  // We call "critical tasks" the last group. These tasks will be solely
+  // responsible for for the min-end of the whole set. The returned
+  // critical_index will be the index of the first critical task in
+  // SortedTasks().
   //
   // A reason for the min end is:
   // - The min-duration of all the critical tasks.
@@ -132,6 +133,9 @@ class DisjunctiveConstraint : public PropagatorInterface {
   //      [(min-duration)       ...      (min-duration)]
   //      ^             ^                ^             ^
   //   min-start     min-end          max-start     max-end
+  //
+  // Note that for tasks with variable durations, we don't necessarily have
+  // min-duration between the the min-XXX and max-XXX value.
   IntegerValue MinDuration(int t) const {
     return duration_vars_[t] == kNoIntegerVariable
                ? fixed_durations_[t]
@@ -140,11 +144,15 @@ class DisjunctiveConstraint : public PropagatorInterface {
   IntegerValue MinStart(int t) const {
     return integer_trail_->LowerBound(start_vars_[t]);
   }
+  IntegerValue MaxStart(int t) const {
+    return integer_trail_->UpperBound(start_vars_[t]);
+  }
+  IntegerValue MinEnd(int t) const {
+    return integer_trail_->LowerBound(end_vars_[t]);
+  }
   IntegerValue MaxEnd(int t) const {
     return integer_trail_->UpperBound(end_vars_[t]);
   }
-  IntegerValue MaxStart(int t) const { return MaxEnd(t) - MinDuration(t); }
-  IntegerValue MinEnd(int t) const { return MinStart(t) + MinDuration(t); }
 
   // Helper functions to compute the reason of a propagation.
   // Append to literal_reason_ and integer_reason_ the corresponding reason.
@@ -152,10 +160,15 @@ class DisjunctiveConstraint : public PropagatorInterface {
   void AddMinDurationReason(int t);
   void AddMinStartReason(int t, IntegerValue lower_bound);
   void AddMaxEndReason(int t, IntegerValue upper_bound);
+  void AddMaxStartReason(int t, IntegerValue upper_bound);
 
-  // Checks that the interval [min_start_t, max_end_t] is larger than
-  // min_duration_t. Returns false and report an conflict otherwise.
-  bool CheckIntervalForConflict(int t, Trail* trail);
+  // Enqueues new bounds of an interval. The reasons (literal_reason_ and
+  // integer_reason_) must already be filled. Note that we automatically push
+  // min-end and max-start accordingly, so we maintain the invariants:
+  // - min-end >= min-start + min-duration
+  // - max-start <= max-end + min-duration
+  bool IncreaseMinStart(int t, IntegerValue new_min_start);
+  bool DecreaseMaxEnd(int t, IntegerValue new_max_end);
 
   // All these passes use the algorithms described in Petr Vilim PhD "Global
   // Constraints in Scheduling". Except that we don't use the O(log(n)) balanced

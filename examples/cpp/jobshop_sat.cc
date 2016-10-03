@@ -20,6 +20,7 @@
 #include "base/timer.h"
 #include "google/protobuf/text_format.h"
 #include "base/join.h"
+#include "base/stringpiece_utils.h"
 #include "base/strutil.h"
 #include "cpp/flexible_jobshop.h"
 #include "cpp/jobshop.h"
@@ -139,7 +140,7 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
     decision_variables.clear();
   }
   MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-      makespan, decision_variables,
+      /*log_info=*/true, makespan, decision_variables,
       /*feasible_solution_observer=*/
       [makespan](const Model& model) {
         LOG(INFO) << "Makespan " << model.Get(LowerBound(makespan));
@@ -154,7 +155,7 @@ void LoadAndSolve() {
   int new_task_id = 0;
   int horizon = 0;
   std::vector<std::vector<Task>> data;
-  if (HasSuffixString(FLAGS_input, ".fjs")) {
+  if (strings::EndsWith(FLAGS_input, ".fjs")) {
     LOG(INFO) << "Reading flexible jobshop instance '" << FLAGS_input << "'.";
     operations_research::FlexibleJobShopData fjs;
     fjs.Load(FLAGS_input);

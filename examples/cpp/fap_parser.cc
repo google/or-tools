@@ -17,9 +17,7 @@
 #include <vector>
 #include "base/file.h"
 #include "base/split.h"
-#include "base/concise_iterator.h"
 #include "base/map_util.h"
-
 #include "cpp/fap_parser.h"
 
 namespace operations_research {
@@ -34,7 +32,7 @@ void ParseFileByLines(const string& filename, std::vector<string>* lines) {
   file->ReadToString(&result, kMaxInputFileSize);
   file->Close();
 
-  SplitStringUsing(result, "\n", lines);
+  *lines = strings::Split(result, "\n", strings::SkipEmpty());
 }
 
 // VariableParser Implementation
@@ -46,9 +44,9 @@ VariableParser::~VariableParser() { }
 void VariableParser::Parse() {
   std::vector<string> lines;
   ParseFileByLines(filename_, &lines);
-  for (ConstIter<std::vector<string> > it(lines); !it.at_end(); ++it) {
+  for (const auto& line : lines) {
     std::vector<string> tokens;
-    SplitStringUsing(*it, " ", &tokens);
+    tokens = strings::Split(line, " ", strings::SkipEmpty());
     if (tokens.empty()) {
         continue;
     }
@@ -74,9 +72,9 @@ DomainParser::~DomainParser() { }
 void DomainParser::Parse() {
   std::vector<string> lines;
   ParseFileByLines(filename_, &lines);
-  for (ConstIter<std::vector<string> > it(lines); !it.at_end(); ++it) {
+  for (const auto& line : lines) {
     std::vector<string> tokens;
-    SplitStringUsing(*it, " ", &tokens);
+    tokens = strings::Split(line, " ", strings::SkipEmpty());
     if (tokens.empty()) {
         continue;
     }
@@ -106,9 +104,9 @@ ConstraintParser::~ConstraintParser() { }
 void ConstraintParser::Parse() {
   std::vector<string> lines;
   ParseFileByLines(filename_, &lines);
-  for (ConstIter<std::vector<string> > it(lines); !it.at_end(); ++it) {
+  for (const auto& line : lines) {
     std::vector<string> tokens;
-    SplitStringUsing(*it, " ", &tokens);
+    tokens = strings::Split(line, " ", strings::SkipEmpty());
     if (tokens.empty()) {
         continue;
     }
@@ -149,22 +147,22 @@ void ParametersParser::Parse() {
   std::vector<string> lines;
 
   ParseFileByLines(filename_, &lines);
-  for (ConstIter<std::vector<string> > it(lines); !it.at_end(); ++it) {
+  for (const auto& line : lines) {
     if (objective) {
-      largest_token = largest_token || (it->find("largest") != string::npos);
-      value_token = value_token || (it->find("value") != string::npos);
-      number_token = number_token || (it->find("number") != string::npos);
-      values_token = values_token || (it->find("values") != string::npos);
-      coefficient = coefficient || (it->find("coefficient") != string::npos);
+      largest_token = largest_token || (line.find("largest") != string::npos);
+      value_token = value_token || (line.find("value") != string::npos);
+      number_token = number_token || (line.find("number") != string::npos);
+      values_token = values_token || (line.find("values") != string::npos);
+      coefficient = coefficient || (line.find("coefficient") != string::npos);
     }
 
     if (coefficient) {
       CHECK_EQ(coefficient_no_,
                constraint_coefficient_no_ + variable_coefficient_no_);
       objective = false;
-      if (it->find("=") != string::npos) {
+      if (line.find("=") != string::npos) {
         std::vector<string> tokens;
-        SplitStringUsing(*it, " ", &tokens);
+        tokens = strings::Split(line, " ", strings::SkipEmpty());
         CHECK_GE(tokens.size(), 3);
         coefficients.push_back(atoi32(tokens[2].c_str()));
       }
@@ -215,30 +213,29 @@ void ParseInstance(const string& data_directory,
   ParametersParser cst(data_directory);
   cst.Parse();
 
-  for (MutableIter<std::map<int, FapVariable> > it(*variables); !it.at_end(); ++it) {
-    it->second.domain_ = FindOrDie(dom.domains(), it->second.domain_index_);
-    it->second.domain_size_ = dom.domain_cardinality();
-    if ((it->second.mobility_index_ == -1) ||
-        (it->second.mobility_index_ == 0)) {
-      it->second.mobility_cost_ = -1;
-      if (it->second.initial_position_ != -1) {
-        it->second.hard_ = true;
+  for (auto& it : *variables) {
+    it.second.domain_ = FindOrDie(dom.domains(), it.second.domain_index_);
+    it.second.domain_size_ = dom.domain_cardinality();
+    if ((it.second.mobility_index_ == -1) ||
+        (it.second.mobility_index_ == 0)) {
+      it.second.mobility_cost_ = -1;
+      if (it.second.initial_position_ != -1) {
+        it.second.hard_ = true;
       }
     } else {
-      it->second.mobility_cost_ =
-        (cst.variable_weights())[it->second.mobility_index_-1];
+      it.second.mobility_cost_ =
+        (cst.variable_weights())[it.second.mobility_index_-1];
     }
   }
   *frequencies = FindOrDie(dom.domains(), 0);
   *objective = cst.objective();
 
-  for (MutableIter<std::vector<FapConstraint> > it(*constraints);
-                                           !it.at_end(); ++it) {
-    if ((it->weight_index_ == -1) || (it->weight_index_ == 0)) {
-      it->weight_cost_ = -1;
-      it->hard_ = true;
+  for (auto& constraint : *constraints) {
+    if ((constraint.weight_index_ == -1) || (constraint.weight_index_ == 0)) {
+      constraint.weight_cost_ = -1;
+      constraint.hard_ = true;
     } else {
-      it->weight_cost_ = (cst.constraint_weights())[it->weight_index_-1];
+      constraint.weight_cost_ = (cst.constraint_weights())[constraint.weight_index_-1];
     }
   }
 }

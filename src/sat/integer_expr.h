@@ -22,35 +22,42 @@
 namespace operations_research {
 namespace sat {
 
-// A really basic implementation of a sum of integer variables.
+// A really basic implementation of an upper-bounded sum of integer variables.
 // The complexity is in O(num_variables) at each propagation.
 //
-// TODO(user): Propagate all the bounds.
 // TODO(user): If one has many such constraint, it will be more efficient to
 // propagate all of them at once rather than doing it one at the time.
-class IntegerSum : public PropagatorInterface {
+//
+// TODO(user): Handle integer overflow! The easiest is probably to check at
+// construction that overflow cannot happen.
+//
+// TODO(user): Explore tree structure to get a log(n) complexity.
+//
+// TODO(user): When the variables are Boolean, use directly the pseudo-Boolean
+// constraint implementation.
+class IntegerSumLE : public PropagatorInterface {
  public:
-  IntegerSum(const std::vector<IntegerVariable>& vars,
-             const std::vector<int>& coefficients, IntegerVariable sum,
-             IntegerTrail* integer_trail);
+  IntegerSumLE(const std::vector<IntegerVariable>& vars,
+               const std::vector<IntegerValue>& coefficients,
+               IntegerValue upper_bound, IntegerTrail* integer_trail);
 
-  // Currently we only propagates the directions:
-  // * vars lower-bound -> sum lower-bound.
-  // * for all vars i,
-  //   vars lower-bound (excluding i) + sum upper_bound -> i upper-bound.
+  // We propagate:
+  // - If the sum of the individual lower-bound is > upper_bound, we fail.
+  // - For all i, upper-bound of i
+  //      <= upper_bound - Sum {individual lower-bound excluding i).
   bool Propagate(Trail* trail) final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  const IntegerValue upper_bound_;
   std::vector<IntegerVariable> vars_;
-  std::vector<int> coeffs_;
-  IntegerVariable sum_;
+  std::vector<IntegerValue> coeffs_;
   IntegerTrail* integer_trail_;
 
   std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> integer_reason_;
 
-  DISALLOW_COPY_AND_ASSIGN(IntegerSum);
+  DISALLOW_COPY_AND_ASSIGN(IntegerSumLE);
 };
 
 // A min (resp max) contraint of the form min == MIN(vars) can be decomposed
@@ -129,19 +136,83 @@ class IsOneOfPropagator : public PropagatorInterface {
 // Model based functions.
 // =============================================================================
 
-// Model-based function to create an IntegerVariable that corresponds to the
-// given weighted sum of other IntegerVariables.
-inline std::function<IntegerVariable(Model*)> NewWeightedSum(
-    const std::vector<int>& coefficients, const std::vector<IntegerVariable>& vars) {
+// Weighted sum <= constant.
+template <typename VectorInt>
+inline std::function<void(Model*)> WeightedSumLowerOrEqual(
+    const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
+    int64 upper_bound) {
   return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-
-    // The trival bounds will be propagated correctly at level zero.
-    IntegerVariable sum = integer_trail->AddIntegerVariable();
-    IntegerSum* constraint =
-        new IntegerSum(vars, coefficients, sum, integer_trail);
+    IntegerSumLE* constraint = new IntegerSumLE(
+        vars, std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
+        IntegerValue(upper_bound), model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
+  };
+}
+
+// Weighted sum >= constant.
+template <typename VectorInt>
+inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
+    const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
+    int64 lower_bound) {
+  return [=](Model* model) {
+    // We just negate everything and use an IntegerSumLE() constraints.
+    std::vector<IntegerValue> new_coeffs(coefficients.begin(), coefficients.end());
+    for (IntegerValue& ref : new_coeffs) ref = -ref;
+    IntegerSumLE* constraint =
+        new IntegerSumLE(vars, new_coeffs, IntegerValue(-lower_bound),
+                         model->GetOrCreate<IntegerTrail>());
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+// Weighted sum == constant
+template <typename VectorInt>
+inline std::function<void(Model*)> FixedWeightedSum(
+    const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
+    int64 value) {
+  return [=](Model* model) {
+    model->Add(WeightedSumGreaterOrEqual(vars, coefficients, value));
+    model->Add(WeightedSumLowerOrEqual(vars, coefficients, value));
+  };
+}
+
+// Model-based function to create an IntegerVariable that corresponds to the
+// given weighted sum of other IntegerVariables.
+//
+// Note that this is templated so that it can seemlessly accept std::vector<int>,
+// std::vector<int64> or std::vector<IntegerValue>!
+//
+// TODO(user): invert the coefficients/vars arguments.
+template <typename VectorInt>
+inline std::function<IntegerVariable(Model*)> NewWeightedSum(
+    const VectorInt& coefficients, const std::vector<IntegerVariable>& vars) {
+  return [=](Model* model) {
+    std::vector<IntegerVariable> new_vars = vars;
+    std::vector<IntegerValue> new_coeffs(coefficients.begin(), coefficients.end());
+
+    // To avoid overflow in the FixedWeightedSum() constraint, we need to
+    // compute the basic bounds on the sum.
+    //
+    // TODO(user): deal with overflow here too!
+    int64 sum_lb(0);
+    int64 sum_ub(0);
+    for (int i = 0; i < new_vars.size(); ++i) {
+      if (coefficients[i] > 0) {
+        sum_lb += coefficients[i] * model->Get(LowerBound(new_vars[i]));
+        sum_ub += coefficients[i] * model->Get(UpperBound(new_vars[i]));
+      } else {
+        sum_lb += coefficients[i] * model->Get(UpperBound(new_vars[i]));
+        sum_ub += coefficients[i] * model->Get(LowerBound(new_vars[i]));
+      }
+    }
+
+    const IntegerVariable sum = model->Add(NewIntegerVariable(sum_lb, sum_ub));
+    new_vars.push_back(sum);
+    new_coeffs.push_back(IntegerValue(-1));
+
+    model->Add(FixedWeightedSum(new_vars, new_coeffs, 0));
     return sum;
   };
 }

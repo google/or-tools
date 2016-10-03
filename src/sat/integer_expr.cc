@@ -16,10 +16,13 @@
 namespace operations_research {
 namespace sat {
 
-IntegerSum::IntegerSum(const std::vector<IntegerVariable>& vars,
-                       const std::vector<int>& coeffs, IntegerVariable sum,
-                       IntegerTrail* integer_trail)
-    : vars_(vars), coeffs_(coeffs), sum_(sum), integer_trail_(integer_trail) {
+IntegerSumLE::IntegerSumLE(const std::vector<IntegerVariable>& vars,
+                           const std::vector<IntegerValue>& coeffs,
+                           IntegerValue upper, IntegerTrail* integer_trail)
+    : upper_bound_(upper),
+      vars_(vars),
+      coeffs_(coeffs),
+      integer_trail_(integer_trail) {
   // Handle negative coefficients.
   for (int i = 0; i < vars.size(); ++i) {
     if (coeffs_[i] < 0) {
@@ -29,32 +32,32 @@ IntegerSum::IntegerSum(const std::vector<IntegerVariable>& vars,
   }
 }
 
-bool IntegerSum::Propagate(Trail* trail) {
-  if (vars_.empty()) return true;
+bool IntegerSumLE::Propagate(Trail* trail) {
+  CHECK(!vars_.empty());  // TODO(user): deal with this corner case.
 
-  IntegerValue new_lb = integer_trail_->LowerBound(vars_[0]) * coeffs_[0];
-  for (int i = 1; i < vars_.size(); ++i) {
+  IntegerValue new_lb(0);
+  for (int i = 0; i < vars_.size(); ++i) {
     new_lb += integer_trail_->LowerBound(vars_[i]) * coeffs_[i];
   }
 
-  // Update the sum lower-bound.
-  if (new_lb > integer_trail_->LowerBound(sum_)) {
+  // Conflict?
+  if (new_lb > upper_bound_) {
+    std::vector<Literal>* conflict = trail->MutableConflict();
+    conflict->clear();
     integer_reason_.clear();
     for (const IntegerVariable& var : vars_) {
       integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
     }
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(sum_, new_lb),
-                                 literal_reason_, integer_reason_)) {
-      return false;
-    }
+    integer_trail_->MergeReasonInto(integer_reason_, conflict);
+    return false;
   }
 
-  // Update the variables upper-bound.
-  const IntegerValue sum_upper_bound = integer_trail_->UpperBound(sum_);
+  // The lower bound of all the variables minus one can be used to update the
+  // upper bound of the last one.
   for (int i = 0; i < vars_.size(); ++i) {
-    const IntegerValue new_term_ub =
-        sum_upper_bound - new_lb +
-        integer_trail_->LowerBound(vars_[i]) * coeffs_[i];
+    const IntegerValue new_lb_excluding_i =
+        new_lb - integer_trail_->LowerBound(vars_[i]) * coeffs_[i];
+    const IntegerValue new_term_ub = upper_bound_ - new_lb_excluding_i;
     const IntegerValue new_ub = new_term_ub / coeffs_[i];
     if (new_ub < integer_trail_->UpperBound(vars_[i])) {
       integer_reason_.clear();
@@ -63,7 +66,6 @@ bool IntegerSum::Propagate(Trail* trail) {
         integer_reason_.push_back(
             integer_trail_->LowerBoundAsLiteral(vars_[j]));
       }
-      integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(sum_));
       if (!integer_trail_->Enqueue(
               IntegerLiteral::LowerOrEqual(vars_[i], new_ub), literal_reason_,
               integer_reason_)) {
@@ -75,12 +77,11 @@ bool IntegerSum::Propagate(Trail* trail) {
   return true;
 }
 
-void IntegerSum::RegisterWith(GenericLiteralWatcher* watcher) {
+void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const IntegerVariable& var : vars_) {
-    watcher->WatchIntegerVariable(var, id);
+    watcher->WatchLowerBound(var, id);
   }
-  watcher->WatchIntegerVariable(sum_, id);
 }
 
 MinPropagator::MinPropagator(const std::vector<IntegerVariable>& vars,
@@ -206,12 +207,12 @@ bool IsOneOfPropagator::Propagate(Trail* trail) {
         std::vector<Literal>* literal_reason;
         std::vector<IntegerLiteral>* integer_reason;
         if (current_min > values_[i]) {
-          integer_trail_->EnqueueLiteral(
-              selectors_[i].Negated(), &literal_reason, &integer_reason, trail);
+          integer_trail_->EnqueueLiteral(selectors_[i].Negated(),
+                                         &literal_reason, &integer_reason);
           integer_reason->push_back(integer_trail_->LowerBoundAsLiteral(var_));
         } else if (current_max < values_[i]) {
-          integer_trail_->EnqueueLiteral(
-              selectors_[i].Negated(), &literal_reason, &integer_reason, trail);
+          integer_trail_->EnqueueLiteral(selectors_[i].Negated(),
+                                         &literal_reason, &integer_reason);
           integer_reason->push_back(integer_trail_->UpperBoundAsLiteral(var_));
         }
       }

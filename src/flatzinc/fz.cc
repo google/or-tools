@@ -33,6 +33,7 @@
 #include "flatzinc/parser.h"
 #include "flatzinc/presolve.h"
 #include "flatzinc/reporting.h"
+#include "flatzinc/sat_fz_solver.h"
 #include "flatzinc/solver.h"
 #include "flatzinc/solver_util.h"
 
@@ -62,6 +63,8 @@ DEFINE_bool(
     "Increase verbosity of the impact based search when used in free search.");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread.");
 
+DEFINE_bool(use_fz_sat, false, "Use the SAT/CP solver.");
+
 DECLARE_bool(log_prefix);
 DECLARE_bool(use_sat);
 
@@ -80,38 +83,30 @@ FlatzincParameters SingleThreadParameters() {
   FlatzincParameters parameters;
   parameters.all_solutions = FLAGS_all_solutions;
   parameters.free_search = FLAGS_free_search;
-  parameters.last_conflict = FLAGS_last_conflict;
   parameters.heuristic_period = FLAGS_heuristic_period;
   parameters.ignore_unknown = false;
+  parameters.last_conflict = FLAGS_last_conflict;
+  parameters.logging = FLAGS_fz_logging;
   parameters.log_period = FLAGS_log_period;
   parameters.luby_restart = FLAGS_luby_restart;
   parameters.num_solutions = FixedNumberOfSolutions();
+  parameters.random_seed = 0;
   parameters.restart_log_size = FLAGS_restart_log_size;
-  parameters.threads = FLAGS_threads;
-  parameters.time_limit_in_ms = FLAGS_time_limit;
-  parameters.logging = FLAGS_fz_logging;
-  parameters.statistics = FLAGS_statistics;
-  parameters.verbose_impact = FLAGS_verbose_impact;
-  parameters.thread_id = -1;
   parameters.search_type =
       FLAGS_use_impact ? FlatzincParameters::IBS : FlatzincParameters::DEFAULT;
+  parameters.statistics = FLAGS_statistics;
+  parameters.threads = FLAGS_threads;
+  parameters.thread_id = -1;
+  parameters.time_limit_in_ms = FLAGS_time_limit;
+  parameters.verbose_impact = FLAGS_verbose_impact;
   return parameters;
 }
 
 FlatzincParameters MultiThreadParameters(int thread_id) {
-  FlatzincParameters parameters;
-  parameters.all_solutions = FLAGS_all_solutions;
-  parameters.heuristic_period = FLAGS_heuristic_period;
-  parameters.ignore_unknown = false;
-  parameters.log_period = FLAGS_log_period;
-  parameters.luby_restart = -1;
-  parameters.num_solutions = FixedNumberOfSolutions();
-  parameters.random_seed = thread_id * 10;
-  parameters.threads = FLAGS_threads;
-  parameters.time_limit_in_ms = FLAGS_time_limit;
+  FlatzincParameters parameters = SingleThreadParameters();
   parameters.logging = thread_id == 0;
-  parameters.statistics = FLAGS_statistics;
-  parameters.verbose_impact = false;
+  parameters.luby_restart = -1;
+  parameters.random_seed = thread_id * 10;
   parameters.thread_id = thread_id;
   switch (thread_id) {
     case 0: {
@@ -308,6 +303,12 @@ int main(int argc, char** argv) {
   operations_research::fz::Model model =
       operations_research::fz::ParseFlatzincModel(input,
                                                   !FLAGS_read_from_stdin);
-  operations_research::fz::Solve(model);
+
+  if (FLAGS_use_fz_sat) {
+    operations_research::sat::SolveWithSat(
+        model, operations_research::fz::SingleThreadParameters());
+  } else {
+    operations_research::fz::Solve(model);
+  }
   return EXIT_SUCCESS;
 }

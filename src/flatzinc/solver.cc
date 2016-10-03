@@ -12,7 +12,9 @@
 // limitations under the License.
 
 #include "flatzinc/solver.h"
+
 #include <string>
+
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/map_util.h"
@@ -24,7 +26,7 @@
 #include "flatzinc/sat_constraint.h"
 #include "util/string_array.h"
 
-DEFINE_bool(use_sat, true, "Use a sat solver for propagating on booleans.");
+DEFINE_bool(use_sat, true, "Use a sat solver for propagating on Booleans.");
 
 namespace operations_research {
 
@@ -79,7 +81,7 @@ int64 Solver::SolutionValue(IntegerVariable* var) const {
 }
 
 // The format is fixed in the flatzinc specification.
-std::string Solver::SolutionString(const OnSolutionOutput& output) const {
+std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
   if (output.variable != nullptr) {
     const int64 value = SolutionValue(output.variable);
     if (output.display_as_boolean) {
@@ -122,7 +124,7 @@ std::string Solver::SolutionString(const OnSolutionOutput& output) const {
 
 void Solver::StoreSolution() {
   stored_values_.resize(stored_values_.size() + 1);
-  for (const OnSolutionOutput& output : model_.output()) {
+  for (const SolutionOutputSpecs& output : model_.output()) {
     if (output.variable != nullptr) {
       const int64 value = SolutionValue(output.variable);
       stored_values_.back()[output.variable] = value;
@@ -160,8 +162,8 @@ struct ConstraintsWithRequiredVariables {
   }
 };
 
-int ComputeWeight(const ConstraintsWithRequiredVariables& ctio) {
-  return ctio.required.size() * 2 + (ctio.ct->target_variable == nullptr);
+int ComputeWeight(const ConstraintsWithRequiredVariables& c) {
+  return c.required.size() * 2 + (c.ct->target_variable == nullptr);
 }
 
 // Comparator to sort constraints based on numbers of required
@@ -238,9 +240,6 @@ bool Solver::Extract() {
   // Sort a first time.
   std::sort(to_sort.begin(), to_sort.end(),
             ConstraintsWithRequiredVariablesComparator());
-  for (ConstraintsWithRequiredVariables* const ctio : to_sort) {
-    CHECK(ctio != nullptr);
-  }
 
   // Topological sort.
   while (!to_sort.empty()) {
@@ -285,9 +284,8 @@ bool Solver::Extract() {
     delete ctio;
   }
 
-  // Start by identifying the all differents constraints. This does not
-  // process
-  // them yet
+  // Start by identifying the all differents constraints. This does not process
+  // them yet.
   for (Constraint* const ct : model_.constraints()) {
     if (ct->type == "all_different_int") {
       data_.StoreAllDifferent(ct->arguments[0].variables);
@@ -504,7 +502,7 @@ void Solver::ParseSearchAnnotations(bool ignore_unknown,
 }
 
 void Solver::CollectOutputVariables(std::vector<IntVar*>* out) {
-  for (const OnSolutionOutput& output : model_.output()) {
+  for (const SolutionOutputSpecs& output : model_.output()) {
     if (output.variable != nullptr) {
       if (!ContainsKey(implied_variables_, output.variable)) {
         out->push_back(data_.Extract(output.variable)->Var());
@@ -745,7 +743,7 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
   } else if (p.all_solutions && p.num_solutions > 1) {
     FZLOG << "  - searching for " << p.num_solutions << " solutions"
           << std::endl;
-  } else if (model_.objective() == NULL ||
+  } else if (model_.objective() == nullptr ||
              (p.all_solutions && p.num_solutions == 1)) {
     FZLOG << "  - searching for the first solution" << std::endl;
   } else {
@@ -769,7 +767,7 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
     if (!report->ShouldFinish()) {
       solution_string.clear();
       if (!model_.output().empty()) {
-        for (const OnSolutionOutput& output : model_.output()) {
+        for (const SolutionOutputSpecs& output : model_.output()) {
           solution_string.append(SolutionString(output));
           solution_string.append("\n");
         }

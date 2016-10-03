@@ -137,8 +137,9 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScan(
 // TODO(user): If it is too much work to provide this set, we could add a more
 // complex heuristic to decide the next IntegerLiteral that will be associated
 // to a decision in the SatSolver search.
+//
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-    IntegerVariable objective_var,
+    bool log_info, IntegerVariable objective_var,
     const std::vector<IntegerVariable>& var_for_lazy_encoding,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);

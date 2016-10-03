@@ -1,5 +1,6 @@
 Makefile.local
 
+dependencies/archives/autoconf-2.69/
 dependencies/archives/autoconf-2.69.tar.gz
 dependencies/archives/autoconf.patch
 dependencies/archives/automake-1.15.tar.gz
@@ -20,6 +21,9 @@ dependencies/archives/zlib128.zip
 dependencies/install/
 dependencies/sources/
 
+
+or-tools*.tar.gz
+or-tools*.zip
 *.a
 *.o
 *.so

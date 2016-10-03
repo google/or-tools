@@ -23,9 +23,13 @@ or-tools/
 
 
 To install the package, please run:
-  python setup.py install --user
+  make install
+or  
+  python setup.py install --user 
 
-Then check the dependecies by running : 
+This will check the ortools module dependecies. You still can do it by running: 
+  make check
+or
   python check_python_deps.py
 
 Once this is done, you can run the samples in the examples/ directory.

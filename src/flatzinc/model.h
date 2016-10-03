@@ -264,7 +264,7 @@ struct Annotation {
 
 // Information on what should be displayed when a solution is found.
 // It follows the flatzinc specification (www.minizinc.org).
-struct OnSolutionOutput {
+struct SolutionOutputSpecs {
   struct Bounds {
     Bounds(int64 min_value_, int64 max_value_)
         : min_value(min_value_), max_value(max_value_) {}
@@ -274,17 +274,17 @@ struct OnSolutionOutput {
   };
 
   // Will output: name = <variable value>.
-  static OnSolutionOutput SingleVariable(const std::string& name,
-                                         IntegerVariable* variable,
-                                         bool display_as_boolean);
+  static SolutionOutputSpecs SingleVariable(const std::string& name,
+                                            IntegerVariable* variable,
+                                            bool display_as_boolean);
   // Will output (for example):
   //     name = array2d(min1..max1, min2..max2, [list of variable values])
   // for a 2d array (bounds.size() == 2).
-  static OnSolutionOutput MultiDimensionalArray(
+  static SolutionOutputSpecs MultiDimensionalArray(
       const std::string& name, std::vector<Bounds> bounds,
       std::vector<IntegerVariable*> flat_variables, bool display_as_boolean);
   // Empty output.
-  static OnSolutionOutput VoidOutput();
+  static SolutionOutputSpecs VoidOutput();
 
   std::string DebugString() const;
 
@@ -316,7 +316,7 @@ class Model {
   void AddConstraint(const std::string& type, std::vector<Argument> arguments,
                      bool strong, IntegerVariable* target_variable);
   void AddConstraint(const std::string& type, std::vector<Argument> arguments);
-  void AddOutput(OnSolutionOutput output);
+  void AddOutput(SolutionOutputSpecs output);
 
   // Set the search annotations and the objective: either simply satisfy the
   // problem, or minimize or maximize the given variable (which must have been
@@ -337,10 +337,10 @@ class Model {
     return MutableVectorIteration<Annotation>(&search_annotations_);
   }
 #endif
-  const std::vector<OnSolutionOutput>& output() const { return output_; }
+  const std::vector<SolutionOutputSpecs>& output() const { return output_; }
 #if !defined(SWIG)
-  MutableVectorIteration<OnSolutionOutput> mutable_output() {
-    return MutableVectorIteration<OnSolutionOutput>(&output_);
+  MutableVectorIteration<SolutionOutputSpecs> mutable_output() {
+    return MutableVectorIteration<SolutionOutputSpecs>(&output_);
   }
 #endif
   bool maximize() const { return maximize_; }
@@ -364,7 +364,7 @@ class Model {
   bool maximize_;
   // All search annotations are stored as a vector of Annotation.
   std::vector<Annotation> search_annotations_;
-  std::vector<OnSolutionOutput> output_;
+  std::vector<SolutionOutputSpecs> output_;
 };
 
 // Stand-alone statistics class on the model.

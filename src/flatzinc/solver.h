@@ -62,7 +62,7 @@ struct FlatzincParameters {
 
 // The main class to search for a solution in a flatzinc model.  It is
 // responsible for parsing the search annotations, setting up the
-// search state and perform the actual search.
+// search state and performing the actual search.
 class Solver {
  public:
   explicit Solver(const Model& model)
@@ -87,13 +87,13 @@ class Solver {
   bool Extract();
 
   // String output for the minizinc interface.
-  std::string SolutionString(const OnSolutionOutput& output) const;
+  std::string SolutionString(const SolutionOutputSpecs& output) const;
 
   // Query the value of the variable. This must be called during search, when
   // a solution is found.
   int64 SolutionValue(IntegerVariable* var) const;
 
-  // Programmatic interface to the solver.
+  // Programmatic interface to read the solutions.
 
   // Returns the number of solutions stored. You need to set store_all_solution
   // to true in the parameters, otherwise this method will always return 0.

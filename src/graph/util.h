@@ -21,10 +21,12 @@
 #include <numeric>
 #include <string>
 
-#include "base/numbers.h"
 #include "base/hash.h"
+#include "base/join.h"
+#include "base/numbers.h"
 #include "base/split.h"
 #include "base/join.h"
+#include "base/map_util.h"
 #include "base/murmur.h"
 #include "graph/graph.h"
 #include "util/filelineiter.h"
@@ -41,21 +43,67 @@ bool GraphIsSymmetric(const Graph& graph);
 
 // Creates a remapped copy of graph "graph", where node i becomes node
 // new_node_index[i]. The caller takes ownership of the returned graph.
-// "new_node_index" must be a valid permutation of [0..num_nodes-1], or
-// else the return StatusOr will be in an error state.
+// "new_node_index" must be a valid permutation of [0..num_nodes-1] or the
+// behavior is undefined (it may die).
+// Note that you can call IsValidPermutation() to check it yourself.
 template <class Graph>
-util::StatusOr<Graph*> RemapGraph(const Graph& graph,
+std::unique_ptr<Graph> RemapGraph(const Graph& graph,
                                   const std::vector<int>& new_node_index);
 
-// Returns a std::string representation of a graph: one arc per line. Eg.:
-// "1->2\n3->3" for a graph with 4 nodes and 2 arcs (1->2) and (3->3).
-// Arcs are sorted by their tail, then by the order of OutgoingArcs().
+// Returns true iff the given vector is a permutation of [0..size()-1].
+bool IsValidPermutation(const std::vector<int>& v);
+
+// Returns a std::string representation of a graph.
+enum GraphToStringFormat {
+  // One arc per line, eg. "3->1".
+  PRINT_GRAPH_ARCS,
+
+  // One space-separated adjacency list per line, eg. "5 1 3 1".
+  // Nodes with no outgoing arc get an empty line.
+  PRINT_GRAPH_ADJACENCY_LISTS,
+
+  // Ditto, but the adjacency lists are sorted.
+  PRINT_GRAPH_ADJACENCY_LISTS_SORTED,
+};
 template <class Graph>
-std::string GraphToString(const Graph& graph);
+std::string GraphToString(const Graph& graph, GraphToStringFormat format);
 
 // Returns a copy of "graph", without self-arcs and duplicate arcs.
 template <class Graph>
 std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph);
+
+// Given an arc path, changes it to a sub-path with the same source and
+// destination but without any cycle. Nothing happen if the path was already
+// without cycle.
+//
+// The graph class should support Tail(arc) and Head(arc). They should both
+// return an integer representing the corresponding tail/head of the passed arc.
+//
+// TODO(user): In some cases, there is more than one possible solution. We could
+// take some arc costs and return the cheapest path instead. Or return the
+// shortest path in term of number of arcs.
+template <class Graph>
+void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path);
+
+// Returns true iff the given path contains a cycle.
+template <class Graph>
+bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path);
+
+// Returns a vector representing a mapping from arcs to arcs such that each arc
+// is mapped to another arc with its (tail, head) flipped, if such an arc
+// exists (otherwise it is mapped to -1).
+// If the graph is symmetric, the returned mapping is bijective and reflexive,
+// i.e. out[out[arc]] = arc for all "arc", where "out" is the returned vector.
+// If "die_if_not_symmetric" is true, this function CHECKs() that the graph
+// is symmetric.
+//
+// Self-arcs are always mapped to themselves.
+//
+// Note that since graphs may have multi-arcs, the mapping isn't necessarily
+// unique, hence the function name.
+template <class Graph>
+std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
+                                                bool die_if_not_symmetric);
 
 // Read a graph file in the simple ".g" format: the file should be a text file
 // containing only space-separated integers, whose first line is:
@@ -140,29 +188,11 @@ bool GraphIsSymmetric(const Graph& graph) {
 }
 
 template <class Graph>
-util::StatusOr<Graph*> RemapGraph(const Graph& old_graph,
+std::unique_ptr<Graph> RemapGraph(const Graph& old_graph,
                                   const std::vector<int>& new_node_index) {
+  DCHECK(IsValidPermutation(new_node_index)) << "Invalid permutation";
   const int num_nodes = old_graph.num_nodes();
-  // Quickly verify that "new_node_index" is a valid permutation.
-  bool ok = new_node_index.size() == num_nodes;
-  if (ok) {
-    std::vector<bool> tmp_node_mask(old_graph.num_nodes(), false);
-    for (const int i : new_node_index) {
-      if (i < 0 || i >= num_nodes || tmp_node_mask[i]) {
-        ok = false;
-        break;
-      }
-      tmp_node_mask[i] = true;
-    }
-  }
-  if (!ok) {
-    return util::Status(
-        util::error::INVALID_ARGUMENT,
-        StrCat(
-            "new_node_index is not a valid permutation of [0..num_nodes-1],"
-            " with num_nodes = ",
-            num_nodes));
-  }
+  CHECK_EQ(new_node_index.size(), num_nodes);
   std::unique_ptr<Graph> new_graph(new Graph(num_nodes, old_graph.num_arcs()));
   typedef typename Graph::NodeIndex NodeIndex;
   typedef typename Graph::ArcIndex ArcIndex;
@@ -173,16 +203,29 @@ util::StatusOr<Graph*> RemapGraph(const Graph& old_graph,
     }
   }
   new_graph->Build();
-  return new_graph.release();
+  return new_graph;
 }
 
 template <class Graph>
-std::string GraphToString(const Graph& graph) {
+std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
   std::string out;
+  std::vector<typename Graph::NodeIndex> adj;
   for (const typename Graph::NodeIndex node : graph.AllNodes()) {
-    for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-      if (!out.empty()) out += '\n';
-      StrAppend(&out, node, "->", graph.Head(arc));
+    if (format == PRINT_GRAPH_ARCS) {
+      for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
+        if (!out.empty()) out += '\n';
+        StrAppend(&out, node, "->", graph.Head(arc));
+      }
+    } else {  // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
+      adj.clear();
+      for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
+        adj.push_back(graph.Head(arc));
+      }
+      if (format == PRINT_GRAPH_ADJACENCY_LISTS_SORTED) {
+        std::sort(adj.begin(), adj.end());
+      }
+      if (node != 0) out += '\n';
+      StrAppend(&out, node, ": ", strings::Join(adj, " "));
     }
   }
   return out;
@@ -204,6 +247,79 @@ std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph) {
   }
   g->Build();
   return g;
+}
+
+template <class Graph>
+void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path) {
+  if (arc_path->empty()) return;
+
+  // This maps each node to the latest arc in the given path that leaves it.
+  std::map<int, int> last_arc_leaving_node;
+  for (const int arc : *arc_path) last_arc_leaving_node[graph.Tail(arc)] = arc;
+
+  // Special case for the destination.
+  // Note that this requires that -1 is not a valid arc of Graph.
+  last_arc_leaving_node[graph.Head(arc_path->back())] = -1;
+
+  // Reconstruct the path by starting at the source and then following the
+  // "next" arcs. We override the given arc_path at the same time.
+  int node = graph.Tail(arc_path->front());
+  int new_size = 0;
+  while (new_size < arc_path->size()) {  // To prevent cycle on bad input.
+    const int arc = FindOrDie(last_arc_leaving_node, node);
+    if (arc == -1) break;
+    (*arc_path)[new_size++] = arc;
+    node = graph.Head(arc);
+  }
+  arc_path->resize(new_size);
+}
+
+template <class Graph>
+bool PathHasCycle(const Graph& graph, const std::vector<int>& arc_path) {
+  if (arc_path.empty()) return false;
+  std::set<int> seen;
+  seen.insert(graph.Tail(arc_path.front()));
+  for (const int arc : arc_path) {
+    if (!InsertIfNotPresent(&seen, graph.Head(arc))) return true;
+  }
+  return false;
+}
+
+template <class Graph>
+std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
+                                                bool die_if_not_symmetric) {
+  std::vector<int> reverse_arc(graph.num_arcs(), -1);
+  hash_multimap<std::pair</*tail*/ int, /*head*/ int>, /*arc index*/ int> arc_map;
+  for (int arc = 0; arc < graph.num_arcs(); ++arc) {
+    const int tail = graph.Tail(arc);
+    const int head = graph.Head(arc);
+    if (tail == head) {
+      // Special case: directly map any self-arc to itself.
+      reverse_arc[arc] = arc;
+      continue;
+    }
+    // Lookup for the reverse arc of the current one...
+    auto it = arc_map.find({head, tail});
+    if (it != arc_map.end()) {
+      // Found a reverse arc! Store the mapping and remove the
+      // reverse arc from the map.
+      reverse_arc[arc] = it->second;
+      reverse_arc[it->second] = arc;
+      arc_map.erase(it);
+    } else {
+      // Reverse arc not in the map. Add the current arc to the map.
+      arc_map.insert({{tail, head}, arc});
+    }
+  }
+  // Algorithm check, for debugging.
+  DCHECK_EQ(std::count(reverse_arc.begin(), reverse_arc.end(), -1),
+            arc_map.size());
+  if (die_if_not_symmetric) {
+    CHECK_EQ(arc_map.size(), 0)
+        << "The graph is not symmetric: " << arc_map.size() << " of "
+        << graph.num_arcs() << " arcs did not have a reverse.";
+  }
+  return reverse_arc;
 }
 
 template <class Graph>

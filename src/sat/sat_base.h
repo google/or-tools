@@ -269,7 +269,7 @@ class Trail {
   }
 
   // Specific Enqueue() version for the search decision.
-  void EnqueueSeachDecision(Literal true_literal) {
+  void EnqueueSearchDecision(Literal true_literal) {
     Enqueue(true_literal, AssignmentType::kSearchDecision);
   }
 

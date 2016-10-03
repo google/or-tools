@@ -597,27 +597,26 @@ std::string Annotation::DebugString() const {
   return "";
 }
 
-// ----- OnSolutionOutput -----
+// ----- SolutionOutputSpecs -----
 
-std::string OnSolutionOutput::Bounds::DebugString() const {
+std::string SolutionOutputSpecs::Bounds::DebugString() const {
   return StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min_value,
                       max_value);
 }
 
-OnSolutionOutput OnSolutionOutput::SingleVariable(const std::string& name,
-                                                  IntegerVariable* variable,
-                                                  bool display_as_boolean) {
-  OnSolutionOutput result;
+SolutionOutputSpecs SolutionOutputSpecs::SingleVariable(
+    const std::string& name, IntegerVariable* variable, bool display_as_boolean) {
+  SolutionOutputSpecs result;
   result.name = name;
   result.variable = variable;
   result.display_as_boolean = display_as_boolean;
   return result;
 }
 
-OnSolutionOutput OnSolutionOutput::MultiDimensionalArray(
+SolutionOutputSpecs SolutionOutputSpecs::MultiDimensionalArray(
     const std::string& name, std::vector<Bounds> bounds,
     std::vector<IntegerVariable*> flat_variables, bool display_as_boolean) {
-  OnSolutionOutput result;
+  SolutionOutputSpecs result;
   result.variable = nullptr;
   result.name = name;
   result.bounds = std::move(bounds);
@@ -626,14 +625,14 @@ OnSolutionOutput OnSolutionOutput::MultiDimensionalArray(
   return result;
 }
 
-OnSolutionOutput OnSolutionOutput::VoidOutput() {
-  OnSolutionOutput result;
+SolutionOutputSpecs SolutionOutputSpecs::VoidOutput() {
+  SolutionOutputSpecs result;
   result.variable = nullptr;
   result.display_as_boolean = false;
   return result;
 }
 
-std::string OnSolutionOutput::DebugString() const {
+std::string SolutionOutputSpecs::DebugString() const {
   if (variable != nullptr) {
     return StringPrintf("output_var(%s)", variable->name.c_str());
   } else {
@@ -680,7 +679,7 @@ void Model::AddConstraint(const std::string& id, std::vector<Argument> arguments
   AddConstraint(id, std::move(arguments), false, nullptr);
 }
 
-void Model::AddOutput(OnSolutionOutput output) {
+void Model::AddOutput(SolutionOutputSpecs output) {
   output_.push_back(std::move(output));
 }
 

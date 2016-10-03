@@ -305,7 +305,7 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
         std::vector<Literal>* literal_reason;
         std::vector<IntegerLiteral>* integer_reason;
         integer_trail_->EnqueueLiteral(is_present.Negated(), &literal_reason,
-                                       &integer_reason, trail);
+                                       &integer_reason);
         integer_reason->push_back(
             integer_trail_->LowerBoundAsLiteral(arc.tail_var));
         integer_reason->push_back(

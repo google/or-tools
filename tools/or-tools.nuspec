@@ -7,7 +7,6 @@
     <licenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</licenseUrl>
     <projectUrl>https://developers.google.com/optimization</projectUrl>
     <description>.NET Assembly for the OR-Tools project</description>
-    <releaseNotes>SVN Release VVVV.</releaseNotes>
     <copyright>Copyright 2016 Google</copyright>
     <tags>OperationsResearch MathProgramming LinearProgramming ConstraintProgramming .NET</tags>
     <dependencies>
