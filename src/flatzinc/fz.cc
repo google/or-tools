@@ -19,6 +19,7 @@
 #include <signal.h>
 #endif  // __GNUC__
 
+#include <csignal>
 #include <string>
 #include <vector>
 
@@ -48,6 +49,7 @@ DEFINE_bool(presolve, true, "Presolve the model to simplify it.");
 DEFINE_bool(statistics, false, "Print solver statistics after search.");
 DEFINE_bool(read_from_stdin, false,
             "Read the FlatZinc from stdin, not from a file.");
+DEFINE_int32(fz_seed, 0, "Random seed");
 DEFINE_int32(log_period, 10000000, "Search log period in the CP search.");
 DEFINE_bool(use_impact, false, "Use impact based search in free search.");
 DEFINE_double(restart_log_size, -1,
@@ -62,11 +64,12 @@ DEFINE_bool(
     verbose_impact, false,
     "Increase verbosity of the impact based search when used in free search.");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread.");
-
 DEFINE_bool(use_fz_sat, false, "Use the SAT/CP solver.");
+DEFINE_string(fz_model_name, "stdin",
+              "Define problem name when reading from stdin.");
 
 DECLARE_bool(log_prefix);
-DECLARE_bool(use_sat);
+DECLARE_bool(fz_use_sat);
 
 using operations_research::ThreadPool;
 
@@ -90,7 +93,7 @@ FlatzincParameters SingleThreadParameters() {
   parameters.log_period = FLAGS_log_period;
   parameters.luby_restart = FLAGS_luby_restart;
   parameters.num_solutions = FixedNumberOfSolutions();
-  parameters.random_seed = 0;
+  parameters.random_seed = FLAGS_fz_seed;
   parameters.restart_log_size = FLAGS_restart_log_size;
   parameters.search_type =
       FLAGS_use_impact ? FlatzincParameters::IBS : FlatzincParameters::DEFAULT;
@@ -106,7 +109,7 @@ FlatzincParameters MultiThreadParameters(int thread_id) {
   FlatzincParameters parameters = SingleThreadParameters();
   parameters.logging = thread_id == 0;
   parameters.luby_restart = -1;
-  parameters.random_seed = thread_id * 10;
+  parameters.random_seed = FLAGS_fz_seed + thread_id * 10;
   parameters.thread_id = thread_id;
   switch (thread_id) {
     case 0: {
@@ -174,6 +177,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
   char solutions_param[] = "--num_solutions";
   char logging_param[] = "--fz_logging";
   char statistics_param[] = "--statistics";
+  char seed_param[] = "--fz_seed";
   char verbose_param[] = "--fz_verbose";
   char debug_param[] = "--fz_debug";
   for (int i = 1; i < *argc; ++i) {
@@ -195,6 +199,9 @@ void FixAndParseParameters(int* argc, char*** argv) {
     if (strcmp((*argv)[i], "-s") == 0) {
       (*argv)[i] = statistics_param;
     }
+    if (strcmp((*argv)[i], "-r") == 0) {
+      (*argv)[i] = seed_param;
+    }
     if (strcmp((*argv)[i], "-v") == 0) {
       (*argv)[i] = verbose_param;
     }
@@ -213,8 +220,8 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
   WallTimer timer;
   timer.Start();
   // Read model.
-  std::string problem_name = input_is_filename ? input : "stdin";
-  if (input_is_filename) {
+  std::string problem_name = input_is_filename ? input : FLAGS_fz_model_name;
+  if (input_is_filename || strings::EndsWith(problem_name, ".fzn")) {
     CHECK(strings::EndsWith(problem_name, ".fzn"));
     problem_name.resize(problem_name.size() - 4);
     const size_t found = problem_name.find_last_of("/\\");
@@ -234,7 +241,7 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
 
   // Presolve the model.
   Presolver presolve;
-  presolve.CleanUpModelForTheCpSolver(&model, FLAGS_use_sat);
+  presolve.CleanUpModelForTheCpSolver(&model, FLAGS_fz_use_sat);
   if (FLAGS_presolve) {
     FZLOG << "Presolve model" << FZENDL;
     timer.Reset();
@@ -247,15 +254,14 @@ Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
   ModelStatistics stats(model);
   stats.BuildStatistics();
   stats.PrintStatistics();
-
-#if defined(__GNUC__)
-  signal(SIGINT, &operations_research::fz::Interrupt::ControlCHandler);
-#endif
-
   return model;
 }
 
 void Solve(const Model& model) {
+#if defined(__GNUC__)
+  signal(SIGINT, &operations_research::fz::Interrupt::ControlCHandler);
+#endif
+
   if (FLAGS_threads == 0) {
     Solver solver(model);
     CHECK(solver.Extract());
@@ -305,8 +311,10 @@ int main(int argc, char** argv) {
                                                   !FLAGS_read_from_stdin);
 
   if (FLAGS_use_fz_sat) {
+    bool interrupt_solve = false;
     operations_research::sat::SolveWithSat(
-        model, operations_research::fz::SingleThreadParameters());
+        model, operations_research::fz::SingleThreadParameters(),
+        &interrupt_solve);
   } else {
     operations_research::fz::Solve(model);
   }

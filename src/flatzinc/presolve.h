@@ -124,6 +124,7 @@ class Presolver {
   bool PresolveInequalities(Constraint* ct, std::string* log);
   bool PresolveIntNe(Constraint* ct, std::string* log);
   bool PresolveSetIn(Constraint* ct, std::string* log);
+  bool PresolveSetInReif(Constraint* ct, std::string* log);
   bool PresolveArrayBoolAnd(Constraint* ct, std::string* log);
   bool PresolveArrayBoolOr(Constraint* ct, std::string* log);
   bool PresolveBoolEqNeReif(Constraint* ct, std::string* log);
@@ -151,6 +152,7 @@ class Presolver {
   bool PresolveBoolClause(Constraint* ct, std::string* log);
   bool StoreIntEqReif(Constraint* ct, std::string* log);
   bool SimplifyIntNeReif(Constraint* ct, std::string* log);
+  bool PresolveTableInt(Constraint* ct, std::string* log);
 
   // Helpers.
   void IntersectDomainWith(const Argument& arg, Domain* domain);

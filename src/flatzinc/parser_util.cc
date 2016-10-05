@@ -52,7 +52,7 @@ bool ContainsId(std::vector<Annotation>* annotations, const std::string& id) {
   return false;
 }
 
-bool AreAllSingleton(const std::vector<Domain>& domains) {
+bool AllDomainsHaveOneValue(const std::vector<Domain>& domains) {
   for (int i = 0; i < domains.size(); ++i) {
     if (!domains[i].HasOneValue()) {
       return false;

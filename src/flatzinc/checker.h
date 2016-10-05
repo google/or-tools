@@ -11,19 +11,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_FLATZINC_SAT_FZ_SOLVER_H_
-#define OR_TOOLS_FLATZINC_SAT_FZ_SOLVER_H_
+#ifndef OR_TOOLS_FLATZINC_CHECKER_H_
+#define OR_TOOLS_FLATZINC_CHECKER_H_
+
+#include <functional>
 
 #include "flatzinc/model.h"
-#include "flatzinc/solver.h"
 
 namespace operations_research {
-namespace sat {
+namespace fz {
 
-void SolveWithSat(const fz::Model& model, const fz::FlatzincParameters& p,
-                  bool* interup_solve);
+// Verifies that the solution specified by the given evaluator is a
+// feasible solution of the given model. Returns true iff this is the
+// case.
+bool CheckSolution(const Model& model,
+                   std::function<int64(IntegerVariable*)> evaluator);
 
-}  // namespace sat
+}  // namespace fz
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_SAT_FZ_SOLVER_H_
+#endif  // OR_TOOLS_FLATZINC_CHECKER_H_

@@ -13,8 +13,11 @@
 
 #include "flatzinc/sat_fz_solver.h"
 
+#include "base/timer.h"
 #include "base/map_util.h"
+#include "flatzinc/checker.h"
 #include "flatzinc/logging.h"
+#include "sat/cp_constraints.h"
 #include "sat/disjunctive.h"
 #include "sat/integer.h"
 #include "sat/integer_expr.h"
@@ -26,39 +29,198 @@
 
 namespace operations_research {
 namespace sat {
+namespace {
 
 // Hold the sat::Model and the correspondance between flatzinc and sat vars.
 struct SatModel {
   Model model;
   hash_map<fz::IntegerVariable*, IntegerVariable> var_map;
 
+  // For now, we need to create a constant sat::IntegerVariable for each
+  // constant appearing in the flatzinc model.
+  hash_map<int64, IntegerVariable> constant_map;
+
   // Utility function to conver an fz::Argument to sat::IntegerVariable(s).
-  IntegerVariable LookupVar(const fz::Argument& argument) const;
-  std::vector<IntegerVariable> LookupVars(const fz::Argument& argument) const;
+  IntegerVariable LookupConstant(int64 value);
+  IntegerVariable LookupVar(const fz::Argument& argument);
+  std::vector<IntegerVariable> LookupVars(const fz::Argument& argument);
+
+  // Returns the full domain Boolean encoding of the given variable (encoding it
+  // if not already done).
+  const std::vector<IntegerEncoder::ValueLiteralPair>& FullEncoding(
+      IntegerVariable v);
+  std::string FullEncodingValuesAsString(IntegerVariable v) const;
+
+  // Given an IntegerVariable that is actually a Boolean (only 2 values that
+  // are exactly 0 and 1) return the Literal encoding the value 1.
+  const Literal GetTrueLiteral(IntegerVariable v) const;
+  const Literal GetTrueLiteral(const fz::Argument& argument);
+
+  // Applies GetTrueLiteral() to LookupVars(argument).
+  const std::vector<Literal> GetTrueLiterals(const fz::Argument& argument);
+
+  // Return GetTrueLiteral() with all literals negated.
+  const std::vector<Literal> GetFalseLiterals(const fz::Argument& argument);
 };
 
-// TODO(user): deal with constant variables.
-// In a first version we could create constant IntegerVariable in the solver.
-IntegerVariable SatModel::LookupVar(const fz::Argument& argument) const {
+IntegerVariable SatModel::LookupConstant(const int64 value) {
+  if (!ContainsKey(constant_map, value)) {
+    constant_map[value] = model.Add(NewIntegerVariable(value, value));
+  }
+  return FindOrDie(constant_map, value);
+}
+
+IntegerVariable SatModel::LookupVar(const fz::Argument& argument) {
+  if (argument.HasOneValue()) return LookupConstant(argument.Value());
   CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF);
+  CHECK(!argument.variables[0]->domain.HasOneValue());
   return FindOrDie(var_map, argument.variables[0]);
 }
 
-// TODO(user): deal with constant variables.
-// In a first version we could create constant IntegerVariable in the solver.
-std::vector<IntegerVariable> SatModel::LookupVars(
-    const fz::Argument& argument) const {
-  CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
+std::vector<IntegerVariable> SatModel::LookupVars(const fz::Argument& argument) {
   std::vector<IntegerVariable> result;
+  if (argument.type == fz::Argument::VOID_ARGUMENT) return result;
+
+  CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
   for (fz::IntegerVariable* var : argument.variables) {
-    result.push_back(FindOrDie(var_map, var));
+    if (var->domain.HasOneValue()) {
+      result.push_back(LookupConstant(var->domain.Value()));
+    } else {
+      result.push_back(FindOrDie(var_map, var));
+    }
   }
   return result;
+}
+
+const std::vector<IntegerEncoder::ValueLiteralPair>& SatModel::FullEncoding(
+    IntegerVariable var) {
+  IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
+  if (!encoder->VariableIsFullyEncoded(var)) {
+    const IntegerValue lb(model.Get(LowerBound(var)));
+    const IntegerValue ub(model.Get(UpperBound(var)));
+    encoder->FullyEncodeVariable(var, lb, ub);
+  }
+  return encoder->FullDomainEncoding(var);
+}
+
+std::string SatModel::FullEncodingValuesAsString(IntegerVariable v) const {
+  std::vector<int64> values;
+  IntegerEncoder const* encoder = model.Get<IntegerEncoder>();
+  for (const auto p : encoder->FullDomainEncoding(v)) {
+    values.push_back(p.value.value());
+  }
+  return strings::Join(values, ", ");
+}
+
+const Literal SatModel::GetTrueLiteral(IntegerVariable v) const {
+  const IntegerEncoder* encoder = model.Get<IntegerEncoder>();
+  const std::vector<IntegerEncoder::ValueLiteralPair>& encoding =
+      encoder->FullDomainEncoding(v);
+  CHECK_EQ(2, encoding.size());
+  CHECK_EQ(IntegerValue(0), encoding[0].value);
+  CHECK_EQ(IntegerValue(1), encoding[1].value);
+  return encoding[1].literal;
+}
+
+const Literal SatModel::GetTrueLiteral(const fz::Argument& argument) {
+  CHECK(!argument.HasOneValue());
+  return GetTrueLiteral(LookupVar(argument));
+}
+
+const std::vector<Literal> SatModel::GetTrueLiterals(const fz::Argument& argument) {
+  std::vector<Literal> literals;
+  for (const IntegerVariable var : LookupVars(argument)) {
+    literals.push_back(GetTrueLiteral(var));
+  }
+  return literals;
+}
+
+const std::vector<Literal> SatModel::GetFalseLiterals(const fz::Argument& argument) {
+  std::vector<Literal> literals;
+  for (const IntegerVariable var : LookupVars(argument)) {
+    literals.push_back(GetTrueLiteral(var).Negated());
+  }
+  return literals;
 }
 
 // =============================================================================
 // Constraints extraction.
 // =============================================================================
+
+void ExtractBoolEq(const fz::Constraint& ct, SatModel* m) {
+  const Literal a = m->GetTrueLiteral(ct.arguments[0]);
+  const Literal b = m->GetTrueLiteral(ct.arguments[1]);
+  m->model.Add(Equality(a, b));
+}
+
+void ExtractBoolEqNeReif(bool is_eq, const fz::Constraint& ct, SatModel* m) {
+  const Literal a = m->GetTrueLiteral(ct.arguments[0]);
+  const Literal b = m->GetTrueLiteral(ct.arguments[1]);
+  Literal r = m->GetTrueLiteral(ct.arguments[2]);
+  if (!is_eq) r = r.Negated();
+
+  // We exclude 101, 011, 110 and 000.
+  m->model.Add(ClauseConstraint({a.Negated(), b, r.Negated()}));
+  m->model.Add(ClauseConstraint({a, b.Negated(), r.Negated()}));
+  m->model.Add(ClauseConstraint({a.Negated(), b.Negated(), r}));
+  m->model.Add(ClauseConstraint({a, b, r}));
+}
+
+void ExtractBoolNe(const fz::Constraint& ct, SatModel* m) {
+  const Literal a = m->GetTrueLiteral(ct.arguments[0]);
+  const Literal b = m->GetTrueLiteral(ct.arguments[1]);
+  m->model.Add(Equality(a, b.Negated()));
+}
+
+void ExtractBoolLe(const fz::Constraint& ct, SatModel* m) {
+  const Literal a = m->GetTrueLiteral(ct.arguments[0]);
+  const Literal b = m->GetTrueLiteral(ct.arguments[1]);
+  m->model.Add(Implication(a, b));
+}
+
+void ExtractBoolLeLtReif(bool is_le, const fz::Constraint& ct, SatModel* m) {
+  Literal a = m->GetTrueLiteral(ct.arguments[0]);
+  Literal b = m->GetTrueLiteral(ct.arguments[1]);
+  Literal r = m->GetTrueLiteral(ct.arguments[2]);
+  if (!is_le) {
+    // The negation of r <=> (a <= b) is not(r) <=> (a > b)
+    r = r.Negated();
+    std::swap(a, b);
+  }
+
+  // We exclude 101, 010, 110 and 000.
+  m->model.Add(ClauseConstraint({a.Negated(), b, r.Negated()}));
+  m->model.Add(ClauseConstraint({a, b.Negated(), r}));
+  m->model.Add(ClauseConstraint({a.Negated(), b.Negated(), r}));
+  m->model.Add(ClauseConstraint({a, b, r}));
+}
+
+void ExtractBoolClause(const fz::Constraint& ct, SatModel* m) {
+  std::vector<Literal> positive = m->GetTrueLiterals(ct.arguments[0]);
+  const std::vector<Literal> negative = m->GetFalseLiterals(ct.arguments[1]);
+  positive.insert(positive.end(), negative.begin(), negative.end());
+  m->model.Add(ClauseConstraint(positive));
+}
+
+void ExtractArrayBoolAnd(const fz::Constraint& ct, SatModel* m) {
+  if (ct.arguments[1].HasOneValue()) {
+    CHECK_EQ(0, ct.arguments[1].Value()) << "Other case should be presolved.";
+    m->model.Add(ClauseConstraint(m->GetFalseLiterals(ct.arguments[0])));
+  } else {
+    const Literal r = m->GetTrueLiteral(ct.arguments[1]);
+    m->model.Add(ReifiedBoolAnd(m->GetTrueLiterals(ct.arguments[0]), r));
+  }
+}
+
+void ExtractArrayBoolOr(const fz::Constraint& ct, SatModel* m) {
+  if (ct.arguments[1].HasOneValue()) {
+    CHECK_EQ(ct.arguments[1].Value(), 1) << "Other case should be presolved.";
+    m->model.Add(ClauseConstraint(m->GetTrueLiterals(ct.arguments[0])));
+  } else {
+    const Literal r = m->GetTrueLiteral(ct.arguments[1]);
+    m->model.Add(ReifiedBoolOr(m->GetTrueLiterals(ct.arguments[0]), r));
+  }
+}
 
 void ExtractIntMin(const fz::Constraint& ct, SatModel* m) {
   const IntegerVariable a = m->LookupVar(ct.arguments[0]);
@@ -67,11 +229,16 @@ void ExtractIntMin(const fz::Constraint& ct, SatModel* m) {
   m->model.Add(IsEqualToMinOf(c, {a, b}));
 }
 
-// TODO(user): Optimize when num_vars is 1, 2, or vars contains const...
 void ExtractArrayIntMinimum(const fz::Constraint& ct, SatModel* m) {
   const IntegerVariable min = m->LookupVar(ct.arguments[0]);
   const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
   m->model.Add(IsEqualToMinOf(min, vars));
+}
+
+void ExtractArrayIntMaximum(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable max = m->LookupVar(ct.arguments[0]);
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  m->model.Add(IsEqualToMaxOf(max, vars));
 }
 
 void ExtractIntAbs(const fz::Constraint& ct, SatModel* m) {
@@ -80,7 +247,79 @@ void ExtractIntAbs(const fz::Constraint& ct, SatModel* m) {
   m->model.Add(IsEqualToMaxOf(abs, {v, NegationOf(v)}));
 }
 
-// TODO(user): simplify when some variable are fixed!
+void ExtractIntMax(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  const IntegerVariable max = m->LookupVar(ct.arguments[2]);
+  m->model.Add(IsEqualToMaxOf(max, {a, b}));
+}
+
+void ExtractIntTimes(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  const IntegerVariable p = m->LookupVar(ct.arguments[2]);
+  m->model.Add(ProductConstraint(a, b, p));
+}
+
+void ExtractIntDiv(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  const IntegerVariable d = m->LookupVar(ct.arguments[2]);
+  m->model.Add(DivisionConstraint(a, b, d));
+}
+
+void ExtractIntEq(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  m->model.Add(Equality(a, b));
+}
+
+// TODO(user): The all different forces the variables to be fully encoded. It
+// would make sense to have another int_ne constraint that work on large
+// interval and decide which one to use depending on the arguments.
+void ExtractIntNe(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  m->model.Add(AllDifferent({a, b}));
+}
+
+void ExtractIntLe(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  m->model.Add(LowerOrEqual(a, b));
+}
+
+void ExtractIntGe(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  m->model.Add(GreaterOrEqual(a, b));
+}
+
+void ExtractIntLeGeReif(bool is_le, const fz::Constraint& ct, SatModel* m) {
+  IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  if (!is_le) std::swap(a, b);
+
+  CHECK(!ct.arguments[2].HasOneValue()) << "Should be presolved.";
+  const Literal r = m->GetTrueLiteral(m->LookupVar(ct.arguments[2]));
+  m->model.Add(ReifiedLowerOrEqualWithOffset(a, b, 0, r));
+}
+
+void ExtractIntLt(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  m->model.Add(LowerOrEqualWithOffset(a, b, 1));  // a + 1 <= b
+}
+
+void ExtractIntLtReif(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+
+  CHECK(!ct.arguments[2].HasOneValue()) << "Should be presolved.";
+  const Literal is_lt = m->GetTrueLiteral(m->LookupVar(ct.arguments[2]));
+  m->model.Add(ReifiedLowerOrEqualWithOffset(a, b, 1, is_lt));
+}
+
 void ExtractIntLinEq(const fz::Constraint& ct, SatModel* m) {
   const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
   const std::vector<int64>& coeffs = ct.arguments[0].values;
@@ -88,12 +327,245 @@ void ExtractIntLinEq(const fz::Constraint& ct, SatModel* m) {
   m->model.Add(FixedWeightedSum(vars, coeffs, rhs));
 }
 
-// TODO(user): simplify when some variable are fixed!
+void ExtractIntLinNe(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const std::vector<int64>& coeffs = ct.arguments[0].values;
+  const int rhs = ct.arguments[2].values[0];
+  m->model.Add(WeightedSumNotEqual(vars, coeffs, rhs));
+}
+
 void ExtractIntLinLe(const fz::Constraint& ct, SatModel* m) {
   const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
   const std::vector<int64>& coeffs = ct.arguments[0].values;
   const int rhs = ct.arguments[2].values[0];
   m->model.Add(WeightedSumLowerOrEqual(vars, coeffs, rhs));
+}
+
+void ExtractIntLinGe(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const std::vector<int64>& coeffs = ct.arguments[0].values;
+  const int rhs = ct.arguments[2].values[0];
+  m->model.Add(WeightedSumGreaterOrEqual(vars, coeffs, rhs));
+}
+
+void ExtractIntLinLeReif(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const std::vector<int64>& coeffs = ct.arguments[0].values;
+  const int rhs = ct.arguments[2].values[0];
+  const Literal r = m->GetTrueLiteral(ct.arguments[3]);
+  m->model.Add(WeightedSumLowerOrEqualReif(r, vars, coeffs, rhs));
+}
+
+void ExtractIntLinGeReif(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const std::vector<int64>& coeffs = ct.arguments[0].values;
+  const int rhs = ct.arguments[2].values[0];
+  const Literal r = m->GetTrueLiteral(ct.arguments[3]);
+  m->model.Add(WeightedSumGreaterOrEqualReif(r, vars, coeffs, rhs));
+}
+
+void ExtractIntLinEqReif(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const std::vector<int64>& coeffs = ct.arguments[0].values;
+  const int rhs = ct.arguments[2].values[0];
+  const Literal r = m->GetTrueLiteral(ct.arguments[3]);
+  m->model.Add(FixedWeightedSumReif(r, vars, coeffs, rhs));
+}
+
+void ExtractIntLinNeReif(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const std::vector<int64>& coeffs = ct.arguments[0].values;
+  const int rhs = ct.arguments[2].values[0];
+  const Literal r = m->GetTrueLiteral(ct.arguments[3]);
+  m->model.Add(FixedWeightedSumReif(r.Negated(), vars, coeffs, rhs));
+}
+
+// r => (a == cte)
+void ImpliesEqualityToConstant(bool reverse_implication, IntegerVariable a,
+                               int64 cte, Literal r, SatModel* m) {
+  if (m->model.Get(IsFixed(a))) {
+    FZLOG << "Case could have been presolved." << FZENDL;
+    if (m->model.Get(Value(a)) == IntegerValue(cte)) {
+      if (reverse_implication) {
+        m->model.GetOrCreate<SatSolver>()->AddUnitClause(r);
+      }
+    } else {
+      m->model.GetOrCreate<SatSolver>()->AddUnitClause(r.Negated());
+    }
+    return;
+  }
+
+  const std::vector<IntegerEncoder::ValueLiteralPair>& encoding = m->FullEncoding(a);
+  for (const auto pair : encoding) {
+    if (pair.value == IntegerValue(cte)) {
+      // Lit is equal to pair.literal.
+      //
+      // TODO(user): We could just use the same variable for this instead of
+      // creating two and then making them equals.
+      if (reverse_implication) {
+        m->model.Add(Equality(r, pair.literal));
+      } else {
+        m->model.Add(Implication(r, pair.literal));
+      }
+      return;
+    }
+  }
+
+  // Value is not found, the literal must be false.
+  FZLOG << "Case could have been presolved." << FZENDL;
+  m->model.GetOrCreate<SatSolver>()->AddUnitClause(r.Negated());
+}
+
+// r => (a == b), and if reverse_implication is true, we have the other way
+// around too.
+//
+// TODO(user): move this and ImpliesEqualityToConstant() under .../sat/ and unit
+// test it!
+void ImpliesEquality(bool reverse_implication, Literal r, IntegerVariable a,
+                     IntegerVariable b, SatModel* m) {
+  if (m->model.Get(IsFixed(a))) {
+    ImpliesEqualityToConstant(reverse_implication, b, m->model.Get(Value(a)), r,
+                              m);
+    return;
+  }
+  if (m->model.Get(IsFixed(b))) {
+    ImpliesEqualityToConstant(reverse_implication, a, m->model.Get(Value(b)), r,
+                              m);
+    return;
+  }
+
+  hash_map<IntegerValue, std::vector<Literal>> by_value;
+  for (const auto p : m->FullEncoding(a)) {
+    by_value[p.value].push_back(p.literal);
+  }
+  for (const auto p : m->FullEncoding(b)) {
+    by_value[p.value].push_back(p.literal);
+  }
+  for (const auto& p : by_value) {
+    if (p.second.size() == 1) {
+      // This value appear in only one of the variable, so if this value is
+      // true then r must be false.
+      m->model.Add(Implication(p.second[0], r.Negated()));
+    } else {
+      CHECK_EQ(p.second.size(), 2);
+      const Literal a = p.second[0];
+      const Literal b = p.second[1];
+      // This value is common:
+      // - a & b => r
+      // - a & not(b) => not(r)
+      // - not(a) & b => not(r)
+      if (reverse_implication) {
+        m->model.Add(ClauseConstraint({a.Negated(), b.Negated(), r}));
+      }
+      m->model.Add(ClauseConstraint({a.Negated(), b, r.Negated()}));
+      m->model.Add(ClauseConstraint({a, b.Negated(), r.Negated()}));
+    }
+  }
+}
+
+void ExtractIntEqNeReif(const fz::Constraint& ct, bool eq, SatModel* m) {
+  // The Eq or Ne version are the same up to the sign of the "eq" literal.
+  Literal is_eq = m->GetTrueLiteral(m->LookupVar(ct.arguments[2]));
+  if (!eq) is_eq = is_eq.Negated();
+
+  // If one of the variable domain is large, we implement this constraint
+  // differently.
+  const int64 s0 =
+      ct.arguments[0].HasOneValue() ? 1 : ct.arguments[0].Var()->domain.Size();
+  const int64 s1 =
+      ct.arguments[1].HasOneValue() ? 1 : ct.arguments[1].Var()->domain.Size();
+  if (s0 > 1000 || s1 > 1000) {
+    const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+    const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+    m->model.Add(ReifiedEquality(a, b, is_eq));
+    return;
+  }
+
+  if (ct.arguments[0].HasOneValue()) {
+    ImpliesEqualityToConstant(/*reverse_implication=*/true,
+                              m->LookupVar(ct.arguments[1]),
+                              ct.arguments[0].Value(), is_eq, m);
+    return;
+  }
+
+  if (ct.arguments[1].HasOneValue()) {
+    ImpliesEqualityToConstant(/*reverse_implication=*/true,
+                              m->LookupVar(ct.arguments[0]),
+                              ct.arguments[1].Value(), is_eq, m);
+    return;
+  }
+
+  // General case. This is exercised by the grid-colouring problems.
+  ImpliesEquality(/*reverse_implication=*/true, is_eq,
+                  m->LookupVar(ct.arguments[0]), m->LookupVar(ct.arguments[1]),
+                  m);
+}
+
+// TODO(user): move this logic in some model function under .../sat/ and unit
+// test it! Or adapt the table constraint? this is like a table with 1 columns,
+// the row literal beeing the one of ct.arguments[0].
+void ExtractArrayIntElement(const fz::Constraint& ct, SatModel* m) {
+  const auto& encoding = m->FullEncoding(m->LookupVar(ct.arguments[0]));
+  const std::vector<int64>& values = ct.arguments[1].values;
+  if (encoding.size() != values.size()) {
+    FZVLOG << "array_int_element could have been slightly presolved." << FZENDL;
+  }
+  std::map<int64, std::vector<Literal>> value_to_literals;
+  for (const auto literal_value : encoding) {
+    const int i = literal_value.value.value() - 1;  // minizinc use 1-index.
+    CHECK_GE(i, 0);
+    CHECK_LT(i, values.size());
+    value_to_literals[values[i]].push_back(literal_value.literal);
+  }
+
+  std::map<IntegerValue, Literal> target_by_value;
+  const IntegerVariable target = m->LookupVar(ct.arguments[2]);
+  for (const auto p : m->FullEncoding(target)) {
+    target_by_value[p.value] = p.literal;
+  }
+
+  for (auto entry : value_to_literals) {
+    // target == OR(entry.second), same as ExtractBoolOr().
+    const Literal r = FindOrDie(target_by_value, IntegerValue(entry.first));
+    for (const Literal literal : entry.second) {
+      m->model.Add(Implication(literal, r));
+    }
+
+    // Note that this clause is not striclty needed because all the other
+    // value of target will be false and so only the literals in entry.second
+    // can be true out of all the literal of the argument 0.
+    // TODO(user): remove?
+    entry.second.push_back(r.Negated());
+    m->model.Add(ClauseConstraint(entry.second));
+
+    // We remove the entry from target_by_value to see if they all appear.
+    target_by_value.erase(IntegerValue(entry.first));
+  }
+
+  if (!target_by_value.empty()) {
+    FZLOG << "array_int_element could have been presolved." << FZENDL;
+    for (const auto& entry : target_by_value) {
+      m->model.GetOrCreate<SatSolver>()->AddUnitClause(entry.second.Negated());
+    }
+  }
+}
+
+// vars[i] == t.
+void ExtractArrayVarIntElement(const fz::Constraint& ct, SatModel* m) {
+  const auto& encoding = m->FullEncoding(m->LookupVar(ct.arguments[0]));
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
+  const IntegerVariable t = m->LookupVar(ct.arguments[2]);
+  if (encoding.size() != vars.size()) {
+    FZVLOG << "array_var_int_element could have been slightly presolved."
+           << FZENDL;
+  }
+  for (const auto literal_value : encoding) {
+    const int i = literal_value.value.value() - 1;  // minizinc use 1-index.
+    CHECK_GE(i, 0);
+    CHECK_LT(i, vars.size());
+    ImpliesEquality(/*reverse_implication=*/false, literal_value.literal,
+                    vars[i], t, m);
+  }
 }
 
 void ExtractRegular(const fz::Constraint& ct, SatModel* m) {
@@ -136,20 +608,110 @@ void ExtractRegular(const fz::Constraint& ct, SatModel* m) {
       TransitionConstraint(vars, transitions, initial_state, final_states));
 }
 
+void ExtractTableInt(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[0]);
+  const std::vector<int64>& t = ct.arguments[1].values;
+  const int num_vars = vars.size();
+  const int num_tuples = t.size() / num_vars;
+  std::vector<std::vector<int64>> tuples(num_tuples);
+  int count = 0;
+  for (int i = 0; i < num_tuples; ++i) {
+    for (int j = 0; j < num_vars; ++j) {
+      tuples[i].push_back(t[count++]);
+    }
+  }
+  m->model.Add(TableConstraint(vars, tuples));
+}
+
+void ExtractAllDifferentInt(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[0]);
+  m->model.Add(AllDifferent(vars));
+}
+
 // Returns false iff the constraint type is not supported.
 bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
-  if (ct.type == "int_min") {
+  if (ct.type == "bool_eq") {
+    ExtractBoolEq(ct, m);
+  } else if (ct.type == "bool_eq_reif") {
+    ExtractBoolEqNeReif(/*is_eq=*/true, ct, m);
+  } else if (ct.type == "bool_ne" || ct.type == "bool_not") {
+    ExtractBoolNe(ct, m);
+  } else if (ct.type == "bool_ne_reif") {
+    ExtractBoolEqNeReif(/*is_eq=*/false, ct, m);
+  } else if (ct.type == "bool_le") {
+    ExtractBoolLe(ct, m);
+  } else if (ct.type == "bool_le_reif") {
+    ExtractBoolLeLtReif(/*is_le=*/true, ct, m);
+  } else if (ct.type == "bool_lt_reif") {
+    ExtractBoolLeLtReif(/*is_le=*/false, ct, m);
+  } else if (ct.type == "bool_clause") {
+    ExtractBoolClause(ct, m);
+  } else if (ct.type == "array_bool_and") {
+    ExtractArrayBoolAnd(ct, m);
+  } else if (ct.type == "array_bool_or") {
+    ExtractArrayBoolOr(ct, m);
+  } else if (ct.type == "int_min") {
     ExtractIntMin(ct, m);
-  } else if (ct.type == "array_int_minimum") {
-    ExtractArrayIntMinimum(ct, m);
   } else if (ct.type == "int_abs") {
     ExtractIntAbs(ct, m);
+  } else if (ct.type == "int_max") {
+    ExtractIntMax(ct, m);
+  } else if (ct.type == "int_times") {
+    ExtractIntTimes(ct, m);
+  } else if (ct.type == "int_div") {
+    ExtractIntDiv(ct, m);
+  } else if (ct.type == "array_int_minimum" || ct.type == "minimum_int") {
+    ExtractArrayIntMinimum(ct, m);
+  } else if (ct.type == "array_int_maximum" || ct.type == "maximum_int") {
+    ExtractArrayIntMaximum(ct, m);
+  } else if (ct.type == "array_int_element" ||
+             ct.type == "array_bool_element") {
+    ExtractArrayIntElement(ct, m);
+  } else if (ct.type == "array_var_int_element" ||
+             ct.type == "array_var_bool_element") {
+    ExtractArrayVarIntElement(ct, m);
+  } else if (ct.type == "all_different_int") {
+    ExtractAllDifferentInt(ct, m);
+  } else if (ct.type == "int_eq") {
+    ExtractIntEq(ct, m);
+  } else if (ct.type == "int_ne") {
+    ExtractIntNe(ct, m);
+  } else if (ct.type == "int_le") {
+    ExtractIntLe(ct, m);
+  } else if (ct.type == "int_ge") {
+    ExtractIntGe(ct, m);
+  } else if (ct.type == "int_le_reif") {
+    ExtractIntLeGeReif(/*is_le=*/true, ct, m);
+  } else if (ct.type == "int_ge_reif") {
+    ExtractIntLeGeReif(/*is_le=*/false, ct, m);
+  } else if (ct.type == "int_lt") {
+    ExtractIntLt(ct, m);
+  } else if (ct.type == "int_lt_reif") {
+    ExtractIntLtReif(ct, m);
   } else if (ct.type == "int_lin_eq") {
     ExtractIntLinEq(ct, m);
+  } else if (ct.type == "int_lin_ne") {
+    ExtractIntLinNe(ct, m);
   } else if (ct.type == "int_lin_le") {
     ExtractIntLinLe(ct, m);
+  } else if (ct.type == "int_lin_ge") {
+    ExtractIntLinGe(ct, m);
+  } else if (ct.type == "int_lin_eq_reif") {
+    ExtractIntLinEqReif(ct, m);
+  } else if (ct.type == "int_lin_ne_reif") {
+    ExtractIntLinNeReif(ct, m);
+  } else if (ct.type == "int_lin_le_reif") {
+    ExtractIntLinLeReif(ct, m);
+  } else if (ct.type == "int_lin_ge_reif") {
+    ExtractIntLinGeReif(ct, m);
+  } else if (ct.type == "int_eq_reif") {
+    ExtractIntEqNeReif(ct, /*eq=*/true, m);
+  } else if (ct.type == "int_ne_reif") {
+    ExtractIntEqNeReif(ct, /*eq=*/false, m);
   } else if (ct.type == "regular") {
     ExtractRegular(ct, m);
+  } else if (ct.type == "table_int") {
+    ExtractTableInt(ct, m);
   } else {
     return false;
   }
@@ -161,13 +723,13 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
 // =============================================================================
 
 // The format is fixed in the flatzinc specification.
-std::string SolutionString(
-    const Model& sat_model,
-    const hash_map<fz::IntegerVariable*, IntegerVariable>& var_map,
-    const fz::SolutionOutputSpecs& output) {
+std::string SolutionString(const SatModel& m,
+                      const fz::SolutionOutputSpecs& output) {
   if (output.variable != nullptr) {
-    const int64 value =
-        sat_model.Get(Value(FindOrDie(var_map, output.variable)));
+    fz::IntegerVariable* v = output.variable;
+    const int64 value = v->domain.HasOneValue()
+                            ? v->domain.Value()
+                            : m.model.Get(Value(FindOrDie(m.var_map, v)));
     if (output.display_as_boolean) {
       return StringPrintf("%s = %s;", output.name.c_str(),
                           value == 1 ? "true" : "false");
@@ -190,8 +752,10 @@ std::string SolutionString(
     }
     result.append("[");
     for (int i = 0; i < output.flat_variables.size(); ++i) {
-      const int64 value =
-          sat_model.Get(Value(FindOrDie(var_map, output.flat_variables[i])));
+      fz::IntegerVariable* v = output.flat_variables[i];
+      const int64 value = v->domain.HasOneValue()
+                              ? v->domain.Value()
+                              : m.model.Get(Value(FindOrDie(m.var_map, v)));
       if (output.display_as_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {
@@ -207,27 +771,86 @@ std::string SolutionString(
   return "";
 }
 
-void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p) {
+std::string CheckSolutionAndGetFzString(const fz::Model& fz_model,
+                                   const SatModel& m) {
+  CHECK(CheckSolution(fz_model, [&m](fz::IntegerVariable* v) {
+    return v->domain.HasOneValue()
+               ? v->domain.Value()
+               : m.model.Get(Value(FindOrDie(m.var_map, v)));
+  }));
+
+  std::string solution_string;
+  for (const fz::SolutionOutputSpecs& output : fz_model.output()) {
+    solution_string.append(SolutionString(m, output));
+    solution_string.append("\n");
+  }
+  return solution_string + "----------\n";
+}
+
+}  // namespace
+
+void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
+                  bool* interrupt_solve) {
+  // Timing.
+  WallTimer wall_timer;
+  UserTimer user_timer;
+  wall_timer.Start();
+  user_timer.Start();
+
   SatModel m;
+  std::unique_ptr<TimeLimit> time_limit;
+  if (p.time_limit_in_ms > 0) {
+    time_limit.reset(new TimeLimit(p.time_limit_in_ms * 1e-3));
+  } else {
+    time_limit = TimeLimit::Infinite();
+  }
+  time_limit->RegisterExternalBooleanAsLimit(interrupt_solve);
+  m.model.SetSingleton(std::move(time_limit));
 
   // Extract all the variables.
+  int num_constants = 0;
+  std::set<int64> constant_values;
+  std::map<std::pair<int64, int64>, int> num_vars_per_bounds;
+  hash_map<std::pair<int64, int64>, int> num_fully_encoded_vars_per_bounds;
   FZLOG << "Extracting " << fz_model.variables().size() << " variables. "
         << FZENDL;
   for (fz::IntegerVariable* var : fz_model.variables()) {
     if (!var->active) continue;
+
+    // Will be encoded as a constant lazily as needed.
+    if (var->domain.HasOneValue()) {
+      ++num_constants;
+      constant_values.insert(var->domain.Value());
+      continue;
+    }
+
+    num_vars_per_bounds[{var->domain.Min(), var->domain.Max()}]++;
     m.var_map[var] =
         m.model.Add(NewIntegerVariable(var->domain.Min(), var->domain.Max()));
 
     // We fully encode a variable if it is given as a list of values. Otherwise,
     // we will lazily-encode it depending on the constraints it appears in or if
     // needed to fully specify a solution.
-    if (!var->domain.is_interval) {
+    //
+    // Note that we also fully encode interval of size 2!
+    if (!var->domain.is_interval ||
+        (var->domain.Min() + 1 == var->domain.Max())) {
+      num_fully_encoded_vars_per_bounds[{var->domain.Min(),
+                                         var->domain.Max()}]++;
       m.model.GetOrCreate<IntegerEncoder>()->FullyEncodeVariable(
           FindOrDie(m.var_map, var),
           std::vector<IntegerValue>(var->domain.values.begin(),
                                var->domain.values.end()));
     }
   }
+  for (const auto& entry : num_vars_per_bounds) {
+    FZLOG << " - " << entry.second << " variables in [" << entry.first.first
+          << ", " << entry.first.second << "] ("
+          << num_fully_encoded_vars_per_bounds[entry.first]
+          << " fully encoded)." << FZENDL;
+  }
+  FZLOG << " - " << num_constants << " constants in {"
+        << strings::Join(constant_values, ",") << "}.";
 
   // Extract all the constraints.
   FZLOG << "Extracting " << fz_model.constraints().size() << " constraints. "
@@ -235,9 +858,12 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p) {
   std::set<std::string> unsupported_types;
   for (fz::Constraint* ct : fz_model.constraints()) {
     if (ct != nullptr && ct->active) {
+      FZVLOG << "Extracting '" << ct->type << "'." << FZENDL;
       if (!ExtractConstraint(*ct, &m)) {
         unsupported_types.insert(ct->type);
       }
+      CHECK(!m.model.GetOrCreate<SatSolver>()->IsModelUnsat())
+          << "UNSAT after adding '" << ct->type << "'.";
     }
   }
   if (!unsupported_types.empty()) {
@@ -248,61 +874,114 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p) {
     return;
   }
 
-  std::string solution_string;
+  // Some stats.
+  int num_fully_encoded_variables = 0;
+  for (int i = 0; i < m.model.Get<IntegerTrail>()->NumIntegerVariables(); ++i) {
+    if (m.model.Get<IntegerEncoder>()->VariableIsFullyEncoded(
+            IntegerVariable(i))) {
+      ++num_fully_encoded_variables;
+    }
+  }
+  // We divide by two because of the automatically created NegationOf() var.
+  FZLOG << "Num integer variables = "
+        << m.model.Get<IntegerTrail>()->NumIntegerVariables() / 2;
+  FZLOG << "Num fully encoded variable = " << num_fully_encoded_variables / 2;
+  FZLOG << "Num Boolean variables created = "
+        << m.model.Get<SatSolver>()->NumVariables();
+  FZLOG << "Num constants = " << m.constant_map.size();
+
+  int num_solutions = 0;
+  int64 best_objective = 0;
+  std::string solutions_string;
   std::string search_status;
+
+  // TODO(user): We could restrict these if we are sure all the other variables
+  // will be fixed once these are fixed.
+  std::vector<IntegerVariable> decision_vars;
+  for (const auto& entry : m.var_map) decision_vars.push_back(entry.second);
 
   // TODO(user): deal with other search parameters.
   FZLOG << "Solving..." << FZENDL;
+  SatSolver::Status status;
   if (fz_model.objective() == nullptr) {
     // Decision problem.
-    CHECK_EQ(1, p.num_solutions);
+    while (num_solutions < p.num_solutions) {
+      status = SolveIntegerProblemWithLazyEncoding(&m.model, decision_vars);
 
-    // TODO(user): Encode IntegerVariable that are not fixed at the end of the
-    // search.
-    const SatSolver::Status status = m.model.GetOrCreate<SatSolver>()->Solve();
-    FZLOG << "Status: " << status << FZENDL;
-
-    if (status == SatSolver::MODEL_SAT) {
-      for (const fz::SolutionOutputSpecs& output : fz_model.output()) {
-        solution_string.append(SolutionString(m.model, m.var_map, output));
-        solution_string.append("\n");
+      if (status == SatSolver::MODEL_SAT) {
+        ++num_solutions;
+        FZLOG << "Solution #" << num_solutions
+              << " num_bool:" << m.model.Get<SatSolver>()->NumVariables()
+              << FZENDL;
+        solutions_string += CheckSolutionAndGetFzString(fz_model, m);
+        if (num_solutions < p.num_solutions) {
+          m.model.Add(ExcludeCurrentSolutionAndBacktrack());
+        }
+        continue;
       }
-    } else {
-      search_status = "=====UNSATISFIABLE=====";
+
+      if (status == SatSolver::MODEL_UNSAT) {
+        if (num_solutions == 0) {
+          search_status = "=====UNSATISFIABLE=====";
+        }
+        break;
+      }
+
+      // Limit reached.
+      break;
     }
   } else {
     // Optimization problem.
-    int solution_number = 0;
     const IntegerVariable objective_var =
         FindOrDie(m.var_map, fz_model.objective());
-    std::vector<IntegerVariable> decision_vars;
-    for (const auto& entry : m.var_map) decision_vars.push_back(entry.second);
-    MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-        /*log_info=*/false, objective_var, decision_vars,
-        [objective_var, &solution_number, &solution_string, &m,
-         &fz_model](const Model& sat_model) {
-          // Overwrite solution_string with the new (better) solution.
-          FZLOG << "Solution #" << ++solution_number
-                << " obj:" << sat_model.Get(LowerBound(objective_var))
+    status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
+        /*log_info=*/false,
+        fz_model.maximize() ? NegationOf(objective_var) : objective_var,
+        decision_vars,
+        [objective_var, &num_solutions, &m, &fz_model, &best_objective,
+         &solutions_string](const Model& sat_model) {
+          num_solutions++;
+          best_objective = sat_model.Get(LowerBound(objective_var));
+          FZLOG << "Solution #" << num_solutions << " obj:" << best_objective
                 << " num_bool:" << sat_model.Get<SatSolver>()->NumVariables()
                 << FZENDL;
-          solution_string.clear();
-          for (const fz::SolutionOutputSpecs& output : fz_model.output()) {
-            solution_string.append(
-                SolutionString(sat_model, m.var_map, output));
-            solution_string.append("\n");
-          }
+          solutions_string = CheckSolutionAndGetFzString(fz_model, m);
         },
         &m.model);
-    if (solution_number > 0) {
+    if (num_solutions > 0) {
       search_status = "==========";
     } else {
       search_status = "=====UNSATISFIABLE=====";
     }
   }
 
-  // Print the solution.
-  std::cout << solution_string << "----------" << std::endl;
+  if (fz_model.objective() == nullptr || num_solutions == 0) {
+    FZLOG << "Status: " << status << FZENDL;
+    FZLOG << "Objective: NA" << FZENDL;
+  } else {
+    if (status == SatSolver::MODEL_SAT) {
+      FZLOG << "Status: OPTIMAL" << FZENDL;
+    } else {
+      FZLOG << "Status: " << status << FZENDL;
+    }
+    FZLOG << "Objective: " << best_objective << FZENDL;
+  }
+  FZLOG << "Booleans: " << m.model.Get<SatSolver>()->NumVariables() << FZENDL;
+  FZLOG << "Conflicts: " << m.model.Get<SatSolver>()->num_failures() << FZENDL;
+  FZLOG << "Branches: " << m.model.Get<SatSolver>()->num_branches() << FZENDL;
+  FZLOG << "Propagations: " << m.model.Get<SatSolver>()->num_propagations()
+        << FZENDL;
+  FZLOG << "Walltime: " << wall_timer.Get();
+  FZLOG << "Usertime: " << user_timer.Get();
+  FZLOG << "Deterministic_time: "
+        << m.model.Get<SatSolver>()->deterministic_time() << FZENDL;
+
+  if (status == SatSolver::LIMIT_REACHED) {
+    search_status = "%% LIMIT_REACHED";
+  }
+
+  // Print the solution(s).
+  std::cout << solutions_string;
   if (!search_status.empty()) {
     std::cout << search_status << std::endl;
   }

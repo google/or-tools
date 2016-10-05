@@ -20,13 +20,15 @@
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "flatzinc/checker.h"
 #include "flatzinc/constraints.h"
 #include "flatzinc/logging.h"
 #include "flatzinc/model.h"
 #include "flatzinc/sat_constraint.h"
 #include "util/string_array.h"
 
-DEFINE_bool(use_sat, true, "Use a sat solver for propagating on Booleans.");
+DEFINE_bool(fz_use_sat, true, "Use a sat solver for propagating on Booleans.");
+DEFINE_bool(fz_check_solutions, true, "Check solutions");
 
 namespace operations_research {
 
@@ -46,14 +48,17 @@ FlatzincParameters::FlatzincParameters()
       statistics(false),
       verbose_impact(false),
       restart_log_size(-1.0),
+      run_all_heuristics(false),
+      heuristic_period(100),
       log_period(1000000),
       luby_restart(0),
       num_solutions(1),
       random_seed(0),
-      threads(1),
+      threads(0),
       thread_id(-1),
       time_limit_in_ms(0),
-      search_type(MIN_SIZE) {}
+      search_type(MIN_SIZE),
+      store_all_solutions(false) {}
 
 // TODO(user): Investigate having the constants directly in the
 // definition of the struct. This has to be tested with visual studio
@@ -180,7 +185,7 @@ struct ConstraintsWithRequiredVariablesComparator {
 
 bool Solver::Extract() {
   // Create the sat solver.
-  if (FLAGS_use_sat) {
+  if (FLAGS_fz_use_sat) {
     FZLOG << "  - Use sat" << FZENDL;
     data_.CreateSatPropagatorAndAddToSolver();
   }
@@ -367,7 +372,7 @@ void Solver::ParseSearchAnnotations(bool ignore_unknown,
     FlattenAnnotations(ann, &flat_annotations);
   }
 
-  FZLOG << "  - parsing search annotations" << std::endl;
+  FZLOG << "  - parsing search annotations" << FZENDL;
   hash_set<IntVar*> added;
   for (const Annotation& ann : flat_annotations) {
     FZLOG << "  - parse " << ann.DebugString() << FZENDL;
@@ -549,7 +554,7 @@ void Solver::AddCompletionDecisionBuilders(
 DecisionBuilder* Solver::CreateDecisionBuilders(const FlatzincParameters& p,
                                                 SearchLimit* limit) {
   FZLOG << "Defining search" << (p.free_search ? "  (free)" : "  (fixed)")
-        << std::endl;
+        << FZENDL;
   // Fill builders_ with predefined search.
   std::vector<DecisionBuilder*> defined;
   std::vector<IntVar*> defined_variables;
@@ -734,29 +739,31 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
 
   if (limit != nullptr) {
     FZLOG << "  - adding a time limit of " << p.time_limit_in_ms << " ms"
-          << std::endl;
+          << FZENDL;
   }
   monitors.push_back(limit);
 
   if (p.all_solutions && p.num_solutions == kint32max) {
-    FZLOG << "  - searching for all solutions" << std::endl;
+    FZLOG << "  - searching for all solutions" << FZENDL;
   } else if (p.all_solutions && p.num_solutions > 1) {
-    FZLOG << "  - searching for " << p.num_solutions << " solutions"
-          << std::endl;
+    FZLOG << "  - searching for " << p.num_solutions << " solutions" << FZENDL;
   } else if (model_.objective() == nullptr ||
              (p.all_solutions && p.num_solutions == 1)) {
-    FZLOG << "  - searching for the first solution" << std::endl;
+    FZLOG << "  - searching for the first solution" << FZENDL;
   } else {
-    FZLOG << "  - search for the best solution" << std::endl;
+    FZLOG << "  - search for the best solution" << FZENDL;
   }
 
   if (p.luby_restart > 0) {
     FZLOG << "  - using luby restart with a factor of " << p.luby_restart
-          << std::endl;
+          << FZENDL;
     monitors.push_back(solver_->MakeLubyRestart(p.luby_restart));
   }
   if (p.last_conflict && p.free_search) {
-    FZLOG << "  - using last conflict search hints" << std::endl;
+    FZLOG << "  - using last conflict search hints" << FZENDL;
+  }
+  if (FLAGS_fz_check_solutions) {
+    FZLOG << "  - using solution checker" << FZENDL;
   }
 
   bool breaked = false;
@@ -764,6 +771,10 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
   const int64 build_time = solver_->wall_time();
   solver_->NewSearch(db, monitors);
   while (solver_->NextSolution()) {
+    if (FLAGS_fz_check_solutions) {
+      CHECK(CheckSolution(
+          model_, [this](IntegerVariable* v) { return SolutionValue(v); }));
+    }
     if (!report->ShouldFinish()) {
       solution_string.clear();
       if (!model_.output().empty()) {

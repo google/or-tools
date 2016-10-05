@@ -12,6 +12,10 @@
 // limitations under the License.
 
 #include "flatzinc/presolve.h"
+
+#include <set>
+#include <unordered_set>
+
 #include "base/stringpiece_utils.h"
 #include "base/strutil.h"
 #include "base/map_util.h"
@@ -55,6 +59,24 @@ bool AtMostOne0OrAtMostOne1(const std::vector<T>& values) {
   }
   return true;
 }
+
+std::unordered_set<int64> GetValueSet(const Argument& arg) {
+  std::unordered_set<int64> result;
+  if (arg.HasOneValue()) {
+    result.insert(arg.Value());
+  } else {
+    const Domain& domain = arg.Var()->domain;
+    if (domain.is_interval && !domain.values.empty()) {
+      for (int64 v = domain.values[0]; v <= domain.values[1]; ++v) {
+        result.insert(v);
+      }
+    } else {
+      result.insert(domain.values.begin(), domain.values.end());
+    }
+  }
+  return result;
+}
+
 }  // namespace
 
 // For the author's reference, here is an indicative list of presolve rules
@@ -72,20 +94,24 @@ bool AtMostOne0OrAtMostOne1(const std::vector<T>& values) {
 
 bool Presolver::ApplyRule(Constraint* ct, const std::string& rule_name,
                           std::function<bool(Constraint* ct, std::string*)> rule) {
-  const std::string before = ct->DebugString();
+  const std::string before = HASVLOG ? ct->DebugString() : "";
   std::string log;
   const bool modified = rule(ct, &log);
   if (modified) {
-    FZVLOG << "Apply rule " << rule_name << " on " << before << FZENDL;
-    if (!log.empty()) {
-      FZVLOG << "  - log: " << log << FZENDL;
-    }
-    if (!ct->active) {
-      FZVLOG << "  - constraint is now inactive" << FZENDL;
-    } else {
-      const std::string after = ct->DebugString();
-      if (after != before) {
-        FZVLOG << "  - constraint is modified to " << after << FZENDL;
+    // TODO(user): log running time.
+    successful_rules_[rule_name]++;
+    if (HASVLOG) {
+      FZVLOG << "Apply rule " << rule_name << " on " << before << FZENDL;
+      if (!log.empty()) {
+        FZVLOG << "  - log: " << log << FZENDL;
+      }
+      if (!ct->active) {
+        FZVLOG << "  - constraint is now inactive" << FZENDL;
+      } else {
+        const std::string after = ct->DebugString();
+        if (after != before) {
+          FZVLOG << "  - constraint is modified to " << after << FZENDL;
+        }
       }
     }
     return true;
@@ -412,6 +438,40 @@ bool Presolver::PresolveSetIn(Constraint* ct, std::string* log) {
     // TODO(user): Returns true iff the intersection yielded some domain
     // reduction.
     return true;
+  }
+  return false;
+}
+
+// Propagates the values of set_in_reif
+// Input : set_in_reif(x, [c1..c2], b) or set_in_reif(x, {c1, .., cn}, b)
+// Output: bool_eq(t, b)
+bool Presolver::PresolveSetInReif(Constraint* ct, std::string* log) {
+  if (ct->arguments[0].IsVariable() && !ct->arguments[2].HasOneValue()) {
+    std::unordered_set<int64> domain = GetValueSet(ct->arguments[0]);
+    int in = 0;
+    int out = 0;
+    for (int64 value : domain) {
+      if (ct->arguments[1].Contains(value)) {
+        in++;
+      } else {
+        out++;
+      }
+      // Early break.
+      if (in > 0 && out > 0) {
+        break;
+      }
+    }
+    if (in == 0) {
+      ct->RemoveArg(1);
+      ct->type = "bool_eq";
+      ct->arguments[0] = Argument::IntegerValue(0);
+      return true;
+    } else if (out == 0) {
+      ct->RemoveArg(1);
+      ct->type = "bool_eq";
+      ct->arguments[0] = Argument::IntegerValue(1);
+      return true;
+    }
   }
   return false;
 }
@@ -752,7 +812,6 @@ bool Presolver::SimplifyUnaryLinear(Constraint* ct, std::string* log) {
     // Change type (remove "_lin" part).
     DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
     ct->type.erase(3, 4);
-    FZVLOG << "  - " << ct->DebugString() << FZENDL;
     return true;
   }
   return false;
@@ -790,7 +849,6 @@ bool Presolver::SimplifyBinaryLinear(Constraint* ct, std::string* log) {
   // Change type (remove "_lin" part).
   DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
   ct->type.erase(3, 4);
-  FZVLOG << "  - " << ct->DebugString() << FZENDL;
   return true;
 }
 
@@ -892,18 +950,33 @@ bool Presolver::CreateLinearTarget(Constraint* ct, std::string* log) {
 }
 
 // Propagates: array_int_element
+//
 // Rule 1:
+// Input: array_int_element(x, [c1, .., cn], y)
+// Action: Intersect the domain of x with [1 .. n]
+//
+// Rule 2:
 // Input : array_int_element(x, [c1, .., cn], y)
 // Output: array_int_element(x, [c1, .., cm], y) if all cm+1, .., cn are not
 //         the domain of y.
 //
-// Rule 2:
+// Rule 3:
 // Input : array_int_element(x, [c1, .., cn], y)
 // Action: Intersect the domain of y with the set of values.
 bool Presolver::PresolveArrayIntElement(Constraint* ct, std::string* log) {
+  const int array_size = ct->arguments[1].values.size();
+  bool changed = false;
   if (ct->arguments[0].variables.size() == 1) {
+    // Rule 1.
+    if (ct->arguments[0].IsVariable() &&
+        (ct->arguments[0].Var()->domain.Min() < 1 ||
+         ct->arguments[0].Var()->domain.Max() > array_size)) {
+      ct->arguments[0].Var()->domain.IntersectWithInterval(1, array_size);
+      changed = true;
+    }
+
+    // Rule 2.
     if (!ct->arguments[0].HasOneValue()) {
-      // Rule 1.
       const int64 target_min = ct->arguments[2].HasOneValue()
                                    ? ct->arguments[2].Value()
                                    : ct->arguments[2].Var()->domain.Min();
@@ -911,7 +984,7 @@ bool Presolver::PresolveArrayIntElement(Constraint* ct, std::string* log) {
                                    ? ct->arguments[2].Value()
                                    : ct->arguments[2].Var()->domain.Max();
 
-      int64 last_index = ct->arguments[1].values.size();
+      int64 last_index = array_size;
       last_index = std::min(ct->arguments[0].Var()->domain.Max(), last_index);
 
       while (last_index >= 1) {
@@ -946,14 +1019,31 @@ bool Presolver::PresolveArrayIntElement(Constraint* ct, std::string* log) {
       }
     }
   }
-  if (ct->arguments[2].IsVariable() && !ct->presolve_propagation_done) {
-    // Rule 2.
+
+  // Rule 3.
+  if (ct->arguments[0].IsVariable() && ct->arguments[2].IsVariable() &&
+      !ct->presolve_propagation_done) {
+    CHECK_EQ(Argument::INT_LIST, ct->arguments[1].type);
     log->append("propagate domain");
-    IntersectDomainWith(ct->arguments[1], &ct->arguments[2].Var()->domain);
-    ct->presolve_propagation_done = true;
-    return true;
+    std::set<int64> visited;
+    for (int value : GetValueSet(ct->arguments[0])) {
+      CHECK(value >= 1 && value <= array_size);
+      visited.insert(ct->arguments[1].values[value - 1]);
+    }
+
+    std::vector<int64> sorted_values(visited.begin(), visited.end());
+    const std::string before = ct->arguments[2].Var()->DebugString();
+    ct->arguments[2].Var()->domain.IntersectWithListOfIntegers(sorted_values);
+    const std::string after = ct->arguments[2].Var()->DebugString();
+    if (before != after) {
+      log->append(StringPrintf(", reduce target variable from %s to %s",
+                               before.c_str(), after.c_str()));
+      ct->presolve_propagation_done = true;
+      return true;
+    }
   }
-  return false;
+
+  return changed;
 }
 
 // Reverses a linear constraint: with negative coefficients.
@@ -973,17 +1063,23 @@ bool Presolver::PresolveArrayIntElement(Constraint* ct, std::string* log) {
 // Rule 3:
 // Input: int_lin_xxx_reif[[c1, .., cn], [c'1, .., c'n], c0]  (no variables)
 // Output: bool_eq(c0, true or false).
+//
+// Rule 4:
+// Input: int_lin_xxx([c1, .., cn], [x1,.., xk, .., xn], c0) with xk fixed
+// Output: int_lin_xxx([c1, .., ck-1, ck+1, .., cn], [x1, xk-1, xk+1, .., xn],
+//                     c0 - ck * xk.Value())
+//
+// TODO(user): The code is broken in case of integer-overflow.
 bool Presolver::PresolveLinear(Constraint* ct, std::string* log) {
   if (ct->arguments[0].values.empty()) {
     return false;
   }
   // Rule 2.
-  if (ct->arguments[1].variables.empty()) {
+  if (ct->arguments[1].IsArrayOfValues()) {
     log->append("rewrite constant linear equation");
-    CHECK(!ct->arguments[1].values.empty());
     int64 scalprod = 0;
     for (int i = 0; i < ct->arguments[0].values.size(); ++i) {
-      scalprod += ct->arguments[0].values[i] * ct->arguments[1].values[i];
+      scalprod += ct->arguments[0].values[i] * ct->arguments[1].ValueAt(i);
     }
     const int64 rhs = ct->arguments[2].Value();
     if (ct->type == "int_lin_eq") {
@@ -1045,6 +1141,36 @@ bool Presolver::PresolveLinear(Constraint* ct, std::string* log) {
       ct->arguments.push_back(Argument::IntegerValue(scalprod != rhs));
     }
     return true;
+  }
+
+  // Rule 4.
+  if (!ct->arguments[1].variables.empty()) {
+    const int size = ct->arguments[1].variables.size();
+    std::vector<IntegerVariable*>& vars = ct->arguments[1].variables;
+    std::vector<int64>& coeffs = ct->arguments[0].values;
+    // We start by skipping over the non-fixed position. This is a
+    // speed optimization.
+    for (int position = 0; position < size; ++position) {
+      if (!vars[position]->domain.HasOneValue()) {
+        continue;
+      }
+      int new_size = position;
+      int64 new_rhs = ct->arguments[2].Value();
+      new_rhs -= coeffs[position] * vars[position]->domain.Value();
+      for (int i = position + 1; i < size; ++i) {
+        if (vars[i]->domain.HasOneValue()) {
+          new_rhs -= coeffs[i] * vars[i]->domain.Value();
+        } else {
+          coeffs[new_size] = coeffs[i];
+          vars[new_size] = vars[i];
+          new_size++;
+        }
+      }
+      vars.resize(new_size);
+      coeffs.resize(new_size);
+      ct->arguments[2] = Argument::IntegerValue(new_rhs);
+      return true;
+    }
   }
 
   // Rule 1.
@@ -1271,28 +1397,76 @@ bool IsIncreasingAndContiguous(const std::vector<int64>& values) {
 
 // Rewrite array element: array_int_element:
 //
-// Rule1:
+// Rule 1a:
+// Input : array_int_element(x, [c1, .., cn], y) with x fixed at one value.
+// Output: int_eq(b, c_x.Value())
+//
+// Rule 1b:
+// Input : array_int_element(x, [c1, .., cn], y) with y fixed at one value.
+// Output: set_in(x, [i | c_i == y])
+//
+// Rule 2:
 // Input : array_int_element(x0, [c1, .., cn], y) with x0 = a * x + b
 // Output: array_int_element(x, [c_a1, .., c_am], b) with a * i = b = ai
 //
-// Rule 2:
+// Rule 3:
 // Input : array_int_element(x, [c1, .., cn], y) with x = a * x1 + x2 + b
 // Output: array_int_element([x1, x2], [c_a1, .., c_am], b, [a, b])
 //         to be interpreted by the extraction process.
-// Rule3:
-// Input : array_int_element(x, [c1, .., cn], y) with x fixed one value.
-// Output: int_eq(b, c_x.Value())
 //
 // Rule 4:
+// Input: array_int_element(x, [c1, .., cn], y)
+// Output array_int_element(x, [c1, .., c{std::max(x)}], y)
+//
+// Rule 5:
 // Input : array_int_element(x, [c1, .., cn], y) with x0 ci = c0 + i
 // Output: int_lin_eq([-1, 1], [y, x], 1 - c)  (e.g. y = x + c - 1)
+//
+// Rule 6:
+// Input : array_int_element(x, [c1, .., cn], y)
+// Output: Remove unreachable values from x.
 bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
   if (ct->arguments[0].variables.size() > 1) {
     return false;
   }
+
+  // Rule 1a.
+  if (ct->arguments[0].HasOneValue() && ct->arguments[0].Value() >= 1 &&
+      ct->arguments[0].Value() <= ct->arguments[1].values.size()) {
+    const int64 index = ct->arguments[0].Value() - 1;
+    const int64 value = ct->arguments[1].values[index];
+    // Rewrite as equality.
+    ct->type = "int_eq";
+    ct->arguments[0] = Argument::IntegerValue(value);
+    ct->RemoveArg(1);
+    return true;
+  }
+
+  // Rule 1b.
+  if (ct->arguments[2].HasOneValue()) {
+    const int64 target_value = ct->arguments[2].Value();
+
+    // Extract the possible indices.
+    std::vector<int64> indices;
+    const int size = ct->arguments[1].values.size();
+    for (int i = 0; i < size; ++i) {
+      if (ct->arguments[1].values[i] == target_value) {
+        indices.push_back(i + 1);  // 1-based.
+      }
+    }
+
+    // Rewrite as set_in.
+    ct->type = "set_in";
+    ct->arguments[1] = Argument::IntegerList(indices);
+    ct->RemoveArg(2);
+    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
+    return true;
+  }
+
   IntegerVariable* const index_var = ct->arguments[0].Var();
+
+  // Rule 2.
   if (ContainsKey(affine_map_, index_var)) {
-    // Rule 1.
     const AffineMapping& mapping = affine_map_[index_var];
     const Domain& domain = mapping.variable->domain;
     if (domain.is_interval && domain.values.empty()) {
@@ -1346,6 +1520,8 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
       return true;
     }
   }
+
+  // Rule 3.
   if (ContainsKey(array2d_index_map_, index_var)) {
     log->append("rewrite as a 2d element");
     const Array2DIndexMapping& mapping = array2d_index_map_[index_var];
@@ -1365,27 +1541,18 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
     // TODO(user): Check if presolve is valid.
     return true;
   }
-  if (index_var->domain.HasOneValue()) {
-    // Rule 3.
-    const int64 index = index_var->domain.values[0] - 1;
-    const int64 value = ct->arguments[1].values[index];
-    // Rewrite as equality.
-    ct->type = "int_eq";
-    ct->arguments[0] = Argument::IntegerValue(value);
-    ct->RemoveArg(1);
-    FZVLOG << "  -> " << ct->DebugString() << FZENDL;
-    return true;
-  }
-  if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
-      index_var->domain.Max() < ct->arguments[1].values.size()) {
+
+  // Rule 4.
+  if (index_var->domain.Max() < ct->arguments[1].values.size()) {
     // Reduce array of values.
     ct->arguments[1].values.resize(index_var->domain.Max());
     ct->presolve_propagation_done = false;
     log->append("reduce array");
     return true;
   }
+
+  // Rule 5.
   if (IsIncreasingAndContiguous(ct->arguments[1].values)) {
-    // Rule 4.
     const int64 start = ct->arguments[1].values.front();
     IntegerVariable* const index = ct->arguments[0].Var();
     IntegerVariable* const target = ct->arguments[2].Var();
@@ -1401,9 +1568,55 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
       ct->arguments[1] = Argument::IntVarRefArray({target, index});
       ct->arguments[2] = Argument::IntegerValue(1 - start);
     }
-
     return true;
   }
+
+  // Rule 6.
+  if (ct->arguments[0].IsVariable()) {
+    std::unordered_set<int64> all_values = GetValueSet(ct->arguments[2]);
+    const std::vector<int64>& array = ct->arguments[1].values;
+    const int array_size = array.size();
+    if (!all_values.empty()) {
+      const Domain& domain = ct->arguments[0].Var()->domain;
+      std::vector<int64> to_keep;
+      bool remove_some = false;
+      if (domain.is_interval) {
+        for (int64 v = std::max<int64>(1, domain.values[0]);
+             v <= std::min<int64>(array_size, domain.values[1]); ++v) {
+          const int64 value = array[v - 1];
+          if (ContainsKey(all_values, value)) {
+            to_keep.push_back(v);
+          } else {
+            remove_some = true;
+          }
+        }
+      } else {
+        for (int64 v : domain.values) {
+          // We have not yet reduced the domain of the index.
+          // TODO(user): Reorder presolve rules to propagate domain
+          // of validity first.
+          if (v < 1 || v > array_size) {
+            remove_some = true;
+          } else {
+            const int64 value = array[v - 1];
+            if (!ContainsKey(all_values, value)) {
+              remove_some = true;
+            } else {
+              to_keep.push_back(v);
+            }
+          }
+        }
+      }
+      if (remove_some) {
+        ct->arguments[0].Var()->domain.IntersectWithListOfIntegers(to_keep);
+        log->append(
+            StringPrintf("reduce index domain to %s",
+                         ct->arguments[0].Var()->DebugString().c_str()));
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 
@@ -1415,18 +1628,22 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
 // Output: array_int_element(x0, [x1.Value(), .., xn.Value()], y)
 //
 // Rule2:
+// Input : array_var_int_element(x0, [x1, .., xn], y) with x0 fixed
+// Output: equality betwen x_x0 and y.
+//
+// Rule3:
 // Input : array_var_int_element(x0, [x1, .., xn], y) with x0 = a * x + b
 // Output: array_var_int_element(x, [x_a1, .., x_an], b) with a * i = b = ai
 bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
-  bool all_integers = true;
+  // Rule 1.
+  bool all_fixed = true;
   for (IntegerVariable* const var : ct->arguments[1].variables) {
     if (!var->domain.HasOneValue()) {
-      all_integers = false;
+      all_fixed = false;
       break;
     }
   }
-  if (all_integers) {
-    // Rule 1:
+  if (all_fixed) {
     log->append("rewrite constraint as array_int_element");
     ct->type = "array_int_element";
     ct->arguments[1].type = Argument::INT_LIST;
@@ -1437,9 +1654,10 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
     ct->arguments[1].variables.clear();
     return true;
   }
+
+  // Rule 2.
   IntegerVariable* const index_var = ct->arguments[0].Var();
   if (index_var->domain.HasOneValue()) {
-    // Rule 2.
     // Arrays are 1 based.
     const int64 position = index_var->domain.Min() - 1;
     IntegerVariable* const expr = ct->arguments[1].variables[position];
@@ -1449,7 +1667,10 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
     ct->arguments[0].variables[0] = expr;
     ct->RemoveArg(1);
     return true;
-  } else if (ContainsKey(affine_map_, index_var)) {
+  }
+
+  // Rule 3.
+  if (ContainsKey(affine_map_, index_var)) {
     const AffineMapping& mapping = affine_map_[index_var];
     const Domain& domain = mapping.variable->domain;
     if ((domain.is_interval && domain.values.empty()) ||
@@ -1702,7 +1923,6 @@ bool Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
     log->append("simplify constraint");
     ct->RemoveArg(0);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
   }
   if (ct->arguments[1].HasOneValue()) {
@@ -1711,7 +1931,6 @@ bool Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
     log->append("simplify constraint");
     ct->RemoveArg(1);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
   }
   if (ct->arguments[2].HasOneValue()) {
@@ -1720,7 +1939,6 @@ bool Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
     log->append("simplify constraint");
     ct->RemoveArg(2);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    FZVLOG << "   -> " << ct->DebugString() << FZENDL;
     return true;
   }
   return false;
@@ -1802,7 +2020,6 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     ct->arguments[0].type = Argument::INT_VAR_REF;
     ct->arguments[1].type = Argument::INT_VAR_REF;
     ct->type = "bool_le";
-    FZVLOG << "  to " << ct->DebugString() << FZENDL;
     return true;
   }
   // Rule 2.
@@ -1818,7 +2035,6 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
       ct->arguments[0] = Argument::IntVarRef(ct->arguments[1].Var());
       ct->arguments[1] = Argument::IntegerValue(0);
       ct->type = "bool_eq";
-      FZVLOG << "  to " << ct->DebugString() << FZENDL;
       return true;
     }
   }
@@ -1830,13 +2046,11 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     if (value) {
       if (ct->arguments[0].variables.size() > 1) {
         ct->type = "array_bool_or";
-        FZVLOG << "  to " << ct->DebugString() << FZENDL;
         return true;
       } else if (ct->arguments[0].variables.size() == 1) {
         ct->arguments[0].type = Argument::INT_VAR_REF;
         ct->arguments[1].type = Argument::INT_VALUE;
         ct->type = "bool_eq";
-        FZVLOG << "  to " << ct->DebugString() << FZENDL;
         return true;
       }
     } else {
@@ -1883,7 +2097,6 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
       ct->arguments[1] = Argument::IntVarRef(right);
       ct->arguments[2] = Argument::IntVarRef(target);
       ct->RemoveArg(3);
-      FZVLOG << " -> " << ct->DebugString() << FZENDL;
       return true;
     }
     if (Has01Values(right) && left->domain.HasOneValue() &&
@@ -1896,7 +2109,6 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
         ct->arguments[1] = Argument::IntVarRef(target);
         ct->RemoveArg(3);
         ct->RemoveArg(2);
-        FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       } else {
         // Rule 3.
@@ -1906,7 +2118,6 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
         ct->arguments[1] = Argument::IntVarRef(target);
         ct->RemoveArg(3);
         ct->RemoveArg(2);
-        FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       }
     } else if (Has01Values(left) && right->domain.HasOneValue() &&
@@ -1919,7 +2130,6 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
         ct->arguments[1] = Argument::IntVarRef(target);
         ct->RemoveArg(3);
         ct->RemoveArg(2);
-        FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       } else {
         // Rule 5.
@@ -1929,7 +2139,6 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
         ct->arguments[1] = Argument::IntVarRef(target);
         ct->RemoveArg(3);
         ct->RemoveArg(2);
-        FZVLOG << " -> " << ct->DebugString() << FZENDL;
         return true;
       }
     }
@@ -1952,6 +2161,10 @@ bool Presolver::PresolveIntMod(Constraint* ct, std::string* log) {
   return false;
 }
 
+// Remove invalid tuples, remove unreached values from domain variables.
+//
+bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) { return false; }
+
 #define CALL_TYPE(ct, t, method)                                            \
   if (ct->active && ct->type == t) {                                        \
     changed |= ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
@@ -1964,11 +2177,11 @@ bool Presolver::PresolveIntMod(Constraint* ct, std::string* log) {
       return method(ct, log);                                               \
     });                                                                     \
   }
-#define CALL_SUFFIX(ct, t, method)                                           \
-  if (ct->active && strings::EndsWith(ct->type, t)) {                        \
-    changed |= ApplyRule(ct, "method", [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                                \
-    });                                                                      \
+#define CALL_SUFFIX(ct, t, method)                                          \
+  if (ct->active && strings::EndsWith(ct->type, t)) {                       \
+    changed |= ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
+      return method(ct, log);                                               \
+    });                                                                     \
   }
 
 // Main presolve rule caller.
@@ -2006,50 +2219,67 @@ bool Presolver::PresolveOneConstraint(Constraint* ct) {
     ct->arguments[0].variables[0] = abs_map_[ct->arguments[0].Var()];
     changed = true;
   }
-  CALL_TYPE(ct, "int_le_reif", RemoveAbsFromIntLeReif);
-  CALL_TYPE(ct, "int_eq", PresolveIntEq);
-  CALL_TYPE(ct, "bool_eq", PresolveIntEq);
-  CALL_TYPE(ct, "int_ne", PresolveIntNe);
-  CALL_TYPE(ct, "bool_not", PresolveIntNe);
   CALL_TYPE(ct, "set_in", PresolveSetIn);
-  CALL_TYPE(ct, "array_bool_and", PresolveArrayBoolAnd);
-  CALL_TYPE(ct, "array_bool_or", PresolveArrayBoolOr);
-  CALL_TYPE(ct, "bool_eq_reif", PresolveBoolEqNeReif);
-  CALL_TYPE(ct, "bool_ne_reif", PresolveBoolEqNeReif);
-  CALL_TYPE(ct, "bool_xor", PresolveBoolXor);
-  CALL_TYPE(ct, "bool_not", PresolveBoolNot);
-  CALL_TYPE(ct, "bool_clause", PresolveBoolClause);
-  CALL_TYPE(ct, "int_div", PresolveIntDiv);
-  CALL_TYPE(ct, "int_times", PresolveIntTimes);
-  CALL_TYPE(ct, "int_lin_gt", PresolveIntLinGt);
-  CALL_TYPE(ct, "int_lin_lt", PresolveIntLinLt);
-  CALL_PREFIX(ct, "int_lin_", PresolveLinear);
-  CALL_PREFIX(ct, "int_lin_", RegroupLinear);
-  CALL_PREFIX(ct, "int_lin_", SimplifyUnaryLinear);
-  CALL_PREFIX(ct, "int_lin_", SimplifyBinaryLinear);
-  CALL_TYPE(ct, "int_lin_eq", PropagatePositiveLinear);
-  CALL_TYPE(ct, "int_lin_le", PropagatePositiveLinear);
-  CALL_TYPE(ct, "int_lin_ge", PropagatePositiveLinear);
-  CALL_TYPE(ct, "int_lin_eq", CreateLinearTarget);
-  CALL_TYPE(ct, "int_lin_eq", PresolveStoreMapping);
-  CALL_TYPE(ct, "int_lin_eq_reif", CheckIntLinReifBounds);
-  CALL_TYPE(ct, "int_lin_eq_reif", SimplifyIntLinEqReif);
-  CALL_TYPE(ct, "array_int_element", PresolveSimplifyElement);
-  CALL_TYPE(ct, "array_int_element", PresolveArrayIntElement);
-  CALL_TYPE(ct, "array_var_int_element", PresolveSimplifyExprElement);
-  CALL_TYPE(ct, "int_eq_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "int_ne_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "int_le_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "int_lt_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "int_ge_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "int_gt_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "bool_eq_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "bool_ne_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "bool_le_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "bool_lt_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "bool_ge_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "bool_gt_reif", PropagateReifiedComparisons);
-  CALL_TYPE(ct, "int_mod", PresolveIntMod);
+  CALL_TYPE(ct, "set_in_reif", PresolveSetInReif);
+
+  if (strings::StartsWith(ct->type, "int_lin")) {
+    CALL_TYPE(ct, "int_lin_gt", PresolveIntLinGt);
+    CALL_TYPE(ct, "int_lin_lt", PresolveIntLinLt);
+    CALL_PREFIX(ct, "int_lin_", PresolveLinear);
+    CALL_PREFIX(ct, "int_lin_", RegroupLinear);
+    CALL_PREFIX(ct, "int_lin_", SimplifyUnaryLinear);
+    CALL_PREFIX(ct, "int_lin_", SimplifyBinaryLinear);
+    CALL_TYPE(ct, "int_lin_eq", PropagatePositiveLinear);
+    CALL_TYPE(ct, "int_lin_le", PropagatePositiveLinear);
+    CALL_TYPE(ct, "int_lin_ge", PropagatePositiveLinear);
+    CALL_TYPE(ct, "int_lin_eq", CreateLinearTarget);
+    CALL_TYPE(ct, "int_lin_eq", PresolveStoreMapping);
+    CALL_TYPE(ct, "int_lin_eq_reif", CheckIntLinReifBounds);
+    CALL_TYPE(ct, "int_lin_eq_reif", SimplifyIntLinEqReif);
+  }
+
+  if (strings::StartsWith(ct->type, "array_")) {
+    CALL_TYPE(ct, "array_bool_and", PresolveArrayBoolAnd);
+    CALL_TYPE(ct, "array_bool_or", PresolveArrayBoolOr);
+    CALL_TYPE(ct, "array_int_element", PresolveSimplifyElement);
+    CALL_TYPE(ct, "array_int_element", PresolveArrayIntElement);
+    CALL_TYPE(ct, "array_var_int_element", PresolveSimplifyExprElement);
+  }
+
+  if (strings::StartsWith(ct->type, "int_")) {
+    CALL_TYPE(ct, "int_div", PresolveIntDiv);
+    CALL_TYPE(ct, "int_times", PresolveIntTimes);
+    CALL_TYPE(ct, "int_eq", PresolveIntEq);
+    CALL_TYPE(ct, "int_ne", PresolveIntNe);
+    CALL_TYPE(ct, "int_eq_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "int_ne_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "int_le_reif", RemoveAbsFromIntLeReif);
+    CALL_TYPE(ct, "int_le_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "int_lt_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "int_ge_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "int_gt_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "int_mod", PresolveIntMod);
+  }
+
+  if (strings::StartsWith(ct->type, "bool_")) {
+    CALL_TYPE(ct, "bool_eq", PresolveIntEq);
+    CALL_TYPE(ct, "bool_ne", PresolveIntNe);
+    CALL_TYPE(ct, "bool_not", PresolveIntNe);
+    CALL_TYPE(ct, "bool_eq_reif", PresolveBoolEqNeReif);
+    CALL_TYPE(ct, "bool_ne_reif", PresolveBoolEqNeReif);
+    CALL_TYPE(ct, "bool_xor", PresolveBoolXor);
+    CALL_TYPE(ct, "bool_ne", PresolveBoolNot);
+    CALL_TYPE(ct, "bool_not", PresolveBoolNot);
+    CALL_TYPE(ct, "bool_clause", PresolveBoolClause);
+    CALL_TYPE(ct, "bool_eq_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "bool_ne_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "bool_le_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "bool_lt_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "bool_ge_reif", PropagateReifiedComparisons);
+    CALL_TYPE(ct, "bool_gt_reif", PropagateReifiedComparisons);
+  }
+  CALL_TYPE(ct, "table_int", PresolveTableInt);
+
   // Last rule: if the target variable of a constraint is fixed, removed it
   // the target part.
   if (ct->target_variable != nullptr &&
@@ -2113,6 +2343,7 @@ void Presolver::MergeIntEqNe(Model* model) {
           FZVLOG << "Merge " << ct->DebugString() << FZENDL;
           ct->MarkAsInactive();
           AddVariableSubstition(stored, boolvar);
+          successful_rules_["MergeIntEqNe"]++;
         }
       }
     }
@@ -2139,6 +2370,7 @@ void Presolver::MergeIntEqNe(Model* model) {
           FZVLOG << "Merge " << ct->DebugString() << FZENDL;
           ct->MarkAsInactive();
           AddVariableSubstition(stored, boolvar);
+          successful_rules_["MergeIntEqNe"]++;
         }
       }
     }
@@ -2187,7 +2419,10 @@ bool Presolver::Run(Model* model) {
   for (Constraint* const ct : model->constraints()) {
     if (ct->active && ct->type == "bool2int") {
       std::string log;
-      changed_since_start |= PresolveBool2Int(ct, &log);
+      if (PresolveBool2Int(ct, &log)) {
+        changed_since_start = true;
+        successful_rules_["PresolveBool2Int"]++;
+      }
     }
   }
   if (!var_representative_map_.empty()) {
@@ -2196,8 +2431,10 @@ bool Presolver::Run(Model* model) {
     var_representative_map_.clear();
   }
 
+  int loops = 0;
   // Apply the rest of the presolve rules.
   for (;;) {
+    loops++;
     bool changed = false;
     var_representative_map_.clear();
     for (Constraint* const ct : model->constraints()) {
@@ -2217,6 +2454,18 @@ bool Presolver::Run(Model* model) {
     }
     changed_since_start |= changed;
     if (!changed) break;
+  }
+  if (changed_since_start) {
+    FZLOG << "  - presolve looped " << loops << " times over the model"
+          << FZENDL;
+    for (const auto& rule : successful_rules_) {
+      if (rule.second == 1) {
+        FZLOG << "  - rule " << rule.first << " was applied 1 time" << FZENDL;
+      } else {
+        FZLOG << "  - rule " << rule.first << " was applied " << rule.second
+              << " times" << FZENDL;
+      }
+    }
   }
   return changed_since_start;
 }

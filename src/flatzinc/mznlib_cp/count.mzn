@@ -1,5 +1,5 @@
 %-----------------------------------------------------------------------------%
-% Constrains 'c' to be the number of occurrences of 'y' in 'x'. 
+% Constrains 'c' to be the number of occurrences of 'y' in 'x'.
 %-----------------------------------------------------------------------------%
 
 include "count_eq.mzn";

@@ -49,7 +49,7 @@ Domain Domain::AllInt64() {
   return result;
 }
 
-Domain Domain::Singleton(int64 value) {
+Domain Domain::IntegerValue(int64 value) {
   Domain result;
   result.is_interval = false;
   result.values.push_back(value);
@@ -189,6 +189,15 @@ int64 Domain::Min() const {
 int64 Domain::Max() const {
   CHECK(!empty());
   return is_interval && values.empty() ? kint64max : values.back();
+}
+
+int64 Domain::Value() const {
+  CHECK(HasOneValue());
+  return values.front();
+}
+
+int64 Domain::Size() const {
+  return is_interval ? Max() - Min() + 1 : values.size();
 }
 
 bool Domain::IsAllInt64() const {
@@ -361,12 +370,93 @@ int64 Argument::Value() const {
     case INT_VAR_REF: {
       return variables[0]->domain.values[0];
     }
-    default: { return 0; }  // Should fail anyway.
+    default: {
+      LOG(FATAL) << "Should not be here";
+      return 0;
+    }
+  }
+}
+
+bool Argument::IsArrayOfValues() const {
+  switch (type) {
+    case INT_VALUE:
+      return false;
+    case INT_INTERVAL:
+      return false;
+    case INT_LIST:
+      return true;
+    case DOMAIN_LIST: {
+      for (const Domain& domain : domains) {
+        if (!domain.HasOneValue()) {
+          return false;
+        }
+      }
+      return true;
+    }
+    case INT_VAR_REF:
+      return false;
+    case INT_VAR_REF_ARRAY: {
+      for (IntegerVariable* var : variables) {
+        if (!var->domain.HasOneValue()) {
+          return false;
+        }
+      }
+      return true;
+    }
+    case VOID_ARGUMENT:
+      return false;
+  }
+}
+
+bool Argument::Contains(int64 value) const {
+  switch (type) {
+    case Argument::INT_LIST: {
+      return std::find(values.begin(), values.end(), value) != values.end();
+    }
+    case Argument::INT_INTERVAL: {
+      return value >= values.front() && value <= values.back();
+    }
+    case Argument::INT_VALUE: {
+      return value == values.front();
+    }
+    default: {
+      LOG(FATAL) << "Cannot call Constains() on " << DebugString();
+      return 0;
+    }
+  }
+}
+
+int64 Argument::ValueAt(int pos) const {
+  switch (type) {
+    case INT_LIST:
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, values.size());
+      return values[pos];
+    case DOMAIN_LIST: {
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, domains.size());
+      CHECK(domains[pos].HasOneValue());
+      return domains[pos].Value();
+    }
+    case INT_VAR_REF_ARRAY: {
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, variables.size());
+      CHECK(variables[pos]->domain.HasOneValue());
+      return variables[pos]->domain.Value();
+    }
+    default: {
+      LOG(FATAL) << "Should not be here";
+      return 0;
+    }
   }
 }
 
 IntegerVariable* Argument::Var() const {
   return type == INT_VAR_REF ? variables[0] : nullptr;
+}
+
+IntegerVariable* Argument::VarAt(int pos) const {
+  return type == INT_VAR_REF_ARRAY ? variables[pos] : nullptr;
 }
 
 // ----- IntegerVariable -----
@@ -660,7 +750,7 @@ IntegerVariable* Model::AddVariable(const std::string& name, const Domain& domai
 IntegerVariable* Model::AddConstant(int64 value) {
   IntegerVariable* const var =
       new IntegerVariable(StringPrintf("%" GG_LL_FORMAT "d", value),
-                          Domain::Singleton(value), true);
+                          Domain::IntegerValue(value), true);
   variables_.push_back(var);
   return var;
 }

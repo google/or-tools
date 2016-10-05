@@ -19,6 +19,7 @@
 
 #include "base/strutil.h"
 #include "base/map_util.h"
+#include "base/hash.h"
 #include "flatzinc/model.h"
 
 using operations_research::HasPrefixString;
