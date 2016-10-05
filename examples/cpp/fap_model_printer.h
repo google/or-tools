@@ -10,6 +10,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 //
 // Prints a model of Frequency Assignment Problem.
 // Format: http://www.inra.fr/mia/T/schiex/Doc/CELAR.shtml#synt
@@ -23,17 +24,14 @@
 
 #include "cpp/fap_parser.h"
 
-using std::string;
-
 namespace operations_research {
 
-// Prints the instance of the Frequency Assignment Problem
+// Prints the instance of the Frequency Assignment Problem.
 class FapModelPrinter {
  public:
   FapModelPrinter(const std::map<int, FapVariable>& variables,
                   const std::vector<FapConstraint>& constraints,
-                  const string& objective,
-                  const std::vector<int>& values);
+                  const std::string& objective, const std::vector<int>& values);
   ~FapModelPrinter();
 
   void PrintFapObjective();
@@ -44,7 +42,7 @@ class FapModelPrinter {
  private:
   const std::map<int, FapVariable> variables_;
   const std::vector<FapConstraint> constraints_;
-  const string objective_;
+  const std::string objective_;
   const std::vector<int> values_;
   DISALLOW_COPY_AND_ASSIGN(FapModelPrinter);
 };
