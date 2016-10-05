@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "base/integral_types.h"
@@ -1421,5 +1422,141 @@ Constraint* Solver::MakePathConnected(std::vector<IntVar*> nexts,
   return RevAlloc(
       new PathConnectedConstraint(this, std::move(nexts), std::move(sources),
                                   std::move(sinks), std::move(status)));
+}
+
+namespace {
+class PathTransitPrecedenceConstraint : public Constraint {
+ public:
+  PathTransitPrecedenceConstraint(
+      Solver* solver, std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+      const std::vector<std::pair<int, int>>& precedences)
+      : Constraint(solver),
+        nexts_(std::move(nexts)),
+        transits_(std::move(transits)),
+        predecessors_(nexts_.size()),
+        successors_(nexts_.size()),
+        starts_(nexts_.size(), -1),
+        ends_(nexts_.size(), -1),
+        transit_cumuls_(nexts_.size(), 0) {
+    for (int i = 0; i < nexts_.size(); ++i) {
+      starts_.SetValue(solver, i, i);
+      ends_.SetValue(solver, i, i);
+    }
+    for (const auto& precedence : precedences) {
+      if (precedence.second < nexts_.size()) {
+        predecessors_[precedence.second].push_back(precedence.first);
+      }
+      if (precedence.first < nexts_.size()) {
+        successors_[precedence.first].push_back(precedence.second);
+      }
+    }
+  }
+  ~PathTransitPrecedenceConstraint() override {}
+  void Post() override {
+    for (int i = 0; i < nexts_.size(); ++i) {
+      nexts_[i]->WhenBound(MakeDelayedConstraintDemon1(
+          solver(), this, &PathTransitPrecedenceConstraint::NextBound,
+          "NextBound", i));
+    }
+    for (int i = 0; i < transits_.size(); ++i) {
+      transits_[i]->WhenRange(MakeDelayedConstraintDemon1(
+          solver(), this, &PathTransitPrecedenceConstraint::NextBound,
+          "TransitRange", i));
+    }
+  }
+  void InitialPropagate() override {
+    for (int i = 0; i < nexts_.size(); ++i) {
+      if (nexts_[i]->Bound()) {
+        NextBound(i);
+      }
+    }
+  }
+  std::string DebugString() const override {
+    std::string output = "PathPrecedence(";
+    std::vector<std::string> elements = {JoinDebugStringPtr(nexts_, ",")};
+    if (!transits_.empty()) {
+      elements.push_back(JoinDebugStringPtr(transits_, ","));
+    }
+    for (int i = 0; i < predecessors_.size(); ++i) {
+      for (const int predecessor : predecessors_[i]) {
+        elements.push_back(StrCat("(", predecessor, ", ", i, ")"));
+      }
+    }
+    output += strings::Join(elements, ",") + ")";
+    return output;
+  }
+  void Accept(ModelVisitor* const visitor) const override {
+    // TODO(user): Implement.
+  }
+
+ private:
+  void NextBound(int index) {
+    if (!nexts_[index]->Bound()) return;
+    const int next = nexts_[index]->Min();
+    const int start = starts_[index];
+    const int end = (next < nexts_.size()) ? ends_[next] : next;
+    if (end < nexts_.size()) starts_.SetValue(solver(), end, start);
+    ends_.SetValue(solver(), start, end);
+    int current = start;
+    forbidden_.clear();
+    marked_.clear();
+    int64 transit_cumul = 0;
+    const bool has_transits = !transits_.empty();
+    while (current < nexts_.size() && current != end) {
+      transit_cumuls_[current] = transit_cumul;
+      marked_.insert(current);
+      if (forbidden_.find(current) != forbidden_.end()) {
+        for (const int successor : successors_[current]) {
+          if (marked_.find(successor) != marked_.end()) {
+            if (!has_transits ||
+                CapSub(transit_cumul, transit_cumuls_[successor]) > 0) {
+              solver()->Fail();
+            }
+          }
+        }
+      }
+      for (const int predecessor : predecessors_[current]) {
+        forbidden_.insert(predecessor);
+      }
+      if (has_transits) {
+        transit_cumul = CapAdd(transit_cumul, transits_[current]->Min());
+      }
+      current = nexts_[current]->Min();
+    }
+    if (forbidden_.find(current) != forbidden_.end()) {
+      for (const int successor : successors_[current]) {
+        if (marked_.find(successor) != marked_.end()) {
+          if (!has_transits ||
+              CapSub(transit_cumul, transit_cumuls_[successor]) > 0) {
+            solver()->Fail();
+          }
+        }
+      }
+    }
+  }
+
+  const std::vector<IntVar*> nexts_;
+  const std::vector<IntVar*> transits_;
+  std::vector<std::vector<int>> predecessors_;
+  std::vector<std::vector<int>> successors_;
+  RevArray<int> starts_;
+  RevArray<int> ends_;
+  std::unordered_set<int> forbidden_;
+  std::unordered_set<int> marked_;
+  std::vector<int64> transit_cumuls_;
+};
+}  // namespace
+
+Constraint* Solver::MakePathPrecedenceConstraint(
+    std::vector<IntVar*> nexts, const std::vector<std::pair<int, int>>& precedences) {
+  return RevAlloc(new PathTransitPrecedenceConstraint(this, std::move(nexts),
+                                                      {}, precedences));
+}
+
+Constraint* Solver::MakePathTransitPrecedenceConstraint(
+    std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+    const std::vector<std::pair<int, int>>& precedences) {
+  return RevAlloc(new PathTransitPrecedenceConstraint(
+      this, std::move(nexts), std::move(transits), precedences));
 }
 }  // namespace operations_research

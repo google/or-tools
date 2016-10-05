@@ -1465,6 +1465,8 @@ class Solver {
   IntVar* MakeIsMemberVar(IntExpr* const v, const std::vector<int64>& values);
   IntVar* MakeIsMemberVar(IntExpr* const v, const std::vector<int>& values);
 
+  // |{i | v[i] == value}| <= count
+  Constraint* MakeAtMost(std::vector<IntVar*> v, int64 value, int64 count);
   // |{i | v[i] == value}| == count
   Constraint* MakeCount(const std::vector<IntVar*>& v, int64 value, int64 count);
   // |{i | v[i] == value}| == count
@@ -1669,6 +1671,20 @@ class Solver {
   // Check whether more propagation is needed.
   Constraint* MakePathConnected(std::vector<IntVar*> nexts, std::vector<int64> sources,
                                 std::vector<int64> sinks, std::vector<IntVar*> status);
+#ifndef SWIG
+  // Contraint enforcing, for each pair (i,j) in precedences, i to be before j
+  // in paths defined by next variables.
+  // TODO(user): This constraint does not make holes in variable domains;
+  // the implementation can easily be modified to do that; evaluate the the
+  // impact on models solved with local search.
+  Constraint* MakePathPrecedenceConstraint(
+      std::vector<IntVar*> nexts, const std::vector<std::pair<int, int>>& precedences);
+  // Same precedence constraint as above but will force i to be before j if
+  // the sum of transits on the path from i to j is strictly positive.
+  Constraint* MakePathTransitPrecedenceConstraint(
+      std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
+      const std::vector<std::pair<int, int>>& precedences);
+#endif
   // This constraint maps the domain of 'var' onto the array of
   // variables 'vars'. That is
   // for all i in [0 .. size - 1]: vars[i] == 1 <=> var->Contains(i);
@@ -3320,6 +3336,7 @@ class ModelVisitor : public BaseObject {
   static const char kAbsEqual[];
   static const char kAllDifferent[];
   static const char kAllowedAssignments[];
+  static const char kAtMost[];
   static const char kIndexOf[];
   static const char kBetween[];
   static const char kConditionalExpr[];
@@ -3769,6 +3786,7 @@ class RevArray {
 #endif
 
   void SetValue(Solver* const s, int index, const T& val) {
+    DCHECK_LT(index, size_);
     if (val != values_[index]) {
       if (stamps_[index] < s->stamp()) {
         s->SaveValue(&values_[index]);

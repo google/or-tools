@@ -63,6 +63,86 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, IntVar*
 // ---------- Distribute ----------
 
 namespace {
+class AtMost : public Constraint {
+ public:
+  AtMost(Solver* const s, std::vector<IntVar*> vars, int64 value, int64 max_count)
+      : Constraint(s),
+        vars_(std::move(vars)),
+        value_(value),
+        max_count_(max_count),
+        current_count_(0) {}
+
+  ~AtMost() override {}
+
+  void Post() override {
+    for (IntVar* var : vars_) {
+      if (!var->Bound() && var->Contains(value_)) {
+        Demon* const d = MakeConstraintDemon1(solver(), this, &AtMost::OneBound,
+                                              "OneBound", var);
+        var->WhenBound(d);
+      }
+    }
+  }
+
+  void InitialPropagate() override {
+    for (IntVar* var : vars_) {
+      if (var->Bound() && var->Min() == value_) {
+        current_count_.Incr(solver());
+      }
+    }
+    CheckCount();
+  }
+
+  void OneBound(IntVar* var) {
+    if (var->Min() == value_) {
+      current_count_.Incr(solver());
+      CheckCount();
+    }
+  }
+
+  void CheckCount() {
+    if (current_count_.Value() < max_count_) {
+      return;
+    }
+
+    // Remove all remaining values.
+    int forced = 0;
+    for (IntVar* var : vars_) {
+      if (var->Bound()) {
+        if (var->Min() == value_) {
+          forced++;
+        }
+      } else {
+        var->RemoveValue(value_);
+      }
+    }
+    if (forced > max_count_) {
+      solver()->Fail();
+    }
+  }
+
+  std::string DebugString() const override {
+    return StringPrintf("AtMost(%s, %" GG_LL_FORMAT "d, %" GG_LL_FORMAT "d)",
+                        JoinDebugStringPtr(vars_, ", ").c_str(), value_,
+                        max_count_);
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    visitor->BeginVisitConstraint(ModelVisitor::kAtMost, this);
+    visitor->VisitIntegerVariableArrayArgument(ModelVisitor::kVarsArgument,
+                                               vars_);
+    visitor->VisitIntegerArgument(ModelVisitor::kValueArgument, value_);
+    visitor->VisitIntegerArgument(ModelVisitor::kCountArgument, max_count_);
+    visitor->EndVisitConstraint(ModelVisitor::kAtMost, this);
+  }
+
+ private:
+  const std::vector<IntVar*> vars_;
+  const int64 value_;
+  const int64 max_count_;
+  NumericalRev<int> current_count_;
+};
+
 class Distribute : public Constraint {
  public:
   Distribute(Solver* const s, const std::vector<IntVar*>& vars,
@@ -503,7 +583,8 @@ BoundedDistribute::BoundedDistribute(Solver* const s,
 
 std::string BoundedDistribute::DebugString() const {
   return StringPrintf(
-      "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = [%s]",
+      "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = "
+      "[%s]",
       JoinDebugStringPtr(vars_, ", ").c_str(),
       strings::Join(values_, ", ").c_str(),
       strings::Join(card_min_, ", ").c_str(),
@@ -867,6 +948,15 @@ class SetAllToZero : public Constraint {
 }  // namespace
 
 // ----- Factory -----
+
+Constraint* Solver::MakeAtMost(std::vector<IntVar*> vars, int64 value,
+                               int64 max_count) {
+  CHECK_GE(max_count, 0);
+  if (max_count >= vars.size()) {
+    return MakeTrueConstraint();
+  }
+  return RevAlloc(new AtMost(this, std::move(vars), value, max_count));
+}
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& values,

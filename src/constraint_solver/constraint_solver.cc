@@ -2526,6 +2526,7 @@ const char ModelVisitor::kAbs[] = "Abs";
 const char ModelVisitor::kAbsEqual[] = "AbsEqual";
 const char ModelVisitor::kAllDifferent[] = "AllDifferent";
 const char ModelVisitor::kAllowedAssignments[] = "AllowedAssignments";
+const char ModelVisitor::kAtMost[] = "AtMost";
 const char ModelVisitor::kBetween[] = "Between";
 const char ModelVisitor::kConditionalExpr[] = "ConditionalExpr";
 const char ModelVisitor::kCircuit[] = "Circuit";
