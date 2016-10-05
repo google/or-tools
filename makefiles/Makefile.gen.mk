@@ -1158,6 +1158,7 @@ $(SRC_DIR)/graph/shortestpaths.h: \
 
 $(SRC_DIR)/graph/util.h: \
     $(SRC_DIR)/graph/graph.h \
+    $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/murmur.h \
@@ -1434,6 +1435,7 @@ SAT_DEPS = \
 SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/boolean_problem.$O \
     $(OBJ_DIR)/sat/clause.$O \
+    $(OBJ_DIR)/sat/cp_constraints.$O \
     $(OBJ_DIR)/sat/disjunctive.$O \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
@@ -1473,6 +1475,10 @@ $(SRC_DIR)/sat/clause.h: \
     $(SRC_DIR)/base/timer.h \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/stats.h
+
+$(SRC_DIR)/sat/cp_constraints.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h
 
 $(SRC_DIR)/sat/disjunctive.h: \
     $(SRC_DIR)/sat/integer.h \
@@ -1621,6 +1627,12 @@ $(OBJ_DIR)/sat/clause.$O: \
     $(SRC_DIR)/base/sysinfo.h \
     $(SRC_DIR)/util/time_limit.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sclause.$O
+
+$(OBJ_DIR)/sat/cp_constraints.$O: \
+    $(SRC_DIR)/sat/cp_constraints.cc \
+    $(SRC_DIR)/sat/cp_constraints.h \
+    $(SRC_DIR)/base/map_util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/cp_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_constraints.$O
 
 $(OBJ_DIR)/sat/disjunctive.$O: \
     $(SRC_DIR)/sat/disjunctive.cc \

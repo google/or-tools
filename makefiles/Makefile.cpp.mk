@@ -87,6 +87,7 @@ faplibs: $(FAP_LIBS)
 
 FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX)
 FLATZINC_DEPS = \
+	$(SRC_DIR)/flatzinc/checker.h \
 	$(SRC_DIR)/flatzinc/constraints.h \
 	$(SRC_DIR)/flatzinc/flatzinc_constraints.h \
 	$(SRC_DIR)/flatzinc/logging.h \
@@ -182,6 +183,7 @@ $(OBJ_DIR)/fap_utilities.$O: $(EX_DIR)/cpp/fap_utilities.cc
 # Flatzinc code
 
 FLATZINC_OBJS=\
+	$(OBJ_DIR)/flatzinc/checker.$O \
 	$(OBJ_DIR)/flatzinc/constraints.$O \
 	$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O \
 	$(OBJ_DIR)/flatzinc/logging.$O \
@@ -205,6 +207,9 @@ $(GEN_DIR)/flatzinc/parser.tab.cc: $(SRC_DIR)/flatzinc/parser.yy $(BISON)
 	$(BISON) -t -o $(GEN_DIR)/flatzinc/parser.tab.cc -d $<
 
 $(GEN_DIR)/flatzinc/parser.tab.hh: $(GEN_DIR)/flatzinc/parser.tab.cc
+
+$(OBJ_DIR)/flatzinc/checker.$O: $(SRC_DIR)/flatzinc/checker.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Schecker.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Schecker.$O
 
 $(OBJ_DIR)/flatzinc/constraints.$O: $(SRC_DIR)/flatzinc/constraints.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sconstraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sconstraints.$O

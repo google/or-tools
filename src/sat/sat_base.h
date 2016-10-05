@@ -217,6 +217,11 @@ struct AssignmentInfo {
 
   // The index of this assignment in the trail.
   int32 trail_index;
+
+  std::string DebugString() const {
+    return StringPrintf("level:%d type:%d trail_index:%d", level, type,
+                        trail_index);
+  }
 };
 COMPILE_ASSERT(sizeof(AssignmentInfo) == 8,
                ERROR_AssignmentInfo_is_not_well_compacted);

@@ -290,6 +290,11 @@ void DisjunctiveConstraint::AddMinStartReason(int t, IntegerValue lower_bound) {
       IntegerLiteral::GreaterOrEqual(start_vars_[t], lower_bound));
 }
 
+void DisjunctiveConstraint::AddMinEndReason(int t, IntegerValue lower_bound) {
+  integer_reason_.push_back(
+      IntegerLiteral::GreaterOrEqual(end_vars_[t], lower_bound));
+}
+
 void DisjunctiveConstraint::AddMaxEndReason(int t, IntegerValue upper_bound) {
   integer_reason_.push_back(
       IntegerLiteral::LowerOrEqual(end_vars_[t], upper_bound));
@@ -539,9 +544,8 @@ bool DisjunctiveConstraint::DetectablePrecedencePass(
         AddMaxStartReason(ct, min_end - 1);
       }
 
-      // Add the reason for t (we don't need the max-end or presence reason).
-      AddMinDurationReason(t);
-      AddMinStartReason(t, MinStart(t));
+      // Add the reason for t (we only need the min-end).
+      AddMinEndReason(t, MinEnd(t));
 
       // This augment the min-start of t and subsequently it can augment the
       // next min_end_of_critical_tasks, but our deduction is still valid.
@@ -634,7 +638,7 @@ bool DisjunctiveConstraint::NotLastPass(IntegerTrail* integer_trail,
     // (i.e. it cannot be last):
     //
     // [(critical tasks)
-    //              (duration_t)]
+    //              | <- t max-start
     //
     // So we can deduce that the max-end of t is smaller than or equal to the
     // largest max-start of the critical tasks.
@@ -657,6 +661,11 @@ bool DisjunctiveConstraint::NotLastPass(IntegerTrail* integer_trail,
         largest_ct_max_start = max_start;
       }
     }
+
+    // If we have any critical task, the test will always be true because
+    // of the tasks we put in task_set_.
+    DCHECK(largest_ct_max_start == kMinIntegerValue ||
+           max_end > largest_ct_max_start);
     if (max_end > largest_ct_max_start) {
       literal_reason_.clear();
       integer_reason_.clear();
@@ -826,25 +835,29 @@ bool DisjunctiveConstraint::EdgeFindingPass(IntegerTrail* integer_trail,
       const int gray_task = sorted_tasks[gray_task_index].task;
       DCHECK(is_gray_[gray_task]);
 
+      // Because of the optimization above, we necessarily have this order:
+      CHECK_LE(gray_critical_index, critical_index);
+
       // Since the gray task is after all the other, we have a new lower bound.
       if (min_end_of_critical_tasks > MinStart(gray_task)) {
         literal_reason_.clear();
         integer_reason_.clear();
-        const IntegerValue window_start =
+        const IntegerValue low_start =
             sorted_tasks[gray_critical_index].min_start;
+        const IntegerValue high_start = sorted_tasks[critical_index].min_start;
         const IntegerValue window_end = min_end_of_critical_tasks_with_gray - 1;
         for (int i = gray_critical_index; i < sorted_tasks.size(); ++i) {
           const int ct = sorted_tasks[i].task;
           if (is_gray_[ct]) continue;
           AddPresenceAndDurationReason(ct);
-          AddMinStartReason(ct, window_start);
+          AddMinStartReason(ct, i >= critical_index ? high_start : low_start);
           AddMaxEndReason(ct, window_end);
         }
 
         // Add the reason for the gray_task (we don't need the max-end or
         // presence reason).
         AddMinDurationReason(gray_task);
-        AddMinStartReason(gray_task, window_start);
+        AddMinStartReason(gray_task, low_start);
 
         // Enqueue the new min-start for gray_task.
         //

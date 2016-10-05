@@ -159,6 +159,7 @@ class DisjunctiveConstraint : public PropagatorInterface {
   void AddPresenceAndDurationReason(int t);
   void AddMinDurationReason(int t);
   void AddMinStartReason(int t, IntegerValue lower_bound);
+  void AddMinEndReason(int t, IntegerValue lower_bound);
   void AddMaxEndReason(int t, IntegerValue upper_bound);
   void AddMaxStartReason(int t, IntegerValue upper_bound);
 

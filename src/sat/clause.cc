@@ -249,15 +249,17 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   ++num_implications_;
 }
 
-void BinaryImplicationGraph::AddBinaryConflict(Literal a, Literal b,
-                                               Trail* trail) {
+void BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b,
+                                                         Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   if (num_implications_ == 0) propagation_trail_index_ = trail->Index();
   AddBinaryClause(a, b);
   if (trail->Assignment().LiteralIsFalse(a)) {
+    DCHECK_EQ(trail->CurrentDecisionLevel(), trail->Info(a.Variable()).level);
     reasons_[trail->Index()] = a;
     trail->Enqueue(b, propagator_id_);
   } else if (trail->Assignment().LiteralIsFalse(b)) {
+    DCHECK_EQ(trail->CurrentDecisionLevel(), trail->Info(b.Variable()).level);
     reasons_[trail->Index()] = b;
     trail->Enqueue(a, propagator_id_);
   }

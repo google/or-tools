@@ -77,6 +77,15 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var,
   full_encoding_.push_back(std::move(encoding));
 }
 
+void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var, IntegerValue lb,
+                                         IntegerValue ub) {
+  // TODO(user): optimize the code if it ever become needed.
+  CHECK_LE(ub - lb, 10000) << "Large domain for full encoding! investigate.";
+  std::vector<IntegerValue> values;
+  for (IntegerValue value = lb; value <= ub; ++value) values.push_back(value);
+  return FullyEncodeVariable(i_var, std::move(values));
+}
+
 void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
   if (i_lit.var >= encoding_by_var_.size()) {
     encoding_by_var_.resize(i_lit.var + 1);
@@ -306,13 +315,24 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
 bool IntegerTrail::EnqueueAssociatedLiteral(
     Literal literal, IntegerLiteral i_lit,
     const std::vector<Literal>& literals_reason,
-    const std::vector<IntegerLiteral>& bounds_reason) {
+    const std::vector<IntegerLiteral>& bounds_reason,
+    BooleanVariable* variable_with_same_reason) {
   if (!trail_->Assignment().VariableIsAssigned(literal.Variable())) {
+    if (variable_with_same_reason != nullptr) {
+      if (*variable_with_same_reason != kNoBooleanVariable) {
+        trail_->EnqueueWithSameReasonAs(literal, *variable_with_same_reason);
+        return true;
+      }
+      *variable_with_same_reason = literal.Variable();
+    }
+
     // The reason is simply i_lit and will be expanded lazily when needed.
-    std::vector<Literal>* unused;
-    std::vector<IntegerLiteral>* integer_reason;
-    EnqueueLiteral(literal, &unused, &integer_reason);
-    integer_reason->push_back(i_lit);
+    //
+    // Note(user): Instead of setting the reason to just i_lit, we set it to the
+    // reason why i_lit was about to be propagated, otherwise in some corner
+    // cases (not 100% clear), i_lit will not be pushed yet when the reason of
+    // this literal will be queried and that is an issue.
+    EnqueueLiteral(literal, literals_reason, bounds_reason);
     return true;
   }
   if (trail_->Assignment().LiteralIsFalse(literal)) {
@@ -332,6 +352,9 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   if (i_lit.bound <= vars_[i_lit.var].current_bound) return true;
   ++num_enqueues_;
 
+  // For the EnqueueWithSameReasonAs() mechanism.
+  BooleanVariable first_propagated_variable = kNoBooleanVariable;
+
   // Deal with fully encoded variable. We want to do that first because this may
   // make the IntegerLiteral bound stronger.
   const IntegerVariable var(i_lit.var);
@@ -342,24 +365,13 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
     const int min_index = current_min_.FindOrDie(var);
     const auto& encoding = encoder_->FullDomainEncoding(var);
     if (i_lit.bound > encoding[min_index].value) {
-      const Literal negated_min = encoding[min_index].literal.Negated();
-      if (!EnqueueAssociatedLiteral(negated_min, i_lit, literals_reason,
-                                    bounds_reason)) {
-        return false;
-      }
-
-      int i = min_index + 1;
+      int i = min_index;
       for (; i < encoding.size(); ++i) {
         if (i_lit.bound <= encoding[i].value) break;
         const Literal literal = encoding[i].literal.Negated();
-        if (!trail_->Assignment().VariableIsAssigned(literal.Variable())) {
-          trail_->EnqueueWithSameReasonAs(literal, negated_min.Variable());
-        } else if (trail_->Assignment().LiteralIsFalse(literal)) {
-          // Conflict.
-          std::vector<Literal>* conflict = trail_->MutableConflict();
-          *conflict = literals_reason;
-          conflict->push_back(literal);
-          MergeReasonInto(bounds_reason, conflict);
+        if (!EnqueueAssociatedLiteral(literal, i_lit, literals_reason,
+                                      bounds_reason,
+                                      &first_propagated_variable)) {
           return false;
         }
       }
@@ -421,7 +433,7 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
       encoder_->SearchForLiteralAtOrBefore(i_lit);
   if (literal_index != kNoLiteralIndex) {
     if (!EnqueueAssociatedLiteral(Literal(literal_index), i_lit,
-                                  literals_reason, bounds_reason)) {
+                                  literals_reason, bounds_reason, nullptr)) {
       return false;
     }
   }
@@ -573,6 +585,7 @@ ClauseRef IntegerTrail::Reason(const Trail& trail, int trail_index) const {
   std::vector<Literal>* reason = trail.GetVectorToStoreReason(trail_index);
   *reason = literal_reasons_[trail_index];
   MergeReasonInto(integer_reasons_[trail_index], reason);
+  if (DEBUG_MODE && trail.CurrentDecisionLevel() > 0) CHECK(!reason->empty());
   return ClauseRef(*reason);
 }
 
@@ -677,6 +690,50 @@ int GenericLiteralWatcher::Register(PropagatorInterface* propagator) {
   in_queue_.push_back(true);
   queue_.push_back(id);
   return id;
+}
+
+SatSolver::Status SolveIntegerProblemWithLazyEncoding(
+    Model* model, const std::vector<IntegerVariable>& variables_to_finalize) {
+  TimeLimit* time_limit = model->Mutable<TimeLimit>();
+  IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
+  SatSolver* const solver = model->GetOrCreate<SatSolver>();
+  SatSolver::Status status = SatSolver::Status::MODEL_UNSAT;
+  for (;;) {
+    if (time_limit == nullptr) {
+      status = solver->Solve();
+    } else {
+      status = solver->SolveWithTimeLimit(time_limit);
+    }
+    if (status != SatSolver::MODEL_SAT) break;
+
+    // Look for an integer variable whose domain is not singleton.
+    // Heuristic: we take the one with minimum lb amongst the given variables.
+    //
+    // TODO(user): consider better heuristics. Maybe we can use some kind of
+    // IntegerVariable activity or something from the CP world.
+    IntegerVariable candidate = kNoIntegerVariable;
+    IntegerValue candidate_lb(0);
+    for (const IntegerVariable variable : variables_to_finalize) {
+      // Note that we use < and not != for optional variable whose domain may
+      // be empty.
+      const IntegerValue lb = integer_trail->LowerBound(variable);
+      if (lb < integer_trail->UpperBound(variable)) {
+        if (candidate == kNoIntegerVariable || lb < candidate_lb) {
+          candidate = variable;
+          candidate_lb = lb;
+        }
+      }
+    }
+
+    if (candidate == kNoIntegerVariable) break;
+    // This add a literal with good polarity. It is very important that the
+    // decision heuristic assign it to false! Otherwise, our heuristic is not
+    // good.
+    integer_encoder->CreateAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(candidate, candidate_lb + 1));
+  }
+  return status;
 }
 
 }  // namespace sat

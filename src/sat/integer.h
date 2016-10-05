@@ -199,6 +199,8 @@ class IntegerEncoder {
   // TODO(user): It is currently only possible to call that at the decision
   // level zero. This is Checked.
   void FullyEncodeVariable(IntegerVariable var, std::vector<IntegerValue> values);
+  void FullyEncodeVariable(IntegerVariable var, IntegerValue lb,
+                           IntegerValue ub);
 
   // Gets the full encoding of a variable on which FullyEncodeVariable() has
   // been called. The returned elements are always sorted by increasing
@@ -215,6 +217,11 @@ class IntegerEncoder {
   const std::vector<ValueLiteralPair>& FullDomainEncoding(
       IntegerVariable var) const {
     return full_encoding_[FindOrDie(full_encoding_index_, var)];
+  }
+
+  // Returns true if a variable is fully encoded.
+  bool VariableIsFullyEncoded(IntegerVariable var) const {
+    return ContainsKey(full_encoding_index_, var);
   }
 
   // Returns the set of variable encoded as the keys in a map. The map values
@@ -418,7 +425,8 @@ class IntegerTrail : public Propagator {
   // the given i_lit and maintained by encoder_.
   bool EnqueueAssociatedLiteral(Literal literal, IntegerLiteral i_lit,
                                 const std::vector<Literal>& literals_reason,
-                                const std::vector<IntegerLiteral>& bounds_reason);
+                                const std::vector<IntegerLiteral>& bounds_reason,
+                                BooleanVariable* variable_with_same_reason);
 
   // Returns a lower bound on the given var that will always be valid.
   IntegerValue LevelZeroBound(int var) const {
@@ -665,6 +673,13 @@ inline std::function<int64(const Model&)> UpperBound(IntegerVariable v) {
   };
 }
 
+inline std::function<bool(const Model&)> IsFixed(IntegerVariable v) {
+  return [=](const Model& model) {
+    const IntegerTrail* trail = model.Get<IntegerTrail>();
+    return trail->LowerBound(v) == trail->UpperBound(v);
+  };
+}
+
 // This checks that the variable is fixed.
 inline std::function<int64(const Model&)> Value(IntegerVariable v) {
   return [=](const Model& model) {
@@ -701,6 +716,14 @@ inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64 ub) {
     }
   };
 }
+
+// A wrapper around SatSolver::Solve that handles integer variable with lazy
+// encoding. Repeatedly calls SatSolver::Solve on the model, and instantiates
+// literals for non-fixed variables in vars_with_lazy_encoding, until either all
+// variables are fixed to a single value, or the model is proved UNSAT. Returns
+// the status of the last call to SatSolver::Solve().
+SatSolver::Status SolveIntegerProblemWithLazyEncoding(
+    Model* model, const std::vector<IntegerVariable>& vars_with_lazy_encoding);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -81,6 +81,10 @@ class Model {
     if (!ContainsKey(singletons_, type_id)) {
       // Note that it is up to CreateInModel() to call model->TakeOwnership()
       // of the returned pointer.
+      //
+      // TODO(user): Always take ownership of the pointer instead. That would
+      // requires some cleanup, but it is probably a safer solution and would
+      // allow SetSingleton() to change an instance dynamically.
       T* new_t = T::CreateInModel(this);
       singletons_[type_id] = new_t;
       return new_t;
@@ -88,11 +92,28 @@ class Model {
     return static_cast<T*>(FindOrDie(singletons_, type_id));
   }
 
-  // Likes GetOrCreate() but do not create the object if it is non-existing
-  // and returns a pointer to a non-mutable type.
+  // Registers a given instance of type T as a "local singleton" for this type.
+  // For now this CHECKs that the object was not yet created.
+  template <typename T>
+  void SetSingleton(std::unique_ptr<T> t) {
+    const size_t type_id = FastTypeId<T>();
+    CHECK(!ContainsKey(singletons_, type_id));
+    singletons_[type_id] = t.get();
+    TakeOwnership(t.release());
+  }
+
+  // Likes GetOrCreate() but do not create the object if it is non-existing.
+  // This returns a const version of the object.
   template <typename T>
   const T* Get() const {
     return static_cast<const T*>(
+        FindWithDefault(singletons_, FastTypeId<T>(), nullptr));
+  }
+
+  // Same as Get(), but returns a mutable version of the object.
+  template <typename T>
+  T* Mutable() const {
+    return static_cast<T*>(
         FindWithDefault(singletons_, FastTypeId<T>(), nullptr));
   }
 

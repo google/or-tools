@@ -16,10 +16,12 @@
 namespace operations_research {
 namespace sat {
 
-IntegerSumLE::IntegerSumLE(const std::vector<IntegerVariable>& vars,
+IntegerSumLE::IntegerSumLE(LiteralIndex reified_literal,
+                           const std::vector<IntegerVariable>& vars,
                            const std::vector<IntegerValue>& coeffs,
                            IntegerValue upper, IntegerTrail* integer_trail)
-    : upper_bound_(upper),
+    : reified_literal_(reified_literal),
+      upper_bound_(upper),
       vars_(vars),
       coeffs_(coeffs),
       integer_trail_(integer_trail) {
@@ -35,6 +37,12 @@ IntegerSumLE::IntegerSumLE(const std::vector<IntegerVariable>& vars,
 bool IntegerSumLE::Propagate(Trail* trail) {
   CHECK(!vars_.empty());  // TODO(user): deal with this corner case.
 
+  // Reified case: If the reified literal is false, we ignore the constraint.
+  if (reified_literal_ != kNoLiteralIndex &&
+      trail->Assignment().LiteralIsFalse(Literal(reified_literal_))) {
+    return true;
+  }
+
   IntegerValue new_lb(0);
   for (int i = 0; i < vars_.size(); ++i) {
     new_lb += integer_trail_->LowerBound(vars_[i]) * coeffs_[i];
@@ -42,14 +50,35 @@ bool IntegerSumLE::Propagate(Trail* trail) {
 
   // Conflict?
   if (new_lb > upper_bound_) {
-    std::vector<Literal>* conflict = trail->MutableConflict();
-    conflict->clear();
     integer_reason_.clear();
     for (const IntegerVariable& var : vars_) {
       integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
     }
+
+    // Reified case: If the reified literal is unassigned, we set it to false,
+    // otherwise we have a conflict.
+    if (reified_literal_ != kNoLiteralIndex &&
+        !trail->Assignment().LiteralIsTrue(Literal(reified_literal_))) {
+      integer_trail_->EnqueueLiteral(Literal(reified_literal_).Negated(), {},
+                                     integer_reason_);
+      return true;
+    }
+
+    // Conflict.
+    std::vector<Literal>* conflict = trail->MutableConflict();
+    conflict->clear();
+    if (reified_literal_ != kNoLiteralIndex) {
+      conflict->push_back(Literal(reified_literal_).Negated());
+    }
     integer_trail_->MergeReasonInto(integer_reason_, conflict);
     return false;
+  }
+
+  // Reified case: We can only propagate the actual constraint if the reified
+  // literal is true.
+  if (reified_literal_ != kNoLiteralIndex &&
+      !trail->Assignment().LiteralIsTrue(Literal(reified_literal_))) {
+    return true;
   }
 
   // The lower bound of all the variables minus one can be used to update the
@@ -60,6 +89,10 @@ bool IntegerSumLE::Propagate(Trail* trail) {
     const IntegerValue new_term_ub = upper_bound_ - new_lb_excluding_i;
     const IntegerValue new_ub = new_term_ub / coeffs_[i];
     if (new_ub < integer_trail_->UpperBound(vars_[i])) {
+      literal_reason_.clear();
+      if (reified_literal_ != kNoLiteralIndex) {
+        literal_reason_.push_back(Literal(reified_literal_).Negated());
+      }
       integer_reason_.clear();
       for (int j = 0; j < vars_.size(); ++j) {
         if (i == j) continue;
@@ -81,6 +114,10 @@ void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const IntegerVariable& var : vars_) {
     watcher->WatchLowerBound(var, id);
+  }
+  if (reified_literal_ != kNoLiteralIndex) {
+    // We only watch the true direction.
+    watcher->WatchLiteral(Literal(reified_literal_), id);
   }
 }
 
@@ -242,6 +279,112 @@ void IsOneOfPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchLiteral(lit.Negated(), id);
   }
   watcher->WatchIntegerVariable(var_, id);
+}
+
+ProductPropagator::ProductPropagator(IntegerVariable a, IntegerVariable b,
+                                     IntegerVariable p,
+                                     IntegerTrail* integer_trail)
+    : a_(a), b_(b), p_(p), integer_trail_(integer_trail) {}
+
+namespace {
+
+// The maximum value of x such that x * b <= p with b > 0 and p >= 0;
+IntegerValue MaxValue(IntegerValue b, IntegerValue p) {
+  CHECK_GT(b, 0);
+  CHECK_GE(p, 0);
+  return p / b;
+}
+
+// The minimum value of x such that x * b >= p with b > 0 and p >= 0;
+IntegerValue MinValue(IntegerValue b, IntegerValue p) {
+  CHECK_GT(b, 0);
+  CHECK_GE(p, 0);
+  return (p + b - 1) / b;
+}
+
+}  // namespace
+
+bool ProductPropagator::Propagate(Trail* trail) {
+  // Copy because we will swap them.
+  IntegerVariable a = a_;
+  IntegerVariable b = b_;
+  IntegerValue min_a = integer_trail_->LowerBound(a);
+  IntegerValue max_a = integer_trail_->UpperBound(a);
+  IntegerValue min_b = integer_trail_->LowerBound(b);
+  IntegerValue max_b = integer_trail_->UpperBound(b);
+  IntegerValue min_p = integer_trail_->LowerBound(p_);
+  IntegerValue max_p = integer_trail_->UpperBound(p_);
+
+  // TODO(user): support these cases.
+  CHECK_GE(min_a, 0);
+  CHECK_GE(min_b, 0);
+
+  const IntegerValue zero(0);  // For convenience.
+  bool may_propagate = true;
+  while (may_propagate) {
+    may_propagate = false;
+    if (max_a * max_b < max_p) {
+      may_propagate = true;
+      max_p = max_a * max_b;
+      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(p_, max_p), {},
+                                   {integer_trail_->UpperBoundAsLiteral(a),
+                                    integer_trail_->UpperBoundAsLiteral(b),
+                                    IntegerLiteral::GreaterOrEqual(a, zero),
+                                    IntegerLiteral::GreaterOrEqual(b, zero)})) {
+        return false;
+      }
+    }
+    if (min_a * min_b > min_p) {
+      may_propagate = true;
+      min_p = min_a * min_b;
+      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(p_, min_p),
+                                   {},
+                                   {integer_trail_->LowerBoundAsLiteral(a),
+                                    integer_trail_->LowerBoundAsLiteral(b)})) {
+        return false;
+      }
+    }
+
+    // This helps to check the validity of the test below.
+    CHECK_GE(min_p, 0);
+    CHECK_GE(max_p, min_p);
+
+    for (int i = 0; i < 2; ++i) {
+      if (max_a * min_b > max_p) {
+        may_propagate = true;
+        max_a = MaxValue(min_b, max_p);
+        if (!integer_trail_->Enqueue(
+                IntegerLiteral::LowerOrEqual(a, max_a), {},
+                {integer_trail_->LowerBoundAsLiteral(b),
+                 integer_trail_->UpperBoundAsLiteral(p_)})) {
+          return false;
+        }
+      } else if (max_a * min_b < min_p) {
+        may_propagate = true;
+        min_b = MinValue(max_a, min_p);
+        if (!integer_trail_->Enqueue(
+                IntegerLiteral::GreaterOrEqual(b, min_b), {},
+                {integer_trail_->UpperBoundAsLiteral(a),
+                 IntegerLiteral::GreaterOrEqual(b, zero),
+                 integer_trail_->LowerBoundAsLiteral(p_)})) {
+          return false;
+        }
+      }
+
+      // Same thing with a and b swapped.
+      std::swap(a, b);
+      std::swap(min_a, min_b);
+      std::swap(max_a, max_b);
+    }
+  }
+  return true;
+}
+
+void ProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  watcher->WatchIntegerVariable(a_, id);
+  watcher->WatchIntegerVariable(b_, id);
+  watcher->WatchIntegerVariable(p_, id);
 }
 
 }  // namespace sat

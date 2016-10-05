@@ -177,6 +177,17 @@ inline std::function<void(Model*)> EndBeforeStart(IntervalVariable i1,
   };
 }
 
+inline std::function<void(Model*)> StartAtEnd(IntervalVariable i1,
+                                              IntervalVariable i2) {
+  return [=](Model* model) {
+    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
+    PrecedencesPropagator* precedences =
+        model->GetOrCreate<PrecedencesPropagator>();
+    precedences->AddPrecedence(intervals->EndVar(i1), intervals->StartVar(i2));
+    precedences->AddPrecedence(intervals->StartVar(i2), intervals->EndVar(i1));
+  };
+}
+
 inline std::function<void(Model*)> StartAtStart(IntervalVariable i1,
                                                 IntervalVariable i2) {
   return [=](Model* model) {

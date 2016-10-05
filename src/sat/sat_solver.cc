@@ -366,8 +366,8 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     if (track_binary_clauses_) {
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
-    binary_implication_graph_.AddBinaryConflict(literals[0], literals[1],
-                                                trail_);
+    binary_implication_graph_.AddBinaryClauseDuringSearch(literals[0],
+                                                          literals[1], trail_);
     lbd_running_average_.Add(2);
 
     // In case this is the first binary clauses.
@@ -2389,7 +2389,8 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
   variable_to_process_.push_back(variable);
 
   // First we expand the reason for the given variable.
-  DCHECK(!trail_->Reason(variable).IsEmpty());
+  DCHECK(!trail_->Reason(variable).IsEmpty())
+      << trail_->Info(variable).DebugString();
   for (Literal literal : trail_->Reason(variable)) {
     const BooleanVariable var = literal.Variable();
     DCHECK_NE(var, variable);

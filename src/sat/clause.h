@@ -356,9 +356,10 @@ class BinaryImplicationGraph : public Propagator {
   // Note that it is also equivalent to (not b => a).
   void AddBinaryClause(Literal a, Literal b);
 
-  // Same as AddBinaryClause() but enqueues a possible unit propagation.
-  void AddBinaryConflict(Literal a, Literal b, Trail* trail);
-
+  // Same as AddBinaryClause() but enqueues a possible unit propagation. Note
+  // that if the binary clause propagates, it must do so at the last level, this
+  // is DCHECKed.
+  void AddBinaryClauseDuringSearch(Literal a, Literal b, Trail* trail);
 
   // Uses the binary implication graph to minimize the given conflict by
   // removing literals that implies others. The idea is that if a and b are two
