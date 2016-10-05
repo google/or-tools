@@ -29,15 +29,22 @@ bool CheckConstraintSatisfaction(const std::vector<FapConstraint>& data_constrai
                                  const std::vector<int>& variables,
                                  const std::map<int, int>& index_from_key) {
   bool status = true;
+<<<<<<< HEAD
   for (const FapConstraint& ct : data_constraints) {
     const int index1 = FindOrDie(index_from_key, ct.variable1);
     const int index2 = FindOrDie(index_from_key, ct.variable2);
+=======
+  for (const auto& data_constraint : data_constraints) {
+    const int index1 = FindOrDie(index_from_key, data_constraint.variable1_);
+    const int index2 = FindOrDie(index_from_key, data_constraint.variable2_);
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
     CHECK_LT(index1, variables.size());
     CHECK_LT(index2, variables.size());
     const int var1 = variables[index1];
     const int var2 = variables[index2];
     const int absolute_difference = abs(var1 - var2);
 
+<<<<<<< HEAD
     if ((ct.operation == ">") && (absolute_difference <= ct.value)) {
       LOG(INFO) << "  Violation of contraint between variable " << ct.variable1
                 << " and variable " << ct.variable2 << ".";
@@ -52,6 +59,27 @@ bool CheckConstraintSatisfaction(const std::vector<FapConstraint>& data_constrai
                 << "| (= " << absolute_difference << ") =  " << ct.value
                 << ".";
       status = false;
+=======
+    if (data_constraint.hard_) {
+      if ((data_constraint.operator_ == ">") && (absolute_difference <= data_constraint.value_)) {
+        LOG(INFO) << StringPrintf("  Violation of contraint between variable %d"
+                                  " and variable %d.\n",
+                                  data_constraint.variable1_, data_constraint.variable2_);
+        LOG(INFO) << StringPrintf("  Expected |%d - %d| (= %d) > %d.",
+                                  var1, var2,
+                                  absolute_difference, data_constraint.value_);
+        status = false;
+      } else if ((data_constraint.operator_ == "=") &&
+                 (absolute_difference != data_constraint.value_)) {
+        LOG(INFO) << StringPrintf("  Violation of contraint between variable %d"
+                                  " and variable %d.\n",
+                                  data_constraint.variable1_, data_constraint.variable2_);
+        LOG(INFO) << StringPrintf("  Expected |%d - %d| (= %d) == %d.",
+                                  var1, var2,
+                                  absolute_difference, data_constraint.value_);
+        status = false;
+      }
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
     }
   }
   return status;
@@ -66,11 +94,21 @@ bool CheckVariablePosition(const std::map<int, FapVariable>& data_variables,
     CHECK_LT(index, variables.size());
     const int var = variables[index];
 
+<<<<<<< HEAD
     if (it.second.hard && (it.second.initial_position != -1) &&
         (var != it.second.initial_position)) {
       LOG(INFO) << "  Change of position of hard variable " << it.first << ".";
       LOG(INFO) << "  Expected " << it.second.initial_position
                 << " instead of given " << var << ".";
+=======
+    if (it.second.hard_ &&
+        (it.second.initial_position_ != -1) &&
+        (var != it.second.initial_position_)) {
+      LOG(INFO) << StringPrintf("  Change of position of hard variable %d.\n",
+                                it.first);
+      LOG(INFO) << StringPrintf("  Expected %d instead of given %d.",
+                                it.second.initial_position_, var);
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
       status = false;
     }
   }

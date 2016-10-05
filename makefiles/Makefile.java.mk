@@ -368,10 +368,28 @@ $(OBJ_DIR)/com/google/ortools/samples/MultiThreadTest.class: javaortools $(EX_DI
 
 # Compile and Run CP java example:
 
-$(OBJ_DIR)/com/google/ortools/samples/$(EX).class: javaortools $(EX_DIR)/com/google/ortools/samples/$(EX).java
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$S$(EX).java
+ifneq ($(EX),)
+ifeq ($(SYSTEM),win)
+EX_read_package = $(shell findstr /r "^package.*\;" $(EX))
+else
+EX_read_package = $(shell grep '^package.*\;' $(EX))
+endif
+EX_name = $(basename $(notdir $(EX)))
+EX_package = $(subst ;,,$(subst package ,,$(EX_read_package)))
+ifeq ($(EX_read_package),)
+EX_class_file = $(OBJ_DIR)$S$(EX_name).class
+EX_class = $(EX_name)
+else
+EX_class_file = $(OBJ_DIR)$S$(subst .,$S,$(EX_package))$S$(EX_name).class
+EX_class = $(EX_package).$(EX_name)
+endif
 
-cjava: $(OBJ_DIR)/com/google/ortools/samples/$(EX).class
 
-rjava: cjava javaortools
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.$(EX) $(ARGS)
+$(EX_class_file): javaortools $(EX)
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX)
+
+cjava: $(EX_class_file)
+
+rjava: $(EX_class_file) javaortools
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_class) $(ARGS)
+endif

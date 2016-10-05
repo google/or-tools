@@ -74,7 +74,7 @@ DIMACS_DEPS = \
 DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
 dimacslibs: $(DIMACS_LIBS)
 
-FAP_LIBS      = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
+FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
 FAP_DEPS = \
 	$(EX_DIR)/cpp/fap_model_printer.h \
 	$(EX_DIR)/cpp/fap_parser.h \
@@ -179,6 +179,8 @@ $(OBJ_DIR)/fap_parser.$O: $(EX_DIR)/cpp/fap_parser.cc
 $(OBJ_DIR)/fap_utilities.$O: $(EX_DIR)/cpp/fap_utilities.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sfap_utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_utilities.$O
 
+$(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX): $(FAP_OBJS)
+	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX) $(FAP_OBJS)
 
 # Flatzinc code
 
@@ -611,6 +613,14 @@ $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
 	  $(CP_LIB_OBJS) \
 	  $(DEPENDENCIES_LNK) \
 	  $(OR_TOOLS_LD_FLAGS)
+
+# compile and run C++ examples
+
+ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+
+rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 
 
 # Debug

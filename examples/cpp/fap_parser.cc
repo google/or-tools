@@ -20,15 +20,25 @@
 #include "base/file.h"
 #include "base/split.h"
 #include "base/map_util.h"
-
 #include "cpp/fap_parser.h"
 
 namespace operations_research {
 
 void ParseFileByLines(const std::string& filename, std::vector<std::string>* lines) {
   CHECK_NOTNULL(lines);
+<<<<<<< HEAD
   std::string result;
   CHECK(file::GetContents(filename, &result, file::Defaults()).ok());
+=======
+  File::Init();
+  File* file = File::OpenOrDie(filename.c_str(), "r");
+
+  string result;
+  const int64 kMaxInputFileSize = 1 << 30;  // 1GB
+  file->ReadToString(&result, kMaxInputFileSize);
+  file->Close();
+
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
   *lines = strings::Split(result, "\n", strings::SkipEmpty());
 }
 
@@ -41,8 +51,14 @@ VariableParser::~VariableParser() {}
 void VariableParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
+<<<<<<< HEAD
   for (const std::string& line : lines) {
     std::vector<std::string> tokens = strings::Split(line, " ", strings::SkipEmpty());
+=======
+  for (const auto& line : lines) {
+    std::vector<string> tokens;
+    tokens = strings::Split(line, " ", strings::SkipEmpty());
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
     if (tokens.empty()) {
       continue;
     }
@@ -67,8 +83,14 @@ DomainParser::~DomainParser() {}
 void DomainParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
+<<<<<<< HEAD
   for (const std::string& line : lines) {
     std::vector<std::string> tokens = strings::Split(line, " ", strings::SkipEmpty());
+=======
+  for (const auto& line : lines) {
+    std::vector<string> tokens;
+    tokens = strings::Split(line, " ", strings::SkipEmpty());
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
     if (tokens.empty()) {
       continue;
     }
@@ -97,8 +119,14 @@ ConstraintParser::~ConstraintParser() {}
 void ConstraintParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
+<<<<<<< HEAD
   for (const std::string& line : lines) {
     std::vector<std::string> tokens = strings::Split(line, " ", strings::SkipEmpty());
+=======
+  for (const auto& line : lines) {
+    std::vector<string> tokens;
+    tokens = strings::Split(line, " ", strings::SkipEmpty());
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
     if (tokens.empty()) {
       continue;
     }
@@ -142,6 +170,7 @@ void ParametersParser::Parse() {
   std::vector<std::string> lines;
 
   ParseFileByLines(filename_, &lines);
+<<<<<<< HEAD
   for (const std::string& line : lines) {
     if (objective) {
       largest_token = largest_token || (line.find("largest") != std::string::npos);
@@ -149,14 +178,29 @@ void ParametersParser::Parse() {
       number_token = number_token || (line.find("number") != std::string::npos);
       values_token = values_token || (line.find("values") != std::string::npos);
       coefficient = coefficient || (line.find("coefficient") != std::string::npos);
+=======
+  for (const auto& line : lines) {
+    if (objective) {
+      largest_token = largest_token || (line.find("largest") != string::npos);
+      value_token = value_token || (line.find("value") != string::npos);
+      number_token = number_token || (line.find("number") != string::npos);
+      values_token = values_token || (line.find("values") != string::npos);
+      coefficient = coefficient || (line.find("coefficient") != string::npos);
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
     }
 
     if (coefficient) {
       CHECK_EQ(coefficient_no_,
                constraint_coefficient_no_ + variable_coefficient_no_);
       objective = false;
+<<<<<<< HEAD
       if (line.find("=") != std::string::npos) {
         std::vector<std::string> tokens = strings::Split(line, " ", strings::SkipEmpty());
+=======
+      if (line.find("=") != string::npos) {
+        std::vector<string> tokens;
+        tokens = strings::Split(line, " ", strings::SkipEmpty());
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
         CHECK_GE(tokens.size(), 3);
         coefficients.push_back(atoi32(tokens[2].c_str()));
       }
@@ -316,6 +360,7 @@ void ParseInstance(const std::string& data_directory, bool find_components,
 
   ParametersParser cst(data_directory);
   cst.Parse();
+<<<<<<< HEAD
   const int maximum_weight_cost =
       *std::max_element((cst.constraint_weights()).begin(),
                         (cst.constraint_weights()).end());
@@ -343,6 +388,21 @@ void ParseInstance(const std::string& data_directory, bool find_components,
     } else {
       ct.weight_cost = (cst.constraint_weights())[ct.weight_index - 1];
       ct.hard = false;
+=======
+
+  for (auto& it : *variables) {
+    it.second.domain_ = FindOrDie(dom.domains(), it.second.domain_index_);
+    it.second.domain_size_ = dom.domain_cardinality();
+    if ((it.second.mobility_index_ == -1) ||
+        (it.second.mobility_index_ == 0)) {
+      it.second.mobility_cost_ = -1;
+      if (it.second.initial_position_ != -1) {
+        it.second.hard_ = true;
+      }
+    } else {
+      it.second.mobility_cost_ =
+        (cst.variable_weights())[it.second.mobility_index_-1];
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
     }
     ++((*variables)[ct.variable1]).degree;
     ++((*variables)[ct.variable2]).degree;
@@ -352,6 +412,7 @@ void ParseInstance(const std::string& data_directory, bool find_components,
   // Make the objective of the instance.
   *objective = cst.objective();
 
+<<<<<<< HEAD
   if (find_components) {
     CHECK_NOTNULL(components);
     FindComponents(*constraints, *variables, maximum_variable_id, components);
@@ -366,6 +427,14 @@ void ParseInstance(const std::string& data_directory, bool find_components,
     for (FapConstraint& constraint : *constraints) {
       constraint.impact = EvaluateConstraintImpact(
           *variables, maximum_weight_cost, constraint);
+=======
+  for (auto& constraint : *constraints) {
+    if ((constraint.weight_index_ == -1) || (constraint.weight_index_ == 0)) {
+      constraint.weight_cost_ = -1;
+      constraint.hard_ = true;
+    } else {
+      constraint.weight_cost_ = (cst.constraint_weights())[constraint.weight_index_-1];
+>>>>>>> 12dc2aee2aa9f9e0c0ba3f00d2c47084ed1ec2af
     }
   }
 }

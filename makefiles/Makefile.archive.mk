@@ -24,8 +24,6 @@ create_dirs:
 	        $(MKDIR) temp$S$(INSTALL_DIR)$Slib
 	        $(MKDIR) temp$S$(INSTALL_DIR)$Sobjs
 	        $(MKDIR) temp$S$(INSTALL_DIR)$Sbin
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sbin$Scpp
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sbin$Scsharp
 	        $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude
 	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Salgorithms
 	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sbase
@@ -72,6 +70,7 @@ cc_archive:
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) examples$Scpp$S*.cc temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) examples$Scpp$S*.h temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) src$Salgorithms$S*.h temp$S$(INSTALL_DIR)$Sinclude$Salgorithms
@@ -114,8 +113,8 @@ endif
 
 dotnet_archive:
 
-	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin$Scsharp
-	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin$Scsharp
+	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin
+	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin
 	$(COPY) examples$Scsharp$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Scsharp$Ssolution$SProperties$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
 	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
@@ -129,7 +128,7 @@ ifeq "$(SYSTEM)" "win"
 	$(COPY) examples$Scsharp$S*.sln temp$S$(INSTALL_DIR)$Sexamples
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 else
-	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin$Scsharp
+	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin
 endif
 
 java_archive:
