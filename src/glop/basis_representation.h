@@ -117,7 +117,8 @@ class EtaFactorization {
   // Updates the eta factorization, i.e. adds the new eta matrix defined by
   // the leaving variable and the corresponding eta column.
   void Update(ColIndex entering_col, RowIndex leaving_variable_row,
-              const std::vector<RowIndex>& eta_non_zeros, DenseColumn* dense_eta);
+              const std::vector<RowIndex>& eta_non_zeros,
+              DenseColumn* dense_eta);
 
   // Left solves all systems from right to left, i.e. y_i = y_{i+1}.(E_i)^{-1}
   void LeftSolve(DenseRow* y) const;

@@ -90,8 +90,8 @@ namespace {
 // If non_zeros is empty, uses a dense algorithm to compute the squared L2
 // norm of the given column, otherwise do the same with a sparse version. In
 // both cases column is cleared.
-Fractional ComputeSquaredNormAndResetToZero(const std::vector<RowIndex>& non_zeros,
-                                            DenseColumn* column) {
+Fractional ComputeSquaredNormAndResetToZero(
+    const std::vector<RowIndex>& non_zeros, DenseColumn* column) {
   Fractional sum = 0.0;
   if (non_zeros.empty()) {
     sum = SquaredNorm(*column);
@@ -260,7 +260,8 @@ void LuFactorization::LeftSolveL(DenseRow* y) const {
 }
 
 void LuFactorization::RightSolveLForSparseColumn(
-    const SparseColumn& b, DenseColumn* x, std::vector<RowIndex>* non_zeros) const {
+    const SparseColumn& b, DenseColumn* x,
+    std::vector<RowIndex>* non_zeros) const {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(IsAllZero(*x));
   non_zeros->clear();

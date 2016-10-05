@@ -134,7 +134,8 @@ class LuFactorization {
   // RightSolveUWithNonZeros() always return the non-zeros of the output.
   void RightSolveUWithNonZeros(DenseColumn* x,
                                std::vector<RowIndex>* non_zeros) const;
-  void LeftSolveUWithNonZeros(DenseRow* y, std::vector<ColIndex>* non_zeros) const;
+  void LeftSolveUWithNonZeros(DenseRow* y,
+                              std::vector<ColIndex>* non_zeros) const;
 
   // Specialized version of LeftSolveL() that also computes the non-zero
   // pattern of the output. Moreover, if result_before_permutation is not NULL,

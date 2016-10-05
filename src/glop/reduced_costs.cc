@@ -379,7 +379,8 @@ void ReducedCosts::ComputeReducedCosts() {
 #ifdef OMP
     // In the multi-threaded case, perform the same computation as in the
     // single-threaded case above.
-    std::vector<Fractional> thread_local_dual_residual_error(num_omp_threads, 0.0);
+    std::vector<Fractional> thread_local_dual_residual_error(num_omp_threads,
+                                                             0.0);
     const int parallel_loop_size = num_cols.value();
 #pragma omp parallel for num_threads(num_omp_threads)
     for (int i = 0; i < parallel_loop_size; i++) {

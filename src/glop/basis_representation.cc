@@ -27,7 +27,8 @@ namespace glop {
 
 const Fractional EtaMatrix::kSparseThreshold = 0.5;
 
-EtaMatrix::EtaMatrix(ColIndex eta_col, const std::vector<RowIndex>& eta_non_zeros,
+EtaMatrix::EtaMatrix(ColIndex eta_col,
+                     const std::vector<RowIndex>& eta_non_zeros,
                      DenseColumn* dense_eta)
     : eta_col_(eta_col),
       eta_col_coefficient_((*dense_eta)[ColToRowIndex(eta_col)]),
