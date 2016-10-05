@@ -44,6 +44,8 @@ class BeginEndWrapper {
   Iterator begin() const { return begin_; }
   Iterator end() const { return end_; }
 
+  bool empty() const { return begin() == end(); }
+
  private:
   const Iterator begin_;
   const Iterator end_;
