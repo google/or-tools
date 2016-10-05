@@ -55,6 +55,15 @@ bool StartMinLessThan(Task* const w1, Task* const w2) {
   return (w1->interval->StartMin() < w2->interval->StartMin());
 }
 
+// A comparator that sorts the tasks by their effective earliest start time when
+// using the shortest duration possible. This comparator can be used when
+// sorting the tasks before they are inserted to a Theta-tree.
+template <class Task>
+bool ShortestDurationStartMinLessThan(Task* const w1, Task* const w2) {
+  return w1->interval->EndMin() - w1->interval->DurationMin() <
+         w2->interval->EndMin() - w2->interval->DurationMin();
+}
+
 template <class Task>
 bool StartMaxLessThan(Task* const w1, Task* const w2) {
   return (w1->interval->StartMax() < w2->interval->StartMax());
@@ -158,7 +167,7 @@ struct ThetaNode {
   // Single interval element
   explicit ThetaNode(const IntervalVar* const interval)
       : total_processing(interval->DurationMin()),
-        total_ect(interval->StartMin() + interval->DurationMin()) {
+        total_ect(interval->EndMin()) {
     // NOTE(user): Petr Vilim's thesis assumes that all tasks in the
     // scheduling problem have fixed duration and that propagation already
     // updated the bounds of the start/end times accordingly.
@@ -167,11 +176,6 @@ struct ThetaNode {
     // our case, we use StartMin() + DurationMin() for the earliest completion
     // time of a task, which should not break any assumptions, but may give
     // bounds that are too loose.
-    // LOG_IF_FIRST_N(WARNING,
-    //                (interval->DurationMin() != interval->DurationMax()), 1)
-    //     << "You are using the Theta-tree on tasks having variable durations. "
-    //        "This may lead to unexpected results, such as discarding valid "
-    //        "solutions or allowing invalid ones.";
   }
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
@@ -596,7 +600,7 @@ EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
 
 void EdgeFinderAndDetectablePrecedences::UpdateEst() {
   std::sort(by_start_min_.begin(), by_start_min_.end(),
-            StartMinLessThan<DisjunctiveTask>);
+            ShortestDurationStartMinLessThan<DisjunctiveTask>);
   for (int i = 0; i < size(); ++i) {
     by_start_min_[i]->index = i;
   }
