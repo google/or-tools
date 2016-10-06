@@ -381,7 +381,7 @@ ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 
 rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
-	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
 
 # Java generic compilation command.
 
