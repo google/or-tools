@@ -1056,47 +1056,13 @@ const RoutingModel::DisjunctionIndex RoutingModel::kNoDisjunction(-1);
 
 const RoutingModel::DimensionIndex RoutingModel::kNoDimension(-1);
 
-RoutingModel::RoutingModel(int nodes, int vehicles)
-    : RoutingModel(nodes, vehicles, DefaultModelParameters()) {}
+RoutingModel::RoutingModel(int nodes, int vehicles, NodeIndex depot)
+    : RoutingModel(nodes, vehicles, depot, DefaultModelParameters()) {}
 
-RoutingModel::RoutingModel(int nodes, int vehicles,
+RoutingModel::RoutingModel(int nodes, int vehicles, NodeIndex depot,
                            const RoutingModelParameters& parameters)
-    : nodes_(nodes),
-      vehicles_(vehicles),
-      no_cycle_constraint_(nullptr),
-      cost_(nullptr),
-      transit_cost_of_vehicle_(vehicles, nullptr),
-      fixed_cost_of_vehicle_(vehicles),
-      cost_class_index_of_vehicle_(vehicles_, CostClassIndex(-1)),
-      cost_classes_(),
-      costs_are_homogeneous_across_vehicles_(
-          parameters.reduce_vehicle_cost_model()),
-      vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
-      starts_(vehicles),
-      ends_(vehicles),
-      start_end_count_(vehicles > 0 ? 1 : 0),
-      is_depot_set_(false),
-      closed_(false),
-      status_(ROUTING_NOT_SOLVED),
-      collect_assignments_(nullptr),
-      solve_db_(nullptr),
-      improve_db_(nullptr),
-      restore_assignment_(nullptr),
-      assignment_(nullptr),
-      preassignment_(nullptr),
-      limit_(nullptr),
-      ls_limit_(nullptr),
-      lns_limit_(nullptr) {
-  VLOG(1) << "Model parameters:\n" << parameters.DebugString();
-  ConstraintSolverParameters solver_parameters =
-      parameters.has_solver_parameters() ? parameters.solver_parameters()
-                                         : Solver::DefaultSolverParameters();
-  solver_parameters.set_compress_trail(
-      GetTrailCompression(parameters.trail_compression()));
-  solver_.reset(new Solver("Routing", solver_parameters));
-  InitializeBuilders(solver_.get());
-  Initialize();
-}
+    : RoutingModel(nodes, vehicles, std::vector<NodeIndex>(vehicles, depot),
+                   std::vector<NodeIndex>(vehicles, depot), parameters) {}
 
 RoutingModel::RoutingModel(int nodes, int vehicles,
                            const std::vector<std::pair<NodeIndex, NodeIndex>>& start_ends)
@@ -1118,7 +1084,6 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       starts_(vehicles),
       ends_(vehicles),
-      is_depot_set_(false),
       closed_(false),
       status_(ROUTING_NOT_SOLVED),
       collect_assignments_(nullptr),
@@ -1171,7 +1136,6 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       starts_(vehicles),
       ends_(vehicles),
-      is_depot_set_(false),
       closed_(false),
       status_(ROUTING_NOT_SOLVED),
       collect_assignments_(nullptr),
@@ -1300,7 +1264,6 @@ RoutingSearchParameters RoutingModel::DefaultSearchParameters() {
 }
 
 void RoutingModel::AddNoCycleConstraintInternal() {
-  CheckDepot();
   if (no_cycle_constraint_ == nullptr) {
     no_cycle_constraint_ = solver_->MakeNoCycle(nexts_, active_);
     solver_->AddConstraint(no_cycle_constraint_);
@@ -1363,7 +1326,6 @@ bool RoutingModel::InitializeDimensionInternal(
     int64 slack_max, bool fix_start_cumul_to_zero,
     RoutingDimension* dimension) {
   CHECK(dimension != nullptr);
-  CheckDepot();
   CHECK_EQ(vehicles_, evaluators.size());
   CHECK((dimension->base_dimension_ == nullptr &&
          state_dependent_evaluators.empty()) ||
@@ -2019,18 +1981,8 @@ void RoutingModel::AddLocalSearchOperator(LocalSearchOperator* ls_operator) {
 
 int64 RoutingModel::GetDepot() const { return vehicles() > 0 ? Start(0) : -1; }
 
-void RoutingModel::SetDepot(NodeIndex depot) {
-  std::vector<std::pair<NodeIndex, NodeIndex>> start_end(
-      vehicles_, std::make_pair(depot, depot));
-  SetStartEnd(start_end);
-}
-
 void RoutingModel::SetStartEnd(
     const std::vector<std::pair<NodeIndex, NodeIndex>>& start_ends) {
-  if (is_depot_set_) {
-    LOG(WARNING) << "A depot has already been specified, ignoring new ones";
-    return;
-  }
   CHECK_EQ(start_ends.size(), vehicles_);
   const int size = Size();
   hash_set<NodeIndex> starts;
@@ -2080,7 +2032,6 @@ void RoutingModel::SetStartEnd(
     index_to_vehicle_[index] = i;
     ++index;
   }
-  is_depot_set_ = true;
 
   // Logging model information.
   VLOG(1) << "Number of nodes: " << nodes_;
@@ -2340,8 +2291,6 @@ void RoutingModel::CloseModelWithParameters(
   }
   closed_ = true;
 
-  CheckDepot();
-
   for (RoutingDimension* const dimension : dimensions_) {
     dimension->CloseModel(UsesLightPropagation(parameters));
   }
@@ -2446,6 +2395,9 @@ void RoutingModel::CloseModelWithParameters(
   cost_ = solver_->MakeSum(cost_elements)->Var();
   cost_->set_name("Cost");
 
+  // Precedences
+  solver_->AddConstraint(
+      solver_->MakePathPrecedenceConstraint(nexts_, pickup_delivery_pairs_));
   // Detect constraints
   std::unique_ptr<RoutingModelInspector> inspector(
       new RoutingModelInspector(this));
@@ -3034,7 +2986,6 @@ class SavingsBuilder : public DecisionBuilder {
 
  private:
   void ModelSetup() {
-    depot_ = model_->GetDepot();
     nodes_number_ = model_->Size() + model_->vehicles();
     neighbors_.resize(nodes_number_);
     route_shape_parameter_ = FLAGS_savings_route_shape_parameter;
@@ -3105,7 +3056,6 @@ class SavingsBuilder : public DecisionBuilder {
   const bool check_assignment_;
   std::vector<std::string> dimensions_;
   int64 nodes_number_;
-  int depot_;
   std::vector<std::vector<int64>> costs_;
   std::vector<std::vector<int>> neighbors_;
   std::vector<Link> savings_list_;
@@ -3184,7 +3134,7 @@ void SweepArranger::ArrangeNodes(std::vector<RoutingModel::NodeIndex>* nodes) {
   }
 }
 
-// Desicion Builder building a first solution based on Sweep heuristic for
+// Decision Builder building a first solution based on Sweep heuristic for
 // Vehicle Routing Problem.
 // Suitable only when distance is considered as the cost.
 class SweepBuilder : public DecisionBuilder {
@@ -3213,7 +3163,7 @@ class SweepBuilder : public DecisionBuilder {
 
  private:
   void ModelSetup() {
-    depot_ = model_->GetDepot();
+    const int depot = model_->GetDepot();
     nodes_number_ = model_->nodes();
     if (FLAGS_sweep_sectors > 0 && FLAGS_sweep_sectors < nodes_number_) {
       model_->sweep_arranger()->SetSectors(FLAGS_sweep_sectors);
@@ -3226,9 +3176,9 @@ class SweepBuilder : public DecisionBuilder {
       if (model_->HasIndex(first) && model_->HasIndex(second)) {
         const int64 first_index = model_->NodeToIndex(first);
         const int64 second_index = model_->NodeToIndex(second);
-        if (first_index != depot_ && second_index != depot_) {
-          Link link(std::make_pair(first_index, second_index), 0, 0, depot_,
-                    depot_);
+        if (first_index != depot && second_index != depot) {
+          Link link(std::make_pair(first_index, second_index), 0, 0, depot,
+                    depot);
           links_.push_back(link);
         }
       }
@@ -3239,7 +3189,6 @@ class SweepBuilder : public DecisionBuilder {
   std::unique_ptr<RouteConstructor> route_constructor_;
   const bool check_assignment_;
   int64 nodes_number_;
-  int depot_;
   std::vector<Link> links_;
   std::vector<VehicleClass> vehicle_classes_;
 };
@@ -4241,13 +4190,6 @@ std::string RoutingModel::DebugOutputAssignment(
   }
   StringAppendF(&output, "\n");
   return output;
-}
-
-void RoutingModel::CheckDepot() {
-  if (!is_depot_set_) {
-    LOG(WARNING) << "A depot must be specified, setting one at node 0";
-    SetDepot(NodeIndex(0));
-  }
 }
 
 Assignment* RoutingModel::GetOrCreateAssignment() {

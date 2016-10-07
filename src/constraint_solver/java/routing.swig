@@ -265,7 +265,6 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %rename (addAllActive) AddAllActive;
 %rename (addDisjunction) AddDisjunction;
 %rename (addLocalSearchOperator) AddLocalSearchOperator;
-%rename (setDepot) SetDepot;
 %rename (addSearchMonitor) AddSearchMonitor;
 %rename (applyLocks) ApplyLocks;
 %rename (writeAssignment) WriteAssignment;

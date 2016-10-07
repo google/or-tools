@@ -64,8 +64,7 @@ int main(int argc, char** argv) {
   // Nodes are indexed from 0 to vrp_orders, the starts and ends of the routes
   // are at node 0.
   const RoutingModel::NodeIndex kDepot(0);
-  RoutingModel routing(vrp_orders + 1, FLAGS_vrp_vehicles);
-  routing.SetDepot(kDepot);
+  RoutingModel routing(vrp_orders + 1, FLAGS_vrp_vehicles, kDepot);
   RoutingSearchParameters parameters =
       operations_research::BuildSearchParametersFromFlags();
   parameters.set_first_solution_strategy(

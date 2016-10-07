@@ -81,7 +81,7 @@ def main(args):
     # Second argument = 1 to build a single tour (it's a TSP).
     # Nodes are indexed from 0 to parser_tsp_size - 1, by default the start of
     # the route is node 0.
-    routing = pywrapcp.RoutingModel(args.tsp_size, 1)
+    routing = pywrapcp.RoutingModel(args.tsp_size, 1, 0)
 
     search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
     # Setting first solution heuristic (cheapest addition).

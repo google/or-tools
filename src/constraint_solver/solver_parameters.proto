@@ -115,6 +115,7 @@ message ConstraintSolverParameters {
   //
   bool use_cumulative_edge_finder = 105;
   bool use_cumulative_time_table = 106;
+  bool use_cumulative_time_table_sync = 112;
   bool use_sequence_high_demand_tasks = 107;
   bool use_all_possible_disjunctions = 108;
   int32 max_edge_finder_size = 109;

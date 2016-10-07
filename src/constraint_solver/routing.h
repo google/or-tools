@@ -346,11 +346,12 @@ class RoutingModel {
   static const DimensionIndex kNoDimension;
 
   // In the following constructors, the versions which do not take
-  // RoutingModelParamters are equivalent to passing DefaultModelParameters.
-  // Supposes a single depot. A depot is the start and end node of the route of
-  // a vehicle.
-  RoutingModel(int nodes, int vehicles);
-  RoutingModel(int nodes, int vehicles,
+  // RoutingModelParameters are equivalent to passing DefaultModelParameters.
+  // A depot is the start and end node of the route of a vehicle.
+  // Constructor taking a single depot node which is used as the start and
+  // end node for all vehicles.
+  RoutingModel(int nodes, int vehicles, NodeIndex depot);
+  RoutingModel(int nodes, int vehicles, NodeIndex depot,
                const RoutingModelParameters& parameters);
   // Constructor taking a vector of (start node, end node) pairs for each
   // vehicle route. Used to model multiple depots.
@@ -587,10 +588,6 @@ class RoutingModel {
   //
   // TODO(user): Remove this when model introspection detects linked nodes.
   void AddPickupAndDelivery(NodeIndex node1, NodeIndex node2) {
-    // TODO(user): Checking the depot ensures indices are up-to-date but sets
-    // the depot to node 0 if it has not been set already; find a way to avoid
-    // this.
-    CheckDepot();
     pickup_delivery_pairs_.push_back(
         std::make_pair(NodeToIndex(node1), NodeToIndex(node2)));
   }
@@ -613,8 +610,6 @@ class RoutingModel {
   // routes. If all routes start  and end at the same node (single depot), this
   // is the node returned.
   int64 GetDepot() const;
-  // Makes 'depot' the starting node of all routes.
-  void SetDepot(NodeIndex depot);
 
   // Sets the cost function of the model such that the cost of a segment of a
   // route between node 'from' and 'to' is evaluator(from, to), whatever the
@@ -1147,7 +1142,6 @@ class RoutingModel {
   NodeEvaluator2* NewCachedCallback(NodeEvaluator2* callback);
   VariableNodeEvaluator2* NewCachedStateDependentCallback(
       VariableNodeEvaluator2* callback);
-  void CheckDepot();
   void QuietCloseModel();
   void QuietCloseModelWithParameters(
       const RoutingSearchParameters& parameters) {
@@ -1266,7 +1260,6 @@ class RoutingModel {
   std::vector<int64> ends_;
   int start_end_count_;
   // Model status
-  bool is_depot_set_;
   bool closed_;
   Status status_;
 

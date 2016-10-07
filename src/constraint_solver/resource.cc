@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include "base/hash.h"
+#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
@@ -41,7 +42,6 @@
 #include "util/monoid_operation_tree.h"
 #include "util/saturated_arithmetic.h"
 #include "util/string_array.h"
-
 
 namespace operations_research {
 namespace {
@@ -1874,6 +1874,284 @@ class CumulativeTimeTable : public Constraint {
   DISALLOW_COPY_AND_ASSIGN(CumulativeTimeTable);
 };
 
+// Cumulative idempotent Time-Table.
+//
+// This propagator is based on Letort et al. 2012 add Gay et al. 2015.
+//
+// TODO(user): fill the description once the incremental aspect are
+// implemented.
+//
+// Worst case: O(n^2 log n) -- really unlikely in practice.
+// Best case:  Omega(1).
+// Practical:  Almost linear in the number of unfixed tasks.
+template <class Task>
+class TimeTableSync : public Constraint {
+ public:
+  TimeTableSync(Solver* const solver, const std::vector<Task*>& tasks,
+                IntVar* const capacity)
+      : Constraint(solver), tasks_(tasks), capacity_(capacity) {
+    num_tasks_ = tasks_.size();
+    gap_ = 0;
+    prev_gap_ = 0;
+    pos_ = kint64min;
+    next_pos_ = kint64min;
+    // Allocate vectors to contain no more than n_tasks.
+    start_min_.reserve(num_tasks_);
+    start_max_.reserve(num_tasks_);
+    end_min_.reserve(num_tasks_);
+    durations_.reserve(num_tasks_);
+    demands_.reserve(num_tasks_);
+  }
+
+  ~TimeTableSync() override { STLDeleteElements(&tasks_); }
+
+  void InitialPropagate() override {
+    // Reset data structures.
+    BuildEvents();
+    while (!events_scp_.empty() && !events_ecp_.empty()) {
+      // Move the sweep line.
+      pos_ = NextEventTime();
+      // Update the profile with compulsory part events.
+      ProcessEventsScp();
+      ProcessEventsEcp();
+      // Update minimum capacity (may fail)
+      capacity_->SetMin(capacity_->Max() - gap_);
+      // Time to the next possible profile increase.
+      next_pos_ = NextScpTime();
+      // Consider new task to schedule.
+      ProcessEventsPr();
+      // Filter.
+      FilterMin();
+    }
+  }
+
+  void Post() override {
+    Demon* demon = MakeDelayedConstraintDemon0(
+        solver(), this, &TimeTableSync::InitialPropagate, "InitialPropagate");
+    for (Task* const task : tasks_) {
+      task->WhenAnything(demon);
+    }
+    capacity_->WhenRange(demon);
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    LOG(FATAL) << "Should not be visited";
+  }
+
+  std::string DebugString() const override { return "TimeTableSync"; }
+
+ private:
+  // Task state.
+  enum State { NONE, READY, CHECK, CONFLICT };
+
+  inline int64 NextScpTime() {
+    return !events_scp_.empty() ? events_scp_.top().first : kint64max;
+  }
+
+  inline int64 NextEventTime() {
+    int64 time = kint64max;
+    if (!events_pr_.empty()) {
+      time = events_pr_.top().first;
+    }
+    if (!events_scp_.empty()) {
+      int64 t = events_scp_.top().first;
+      time = t < time ? t : time;
+    }
+    if (!events_ecp_.empty()) {
+      int64 t = events_ecp_.top().first;
+      time = t < time ? t : time;
+    }
+    return time;
+  }
+
+  void ProcessEventsScp() {
+    while (!events_scp_.empty() && events_scp_.top().first == pos_) {
+      const int64 task_id = events_scp_.top().second;
+      events_scp_.pop();
+      const int64 old_end_min = end_min_[task_id];
+      if (states_[task_id] == State::CONFLICT) {
+        // Update cached values.
+        const int64 new_end_min = pos_ + durations_[task_id];
+        start_min_[task_id] = pos_;
+        end_min_[task_id] = new_end_min;
+        // Filter the domain
+        tasks_[task_id]->interval->SetStartMin(pos_);
+      }
+      // The task is scheduled.
+      states_[task_id] = State::READY;
+      // Update the profile if the task has a compulsory part.
+      if (pos_ < end_min_[task_id]) {
+        gap_ -= demands_[task_id];
+        if (old_end_min <= pos_) {
+          events_ecp_.push(kv(end_min_[task_id], task_id));
+        }
+      }
+    }
+  }
+
+  void ProcessEventsEcp() {
+    while (!events_ecp_.empty() && events_ecp_.top().first == pos_) {
+      const int64 task_id = events_ecp_.top().second;
+      events_ecp_.pop();
+      // Update the event if it is not up to date.
+      if (pos_ < end_min_[task_id]) {
+        events_ecp_.push(kv(end_min_[task_id], task_id));
+      } else {
+        gap_ += demands_[task_id];
+      }
+    }
+  }
+
+  void ProcessEventsPr() {
+    while (!events_pr_.empty() && events_pr_.top().first == pos_) {
+      const int64 task_id = events_pr_.top().second;
+      events_pr_.pop();
+      // The task is in conflict with the current profile.
+      if (demands_[task_id] > gap_) {
+        states_[task_id] = State::CONFLICT;
+        conflict_.push(kv(demands_[task_id], task_id));
+        continue;
+      }
+      // The task is not in conflict for the moment.
+      if (next_pos_ < end_min_[task_id]) {
+        states_[task_id] = State::CHECK;
+        check_.push(kv(demands_[task_id], task_id));
+        continue;
+      }
+      // The task is not in conflict and can be scheduled.
+      states_[task_id] = State::READY;
+    }
+  }
+
+  void FilterMin() {
+    // The profile exceeds the capacity.
+    capacity_->SetMin(capacity_->Max() - gap_);
+    // The profile has increased.
+    if (gap_ < prev_gap_) {
+      // Reconsider the task in check state.
+      while (!check_.empty() && demands_[check_.top().second] > gap_) {
+        const int64 task_id = check_.top().second;
+        check_.pop();
+        if (states_[task_id] == State::CHECK && pos_ < end_min_[task_id]) {
+          states_[task_id] = State::CONFLICT;
+          conflict_.push(kv(demands_[task_id], task_id));
+          continue;
+        }
+        states_[task_id] = State::READY;
+      }
+      prev_gap_ = gap_;
+    }
+    // The profile has decreased.
+    if (gap_ > prev_gap_) {
+      // Reconsider the tasks in conflict.
+      while (!conflict_.empty() && demands_[conflict_.top().second] <= gap_) {
+        const int64 task_id = conflict_.top().second;
+        conflict_.pop();
+        if (states_[task_id] != State::CONFLICT) {
+          continue;
+        }
+        const int64 old_end_min = end_min_[task_id];
+        // Update the cache.
+        start_min_[task_id] = pos_;
+        end_min_[task_id] = pos_ + durations_[task_id];
+        // Filter the domain.
+        tasks_[task_id]->interval->SetStartMin(pos_);  // should not fail.
+        // The task still have to be checked.
+        if (next_pos_ < end_min_[task_id]) {
+          states_[task_id] = State::CHECK;
+          check_.push(kv(demands_[task_id], task_id));
+        } else {
+          states_[task_id] = State::READY;
+        }
+        // Update possible compulsory part.
+        const int64 start_max = start_max_[task_id];
+        if (start_max >= old_end_min && start_max < end_min_[task_id]) {
+          events_ecp_.push(kv(end_min_[task_id], task_id));
+        }
+      }
+    }
+    prev_gap_ = gap_;
+  }
+
+  void BuildEvents() {
+    // Reset the sweep line.
+    pos_ = kint64min;
+    next_pos_ = kint64min;
+    gap_ = capacity_->Max();
+    prev_gap_ = capacity_->Max();
+    // Reset dynamic states.
+    conflict_ = min_heap();
+    check_ = max_heap();
+    // Reset profile events.
+    events_pr_ = min_heap();
+    events_scp_ = min_heap();
+    events_ecp_ = min_heap();
+    // Reset cache.
+    start_min_.clear();
+    start_max_.clear();
+    end_min_.clear();
+    durations_.clear();
+    demands_.clear();
+    states_.clear();
+    // Build events.
+    for (int i = 0; i < num_tasks_; i++) {
+      const int64 s_min = tasks_[i]->interval->StartMin();
+      const int64 s_max = tasks_[i]->interval->StartMax();
+      const int64 e_min = tasks_[i]->interval->EndMin();
+      // Cache the values.
+      start_min_.push_back(s_min);
+      start_max_.push_back(s_max);
+      end_min_.push_back(e_min);
+      durations_.push_back(tasks_[i]->interval->DurationMin());
+      demands_.push_back(tasks_[i]->DemandMin());
+      // Reset task state.
+      states_.push_back(State::NONE);
+      // Start compulsory part event.
+      events_scp_.push(kv(s_max, i));
+      // Pruning event only if the start time of the task is not fixed.
+      if (s_min != s_max) {
+        events_pr_.push(kv(s_min, i));
+      }
+      // End of compulsory part only if the task has a compulsory part.
+      if (s_max < e_min) {
+        events_ecp_.push(kv(e_min, i));
+      }
+    }
+  }
+
+  int64 num_tasks_;
+  std::vector<Task*> tasks_;
+  IntVar* const capacity_;
+
+  std::vector<int64> start_min_;
+  std::vector<int64> start_max_;
+  std::vector<int64> end_min_;
+  std::vector<int64> end_max_;
+  std::vector<int64> durations_;
+  std::vector<int64> demands_;
+
+  // Pair key value.
+  typedef std::pair<int64, int64> kv;
+  typedef std::priority_queue<kv, std::vector<kv>, std::greater<kv>> min_heap;
+  typedef std::priority_queue<kv, std::vector<kv>, std::less<kv>> max_heap;
+
+  // Profile events.
+  min_heap events_pr_;
+  min_heap events_scp_;
+  min_heap events_ecp_;
+
+  // Task state.
+  std::vector<State> states_;
+  min_heap conflict_;
+  max_heap check_;
+
+  // Sweep line state.
+  int64 pos_;
+  int64 next_pos_;
+  int64 gap_;
+  int64 prev_gap_;
+};
+
 class CumulativeConstraint : public Constraint {
  public:
   CumulativeConstraint(Solver* const s, const std::vector<IntervalVar*>& intervals,
@@ -1895,12 +2173,17 @@ class CumulativeConstraint : public Constraint {
     // by posting a bunch of different propagators.
     const ConstraintSolverParameters& params = solver()->parameters();
     if (params.use_cumulative_time_table()) {
-      PostOneSidedConstraint(false, false);
-      PostOneSidedConstraint(true, false);
+      if (params.use_cumulative_time_table_sync()) {
+        PostOneSidedConstraint(false, false, true);
+        PostOneSidedConstraint(true, false, true);
+      } else {
+        PostOneSidedConstraint(false, false, false);
+        PostOneSidedConstraint(true, false, false);
+      }
     }
     if (params.use_cumulative_edge_finder()) {
-      PostOneSidedConstraint(false, true);
-      PostOneSidedConstraint(true, true);
+      PostOneSidedConstraint(false, true, false);
+      PostOneSidedConstraint(true, true, false);
     }
     if (params.use_sequence_high_demand_tasks()) {
       PostHighDemandSequenceConstraint();
@@ -2014,7 +2297,8 @@ class CumulativeConstraint : public Constraint {
 
   // Makes and return an edge-finder or a time table, or nullptr if it is not
   // necessary.
-  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder) {
+  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder,
+                                     bool tt_sync) {
     std::vector<CumulativeTask*> useful_tasks;
     PopulateVectorUsefulTasks(mirror, &useful_tasks);
     if (useful_tasks.empty()) {
@@ -2027,16 +2311,20 @@ class CumulativeConstraint : public Constraint {
                    ? s->RevAlloc(new EdgeFinder<CumulativeTask>(s, useful_tasks,
                                                                 capacity_))
                    : nullptr;
-      } else {
-        return s->RevAlloc(new CumulativeTimeTable<CumulativeTask>(
-            s, useful_tasks, capacity_));
       }
+      if (tt_sync) {
+        return s->RevAlloc(
+            new TimeTableSync<CumulativeTask>(s, useful_tasks, capacity_));
+      }
+      return s->RevAlloc(
+          new CumulativeTimeTable<CumulativeTask>(s, useful_tasks, capacity_));
     }
   }
 
   // Post a straight or mirrored edge-finder, if needed
-  void PostOneSidedConstraint(bool mirror, bool edge_finder) {
-    Constraint* const constraint = MakeOneSidedConstraint(mirror, edge_finder);
+  void PostOneSidedConstraint(bool mirror, bool edge_finder, bool tt_sync) {
+    Constraint* const constraint =
+        MakeOneSidedConstraint(mirror, edge_finder, tt_sync);
     if (constraint != nullptr) {
       solver()->AddConstraint(constraint);
     }
@@ -2078,12 +2366,12 @@ class VariableDemandCumulativeConstraint : public Constraint {
     // by posting a bunch of different propagators.
     const ConstraintSolverParameters& params = solver()->parameters();
     if (params.use_cumulative_time_table()) {
-      PostOneSidedConstraint(false, false);
-      PostOneSidedConstraint(true, false);
+      PostOneSidedConstraint(false, false, false);
+      PostOneSidedConstraint(true, false, false);
     }
     if (params.use_cumulative_edge_finder()) {
-      PostOneSidedConstraint(false, true);
-      PostOneSidedConstraint(true, true);
+      PostOneSidedConstraint(false, true, false);
+      PostOneSidedConstraint(true, true, false);
     }
     if (params.use_sequence_high_demand_tasks()) {
       PostHighDemandSequenceConstraint();
@@ -2198,7 +2486,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
 
   // Makes and returns an edge-finder or a time table, or nullptr if it is not
   // necessary.
-  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder) {
+  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder,
+                                     bool tt_sync) {
     std::vector<VariableCumulativeTask*> useful_tasks;
     PopulateVectorUsefulTasks(mirror, &useful_tasks);
     if (useful_tasks.empty()) {
@@ -2208,16 +2497,20 @@ class VariableDemandCumulativeConstraint : public Constraint {
       if (edge_finder) {
         return s->RevAlloc(
             new EdgeFinder<VariableCumulativeTask>(s, useful_tasks, capacity_));
-      } else {
-        return s->RevAlloc(new CumulativeTimeTable<VariableCumulativeTask>(
+      }
+      if (tt_sync) {
+        return s->RevAlloc(new TimeTableSync<VariableCumulativeTask>(
             s, useful_tasks, capacity_));
       }
+      return s->RevAlloc(new CumulativeTimeTable<VariableCumulativeTask>(
+          s, useful_tasks, capacity_));
     }
   }
 
   // Post a straight or mirrored edge-finder, if needed
-  void PostOneSidedConstraint(bool mirror, bool edge_finder) {
-    Constraint* const constraint = MakeOneSidedConstraint(mirror, edge_finder);
+  void PostOneSidedConstraint(bool mirror, bool edge_finder, bool tt_sync) {
+    Constraint* const constraint =
+        MakeOneSidedConstraint(mirror, edge_finder, tt_sync);
     if (constraint != nullptr) {
       solver()->AddConstraint(constraint);
     }
