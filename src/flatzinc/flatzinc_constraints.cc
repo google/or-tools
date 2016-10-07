@@ -13,6 +13,8 @@
 
 #include "flatzinc/flatzinc_constraints.h"
 
+#include <unordered_set>
+
 #include "base/commandlineflags.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "flatzinc/logging.h"
@@ -849,7 +851,7 @@ class KDiffn : public Constraint {
   const int64 num_boxes_;
   const int64 num_dims_;
   Demon* delayed_demon_;
-  hash_set<int> to_propagate_;
+  std::unordered_set<int> to_propagate_;
   std::vector<int> neighbors_;
   uint64 fail_stamp_;
 };

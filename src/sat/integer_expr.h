@@ -165,6 +165,30 @@ class ProductPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(ProductPropagator);
 };
 
+// Propagates a / b = c. Basic version, we don't extract any special cases, and
+// we only propagates the bounds.
+//
+// TODO(user): For now this only works on variables that are non-negative.
+// TODO(user): This only propagate the direction => c, do the reverse.
+// TODO(user): Deal with overflow.
+// TODO(user): Unit-test this like the ProductPropagator.
+class DivisionPropagator : public PropagatorInterface {
+ public:
+  DivisionPropagator(IntegerVariable a, IntegerVariable b, IntegerVariable c,
+                     IntegerTrail* integer_trail);
+
+  bool Propagate(Trail* trail) final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  const IntegerVariable a_;
+  const IntegerVariable b_;
+  const IntegerVariable c_;
+  IntegerTrail* integer_trail_;
+
+  DISALLOW_COPY_AND_ASSIGN(DivisionPropagator);
+};
+
 // =============================================================================
 // Model based functions.
 // =============================================================================
@@ -416,11 +440,11 @@ inline std::function<void(Model*)> ProductConstraint(IntegerVariable a,
 // Adds the constraint: a / b = d.
 inline std::function<void(Model*)> DivisionConstraint(IntegerVariable a,
                                                       IntegerVariable b,
-                                                      IntegerVariable d) {
+                                                      IntegerVariable c) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    ProductPropagator* constraint =
-        new ProductPropagator(b, d, a, integer_trail);
+    DivisionPropagator* constraint =
+        new DivisionPropagator(a, b, c, integer_trail);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

@@ -111,11 +111,8 @@ void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
   map_ref[i_lit.bound] = literal;
 }
 
-Literal IntegerEncoder::CreateAssociatedLiteral(IntegerLiteral i_lit) {
-  ++num_created_variables_;
-  const BooleanVariable new_var = sat_solver_->NewBooleanVariable();
-  const Literal literal(new_var, true);
-
+void IntegerEncoder::AssociateGivenLiteral(IntegerLiteral i_lit,
+                                           Literal literal) {
   // Resize reverse encoding.
   const int new_size =
       1 + std::max(literal.Index(), literal.NegatedIndex()).value();
@@ -132,7 +129,31 @@ Literal IntegerEncoder::CreateAssociatedLiteral(IntegerLiteral i_lit) {
   // in a conflict if the presence literal of the optional variables is true.
   AddImplications(i_lit.Negated(), literal.Negated());
   reverse_encoding_[literal.NegatedIndex()] = i_lit.Negated();
+}
+
+Literal IntegerEncoder::CreateAssociatedLiteral(IntegerLiteral i_lit) {
+  ++num_created_variables_;
+  const BooleanVariable new_var = sat_solver_->NewBooleanVariable();
+  const Literal literal(new_var, true);
+  AssociateGivenLiteral(i_lit, literal);
   return literal;
+}
+
+bool IntegerEncoder::LiteralIsAssociated(IntegerLiteral i) const {
+  if (i.var >= encoding_by_var_.size()) return false;
+  const std::map<IntegerValue, Literal>& encoding =
+      encoding_by_var_[IntegerVariable(i.var)];
+  return encoding.find(i.bound) != encoding.end();
+}
+
+Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i) {
+  if (i.var < encoding_by_var_.size()) {
+    const std::map<IntegerValue, Literal>& encoding =
+        encoding_by_var_[IntegerVariable(i.var)];
+    const auto it = encoding.find(i.bound);
+    if (it != encoding.end()) return it->second;
+  }
+  return CreateAssociatedLiteral(i);
 }
 
 LiteralIndex IntegerEncoder::SearchForLiteralAtOrBefore(

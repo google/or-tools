@@ -257,15 +257,22 @@ void ExtractIntMax(const fz::Constraint& ct, SatModel* m) {
 void ExtractIntTimes(const fz::Constraint& ct, SatModel* m) {
   const IntegerVariable a = m->LookupVar(ct.arguments[0]);
   const IntegerVariable b = m->LookupVar(ct.arguments[1]);
-  const IntegerVariable p = m->LookupVar(ct.arguments[2]);
-  m->model.Add(ProductConstraint(a, b, p));
+  const IntegerVariable c = m->LookupVar(ct.arguments[2]);
+  m->model.Add(ProductConstraint(a, b, c));
 }
 
 void ExtractIntDiv(const fz::Constraint& ct, SatModel* m) {
   const IntegerVariable a = m->LookupVar(ct.arguments[0]);
   const IntegerVariable b = m->LookupVar(ct.arguments[1]);
-  const IntegerVariable d = m->LookupVar(ct.arguments[2]);
-  m->model.Add(DivisionConstraint(a, b, d));
+  const IntegerVariable c = m->LookupVar(ct.arguments[2]);
+  m->model.Add(DivisionConstraint(a, b, c));
+}
+
+void ExtractIntPlus(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+  const IntegerVariable c = m->LookupVar(ct.arguments[2]);
+  m->model.Add(FixedWeightedSum({a, b, c}, std::vector<int>{1, 1, -1}, 0));
 }
 
 void ExtractIntEq(const fz::Constraint& ct, SatModel* m) {
@@ -296,13 +303,44 @@ void ExtractIntGe(const fz::Constraint& ct, SatModel* m) {
 }
 
 void ExtractIntLeGeReif(bool is_le, const fz::Constraint& ct, SatModel* m) {
-  IntegerVariable a = m->LookupVar(ct.arguments[0]);
-  IntegerVariable b = m->LookupVar(ct.arguments[1]);
-  if (!is_le) std::swap(a, b);
-
   CHECK(!ct.arguments[2].HasOneValue()) << "Should be presolved.";
   const Literal r = m->GetTrueLiteral(m->LookupVar(ct.arguments[2]));
-  m->model.Add(ReifiedLowerOrEqualWithOffset(a, b, 0, r));
+
+  if (ct.arguments[1].HasOneValue()) {
+    if (ct.arguments[0].HasOneValue()) {
+      if (is_le) {
+        if (ct.arguments[0].Value() <= ct.arguments[1].Value()) {
+          m->model.Add(ClauseConstraint({r}));
+        } else {
+          m->model.Add(ClauseConstraint({r.Negated()}));
+        }
+      } else {
+        if (ct.arguments[0].Value() >= ct.arguments[1].Value()) {
+          m->model.Add(ClauseConstraint({r}));
+        } else {
+          m->model.Add(ClauseConstraint({r.Negated()}));
+        }
+      }
+      FZLOG << "Should be presolved: " << ct.DebugString() << FZENDL;
+      return;
+    }
+    const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+    const IntegerValue value(ct.arguments[1].Value());
+    IntegerLiteral i_lit = is_le ? IntegerLiteral::LowerOrEqual(a, value)
+                                 : IntegerLiteral::GreaterOrEqual(a, value);
+    m->model.Add(Equality(i_lit, r));
+  } else if (ct.arguments[0].HasOneValue()) {
+    const IntegerValue value(ct.arguments[0].Value());
+    const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+    IntegerLiteral i_lit = is_le ? IntegerLiteral::GreaterOrEqual(b, value)
+                                 : IntegerLiteral::LowerOrEqual(b, value);
+    m->model.Add(Equality(i_lit, r));
+  } else {
+    IntegerVariable a = m->LookupVar(ct.arguments[0]);
+    IntegerVariable b = m->LookupVar(ct.arguments[1]);
+    if (!is_le) std::swap(a, b);
+    m->model.Add(ReifiedLowerOrEqualWithOffset(a, b, 0, r));
+  }
 }
 
 void ExtractIntLt(const fz::Constraint& ct, SatModel* m) {
@@ -311,13 +349,26 @@ void ExtractIntLt(const fz::Constraint& ct, SatModel* m) {
   m->model.Add(LowerOrEqualWithOffset(a, b, 1));  // a + 1 <= b
 }
 
+// TODO(user): the code can probably be shared by ExtractIntLeGeReif() and
+// we can easily support Gt.
 void ExtractIntLtReif(const fz::Constraint& ct, SatModel* m) {
-  const IntegerVariable a = m->LookupVar(ct.arguments[0]);
-  const IntegerVariable b = m->LookupVar(ct.arguments[1]);
-
   CHECK(!ct.arguments[2].HasOneValue()) << "Should be presolved.";
   const Literal is_lt = m->GetTrueLiteral(m->LookupVar(ct.arguments[2]));
-  m->model.Add(ReifiedLowerOrEqualWithOffset(a, b, 1, is_lt));
+
+  if (ct.arguments[1].HasOneValue()) {
+    CHECK(!ct.arguments[0].HasOneValue()) << "Should be presolved.";
+    const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+    const IntegerValue value(ct.arguments[1].Value() - 1);
+    m->model.Add(Equality(IntegerLiteral::LowerOrEqual(a, value), is_lt));
+  } else if (ct.arguments[0].HasOneValue()) {
+    const IntegerValue value(ct.arguments[0].Value() + 1);
+    const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+    m->model.Add(Equality(IntegerLiteral::GreaterOrEqual(b, value), is_lt));
+  } else {
+    const IntegerVariable a = m->LookupVar(ct.arguments[0]);
+    const IntegerVariable b = m->LookupVar(ct.arguments[1]);
+    m->model.Add(ReifiedLowerOrEqualWithOffset(a, b, 1, is_lt));
+  }
 }
 
 void ExtractIntLinEq(const fz::Constraint& ct, SatModel* m) {
@@ -395,6 +446,23 @@ void ImpliesEqualityToConstant(bool reverse_implication, IntegerVariable a,
     return;
   }
 
+  // TODO(user): Simply do that all the time?
+  // TODO(user): No need to create a literal that is trivially true or false!
+  if (m->model.Get(UpperBound(a)) - m->model.Get(LowerBound(a)) > 100) {
+    IntegerEncoder* encoder = m->model.GetOrCreate<IntegerEncoder>();
+    if (reverse_implication) {
+      m->model.Add(ReifiedInInterval(a, cte, cte, r));
+    } else {
+      const Literal ge = encoder->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::GreaterOrEqual(a, IntegerValue(cte)));
+      const Literal le = encoder->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::LowerOrEqual(a, IntegerValue(cte)));
+      m->model.Add(Implication(r, ge));
+      m->model.Add(Implication(r, le));
+    }
+    return;
+  }
+
   const std::vector<IntegerEncoder::ValueLiteralPair>& encoding = m->FullEncoding(a);
   for (const auto pair : encoding) {
     if (pair.value == IntegerValue(cte)) {
@@ -434,6 +502,18 @@ void ImpliesEquality(bool reverse_implication, Literal r, IntegerVariable a,
     return;
   }
 
+  // TODO(user): Do that all the time?
+  if ((m->model.Get(UpperBound(a)) - m->model.Get(LowerBound(a)) > 100) ||
+      (m->model.Get(UpperBound(b)) - m->model.Get(LowerBound(b)) > 100)) {
+    if (reverse_implication) {
+      m->model.Add(ReifiedEquality(a, b, r));
+    } else {
+      m->model.Add(ConditionalLowerOrEqualWithOffset(a, b, 0, r));
+      m->model.Add(ConditionalLowerOrEqualWithOffset(b, a, 0, r));
+    }
+    return;
+  }
+
   hash_map<IntegerValue, std::vector<Literal>> by_value;
   for (const auto p : m->FullEncoding(a)) {
     by_value[p.value].push_back(p.literal);
@@ -467,19 +547,6 @@ void ExtractIntEqNeReif(const fz::Constraint& ct, bool eq, SatModel* m) {
   // The Eq or Ne version are the same up to the sign of the "eq" literal.
   Literal is_eq = m->GetTrueLiteral(m->LookupVar(ct.arguments[2]));
   if (!eq) is_eq = is_eq.Negated();
-
-  // If one of the variable domain is large, we implement this constraint
-  // differently.
-  const int64 s0 =
-      ct.arguments[0].HasOneValue() ? 1 : ct.arguments[0].Var()->domain.Size();
-  const int64 s1 =
-      ct.arguments[1].HasOneValue() ? 1 : ct.arguments[1].Var()->domain.Size();
-  if (s0 > 1000 || s1 > 1000) {
-    const IntegerVariable a = m->LookupVar(ct.arguments[0]);
-    const IntegerVariable b = m->LookupVar(ct.arguments[1]);
-    m->model.Add(ReifiedEquality(a, b, is_eq));
-    return;
-  }
 
   if (ct.arguments[0].HasOneValue()) {
     ImpliesEqualityToConstant(/*reverse_implication=*/true,
@@ -552,6 +619,7 @@ void ExtractArrayIntElement(const fz::Constraint& ct, SatModel* m) {
 
 // vars[i] == t.
 void ExtractArrayVarIntElement(const fz::Constraint& ct, SatModel* m) {
+  CHECK(!ct.arguments[0].HasOneValue()) << "Should have been presolved.";
   const auto& encoding = m->FullEncoding(m->LookupVar(ct.arguments[0]));
   const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
   const IntegerVariable t = m->LookupVar(ct.arguments[2]);
@@ -623,6 +691,33 @@ void ExtractTableInt(const fz::Constraint& ct, SatModel* m) {
   m->model.Add(TableConstraint(vars, tuples));
 }
 
+void ExtractSetInReif(const fz::Constraint& ct, SatModel* m) {
+  const IntegerVariable var = m->LookupVar(ct.arguments[0]);
+  const Literal in_set = m->GetTrueLiteral(ct.arguments[2]);
+  CHECK(!ct.arguments[0].HasOneValue()) << "Should be presolved: "
+                                        << ct.DebugString();
+  if (ct.arguments[1].HasOneValue()) {
+    FZLOG << "Could have been presolved in int_eq_reif: " << ct.DebugString();
+  }
+  if (ct.arguments[1].type == fz::Argument::INT_LIST) {
+    std::set<int64> values(ct.arguments[1].values.begin(),
+                      ct.arguments[1].values.end());
+    const auto& encoding = m->FullEncoding(var);
+    for (const auto& literal_value : encoding) {
+      if (ContainsKey(values, literal_value.value.value())) {
+        m->model.Add(Implication(literal_value.literal, in_set));
+      } else {
+        m->model.Add(Implication(literal_value.literal, in_set.Negated()));
+      }
+    }
+  } else if (ct.arguments[1].type == fz::Argument::INT_INTERVAL) {
+    m->model.Add(ReifiedInInterval(var, ct.arguments[1].values[0],
+                                   ct.arguments[1].values[1], in_set));
+  } else {
+    LOG(FATAL) << "Argument type not supported: " << ct.arguments[1].type;
+  }
+}
+
 void ExtractAllDifferentInt(const fz::Constraint& ct, SatModel* m) {
   const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[0]);
   m->model.Add(AllDifferent(vars));
@@ -660,6 +755,8 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractIntTimes(ct, m);
   } else if (ct.type == "int_div") {
     ExtractIntDiv(ct, m);
+  } else if (ct.type == "int_plus") {
+    ExtractIntPlus(ct, m);
   } else if (ct.type == "array_int_minimum" || ct.type == "minimum_int") {
     ExtractArrayIntMinimum(ct, m);
   } else if (ct.type == "array_int_maximum" || ct.type == "maximum_int") {
@@ -680,14 +777,18 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractIntLe(ct, m);
   } else if (ct.type == "int_ge") {
     ExtractIntGe(ct, m);
+  } else if (ct.type == "int_lt") {
+    ExtractIntLt(ct, m);
   } else if (ct.type == "int_le_reif") {
     ExtractIntLeGeReif(/*is_le=*/true, ct, m);
   } else if (ct.type == "int_ge_reif") {
     ExtractIntLeGeReif(/*is_le=*/false, ct, m);
-  } else if (ct.type == "int_lt") {
-    ExtractIntLt(ct, m);
   } else if (ct.type == "int_lt_reif") {
     ExtractIntLtReif(ct, m);
+  } else if (ct.type == "int_eq_reif") {
+    ExtractIntEqNeReif(ct, /*eq=*/true, m);
+  } else if (ct.type == "int_ne_reif") {
+    ExtractIntEqNeReif(ct, /*eq=*/false, m);
   } else if (ct.type == "int_lin_eq") {
     ExtractIntLinEq(ct, m);
   } else if (ct.type == "int_lin_ne") {
@@ -704,14 +805,12 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractIntLinLeReif(ct, m);
   } else if (ct.type == "int_lin_ge_reif") {
     ExtractIntLinGeReif(ct, m);
-  } else if (ct.type == "int_eq_reif") {
-    ExtractIntEqNeReif(ct, /*eq=*/true, m);
-  } else if (ct.type == "int_ne_reif") {
-    ExtractIntEqNeReif(ct, /*eq=*/false, m);
   } else if (ct.type == "regular") {
     ExtractRegular(ct, m);
   } else if (ct.type == "table_int") {
     ExtractTableInt(ct, m);
+  } else if (ct.type == "set_in_reif") {
+    ExtractSetInReif(ct, m);
   } else {
     return false;
   }

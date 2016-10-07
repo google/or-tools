@@ -13,8 +13,8 @@
 
 #include "flatzinc/model.h"
 
-#include "base/hash.h"
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 #include "base/join.h"
@@ -162,7 +162,7 @@ void Domain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
   } else {
     // TODO(user): Investigate faster code for small arrays.
     std::sort(values.begin(), values.end());
-    hash_set<int64> other_values(ovalues.begin(), ovalues.end());
+    std::unordered_set<int64> other_values(ovalues.begin(), ovalues.end());
     std::vector<int64> new_values;
     new_values.reserve(std::min(values.size(), ovalues.size()));
     for (const int64 val : values) {
@@ -196,10 +196,6 @@ int64 Domain::Value() const {
   return values.front();
 }
 
-int64 Domain::Size() const {
-  return is_interval ? Max() - Min() + 1 : values.size();
-}
-
 bool Domain::IsAllInt64() const {
   return is_interval &&
          (values.empty() || (values[0] == kint64min && values[1] == kint64max));
@@ -221,13 +217,13 @@ bool Domain::RemoveValue(int64 value) {
   if (is_interval) {
     if (values.empty()) {
       return false;
-    } else if (value == values[0]) {
+    } else if (value == values[0] && value != values[1]) {
       values[0]++;
       return true;
-    } else if (value == values[1]) {
+    } else if (value == values[1] && value != values[0]) {
       values[1]--;
       return true;
-    } else if (values[1] - values[0] < 64 && value > values[0] &&
+    } else if (values[1] - values[0] < 1024 && value > values[0] &&
                value < values[1]) {  // small
       const int64 vmax = values[1];
       values.pop_back();
@@ -240,8 +236,11 @@ bool Domain::RemoveValue(int64 value) {
       is_interval = false;
       return true;
     }
+  } else {
+    values.erase(std::remove(values.begin(), values.end(), value),
+                 values.end());
+    return true;
   }
-  // TODO(user): Remove value from list.
   return false;
 }
 
@@ -840,7 +839,7 @@ void ModelStatistics::BuildStatistics() {
   for (Constraint* const ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
       constraints_per_type_[ct->type].push_back(ct);
-      hash_set<const IntegerVariable*> marked;
+      std::unordered_set<const IntegerVariable*> marked;
       for (const Argument& arg : ct->arguments) {
         for (IntegerVariable* const var : arg.variables) {
           marked.insert(var);

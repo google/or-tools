@@ -387,5 +387,59 @@ void ProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchIntegerVariable(p_, id);
 }
 
+DivisionPropagator::DivisionPropagator(IntegerVariable a, IntegerVariable b,
+                                       IntegerVariable c,
+                                       IntegerTrail* integer_trail)
+    : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {}
+
+bool DivisionPropagator::Propagate(Trail* trail) {
+  const IntegerValue min_a = integer_trail_->LowerBound(a_);
+  const IntegerValue max_a = integer_trail_->UpperBound(a_);
+  const IntegerValue min_b = integer_trail_->LowerBound(b_);
+  const IntegerValue max_b = integer_trail_->UpperBound(b_);
+  IntegerValue min_c = integer_trail_->LowerBound(c_);
+  IntegerValue max_c = integer_trail_->UpperBound(c_);
+
+  // TODO(user): support these cases.
+  CHECK_GE(min_a, 0);
+  CHECK_GT(min_b, 0);  // b can never be zero.
+
+  bool may_propagate = true;
+  while (may_propagate) {
+    may_propagate = false;
+    if (max_a / min_b < max_c) {
+      may_propagate = true;
+      max_c = max_a / min_b;
+      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(c_, max_c), {},
+                                   {integer_trail_->UpperBoundAsLiteral(a_),
+                                    integer_trail_->LowerBoundAsLiteral(b_)})) {
+        return false;
+      }
+    }
+    if (min_a / max_b > min_c) {
+      may_propagate = true;
+      min_c = min_a / max_b;
+      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(c_, min_c),
+                                   {},
+                                   {integer_trail_->LowerBoundAsLiteral(a_),
+                                    integer_trail_->UpperBoundAsLiteral(b_)})) {
+        return false;
+      }
+    }
+
+    // TODO(user): propagate the bounds on a and b from the ones of c.
+    // Note however that what we did is enough to enforce the constraint when
+    // all the values are fixed.
+  }
+  return true;
+}
+
+void DivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  watcher->WatchIntegerVariable(a_, id);
+  watcher->WatchIntegerVariable(b_, id);
+  watcher->WatchIntegerVariable(c_, id);
+}
+
 }  // namespace sat
 }  // namespace operations_research

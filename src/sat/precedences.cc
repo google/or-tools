@@ -218,6 +218,18 @@ void PrecedencesPropagator::MarkIntegerVariableAsOptional(IntegerVariable i,
 void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
                                    IntegerValue offset,
                                    IntegerVariable offset_var, LiteralIndex l) {
+  if (head == tail) {
+    // A self-arc is either plain SAT or plan UNSAT or it forces something on
+    // the given offset_var or l. In any case it could be presolved in something
+    // more efficent.
+    LOG(WARNING) << "Self arc! This could be presolved. "
+                 << "var:" << tail << " offset:" << offset
+                 << " offset_var:" << offset_var << " conditioned_by:" << l;
+    if (offset <= 0 && offset_var == kNoIntegerVariable &&
+        l == kNoLiteralIndex) {
+      return;  // no-op.
+    }
+  }
   AdjustSizeFor(tail);
   AdjustSizeFor(head);
   if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
@@ -459,7 +471,7 @@ bool PrecedencesPropagator::DisassembleSubtree(int source, int target,
 void PrecedencesPropagator::ReportPositiveCycle(int first_arc, Trail* trail) {
   // TODO(user): I am not sure we have a theoretical guarantee than the
   // set of arcs appearing in bf_parent_arc_of_[] form a tree here because
-  // we consider all of them, not just the non-maked one. Because of that,
+  // we consider all of them, not just the marked ones. Because of that,
   // for now we use an extra vector to be on the safe side.
   std::vector<bool> in_queue(impacted_arcs_.size(), false);
 
@@ -468,7 +480,7 @@ void PrecedencesPropagator::ReportPositiveCycle(int first_arc, Trail* trail) {
   tmp_vector_.push_back(first_node);
   in_queue[first_node] = true;
   std::vector<int> arc_queue{first_arc};
-  std::vector<int> arc_on_cycle{first_arc};
+  std::vector<int> arc_on_cycle;
   bool found = false;
   while (!found && !tmp_vector_.empty()) {
     const int node = tmp_vector_.back();
@@ -602,16 +614,24 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
           return false;
         }
 
-        // We need to enforce the invariant that only the arc_index in
-        // bf_parent_arc_of_[] are marked (but not necessarily all of them since
-        // we unmark some in DisassembleSubtree()).
-        if (bf_parent_arc_of_[arc.head_var.value()] != -1) {
-          arcs_[bf_parent_arc_of_[arc.head_var.value()]].is_marked = false;
+        // Tricky: We just enqueued the fact that the lower-bound of head is
+        // candidate. However, because the domain of head may be discrete, it is
+        // possible that the lower-bound of head is now higher than candidate!
+        // If this is the case, we don't update bf_parent_arc_of_[] so that we
+        // don't wrongly detect a positive weight cycle because of this "extra
+        // push".
+        if (integer_trail_->LowerBound(arc.head_var) == candidate) {
+          // We need to enforce the invariant that only the arc_index in
+          // bf_parent_arc_of_[] are marked (but not necessarily all of them
+          // since we unmark some in DisassembleSubtree()).
+          if (bf_parent_arc_of_[arc.head_var.value()] != -1) {
+            arcs_[bf_parent_arc_of_[arc.head_var.value()]].is_marked = false;
+          }
+          bf_parent_arc_of_[arc.head_var.value()] = arc_index;
+          arcs_[arc_index].is_marked = true;
         }
-        bf_parent_arc_of_[arc.head_var.value()] = arc_index;
-        bf_can_be_skipped_[arc.head_var.value()] = false;
-        arcs_[arc_index].is_marked = true;
 
+        bf_can_be_skipped_[arc.head_var.value()] = false;
         if (!bf_in_queue_[arc.head_var.value()]) {
           bf_queue_.push_back(arc.head_var.value());
           bf_in_queue_[arc.head_var.value()] = true;

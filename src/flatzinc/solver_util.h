@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_FLATZINC_SOLVER_UTIL_H_
 #define OR_TOOLS_FLATZINC_SOLVER_UTIL_H_
 
+#include <unordered_set>
+
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "flatzinc/model.h"
@@ -77,7 +79,8 @@ void FlattenAnnotations(const Annotation& ann, std::vector<Annotation>* out);
 // constraints which semantics clearly defines output variables (x = sum(yi)
 // for instances will mark x as computed).
 // If this create cycles, they will be broken later during extraction.
-void MarkComputedVariables(Constraint* ct, hash_set<IntegerVariable*>* marked);
+void MarkComputedVariables(Constraint* ct,
+                           std::unordered_set<IntegerVariable*>* marked);
 
 }  // namespace fz
 }  // namespace operations_research

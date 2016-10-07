@@ -109,6 +109,9 @@ struct IntegerLiteral {
   bool operator==(IntegerLiteral o) const {
     return var == o.var && bound == o.bound;
   }
+  bool operator!=(IntegerLiteral o) const {
+    return var != o.var || bound == o.bound;
+  }
 
   std::string DebugString() const { return StrCat("I", var, ">=", bound.value()); }
 
@@ -243,7 +246,17 @@ class IntegerEncoder {
   //
   // It is an error to call this with an already created literal. This is
   // Checked.
+  //
+  // The second version use the given literal instead of creating a new
+  // variable.
   Literal CreateAssociatedLiteral(IntegerLiteral i_lit);
+  void AssociateGivenLiteral(IntegerLiteral i_lit, Literal wanted);
+
+  // Return true iff the given integer literal is associated.
+  bool LiteralIsAssociated(IntegerLiteral i_lit) const;
+
+  // Same as CreateAssociatedLiteral() but safe to call if already created.
+  Literal GetOrCreateAssociatedLiteral(IntegerLiteral i_lit);
 
   // Returns the IntegerLiteral that was associated with the given Boolean
   // literal or an IntegerLiteral with a variable set to kNoIntegerVariable if
@@ -713,6 +726,45 @@ inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64 ub) {
                    << " has lower bound " << model->Get(LowerBound(v))
                    << " and LowerOrEqual() was called with an upper bound of "
                    << ub;
+    }
+  };
+}
+
+// Associate the given literal to the given integer inequality.
+inline std::function<void(Model*)> Equality(IntegerLiteral i, Literal l) {
+  return [=](Model* model) {
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+
+    // Tricky: currently we cannot associate the same literal to two different
+    // IntegerLiteral! The second test verifies that l is not already
+    // associated.
+    if (encoder->LiteralIsAssociated(i) ||
+        encoder->GetIntegerLiteral(l) != IntegerLiteral()) {
+      const Literal current = encoder->GetOrCreateAssociatedLiteral(i);
+      model->Add(Equality(current, l));
+    } else {
+      encoder->AssociateGivenLiteral(i, l);
+    }
+  };
+}
+
+// in_interval <=> v in [lb, ub].
+inline std::function<void(Model*)> ReifiedInInterval(IntegerVariable v,
+                                                     int64 lb, int64 ub,
+                                                     Literal in_interval) {
+  return [=](Model* model) {
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    const auto lb_lit = IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb));
+    const auto ub_lit = IntegerLiteral::LowerOrEqual(v, IntegerValue(ub));
+    if (lb < model->Get(LowerBound(v))) {
+      CHECK_LT(ub, model->Get(UpperBound(v))) << "Should be presolved.";
+      model->Add(Equality(ub_lit, in_interval));
+    } else if (ub > model->Get(UpperBound(v))) {
+      model->Add(Equality(lb_lit, in_interval));
+    } else {
+      const Literal is_ge_lb = encoder->GetOrCreateAssociatedLiteral(lb_lit);
+      const Literal is_le_ub = encoder->GetOrCreateAssociatedLiteral(ub_lit);
+      model->Add(ReifiedBoolAnd({is_ge_lb, is_le_ub}, in_interval));
     }
   };
 }

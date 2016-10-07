@@ -17,9 +17,10 @@
 #ifndef OR_TOOLS_FLATZINC_PARSER_UTIL_H_
 #define OR_TOOLS_FLATZINC_PARSER_UTIL_H_
 
+#include <unordered_map>
+
 #include "base/strutil.h"
 #include "base/map_util.h"
-#include "base/hash.h"
 #include "flatzinc/model.h"
 
 using operations_research::HasPrefixString;
@@ -32,12 +33,12 @@ namespace operations_research {
 namespace fz {
 // This is the context used during parsing.
 struct ParserContext {
-  hash_map<std::string, int64> integer_map;
-  hash_map<std::string, std::vector<int64>> integer_array_map;
-  hash_map<std::string, IntegerVariable*> variable_map;
-  hash_map<std::string, std::vector<IntegerVariable*>> variable_array_map;
-  hash_map<std::string, Domain> domain_map;
-  hash_map<std::string, std::vector<Domain>> domain_array_map;
+  std::unordered_map<std::string, int64> integer_map;
+  std::unordered_map<std::string, std::vector<int64>> integer_array_map;
+  std::unordered_map<std::string, IntegerVariable*> variable_map;
+  std::unordered_map<std::string, std::vector<IntegerVariable*>> variable_array_map;
+  std::unordered_map<std::string, Domain> domain_map;
+  std::unordered_map<std::string, std::vector<Domain>> domain_array_map;
 };
 
 // An optional reference to a variable, or an integer value, used in

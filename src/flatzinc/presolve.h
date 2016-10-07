@@ -15,8 +15,9 @@
 #define OR_TOOLS_FLATZINC_PRESOLVE_H_
 
 #include <functional>
-#include "base/hash.h"
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -123,6 +124,7 @@ class Presolver {
   bool Unreify(Constraint* ct, std::string* log);
   bool PresolveInequalities(Constraint* ct, std::string* log);
   bool PresolveIntNe(Constraint* ct, std::string* log);
+  bool PresolveSetNotIn(Constraint* ct, std::string* log);
   bool PresolveSetIn(Constraint* ct, std::string* log);
   bool PresolveSetInReif(Constraint* ct, std::string* log);
   bool PresolveArrayBoolAnd(Constraint* ct, std::string* log);
@@ -169,34 +171,38 @@ class Presolver {
   // of 'from' with 'to', rather than the opposite.
   void AddVariableSubstition(IntegerVariable* from, IntegerVariable* to);
   IntegerVariable* FindRepresentativeOfVar(IntegerVariable* var);
-  hash_map<const IntegerVariable*, IntegerVariable*> var_representative_map_;
+  std::unordered_map<const IntegerVariable*, IntegerVariable*>
+      var_representative_map_;
 
   // Stores abs_map_[x] = y if x = abs(y).
-  hash_map<const IntegerVariable*, IntegerVariable*> abs_map_;
+  std::unordered_map<const IntegerVariable*, IntegerVariable*> abs_map_;
 
   // Stores affine_map_[x] = a * y + b.
-  hash_map<const IntegerVariable*, AffineMapping> affine_map_;
+  std::unordered_map<const IntegerVariable*, AffineMapping> affine_map_;
 
   // Stores array2d_index_map_[z] = a * x + y + b.
-  hash_map<const IntegerVariable*, Array2DIndexMapping> array2d_index_map_;
+  std::unordered_map<const IntegerVariable*, Array2DIndexMapping>
+      array2d_index_map_;
 
   // Stores x == (y - z).
-  hash_map<const IntegerVariable*,
-           std::pair<IntegerVariable*, IntegerVariable*>>
+  std::unordered_map<const IntegerVariable*,
+                     std::pair<IntegerVariable*, IntegerVariable*>>
       difference_map_;
 
   // Stores (x == y) == b
-  hash_map<const IntegerVariable*, hash_map<IntegerVariable*, IntegerVariable*>>
+  std::unordered_map<const IntegerVariable*,
+                     std::unordered_map<IntegerVariable*, IntegerVariable*>>
       int_eq_reif_map_;
 
   // Stores all variables defined in the search annotations.
-  hash_set<const IntegerVariable*> decision_variables_;
+  std::unordered_set<const IntegerVariable*> decision_variables_;
 
   // For all variables, stores all constraints it appears in.
-  hash_map<const IntegerVariable*, hash_set<Constraint*>> var_to_constraints_;
+  std::unordered_map<const IntegerVariable*, std::unordered_set<Constraint*>>
+      var_to_constraints_;
 
   // Count applications of presolve rules.
-  hash_map<std::string, int> successful_rules_;
+  std::unordered_map<std::string, int> successful_rules_;
 };
 }  // namespace fz
 }  // namespace operations_research

@@ -14,6 +14,7 @@
 #include "flatzinc/constraints.h"
 
 #include <string>
+#include <unordered_set>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -210,7 +211,7 @@ void ExtractAtMostInt(fz::SolverData* data, fz::Constraint* ct) {
 void ExtractArrayBoolAnd(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
   std::vector<IntVar*> variables;
-  hash_set<IntExpr*> added;
+  std::unordered_set<IntExpr*> added;
   const std::vector<IntVar*> tmp_vars =
       data->GetOrCreateVariableArray(ct->arguments[0]);
   for (IntVar* const to_add : tmp_vars) {
@@ -263,7 +264,7 @@ void ExtractArrayBoolAnd(fz::SolverData* data, fz::Constraint* ct) {
 void ExtractArrayBoolOr(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
   std::vector<IntVar*> variables;
-  hash_set<IntExpr*> added;
+  std::unordered_set<IntExpr*> added;
   const std::vector<IntVar*> tmp_vars =
       data->GetOrCreateVariableArray(ct->arguments[0]);
   for (IntVar* const to_add : tmp_vars) {

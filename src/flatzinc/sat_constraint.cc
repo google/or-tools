@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "base/commandlineflags.h"
@@ -173,7 +174,7 @@ class SatPropagator : public Constraint {
  private:
   sat::SatSolver sat_;
   std::vector<IntVar*> vars_;
-  hash_map<IntVar*, sat::BooleanVariable> indices_;
+  std::unordered_map<IntVar*, sat::BooleanVariable> indices_;
   std::vector<sat::Literal> bound_literals_;
   NumericalRev<int> sat_decision_level_;
   std::vector<Demon*> demons_;

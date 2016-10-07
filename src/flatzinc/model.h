@@ -82,9 +82,6 @@ struct Domain {
   bool RemoveValue(int64 value);
   std::string DebugString() const;
 
-  // Return the number of values in this domain.
-  int64 Size() const;
-
   // These should never be modified from outside the class.
   std::vector<int64> values;
   bool is_interval;

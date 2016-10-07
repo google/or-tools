@@ -949,226 +949,137 @@ bool CheckSymmetricAllDifferent(
   return true;
 }
 
-bool CheckConstraint(const Constraint& ct,
-                     std::function<int64(IntegerVariable*)> evaluator) {
-  FZDLOG << "Checking " << ct.DebugString() << std::endl;
-  const std::string& type = ct.type;
-  if (type == "all_different_int") {
-    return CheckAllDifferentInt(ct, evaluator);
-  } else if (type == "alldifferent_except_0") {
-    return CheckAlldifferentExcept0(ct, evaluator);
-  } else if (type == "among") {
-    return CheckAmong(ct, evaluator);
-  } else if (type == "array_bool_and") {
-    return CheckArrayBoolAnd(ct, evaluator);
-  } else if (type == "array_bool_element") {
-    return CheckArrayIntElement(ct, evaluator);
-  } else if (type == "array_bool_or") {
-    return CheckArrayBoolOr(ct, evaluator);
-  } else if (type == "array_bool_xor") {
-    return CheckArrayBoolXor(ct, evaluator);
-  } else if (type == "array_int_element") {
-    return CheckArrayIntElement(ct, evaluator);
-  } else if (type == "array_var_bool_element") {
-    return CheckArrayVarIntElement(ct, evaluator);
-  } else if (type == "array_var_int_element") {
-    return CheckArrayVarIntElement(ct, evaluator);
-  } else if (type == "at_most_int") {
-    return CheckAtMostInt(ct, evaluator);
-  } else if (type == "bool_and") {
-    return CheckBoolAnd(ct, evaluator);
-  } else if (type == "bool_clause") {
-    return CheckBoolClause(ct, evaluator);
-  } else if (type == "bool_eq" || type == "bool2int") {
-    return CheckIntEq(ct, evaluator);
-  } else if (type == "bool_eq_reif") {
-    return CheckIntEqReif(ct, evaluator);
-  } else if (type == "bool_ge") {
-    return CheckIntGe(ct, evaluator);
-  } else if (type == "bool_ge_reif") {
-    return CheckIntGeReif(ct, evaluator);
-  } else if (type == "bool_gt") {
-    return CheckIntGt(ct, evaluator);
-  } else if (type == "bool_gt_reif") {
-    return CheckIntGtReif(ct, evaluator);
-  } else if (type == "bool_le") {
-    return CheckIntLe(ct, evaluator);
-  } else if (type == "bool_le_reif") {
-    return CheckIntLeReif(ct, evaluator);
-  } else if (type == "bool_left_imp") {
-    return CheckIntLe(ct, evaluator);
-  } else if (type == "bool_lin_eq") {
-    return CheckIntLinEq(ct, evaluator);
-  } else if (type == "bool_lin_le") {
-    return CheckIntLinLe(ct, evaluator);
-  } else if (type == "bool_lt") {
-    return CheckIntLt(ct, evaluator);
-  } else if (type == "bool_lt_reif") {
-    return CheckIntLtReif(ct, evaluator);
-  } else if (type == "bool_ne") {
-    return CheckIntNe(ct, evaluator);
-  } else if (type == "bool_ne_reif") {
-    return CheckIntNeReif(ct, evaluator);
-  } else if (type == "bool_not") {
-    return CheckBoolNot(ct, evaluator);
-  } else if (type == "bool_or") {
-    return CheckBoolOr(ct, evaluator);
-  } else if (type == "bool_right_imp") {
-    return CheckIntGe(ct, evaluator);
-  } else if (type == "bool_xor") {
-    return CheckBoolXor(ct, evaluator);
-  } else if (type == "circuit") {
-    return CheckCircuit(ct, evaluator);
-  } else if (type == "count_eq" || type == "count") {
-    return CheckCountEq(ct, evaluator);
-  } else if (type == "count_geq") {
-    return CheckCountGeq(ct, evaluator);
-  } else if (type == "count_gt") {
-    return CheckCountGt(ct, evaluator);
-  } else if (type == "count_leq") {
-    return CheckCountLeq(ct, evaluator);
-  } else if (type == "count_lt") {
-    return CheckCountLt(ct, evaluator);
-  } else if (type == "count_neq") {
-    return CheckCountNeq(ct, evaluator);
-  } else if (type == "count_reif") {
-    return CheckCountReif(ct, evaluator);
-  } else if (type == "cumulative" || type == "var_cumulative" ||
-             type == "variable_cumulative" || type == "fixed_cumulative") {
-    return CheckCumulative(ct, evaluator);
-  } else if (type == "diffn") {
-    return CheckDiffn(ct, evaluator);
-  } else if (type == "diffn_k_with_sizes") {
-    return CheckDiffnK(ct, evaluator);
-  } else if (type == "diffn_nonstrict") {
-    return CheckDiffnNonStrict(ct, evaluator);
-  } else if (type == "diffn_nonstrict_k_with_sizes") {
-    return CheckDiffnNonStrictK(ct, evaluator);
-  } else if (type == "disjunctive") {
-    return CheckDisjunctive(ct, evaluator);
-  } else if (type == "disjunctive_strict") {
-    return CheckDisjunctiveStrict(ct, evaluator);
-  } else if (type == "false_constraint") {
-    return CheckFalseConstraint(ct, evaluator);
-  } else if (type == "global_cardinality") {
-    return CheckGlobalCardinality(ct, evaluator);
-  } else if (type == "global_cardinality_closed") {
-    return CheckGlobalCardinalityClosed(ct, evaluator);
-  } else if (type == "global_cardinality_low_up") {
-    return CheckGlobalCardinalityLowUp(ct, evaluator);
-  } else if (type == "global_cardinality_low_up_closed") {
-    return CheckGlobalCardinalityLowUpClosed(ct, evaluator);
-  } else if (type == "global_cardinality_old") {
-    return CheckGlobalCardinalityOld(ct, evaluator);
-  } else if (type == "int_abs") {
-    return CheckIntAbs(ct, evaluator);
-  } else if (type == "int_div") {
-    return CheckIntDiv(ct, evaluator);
-  } else if (type == "int_eq") {
-    return CheckIntEq(ct, evaluator);
-  } else if (type == "int_eq_reif") {
-    return CheckIntEqReif(ct, evaluator);
-  } else if (type == "int_ge") {
-    return CheckIntGe(ct, evaluator);
-  } else if (type == "int_ge_reif") {
-    return CheckIntGeReif(ct, evaluator);
-  } else if (type == "int_gt") {
-    return CheckIntGt(ct, evaluator);
-  } else if (type == "int_gt_reif") {
-    return CheckIntGtReif(ct, evaluator);
-  } else if (type == "int_le") {
-    return CheckIntLe(ct, evaluator);
-  } else if (type == "int_le_reif") {
-    return CheckIntLeReif(ct, evaluator);
-  } else if (type == "int_lin_eq") {
-    return CheckIntLinEq(ct, evaluator);
-  } else if (type == "int_lin_eq_reif") {
-    return CheckIntLinEqReif(ct, evaluator);
-  } else if (type == "int_lin_ge") {
-    return CheckIntLinGe(ct, evaluator);
-  } else if (type == "int_lin_ge_reif") {
-    return CheckIntLinGeReif(ct, evaluator);
-  } else if (type == "int_lin_le") {
-    return CheckIntLinLe(ct, evaluator);
-  } else if (type == "int_lin_le_reif") {
-    return CheckIntLinLeReif(ct, evaluator);
-  } else if (type == "int_lin_ne") {
-    return CheckIntLinNe(ct, evaluator);
-  } else if (type == "int_lin_ne_reif") {
-    return CheckIntLinNeReif(ct, evaluator);
-  } else if (type == "int_lt") {
-    return CheckIntLt(ct, evaluator);
-  } else if (type == "int_lt_reif") {
-    return CheckIntLtReif(ct, evaluator);
-  } else if (type == "int_max") {
-    return CheckIntMax(ct, evaluator);
-  } else if (type == "int_min") {
-    return CheckIntMin(ct, evaluator);
-  } else if (type == "int_minus") {
-    return CheckIntMinus(ct, evaluator);
-  } else if (type == "int_mod") {
-    return CheckIntMod(ct, evaluator);
-  } else if (type == "int_ne") {
-    return CheckIntNe(ct, evaluator);
-  } else if (type == "int_ne_reif") {
-    return CheckIntNeReif(ct, evaluator);
-  } else if (type == "int_negate") {
-    return CheckIntNegate(ct, evaluator);
-  } else if (type == "int_plus") {
-    return CheckIntPlus(ct, evaluator);
-  } else if (type == "int_times") {
-    return CheckIntTimes(ct, evaluator);
-  } else if (type == "inverse") {
-    return CheckInverse(ct, evaluator);
-  } else if (type == "lex_less_bool" || type == "lex_less_int") {
-    return CheckLexLessInt(ct, evaluator);
-  } else if (type == "lex_lesseq_bool" || type == "lex_lesseq_int") {
-    return CheckLexLesseqInt(ct, evaluator);
-  } else if (type == "maximum_arg_int") {
-    return CheckMaximumArgInt(ct, evaluator);
-  } else if (type == "maximum_int" || type == "array_int_maximum") {
-    return CheckMaximumInt(ct, evaluator);
-  } else if (type == "minimum_arg_int") {
-    return CheckMinimumArgInt(ct, evaluator);
-  } else if (type == "minimum_int" || type == "array_int_minimum") {
-    return CheckMinimumInt(ct, evaluator);
-  } else if (type == "nvalue") {
-    return CheckNvalue(ct, evaluator);
-  } else if (type == "regular") {
-    return CheckRegular(ct, evaluator);
-  } else if (type == "regular_nfa") {
-    return CheckRegularNfa(ct, evaluator);
-  } else if (type == "set_in" || type == "int_in") {
-    return CheckSetIn(ct, evaluator);
-  } else if (type == "set_not_in" || type == "int_not_in") {
-    return CheckSetNotIn(ct, evaluator);
-  } else if (type == "set_in_reif") {
-    return CheckSetInReif(ct, evaluator);
-  } else if (type == "sliding_sum") {
-    return CheckSlidingSum(ct, evaluator);
-  } else if (type == "sort") {
-    return CheckSort(ct, evaluator);
-  } else if (type == "subcircuit") {
-    return CheckSubCircuit(ct, evaluator);
-  } else if (type == "symmetric_all_different") {
-    return CheckSymmetricAllDifferent(ct, evaluator);
-  } else if (type == "table_bool" || type == "table_int") {
-    return CheckTableInt(ct, evaluator);
-  } else if (type == "true_constraint") {
-    // Nothing to do.
-    return true;
-  } else {
-    LOG(FATAL) << "Unknown predicate: " << type;
-    return false;
-  }
+using CallMap = std::unordered_map<
+    std::string, std::function<bool(const Constraint& ct,
+                               std::function<int64(IntegerVariable*)>)>>;
+
+CallMap CreateCallMap() {
+  CallMap m;
+  m["all_different_int"] = CheckAllDifferentInt;
+  m["alldifferent_except_0"] = CheckAlldifferentExcept0;
+  m["among"] = CheckAmong;
+  m["array_bool_and"] = CheckArrayBoolAnd;
+  m["array_bool_element"] = CheckArrayIntElement;
+  m["array_bool_or"] = CheckArrayBoolOr;
+  m["array_bool_xor"] = CheckArrayBoolXor;
+  m["array_int_element"] = CheckArrayIntElement;
+  m["array_var_bool_element"] = CheckArrayVarIntElement;
+  m["array_var_int_element"] = CheckArrayVarIntElement;
+  m["at_most_int"] = CheckAtMostInt;
+  m["bool_and"] = CheckBoolAnd;
+  m["bool_clause"] = CheckBoolClause;
+  m["bool_eq"] = CheckIntEq;
+  m["bool2int"] = CheckIntEq;
+  m["bool_eq_reif"] = CheckIntEqReif;
+  m["bool_ge"] = CheckIntGe;
+  m["bool_ge_reif"] = CheckIntGeReif;
+  m["bool_gt"] = CheckIntGt;
+  m["bool_gt_reif"] = CheckIntGtReif;
+  m["bool_le"] = CheckIntLe;
+  m["bool_le_reif"] = CheckIntLeReif;
+  m["bool_left_imp"] = CheckIntLe;
+  m["bool_lin_eq"] = CheckIntLinEq;
+  m["bool_lin_le"] = CheckIntLinLe;
+  m["bool_lt"] = CheckIntLt;
+  m["bool_lt_reif"] = CheckIntLtReif;
+  m["bool_ne"] = CheckIntNe;
+  m["bool_ne_reif"] = CheckIntNeReif;
+  m["bool_not"] = CheckBoolNot;
+  m["bool_or"] = CheckBoolOr;
+  m["bool_right_imp"] = CheckIntGe;
+  m["bool_xor"] = CheckBoolXor;
+  m["circuit"] = CheckCircuit;
+  m["count_eq"] = CheckCountEq;
+  m["count"] = CheckCountEq;
+  m["count_geq"] = CheckCountGeq;
+  m["count_gt"] = CheckCountGt;
+  m["count_leq"] = CheckCountLeq;
+  m["count_lt"] = CheckCountLt;
+  m["count_neq"] = CheckCountNeq;
+  m["count_reif"] = CheckCountReif;
+  m["cumulative"] = CheckCumulative;
+  m["var_cumulative"] = CheckCumulative;
+  m["variable_cumulative"] = CheckCumulative;
+  m["fixed_cumulative"] = CheckCumulative;
+  m["diffn"] = CheckDiffn;
+  m["diffn_k_with_sizes"] = CheckDiffnK;
+  m["diffn_nonstrict"] = CheckDiffnNonStrict;
+  m["diffn_nonstrict_k_with_sizes"] = CheckDiffnNonStrictK;
+  m["disjunctive"] = CheckDisjunctive;
+  m["disjunctive_strict"] = CheckDisjunctiveStrict;
+  m["false_constraint"] = CheckFalseConstraint;
+  m["global_cardinality"] = CheckGlobalCardinality;
+  m["global_cardinality_closed"] = CheckGlobalCardinalityClosed;
+  m["global_cardinality_low_up"] = CheckGlobalCardinalityLowUp;
+  m["global_cardinality_low_up_closed"] = CheckGlobalCardinalityLowUpClosed;
+  m["global_cardinality_old"] = CheckGlobalCardinalityOld;
+  m["int_abs"] = CheckIntAbs;
+  m["int_div"] = CheckIntDiv;
+  m["int_eq"] = CheckIntEq;
+  m["int_eq_reif"] = CheckIntEqReif;
+  m["int_ge"] = CheckIntGe;
+  m["int_ge_reif"] = CheckIntGeReif;
+  m["int_gt"] = CheckIntGt;
+  m["int_gt_reif"] = CheckIntGtReif;
+  m["int_le"] = CheckIntLe;
+  m["int_le_reif"] = CheckIntLeReif;
+  m["int_lin_eq"] = CheckIntLinEq;
+  m["int_lin_eq_reif"] = CheckIntLinEqReif;
+  m["int_lin_ge"] = CheckIntLinGe;
+  m["int_lin_ge_reif"] = CheckIntLinGeReif;
+  m["int_lin_le"] = CheckIntLinLe;
+  m["int_lin_le_reif"] = CheckIntLinLeReif;
+  m["int_lin_ne"] = CheckIntLinNe;
+  m["int_lin_ne_reif"] = CheckIntLinNeReif;
+  m["int_lt"] = CheckIntLt;
+  m["int_lt_reif"] = CheckIntLtReif;
+  m["int_max"] = CheckIntMax;
+  m["int_min"] = CheckIntMin;
+  m["int_minus"] = CheckIntMinus;
+  m["int_mod"] = CheckIntMod;
+  m["int_ne"] = CheckIntNe;
+  m["int_ne_reif"] = CheckIntNeReif;
+  m["int_negate"] = CheckIntNegate;
+  m["int_plus"] = CheckIntPlus;
+  m["int_times"] = CheckIntTimes;
+  m["inverse"] = CheckInverse;
+  m["lex_less_bool"] = CheckLexLessInt;
+  m["lex_less_int"] = CheckLexLessInt;
+  m["lex_lesseq_bool"] = CheckLexLesseqInt;
+  m["lex_lesseq_int"] = CheckLexLesseqInt;
+  m["maximum_arg_int"] = CheckMaximumArgInt;
+  m["maximum_int"] = CheckMaximumInt;
+  m["array_int_maximum"] = CheckMaximumInt;
+  m["minimum_arg_int"] = CheckMinimumArgInt;
+  m["minimum_int"] = CheckMinimumInt;
+  m["array_int_minimum"] = CheckMinimumInt;
+  m["nvalue"] = CheckNvalue;
+  m["regular"] = CheckRegular;
+  m["regular_nfa"] = CheckRegularNfa;
+  m["set_in"] = CheckSetIn;
+  m["int_in"] = CheckSetIn;
+  m["set_not_in"] = CheckSetNotIn;
+  m["int_not_in"] = CheckSetNotIn;
+  m["set_in_reif"] = CheckSetInReif;
+  m["sliding_sum"] = CheckSlidingSum;
+  m["sort"] = CheckSort;
+  m["subcircuit"] = CheckSubCircuit;
+  m["symmetric_all_different"] = CheckSymmetricAllDifferent;
+  m["table_bool"] = CheckTableInt;
+  m["table_int"] = CheckTableInt;
+  return m;
 }
+
 }  // namespace
 
 bool CheckSolution(const Model& model,
                    std::function<int64(IntegerVariable*)> evaluator) {
   bool ok = true;
+  const CallMap call_map = CreateCallMap();
   for (Constraint* ct : model.constraints()) {
-    if (ct->active && !CheckConstraint(*ct, evaluator)) {
+    if (!ct->active) continue;
+    const auto& checker = FindOrDie(call_map, ct->type);
+    if (!checker(*ct, evaluator)) {
       FZLOG << "Failing constraint " << ct->DebugString() << FZENDL;
       ok = false;
     }
