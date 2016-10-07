@@ -728,4 +728,25 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
 }  // namespace sat
 }  // namespace operations_research
 
+#if defined(_MSC_VER)
+
+#include <xhash>
+
+namespace stdext {
+
+template <>
+inline size_t hash_value<operations_research::sat::IntegerValue>(
+    const operations_research::sat::IntegerValue& a) {
+		return a.value();
+	}
+
+template <>
+inline size_t hash_value<operations_research::sat::IntegerVariable>(
+    const operations_research::sat::IntegerVariable& a) {
+		return a.value();
+	}
+
+}  //  namespace stdext
+#endif  // _MSC_VER
+
 #endif  // OR_TOOLS_SAT_INTEGER_H_
