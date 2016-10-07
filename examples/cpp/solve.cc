@@ -27,12 +27,12 @@
 #include "base/file.h"
 //#include "base/options.h"
 #include "base/stringpiece_utils.h"
-#include "glop/proto_utils.h"
 #include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver.pb.h"
 //#include "linear_solver/model_anonymizer.h"
 #include "lp_data/lp_data.h"
 #include "lp_data/mps_reader.h"
+#include "lp_data/proto_utils.h"
 #include "util/proto_tools.h"
 
 DEFINE_string(input, "", "REQUIRED: Input file name.");

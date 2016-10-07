@@ -518,7 +518,9 @@ LP_DATA_DEPS = \
     $(SRC_DIR)/base/thorough_hash.h \
     $(SRC_DIR)/base/time_support.h \
     $(SRC_DIR)/algorithms/dynamic_partition.h \
-    $(SRC_DIR)/algorithms/dynamic_permutation.h
+    $(SRC_DIR)/algorithms/dynamic_permutation.h \
+    $(SRC_DIR)/linear_solver/linear_solver.h \
+    $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
 LP_DATA_LIB_OBJS = \
     $(OBJ_DIR)/lp_data/lp_data.$O \
@@ -529,6 +531,7 @@ LP_DATA_LIB_OBJS = \
     $(OBJ_DIR)/lp_data/matrix_scaler.$O \
     $(OBJ_DIR)/lp_data/matrix_utils.$O \
     $(OBJ_DIR)/lp_data/mps_reader.$O \
+    $(OBJ_DIR)/lp_data/proto_utils.$O \
     $(OBJ_DIR)/lp_data/sparse.$O \
     $(OBJ_DIR)/lp_data/sparse_column.$O
 
@@ -587,6 +590,10 @@ $(SRC_DIR)/lp_data/mps_reader.h: \
 $(SRC_DIR)/lp_data/permutation.h: \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/util/return_macros.h
+
+$(SRC_DIR)/lp_data/proto_utils.h: \
+    $(SRC_DIR)/lp_data/lp_data.h \
+    $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
 $(SRC_DIR)/lp_data/sparse_column.h: \
     $(SRC_DIR)/lp_data/sparse_vector.h
@@ -679,6 +686,11 @@ $(OBJ_DIR)/lp_data/mps_reader.$O: \
     $(SRC_DIR)/base/strutil.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/lp_data/mps_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smps_reader.$O
 
+$(OBJ_DIR)/lp_data/proto_utils.$O: \
+    $(SRC_DIR)/lp_data/proto_utils.cc \
+    $(SRC_DIR)/lp_data/proto_utils.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/lp_data/proto_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Sproto_utils.$O
+
 $(OBJ_DIR)/lp_data/sparse.$O: \
     $(SRC_DIR)/lp_data/sparse.cc \
     $(SRC_DIR)/lp_data/lp_data.h \
@@ -750,7 +762,6 @@ GLOP_LIB_OBJS = \
     $(OBJ_DIR)/glop/markowitz.$O \
     $(OBJ_DIR)/glop/preprocessor.$O \
     $(OBJ_DIR)/glop/primal_edge_norms.$O \
-    $(OBJ_DIR)/glop/proto_utils.$O \
     $(OBJ_DIR)/glop/reduced_costs.$O \
     $(OBJ_DIR)/glop/revised_simplex.$O \
     $(OBJ_DIR)/glop/status.$O \
@@ -832,10 +843,6 @@ $(SRC_DIR)/glop/primal_edge_norms.h: \
     $(SRC_DIR)/util/stats.h \
     $(SRC_DIR)/lp_data/lp_data.h \
     $(SRC_DIR)/lp_data/lp_types.h
-
-$(SRC_DIR)/glop/proto_utils.h: \
-    $(SRC_DIR)/lp_data/lp_data.h \
-    $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
 $(SRC_DIR)/glop/rank_one_update.h: \
     $(SRC_DIR)/glop/status.h \
@@ -929,7 +936,6 @@ $(OBJ_DIR)/glop/lp_solver.$O: \
     $(SRC_DIR)/glop/lp_solver.cc \
     $(SRC_DIR)/glop/lp_solver.h \
     $(SRC_DIR)/glop/preprocessor.h \
-    $(SRC_DIR)/glop/proto_utils.h \
     $(SRC_DIR)/glop/status.h \
     $(SRC_DIR)/util/fp_utils.h \
     $(SRC_DIR)/util/proto_tools.h \
@@ -939,7 +945,8 @@ $(OBJ_DIR)/glop/lp_solver.$O: \
     $(SRC_DIR)/base/strutil.h \
     $(SRC_DIR)/base/timer.h \
     $(SRC_DIR)/lp_data/lp_types.h \
-    $(SRC_DIR)/lp_data/lp_utils.h
+    $(SRC_DIR)/lp_data/lp_utils.h \
+    $(SRC_DIR)/lp_data/proto_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/lp_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_solver.$O
 
 $(OBJ_DIR)/glop/lu_factorization.$O: \
@@ -971,11 +978,6 @@ $(OBJ_DIR)/glop/primal_edge_norms.$O: \
     $(SRC_DIR)/base/timer.h \
     $(SRC_DIR)/lp_data/lp_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/primal_edge_norms.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sprimal_edge_norms.$O
-
-$(OBJ_DIR)/glop/proto_utils.$O: \
-    $(SRC_DIR)/glop/proto_utils.cc \
-    $(SRC_DIR)/glop/proto_utils.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/proto_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sproto_utils.$O
 
 $(OBJ_DIR)/glop/reduced_costs.$O: \
     $(SRC_DIR)/glop/reduced_costs.cc \

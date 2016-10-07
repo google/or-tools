@@ -30,9 +30,9 @@
 #include "base/strutil.h"
 #include "glop/lp_solver.h"
 #include "glop/parameters.pb.h"
-#include "glop/proto_utils.h"
 #include "lp_data/lp_print_utils.h"
 #include "lp_data/mps_reader.h"
+#include "lp_data/proto_utils.h"
 #include "util/proto_tools.h"
 #include "base/status.h"
 

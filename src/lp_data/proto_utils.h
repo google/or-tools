@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_GLOP_PROTO_UTILS_H_
-#define OR_TOOLS_GLOP_PROTO_UTILS_H_
+#ifndef OR_TOOLS_LP_DATA_PROTO_UTILS_H_
+#define OR_TOOLS_LP_DATA_PROTO_UTILS_H_
 
 #include "linear_solver/linear_solver.pb.h"
 #include "lp_data/lp_data.h"
@@ -31,4 +31,4 @@ void MPModelProtoToLinearProgram(const MPModelProto& input,
 }  // namespace glop
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_GLOP_PROTO_UTILS_H_
+#endif  // OR_TOOLS_LP_DATA_PROTO_UTILS_H_

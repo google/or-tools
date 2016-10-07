@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "glop/proto_utils.h"
+#include "lp_data/proto_utils.h"
 
 namespace operations_research {
 namespace glop {
