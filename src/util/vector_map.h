@@ -51,6 +51,9 @@ class VectorMap {
     }
   }
 
+  // Will return the index of the element if present, or die otherwise.
+  int IndexOrDie(const T& element) const { return FindOrDie(map_, element); }
+
   // Returns -1 if the element is not in the vector, or its unique
   // index if it is.
   int Index(const T& element) const {
