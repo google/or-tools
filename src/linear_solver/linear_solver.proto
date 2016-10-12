@@ -136,6 +136,76 @@ message MPModelProto {
   optional PartialVariableAssignment solution_hint = 6;
 }
 
+// A "three-way" boolean: unspecified, false or true.
+enum OptionalBoolean {
+  BOOL_UNSPECIFIED = 0;
+  BOOL_FALSE = 1;
+  BOOL_TRUE = 2;
+}
+
+// To support 'unspecified' double value in proto3, the simplest is to wrap
+// any double value in a nested message (has_XXX works for message fields).
+message OptionalDouble {
+  optional double value = 1;
+}
+
+// MPSolverCommonParameters holds advanced usage parameters that apply to any of
+// the solvers we support.
+// All of the fields in this proto can have a value of unspecified. In this
+// case each inner solver will use their own safe defaults.
+// Some values won't be supported by some solvers. The behavior in that case is
+// not defined yet.
+message MPSolverCommonParameters {
+  // Limit for relative MIP gap.
+  // If the relative MIP gap reaches this value or below, stop the solve before
+  // the time limit.
+  // The relative MIP gap is an upper bound of the relative distance to the
+  // optimal:
+  // for a maximization problem, it is defined as either
+  //   (best_bound - objective) / abs(objective) (Gurobi)
+  //   abs((best_bound - objective) / best_bound) (SCIP)
+  // where "objective" is the max objective of any solution found so far, and
+  // "best_bound" is the tightest (i.e. lowest) upper bound of the objective
+  // determined so far.
+  // The MIP Gap is sensitive to objective offset.
+  // If the denominator is 0 the MIP Gap is INFINITY for SCIP and Gurobi.
+  // Ask or-core-team@ for other solvers.
+  optional OptionalDouble relative_mip_gap = 1;
+
+  // Tolerance for primal feasibility of basic solutions: this is the maximum
+  // allowed error in constraint satisfiability.
+  // For SCIP this includes integrality constraints. For Gurobi it does not, you
+  // need to set the custom parameter IntFeasTol.
+  optional OptionalDouble primal_tolerance = 2;
+
+  // Tolerance for dual feasibility.
+  // For SCIP and Gurobi this is the feasibility tolerance for reduced costs in
+  // LP solution: reduced costs must all be smaller than this value in the
+  // improving direction in order for a model to be declared optimal.
+  // Not supported for other solvers.
+  optional OptionalDouble dual_tolerance = 3;
+
+  enum LPAlgorithmValues {
+    LP_ALGO_UNSPECIFIED = 0;
+    LP_ALGO_DUAL = 1;    // Dual simplex.
+    LP_ALGO_PRIMAL = 2;  // Primal simplex.
+    LP_ALGO_BARRIER = 3;  // Barrier algorithm.
+  }
+
+  // Algorithm to solve linear programs.
+  // Ask or-core-team@ if you want to know what this does exactly.
+  optional LPAlgorithmValues lp_algorithm = 4 [default = LP_ALGO_UNSPECIFIED];
+
+  // Gurobi and SCIP enable presolve by default.
+  // Ask or-core-team@ for other solvers.
+  optional OptionalBoolean presolve = 5 [default = BOOL_UNSPECIFIED];
+
+  // Enable automatic scaling of matrix coefficients and objective. Available
+  // for Gurobi and GLOP.
+  // Ask or-core-team@ if you want more details.
+  optional OptionalBoolean scaling = 7 [default = BOOL_UNSPECIFIED];
+}
+
 message MPModelRequest {
   // The model to be optimized by the server.
   optional MPModelProto model = 1;
@@ -297,6 +367,8 @@ message MPSolutionResponse {
   // [Advanced usage.]
   // Values of the dual variables values in the same order as the
   // MPModelProto::constraint field. This is a dense representation.
+  // These are not set if the problem was solved with a MIP solver (even if
+  // it is actually a linear program).
   // These are set iff 'status' is OPTIMAL or FEASIBLE.
   repeated double dual_value = 4 [packed = true];
 }

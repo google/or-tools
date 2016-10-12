@@ -378,8 +378,7 @@ class MPSolver {
       const MPModelProto& input_model, std::string* error_message);
 
   // Encodes the current solution in a solution response protocol buffer.
-  // Only nonzero variable values are stored in order to reduce the
-  // size of the MPSolutionResponse protocol buffer.
+
   void FillSolutionResponseProto(MPSolutionResponse* response) const;
 
   // Solves the model encoded by a MPModelRequest protocol buffer and
