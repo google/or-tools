@@ -26,7 +26,6 @@
 #define OR_TOOLS_LP_DATA_MPS_READER_H_
 
 #include <algorithm>  // for max
-#include <map>
 #include "base/hash.h"
 #include <string>  // for std::string
 #include <vector>  // for vector

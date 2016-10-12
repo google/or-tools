@@ -234,6 +234,13 @@ void MPSReader::ProcessLine(char* line) {
           problem_name_ = fields_[2];
         }
       }
+      // NOTE(user): The name may differ between fixed and free forms. In
+      // fixed form, the name has at most 8 characters, and starts at a specific
+      // position in the NAME line. For MIPLIB2010 problems (eg, air04, glass4),
+      // the name in fixed form ends up being preceeded with a whitespace.
+      // TODO(user, bdb): Return an error for fixed form if the problem name
+      // does not fit.
+      data_->SetName(problem_name_);
     }
     return;
   }

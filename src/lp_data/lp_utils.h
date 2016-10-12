@@ -254,8 +254,8 @@ inline void ApplyPermutationWhenInputIsProbablySparse(
 
 // Sets a dense vector for which the non zeros are known to be non_zeros.
 template <typename Vector, typename IndexType>
-inline void ClearAndResizeVectorWithNonZeros(IndexType size, Vector* v,
-                                             std::vector<IndexType>* non_zeros) {
+inline void ClearAndResizeVectorWithNonZeros(
+    IndexType size, Vector* v, std::vector<IndexType>* non_zeros) {
   // Only use the sparse version if there is less than 5% non-zeros positions
   // compared to the wanted size. Note that in most cases the vector will
   // already be of the correct size.
