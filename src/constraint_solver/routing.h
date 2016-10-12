@@ -1231,6 +1231,7 @@ class RoutingModel {
   ITIVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
+  bool cache_callbacks_;
   std::vector<CostCacheElement> cost_cache_;  // Index by source index.
   std::vector<VehicleClassIndex> vehicle_class_index_of_vehicle_;
 #ifndef SWIG

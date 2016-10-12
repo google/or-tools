@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "base/map_util.h"
+#include "constraint_solver/constraint_solver.h"
 
 // --- Routing search flags ---
 
@@ -77,6 +78,11 @@ DEFINE_int64(routing_optimization_step, 1, "Optimization step.");
 // Propagation control
 DEFINE_bool(routing_use_light_propagation, true,
             "Use constraints with light propagation in routing model.");
+
+// Cache settings.
+DEFINE_bool(routing_cache_callbacks, false, "Cache callback calls.");
+DEFINE_int64(routing_max_cache_size, 1000,
+             "Maximum cache size when callback caching is on.");
 
 // Misc
 DEFINE_bool(routing_fingerprint_arc_cost_evaluators, true,
@@ -197,7 +203,13 @@ RoutingSearchParameters BuildSearchParametersFromFlags() {
 
 RoutingModelParameters BuildModelParametersFromFlags() {
   RoutingModelParameters parameters;
+  ConstraintSolverParameters* const solver_parameters =
+      parameters.mutable_solver_parameters();
+  *solver_parameters = Solver::DefaultSolverParameters();
   parameters.set_reduce_vehicle_cost_model(FLAGS_routing_use_homogeneous_costs);
+  if (FLAGS_routing_cache_callbacks) {
+    parameters.set_max_callback_cache_size(FLAGS_routing_max_cache_size);
+  }
   return parameters;
 }
 }  // namespace operations_research

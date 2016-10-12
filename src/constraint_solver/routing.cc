@@ -59,13 +59,6 @@ DEFINE_int64(sweep_sectors, 1,
              "The number of sectors the space is divided before it is sweeped "
              "by the ray.");
 
-// Cache settings.
-// TODO(user): Investigate if these settings could be moved to
-// RoutingSearchParameters or if we can get rid of them entirely.
-DEFINE_bool(routing_cache_callbacks, false, "Cache callback calls.");
-DEFINE_int64(routing_max_cache_size, 1000,
-             "Maximum cache size when callback caching is on.");
-
 // Trace settings
 
 // TODO(user): Move most of the following settings to a model parameter
@@ -1029,19 +1022,6 @@ class ConstantEvaluator : public BaseObject {
  private:
   const T value_;
 };
-
-ConstraintSolverParameters::TrailCompression GetTrailCompression(
-    RoutingModelParameters::TrailCompression trail_compression) {
-  switch (trail_compression) {
-    case RoutingModelParameters::NONE:
-      return ConstraintSolverParameters::NO_COMPRESSION;
-    case RoutingModelParameters::ZLIB:
-      return ConstraintSolverParameters::COMPRESS_WITH_ZLIB;
-    default:
-            return ConstraintSolverParameters::NO_COMPRESSION;
-  }
-}
-
 }  // namespace
 
 // ----- Routing model -----
@@ -1081,6 +1061,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       cost_classes_(),
       costs_are_homogeneous_across_vehicles_(
           parameters.reduce_vehicle_cost_model()),
+      cache_callbacks_(nodes <= parameters.max_callback_cache_size()),
       vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       starts_(vehicles),
       ends_(vehicles),
@@ -1099,8 +1080,6 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
   ConstraintSolverParameters solver_parameters =
       parameters.has_solver_parameters() ? parameters.solver_parameters()
                                          : Solver::DefaultSolverParameters();
-  solver_parameters.set_compress_trail(
-      GetTrailCompression(parameters.trail_compression()));
   solver_.reset(new Solver("Routing", solver_parameters));
   InitializeBuilders(solver_.get());
   CHECK_EQ(vehicles, start_ends.size());
@@ -1133,6 +1112,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
       cost_classes_(),
       costs_are_homogeneous_across_vehicles_(
           parameters.reduce_vehicle_cost_model()),
+      cache_callbacks_(nodes <= parameters.max_callback_cache_size()),
       vehicle_class_index_of_vehicle_(vehicles_, VehicleClassIndex(-1)),
       starts_(vehicles),
       ends_(vehicles),
@@ -1151,8 +1131,6 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
   ConstraintSolverParameters solver_parameters =
       parameters.has_solver_parameters() ? parameters.solver_parameters()
                                          : Solver::DefaultSolverParameters();
-  solver_parameters.set_compress_trail(
-      GetTrailCompression(parameters.trail_compression()));
   solver_.reset(new Solver("Routing", solver_parameters));
   InitializeBuilders(solver_.get());
   CHECK_EQ(vehicles, starts.size());
@@ -1210,13 +1188,13 @@ RoutingModel::~RoutingModel() {
 }
 
 RoutingModelParameters RoutingModel::DefaultModelParameters() {
-  static const char* const kModelParameters =
-      "reduce_vehicle_cost_model: true "
-            "trail_compression: ZLIB";
   RoutingModelParameters parameters;
-  if (!google::protobuf::TextFormat::ParseFromString(kModelParameters, &parameters)) {
-    LOG(ERROR) << "Unsupported default model parameters: " << kModelParameters;
-  }
+  ConstraintSolverParameters* const solver_parameters =
+      parameters.mutable_solver_parameters();
+  *solver_parameters = Solver::DefaultSolverParameters();
+  solver_parameters->set_compress_trail(
+         ConstraintSolverParameters::COMPRESS_WITH_ZLIB);
+  parameters.set_reduce_vehicle_cost_model(true);
   return parameters;
 }
 
@@ -4880,7 +4858,7 @@ void RoutingModel::AddIntervalToAssignment(IntervalVar* const interval) {
 RoutingModel::NodeEvaluator2* RoutingModel::NewCachedCallback(
     NodeEvaluator2* callback) {
   const int size = node_to_index_.size();
-  if (FLAGS_routing_cache_callbacks && size <= FLAGS_routing_max_cache_size) {
+  if (cache_callbacks_) {
     NodeEvaluator2* cached_evaluator = nullptr;
     if (!FindCopy(cached_node_callbacks_, callback, &cached_evaluator)) {
       cached_evaluator = new RoutingCache(callback, size);
