@@ -17,21 +17,16 @@
 #define OR_TOOLS_GRAPH_UTIL_H_
 
 #include <algorithm>
-#include <memory>
-#include <numeric>
-#include <string>
-
 #include "base/hash.h"
-#include "base/join.h"
-#include "base/numbers.h"
-#include "base/split.h"
-#include "base/join.h"
+#include "base/hash.h"
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
+
 #include "base/map_util.h"
-#include "base/murmur.h"
+#include "base/hash.h"
 #include "graph/graph.h"
-#include "util/filelineiter.h"
-#include "base/status.h"
-#include "base/statusor.h"
 
 namespace operations_research {
 
@@ -41,8 +36,12 @@ namespace operations_research {
 template <class Graph>
 bool GraphIsSymmetric(const Graph& graph);
 
+// Returns a fresh copy of a given graph.
+template <class Graph>
+std::unique_ptr<Graph> CopyGraph(const Graph& graph);
+
 // Creates a remapped copy of graph "graph", where node i becomes node
-// new_node_index[i]. The caller takes ownership of the returned graph.
+// new_node_index[i].
 // "new_node_index" must be a valid permutation of [0..num_nodes-1] or the
 // behavior is undefined (it may die).
 // Note that you can call IsValidPermutation() to check it yourself.
@@ -50,23 +49,29 @@ template <class Graph>
 std::unique_ptr<Graph> RemapGraph(const Graph& graph,
                                   const std::vector<int>& new_node_index);
 
-// Returns true iff the given vector is a permutation of [0..size()-1].
-bool IsValidPermutation(const std::vector<int>& v);
-
-// Returns a std::string representation of a graph.
-enum GraphToStringFormat {
-  // One arc per line, eg. "3->1".
-  PRINT_GRAPH_ARCS,
-
-  // One space-separated adjacency list per line, eg. "5 1 3 1".
-  // Nodes with no outgoing arc get an empty line.
-  PRINT_GRAPH_ADJACENCY_LISTS,
-
-  // Ditto, but the adjacency lists are sorted.
-  PRINT_GRAPH_ADJACENCY_LISTS_SORTED,
-};
+// Gets the induced subgraph of "graph" restricted to the nodes in "nodes":
+// the resulting graph will have exactly nodes.size() nodes, and its
+// node #0 will be the former graph's node #nodes[0], etc.
+// See https://en.wikipedia.org/wiki/Induced_subgraph .
+// The "nodes" must be a valid subset (no repetitions) of
+// [0..graph.num_nodes()-1], or the behavior is undefined (it may die).
+// Note that you can call IsSubsetOf0N() to check it yourself.
+//
+// Current complexity: O(num old nodes + num new arcs). It could easily
+// be done in O(num new nodes + num new arcs) but with a higher constant.
 template <class Graph>
-std::string GraphToString(const Graph& graph, GraphToStringFormat format);
+std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& graph,
+                                          const std::vector<int>& nodes);
+
+// Returns true iff the given vector is a subset of [0..n-1], i.e.
+// all elements i are such that 0 <= i < n and no two elements are equal.
+// "n" must be >= 0 or the result is undefined.
+bool IsSubsetOf0N(const std::vector<int>& v, int n);
+
+// Returns true iff the given vector is a permutation of [0..size()-1].
+inline bool IsValidPermutation(const std::vector<int>& v) {
+  return IsSubsetOf0N(v, v.size());
+}
 
 // Returns a copy of "graph", without self-arcs and duplicate arcs.
 template <class Graph>
@@ -105,57 +110,6 @@ template <class Graph>
 std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
                                                 bool die_if_not_symmetric);
 
-// Read a graph file in the simple ".g" format: the file should be a text file
-// containing only space-separated integers, whose first line is:
-//   <num nodes> <num edges> [<num_colors> <index of first node with color #1>
-//                            <index of first node with color #2> ...]
-// and whose subsequent lines represent edges if "directed" is false, or arcs if
-// "directed" is true:
-//   <node1> <node2>.
-//
-// This returns a newly created graph upon success, which the user needs to take
-// ownership of, or a failure status. See base/statusor.h.
-//
-// If "num_nodes_with_color_or_null" is not nullptr, it will be filled with the
-// color information: num_nodes_with_color_or_null[i] will be the number of
-// nodes with color #i. Furthermore, nodes are sorted by color.
-//
-// Examples:
-//   // Simply crash if the graph isn't successfully read from the file.
-//   typedef StaticGraph<> MyGraph;  // This is just an example.
-//   std::unique_ptr<MyGraph> my_graph(
-//       ReadGraphFile<MyGraph>("graph.g", /*directed=*/ false).ValueOrDie());
-//
-//   // More complicated error handling.
-//   util::StatusOr<MyGraph*> error_or_graph =
-//       ReadGraphFile<MyGraph>("graph.g", /*directed=*/ false);
-//   if (!error_or_graph.ok()) {
-//     LOG(ERROR) << "Error: " << error_or_graph.status().error_message();
-//   } else {
-//     std::unique_ptr<MyGraph> my_graph(error_or_graph.ValueOrDie());
-//     ...
-//   }
-template <class Graph>
-util::StatusOr<Graph*> ReadGraphFile(const std::string& filename, bool directed,
-                                     std::vector<int>* num_nodes_with_color_or_null);
-
-// Writes a graph to the ".g" file format described above. If "directed" is
-// true, all arcs are written to the file. If it is false, the graph is expected
-// to be undirected (i.e. the number of arcs a->b is equal to the number of arcs
-// b->a for all nodes a,b); and only the arcs a->b where a<=b are written. Note
-// however that in this case, the symmetry of the graph is not fully checked
-// (only the parity of the number of non-self arcs is).
-//
-// "num_nodes_with_color" is optional. If it is not empty, then the color
-// information will be written to the header of the .g file. See ReadGraphFile.
-//
-// This method is the reverse of ReadGraphFile (with the same value for
-// "directed").
-template <class Graph>
-util::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
-                              bool directed,
-                              const std::vector<int>& num_nodes_with_color);
-
 // Implementations of the templated methods.
 
 template <class Graph>
@@ -188,6 +142,19 @@ bool GraphIsSymmetric(const Graph& graph) {
 }
 
 template <class Graph>
+std::unique_ptr<Graph> CopyGraph(const Graph& graph) {
+  std::unique_ptr<Graph> new_graph(
+      new Graph(graph.num_nodes(), graph.num_arcs()));
+  for (const auto node : graph.AllNodes()) {
+    for (const auto arc : graph.OutgoingArcs(node)) {
+      new_graph->AddArc(node, graph.Head(arc));
+    }
+  }
+  new_graph->Build();
+  return new_graph;
+}
+
+template <class Graph>
 std::unique_ptr<Graph> RemapGraph(const Graph& old_graph,
                                   const std::vector<int>& new_node_index) {
   DCHECK(IsValidPermutation(new_node_index)) << "Invalid permutation";
@@ -207,28 +174,37 @@ std::unique_ptr<Graph> RemapGraph(const Graph& old_graph,
 }
 
 template <class Graph>
-std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
-  std::string out;
-  std::vector<typename Graph::NodeIndex> adj;
-  for (const typename Graph::NodeIndex node : graph.AllNodes()) {
-    if (format == PRINT_GRAPH_ARCS) {
-      for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-        if (!out.empty()) out += '\n';
-        StrAppend(&out, node, "->", graph.Head(arc));
-      }
-    } else {  // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
-      adj.clear();
-      for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-        adj.push_back(graph.Head(arc));
-      }
-      if (format == PRINT_GRAPH_ADJACENCY_LISTS_SORTED) {
-        std::sort(adj.begin(), adj.end());
-      }
-      if (node != 0) out += '\n';
-      StrAppend(&out, node, ": ", strings::Join(adj, " "));
+std::unique_ptr<Graph> GetSubgraphOfNodes(const Graph& old_graph,
+                                          const std::vector<int>& nodes) {
+  typedef typename Graph::NodeIndex NodeIndex;
+  typedef typename Graph::ArcIndex ArcIndex;
+  DCHECK(IsSubsetOf0N(nodes, old_graph.num_nodes())) << "Invalid subset";
+  std::vector<NodeIndex> new_node_index(old_graph.num_nodes(), -1);
+  for (NodeIndex new_index = 0; new_index < nodes.size(); ++new_index) {
+    new_node_index[nodes[new_index]] = new_index;
+  }
+  // Do a first pass to count the arcs, so that we don't allocate more memory
+  // than needed.
+  ArcIndex num_arcs = 0;
+  for (const NodeIndex node : nodes) {
+    for (const ArcIndex arc : old_graph.OutgoingArcs(node)) {
+      if (new_node_index[old_graph.Head(arc)] != -1) ++num_arcs;
     }
   }
-  return out;
+  // A second pass where we actually copy the subgraph.
+  // NOTE(user): there might seem to be a bit of duplication with RemapGraph(),
+  // but there is a key difference: the loop below only iterates on "nodes",
+  // which could be much smaller than all the graph's nodes.
+  std::unique_ptr<Graph> new_graph(new Graph(nodes.size(), num_arcs));
+  for (NodeIndex new_tail = 0; new_tail < nodes.size(); ++new_tail) {
+    const NodeIndex old_tail = nodes[new_tail];
+    for (const ArcIndex arc : old_graph.OutgoingArcs(old_tail)) {
+      const NodeIndex new_head = new_node_index[old_graph.Head(arc)];
+      if (new_head != -1) new_graph->AddArc(new_tail, new_head);
+    }
+  }
+  new_graph->Build();
+  return new_graph;
 }
 
 template <class Graph>
@@ -320,155 +296,6 @@ std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
         << graph.num_arcs() << " arcs did not have a reverse.";
   }
   return reverse_arc;
-}
-
-template <class Graph>
-util::StatusOr<Graph*> ReadGraphFile(
-    const std::string& filename, bool directed,
-    std::vector<int>* num_nodes_with_color_or_null) {
-  std::unique_ptr<Graph> graph;
-  int64 num_nodes = -1;
-  int64 num_expected_lines = -1;
-  int64 num_lines_read = 0;
-  for (const std::string& line : FileLines(filename)) {
-    ++num_lines_read;
-    if (num_lines_read == 1) {
-      std::vector<int64> header_ints;
-      if (!SplitStringAndParse(line, " ", &safe_strto64, &header_ints) ||
-          header_ints.size() < 2 || header_ints[0] < 0 || header_ints[1] < 0) {
-        return util::Status(
-            util::error::INVALID_ARGUMENT,
-            StrCat("First line of '", filename,
-                   "' should be at least two nonnegative integers."));
-      }
-      num_nodes = header_ints[0];
-      num_expected_lines = header_ints[1];
-      if (num_nodes_with_color_or_null != nullptr) {
-        num_nodes_with_color_or_null->clear();
-        if (header_ints.size() == 2) {
-          // No coloring: all the nodes have the same color.
-          num_nodes_with_color_or_null->push_back(num_nodes);
-        } else {
-          const int num_colors = header_ints[2];
-          if (header_ints.size() != num_colors + 2) {
-            return util::Status(
-                util::error::INVALID_ARGUMENT,
-                StrCat(
-                    "There should be num_colors-1 color cardinalities in the"
-                    " header of '",
-                    filename, "' (where num_colors=", num_colors,
-                    "): the last color cardinality should be", " skipped."));
-          }
-          num_nodes_with_color_or_null->reserve(num_colors);
-          int num_nodes_left = num_nodes;
-          for (int i = 3; i < header_ints.size(); ++i) {
-            num_nodes_with_color_or_null->push_back(header_ints[i]);
-            num_nodes_left -= header_ints[i];
-            if (header_ints[i] <= 0 || num_nodes_left <= 0) {
-              return util::Status(
-                  util::error::INVALID_ARGUMENT,
-                  StrCat("The color cardinalities in the header of '", filename,
-                         " should always be >0 and add up to less than the"
-                         " total number of nodes."));
-            }
-          }
-          num_nodes_with_color_or_null->push_back(num_nodes_left);
-        }
-      }
-      const int64 num_arcs = (directed ? 1 : 2) * num_expected_lines;
-      graph.reset(new Graph(num_nodes, num_arcs));
-      continue;
-    }
-    int64 node1 = -1;
-    int64 node2 = -1;
-    if (sscanf(line.c_str(), "%lld %lld", &node1, &node2) != 2 || node1 < 0 ||
-        node2 < 0 || node1 >= num_nodes || node2 >= num_nodes) {
-      return util::Status(
-          util::error::INVALID_ARGUMENT,
-          StrCat("In '", filename, "', line ", num_lines_read, ": Expected two",
-                 " integers in the range [0, ", num_nodes, ")."));
-    }
-    // We don't add superfluous arcs to the graph, but we still keep reading
-    // the file, to get better error messages: we want to know the actual
-    // number of lines, and also want to check the validity of the superfluous
-    // arcs (i.e. that their src/dst nodes are ok).
-    if (num_lines_read > num_expected_lines + 1) continue;
-    graph->AddArc(node1, node2);
-    if (!directed && node1 != node2) graph->AddArc(node2, node1);
-  }
-  if (num_lines_read == 0) {
-    return util::Status(util::error::INVALID_ARGUMENT, "Unknown or empty file");
-  }
-  if (num_lines_read != num_expected_lines + 1) {
-    return util::Status(
-        util::error::INVALID_ARGUMENT,
-        StrCat("The number of arcs/edges in '", filename, "' (",
-               num_lines_read - 1, " does not match the value announced in",
-               " the header (", num_expected_lines, ")"));
-  }
-  graph->Build();
-  return graph.release();
-}
-
-template <class Graph>
-util::Status WriteGraphToFile(const Graph& graph, const std::string& filename,
-                              bool directed,
-                              const std::vector<int>& num_nodes_with_color) {
-  FILE* f = fopen(filename.c_str(), "w");
-  if (f == nullptr) {
-    return util::Status(util::error::INVALID_ARGUMENT,
-                        "Could not open file: '" + filename + "'");
-  }
-  // In undirected mode, we must count the self-arcs separately. All other arcs
-  // should be duplicated.
-  int num_self_arcs = 0;
-  if (!directed) {
-    for (const typename Graph::NodeIndex node : graph.AllNodes()) {
-      for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-        if (graph.Head(arc) == node) ++num_self_arcs;
-      }
-    }
-    if ((graph.num_arcs() - num_self_arcs) % 2 != 0) {
-      fclose(f);
-      return util::Status(util::error::INVALID_ARGUMENT,
-                          "WriteGraphToFile() called with directed=false"
-                          " and with a graph with an odd number of (non-self)"
-                          " arcs!");
-    }
-  }
-  fprintf(
-      f, "%lld %lld", static_cast<int64>(graph.num_nodes()),
-      static_cast<int64>(directed ? graph.num_arcs()
-                                  : (graph.num_arcs() + num_self_arcs) / 2));
-  if (!num_nodes_with_color.empty()) {
-    if (std::accumulate(num_nodes_with_color.begin(),
-                        num_nodes_with_color.end(), 0) != graph.num_nodes() ||
-        *std::min_element(num_nodes_with_color.begin(),
-                          num_nodes_with_color.end()) <= 0) {
-      return util::Status(util::error::INVALID_ARGUMENT,
-                          "WriteGraphToFile() called with invalid coloring.");
-    }
-    fprintf(f, " %lu", num_nodes_with_color.size());
-    for (int i = 0; i < num_nodes_with_color.size() - 1; ++i) {
-      fprintf(f, " %lld", static_cast<int64>(num_nodes_with_color[i]));
-    }
-  }
-  fprintf(f, "\n");
-
-  for (const typename Graph::NodeIndex node : graph.AllNodes()) {
-    for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
-      const typename Graph::NodeIndex head = graph.Head(arc);
-      if (directed || head >= node) {
-        fprintf(f, "%lld %lld\n", static_cast<int64>(node),
-                static_cast<uint64>(head));
-      }
-    }
-  }
-  if (fclose(f) != 0) {
-    return util::Status(util::error::INTERNAL,
-                        "Could not close file '" + filename + "'");
-  }
-  return util::Status::OK;
 }
 
 }  // namespace operations_research
