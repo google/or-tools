@@ -18,6 +18,60 @@
 namespace operations_research {
 namespace sat {
 
+bool BooleanXorPropagator::Propagate(Trail* trail) {
+  bool sum = false;
+  int unassigned_index = -1;
+  for (int i = 0; i < literals_.size(); ++i) {
+    const Literal l = literals_[i];
+    if (trail->Assignment().LiteralIsFalse(l)) {
+      sum ^= false;
+    } else if (trail->Assignment().LiteralIsTrue(l)) {
+      sum ^= true;
+    } else {
+      // If we have more than one unassigned literal, we can't deduce anything.
+      if (unassigned_index != -1) return true;
+      unassigned_index = i;
+    }
+  }
+
+  // Propagates?
+  if (unassigned_index != -1) {
+    std::vector<Literal>* literal_reason;
+    std::vector<IntegerLiteral>* integer_reason;
+    const Literal u = literals_[unassigned_index];
+    integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
+                                   &literal_reason, &integer_reason);
+    for (int i = 0; i < literals_.size(); ++i) {
+      if (i == unassigned_index) continue;
+      const Literal l = literals_[i];
+      literal_reason->push_back(
+          trail->Assignment().LiteralIsFalse(l) ? l : l.Negated());
+    }
+    return true;
+  }
+
+  // Ok.
+  if (sum == value_) return true;
+
+  // Conflict.
+  std::vector<Literal>* conflict = trail->MutableConflict();
+  conflict->clear();
+  for (int i = 0; i < literals_.size(); ++i) {
+    const Literal l = literals_[i];
+    conflict->push_back(trail->Assignment().LiteralIsFalse(l) ? l
+                                                              : l.Negated());
+  }
+  return false;
+}
+
+void BooleanXorPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  for (const Literal& l : literals_) {
+    watcher->WatchLiteral(l, id);
+    watcher->WatchLiteral(l.Negated(), id);
+  }
+}
+
 std::function<void(Model*)> AllDifferent(const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
     hash_set<IntegerValue> fixed_values;

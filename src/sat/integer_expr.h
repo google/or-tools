@@ -198,6 +198,23 @@ template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
     int64 upper_bound) {
+  // Special cases.
+  // TODO(user): Do the same for the reified case.
+  CHECK_GE(vars.size(), 1) << "Should be encoded differently.";
+  if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&
+      (coefficients[1] == 1 || coefficients[1] == -1)) {
+    return Sum2LowerOrEqual(
+        coefficients[0] == 1 ? vars[0] : NegationOf(vars[0]),
+        coefficients[1] == 1 ? vars[1] : NegationOf(vars[1]), upper_bound);
+  }
+  if (vars.size() == 3 && (coefficients[0] == 1 || coefficients[0] == -1) &&
+      (coefficients[1] == 1 || coefficients[1] == -1) &&
+      (coefficients[2] == 1 || coefficients[2] == -1)) {
+    return Sum3LowerOrEqual(
+        coefficients[0] == 1 ? vars[0] : NegationOf(vars[0]),
+        coefficients[1] == 1 ? vars[1] : NegationOf(vars[1]),
+        coefficients[2] == 1 ? vars[2] : NegationOf(vars[2]), upper_bound);
+  }
   return [=](Model* model) {
     IntegerSumLE* constraint = new IntegerSumLE(
         kNoLiteralIndex, vars,
@@ -213,17 +230,10 @@ template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
     int64 lower_bound) {
-  return [=](Model* model) {
-    // We just negate everything and use an IntegerSumLE() constraints.
-    std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
-                                        coefficients.end());
-    for (IntegerValue& ref : negated_coeffs) ref = -ref;
-    IntegerSumLE* constraint = new IntegerSumLE(
-        kNoLiteralIndex, vars, negated_coeffs, IntegerValue(-lower_bound),
-        model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
+  // We just negate everything and use an IntegerSumLE() constraints.
+  std::vector<IntegerValue> negated_coeffs(coefficients.begin(), coefficients.end());
+  for (IntegerValue& ref : negated_coeffs) ref = -ref;
+  return WeightedSumLowerOrEqual(vars, negated_coeffs, -lower_bound);
 }
 
 // Weighted sum == constant.

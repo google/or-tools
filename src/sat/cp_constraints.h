@@ -20,8 +20,46 @@
 namespace operations_research {
 namespace sat {
 
+// Propagate the fact that a XOR of literals is equal to the given value.
+// The complexity is in O(n).
+//
+// TODO(user): By using a two watcher mechanism, we can propagate this a lot
+// faster.
+class BooleanXorPropagator : public PropagatorInterface {
+ public:
+  BooleanXorPropagator(const std::vector<Literal>& literals, bool value,
+                       IntegerTrail* integer_trail)
+      : literals_(literals), value_(value), integer_trail_(integer_trail) {}
+
+  bool Propagate(Trail* trail) final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  const std::vector<Literal> literals_;
+  const bool value_;
+  IntegerTrail* integer_trail_;
+
+  DISALLOW_COPY_AND_ASSIGN(BooleanXorPropagator);
+};
+
+// ============================================================================
+// Model based functions.
+// ============================================================================
+
 // Enforces that the given tuple of variables takes different values.
 std::function<void(Model*)> AllDifferent(const std::vector<IntegerVariable>& vars);
+
+// Enforces the XOR of a set of literals to be equal to the given value.
+inline std::function<void(Model*)> LiteralXorIs(const std::vector<Literal>& literals,
+                                                bool value) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    BooleanXorPropagator* constraint =
+        new BooleanXorPropagator(literals, value, integer_trail);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
 
 }  // namespace sat
 }  // namespace operations_research

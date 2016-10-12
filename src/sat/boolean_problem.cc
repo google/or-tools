@@ -23,6 +23,7 @@
 #include "base/hash.h"
 #include "algorithms/find_graph_symmetries.h"
 #include "graph/graph.h"
+#include "graph/io.h"
 #include "graph/util.h"
 
 DEFINE_string(debug_dump_symmetry_graph_to_file, "",

@@ -186,9 +186,11 @@ class IntegerEncoder {
   // 3/ The encoding for NegationOf(var) is automatically created too. It reuses
   //    the same Boolean variable as the encoding of var.
   //
-  // Calling this more than once is an error (Checked).
-  // TODO(user): we could instead only keep the intersection and fix the now
-  // impossible values to zero.
+  // Calling this more than once will take the intersection of all the given
+  // values arguments. However, this is not optimal because the first calls may
+  // creates new Boolean variables that will later be fixed, so we log a warning
+  // when this happen. Ideally, the intersection should be done in a presolve
+  // step to be as efficient as possible here.
   //
   // Note(user): There is currently no relation here between
   // FullyEncodeVariable() and CreateAssociatedLiteral(). However the
@@ -727,6 +729,14 @@ inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64 ub) {
                    << " and LowerOrEqual() was called with an upper bound of "
                    << ub;
     }
+  };
+}
+
+// Fix v to a given value.
+inline std::function<void(Model*)> Equality(IntegerVariable v, int64 value) {
+  return [=](Model* model) {
+    model->Add(LowerOrEqual(v, value));
+    model->Add(GreaterOrEqual(v, value));
   };
 }
 

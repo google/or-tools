@@ -32,16 +32,22 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var,
   // the caller to deal with this case.
   CHECK_NE(values.size(), 1);
 
-  // If the variable has already been fully encoded, for now we check that
-  // the sets of value is the same.
-  //
-  // TODO(user): Take the intersection, and handle that case in the constraints
-  // creation functions.
+  // If the variable has already been fully encoded, we set to false the
+  // literals that cannot be true anymore. We also log a warning because ideally
+  // these intersection should happen in the presolve.
   if (ContainsKey(full_encoding_index_, i_var)) {
+    int num_fixed = 0;
+    hash_set<IntegerValue> to_interset(values.begin(), values.end());
     const std::vector<ValueLiteralPair>& encoding = FullDomainEncoding(i_var);
-    CHECK_EQ(values.size(), encoding.size());
-    for (int i = 0; i < values.size(); ++i) {
-      CHECK_EQ(values[i], encoding[i].value);
+    for (const ValueLiteralPair& p : encoding) {
+      if (!ContainsKey(to_interset, p.value)) {
+        // TODO(user): also remove this entry from encoding.
+        ++num_fixed;
+        sat_solver_->AddUnitClause(p.literal.Negated());
+      }
+    }
+    if (num_fixed > 0) {
+      LOG(WARNING) << "Domain intersection removed " << num_fixed << " values.";
     }
     return;
   }

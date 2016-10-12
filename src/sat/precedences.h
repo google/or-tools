@@ -39,9 +39,10 @@ namespace sat {
 // Another word is "separation logic".
 class PrecedencesPropagator : public Propagator {
  public:
-  PrecedencesPropagator(IntegerTrail* integer_trail,
+  PrecedencesPropagator(Trail* trail, IntegerTrail* integer_trail,
                         GenericLiteralWatcher* watcher)
       : Propagator("PrecedencesPropagator"),
+        trail_(trail),
         integer_trail_(integer_trail),
         watcher_(watcher),
         watcher_id_(watcher->Register(this)) {
@@ -49,9 +50,9 @@ class PrecedencesPropagator : public Propagator {
   }
 
   static PrecedencesPropagator* CreateInModel(Model* model) {
-    PrecedencesPropagator* precedences =
-        new PrecedencesPropagator(model->GetOrCreate<IntegerTrail>(),
-                                  model->GetOrCreate<GenericLiteralWatcher>());
+    PrecedencesPropagator* precedences = new PrecedencesPropagator(
+        model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>(),
+        model->GetOrCreate<GenericLiteralWatcher>());
 
     // TODO(user): Find a way to have more control on the order in which
     // the propagators are added.
@@ -86,6 +87,10 @@ class PrecedencesPropagator : public Propagator {
   // when I wrote this, I just had a couple of problems to test this on.
   void AddPrecedenceWithVariableOffset(IntegerVariable i1, IntegerVariable i2,
                                        IntegerVariable offset_var);
+  void AddPrecedenceWithVariableAndFixedOffset(IntegerVariable i1,
+                                               IntegerVariable i2,
+                                               IntegerValue offset,
+                                               IntegerVariable offset_var);
 
   // An optional integer variable has a special behavior:
   // - If the bounds on i cross each other, then is_present must be false.
@@ -165,7 +170,6 @@ class PrecedencesPropagator : public Propagator {
   // from the current value of arc.tail_lb and the offset of this arc.
   bool EnqueueAndCheck(const ArcInfo& arc, IntegerValue new_head_lb,
                        Trail* trail);
-  bool PropagateMaxOffsetIfNeeded(const ArcInfo& arc, Trail* trail);
   IntegerValue ArcOffset(const ArcInfo& arc) const;
 
   // Returns true iff this arc should propagate. For now, this is true when:
@@ -207,6 +211,7 @@ class PrecedencesPropagator : public Propagator {
 
   // External class needed to get the IntegerVariable lower bounds and Enqueue
   // new ones.
+  Trail* trail_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
   int watcher_id_;
@@ -307,6 +312,12 @@ inline void PrecedencesPropagator::AddPrecedenceWithVariableOffset(
   AddArc(i1, i2, /*offset=*/IntegerValue(0), offset_var, /*l=*/kNoLiteralIndex);
 }
 
+inline void PrecedencesPropagator::AddPrecedenceWithVariableAndFixedOffset(
+    IntegerVariable i1, IntegerVariable i2, IntegerValue offset,
+    IntegerVariable offset_var) {
+  AddArc(i1, i2, offset, offset_var, /*l=*/kNoLiteralIndex);
+}
+
 // =============================================================================
 // Model based functions.
 // =============================================================================
@@ -326,6 +337,25 @@ inline std::function<void(Model*)> LowerOrEqualWithOffset(IntegerVariable a,
   return [=](Model* model) {
     return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
         a, b, IntegerValue(offset));
+  };
+}
+
+// a + b <= ub.
+inline std::function<void(Model*)> Sum2LowerOrEqual(IntegerVariable a,
+                                                    IntegerVariable b,
+                                                    int64 ub) {
+  return LowerOrEqualWithOffset(a, NegationOf(b), -ub);
+}
+
+// a + b + c <= ub.
+inline std::function<void(Model*)> Sum3LowerOrEqual(IntegerVariable a,
+                                                    IntegerVariable b,
+                                                    IntegerVariable c,
+                                                    int64 ub) {
+  return [=](Model* model) {
+    return model->GetOrCreate<PrecedencesPropagator>()
+        ->AddPrecedenceWithVariableAndFixedOffset(a, NegationOf(c),
+                                                  IntegerValue(-ub), b);
   };
 }
 
@@ -382,6 +412,19 @@ inline std::function<void(Model*)> ReifiedEquality(IntegerVariable a,
     const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
     const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
     model->Add(ReifiedBoolAnd({is_le, is_ge}, is_eq));
+    model->Add(ReifiedLowerOrEqualWithOffset(a, b, 0, is_le));
+    model->Add(ReifiedLowerOrEqualWithOffset(b, a, 0, is_ge));
+  };
+}
+
+// a != b.
+inline std::function<void(Model*)> NotEqual(IntegerVariable a,
+                                            IntegerVariable b) {
+  return [=](Model* model) {
+    // We model this by is_le and is_ge cannot be both true.
+    const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
+    const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
+    model->Add(Implication(is_le, is_ge.Negated()));
     model->Add(ReifiedLowerOrEqualWithOffset(a, b, 0, is_le));
     model->Add(ReifiedLowerOrEqualWithOffset(b, a, 0, is_ge));
   };
