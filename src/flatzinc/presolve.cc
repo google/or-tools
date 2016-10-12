@@ -13,14 +13,18 @@
 
 #include "flatzinc/presolve.h"
 
+#include <map>
 #include <set>
 #include <unordered_set>
 
+#include "base/join.h"
 #include "base/stringpiece_utils.h"
 #include "base/strutil.h"
 #include "base/map_util.h"
 #include "flatzinc/logging.h"
+#include "graph/cliques.h"
 #include "util/saturated_arithmetic.h"
+#include "util/vector_map.h"
 
 namespace operations_research {
 namespace fz {
@@ -233,11 +237,30 @@ bool Presolver::PresolveIntEq(Constraint* ct, std::string* log) {
 }
 
 // Propagates inequality constraint.
+//
+// Rule 1:
+// Input : int_ne(x, y), x and y not overlapping
+// Action: Mark c as inactive.
+//
+// Rule 2:
 // Input : int_ne(x, c) or int_ne(c, x)
 // Action: remove c from the domain of x.
 // Output: inactive constraint if the removal was successful
 //         (domain is not too large to remove a value).
 bool Presolver::PresolveIntNe(Constraint* ct, std::string* log) {
+  // Rule 1.
+  if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable()) {
+    IntegerVariable* const left = ct->arguments[0].Var();
+    IntegerVariable* const right = ct->arguments[1].Var();
+    if (left->domain.Min() > right->domain.Max() ||
+        left->domain.Max() < right->domain.Min()) {
+      log->append("variable domains are not overlapping");
+      ct->MarkAsInactive();
+      return true;
+    }
+  }
+
+  // Rule 2.
   if (ct->presolve_propagation_done) {
     return false;
   }
@@ -1782,6 +1805,12 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
 // Action: Assign b to true or false if this can be decided from the of x and
 //         c, or the comparison of b1/b2 with t.
 // Output: inactive constraint of b was assigned a value.
+//
+// Rule 4:
+// Input : int_xx_reif(x, y, b) or bool_xx_reif(b1, b1, b2).
+// Action: Assign b to true or false if this can be decided from the domain of
+//         x and y.
+// Output: inactive constraint if b was assigned a value.
 bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
   const std::string& id = ct->type;
   if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable() &&
@@ -1887,6 +1916,52 @@ bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
         ct->MarkAsInactive();
         return true;
       }
+    }
+  }
+
+  // Rule 4.
+  if (!ct->arguments[0].HasOneValue() && !ct->arguments[1].HasOneValue()) {
+    const Domain& ld = ct->arguments[0].Var()->domain;
+    const Domain& rd = ct->arguments[1].Var()->domain;
+    int state = 2;  // 0 force_false, 1 force true, 2 unknown.
+    if (id == "int_eq_reif" || id == "bool_eq_reif") {
+      if (ld.Min() > rd.Max() || ld.Max() < rd.Min()) {
+        state = 0;
+      }
+    } else if (id == "int_ne_reif" || id == "bool_ne_reif") {
+      if (ld.Min() > rd.Max() || ld.Max() < rd.Min()) {
+        state = 1;
+      }
+    } else if (id == "int_lt_reif" || id == "bool_lt_reif") {
+      if (ld.Max() < rd.Min()) {
+        state = 1;
+      } else if (ld.Min() >= rd.Max()) {
+        state = 0;
+      }
+    } else if (id == "int_gt_reif" || id == "bool_gt_reif") {
+      if (ld.Max() <= rd.Min()) {
+        state = 0;
+      } else if (ld.Min() > rd.Max()) {
+        state = 1;
+      }
+    } else if (id == "int_le_reif" || id == "bool_le_reif") {
+      if (ld.Max() <= rd.Min()) {
+        state = 1;
+      } else if (ld.Min() > rd.Max()) {
+        state = 0;
+      }
+    } else if (id == "int_ge_reif" || id == "bool_ge_reif") {
+      if (ld.Max() < rd.Min()) {
+        state = 0;
+      } else if (ld.Min() >= rd.Max()) {
+        state = 1;
+      }
+    }
+    if (state != 2) {
+      StringAppendF(log, "assign boolvar to %s", state == 0 ? "false" : "true");
+      ct->arguments[2].Var()->domain.IntersectWithSingleton(state);
+      ct->MarkAsInactive();
+      return true;
     }
   }
   return false;
@@ -2257,7 +2332,61 @@ bool Presolver::PresolveIntMod(Constraint* ct, std::string* log) {
 
 // Remove invalid tuples, remove unreached values from domain variables.
 //
-bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) { return false; }
+bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
+  if (ct->arguments[0].variables.empty()) {
+    return false;
+  }
+  const int num_vars = ct->arguments[0].variables.size();
+  CHECK_EQ(0, ct->arguments[1].values.size() % num_vars);
+  const int num_tuples = ct->arguments[1].values.size() / num_vars;
+  int ignored_tuples = 0;
+  std::vector<int64> new_tuples;
+  std::vector<std::unordered_set<int64>> visited_values(num_vars);
+  for (int t = 0; t < num_tuples; ++t) {
+    std::vector<int64> tuple(ct->arguments[1].values.begin() + t * num_vars,
+                        ct->arguments[1].values.begin() + (t + 1) * num_vars);
+    bool valid = true;
+    for (int i = 0; i < num_vars; ++i) {
+      if (!ct->arguments[0].variables[i]->domain.Contains(tuple[i])) {
+        valid = false;
+        break;
+      }
+    }
+    if (valid) {
+      for (int i = 0; i < num_vars; ++i) {
+        visited_values[i].insert(tuple[i]);
+      }
+      new_tuples.insert(new_tuples.end(), tuple.begin(), tuple.end());
+    } else {
+      ignored_tuples++;
+    }
+  }
+  // Removed invalid tuples.
+  if (ignored_tuples > 0) {
+    log->append(StringPrintf("removed %i tuples", ignored_tuples));
+    ct->arguments[1].values.swap(new_tuples);
+  }
+  // Reduce variables domains.
+  bool variable_changed = false;
+  for (int var_index = 0; var_index < num_vars; ++var_index) {
+    IntegerVariable* const var = ct->arguments[0].variables[var_index];
+    // Store domain info to detect change.
+    const bool is_interval = var->domain.is_interval;
+    const int vsize = var->domain.values.size();
+    const int vmin =
+        var->domain.values.empty() ? 0 : var->domain.values.front();
+    const int vmax = var->domain.values.empty() ? 0 : var->domain.values.back();
+    std::vector<int64> values(visited_values[var_index].begin(),
+                         visited_values[var_index].end());
+    // TODO(user): Add return value that indicates change to IntersectXXX().
+    var->domain.IntersectWithListOfIntegers(values);
+    variable_changed |= is_interval != var->domain.is_interval ||
+                        vsize != var->domain.values.size() ||
+                        vmin != var->domain.values.front() ||
+                        vmax != var->domain.values.back();
+  }
+  return variable_changed || ignored_tuples > 0;
+}
 
 #define CALL_TYPE(ct, t, method)                                            \
   if (ct->active && ct->type == t) {                                        \
@@ -2496,6 +2625,155 @@ void Presolver::FirstPassModelScan(Model* model) {
   decision_variables_.insert(vars.begin(), vars.end());
 }
 
+namespace {
+CliqueResponse StoreClique(const std::vector<int>& vec, std::vector<int>* out) {
+  out->assign(vec.begin(), vec.end());
+  // We do not care about singleton and one arc cliques.
+  if (vec.size() > 2) {
+    return CliqueResponse::STOP;
+  } else {
+    return CliqueResponse::CONTINUE;
+  }
+}
+
+void PrintGraph(const std::vector<std::vector<bool>> neighbors, int num_variables) {
+  for (int i = 0; i < num_variables; ++i) {
+    std::string out = StringPrintf("%i : [", i);
+    bool found_one = false;
+    for (int j = 0; j < num_variables; ++j) {
+      if (neighbors[i][j]) {
+        StringAppendF(&out, "%s %i", found_one ? "," : "", j);
+        found_one = true;
+      }
+    }
+    if (found_one) {
+      FZLOG << out << "]" << FZENDL;
+    }
+  }
+}
+}  // namespace
+
+bool Presolver::RegroupDifferent(Model* model) {
+  std::vector<std::vector<bool>> neighbors;
+  VectorMap<IntegerVariable*> variables_to_dense_index;
+
+  std::vector<Constraint*> int_ne_constraints;
+  for (Constraint* const ct : model->constraints()) {
+    if (!ct->active) continue;
+    if (ct->type == "int_ne" && !ct->arguments[0].HasOneValue() &&
+        !ct->arguments[1].HasOneValue()) {
+      IntegerVariable* const left = ct->arguments[0].Var();
+      IntegerVariable* const right = ct->arguments[1].Var();
+      variables_to_dense_index.Add(left);
+      variables_to_dense_index.Add(right);
+      int_ne_constraints.push_back(ct);
+    }
+  }
+
+  if (int_ne_constraints.empty()) {
+    // Nothing to do. Exit early.
+    return false;
+  }
+
+  const int num_variables = variables_to_dense_index.size();
+  neighbors.resize(num_variables);
+  for (int i = 0; i < num_variables; ++i) {
+    neighbors[i].resize(num_variables, false);
+  }
+
+  for (Constraint* const ct : int_ne_constraints) {
+    const int left_index =
+        variables_to_dense_index.IndexOrDie(ct->arguments[0].Var());
+    const int right_index =
+        variables_to_dense_index.IndexOrDie(ct->arguments[1].Var());
+    neighbors[left_index][right_index] = true;
+    neighbors[right_index][left_index] = true;
+  }
+
+  // Collect all cliques of size > 2. After finding one clique. We remove all
+  // arcs belonging to this clique from the graph, and restart. This way, we
+  // cover all arcs with cliques, instead of finding all maximal cliques.
+  std::vector<std::vector<int>> all_cliques;
+  for (;;) {
+    std::vector<int> clique;
+    BronKerboschAlgorithm<int> clique_finder(
+        [neighbors](int i, int j) { return neighbors[i][j]; }, num_variables,
+        [&clique](const std::vector<int>& o) { return StoreClique(o, &clique); });
+
+    const BronKerboschAlgorithmStatus status = clique_finder.Run();
+    if (status == BronKerboschAlgorithmStatus::COMPLETED) {
+      // We have found all cliques of size > 2. We can exit this loop.
+      break;
+    }
+    CHECK_GT(clique.size(), 2);
+
+    std::sort(clique.begin(), clique.end());
+    for (int i = 0; i < clique.size() - 1; ++i) {
+      for (int j = i + 1; j < clique.size(); ++j) {
+        neighbors[clique[i]][clique[j]] = false;
+        neighbors[clique[j]][clique[i]] = false;
+      }
+    }
+    all_cliques.push_back(clique);
+  }
+
+  if (all_cliques.empty()) {
+    return false;
+  }
+
+  // Note that the memory used is not greater that what we actually uses for all
+  // the not-equal constraints in the first place.
+  std::set<std::pair<int, int>> to_kill;
+  std::map<std::pair<int, int>, std::vector<int>> replace_map;
+  for (const auto& clique : all_cliques) {
+    for (int i = 0; i < clique.size() - 1; ++i) {
+      for (int j = i + 1; j < clique.size(); ++j) {
+        const std::pair<int, int> p = std::make_pair(clique[i], clique[j]);
+        if (i == 0 && j == 1) {
+          replace_map[p] = clique;
+        } else {
+          to_kill.insert(p);
+        }
+      }
+    }
+  }
+
+  // Modify the model.
+  int killed = 0;
+  int new_all_diffs = 0;
+  for (Constraint* const ct : int_ne_constraints) {
+    IntegerVariable* const left = ct->arguments[0].Var();
+    IntegerVariable* const right = ct->arguments[1].Var();
+    const int left_index = variables_to_dense_index.IndexOrDie(left);
+    const int right_index = variables_to_dense_index.IndexOrDie(right);
+    const std::pair<int, int> p = std::make_pair(
+        std::min(left_index, right_index), std::max(left_index, right_index));
+    if (ContainsKey(replace_map, p)) {
+      FZVLOG << "Apply rule RegroupDifferent on " << ct->DebugString()
+             << FZENDL;
+      const std::vector<int>& rep = replace_map[p];
+      ct->type = "all_different_int";
+      std::vector<IntegerVariable*> vars(rep.size());
+      for (int i = 0; i < rep.size(); ++i) {
+        vars[i] = variables_to_dense_index[rep[i]];
+      }
+      ct->arguments[0] = Argument::IntVarRefArray(vars);
+      ct->arguments.pop_back();
+      new_all_diffs++;
+      FZVLOG << "  - constraint is modified to " << ct->DebugString() << FZENDL;
+    } else if (ContainsKey(to_kill, p)) {
+      ct->MarkAsInactive();
+      killed++;
+    }
+  }
+  if (killed != 0) {
+    FZLOG << "  - rule RegroupDifferent has created " << new_all_diffs
+          << " all_different_int constraints and removed " << killed
+          << " int_ne constraints" << FZENDL;
+  }
+  return killed > 0;
+}
+
 bool Presolver::Run(Model* model) {
   // Rebuild var_constraint map if empty.
   if (var_to_constraints_.empty()) {
@@ -2558,6 +2836,8 @@ bool Presolver::Run(Model* model) {
     changed_since_start |= changed;
     if (!changed) break;
   }
+
+  // Report presolve rules statistics.
   if (changed_since_start) {
     FZLOG << "  - presolve looped " << loops << " times over the model"
           << FZENDL;
@@ -2570,6 +2850,10 @@ bool Presolver::Run(Model* model) {
       }
     }
   }
+
+  // Regroup int_ne into all_different_int.
+  changed_since_start |= RegroupDifferent(model);
+
   return changed_since_start;
 }
 

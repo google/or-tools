@@ -109,6 +109,10 @@ class Presolver {
   // expensive.
   void MergeIntEqNe(Model* model);
 
+  // This regroups all int_ne, find cliques, and replace them with
+  // all_different_int constraints.
+  bool RegroupDifferent(Model* model);
+
   // Parse constraint x == y - z (and z == y - x) and store the info.
   // It will be useful to transform x == 0 into x == z in the first case.
   void StoreDifference(Constraint* ct);
@@ -201,8 +205,9 @@ class Presolver {
   std::unordered_map<const IntegerVariable*, std::unordered_set<Constraint*>>
       var_to_constraints_;
 
-  // Count applications of presolve rules.
-  std::unordered_map<std::string, int> successful_rules_;
+  // Count applications of presolve rules. Use a sorted map for reporting
+  // purposes.
+  std::map<std::string, int> successful_rules_;
 };
 }  // namespace fz
 }  // namespace operations_research

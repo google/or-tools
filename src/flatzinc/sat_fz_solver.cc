@@ -47,6 +47,10 @@ struct SatModel {
 
   // Returns the full domain Boolean encoding of the given variable (encoding it
   // if not already done).
+  //
+  // WARNING: The returned reference may be invalidated by a next call to
+  // FullEncoding(). TODO(user): It is easy to forget this, find a more robust
+  // solution.
   const std::vector<IntegerEncoder::ValueLiteralPair>& FullEncoding(
       IntegerVariable v);
   std::string FullEncodingValuesAsString(IntegerVariable v) const;
@@ -568,21 +572,64 @@ void ExtractIntEqNeReif(const fz::Constraint& ct, bool eq, SatModel* m) {
                   m);
 }
 
+// Special case added by the presolve (not in flatzinc). We encode this as a
+// table constraint.
+//
+// TODO(user): is this the more efficient? we could at least optimize the table
+// code to not create row literals when not needed.
+void ExtractArray2dIntElement(const fz::Constraint& ct, SatModel* m) {
+  CHECK_EQ(2, ct.arguments[0].variables.size());
+  CHECK_EQ(5, ct.arguments.size());
+
+  // the constraint is:
+  //   values[coeff1 * vars[0] + coeff2 * vars[1] + offset] == target.
+  std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[0]);
+  const std::vector<int64>& values = ct.arguments[1].values;
+  const int64 coeff1 = ct.arguments[3].values[0];
+  const int64 coeff2 = ct.arguments[3].values[1];
+  const int64 offset = ct.arguments[4].values[0] - 1;
+
+  // Tricky: FullEncoding() may invalidate any reference to a previously
+  // returned vector, so we copy the result of the first call.
+  std::vector<std::vector<int64>> tuples;
+  const auto encoding1 = m->FullEncoding(vars[0]);
+  const auto& encoding2 = m->FullEncoding(vars[1]);
+  for (const auto& entry1 : encoding1) {
+    const int64 v1 = entry1.value.value();
+    for (const auto& entry2 : encoding2) {
+      const int64 v2 = entry2.value.value();
+      const int index = coeff1 * v1 + coeff2 * v2 + offset;
+      CHECK_GE(index, 0);
+      CHECK_LT(index, values.size());
+      tuples.push_back({v1, v2, values[index]});
+    }
+  }
+  vars.push_back(m->LookupVar(ct.arguments[2]));
+  m->model.Add(TableConstraint(vars, tuples));
+}
+
 // TODO(user): move this logic in some model function under .../sat/ and unit
 // test it! Or adapt the table constraint? this is like a table with 1 columns,
 // the row literal beeing the one of ct.arguments[0].
 void ExtractArrayIntElement(const fz::Constraint& ct, SatModel* m) {
-  const auto& encoding = m->FullEncoding(m->LookupVar(ct.arguments[0]));
-  const std::vector<int64>& values = ct.arguments[1].values;
-  if (encoding.size() != values.size()) {
-    FZVLOG << "array_int_element could have been slightly presolved." << FZENDL;
+  if (ct.arguments[0].type != fz::Argument::INT_VAR_REF) {
+    return ExtractArray2dIntElement(ct, m);
   }
+
   std::map<int64, std::vector<Literal>> value_to_literals;
-  for (const auto literal_value : encoding) {
-    const int i = literal_value.value.value() - 1;  // minizinc use 1-index.
-    CHECK_GE(i, 0);
-    CHECK_LT(i, values.size());
-    value_to_literals[values[i]].push_back(literal_value.literal);
+  {
+    const auto& encoding = m->FullEncoding(m->LookupVar(ct.arguments[0]));
+    const std::vector<int64>& values = ct.arguments[1].values;
+    if (encoding.size() != values.size()) {
+      FZVLOG << "array_int_element could have been slightly presolved."
+             << FZENDL;
+    }
+    for (const auto literal_value : encoding) {
+      const int i = literal_value.value.value() - 1;  // minizinc use 1-index.
+      CHECK_GE(i, 0);
+      CHECK_LT(i, values.size());
+      value_to_literals[values[i]].push_back(literal_value.literal);
+    }
   }
 
   std::map<IntegerValue, Literal> target_by_value;
@@ -961,8 +1008,11 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
       if (!ExtractConstraint(*ct, &m)) {
         unsupported_types.insert(ct->type);
       }
-      CHECK(!m.model.GetOrCreate<SatSolver>()->IsModelUnsat())
-          << "UNSAT after adding '" << ct->type << "'.";
+      if (m.model.GetOrCreate<SatSolver>()->IsModelUnsat()) {
+        FZLOG << "UNSAT during extraction (after adding '" << ct->type << "')."
+              << FZENDL;
+        break;
+      }
     }
   }
   if (!unsupported_types.empty()) {

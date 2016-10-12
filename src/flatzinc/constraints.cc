@@ -517,7 +517,7 @@ void ExtractBoolClause(fz::SolverData* data, fz::Constraint* ct) {
     }
   }
   if (FLAGS_fz_use_sat && AddBoolOrArrayEqualTrue(data->Sat(), vars)) {
-    FZVLOG << "  - posted to sat";
+    FZVLOG << "  - posted to sat" << FZENDL;
   } else {
     Constraint* const constraint = solver->MakeSumGreaterOrEqual(vars, 1);
     AddConstraint(solver, ct, constraint);
@@ -565,7 +565,7 @@ void ExtractBoolOr(fz::SolverData* data, fz::Constraint* ct) {
   } else {
     IntExpr* const target = data->GetOrCreateExpression(ct->arguments[2]);
     if (FLAGS_fz_use_sat && AddBoolOrEqVar(data->Sat(), left, right, target)) {
-      FZVLOG << "  - posted to sat";
+      FZVLOG << "  - posted to sat" << FZENDL;
     } else {
       Constraint* const constraint =
           solver->MakeEquality(solver->MakeMax(left, right), target);
