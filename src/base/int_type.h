@@ -338,7 +338,8 @@ struct hash<IntType<IntTypeName, ValueType> > {
 };
 }  // namespace __gnu_cxx
 #endif  // !defined(_MSC_VER) && !defined(SWIG) && !defined(STLPORT)
-#if defined(_MSC_VER)
+
+#if defined(_MSC_VER) && !defined(SWIG)
 #include <xhash>
 namespace stdext {
 template <typename IntTypeName, typename ValueType>
@@ -347,6 +348,5 @@ inline size_t hash_value(const IntType<IntTypeName, ValueType>& idx) {
 }
 }  //  namespace stdext
 #endif  // _MSC_VER
-
 
 #endif  // OR_TOOLS_BASE_INT_TYPE_H_
