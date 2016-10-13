@@ -226,6 +226,19 @@ void ExtractArrayBoolOr(const fz::Constraint& ct, SatModel* m) {
   }
 }
 
+void ExtractArrayBoolXor(const fz::Constraint& ct, SatModel* m) {
+  bool sum = false;
+  std::vector<Literal> literals;
+  for (fz::IntegerVariable* var : ct.arguments[0].variables) {
+    if (var->domain.HasOneValue()) {
+      sum ^= (var->domain.Value() == 1);
+    } else {
+      literals.push_back(m->GetTrueLiteral(FindOrDie(m->var_map, var)));
+    }
+  }
+  m->model.Add(LiteralXorIs(literals, !sum));
+}
+
 void ExtractIntMin(const fz::Constraint& ct, SatModel* m) {
   const IntegerVariable a = m->LookupVar(ct.arguments[0]);
   const IntegerVariable b = m->LookupVar(ct.arguments[1]);
@@ -744,7 +757,8 @@ void ExtractSetInReif(const fz::Constraint& ct, SatModel* m) {
   CHECK(!ct.arguments[0].HasOneValue()) << "Should be presolved: "
                                         << ct.DebugString();
   if (ct.arguments[1].HasOneValue()) {
-    FZLOG << "Could have been presolved in int_eq_reif: " << ct.DebugString();
+    FZLOG << "Could have been presolved in int_eq_reif: " << ct.DebugString()
+          << FZENDL;
   }
   if (ct.arguments[1].type == fz::Argument::INT_LIST) {
     std::set<int64> values(ct.arguments[1].values.begin(),
@@ -792,6 +806,8 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractArrayBoolAnd(ct, m);
   } else if (ct.type == "array_bool_or") {
     ExtractArrayBoolOr(ct, m);
+  } else if (ct.type == "array_bool_xor") {
+    ExtractArrayBoolXor(ct, m);
   } else if (ct.type == "int_min") {
     ExtractIntMin(ct, m);
   } else if (ct.type == "int_abs") {
@@ -996,7 +1012,7 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
           << " fully encoded)." << FZENDL;
   }
   FZLOG << " - " << num_constants << " constants in {"
-        << strings::Join(constant_values, ",") << "}.";
+        << strings::Join(constant_values, ",") << "}." << FZENDL;
 
   // Extract all the constraints.
   FZLOG << "Extracting " << fz_model.constraints().size() << " constraints. "
@@ -1018,7 +1034,7 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   if (!unsupported_types.empty()) {
     FZLOG << "There is unsuported constraints types in this model: " << FZENDL;
     for (const std::string& type : unsupported_types) {
-      FZLOG << " - " << type;
+      FZLOG << " - " << type << FZENDL;
     }
     return;
   }
@@ -1033,11 +1049,12 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   }
   // We divide by two because of the automatically created NegationOf() var.
   FZLOG << "Num integer variables = "
-        << m.model.Get<IntegerTrail>()->NumIntegerVariables() / 2;
-  FZLOG << "Num fully encoded variable = " << num_fully_encoded_variables / 2;
+        << m.model.Get<IntegerTrail>()->NumIntegerVariables() / 2 << FZENDL;
+  FZLOG << "Num fully encoded variable = " << num_fully_encoded_variables / 2
+      << FZENDL;
   FZLOG << "Num Boolean variables created = "
-        << m.model.Get<SatSolver>()->NumVariables();
-  FZLOG << "Num constants = " << m.constant_map.size();
+        << m.model.Get<SatSolver>()->NumVariables() << FZENDL;
+  FZLOG << "Num constants = " << m.constant_map.size() << FZENDL;
 
   int num_solutions = 0;
   int64 best_objective = 0;
@@ -1120,8 +1137,8 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   FZLOG << "Branches: " << m.model.Get<SatSolver>()->num_branches() << FZENDL;
   FZLOG << "Propagations: " << m.model.Get<SatSolver>()->num_propagations()
         << FZENDL;
-  FZLOG << "Walltime: " << wall_timer.Get();
-  FZLOG << "Usertime: " << user_timer.Get();
+  FZLOG << "Walltime: " << wall_timer.Get() << FZENDL;
+  FZLOG << "Usertime: " << user_timer.Get() << FZENDL;
   FZLOG << "Deterministic_time: "
         << m.model.Get<SatSolver>()->deterministic_time() << FZENDL;
 

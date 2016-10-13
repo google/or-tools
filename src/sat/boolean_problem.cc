@@ -13,8 +13,6 @@
 
 #include "sat/boolean_problem.h"
 
-#include <math.h>
-
 #include "base/hash.h"
 
 #include "base/commandlineflags.h"
