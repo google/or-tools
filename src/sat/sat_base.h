@@ -597,15 +597,4 @@ inline ClauseRef Trail::Reason(BooleanVariable var) const {
 }  // namespace sat
 }  // namespace operations_research
 
-#if defined(_MSC_VER)
-#include <xhash>
-namespace stdext {
-template <>
-inline size_t hash_value<operations_research::sat::LiteralIndex>(
-    const operations_research::sat::LiteralIndex& a) {
-		return a.value();
-	}
-}  //  namespace stdext
-#endif  // _MSC_VER
-
 #endif  // OR_TOOLS_SAT_SAT_BASE_H_
