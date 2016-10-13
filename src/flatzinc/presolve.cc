@@ -2697,7 +2697,7 @@ bool Presolver::RegroupDifferent(Model* model) {
   for (;;) {
     std::vector<int> clique;
     BronKerboschAlgorithm<int> clique_finder(
-        [neighbors](int i, int j) { return neighbors[i][j]; }, num_variables,
+        [&neighbors](int i, int j) { return neighbors[i][j]; }, num_variables,
         [&clique](const std::vector<int>& o) { return StoreClique(o, &clique); });
 
     const BronKerboschAlgorithmStatus status = clique_finder.Run();
