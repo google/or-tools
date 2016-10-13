@@ -211,22 +211,6 @@ void PrecedencesPropagator::MarkIntegerVariableAsOptional(IntegerVariable i,
 void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
                                    IntegerValue offset,
                                    IntegerVariable offset_var, LiteralIndex l) {
-  if (head == tail) {
-    // A self-arc is either plain SAT or plan UNSAT or it forces something on
-    // the given offset_var or l. In any case it could be presolved in something
-    // more efficent.
-    LOG(WARNING) << "Self arc! This could be presolved. "
-                 << "var:" << tail << " offset:" << offset
-                 << " offset_var:" << offset_var << " conditioned_by:" << l;
-    if (offset <= 0 && offset_var == kNoIntegerVariable &&
-        l == kNoLiteralIndex) {
-      return;  // no-op.
-    }
-  }
-  AdjustSizeFor(tail);
-  AdjustSizeFor(head);
-  if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
-
   // Handle level zero stuff.
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (l != kNoLiteralIndex) {
@@ -237,6 +221,24 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
       return;  // At false, nothing to add.
     }
   }
+
+  if (head == tail) {
+    // A self-arc is either plain SAT or plan UNSAT or it forces something on
+    // the given offset_var or l. In any case it could be presolved in something
+    // more efficent.
+    LOG(WARNING) << "Self arc! This could be presolved. "
+                 << "var:" << tail << " offset:" << offset
+                 << " offset_var:" << offset_var << " conditioned_by:" << l;
+    if (offset_var == kNoIntegerVariable) {
+      // Always false => l is false, otherwise this is a no op.
+      if (offset > 0) trail_->EnqueueWithUnitReason(Literal(l).Negated());
+      return;
+    }
+  }
+
+  AdjustSizeFor(tail);
+  AdjustSizeFor(head);
+  if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
 
   if (l != kNoLiteralIndex && l.value() >= potential_arcs_.size()) {
     potential_arcs_.resize(l.value() + 1);

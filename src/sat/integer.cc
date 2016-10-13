@@ -126,7 +126,7 @@ void IntegerEncoder::AssociateGivenLiteral(IntegerLiteral i_lit,
 
   // Associate the new literal to i_lit.
   AddImplications(i_lit, literal);
-  reverse_encoding_[literal.Index()] = i_lit;
+  reverse_encoding_[literal.Index()].push_back(i_lit);
 
   // Add its negation and associated it with i_lit.Negated().
   //
@@ -134,7 +134,7 @@ void IntegerEncoder::AssociateGivenLiteral(IntegerLiteral i_lit,
   // 100% sure why!! I think it works because these literals can only appear
   // in a conflict if the presence literal of the optional variables is true.
   AddImplications(i_lit.Negated(), literal.Negated());
-  reverse_encoding_[literal.NegatedIndex()] = i_lit.Negated();
+  reverse_encoding_[literal.NegatedIndex()].push_back(i_lit.Negated());
 }
 
 Literal IntegerEncoder::CreateAssociatedLiteral(IntegerLiteral i_lit) {
@@ -232,8 +232,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
     const Literal literal = (*trail)[propagation_trail_index_++];
 
     // Bound encoder.
-    const IntegerLiteral i_lit = encoder_->GetIntegerLiteral(literal);
-    if (i_lit.var >= 0) {
+    for (const IntegerLiteral i_lit : encoder_->GetIntegerLiterals(literal)) {
       // The reason is simply the associated literal.
       if (!Enqueue(i_lit, {literal.Negated()}, {})) return false;
     }

@@ -117,6 +117,45 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
   return it;
 }
 
+SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::GrowRightByOne(
+    int64 value, int64* newly_covered) {
+  auto it = intervals_.upper_bound({value, kint64max});
+  auto it_prev = it;
+
+  // No interval containing or adjacent to "value" on the left (i.e. below).
+  if (it == begin() || ((--it_prev)->end < value - 1 && value != kint64min)) {
+    *newly_covered = value;
+    if (it == end() || it->start != value + 1) {
+      // No interval adjacent to "value" on the right: insert a singleton.
+      return intervals_.insert(it, {value, value});
+    } else {
+      // There is an interval adjacent to "value" on the right. Extend it by
+      // one. Note that we already know that there won't be a merge with another
+      // interval on the left, since there were no interval adjacent to "value"
+      // on the left.
+      DCHECK_EQ(it->start, value + 1);
+      const_cast<Interval*>(&(*it))->start = value;
+      return it;
+    }
+  }
+
+  // At this point, "it_prev" points to an interval containing or adjacent to
+  // "value" on the left: grow it by one, and if it now touches the next
+  // interval, merge with it.
+  CHECK_NE(kint64max, it_prev->end) << "Cannot grow right by one: the interval "
+                                       "that would grow already ends at "
+                                       "kint64max";
+  *newly_covered = it_prev->end + 1;
+  if (it != end() && it_prev->end + 2 == it->start) {
+    // We need to merge it_prev with 'it'.
+    const_cast<Interval*>(&(*it_prev))->end = it->end;
+    intervals_.erase(it);
+  } else {
+    const_cast<Interval*>(&(*it_prev))->end = it_prev->end + 1;
+  }
+  return it_prev;
+}
+
 template <class T>
 void SortedDisjointIntervalList::InsertAll(const std::vector<T>& starts,
                                            const std::vector<T>& ends) {

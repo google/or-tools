@@ -199,7 +199,6 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
     int64 upper_bound) {
   // Special cases.
-  // TODO(user): Do the same for the reified case.
   CHECK_GE(vars.size(), 1) << "Should be encoded differently.";
   if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&
       (coefficients[1] == 1 || coefficients[1] == -1)) {
@@ -230,7 +229,7 @@ template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
     int64 lower_bound) {
-  // We just negate everything and use an IntegerSumLE() constraints.
+  // We just negate everything and use an <= constraints.
   std::vector<IntegerValue> negated_coeffs(coefficients.begin(), coefficients.end());
   for (IntegerValue& ref : negated_coeffs) ref = -ref;
   return WeightedSumLowerOrEqual(vars, negated_coeffs, -lower_bound);
@@ -247,33 +246,61 @@ inline std::function<void(Model*)> FixedWeightedSum(
   };
 }
 
+// is_le => sum <= upper_bound
+template <typename VectorInt>
+inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
+    Literal is_le, const std::vector<IntegerVariable>& vars,
+    const VectorInt& coefficients, int64 upper_bound) {
+  // Special cases.
+  CHECK_GE(vars.size(), 1) << "Should be encoded differently.";
+  if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&
+      (coefficients[1] == 1 || coefficients[1] == -1)) {
+    return ConditionalSum2LowerOrEqual(
+        coefficients[0] == 1 ? vars[0] : NegationOf(vars[0]),
+        coefficients[1] == 1 ? vars[1] : NegationOf(vars[1]), upper_bound,
+        is_le);
+  }
+  if (vars.size() == 3 && (coefficients[0] == 1 || coefficients[0] == -1) &&
+      (coefficients[1] == 1 || coefficients[1] == -1) &&
+      (coefficients[2] == 1 || coefficients[2] == -1)) {
+    return ConditionalSum3LowerOrEqual(
+        coefficients[0] == 1 ? vars[0] : NegationOf(vars[0]),
+        coefficients[1] == 1 ? vars[1] : NegationOf(vars[1]),
+        coefficients[2] == 1 ? vars[2] : NegationOf(vars[2]), upper_bound,
+        is_le);
+  }
+  return [=](Model* model) {
+    IntegerSumLE* constraint = new IntegerSumLE(
+        is_le.Index(), vars,
+        std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
+        IntegerValue(upper_bound), model->GetOrCreate<IntegerTrail>());
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+// is_ge => sum >= lower_bound
+template <typename VectorInt>
+inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
+    Literal is_ge, const std::vector<IntegerVariable>& vars,
+    const VectorInt& coefficients, int64 lower_bound) {
+  // We just negate everything and use an <= constraint.
+  std::vector<IntegerValue> negated_coeffs(coefficients.begin(), coefficients.end());
+  for (IntegerValue& ref : negated_coeffs) ref = -ref;
+  return ConditionalWeightedSumLowerOrEqual(is_ge, vars, negated_coeffs,
+                                            -lower_bound);
+}
+
 // Weighted sum <= constant reified.
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumLowerOrEqualReif(
     Literal is_le, const std::vector<IntegerVariable>& vars,
     const VectorInt& coefficients, int64 upper_bound) {
   return [=](Model* model) {
-    // is_le => lin <= upper_bound
-    {
-      IntegerSumLE* constraint = new IntegerSumLE(
-          is_le.Index(), vars,
-          std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
-          IntegerValue(upper_bound), model->GetOrCreate<IntegerTrail>());
-      constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-      model->TakeOwnership(constraint);
-    }
-
-    // not(is_le) => lin > upper_bound, i.e -lin <= -upper_bound - 1
-    {
-      std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
-                                          coefficients.end());
-      for (IntegerValue& ref : negated_coeffs) ref = -ref;
-      IntegerSumLE* constraint = new IntegerSumLE(
-          is_le.NegatedIndex(), vars, negated_coeffs,
-          IntegerValue(-upper_bound - 1), model->GetOrCreate<IntegerTrail>());
-      constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-      model->TakeOwnership(constraint);
-    }
+    model->Add(ConditionalWeightedSumLowerOrEqual(is_le, vars, coefficients,
+                                                  upper_bound));
+    model->Add(ConditionalWeightedSumGreaterOrEqual(
+        is_le.Negated(), vars, coefficients, upper_bound + 1));
   };
 }
 
@@ -282,8 +309,12 @@ template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumGreaterOrEqualReif(
     Literal is_ge, const std::vector<IntegerVariable>& vars,
     const VectorInt& coefficients, int64 lower_bound) {
-  return WeightedSumLowerOrEqualReif(is_ge.Negated(), vars, coefficients,
-                                     lower_bound - 1);
+  return [=](Model* model) {
+    model->Add(ConditionalWeightedSumGreaterOrEqual(is_ge, vars, coefficients,
+                                                    lower_bound));
+    model->Add(ConditionalWeightedSumLowerOrEqual(
+        is_ge.Negated(), vars, coefficients, lower_bound - 1));
+  };
 }
 
 // Weighted sum == constant reified.
@@ -308,14 +339,13 @@ inline std::function<void(Model*)> WeightedSumNotEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
     int64 value) {
   return [=](Model* model) {
-    // We creates two extra Boolean variables in this case.
+    // Exactly one of these alternative must be true.
     const Literal is_lt = Literal(model->Add(NewBooleanVariable()), true);
-    const Literal is_gt = Literal(model->Add(NewBooleanVariable()), true);
-    model->Add(ClauseConstraint({is_lt, is_gt}));
-    model->Add(
-        WeightedSumLowerOrEqualReif(is_lt, vars, coefficients, value - 1));
-    model->Add(
-        WeightedSumGreaterOrEqualReif(is_gt, vars, coefficients, value + 1));
+    const Literal is_gt = is_lt.Negated();
+    model->Add(ConditionalWeightedSumLowerOrEqual(is_lt, vars, coefficients,
+                                                  value - 1));
+    model->Add(ConditionalWeightedSumGreaterOrEqual(is_gt, vars, coefficients,
+                                                    value + 1));
   };
 }
 

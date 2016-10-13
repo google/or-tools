@@ -141,6 +141,8 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
   return os;
 }
 
+using InlinedIntegerLiteralVector = std::vector<IntegerLiteral>;
+
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
 // the integer variables and such literals which can be created by a call to
@@ -260,11 +262,11 @@ class IntegerEncoder {
   // Same as CreateAssociatedLiteral() but safe to call if already created.
   Literal GetOrCreateAssociatedLiteral(IntegerLiteral i_lit);
 
-  // Returns the IntegerLiteral that was associated with the given Boolean
-  // literal or an IntegerLiteral with a variable set to kNoIntegerVariable if
-  // the argument does not correspond to such literal.
-  IntegerLiteral GetIntegerLiteral(Literal lit) const {
-    if (lit.Index() >= reverse_encoding_.size()) return IntegerLiteral();
+  // Returns the IntegerLiterals that were associated with the given Literal.
+  const InlinedIntegerLiteralVector& GetIntegerLiterals(Literal lit) const {
+    if (lit.Index() >= reverse_encoding_.size()) {
+      return empty_integer_literal_vector_;
+    }
     return reverse_encoding_[lit.Index()];
   }
 
@@ -291,10 +293,9 @@ class IntegerEncoder {
   // corresponding to the same variable).
   ITIVector<IntegerVariable, std::map<IntegerValue, Literal>> encoding_by_var_;
 
-  // Store for a given LiteralIndex its associated IntegerLiteral or an
-  // IntegerLiteral with kNoIntegerVariable as a variable if the LiteralIndex
-  // doesn't correspond to an IntegerLiteral.
-  ITIVector<LiteralIndex, IntegerLiteral> reverse_encoding_;
+  // Store for a given LiteralIndex the list of its associated IntegerLiterals.
+  const InlinedIntegerLiteralVector empty_integer_literal_vector_;
+  ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
 
   // Full domain encoding. The map contains the index in full_encoding_ of
   // the fully encoded variable. Each entry in full_encoding_ is sorted by
@@ -744,12 +745,7 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64 value) {
 inline std::function<void(Model*)> Equality(IntegerLiteral i, Literal l) {
   return [=](Model* model) {
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-
-    // Tricky: currently we cannot associate the same literal to two different
-    // IntegerLiteral! The second test verifies that l is not already
-    // associated.
-    if (encoder->LiteralIsAssociated(i) ||
-        encoder->GetIntegerLiteral(l) != IntegerLiteral()) {
+    if (encoder->LiteralIsAssociated(i)) {
       const Literal current = encoder->GetOrCreateAssociatedLiteral(i);
       model->Add(Equality(current, l));
     } else {

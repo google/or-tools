@@ -1051,7 +1051,7 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   FZLOG << "Num integer variables = "
         << m.model.Get<IntegerTrail>()->NumIntegerVariables() / 2 << FZENDL;
   FZLOG << "Num fully encoded variable = " << num_fully_encoded_variables / 2
-      << FZENDL;
+        << FZENDL;
   FZLOG << "Num Boolean variables created = "
         << m.model.Get<SatSolver>()->NumVariables() << FZENDL;
   FZLOG << "Num constants = " << m.constant_map.size() << FZENDL;
