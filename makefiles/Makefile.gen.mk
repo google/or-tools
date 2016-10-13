@@ -1070,13 +1070,13 @@ GRAPH_LIB_OBJS = \
     $(OBJ_DIR)/graph/max_flow.$O \
     $(OBJ_DIR)/graph/min_cost_flow.$O \
     $(OBJ_DIR)/graph/shortestpaths.$O \
+    $(OBJ_DIR)/graph/util.$O \
     $(OBJ_DIR)/graph/flow_problem.pb.$O
 
 $(SRC_DIR)/graph/assignment.h: \
     $(SRC_DIR)/graph/ebert_graph.h
 
 $(SRC_DIR)/graph/cliques.h: \
-    $(SRC_DIR)/base/callback.h \
     $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
@@ -1118,6 +1118,15 @@ $(SRC_DIR)/graph/hamiltonian_path.h: \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/saturated_arithmetic.h
+
+$(SRC_DIR)/graph/io.h: \
+    $(SRC_DIR)/graph/graph.h \
+    $(SRC_DIR)/base/join.h \
+    $(SRC_DIR)/base/numbers.h \
+    $(SRC_DIR)/base/split.h \
+    $(SRC_DIR)/base/status.h \
+    $(SRC_DIR)/base/statusor.h \
+    $(SRC_DIR)/util/filelineiter.h
 
 $(SRC_DIR)/graph/linear_assignment.h: \
     $(SRC_DIR)/graph/ebert_graph.h \
@@ -1161,14 +1170,7 @@ $(SRC_DIR)/graph/shortestpaths.h: \
 $(SRC_DIR)/graph/util.h: \
     $(SRC_DIR)/graph/graph.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/join.h \
-    $(SRC_DIR)/base/map_util.h \
-    $(SRC_DIR)/base/murmur.h \
-    $(SRC_DIR)/base/numbers.h \
-    $(SRC_DIR)/base/split.h \
-    $(SRC_DIR)/base/status.h \
-    $(SRC_DIR)/base/statusor.h \
-    $(SRC_DIR)/util/filelineiter.h
+    $(SRC_DIR)/base/map_util.h
 
 $(OBJ_DIR)/graph/assignment.$O: \
     $(SRC_DIR)/graph/assignment.cc \
@@ -1239,6 +1241,11 @@ $(OBJ_DIR)/graph/shortestpaths.$O: \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/shortestpaths.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sshortestpaths.$O
+
+$(OBJ_DIR)/graph/util.$O: \
+    $(SRC_DIR)/graph/util.cc \
+    $(SRC_DIR)/graph/util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/util.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sutil.$O
 
 $(GEN_DIR)/graph/flow_problem.pb.cc: $(SRC_DIR)/graph/flow_problem.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/graph/flow_problem.proto
@@ -1616,6 +1623,7 @@ $(OBJ_DIR)/sat/boolean_problem.$O: \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/algorithms/find_graph_symmetries.h \
     $(SRC_DIR)/graph/graph.h \
+    $(SRC_DIR)/graph/io.h \
     $(SRC_DIR)/graph/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/boolean_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sboolean_problem.$O
 
@@ -2854,6 +2862,7 @@ $(OBJ_DIR)/constraint_solver/routing.$O: \
 
 $(OBJ_DIR)/constraint_solver/routing_flags.$O: \
     $(SRC_DIR)/constraint_solver/routing_flags.cc \
+    $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/routing_flags.h \
     $(SRC_DIR)/base/map_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_flags.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_flags.$O

@@ -20,6 +20,7 @@
 #include "base/hash.h"
 #include "base/hash.h"
 #include <memory>
+#include <map>
 #include <set>
 #include <string>
 #include <vector>
