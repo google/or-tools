@@ -121,7 +121,7 @@ message RoutingSearchParameters {
     // The OR_OPT operator is a limited version of 3-Opt (breaks 3 arcs on a
     // path).
     bool use_or_opt = 8;
-    // Lin–Kernighan operator.
+    // Lin-Kernighan operator.
     // While the accumulated local gain is positive, performs a 2-OPT or a 3-OPT
     // move followed by a series of 2-OPT moves. Returns a neighbor for which
     // the global gain is positive.
