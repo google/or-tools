@@ -128,7 +128,7 @@ def main():
     # The number of nodes of the VRP is num_locations.
     # Nodes are indexed from 0 to num_locations - 1. By default the start of
     # a route is node 0.
-    routing = pywrapcp.RoutingModel(num_locations, num_vehicles)
+    routing = pywrapcp.RoutingModel(num_locations, num_vehicles, depot)
     search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
 
     # Setting first solution heuristic: the
@@ -140,9 +140,6 @@ def main():
     # Starting from a route "start" node, connect it to the node which produces the
     # cheapest route segment, then extend the route by iterating on the last
     # node added to the route.
-
-    # Set the depot.
-    routing.SetDepot(depot)
 
     # Put callbacks to the distance function and travel time functions here.
 
