@@ -647,6 +647,10 @@ class RoutingModel {
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
   // Adds a search monitor to the search used to solve the routing model.
   void AddSearchMonitor(SearchMonitor* const monitor);
+  // Adds a callback called each time a solution is found during the search.
+  // This is a shortcut to creating a monitor to call the callback on
+  // AtSolution() and adding it with AddSearchMonitor.
+  void AddAtSolutionCallback(std::function<void()> callback);
   // Adds a variable to minimize in the solution finalizer. The solution
   // finalizer is called each time a solution is found during the search and
   // allows to instantiate secondary variables (such as dimension cumul

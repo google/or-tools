@@ -3327,6 +3327,26 @@ void RoutingModel::AddSearchMonitor(SearchMonitor* const monitor) {
   monitors_.push_back(monitor);
 }
 
+namespace {
+class AtSolutionCallbackMonitor : public SearchMonitor {
+ public:
+  AtSolutionCallbackMonitor(Solver* solver, std::function<void()> callback)
+      : SearchMonitor(solver), callback_(std::move(callback)) {}
+  bool AtSolution() override {
+    callback_();
+    return false;
+  }
+
+ private:
+  std::function<void()> callback_;
+};
+}  // namespace
+
+void RoutingModel::AddAtSolutionCallback(std::function<void()> callback) {
+  AddSearchMonitor(solver_->RevAlloc(
+      new AtSolutionCallbackMonitor(solver_.get(), std::move(callback))));
+}
+
 const Assignment* RoutingModel::Solve(const Assignment* assignment) {
   return SolveFromAssignmentWithParameters(assignment,
                                            DefaultSearchParameters());
