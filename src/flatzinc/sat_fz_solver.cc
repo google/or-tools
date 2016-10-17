@@ -298,13 +298,16 @@ void ExtractIntEq(const fz::Constraint& ct, SatModel* m) {
   m->model.Add(Equality(a, b));
 }
 
-// TODO(user): The all different forces the variables to be fully encoded. It
-// would make sense to have another int_ne constraint that work on large
-// interval and decide which one to use depending on the arguments.
 void ExtractIntNe(const fz::Constraint& ct, SatModel* m) {
   const IntegerVariable a = m->LookupVar(ct.arguments[0]);
   const IntegerVariable b = m->LookupVar(ct.arguments[1]);
-  m->model.Add(AllDifferent({a, b}));
+  IntegerEncoder* encoder = m->model.GetOrCreate<IntegerEncoder>();
+  if (!encoder->VariableIsFullyEncoded(a) ||
+      !encoder->VariableIsFullyEncoded(b)) {
+    m->model.Add(NotEqual(a, b));
+  } else {
+    m->model.Add(AllDifferent({a, b}));
+  }
 }
 
 void ExtractIntLe(const fz::Constraint& ct, SatModel* m) {
@@ -465,8 +468,8 @@ void ImpliesEqualityToConstant(bool reverse_implication, IntegerVariable a,
 
   // TODO(user): Simply do that all the time?
   // TODO(user): No need to create a literal that is trivially true or false!
-  if (m->model.Get(UpperBound(a)) - m->model.Get(LowerBound(a)) > 100) {
-    IntegerEncoder* encoder = m->model.GetOrCreate<IntegerEncoder>();
+  IntegerEncoder* encoder = m->model.GetOrCreate<IntegerEncoder>();
+  if (!encoder->VariableIsFullyEncoded(a)) {
     if (reverse_implication) {
       m->model.Add(ReifiedInInterval(a, cte, cte, r));
     } else {
@@ -480,8 +483,7 @@ void ImpliesEqualityToConstant(bool reverse_implication, IntegerVariable a,
     return;
   }
 
-  const std::vector<IntegerEncoder::ValueLiteralPair>& encoding = m->FullEncoding(a);
-  for (const auto pair : encoding) {
+  for (const auto pair : m->FullEncoding(a)) {
     if (pair.value == IntegerValue(cte)) {
       // Lit is equal to pair.literal.
       //
@@ -520,8 +522,9 @@ void ImpliesEquality(bool reverse_implication, Literal r, IntegerVariable a,
   }
 
   // TODO(user): Do that all the time?
-  if ((m->model.Get(UpperBound(a)) - m->model.Get(LowerBound(a)) > 100) ||
-      (m->model.Get(UpperBound(b)) - m->model.Get(LowerBound(b)) > 100)) {
+  IntegerEncoder* encoder = m->model.GetOrCreate<IntegerEncoder>();
+  if (!encoder->VariableIsFullyEncoded(a) ||
+      !encoder->VariableIsFullyEncoded(b)) {
     if (reverse_implication) {
       m->model.Add(ReifiedEquality(a, b, r));
     } else {
@@ -781,7 +784,19 @@ void ExtractSetInReif(const fz::Constraint& ct, SatModel* m) {
 
 void ExtractAllDifferentInt(const fz::Constraint& ct, SatModel* m) {
   const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[0]);
-  m->model.Add(AllDifferent(vars));
+  IntegerEncoder* encoder = m->model.GetOrCreate<IntegerEncoder>();
+  bool all_variables_are_encoded = true;
+  for (const IntegerVariable v : vars) {
+    if (!encoder->VariableIsFullyEncoded(v)) {
+      all_variables_are_encoded = false;
+      break;
+    }
+  }
+  if (all_variables_are_encoded) {
+    m->model.Add(AllDifferent(vars));
+  } else {
+    m->model.Add(AllDifferentOnBounds(vars));
+  }
 }
 
 // Returns false iff the constraint type is not supported.
@@ -1061,10 +1076,23 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   std::string solutions_string;
   std::string search_status;
 
+  // Important: we use the order of the variable from flatzinc with the
+  // non-defined variable first. In particular we don't want to iterate on
+  // m.var_map which order is randomized!
+  //
   // TODO(user): We could restrict these if we are sure all the other variables
   // will be fixed once these are fixed.
   std::vector<IntegerVariable> decision_vars;
-  for (const auto& entry : m.var_map) decision_vars.push_back(entry.second);
+  for (fz::IntegerVariable* var : fz_model.variables()) {
+    if (!var->active || var->domain.HasOneValue()) continue;
+    if (var->defining_constraint != nullptr) continue;
+    decision_vars.push_back(FindOrDie(m.var_map, var));
+  }
+  for (fz::IntegerVariable* var : fz_model.variables()) {
+    if (!var->active || var->domain.HasOneValue()) continue;
+    if (var->defining_constraint == nullptr) continue;
+    decision_vars.push_back(FindOrDie(m.var_map, var));
+  }
 
   // TODO(user): deal with other search parameters.
   FZLOG << "Solving..." << FZENDL;
