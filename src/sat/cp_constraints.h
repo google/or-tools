@@ -105,6 +105,93 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(AllDifferentBoundsPropagator);
 };
 
+class NonOverlappingRectanglesPropagator : public PropagatorInterface {
+public:
+  NonOverlappingRectanglesPropagator(const std::vector<IntegerVariable>& x,
+                                const std::vector<IntegerVariable>& y,
+                                const std::vector<IntegerVariable>& dx,
+                                const std::vector<IntegerVariable>& dy,
+                                IntegerTrail* integer_trail);
+  ~NonOverlappingRectanglesPropagator() override;
+
+  bool Propagate(Trail* trail) final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  bool CanBoxedOverlap(int i, int j) const;
+  bool AreBoxedDisjoingHorizontallyForSure(int i, int j) const;
+  bool AreBoxedDisjoingVerticallyForSure(int i, int j) const;
+  void FillNeighbors(int box);
+  bool FailWhenEnergyIsTooLarge(int box, Trail* trail);
+  bool PushOverlappingRectangles(int box, Trail* trail);
+  bool PushOneBox(int box, int other, Trail* trail);
+  void AddBoxReason(int box);
+
+  // Helpers.
+  int64 Min(IntegerVariable v) const;
+  int64 Max(IntegerVariable v) const;
+  // Expects integer_reason to be filled.
+  bool SetMin(IntegerVariable v, int64 value);
+  bool SetMax(IntegerVariable v, int64 value);
+
+  std::vector<IntegerVariable> x_;
+  std::vector<IntegerVariable> y_;
+  std::vector<IntegerVariable> dx_;
+  std::vector<IntegerVariable> dy_;
+  const bool strict_;
+
+  IntegerTrail* integer_trail_;
+
+  std::vector<int> neighbors_;
+  std::vector<IntegerLiteral> integer_reason_;
+
+  DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesPropagator);
+};
+
+class NonOverlappingFixedSizeRectanglesPropagator : public PropagatorInterface {
+ public:
+  NonOverlappingFixedSizeRectanglesPropagator(const std::vector<IntegerVariable>& x,
+                                         const std::vector<IntegerVariable>& y,
+                                         const std::vector<int64>& dx,
+                                         const std::vector<int64>& dy,
+                                         IntegerTrail* integer_trail);
+  ~NonOverlappingFixedSizeRectanglesPropagator() override;
+
+  bool Propagate(Trail* trail) final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  bool CanBoxedOverlap(int i, int j) const;
+  bool AreBoxedDisjoingHorizontallyForSure(int i, int j) const;
+  bool AreBoxedDisjoingVerticallyForSure(int i, int j) const;
+  void FillNeighbors(int box);
+  bool FailWhenEnergyIsTooLarge(int box, Trail* trail);
+  bool PushOverlappingRectangles(int box, Trail* trail);
+  bool PushOneBox(int box, int other, Trail* trail);
+  void AddBoxReason(int box);
+
+  // Helpers.
+  int64 Min(IntegerVariable v) const;
+  int64 Max(IntegerVariable v) const;
+  // Expects integer_reason to be filled.
+  bool SetMin(IntegerVariable v, int64 value);
+  bool SetMax(IntegerVariable v, int64 value);
+  void Fail(Trail* trail);
+
+  std::vector<IntegerVariable> x_;
+  std::vector<IntegerVariable> y_;
+  std::vector<int64> dx_;
+  std::vector<int64> dy_;
+  const bool strict_;
+
+  IntegerTrail* integer_trail_;
+
+  std::vector<int> neighbors_;
+  std::vector<IntegerLiteral> integer_reason_;
+
+  DISALLOW_COPY_AND_ASSIGN(NonOverlappingFixedSizeRectanglesPropagator);
+};
+
 // ============================================================================
 // Model based functions.
 // ============================================================================
@@ -143,6 +230,34 @@ inline std::function<void(Model*)> AllDifferentOnBounds(
   };
 }
 
+inline std::function<void(Model*)> NonOverlappingRectangles(
+    const std::vector<IntegerVariable>& x,
+    const std::vector<IntegerVariable>& y,
+    const std::vector<IntegerVariable>& dx,
+    const std::vector<IntegerVariable>& dy) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    NonOverlappingRectanglesPropagator* constraint =
+        new NonOverlappingRectanglesPropagator(x, y, dx, dy, integer_trail);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+inline std::function<void(Model*)> NonOverlappingFixedSizeRectangles(
+    const std::vector<IntegerVariable>& x,
+    const std::vector<IntegerVariable>& y,
+    const std::vector<int64>& dx,
+    const std::vector<int64>& dy) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    NonOverlappingFixedSizeRectanglesPropagator* constraint =
+        new NonOverlappingFixedSizeRectanglesPropagator(
+            x, y, dx, dy, integer_trail);
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
 }  // namespace sat
 }  // namespace operations_research
 

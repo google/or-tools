@@ -2388,6 +2388,38 @@ bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
   return variable_changed || ignored_tuples > 0;
 }
 
+// Tranform diffn into all_different_int when sizes and y positions are all 1.
+//
+// Input : diffn([x1, .. xn], [1, .., 1], [1, .., 1], [1, .., 1])
+// Output: all_different_int([x1, .. xn])
+bool Presolver::PresolveDiffN(Constraint* ct, std::string* log) {
+  const int size = ct->arguments[0].variables.size();
+  if (size > 0 && ct->arguments[1].IsArrayOfValues() &&
+      ct->arguments[2].IsArrayOfValues() &&
+      ct->arguments[3].IsArrayOfValues()) {
+    for (int i = 0; i < size; ++i) {
+      if (ct->arguments[1].ValueAt(i) != 1) {
+        return false;
+      }
+    }
+    for (int i = 0; i < size; ++i) {
+      if (ct->arguments[2].ValueAt(i) != 1) {
+        return false;
+      }
+    }
+    for (int i = 0; i < size; ++i) {
+      if (ct->arguments[3].ValueAt(i) != 1) {
+        return false;
+      }
+    }
+    ct->type = "all_different_int";
+    ct->arguments.resize(1);
+    return true;
+  }
+  return false;
+}
+
+
 #define CALL_TYPE(ct, t, method)                                            \
   if (ct->active && ct->type == t) {                                        \
     changed |= ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
@@ -2509,6 +2541,7 @@ bool Presolver::PresolveOneConstraint(Constraint* ct) {
     CALL_TYPE(ct, "bool_gt_reif", PropagateReifiedComparisons);
   }
   CALL_TYPE(ct, "table_int", PresolveTableInt);
+  CALL_TYPE(ct, "diffn", PresolveDiffN);
 
   // Last rule: if the target variable of a constraint is fixed, removed it
   // the target part.

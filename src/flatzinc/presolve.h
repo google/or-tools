@@ -159,6 +159,7 @@ class Presolver {
   bool StoreIntEqReif(Constraint* ct, std::string* log);
   bool SimplifyIntNeReif(Constraint* ct, std::string* log);
   bool PresolveTableInt(Constraint* ct, std::string* log);
+  bool PresolveDiffN(Constraint* ct, std::string* log);
 
   // Helpers.
   void IntersectDomainWith(const Argument& arg, Domain* domain);

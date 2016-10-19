@@ -85,12 +85,18 @@ std::vector<IntegerVariable> SatModel::LookupVars(const fz::Argument& argument) 
   std::vector<IntegerVariable> result;
   if (argument.type == fz::Argument::VOID_ARGUMENT) return result;
 
-  CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
-  for (fz::IntegerVariable* var : argument.variables) {
-    if (var->domain.HasOneValue()) {
-      result.push_back(LookupConstant(var->domain.Value()));
-    } else {
-      result.push_back(FindOrDie(var_map, var));
+  if (argument.type == fz::Argument::INT_LIST) {
+    for (int64 value : argument.values) {
+      result.push_back(LookupConstant(value));
+    }
+  } else {
+    CHECK_EQ(argument.type, fz::Argument::INT_VAR_REF_ARRAY);
+    for (fz::IntegerVariable* var : argument.variables) {
+      if (var->domain.HasOneValue()) {
+        result.push_back(LookupConstant(var->domain.Value()));
+      } else {
+        result.push_back(FindOrDie(var_map, var));
+      }
     }
   }
   return result;
@@ -799,6 +805,22 @@ void ExtractAllDifferentInt(const fz::Constraint& ct, SatModel* m) {
   }
 }
 
+void ExtractDiffN(const fz::Constraint& ct, SatModel* m) {
+  // TODO(user): Support fixed positions.
+  const std::vector<IntegerVariable> x = m->LookupVars(ct.arguments[0]);
+  const std::vector<IntegerVariable> y = m->LookupVars(ct.arguments[1]);
+  if (ct.arguments[2].type == fz::Argument::INT_LIST &&
+      ct.arguments[3].type == fz::Argument::INT_LIST) {
+    m->model.Add(NonOverlappingFixedSizeRectangles(
+        x, y, ct.arguments[2].values, ct.arguments[3].values));
+  } else {
+    // TODO(user): Make this work with one variable and one fixed argument.
+    const std::vector<IntegerVariable> dx = m->LookupVars(ct.arguments[2]);
+    const std::vector<IntegerVariable> dy = m->LookupVars(ct.arguments[3]);
+    m->model.Add(NonOverlappingRectangles(x, y, dx, dy));
+  }
+}
+
 // Returns false iff the constraint type is not supported.
 bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
   if (ct.type == "bool_eq") {
@@ -889,6 +911,8 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractTableInt(ct, m);
   } else if (ct.type == "set_in_reif") {
     ExtractSetInReif(ct, m);
+  } else if (ct.type == "diffn") {
+    ExtractDiffN(ct, m);
   } else {
     return false;
   }
