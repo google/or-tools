@@ -461,12 +461,13 @@ void ExtractIntLinNeReif(const fz::Constraint& ct, SatModel* m) {
 void ImpliesEqualityToConstant(bool reverse_implication, IntegerVariable a,
                                int64 cte, Literal r, SatModel* m) {
   if (m->model.Get(IsFixed(a))) {
-    FZLOG << "Case could have been presolved." << FZENDL;
     if (m->model.Get(Value(a)) == IntegerValue(cte)) {
       if (reverse_implication) {
+        FZLOG << "Case could have been presolved." << FZENDL;
         m->model.GetOrCreate<SatSolver>()->AddUnitClause(r);
       }
     } else {
+      FZLOG << "Case could have been presolved." << FZENDL;
       m->model.GetOrCreate<SatSolver>()->AddUnitClause(r.Negated());
     }
     return;
@@ -533,7 +534,8 @@ void ImpliesEquality(bool reverse_implication, Literal r, IntegerVariable a,
       !encoder->VariableIsFullyEncoded(b)) {
     if (reverse_implication) {
       m->model.Add(ReifiedEquality(a, b, r));
-    } else {
+    } else if (a != b) {
+      // If a == b, r can take any value.
       m->model.Add(ConditionalLowerOrEqualWithOffset(a, b, 0, r));
       m->model.Add(ConditionalLowerOrEqualWithOffset(b, a, 0, r));
     }
@@ -806,15 +808,27 @@ void ExtractAllDifferentInt(const fz::Constraint& ct, SatModel* m) {
 }
 
 void ExtractDiffN(const fz::Constraint& ct, SatModel* m) {
-  // TODO(user): Support fixed positions.
   const std::vector<IntegerVariable> x = m->LookupVars(ct.arguments[0]);
   const std::vector<IntegerVariable> y = m->LookupVars(ct.arguments[1]);
   if (ct.arguments[2].type == fz::Argument::INT_LIST &&
       ct.arguments[3].type == fz::Argument::INT_LIST) {
-    m->model.Add(NonOverlappingFixedSizeRectangles(
+    m->model.Add(StrictNonOverlappingFixedSizeRectangles(
         x, y, ct.arguments[2].values, ct.arguments[3].values));
   } else {
-    // TODO(user): Make this work with one variable and one fixed argument.
+    const std::vector<IntegerVariable> dx = m->LookupVars(ct.arguments[2]);
+    const std::vector<IntegerVariable> dy = m->LookupVars(ct.arguments[3]);
+    m->model.Add(StrictNonOverlappingRectangles(x, y, dx, dy));
+  }
+}
+
+void ExtractDiffNNonStrict(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> x = m->LookupVars(ct.arguments[0]);
+  const std::vector<IntegerVariable> y = m->LookupVars(ct.arguments[1]);
+  if (ct.arguments[2].type == fz::Argument::INT_LIST &&
+      ct.arguments[3].type == fz::Argument::INT_LIST) {
+    m->model.Add(NonOverlappingFixedSizeRectangles(x, y, ct.arguments[2].values,
+                                                   ct.arguments[3].values));
+  } else {
     const std::vector<IntegerVariable> dx = m->LookupVars(ct.arguments[2]);
     const std::vector<IntegerVariable> dy = m->LookupVars(ct.arguments[3]);
     m->model.Add(NonOverlappingRectangles(x, y, dx, dy));
@@ -913,6 +927,8 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractSetInReif(ct, m);
   } else if (ct.type == "diffn") {
     ExtractDiffN(ct, m);
+  } else if (ct.type == "diffn_nonstrict") {
+    ExtractDiffNNonStrict(ct, m);
   } else {
     return false;
   }

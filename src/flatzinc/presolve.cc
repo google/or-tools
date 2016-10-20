@@ -1710,6 +1710,10 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
 // Rule3:
 // Input : array_var_int_element(x0, [x1, .., xn], y) with x0 = a * x + b
 // Output: array_var_int_element(x, [x_a1, .., x_an], b) with a * i = b = ai
+//
+// Rule4:
+// Input : array_var_int_element(x0, [x1, .., xn], y)
+// Output: remove from the domain of x0 the value for which whe know xi != y
 bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
   // Rule 1.
   bool all_fixed = true;
@@ -1784,6 +1788,36 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
     log->append("reduce array");
     return true;
   }
+
+  // Rule 4.
+  if (ct->arguments[0].IsVariable() && ct->arguments[2].HasOneValue()) {
+    bool changed = false;
+    const int64 value = ct->arguments[2].Value();
+    const std::vector<IntegerVariable*>& vars = ct->arguments[1].variables;
+    for (int index = 1; index <= vars.size(); ++index) {
+      if (!ct->arguments[0].Var()->domain.Contains(index)) continue;
+      const Domain& x = vars[index - 1]->domain;  // 1-based in minizinc.
+      if (!x.Contains(value)) {
+        ct->arguments[0].Var()->domain.RemoveValue(index);
+        changed = true;
+      }
+    }
+    return changed;
+  } else if (ct->arguments[0].IsVariable() && ct->arguments[2].IsVariable()) {
+    bool changed = false;
+    const std::vector<IntegerVariable*>& vars = ct->arguments[1].variables;
+    for (int index = 1; index <= vars.size(); ++index) {
+      if (!ct->arguments[0].Var()->domain.Contains(index)) continue;
+      const Domain& x = vars[index - 1]->domain;  // 1-based in minizinc.
+      const Domain& y = ct->arguments[2].Var()->domain;
+      if (x.Min() > y.Max() || y.Min() > x.Max()) {
+        ct->arguments[0].Var()->domain.RemoveValue(index);
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
   return false;
 }
 
@@ -1797,7 +1831,7 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
 // Rule 2:
 // Input: int_eq_reif(b1, c, b0) or bool_eq_reif(b1, c, b0)
 //        or int_eq_reif(c, b1, b0) or bool_eq_reif(c, b1, b0)
-// Outout: bool_eq(b1, b0) or bool_not(b1, b0) depending on the parity.
+// Output: bool_eq(b1, b0) or bool_not(b1, b0) depending on the parity.
 //
 // Rule 3:
 // Input : int_xx_reif(x, c, b) or bool_xx_reif(b1, t, b) or
@@ -1823,12 +1857,38 @@ bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
          ct->arguments[2].Value() == static_cast<int64>(value)) ||
         !ct->arguments[2].HasOneValue()) {
       log->append("propagate boolvar to value");
-      CHECK_EQ(Argument::INT_VAR_REF, ct->arguments[2].type);
-      ct->arguments[2].variables[0]->domain.IntersectWithSingleton(value);
+      ct->arguments[2].Var()->domain.IntersectWithSingleton(value);
       ct->MarkAsInactive();
       return true;
     }
   }
+
+  // Rule 3, easy case. Both constants.
+  if (ct->arguments[0].HasOneValue() && ct->arguments[1].HasOneValue()) {
+    const int64 a = ct->arguments[0].Value();
+    const int64 b = ct->arguments[1].Value();
+    int state = 2;  // 0 force_false, 1 force true, 2 unknown.
+    if (id == "int_eq_reif" || id == "bool_eq_reif") {
+      state = (a == b);
+    } else if (id == "int_ne_reif" || id == "bool_ne_reif") {
+      state = (a != b);
+    } else if (id == "int_lt_reif" || id == "bool_lt_reif") {
+      state = (a < b);
+    } else if (id == "int_gt_reif" || id == "bool_gt_reif") {
+      state = (a > b);
+    } else if (id == "int_le_reif" || id == "bool_le_reif") {
+      state = (a <= b);
+    } else if (id == "int_ge_reif" || id == "bool_ge_reif") {
+      state = (a >= b);
+    }
+    if (state != 2) {
+      StringAppendF(log, "assign boolvar to %s", state == 0 ? "false" : "true");
+      ct->arguments[2].Var()->domain.IntersectWithSingleton(state);
+      ct->MarkAsInactive();
+      return true;
+    }
+  }
+
   IntegerVariable* var = nullptr;
   int64 value = 0;
   bool reverse = false;
@@ -2388,7 +2448,7 @@ bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
   return variable_changed || ignored_tuples > 0;
 }
 
-// Tranform diffn into all_different_int when sizes and y positions are all 1.
+// Tranforms diffn into all_different_int when sizes and y positions are all 1.
 //
 // Input : diffn([x1, .. xn], [1, .., 1], [1, .., 1], [1, .., 1])
 // Output: all_different_int([x1, .. xn])
@@ -2418,7 +2478,6 @@ bool Presolver::PresolveDiffN(Constraint* ct, std::string* log) {
   }
   return false;
 }
-
 
 #define CALL_TYPE(ct, t, method)                                            \
   if (ct->active && ct->type == t) {                                        \

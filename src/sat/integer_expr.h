@@ -54,6 +54,12 @@ class IntegerSumLE : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  // Fills integer_reason_ with all the current lower_bounds. The real
+  // explanation may require removing one of them, but as an optimization, we
+  // always keep all the IntegerLiteral in integer_reason_, and swap them as
+  // needed just before pushing something.
+  void FillIntegerReason();
+
   const LiteralIndex reified_literal_;  // kNoLiteralIndex if not reified.
   const IntegerValue upper_bound_;
   std::vector<IntegerVariable> vars_;

@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_INTEGER_H_
 
 #include <queue>
+#include <set>
 
 #include "base/port.h"
 #include "base/join.h"
@@ -401,12 +402,7 @@ class IntegerTrail : public Propagator {
                                const std::vector<Literal>& literal_reason,
                                const std::vector<IntegerLiteral>& integer_reason);
 
-  // Enqueues the given literal on the trail. The two returned vector pointers
-  // will point to empty vectors that can be filled to store the reason of this
-  // assignment. They are only valid just after this is called. The full literal
-  // reason will be computed lazily when it becomes needed.
-  void EnqueueLiteral(Literal literal, std::vector<Literal>** literal_reason,
-                      std::vector<IntegerLiteral>** integer_reason);
+  // Enqueues the given literal on the trail.
   void EnqueueLiteral(Literal literal, const std::vector<Literal>& literal_reason,
                       const std::vector<IntegerLiteral>& integer_reason);
 
@@ -437,6 +433,9 @@ class IntegerTrail : public Propagator {
   }
 
  private:
+  // Does the work of MergeReasonInto() when queue_ is already initialized.
+  void MergeReasonIntoInternal(std::vector<Literal>* output) const;
+
   // Helper used by Enqueue() to propagate one of the literal associated to
   // the given i_lit and maintained by encoder_.
   bool EnqueueAssociatedLiteral(Literal literal, IntegerLiteral i_lit,
@@ -459,12 +458,15 @@ class IntegerTrail : public Propagator {
   // Helper function to return the "dependencies" of a bound assignment.
   // All the TrailEntry at these indices are part of the reason for this
   // assignment.
-  BeginEndWrapper<std::vector<int>::const_iterator> Dependencies(
+  BeginEndWrapper<std::vector<IntegerLiteral>::const_iterator> Dependencies(
       int trail_index) const;
 
   // Helper function to append the Literal part of the reason for this bound
   // assignment.
   void AppendLiteralsReason(int trail_index, std::vector<Literal>* output) const;
+
+  // Returns some debuging info.
+  std::string DebugString();
 
   // Information for each internal variable about its current bound.
   struct VarInfo {
@@ -493,8 +495,12 @@ class IntegerTrail : public Propagator {
   std::vector<int> integer_decision_levels_;
 
   // Buffer to store the reason of each trail entry.
+  // Note that bounds_reason_buffer_ is an "union". It initially contains the
+  // IntegerLiteral, and is lazily replaced by the result of
+  // FindLowestTrailIndexThatExplainBound() applied to these literals. The
+  // encoding is a bit hacky, see Dependencies().
   std::vector<Literal> literals_reason_buffer_;
-  std::vector<int> dependencies_buffer_;
+  mutable std::vector<IntegerLiteral> bounds_reason_buffer_;
 
   // The "is_empty" literal of the optional variables or kNoLiteralIndex.
   ITIVector<IntegerVariable, LiteralIndex> is_empty_literals_;
@@ -511,9 +517,11 @@ class IntegerTrail : public Propagator {
   mutable std::vector<int> tmp_trail_indices_;
   mutable std::vector<int> tmp_var_to_highest_explained_trail_index_;
 
-  // Lazy reason repository.
-  std::vector<std::vector<Literal>> literal_reasons_;
-  std::vector<std::vector<IntegerLiteral>> integer_reasons_;
+  // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
+  // lazily. This vector indicates the correspondance between a literal that
+  // was pushed by this class at a given trail index, and the index of its
+  // TrailEntry in integer_trail_.
+  std::vector<int> boolean_trail_index_to_integer_one_;
 
   int64 num_enqueues_;
 
@@ -561,6 +569,7 @@ class GenericLiteralWatcher : public Propagator {
   void WatchLowerBound(IntegerVariable i, int id);
   void WatchUpperBound(IntegerVariable i, int id);
   void WatchIntegerVariable(IntegerVariable i, int id);
+  void WatchIntegerVariable(IntegerValue v, int id) {}
 
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be

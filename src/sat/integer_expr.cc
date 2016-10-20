@@ -32,6 +32,19 @@ IntegerSumLE::IntegerSumLE(LiteralIndex reified_literal,
       coeffs_[i] = -coeffs_[i];
     }
   }
+
+  // Literal reason will either alway contains the negation of reified_literal
+  // or be always empty.
+  if (reified_literal_ != kNoLiteralIndex) {
+    literal_reason_.push_back(Literal(reified_literal_).Negated());
+  }
+}
+
+void IntegerSumLE::FillIntegerReason() {
+  integer_reason_.clear();
+  for (const IntegerVariable& var : vars_) {
+    integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+  }
 }
 
 bool IntegerSumLE::Propagate(Trail* trail) {
@@ -50,10 +63,7 @@ bool IntegerSumLE::Propagate(Trail* trail) {
 
   // Conflict?
   if (new_lb > upper_bound_) {
-    integer_reason_.clear();
-    for (const IntegerVariable& var : vars_) {
-      integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
-    }
+    FillIntegerReason();
 
     // Reified case: If the reified literal is unassigned, we set it to false,
     // otherwise we have a conflict.
@@ -66,10 +76,7 @@ bool IntegerSumLE::Propagate(Trail* trail) {
 
     // Conflict.
     std::vector<Literal>* conflict = trail->MutableConflict();
-    conflict->clear();
-    if (reified_literal_ != kNoLiteralIndex) {
-      conflict->push_back(Literal(reified_literal_).Negated());
-    }
+    *conflict = literal_reason_;
     integer_trail_->MergeReasonInto(integer_reason_, conflict);
     return false;
   }
@@ -81,6 +88,9 @@ bool IntegerSumLE::Propagate(Trail* trail) {
     return true;
   }
 
+  // Will only be filled on the first push.
+  integer_reason_.clear();
+
   // The lower bound of all the variables minus one can be used to update the
   // upper bound of the last one.
   for (int i = 0; i < vars_.size(); ++i) {
@@ -89,21 +99,23 @@ bool IntegerSumLE::Propagate(Trail* trail) {
     const IntegerValue new_term_ub = upper_bound_ - new_lb_excluding_i;
     const IntegerValue new_ub = new_term_ub / coeffs_[i];
     if (new_ub < integer_trail_->UpperBound(vars_[i])) {
-      literal_reason_.clear();
-      if (reified_literal_ != kNoLiteralIndex) {
-        literal_reason_.push_back(Literal(reified_literal_).Negated());
-      }
-      integer_reason_.clear();
-      for (int j = 0; j < vars_.size(); ++j) {
-        if (i == j) continue;
-        integer_reason_.push_back(
-            integer_trail_->LowerBoundAsLiteral(vars_[j]));
-      }
+      if (integer_reason_.empty()) FillIntegerReason();
+
+      // We need to remove the entry i temporarily.
+      const IntegerLiteral saved = integer_reason_[i];
+      std::swap(integer_reason_[i], integer_reason_.back());
+      integer_reason_.pop_back();
+
       if (!integer_trail_->Enqueue(
               IntegerLiteral::LowerOrEqual(vars_[i], new_ub), literal_reason_,
               integer_reason_)) {
         return false;
       }
+
+      // Restore integer_reason_. Note that this is not needed if we returned
+      // false above.
+      integer_reason_.push_back(saved);
+      std::swap(integer_reason_[i], integer_reason_.back());
     }
   }
 
@@ -241,16 +253,14 @@ bool IsOneOfPropagator::Propagate(Trail* trail) {
 
       if (!trail->Assignment().LiteralIsTrue(selectors_[i])) {
         // Propagate selector to false?
-        std::vector<Literal>* literal_reason;
-        std::vector<IntegerLiteral>* integer_reason;
         if (current_min > values_[i]) {
-          integer_trail_->EnqueueLiteral(selectors_[i].Negated(),
-                                         &literal_reason, &integer_reason);
-          integer_reason->push_back(integer_trail_->LowerBoundAsLiteral(var_));
+          integer_trail_->EnqueueLiteral(
+              selectors_[i].Negated(), {},
+              {integer_trail_->LowerBoundAsLiteral(var_)});
         } else if (current_max < values_[i]) {
-          integer_trail_->EnqueueLiteral(selectors_[i].Negated(),
-                                         &literal_reason, &integer_reason);
-          integer_reason->push_back(integer_trail_->UpperBoundAsLiteral(var_));
+          integer_trail_->EnqueueLiteral(
+              selectors_[i].Negated(), {},
+              {integer_trail_->UpperBoundAsLiteral(var_)});
         }
       }
     }

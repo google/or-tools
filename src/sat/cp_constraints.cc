@@ -36,17 +36,16 @@ bool BooleanXorPropagator::Propagate(Trail* trail) {
 
   // Propagates?
   if (unassigned_index != -1) {
-    std::vector<Literal>* literal_reason;
-    std::vector<IntegerLiteral>* integer_reason;
-    const Literal u = literals_[unassigned_index];
-    integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
-                                   &literal_reason, &integer_reason);
+    literal_reason_.clear();
     for (int i = 0; i < literals_.size(); ++i) {
       if (i == unassigned_index) continue;
       const Literal l = literals_[i];
-      literal_reason->push_back(
+      literal_reason_.push_back(
           trail->Assignment().LiteralIsFalse(l) ? l : l.Negated());
     }
+    const Literal u = literals_[unassigned_index];
+    integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
+                                   literal_reason_, {});
     return true;
   }
 
@@ -82,14 +81,24 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
 
 bool AllDifferentBoundsPropagator::Propagate(Trail* trail) {
   if (vars_.empty()) return true;
-  if (!PropagateLowerBounds(trail)) return false;
 
-  // Note that it is not required to swap back vars_ and negated_vars_.
-  // TODO(user): investigate the impact.
-  std::swap(vars_, negated_vars_);
-  const bool result = PropagateLowerBounds(trail);
-  std::swap(vars_, negated_vars_);
-  return result;
+  // Unfortunately, we may not reach a fixed-point in one pass.
+  // TODO(user): can we change the code to achieve this?
+  while (true) {
+    const int64 old_timestamp = integer_trail_->num_enqueues();
+
+    if (!PropagateLowerBounds(trail)) return false;
+
+    // Note that it is not required to swap back vars_ and negated_vars_.
+    // TODO(user): investigate the impact.
+    std::swap(vars_, negated_vars_);
+    const bool result = PropagateLowerBounds(trail);
+    std::swap(vars_, negated_vars_);
+    if (!result) return false;
+
+    if (old_timestamp == integer_trail_->num_enqueues()) break;
+  }
+  return true;
 }
 
 // TODO(user): we could gain by pushing all the new bound at the end, so that
@@ -183,7 +192,8 @@ void AllDifferentBoundsPropagator::RegisterWith(
   }
 }
 
-std::function<void(Model*)> AllDifferent(const std::vector<IntegerVariable>& vars) {
+std::function<void(Model*)> AllDifferent(
+    const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
     hash_set<IntegerValue> fixed_values;
 
@@ -227,36 +237,119 @@ std::function<void(Model*)> AllDifferent(const std::vector<IntegerVariable>& var
   };
 }
 
-// ----- NonOverlappingRectanglesPropagator -----
+// ----- CpPropagator -----
 
-#define RETURN_IF_FALSE(x) if (!(x)) return false;
+CpPropagator::CpPropagator(Trail* trail, IntegerTrail* integer_trail)
+    : trail_(trail), integer_trail_(integer_trail) {}
 
-NonOverlappingRectanglesPropagator::NonOverlappingRectanglesPropagator(
-    const std::vector<IntegerVariable>& x,
-    const std::vector<IntegerVariable>& y,
-    const std::vector<IntegerVariable>& dx,
-    const std::vector<IntegerVariable>& dy,
-    IntegerTrail* integer_trail)
-    : x_(x),
-      y_(y),
-      dx_(dx),
-      dy_(dy),
-      integer_trail_(integer_trail),
-      strict_(false) {}
+CpPropagator::~CpPropagator() {}
 
-NonOverlappingRectanglesPropagator::~NonOverlappingRectanglesPropagator() {}
+IntegerValue CpPropagator::Min(IntegerVariable v) const {
+  return integer_trail_->LowerBound(v);
+}
 
+IntegerValue CpPropagator::Max(IntegerVariable v) const {
+  return integer_trail_->UpperBound(v);
+}
 
-bool NonOverlappingRectanglesPropagator::Propagate(Trail* trail) {
-  for (int box = 0; box < x_.size(); ++box) {
-    FillNeighbors(box);
-    RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box, trail));
-    RETURN_IF_FALSE(PushOverlappingRectangles(box, trail));
+bool CpPropagator::SetMin(IntegerVariable v, IntegerValue val,
+                          const std::vector<IntegerLiteral>& reason) {
+  IntegerValue current_min = Min(v);
+  if (val > current_min &&
+      !integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(v, val),
+                               /*literal_reason=*/{}, reason)) {
+    return false;
   }
   return true;
 }
 
-void NonOverlappingRectanglesPropagator::RegisterWith(
+bool CpPropagator::SetMax(IntegerVariable v, IntegerValue val,
+                          const std::vector<IntegerLiteral>& reason) {
+  const IntegerValue current_max = Max(v);
+  if (val < current_max &&
+      !integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(v, val),
+                               /*literal_reason=*/{}, reason)) {
+    return false;
+  }
+  return true;
+}
+
+bool CpPropagator::SetMin(IntegerValue v, IntegerValue val,
+                          const std::vector<IntegerLiteral>& reason) {
+  if (val > v) {
+    FillConflictFromReason(reason);
+    return false;
+  }
+  return true;
+}
+
+bool CpPropagator::SetMax(IntegerValue v, IntegerValue val,
+                          const std::vector<IntegerLiteral>& reason) {
+  if (val < v) {
+    FillConflictFromReason(reason);
+    return false;
+  }
+  return true;
+}
+
+void CpPropagator::FillConflictFromReason(
+    const std::vector<IntegerLiteral>& reason) {
+  std::vector<Literal>* conflict = trail_->MutableConflict();
+  conflict->clear();
+  integer_trail_->MergeReasonInto(reason, conflict);
+}
+
+void CpPropagator::AddLowerBoundReason(
+    IntegerVariable v, std::vector<IntegerLiteral>* reason) const {
+  reason->push_back(integer_trail_->LowerBoundAsLiteral(v));
+}
+
+void CpPropagator::AddUpperBoundReason(
+    IntegerVariable v, std::vector<IntegerLiteral>* reason) const {
+  reason->push_back(integer_trail_->UpperBoundAsLiteral(v));
+}
+
+void CpPropagator::AddBoundsReason(IntegerVariable v,
+                                   std::vector<IntegerLiteral>* reason) const {
+  reason->push_back(integer_trail_->LowerBoundAsLiteral(v));
+  reason->push_back(integer_trail_->UpperBoundAsLiteral(v));
+}
+
+// NonOverlappingRectanglesPropagator
+
+#define RETURN_IF_FALSE(x) \
+  if (!(x)) return false;
+
+template <class S>
+NonOverlappingRectanglesPropagator<S>::NonOverlappingRectanglesPropagator(
+    const std::vector<IntegerVariable>& x,
+    const std::vector<IntegerVariable>& y, const std::vector<S>& dx,
+    const std::vector<S>& dy, bool strict, Trail* trail,
+    IntegerTrail* integer_trail)
+    : CpPropagator(trail, integer_trail),
+      x_(x),
+      y_(y),
+      dx_(dx),
+      dy_(dy),
+      strict_(strict) {}
+
+template <class S>
+NonOverlappingRectanglesPropagator<S>::~NonOverlappingRectanglesPropagator() {}
+
+template <class S>
+bool NonOverlappingRectanglesPropagator<S>::Propagate(Trail* trail) {
+  for (int box = 0; box < x_.size(); ++box) {
+    FillNeighbors(box);
+    RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box));
+    for (int i = 0; i < neighbors_.size(); ++i) {
+      RETURN_IF_FALSE(PushOneBox(box, neighbors_[i]));
+    }
+  }
+  return true;
+}
+
+template <class S>
+void NonOverlappingRectanglesPropagator<S>::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   for (const IntegerVariable& var : x_) {
@@ -265,100 +358,97 @@ void NonOverlappingRectanglesPropagator::RegisterWith(
   for (const IntegerVariable& var : y_) {
     watcher->WatchIntegerVariable(var, id);
   }
-  for (const IntegerVariable& var : dx_) {
+  for (const S& var : dx_) {
     watcher->WatchIntegerVariable(var, id);
   }
-  for (const IntegerVariable& var : dy_) {
+  for (const S& var : dy_) {
     watcher->WatchIntegerVariable(var, id);
   }
 }
 
-int64 NonOverlappingRectanglesPropagator::Min(IntegerVariable v) const {
-  return integer_trail_->LowerBound(v).value();
+template <class S>
+void NonOverlappingRectanglesPropagator<S>::AddBoxReason(int box) {
+  AddBoundsReason(x_[box], &integer_reason_);
+  AddBoundsReason(y_[box], &integer_reason_);
+  AddBoundsReason(dx_[box], &integer_reason_);
+  AddBoundsReason(dy_[box], &integer_reason_);
 }
 
-int64 NonOverlappingRectanglesPropagator::Max(IntegerVariable v) const {
-  return integer_trail_->UpperBound(v).value();
-}
-
-bool NonOverlappingRectanglesPropagator::SetMin(IntegerVariable v, int64 val) {
-  const int64 current_min = Min(v);
-  if (val > current_min &&
-      !integer_trail_->Enqueue(
-          IntegerLiteral::GreaterOrEqual(v, IntegerValue(val)),
-          /*literal_reason=*/{}, integer_reason_)) {
+template <class S>
+bool NonOverlappingRectanglesPropagator<S>::CanBoxesOverlap(int i,
+                                                            int j) const {
+  if (AreBoxesDisjoingHorizontallyForSure(i, j) ||
+      AreBoxesDisjoingVerticallyForSure(i, j)) {
     return false;
   }
   return true;
 }
 
-bool NonOverlappingRectanglesPropagator::SetMax(IntegerVariable v, int64 val) {
-  const int64 current_max = Max(v);
-  if (val < current_max &&
-      !integer_trail_->Enqueue(
-          IntegerLiteral::LowerOrEqual(v, IntegerValue(val)),
-          /*literal_reason=*/{}, integer_reason_)) {
-    return false;
-  }
-  return true;
-}
-
-void NonOverlappingRectanglesPropagator::AddBoxReason(int box) {
-  integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(dx_[box]));
-  integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(dy_[box]));
-  integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(x_[box]));
-  integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(y_[box]));
-  integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(dx_[box]));
-  integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(dy_[box]));
-  integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(x_[box]));
-  integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(y_[box]));
-}
-
-bool NonOverlappingRectanglesPropagator::CanBoxedOverlap(int i, int j) const {
-  if (AreBoxedDisjoingHorizontallyForSure(i, j) ||
-      AreBoxedDisjoingVerticallyForSure(i, j)) {
-    return false;
-  }
-  return true;
-}
-
-bool NonOverlappingRectanglesPropagator::AreBoxedDisjoingHorizontallyForSure(
+template <class S>
+bool NonOverlappingRectanglesPropagator<S>::AreBoxesDisjoingHorizontallyForSure(
     int i, int j) const {
   return Min(x_[i]) >= Max(x_[j]) + Max(dx_[j]) ||
-      Min(x_[j]) >= Max(x_[i]) + Max(dx_[i])||
-      (!strict_ && (Min(dx_[i]) == 0 || Min(dx_[j]) == 0));
+         Min(x_[j]) >= Max(x_[i]) + Max(dx_[i]) ||
+         (!strict_ && (Min(dx_[i]) == 0 || Min(dx_[j]) == 0));
 }
 
-bool NonOverlappingRectanglesPropagator::AreBoxedDisjoingVerticallyForSure(
+template <class S>
+bool NonOverlappingRectanglesPropagator<S>::AreBoxesDisjoingVerticallyForSure(
     int i, int j) const {
   return Min(y_[i]) >= Max(y_[j]) + Max(dy_[j]) ||
-      Min(y_[j]) >= Max(y_[i]) + Max(dy_[i])||
-      (!strict_ && (Min(dy_[i]) == 0 || Min(dx_[j]) == 0));
+         Min(y_[j]) >= Max(y_[i]) + Max(dy_[i]) ||
+         (!strict_ && (Min(dy_[i]) == 0 || Min(dx_[j]) == 0));
 }
 
-void NonOverlappingRectanglesPropagator::FillNeighbors(int box) {
+template <class S>
+IntegerValue NonOverlappingRectanglesPropagator<S>::DistanceToBoundingBox(
+    int box, int other) {
+  IntegerValue distance = Min(x_[box]) - Min(x_[other]);
+  distance =
+      std::max(distance, Max(x_[other]) + Max(dx_[other]) - Max(x_[box]));
+  distance = std::max(distance, Min(y_[box]) - Min(y_[other]));
+  distance =
+      std::max(distance, Max(y_[other]) + Max(dy_[other]) - Max(y_[box]));
+  return distance;
+}
+
+template <class S>
+void NonOverlappingRectanglesPropagator<S>::FillNeighbors(int box) {
   // TODO(user): We could maintain a non reversible list of
   // neighbors and clean it after each failure.
   neighbors_.clear();
   for (int other = 0; other < x_.size(); ++other) {
-    if (other != box && CanBoxedOverlap(other, box)) {
+    if (other != box && CanBoxesOverlap(other, box)) {
       neighbors_.push_back(other);
     }
   }
+  std::sort(neighbors_.begin(), neighbors_.end(), [this, box](int i, int j) {
+    return DistanceToBoundingBox(box, i) < DistanceToBoundingBox(box, j);
+  });
 }
 
-bool NonOverlappingRectanglesPropagator::FailWhenEnergyIsTooLarge(
-    int box, Trail* trail) {
-  int64 area_min_x = Min(x_[box]);
-  int64 area_max_x = Max(x_[box]) + Max(dx_[box]);
-  int64 area_min_y = Min(y_[box]);
-  int64 area_max_y = Max(y_[box]) + Max(dy_[box]);
-  int64 sum_of_areas = Min(dx_[box]) * Min(dy_[box]);
+template <class S>
+bool NonOverlappingRectanglesPropagator<S>::FailWhenEnergyIsTooLarge(int box) {
+  IntegerValue area_min_x = Min(x_[box]);
+  IntegerValue area_max_x = Max(x_[box]) + Max(dx_[box]);
+  IntegerValue area_min_y = Min(y_[box]);
+  IntegerValue area_max_y = Max(y_[box]) + Max(dy_[box]);
+  IntegerValue sum_of_areas = Min(dx_[box]) * Min(dy_[box]);
+
+  IntegerValue total_sum_of_areas = sum_of_areas;
+  for (int i = 0; i < neighbors_.size(); ++i) {
+    const int other = neighbors_[i];
+    total_sum_of_areas += Min(dx_[other]) * Min(dy_[other]);
+  }
+
   // TODO(user): Is there a better order, maybe sort by distance
   // with the current box.
   for (int i = 0; i < neighbors_.size(); ++i) {
-    // TODO(user): Skip box with area_min == 0.
     const int other = neighbors_[i];
+    if (Min(dx_[other]) == 0 || Min(dy_[other]) == 0) {
+      // This box will not contribute. Skipping.
+      continue;
+    }
     // Update Bounding box.
     area_min_x = std::min(area_min_x, Min(x_[other]));
     area_max_x = std::max(area_max_x, Max(x_[other]) + Max(dx_[other]));
@@ -366,38 +456,39 @@ bool NonOverlappingRectanglesPropagator::FailWhenEnergyIsTooLarge(
     area_max_y = std::max(area_max_y, Max(y_[other]) + Max(dy_[other]));
     // Update sum of areas.
     sum_of_areas += Min(dx_[other]) * Min(dy_[other]);
-    const int64 bounding_area =
+    const IntegerValue bounding_area =
         (area_max_x - area_min_x) * (area_max_y - area_min_y);
+    if (bounding_area >= total_sum_of_areas) {
+      // Nothing will be deduced. Exiting.
+      return true;
+    }
+
     if (sum_of_areas > bounding_area) {
+      // TODO(user): compute wider reason with relaxed bounds on boxes.
       integer_reason_.clear();
       AddBoxReason(box);
       for (int j = 0; j <= i; ++j) {
-        AddBoxReason(neighbors_[j]);
+        const int other = neighbors_[j];
+        if (Min(dx_[other]) == 0 || Min(dy_[other]) == 0) {
+          // This box will not contribute. Skipping.
+          continue;
+        }
+        AddBoxReason(other);
       }
-      std::vector<Literal>* conflict = trail->MutableConflict();
-      conflict->clear();
-      integer_trail_->MergeReasonInto(integer_reason_, conflict);
+      FillConflictFromReason(integer_reason_);
       return false;
     }
   }
   return true;
 }
 
-bool NonOverlappingRectanglesPropagator::PushOverlappingRectangles(
-    int box, Trail* trail) {
-  for (int i = 0; i < neighbors_.size(); ++i) {
-    RETURN_IF_FALSE(PushOneBox(box, neighbors_[i], trail));
-  }
-  return true;
-}
-
-bool NonOverlappingRectanglesPropagator::PushOneBox(
-    int box, int other, Trail* trail) {
-  const int state =
-      (Min(x_[box]) + Min(dx_[box]) <= Max(x_[other]) + Max(x_[other])) +
-      2 * (Min(x_[other]) + Min(dx_[other]) <= Max(x_[box]) + Max(dx_[box])) +
-      4 * (Min(y_[box]) + Min(dy_[box]) <= Max(y_[other]) + Max(dy_[other])) +
-      8 * (Min(y_[other]) + Min(dy_[other]) <= Max(y_[box]) + Max(dy_[box]));
+template <class S>
+bool NonOverlappingRectanglesPropagator<S>::PushOneBox(int box, int other) {
+  // For each direction, and each order, we test if the boxes can be disjoint.
+  const int state = (Min(x_[box]) + Min(dx_[box]) <= Max(x_[other])) +
+                    2 * (Min(x_[other]) + Min(dx_[other]) <= Max(x_[box])) +
+                    4 * (Min(y_[box]) + Min(dy_[box]) <= Max(y_[other])) +
+                    8 * (Min(y_[other]) + Min(dy_[other]) <= Max(y_[box]));
   if (state == 0 || state == 1 || state == 2 || state == 4 || state == 8) {
     // Fill reason.
     integer_reason_.clear();
@@ -408,33 +499,43 @@ bool NonOverlappingRectanglesPropagator::PushOneBox(
     // and only one of the conditions below.
     switch (state) {
       case 0: {
-        std::vector<Literal>* conflict = trail->MutableConflict();
-        conflict->clear();
-        integer_trail_->MergeReasonInto(integer_reason_, conflict);
+        FillConflictFromReason(integer_reason_);
         return false;
       }
       case 1: {  // We push other left (x increasing).
-        RETURN_IF_FALSE(SetMin(x_[other], Min(x_[box]) + Min(dx_[box])));
-        RETURN_IF_FALSE(SetMax(x_[box], Max(x_[other]) - Min(dx_[box])));
-        RETURN_IF_FALSE(SetMax(dx_[box], Max(x_[other]) - Min(x_[box])));
+        RETURN_IF_FALSE(
+            SetMin(x_[other], Min(x_[box]) + Min(dx_[box]), integer_reason_));
+        RETURN_IF_FALSE(
+            SetMax(x_[box], Max(x_[other]) - Min(dx_[box]), integer_reason_));
+        RETURN_IF_FALSE(
+            SetMax(dx_[box], Max(x_[other]) - Min(x_[box]), integer_reason_));
         break;
       }
       case 2: {  // We push other right (x decreasing).
-        RETURN_IF_FALSE(SetMin(x_[box], Min(x_[other]) + Min(dx_[other])));
-        RETURN_IF_FALSE(SetMax(x_[other], Max(x_[box]) - Min(dx_[box])));
-        RETURN_IF_FALSE(SetMax(dx_[other], Max(x_[box]) - Min(x_[other])));
+        RETURN_IF_FALSE(
+            SetMin(x_[box], Min(x_[other]) + Min(dx_[other]), integer_reason_));
+        RETURN_IF_FALSE(
+            SetMax(x_[other], Max(x_[box]) - Min(dx_[box]), integer_reason_));
+        RETURN_IF_FALSE(
+            SetMax(dx_[other], Max(x_[box]) - Min(x_[other]), integer_reason_));
         break;
       }
       case 4: {  // We push other up (y increasing).
-        RETURN_IF_FALSE(SetMin(y_[other], Min(y_[box]) + Min(dy_[box])));
-        RETURN_IF_FALSE(SetMax(y_[box], Max(y_[other]) - Min(dy_[box])));
-        RETURN_IF_FALSE(SetMax(dy_[box], Max(y_[other]) - Min(y_[box])));
+        RETURN_IF_FALSE(
+            SetMin(y_[other], Min(y_[box]) + Min(dy_[box]), integer_reason_));
+        RETURN_IF_FALSE(
+            SetMax(y_[box], Max(y_[other]) - Min(dy_[box]), integer_reason_));
+        RETURN_IF_FALSE(
+            SetMax(dy_[box], Max(y_[other]) - Min(y_[box]), integer_reason_));
         break;
       }
       case 8: {  // We push other down (y decreasing).
-        RETURN_IF_FALSE(SetMin(y_[box], Min(y_[other]) + Min(dy_[other])));
-        RETURN_IF_FALSE(SetMax(y_[other], Max(y_[box]) - Min(dy_[other])));
-        RETURN_IF_FALSE(SetMax(dy_[other], Max(y_[box]) - Min(y_[other])));
+        RETURN_IF_FALSE(
+            SetMin(y_[box], Min(y_[other]) + Min(dy_[other]), integer_reason_));
+        RETURN_IF_FALSE(
+            SetMax(y_[other], Max(y_[box]) - Min(dy_[other]), integer_reason_));
+        RETURN_IF_FALSE(
+            SetMax(dy_[other], Max(y_[box]) - Min(y_[other]), integer_reason_));
         break;
       }
       default: { break; }
@@ -442,222 +543,10 @@ bool NonOverlappingRectanglesPropagator::PushOneBox(
   }
   return true;
 }
-
-NonOverlappingFixedSizeRectanglesPropagator::NonOverlappingFixedSizeRectanglesPropagator(
-    const std::vector<IntegerVariable>& x,
-    const std::vector<IntegerVariable>& y,
-    const std::vector<int64>& dx,
-    const std::vector<int64>& dy,
-    IntegerTrail* integer_trail)
-    : x_(x),
-      y_(y),
-      dx_(dx),
-      dy_(dy),
-      integer_trail_(integer_trail),
-      strict_(false) {}
-
-NonOverlappingFixedSizeRectanglesPropagator::~NonOverlappingFixedSizeRectanglesPropagator() {}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::Propagate(Trail* trail) {
-  for (int box = 0; box < x_.size(); ++box) {
-    FillNeighbors(box);
-    RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box, trail));
-    RETURN_IF_FALSE(PushOverlappingRectangles(box, trail));
-  }
-  return true;
-}
-
-void NonOverlappingFixedSizeRectanglesPropagator::RegisterWith(
-    GenericLiteralWatcher* watcher) {
-  const int id = watcher->Register(this);
-  for (const IntegerVariable& var : x_) {
-    watcher->WatchIntegerVariable(var, id);
-  }
-  for (const IntegerVariable& var : y_) {
-    watcher->WatchIntegerVariable(var, id);
-  }
-}
-
-int64 NonOverlappingFixedSizeRectanglesPropagator::Min(IntegerVariable v) const {
-  return integer_trail_->LowerBound(v).value();
-}
-
-int64 NonOverlappingFixedSizeRectanglesPropagator::Max(IntegerVariable v) const {
-  return integer_trail_->UpperBound(v).value();
-}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::SetMin(IntegerVariable v, int64 val) {
-  const int64 current_min = Min(v);
-  if (val > current_min &&
-      !integer_trail_->Enqueue(
-          IntegerLiteral::GreaterOrEqual(v, IntegerValue(val)),
-          /*literal_reason=*/{}, integer_reason_)) {
-    return false;
-  }
-  return true;
-}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::SetMax(IntegerVariable v, int64 val) {
-  const int64 current_max = Max(v);
-  if (val < current_max &&
-      !integer_trail_->Enqueue(
-          IntegerLiteral::LowerOrEqual(v, IntegerValue(val)),
-          /*literal_reason=*/{}, integer_reason_)) {
-    return false;
-  }
-  return true;
-}
-
-void NonOverlappingFixedSizeRectanglesPropagator::Fail(Trail* trail) {
-  std::vector<Literal>* conflict = trail->MutableConflict();
-  conflict->clear();
-  integer_trail_->MergeReasonInto(integer_reason_, conflict);
-}
-
-void NonOverlappingFixedSizeRectanglesPropagator::AddBoxReason(int box) {
-  integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(x_[box]));
-  integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(y_[box]));
-  integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(x_[box]));
-  integer_reason_.push_back(integer_trail_->UpperBoundAsLiteral(y_[box]));
-}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::CanBoxedOverlap(int i, int j) const {
-  if (AreBoxedDisjoingHorizontallyForSure(i, j) ||
-      AreBoxedDisjoingVerticallyForSure(i, j)) {
-    return false;
-  }
-  return true;
-}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::AreBoxedDisjoingHorizontallyForSure(
-    int i, int j) const {
-  return Min(x_[i]) >= Max(x_[j]) + dx_[j] ||
-      Min(x_[j]) >= Max(x_[i]) + dx_[i] ||
-      (!strict_ && (dx_[i] == 0 || dx_[j] == 0));
-}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::AreBoxedDisjoingVerticallyForSure(
-    int i, int j) const {
-  return Min(y_[i]) >= Max(y_[j]) + dy_[j] ||
-      Min(y_[j]) >= Max(y_[i]) + dy_[i]||
-      (!strict_ && (dy_[i] == 0 || dx_[j] == 0));
-}
-
-void NonOverlappingFixedSizeRectanglesPropagator::FillNeighbors(int box) {
-  // TODO(user): We could maintain a non reversible list of
-  // neighbors and clean it after each failure.
-  neighbors_.clear();
-  for (int other = 0; other < x_.size(); ++other) {
-    if (other != box && CanBoxedOverlap(other, box)) {
-      neighbors_.push_back(other);
-    }
-  }
-}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::FailWhenEnergyIsTooLarge(
-    int box, Trail* trail) {
-  int64 area_min_x = Min(x_[box]);
-  int64 area_max_x = Max(x_[box]) + dx_[box];
-  int64 area_min_y = Min(y_[box]);
-  int64 area_max_y = Max(y_[box]) + dy_[box];
-  int64 sum_of_areas = dx_[box] * dy_[box];
-  // TODO(user): Is there a better order, maybe sort by distance
-  // with the current box.
-  for (int i = 0; i < neighbors_.size(); ++i) {
-    // TODO(user): Skip box with area_min == 0.
-    const int other = neighbors_[i];
-    // Update Bounding box.
-    area_min_x = std::min(area_min_x, Min(x_[other]));
-    area_max_x = std::max(area_max_x, Max(x_[other]) + dx_[other]);
-    area_min_y = std::min(area_min_y, Min(y_[other]));
-    area_max_y = std::max(area_max_y, Max(y_[other]) + dy_[other]);
-    // Update sum of areas.
-    sum_of_areas += dx_[other] * dy_[other];
-    const int64 bounding_area =
-        (area_max_x - area_min_x) * (area_max_y - area_min_y);
-    if (sum_of_areas > bounding_area) {
-      integer_reason_.clear();
-      AddBoxReason(box);
-      for (int j = 0; j <= i; ++j) {
-        AddBoxReason(neighbors_[j]);
-      }
-      Fail(trail);
-      return false;
-    }
-  }
-  return true;
-}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::PushOverlappingRectangles(
-    int box, Trail* trail) {
-  for (int i = 0; i < neighbors_.size(); ++i) {
-    RETURN_IF_FALSE(PushOneBox(box, neighbors_[i], trail));
-  }
-  return true;
-}
-
-bool NonOverlappingFixedSizeRectanglesPropagator::PushOneBox(
-    int box, int other, Trail* trail) {
-  const int state =
-      (Min(x_[box]) + dx_[box] <= Max(x_[other]) + dx_[other]) +
-      2 * (Min(x_[other]) + dx_[other] <= Max(x_[box]) + dx_[box]) +
-      4 * (Min(y_[box]) + dy_[box] <= Max(y_[other]) + dy_[other]) +
-      8 * (Min(y_[other]) + dy_[other] <= Max(y_[box]) + dy_[box]);
-  if (state == 0 || state == 1 || state == 2 || state == 4 || state == 8) {
-    // Fill reason.
-    integer_reason_.clear();
-    AddBoxReason(box);
-    AddBoxReason(other);
-
-    // This is an "hack" to be able to easily test for none or for one
-    // and only one of the conditions below.
-    switch (state) {
-      case 0: {
-        Fail(trail);
-        return false;
-      }
-      case 1: {  // We push other left (x increasing).
-        RETURN_IF_FALSE(SetMin(x_[other], Min(x_[box]) + dx_[box]));
-        RETURN_IF_FALSE(SetMax(x_[box], Max(x_[other]) - dx_[box]));
-        if (Max(x_[other]) - Min(x_[box]) < dx_[box]) {
-          Fail(trail);
-          return false;
-        }
-        break;
-      }
-      case 2: {  // We push other right (x decreasing).
-        RETURN_IF_FALSE(SetMin(x_[box], Min(x_[other]) + dx_[other]));
-        RETURN_IF_FALSE(SetMax(x_[other], Max(x_[box]) - dx_[box]));
-        if (Max(x_[box]) - Min(x_[other]) < dx_[other]) {
-          Fail(trail);
-          return false;
-        }
-        break;
-      }
-      case 4: {  // We push other up (y increasing).
-        RETURN_IF_FALSE(SetMin(y_[other], Min(y_[box]) + dy_[box]));
-        RETURN_IF_FALSE(SetMax(y_[box], Max(y_[other]) - dy_[box]));
-        if (Max(y_[other]) - Min(y_[box]) < dy_[box]) {
-          Fail(trail);
-          return false;
-        }
-        break;
-      }
-      case 8: {  // We push other down (y decreasing).
-        RETURN_IF_FALSE(SetMin(y_[box], Min(y_[other]) + dy_[other]));
-        RETURN_IF_FALSE(SetMax(y_[other], Max(y_[box]) - dy_[other]));
-        if (Max(y_[box]) - Min(y_[other]) < dy_[other]) {
-          Fail(trail);
-          return false;
-        }
-      }
-      default: { break; }
-    }
-  }
-  return true;
-}
-
 #undef RETURN_IF_FALSE
+
+template class NonOverlappingRectanglesPropagator<IntegerVariable>;
+template class NonOverlappingRectanglesPropagator<IntegerValue>;
 
 }  // namespace sat
 }  // namespace operations_research

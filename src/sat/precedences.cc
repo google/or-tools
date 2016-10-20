@@ -248,24 +248,31 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
     IntegerVariable tail_var;
     IntegerVariable head_var;
     IntegerVariable offset_var;
+
+    // Optimization: impacted_potential_arcs_ is only used by
+    // PropagateOptionalArcs() to detect when the literal l can be propagated to
+    // false. Because of how this function works, we only need to add one arc
+    // per tail_var in the code below.
+    bool add_to_impacted_potential_arcs;
   };
 
   std::vector<InternalArc> to_add;
   if (offset_var == kNoIntegerVariable) {
     // a + offset <= b and -b + offset <= -a
-    to_add.push_back({tail, head, kNoIntegerVariable});
-    to_add.push_back({NegationOf(head), NegationOf(tail), kNoIntegerVariable});
+    to_add.push_back({tail, head, kNoIntegerVariable, true});
+    to_add.push_back(
+        {NegationOf(head), NegationOf(tail), kNoIntegerVariable, true});
   } else {
     // tail (a) and offset_var (b) are symmetric, so we add:
     // - a + b + offset <= c
-    to_add.push_back({tail, head, offset_var});
-    to_add.push_back({offset_var, head, tail});
+    to_add.push_back({tail, head, offset_var, true});
+    to_add.push_back({offset_var, head, tail, true});
     // - a - c + offset <= -b
-    to_add.push_back({tail, NegationOf(offset_var), NegationOf(head)});
-    to_add.push_back({NegationOf(head), NegationOf(offset_var), tail});
+    to_add.push_back({tail, NegationOf(offset_var), NegationOf(head), false});
+    to_add.push_back({NegationOf(head), NegationOf(offset_var), tail, true});
     // - b - c + offset <= -a
-    to_add.push_back({offset_var, NegationOf(tail), NegationOf(head)});
-    to_add.push_back({NegationOf(head), NegationOf(tail), offset_var});
+    to_add.push_back({offset_var, NegationOf(tail), NegationOf(head), false});
+    to_add.push_back({NegationOf(head), NegationOf(tail), offset_var, false});
   }
   for (const InternalArc a : to_add) {
     // Since we add a new arc, we will need to consider its tail during the next
@@ -278,7 +285,9 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
     if (l == kNoLiteralIndex) {
       impacted_arcs_[a.tail_var].push_back(arc_index);
     } else {
-      impacted_potential_arcs_[a.tail_var].push_back(arc_index);
+      if (a.add_to_impacted_potential_arcs) {
+        impacted_potential_arcs_[a.tail_var].push_back(arc_index);
+      }
       potential_arcs_[l].push_back(arc_index);
     }
     arcs_.push_back({a.tail_var, a.head_var, offset, a.offset_var, l});
@@ -307,15 +316,12 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
     if (!IsInvalidOrTrue(OptionalLiteralOf(var), *trail)) continue;
 
     // Note that we can currently do the same computation up to 3 times:
-    // - if tail_var changed
-    // - if OtherLbVar(head_var) changed, we will process the "reverse" arc,
+    // - if tail_var changed.
+    // - if NegationOf(head_var) changed, we will process the "reverse" arc,
     //   but it will lead to the same computation and the same presence literal
     //   to be propagated.
     // - if offset_var changed.
-    //
-    // Note(user): I tried another option, but it was slower:
-    // - keep the unique and even (i.e direct arc) arc_index.
-    // - Only call PropagateArcIfNeeded() on them.
+    const IntegerValue tail_lb = integer_trail_->LowerBound(var);
     for (const int arc_index : impacted_potential_arcs_[var]) {
       const ArcInfo& arc = arcs_[arc_index];
       const Literal is_present(arc.presence_l);
@@ -330,21 +336,23 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
 
       // We want the other bound of head to test infeasibility of the head
       // IntegerVariable.
-      const IntegerValue tail_lb = integer_trail_->LowerBound(arc.tail_var);
+      DCHECK_EQ(var, arc.tail_var);
       const IntegerValue head_ub = integer_trail_->UpperBound(arc.head_var);
       if (CapAdd(tail_lb, ArcOffset(arc)) > head_ub) {
-        std::vector<Literal>* literal_reason;
-        std::vector<IntegerLiteral>* integer_reason;
-        integer_trail_->EnqueueLiteral(is_present.Negated(), &literal_reason,
-                                       &integer_reason);
-        integer_reason->push_back(
+        integer_reason_.clear();
+        integer_reason_.push_back(
             integer_trail_->LowerBoundAsLiteral(arc.tail_var));
-        integer_reason->push_back(
+        integer_reason_.push_back(
             integer_trail_->UpperBoundAsLiteral(arc.head_var));
         AppendLowerBoundReasonIfValid(arc.offset_var, *integer_trail_,
-                                      integer_reason);
-        AppendNegationIfValid(OptionalLiteralOf(arc.tail_var), literal_reason);
-        AppendNegationIfValid(OptionalLiteralOf(arc.head_var), literal_reason);
+                                      &integer_reason_);
+        literal_reason_.clear();
+        AppendNegationIfValid(OptionalLiteralOf(arc.tail_var),
+                              &literal_reason_);
+        AppendNegationIfValid(OptionalLiteralOf(arc.head_var),
+                              &literal_reason_);
+        integer_trail_->EnqueueLiteral(is_present.Negated(), literal_reason_,
+                                       integer_reason_);
       }
     }
   }
