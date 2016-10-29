@@ -496,10 +496,10 @@ class UpperBoundedLinearConstraint {
 
 // Class responsible for managing a set of pseudo-Boolean constraints and their
 // propagation.
-class PbConstraints : public Propagator {
+class PbConstraints : public SatPropagator {
  public:
   PbConstraints()
-      : Propagator("PbConstraints"),
+      : SatPropagator("PbConstraints"),
         conflicting_constraint_index_(-1),
         num_learned_constraint_before_cleanup_(0),
         constraint_activity_increment_(1.0),

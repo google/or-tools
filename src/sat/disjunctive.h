@@ -104,7 +104,7 @@ class DisjunctiveConstraint : public PropagatorInterface {
   // Creates a disjunctive constraint (or no overlap constraint) between the
   // given IntervalVariable.
   DisjunctiveConstraint(
-      const std::vector<IntervalVariable>& non_overlapping_intervals,
+      const std::vector<IntervalVariable>& non_overlapping_intervals, Trail* trail,
       IntegerTrail* integer_trail, IntervalsRepository* task_repository,
       PrecedencesPropagator* precedences);
 
@@ -113,7 +113,7 @@ class DisjunctiveConstraint : public PropagatorInterface {
   }
 
   // The algorithm is quadratic in the number of tasks.
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
 
   // Registers this constraint with the GenericLiteralWatcher.
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -180,15 +180,15 @@ class DisjunctiveConstraint : public PropagatorInterface {
   // propagation, it is unclear if tree-based structure will be a lot better
   // here (especially because on the kind of problem we can solve n is
   // relatively small, like 30).
-  bool OverloadCheckingPass(IntegerTrail* integer_trail, Trail* trail);
-  bool DetectablePrecedencePass(IntegerTrail* integer_trail, Trail* trail);
-  bool NotLastPass(IntegerTrail* integer_trail, Trail* trail);
-  bool EdgeFindingPass(IntegerTrail* integer_trail, Trail* trail);
+  bool OverloadCheckingPass();
+  bool DetectablePrecedencePass();
+  bool NotLastPass();
+  bool EdgeFindingPass();
 
   // Exploits the precedences relations of the form "this set of disjoint
   // IntervalVariables must be performed before a given IntegerVariable". The
   // relations are computed with PrecedencesPropagator::ComputePrecedences().
-  bool PrecedencePass(IntegerTrail* integer_trail, Trail* trail);
+  bool PrecedencePass();
 
   // Sorts the corresponding vectors of tasks. See below.
   void UpdateTaskByIncreasingMinStart();
@@ -239,6 +239,7 @@ class DisjunctiveConstraint : public PropagatorInterface {
   std::vector<IntegerLiteral> integer_reason_;
 
   const std::vector<IntervalVariable> non_overlapping_intervals_;
+  Trail* trail_;
   IntegerTrail* integer_trail_;
   IntervalsRepository* intervals_;
   PrecedencesPropagator* precedences_;

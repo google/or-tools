@@ -44,13 +44,14 @@ class IntegerSumLE : public PropagatorInterface {
   IntegerSumLE(LiteralIndex reified_literal,
                const std::vector<IntegerVariable>& vars,
                const std::vector<IntegerValue>& coefficients,
-               IntegerValue upper_bound, IntegerTrail* integer_trail);
+               IntegerValue upper_bound, Trail* trail,
+               IntegerTrail* integer_trail);
 
   // We propagate:
   // - If the sum of the individual lower-bound is > upper_bound, we fail.
   // - For all i, upper-bound of i
   //      <= upper_bound - Sum {individual lower-bound excluding i).
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
@@ -64,6 +65,7 @@ class IntegerSumLE : public PropagatorInterface {
   const IntegerValue upper_bound_;
   std::vector<IntegerVariable> vars_;
   std::vector<IntegerValue> coeffs_;
+  Trail* trail_;
   IntegerTrail* integer_trail_;
 
   std::vector<Literal> literal_reason_;
@@ -101,7 +103,7 @@ class MinPropagator : public PropagatorInterface {
   MinPropagator(const std::vector<IntegerVariable>& vars, IntegerVariable min_var,
                 IntegerTrail* integer_trail);
 
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
@@ -109,7 +111,6 @@ class MinPropagator : public PropagatorInterface {
   const IntegerVariable min_var_;
   IntegerTrail* integer_trail_;
 
-  std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> integer_reason_;
 
   DISALLOW_COPY_AND_ASSIGN(MinPropagator);
@@ -131,16 +132,17 @@ class MinPropagator : public PropagatorInterface {
 class IsOneOfPropagator : public PropagatorInterface {
  public:
   IsOneOfPropagator(IntegerVariable var, const std::vector<Literal>& selectors,
-                    const std::vector<IntegerValue>& values,
+                    const std::vector<IntegerValue>& values, Trail* trail,
                     IntegerTrail* integer_trail);
 
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   const IntegerVariable var_;
   const std::vector<Literal> selectors_;
   const std::vector<IntegerValue> values_;
+  Trail* trail_;
   IntegerTrail* integer_trail_;
 
   std::vector<Literal> literal_reason_;
@@ -159,7 +161,7 @@ class ProductPropagator : public PropagatorInterface {
   ProductPropagator(IntegerVariable a, IntegerVariable b, IntegerVariable p,
                     IntegerTrail* integer_trail);
 
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
@@ -183,7 +185,7 @@ class DivisionPropagator : public PropagatorInterface {
   DivisionPropagator(IntegerVariable a, IntegerVariable b, IntegerVariable c,
                      IntegerTrail* integer_trail);
 
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
@@ -224,7 +226,8 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     IntegerSumLE* constraint = new IntegerSumLE(
         kNoLiteralIndex, vars,
         std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
-        IntegerValue(upper_bound), model->GetOrCreate<IntegerTrail>());
+        IntegerValue(upper_bound), model->GetOrCreate<Trail>(),
+        model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -279,7 +282,8 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
     IntegerSumLE* constraint = new IntegerSumLE(
         is_le.Index(), vars,
         std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
-        IntegerValue(upper_bound), model->GetOrCreate<IntegerTrail>());
+        IntegerValue(upper_bound), model->GetOrCreate<Trail>(),
+        model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -403,8 +407,8 @@ inline std::function<void(Model*)> IsEqualToMinOf(
       model->Add(LowerOrEqual(min_var, var));
     }
 
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    MinPropagator* constraint = new MinPropagator(vars, min_var, integer_trail);
+    MinPropagator* constraint =
+        new MinPropagator(vars, min_var, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -421,9 +425,8 @@ inline std::function<void(Model*)> IsEqualToMaxOf(
       model->Add(GreaterOrEqual(max_var, var));
     }
 
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    MinPropagator* constraint =
-        new MinPropagator(negated_vars, NegationOf(max_var), integer_trail);
+    MinPropagator* constraint = new MinPropagator(
+        negated_vars, NegationOf(max_var), model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -462,9 +465,9 @@ inline std::function<void(Model*)> IsOneOf(IntegerVariable var,
                                            const std::vector<IntegerValue>& values) {
   return [=](Model* model) {
     // TODO(user): Add the exactly one constaint here?
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    IsOneOfPropagator* constraint =
-        new IsOneOfPropagator(var, selectors, values, integer_trail);
+    IsOneOfPropagator* constraint = new IsOneOfPropagator(
+        var, selectors, values, model->GetOrCreate<Trail>(),
+        model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

@@ -17,7 +17,7 @@ namespace operations_research {
 namespace sat {
 
 SymmetryPropagator::SymmetryPropagator()
-    : Propagator("SymmetryPropagator"),
+    : SatPropagator("SymmetryPropagator"),
       stats_("SymmetryPropagator"),
       num_propagations_(0),
       num_conflicts_(0) {}

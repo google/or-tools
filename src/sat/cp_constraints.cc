@@ -18,14 +18,14 @@
 namespace operations_research {
 namespace sat {
 
-bool BooleanXorPropagator::Propagate(Trail* trail) {
+bool BooleanXorPropagator::Propagate() {
   bool sum = false;
   int unassigned_index = -1;
   for (int i = 0; i < literals_.size(); ++i) {
     const Literal l = literals_[i];
-    if (trail->Assignment().LiteralIsFalse(l)) {
+    if (trail_->Assignment().LiteralIsFalse(l)) {
       sum ^= false;
-    } else if (trail->Assignment().LiteralIsTrue(l)) {
+    } else if (trail_->Assignment().LiteralIsTrue(l)) {
       sum ^= true;
     } else {
       // If we have more than one unassigned literal, we can't deduce anything.
@@ -41,7 +41,7 @@ bool BooleanXorPropagator::Propagate(Trail* trail) {
       if (i == unassigned_index) continue;
       const Literal l = literals_[i];
       literal_reason_.push_back(
-          trail->Assignment().LiteralIsFalse(l) ? l : l.Negated());
+          trail_->Assignment().LiteralIsFalse(l) ? l : l.Negated());
     }
     const Literal u = literals_[unassigned_index];
     integer_trail_->EnqueueLiteral(sum == value_ ? u.Negated() : u,
@@ -53,12 +53,12 @@ bool BooleanXorPropagator::Propagate(Trail* trail) {
   if (sum == value_) return true;
 
   // Conflict.
-  std::vector<Literal>* conflict = trail->MutableConflict();
+  std::vector<Literal>* conflict = trail_->MutableConflict();
   conflict->clear();
   for (int i = 0; i < literals_.size(); ++i) {
     const Literal l = literals_[i];
-    conflict->push_back(trail->Assignment().LiteralIsFalse(l) ? l
-                                                              : l.Negated());
+    conflict->push_back(trail_->Assignment().LiteralIsFalse(l) ? l
+                                                               : l.Negated());
   }
   return false;
 }
@@ -79,7 +79,7 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
   }
 }
 
-bool AllDifferentBoundsPropagator::Propagate(Trail* trail) {
+bool AllDifferentBoundsPropagator::Propagate() {
   if (vars_.empty()) return true;
 
   // Unfortunately, we may not reach a fixed-point in one pass.
@@ -87,12 +87,12 @@ bool AllDifferentBoundsPropagator::Propagate(Trail* trail) {
   while (true) {
     const int64 old_timestamp = integer_trail_->num_enqueues();
 
-    if (!PropagateLowerBounds(trail)) return false;
+    if (!PropagateLowerBounds()) return false;
 
     // Note that it is not required to swap back vars_ and negated_vars_.
     // TODO(user): investigate the impact.
     std::swap(vars_, negated_vars_);
-    const bool result = PropagateLowerBounds(trail);
+    const bool result = PropagateLowerBounds();
     std::swap(vars_, negated_vars_);
     if (!result) return false;
 
@@ -117,7 +117,7 @@ void AllDifferentBoundsPropagator::FillHallReason(IntegerValue hall_lb,
   }
 }
 
-bool AllDifferentBoundsPropagator::PropagateLowerBounds(Trail* trail) {
+bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   ++num_calls_;
   critical_intervals_.clear();
   hall_starts_.clear();
@@ -239,8 +239,8 @@ std::function<void(Model*)> AllDifferent(
 
 // ----- CpPropagator -----
 
-CpPropagator::CpPropagator(Trail* trail, IntegerTrail* integer_trail)
-    : trail_(trail), integer_trail_(integer_trail) {}
+CpPropagator::CpPropagator(IntegerTrail* integer_trail)
+    : integer_trail_(integer_trail) {}
 
 CpPropagator::~CpPropagator() {}
 
@@ -277,8 +277,7 @@ bool CpPropagator::SetMax(IntegerVariable v, IntegerValue val,
 bool CpPropagator::SetMin(IntegerValue v, IntegerValue val,
                           const std::vector<IntegerLiteral>& reason) {
   if (val > v) {
-    FillConflictFromReason(reason);
-    return false;
+    return integer_trail_->ReportConflict(reason);
   }
   return true;
 }
@@ -286,17 +285,9 @@ bool CpPropagator::SetMin(IntegerValue v, IntegerValue val,
 bool CpPropagator::SetMax(IntegerValue v, IntegerValue val,
                           const std::vector<IntegerLiteral>& reason) {
   if (val < v) {
-    FillConflictFromReason(reason);
-    return false;
+    return integer_trail_->ReportConflict(reason);
   }
   return true;
-}
-
-void CpPropagator::FillConflictFromReason(
-    const std::vector<IntegerLiteral>& reason) {
-  std::vector<Literal>* conflict = trail_->MutableConflict();
-  conflict->clear();
-  integer_trail_->MergeReasonInto(reason, conflict);
 }
 
 void CpPropagator::AddLowerBoundReason(
@@ -324,9 +315,8 @@ template <class S>
 NonOverlappingRectanglesPropagator<S>::NonOverlappingRectanglesPropagator(
     const std::vector<IntegerVariable>& x,
     const std::vector<IntegerVariable>& y, const std::vector<S>& dx,
-    const std::vector<S>& dy, bool strict, Trail* trail,
-    IntegerTrail* integer_trail)
-    : CpPropagator(trail, integer_trail),
+    const std::vector<S>& dy, bool strict, IntegerTrail* integer_trail)
+    : CpPropagator(integer_trail),
       x_(x),
       y_(y),
       dx_(dx),
@@ -337,7 +327,7 @@ template <class S>
 NonOverlappingRectanglesPropagator<S>::~NonOverlappingRectanglesPropagator() {}
 
 template <class S>
-bool NonOverlappingRectanglesPropagator<S>::Propagate(Trail* trail) {
+bool NonOverlappingRectanglesPropagator<S>::Propagate() {
   for (int box = 0; box < x_.size(); ++box) {
     FillNeighbors(box);
     RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box));
@@ -475,8 +465,7 @@ bool NonOverlappingRectanglesPropagator<S>::FailWhenEnergyIsTooLarge(int box) {
         }
         AddBoxReason(other);
       }
-      FillConflictFromReason(integer_reason_);
-      return false;
+      return integer_trail_->ReportConflict(integer_reason_);
     }
   }
   return true;
@@ -497,10 +486,13 @@ bool NonOverlappingRectanglesPropagator<S>::PushOneBox(int box, int other) {
 
     // This is an "hack" to be able to easily test for none or for one
     // and only one of the conditions below.
+    //
+    // TODO(user, lperron): Abstract what happen in each case in a function, it
+    // is the same code with other and box swapped or with x and y swapped. Like
+    // this, it is too easy to make a typo and harder to test all the cases.
     switch (state) {
       case 0: {
-        FillConflictFromReason(integer_reason_);
-        return false;
+        return integer_trail_->ReportConflict(integer_reason_);
       }
       case 1: {  // We push other left (x increasing).
         RETURN_IF_FALSE(
@@ -515,7 +507,7 @@ bool NonOverlappingRectanglesPropagator<S>::PushOneBox(int box, int other) {
         RETURN_IF_FALSE(
             SetMin(x_[box], Min(x_[other]) + Min(dx_[other]), integer_reason_));
         RETURN_IF_FALSE(
-            SetMax(x_[other], Max(x_[box]) - Min(dx_[box]), integer_reason_));
+            SetMax(x_[other], Max(x_[box]) - Min(dx_[other]), integer_reason_));
         RETURN_IF_FALSE(
             SetMax(dx_[other], Max(x_[box]) - Min(x_[other]), integer_reason_));
         break;

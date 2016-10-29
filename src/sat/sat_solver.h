@@ -136,8 +136,8 @@ class SatSolver {
 
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they where added.
-  void AddPropagator(std::unique_ptr<Propagator> propagator);
-  void AddLastPropagator(std::unique_ptr<Propagator> propagator);
+  void AddPropagator(std::unique_ptr<SatPropagator> propagator);
+  void AddLastPropagator(std::unique_ptr<SatPropagator> propagator);
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // set to true. Currently this take precedence over the phase saving heuristic
@@ -668,17 +668,17 @@ class SatSolver {
   hash_map<SatClause*, ClauseInfo> clauses_info_;
 
   // Internal propagators. We keep them here because we need more than the
-  // Propagator interface for them.
+  // SatPropagator interface for them.
   LiteralWatchers clauses_propagator_;
   BinaryImplicationGraph binary_implication_graph_;
   PbConstraints pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().
-  std::vector<Propagator*> propagators_;
+  std::vector<SatPropagator*> propagators_;
 
   // Ordered list of propagators added with AddPropagator().
-  std::vector<std::unique_ptr<Propagator>> external_propagators_;
-  std::unique_ptr<Propagator> last_propagator_;
+  std::vector<std::unique_ptr<SatPropagator>> external_propagators_;
+  std::unique_ptr<SatPropagator> last_propagator_;
 
   // Keep track of all binary clauses so they can be exported.
   bool track_binary_clauses_;

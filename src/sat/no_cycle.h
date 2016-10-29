@@ -28,10 +28,10 @@ namespace sat {
 // Each arc will be associated to a literal and this propagator will make sure
 // that there is no cycle in the graph with only the arcs whose associated
 // literal is set to true.
-class NoCyclePropagator : public Propagator {
+class NoCyclePropagator : public SatPropagator {
  public:
   NoCyclePropagator()
-      : Propagator("NoCyclePropagator"),
+      : SatPropagator("NoCyclePropagator"),
         num_arcs_(0),
         problem_is_unsat_(false),
         initialization_is_done_(false),
@@ -79,7 +79,7 @@ class NoCyclePropagator : public Propagator {
   void AddPotentialArc(int tail, int head, Literal literal);
 
   // Getters for the current graph. This is only in sync with the trail iff
-  // Propagator::PropagationIsDone() is true.
+  // SatPropagator::PropagationIsDone() is true.
   //
   // Note that these graphs will NOT contain all the arcs but will correctly
   // encode the reachability of every node. More specifically, when an arc (tail

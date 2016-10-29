@@ -396,7 +396,7 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   }
 }
 
-void SatSolver::AddPropagator(std::unique_ptr<Propagator> propagator) {
+void SatSolver::AddPropagator(std::unique_ptr<SatPropagator> propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   problem_is_pure_sat_ = false;
   trail_->RegisterPropagator(propagator.get());
@@ -404,7 +404,7 @@ void SatSolver::AddPropagator(std::unique_ptr<Propagator> propagator) {
   InitializePropagators();
 }
 
-void SatSolver::AddLastPropagator(std::unique_ptr<Propagator> propagator) {
+void SatSolver::AddLastPropagator(std::unique_ptr<SatPropagator> propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   CHECK(last_propagator_ == nullptr);
   problem_is_pure_sat_ = false;
@@ -853,7 +853,7 @@ void SatSolver::Backtrack(int target_level) {
   DCHECK_GE(target_level, 0);
   DCHECK_LE(target_level, CurrentDecisionLevel());
 
-  // Per the Propagator interface, this is needed before calling Untrail.
+  // Per the SatPropagator interface, this is needed before calling Untrail.
   trail_->SetDecisionLevel(target_level);
 
   int target_trail_index = 0;
@@ -1495,7 +1495,7 @@ bool SatSolver::Propagate() {
     // and that its Propagate() functions will not abort on the first
     // propagation to be slightly more efficient.
     const int old_index = trail_->Index();
-    for (Propagator* propagator : propagators_) {
+    for (SatPropagator* propagator : propagators_) {
       DCHECK(propagator->PropagatePreconditionsAreSatisfied(*trail_));
       if (!propagator->Propagate(trail_)) return false;
       if (trail_->Index() > old_index) break;
@@ -1533,7 +1533,7 @@ void SatSolver::InitializePropagators() {
 }
 
 bool SatSolver::PropagationIsDone() const {
-  for (Propagator* propagator : propagators_) {
+  for (SatPropagator* propagator : propagators_) {
     if (!propagator->PropagationIsDone(*trail_)) return false;
   }
   return true;
@@ -1807,7 +1807,7 @@ void SatSolver::Untrail(int target_trail_index) {
   DCHECK_LT(target_trail_index, trail_->Index());
 
   // Untrail the propagators.
-  for (Propagator* propagator : propagators_) {
+  for (SatPropagator* propagator : propagators_) {
     propagator->Untrail(*trail_, target_trail_index);
   }
 

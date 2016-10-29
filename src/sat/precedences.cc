@@ -50,9 +50,11 @@ void AppendLowerBoundReasonIfValid(IntegerVariable var,
 
 }  // namespace
 
-bool PrecedencesPropagator::Propagate(Trail* trail) {
-  while (propagation_trail_index_ < trail->Index()) {
-    const Literal literal = (*trail)[propagation_trail_index_++];
+bool PrecedencesPropagator::Propagate(Trail* trail) { return Propagate(); }
+
+bool PrecedencesPropagator::Propagate() {
+  while (propagation_trail_index_ < trail_->Index()) {
+    const Literal literal = (*trail_)[propagation_trail_index_++];
 
     if (literal.Index() < potential_nodes_.size()) {
       // We need to mark these nodes since they are now "present".
@@ -76,22 +78,22 @@ bool PrecedencesPropagator::Propagate(Trail* trail) {
     // modified_vars_.
     for (const int arc_index : potential_arcs_[literal.Index()]) {
       const ArcInfo& arc = arcs_[arc_index];
-      if (!ArcShouldPropagate(arc, *trail)) continue;
+      if (!ArcShouldPropagate(arc, *trail_)) continue;
       const IntegerValue new_head_lb =
           CapAdd(integer_trail_->LowerBound(arc.tail_var), ArcOffset(arc));
       if (new_head_lb > integer_trail_->LowerBound(arc.head_var)) {
-        if (!EnqueueAndCheck(arc, new_head_lb, trail)) return false;
+        if (!EnqueueAndCheck(arc, new_head_lb, trail_)) return false;
       }
     }
   }
 
   // Do the actual propagation of the IntegerVariable bounds.
   InitializeBFQueueWithModifiedNodes();
-  if (!BellmanFordTarjan(trail)) return false;
-  DCHECK(NoPropagationLeft(*trail));
+  if (!BellmanFordTarjan(trail_)) return false;
+  DCHECK(NoPropagationLeft(*trail_));
 
   // Propagate the presence literal of the arcs that can't be added.
-  PropagateOptionalArcs(trail);
+  PropagateOptionalArcs(trail_);
 
   // Clean-up modified_vars_ to do as little as possible on the next call.
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());

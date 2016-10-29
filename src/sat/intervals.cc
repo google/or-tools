@@ -46,6 +46,30 @@ IntervalVariable IntervalsRepository::CreateInterval(IntegerValue min_size,
   return t;
 }
 
+IntervalVariable IntervalsRepository::CreateIntervalFromStartAndSizeVars(
+    IntegerVariable start, IntegerVariable size) {
+  const IntervalVariable t(start_vars_.size());
+  start_vars_.push_back(start);
+  size_vars_.push_back(size);
+  fixed_sizes_.push_back(IntegerValue(0));
+  is_present_.push_back(kNoLiteralIndex);
+
+  // Create the "end" variable.
+  // TODO(user): deal with overflow.
+  const IntegerValue end_lb =
+      integer_trail_->LowerBound(start) + integer_trail_->LowerBound(size);
+  const IntegerValue end_ub =
+      integer_trail_->UpperBound(start) + integer_trail_->UpperBound(size);
+  end_vars_.push_back(integer_trail_->AddIntegerVariable(end_lb, end_ub));
+
+  // Link the 3 integer variables together.
+  precedences_->AddPrecedenceWithVariableOffset(StartVar(t), EndVar(t),
+                                                SizeVar(t));
+  precedences_->AddPrecedenceWithVariableOffset(EndVar(t), StartVar(t),
+                                                NegationOf(SizeVar(t)));
+  return t;
+}
+
 IntervalVariable IntervalsRepository::CreateIntervalWithFixedSize(
     IntegerValue size) {
   const IntervalVariable t = CreateNewInterval();

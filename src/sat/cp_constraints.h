@@ -31,16 +31,20 @@ namespace sat {
 class BooleanXorPropagator : public PropagatorInterface {
  public:
   BooleanXorPropagator(const std::vector<Literal>& literals, bool value,
-                       IntegerTrail* integer_trail)
-      : literals_(literals), value_(value), integer_trail_(integer_trail) {}
+                       Trail* trail, IntegerTrail* integer_trail)
+      : literals_(literals),
+        value_(value),
+        trail_(trail),
+        integer_trail_(integer_trail) {}
 
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
   const std::vector<Literal> literals_;
   const bool value_;
   std::vector<Literal> literal_reason_;
+  Trail* trail_;
   IntegerTrail* integer_trail_;
 
   DISALLOW_COPY_AND_ASSIGN(BooleanXorPropagator);
@@ -67,7 +71,7 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   AllDifferentBoundsPropagator(const std::vector<IntegerVariable>& vars,
                                IntegerTrail* integer_trail);
 
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
@@ -75,7 +79,7 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   void FillHallReason(IntegerValue hall_lb, IntegerValue hall_ub);
 
   // Do half the job of Propagate().
-  bool PropagateLowerBounds(Trail* trail);
+  bool PropagateLowerBounds();
 
   std::vector<IntegerVariable> vars_;
   std::vector<IntegerVariable> negated_vars_;
@@ -109,7 +113,7 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
 // Base class to help writing CP inspired constraints.
 class CpPropagator : public PropagatorInterface {
  public:
-  explicit CpPropagator(Trail* trail, IntegerTrail* integer_trail);
+  explicit CpPropagator(IntegerTrail* integer_trail);
   ~CpPropagator() override;
 
   // ----- Shortcuts to integer variables -----
@@ -135,9 +139,6 @@ class CpPropagator : public PropagatorInterface {
 
   // ----- Conflict management -----
 
-  // This method must be called before returning false during propagation.
-  void FillConflictFromReason(const std::vector<IntegerLiteral>& reason);
-
   // Manage the list of integer bounds used to build the reason of propagation.
   void AddLowerBoundReason(IntegerVariable v,
                            std::vector<IntegerLiteral>* reason) const;
@@ -154,7 +155,6 @@ class CpPropagator : public PropagatorInterface {
                        std::vector<IntegerLiteral>* reason) const {}
 
  protected:
-  Trail* trail_;
   IntegerTrail* integer_trail_;
 
  private:
@@ -172,11 +172,11 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
                                      const std::vector<IntegerVariable>& y,
                                      const std::vector<S>& dx,
                                      const std::vector<S>& dy, bool strict,
-                                     Trail* trail, IntegerTrail* integer_trail);
+                                     IntegerTrail* integer_trail);
   ~NonOverlappingRectanglesPropagator() override;
 
   // TODO(user): Look at intervals to to store x and dx, y and dy.
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
@@ -218,9 +218,10 @@ inline std::vector<IntegerValue> ToIntegerValueVector(
 inline std::function<void(Model*)> LiteralXorIs(
     const std::vector<Literal>& literals, bool value) {
   return [=](Model* model) {
+    Trail* trail = model->GetOrCreate<Trail>();
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     BooleanXorPropagator* constraint =
-        new BooleanXorPropagator(literals, value, integer_trail);
+        new BooleanXorPropagator(literals, value, trail, integer_trail);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -241,9 +242,8 @@ std::function<void(Model*)> AllDifferent(
 inline std::function<void(Model*)> AllDifferentOnBounds(
     const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    AllDifferentBoundsPropagator* constraint =
-        new AllDifferentBoundsPropagator(vars, integer_trail);
+    AllDifferentBoundsPropagator* constraint = new AllDifferentBoundsPropagator(
+        vars, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -258,11 +258,9 @@ inline std::function<void(Model*)> NonOverlappingRectangles(
     const std::vector<IntegerVariable>& dx,
     const std::vector<IntegerVariable>& dy) {
   return [=](Model* model) {
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     NonOverlappingRectanglesPropagator<IntegerVariable>* constraint =
         new NonOverlappingRectanglesPropagator<IntegerVariable>(
-            x, y, dx, dy, false, trail, integer_trail);
+            x, y, dx, dy, false, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -276,12 +274,10 @@ inline std::function<void(Model*)> NonOverlappingFixedSizeRectangles(
     const std::vector<IntegerVariable>& y, const std::vector<int64>& dx,
     const std::vector<int64>& dy) {
   return [=](Model* model) {
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     NonOverlappingRectanglesPropagator<IntegerValue>* constraint =
         new NonOverlappingRectanglesPropagator<IntegerValue>(
             x, y, ToIntegerValueVector(dx), ToIntegerValueVector(dy), false,
-            trail, integer_trail);
+            model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -296,11 +292,9 @@ inline std::function<void(Model*)> StrictNonOverlappingRectangles(
     const std::vector<IntegerVariable>& dx,
     const std::vector<IntegerVariable>& dy) {
   return [=](Model* model) {
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     NonOverlappingRectanglesPropagator<IntegerVariable>* constraint =
         new NonOverlappingRectanglesPropagator<IntegerVariable>(
-            x, y, dx, dy, true, trail, integer_trail);
+            x, y, dx, dy, true, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -314,12 +308,10 @@ inline std::function<void(Model*)> StrictNonOverlappingFixedSizeRectangles(
     const std::vector<IntegerVariable>& y, const std::vector<int64>& dx,
     const std::vector<int64>& dy) {
   return [=](Model* model) {
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     NonOverlappingRectanglesPropagator<IntegerValue>* constraint =
         new NonOverlappingRectanglesPropagator<IntegerValue>(
             x, y, ToIntegerValueVector(dx), ToIntegerValueVector(dy), true,
-            trail, integer_trail);
+            model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

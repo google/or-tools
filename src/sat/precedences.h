@@ -37,11 +37,11 @@ namespace sat {
 //
 // This is also known as an "integer difference logic theory" in the SMT world.
 // Another word is "separation logic".
-class PrecedencesPropagator : public Propagator {
+class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
  public:
   PrecedencesPropagator(Trail* trail, IntegerTrail* integer_trail,
                         GenericLiteralWatcher* watcher)
-      : Propagator("PrecedencesPropagator"),
+      : SatPropagator("PrecedencesPropagator"),
         trail_(trail),
         integer_trail_(integer_trail),
         watcher_(watcher),
@@ -61,6 +61,7 @@ class PrecedencesPropagator : public Propagator {
     return precedences;
   }
 
+  bool Propagate() final;
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
 

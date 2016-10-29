@@ -310,10 +310,10 @@ class IntegerEncoder {
 // This class maintains a set of integer variables with their current bounds.
 // Bounds can be propagated from an external "source" and this class helps
 // to maintain the reason for each propagation.
-class IntegerTrail : public Propagator {
+class IntegerTrail : public SatPropagator {
  public:
   IntegerTrail(IntegerEncoder* encoder, Trail* trail)
-      : Propagator("IntegerTrail"),
+      : SatPropagator("IntegerTrail"),
         num_enqueues_(0),
         encoder_(encoder),
         trail_(trail) {}
@@ -328,7 +328,7 @@ class IntegerTrail : public Propagator {
     return integer_trail;
   }
 
-  // Propagator interface. These functions make sure the current bounds
+  // SatPropagator interface. These functions make sure the current bounds
   // information is in sync with the current solver literal trail. Any
   // class/propagator using this class must make sure it is synced to the
   // correct state before calling any of its functions.
@@ -432,6 +432,22 @@ class IntegerTrail : public Propagator {
     watchers_.push_back(p);
   }
 
+  // Helper functions to report a conflict. Always return false so a client can
+  // simply do: return integer_trail_->ReportConflict(...);
+  bool ReportConflict(const std::vector<Literal>& literal_reason,
+                      const std::vector<IntegerLiteral>& integer_reason) {
+    std::vector<Literal>* conflict = trail_->MutableConflict();
+    *conflict = literal_reason;
+    MergeReasonInto(integer_reason, conflict);
+    return false;
+  }
+  bool ReportConflict(const std::vector<IntegerLiteral>& integer_reason) {
+    std::vector<Literal>* conflict = trail_->MutableConflict();
+    conflict->clear();
+    MergeReasonInto(integer_reason, conflict);
+    return false;
+  }
+
  private:
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;
@@ -533,9 +549,22 @@ class IntegerTrail : public Propagator {
   DISALLOW_COPY_AND_ASSIGN(IntegerTrail);
 };
 
+// Base class for CP like propagators.
+//
+// TODO(user): Think about an incremental Propagate() interface.
+//
+// TODO(user): Add shortcuts for the most used functions? like
+// Min(IntegerVariable) and Max(IntegerVariable)?
+class PropagatorInterface {
+ public:
+  PropagatorInterface() {}
+  virtual ~PropagatorInterface() {}
+  virtual bool Propagate() = 0;
+};
+
 // This class allows registering Propagator that will be called if a
 // watched Literal or LbVar changes.
-class GenericLiteralWatcher : public Propagator {
+class GenericLiteralWatcher : public SatPropagator {
  public:
   explicit GenericLiteralWatcher(IntegerTrail* trail);
   ~GenericLiteralWatcher() final {}

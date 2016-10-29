@@ -58,7 +58,7 @@ bool CleanUpPredicate(const Watcher& watcher) {
 // ----- LiteralWatchers -----
 
 LiteralWatchers::LiteralWatchers()
-    : Propagator("LiteralWatchers"),
+    : SatPropagator("LiteralWatchers"),
       is_clean_(true),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),

@@ -54,6 +54,8 @@ class IntervalsRepository {
   IntervalVariable CreateIntervalWithFixedSize(IntegerValue size);
   IntervalVariable CreateOptionalIntervalWithFixedSize(IntegerValue size,
                                                        Literal is_present);
+  IntervalVariable CreateIntervalFromStartAndSizeVars(IntegerVariable start,
+                                                      IntegerVariable size);
 
   // Returns whether or not a interval is optional and the associated literal.
   bool IsOptional(IntervalVariable i) const {
@@ -142,6 +144,14 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()
         ->CreateOptionalIntervalWithFixedSize(IntegerValue(size), is_present);
+  };
+}
+
+inline std::function<IntervalVariable(Model*)> NewIntervalFromStartAndSizeVars(
+    IntegerVariable start, IntegerVariable size) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntervalsRepository>()
+        ->CreateIntervalFromStartAndSizeVars(start, size);
   };
 }
 

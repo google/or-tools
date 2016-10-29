@@ -476,10 +476,7 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
 
       if (i == encoding.size()) {
         // Conflict: no possible values left.
-        std::vector<Literal>* conflict = trail_->MutableConflict();
-        *conflict = literals_reason;
-        MergeReasonInto(bounds_reason, conflict);
-        return false;
+        return ReportConflict(literals_reason, bounds_reason);
       } else {
         // We have a new min.
         watched_min_.EraseOrDie(encoding[min_index].literal.NegatedIndex());
@@ -772,7 +769,7 @@ void IntegerTrail::EnqueueLiteral(
 }
 
 GenericLiteralWatcher::GenericLiteralWatcher(IntegerTrail* integer_trail)
-    : Propagator("GenericLiteralWatcher"), integer_trail_(integer_trail) {
+    : SatPropagator("GenericLiteralWatcher"), integer_trail_(integer_trail) {
   integer_trail_->RegisterWatcher(&modified_vars_);
 }
 
@@ -807,7 +804,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
     const int id = queue_.front();
     queue_.pop_front();
 
-    if (!watchers_[id]->Propagate(trail)) {
+    if (!watchers_[id]->Propagate()) {
       in_queue_[id] = false;
       return false;
     }

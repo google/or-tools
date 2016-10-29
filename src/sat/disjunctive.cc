@@ -21,14 +21,12 @@ namespace sat {
 
 std::function<void(Model*)> Disjunctive(const std::vector<IntervalVariable>& vars) {
   return [=](Model* model) {
-    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
     DisjunctiveConstraint* disjunctive = new DisjunctiveConstraint(
-        vars, model->GetOrCreate<IntegerTrail>(), intervals, precedences);
+        vars, model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>(),
+        model->GetOrCreate<IntervalsRepository>(),
+        model->GetOrCreate<PrecedencesPropagator>());
     disjunctive->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    disjunctive->SetParameters(sat_solver->parameters());
+    disjunctive->SetParameters(model->GetOrCreate<SatSolver>()->parameters());
     model->TakeOwnership(disjunctive);
   };
 }
@@ -54,7 +52,8 @@ std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
       }
     }
     DisjunctiveConstraint* disjunctive = new DisjunctiveConstraint(
-        vars, model->GetOrCreate<IntegerTrail>(), intervals, precedences);
+        vars, model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>(),
+        intervals, precedences);
     disjunctive->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     disjunctive->SetParameters(sat_solver->parameters());
     model->TakeOwnership(disjunctive);
@@ -127,10 +126,11 @@ IntegerValue TaskSet::ComputeMinEnd(int task_to_ignore,
 }
 
 DisjunctiveConstraint::DisjunctiveConstraint(
-    const std::vector<IntervalVariable>& non_overlapping_intervals,
+    const std::vector<IntervalVariable>& non_overlapping_intervals, Trail* trail,
     IntegerTrail* integer_trail, IntervalsRepository* intervals,
     PrecedencesPropagator* precedences)
     : non_overlapping_intervals_(non_overlapping_intervals),
+      trail_(trail),
       integer_trail_(integer_trail),
       intervals_(intervals),
       precedences_(precedences),
@@ -144,7 +144,7 @@ void DisjunctiveConstraint::SwitchToMirrorProblem() {
   std::swap(before_, after_);
 }
 
-bool DisjunctiveConstraint::Propagate(Trail* trail) {
+bool DisjunctiveConstraint::Propagate() {
   SCOPED_TIME_STAT(&stats_);
 
   start_vars_.clear();
@@ -158,9 +158,9 @@ bool DisjunctiveConstraint::Propagate(Trail* trail) {
   for (const IntervalVariable i : non_overlapping_intervals_) {
     if (intervals_->IsOptional(i)) {
       const Literal l = intervals_->IsPresentLiteral(i);
-      if (trail->Assignment().LiteralIsFalse(l)) continue;
+      if (trail_->Assignment().LiteralIsFalse(l)) continue;
       task_is_currently_present_.push_back(
-          trail->Assignment().LiteralIsTrue(l));
+          trail_->Assignment().LiteralIsTrue(l));
       reason_for_presence_.push_back(l.Index());
     } else {
       task_is_currently_present_.push_back(true);
@@ -221,30 +221,30 @@ bool DisjunctiveConstraint::Propagate(Trail* trail) {
 
     // This one is symmetric so there is no need to do it backward in time too.
     // It only detects conflict, it never propagates anything.
-    if (!OverloadCheckingPass(integer_trail_, trail)) return false;
+    if (!OverloadCheckingPass()) return false;
 
-    if (!DetectablePrecedencePass(integer_trail_, trail)) return false;
+    if (!DetectablePrecedencePass()) return false;
     SwitchToMirrorProblem();
-    if (!DetectablePrecedencePass(integer_trail_, trail)) return false;
+    if (!DetectablePrecedencePass()) return false;
     SwitchToMirrorProblem();
     if (old_timestamp != integer_trail_->num_enqueues()) continue;
 
-    if (!NotLastPass(integer_trail_, trail)) return false;
+    if (!NotLastPass()) return false;
     SwitchToMirrorProblem();
-    if (!NotLastPass(integer_trail_, trail)) return false;
+    if (!NotLastPass()) return false;
     SwitchToMirrorProblem();
     if (old_timestamp != integer_trail_->num_enqueues()) continue;
 
-    if (!EdgeFindingPass(integer_trail_, trail)) return false;
+    if (!EdgeFindingPass()) return false;
     SwitchToMirrorProblem();
-    if (!EdgeFindingPass(integer_trail_, trail)) return false;
+    if (!EdgeFindingPass()) return false;
     SwitchToMirrorProblem();
     if (old_timestamp != integer_trail_->num_enqueues()) continue;
 
     if (parameters_.use_precedences_in_disjunctive_constraint()) {
-      if (!PrecedencePass(integer_trail_, trail)) return false;
+      if (!PrecedencePass()) return false;
       SwitchToMirrorProblem();
-      if (!PrecedencePass(integer_trail_, trail)) return false;
+      if (!PrecedencePass()) return false;
       SwitchToMirrorProblem();
       if (old_timestamp != integer_trail_->num_enqueues()) continue;
     }
@@ -407,8 +407,7 @@ void DisjunctiveConstraint::UpdateTaskByDecreasingMaxEnd() {
   }
 }
 
-bool DisjunctiveConstraint::OverloadCheckingPass(IntegerTrail* integer_trail,
-                                                 Trail* trail) {
+bool DisjunctiveConstraint::OverloadCheckingPass() {
   SCOPED_TIME_STAT(&stats_);
   UpdateTaskByDecreasingMaxEnd();
   task_set_.Clear();
@@ -428,7 +427,7 @@ bool DisjunctiveConstraint::OverloadCheckingPass(IntegerTrail* integer_trail,
     // it would be like in the EdgeFindingPass() with the concept of gray tasks.
     if (!task_is_currently_present_[t] && !sorted_tasks.empty()) {
       // Skip if it was already shown not to be there.
-      if (trail->Assignment().LiteralIsFalse(
+      if (trail_->Assignment().LiteralIsFalse(
               Literal(reason_for_presence_[t]))) {
         continue;
       }
@@ -460,7 +459,7 @@ bool DisjunctiveConstraint::OverloadCheckingPass(IntegerTrail* integer_trail,
         AddMaxEndReason(t, window_end);
 
         DCHECK_NE(reason_for_presence_[t], kNoLiteralIndex);
-        integer_trail->EnqueueLiteral(
+        integer_trail_->EnqueueLiteral(
             Literal(reason_for_presence_[t]).Negated(), literal_reason_,
             integer_reason_);
       }
@@ -481,17 +480,13 @@ bool DisjunctiveConstraint::OverloadCheckingPass(IntegerTrail* integer_trail,
         AddMaxEndReason(ct, window_end);
       }
 
-      std::vector<Literal>* conflict = trail->MutableConflict();
-      *conflict = literal_reason_;
-      integer_trail->MergeReasonInto(integer_reason_, conflict);
-      return false;
+      return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
     }
   }
   return true;
 }
 
-bool DisjunctiveConstraint::DetectablePrecedencePass(
-    IntegerTrail* integer_trail, Trail* trail) {
+bool DisjunctiveConstraint::DetectablePrecedencePass() {
   SCOPED_TIME_STAT(&stats_);
 
   UpdateTaskByIncreasingMinEnd();
@@ -558,8 +553,7 @@ bool DisjunctiveConstraint::DetectablePrecedencePass(
   return true;
 }
 
-bool DisjunctiveConstraint::PrecedencePass(IntegerTrail* integer_trail,
-                                           Trail* trail) {
+bool DisjunctiveConstraint::PrecedencePass() {
   SCOPED_TIME_STAT(&stats_);
   const int num_tasks = start_vars_.size();
 
@@ -601,8 +595,8 @@ bool DisjunctiveConstraint::PrecedencePass(IntegerTrail* integer_trail,
 
       // TODO(user): If var is actually a min-start of an interval, we
       // could push the min-end and check the interval consistency right away.
-      if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, min_end),
-                                  literal_reason_, integer_reason_)) {
+      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(var, min_end),
+                                   literal_reason_, integer_reason_)) {
         return false;
       }
     }
@@ -610,8 +604,7 @@ bool DisjunctiveConstraint::PrecedencePass(IntegerTrail* integer_trail,
   return true;
 }
 
-bool DisjunctiveConstraint::NotLastPass(IntegerTrail* integer_trail,
-                                        Trail* trail) {
+bool DisjunctiveConstraint::NotLastPass() {
   SCOPED_TIME_STAT(&stats_);
   UpdateTaskByDecreasingMaxStart();
   UpdateTaskByDecreasingMaxEnd();
@@ -690,8 +683,7 @@ bool DisjunctiveConstraint::NotLastPass(IntegerTrail* integer_trail,
   return true;
 }
 
-bool DisjunctiveConstraint::EdgeFindingPass(IntegerTrail* integer_trail,
-                                            Trail* trail) {
+bool DisjunctiveConstraint::EdgeFindingPass() {
   SCOPED_TIME_STAT(&stats_);
   const int num_tasks = start_vars_.size();
 
@@ -802,10 +794,7 @@ bool DisjunctiveConstraint::EdgeFindingPass(IntegerTrail* integer_trail,
         AddMinStartReason(ct, window_start);
         AddMaxEndReason(ct, window_end);
       }
-      std::vector<Literal>* conflict = trail->MutableConflict();
-      *conflict = literal_reason_;
-      integer_trail->MergeReasonInto(integer_reason_, conflict);
-      return false;
+      return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
     }
 
     // Optimization, we can remove all the gray tasks that starts at or after

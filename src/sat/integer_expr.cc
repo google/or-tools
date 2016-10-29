@@ -19,11 +19,13 @@ namespace sat {
 IntegerSumLE::IntegerSumLE(LiteralIndex reified_literal,
                            const std::vector<IntegerVariable>& vars,
                            const std::vector<IntegerValue>& coeffs,
-                           IntegerValue upper, IntegerTrail* integer_trail)
+                           IntegerValue upper, Trail* trail,
+                           IntegerTrail* integer_trail)
     : reified_literal_(reified_literal),
       upper_bound_(upper),
       vars_(vars),
       coeffs_(coeffs),
+      trail_(trail),
       integer_trail_(integer_trail) {
   // Handle negative coefficients.
   for (int i = 0; i < vars.size(); ++i) {
@@ -47,12 +49,12 @@ void IntegerSumLE::FillIntegerReason() {
   }
 }
 
-bool IntegerSumLE::Propagate(Trail* trail) {
+bool IntegerSumLE::Propagate() {
   CHECK(!vars_.empty());  // TODO(user): deal with this corner case.
 
   // Reified case: If the reified literal is false, we ignore the constraint.
   if (reified_literal_ != kNoLiteralIndex &&
-      trail->Assignment().LiteralIsFalse(Literal(reified_literal_))) {
+      trail_->Assignment().LiteralIsFalse(Literal(reified_literal_))) {
     return true;
   }
 
@@ -68,23 +70,18 @@ bool IntegerSumLE::Propagate(Trail* trail) {
     // Reified case: If the reified literal is unassigned, we set it to false,
     // otherwise we have a conflict.
     if (reified_literal_ != kNoLiteralIndex &&
-        !trail->Assignment().LiteralIsTrue(Literal(reified_literal_))) {
+        !trail_->Assignment().LiteralIsTrue(Literal(reified_literal_))) {
       integer_trail_->EnqueueLiteral(Literal(reified_literal_).Negated(), {},
                                      integer_reason_);
       return true;
     }
-
-    // Conflict.
-    std::vector<Literal>* conflict = trail->MutableConflict();
-    *conflict = literal_reason_;
-    integer_trail_->MergeReasonInto(integer_reason_, conflict);
-    return false;
+    return integer_trail_->ReportConflict(literal_reason_, integer_reason_);
   }
 
   // Reified case: We can only propagate the actual constraint if the reified
   // literal is true.
   if (reified_literal_ != kNoLiteralIndex &&
-      !trail->Assignment().LiteralIsTrue(Literal(reified_literal_))) {
+      !trail_->Assignment().LiteralIsTrue(Literal(reified_literal_))) {
     return true;
   }
 
@@ -138,7 +135,7 @@ MinPropagator::MinPropagator(const std::vector<IntegerVariable>& vars,
                              IntegerTrail* integer_trail)
     : vars_(vars), min_var_(min_var), integer_trail_(integer_trail) {}
 
-bool MinPropagator::Propagate(Trail* trail) {
+bool MinPropagator::Propagate() {
   if (vars_.empty()) return true;
 
   // Count the number of interval that are possible candidate for the min.
@@ -161,13 +158,12 @@ bool MinPropagator::Propagate(Trail* trail) {
 
   // Propagation a)
   if (min > integer_trail_->LowerBound(min_var_)) {
-    literal_reason_.clear();
     integer_reason_.clear();
     for (const IntegerVariable var : vars_) {
       integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, min));
     }
     if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(min_var_, min),
-                                 literal_reason_, integer_reason_)) {
+                                 {}, integer_reason_)) {
       return false;
     }
   }
@@ -177,7 +173,6 @@ bool MinPropagator::Propagate(Trail* trail) {
     const IntegerValue ub_of_only_candidate =
         integer_trail_->UpperBound(vars_[last_possible_min_interval]);
     if (current_min_ub < ub_of_only_candidate) {
-      literal_reason_.clear();
       integer_reason_.clear();
 
       // The reason is that all the other interval start after current_min_ub.
@@ -191,7 +186,7 @@ bool MinPropagator::Propagate(Trail* trail) {
       if (!integer_trail_->Enqueue(
               IntegerLiteral::LowerOrEqual(vars_[last_possible_min_interval],
                                            current_min_ub),
-              literal_reason_, integer_reason_)) {
+              {}, integer_reason_)) {
         return false;
       }
     }
@@ -212,10 +207,7 @@ bool MinPropagator::Propagate(Trail* trail) {
       integer_reason_.push_back(
           IntegerLiteral::GreaterOrEqual(var, current_min_ub + 1));
     }
-
-    std::vector<Literal>* conflict = trail->MutableConflict();
-    integer_trail_->MergeReasonInto(integer_reason_, conflict);
-    return false;
+    return integer_trail_->ReportConflict(integer_reason_);
   }
 
   return true;
@@ -232,26 +224,27 @@ void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
 IsOneOfPropagator::IsOneOfPropagator(IntegerVariable var,
                                      const std::vector<Literal>& selectors,
                                      const std::vector<IntegerValue>& values,
-                                     IntegerTrail* integer_trail)
+                                     Trail* trail, IntegerTrail* integer_trail)
     : var_(var),
       selectors_(selectors),
       values_(values),
+      trail_(trail),
       integer_trail_(integer_trail) {}
 
-bool IsOneOfPropagator::Propagate(Trail* trail) {
+bool IsOneOfPropagator::Propagate() {
   const IntegerValue current_min = integer_trail_->LowerBound(var_);
   const IntegerValue current_max = integer_trail_->UpperBound(var_);
   IntegerValue min = kMaxIntegerValue;
   IntegerValue max = kMinIntegerValue;
   literal_reason_.clear();
   for (int i = 0; i < selectors_.size(); ++i) {
-    if (trail->Assignment().LiteralIsFalse(selectors_[i])) {
+    if (trail_->Assignment().LiteralIsFalse(selectors_[i])) {
       literal_reason_.push_back(selectors_[i]);
     } else {
       min = std::min(min, values_[i]);
       max = std::max(max, values_[i]);
 
-      if (!trail->Assignment().LiteralIsTrue(selectors_[i])) {
+      if (!trail_->Assignment().LiteralIsTrue(selectors_[i])) {
         // Propagate selector to false?
         if (current_min > values_[i]) {
           integer_trail_->EnqueueLiteral(
@@ -314,7 +307,7 @@ IntegerValue MinValue(IntegerValue b, IntegerValue p) {
 
 }  // namespace
 
-bool ProductPropagator::Propagate(Trail* trail) {
+bool ProductPropagator::Propagate() {
   // Copy because we will swap them.
   IntegerVariable a = a_;
   IntegerVariable b = b_;
@@ -402,7 +395,7 @@ DivisionPropagator::DivisionPropagator(IntegerVariable a, IntegerVariable b,
                                        IntegerTrail* integer_trail)
     : a_(a), b_(b), c_(c), integer_trail_(integer_trail) {}
 
-bool DivisionPropagator::Propagate(Trail* trail) {
+bool DivisionPropagator::Propagate() {
   const IntegerValue min_a = integer_trail_->LowerBound(a_);
   const IntegerValue max_a = integer_trail_->UpperBound(a_);
   const IntegerValue min_b = integer_trail_->LowerBound(b_);

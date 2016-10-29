@@ -157,7 +157,7 @@ class SatClause {
 // Stores the 2-watched literals data structure.  See
 // http://www.cs.berkeley.edu/~necula/autded/lecture24-sat.pdf for
 // detail.
-class LiteralWatchers : public Propagator {
+class LiteralWatchers : public SatPropagator {
  public:
   LiteralWatchers();
   ~LiteralWatchers();
@@ -328,10 +328,10 @@ class BinaryClauseManager {
 //   of Satisfiability Testing - SAT 2011, Lecture Notes in Computer Science
 //   Volume 6695, 2011, pp 201-215
 //   http://www.cs.helsinki.fi/u/mjarvisa/papers/heule-jarvisalo-biere.sat11.pdf
-class BinaryImplicationGraph : public Propagator {
+class BinaryImplicationGraph : public SatPropagator {
  public:
   BinaryImplicationGraph()
-      : Propagator("BinaryImplicationGraph"),
+      : SatPropagator("BinaryImplicationGraph"),
         num_implications_(0),
         num_propagations_(0),
         num_inspections_(0),
