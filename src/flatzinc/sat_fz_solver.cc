@@ -26,6 +26,7 @@
 #include "sat/optimization.h"
 #include "sat/sat_solver.h"
 #include "sat/table.h"
+#include "sat/timetabling.h"
 
 namespace operations_research {
 namespace sat {
@@ -835,6 +836,22 @@ void ExtractDiffNNonStrict(const fz::Constraint& ct, SatModel* m) {
   }
 }
 
+void ExtractCumulative(const fz::Constraint& ct, SatModel* m) {
+  const std::vector<IntegerVariable> starts = m->LookupVars(ct.arguments[0]);
+  const std::vector<IntegerVariable> durations = m->LookupVars(ct.arguments[1]);
+  const std::vector<IntegerVariable> demands = m->LookupVars(ct.arguments[2]);
+  const IntegerVariable capacity = m->LookupVar(ct.arguments[3]);
+
+  // Convert the couple (starts, duration) into an interval variable.
+  std::vector<IntervalVariable> intervals;
+  for (int i = 0; i < starts.size(); ++i) {
+    intervals.push_back(
+        m->model.Add(NewIntervalFromStartAndSizeVars(starts[i], durations[i])));
+  }
+
+  m->model.Add(Cumulative(intervals, demands, capacity));
+}
+
 // Returns false iff the constraint type is not supported.
 bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
   if (ct.type == "bool_eq") {
@@ -929,6 +946,10 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractDiffN(ct, m);
   } else if (ct.type == "diffn_nonstrict") {
     ExtractDiffNNonStrict(ct, m);
+  } else if (ct.type == "cumulative" || ct.type == "var_cumulative" ||
+             ct.type == "variable_cumulative" ||
+             ct.type == "fixed_cumulative") {
+    ExtractCumulative(ct, m);
   } else {
     return false;
   }
