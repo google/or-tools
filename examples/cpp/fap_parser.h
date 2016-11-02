@@ -26,6 +26,7 @@
 #include "base/strtoint.h"
 #include "base/split.h"
 #include "base/map_util.h"
+#include "base/hash.h"
 
 namespace operations_research {
 
