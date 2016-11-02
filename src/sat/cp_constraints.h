@@ -110,6 +110,57 @@ class AllDifferentBoundsPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(AllDifferentBoundsPropagator);
 };
 
+// Initial version of the circuit/sub-circuit constraint.
+// It mainly report conflicts and do not propagate much.
+class CircuitPropagator : PropagatorInterface, ReversibleInterface {
+ public:
+  // The constraints take a dense representation of a graph on [0, n). Each arc
+  // being present when the given literal is true. The special values
+  // kTrueLiteralIndex and kFalseLiteralIndex can be used for arcs that are
+  // either always there or never there.
+  CircuitPropagator(const std::vector<std::vector<LiteralIndex>>& graph,
+                    bool allow_subcircuit, Trail* trail);
+
+  void SetLevel(int level) final;
+  bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  // Clears and fills trail_->MutableConflict() with the literals of the arcs
+  // that form a cycle containing the given node.
+  void FillConflictFromCircuitAt(int start);
+
+  const int num_nodes_;
+  const bool allow_subcircuit_;
+  Trail* trail_;
+
+  // Internal representation of the graph given at construction. Const.
+  struct Arc {
+    int tail;
+    int head;
+  };
+  std::vector<LiteralIndex> self_arcs_;
+  hash_map<LiteralIndex, std::vector<Arc>> literal_to_arcs_;
+
+  // Index in trail_ up to which we propagated all the assigned Literals.
+  int propagation_trail_index_;
+
+  // Current partial chains of arc that are present.
+  std::vector<int> next_;  // -1 if not assigned yet.
+  std::vector<int> prev_;  // -1 if not assigned yet.
+  std::vector<LiteralIndex> next_literal_;
+
+  // Backtrack support for the partial chains of arcs, level_ends_[level] is an
+  // index in added_arcs_;
+  std::vector<int> level_ends_;
+  std::vector<Arc> added_arcs_;
+
+  // Temporary vector.
+  std::vector<bool> in_circuit_;
+
+  DISALLOW_COPY_AND_ASSIGN(CircuitPropagator);
+};
+
 // Base class to help writing CP inspired constraints.
 class CpPropagator : public PropagatorInterface {
  public:
@@ -312,6 +363,28 @@ inline std::function<void(Model*)> StrictNonOverlappingFixedSizeRectangles(
         new NonOverlappingRectanglesPropagator<IntegerValue>(
             x, y, ToIntegerValueVector(dx), ToIntegerValueVector(dy), true,
             model->GetOrCreate<IntegerTrail>());
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+inline std::function<void(Model*)> CircuitConstraint(
+    const std::vector<std::vector<LiteralIndex>>& graph) {
+  return [=](Model* model) {
+    if (graph.empty()) return;
+    CircuitPropagator* constraint = new CircuitPropagator(
+        graph, /*allow_subcircuit=*/false, model->GetOrCreate<Trail>());
+    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(constraint);
+  };
+}
+
+inline std::function<void(Model*)> SubcircuitConstraint(
+    const std::vector<std::vector<LiteralIndex>>& graph) {
+  return [=](Model* model) {
+    if (graph.empty()) return;
+    CircuitPropagator* constraint = new CircuitPropagator(
+        graph, /*allow_subcircuit=*/true, model->GetOrCreate<Trail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

@@ -38,6 +38,11 @@ const BooleanVariable kNoBooleanVariable(-1);
 DEFINE_INT_TYPE(LiteralIndex, int);
 const LiteralIndex kNoLiteralIndex(-1);
 
+// Special values used in some API to indicate a literal that is always true
+// or always false.
+const LiteralIndex kTrueLiteralIndex(-2);
+const LiteralIndex kFalseLiteralIndex(-3);
+
 // A literal is used to represent a variable or its negation. If it represents
 // the variable it is said to be positive. If it represent its negation, it is
 // said to be negative. We support two representations as an integer.

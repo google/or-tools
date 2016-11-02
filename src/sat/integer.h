@@ -566,12 +566,18 @@ class PropagatorInterface {
 // watched Literal or LbVar changes.
 class GenericLiteralWatcher : public SatPropagator {
  public:
-  explicit GenericLiteralWatcher(IntegerTrail* trail);
+  explicit GenericLiteralWatcher(IntegerTrail* trail,
+                                 RevRepository<int>* rev_int_repository);
   ~GenericLiteralWatcher() final {}
 
   static GenericLiteralWatcher* CreateInModel(Model* model) {
-    GenericLiteralWatcher* watcher =
-        new GenericLiteralWatcher(model->GetOrCreate<IntegerTrail>());
+    // TODO(user): Have a general mecanism to register "global" reversible
+    // classes and keep them synchronized with the search.
+    std::unique_ptr<RevRepository<int>> rev_int_repository(
+        new RevRepository<int>());
+    GenericLiteralWatcher* watcher = new GenericLiteralWatcher(
+        model->GetOrCreate<IntegerTrail>(), rev_int_repository.get());
+    model->SetSingleton(std::move(rev_int_repository));
 
     // TODO(user): This propagator currently needs to be last because it is the
     // only one enforcing that a fix-point is reached on the integer variables.
@@ -600,12 +606,35 @@ class GenericLiteralWatcher : public SatPropagator {
   void WatchIntegerVariable(IntegerVariable i, int id);
   void WatchIntegerVariable(IntegerValue v, int id) {}
 
+  // Registers a reversible class with a given propagator. This class will be
+  // changed to the correct state just before the propagator is called.
+  //
+  // Doing it just before should minimize cache-misses and bundle as much as
+  // possible the "backtracking" together. Many propagators only watches a
+  // few variables and will not be called at each decision levels.
+  void RegisterReversibleClass(int id, ReversibleInterface* rev);
+
+  // Registers a reversible int with a given propagator. The int will be changed
+  // to its correct value just before Propagate() is called.
+  //
+  // Note that this will work in O(num_rev_int_of_propagator_id) per call to
+  // Propagate() and happens at most once per decision level. As such this is
+  // meant for classes that have just a few reversible ints or that will have a
+  // similar complexity anyway.
+  //
+  // Alternatively, one can directly get the underlying RevRepository<int> with
+  // a call to model.Get<>(), and use SaveWithStamp() before each modification
+  // to have just a slight overhead per int updates. This later option is what
+  // is usually done in a CP solver at the cost of a sligthly more complex API.
+  void RegisterReversibleInt(int id, int* rev);
+
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.
   void UpdateCallingNeeds();
 
   IntegerTrail* integer_trail_;
+  RevRepository<int>* rev_int_repository_;
 
   ITIVector<LiteralIndex, std::vector<int>> literal_to_watcher_ids_;
   ITIVector<IntegerVariable, std::vector<int>> var_to_watcher_ids_;
@@ -615,6 +644,12 @@ class GenericLiteralWatcher : public SatPropagator {
   // Propagator ids that needs to be called.
   std::deque<int> queue_;
   std::vector<bool> in_queue_;
+
+  // Decision levels and reversible classes for each propagator.
+  std::vector<int> id_to_level_at_last_call_;
+  std::vector<int> id_to_greatest_common_level_since_last_call_;
+  std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;
+  std::vector<std::vector<int*>> id_to_reversible_ints_;
 
   DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };

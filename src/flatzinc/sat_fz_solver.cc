@@ -852,6 +852,38 @@ void ExtractCumulative(const fz::Constraint& ct, SatModel* m) {
   m->model.Add(Cumulative(intervals, demands, capacity));
 }
 
+void ExtractCircuit(const fz::Constraint& ct, bool allow_subcircuit,
+                    SatModel* m) {
+  bool found_zero = false;
+  bool found_size = false;
+  for (fz::IntegerVariable* const var : ct.arguments[0].variables) {
+    if (var->domain.Min() == 0) {
+      found_zero = true;
+    }
+    if (var->domain.Max() == ct.arguments[0].variables.size()) {
+      found_size = true;
+    }
+  }
+  // Are array 1 based or 0 based.
+  const int offset = found_zero && !found_size ? 0 : 1;
+
+  const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[0]);
+  std::vector<std::vector<LiteralIndex>> graph(
+      vars.size(), std::vector<LiteralIndex>(vars.size(), kFalseLiteralIndex));
+  for (int i = 0; i < vars.size(); ++i) {
+    if (m->model.Get(IsFixed(vars[i]))) {
+      graph[i][m->model.Get(Value(vars[i])) - offset] = kTrueLiteralIndex;
+    } else {
+      const auto encoding = m->FullEncoding(vars[i]);
+      for (const auto& entry : encoding) {
+        graph[i][entry.value.value() - offset] = entry.literal.Index();
+      }
+    }
+  }
+  m->model.Add(allow_subcircuit ? SubcircuitConstraint(graph)
+                                : CircuitConstraint(graph));
+}
+
 // Returns false iff the constraint type is not supported.
 bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
   if (ct.type == "bool_eq") {
@@ -936,6 +968,10 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractIntLinLeReif(ct, m);
   } else if (ct.type == "int_lin_ge_reif") {
     ExtractIntLinGeReif(ct, m);
+  } else if (ct.type == "circuit") {
+    ExtractCircuit(ct, /*allow_subcircuit=*/false, m);
+  } else if (ct.type == "subcircuit") {
+    ExtractCircuit(ct, /*allow_subcircuit=*/true, m);
   } else if (ct.type == "regular") {
     ExtractRegular(ct, m);
   } else if (ct.type == "table_int") {

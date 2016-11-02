@@ -768,8 +768,11 @@ void IntegerTrail::EnqueueLiteral(
   trail_->Enqueue(literal, propagator_id_);
 }
 
-GenericLiteralWatcher::GenericLiteralWatcher(IntegerTrail* integer_trail)
-    : SatPropagator("GenericLiteralWatcher"), integer_trail_(integer_trail) {
+GenericLiteralWatcher::GenericLiteralWatcher(
+    IntegerTrail* integer_trail, RevRepository<int>* rev_int_repository)
+    : SatPropagator("GenericLiteralWatcher"),
+      integer_trail_(integer_trail),
+      rev_int_repository_(rev_int_repository) {
   integer_trail_->RegisterWatcher(&modified_vars_);
 }
 
@@ -799,10 +802,30 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
     }
   }
 
+  const int level = trail->CurrentDecisionLevel();
+  rev_int_repository_->SetLevel(level);
   UpdateCallingNeeds();
   while (!queue_.empty()) {
     const int id = queue_.front();
     queue_.pop_front();
+
+    // Before we propagate, make sure any reversible structure are up to date.
+    // Note that we never do anything expensive more than once per level.
+    {
+      const int low = id_to_greatest_common_level_since_last_call_[id];
+      const int high = id_to_level_at_last_call_[id];
+      if (low < high || level > low) {  // Equivalent to not all equal.
+        id_to_level_at_last_call_[id] = level;
+        id_to_greatest_common_level_since_last_call_[id] = level;
+        for (ReversibleInterface* rev : id_to_reversible_classes_[id]) {
+          if (low < high) rev->SetLevel(low);
+          if (level > low) rev->SetLevel(level);
+        }
+        for (int* rev_int : id_to_reversible_ints_[id]) {
+          rev_int_repository_->SaveState(rev_int);
+        }
+      }
+    }
 
     if (!watchers_[id]->Propagate()) {
       in_queue_[id] = false;
@@ -820,26 +843,49 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
 }
 
 void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
-  if (propagation_trail_index_ > trail_index) {
-    // This means that we already propagated all there is to propagate
-    // at the level trail_index, so we can safely clear modified_vars_ in case
-    // it wasn't already done.
-    modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
-    in_queue_.assign(watchers_.size(), false);
-    queue_.clear();
+  if (propagation_trail_index_ <= trail_index) {
+    // Nothing to do since we found a conflict before Propagate() was called.
+    CHECK_EQ(propagation_trail_index_, trail_index);
+    return;
   }
+
+  // This means that we already propagated all there is to propagate
+  // at the level trail_index, so we can safely clear modified_vars_ in case
+  // it wasn't already done.
   propagation_trail_index_ = trail_index;
+  modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
+  in_queue_.assign(watchers_.size(), false);
+  queue_.clear();
+
+  const int level = trail.CurrentDecisionLevel();
+  rev_int_repository_->SetLevel(level);
+  for (int& ref : id_to_greatest_common_level_since_last_call_) {
+    ref = std::min(ref, level);
+  }
 }
 
 // Registers a propagator and returns its unique ids.
 int GenericLiteralWatcher::Register(PropagatorInterface* propagator) {
   const int id = watchers_.size();
   watchers_.push_back(propagator);
+  id_to_level_at_last_call_.push_back(0);
+  id_to_greatest_common_level_since_last_call_.push_back(0);
+  id_to_reversible_classes_.push_back(std::vector<ReversibleInterface*>());
+  id_to_reversible_ints_.push_back(std::vector<int*>());
 
   // Initially call everything.
   in_queue_.push_back(true);
   queue_.push_back(id);
   return id;
+}
+
+void GenericLiteralWatcher::RegisterReversibleClass(int id,
+                                                    ReversibleInterface* rev) {
+  id_to_reversible_classes_[id].push_back(rev);
+}
+
+void GenericLiteralWatcher::RegisterReversibleInt(int id, int* rev) {
+  id_to_reversible_ints_[id].push_back(rev);
 }
 
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(

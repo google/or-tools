@@ -237,6 +237,191 @@ std::function<void(Model*)> AllDifferent(
   };
 }
 
+CircuitPropagator::CircuitPropagator(
+    const std::vector<std::vector<LiteralIndex>>& graph, bool allow_subcircuit,
+    Trail* trail)
+    : num_nodes_(graph.size()),
+      allow_subcircuit_(allow_subcircuit),
+      trail_(trail),
+      propagation_trail_index_(0) {
+  // TODO(user): add a way to properly handle trivially UNSAT cases.
+  // For now we just check that they don't occur at construction.
+  CHECK_GT(num_nodes_, 1)
+      << "Trivial or UNSAT constraint, shouldn't be constructed!";
+  next_.resize(num_nodes_, -1);
+  prev_.resize(num_nodes_, -1);
+  next_literal_.resize(num_nodes_);
+  self_arcs_.resize(num_nodes_);
+  for (int tail = 0; tail < num_nodes_; ++tail) {
+    self_arcs_[tail] = graph[tail][tail];
+    for (int head = 0; head < num_nodes_; ++head) {
+      const LiteralIndex index = graph[tail][head];
+      if (index == kFalseLiteralIndex) continue;
+      if (index == kTrueLiteralIndex) {
+        if (!allow_subcircuit) {
+          CHECK_NE(tail, head) << "Trivially UNSAT.";
+        }
+        CHECK_EQ(next_[tail], -1) << "Trivially UNSAT or duplicate arcs.";
+        CHECK_EQ(prev_[tail], -1) << "Trivially UNSAT or duplicate arcs.";
+        next_[tail] = head;
+        prev_[head] = tail;
+        next_literal_[tail] = kNoLiteralIndex;
+        continue;
+      }
+      literal_to_arcs_[index].push_back({tail, head});
+    }
+  }
+}
+
+void CircuitPropagator::SetLevel(int level) {
+  if (level == level_ends_.size()) return;
+  if (level > level_ends_.size()) {
+    while (level > level_ends_.size()) {
+      level_ends_.push_back(added_arcs_.size());
+    }
+    return;
+  }
+
+  // Backtrack.
+  for (int i = level_ends_[level]; i < added_arcs_.size(); ++i) {
+    const Arc arc = added_arcs_[i];
+    next_[arc.tail] = -1;
+    prev_[arc.head] = -1;
+  }
+  added_arcs_.resize(level_ends_[level]);
+  level_ends_.resize(level);
+}
+
+void CircuitPropagator::FillConflictFromCircuitAt(int start) {
+  std::vector<Literal>* conflict = trail_->MutableConflict();
+  conflict->clear();
+  int node = start;
+  do {
+    CHECK_NE(node, -1);
+    if (next_literal_[node] != kNoLiteralIndex) {
+      conflict->push_back(Literal(next_literal_[node]).Negated());
+    }
+    node = next_[node];
+  } while (node != start);
+}
+
+bool CircuitPropagator::Propagate() {
+  while (propagation_trail_index_ < trail_->Index()) {
+    const Literal literal = (*trail_)[propagation_trail_index_++];
+    const auto it = literal_to_arcs_.find(literal.Index());
+    if (it == literal_to_arcs_.end()) continue;
+    for (const Arc arc : it->second) {
+      // Get rid of the trivial conflicts:
+      // - At most one incoming and one ougtoing arc for each nodes.
+      // - No self arc if allow_subcircuit_ is false
+      std::vector<Literal>* conflict = trail_->MutableConflict();
+      if (arc.tail == arc.head && !allow_subcircuit_) {
+        *conflict = {literal.Negated()};
+        return false;
+      }
+      if (next_[arc.tail] != -1) {
+        if (next_literal_[arc.tail] != kNoLiteralIndex) {
+          *conflict = {Literal(next_literal_[arc.tail]).Negated(),
+                       literal.Negated()};
+        } else {
+          *conflict = {literal.Negated()};
+        }
+        return false;
+      }
+      if (prev_[arc.head] != -1) {
+        if (next_literal_[prev_[arc.head]] != kNoLiteralIndex) {
+          *conflict = {Literal(next_literal_[prev_[arc.head]]).Negated(),
+                       literal.Negated()};
+        } else {
+          *conflict = {literal.Negated()};
+        }
+        return false;
+      }
+
+      // Add the arc.
+      added_arcs_.push_back(arc);
+      next_[arc.tail] = arc.head;
+      prev_[arc.head] = arc.tail;
+      next_literal_[arc.tail] = literal.Index();
+
+      // Circuit?
+      if (allow_subcircuit_) {
+        in_circuit_.assign(num_nodes_, false);
+        in_circuit_[arc.tail] = true;
+      }
+      int node = arc.head;
+      int size = 1;
+      while (node != arc.tail && node != -1) {
+        if (allow_subcircuit_) in_circuit_[node] = true;
+        node = next_[node];
+        size++;
+      }
+      if (node != arc.tail) continue;
+
+      // We have one circuit.
+      if (size == num_nodes_) return true;
+      if (!allow_subcircuit_) {
+        FillConflictFromCircuitAt(arc.tail);
+        return false;
+      }
+
+      if (size == 1) continue;  // self-arc.
+
+      // HACK: we can reuse the conflict vector even though we don't have a
+      // conflict.
+      FillConflictFromCircuitAt(arc.tail);
+      BooleanVariable variable_with_same_reason = kNoBooleanVariable;
+
+      // We can propagate all the other nodes to point to themselves.
+      // If this is not already the case, we have a conflict.
+      for (int node = 0; node < num_nodes_; ++node) {
+        if (in_circuit_[node] || next_[node] == node) continue;
+        if (next_[node] != -1) {
+          std::vector<Literal>* conflict = trail_->MutableConflict();
+          if (next_literal_[node] != kNoLiteralIndex) {
+            conflict->push_back(Literal(next_literal_[node]).Negated());
+          }
+          return false;
+        } else if (self_arcs_[node] == kFalseLiteralIndex) {
+          return false;
+        } else {
+          DCHECK_NE(self_arcs_[node], kTrueLiteralIndex);
+          const Literal literal(self_arcs_[node]);
+
+          // We may not have processed this literal yet.
+          if (trail_->Assignment().LiteralIsTrue(literal)) continue;
+          if (trail_->Assignment().LiteralIsFalse(literal)) {
+            std::vector<Literal>* conflict = trail_->MutableConflict();
+            conflict->push_back(literal);
+            return false;
+          }
+
+          // Propagate.
+          if (variable_with_same_reason == kNoBooleanVariable) {
+            variable_with_same_reason = literal.Variable();
+            const int index = trail_->Index();
+            trail_->Enqueue(literal, AssignmentType::kCachedReason);
+            *trail_->GetVectorToStoreReason(index) = *trail_->MutableConflict();
+            trail_->NotifyThatReasonIsCached(literal.Variable());
+          } else {
+            trail_->EnqueueWithSameReasonAs(literal, variable_with_same_reason);
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+void CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  for (const auto& e : literal_to_arcs_) {
+    watcher->WatchLiteral(Literal(e.first), id);
+  }
+  watcher->RegisterReversibleClass(id, this);
+  watcher->RegisterReversibleInt(id, &propagation_trail_index_);
+}
+
 // ----- CpPropagator -----
 
 CpPropagator::CpPropagator(IntegerTrail* integer_trail)

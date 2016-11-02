@@ -79,8 +79,6 @@ bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* 
 //
 // Finally, this will return false if some integer overflow or underflow occured
 // during the constraint simplification.
-const LiteralIndex kTrueLiteralIndex(-1);
-const LiteralIndex kFalseLiteralIndex(-2);
 bool ApplyLiteralMapping(const ITIVector<LiteralIndex, LiteralIndex>& mapping,
                          std::vector<LiteralWithCoeff>* cst,
                          Coefficient* bound_shift, Coefficient* max_value);
