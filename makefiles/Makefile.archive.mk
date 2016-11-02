@@ -170,13 +170,15 @@ fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(LIB_DIR)$S$(LIB_PRE
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
 	mkdir temp$S$(FZ_INSTALL_DIR)$Slib
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
 	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
 	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
 	$(COPY) bin$Sfz$E temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
+	$(COPY) src$Sflatzinc$Smznlib_cp$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
+	$(COPY) src$Sflatzinc$Smznlib_sat$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
 	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
 ifeq ($(PLATFORM),LINUX)
 	$(DEP_BIN_DIR)$Spatchelf --set-rpath '$$ORIGIN/../lib' temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
