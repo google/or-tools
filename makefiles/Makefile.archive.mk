@@ -65,7 +65,7 @@ create_dirs:
 	$(COPY) tools$SREADME.cc.java.csharp temp$S$(INSTALL_DIR)$SREADME
 	$(COPY) tools$SMakefile.cc temp$S$(INSTALL_DIR)$SMakefile
 
-cc_archive:
+cc_archive: cc
 
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
@@ -111,7 +111,7 @@ else
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v sparsehash | tar xvm
 endif
 
-dotnet_archive:
+dotnet_archive: csharp
 
 	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin
 	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin
@@ -131,7 +131,7 @@ else
 	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin
 endif
 
-java_archive:
+java_archive: java
 	$(COPY) lib$S*.jar temp$S$(INSTALL_DIR)$Slib
 	$(COPY) lib$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT) temp$S$(INSTALL_DIR)$Slib
 

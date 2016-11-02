@@ -141,7 +141,8 @@ CC_BINARIES = \
 	$(BIN_DIR)/linear_solver_protocol_buffers$E \
 	$(BIN_DIR)/strawberry_fields_with_column_generation$E \
 	$(BIN_DIR)/mps_driver$E \
-	$(BIN_DIR)/solve$E
+	$(BIN_DIR)/solve$E \
+	$(BIN_DIR)/frequency_assignment_problem$E
 
 ccexe: $(CC_BINARIES)
 
