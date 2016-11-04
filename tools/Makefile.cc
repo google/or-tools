@@ -46,7 +46,6 @@ ifeq ("$(SYSTEM)","unix")
 	OR_TOOLS_TOP ?= $(shell pwd)
 	OS = $(shell uname -s)
 	LIB_PREFIX = lib
-	LIB_SUFFIX = so
 	PRE_LIB = -Wl,-rpath $(OR_TOOLS_TOP)/lib -L$(OR_TOOLS_TOP)/lib
 	OR_TOOLS_LNK = $(PRE_LIB) -lortools
 	CVRPTW_LNK = $(PRE_LIB) -lcvrptw_lib $(PRE_LIB) -lortools
@@ -66,6 +65,7 @@ ifeq ("$(SYSTEM)","unix")
 		endif
 		CSC = mcs
 		MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
+		LIB_SUFFIX = so
 	endif
 	ifeq ($(OS),Darwin) # Assume Mac Os X
 		CCC = clang++ -fPIC -std=c++11
@@ -75,6 +75,7 @@ ifeq ("$(SYSTEM)","unix")
 		CSC = mcs
 		MONO =	DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono64
 		NETPLATFORM = x64
+		LIB_SUFFIX = dylib
 	endif
 	O = o
 	E =
