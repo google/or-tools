@@ -143,27 +143,7 @@ java_archive: java
 	$(COPY) examples$Sdata$Squasigroup_completion$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 	$(COPY) examples$Scom$Sgoogle$Sortools$Ssamples$S*.java temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
 
-
-ifeq "$(SYSTEM)" "win"
-fz_archive: fz
-	-$(DELREC) temp
-	mkdir temp
-	mkdir temp$S$(FZ_INSTALL_DIR)
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
-	mkdir temp$S$(FZ_INSTALL_DIR)$Slib
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
-	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
-	$(COPY) bin$Sfz$E temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
-	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
-	cd temp && ..$Stools$Szip.exe -r ..$S$(FZ_INSTALL_DIR).zip $(FZ_INSTALL_DIR)
-	-$(DELREC) temp
-else
-fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
+fz_archive: cc fz
 	-$(DELREC) temp
 	mkdir temp
 	mkdir temp$S$(FZ_INSTALL_DIR)
@@ -180,6 +160,9 @@ fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(LIB_DIR)$S$(LIB_PRE
 	$(COPY) src$Sflatzinc$Smznlib_cp$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
 	$(COPY) src$Sflatzinc$Smznlib_sat$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
 	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
+ifeq "$(SYSTEM)" "win"
+	cd temp && ..$Stools$Szip.exe -r ..$S$(FZ_INSTALL_DIR).zip $(FZ_INSTALL_DIR)
+else
 ifeq ($(PLATFORM),LINUX)
 	$(DEP_BIN_DIR)$Spatchelf --set-rpath '$$ORIGIN/../lib' temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
 endif
@@ -190,8 +173,8 @@ ifeq ($(PLATFORM),MACOSX)
 	$(RM) temp$S$(FZ_INSTALL_DIR)$Sfix_fz_libraries_on_mac.sh
 endif
 	cd temp && tar cvzf ..$S$(FZ_INSTALL_DIR).tar.gz $(FZ_INSTALL_DIR)
-	-$(DELREC) temp
 endif
+	-$(DELREC) temp
 
 
 test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)

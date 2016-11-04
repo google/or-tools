@@ -384,6 +384,17 @@ struct StdArrayHasher : public stdext::hash_compare<std::array<T, N>> {
   static const size_t min_buckets = 8;  // 4 and 8 are defaults.
 };
 
+#if defined(_MSC_VER)
+namespace stdext {
+template <>
+inline size_t hash_value <std::pair<int64, int64>> (
+  const std::pair<int64, int64>& a) {
+  PairIntHasher pairIntHasher;
+    return pairIntHasher(a);
+  }
+}  //  namespace stdext
+#endif  // _MSC_VER
+
 using std::hash;
 using stdext::hash_map;
 using stdext::hash_set;
