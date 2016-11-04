@@ -776,7 +776,19 @@ GenericLiteralWatcher::GenericLiteralWatcher(
   integer_trail_->RegisterWatcher(&modified_vars_);
 }
 
-void GenericLiteralWatcher::UpdateCallingNeeds() {
+void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
+  // Process any new Literal on the trail.
+  while (propagation_trail_index_ < trail->Index()) {
+    const Literal literal = (*trail)[propagation_trail_index_++];
+    if (literal.Index() >= literal_to_watcher_ids_.size()) continue;
+    for (const int id : literal_to_watcher_ids_[literal.Index()]) {
+      if (!in_queue_[id]) {
+        in_queue_[id] = true;
+        queue_.push_back(id);
+      }
+    }
+  }
+
   // Process the newly changed variables lower bounds.
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
     if (var.value() >= var_to_watcher_ids_.size()) continue;
@@ -790,21 +802,18 @@ void GenericLiteralWatcher::UpdateCallingNeeds() {
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
 }
 
+// TODO(user): With the current setup, we will reach a fix-point of all the
+// "integer" propagators registered with this class before going back to the SAT
+// solver that will propagate its clauses. It may be more efficient to go back
+// earlier to the SAT solver, like each time we propagate a literal. This is
+// unclear though, so it will require a lot of experiments. Maybe expose the
+// various posibilities in the parameters, so that it is easy to try on
+// different problems.
 bool GenericLiteralWatcher::Propagate(Trail* trail) {
-  while (propagation_trail_index_ < trail->Index()) {
-    const Literal literal = (*trail)[propagation_trail_index_++];
-    if (literal.Index() >= literal_to_watcher_ids_.size()) continue;
-    for (const int id : literal_to_watcher_ids_[literal.Index()]) {
-      if (!in_queue_[id]) {
-        in_queue_[id] = true;
-        queue_.push_back(id);
-      }
-    }
-  }
-
   const int level = trail->CurrentDecisionLevel();
   rev_int_repository_->SetLevel(level);
-  UpdateCallingNeeds();
+
+  UpdateCallingNeeds(trail);
   while (!queue_.empty()) {
     const int id = queue_.front();
     queue_.pop_front();
@@ -831,12 +840,12 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       in_queue_[id] = false;
       return false;
     }
-    UpdateCallingNeeds();
 
-    // We mark the node afterwards because we assume that the Propagate() method
-    // is idempotent and never need to be called twice in a row. If some
-    // propagator don't have this property, we could add an option to call them
-    // again until nothing changes.
+    // We mark the node after UpdateCallingNeeds() because we assume that the
+    // Propagate() method is idempotent and never need to be called twice in a
+    // row. If some propagator don't have this property, we could add an option
+    // to call them again until nothing changes.
+    UpdateCallingNeeds(trail);
     in_queue_[id] = false;
   }
   return true;

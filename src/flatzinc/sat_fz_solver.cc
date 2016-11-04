@@ -1088,6 +1088,7 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   hash_map<std::pair<int64, int64>, int> num_fully_encoded_vars_per_bounds;
   FZLOG << "Extracting " << fz_model.variables().size() << " variables. "
         << FZENDL;
+  int num_capped_variables = 0;
   for (fz::IntegerVariable* var : fz_model.variables()) {
     if (!var->active) continue;
 
@@ -1098,9 +1099,16 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
       continue;
     }
 
-    num_vars_per_bounds[{var->domain.Min(), var->domain.Max()}]++;
-    m.var_map[var] =
-        m.model.Add(NewIntegerVariable(var->domain.Min(), var->domain.Max()));
+    const int64 safe_min =
+        var->domain.Min() == kint64min ? kint32min : var->domain.Min();
+    const int64 safe_max =
+        var->domain.Max() == kint64max ? kint32max : var->domain.Max();
+    if (safe_min != var->domain.Min() || safe_max != var->domain.Max()) {
+      num_capped_variables++;
+    }
+
+    num_vars_per_bounds[{safe_min, safe_max}]++;
+    m.var_map[var] = m.model.Add(NewIntegerVariable(safe_min, safe_max));
 
     // We fully encode a variable if it is given as a list of values. Otherwise,
     // we will lazily-encode it depending on the constraints it appears in or if
@@ -1125,6 +1133,11 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   }
   FZLOG << " - " << num_constants << " constants in {"
         << strings::Join(constant_values, ",") << "}." << FZENDL;
+  if (num_capped_variables > 0) {
+    FZLOG << " - " << num_capped_variables
+          << " variables have been capped to fit into [int32min .. int32max]"
+          << FZENDL;
+  }
 
   // Extract all the constraints.
   FZLOG << "Extracting " << fz_model.constraints().size() << " constraints. "

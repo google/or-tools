@@ -14,6 +14,7 @@
 #include <algorithm>
 
 //#include "base/iterator_adaptors.h"
+#include "sat/overload_checker.h"
 #include "sat/sat_solver.h"
 #include "sat/timetabling.h"
 
@@ -27,13 +28,21 @@ std::function<void(Model*)> Cumulative(const std::vector<IntervalVariable>& vars
     IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
-    // Propagator responsible for increasing the min of the start variables,
-    // decreasing the max of the end variables, and increasing the min of the
-    // capacity variable.
-    TimeTablingPerTask* cumulative_start = new TimeTablingPerTask(
+    // Propagator responsible for applying the Overload Checking filtering rule.
+    // This propagator increases the minimum of the capacity variable.
+    OverloadChecker* overload_checker =
+        new OverloadChecker(vars, demands, capacity, integer_trail, intervals);
+    overload_checker->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(overload_checker);
+
+    // Propagator responsible for applying Timetabling filtering rule. This
+    // propagator increases the minimum of the start variables, decrease the
+    // maximum of the end variables, and increasing the minimum of the capacity
+    // variable.
+    TimeTablingPerTask* time_tabling = new TimeTablingPerTask(
         vars, demands, capacity, integer_trail, intervals);
-    cumulative_start->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(cumulative_start);
+    time_tabling->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+    model->TakeOwnership(time_tabling);
   };
 }
 
@@ -74,14 +83,12 @@ TimeTablingPerTask::TimeTablingPerTask(
 void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
   watcher->WatchUpperBound(capacity_var_, id);
-  for (int i = 0; i < num_tasks_; i++) {
-    watcher->WatchIntegerVariable(start_vars_[i], id);
-    watcher->WatchIntegerVariable(end_vars_[i], id);
-    watcher->WatchLowerBound(demand_vars_[i], id);
-    const IntegerVariable duration_var =
-        intervals_repository_->SizeVar(interval_vars_[i]);
-    if (duration_var != kNoIntegerVariable) {
-      watcher->WatchLowerBound(duration_var, id);
+  for (int t = 0; t < num_tasks_; t++) {
+    watcher->WatchIntegerVariable(start_vars_[t], id);
+    watcher->WatchIntegerVariable(end_vars_[t], id);
+    watcher->WatchLowerBound(demand_vars_[t], id);
+    if (duration_vars_[t] != kNoIntegerVariable) {
+      watcher->WatchLowerBound(duration_vars_[t], id);
     }
   }
 }

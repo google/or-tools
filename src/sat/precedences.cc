@@ -238,6 +238,16 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
     }
   }
 
+  // Remove the offset_var if it is fixed.
+  // TODO(user): We should also handle the case where tail or head is fixed.
+  if (offset_var != kNoIntegerVariable) {
+    const IntegerValue lb = integer_trail_->LowerBound(offset_var);
+    if (lb == integer_trail_->UpperBound(offset_var)) {
+      offset += lb;
+      offset_var = kNoIntegerVariable;
+    }
+  }
+
   AdjustSizeFor(tail);
   AdjustSizeFor(head);
   if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);

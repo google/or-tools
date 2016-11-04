@@ -631,7 +631,7 @@ class GenericLiteralWatcher : public SatPropagator {
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.
-  void UpdateCallingNeeds();
+  void UpdateCallingNeeds(Trail* trail);
 
   IntegerTrail* integer_trail_;
   RevRepository<int>* rev_int_repository_;
