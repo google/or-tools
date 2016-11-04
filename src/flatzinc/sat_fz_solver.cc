@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include "flatzinc/sat_fz_solver.h"
-
 #include "base/timer.h"
 #include "base/map_util.h"
 #include "flatzinc/checker.h"

@@ -387,11 +387,11 @@ struct StdArrayHasher : public stdext::hash_compare<std::array<T, N>> {
 #if defined(_MSC_VER)
 namespace stdext {
 template <>
-inline size_t hash_value <std::pair<int64, int64>> (
-  const std::pair<int64, int64>& a) {
+inline size_t hash_value<std::pair<int64, int64>>(
+    const std::pair<int64, int64>& a) {
   PairIntHasher pairIntHasher;
-    return pairIntHasher(a);
-  }
+  return pairIntHasher(a);
+}
 }  //  namespace stdext
 #endif  // _MSC_VER
 

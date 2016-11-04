@@ -578,10 +578,12 @@ void HardFapSolver(const std::map<int, FapVariable>& data_variables,
   hash_map<int64, std::pair<int64, int64>> history;
   if (FLAGS_value_evaluator == "value_evaluator") {
     LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
-    db = solver.MakePhase(variables, variable_strategy,
-                          [&history](int64 var, int64 value) {
-                            return ValueEvaluator(&history, var, value);
-                          });
+    Solver::IndexEvaluator2 index_evaluator2 = [&history](int64 var,
+                                                          int64 value) {
+      return ValueEvaluator(&history, var, value);
+    };
+    LOG(INFO) << "Using ValueEvaluator for value selection strategy.";
+    db = solver.MakePhase(variables, variable_strategy, index_evaluator2);
   } else {
     LOG(INFO) << "Using Solver::ASSIGN_MIN_VALUE for value selection strategy.";
     db = solver.MakePhase(variables, variable_strategy,
