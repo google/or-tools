@@ -231,7 +231,7 @@ ifeq "$(DISTRIBUTION_NUMBER)" "14.04"
     pre_release: archive test_archive fz_archive test_fz_archive python_examples_archive pypi_archive
     release: pypi_upload
 else 
-ifeq "$(DISTRIBUTION_NUMBER)" "16.0"
+ifeq "$(DISTRIBUTION_NUMBER)" "16.04"
     build_release: clean all test fz
     pre_release: archive test_archive fz_archive test_fz_archive
     release:
