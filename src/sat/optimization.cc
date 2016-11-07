@@ -223,7 +223,8 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
 // becomes satisfiable.
 SatSolver::Status SolveWithFuMalik(LogBehavior log,
                                    const LinearBooleanProblem& problem,
-                                   SatSolver* solver, std::vector<bool>* solution) {
+                                   SatSolver* solver,
+                                   std::vector<bool>* solution) {
   Logger logger(log);
   FuMalikSymmetryBreaker symmetry;
 
@@ -419,7 +420,8 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
 
 SatSolver::Status SolveWithWPM1(LogBehavior log,
                                 const LinearBooleanProblem& problem,
-                                SatSolver* solver, std::vector<bool>* solution) {
+                                SatSolver* solver,
+                                std::vector<bool>* solution) {
   Logger logger(log);
   FuMalikSymmetryBreaker symmetry;
 

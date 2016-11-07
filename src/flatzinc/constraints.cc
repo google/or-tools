@@ -44,8 +44,8 @@ void AddConstraint(Solver* s, fz::Constraint* ct, Constraint* cte) {
 }
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables, int64 range_min,
-                           int64 range_max) {
+                           const std::vector<IntVar*>& variables,
+                           int64 range_min, int64 range_max) {
   // TODO(user): Use sat_solver::AddLinearConstraint()
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
@@ -93,8 +93,8 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables, int64 range_min,
-                             int64 range_max, IntVar* target) {
+                             const std::vector<IntVar*>& variables,
+                             int64 range_min, int64 range_max, IntVar* target) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -134,8 +134,8 @@ void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
-                               const std::vector<IntVar*>& variables, int64 value,
-                               IntVar* target) {
+                               const std::vector<IntVar*>& variables,
+                               int64 value, IntVar* target) {
   const int64 size = variables.size();
   if (value == 0) {
     PostIsBooleanSumInRange(sat, solver, variables, 1, size, target);
@@ -151,14 +151,16 @@ void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
 
 void ExtractAllDifferentInt(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const s = data->solver();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   Constraint* const constraint = s->MakeAllDifferent(vars, vars.size() < 100);
   AddConstraint(s, ct, constraint);
 }
 
 void ExtractAlldifferentExcept0(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const s = data->solver();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   AddConstraint(s, ct, s->MakeAllDifferentExcept(vars, 0));
 }
 
@@ -203,7 +205,8 @@ void ExtractAtMostInt(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
   const int64 max_count = ct->arguments[0].Value();
   const int64 value = ct->arguments[2].Value();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[1]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[1]);
   Constraint* const constraint = solver->MakeAtMost(vars, value, max_count);
   AddConstraint(solver, ct, constraint);
 }
@@ -316,7 +319,8 @@ void ExtractArrayBoolOr(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractArrayBoolXor(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
-  std::vector<IntVar*> tmp_vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  std::vector<IntVar*> tmp_vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   std::vector<IntVar*> variables;
   bool even = true;
   for (IntVar* const var : tmp_vars) {
@@ -438,7 +442,8 @@ void ExtractArrayVarIntElement(fz::SolverData* data, fz::Constraint* ct) {
   const int64 imin = std::max(index->Min(), 1LL);
   const int64 imax = std::min(index->Max(), array_size);
   IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[1]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[1]);
   const int64 size = imax - imin + 1;
   std::vector<IntVar*> var_array(size);
   for (int i = 0; i < size; ++i) {
@@ -1725,7 +1730,8 @@ void ParseShortIntLin(fz::SolverData* data, fz::Constraint* ct, IntExpr** left,
 }
 
 void ParseLongIntLin(fz::SolverData* data, fz::Constraint* ct,
-                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs,
+                     int64* rhs) {
   CHECK(vars != nullptr);
   CHECK(coeffs != nullptr);
   CHECK(rhs != nullptr);
@@ -1748,8 +1754,8 @@ void ParseLongIntLin(fz::SolverData* data, fz::Constraint* ct,
   }
 }
 
-bool AreAllExtractedAsVariables(fz::SolverData* data,
-                                const std::vector<fz::IntegerVariable*>& fz_vars) {
+bool AreAllExtractedAsVariables(
+    fz::SolverData* data, const std::vector<fz::IntegerVariable*>& fz_vars) {
   for (fz::IntegerVariable* const fz_var : fz_vars) {
     IntExpr* const expr = data->Extract(fz_var);
     if (!expr->IsVar()) {
@@ -2011,7 +2017,8 @@ void ExtractIntLinGeReif(fz::SolverData* data, fz::Constraint* ct) {
   }
 }
 
-bool PostHiddenClause(SatPropagator* const sat, const std::vector<int64>& coeffs,
+bool PostHiddenClause(SatPropagator* const sat,
+                      const std::vector<int64>& coeffs,
                       const std::vector<IntVar*>& vars) {
   std::vector<IntVar*> others;
   others.reserve(vars.size() - 1);
@@ -2470,7 +2477,8 @@ void ExtractInverse(fz::SolverData* data, fz::Constraint* ct) {
   std::vector<IntVar*> left;
   // Account for 1 based arrays.
   left.push_back(solver->MakeIntConst(0));
-  std::vector<IntVar*> tmp_vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  std::vector<IntVar*> tmp_vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   left.insert(left.end(), tmp_vars.begin(), tmp_vars.end());
 
   std::vector<IntVar*> right;
@@ -2569,7 +2577,8 @@ void ExtractMinimumInt(fz::SolverData* data, fz::Constraint* ct) {
 void ExtractNvalue(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
 
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[1]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[1]);
 
   int64 lb = kint64max;
   int64 ub = kint64min;
@@ -2832,7 +2841,8 @@ void ExtractSlidingSum(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractSort(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
-  const std::vector<IntVar*> left = data->GetOrCreateVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> left =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   const std::vector<IntVar*> right =
       data->GetOrCreateVariableArray(ct->arguments[1]);
   Constraint* const constraint = solver->MakeSortingConstraint(left, right);
@@ -2892,7 +2902,8 @@ void ExtractTableInt(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractSymmetricAllDifferent(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const s = data->solver();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   Constraint* const constraint =
       s->MakeInversePermutationConstraint(vars, vars);
   AddConstraint(s, ct, constraint);

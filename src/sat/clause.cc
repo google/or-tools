@@ -96,8 +96,8 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
   // small clauses like binary or ternary clauses will often propagate and thus
   // stay at the beginning of the list.
   std::vector<Watcher>::iterator new_it = watchers.begin();
-  for (std::vector<Watcher>::iterator it = watchers.begin(); it != watchers.end();
-       ++it) {
+  for (std::vector<Watcher>::iterator it = watchers.begin();
+       it != watchers.end(); ++it) {
     // Don't even look at the clause memory if the blocking literal is true.
     if (assignment.LiteralIsTrue(it->blocking_literal)) {
       *new_it++ = *it;

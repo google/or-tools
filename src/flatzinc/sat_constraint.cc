@@ -252,7 +252,8 @@ bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
 }
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
-                                 const std::vector<IntVar*>& vars, IntExpr* target) {
+                                 const std::vector<IntVar*>& vars,
+                                 IntExpr* target) {
   if (!sat->AllVariablesAreBoolean(vars) || !sat->ExpressionIsBoolean(target)) {
     return false;
   }
@@ -266,7 +267,8 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
   return true;
 }
 
-bool AddMaxBoolArrayLessEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
+bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
+                              const std::vector<IntVar*>& vars,
                               IntExpr* target) {
   if (!sat->AllVariablesAreBoolean(vars) || !sat->ExpressionIsBoolean(target)) {
     return false;
@@ -366,7 +368,8 @@ bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
   return true;
 }
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars) {
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
+                             const std::vector<IntVar*>& vars) {
   if (!sat->AllVariablesAreBoolean(vars)) {
     return false;
   }

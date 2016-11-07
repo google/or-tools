@@ -90,14 +90,18 @@ class NoCyclePropagator : public SatPropagator {
     LiteralIndex literal_index;
   };
   const std::vector<std::vector<Arc>>& Graph() const { return graph_; }
-  const std::vector<std::vector<Arc>>& ReverseGraph() const { return reverse_graph_; }
+  const std::vector<std::vector<Arc>>& ReverseGraph() const {
+    return reverse_graph_;
+  }
 
   // Getters for the "potential" arcs. That is the arcs that could be added to
   // the graph or not depending on their associated literal value. Note that
   // some already added arcs may not appear here for optimization purposes.
-  const std::vector<std::vector<Arc>>& PotentialGraph() const { return potential_graph_; }
-  const ITIVector<LiteralIndex, std::vector<std::pair<int, int>>>& PotentialArcs()
-      const {
+  const std::vector<std::vector<Arc>>& PotentialGraph() const {
+    return potential_graph_;
+  }
+  const ITIVector<LiteralIndex, std::vector<std::pair<int, int>>>&
+  PotentialArcs() const {
     return potential_arcs_;
   }
 
@@ -117,7 +121,8 @@ class NoCyclePropagator : public SatPropagator {
   // not in the given already_reached. The already_reached vector is not const
   // because this function temporarily modifies it before restoring it to its
   // original value for performance reason.
-  std::vector<int> NewlyReachable(int source, std::vector<bool>* already_reached) const;
+  std::vector<int> NewlyReachable(int source,
+                                  std::vector<bool>* already_reached) const;
 
   // Finds a path from source to target and output its reason.
   // Only the arcs whose associated literal is assigned before the given

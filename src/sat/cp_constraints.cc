@@ -549,56 +549,64 @@ void NonOverlappingRectanglesPropagator<S>::AddBoxReason(int box) {
   AddBoundsReason(dy_[box], &integer_reason_);
 }
 
-template <class S>
-bool NonOverlappingRectanglesPropagator<S>::CanBoxesOverlap(int i,
-                                                            int j) const {
-  if (AreBoxesDisjoingHorizontallyForSure(i, j) ||
-      AreBoxesDisjoingVerticallyForSure(i, j)) {
-    return false;
-  }
-  return true;
+namespace {
+
+// Returns true iff the 2 given intervals are disjoint. If their union is one
+// point, this also returns true.
+bool IntervalAreDisjointForSure(IntegerValue min_a, IntegerValue max_a,
+                                IntegerValue min_b, IntegerValue max_b) {
+  return min_a >= max_b || min_b >= max_a;
 }
 
-template <class S>
-bool NonOverlappingRectanglesPropagator<S>::AreBoxesDisjoingHorizontallyForSure(
-    int i, int j) const {
-  return Min(x_[i]) >= Max(x_[j]) + Max(dx_[j]) ||
-         Min(x_[j]) >= Max(x_[i]) + Max(dx_[i]) ||
-         (!strict_ && (Min(dx_[i]) == 0 || Min(dx_[j]) == 0));
+// Returns the distance from interval a to the "bounding interval" of a and b.
+IntegerValue DistanceToBoundingInterval(IntegerValue min_a, IntegerValue max_a,
+                                        IntegerValue min_b,
+                                        IntegerValue max_b) {
+  return std::max(min_a - min_b, max_b - max_a);
 }
 
-template <class S>
-bool NonOverlappingRectanglesPropagator<S>::AreBoxesDisjoingVerticallyForSure(
-    int i, int j) const {
-  return Min(y_[i]) >= Max(y_[j]) + Max(dy_[j]) ||
-         Min(y_[j]) >= Max(y_[i]) + Max(dy_[i]) ||
-         (!strict_ && (Min(dy_[i]) == 0 || Min(dx_[j]) == 0));
-}
-
-template <class S>
-IntegerValue NonOverlappingRectanglesPropagator<S>::DistanceToBoundingBox(
-    int box, int other) {
-  IntegerValue distance = Min(x_[box]) - Min(x_[other]);
-  distance =
-      std::max(distance, Max(x_[other]) + Max(dx_[other]) - Max(x_[box]));
-  distance = std::max(distance, Min(y_[box]) - Min(y_[other]));
-  distance =
-      std::max(distance, Max(y_[other]) + Max(dy_[other]) - Max(y_[box]));
-  return distance;
-}
+}  // namespace
 
 template <class S>
 void NonOverlappingRectanglesPropagator<S>::FillNeighbors(int box) {
+  if (!strict_ && (Min(dx_[box]) == 0 || Min(dy_[box]) == 0)) return;
+
   // TODO(user): We could maintain a non reversible list of
   // neighbors and clean it after each failure.
   neighbors_.clear();
+  cached_distance_to_bounding_box_.resize(x_.size());
+  const IntegerValue box_x_min = Min(x_[box]);
+  const IntegerValue box_x_max = Max(x_[box]) + Max(dx_[box]);
+  const IntegerValue box_y_min = Min(y_[box]);
+  const IntegerValue box_y_max = Max(y_[box]) + Max(dy_[box]);
   for (int other = 0; other < x_.size(); ++other) {
-    if (other != box && CanBoxesOverlap(other, box)) {
-      neighbors_.push_back(other);
+    if (other == box) continue;
+    if (!strict_ && (Min(dx_[other]) == 0 || Min(dy_[other]) == 0)) continue;
+
+    const IntegerValue other_x_min = Min(x_[other]);
+    const IntegerValue other_x_max = Max(x_[other]) + Max(dx_[other]);
+    if (IntervalAreDisjointForSure(box_x_min, box_x_max, other_x_min,
+                                   other_x_max)) {
+      continue;
     }
+
+    const IntegerValue other_y_min = Min(y_[other]);
+    const IntegerValue other_y_max = Max(y_[other]) + Max(dy_[other]);
+    if (IntervalAreDisjointForSure(box_y_min, box_y_max, other_y_min,
+                                   other_y_max)) {
+      continue;
+    }
+
+    neighbors_.push_back(other);
+    cached_distance_to_bounding_box_[other] =
+        std::max(DistanceToBoundingInterval(box_x_min, box_x_max, other_x_min,
+                                            other_x_max),
+                 DistanceToBoundingInterval(box_y_min, box_y_max, other_y_min,
+                                            other_y_max));
   }
-  std::sort(neighbors_.begin(), neighbors_.end(), [this, box](int i, int j) {
-    return DistanceToBoundingBox(box, i) < DistanceToBoundingBox(box, j);
+  std::sort(neighbors_.begin(), neighbors_.end(), [this](int i, int j) {
+    return cached_distance_to_bounding_box_[i] <
+           cached_distance_to_bounding_box_[j];
   });
 }
 
@@ -724,6 +732,51 @@ bool NonOverlappingRectanglesPropagator<S>::PushOneBox(int box, int other) {
 
 template class NonOverlappingRectanglesPropagator<IntegerVariable>;
 template class NonOverlappingRectanglesPropagator<IntegerValue>;
+
+std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
+    const std::vector<std::vector<LiteralIndex>>& square_matrix) {
+  return [=](Model* model) {
+    int n = square_matrix.size();
+    int num_trivially_false = 0;
+    Trail* trail = model->GetOrCreate<Trail>();
+    std::vector<Literal> exactly_one_constraint;
+    for (const bool transpose : {false, true}) {
+      for (int i = 0; i < n; ++i) {
+        int num_true = 0;
+        exactly_one_constraint.clear();
+        for (int j = 0; j < n; ++j) {
+          CHECK_EQ(n, square_matrix[i].size());
+          const LiteralIndex index =
+              transpose ? square_matrix[j][i] : square_matrix[i][j];
+          if (index == kFalseLiteralIndex) continue;
+          if (index == kTrueLiteralIndex) {
+            ++num_true;
+            continue;
+          }
+          exactly_one_constraint.push_back(Literal(index));
+        }
+        if (num_true > 1) {
+          LOG(WARNING) << "UNSAT in ExactlyOnePerRowAndPerColumn().";
+          return model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+        }
+        CHECK_LE(num_true, 1);
+        if (num_true == 1) {
+          for (const Literal l : exactly_one_constraint) {
+            if (!trail->Assignment().VariableIsAssigned(l.Variable())) {
+              ++num_trivially_false;
+              trail->EnqueueWithUnitReason(l.Negated());
+            }
+          }
+        } else {
+          model->Add(ExactlyOneConstraint(exactly_one_constraint));
+        }
+      }
+    }
+    if (num_trivially_false > 0) {
+      LOG(INFO) << "Num extra fixed literal: " << num_trivially_false;
+    }
+  };
+}
 
 }  // namespace sat
 }  // namespace operations_research

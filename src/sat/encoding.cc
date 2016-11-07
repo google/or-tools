@@ -281,7 +281,8 @@ struct SortEncodingNodePointers {
 EncodingNode* LazyMergeAllNodeWithPQ(const std::vector<EncodingNode*>& nodes,
                                      SatSolver* solver,
                                      std::deque<EncodingNode>* repository) {
-  std::priority_queue<EncodingNode*, std::vector<EncodingNode*>, SortEncodingNodePointers>
+  std::priority_queue<EncodingNode*, std::vector<EncodingNode*>,
+                      SortEncodingNodePointers>
       pq(nodes.begin(), nodes.end());
   while (pq.size() > 1) {
     EncodingNode* a = pq.top();

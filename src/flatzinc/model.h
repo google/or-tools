@@ -337,8 +337,10 @@ class Model {
   // problem, or minimize or maximize the given variable (which must have been
   // added with AddVariable() already).
   void Satisfy(std::vector<Annotation> search_annotations);
-  void Minimize(IntegerVariable* obj, std::vector<Annotation> search_annotations);
-  void Maximize(IntegerVariable* obj, std::vector<Annotation> search_annotations);
+  void Minimize(IntegerVariable* obj,
+                std::vector<Annotation> search_annotations);
+  void Maximize(IntegerVariable* obj,
+                std::vector<Annotation> search_annotations);
 
   // ----- Accessors and mutators -----
 

@@ -203,7 +203,8 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   // http://people.cs.nctu.edu.tw/~tjshen/doc/ne.pdf
   void InitializeBFQueueWithModifiedNodes();
   bool BellmanFordTarjan(Trail* trail);
-  bool DisassembleSubtree(int source, int target, std::vector<bool>* can_be_skipped);
+  bool DisassembleSubtree(int source, int target,
+                          std::vector<bool>* can_be_skipped);
   void ReportPositiveCycle(int first_arc, Trail* trail);
   void CleanUpMarkedArcsAndParents();
 

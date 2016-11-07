@@ -129,7 +129,8 @@ std::vector<bool> SatPostsolver::ExtractAndPostsolveSolution(
   return PostsolveSolution(solution);
 }
 
-std::vector<bool> SatPostsolver::PostsolveSolution(const std::vector<bool>& solution) {
+std::vector<bool> SatPostsolver::PostsolveSolution(
+    const std::vector<bool>& solution) {
   for (BooleanVariable var(0); var < solution.size(); ++var) {
     CHECK_LT(var, reverse_mapping_.size());
     CHECK_NE(reverse_mapping_[var], kNoBooleanVariable);
@@ -481,7 +482,8 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
   // loop to also remove the empty sets from the list.
   {
     int new_index = 0;
-    std::vector<ClauseIndex>& occurence_list_ref = literal_to_clauses_[lit.Index()];
+    std::vector<ClauseIndex>& occurence_list_ref =
+        literal_to_clauses_[lit.Index()];
     for (ClauseIndex ci : occurence_list_ref) {
       if (clauses_[ci].empty()) continue;
       if (ci != clause_index &&
@@ -873,7 +875,8 @@ LiteralIndex DifferAtGivenLiteral(const std::vector<Literal>& a,
 }
 
 bool ComputeResolvant(Literal x, const std::vector<Literal>& a,
-                      const std::vector<Literal>& b, std::vector<Literal>* out) {
+                      const std::vector<Literal>& b,
+                      std::vector<Literal>* out) {
   DCHECK(std::is_sorted(a.begin(), a.end()));
   DCHECK(std::is_sorted(b.begin(), b.end()));
 

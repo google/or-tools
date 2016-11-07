@@ -122,7 +122,8 @@ void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
 // by first computing how many times they appear and then apply the sorting
 // permutation.
 void PrecedencesPropagator::ComputePrecedences(
-    const std::vector<IntegerVariable>& vars, const std::vector<bool>& to_consider,
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<bool>& to_consider,
     std::vector<IntegerPrecedences>* output) {
   tmp_sorted_vars_.clear();
   tmp_precedences_.clear();
@@ -453,8 +454,8 @@ void PrecedencesPropagator::CleanUpMarkedArcsAndParents() {
                       [](bool v) { return v; }));
 }
 
-bool PrecedencesPropagator::DisassembleSubtree(int source, int target,
-                                               std::vector<bool>* can_be_skipped) {
+bool PrecedencesPropagator::DisassembleSubtree(
+    int source, int target, std::vector<bool>* can_be_skipped) {
   // Note that we explore a tree, so we can do it in any order, and the one
   // below seems to be the fastest.
   tmp_vector_.clear();

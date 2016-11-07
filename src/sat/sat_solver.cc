@@ -249,9 +249,9 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals) {
   return true;
 }
 
-bool SatSolver::AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>& cst,
-                                            Coefficient rhs,
-                                            Coefficient max_value) {
+bool SatSolver::AddLinearConstraintInternal(
+    const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
+    Coefficient max_value) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(BooleanLinearExpressionIsCanonical(cst));
   if (rhs < 0) return SetModelUnsat();  // Unsatisfiable constraint.
@@ -2587,7 +2587,8 @@ void SatSolver::DeleteDetachedClauses() {
   std::vector<SatClause*>::iterator iter =
       std::stable_partition(clauses_.begin(), clauses_.end(),
                             [](SatClause* a) { return a->IsAttached(); });
-  for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
+  for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end();
+       ++it) {
     // We do not want to mark as deleted clause of size 2 because they are
     // still kept in the solver inside the BinaryImplicationGraph.
     if (drat_writer_ != nullptr && (*it)->Size() > 2) {

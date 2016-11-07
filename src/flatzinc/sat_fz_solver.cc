@@ -12,6 +12,8 @@
 // limitations under the License.
 
 #include "flatzinc/sat_fz_solver.h"
+
+#include "base/hash.h"
 #include "base/timer.h"
 #include "base/map_util.h"
 #include "flatzinc/checker.h"
@@ -81,7 +83,8 @@ IntegerVariable SatModel::LookupVar(const fz::Argument& argument) {
   return FindOrDie(var_map, argument.variables[0]);
 }
 
-std::vector<IntegerVariable> SatModel::LookupVars(const fz::Argument& argument) {
+std::vector<IntegerVariable> SatModel::LookupVars(
+    const fz::Argument& argument) {
   std::vector<IntegerVariable> result;
   if (argument.type == fz::Argument::VOID_ARGUMENT) return result;
 
@@ -137,7 +140,8 @@ const Literal SatModel::GetTrueLiteral(const fz::Argument& argument) {
   return GetTrueLiteral(LookupVar(argument));
 }
 
-const std::vector<Literal> SatModel::GetTrueLiterals(const fz::Argument& argument) {
+const std::vector<Literal> SatModel::GetTrueLiterals(
+    const fz::Argument& argument) {
   std::vector<Literal> literals;
   for (const IntegerVariable var : LookupVars(argument)) {
     literals.push_back(GetTrueLiteral(var));
@@ -145,7 +149,8 @@ const std::vector<Literal> SatModel::GetTrueLiterals(const fz::Argument& argumen
   return literals;
 }
 
-const std::vector<Literal> SatModel::GetFalseLiterals(const fz::Argument& argument) {
+const std::vector<Literal> SatModel::GetFalseLiterals(
+    const fz::Argument& argument) {
   std::vector<Literal> literals;
   for (const IntegerVariable var : LookupVars(argument)) {
     literals.push_back(GetTrueLiteral(var).Negated());

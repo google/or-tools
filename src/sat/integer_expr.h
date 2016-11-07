@@ -100,8 +100,8 @@ class IntegerSumLE : public PropagatorInterface {
 // TODO(user): Implement a more efficient algorithm when the need arise.
 class MinPropagator : public PropagatorInterface {
  public:
-  MinPropagator(const std::vector<IntegerVariable>& vars, IntegerVariable min_var,
-                IntegerTrail* integer_trail);
+  MinPropagator(const std::vector<IntegerVariable>& vars,
+                IntegerVariable min_var, IntegerTrail* integer_trail);
 
   bool Propagate() final;
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -114,41 +114,6 @@ class MinPropagator : public PropagatorInterface {
   std::vector<IntegerLiteral> integer_reason_;
 
   DISALLOW_COPY_AND_ASSIGN(MinPropagator);
-};
-
-// Propagate the fact that a given integer variable is equal to exactly one
-// element out of a given set of values. Each value is selected or not by a
-// literal being true.
-//
-// Note that the fact that exactly one "selector" should be true is not enforced
-// here. This class just propagate the directions:
-// - selector is false => potentially restrict the [lb, ub] of var.
-// - [lb, ub] change => more selector can be set to false.
-//
-// TODO(user): This is actually exactly the same as fully encoding a variable
-// from its list of values. It is just that we use the given Literal instead
-// of creating new ones. Directly integrate this in the IntegerEncoder. Test
-// this on the TSP.
-class IsOneOfPropagator : public PropagatorInterface {
- public:
-  IsOneOfPropagator(IntegerVariable var, const std::vector<Literal>& selectors,
-                    const std::vector<IntegerValue>& values, Trail* trail,
-                    IntegerTrail* integer_trail);
-
-  bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
-
- private:
-  const IntegerVariable var_;
-  const std::vector<Literal> selectors_;
-  const std::vector<IntegerValue> values_;
-  Trail* trail_;
-  IntegerTrail* integer_trail_;
-
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> integer_reason_;
-
-  DISALLOW_COPY_AND_ASSIGN(IsOneOfPropagator);
 };
 
 // Propagates a * b = c. Basic version, we don't extract any special cases, and
@@ -239,7 +204,8 @@ inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
     int64 lower_bound) {
   // We just negate everything and use an <= constraints.
-  std::vector<IntegerValue> negated_coeffs(coefficients.begin(), coefficients.end());
+  std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
+                                           coefficients.end());
   for (IntegerValue& ref : negated_coeffs) ref = -ref;
   return WeightedSumLowerOrEqual(vars, negated_coeffs, -lower_bound);
 }
@@ -295,7 +261,8 @@ inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
     Literal is_ge, const std::vector<IntegerVariable>& vars,
     const VectorInt& coefficients, int64 lower_bound) {
   // We just negate everything and use an <= constraint.
-  std::vector<IntegerValue> negated_coeffs(coefficients.begin(), coefficients.end());
+  std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
+                                           coefficients.end());
   for (IntegerValue& ref : negated_coeffs) ref = -ref;
   return ConditionalWeightedSumLowerOrEqual(is_ge, vars, negated_coeffs,
                                             -lower_bound);
@@ -371,7 +338,8 @@ inline std::function<IntegerVariable(Model*)> NewWeightedSum(
     const VectorInt& coefficients, const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
     std::vector<IntegerVariable> new_vars = vars;
-    std::vector<IntegerValue> new_coeffs(coefficients.begin(), coefficients.end());
+    std::vector<IntegerValue> new_coeffs(coefficients.begin(),
+                                         coefficients.end());
 
     // To avoid overflow in the FixedWeightedSum() constraint, we need to
     // compute the basic bounds on the sum.
@@ -460,16 +428,33 @@ inline std::function<IntegerVariable(Model*)> NewMax(
 
 // Expresses the fact that an existing integer variable is equal to one of
 // the given values, each selected by a given literal.
-inline std::function<void(Model*)> IsOneOf(IntegerVariable var,
-                                           const std::vector<Literal>& selectors,
-                                           const std::vector<IntegerValue>& values) {
+inline std::function<void(Model*)> IsOneOf(
+    IntegerVariable var, const std::vector<Literal>& selectors,
+    const std::vector<IntegerValue>& values) {
   return [=](Model* model) {
-    // TODO(user): Add the exactly one constaint here?
-    IsOneOfPropagator* constraint = new IsOneOfPropagator(
-        var, selectors, values, model->GetOrCreate<Trail>(),
-        model->GetOrCreate<IntegerTrail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
+    CHECK(!values.empty());
+    CHECK_EQ(values.size(), selectors.size());
+    IntegerValue min_value = values[0];
+    IntegerValue max_value = values[1];
+    for (const IntegerValue v : values) {
+      min_value = std::min(min_value, v);
+      max_value = std::max(max_value, v);
+    }
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    CHECK(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, min_value),
+                                 {}, {}));
+    CHECK(integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, max_value),
+                                 {}, {}));
+
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    if (!encoder->VariableIsFullyEncoded(var)) {
+      encoder->FullyEncodeVariableUsingGivenLiterals(var, selectors, values);
+    } else {
+      // TODO(user): copy the sat_fz_solver code of the int element here.
+      // And use this function instead because the first branch will be more
+      // efficient).
+      LOG(FATAL) << "TODO(fdid): Not implemented.";
+    }
   };
 }
 

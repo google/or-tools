@@ -65,9 +65,9 @@ inline std::ostream& operator<<(std::ostream& os, LiteralWithCoeff term) {
 //
 // Finally, this will return false, if some integer overflow or underflow
 // occured during the reduction to the canonical form.
-bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* cst,
-                                                 Coefficient* bound_shift,
-                                                 Coefficient* max_value);
+bool ComputeBooleanLinearExpressionCanonicalForm(
+    std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
+    Coefficient* max_value);
 
 // Maps all the literals of the given constraint using the given mapping. The
 // mapping may map a literal index to kTrueLiteralIndex or kFalseLiteralIndex in
@@ -103,12 +103,13 @@ Coefficient ComputeNegatedCanonicalRhs(Coefficient lower_bound,
                                        Coefficient max_value);
 
 // Returns true iff the Boolean linear expression is in canonical form.
-bool BooleanLinearExpressionIsCanonical(const std::vector<LiteralWithCoeff>& cst);
+bool BooleanLinearExpressionIsCanonical(
+    const std::vector<LiteralWithCoeff>& cst);
 
 // Given a Boolean linear constraint in canonical form, simplify its
 // coefficients using simple heuristics.
-void SimplifyCanonicalBooleanLinearConstraint(std::vector<LiteralWithCoeff>* cst,
-                                              Coefficient* rhs);
+void SimplifyCanonicalBooleanLinearConstraint(
+    std::vector<LiteralWithCoeff>* cst, Coefficient* rhs);
 
 // Holds a set of boolean linear constraints in canonical form:
 // - The constraint is a linear sum of LiteralWithCoeff <= rhs.
@@ -144,8 +145,8 @@ class CanonicalBooleanLinearProblem {
   }
 
  private:
-  bool AddConstraint(const std::vector<LiteralWithCoeff>& cst, Coefficient max_value,
-                     Coefficient rhs);
+  bool AddConstraint(const std::vector<LiteralWithCoeff>& cst,
+                     Coefficient max_value, Coefficient rhs);
 
   std::vector<Coefficient> rhs_;
   std::vector<std::vector<LiteralWithCoeff>> constraints_;
@@ -357,7 +358,8 @@ struct PbConstraintsEnqueueHelper {
 class UpperBoundedLinearConstraint {
  public:
   // Takes a pseudo-Boolean formula in canonical form.
-  explicit UpperBoundedLinearConstraint(const std::vector<LiteralWithCoeff>& cst);
+  explicit UpperBoundedLinearConstraint(
+      const std::vector<LiteralWithCoeff>& cst);
 
   // Returns true if the given terms are the same as the one in this constraint.
   bool HasIdenticalTerms(const std::vector<LiteralWithCoeff>& cst);
@@ -410,7 +412,8 @@ class UpperBoundedLinearConstraint {
   // better to use during conflict minimization (namely the one already in the
   // 1-UIP conflict).
   void FillReason(const Trail& trail, int source_trail_index,
-                  BooleanVariable propagated_variable, std::vector<Literal>* reason);
+                  BooleanVariable propagated_variable,
+                  std::vector<Literal>* reason);
 
   // Same operation as SatSolver::ResolvePBConflict(), the only difference is
   // that here the reason for var is *this.
@@ -633,7 +636,8 @@ class PbConstraints : public SatPropagator {
 
   // Pointers to the constraints grouped by their hash.
   // This is used to find duplicate constraints by AddConstraint().
-  hash_map<int64, std::vector<UpperBoundedLinearConstraint*>> possible_duplicates_;
+  hash_map<int64, std::vector<UpperBoundedLinearConstraint*>>
+      possible_duplicates_;
 
   // Helper to enqueue propagated literals on the trail and store their reasons.
   PbConstraintsEnqueueHelper enqueue_helper_;

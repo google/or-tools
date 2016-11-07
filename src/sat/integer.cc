@@ -92,6 +92,37 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var, IntegerValue lb,
   return FullyEncodeVariable(i_var, std::move(values));
 }
 
+void IntegerEncoder::FullyEncodeVariableUsingGivenLiterals(
+    IntegerVariable i_var, const std::vector<Literal>& literals,
+    const std::vector<IntegerValue>& values) {
+  CHECK(!VariableIsFullyEncoded(i_var));
+
+  // Sort the literal.
+  std::vector<ValueLiteralPair> encoding;
+  std::vector<sat::LiteralWithCoeff> cst;
+  for (int i = 0; i < values.size(); ++i) {
+    const Literal literal = literals[i];
+    const IntegerValue value = values[i];
+    encoding.push_back({value, literal});
+    cst.push_back(LiteralWithCoeff(literal, Coefficient(1)));
+  }
+  std::sort(encoding.begin(), encoding.end());
+
+  full_encoding_index_[i_var] = full_encoding_.size();
+  full_encoding_.push_back(encoding);  // copy because we need it below.
+
+  // Deal with NegationOf(i_var).
+  //
+  // TODO(user): This seems a bit wasted, but it does simplify the code at a
+  // somehow small cost.
+  std::reverse(encoding.begin(), encoding.end());
+  for (auto& entry : encoding) {
+    entry.value = -entry.value;  // Reverse the value.
+  }
+  full_encoding_index_[NegationOf(i_var)] = full_encoding_.size();
+  full_encoding_.push_back(std::move(encoding));
+}
+
 void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
   if (i_lit.var >= encoding_by_var_.size()) {
     encoding_by_var_.resize(i_lit.var + 1);

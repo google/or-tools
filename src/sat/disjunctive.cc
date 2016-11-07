@@ -19,7 +19,8 @@
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model*)> Disjunctive(const std::vector<IntervalVariable>& vars) {
+std::function<void(Model*)> Disjunctive(
+    const std::vector<IntervalVariable>& vars) {
   return [=](Model* model) {
     DisjunctiveConstraint* disjunctive = new DisjunctiveConstraint(
         vars, model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>(),
@@ -126,8 +127,8 @@ IntegerValue TaskSet::ComputeMinEnd(int task_to_ignore,
 }
 
 DisjunctiveConstraint::DisjunctiveConstraint(
-    const std::vector<IntervalVariable>& non_overlapping_intervals, Trail* trail,
-    IntegerTrail* integer_trail, IntervalsRepository* intervals,
+    const std::vector<IntervalVariable>& non_overlapping_intervals,
+    Trail* trail, IntegerTrail* integer_trail, IntervalsRepository* intervals,
     PrecedencesPropagator* precedences)
     : non_overlapping_intervals_(non_overlapping_intervals),
       trail_(trail),

@@ -66,7 +66,8 @@ class SatClause {
   // Creates a sat clause. There must be at least 2 literals. Smaller clause are
   // treated separatly and never constructed. A redundant clause can be removed
   // without changing the problem.
-  static SatClause* Create(const std::vector<Literal>& literals, bool is_redundant);
+  static SatClause* Create(const std::vector<Literal>& literals,
+                           bool is_redundant);
 
   // Non-sized delete because this is a tail-padded class.
   void operator delete(void* p) {
@@ -371,7 +372,8 @@ class BinaryImplicationGraph : public SatPropagator {
   // See the binary_minimization_algorithm SAT parameter and the .cc for more
   // details about the different algorithms.
   void MinimizeConflictWithReachability(std::vector<Literal>* c);
-  void MinimizeConflictExperimental(const Trail& trail, std::vector<Literal>* c);
+  void MinimizeConflictExperimental(const Trail& trail,
+                                    std::vector<Literal>* c);
   void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
                              SparseBitset<BooleanVariable>* marked);
   void MinimizeConflictFirstWithTransitiveReduction(

@@ -26,7 +26,8 @@ namespace sat {
 
 // Enforces a disjunctive (or no overlap) constraint on the given interval
 // variables.
-std::function<void(Model*)> Disjunctive(const std::vector<IntervalVariable>& vars);
+std::function<void(Model*)> Disjunctive(
+    const std::vector<IntervalVariable>& vars);
 
 // Same as Disjunctive() but also creates a Boolean variable for all the
 // possible precedences of the form (task i is before task j).
@@ -104,9 +105,9 @@ class DisjunctiveConstraint : public PropagatorInterface {
   // Creates a disjunctive constraint (or no overlap constraint) between the
   // given IntervalVariable.
   DisjunctiveConstraint(
-      const std::vector<IntervalVariable>& non_overlapping_intervals, Trail* trail,
-      IntegerTrail* integer_trail, IntervalsRepository* task_repository,
-      PrecedencesPropagator* precedences);
+      const std::vector<IntervalVariable>& non_overlapping_intervals,
+      Trail* trail, IntegerTrail* integer_trail,
+      IntervalsRepository* task_repository, PrecedencesPropagator* precedences);
 
   ~DisjunctiveConstraint() final {
     IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());

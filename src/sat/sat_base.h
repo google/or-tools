@@ -324,7 +324,8 @@ class Trail {
   // Reason() function of the associated propagator.
   void NotifyThatReasonIsCached(BooleanVariable var) const {
     DCHECK(assignment_.VariableIsAssigned(var));
-    const std::vector<Literal>& reason = reasons_repository_[info_[var].trail_index];
+    const std::vector<Literal>& reason =
+        reasons_repository_[info_[var].trail_index];
     reasons_[var] = reason.empty() ? ClauseRef() : ClauseRef(reason);
     old_type_[var] = info_[var].type;
     info_[var].type = AssignmentType::kCachedReason;

@@ -62,7 +62,8 @@ enum LogBehavior { DEFAULT_LOG, STDOUT_LOG };
 // negative.
 SatSolver::Status SolveWithFuMalik(LogBehavior log,
                                    const LinearBooleanProblem& problem,
-                                   SatSolver* solver, std::vector<bool>* solution);
+                                   SatSolver* solver,
+                                   std::vector<bool>* solution);
 
 // The WPM1 algorithm is a generalization of the Fu & Malik algorithm to
 // weighted problems. Note that if all objective weights are the same, this is

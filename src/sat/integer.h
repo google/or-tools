@@ -206,19 +206,37 @@ class IntegerEncoder {
   //
   // TODO(user): It is currently only possible to call that at the decision
   // level zero. This is Checked.
-  void FullyEncodeVariable(IntegerVariable var, std::vector<IntegerValue> values);
+  void FullyEncodeVariable(IntegerVariable var,
+                           std::vector<IntegerValue> values);
   void FullyEncodeVariable(IntegerVariable var, IntegerValue lb,
                            IntegerValue ub);
+
+  // Similar to FullyEncodeVariable() but use the given literal for each values.
+  // This can only be called on variable that are not fully encoded yet, This is
+  // checked.
+  //
+  // Note that duplicate values are supported, but exactly one literal must be
+  // true at the same time. The "exactly one" constraint will implicitely be
+  // enforced by the code in IntegerTrail.
+  void FullyEncodeVariableUsingGivenLiterals(
+      IntegerVariable var, const std::vector<Literal>& literals,
+      const std::vector<IntegerValue>& values);
 
   // Gets the full encoding of a variable on which FullyEncodeVariable() has
   // been called. The returned elements are always sorted by increasing
   // IntegerValue. Once created, the encoding never changes, but some Boolean
-  // variable may become fixed.
+  // variables may become fixed.
+  //
+  // IMPORTANT: the returned vector will be sorted by value, but may contain
+  // duplicates values! IntegerTrail is doing the correct thing in this case.
+  // This allows us to direcly support the "int element" constraint and its
+  // variant at the core level.
   struct ValueLiteralPair {
     ValueLiteralPair(IntegerValue v, Literal l) : value(v), literal(l) {}
     bool operator==(const ValueLiteralPair& o) const {
       return value == o.value && literal == o.literal;
     }
+    bool operator<(const ValueLiteralPair& o) const { return value < o.value; }
     IntegerValue value;
     Literal literal;
   };
@@ -398,12 +416,13 @@ class IntegerTrail : public SatPropagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
-  MUST_USE_RESULT bool Enqueue(IntegerLiteral bound,
-                               const std::vector<Literal>& literal_reason,
-                               const std::vector<IntegerLiteral>& integer_reason);
+  MUST_USE_RESULT bool Enqueue(
+      IntegerLiteral bound, const std::vector<Literal>& literal_reason,
+      const std::vector<IntegerLiteral>& integer_reason);
 
   // Enqueues the given literal on the trail.
-  void EnqueueLiteral(Literal literal, const std::vector<Literal>& literal_reason,
+  void EnqueueLiteral(Literal literal,
+                      const std::vector<Literal>& literal_reason,
                       const std::vector<IntegerLiteral>& integer_reason);
 
   // Returns the reason (as set of Literal currently false) for a given integer
@@ -454,10 +473,11 @@ class IntegerTrail : public SatPropagator {
 
   // Helper used by Enqueue() to propagate one of the literal associated to
   // the given i_lit and maintained by encoder_.
-  bool EnqueueAssociatedLiteral(Literal literal, IntegerLiteral i_lit,
-                                const std::vector<Literal>& literals_reason,
-                                const std::vector<IntegerLiteral>& bounds_reason,
-                                BooleanVariable* variable_with_same_reason);
+  bool EnqueueAssociatedLiteral(
+      Literal literal, IntegerLiteral i_lit,
+      const std::vector<Literal>& literals_reason,
+      const std::vector<IntegerLiteral>& bounds_reason,
+      BooleanVariable* variable_with_same_reason);
 
   // Returns a lower bound on the given var that will always be valid.
   IntegerValue LevelZeroBound(int var) const {
@@ -479,7 +499,8 @@ class IntegerTrail : public SatPropagator {
 
   // Helper function to append the Literal part of the reason for this bound
   // assignment.
-  void AppendLiteralsReason(int trail_index, std::vector<Literal>* output) const;
+  void AppendLiteralsReason(int trail_index,
+                            std::vector<Literal>* output) const;
 
   // Returns some debuging info.
   std::string DebugString();

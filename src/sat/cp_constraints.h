@@ -231,14 +231,10 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  bool CanBoxesOverlap(int i, int j) const;
-  bool AreBoxesDisjoingHorizontallyForSure(int i, int j) const;
-  bool AreBoxesDisjoingVerticallyForSure(int i, int j) const;
   void FillNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);
   bool PushOneBox(int box, int other);
   void AddBoxReason(int box);
-  IntegerValue DistanceToBoundingBox(int box, int other);
 
   const std::vector<IntegerVariable> x_;
   const std::vector<IntegerVariable> y_;
@@ -247,6 +243,7 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   const bool strict_;
 
   std::vector<int> neighbors_;
+  std::vector<IntegerValue> cached_distance_to_bounding_box_;
   std::vector<IntegerLiteral> integer_reason_;
 
   DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesPropagator);
@@ -368,10 +365,16 @@ inline std::function<void(Model*)> StrictNonOverlappingFixedSizeRectangles(
   };
 }
 
+// Enforces that exactly one literal per rows and per columns is true.
+// This only work for a square matrix (but could easily be generalized).
+std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
+    const std::vector<std::vector<LiteralIndex>>& square_matrix);
+
 inline std::function<void(Model*)> CircuitConstraint(
     const std::vector<std::vector<LiteralIndex>>& graph) {
   return [=](Model* model) {
     if (graph.empty()) return;
+    model->Add(ExactlyOnePerRowAndPerColumn(graph));
     CircuitPropagator* constraint = new CircuitPropagator(
         graph, /*allow_subcircuit=*/false, model->GetOrCreate<Trail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
@@ -383,6 +386,7 @@ inline std::function<void(Model*)> SubcircuitConstraint(
     const std::vector<std::vector<LiteralIndex>>& graph) {
   return [=](Model* model) {
     if (graph.empty()) return;
+    model->Add(ExactlyOnePerRowAndPerColumn(graph));
     CircuitPropagator* constraint = new CircuitPropagator(
         graph, /*allow_subcircuit=*/true, model->GetOrCreate<Trail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());

@@ -221,69 +221,6 @@ void MinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchUpperBound(min_var_, id);
 }
 
-IsOneOfPropagator::IsOneOfPropagator(IntegerVariable var,
-                                     const std::vector<Literal>& selectors,
-                                     const std::vector<IntegerValue>& values,
-                                     Trail* trail, IntegerTrail* integer_trail)
-    : var_(var),
-      selectors_(selectors),
-      values_(values),
-      trail_(trail),
-      integer_trail_(integer_trail) {}
-
-bool IsOneOfPropagator::Propagate() {
-  const IntegerValue current_min = integer_trail_->LowerBound(var_);
-  const IntegerValue current_max = integer_trail_->UpperBound(var_);
-  IntegerValue min = kMaxIntegerValue;
-  IntegerValue max = kMinIntegerValue;
-  literal_reason_.clear();
-  for (int i = 0; i < selectors_.size(); ++i) {
-    if (trail_->Assignment().LiteralIsFalse(selectors_[i])) {
-      literal_reason_.push_back(selectors_[i]);
-    } else {
-      min = std::min(min, values_[i]);
-      max = std::max(max, values_[i]);
-
-      if (!trail_->Assignment().LiteralIsTrue(selectors_[i])) {
-        // Propagate selector to false?
-        if (current_min > values_[i]) {
-          integer_trail_->EnqueueLiteral(
-              selectors_[i].Negated(), {},
-              {integer_trail_->LowerBoundAsLiteral(var_)});
-        } else if (current_max < values_[i]) {
-          integer_trail_->EnqueueLiteral(
-              selectors_[i].Negated(), {},
-              {integer_trail_->UpperBoundAsLiteral(var_)});
-        }
-      }
-    }
-  }
-
-  // Propagate new min/max.
-  if (min > current_min) {
-    if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(var_, min),
-                                 literal_reason_, integer_reason_)) {
-      return false;
-    }
-  }
-  if (max < current_max) {
-    if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(var_, max),
-                                 literal_reason_, integer_reason_)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void IsOneOfPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
-  const int id = watcher->Register(this);
-  for (const Literal& lit : selectors_) {
-    watcher->WatchLiteral(lit.Negated(), id);
-  }
-  watcher->WatchIntegerVariable(var_, id);
-}
-
 ProductPropagator::ProductPropagator(IntegerVariable a, IntegerVariable b,
                                      IntegerVariable p,
                                      IntegerTrail* integer_trail)

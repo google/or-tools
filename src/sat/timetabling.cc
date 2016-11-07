@@ -13,7 +13,6 @@
 
 #include <algorithm>
 
-//#include "base/iterator_adaptors.h"
 #include "sat/overload_checker.h"
 #include "sat/sat_solver.h"
 #include "sat/timetabling.h"
@@ -21,9 +20,10 @@
 namespace operations_research {
 namespace sat {
 
-std::function<void(Model*)> Cumulative(const std::vector<IntervalVariable>& vars,
-                                       const std::vector<IntegerVariable>& demands,
-                                       const IntegerVariable& capacity) {
+std::function<void(Model*)> Cumulative(
+    const std::vector<IntervalVariable>& vars,
+    const std::vector<IntegerVariable>& demands,
+    const IntegerVariable& capacity) {
   return [=](Model* model) {
     IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();

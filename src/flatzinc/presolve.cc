@@ -2403,8 +2403,9 @@ bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
   std::vector<int64> new_tuples;
   std::vector<std::unordered_set<int64>> visited_values(num_vars);
   for (int t = 0; t < num_tuples; ++t) {
-    std::vector<int64> tuple(ct->arguments[1].values.begin() + t * num_vars,
-                        ct->arguments[1].values.begin() + (t + 1) * num_vars);
+    std::vector<int64> tuple(
+        ct->arguments[1].values.begin() + t * num_vars,
+        ct->arguments[1].values.begin() + (t + 1) * num_vars);
     bool valid = true;
     for (int i = 0; i < num_vars; ++i) {
       if (!ct->arguments[0].variables[i]->domain.Contains(tuple[i])) {
@@ -2437,7 +2438,7 @@ bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
         var->domain.values.empty() ? 0 : var->domain.values.front();
     const int vmax = var->domain.values.empty() ? 0 : var->domain.values.back();
     std::vector<int64> values(visited_values[var_index].begin(),
-                         visited_values[var_index].end());
+                              visited_values[var_index].end());
     // TODO(user): Add return value that indicates change to IntersectXXX().
     var->domain.IntersectWithListOfIntegers(values);
     variable_changed |= is_interval != var->domain.is_interval ||
@@ -2728,7 +2729,8 @@ CliqueResponse StoreClique(const std::vector<int>& vec, std::vector<int>* out) {
   }
 }
 
-void PrintGraph(const std::vector<std::vector<bool>> neighbors, int num_variables) {
+void PrintGraph(const std::vector<std::vector<bool>> neighbors,
+                int num_variables) {
   for (int i = 0; i < num_variables; ++i) {
     std::string out = StringPrintf("%i : [", i);
     bool found_one = false;
@@ -2790,7 +2792,9 @@ bool Presolver::RegroupDifferent(Model* model) {
     std::vector<int> clique;
     BronKerboschAlgorithm<int> clique_finder(
         [&neighbors](int i, int j) { return neighbors[i][j]; }, num_variables,
-        [&clique](const std::vector<int>& o) { return StoreClique(o, &clique); });
+        [&clique](const std::vector<int>& o) {
+          return StoreClique(o, &clique);
+        });
 
     const BronKerboschAlgorithmStatus status = clique_finder.Run();
     if (status == BronKerboschAlgorithmStatus::COMPLETED) {

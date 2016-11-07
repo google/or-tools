@@ -24,11 +24,13 @@ namespace sat {
 namespace {
 
 // Transpose the given "matrix" and transform the value to IntegerValue.
-std::vector<std::vector<IntegerValue>> Transpose(const std::vector<std::vector<int64>> tuples) {
+std::vector<std::vector<IntegerValue>> Transpose(
+    const std::vector<std::vector<int64>> tuples) {
   CHECK(!tuples.empty());
   const int n = tuples.size();
   const int m = tuples[0].size();
-  std::vector<std::vector<IntegerValue>> transpose(m, std::vector<IntegerValue>(n));
+  std::vector<std::vector<IntegerValue>> transpose(
+      m, std::vector<IntegerValue>(n));
   for (int i = 0; i < n; ++i) {
     CHECK_EQ(m, tuples[i].size());
     for (int j = 0; j < m; ++j) {
@@ -106,7 +108,8 @@ void ProcessOneColumn(const std::vector<Literal>& line_literals,
 }  // namespace
 
 std::function<void(Model*)> TableConstraint(
-    const std::vector<IntegerVariable>& vars, const std::vector<std::vector<int64>>& tuples) {
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples) {
   return [=](Model* model) {
     const int n = vars.size();
 
@@ -154,7 +157,8 @@ std::function<void(Model*)> TableConstraint(
     // Fully encode the variables using all the values appearing in the tuples.
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     hash_map<IntegerValue, Literal> encoding;
-    const std::vector<std::vector<IntegerValue>> tr_tuples = Transpose(new_tuples);
+    const std::vector<std::vector<IntegerValue>> tr_tuples =
+        Transpose(new_tuples);
     for (int i = 0; i < n; ++i) {
       const IntegerValue first = tr_tuples[i].front();
       if (std::all_of(tr_tuples[i].begin(), tr_tuples[i].end(),
@@ -170,8 +174,9 @@ std::function<void(Model*)> TableConstraint(
 }
 
 std::function<void(Model*)> TransitionConstraint(
-    const std::vector<IntegerVariable>& vars, const std::vector<std::vector<int64>>& automata,
-    int64 initial_state, const std::vector<int64>& final_states) {
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& automata, int64 initial_state,
+    const std::vector<int64>& final_states) {
   return [=](Model* model) {
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     const int n = vars.size();

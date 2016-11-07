@@ -64,7 +64,9 @@ IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
 // do not overlap in space.
 // The origin of box i is (x[i][0], ..., x[i][n - 1]).
 // The dimension of the box i in dimension j is dx[i][j].
-Constraint* MakeKDiffn(Solver* solver, const std::vector<std::vector<IntVar*>>& x,
-                       const std::vector<std::vector<IntVar*>>& dx, bool strict);
+Constraint* MakeKDiffn(Solver* solver,
+                       const std::vector<std::vector<IntVar*>>& x,
+                       const std::vector<std::vector<IntVar*>>& dx,
+                       bool strict);
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_CONSTRAINTS_H_

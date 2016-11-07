@@ -120,10 +120,10 @@ class Solver {
                               std::vector<IntVar*>* active_variables,
                               std::vector<int>* defined_occurrences,
                               std::vector<int>* active_occurrences);
-  void AddCompletionDecisionBuilders(const std::vector<IntVar*>& defined_variables,
-                                     const std::vector<IntVar*>& active_variables,
-                                     SearchLimit* limit,
-                                     std::vector<DecisionBuilder*>* builders);
+  void AddCompletionDecisionBuilders(
+      const std::vector<IntVar*>& defined_variables,
+      const std::vector<IntVar*>& active_variables, SearchLimit* limit,
+      std::vector<DecisionBuilder*>* builders);
   DecisionBuilder* CreateDecisionBuilders(const FlatzincParameters& p,
                                           SearchLimit* limit);
   void CollectOutputVariables(std::vector<IntVar*>* output_variables);

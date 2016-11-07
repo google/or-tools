@@ -64,7 +64,8 @@ bool SymmetryPropagator::PropagateNext(Trail* trail) {
 
       // TODO(user): some optim ideas: no need to enqueue if a decision image is
       // already assigned to false. But then the Untrail() is more involved.
-      std::vector<AssignedLiteralInfo>* p_trail = &(permutation_trails_[p_index]);
+      std::vector<AssignedLiteralInfo>* p_trail =
+          &(permutation_trails_[p_index]);
       if (Enqueue(*trail, true_literal, images[image_index].image, p_trail)) {
         continue;
       }

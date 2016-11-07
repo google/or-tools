@@ -207,7 +207,8 @@ class SatSolver {
   //
   // If ASSUMPTIONS_UNSAT is returned, it is possible to get a "core" of unsat
   // assumptions by calling GetLastIncompatibleDecisions().
-  Status ResetAndSolveWithGivenAssumptions(const std::vector<Literal>& assumptions);
+  Status ResetAndSolveWithGivenAssumptions(
+      const std::vector<Literal>& assumptions);
 
   // Changes the assumption level. All the decisions below this level will be
   // treated as assumptions by the next Solve(). Note that this may impact some
@@ -398,7 +399,8 @@ class SatSolver {
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
   // where added since that time, they will be considered unassigned.
-  bool ClauseIsValidUnderDebugAssignement(const std::vector<Literal>& clause) const;
+  bool ClauseIsValidUnderDebugAssignement(
+      const std::vector<Literal>& clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
       const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const;
 
@@ -570,8 +572,9 @@ class SatSolver {
   // Precondidtion: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
-  void MinimizeConflict(std::vector<Literal>* conflict,
-                        std::vector<Literal>* reason_used_to_infer_the_conflict);
+  void MinimizeConflict(
+      std::vector<Literal>* conflict,
+      std::vector<Literal>* reason_used_to_infer_the_conflict);
   void MinimizeConflictExperimental(std::vector<Literal>* conflict);
   void MinimizeConflictSimple(std::vector<Literal>* conflict);
   void MinimizeConflictRecursively(std::vector<Literal>* conflict);

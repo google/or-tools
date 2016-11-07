@@ -929,8 +929,10 @@ IntervalVar* MakePerformedIntervalVar(Solver* const solver, IntVar* const start,
       new StartVarDurationVarPerformedIntervalVar(solver, start, duration, n)));
 }
 
-Constraint* MakeKDiffn(Solver* solver, const std::vector<std::vector<IntVar*>>& x,
-                       const std::vector<std::vector<IntVar*>>& dx, bool strict) {
+Constraint* MakeKDiffn(Solver* solver,
+                       const std::vector<std::vector<IntVar*>>& x,
+                       const std::vector<std::vector<IntVar*>>& dx,
+                       bool strict) {
   return solver->RevAlloc(new KDiffn(solver, x, dx, strict));
 }
 

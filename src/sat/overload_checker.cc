@@ -12,7 +12,6 @@
 // limitations under the License.
 
 #include "sat/overload_checker.h"
-//#include "base/iterator_adaptors.h"
 #include "sat/sat_solver.h"
 
 namespace operations_research {
