@@ -15,6 +15,7 @@
 #ifndef OR_TOOLS_UTIL_REV_H_
 #define OR_TOOLS_UTIL_REV_H_
 
+#include "base/hash.h"
 #include <vector>
 
 #include "base/logging.h"
@@ -199,6 +200,69 @@ void RevMap<Map>::Set(key_type key, mapped_type value) {
     }
   }
   insertion_result.first->second = value;
+}
+
+// A basic backtrackable multi map that can only grow (except on backtrack).
+template <class Key, class Value>
+class RevGrowingMultiMap : ReversibleInterface {
+ public:
+  void SetLevel(int level) final;
+
+  // Adds a new value at the given key.
+  void Add(Key key, Value value);
+
+  // Returns the list of values for a given key (can be empty).
+  const std::vector<Value>& Values(Key key) const;
+
+ private:
+  std::vector<Value> empty_values_;
+
+  // TODO(user): use inlined vectors. Another datastructure that may be more
+  // efficient is to use a linked list inside added_keys_ for the values sharing
+  // the same key.
+  hash_map<Key, std::vector<Value>> map_;
+
+  // Backtracking data.
+  std::vector<Key> added_keys_;
+  std::vector<int> first_added_key_of_next_level_;
+};
+
+template <class Key, class Value>
+void RevGrowingMultiMap<Key, Value>::SetLevel(int level) {
+  DCHECK_GE(level, 0);
+  if (level < first_added_key_of_next_level_.size()) {
+    const int backtrack_level = first_added_key_of_next_level_[level];
+    first_added_key_of_next_level_.resize(level);  // Shrinks.
+    while (added_keys_.size() > backtrack_level) {
+      auto it = map_.find(added_keys_.back());
+      if (it->second.size() > 1) {
+        it->second.pop_back();
+      } else {
+        map_.erase(it);
+      }
+      added_keys_.pop_back();
+    }
+    return;
+  }
+
+  // This is ok even if level == Level().
+  first_added_key_of_next_level_.resize(level, added_keys_.size());  // Grows.
+}
+
+template <class Key, class Value>
+const std::vector<Value>& RevGrowingMultiMap<Key, Value>::Values(
+    Key key) const {
+  const auto it = map_.find(key);
+  if (it != map_.end()) return it->second;
+  return empty_values_;
+}
+
+template <class Key, class Value>
+void RevGrowingMultiMap<Key, Value>::Add(Key key, Value value) {
+  if (!first_added_key_of_next_level_.empty()) {
+    added_keys_.push_back(key);
+  }
+  map_[key].push_back(value);
 }
 
 }  // namespace operations_research

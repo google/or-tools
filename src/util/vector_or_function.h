@@ -69,7 +69,9 @@ class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType>>, square>
  public:
   explicit MatrixOrFunction(std::vector<std::vector<ScalarType>> matrix)
       : matrix_(std::move(matrix)) {}
-  void Reset(std::vector<std::vector<ScalarType>> matrix) { matrix_ = std::move(matrix); }
+  void Reset(std::vector<std::vector<ScalarType>> matrix) {
+    matrix_ = std::move(matrix);
+  }
   ScalarType operator()(int i, int j) const { return matrix_[i][j]; }
   // Returns true if the matrix is square or rectangular.
   // Intended to be used in a CHECK.

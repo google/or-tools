@@ -83,8 +83,10 @@ class SortedDisjointIntervalList {
 
   // Adds all intervals [starts[i]..ends[i]]. Same behavior as InsertInterval()
   // upon invalid intervals. There's a version with int64 and int32.
-  void InsertIntervals(const std::vector<int64>& starts, const std::vector<int64>& ends);
-  void InsertIntervals(const std::vector<int>& starts, const std::vector<int>& ends);
+  void InsertIntervals(const std::vector<int64>& starts,
+                       const std::vector<int64>& ends);
+  void InsertIntervals(const std::vector<int>& starts,
+                       const std::vector<int>& ends);
 
   // Returns the number of disjoint intervals in the list.
   int NumIntervals() const { return intervals_.size(); }

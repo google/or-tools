@@ -163,8 +163,8 @@ void SortedDisjointIntervalList::InsertAll(const std::vector<T>& starts,
   for (int i = 0; i < starts.size(); ++i) InsertInterval(starts[i], ends[i]);
 }
 
-void SortedDisjointIntervalList::InsertIntervals(const std::vector<int64>& starts,
-                                                 const std::vector<int64>& ends) {
+void SortedDisjointIntervalList::InsertIntervals(
+    const std::vector<int64>& starts, const std::vector<int64>& ends) {
   InsertAll(starts, ends);
 }
 
