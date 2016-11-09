@@ -243,7 +243,8 @@ void ProblemState::MarkAsInfeasible() {
   ++update_stamp_;
 }
 
-const std::vector<sat::BinaryClause>& ProblemState::NewlyAddedBinaryClauses() const {
+const std::vector<sat::BinaryClause>& ProblemState::NewlyAddedBinaryClauses()
+    const {
   return binary_clause_manager_.newly_added();
 }
 

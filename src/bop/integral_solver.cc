@@ -467,7 +467,8 @@ bool IntegralProblemConverter::ConvertToBooleanProblem(
       } else {
         const IntegralVariable& integral_variable =
             integral_variables_[-col - 1];
-        const std::vector<VariableIndex>& boolean_cols = integral_variable.bits();
+        const std::vector<VariableIndex>& boolean_cols =
+            integral_variable.bits();
         const std::vector<bool>& boolean_values =
             integral_variable.GetBooleanSolutionValues(
                 round(initial_solution[global_col]));
@@ -1070,7 +1071,8 @@ BopSolveStatus IntegralSolver::SolveWithTimeLimit(
       // The problem can be decomposed. Solve each sub-problem and aggregate the
       // result.
       std::vector<DenseRow> variable_values(num_sub_problems);
-      std::vector<Fractional> objective_values(num_sub_problems, Fractional(0.0));
+      std::vector<Fractional> objective_values(num_sub_problems,
+                                               Fractional(0.0));
       std::vector<Fractional> best_bounds(num_sub_problems, Fractional(0.0));
       std::vector<BopSolveStatus> statuses(num_sub_problems,
                                       BopSolveStatus::INVALID_PROBLEM);
