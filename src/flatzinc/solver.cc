@@ -703,6 +703,23 @@ void Solver::SyncWithModel() {
   }
 }
 
+void Solver::ReportInconsistentModel(const Model& model, FlatzincParameters p,
+                                     SearchReportingInterface* report) {
+  // Special mode. Print out failure status.
+  const std::string search_status = "=====UNSATISFIABLE=====";
+  report->Print(p.thread_id, search_status);
+  if (p.statistics) {
+    std::string solver_status =
+        "%%  name, status, obj, solns, s_time, b_time, br, "
+        "fails, cts, demon, delayed, mem, search\n";
+    StringAppendF(
+        &solver_status,
+        "%%%%  csv: %s, **unsat**, , 0, 0 ms, 0 ms, 0, 0, 0, 0, 0, %s, free",
+        model.name().c_str(), MemoryUsage().c_str());
+    report->Print(p.thread_id, solver_status);
+  }
+}
+
 void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
   SyncWithModel();
   SearchLimit* const limit = p.time_limit_in_ms > 0

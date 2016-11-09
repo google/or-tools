@@ -342,6 +342,8 @@ class Model {
   void Maximize(IntegerVariable* obj,
                 std::vector<Annotation> search_annotations);
 
+  bool IsInconsistent() const;
+
   // ----- Accessors and mutators -----
 
   const std::vector<IntegerVariable*>& variables() const { return variables_; }

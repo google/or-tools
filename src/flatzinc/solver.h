@@ -111,6 +111,9 @@ class Solver {
     return stored_values_[solution_index][var];
   }
 
+  static void ReportInconsistentModel(const Model& model, FlatzincParameters p,
+                                      SearchReportingInterface* report);
+
  private:
   void StoreSolution();
   bool HasSearchAnnotations() const;

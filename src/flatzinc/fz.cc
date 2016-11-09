@@ -262,6 +262,14 @@ void Solve(const Model& model) {
   signal(SIGINT, &operations_research::fz::Interrupt::ControlCHandler);
 #endif
 
+  if (model.IsInconsistent()) {
+    MonoThreadReporting reporting(FLAGS_all_solutions,
+                                  FixedNumberOfSolutions());
+    Solver::ReportInconsistentModel(model, SingleThreadParameters(),
+                                    &reporting);
+    return;
+  }
+
   if (FLAGS_threads == 0) {
     Solver solver(model);
     CHECK(solver.Extract());

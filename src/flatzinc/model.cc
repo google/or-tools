@@ -179,7 +179,10 @@ bool Domain::HasOneValue() const {
   return (values.size() == 1 || (values.size() == 2 && values[0] == values[1]));
 }
 
-bool Domain::empty() const { return values.size() == 0 && !is_interval; }
+bool Domain::empty() const {
+  return is_interval ? (values.size() == 2 && values[0] > values[1])
+                     : values.empty();
+}
 
 int64 Domain::Min() const {
   CHECK(!empty());
@@ -816,6 +819,21 @@ std::string Model::DebugString() const {
   }
 
   return output;
+}
+
+bool Model::IsInconsistent() const {
+  for (IntegerVariable* var : variables_) {
+    if (var->domain.empty()) {
+      return true;
+    }
+  }
+  for (Constraint* ct : constraints_) {
+    if (ct->type == "false_constraint") {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // ----- Model statistics -----
