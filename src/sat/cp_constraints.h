@@ -235,6 +235,8 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   bool FailWhenEnergyIsTooLarge(int box);
   bool PushOneBox(int box, int other);
   void AddBoxReason(int box);
+  void AddBoxReason(int box, IntegerValue xmin, IntegerValue xmax,
+                    IntegerValue ymin, IntegerValue ymax);
 
   const std::vector<IntegerVariable> x_;
   const std::vector<IntegerVariable> y_;

@@ -513,12 +513,16 @@ NonOverlappingRectanglesPropagator<S>::~NonOverlappingRectanglesPropagator() {}
 
 template <class S>
 bool NonOverlappingRectanglesPropagator<S>::Propagate() {
-  for (int box = 0; box < x_.size(); ++box) {
-    FillNeighbors(box);
-    RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box));
-    for (int i = 0; i < neighbors_.size(); ++i) {
-      RETURN_IF_FALSE(PushOneBox(box, neighbors_[i]));
+  while (true) {
+    const int64 saved_stamp = integer_trail_->num_enqueues();
+    for (int box = 0; box < x_.size(); ++box) {
+      FillNeighbors(box);
+      RETURN_IF_FALSE(FailWhenEnergyIsTooLarge(box));
+      for (const int other : neighbors_) {
+        RETURN_IF_FALSE(PushOneBox(box, other));
+      }
     }
+    if (saved_stamp == integer_trail_->num_enqueues()) break;
   }
   return true;
 }
@@ -527,26 +531,34 @@ template <class S>
 void NonOverlappingRectanglesPropagator<S>::RegisterWith(
     GenericLiteralWatcher* watcher) {
   const int id = watcher->Register(this);
-  for (const IntegerVariable& var : x_) {
-    watcher->WatchIntegerVariable(var, id);
-  }
-  for (const IntegerVariable& var : y_) {
-    watcher->WatchIntegerVariable(var, id);
-  }
-  for (const S& var : dx_) {
-    watcher->WatchIntegerVariable(var, id);
-  }
-  for (const S& var : dy_) {
-    watcher->WatchIntegerVariable(var, id);
-  }
+  for (const IntegerVariable& var : x_) watcher->WatchIntegerVariable(var, id);
+  for (const IntegerVariable& var : y_) watcher->WatchIntegerVariable(var, id);
+  for (const S& var : dx_) watcher->WatchLowerBound(var, id);
+  for (const S& var : dy_) watcher->WatchLowerBound(var, id);
 }
 
 template <class S>
 void NonOverlappingRectanglesPropagator<S>::AddBoxReason(int box) {
   AddBoundsReason(x_[box], &integer_reason_);
   AddBoundsReason(y_[box], &integer_reason_);
-  AddBoundsReason(dx_[box], &integer_reason_);
-  AddBoundsReason(dy_[box], &integer_reason_);
+  AddLowerBoundReason(dx_[box], &integer_reason_);
+  AddLowerBoundReason(dy_[box], &integer_reason_);
+}
+
+template <class S>
+void NonOverlappingRectanglesPropagator<S>::AddBoxReason(int box,
+                                                         IntegerValue xmin,
+                                                         IntegerValue xmax,
+                                                         IntegerValue ymin,
+                                                         IntegerValue ymax) {
+  integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(x_[box], xmin));
+  integer_reason_.push_back(
+      IntegerLiteral::LowerOrEqual(x_[box], xmax - Min(dx_[box])));
+  integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(y_[box], ymin));
+  integer_reason_.push_back(
+      IntegerLiteral::LowerOrEqual(y_[box], ymax - Min(dy_[box])));
+  AddLowerBoundReason(dx_[box], &integer_reason_);
+  AddLowerBoundReason(dy_[box], &integer_reason_);
 }
 
 namespace {
@@ -576,22 +588,22 @@ void NonOverlappingRectanglesPropagator<S>::FillNeighbors(int box) {
   neighbors_.clear();
   cached_distance_to_bounding_box_.resize(x_.size());
   const IntegerValue box_x_min = Min(x_[box]);
-  const IntegerValue box_x_max = Max(x_[box]) + Max(dx_[box]);
+  const IntegerValue box_x_max = Max(x_[box]) + Min(dx_[box]);
   const IntegerValue box_y_min = Min(y_[box]);
-  const IntegerValue box_y_max = Max(y_[box]) + Max(dy_[box]);
+  const IntegerValue box_y_max = Max(y_[box]) + Min(dy_[box]);
   for (int other = 0; other < x_.size(); ++other) {
     if (other == box) continue;
     if (!strict_ && (Min(dx_[other]) == 0 || Min(dy_[other]) == 0)) continue;
 
     const IntegerValue other_x_min = Min(x_[other]);
-    const IntegerValue other_x_max = Max(x_[other]) + Max(dx_[other]);
+    const IntegerValue other_x_max = Max(x_[other]) + Min(dx_[other]);
     if (IntervalAreDisjointForSure(box_x_min, box_x_max, other_x_min,
                                    other_x_max)) {
       continue;
     }
 
     const IntegerValue other_y_min = Min(y_[other]);
-    const IntegerValue other_y_max = Max(y_[other]) + Max(dy_[other]);
+    const IntegerValue other_y_max = Max(y_[other]) + Min(dy_[other]);
     if (IntervalAreDisjointForSure(box_y_min, box_y_max, other_y_min,
                                    other_y_max)) {
       continue;
@@ -612,15 +624,15 @@ void NonOverlappingRectanglesPropagator<S>::FillNeighbors(int box) {
 
 template <class S>
 bool NonOverlappingRectanglesPropagator<S>::FailWhenEnergyIsTooLarge(int box) {
+  // Note that we only consider the smallest dimension of each boxes here.
   IntegerValue area_min_x = Min(x_[box]);
-  IntegerValue area_max_x = Max(x_[box]) + Max(dx_[box]);
+  IntegerValue area_max_x = Max(x_[box]) + Min(dx_[box]);
   IntegerValue area_min_y = Min(y_[box]);
-  IntegerValue area_max_y = Max(y_[box]) + Max(dy_[box]);
+  IntegerValue area_max_y = Max(y_[box]) + Min(dy_[box]);
   IntegerValue sum_of_areas = Min(dx_[box]) * Min(dy_[box]);
 
   IntegerValue total_sum_of_areas = sum_of_areas;
-  for (int i = 0; i < neighbors_.size(); ++i) {
-    const int other = neighbors_[i];
+  for (const int other : neighbors_) {
     total_sum_of_areas += Min(dx_[other]) * Min(dy_[other]);
   }
 
@@ -634,9 +646,9 @@ bool NonOverlappingRectanglesPropagator<S>::FailWhenEnergyIsTooLarge(int box) {
     }
     // Update Bounding box.
     area_min_x = std::min(area_min_x, Min(x_[other]));
-    area_max_x = std::max(area_max_x, Max(x_[other]) + Max(dx_[other]));
+    area_max_x = std::max(area_max_x, Max(x_[other]) + Min(dx_[other]));
     area_min_y = std::min(area_min_y, Min(y_[other]));
-    area_max_y = std::max(area_max_y, Max(y_[other]) + Max(dy_[other]));
+    area_max_y = std::max(area_max_y, Max(y_[other]) + Min(dy_[other]));
     // Update sum of areas.
     sum_of_areas += Min(dx_[other]) * Min(dy_[other]);
     const IntegerValue bounding_area =
@@ -647,16 +659,15 @@ bool NonOverlappingRectanglesPropagator<S>::FailWhenEnergyIsTooLarge(int box) {
     }
 
     if (sum_of_areas > bounding_area) {
-      // TODO(user): compute wider reason with relaxed bounds on boxes.
       integer_reason_.clear();
-      AddBoxReason(box);
+      AddBoxReason(box, area_min_x, area_max_x, area_min_y, area_max_y);
       for (int j = 0; j <= i; ++j) {
         const int other = neighbors_[j];
         if (Min(dx_[other]) == 0 || Min(dy_[other]) == 0) {
           // This box will not contribute. Skipping.
           continue;
         }
-        AddBoxReason(other);
+        AddBoxReason(other, area_min_x, area_max_x, area_min_y, area_max_y);
       }
       return integer_trail_->ReportConflict(integer_reason_);
     }

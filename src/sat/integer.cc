@@ -240,10 +240,18 @@ bool IntegerTrail::Propagate(Trail* trail) {
     CHECK_EQ(trail->CurrentDecisionLevel(), 0);
     for (const auto& entry : encoder_->GetFullyEncodedVariables()) {
       IntegerVariable var = entry.first;
+
+      // This variable was already added and will be processed below.
+      // Note that this is important, otherwise we may call many times
+      // watched_min_.Add() on the same literal.
+      if (ContainsKey(current_min_, var)) continue;
+
       const auto& encoding = encoder_->FullDomainEncoding(var);
       for (int i = 0; i < encoding.size(); ++i) {
         if (!trail_->Assignment().LiteralIsFalse(encoding[i].literal)) {
-          watched_min_.Set(encoding[i].literal.NegatedIndex(), {var, i});
+          if (!trail_->Assignment().LiteralIsTrue(encoding[i].literal)) {
+            watched_min_.Add(encoding[i].literal.NegatedIndex(), var);
+          }
           current_min_.Set(var, i);
 
           // No reason because we are at level zero.
@@ -269,28 +277,39 @@ bool IntegerTrail::Propagate(Trail* trail) {
     }
 
     // Value encoder.
-    if (watched_min_.ContainsKey(literal.Index())) {
-      // A watched min value just became false.
-      const auto pair = watched_min_.FindOrDie(literal.Index());
-      const IntegerVariable var = pair.first;
-      const int min = pair.second;
+    for (IntegerVariable var : watched_min_.Values(literal.Index())) {
+      // A watched min value just became false. Note that because current_min_
+      // is also updated by Enqueue(), it may be larger than the watched min.
+      const int min = current_min_.FindOrDie(var);
+      int i = min;
       const auto& encoding = encoder_->FullDomainEncoding(var);
-      std::vector<Literal> literal_reason = {literal.Negated()};
-      for (int i = min + 1; i < encoding.size(); ++i) {
-        if (!trail_->Assignment().LiteralIsFalse(encoding[i].literal)) {
-          watched_min_.EraseOrDie(literal.Index());
-          watched_min_.Set(encoding[i].literal.NegatedIndex(), {var, i});
-          current_min_.Set(var, i);
+      tmp_literals_reason_.clear();
+      for (; i < encoding.size(); ++i) {
+        if (!trail_->Assignment().LiteralIsFalse(encoding[i].literal)) break;
+        tmp_literals_reason_.push_back(encoding[i].literal);
+      }
 
-          // Note that we also need the fact that all smaller value are false
-          // for the propagation. We use the current lower bound for that.
-          if (!Enqueue(IntegerLiteral::GreaterOrEqual(var, encoding[i].value),
-                       literal_reason, {LowerBoundAsLiteral(var)})) {
-            return false;
-          }
-          break;
-        } else {
-          literal_reason.push_back(encoding[i].literal);
+      // Note(user): we enforce a "== 1" on the encoding literals, but the
+      // clause forcing at least one of them to be true may not have propagated
+      // in some cases (because we loop in the integer propagators before
+      // calling the clause propagator again).
+      if (i == encoding.size()) {
+        return ReportConflict(tmp_literals_reason_, {LowerBoundAsLiteral(var)});
+      }
+
+      // Note that we don't need to delete the old watched min:
+      // - its literal has been assigned, so it will not be queried again until
+      //   backtrack.
+      // - When backtracked over, it will already be set correctly. It seems
+      //   less efficient to delete it now and add it back on backtrack.
+      watched_min_.Add(encoding[i].literal.NegatedIndex(), var);
+      if (i > min) {
+        // Note that we also need the fact that all smaller value are false
+        // for the propagation. We use the current lower bound for that.
+        current_min_.Set(var, i);
+        if (!Enqueue(IntegerLiteral::GreaterOrEqual(var, encoding[i].value),
+                     tmp_literals_reason_, {LowerBoundAsLiteral(var)})) {
+          return false;
         }
       }
     }
@@ -484,14 +503,14 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   // Deal with fully encoded variable. We want to do that first because this may
   // make the IntegerLiteral bound stronger.
   const IntegerVariable var(i_lit.var);
-  if (current_min_.ContainsKey(var)) {
+  const int min_index = FindWithDefault(current_min_, var, -1);
+  if (min_index >= 0) {
     // Recover the current min, and propagate to false all the values that
     // are in [min, i_lit.value). All these literals have the same reason, so
     // we use the "same reason as" mecanism.
     //
     // TODO(user): We could go even further if the next literals are set to
     // false (but they need to be added to the reason).
-    const int min_index = current_min_.FindOrDie(var);
     const auto& encoding = encoder_->FullDomainEncoding(var);
     if (i_lit.bound > encoding[min_index].value) {
       int i = min_index;
@@ -509,9 +528,9 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
         // Conflict: no possible values left.
         return ReportConflict(literals_reason, bounds_reason);
       } else {
-        // We have a new min.
-        watched_min_.EraseOrDie(encoding[min_index].literal.NegatedIndex());
-        watched_min_.Set(encoding[i].literal.NegatedIndex(), {var, i});
+        // We have a new min. Note that watched_min_ will be updated on the next
+        // call to Propagate() since we just pushed the watched literal if it
+        // wasn't already set to false.
         current_min_.Set(var, i);
 
         // Adjust the bound of i_lit !

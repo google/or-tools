@@ -56,14 +56,13 @@ void OverloadChecker::ResetThetaTree(int num_tasks) {
   first_leaf_ |= first_leaf_ >> 2;
   first_leaf_ |= first_leaf_ >> 1;
   first_leaf_ += 1;
-  const int last_leaf_ = first_leaf_ + num_tasks - 1;
+  const int last_leaf = first_leaf_ + num_tasks - 1;
   // Add a dummy leaf to simplify the algorithm if the last leaf is not the
   // right child of its parent. Left children are always at an even position.
-  const int tree_size_ = (last_leaf_ | 1) + 1;
+  const int tree_size = (last_leaf | 1) + 1;
   // Reset all the tree nodes.
-  energies_.assign(tree_size_, IntegerValue(0));
-  envelopes_.assign(tree_size_, kMinIntegerValue);
-  leaf_to_task_.resize(num_tasks_);
+  node_energies_.assign(tree_size, IntegerValue(0));
+  node_envelopes_.assign(tree_size, kMinIntegerValue);
 }
 
 void OverloadChecker::RegisterWith(GenericLiteralWatcher* watcher) {
@@ -125,16 +124,36 @@ bool OverloadChecker::Propagate() {
 
     // Compute the minimum capacity required to provide the left-cut with enough
     // energy. The minimum capacity is ceil(envelopes_[i] / EndMax(task_id)).
-    IntegerValue new_capacity_min = envelopes_[1] / EndMax(task_id);
-    if (envelopes_[1] % EndMax(task_id) != 0) new_capacity_min++;
+    IntegerValue new_capacity_min = node_envelopes_[1] / EndMax(task_id);
+    if (node_envelopes_[1] % EndMax(task_id) != 0) new_capacity_min++;
 
     // Do not explain if the minimum capacity does not increase.
     if (new_capacity_min <= integer_trail_->LowerBound(capacity_var_)) continue;
 
     reason_.clear();
 
-    // Collect the tasks responsible for the value of the envelope.
-    ExplainEnvelope(1);
+    // Compute the bounds of the task interval responsible for the value of the
+    // root envelope.
+    const IntegerValue interval_end = by_end_max_[i].time;
+    const int interval_start_index = LeftMostInvolvedLeaf();
+    const IntegerValue interval_start =
+        by_start_min_[interval_start_index].time;
+
+    for (int j = 0; j <= i; ++j) {
+      const int t = by_end_max_[j].task_id;
+      // Do not consider tasks that are not contained in the task interval.
+      if (task_to_index_in_start_min_[t] < interval_start_index) continue;
+      // Add the task to the explanation.
+      reason_.push_back(
+          IntegerLiteral::GreaterOrEqual(start_vars_[t], interval_start));
+      reason_.push_back(
+          IntegerLiteral::LowerOrEqual(end_vars_[t], interval_end));
+      reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
+      if (duration_vars_[t] != kNoIntegerVariable) {
+        reason_.push_back(
+            integer_trail_->LowerBoundAsLiteral(duration_vars_[t]));
+      }
+    }
 
     // Current capacity of the resource.
     reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
@@ -153,43 +172,33 @@ void OverloadChecker::InsertTaskInThetaTree(int task_id, int leaf_id,
                                             IntegerValue energy,
                                             IntegerValue envelope) {
   const int leaf_node = first_leaf_ + leaf_id;
-  DCHECK_LT(leaf_node, energies_.size());
-  leaf_to_task_[leaf_id] = task_id;
-  energies_[leaf_node] = energy;
-  envelopes_[leaf_node] = envelope;
+  DCHECK_LT(leaf_node, node_energies_.size());
+  node_energies_[leaf_node] = energy;
+  node_envelopes_[leaf_node] = envelope;
   int parent = leaf_node / 2;
   while (parent != 0) {
     DCHECK_LT(parent, first_leaf_);
     const int left = parent * 2;
     const int right = left + 1;
-    energies_[parent] = energies_[left] + energies_[right];
-    envelopes_[parent] =
-        std::max(envelopes_[left] + energies_[right], envelopes_[right]);
+    node_energies_[parent] = node_energies_[left] + node_energies_[right];
+    node_envelopes_[parent] = std::max(
+        node_envelopes_[left] + node_energies_[right], node_envelopes_[right]);
     parent = parent / 2;
   }
 }
 
-void OverloadChecker::ExplainEnvelope(int parent) {
-  if (parent >= first_leaf_) {
-    const int t = leaf_to_task_[parent - first_leaf_];
-    reason_.push_back(integer_trail_->UpperBoundAsLiteral(end_vars_[t]));
-    reason_.push_back(integer_trail_->LowerBoundAsLiteral(start_vars_[t]));
-    reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
-    if (duration_vars_[t] != kNoIntegerVariable) {
-      reason_.push_back(integer_trail_->LowerBoundAsLiteral(duration_vars_[t]));
-    }
-  } else {
+int OverloadChecker::LeftMostInvolvedLeaf() const {
+  int parent = 1;
+  while (parent < first_leaf_) {
     const int left = parent * 2;
     const int right = left + 1;
-    if (envelopes_[right] == kMinIntegerValue) {
-      ExplainEnvelope(left);
-    } else if (envelopes_[right] == envelopes_[parent]) {
-      ExplainEnvelope(right);
+    if (node_envelopes_[parent] == node_envelopes_[right]) {
+      parent = right;
     } else {
-      ExplainEnvelope(left);
-      ExplainEnvelope(right);
+      parent = left;
     }
   }
+  return parent - first_leaf_;
 }
 
 }  // namespace sat

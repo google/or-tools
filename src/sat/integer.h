@@ -546,7 +546,8 @@ class IntegerTrail : public SatPropagator {
   // for each variable the index in encoder_.GetDomainEncoding() of the first
   // literal that is not assigned to false, and call this the "min".
   int64 num_encoded_variables_ = 0;
-  RevMap<hash_map<LiteralIndex, std::pair<IntegerVariable, int>>> watched_min_;
+  std::vector<Literal> tmp_literals_reason_;
+  RevGrowingMultiMap<LiteralIndex, IntegerVariable> watched_min_;
   RevMap<hash_map<IntegerVariable, int>> current_min_;
 
   // Temporary data used by MergeReasonInto().
@@ -625,6 +626,11 @@ class GenericLiteralWatcher : public SatPropagator {
   void WatchLowerBound(IntegerVariable i, int id);
   void WatchUpperBound(IntegerVariable i, int id);
   void WatchIntegerVariable(IntegerVariable i, int id);
+
+  // No-op overload for "constant" IntegerVariable that are sometimes templated
+  // as an IntegerValue.
+  void WatchLowerBound(IntegerValue i, int id) {}
+  void WatchUpperBound(IntegerValue i, int id) {}
   void WatchIntegerVariable(IntegerValue v, int id) {}
 
   // Registers a reversible class with a given propagator. This class will be

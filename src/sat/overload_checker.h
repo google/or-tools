@@ -70,21 +70,20 @@ class OverloadChecker : public PropagatorInterface {
     bool operator>(TaskTime other) const { return time > other.time; }
   };
 
-  // Insert the task task_id to the leaf leaf_id with the given energy and
+  // Inserts the task task_id to the leaf leaf_id with the given energy and
   // envelope. The change is propagated to the top of the Theta-tree by
   // recomputing the energy and the envelope of all the leaf's ancestors.
   void InsertTaskInThetaTree(int task_id, int leaf_id, IntegerValue energy,
                              IntegerValue envelope);
 
-  // Explores the Theta-tree routed at node parent and explains the value of its
-  // envelope by filling the reason_ vector. This function does not clear the
-  // reason_ vector.
-  void ExplainEnvelope(int parent);
-
-  // Reset the theta-tree such that its deepest level is the first that can
+  // Resets the theta-tree such that its deepest level is the first that can
   // contain at least num_tasks leaves. All nodes are resets to energy = 0 and
   // envelope = kMinIntegerValue.
   void ResetThetaTree(int num_tasks);
+
+  // Searches for the leaf that contains the task that has the smallest minimum
+  // start time and that is involved in the value of the root node envelope.
+  int LeftMostInvolvedLeaf() const;
 
   IntegerValue StartMin(int task_id) const {
     return integer_trail_->LowerBound(start_vars_[task_id]);
@@ -138,11 +137,9 @@ class OverloadChecker : public PropagatorInterface {
   // Position of the first leaf.
   int first_leaf_;
   // Energy of each node in the Theta-tree.
-  std::vector<IntegerValue> energies_;
+  std::vector<IntegerValue> node_energies_;
   // Envelope of each node in the Theta-tree.
-  std::vector<IntegerValue> envelopes_;
-  // Tasks of each leaf of the Theta-tree.
-  std::vector<int> leaf_to_task_;
+  std::vector<IntegerValue> node_envelopes_;
 
   DISALLOW_COPY_AND_ASSIGN(OverloadChecker);
 };
