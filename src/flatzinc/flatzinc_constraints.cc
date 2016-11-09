@@ -494,20 +494,10 @@ class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
   void SetEndMin(int64 m) override;
   void SetEndMax(int64 m) override;
   void SetEndRange(int64 mi, int64 ma) override;
-  int64 OldEndMin() const override {
-    return start_->OldMin() + duration_->OldMin();
-  }
-  int64 OldEndMax() const override {
-    return start_->OldMax() + duration_->OldMax();
-  }
-  void WhenEndRange(Demon* const d) override {
-    start_->WhenRange(d);
-    duration_->WhenRange(d);
-  }
-  void WhenEndBound(Demon* const d) override {
-    start_->WhenBound(d);
-    duration_->WhenBound(d);
-  }
+  int64 OldEndMin() const override { return end_->OldMin(); }
+  int64 OldEndMax() const override { return end_->OldMax(); }
+  void WhenEndRange(Demon* const d) override { end_->WhenRange(d); }
+  void WhenEndBound(Demon* const d) override { end_->WhenBound(d); }
 
   bool MustBePerformed() const override;
   bool MayBePerformed() const override;
@@ -518,7 +508,7 @@ class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
 
   IntExpr* StartExpr() override { return start_; }
   IntExpr* DurationExpr() override { return duration_; }
-  IntExpr* EndExpr() override { return solver()->MakeSum(start_, duration_); }
+  IntExpr* EndExpr() override { return end_; }
   IntExpr* PerformedExpr() override { return solver()->MakeIntConst(1); }
   IntExpr* SafeStartExpr(int64 unperformed_value) override {
     return StartExpr();
@@ -535,6 +525,7 @@ class StartVarDurationVarPerformedIntervalVar : public IntervalVar {
  private:
   IntVar* const start_;
   IntVar* const duration_;
+  IntVar* const end_;
 };
 
 // TODO(user): Take care of overflows.
@@ -542,7 +533,10 @@ StartVarDurationVarPerformedIntervalVar::
     StartVarDurationVarPerformedIntervalVar(Solver* const s, IntVar* const var,
                                             IntVar* const duration,
                                             const std::string& name)
-    : IntervalVar(s, name), start_(var), duration_(duration) {}
+    : IntervalVar(s, name),
+      start_(var),
+      duration_(duration),
+      end_(s->MakeSum(var, duration)->Var()) {}
 
 int64 StartVarDurationVarPerformedIntervalVar::StartMin() const {
   return start_->Min();
@@ -587,26 +581,23 @@ void StartVarDurationVarPerformedIntervalVar::SetDurationRange(int64 mi,
 }
 
 int64 StartVarDurationVarPerformedIntervalVar::EndMin() const {
-  return start_->Min() + duration_->Min();
+  return end_->Min();
 }
 
 int64 StartVarDurationVarPerformedIntervalVar::EndMax() const {
-  return start_->Max() + duration_->Max();
+  return end_->Max();
 }
 
 void StartVarDurationVarPerformedIntervalVar::SetEndMin(int64 m) {
-  start_->SetMin(m - duration_->Max());
-  duration_->SetMin(m - start_->Max());
+  end_->SetMin(m);
 }
 
 void StartVarDurationVarPerformedIntervalVar::SetEndMax(int64 m) {
-  start_->SetMax(m - duration_->Min());
-  duration_->SetMax(m - start_->Min());
+  end_->SetMax(m);
 }
 
 void StartVarDurationVarPerformedIntervalVar::SetEndRange(int64 mi, int64 ma) {
-  start_->SetRange(mi - duration_->Max(), ma - duration_->Min());
-  duration_->SetRange(mi - start_->Max(), ma - start_->Min());
+  end_->SetRange(mi, ma);
 }
 
 bool StartVarDurationVarPerformedIntervalVar::MustBePerformed() const {
