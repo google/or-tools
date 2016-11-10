@@ -47,7 +47,8 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var,
       }
     }
     if (num_fixed > 0) {
-      LOG(WARNING) << "Domain intersection removed " << num_fixed << " values.";
+      LOG(WARNING) << "Domain intersection removed " << num_fixed << " values "
+                   << "(out of " << encoding.size() << ").";
     }
     return;
   }
@@ -135,13 +136,21 @@ void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
   auto after_it = map_ref.lower_bound(i_lit.bound);
   if (after_it != map_ref.end()) {
     // Literal(after) => literal
-    sat_solver_->AddBinaryClauseDuringSearch(after_it->second.Negated(),
-                                             literal);
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      sat_solver_->AddBinaryClause(after_it->second.Negated(), literal);
+    } else {
+      sat_solver_->AddBinaryClauseDuringSearch(after_it->second.Negated(),
+                                               literal);
+    }
   }
   if (after_it != map_ref.begin()) {
     // literal => Literal(before)
-    sat_solver_->AddBinaryClauseDuringSearch(literal.Negated(),
-                                             (--after_it)->second);
+    if (sat_solver_->CurrentDecisionLevel() == 0) {
+      sat_solver_->AddBinaryClause(literal.Negated(), (--after_it)->second);
+    } else {
+      sat_solver_->AddBinaryClauseDuringSearch(literal.Negated(),
+                                               (--after_it)->second);
+    }
   }
 
   // Add the new entry.

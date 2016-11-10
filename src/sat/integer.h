@@ -862,10 +862,13 @@ inline std::function<void(Model*)> ReifiedInInterval(IntegerVariable v,
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     const auto lb_lit = IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb));
     const auto ub_lit = IntegerLiteral::LowerOrEqual(v, IntegerValue(ub));
-    if (lb < model->Get(LowerBound(v))) {
-      CHECK_LT(ub, model->Get(UpperBound(v))) << "Should be presolved.";
-      model->Add(Equality(ub_lit, in_interval));
-    } else if (ub > model->Get(UpperBound(v))) {
+    if (lb <= model->Get(LowerBound(v))) {
+      if (ub >= model->Get(UpperBound(v))) {
+        model->GetOrCreate<SatSolver>()->AddUnitClause(in_interval);
+      } else {
+        model->Add(Equality(ub_lit, in_interval));
+      }
+    } else if (ub >= model->Get(UpperBound(v))) {
       model->Add(Equality(lb_lit, in_interval));
     } else {
       const Literal is_ge_lb = encoder->GetOrCreateAssociatedLiteral(lb_lit);
