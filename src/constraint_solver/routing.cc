@@ -2376,10 +2376,28 @@ void RoutingModel::CloseModelWithParameters(
   // Precedences
   solver_->AddConstraint(
       solver_->MakePathPrecedenceConstraint(nexts_, pickup_delivery_pairs_));
+
   // Detect constraints
   std::unique_ptr<RoutingModelInspector> inspector(
       new RoutingModelInspector(this));
   solver_->Accept(inspector.get());
+
+  // Dimension precedences, discovered by model inspection (which must be
+  // performed before adding path transit precedences.
+  for (const RoutingDimension* const dimension : dimensions_) {
+    const ReverseArcListGraph<int, int>& graph =
+        dimension->GetPrecedenceGraph();
+    std::vector<std::pair<int, int>> precedences;
+    for (const auto tail : graph.AllNodes()) {
+      for (const auto head : graph[tail]) {
+        precedences.emplace_back(tail, head);
+      }
+    }
+    if (!precedences.empty()) {
+      solver_->AddConstraint(solver_->MakePathTransitPrecedenceConstraint(
+          nexts_, dimension->transits(), precedences));
+    }
+  }
 
   // Keep this out of SetupSearch as this contains static search objects.
   // This will allow calling SetupSearch multiple times with different search

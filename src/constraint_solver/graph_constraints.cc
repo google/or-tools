@@ -1549,13 +1549,15 @@ class PathTransitPrecedenceConstraint : public Constraint {
 
 Constraint* Solver::MakePathPrecedenceConstraint(
     std::vector<IntVar*> nexts, const std::vector<std::pair<int, int>>& precedences) {
-  return RevAlloc(new PathTransitPrecedenceConstraint(this, std::move(nexts),
-                                                      {}, precedences));
+  return MakePathTransitPrecedenceConstraint(std::move(nexts), {}, precedences);
 }
 
 Constraint* Solver::MakePathTransitPrecedenceConstraint(
     std::vector<IntVar*> nexts, std::vector<IntVar*> transits,
     const std::vector<std::pair<int, int>>& precedences) {
+  if (precedences.empty()) {
+    return MakeTrueConstraint();
+  }
   return RevAlloc(new PathTransitPrecedenceConstraint(
       this, std::move(nexts), std::move(transits), precedences));
 }
