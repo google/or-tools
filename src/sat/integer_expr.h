@@ -70,6 +70,7 @@ class IntegerSumLE : public PropagatorInterface {
 
   std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> integer_reason_;
+  std::vector<int> index_in_integer_reason_;
 
   DISALLOW_COPY_AND_ASSIGN(IntegerSumLE);
 };

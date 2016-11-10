@@ -467,6 +467,11 @@ class IntegerTrail : public SatPropagator {
     return false;
   }
 
+  // Returns true if the variable lower bound is still the one from level zero.
+  bool VariableLowerBoundIsFixed(IntegerVariable var) const {
+    return vars_[var.value()].current_trail_index < vars_.size();
+  }
+
  private:
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;

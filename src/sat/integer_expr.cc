@@ -44,8 +44,15 @@ IntegerSumLE::IntegerSumLE(LiteralIndex reified_literal,
 
 void IntegerSumLE::FillIntegerReason() {
   integer_reason_.clear();
-  for (const IntegerVariable& var : vars_) {
-    integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+  index_in_integer_reason_.resize(vars_.size(), -1);
+  for (int i = 0; i < vars_.size(); ++i) {
+    const IntegerVariable var = vars_[i];
+    if (integer_trail_->VariableLowerBoundIsFixed(var)) {
+      index_in_integer_reason_[i] = -1;
+    } else {
+      index_in_integer_reason_[i] = integer_reason_.size();
+      integer_reason_.push_back(integer_trail_->LowerBoundAsLiteral(var));
+    }
   }
 }
 
@@ -98,10 +105,14 @@ bool IntegerSumLE::Propagate() {
     if (new_ub < integer_trail_->UpperBound(vars_[i])) {
       if (integer_reason_.empty()) FillIntegerReason();
 
-      // We need to remove the entry i temporarily.
-      const IntegerLiteral saved = integer_reason_[i];
-      std::swap(integer_reason_[i], integer_reason_.back());
-      integer_reason_.pop_back();
+      // We need to remove the entry index from the reason temporarily.
+      IntegerLiteral saved;
+      const int index = index_in_integer_reason_[i];
+      if (index >= 0) {
+        saved = integer_reason_[index];
+        std::swap(integer_reason_[index], integer_reason_.back());
+        integer_reason_.pop_back();
+      }
 
       if (!integer_trail_->Enqueue(
               IntegerLiteral::LowerOrEqual(vars_[i], new_ub), literal_reason_,
@@ -111,8 +122,10 @@ bool IntegerSumLE::Propagate() {
 
       // Restore integer_reason_. Note that this is not needed if we returned
       // false above.
-      integer_reason_.push_back(saved);
-      std::swap(integer_reason_[i], integer_reason_.back());
+      if (index >= 0) {
+        integer_reason_.push_back(saved);
+        std::swap(integer_reason_[index], integer_reason_.back());
+      }
     }
   }
 

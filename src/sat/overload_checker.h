@@ -64,10 +64,9 @@ class OverloadChecker : public PropagatorInterface {
  private:
   struct TaskTime {
     /* const */ int task_id;
-    /* const */ IntegerValue time;
+    IntegerValue time;
     TaskTime(int task_id, IntegerValue time) : task_id(task_id), time(time) {}
     bool operator<(TaskTime other) const { return time < other.time; }
-    bool operator>(TaskTime other) const { return time > other.time; }
   };
 
   // Inserts the task task_id to the leaf leaf_id with the given energy and
