@@ -1,8 +1,5 @@
-import sys
-import inspect
-from sys import executable
-from sys import version_info
-import logging, sys
+import logging, sys, inspect
+from optparse import OptionParser
 
 #try to import setuptools
 try:
@@ -35,8 +32,7 @@ You should either remove it, or use PYTHONPATH to manage your sys.path. If you d
 Check https://docs.python.org/3/tutorial/modules.html#the-module-search-path from more information."""
 
 if __name__ == '__main__':
-	from optparse import OptionParser
-	parser = OptionParser('Test logging')
+	parser = OptionParser('Log level')
 	parser.add_option('-l','--log',type='string',help='Available levels are CRITICAL (3), ERROR (2), WARNING (1), INFO (0), DEBUG (-1)',default='INFO')
 	options,args = parser.parse_args()
  
