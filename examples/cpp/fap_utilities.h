@@ -28,9 +28,10 @@ namespace operations_research {
 
 // Checks if the solution given from the Solver satisfies all
 // the hard binary constraints specified in the ctr.txt.
-bool CheckConstraintSatisfaction(const std::vector<FapConstraint>& data_constraints,
-                                 const std::vector<int>& variables,
-                                 const std::map<int, int>& index_from_key);
+bool CheckConstraintSatisfaction(
+    const std::vector<FapConstraint>& data_constraints,
+    const std::vector<int>& variables,
+    const std::map<int, int>& index_from_key);
 
 // Checks if the solution given from the Solver has not modified the values of
 // the variables that were initially assigned and denoted as hard in var.txt.

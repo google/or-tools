@@ -27,7 +27,8 @@
 namespace operations_research {
 class OneVarLns : public BaseLns {
  public:
-  explicit OneVarLns(const std::vector<IntVar*>& vars) : BaseLns(vars), index_(0) {}
+  explicit OneVarLns(const std::vector<IntVar*>& vars)
+      : BaseLns(vars), index_(0) {}
 
   ~OneVarLns() override {}
 

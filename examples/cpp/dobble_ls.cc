@@ -64,10 +64,10 @@ namespace operations_research {
 class SymbolsSharedByTwoCardsConstraint : public Constraint {
  public:
   // This constructor does not take any ownership on its arguments.
-  SymbolsSharedByTwoCardsConstraint(Solver* const solver,
-                                    const std::vector<IntVar*>& card1_symbol_vars,
-                                    const std::vector<IntVar*>& card2_symbol_vars,
-                                    IntVar* const num_symbols_in_common_var)
+  SymbolsSharedByTwoCardsConstraint(
+      Solver* const solver, const std::vector<IntVar*>& card1_symbol_vars,
+      const std::vector<IntVar*>& card2_symbol_vars,
+      IntVar* const num_symbols_in_common_var)
       : Constraint(solver),
         card1_symbol_vars_(card1_symbol_vars),
         card2_symbol_vars_(card2_symbol_vars),
@@ -370,9 +370,9 @@ class SwapSymbols : public DobbleOperator {
 // one.
 class SwapSymbolsOnCardPairs : public DobbleOperator {
  public:
-  SwapSymbolsOnCardPairs(const std::vector<IntVar*>& card_symbol_vars, int num_cards,
-                         int num_symbols, int num_symbols_per_card,
-                         int max_num_swaps)
+  SwapSymbolsOnCardPairs(const std::vector<IntVar*>& card_symbol_vars,
+                         int num_cards, int num_symbols,
+                         int num_symbols_per_card, int max_num_swaps)
       : DobbleOperator(card_symbol_vars, num_cards, num_symbols,
                        num_symbols_per_card),
         rand_(FLAGS_ls_seed),

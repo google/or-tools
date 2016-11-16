@@ -19,6 +19,7 @@
 #ifndef OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 #define OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 
+#include "base/hash.h"
 #include <map>
 #include <string>
 #include <vector>
@@ -26,7 +27,6 @@
 #include "base/strtoint.h"
 #include "base/split.h"
 #include "base/map_util.h"
-#include "base/hash.h"
 
 namespace operations_research {
 
@@ -213,7 +213,9 @@ class ParametersParser {
   ~ParametersParser();
 
   std::string objective() const { return objective_; }
-  const std::vector<int>& constraint_weights() const { return constraint_weights_; }
+  const std::vector<int>& constraint_weights() const {
+    return constraint_weights_;
+  }
   const std::vector<int>& variable_weights() const { return variable_weights_; }
 
   void Parse();

@@ -25,9 +25,10 @@
 
 namespace operations_research {
 
-bool CheckConstraintSatisfaction(const std::vector<FapConstraint>& data_constraints,
-                                 const std::vector<int>& variables,
-                                 const std::map<int, int>& index_from_key) {
+bool CheckConstraintSatisfaction(
+    const std::vector<FapConstraint>& data_constraints,
+    const std::vector<int>& variables,
+    const std::map<int, int>& index_from_key) {
   bool status = true;
   for (const FapConstraint& ct : data_constraints) {
     const int index1 = FindOrDie(index_from_key, ct.variable1);
