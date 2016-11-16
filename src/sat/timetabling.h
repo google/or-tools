@@ -42,6 +42,21 @@ class TimeTablingPerTask : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  struct Event {
+    /* const */ IntegerValue time;
+    /* const */ int task_id;
+    Event(IntegerValue time, int task_id) : time(time), task_id(task_id) {}
+    bool operator<(Event other) const { return time < other.time; }
+  };
+
+  struct ProfileRectangle {
+    /* const */ IntegerValue start;
+    /* const */ IntegerValue end;
+    /* const */ IntegerValue height;
+    ProfileRectangle(IntegerValue start, IntegerValue end, IntegerValue height)
+        : start(start), end(end), height(height) {}
+  };
+
   // Increase the start min of task task_id. This function may call
   // UpdateStartingTime().
   bool SweepTaskRight(int task_id);
@@ -58,11 +73,9 @@ class TimeTablingPerTask : public PropagatorInterface {
   // reason_ with the corresponding reason.
   bool UpdateEndingTime(int task_id, IntegerValue new_end);
 
-  // Fills reason_ with the reason why the given task cannot overlap the given
-  // time point. It is because there is not enough capacity to schedule the task
-  // due to the mandatory parts of other tasks that already overlap this time
-  // point. Note that reason_ is not cleared by this function.
-  void ExplainWhyTaskCannotOverlapTimePoint(IntegerValue time, int task_id);
+  // Fills reason_ with the reason that explains the height of the profile at
+  // the given time point.
+  void ExplainProfileHeight(IntegerValue time);
 
   IntegerValue StartMin(int task_id) const {
     return integer_trail_->LowerBound(start_vars_[task_id]);
@@ -127,26 +140,10 @@ class TimeTablingPerTask : public PropagatorInterface {
   std::vector<IntegerValue> duration_min_;
   std::vector<IntegerValue> demand_min_;
 
-  struct Event {
-    /* const */ IntegerValue time;
-    /* const */ int task_id;
-    Event(IntegerValue time, int task_id) : time(time), task_id(task_id) {}
-    bool operator<(Event other) const { return time < other.time; }
-    bool operator>(Event other) const { return time > other.time; }
-  };
-
   // Events that represent the start of a compulsory part.
   std::vector<Event> scp_;
   // Events that represent the end of a compulsory part.
   std::vector<Event> ecp_;
-
-  struct ProfileRectangle {
-    /* const */ IntegerValue start;
-    /* const */ IntegerValue end;
-    /* const */ IntegerValue height;
-    ProfileRectangle(IntegerValue start, IntegerValue end, IntegerValue height)
-        : start(start), end(end), height(height) {}
-  };
 
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;

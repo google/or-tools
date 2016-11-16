@@ -189,42 +189,27 @@ bool TimeTablingPerTask::Propagate() {
     // -----------------------------
     if (max_height > CapacityMin()) {
       reason_.clear();
-      for (int t = 0; t < num_tasks_; ++t) {
-        // Do not consider tasks that do not overlap the starting point of the
-        // profile rectangle, i.e., !(start_max <= max_height_start < end_min).
-        if (start_max_[t] > max_height_start ||
-            max_height_start >= end_min_[t]) {
-          continue;
-        }
-        reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
-        reason_.push_back(
-            IntegerLiteral::LowerOrEqual(start_vars_[t], max_height_start));
-        reason_.push_back(
-            IntegerLiteral::GreaterOrEqual(end_vars_[t], max_height_start + 1));
+      ExplainProfileHeight(max_height_start);
+      if (!integer_trail_->Enqueue(
+              IntegerLiteral::GreaterOrEqual(capacity_var_, max_height),
+              /*literal_reason=*/{}, reason_)) {
+        return false;
       }
     }
-    if (!integer_trail_->Enqueue(
-            IntegerLiteral::GreaterOrEqual(capacity_var_, max_height),
-            /*literal_reason=*/{}, reason_)) {
-      return false;
-    }
 
-    // Filter the start variables.
-    // ---------------------------
+    // Update the start and end variables.
+    // -----------------------------------
     // Tasks with a lower or equal demand will not be pushed.
     const IntegerValue min_demand = CapacityMax() - max_height;
 
     for (int t = 0; t < num_tasks_; ++t) {
       // The task cannot be pushed.
       // TODO(user): exclude fixed tasks for all the subtree.
-      if (start_min_[t] == start_max_[t] || demand_min_[t] <= min_demand ||
-          duration_min_[t] == 0) {
-        continue;
-      }
+      if (demand_min_[t] <= min_demand || duration_min_[t] == 0) continue;
       // Increase the start min of task t.
-      if (!SweepTaskRight(t)) return false;
+      if (start_min_[t] != start_max_[t] && !SweepTaskRight(t)) return false;
       // Decrease the end max of task t.
-      if (!SweepTaskLeft(t)) return false;
+      if (end_min_[t] != end_max_[t] && !SweepTaskLeft(t)) return false;
     }
   }
   return true;
@@ -275,7 +260,7 @@ bool TimeTablingPerTask::SweepTaskRight(int task_id) {
     if (start_min_[task_id] < profile_[rec_id].end) {
       if (!UpdateStartingTime(task_id, profile_[rec_id].end)) return false;
     }
-    profile_changed_ = s_max < end_min_[task_id];
+    profile_changed_ |= s_max < end_min_[task_id];
     rec_id++;
   }
   return true;
@@ -326,7 +311,7 @@ bool TimeTablingPerTask::SweepTaskLeft(int task_id) {
     if (profile_[rec_id].start < end_max_[task_id]) {
       if (!UpdateEndingTime(task_id, profile_[rec_id].start)) return false;
     }
-    profile_changed_ = start_max_[task_id] < e_min;
+    profile_changed_ |= start_max_[task_id] < e_min;
     rec_id--;
   }
   return true;
@@ -336,7 +321,9 @@ bool TimeTablingPerTask::SweepTaskLeft(int task_id) {
 bool TimeTablingPerTask::UpdateStartingTime(int task_id,
                                             IntegerValue new_start) {
   reason_.clear();
-  ExplainWhyTaskCannotOverlapTimePoint(new_start - 1, task_id);
+  ExplainProfileHeight(new_start - 1);
+  reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
+  reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
   reason_.push_back(
       IntegerLiteral::GreaterOrEqual(end_vars_[task_id], new_start));
 
@@ -379,7 +366,9 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id,
 
 bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
   reason_.clear();
-  ExplainWhyTaskCannotOverlapTimePoint(new_end, task_id);
+  ExplainProfileHeight(new_end);
+  reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
+  reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
   reason_.push_back(
       IntegerLiteral::LowerOrEqual(start_vars_[task_id], new_end));
 
@@ -420,22 +409,15 @@ bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
   return true;
 }
 
-void TimeTablingPerTask::ExplainWhyTaskCannotOverlapTimePoint(IntegerValue time,
-                                                              int task_id) {
+void TimeTablingPerTask::ExplainProfileHeight(IntegerValue time) {
   for (int t = 0; t < num_tasks_; ++t) {
     // Tasks need to overlap the time point, i.e., start_max <= time < end_min.
-    // TODO(user): only consider a subset of tasks that results in a
-    // conflicting bump.
-    if (t != task_id && start_max_[t] <= time && time < end_min_[t]) {
+    if (start_max_[t] <= time && time < end_min_[t]) {
       reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
       reason_.push_back(IntegerLiteral::LowerOrEqual(start_vars_[t], time));
       reason_.push_back(IntegerLiteral::GreaterOrEqual(end_vars_[t], time + 1));
     }
   }
-  // Current capacity of the resource.
-  reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
-  // Current demand of the task.
-  reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
 }
 
 }  // namespace sat

@@ -321,15 +321,17 @@ double GurobiInterface::best_objective_bound() const {
     if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
       // Special case for empty model.
       return solver_->Objective().offset();
-    } else if (result_status_ == MPSolver::OPTIMAL) {
+    }
+    double value;
+    const int error = GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &value);
+    if (result_status_ == MPSolver::OPTIMAL &&
+        error == GRB_ERROR_DATA_NOT_AVAILABLE) {
       // Special case for when presolve removes all the variables so the model
       // becomes empty after the presolve phase.
       return objective_value_;
-    } else {
-      double value;
-      CheckedGurobiCall(GRBgetdblattr(model_, GRB_DBL_ATTR_OBJBOUND, &value));
-      return value;
     }
+    CheckedGurobiCall(error);
+    return value;
   } else {
     LOG(DFATAL) << "Best objective bound only available for discrete problems.";
     return trivial_worst_objective_bound();
