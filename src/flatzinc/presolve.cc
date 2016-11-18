@@ -1541,10 +1541,12 @@ bool Presolver::SimplifyPositiveLinear(Constraint* ct, std::string* log) {
       ct->type = "int_lin_le_reif";
       return true;
     } else if (ct->type == "int_lin_ne") {
-      ct->type = "int_lin_gt";
+      ct->type = "int_lin_ge";
+      ct->arguments[2] = Argument::IntegerValue(rhs + 1);
       return true;
     } else if (ct->type == "int_lin_ne_reif") {
-      ct->type = "int_lin_gt_reif";
+      ct->type = "int_lin_ge_reif";
+      ct->arguments[2] = Argument::IntegerValue(rhs + 1);
       return true;
     }
   } else if (rhs == rhs_max) {
@@ -1555,10 +1557,12 @@ bool Presolver::SimplifyPositiveLinear(Constraint* ct, std::string* log) {
       ct->type = "int_lin_ge_reif";
       return true;
     } else if (ct->type == "int_lin_ne") {
-      ct->type = "int_lin_lt";
+      ct->type = "int_lin_le";
+      ct->arguments[2] = Argument::IntegerValue(rhs - 1);
       return true;
     } else if (ct->type == "int_lin_ne_reif") {
-      ct->type = "int_lin_lt_reif";
+      ct->type = "int_lin_le_reif";
+      ct->arguments[2] = Argument::IntegerValue(rhs - 1);
       return true;
     }
   }
