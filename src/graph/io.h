@@ -79,8 +79,9 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format);
 //     ...
 //   }
 template <class Graph>
-util::StatusOr<Graph*> ReadGraphFile(const std::string& filename, bool directed,
-                                     std::vector<int>* num_nodes_with_color_or_null);
+util::StatusOr<Graph*> ReadGraphFile(
+    const std::string& filename, bool directed,
+    std::vector<int>* num_nodes_with_color_or_null);
 
 // Writes a graph to the ".g" file format described above. If "directed" is
 // true, all arcs are written to the file. If it is false, the graph is expected

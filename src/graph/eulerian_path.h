@@ -52,7 +52,8 @@ bool IsEulerianGraph(const Graph& graph) {
 // odd degree.
 // odd_nodes is filled with odd nodes of the graph.
 template <typename NodeIndex, typename Graph>
-bool IsSemiEulerianGraph(const Graph& graph, std::vector<NodeIndex>* odd_nodes) {
+bool IsSemiEulerianGraph(const Graph& graph,
+                         std::vector<NodeIndex>* odd_nodes) {
   CHECK(odd_nodes != nullptr);
   for (const NodeIndex node : graph.AllNodes()) {
     const int degree = graph.OutDegree(node) + graph.InDegree(node);
