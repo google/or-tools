@@ -113,7 +113,8 @@ class OrderedLns : public BaseLns {
         int current_index = work_index % dim;
         work_index = work_index / dim;
 
-        std::pair<std::set<int>::iterator, bool> ret = fragment_set.insert(current_index);
+        std::pair<std::set<int>::iterator, bool> ret =
+            fragment_set.insert(current_index);
 
         // Check if element has been used before
         if (ret.second) {

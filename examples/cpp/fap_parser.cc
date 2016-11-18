@@ -40,7 +40,8 @@ void VariableParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
-    std::vector<std::string> tokens = strings::Split(line, " ", strings::SkipEmpty());
+    std::vector<std::string> tokens =
+        strings::Split(line, " ", strings::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -66,7 +67,8 @@ void DomainParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
-    std::vector<std::string> tokens = strings::Split(line, " ", strings::SkipEmpty());
+    std::vector<std::string> tokens =
+        strings::Split(line, " ", strings::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -96,7 +98,8 @@ void ConstraintParser::Parse() {
   std::vector<std::string> lines;
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
-    std::vector<std::string> tokens = strings::Split(line, " ", strings::SkipEmpty());
+    std::vector<std::string> tokens =
+        strings::Split(line, " ", strings::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -154,7 +157,8 @@ void ParametersParser::Parse() {
                constraint_coefficient_no_ + variable_coefficient_no_);
       objective = false;
       if (line.find("=") != std::string::npos) {
-        std::vector<std::string> tokens = strings::Split(line, " ", strings::SkipEmpty());
+        std::vector<std::string> tokens =
+            strings::Split(line, " ", strings::SkipEmpty());
         CHECK_GE(tokens.size(), 3);
         coefficients.push_back(atoi32(tokens[2].c_str()));
       }

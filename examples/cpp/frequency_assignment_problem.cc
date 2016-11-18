@@ -329,8 +329,9 @@ bool ConstraintImpactComparator(FapConstraint constraint1,
   return (constraint1.impact > constraint2.impact);
 }
 
-int64 ValueEvaluator(hash_map<int64, std::pair<int64, int64>>* value_evaluator_map,
-                     int64 variable_index, int64 value) {
+int64 ValueEvaluator(
+    hash_map<int64, std::pair<int64, int64>>* value_evaluator_map,
+    int64 variable_index, int64 value) {
   CHECK_NOTNULL(value_evaluator_map);
   // Evaluate the choice. Smaller ranking denotes a better choice.
   int64 ranking = -1;
@@ -357,7 +358,8 @@ int64 ValueEvaluator(hash_map<int64, std::pair<int64, int64>>* value_evaluator_m
       new_ranking = existing_value_ranking.second;
     }
   }
-  std::pair<int64, int64> new_value_ranking = std::make_pair(new_value, new_ranking);
+  std::pair<int64, int64> new_value_ranking =
+      std::make_pair(new_value, new_ranking);
   InsertOrUpdate(value_evaluator_map, variable_index, new_value_ranking);
 
   return new_ranking;
@@ -507,7 +509,8 @@ void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
 // of frequencies used to the solution.
 void HardFapSolver(const std::map<int, FapVariable>& data_variables,
                    const std::vector<FapConstraint>& data_constraints,
-                   const std::string& data_objective, const std::vector<int>& values) {
+                   const std::string& data_objective,
+                   const std::vector<int>& values) {
   Solver solver("HardFapSolver");
   std::vector<SearchMonitor*> monitors;
 
@@ -652,10 +655,11 @@ void SplitConstraintHardSoft(const std::vector<FapConstraint>& data_constraints,
 
 // Penalize the modification of the initial position of soft variable of
 // the instance.
-void PenalizeVariablesViolation(const std::map<int, FapVariable>& soft_variables,
-                                const std::map<int, int>& index_from_key,
-                                const std::vector<IntVar*>& variables,
-                                std::vector<IntVar*>* cost, Solver* solver) {
+void PenalizeVariablesViolation(
+    const std::map<int, FapVariable>& soft_variables,
+    const std::map<int, int>& index_from_key,
+    const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
+    Solver* solver) {
   for (const auto& it : soft_variables) {
     const int index = FindOrDie(index_from_key, it.first);
     CHECK_LT(index, variables.size());
@@ -668,13 +672,12 @@ void PenalizeVariablesViolation(const std::map<int, FapVariable>& soft_variables
 }
 
 // Penalize the violation of soft constraints of the instance.
-void PenalizeConstraintsViolation(const std::vector<FapConstraint>& constraints,
-                                  const std::vector<FapConstraint>& soft_constraints,
-                                  const std::map<int, int>& index_from_key,
-                                  const std::vector<IntVar*>& variables,
-                                  std::vector<IntVar*>* cost,
-                                  std::vector<IntVar*>* violated_constraints,
-                                  Solver* solver) {
+void PenalizeConstraintsViolation(
+    const std::vector<FapConstraint>& constraints,
+    const std::vector<FapConstraint>& soft_constraints,
+    const std::map<int, int>& index_from_key,
+    const std::vector<IntVar*>& variables, std::vector<IntVar*>* cost,
+    std::vector<IntVar*>* violated_constraints, Solver* solver) {
   int violated_constraints_index = 0;
   for (const FapConstraint& ct : constraints) {
     CHECK_LT(violated_constraints_index, violated_constraints->size());
@@ -719,7 +722,8 @@ void PenalizeConstraintsViolation(const std::vector<FapConstraint>& constraints,
 // equal to 0 denotes that the instance is feasible.
 int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
                   const std::vector<FapConstraint>& data_constraints,
-                  const std::string& data_objective, const std::vector<int>& values) {
+                  const std::string& data_objective,
+                  const std::vector<int>& values) {
   Solver solver("SoftFapSolver");
   std::vector<SearchMonitor*> monitors;
 

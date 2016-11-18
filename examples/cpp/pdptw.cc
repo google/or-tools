@@ -95,8 +95,8 @@ int64 TravelPlusServiceTime(const Coordinates* const coords,
 
 // Returns the demand (quantity picked up or delivered) of a node, demands
 // holds the demand of each node.
-int64 Demand(const std::vector<int64>* const demands, RoutingModel::NodeIndex from,
-             RoutingModel::NodeIndex to) {
+int64 Demand(const std::vector<int64>* const demands,
+             RoutingModel::NodeIndex from, RoutingModel::NodeIndex to) {
   return demands->at(from.value());
 }
 
@@ -245,12 +245,13 @@ bool LoadAndSolve(const std::string& pdp_file) {
   routing.SetArcCostEvaluatorOfAllVehicles(
       NewPermanentCallback(Travel, const_cast<const Coordinates*>(&coords)));
   routing.AddDimension(
-      NewPermanentCallback(&Demand, const_cast<const std::vector<int64>*>(&demands)),
+      NewPermanentCallback(&Demand,
+                           const_cast<const std::vector<int64>*>(&demands)),
       0, capacity, /*fix_start_cumul_to_zero=*/true, "demand");
   routing.AddDimension(
-      NewPermanentCallback(&TravelPlusServiceTime,
-                           const_cast<const Coordinates*>(&coords),
-                           const_cast<const std::vector<int64>*>(&service_times)),
+      NewPermanentCallback(
+          &TravelPlusServiceTime, const_cast<const Coordinates*>(&coords),
+          const_cast<const std::vector<int64>*>(&service_times)),
       kScalingFactor * horizon, kScalingFactor * horizon,
       /*fix_start_cumul_to_zero=*/true, "time");
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
