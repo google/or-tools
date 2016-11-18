@@ -660,6 +660,9 @@ class GenericLiteralWatcher : public SatPropagator {
   // is usually done in a CP solver at the cost of a sligthly more complex API.
   void RegisterReversibleInt(int id, int* rev);
 
+  // Returns the number of registered propagators.
+  int NumPropagators() const { return in_queue_.size(); }
+
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.

@@ -216,6 +216,67 @@ bool Domain::Contains(int64 value) const {
   }
 }
 
+namespace {
+bool IntervalOverlapValues(int64 lb, int64 ub, const std::vector<int64>& values) {
+  for (int64 value : values) {
+    if (lb <= value && value <= ub) {
+      return true;
+    }
+  }
+  return false;
+}
+}  // namespace
+
+bool Domain::OverlapsIntList(const std::vector<int64>& vec) const {
+  if (IsAllInt64()) {
+    return true;
+  }
+  if (is_interval) {
+    CHECK(!values.empty());
+    return IntervalOverlapValues(values[0], values[1], vec);
+  } else {
+    // TODO(user): Better algorithm, sort and compare increasingly.
+    const std::vector<int64>& to_scan =
+        values.size() <= vec.size() ? values : vec;
+    const std::unordered_set<int64> container =
+        values.size() <= vec.size()
+            ? std::unordered_set<int64>(vec.begin(), vec.end())
+            : std::unordered_set<int64>(values.begin(), values.end());
+    for (int64 value : to_scan) {
+      if (ContainsKey(container, value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+bool Domain::OverlapsIntInterval(int64 lb, int64 ub) const {
+  if (IsAllInt64()) {
+    return true;
+  }
+  if (is_interval) {
+    CHECK(!values.empty());
+    const int64 dlb = values[0];
+    const int64 dub = values[1];
+    return !(dub < lb || dlb > ub);
+  } else {
+    return IntervalOverlapValues(lb, ub, values);
+  }
+}
+
+bool Domain::OverlapsDomain(const Domain& other) const {
+  if (other.is_interval) {
+    if (other.values.empty()) {
+      return true;
+    } else {
+      return OverlapsIntInterval(other.values[0], other.values[1]);
+    }
+  } else {
+    return OverlapsIntList(other.values);
+  }
+}
+
 bool Domain::RemoveValue(int64 value) {
   if (is_interval) {
     if (values.empty()) {

@@ -67,7 +67,11 @@ struct Domain {
   // Returns true if the domain is [kint64min..kint64max]
   bool IsAllInt64() const;
 
+  // Various inclusion tests on a domain.
   bool Contains(int64 value) const;
+  bool OverlapsIntList(const std::vector<int64>& values) const;
+  bool OverlapsIntInterval(int64 lb, int64 ub) const;
+  bool OverlapsDomain(const Domain& other) const;
 
   // All the following modifiers change the internal representation
   //   list to interval or interval to list.

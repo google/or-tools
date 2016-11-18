@@ -27,6 +27,9 @@ IntegerSumLE::IntegerSumLE(LiteralIndex reified_literal,
       coeffs_(coeffs),
       trail_(trail),
       integer_trail_(integer_trail) {
+  // TODO(user): deal with this corner case.
+  CHECK(!vars_.empty());
+
   // Handle negative coefficients.
   for (int i = 0; i < vars.size(); ++i) {
     if (coeffs_[i] < 0) {
@@ -57,8 +60,6 @@ void IntegerSumLE::FillIntegerReason() {
 }
 
 bool IntegerSumLE::Propagate() {
-  CHECK(!vars_.empty());  // TODO(user): deal with this corner case.
-
   // Reified case: If the reified literal is false, we ignore the constraint.
   if (reified_literal_ != kNoLiteralIndex &&
       trail_->Assignment().LiteralIsFalse(Literal(reified_literal_))) {
@@ -71,7 +72,8 @@ bool IntegerSumLE::Propagate() {
   }
 
   // Conflict?
-  if (new_lb > upper_bound_) {
+  const IntegerValue slack = upper_bound_ - new_lb;
+  if (slack < 0) {
     FillIntegerReason();
 
     // Reified case: If the reified literal is unassigned, we set it to false,
@@ -92,31 +94,34 @@ bool IntegerSumLE::Propagate() {
     return true;
   }
 
-  // Will only be filled on the first push.
-  integer_reason_.clear();
+  // The integer_reason_ will only be filled on the first push.
+  bool first_push = true;
 
   // The lower bound of all the variables minus one can be used to update the
   // upper bound of the last one.
   for (int i = 0; i < vars_.size(); ++i) {
-    const IntegerValue new_lb_excluding_i =
-        new_lb - integer_trail_->LowerBound(vars_[i]) * coeffs_[i];
-    const IntegerValue new_term_ub = upper_bound_ - new_lb_excluding_i;
-    const IntegerValue new_ub = new_term_ub / coeffs_[i];
-    if (new_ub < integer_trail_->UpperBound(vars_[i])) {
-      if (integer_reason_.empty()) FillIntegerReason();
+    const IntegerVariable var = vars_[i];
+    const IntegerValue var_slack =
+        integer_trail_->UpperBound(var) - integer_trail_->LowerBound(var);
+    if (var_slack * coeffs_[i] > slack) {
+      if (first_push) {
+        first_push = false;
+        FillIntegerReason();
+      }
 
       // We need to remove the entry index from the reason temporarily.
       IntegerLiteral saved;
       const int index = index_in_integer_reason_[i];
       if (index >= 0) {
         saved = integer_reason_[index];
-        std::swap(integer_reason_[index], integer_reason_.back());
+        integer_reason_[index] = integer_reason_.back();
         integer_reason_.pop_back();
       }
 
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::LowerOrEqual(vars_[i], new_ub), literal_reason_,
-              integer_reason_)) {
+      const IntegerValue new_ub =
+          integer_trail_->LowerBound(var) + slack / coeffs_[i];
+      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub),
+                                   literal_reason_, integer_reason_)) {
         return false;
       }
 

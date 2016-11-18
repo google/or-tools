@@ -296,6 +296,7 @@ inline std::function<void(Model*)> WeightedSumGreaterOrEqualReif(
 }
 
 // Weighted sum == constant reified.
+// TODO(user): Simplify if the constant is at the edge of the possible values.
 template <typename VectorInt>
 inline std::function<void(Model*)> FixedWeightedSumReif(
     Literal is_eq, const std::vector<IntegerVariable>& vars,
@@ -312,6 +313,7 @@ inline std::function<void(Model*)> FixedWeightedSumReif(
 }
 
 // Weighted sum != constant.
+// TODO(user): Simplify if the constant is at the edge of the possible values.
 template <typename VectorInt>
 inline std::function<void(Model*)> WeightedSumNotEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,

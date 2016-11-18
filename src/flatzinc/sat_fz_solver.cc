@@ -462,17 +462,15 @@ void ExtractIntLinNeReif(const fz::Constraint& ct, SatModel* m) {
   m->model.Add(FixedWeightedSumReif(r.Negated(), vars, coeffs, rhs));
 }
 
-// r => (a == cte)
+// r => (a == cte).
 void ImpliesEqualityToConstant(bool reverse_implication, IntegerVariable a,
                                int64 cte, Literal r, SatModel* m) {
   if (m->model.Get(IsFixed(a))) {
     if (m->model.Get(Value(a)) == IntegerValue(cte)) {
       if (reverse_implication) {
-        FZLOG << "Case could have been presolved." << FZENDL;
         m->model.GetOrCreate<SatSolver>()->AddUnitClause(r);
       }
     } else {
-      FZLOG << "Case could have been presolved." << FZENDL;
       m->model.GetOrCreate<SatSolver>()->AddUnitClause(r.Negated());
     }
     return;
@@ -511,7 +509,6 @@ void ImpliesEqualityToConstant(bool reverse_implication, IntegerVariable a,
   }
 
   // Value is not found, the literal must be false.
-  FZLOG << "Case could have been presolved." << FZENDL;
   m->model.GetOrCreate<SatSolver>()->AddUnitClause(r.Negated());
 }
 
@@ -936,7 +933,7 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
     ExtractArrayVarIntElement(ct, m);
   } else if (ct.type == "all_different_int") {
     ExtractAllDifferentInt(ct, m);
-  } else if (ct.type == "int_eq") {
+  } else if (ct.type == "int_eq" || ct.type == "bool2int") {
     ExtractIntEq(ct, m);
   } else if (ct.type == "int_ne") {
     ExtractIntNe(ct, m);
@@ -990,6 +987,8 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
              ct.type == "variable_cumulative" ||
              ct.type == "fixed_cumulative") {
     ExtractCumulative(ct, m);
+  } else if (ct.type == "false_constraint") {
+    m->model.GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
   } else {
     return false;
   }
@@ -1147,11 +1146,22 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   FZLOG << "Extracting " << fz_model.constraints().size() << " constraints. "
         << FZENDL;
   std::set<std::string> unsupported_types;
+  Trail* trail = m.model.GetOrCreate<Trail>();
   for (fz::Constraint* ct : fz_model.constraints()) {
     if (ct != nullptr && ct->active) {
+      const int old_num_fixed = trail->Index();
       FZVLOG << "Extracting '" << ct->type << "'." << FZENDL;
       if (!ExtractConstraint(*ct, &m)) {
         unsupported_types.insert(ct->type);
+      }
+
+      // We propagate after each new Boolean constraint but not the integer
+      // ones. So we call Propagate() manually here. TODO(user): Do that
+      // automatically?
+      m.model.GetOrCreate<SatSolver>()->Propagate();
+      if (trail->Index() > old_num_fixed) {
+        FZVLOG << "Constraint fixed " << trail->Index() - old_num_fixed
+               << " Boolean variable(s): " << ct->DebugString() << FZENDL;
       }
       if (m.model.GetOrCreate<SatSolver>()->IsModelUnsat()) {
         FZLOG << "UNSAT during extraction (after adding '" << ct->type << "')."
@@ -1169,21 +1179,30 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   }
 
   // Some stats.
-  int num_fully_encoded_variables = 0;
-  for (int i = 0; i < m.model.Get<IntegerTrail>()->NumIntegerVariables(); ++i) {
-    if (m.model.Get<IntegerEncoder>()->VariableIsFullyEncoded(
-            IntegerVariable(i))) {
-      ++num_fully_encoded_variables;
+  {
+    int num_fully_encoded_variables = 0;
+    for (int i = 0; i < m.model.Get<IntegerTrail>()->NumIntegerVariables();
+         ++i) {
+      if (m.model.Get<IntegerEncoder>()->VariableIsFullyEncoded(
+              IntegerVariable(i))) {
+        ++num_fully_encoded_variables;
+      }
     }
+    // We divide by two because of the automatically created NegationOf() var.
+    FZLOG << "Num integer variables = "
+          << m.model.GetOrCreate<IntegerTrail>()->NumIntegerVariables() / 2
+          << FZENDL;
+    FZLOG << "Num fully encoded variable = " << num_fully_encoded_variables / 2
+          << FZENDL;
+    FZLOG << "Num initial SAT variables = "
+          << m.model.Get<SatSolver>()->NumVariables() << " ("
+          << m.model.Get<SatSolver>()->LiteralTrail().Index() << " fixed)."
+          << FZENDL;
+    FZLOG << "Num constants = " << m.constant_map.size() << FZENDL;
+    FZLOG << "Num integer propagators = "
+          << m.model.GetOrCreate<GenericLiteralWatcher>()->NumPropagators()
+          << FZENDL;
   }
-  // We divide by two because of the automatically created NegationOf() var.
-  FZLOG << "Num integer variables = "
-        << m.model.Get<IntegerTrail>()->NumIntegerVariables() / 2 << FZENDL;
-  FZLOG << "Num fully encoded variable = " << num_fully_encoded_variables / 2
-        << FZENDL;
-  FZLOG << "Num Boolean variables created = "
-        << m.model.Get<SatSolver>()->NumVariables() << FZENDL;
-  FZLOG << "Num constants = " << m.constant_map.size() << FZENDL;
 
   int num_solutions = 0;
   int64 best_objective = 0;
