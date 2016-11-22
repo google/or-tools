@@ -84,6 +84,7 @@ class Tsp
         FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
     Assignment solution = routing.SolveWithParameters(search_parameters);
+    Console.WriteLine("Status = {0}", routing.Status());
     if (solution != null) {
       // Solution cost.
       Console.WriteLine("Cost = {0}", solution.ObjectiveValue());

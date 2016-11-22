@@ -237,6 +237,7 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %rename (AddDimensionWithVehicleCapacityAux) operations_research::RoutingModel::AddDimensionWithVehicleCapacity;
 %rename (SetArcCostEvaluatorOfAllVehiclesAux) operations_research::RoutingModel::SetArcCostEvaluatorOfAllVehicles;
 %rename (SetArcCostEvaluatorOfVehicleAux) operations_research::RoutingModel::SetArcCostEvaluatorOfVehicle;
+%rename (RoutingModelStatus) operations_research::RoutingModel::Status;
 
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,
