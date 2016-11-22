@@ -172,7 +172,6 @@ def create_data_array():
 
   demands = [0, 19, 21, 6, 19, 7, 12, 16, 6, 16, 8, 14, 21, 16, 3, 22, 18,
              19, 1, 24, 8, 12, 4, 8, 24, 24, 2, 20, 15, 2, 14, 9]
-  
   data = [locations, demands]
   return data
 if __name__ == '__main__':
