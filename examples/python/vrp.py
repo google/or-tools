@@ -100,9 +100,6 @@ def main():
 
     search_parameters.time_limit_ms = time_limit*1000
 
-    # Set the depot.  This function is now depricated
-    #routing.SetDepot(depot)
-
     # The 'PATH_CHEAPEST_ARC' method does the following:
     # Starting from a route "start" node, connect it to the node which produces the
     # cheapest route segment, then extend the route by iterating on the last
