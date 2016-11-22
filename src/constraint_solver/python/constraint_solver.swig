@@ -406,6 +406,9 @@ PY_STRINGIFY_DEBUGSTRING(Decision);
   IntExpr* __floordiv__(int64 v) {
     return $self->solver()->MakeDiv($self, v);
   }
+  IntExpr* __floordiv__(IntExpr* e) {
+    return $self->solver()->MakeDiv($self, e);
+  }
   IntExpr* __mod__(int64 v) {
     return $self->solver()->MakeModulo($self, v);
   }
@@ -2244,4 +2247,3 @@ class PyConstraint(Constraint):
 
 
 }  // %pythoncode
-
