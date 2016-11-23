@@ -576,19 +576,26 @@ bool Presolver::PresolveSetNotIn(Constraint* ct, std::string* log) {
 
 // Propagates the values of set_in_reif
 // Input : set_in_reif(x, [c1..c2], b) or set_in_reif(x, {c1, .., cn}, b)
-// Output: bool_eq(t, b)
+//
+// Rule 1: decide b if it can be decided.
+// Rule 2: replace by int_eq_reif or int_ne_reif if there is just one
+//         alternative.
 bool Presolver::PresolveSetInReif(Constraint* ct, std::string* log) {
   if (ct->arguments[0].IsVariable() || ct->arguments[0].HasOneValue()) {
     int in = 0;
+    int64 first_in_value;
     int out = 0;
+    int64 first_out_value;
     for (const int64 value : GetValueSet(ct->arguments[0])) {
       if (ct->arguments[1].Contains(value)) {
         in++;
+        first_in_value = value;
       } else {
         out++;
+        first_out_value = value;
       }
       // Early break.
-      if (in > 0 && out > 0) {
+      if (in > 1 && out > 1) {
         break;
       }
     }
@@ -603,6 +610,14 @@ bool Presolver::PresolveSetInReif(Constraint* ct, std::string* log) {
       ct->RemoveArg(1);
       ct->type = "bool_eq";
       ct->arguments[0] = Argument::IntegerValue(1);
+      return true;
+    } else if (in == 1) {
+      ct->type = "int_eq_reif";
+      ct->arguments[1] = Argument::IntegerValue(first_in_value);
+      return true;
+    } else if (out == 1) {
+      ct->type = "int_ne_reif";
+      ct->arguments[1] = Argument::IntegerValue(first_out_value);
       return true;
     }
   }
@@ -1493,44 +1508,81 @@ bool Presolver::PropagatePositiveLinear(Constraint* ct, std::string* log) {
   return modified;
 }
 
-// Input: int_lin_xx([c1, .., cn], [x1, .., xn],  rhs) with ci >= 0.
+// Input: int_lin_xx([c1, .., cn], [x1, .., xn],  rhs)
 //
 // Computes the bounds on the rhs.
 // Rule1: remove always true/false constraint or fix the reif Boolean.
 // Rule2: transform ne/eq to gt/ge/lt/le if rhs is at one bound of its domain.
-bool Presolver::SimplifyPositiveLinear(Constraint* ct, std::string* log) {
+bool Presolver::SimplifyLinear(Constraint* ct, std::string* log) {
   const int64 rhs = ct->arguments[2].Value();
-  if (ct->presolve_propagation_done || rhs < 0 ||
-      ct->arguments[1].variables.empty()) {
-    return false;
-  }
+  if (ct->arguments[1].variables.empty()) return false;
+
+  // TODO(user): deal with integer overflow.
   int64 rhs_min = 0;
   int64 rhs_max = 0;
   const int n = ct->arguments[0].values.size();
   for (int i = 0; i < n; ++i) {
     const int64 coeff = ct->arguments[0].values[i];
-    if (coeff < 0) return false;
-    rhs_min += coeff * ct->arguments[1].variables[i]->domain.Min();
-    rhs_max += coeff * ct->arguments[1].variables[i]->domain.Max();
+    if (coeff > 0) {
+      rhs_min += coeff * ct->arguments[1].variables[i]->domain.Min();
+      rhs_max += coeff * ct->arguments[1].variables[i]->domain.Max();
+    } else if (coeff < 0) {
+      rhs_min += coeff * ct->arguments[1].variables[i]->domain.Max();
+      rhs_max += coeff * ct->arguments[1].variables[i]->domain.Min();
+    }
+  }
+  if (ct->type == "int_lin_ge") {
+    if (rhs_min >= rhs) {
+      ct->MarkAsInactive();
+      return true;
+    } else if (rhs_max < rhs) {
+      ct->SetAsFalse();
+      return true;
+    }
+    return false;
+  }
+  if (ct->type == "int_lin_ge_reif") {
+    if (rhs_min >= rhs) {
+      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
+      return true;
+    } else if (rhs_max < rhs) {
+      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
+      return true;
+    }
+    return false;
+  }
+  if (ct->type == "int_lin_le") {
+    if (rhs_min > rhs) {
+      ct->SetAsFalse();
+      return true;
+    } else if (rhs_max <= rhs) {
+      ct->MarkAsInactive();
+      return true;
+    }
+    return false;
+  }
+  if (ct->type == "int_lin_le_reif") {
+    if (rhs_min > rhs) {
+      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
+      return true;
+    } else if (rhs_max <= rhs) {
+      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
+      return true;
+    }
+    return false;
   }
   if (rhs < rhs_min || rhs > rhs_max) {
     if (ct->type == "int_lin_eq") {
       ct->SetAsFalse();
       return true;
     } else if (ct->type == "int_lin_eq_reif") {
-      ct->type = "bool_eq";
-      ct->arguments[0] = ct->arguments[3];
-      ct->arguments.resize(1);
-      ct->arguments.push_back(Argument::IntegerValue(0));
+      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
       return true;
     } else if (ct->type == "int_lin_ne") {
       ct->MarkAsInactive();
       return true;
     } else if (ct->type == "int_lin_ne_reif") {
-      ct->type = "bool_eq";
-      ct->arguments[0] = ct->arguments[3];
-      ct->arguments.resize(1);
-      ct->arguments.push_back(Argument::IntegerValue(1));
+      SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
       return true;
     }
   } else if (rhs == rhs_min) {
@@ -2855,6 +2907,7 @@ bool Presolver::PresolveOneConstraint(Constraint* ct) {
   if (strings::StartsWith(ct->type, "int_lin_")) {
     CALL_TYPE(ct, "int_lin_gt", PresolveIntLinGt);
     CALL_TYPE(ct, "int_lin_lt", PresolveIntLinLt);
+    CALL_PREFIX(ct, "int_lin_", SimplifyLinear);
     CALL_PREFIX(ct, "int_lin_", PresolveLinear);
     CALL_PREFIX(ct, "int_lin_", RegroupLinear);
     CALL_PREFIX(ct, "int_lin_", SimplifyUnaryLinear);
@@ -2862,10 +2915,6 @@ bool Presolver::PresolveOneConstraint(Constraint* ct) {
     CALL_TYPE(ct, "int_lin_eq", PropagatePositiveLinear);
     CALL_TYPE(ct, "int_lin_le", PropagatePositiveLinear);
     CALL_TYPE(ct, "int_lin_ge", PropagatePositiveLinear);
-    CALL_TYPE(ct, "int_lin_eq", SimplifyPositiveLinear);
-    CALL_TYPE(ct, "int_lin_ne", SimplifyPositiveLinear);
-    CALL_TYPE(ct, "int_lin_eq_reif", SimplifyPositiveLinear);
-    CALL_TYPE(ct, "int_lin_ne_reif", SimplifyPositiveLinear);
     CALL_TYPE(ct, "int_lin_eq", CreateLinearTarget);
     CALL_TYPE(ct, "int_lin_eq", PresolveStoreMapping);
     CALL_TYPE(ct, "int_lin_eq_reif", CheckIntLinReifBounds);

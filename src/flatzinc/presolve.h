@@ -141,8 +141,8 @@ class Presolver {
   bool PresolveIntLinLt(Constraint* ct, std::string* log);
   bool PresolveLinear(Constraint* ct, std::string* log);
   bool RegroupLinear(Constraint* ct, std::string* log);
+  bool SimplifyLinear(Constraint* ct, std::string* log);
   bool PropagatePositiveLinear(Constraint* ct, std::string* log);
-  bool SimplifyPositiveLinear(Constraint* ct, std::string* log);
   bool PresolveStoreMapping(Constraint* ct, std::string* log);
   bool PresolveSimplifyElement(Constraint* ct, std::string* log);
   bool PresolveSimplifyExprElement(Constraint* ct, std::string* log);

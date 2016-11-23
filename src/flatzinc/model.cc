@@ -217,7 +217,8 @@ bool Domain::Contains(int64 value) const {
 }
 
 namespace {
-bool IntervalOverlapValues(int64 lb, int64 ub, const std::vector<int64>& values) {
+bool IntervalOverlapValues(int64 lb, int64 ub,
+                           const std::vector<int64>& values) {
   for (int64 value : values) {
     if (lb <= value && value <= ub) {
       return true;
