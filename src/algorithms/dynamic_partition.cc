@@ -43,7 +43,8 @@ DynamicPartition::DynamicPartition(int n) {
                        /*fprint=*/ fprint));
 }
 
-DynamicPartition::DynamicPartition(const std::vector<int>& initial_part_of_element) {
+DynamicPartition::DynamicPartition(
+    const std::vector<int>& initial_part_of_element) {
   if (initial_part_of_element.empty()) return;
   part_of_ = initial_part_of_element;
   const int n = part_of_.size();
@@ -276,7 +277,8 @@ std::string MergingPartition::DebugString() {
   for (int i = 0; i < NumNodes(); ++i) {
     sorted_parts[GetRootAndCompressPath(i)].push_back(i);
   }
-  for (std::vector<int>& part : sorted_parts) std::sort(part.begin(), part.end());
+  for (std::vector<int>& part : sorted_parts)
+    std::sort(part.begin(), part.end());
   std::sort(sorted_parts.begin(), sorted_parts.end());
   // Note: typically, a lot of elements of "sorted_parts" will be empty,
   // but these won't be visible in the std::string that we construct below.

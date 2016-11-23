@@ -828,17 +828,18 @@ SequenceVarElement* Assignment::FastAdd(SequenceVar* const var) {
   return sequence_var_container_.FastAdd(var);
 }
 
-const std::vector<int>& Assignment::ForwardSequence(const SequenceVar* const var)
-    const {
+const std::vector<int>& Assignment::ForwardSequence(
+    const SequenceVar* const var) const {
   return sequence_var_container_.Element(var).ForwardSequence();
 }
 
-const std::vector<int>& Assignment::BackwardSequence(const SequenceVar* const var)
-    const {
+const std::vector<int>& Assignment::BackwardSequence(
+    const SequenceVar* const var) const {
   return sequence_var_container_.Element(var).BackwardSequence();
 }
 
-const std::vector<int>& Assignment::Unperformed(const SequenceVar* const var) const {
+const std::vector<int>& Assignment::Unperformed(
+    const SequenceVar* const var) const {
   return sequence_var_container_.Element(var).Unperformed();
 }
 
@@ -856,8 +857,8 @@ void Assignment::SetForwardSequence(const SequenceVar* const var,
       ->SetForwardSequence(forward_sequence);
 }
 
-void Assignment::SetBackwardSequence(const SequenceVar* const var,
-                                     const std::vector<int>& backward_sequence) {
+void Assignment::SetBackwardSequence(
+    const SequenceVar* const var, const std::vector<int>& backward_sequence) {
   sequence_var_container_.MutableElement(var)
       ->SetBackwardSequence(backward_sequence);
 }

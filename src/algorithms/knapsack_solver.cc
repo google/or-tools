@@ -61,8 +61,9 @@ struct CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder {
   }
 };
 
-typedef std::priority_queue<KnapsackSearchNode*, std::vector<KnapsackSearchNode*>,
-                       CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder>
+typedef std::priority_queue<
+    KnapsackSearchNode*, std::vector<KnapsackSearchNode*>,
+    CompareKnapsackSearchNodePtrInDecreasingUpperBoundOrder>
     SearchQueue;
 
 // Returns true when value_1 * value_2 may overflow int64.
@@ -344,7 +345,7 @@ KnapsackGenericSolver::KnapsackGenericSolver(const std::string& solver_name)
 KnapsackGenericSolver::~KnapsackGenericSolver() { Clear(); }
 
 void KnapsackGenericSolver::Init(const std::vector<int64>& profits,
-                                 const std::vector<std::vector<int64> >& weights,
+                                 const std::vector<std::vector<int64>>& weights,
                                  const std::vector<int64>& capacities) {
   CHECK_EQ(capacities.size(), weights.size());
 
@@ -544,7 +545,8 @@ class KnapsackBruteForceSolver : public BaseKnapsackSolver {
   explicit KnapsackBruteForceSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
+  void Init(const std::vector<int64>& profits,
+            const std::vector<std::vector<int64>>& weights,
             const std::vector<int64>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
@@ -572,9 +574,10 @@ KnapsackBruteForceSolver::KnapsackBruteForceSolver(const std::string& solver_nam
       best_solution_profit_(0LL),
       best_solution_(0U) {}
 
-void KnapsackBruteForceSolver::Init(const std::vector<int64>& profits,
-                                    const std::vector<std::vector<int64> >& weights,
-                                    const std::vector<int64>& capacities) {
+void KnapsackBruteForceSolver::Init(
+    const std::vector<int64>& profits,
+    const std::vector<std::vector<int64>>& weights,
+    const std::vector<int64>& capacities) {
   // TODO(user): Implement multi-dimensional brute force solver.
   CHECK_EQ(weights.size(), 1)
       << "Brute force solver only works with one dimension.";
@@ -671,7 +674,8 @@ class Knapsack64ItemsSolver : public BaseKnapsackSolver {
   explicit Knapsack64ItemsSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
+  void Init(const std::vector<int64>& profits,
+            const std::vector<std::vector<int64>>& weights,
             const std::vector<int64>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
@@ -731,7 +735,7 @@ Knapsack64ItemsSolver::Knapsack64ItemsSolver(const std::string& solver_name)
       rejected_items_weight_(0LL) {}
 
 void Knapsack64ItemsSolver::Init(const std::vector<int64>& profits,
-                                 const std::vector<std::vector<int64> >& weights,
+                                 const std::vector<std::vector<int64>>& weights,
                                  const std::vector<int64>& capacities) {
   CHECK_EQ(weights.size(), 1)
       << "Brute force solver only works with one dimension.";
@@ -926,7 +930,8 @@ class KnapsackDynamicProgrammingSolver : public BaseKnapsackSolver {
   explicit KnapsackDynamicProgrammingSolver(const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
+  void Init(const std::vector<int64>& profits,
+            const std::vector<std::vector<int64>>& weights,
             const std::vector<int64>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
@@ -960,7 +965,8 @@ KnapsackDynamicProgrammingSolver::KnapsackDynamicProgrammingSolver(
       best_solution_() {}
 
 void KnapsackDynamicProgrammingSolver::Init(
-    const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
+    const std::vector<int64>& profits,
+    const std::vector<std::vector<int64>>& weights,
     const std::vector<int64>& capacities) {
   CHECK_EQ(weights.size(), 1)
       << "Current implementation of the dynamic programming solver only deals"
@@ -1024,7 +1030,8 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
                     const std::string& solver_name);
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
+  void Init(const std::vector<int64>& profits,
+            const std::vector<std::vector<int64>>& weights,
             const std::vector<int64>& capacities) override;
 
   // Solves the problem and returns the profit of the optimal solution.
@@ -1038,7 +1045,7 @@ class KnapsackMIPSolver : public BaseKnapsackSolver {
  private:
   MPSolver::OptimizationProblemType problem_type_;
   std::vector<int64> profits_;
-  std::vector<std::vector<int64> > weights_;
+  std::vector<std::vector<int64>> weights_;
   std::vector<int64> capacities_;
   std::vector<bool> best_solution_;
 };
@@ -1053,7 +1060,7 @@ KnapsackMIPSolver::KnapsackMIPSolver(
       best_solution_() {}
 
 void KnapsackMIPSolver::Init(const std::vector<int64>& profits,
-                             const std::vector<std::vector<int64> >& weights,
+                             const std::vector<std::vector<int64>>& weights,
                              const std::vector<int64>& capacities) {
   profits_ = profits;
   weights_ = weights;
@@ -1156,7 +1163,7 @@ KnapsackSolver::KnapsackSolver(SolverType solver_type,
 KnapsackSolver::~KnapsackSolver() {}
 
 void KnapsackSolver::Init(const std::vector<int64>& profits,
-                          const std::vector<std::vector<int64> >& weights,
+                          const std::vector<std::vector<int64>>& weights,
                           const std::vector<int64>& capacities) {
   time_limit_.reset(new TimeLimit(time_limit_seconds_));
   is_solution_optimal_ = false;
@@ -1195,11 +1202,11 @@ void KnapsackSolver::Init(const std::vector<int64>& profits,
   }
 }
 
-int KnapsackSolver::ReduceCapacities(int num_items,
-                                     const std::vector<std::vector<int64>>& weights,
-                                     const std::vector<int64>& capacities,
-                                     std::vector<std::vector<int64>>* reduced_weights,
-                                     std::vector<int64>* reduced_capacities) {
+int KnapsackSolver::ReduceCapacities(
+    int num_items, const std::vector<std::vector<int64>>& weights,
+    const std::vector<int64>& capacities,
+    std::vector<std::vector<int64>>* reduced_weights,
+    std::vector<int64>* reduced_capacities) {
   known_value_.assign(num_items, false);
   best_solution_.assign(num_items, false);
   mapping_reduced_item_id_.assign(num_items, 0);
@@ -1286,7 +1293,8 @@ int KnapsackSolver::ReduceProblem(int num_items) {
   return num_reduced_items;
 }
 
-void KnapsackSolver::ComputeAdditionalProfit(const std::vector<int64>& profits) {
+void KnapsackSolver::ComputeAdditionalProfit(
+    const std::vector<int64>& profits) {
   const int num_items = profits.size();
   additional_profit_ = 0LL;
   for (int item_id = 0; item_id < num_items; ++item_id) {
@@ -1296,9 +1304,10 @@ void KnapsackSolver::ComputeAdditionalProfit(const std::vector<int64>& profits) 
   }
 }
 
-void KnapsackSolver::InitReducedProblem(const std::vector<int64>& profits,
-                                        const std::vector<std::vector<int64> >& weights,
-                                        const std::vector<int64>& capacities) {
+void KnapsackSolver::InitReducedProblem(
+    const std::vector<int64>& profits,
+    const std::vector<std::vector<int64>>& weights,
+    const std::vector<int64>& capacities) {
   const int num_items = profits.size();
   const int num_dimensions = capacities.size();
 
@@ -1310,7 +1319,7 @@ void KnapsackSolver::InitReducedProblem(const std::vector<int64>& profits,
     }
   }
 
-  std::vector<std::vector<int64> > reduced_weights;
+  std::vector<std::vector<int64>> reduced_weights;
   std::vector<int64> reduced_capacities = capacities;
   for (int dim = 0; dim < num_dimensions; ++dim) {
     const std::vector<int64>& one_dimension_weights = weights[dim];

@@ -638,7 +638,8 @@ namespace {
 class BasePathCumul : public Constraint {
  public:
   BasePathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
-                const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls);
+                const std::vector<IntVar*>& active,
+                const std::vector<IntVar*>& cumuls);
   ~BasePathCumul() override {}
   void Post() override;
   void InitialPropagate() override;
@@ -759,7 +760,8 @@ std::string BasePathCumul::DebugString() const {
 class PathCumul : public BasePathCumul {
  public:
   PathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
-            const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
+            const std::vector<IntVar*>& active,
+            const std::vector<IntVar*>& cumuls,
             const std::vector<IntVar*>& transits)
       : BasePathCumul(s, nexts, active, cumuls), transits_(transits) {}
   ~PathCumul() override {}
@@ -869,7 +871,8 @@ class StampedVector {
 class DelayedPathCumul : public Constraint {
  public:
   DelayedPathCumul(Solver* const solver, const std::vector<IntVar*>& nexts,
-                   const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
+                   const std::vector<IntVar*>& active,
+                   const std::vector<IntVar*>& cumuls,
                    const std::vector<IntVar*>& transits)
       : Constraint(solver),
         nexts_(nexts),
@@ -1180,7 +1183,8 @@ bool IndexEvaluator2PathCumul::AcceptLink(int i, int j) const {
 
 class IndexEvaluator2SlackPathCumul : public BasePathCumul {
  public:
-  IndexEvaluator2SlackPathCumul(Solver* const s, const std::vector<IntVar*>& nexts,
+  IndexEvaluator2SlackPathCumul(Solver* const s,
+                                const std::vector<IntVar*>& nexts,
                                 const std::vector<IntVar*>& active,
                                 const std::vector<IntVar*>& cumuls,
                                 const std::vector<IntVar*>& slacks,
@@ -1214,7 +1218,8 @@ class IndexEvaluator2SlackPathCumul : public BasePathCumul {
 IndexEvaluator2SlackPathCumul::IndexEvaluator2SlackPathCumul(
     Solver* const s, const std::vector<IntVar*>& nexts,
     const std::vector<IntVar*>& active, const std::vector<IntVar*>& cumuls,
-    const std::vector<IntVar*>& slacks, Solver::IndexEvaluator2 transit_evaluator)
+    const std::vector<IntVar*>& slacks,
+    Solver::IndexEvaluator2 transit_evaluator)
     : BasePathCumul(s, nexts, active, cumuls),
       slacks_(slacks),
       transits_evaluator_(std::move(transit_evaluator)) {}
@@ -1321,8 +1326,8 @@ namespace {
 class PathConnectedConstraint : public Constraint {
  public:
   PathConnectedConstraint(Solver* solver, std::vector<IntVar*> nexts,
-                          const std::vector<int64>& sources, std::vector<int64> sinks,
-                          std::vector<IntVar*> status)
+                          const std::vector<int64>& sources,
+                          std::vector<int64> sinks, std::vector<IntVar*> status)
       : Constraint(solver),
         sources_(sources.size(), -1),
         index_to_path_(nexts.size(), -1),
@@ -1548,7 +1553,8 @@ class PathTransitPrecedenceConstraint : public Constraint {
 }  // namespace
 
 Constraint* Solver::MakePathPrecedenceConstraint(
-    std::vector<IntVar*> nexts, const std::vector<std::pair<int, int>>& precedences) {
+    std::vector<IntVar*> nexts,
+    const std::vector<std::pair<int, int>>& precedences) {
   return MakePathTransitPrecedenceConstraint(std::move(nexts), {}, precedences);
 }
 

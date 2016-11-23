@@ -270,7 +270,8 @@ class MPSolver {
   void MakeIntVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
   // Creates an array of boolean variables.
-  void MakeBoolVarArray(int nb, const std::string& name, std::vector<MPVariable*>* vars);
+  void MakeBoolVarArray(int nb, const std::string& name,
+                        std::vector<MPVariable*>* vars);
 
   // ----- Constraints -----
   // Returns the number of constraints.

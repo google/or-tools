@@ -163,7 +163,8 @@ class GraphSymmetryFinder {
   std::unique_ptr<SparsePermutation> FindOneSuitablePermutation(
       int root_node, int root_image_node, DynamicPartition* base_partition,
       DynamicPartition* image_partition,
-      const std::vector<std::unique_ptr<SparsePermutation>>& generators_found_so_far,
+      const std::vector<std::unique_ptr<SparsePermutation>>&
+          generators_found_so_far,
       const std::vector<std::vector<int>>& permutations_displacing_node);
 
   // Data structure used by FindOneSuitablePermutation(). See the .cc

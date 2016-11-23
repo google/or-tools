@@ -484,7 +484,7 @@ class RoutingModel {
 #endif  // SWIG
   // Outputs the names of all dimensions added to the routing engine.
   // TODO(user): rename.
-  std::vector<std::string> GetAllDimensionNames() const;
+  std::vector<::std::string> GetAllDimensionNames() const;
   // Returns true if a dimension exists for a given dimension name.
   bool HasDimension(const std::string& dimension_name) const;
   // Returns a dimension from its name. Dies if the dimension does not exist.
@@ -572,7 +572,8 @@ class RoutingModel {
   // Adds a soft contraint to force a set of nodes to be on the same vehicle.
   // If all nodes are not on the same vehicle, each extra vehicle used adds
   // 'cost' to the cost function.
-  void AddSoftSameVehicleConstraint(const std::vector<NodeIndex>& nodes, int64 cost);
+  void AddSoftSameVehicleConstraint(const std::vector<NodeIndex>& nodes,
+                                    int64 cost);
 
   // Notifies that node1 and node2 form a pair of nodes which should belong
   // to the same route. This methods helps the search find better solutions,
@@ -707,8 +708,8 @@ class RoutingModel {
   // vehicle and deactivates other nodes.
   // An assignment containing the locks can be obtained by calling
   // PreAssignment().
-  bool ApplyLocksToAllVehicles(const std::vector<std::vector<NodeIndex> >& locks,
-                               bool close_routes);
+  bool ApplyLocksToAllVehicles(
+      const std::vector<std::vector<NodeIndex> >& locks, bool close_routes);
   // Returns an assignment used to fix some of the variables of the problem.
   // In practice, this assignment locks partial routes of the problem. This
   // can be used in the context of locking the parts of the routes which have
@@ -732,8 +733,9 @@ class RoutingModel {
   // assign values to the dimension variables; this may take
   // considerable amount of time, especially when using dimensions
   // with slack.
-  Assignment* ReadAssignmentFromRoutes(const std::vector<std::vector<NodeIndex> >& routes,
-                                       bool ignore_inactive_nodes);
+  Assignment* ReadAssignmentFromRoutes(
+      const std::vector<std::vector<NodeIndex> >& routes,
+      bool ignore_inactive_nodes);
   // Fills an assignment from a specification of the routes of the
   // vehicles. The routes are specified as lists of nodes that appear
   // on the routes of the vehicles. The indices of the outer vector in
@@ -757,8 +759,9 @@ class RoutingModel {
   // Converts the solution in the given assignment to routes for all vehicles.
   // Expects that assignment contains a valid solution (i.e. routes for all
   // vehicles end with an end node for that vehicle).
-  void AssignmentToRoutes(const Assignment& assignment,
-                          std::vector<std::vector<NodeIndex> >* const routes) const;
+  void AssignmentToRoutes(
+      const Assignment& assignment,
+      std::vector<std::vector<NodeIndex> >* const routes) const;
   // Returns a compacted version of the given assignment, in which all vehicles
   // with id lower or equal to some N have non-empty routes, and all vehicles
   // with id greater than N have empty routes. Does not take ownership of the
@@ -1080,9 +1083,10 @@ class RoutingModel {
 
   // Internal methods.
   void Initialize();
-  void SetStartEnd(const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
-  void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty,
-                              int64 max_cardinality);
+  void SetStartEnd(
+      const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+  void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes,
+                              int64 penalty, int64 max_cardinality);
   void AddNoCycleConstraintInternal();
   bool AddDimensionWithCapacityInternal(
       const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
@@ -1584,13 +1588,16 @@ class RoutingDimension {
           state_dependent_transit_evaluators,
       int64 slack_max);
   // Sets up the cost variables related to cumul soft upper bounds.
-  void SetupCumulVarSoftUpperBoundCosts(std::vector<IntVar*>* cost_elements) const;
+  void SetupCumulVarSoftUpperBoundCosts(
+      std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to cumul soft lower bounds.
-  void SetupCumulVarSoftLowerBoundCosts(std::vector<IntVar*>* cost_elements) const;
+  void SetupCumulVarSoftLowerBoundCosts(
+      std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to the global span and per-vehicle span
   // costs (only for the "slack" part of the latter).
   void SetupGlobalSpanCost(std::vector<IntVar*>* cost_elements) const;
-  void SetupSlackAndDependentTransitCosts(std::vector<IntVar*>* cost_elements) const;
+  void SetupSlackAndDependentTransitCosts(
+      std::vector<IntVar*>* cost_elements) const;
   // Finalize the model of the dimension.
   void CloseModel(bool use_light_propagation);
 
@@ -1674,7 +1681,8 @@ class SweepArranger {
 // when the code is mature enough.
 class IntVarFilteredDecisionBuilder : public DecisionBuilder {
  public:
-  IntVarFilteredDecisionBuilder(Solver* solver, const std::vector<IntVar*>& vars,
+  IntVarFilteredDecisionBuilder(Solver* solver,
+                                const std::vector<IntVar*>& vars,
                                 const std::vector<LocalSearchFilter*>& filters);
   ~IntVarFilteredDecisionBuilder() override {}
   Decision* Next(Solver* solver) override;
@@ -1740,8 +1748,8 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
 // Filter-based decision builder dedicated to routing.
 class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
  public:
-  RoutingFilteredDecisionBuilder(RoutingModel* model,
-                                 const std::vector<LocalSearchFilter*>& filters);
+  RoutingFilteredDecisionBuilder(
+      RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
   ~RoutingFilteredDecisionBuilder() override {}
   RoutingModel* model() const { return model_; }
   // Initializes the current solution with empty or partial vehicle routes.
@@ -1781,9 +1789,9 @@ class CheapestInsertionFilteredDecisionBuilder
   // possible insertion positions of node 'node_to_insert' in the partial route
   // starting at node 'start' and adds them to 'valued_position', a list of
   // unsorted pairs of (cost, position to insert the node).
-  void AppendEvaluatedPositionsAfter(int64 node_to_insert, int64 start,
-                                     int64 next_after_start, int64 vehicle,
-                                     std::vector<ValuedPosition>* valued_positions);
+  void AppendEvaluatedPositionsAfter(
+      int64 node_to_insert, int64 start, int64 next_after_start, int64 vehicle,
+      std::vector<ValuedPosition>* valued_positions);
   // Returns the cost of unperforming node 'node_to_insert'. Returns kint64max
   // if penalty callback is null or if the node cannot be unperformed.
   int64 GetUnperformedValue(int64 node_to_insert) const;
@@ -1938,7 +1946,8 @@ class CheapestAdditionFilteredDecisionBuilder
   // node 'from'.
   // 'from' is a variable index corresponding to a node, 'sorted_nexts' is a
   // vector of variable indices corresponding to nodes which can follow 'from'.
-  virtual void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts) = 0;
+  virtual void SortPossibleNexts(int64 from,
+                                 std::vector<int64>* sorted_nexts) = 0;
 };
 
 // A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc'
@@ -1991,8 +2000,9 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
  public:
   // If savings_neighbors > 0 then for each node only its 'saving_neighbors'
   // neighbors leading to the smallest arc costs are considered.
-  SavingsFilteredDecisionBuilder(RoutingModel* model, int64 saving_neighbors,
-                                 const std::vector<LocalSearchFilter*>& filters);
+  SavingsFilteredDecisionBuilder(
+      RoutingModel* model, int64 saving_neighbors,
+      const std::vector<LocalSearchFilter*>& filters);
   ~SavingsFilteredDecisionBuilder() override {}
   bool BuildSolution() override;
 

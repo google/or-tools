@@ -210,7 +210,8 @@ class HungarianOptimizer {
   HungarianOptimizer::Step state_;
 };
 
-HungarianOptimizer::HungarianOptimizer(const std::vector<std::vector<double> >& costs)
+HungarianOptimizer::HungarianOptimizer(
+    const std::vector<std::vector<double> >& costs)
     : matrix_size_(0),
       costs_(),
       max_cost_(0),
@@ -277,7 +278,8 @@ HungarianOptimizer::HungarianOptimizer(const std::vector<std::vector<double> >& 
 // Find an assignment which maximizes the total cost.
 // Return an array of pairs of integers.  Each pair (i, j) corresponds to
 // assigning agent i to task j.
-void HungarianOptimizer::Maximize(std::vector<int>* preimage, std::vector<int>* image) {
+void HungarianOptimizer::Maximize(std::vector<int>* preimage,
+                                  std::vector<int>* image) {
   // Find a maximal assignment by subtracting each of the
   // original costs from max_cost_  and then minimizing.
   for (int row = 0; row < width_; ++row) {
@@ -291,7 +293,8 @@ void HungarianOptimizer::Maximize(std::vector<int>* preimage, std::vector<int>* 
 // Find an assignment which minimizes the total cost.
 // Return an array of pairs of integers.  Each pair (i, j) corresponds to
 // assigning agent i to task j.
-void HungarianOptimizer::Minimize(std::vector<int>* preimage, std::vector<int>* image) {
+void HungarianOptimizer::Minimize(std::vector<int>* preimage,
+                                  std::vector<int>* image) {
   DoMunkres();
   FindAssignments(preimage, image);
 }

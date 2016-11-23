@@ -641,7 +641,8 @@ class PrintTrace : public PropagationMonitor {
                                      strings::Join(values, ", ").c_str()));
   }
 
-  void RemoveValues(IntVar* const var, const std::vector<int64>& values) override {
+  void RemoveValues(IntVar* const var,
+                    const std::vector<int64>& values) override {
     DisplayModification(StringPrintf("RemoveValues(%s, %s)",
                                      var->DebugString().c_str(),
                                      strings::Join(values, ", ").c_str()));

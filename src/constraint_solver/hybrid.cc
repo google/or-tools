@@ -270,7 +270,8 @@ class Linearizer : public ModelParser {
                              IntervalVar* const argument) override {}
 
   void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& argument) override {}
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& argument) override {}
 
   std::string DebugString() const override { return "Linearizer"; }
 
@@ -366,8 +367,9 @@ class Linearizer : public ModelParser {
     const std::vector<IntVar*>& cp_vars =
         Top()->FindIntegerVariableArrayArgumentOrDie(
             ModelVisitor::kVarsArgument);
-    const std::vector<int64>& cp_coefficients = Top()->FindIntegerArrayArgumentOrDie(
-        ModelVisitor::kCoefficientsArgument);
+    const std::vector<int64>& cp_coefficients =
+        Top()->FindIntegerArrayArgumentOrDie(
+            ModelVisitor::kCoefficientsArgument);
     const int64 constant =
         Top()->FindIntegerArgumentOrDie(ModelVisitor::kValueArgument);
     MPConstraint* const ct =
@@ -423,8 +425,9 @@ class Linearizer : public ModelParser {
     const std::vector<IntVar*>& cp_vars =
         Top()->FindIntegerVariableArrayArgumentOrDie(
             ModelVisitor::kVarsArgument);
-    const std::vector<int64>& cp_coefficients = Top()->FindIntegerArrayArgumentOrDie(
-        ModelVisitor::kCoefficientsArgument);
+    const std::vector<int64>& cp_coefficients =
+        Top()->FindIntegerArrayArgumentOrDie(
+            ModelVisitor::kCoefficientsArgument);
     CHECK_EQ(cp_vars.size(), cp_coefficients.size());
     MPConstraint* const ct = mp_solver_->MakeRowConstraint(0.0, 0.0);
     for (int i = 0; i < cp_vars.size(); ++i) {

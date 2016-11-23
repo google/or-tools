@@ -288,7 +288,8 @@ IntVar* BuildDomainIntVar(Solver* const solver, std::vector<int64>* values);
 
 class IntExprElement : public BaseIntExprElement {
  public:
-  IntExprElement(Solver* const s, const std::vector<int64>& vals, IntVar* const expr)
+  IntExprElement(Solver* const s, const std::vector<int64>& vals,
+                 IntVar* const expr)
       : BaseIntExprElement(s, expr), values_(vals) {}
 
   ~IntExprElement() override {}
@@ -501,9 +502,8 @@ class IncreasingIntExprElement : public BaseIntExpr {
   IntVar* const index_;
 };
 
-IncreasingIntExprElement::IncreasingIntExprElement(Solver* const s,
-                                                   const std::vector<int64>& values,
-                                                   IntVar* const index)
+IncreasingIntExprElement::IncreasingIntExprElement(
+    Solver* const s, const std::vector<int64>& values, IntVar* const index)
     : BaseIntExpr(s), values_(values), index_(index) {
   DCHECK(index);
   DCHECK(s);
@@ -652,7 +652,8 @@ IntExpr* BuildElement(Solver* const solver, const std::vector<int64>& values,
 }
 }  // namespace
 
-IntExpr* Solver::MakeElement(const std::vector<int64>& values, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int64>& values,
+                             IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
   if (index->Bound()) {
@@ -661,7 +662,8 @@ IntExpr* Solver::MakeElement(const std::vector<int64>& values, IntVar* const ind
   return BuildElement(this, values, index);
 }
 
-IntExpr* Solver::MakeElement(const std::vector<int>& values, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<int>& values,
+                             IntVar* const index) {
   DCHECK(index);
   DCHECK_EQ(this, index->solver());
   if (index->Bound()) {
@@ -1617,7 +1619,8 @@ Constraint* Solver::MakeIfThenElseCt(IntVar* const condition,
       new IfThenElseCt(this, condition, then_expr, else_expr, target_var));
 }
 
-IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars, IntVar* const index) {
+IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars,
+                             IntVar* const index) {
   if (index->Bound()) {
     return vars[index->Min()];
   }
@@ -1759,7 +1762,8 @@ Constraint* Solver::MakeIndexOfConstraint(const std::vector<IntVar*>& vars,
   }
 }
 
-IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars, int64 value) {
+IntExpr* Solver::MakeIndexExpression(const std::vector<IntVar*>& vars,
+                                     int64 value) {
   IntExpr* const cache = model_cache_->FindVarArrayConstantExpression(
       vars, value, ModelCache::VAR_ARRAY_CONSTANT_INDEX);
   if (cache != nullptr) {

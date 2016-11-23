@@ -27,7 +27,8 @@
 #include "util/string_array.h"
 
 namespace operations_research {
-Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, int64 c) {
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v,
+                              int64 c) {
   std::vector<IntVar*> tmp_sum;
   for (int i = 0; i < vars.size(); ++i) {
     if (vars[i]->Contains(v)) {
@@ -41,7 +42,8 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, int64 c
   return MakeSumEquality(tmp_sum, c);
 }
 
-Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, IntVar* c) {
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v,
+                              IntVar* c) {
   if (c->Bound()) {
     return MakeCount(vars, v, c->Min());
   } else {
@@ -65,7 +67,8 @@ Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v, IntVar*
 namespace {
 class AtMost : public Constraint {
  public:
-  AtMost(Solver* const s, std::vector<IntVar*> vars, int64 value, int64 max_count)
+  AtMost(Solver* const s, std::vector<IntVar*> vars, int64 value,
+         int64 max_count)
       : Constraint(s),
         vars_(std::move(vars)),
         value_(value),
@@ -146,7 +149,8 @@ class AtMost : public Constraint {
 class Distribute : public Constraint {
  public:
   Distribute(Solver* const s, const std::vector<IntVar*>& vars,
-             const std::vector<int64>& values, const std::vector<IntVar*>& cards)
+             const std::vector<int64>& values,
+             const std::vector<IntVar*>& cards)
       : Constraint(s),
         vars_(vars),
         values_(values),
@@ -369,7 +373,8 @@ class FastDistribute : public Constraint {
   std::vector<IntVarIterator*> holes_;
 };
 
-FastDistribute::FastDistribute(Solver* const s, const std::vector<IntVar*>& vars,
+FastDistribute::FastDistribute(Solver* const s,
+                               const std::vector<IntVar*>& vars,
                                const std::vector<IntVar*>& cards)
     : Constraint(s),
       vars_(vars),
@@ -503,7 +508,8 @@ void FastDistribute::CardMax(int card_index) {
 class BoundedDistribute : public Constraint {
  public:
   BoundedDistribute(Solver* const s, const std::vector<IntVar*>& vars,
-                    const std::vector<int64>& values, const std::vector<int64>& card_min,
+                    const std::vector<int64>& values,
+                    const std::vector<int64>& card_min,
                     const std::vector<int64>& card_max);
   ~BoundedDistribute() override {}
 
@@ -1007,8 +1013,9 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
   return RevAlloc(new FastDistribute(this, vars, cards));
 }
 
-Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars, int64 card_min,
-                                   int64 card_max, int64 card_size) {
+Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
+                                   int64 card_min, int64 card_max,
+                                   int64 card_size) {
   const int vsize = vars.size();
   CHECK_NE(vsize, 0);
   for (IntVar* const var : vars) {

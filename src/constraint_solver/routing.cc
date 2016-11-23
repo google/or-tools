@@ -282,8 +282,8 @@ Constraint* BuildLightElement2(CpModelLoader* const builder,
 class PathWithPreviousNodesOperator : public PathOperator {
  public:
   PathWithPreviousNodesOperator(
-      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-      int number_of_base_nodes,
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars, int number_of_base_nodes,
       std::function<int(int64)> start_empty_path_class)
       : PathOperator(vars, secondary_vars, number_of_base_nodes,
                      std::move(start_empty_path_class)) {
@@ -340,7 +340,8 @@ class PathWithPreviousNodesOperator : public PathOperator {
 class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
  public:
   MakeRelocateNeighborsOperator(
-      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
       std::function<int(int64)> start_empty_path_class,
       RoutingModel::TransitEvaluator2 arc_evaluator)
       : PathWithPreviousNodesOperator(vars, secondary_vars, 2,
@@ -988,7 +989,8 @@ class MatrixEvaluator : public BaseObject {
 
 class VectorEvaluator : public BaseObject {
  public:
-  explicit VectorEvaluator(std::vector<int64> values) : values_(std::move(values)) {}
+  explicit VectorEvaluator(std::vector<int64> values)
+      : values_(std::move(values)) {}
   ~VectorEvaluator() override {}
   int64 Value(RoutingModel::NodeIndex i, RoutingModel::NodeIndex j) const {
     return values_[i.value()];
@@ -1044,13 +1046,15 @@ RoutingModel::RoutingModel(int nodes, int vehicles, NodeIndex depot,
     : RoutingModel(nodes, vehicles, std::vector<NodeIndex>(vehicles, depot),
                    std::vector<NodeIndex>(vehicles, depot), parameters) {}
 
-RoutingModel::RoutingModel(int nodes, int vehicles,
-                           const std::vector<std::pair<NodeIndex, NodeIndex>>& start_ends)
+RoutingModel::RoutingModel(
+    int nodes, int vehicles,
+    const std::vector<std::pair<NodeIndex, NodeIndex>>& start_ends)
     : RoutingModel(nodes, vehicles, start_ends, DefaultModelParameters()) {}
 
-RoutingModel::RoutingModel(int nodes, int vehicles,
-                           const std::vector<std::pair<NodeIndex, NodeIndex>>& start_ends,
-                           const RoutingModelParameters& parameters)
+RoutingModel::RoutingModel(
+    int nodes, int vehicles,
+    const std::vector<std::pair<NodeIndex, NodeIndex>>& start_ends,
+    const RoutingModelParameters& parameters)
     : nodes_(nodes),
       vehicles_(vehicles),
       no_cycle_constraint_(nullptr),
@@ -1259,8 +1263,9 @@ bool RoutingModel::AddDimension(NodeEvaluator2* evaluator, int64 slack_max,
 }
 
 bool RoutingModel::AddDimensionWithVehicleTransits(
-    const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max, int64 capacity,
-    bool fix_start_cumul_to_zero, const std::string& dimension_name) {
+    const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
+    int64 capacity, bool fix_start_cumul_to_zero,
+    const std::string& dimension_name) {
   std::vector<int64> capacities(vehicles_, capacity);
   return AddDimensionWithCapacityInternal(
       evaluators, slack_max, std::move(capacities), fix_start_cumul_to_zero,
@@ -1496,7 +1501,7 @@ bool RoutingModel::AddDimensionDependentDimensionWithVehicleCapacity(
     int64 vehicle_capacity, bool fix_start_cumul_to_zero, const std::string& name) {
   std::vector<NodeEvaluator2*> pure_evaluators(vehicles_, pure_transits);
   std::vector<VariableNodeEvaluator2*> transit_evaluators(vehicles_,
-                                                     dependent_transits);
+                                                          dependent_transits);
   std::vector<int64> vehicle_capacities(vehicles_, vehicle_capacity);
   return AddDimensionDependentDimensionWithVehicleCapacityInternal(
       pure_evaluators, transit_evaluators, base_dimension, slack_max,
@@ -1861,8 +1866,8 @@ void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes,
   AddDisjunction(nodes, penalty, 1);
 }
 
-void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes, int64 penalty,
-                                  int64 max_cardinality) {
+void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes,
+                                  int64 penalty, int64 max_cardinality) {
   CHECK_GE(penalty, 0) << "Penalty must be positive";
   CHECK_GE(max_cardinality, 1);
   AddDisjunctionInternal(nodes, penalty, max_cardinality);
@@ -1913,8 +1918,8 @@ IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
   }
 }
 
-void RoutingModel::AddSoftSameVehicleConstraint(const std::vector<NodeIndex>& nodes,
-                                                int64 cost) {
+void RoutingModel::AddSoftSameVehicleConstraint(
+    const std::vector<NodeIndex>& nodes, int64 cost) {
   if (!nodes.empty()) {
     ValuedNodes<int64> same_vehicle_cost;
     for (const NodeIndex node : nodes) {
@@ -2198,9 +2203,8 @@ class RoutingModelInspector : public ModelVisitor {
     };
     array_inspectors_[kStartsArgument] = [this](
         const std::vector<int64>& int_array) { starts_argument_ = int_array; };
-    array_inspectors_[kEndsArgument] = [this](const std::vector<int64>& int_array) {
-      ends_argument_ = int_array;
-    };
+    array_inspectors_[kEndsArgument] = [this](
+        const std::vector<int64>& int_array) { ends_argument_ = int_array; };
     constraint_inspectors_[kNotMember] = [this]() {
       std::pair<RoutingDimension*, int> dim_index;
       if (FindCopy(cumul_to_dim_indices_, expr_, &dim_index)) {
@@ -2487,7 +2491,8 @@ class RouteConstructor {
         node_to_chain_index_(nodes_number, -1),
         node_to_vehicle_class_index_(nodes_number, -1) {
     {
-      const std::vector<std::string> dimension_names = model_->GetAllDimensionNames();
+      const std::vector<std::string> dimension_names =
+          model_->GetAllDimensionNames();
       dimensions_.assign(dimension_names.size(), nullptr);
       for (int i = 0; i < dimension_names.size(); ++i) {
         dimensions_[i] = &model_->GetDimensionOrDie(dimension_names[i]);
@@ -2624,13 +2629,16 @@ class RouteConstructor {
     }
   }
 
-  const std::vector<std::vector<int>>& final_routes() const { return final_routes_; }
+  const std::vector<std::vector<int>>& final_routes() const {
+    return final_routes_;
+  }
 
  private:
   enum MergeStatus { FIRST_SECOND, SECOND_FIRST, NO_MERGE };
 
   struct RouteSort {
-    bool operator()(const std::vector<int>& route1, const std::vector<int>& route2) {
+    bool operator()(const std::vector<int>& route1,
+                    const std::vector<int>& route2) {
       return (route1.size() < route2.size());
     }
   } RouteComparator;
@@ -2745,9 +2753,10 @@ class RouteConstructor {
     return true;
   }
 
-  bool FeasibleMerge(const std::vector<int>& route1, const std::vector<int>& route2,
-                     int node1, int node2, int route_index1, int route_index2,
-                     int vehicle_class, int64 start_depot, int64 end_depot) {
+  bool FeasibleMerge(const std::vector<int>& route1,
+                     const std::vector<int>& route2, int node1, int node2,
+                     int route_index1, int route_index2, int vehicle_class,
+                     int64 start_depot, int64 end_depot) {
     if ((route_index1 == route_index2) || !(Tail(node1) && Head(node2))) {
       return false;
     }
@@ -2805,7 +2814,8 @@ class RouteConstructor {
     return solver_->Solve(solver_->MakeRestoreAssignment(temp_assignment));
   }
 
-  bool UpdateAssignment(const std::vector<int>& route1, const std::vector<int>& route2) {
+  bool UpdateAssignment(const std::vector<int>& route1,
+                        const std::vector<int>& route2) {
     bool feasible = true;
     const int head1 = route1.front();
     const int tail1 = route1.back();
@@ -3119,7 +3129,8 @@ void SweepArranger::ArrangeNodes(std::vector<RoutingModel::NodeIndex>* nodes) {
   const int size = static_cast<int>(sweep_nodes.size()) / sectors_;
   for (int sector = 0; sector < sectors_; ++sector) {
     std::vector<SweepNode> cluster;
-    std::vector<SweepNode>::iterator begin = sweep_nodes.begin() + sector * size;
+    std::vector<SweepNode>::iterator begin =
+        sweep_nodes.begin() + sector * size;
     std::vector<SweepNode>::iterator end =
         sector == sectors_ - 1 ? sweep_nodes.end()
                                : sweep_nodes.begin() + (sector + 1) * size;
@@ -3641,7 +3652,8 @@ Assignment* RoutingModel::CompactAssignmentInternal(
   return compact_assignment.release();
 }
 
-int RoutingModel::FindNextActive(int index, const std::vector<int>& nodes) const {
+int RoutingModel::FindNextActive(int index,
+                                 const std::vector<int>& nodes) const {
   ++index;
   CHECK_LE(0, index);
   const int size = nodes.size();
@@ -3734,10 +3746,10 @@ Assignment* RoutingModel::DoRestoreAssignment() {
   return nullptr;
 }
 
-bool RoutingModel::RoutesToAssignment(const std::vector<std::vector<NodeIndex>>& routes,
-                                      bool ignore_inactive_nodes,
-                                      bool close_routes,
-                                      Assignment* const assignment) const {
+bool RoutingModel::RoutesToAssignment(
+    const std::vector<std::vector<NodeIndex>>& routes,
+    bool ignore_inactive_nodes, bool close_routes,
+    Assignment* const assignment) const {
   CHECK(assignment != nullptr);
   if (!closed_) {
     LOG(ERROR) << "The model is not closed yet";
@@ -3855,7 +3867,8 @@ bool RoutingModel::RoutesToAssignment(const std::vector<std::vector<NodeIndex>>&
 }
 
 Assignment* RoutingModel::ReadAssignmentFromRoutes(
-    const std::vector<std::vector<NodeIndex>>& routes, bool ignore_inactive_nodes) {
+    const std::vector<std::vector<NodeIndex>>& routes,
+    bool ignore_inactive_nodes) {
   QuietCloseModel();
   if (!RoutesToAssignment(routes, ignore_inactive_nodes, true, assignment_)) {
     return nullptr;
@@ -4287,12 +4300,12 @@ LocalSearchOperator* RoutingModel::CreateMakeInactiveOperator() {
         nexts_, vehicle_vars_, Solver::cp_operator_type);           \
   }
 
-#define CP_ROUTING_ADD_OPERATOR2(operator_type, cp_operator_class) \
-  local_search_operators_[operator_type] =                         \
-      MakeLocalSearchOperator<cp_operator_class>(                  \
-          solver_.get(), nexts_,                                   \
-          CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>()  \
-                                              : vehicle_vars_,     \
+#define CP_ROUTING_ADD_OPERATOR2(operator_type, cp_operator_class)     \
+  local_search_operators_[operator_type] =                             \
+      MakeLocalSearchOperator<cp_operator_class>(                      \
+          solver_.get(), nexts_,                                       \
+          CostsAreHomogeneousAcrossVehicles() ? std::vector<IntVar*>() \
+                                              : vehicle_vars_,         \
           vehicle_start_class_callback_);
 
 #define CP_ROUTING_ADD_CALLBACK_OPERATOR(operator_type, cp_operator_type)  \

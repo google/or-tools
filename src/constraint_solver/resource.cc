@@ -458,8 +458,9 @@ class NotLast {
   const bool strict_;
 };
 
-NotLast::NotLast(Solver* const solver, const std::vector<IntervalVar*>& intervals,
-                 bool mirror, bool strict)
+NotLast::NotLast(Solver* const solver,
+                 const std::vector<IntervalVar*>& intervals, bool mirror,
+                 bool strict)
     : theta_tree_(intervals.size()),
       by_start_min_(intervals.size()),
       by_end_max_(intervals.size()),
@@ -578,8 +579,8 @@ class EdgeFinderAndDetectablePrecedences {
 };
 
 EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
-    Solver* const solver, const std::vector<IntervalVar*>& intervals, bool mirror,
-    bool strict)
+    Solver* const solver, const std::vector<IntervalVar*>& intervals,
+    bool mirror, bool strict)
     : solver_(solver),
       theta_tree_(intervals.size()),
       lt_tree_(intervals.size()),
@@ -1066,9 +1067,13 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
   const std::vector<IntVar*>& actives() const override { return actives_; }
 
-  const std::vector<IntVar*>& time_cumuls() const override { return time_cumuls_; }
+  const std::vector<IntVar*>& time_cumuls() const override {
+    return time_cumuls_;
+  }
 
-  const std::vector<IntVar*>& time_slacks() const override { return time_slacks_; }
+  const std::vector<IntVar*>& time_slacks() const override {
+    return time_slacks_;
+  }
 
  private:
   int64 Distance(int64 activity_plus_one, int64 next_activity_plus_one) {
@@ -1145,7 +1150,8 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
         s->MakePathCumul(nexts_, actives_, time_cumuls_, time_slacks_,
                          [this](int64 x, int64 y) { return Distance(x, y); }));
 
-    std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1, time_slacks_.end());
+    std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1,
+                                      time_slacks_.end());
     s->AddConstraint(s->RevAlloc(
         new RankedPropagator(s, nexts_, intervals_, short_slacks, this)));
   }
@@ -2154,9 +2160,10 @@ class TimeTableSync : public Constraint {
 
 class CumulativeConstraint : public Constraint {
  public:
-  CumulativeConstraint(Solver* const s, const std::vector<IntervalVar*>& intervals,
-                       const std::vector<int64>& demands, IntVar* const capacity,
-                       const std::string& name)
+  CumulativeConstraint(Solver* const s,
+                       const std::vector<IntervalVar*>& intervals,
+                       const std::vector<int64>& demands,
+                       IntVar* const capacity, const std::string& name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -2270,8 +2277,8 @@ class CumulativeConstraint : public Constraint {
 
   // Populate the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
-  void PopulateVectorUsefulTasks(bool mirror,
-                                 std::vector<CumulativeTask*>* const useful_tasks) {
+  void PopulateVectorUsefulTasks(
+      bool mirror, std::vector<CumulativeTask*>* const useful_tasks) {
     DCHECK(useful_tasks->empty());
     for (int i = 0; i < tasks_.size(); ++i) {
       const CumulativeTask& original_task = tasks_[i];
@@ -2536,7 +2543,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
 // ----- Public class -----
 
 DisjunctiveConstraint::DisjunctiveConstraint(
-    Solver* const s, const std::vector<IntervalVar*>& intervals, const std::string& name)
+    Solver* const s, const std::vector<IntervalVar*>& intervals,
+    const std::string& name)
     : Constraint(s), intervals_(intervals) {
   if (!name.empty()) {
     set_name(name);
@@ -2570,8 +2578,8 @@ DisjunctiveConstraint* Solver::MakeStrictDisjunctiveConstraint(
 // Demands are constant
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
-                                   const std::vector<int64>& demands, int64 capacity,
-                                   const std::string& name) {
+                                   const std::vector<int64>& demands,
+                                   int64 capacity, const std::string& name) {
   CHECK_EQ(intervals.size(), demands.size());
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
@@ -2584,8 +2592,8 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
-                                   const std::vector<int>& demands, int64 capacity,
-                                   const std::string& name) {
+                                   const std::vector<int>& demands,
+                                   int64 capacity, const std::string& name) {
   return MakeCumulative(intervals, ToInt64Vector(demands), capacity, name);
 }
 

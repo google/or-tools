@@ -152,7 +152,8 @@ bool DijkstraSP::ShortestPath(int end_node, std::vector<int>* nodes) {
 
 bool DijkstraShortestPath(int node_count, int start_node, int end_node,
                           std::function<int64(int, int)> graph,
-                          int64 disconnected_distance, std::vector<int>* nodes) {
+                          int64 disconnected_distance,
+                          std::vector<int>* nodes) {
   DijkstraSP bf(node_count, start_node, std::move(graph),
                 disconnected_distance);
   return bf.ShortestPath(end_node, nodes);

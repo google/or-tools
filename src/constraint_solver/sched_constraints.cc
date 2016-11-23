@@ -42,7 +42,8 @@ class TreeArrayConstraint : public Constraint {
     UNDECIDED
   };
 
-  TreeArrayConstraint(Solver* const solver, const std::vector<IntervalVar*>& vars,
+  TreeArrayConstraint(Solver* const solver,
+                      const std::vector<IntervalVar*>& vars,
                       IntervalVar* const target_var)
       : Constraint(solver),
         vars_(vars),

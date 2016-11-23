@@ -35,7 +35,8 @@ int64 IndexToValue(int64 index) { return index + 1; }
 // TODO(user): Add better class invariants, in particular checks
 // that ranked_first, ranked_last, and unperformed are truly disjoint.
 
-SequenceVar::SequenceVar(Solver* const s, const std::vector<IntervalVar*>& intervals,
+SequenceVar::SequenceVar(Solver* const s,
+                         const std::vector<IntervalVar*>& intervals,
                          const std::vector<IntVar*>& nexts, const std::string& name)
     : PropagationBaseObject(s),
       intervals_(intervals),
@@ -185,7 +186,8 @@ int SequenceVar::ComputeBackwardFrontier() {
 }
 
 void SequenceVar::ComputePossibleFirstsAndLasts(
-    std::vector<int>* const possible_firsts, std::vector<int>* const possible_lasts) {
+    std::vector<int>* const possible_firsts,
+    std::vector<int>* const possible_lasts) {
   possible_firsts->clear();
   possible_lasts->clear();
   hash_set<int> to_check;
