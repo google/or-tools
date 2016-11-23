@@ -34,8 +34,8 @@ else
   endif
 endif
 
-.PHONY : python cc java csharp sat
-all: cc java python csharp
+.PHONY : python cc java csharp sat third_party_check
+all: third_party_check cc java python csharp
 clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
 # First, we try to detect the platform.
@@ -63,6 +63,12 @@ include $(OR_ROOT)makefiles/Makefile.test.$(SYSTEM)
 
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
+
+#check if "make third_party" have been run or not
+third_party_check:
+ifeq ($(wildcard dependencies$Sinstall$Sinclude$Sgflags$Sgflags.h),)
+	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
+endif
 
 print-%  : ; @echo $* = $($*)
 
