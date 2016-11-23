@@ -66,7 +66,7 @@ include $(OR_ROOT)makefiles/Makefile.test.$(SYSTEM)
 
 #check if "make third_party" have been run or not
 third_party_check:
-ifeq ($(wildcard dependencies$Sinstall$Sinclude$Sgflags$Sgflags.h),)
+ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
 	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
 endif
 
