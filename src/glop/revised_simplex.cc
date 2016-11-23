@@ -220,15 +220,23 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   // Because of shifts or perturbations, we may need to re-run a dual simplex
   // after the primal simplex finished, or the opposite.
   //
-  // We solve the primal (resp. dual) Phase II in the first iteration of the
-  // loop. The second iteration of the loop solves the dual (resp. primal) Phase
-  // II, and it is executed only if time permits and the solution from the first
-  // iteration was not precise after we removed the bound and cost shifts and
-  // perturbations.
-  const int max_num_optims = 2;
+  // We alter between solving with primal and dual Phase II algorithm as long as
+  // time limit permits *and* we did not yet achieve the desired precision.
+  // I.e., we run iteration i if the solution from iteration i-1 was not precise
+  // after we removed the bound and cost shifts and perturbations.
+  //
+  // NOTE(user): We may still hit the limit of max_number_of_reoptimizations()
+  // which means the status returned can be PRIMAL_FEASIBLE or DUAL_FEASIBLE
+  // (i.e., these statuses are not necesserily a consequence of hitting a time
+  // limit).
   for (int num_optims = 0;
-       num_optims < max_num_optims && !time_limit->LimitReached() &&
-       !FLAGS_simplex_stop_after_feasibility &&
+       // We want to enter the loop when both num_optims and num_iterations_ are
+       // *equal* to the corresponding limits (to return a meaningful status
+       // when the limits are set to 0).
+       num_optims <= parameters_.max_number_of_reoptimizations() &&
+       (num_iterations_ == 0 ||
+        num_iterations_ < parameters_.max_number_of_iterations()) &&
+       !time_limit->LimitReached() && !FLAGS_simplex_stop_after_feasibility &&
        (problem_status_ == ProblemStatus::PRIMAL_FEASIBLE ||
         problem_status_ == ProblemStatus::DUAL_FEASIBLE);
        ++num_optims) {
@@ -350,6 +358,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   total_time_ = time_limit->GetElapsedTime() - start_time;
   optimization_time_ = total_time_ - feasibility_time_;
   num_optimization_iterations_ = num_iterations_ - num_feasibility_iterations_;
+
   DisplayAllStats();
   return Status::OK;
 }
