@@ -13,6 +13,7 @@
 
 #include "sat/overload_checker.h"
 #include "sat/sat_solver.h"
+#include "util/sort.h"
 
 namespace operations_research {
 namespace sat {
@@ -91,22 +92,12 @@ IntegerValue CeilOfDivision(IntegerValue a, IntegerValue b) {
 bool OverloadChecker::Propagate() {
   // Sort the tasks by start-min and end-max. Note that we reuse the current
   // order because it is often already sorted.
-  for (const bool start_min_or_end_max : {true, false}) {
-    bool already_sorted = true;
-    IntegerValue prev = kMinIntegerValue;
-    std::vector<TaskTime>& to_sort =
-        start_min_or_end_max ? by_start_min_ : by_end_max_;
-    for (TaskTime& ref : to_sort) {
-      const IntegerValue value =
-          start_min_or_end_max ? StartMin(ref.task_id) : EndMax(ref.task_id);
-      ref.time = value;
-      if (already_sorted) {
-        if (value < prev) already_sorted = false;
-        prev = value;
-      }
-    }
-    if (!already_sorted) std::sort(to_sort.begin(), to_sort.end());
+  for (int t = 0; t < num_tasks_; ++t) {
+    by_start_min_[t].time = StartMin(by_start_min_[t].task_id);
+    by_end_max_[t].time = EndMax(by_end_max_[t].task_id);
   }
+  IncrementalSort(by_start_min_.begin(), by_start_min_.end());
+  IncrementalSort(by_end_max_.begin(), by_end_max_.end());
 
   // Link each task to its position in by_start_min_.
   for (int i = 0; i < by_start_min_.size(); ++i) {

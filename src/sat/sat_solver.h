@@ -1011,7 +1011,7 @@ inline std::function<void(Model*)> Equality(Literal a, Literal b) {
   };
 }
 
-// r <=> (at least one literal is true).
+// r <=> (at least one literal is true). This is a reified clause.
 inline std::function<void(Model*)> ReifiedBoolOr(
     const std::vector<Literal>& literals, Literal r) {
   return [=](Model* model) {
@@ -1042,6 +1042,16 @@ inline std::function<void(Model*)> ReifiedBoolAnd(
     // All true => r true.
     clause.push_back(r);
     model->Add(ClauseConstraint(clause));
+  };
+}
+
+// r <=> (a <= b).
+inline std::function<void(Model*)> ReifiedBoolLe(Literal a, Literal b,
+                                                 Literal r) {
+  return [=](Model* model) {
+    // r <=> (a <= b) is the same as r <=> not(a=1 and b=0).
+    // So r <=> a=0 OR b=1.
+    model->Add(ReifiedBoolOr({a.Negated(), b}, r));
   };
 }
 

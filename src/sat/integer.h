@@ -785,6 +785,18 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64 lb,
   };
 }
 
+// Creates a 0-1 integer variable "view" of the given literal. It will have a
+// value of 1 when the literal is true, and 0 when the literal is false.
+inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
+    Literal lit) {
+  return [=](Model* model) {
+    const IntegerVariable int_var = model->Add(NewIntegerVariable(0, 1));
+    model->GetOrCreate<IntegerEncoder>()->FullyEncodeVariableUsingGivenLiterals(
+        int_var, {lit.Negated(), lit}, {IntegerValue(0), IntegerValue(1)});
+    return int_var;
+  };
+}
+
 inline std::function<int64(const Model&)> LowerBound(IntegerVariable v) {
   return [=](const Model& model) {
     return model.Get<IntegerTrail>()->LowerBound(v).value();
