@@ -349,7 +349,7 @@ dependencies\install\swigwin-$(SWIG_TAG)\swig.exe: dependencies\archives\swigwin
 	tools\touch.exe dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
 
 dependencies\archives\swigwin-$(SWIG_TAG).zip:
-	tools\wget -P dependencies\archives http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip
+	tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
