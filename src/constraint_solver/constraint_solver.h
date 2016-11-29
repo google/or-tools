@@ -3575,14 +3575,14 @@ class ModelVisitor : public BaseObject {
   virtual void VisitIntervalArgument(const std::string& arg_name,
                                      IntervalVar* const argument);
 
-  virtual void VisitIntervalArrayArgument(const std::string& arg_name,
-                                          const std::vector<IntervalVar*>& argument);
+  virtual void VisitIntervalArrayArgument(
+      const std::string& arg_name, const std::vector<IntervalVar*>& argument);
   // Visit sequence argument.
   virtual void VisitSequenceArgument(const std::string& arg_name,
                                      SequenceVar* const argument);
 
-  virtual void VisitSequenceArrayArgument(const std::string& arg_name,
-                                          const std::vector<SequenceVar*>& argument);
+  virtual void VisitSequenceArrayArgument(
+      const std::string& arg_name, const std::vector<SequenceVar*>& argument);
 // Helpers.
 #if !defined(SWIG)
   virtual void VisitIntegerVariableEvaluatorArgument(
@@ -5199,8 +5199,8 @@ class Pack : public Constraint {
   // This dimension imposes that for all bins b, the weighted sum
   // (weights[i]) of all objects i assigned to 'b' is less or equal
   // 'bounds[b]'.
-  void AddWeightedSumLessOrEqualConstantDimension(const std::vector<int64>& weights,
-                                                  const std::vector<int64>& bounds);
+  void AddWeightedSumLessOrEqualConstantDimension(
+      const std::vector<int64>& weights, const std::vector<int64>& bounds);
 
   // This dimension imposes that for all bins b, the weighted sum
   // (weights->Run(i)) of all objects i assigned to 'b' is less or
@@ -5236,7 +5236,8 @@ class Pack : public Constraint {
   // the same item on parallel dimensions with an allowed assignment
   // constraint.
   void AddSumVariableWeightsLessOrEqualConstantDimension(
-      const std::vector<IntVar*>& weights, const std::vector<int64>& capacities);
+      const std::vector<IntVar*>& weights,
+      const std::vector<int64>& capacities);
 
   // This dimension enforces that cost_var == sum of weights[i] for
   // all objects 'i' assigned to a bin.
@@ -5295,7 +5296,8 @@ class Pack : public Constraint {
 
 class DisjunctiveConstraint : public Constraint {
  public:
-  DisjunctiveConstraint(Solver* const s, const std::vector<IntervalVar*>& intervals,
+  DisjunctiveConstraint(Solver* const s,
+                        const std::vector<IntervalVar*>& intervals,
                         const std::string& name);
   ~DisjunctiveConstraint() override;
 
