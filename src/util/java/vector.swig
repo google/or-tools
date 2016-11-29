@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// SWIG Macros to use std::vector<Num> and const std::vector<Num>& in Java, where
-// Num is an atomic numeric type.
+// SWIG Macros to use std::vector<Num> and const std::vector<Num>& in Java,
+// where Num is an atomic numeric type.
 //
 // Normally we'd simply use %include "std_vector.i" with the %template
 // directive (see http://www.swig.org/Doc1.3/Library.html#Library_nn15), but
@@ -31,7 +31,8 @@
 #include "base/jniutil.h"
 %}
 
-// Typemaps to represent const std::vector<CType>& arguments as arrays of JavaType.
+// Typemaps to represent const std::vector<CType>& arguments as arrays of
+// JavaType.
 %define VECTOR_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)
 %typemap(jni) const std::vector<CType>& "j" #JavaType "Array"
 %typemap(jtype) const std::vector<CType>& #JavaType "[]"
@@ -97,6 +98,9 @@
   return $jnicall;
 }
 
+%apply const std::vector<CType>& { const std::vector<CType>& }
+%apply std::vector<CType> { std::vector<CType> }
+
 %enddef  // VECTOR_AS_JAVA_ARRAY
 VECTOR_AS_JAVA_ARRAY(int, int, Int);
 VECTOR_AS_JAVA_ARRAY(int64, long, Long);
@@ -104,8 +108,8 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
 
 // Convert long[][] to std::vector<std::vector<int64>>
 //
-// TODO(user): move this code to a generic macro to convert std::vector<std::vector<T>>
-// to T[][].
+// TODO(user): move this code to a generic macro to convert
+// std::vector<std::vector<T>> to T[][].
 %typemap(jni) const std::vector<std::vector<int64> >& "jobjectArray"
 %typemap(jtype) const std::vector<std::vector<int64> >& "long[][]"
 %typemap(jstype) const std::vector<std::vector<int64> >& "long[][]"
@@ -129,4 +133,8 @@ VECTOR_AS_JAVA_ARRAY(double, double, Double);
     jenv->DeleteLocalRef(inner_array);
   }
   $1 = &result;
+}
+
+%apply const std::vector<std::vector<int64> >& {
+  const std::vector<std::vector<int64> >&
 }
