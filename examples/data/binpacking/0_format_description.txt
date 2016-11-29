@@ -1,0 +1,20 @@
+instances format:
+
+N	C
+1	w	a1	a2	...	ak
+
+...
+
+i	w	a1	a2	...	ak
+
+...
+
+N	w	a1	a2	...	ak
+
+
+where:
+N is the number of items
+C is the bin capacity
+i is a number identifying the item
+w is the item weight
+a1, ..., ak are the items which are incompatible with item i
