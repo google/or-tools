@@ -108,8 +108,9 @@ class MPModelProtoExporter {
   //
   // Therefore, a name "$20<=40" for proto #3 could be "_$20__40_1".
   template <class ListOfProtosWithNameFields>
-  std::vector<std::string> ExtractAndProcessNames(const ListOfProtosWithNameFields& proto,
-                                        const std::string& prefix, bool obfuscate);
+  std::vector<std::string> ExtractAndProcessNames(
+      const ListOfProtosWithNameFields& proto, const std::string& prefix,
+      bool obfuscate);
 
   // Returns true when the fixed MPS format can be used.
   // The fixed format is used when the variable and constraint names do not
@@ -157,9 +158,10 @@ class MPModelProtoExporter {
   // When 'integrality' is true, appends columns corresponding to integer
   // variables. Appends the columns for non-integer variables otherwise.
   // The sparse matrix must be passed as a vector of columns ('transpose').
-  void AppendMpsColumns(bool integrality,
-                        const std::vector<std::vector<std::pair<int, double>>>& transpose,
-                        std::string* output);
+  void AppendMpsColumns(
+      bool integrality,
+      const std::vector<std::vector<std::pair<int, double>>>& transpose,
+      std::string* output);
 
   // Appends a line describing the bound of a variablenew-line if two columns
   // are already present on the MPS line.
