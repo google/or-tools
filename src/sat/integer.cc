@@ -839,22 +839,28 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   // Process any new Literal on the trail.
   while (propagation_trail_index_ < trail->Index()) {
     const Literal literal = (*trail)[propagation_trail_index_++];
-    if (literal.Index() >= literal_to_watcher_ids_.size()) continue;
-    for (const int id : literal_to_watcher_ids_[literal.Index()]) {
-      if (!in_queue_[id]) {
-        in_queue_[id] = true;
-        queue_.push_back(id);
+    if (literal.Index() >= literal_to_watcher_.size()) continue;
+    for (const auto entry : literal_to_watcher_[literal.Index()]) {
+      if (!in_queue_[entry.id]) {
+        in_queue_[entry.id] = true;
+        queue_.push_back(entry.id);
+      }
+      if (entry.watch_index >= 0) {
+        id_to_watch_indices_[entry.id].push_back(entry.watch_index);
       }
     }
   }
 
   // Process the newly changed variables lower bounds.
   for (const IntegerVariable var : modified_vars_.PositionsSetAtLeastOnce()) {
-    if (var.value() >= var_to_watcher_ids_.size()) continue;
-    for (const int id : var_to_watcher_ids_[var]) {
-      if (!in_queue_[id]) {
-        in_queue_[id] = true;
-        queue_.push_back(id);
+    if (var.value() >= var_to_watcher_.size()) continue;
+    for (const auto entry : var_to_watcher_[var]) {
+      if (!in_queue_[entry.id]) {
+        in_queue_[entry.id] = true;
+        queue_.push_back(entry.id);
+      }
+      if (entry.watch_index >= 0) {
+        id_to_watch_indices_[entry.id].push_back(entry.watch_index);
       }
     }
   }
@@ -895,7 +901,14 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
       }
     }
 
-    if (!watchers_[id]->Propagate()) {
+    // TODO(user): Maybe just provide one function Propagate(watch_indices) ?
+    std::vector<int>& watch_indices_ref = id_to_watch_indices_[id];
+    const bool result =
+        watch_indices_ref.empty()
+            ? watchers_[id]->Propagate()
+            : watchers_[id]->IncrementalPropagate(watch_indices_ref);
+    if (!result) {
+      watch_indices_ref.clear();
       in_queue_[id] = false;
       return false;
     }
@@ -905,6 +918,7 @@ bool GenericLiteralWatcher::Propagate(Trail* trail) {
     // row. If some propagator don't have this property, we could add an option
     // to call them again until nothing changes.
     UpdateCallingNeeds(trail);
+    watch_indices_ref.clear();
     in_queue_[id] = false;
   }
   return true;
@@ -915,6 +929,11 @@ void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
     // Nothing to do since we found a conflict before Propagate() was called.
     CHECK_EQ(propagation_trail_index_, trail_index);
     return;
+  }
+
+  // We need to clear the watch indices on untrail.
+  for (const int id : queue_) {
+    id_to_watch_indices_[id].clear();
   }
 
   // This means that we already propagated all there is to propagate
@@ -940,8 +959,9 @@ int GenericLiteralWatcher::Register(PropagatorInterface* propagator) {
   id_to_greatest_common_level_since_last_call_.push_back(0);
   id_to_reversible_classes_.push_back(std::vector<ReversibleInterface*>());
   id_to_reversible_ints_.push_back(std::vector<int*>());
+  id_to_watch_indices_.push_back(std::vector<int>());
 
-  // Initially call everything.
+  // Call this propagator at least once the next time Propagate() is called.
   in_queue_.push_back(true);
   queue_.push_back(id);
   return id;

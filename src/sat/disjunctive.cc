@@ -15,6 +15,7 @@
 
 //#include "base/iterator_adaptors.h"
 #include "sat/sat_solver.h"
+#include "util/sort.h"
 
 namespace operations_research {
 namespace sat {
@@ -355,57 +356,30 @@ bool DisjunctiveConstraint::DecreaseMaxEnd(int t, IntegerValue new_max_end) {
   return true;
 }
 
-// Experiments showed that checking first if the array is sorted resulted in
-// about 15% of speed gain. This is not that surprising because these vectors
-// are often already sorted.
 void DisjunctiveConstraint::UpdateTaskByIncreasingMinStart() {
-  // TODO(user): tie-breaking?
-  if (!std::is_sorted(
-          task_by_increasing_min_start_.begin(),
-          task_by_increasing_min_start_.end(),
-          [this](int t1, int t2) { return MinStart(t1) < MinStart(t2); })) {
-    std::stable_sort(
-        task_by_increasing_min_start_.begin(),
-        task_by_increasing_min_start_.end(),
-        [this](int t1, int t2) { return MinStart(t1) < MinStart(t2); });
-  }
+  IncrementalSort(task_by_increasing_min_start_.begin(),
+                  task_by_increasing_min_start_.end(), [this](int t1, int t2) {
+                    return MinStart(t1) < MinStart(t2);
+                  });
 }
 
 void DisjunctiveConstraint::UpdateTaskByIncreasingMinEnd() {
-  // TODO(user): tie-breaking?
-  if (!std::is_sorted(
-          task_by_increasing_min_end_.begin(),
-          task_by_increasing_min_end_.end(),
-          [this](int t1, int t2) { return MinEnd(t1) < MinEnd(t2); })) {
-    std::stable_sort(
-        task_by_increasing_min_end_.begin(), task_by_increasing_min_end_.end(),
-        [this](int t1, int t2) { return MinEnd(t1) < MinEnd(t2); });
-  }
+  IncrementalSort(task_by_increasing_min_end_.begin(),
+                  task_by_increasing_min_end_.end(),
+                  [this](int t1, int t2) { return MinEnd(t1) < MinEnd(t2); });
 }
 
 void DisjunctiveConstraint::UpdateTaskByDecreasingMaxStart() {
-  // TODO(user): tie-breaking?
-  if (!std::is_sorted(
-          task_by_decreasing_max_start_.begin(),
-          task_by_decreasing_max_start_.end(),
-          [this](int t1, int t2) { return MaxStart(t1) > MaxStart(t2); })) {
-    std::stable_sort(
-        task_by_decreasing_max_start_.begin(),
-        task_by_decreasing_max_start_.end(),
-        [this](int t1, int t2) { return MaxStart(t1) > MaxStart(t2); });
-  }
+  IncrementalSort(task_by_decreasing_max_start_.begin(),
+                  task_by_decreasing_max_start_.end(), [this](int t1, int t2) {
+                    return MaxStart(t1) > MaxStart(t2);
+                  });
 }
 
 void DisjunctiveConstraint::UpdateTaskByDecreasingMaxEnd() {
-  // TODO(user): tie-breaking?
-  if (!std::is_sorted(
-          task_by_decreasing_max_end_.begin(),
-          task_by_decreasing_max_end_.end(),
-          [this](int t1, int t2) { return MaxEnd(t1) > MaxEnd(t2); })) {
-    std::stable_sort(
-        task_by_decreasing_max_end_.begin(), task_by_decreasing_max_end_.end(),
-        [this](int t1, int t2) { return MaxEnd(t1) > MaxEnd(t2); });
-  }
+  IncrementalSort(task_by_decreasing_max_end_.begin(),
+                  task_by_decreasing_max_end_.end(),
+                  [this](int t1, int t2) { return MaxEnd(t1) > MaxEnd(t2); });
 }
 
 bool DisjunctiveConstraint::OverloadCheckingPass() {

@@ -123,6 +123,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
 
   void SetLevel(int level) final;
   bool Propagate() final;
+  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
@@ -140,7 +141,9 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
     int head;
   };
   std::vector<LiteralIndex> self_arcs_;
-  hash_map<LiteralIndex, std::vector<Arc>> literal_to_arcs_;
+
+  std::vector<Literal> watch_index_to_literal_;
+  std::vector<std::vector<Arc>> watch_index_to_arcs_;
 
   // Index in trail_ up to which we propagated all the assigned Literals.
   int propagation_trail_index_;
@@ -231,12 +234,19 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  void FillNeighbors(int box);
+  void UpdateNeighbors(int box);
   bool FailWhenEnergyIsTooLarge(int box);
   bool PushOneBox(int box, int other);
   void AddBoxReason(int box);
   void AddBoxReason(int box, IntegerValue xmin, IntegerValue xmax,
                     IntegerValue ymin, IntegerValue ymax);
+
+  // Updates the boxes positions and size when the given box is before other in
+  // the passed direction. This will fill integer_reason_ if it is empty,
+  // otherwise, it will reuse its current value.
+  bool FirstBoxIsBeforeSecondBox(const std::vector<IntegerVariable>& pos,
+                                 const std::vector<S>& size, int box, int other,
+                                 std::vector<IntegerValue>* min_end);
 
   const std::vector<IntegerVariable> x_;
   const std::vector<IntegerVariable> y_;
@@ -244,7 +254,16 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   const std::vector<S> dy_;
   const bool strict_;
 
+  // The neighbors_ of a box will be in
+  // [neighbors_[begin[box]], neighbors_[end[box]])
   std::vector<int> neighbors_;
+  std::vector<int> neighbors_begins_;
+  std::vector<int> neighbors_ends_;
+  std::vector<int> tmp_removed_;
+
+  std::vector<IntegerValue> cached_areas_;
+  std::vector<IntegerValue> cached_min_end_x_;
+  std::vector<IntegerValue> cached_min_end_y_;
   std::vector<IntegerValue> cached_distance_to_bounding_box_;
   std::vector<IntegerLiteral> integer_reason_;
 

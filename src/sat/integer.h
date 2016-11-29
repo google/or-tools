@@ -586,7 +586,28 @@ class PropagatorInterface {
  public:
   PropagatorInterface() {}
   virtual ~PropagatorInterface() {}
+
+  // This will be called after one or more literals that are watched by this
+  // propagator changed. It will also always be called on the first propagation
+  // cycle after registration.
   virtual bool Propagate() = 0;
+
+  // This will only be called on a non-empty vector, otherwise Propagate() will
+  // be called. The passed vector will contain the "watch index" of all the
+  // literals that were given one at registration and that changed since the
+  // last call to Propagate(). This is only true when going down in the search
+  // tree, on backjump this list will be cleared.
+  //
+  // Notes:
+  // - The indices may contain duplicates if the same integer variable as been
+  //   updated many times or if different watched literals have the same
+  //   watch_index.
+  // - At level zero, it will not contain any indices associated with literals
+  //   that where already fixed when the propagator was registered. Only the
+  //   indices of the literals modified after the registration will be present.
+  virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
+    LOG(FATAL) << "Not implemented.";
+  }
 };
 
 // This class allows registering Propagator that will be called if a
@@ -627,10 +648,14 @@ class GenericLiteralWatcher : public SatPropagator {
   // Watches the corresponding quantity. The propagator with given id will be
   // called if it changes. Note that WatchLiteral() only trigger when the
   // literal becomes true.
-  void WatchLiteral(Literal l, int id);
-  void WatchLowerBound(IntegerVariable i, int id);
-  void WatchUpperBound(IntegerVariable i, int id);
-  void WatchIntegerVariable(IntegerVariable i, int id);
+  //
+  // If watch_index is specified, it is associated with the watched literal.
+  // Doing this will cause IncrementalPropagate() to be called (see the
+  // documentation of this interface for more detail).
+  void WatchLiteral(Literal l, int id, int watch_index = -1);
+  void WatchLowerBound(IntegerVariable i, int id, int watch_index = -1);
+  void WatchUpperBound(IntegerVariable i, int id, int watch_index = -1);
+  void WatchIntegerVariable(IntegerVariable i, int id, int watch_index = -1);
 
   // No-op overload for "constant" IntegerVariable that are sometimes templated
   // as an IntegerValue.
@@ -671,8 +696,12 @@ class GenericLiteralWatcher : public SatPropagator {
   IntegerTrail* integer_trail_;
   RevRepository<int>* rev_int_repository_;
 
-  ITIVector<LiteralIndex, std::vector<int>> literal_to_watcher_ids_;
-  ITIVector<IntegerVariable, std::vector<int>> var_to_watcher_ids_;
+  struct WatchData {
+    int id;
+    int watch_index;
+  };
+  ITIVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
+  ITIVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<IntegerVariable> modified_vars_;
 
@@ -685,6 +714,7 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<int> id_to_greatest_common_level_since_last_call_;
   std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;
   std::vector<std::vector<int*>> id_to_reversible_ints_;
+  std::vector<std::vector<int>> id_to_watch_indices_;
 
   DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };
@@ -731,30 +761,32 @@ inline IntegerLiteral IntegerTrail::UpperBoundAsLiteral(
   return IntegerLiteral::LowerOrEqual(i, UpperBound(i));
 }
 
-inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id) {
-  if (l.Index() >= literal_to_watcher_ids_.size()) {
-    literal_to_watcher_ids_.resize(l.Index().value() + 1);
+inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,
+                                                int watch_index) {
+  if (l.Index() >= literal_to_watcher_.size()) {
+    literal_to_watcher_.resize(l.Index().value() + 1);
   }
-  literal_to_watcher_ids_[l.Index()].push_back(id);
+  literal_to_watcher_[l.Index()].push_back({id, watch_index});
 }
 
-inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var,
-                                                   int id) {
-  if (var.value() >= var_to_watcher_ids_.size()) {
-    var_to_watcher_ids_.resize(var.value() + 1);
+inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var, int id,
+                                                   int watch_index) {
+  if (var.value() >= var_to_watcher_.size()) {
+    var_to_watcher_.resize(var.value() + 1);
   }
-  var_to_watcher_ids_[var].push_back(id);
+  var_to_watcher_[var].push_back({id, watch_index});
 }
 
-inline void GenericLiteralWatcher::WatchUpperBound(IntegerVariable var,
-                                                   int id) {
-  WatchLowerBound(NegationOf(var), id);
+inline void GenericLiteralWatcher::WatchUpperBound(IntegerVariable var, int id,
+                                                   int watch_index) {
+  WatchLowerBound(NegationOf(var), id, watch_index);
 }
 
 inline void GenericLiteralWatcher::WatchIntegerVariable(IntegerVariable i,
-                                                        int id) {
-  WatchLowerBound(i, id);
-  WatchUpperBound(i, id);
+                                                        int id,
+                                                        int watch_index) {
+  WatchLowerBound(i, id, watch_index);
+  WatchUpperBound(i, id, watch_index);
 }
 
 // ============================================================================
@@ -782,6 +814,18 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64 lb,
   return [=](Model* model) {
     return model->GetOrCreate<IntegerTrail>()->AddIntegerVariable(
         IntegerValue(lb), IntegerValue(ub));
+  };
+}
+
+// Creates a 0-1 integer variable "view" of the given literal. It will have a
+// value of 1 when the literal is true, and 0 when the literal is false.
+inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
+    Literal lit) {
+  return [=](Model* model) {
+    const IntegerVariable int_var = model->Add(NewIntegerVariable(0, 1));
+    model->GetOrCreate<IntegerEncoder>()->FullyEncodeVariableUsingGivenLiterals(
+        int_var, {lit.Negated(), lit}, {IntegerValue(0), IntegerValue(1)});
+    return int_var;
   };
 }
 
