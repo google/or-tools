@@ -116,7 +116,8 @@ class FalseConstraint : public Constraint {
 
 class MapDomain : public Constraint {
  public:
-  MapDomain(Solver* const s, IntVar* const var, const std::vector<IntVar*>& actives)
+  MapDomain(Solver* const s, IntVar* const var,
+            const std::vector<IntVar*>& actives)
       : Constraint(s), var_(var), actives_(actives) {
     holes_ = var->MakeHoleIterator(true);
   }
@@ -306,7 +307,8 @@ class LexicalLess : public Constraint {
 
 class InversePermutationConstraint : public Constraint {
  public:
-  InversePermutationConstraint(Solver* const s, const std::vector<IntVar*>& left,
+  InversePermutationConstraint(Solver* const s,
+                               const std::vector<IntVar*>& left,
                                const std::vector<IntVar*>& right)
       : Constraint(s),
         left_(left),

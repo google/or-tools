@@ -45,7 +45,8 @@ void DynamicPermutation::AddMappings(const std::vector<int>& src,
   }
 }
 
-void DynamicPermutation::UndoLastMappings(std::vector<int>* undone_mapping_src) {
+void DynamicPermutation::UndoLastMappings(
+    std::vector<int>* undone_mapping_src) {
   DCHECK(undone_mapping_src != nullptr);
   undone_mapping_src->clear();
   if (mapping_src_size_stack_.empty()) return;  // Nothing to undo.

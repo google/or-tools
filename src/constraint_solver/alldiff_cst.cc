@@ -427,7 +427,8 @@ class BoundsAllDifferent : public BaseAllDifferent {
 
 class SortConstraint : public Constraint {
  public:
-  SortConstraint(Solver* const solver, const std::vector<IntVar*>& original_vars,
+  SortConstraint(Solver* const solver,
+                 const std::vector<IntVar*>& original_vars,
                  const std::vector<IntVar*>& sorted_vars)
       : Constraint(solver),
         ovars_(original_vars),
@@ -536,7 +537,8 @@ class SortConstraint : public Constraint {
 // the escape value.
 class AllDifferentExcept : public Constraint {
  public:
-  AllDifferentExcept(Solver* const s, std::vector<IntVar*> vars, int64 escape_value)
+  AllDifferentExcept(Solver* const s, std::vector<IntVar*> vars,
+                     int64 escape_value)
       : Constraint(s), vars_(vars), escape_value_(escape_value) {}
 
   ~AllDifferentExcept() override {}
@@ -733,9 +735,9 @@ Constraint* Solver::MakeNullIntersect(const std::vector<IntVar*>& first_vars,
   return RevAlloc(new NullIntersectArrayExcept(this, first_vars, second_vars));
 }
 
-Constraint* Solver::MakeNullIntersectExcept(const std::vector<IntVar*>& first_vars,
-                                            const std::vector<IntVar*>& second_vars,
-                                            int64 escape_value) {
+Constraint* Solver::MakeNullIntersectExcept(
+    const std::vector<IntVar*>& first_vars,
+    const std::vector<IntVar*>& second_vars, int64 escape_value) {
   int first_escape_candidates = 0;
   for (int i = 0; i < first_vars.size(); ++i) {
     first_escape_candidates += (first_vars[i]->Contains(escape_value));

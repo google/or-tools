@@ -704,7 +704,8 @@ DecisionBuilder* Solver::Try(const std::vector<DecisionBuilder*>& dbs) {
 namespace {
 class BaseVariableAssignmentSelector : public BaseObject {
  public:
-  BaseVariableAssignmentSelector(Solver* solver, const std::vector<IntVar*>& vars)
+  BaseVariableAssignmentSelector(Solver* solver,
+                                 const std::vector<IntVar*>& vars)
       : solver_(solver),
         vars_(vars),
         first_unbound_(0),
@@ -998,7 +999,8 @@ class CheapestVarSelector : public BaseObject {
   std::function<int64(int64)> var_evaluator_;
 };
 
-int64 CheapestVarSelector::Choose(Solver* const s, const std::vector<IntVar*>& vars,
+int64 CheapestVarSelector::Choose(Solver* const s,
+                                  const std::vector<IntVar*>& vars,
                                   int64 first_unbound, int64 last_unbound) {
   int64 best_eval = kint64max;
   int64 index = -1;
@@ -2662,45 +2664,43 @@ std::string WeightedOptimizeVar::Print() const {
 }
 }  // namespace
 
-OptimizeVar* Solver::MakeWeightedOptimize(bool maximize,
-                                          const std::vector<IntVar*>& sub_objectives,
-                                          const std::vector<int64>& weights,
-                                          int64 step) {
+OptimizeVar* Solver::MakeWeightedOptimize(
+    bool maximize, const std::vector<IntVar*>& sub_objectives,
+    const std::vector<int64>& weights, int64 step) {
   return RevAlloc(
       new WeightedOptimizeVar(this, maximize, sub_objectives, weights, step));
 }
 
-OptimizeVar* Solver::MakeWeightedMinimize(const std::vector<IntVar*>& sub_objectives,
-                                          const std::vector<int64>& weights,
-                                          int64 step) {
+OptimizeVar* Solver::MakeWeightedMinimize(
+    const std::vector<IntVar*>& sub_objectives,
+    const std::vector<int64>& weights, int64 step) {
   return RevAlloc(
       new WeightedOptimizeVar(this, false, sub_objectives, weights, step));
 }
 
-OptimizeVar* Solver::MakeWeightedMaximize(const std::vector<IntVar*>& sub_objectives,
-                                          const std::vector<int64>& weights,
-                                          int64 step) {
+OptimizeVar* Solver::MakeWeightedMaximize(
+    const std::vector<IntVar*>& sub_objectives,
+    const std::vector<int64>& weights, int64 step) {
   return RevAlloc(
       new WeightedOptimizeVar(this, true, sub_objectives, weights, step));
 }
 
-OptimizeVar* Solver::MakeWeightedOptimize(bool maximize,
-                                          const std::vector<IntVar*>& sub_objectives,
-                                          const std::vector<int>& weights,
-                                          int64 step) {
+OptimizeVar* Solver::MakeWeightedOptimize(
+    bool maximize, const std::vector<IntVar*>& sub_objectives,
+    const std::vector<int>& weights, int64 step) {
   return MakeWeightedOptimize(maximize, sub_objectives, ToInt64Vector(weights),
                               step);
 }
 
-OptimizeVar* Solver::MakeWeightedMinimize(const std::vector<IntVar*>& sub_objectives,
-                                          const std::vector<int>& weights,
-                                          int64 step) {
+OptimizeVar* Solver::MakeWeightedMinimize(
+    const std::vector<IntVar*>& sub_objectives, const std::vector<int>& weights,
+    int64 step) {
   return MakeWeightedMinimize(sub_objectives, ToInt64Vector(weights), step);
 }
 
-OptimizeVar* Solver::MakeWeightedMaximize(const std::vector<IntVar*>& sub_objectives,
-                                          const std::vector<int>& weights,
-                                          int64 step) {
+OptimizeVar* Solver::MakeWeightedMaximize(
+    const std::vector<IntVar*>& sub_objectives, const std::vector<int>& weights,
+    int64 step) {
   return MakeWeightedMaximize(sub_objectives, ToInt64Vector(weights), step);
 }
 
@@ -2943,7 +2943,8 @@ void TabuSearch::AgeLists() {
 }  // namespace
 
 SearchMonitor* Solver::MakeTabuSearch(bool maximize, IntVar* const v,
-                                      int64 step, const std::vector<IntVar*>& vars,
+                                      int64 step,
+                                      const std::vector<IntVar*>& vars,
                                       int64 keep_tenure, int64 forbid_tenure,
                                       double tabu_factor) {
   return RevAlloc(new TabuSearch(this, maximize, v, step, vars, keep_tenure,
@@ -3404,7 +3405,8 @@ class BinaryGuidedLocalSearch : public GuidedLocalSearch {
   BinaryGuidedLocalSearch(Solver* const solver, IntVar* const objective,
                           std::function<int64(int64, int64)> objective_function,
                           bool maximize, int64 step,
-                          const std::vector<IntVar*>& vars, double penalty_factor);
+                          const std::vector<IntVar*>& vars,
+                          double penalty_factor);
   ~BinaryGuidedLocalSearch() override {}
   IntExpr* MakeElementPenalty(int index) override;
   int64 AssignmentElementPenalty(const Assignment& assignment,
@@ -3587,8 +3589,8 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
 SearchMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
     Solver::IndexEvaluator3 objective_function, int64 step,
-    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-    double penalty_factor) {
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars, double penalty_factor) {
   return RevAlloc(new TernaryGuidedLocalSearch(
       this, objective, objective_function, maximize, step, vars, secondary_vars,
       penalty_factor));
@@ -3988,7 +3990,8 @@ class SolveOnce : public DecisionBuilder {
     CHECK(db != nullptr);
   }
 
-  SolveOnce(DecisionBuilder* const db, const std::vector<SearchMonitor*>& monitors)
+  SolveOnce(DecisionBuilder* const db,
+            const std::vector<SearchMonitor*>& monitors)
       : db_(db), monitors_(monitors) {
     CHECK(db != nullptr);
   }
@@ -4061,8 +4064,8 @@ DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
   return RevAlloc(new SolveOnce(db, monitors));
 }
 
-DecisionBuilder* Solver::MakeSolveOnce(DecisionBuilder* const db,
-                                       const std::vector<SearchMonitor*>& monitors) {
+DecisionBuilder* Solver::MakeSolveOnce(
+    DecisionBuilder* const db, const std::vector<SearchMonitor*>& monitors) {
   return RevAlloc(new SolveOnce(db, monitors));
 }
 
@@ -4303,7 +4306,8 @@ SearchMonitor* Solver::MakeConstantRestart(int frequency) {
 //
 class SymmetryManager : public SearchMonitor {
  public:
-  SymmetryManager(Solver* const s, const std::vector<SymmetryBreaker*>& visitors)
+  SymmetryManager(Solver* const s,
+                  const std::vector<SymmetryBreaker*>& visitors)
       : SearchMonitor(s),
         visitors_(visitors),
         clauses_(visitors.size()),

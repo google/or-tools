@@ -1532,7 +1532,8 @@ class SumBooleanLessOrEqualToOne : public BaseSumBooleanConstraint {
 
 class SumBooleanGreaterOrEqualToOne : public BaseSumBooleanConstraint {
  public:
-  SumBooleanGreaterOrEqualToOne(Solver* const s, const std::vector<IntVar*>& vars);
+  SumBooleanGreaterOrEqualToOne(Solver* const s,
+                                const std::vector<IntVar*>& vars);
   ~SumBooleanGreaterOrEqualToOne() override {}
 
   void Post() override;
@@ -1862,7 +1863,8 @@ struct Container {
 // If keep_inside is true, the constant will be added back into the
 // scalprod as IntConst(1) * constant.
 int64 SortBothChangeConstant(std::vector<IntVar*>* const vars,
-                             std::vector<int64>* const coefs, bool keep_inside) {
+                             std::vector<int64>* const coefs,
+                             bool keep_inside) {
   CHECK(vars != nullptr);
   CHECK(coefs != nullptr);
   if (vars->empty()) {
@@ -1898,7 +1900,8 @@ int64 SortBothChangeConstant(std::vector<IntVar*>* const vars,
 class BooleanScalProdLessConstant : public Constraint {
  public:
   BooleanScalProdLessConstant(Solver* const s, const std::vector<IntVar*>& vars,
-                              const std::vector<int64>& coefs, int64 upper_bound)
+                              const std::vector<int64>& coefs,
+                              int64 upper_bound)
       : Constraint(s),
         vars_(vars),
         coefs_(coefs),
@@ -2004,8 +2007,10 @@ class BooleanScalProdLessConstant : public Constraint {
 
 class PositiveBooleanScalProdEqVar : public CastConstraint {
  public:
-  PositiveBooleanScalProdEqVar(Solver* const s, const std::vector<IntVar*>& vars,
-                               const std::vector<int64>& coefs, IntVar* const var)
+  PositiveBooleanScalProdEqVar(Solver* const s,
+                               const std::vector<IntVar*>& vars,
+                               const std::vector<int64>& coefs,
+                               IntVar* const var)
       : CastConstraint(s, var),
         vars_(vars),
         coefs_(coefs),
@@ -2252,7 +2257,8 @@ class PositiveBooleanScalProd : public BaseIntExpr {
 
 class PositiveBooleanScalProdEqCst : public Constraint {
  public:
-  PositiveBooleanScalProdEqCst(Solver* const s, const std::vector<IntVar*>& vars,
+  PositiveBooleanScalProdEqCst(Solver* const s,
+                               const std::vector<IntVar*>& vars,
                                const std::vector<int64>& coefs, int64 constant)
       : Constraint(s),
         vars_(vars),
@@ -2488,7 +2494,8 @@ class ExprLinearizer : public ModelParser {
                              IntervalVar* const argument) override {}
 
   void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& argument) override {}
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& argument) override {}
 
   void Visit(const IntExpr* const expr, int64 multiplier) {
     if (expr->Min() == expr->Max()) {
@@ -2543,8 +2550,9 @@ class ExprLinearizer : public ModelParser {
     const std::vector<IntVar*>& cp_vars =
         Top()->FindIntegerVariableArrayArgumentOrDie(
             ModelVisitor::kVarsArgument);
-    const std::vector<int64>& cp_coefficients = Top()->FindIntegerArrayArgumentOrDie(
-        ModelVisitor::kCoefficientsArgument);
+    const std::vector<int64>& cp_coefficients =
+        Top()->FindIntegerArrayArgumentOrDie(
+            ModelVisitor::kCoefficientsArgument);
     CHECK_EQ(cp_vars.size(), cp_coefficients.size());
     for (int i = 0; i < cp_vars.size(); ++i) {
       const int64 coefficient = cp_coefficients[i];
@@ -2640,8 +2648,9 @@ class ExprLinearizer : public ModelParser {
 // ----- Factory functions -----
 
 void DeepLinearize(Solver* const solver, const std::vector<IntVar*>& pre_vars,
-                   const std::vector<int64>& pre_coefs, std::vector<IntVar*>* vars,
-                   std::vector<int64>* coefs, int64* constant) {
+                   const std::vector<int64>& pre_coefs,
+                   std::vector<IntVar*>* vars, std::vector<int64>* coefs,
+                   int64* constant) {
   CHECK(solver != nullptr);
   CHECK(vars != nullptr);
   CHECK(coefs != nullptr);
@@ -2685,7 +2694,8 @@ void DeepLinearize(Solver* const solver, const std::vector<IntVar*>& pre_vars,
 
 Constraint* MakeScalProdEqualityFct(Solver* const solver,
                                     const std::vector<IntVar*>& pre_vars,
-                                    const std::vector<int64>& pre_coefs, int64 cst) {
+                                    const std::vector<int64>& pre_coefs,
+                                    int64 cst) {
   int64 constant = 0;
   std::vector<IntVar*> vars;
   std::vector<int64> coefs;
@@ -3389,7 +3399,8 @@ Constraint* Solver::MakeMaxEquality(const std::vector<IntVar*>& vars,
   }
 }
 
-Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars, int64 cst) {
+Constraint* Solver::MakeSumLessOrEqual(const std::vector<IntVar*>& vars,
+                                       int64 cst) {
   const int size = vars.size();
   if (cst == 1LL && AreAllBooleans(vars) && size > 2) {
     return RevAlloc(new SumBooleanLessOrEqualToOne(this, vars));
@@ -3408,7 +3419,8 @@ Constraint* Solver::MakeSumGreaterOrEqual(const std::vector<IntVar*>& vars,
   }
 }
 
-Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars, int64 cst) {
+Constraint* Solver::MakeSumEquality(const std::vector<IntVar*>& vars,
+                                    int64 cst) {
   const int size = vars.size();
   if (size == 0) {
     return cst == 0 ? MakeTrueConstraint() : MakeFalseConstraint();
@@ -3505,16 +3517,16 @@ Constraint* Solver::MakeScalProdGreaterOrEqual(const std::vector<IntVar*>& vars,
   return MakeScalProdGreaterOrEqualFct(this, vars, ToInt64Vector(coeffs), cst);
 }
 
-Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
-                                            const std::vector<int64>& coefficients,
-                                            int64 cst) {
+Constraint* Solver::MakeScalProdLessOrEqual(
+    const std::vector<IntVar*>& vars, const std::vector<int64>& coefficients,
+    int64 cst) {
   DCHECK_EQ(vars.size(), coefficients.size());
   return MakeScalProdLessOrEqualFct(this, vars, coefficients, cst);
 }
 
-Constraint* Solver::MakeScalProdLessOrEqual(const std::vector<IntVar*>& vars,
-                                            const std::vector<int>& coefficients,
-                                            int64 cst) {
+Constraint* Solver::MakeScalProdLessOrEqual(
+    const std::vector<IntVar*>& vars, const std::vector<int>& coefficients,
+    int64 cst) {
   DCHECK_EQ(vars.size(), coefficients.size());
   return MakeScalProdLessOrEqualFct(this, vars, ToInt64Vector(coefficients),
                                     cst);

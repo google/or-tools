@@ -132,7 +132,8 @@ class KnapsackSolver {
   virtual ~KnapsackSolver();
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
+  void Init(const std::vector<int64>& profits,
+            const std::vector<std::vector<int64> >& weights,
             const std::vector<int64>& capacities);
 
   // Solves the problem and returns the profit of the optimal solution.
@@ -156,7 +157,8 @@ class KnapsackSolver {
  private:
   // Trivial reduction of capacity constraints when the capacity is higher than
   // the sum of the weights of the items. Returns the number of reduced items.
-  int ReduceCapacities(int num_items, const std::vector<std::vector<int64> >& weights,
+  int ReduceCapacities(int num_items,
+                       const std::vector<std::vector<int64> >& weights,
                        const std::vector<int64>& capacities,
                        std::vector<std::vector<int64> >* reduced_weights,
                        std::vector<int64>* reduced_capacities);
@@ -366,7 +368,8 @@ class KnapsackPropagator {
   virtual ~KnapsackPropagator();
 
   // Initializes data structure and then calls InitPropagator.
-  void Init(const std::vector<int64>& profits, const std::vector<int64>& weights);
+  void Init(const std::vector<int64>& profits,
+            const std::vector<int64>& weights);
 
   // Updates data structure and then calls UpdatePropagator.
   // Returns false when failure.
@@ -530,7 +533,8 @@ class KnapsackGenericSolver : public BaseKnapsackSolver {
   ~KnapsackGenericSolver() override;
 
   // Initializes the solver and enters the problem to be solved.
-  void Init(const std::vector<int64>& profits, const std::vector<std::vector<int64> >& weights,
+  void Init(const std::vector<int64>& profits,
+            const std::vector<std::vector<int64> >& weights,
             const std::vector<int64>& capacities) override;
   int GetNumberOfItems() const { return state_.GetNumberOfItems(); }
   void GetLowerAndUpperBoundWhenItem(int item_id, bool is_item_in,

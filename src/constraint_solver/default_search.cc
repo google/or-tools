@@ -71,7 +71,8 @@ namespace {
 // search space of all integer variables.
 class DomainWatcher {
  public:
-  DomainWatcher(const std::vector<IntVar*>& vars, int cache_size) : vars_(vars) {
+  DomainWatcher(const std::vector<IntVar*>& vars, int cache_size)
+      : vars_(vars) {
     cached_log_.Init(cache_size);
   }
 
@@ -1382,7 +1383,8 @@ DecisionBuilder* Solver::MakeDefaultPhase(const std::vector<IntVar*>& vars) {
 }
 
 DecisionBuilder* Solver::MakeDefaultPhase(
-    const std::vector<IntVar*>& vars, const DefaultPhaseParameters& parameters) {
+    const std::vector<IntVar*>& vars,
+    const DefaultPhaseParameters& parameters) {
   return RevAlloc(new DefaultIntegerSearch(this, vars, parameters));
 }
 }  // namespace operations_research

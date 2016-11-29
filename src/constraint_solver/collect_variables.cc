@@ -28,10 +28,11 @@ namespace operations_research {
 namespace {
 class CollectVariablesVisitor : public ModelParser {
  public:
-  CollectVariablesVisitor(std::vector<IntVar*>* const primary_integer_variables,
-                          std::vector<IntVar*>* const secondary_integer_variables,
-                          std::vector<SequenceVar*>* const sequence_variables,
-                          std::vector<IntervalVar*>* const interval_variables)
+  CollectVariablesVisitor(
+      std::vector<IntVar*>* const primary_integer_variables,
+      std::vector<IntVar*>* const secondary_integer_variables,
+      std::vector<SequenceVar*>* const sequence_variables,
+      std::vector<IntervalVar*>* const interval_variables)
       : primaries_(primary_integer_variables),
         secondaries_(secondary_integer_variables),
         sequences_(sequence_variables),

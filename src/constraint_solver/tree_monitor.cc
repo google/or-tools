@@ -436,7 +436,8 @@ class TreeNode {
                                       ? parent_->children_[0]->domain()
                                       : domain_;
 
-        const std::vector<int64>* const domain_values = FindOrNull(domain, name_);
+        const std::vector<int64>* const domain_values =
+            FindOrNull(domain, name_);
         if (domain_values) {
           tree_writer->AddAttribute("size",
                                     StringPrintf("%zu", domain_values->size()));

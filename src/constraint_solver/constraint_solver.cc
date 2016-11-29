@@ -2498,8 +2498,8 @@ void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
 
 std::string DecisionBuilder::DebugString() const { return "DecisionBuilder"; }
 
-void DecisionBuilder::AppendMonitors(Solver* const solver,
-                                     std::vector<SearchMonitor*>* const extras) {}
+void DecisionBuilder::AppendMonitors(
+    Solver* const solver, std::vector<SearchMonitor*>* const extras) {}
 
 void DecisionBuilder::Accept(ModelVisitor* const visitor) const {}
 
@@ -2751,7 +2751,8 @@ void ModelVisitor::VisitSequenceVariable(const SequenceVar* const variable) {
 void ModelVisitor::VisitIntegerArgument(const std::string& arg_name, int64 value) {}
 
 void ModelVisitor::VisitIntegerArrayArgument(const std::string& arg_name,
-                                             const std::vector<int64>& values) {}
+                                             const std::vector<int64>& values) {
+}
 
 void ModelVisitor::VisitIntegerMatrixArgument(const std::string& arg_name,
                                               const IntTupleSet& tuples) {}
@@ -2999,7 +3000,8 @@ class Trace : public PropagationMonitor {
     ForAll(monitors_, &PropagationMonitor::SetValues, var, values);
   }
 
-  void RemoveValues(IntVar* const var, const std::vector<int64>& values) override {
+  void RemoveValues(IntVar* const var,
+                    const std::vector<int64>& values) override {
     ForAll(monitors_, &PropagationMonitor::RemoveValues, var, values);
   }
 

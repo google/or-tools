@@ -1093,7 +1093,8 @@ namespace {
 // TODO(user): Do not create holes on expressions.
 class MemberCt : public Constraint {
  public:
-  MemberCt(Solver* const s, IntVar* const v, const std::vector<int64>& sorted_values)
+  MemberCt(Solver* const s, IntVar* const v,
+           const std::vector<int64>& sorted_values)
       : Constraint(s), var_(v), values_(sorted_values) {
     DCHECK(v != nullptr);
     DCHECK(s != nullptr);
@@ -1153,7 +1154,8 @@ class NotMemberCt : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeMemberCt(IntExpr* expr, const std::vector<int64>& values) {
+Constraint* Solver::MakeMemberCt(IntExpr* expr,
+                                 const std::vector<int64>& values) {
   const int64 coeff = ExtractExprProductCoeff(&expr);
   if (coeff == 0) {
     return std::find(values.begin(), values.end(), 0) == values.end()
@@ -1413,7 +1415,8 @@ class IsMemberCt : public Constraint {
 
 template <class T>
 Constraint* BuildIsMemberCt(Solver* const solver, IntExpr* const expr,
-                            const std::vector<T>& values, IntVar* const boolvar) {
+                            const std::vector<T>& values,
+                            IntVar* const boolvar) {
   // TODO(user): optimize this by copying the code from MakeMemberCt.
   // Simplify and filter if expr is a product.
   IntExpr* sub = nullptr;
@@ -1563,13 +1566,15 @@ class SortedDisjointForbiddenIntervalsConstraint : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeNotMemberCt(IntExpr* const expr, std::vector<int64> starts,
+Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
+                                    std::vector<int64> starts,
                                     std::vector<int64> ends) {
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
       this, expr->Var(), {std::move(starts), std::move(ends)}));
 }
 
-Constraint* Solver::MakeNotMemberCt(IntExpr* const expr, std::vector<int> starts,
+Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
+                                    std::vector<int> starts,
                                     std::vector<int> ends) {
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
       this, expr->Var(), {std::move(starts), std::move(ends)}));

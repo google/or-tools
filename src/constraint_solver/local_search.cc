@@ -159,7 +159,8 @@ bool SimpleLns::NextFragment() {
 
 class RandomLns : public BaseLns {
  public:
-  RandomLns(const std::vector<IntVar*>& vars, int number_of_variables, int32 seed)
+  RandomLns(const std::vector<IntVar*>& vars, int number_of_variables,
+            int32 seed)
       : BaseLns(vars), rand_(seed), number_of_variables_(number_of_variables) {
     CHECK_GT(number_of_variables_, 0);
     CHECK_LE(number_of_variables_, Size());
@@ -182,15 +183,14 @@ bool RandomLns::NextFragment() {
 }
 }  // namespace
 
-LocalSearchOperator* Solver::MakeRandomLnsOperator(const std::vector<IntVar*>& vars,
-                                                   int number_of_variables) {
+LocalSearchOperator* Solver::MakeRandomLnsOperator(
+    const std::vector<IntVar*>& vars, int number_of_variables) {
   return MakeRandomLnsOperator(vars, number_of_variables,
                                ACMRandom::HostnamePidTimeSeed());
 }
 
-LocalSearchOperator* Solver::MakeRandomLnsOperator(const std::vector<IntVar*>& vars,
-                                                   int number_of_variables,
-                                                   int32 seed) {
+LocalSearchOperator* Solver::MakeRandomLnsOperator(
+    const std::vector<IntVar*>& vars, int number_of_variables, int32 seed) {
   return RevAlloc(new RandomLns(vars, number_of_variables, seed));
 }
 
@@ -279,7 +279,8 @@ LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
 }
 
 LocalSearchOperator* Solver::MakeMoveTowardTargetOperator(
-    const std::vector<IntVar*>& variables, const std::vector<int64>& target_values) {
+    const std::vector<IntVar*>& variables,
+    const std::vector<int64>& target_values) {
   return RevAlloc(new MoveTowardTargetLS(variables, target_values));
 }
 
@@ -308,7 +309,8 @@ void ChangeValue::OnStart() { index_ = 0; }
 namespace {
 class IncrementValue : public ChangeValue {
  public:
-  explicit IncrementValue(const std::vector<IntVar*>& vars) : ChangeValue(vars) {}
+  explicit IncrementValue(const std::vector<IntVar*>& vars)
+      : ChangeValue(vars) {}
   ~IncrementValue() override {}
   int64 ModifyValue(int64 index, int64 value) override { return value + 1; }
 
@@ -319,7 +321,8 @@ class IncrementValue : public ChangeValue {
 
 class DecrementValue : public ChangeValue {
  public:
-  explicit DecrementValue(const std::vector<IntVar*>& vars) : ChangeValue(vars) {}
+  explicit DecrementValue(const std::vector<IntVar*>& vars)
+      : ChangeValue(vars) {}
   ~DecrementValue() override {}
   int64 ModifyValue(int64 index, int64 value) override { return value - 1; }
 
@@ -692,7 +695,8 @@ bool PathOperator::CheckChainValidity(int64 before_chain, int64 chain_end,
 // 1 -> 2 -> 4 -> 3 -> 5
 class TwoOpt : public PathOperator {
  public:
-  TwoOpt(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+  TwoOpt(const std::vector<IntVar*>& vars,
+         const std::vector<IntVar*>& secondary_vars,
          std::function<int(int64)> start_empty_path_class)
       : PathOperator(vars, secondary_vars, 2,
                      std::move(start_empty_path_class)),
@@ -761,8 +765,9 @@ bool TwoOpt::MakeNeighbor() {
 
 class Relocate : public PathOperator {
  public:
-  Relocate(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-           const std::string& name, std::function<int(int64)> start_empty_path_class,
+  Relocate(const std::vector<IntVar*>& vars,
+           const std::vector<IntVar*>& secondary_vars, const std::string& name,
+           std::function<int(int64)> start_empty_path_class,
            int64 chain_length = 1LL, bool single_path = false)
       : PathOperator(vars, secondary_vars, 2,
                      std::move(start_empty_path_class)),
@@ -771,7 +776,8 @@ class Relocate : public PathOperator {
         name_(name) {
     CHECK_GT(chain_length_, 0);
   }
-  Relocate(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+  Relocate(const std::vector<IntVar*>& vars,
+           const std::vector<IntVar*>& secondary_vars,
            std::function<int(int64)> start_empty_path_class,
            int64 chain_length = 1LL, bool single_path = false)
       : Relocate(vars, secondary_vars, StrCat("Relocate<", chain_length, ">"),
@@ -820,7 +826,8 @@ bool Relocate::MakeNeighbor() {
 
 class Exchange : public PathOperator {
  public:
-  Exchange(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+  Exchange(const std::vector<IntVar*>& vars,
+           const std::vector<IntVar*>& secondary_vars,
            std::function<int(int64)> start_empty_path_class)
       : PathOperator(vars, secondary_vars, 2,
                      std::move(start_empty_path_class)) {}
@@ -862,7 +869,8 @@ bool Exchange::MakeNeighbor() {
 
 class Cross : public PathOperator {
  public:
-  Cross(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+  Cross(const std::vector<IntVar*>& vars,
+        const std::vector<IntVar*>& secondary_vars,
         std::function<int(int64)> start_empty_path_class)
       : PathOperator(vars, secondary_vars, 2,
                      std::move(start_empty_path_class)) {}
@@ -896,8 +904,8 @@ bool Cross::MakeNeighbor() {
 class BaseInactiveNodeToPathOperator : public PathOperator {
  public:
   BaseInactiveNodeToPathOperator(
-      const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-      int number_of_base_nodes,
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars, int number_of_base_nodes,
       std::function<int(int64)> start_empty_path_class)
       : PathOperator(vars, secondary_vars, number_of_base_nodes,
                      std::move(start_empty_path_class)),
@@ -1144,7 +1152,8 @@ bool ExtendedSwapActiveOperator::MakeNeighbor() {
 
 class TSPOpt : public PathOperator {
  public:
-  TSPOpt(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+  TSPOpt(const std::vector<IntVar*>& vars,
+         const std::vector<IntVar*>& secondary_vars,
          Solver::IndexEvaluator3 evaluator, int chain_length);
   ~TSPOpt() override {}
   bool MakeNeighbor() override;
@@ -1153,7 +1162,8 @@ class TSPOpt : public PathOperator {
 
  private:
   std::vector<std::vector<int64>> cost_;
-  HamiltonianPathSolver<int64, std::vector<std::vector<int64>>> hamiltonian_path_solver_;
+  HamiltonianPathSolver<int64, std::vector<std::vector<int64>>>
+      hamiltonian_path_solver_;
   Solver::IndexEvaluator3 evaluator_;
   const int chain_length_;
 };
@@ -1210,7 +1220,8 @@ bool TSPOpt::MakeNeighbor() {
 
 class TSPLns : public PathOperator {
  public:
-  TSPLns(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+  TSPLns(const std::vector<IntVar*>& vars,
+         const std::vector<IntVar*>& secondary_vars,
          Solver::IndexEvaluator3 evaluator, int tsp_size);
   ~TSPLns() override {}
   bool MakeNeighbor() override;
@@ -1222,7 +1233,8 @@ class TSPLns : public PathOperator {
 
  private:
   std::vector<std::vector<int64>> cost_;
-  HamiltonianPathSolver<int64, std::vector<std::vector<int64>>> hamiltonian_path_solver_;
+  HamiltonianPathSolver<int64, std::vector<std::vector<int64>>>
+      hamiltonian_path_solver_;
   Solver::IndexEvaluator3 evaluator_;
   const int tsp_size_;
   ACMRandom rand_;
@@ -1555,8 +1567,9 @@ bool LinKernighan::InFromOut(int64 in_i, int64 in_j, int64* out, int64* gain) {
 
 class PathLns : public PathOperator {
  public:
-  PathLns(const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-          int number_of_chunks, int chunk_size, bool unactive_fragments)
+  PathLns(const std::vector<IntVar*>& vars,
+          const std::vector<IntVar*>& secondary_vars, int number_of_chunks,
+          int chunk_size, bool unactive_fragments)
       : PathOperator(vars, secondary_vars, number_of_chunks, nullptr),
         number_of_chunks_(number_of_chunks),
         chunk_size_(chunk_size),
@@ -1786,7 +1799,8 @@ namespace {
 class RandomCompoundOperator : public LocalSearchOperator {
  public:
   explicit RandomCompoundOperator(std::vector<LocalSearchOperator*> operators);
-  RandomCompoundOperator(std::vector<LocalSearchOperator*> operators, int32 seed);
+  RandomCompoundOperator(std::vector<LocalSearchOperator*> operators,
+                         int32 seed);
   ~RandomCompoundOperator() override {}
   void Start(const Assignment* assignment) override;
   bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
@@ -1877,9 +1891,10 @@ LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
   return MakeOperator(vars, std::vector<IntVar*>(), op);
 }
 
-LocalSearchOperator* Solver::MakeOperator(const std::vector<IntVar*>& vars,
-                                          const std::vector<IntVar*>& secondary_vars,
-                                          Solver::LocalSearchOperators op) {
+LocalSearchOperator* Solver::MakeOperator(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
+    Solver::LocalSearchOperators op) {
   LocalSearchOperator* result = nullptr;
   switch (op) {
     case Solver::TWOOPT: {
@@ -1990,7 +2005,8 @@ LocalSearchOperator* Solver::MakeOperator(
 }
 
 LocalSearchOperator* Solver::MakeOperator(
-    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars,
     Solver::IndexEvaluator3 evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
   LocalSearchOperator* result = nullptr;
@@ -2117,7 +2133,8 @@ LocalSearchFilter* Solver::MakeVariableDomainFilter() {
 
 const int IntVarLocalSearchFilter::kUnassigned = -1;
 
-IntVarLocalSearchFilter::IntVarLocalSearchFilter(const std::vector<IntVar*>& vars) {
+IntVarLocalSearchFilter::IntVarLocalSearchFilter(
+    const std::vector<IntVar*>& vars) {
   AddVars(vars);
 }
 
@@ -2483,18 +2500,19 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
 }
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
-    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-    Solver::IndexEvaluator3 values, IntVar* const objective,
-    Solver::LocalSearchFilterBound filter_enum,
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars, Solver::IndexEvaluator3 values,
+    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
   ReturnObjectiveFilter6(TernaryObjectiveFilter, op_enum, vars, secondary_vars,
                          values, nullptr, objective, filter_enum);
 }
 
 LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
-    const std::vector<IntVar*>& vars, const std::vector<IntVar*>& secondary_vars,
-    Solver::IndexEvaluator3 values, ObjectiveWatcher delta_objective_callback,
-    IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars, Solver::IndexEvaluator3 values,
+    ObjectiveWatcher delta_objective_callback, IntVar* const objective,
+    Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
   ReturnObjectiveFilter6(TernaryObjectiveFilter, op_enum, vars, secondary_vars,
                          values, delta_objective_callback, objective,
@@ -2858,14 +2876,16 @@ LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     SolutionPool* const pool, LocalSearchOperator* const ls_operator,
     DecisionBuilder* const sub_decision_builder) {
   return MakeLocalSearchPhaseParameters(pool, ls_operator, sub_decision_builder,
-                                        nullptr, std::vector<LocalSearchFilter*>());
+                                        nullptr,
+                                        std::vector<LocalSearchFilter*>());
 }
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
     SolutionPool* const pool, LocalSearchOperator* const ls_operator,
     DecisionBuilder* const sub_decision_builder, SearchLimit* const limit) {
   return MakeLocalSearchPhaseParameters(pool, ls_operator, sub_decision_builder,
-                                        limit, std::vector<LocalSearchFilter*>());
+                                        limit,
+                                        std::vector<LocalSearchFilter*>());
 }
 
 LocalSearchPhaseParameters* Solver::MakeLocalSearchPhaseParameters(
@@ -2907,9 +2927,9 @@ class NestedSolveDecision : public Decision {
   int state_;
 };
 
-NestedSolveDecision::NestedSolveDecision(DecisionBuilder* const db,
-                                         bool restore,
-                                         const std::vector<SearchMonitor*>& monitors)
+NestedSolveDecision::NestedSolveDecision(
+    DecisionBuilder* const db, bool restore,
+    const std::vector<SearchMonitor*>& monitors)
     : db_(db),
       restore_(restore),
       monitors_(monitors),
@@ -3014,7 +3034,8 @@ LocalSearch::LocalSearch(Assignment* const assignment, SolutionPool* const pool,
   PushLocalSearchDecision();
 }
 
-LocalSearch::LocalSearch(const std::vector<IntVar*>& vars, SolutionPool* const pool,
+LocalSearch::LocalSearch(const std::vector<IntVar*>& vars,
+                         SolutionPool* const pool,
                          DecisionBuilder* const first_solution,
                          LocalSearchOperator* const ls_operator,
                          DecisionBuilder* const sub_decision_builder,

@@ -19,8 +19,8 @@
 #include <algorithm>
 #include "base/hash.h"
 #include "base/hash.h"
-#include <memory>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -266,7 +266,8 @@ template <class Graph>
 std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
                                                 bool die_if_not_symmetric) {
   std::vector<int> reverse_arc(graph.num_arcs(), -1);
-  hash_multimap<std::pair</*tail*/ int, /*head*/ int>, /*arc index*/ int> arc_map;
+  hash_multimap<std::pair</*tail*/ int, /*head*/ int>, /*arc index*/ int>
+      arc_map;
   for (int arc = 0; arc < graph.num_arcs(); ++arc) {
     const int tail = graph.Tail(arc);
     const int head = graph.Head(arc);

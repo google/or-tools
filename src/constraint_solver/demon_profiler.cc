@@ -212,8 +212,10 @@ class DemonProfiler : public PropagationMonitor {
   void RemoveValue(IntVar* const var, int64 value) override {}
   void SetValue(IntVar* const var, int64 value) override {}
   void RemoveInterval(IntVar* const var, int64 imin, int64 imax) override {}
-  void SetValues(IntVar* const var, const std::vector<int64>& values) override {}
-  void RemoveValues(IntVar* const var, const std::vector<int64>& values) override {}
+  void SetValues(IntVar* const var, const std::vector<int64>& values) override {
+  }
+  void RemoveValues(IntVar* const var,
+                    const std::vector<int64>& values) override {}
   // IntervalVar modifiers.
   void SetStartMin(IntervalVar* const var, int64 new_min) override {}
   void SetStartMax(IntervalVar* const var, int64 new_max) override {}

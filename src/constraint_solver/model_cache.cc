@@ -388,7 +388,8 @@ class NonReversibleCache : public ModelCache {
       VarConstantArrayIntExprCache;
   typedef Cache2<IntExpr, std::vector<IntVar*>, const std::vector<int64>&>
       VarArrayConstantArrayIntExprCache;
-  typedef Cache2<IntExpr, std::vector<IntVar*>, int64> VarArrayConstantIntExprCache;
+  typedef Cache2<IntExpr, std::vector<IntVar*>, int64>
+      VarArrayConstantIntExprCache;
 
   typedef Cache3<IntExpr, IntVar*, int64, int64>
       VarConstantConstantIntExprCache;
@@ -736,7 +737,8 @@ class NonReversibleCache : public ModelCache {
   }
 
   void InsertVarConstantArrayExpression(
-      IntExpr* const expression, IntVar* const var, const std::vector<int64>& values,
+      IntExpr* const expression, IntVar* const var,
+      const std::vector<int64>& values,
       VarConstantArrayExpressionType type) override {
     DCHECK(expression != nullptr);
     DCHECK(var != nullptr);
@@ -829,7 +831,8 @@ class NonReversibleCache : public ModelCache {
   std::vector<ExprIntExprCache*> expr_expressions_;
   std::vector<ExprConstantIntExprCache*> expr_constant_expressions_;
   std::vector<ExprExprIntExprCache*> expr_expr_expressions_;
-  std::vector<VarConstantConstantIntExprCache*> var_constant_constant_expressions_;
+  std::vector<VarConstantConstantIntExprCache*>
+      var_constant_constant_expressions_;
   std::vector<VarConstantArrayIntExprCache*> var_constant_array_expressions_;
   std::vector<VarArrayIntExprCache*> var_array_expressions_;
   std::vector<VarArrayConstantArrayIntExprCache*>

@@ -39,7 +39,8 @@ Constraint* BuildAc4TableConstraint(Solver* const solver,
                                     const IntTupleSet& tuples,
                                     const std::vector<IntVar*>& vars);
 
-Constraint* BuildSatTableConstraint(Solver* solver, const std::vector<IntVar*>& vars,
+Constraint* BuildSatTableConstraint(Solver* solver,
+                                    const std::vector<IntVar*>& vars,
                                     const IntTupleSet& tuples);
 
 Constraint* BuildAc4MddResetTableConstraint(Solver* const solver,
@@ -403,7 +404,8 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
 
 class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  CompactPositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
+  CompactPositiveTableConstraint(Solver* const s,
+                                 const std::vector<IntVar*>& vars,
                                  const IntTupleSet& tuples)
       : BasePositiveTableConstraint(s, vars, tuples),
         word_length_(BitLength64(tuples.NumTuples())),

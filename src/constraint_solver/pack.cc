@@ -41,8 +41,8 @@ class Dimension : public BaseObject {
   virtual void Post() = 0;
   virtual void InitialPropagate(int bin_index, const std::vector<int>& forced,
                                 const std::vector<int>& undecided) = 0;
-  virtual void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                          const std::vector<int>& unassigned) = 0;
+  virtual void InitialPropagateUnassigned(
+      const std::vector<int>& assigned, const std::vector<int>& unassigned) = 0;
   virtual void EndInitialPropagate() = 0;
   virtual void Propagate(int bin_index, const std::vector<int>& forced,
                          const std::vector<int>& removed) = 0;
@@ -105,7 +105,8 @@ class Dimension : public BaseObject {
 
 // ----- Pack -----
 
-Pack::Pack(Solver* const s, const std::vector<IntVar*>& vars, int number_of_bins)
+Pack::Pack(Solver* const s, const std::vector<IntVar*>& vars,
+           int number_of_bins)
     : Constraint(s),
       vars_(vars),
       bins_(number_of_bins),
@@ -171,7 +172,9 @@ class InitialPropagateData : public BaseObject {
   void PushUndecided(int bin, int index) {
     undecided_.at(bin).push_back(index);
   }
-  const std::vector<int>& undecided(int bin) const { return undecided_.at(bin); }
+  const std::vector<int>& undecided(int bin) const {
+    return undecided_.at(bin);
+  }
   const std::vector<int>& assigned() const { return assigned_; }
   const std::vector<int>& unassigned() const { return unassigned_; }
 
@@ -623,7 +626,8 @@ class DimensionLessThanConstant : public Dimension {
     }
   }
   void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                  const std::vector<int>& unassigned) override {}
+                                  const std::vector<int>& unassigned) override {
+  }
   void PropagateUnassigned(const std::vector<int>& assigned,
                            const std::vector<int>& unassigned) override {}
 
@@ -721,7 +725,8 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
     }
   }
   void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                  const std::vector<int>& unassigned) override {}
+                                  const std::vector<int>& unassigned) override {
+  }
   void PropagateUnassigned(const std::vector<int>& assigned,
                            const std::vector<int>& unassigned) override {}
 
@@ -824,7 +829,8 @@ class DimensionLessThanConstantCallback2 : public Dimension {
     }
   }
   void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                  const std::vector<int>& unassigned) override {}
+                                  const std::vector<int>& unassigned) override {
+  }
   void PropagateUnassigned(const std::vector<int>& assigned,
                            const std::vector<int>& unassigned) override {}
 
@@ -956,7 +962,8 @@ class DimensionWeightedSumEqVar : public Dimension {
     PushFromTop(bin_index);
   }
   void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                  const std::vector<int>& unassigned) override {}
+                                  const std::vector<int>& unassigned) override {
+  }
   void PropagateUnassigned(const std::vector<int>& assigned,
                            const std::vector<int>& unassigned) override {}
 
@@ -1096,7 +1103,8 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
     PushFromTop(bin_index);
   }
   void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                  const std::vector<int>& unassigned) override {}
+                                  const std::vector<int>& unassigned) override {
+  }
   void PropagateUnassigned(const std::vector<int>& assigned,
                            const std::vector<int>& unassigned) override {}
 
@@ -1137,8 +1145,8 @@ class AssignedWeightedSumDimension : public Dimension {
   };
 
   AssignedWeightedSumDimension(Solver* const s, Pack* const p,
-                               const std::vector<int64>& weights, int bins_count,
-                               IntVar* const cost_var)
+                               const std::vector<int64>& weights,
+                               int bins_count, IntVar* const cost_var)
       : Dimension(s, p),
         vars_count_(weights.size()),
         weights_(weights),
@@ -1413,7 +1421,8 @@ class CountUsedBinDimension : public Dimension {
   }
 
   void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                  const std::vector<int>& unassigned) override {}
+                                  const std::vector<int>& unassigned) override {
+  }
 
   void Propagate(int bin_index, const std::vector<int>& forced,
                  const std::vector<int>& removed) override {
@@ -1485,7 +1494,8 @@ class VariableUsageDimension : public Dimension {
   void InitialPropagate(int bin_index, const std::vector<int>& forced,
                         const std::vector<int>& undecided) override {}
   void InitialPropagateUnassigned(const std::vector<int>& assigned,
-                                  const std::vector<int>& unassigned) override {}
+                                  const std::vector<int>& unassigned) override {
+  }
   void EndInitialPropagate() override {}
   void Propagate(int bin_index, const std::vector<int>& forced,
                  const std::vector<int>& removed) override {}
