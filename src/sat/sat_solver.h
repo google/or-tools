@@ -209,6 +209,8 @@ class SatSolver {
   // assumptions by calling GetLastIncompatibleDecisions().
   Status ResetAndSolveWithGivenAssumptions(
       const std::vector<Literal>& assumptions);
+  Status ResetAndSolveWithGivenAssumptions(
+      const std::vector<Literal>& assumptions, TimeLimit* time_limit);
 
   // Changes the assumption level. All the decisions below this level will be
   // treated as assumptions by the next Solve(). Note that this may impact some
@@ -957,6 +959,20 @@ inline std::function<void(Model*)> BooleanLinearConstraint(
   };
 }
 
+inline std::function<void(Model*)> CardinalityConstraint(
+    int64 lower_bound, int64 upper_bound,
+    const std::vector<Literal>& literals) {
+  return [=](Model* model) {
+    std::vector<LiteralWithCoeff> cst(literals.size());
+    for (int i = 0; i < literals.size(); ++i) {
+      cst[i] = LiteralWithCoeff(literals[i], 1);
+    }
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/true, Coefficient(lower_bound),
+        /*use_upper_bound=*/true, Coefficient(upper_bound), &cst);
+  };
+}
+
 inline std::function<void(Model*)> ExactlyOneConstraint(
     const std::vector<Literal>& literals) {
   return [=](Model* model) {
@@ -1101,6 +1117,7 @@ inline std::function<SatParameters(Model*)> NewSatParameters(std::string params)
     if (!params.empty()) {
       CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters)) << params;
       model->GetOrCreate<SatSolver>()->SetParameters(parameters);
+      model->SetSingleton(TimeLimit::FromParameters(parameters));
     }
     return parameters;
   };

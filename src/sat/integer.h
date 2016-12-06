@@ -367,6 +367,16 @@ class IntegerTrail : public SatPropagator {
   IntegerVariable AddIntegerVariable(IntegerValue lower_bound,
                                      IntegerValue upper_bound);
 
+  // Same as AddIntegerVariable(value, value), but this is a bit more efficient
+  // because it reuses another constant with the same value if its exist.
+  //
+  // Note(user): Creating constant integer variable is a bit wasteful, but not
+  // that much, and it allows to simplify a lot of constraints that do not need
+  // to handle this case any differently than the general one. Maybe there is a
+  // better solution, but this is not really high priority as of December 2016.
+  IntegerVariable GetOrCreateConstantIntegerVariable(IntegerValue value);
+  int NumConstantVariables() const;
+
   // Same as AddIntegerVariable() but uses the maximum possible range. Note
   // that since we take negation of bounds in various places, we make sure that
   // we don't have overflow when we take the negation of the lower bound or of
@@ -519,6 +529,10 @@ class IntegerTrail : public SatPropagator {
     int current_trail_index;
   };
   std::vector<VarInfo> vars_;
+
+  // Used by GetOrCreateConstantIntegerVariable() to return already created
+  // constant variables that share the same value.
+  hash_map<IntegerValue, IntegerVariable> constant_map_;
 
   // The integer trail. It always start by num_vars sentinel values with the
   // level 0 bounds (in one to one correspondance with vars_).
@@ -809,6 +823,14 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable() {
   };
 }
 
+inline std::function<IntegerVariable(Model*)> ConstantIntegerVariable(
+    int64 value) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntegerTrail>()
+        ->GetOrCreateConstantIntegerVariable(IntegerValue(value));
+  };
+}
+
 inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64 lb,
                                                                  int64 ub) {
   return [=](Model* model) {
@@ -936,7 +958,8 @@ inline std::function<void(Model*)> ReifiedInInterval(IntegerVariable v,
 // variables are fixed to a single value, or the model is proved UNSAT. Returns
 // the status of the last call to SatSolver::Solve().
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(
-    Model* model, const std::vector<IntegerVariable>& vars_with_lazy_encoding);
+    const std::vector<Literal>& assumptions,
+    const std::vector<IntegerVariable>& vars_with_lazy_encoding, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

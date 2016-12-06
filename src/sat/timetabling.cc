@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "sat/overload_checker.h"
+#include "sat/precedences.h"
 #include "sat/sat_solver.h"
 #include "sat/timetabling.h"
 
@@ -25,13 +26,25 @@ std::function<void(Model*)> Cumulative(
     const std::vector<IntegerVariable>& demands,
     const IntegerVariable& capacity) {
   return [=](Model* model) {
+    if (vars.empty()) return;
     IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
+    Trail* trail = model->GetOrCreate<Trail>();
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+
+    if (vars.size() == 1) {
+      if (intervals->IsOptional(vars[0])) {
+        model->Add(ConditionalLowerOrEqualWithOffset(
+            demands[0], capacity, 0, intervals->IsPresentLiteral(vars[0])));
+      } else {
+        model->Add(LowerOrEqual(demands[0], capacity));
+      }
+      return;
+    }
 
     // Propagator responsible for applying the Overload Checking filtering rule.
     // This propagator increases the minimum of the capacity variable.
-    OverloadChecker* overload_checker =
-        new OverloadChecker(vars, demands, capacity, integer_trail, intervals);
+    OverloadChecker* overload_checker = new OverloadChecker(
+        vars, demands, capacity, trail, integer_trail, intervals);
     overload_checker->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(overload_checker);
 
@@ -40,7 +53,7 @@ std::function<void(Model*)> Cumulative(
     // maximum of the end variables, and increasing the minimum of the capacity
     // variable.
     TimeTablingPerTask* time_tabling = new TimeTablingPerTask(
-        vars, demands, capacity, integer_trail, intervals);
+        vars, demands, capacity, trail, integer_trail, intervals);
     time_tabling->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(time_tabling);
   };
@@ -49,11 +62,13 @@ std::function<void(Model*)> Cumulative(
 TimeTablingPerTask::TimeTablingPerTask(
     const std::vector<IntervalVariable>& interval_vars,
     const std::vector<IntegerVariable>& demand_vars, IntegerVariable capacity,
-    IntegerTrail* integer_trail, IntervalsRepository* intervals_repository)
+    Trail* trail, IntegerTrail* integer_trail,
+    IntervalsRepository* intervals_repository)
     : num_tasks_(interval_vars.size()),
       interval_vars_(interval_vars),
       demand_vars_(demand_vars),
       capacity_var_(capacity),
+      trail_(trail),
       integer_trail_(integer_trail),
       intervals_repository_(intervals_repository) {
   start_min_.resize(num_tasks_);
@@ -90,7 +105,21 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
     if (duration_vars_[t] != kNoIntegerVariable) {
       watcher->WatchLowerBound(duration_vars_[t], id);
     }
+    if (!IsAlwaysPresent(t)) {
+      const Literal is_present =
+          intervals_repository_->IsPresentLiteral(interval_vars_[t]);
+      watcher->WatchLiteral(is_present, id);
+    }
   }
+}
+
+bool TimeTablingPerTask::IsAlwaysPresent(int task_id) const {
+  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
+    const Literal is_present =
+        intervals_repository_->IsPresentLiteral(interval_vars_[task_id]);
+    return trail_->Assignment().LiteralIsTrue(is_present);
+  }
+  return true;
 }
 
 bool TimeTablingPerTask::Propagate() {
@@ -111,7 +140,7 @@ bool TimeTablingPerTask::Propagate() {
       end_max_[t] = EndMax(t);
       demand_min_[t] = DemandMin(t);
       duration_min_[t] = DurationMin(t);
-      if (start_max_[t] < end_min_[t]) {
+      if (start_max_[t] < end_min_[t] && IsAlwaysPresent(t)) {
         scp_.push_back(Event(start_max_[t], t));
         ecp_.push_back(Event(end_min_[t], t));
       }
@@ -189,10 +218,11 @@ bool TimeTablingPerTask::Propagate() {
     // -----------------------------
     if (max_height > CapacityMin()) {
       reason_.clear();
+      literal_reason_.clear();
       ExplainProfileHeight(max_height_start);
       if (!integer_trail_->Enqueue(
               IntegerLiteral::GreaterOrEqual(capacity_var_, max_height),
-              /*literal_reason=*/{}, reason_)) {
+              literal_reason_, reason_)) {
         return false;
       }
     }
@@ -205,7 +235,12 @@ bool TimeTablingPerTask::Propagate() {
     for (int t = 0; t < num_tasks_; ++t) {
       // The task cannot be pushed.
       // TODO(user): exclude fixed tasks for all the subtree.
+      //
+      // Note: We do not check that the task t is optional.
+      // It is OK to propagate the bounds of optional variables. They should
+      // become unperformed if the bounds are no longer consistent.
       if (demand_min_[t] <= min_demand || duration_min_[t] == 0) continue;
+
       // Increase the start min of task t.
       if (start_min_[t] != start_max_[t] && !SweepTaskRight(t)) return false;
       // Decrease the end max of task t.
@@ -321,6 +356,7 @@ bool TimeTablingPerTask::SweepTaskLeft(int task_id) {
 bool TimeTablingPerTask::UpdateStartingTime(int task_id,
                                             IntegerValue new_start) {
   reason_.clear();
+  literal_reason_.clear();
   ExplainProfileHeight(new_start - 1);
   reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
   reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
@@ -329,8 +365,8 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id,
 
   // Explain the increase of the start min.
   if (!integer_trail_->Enqueue(
-          IntegerLiteral::GreaterOrEqual(start_vars_[task_id], new_start), {},
-          reason_)) {
+          IntegerLiteral::GreaterOrEqual(start_vars_[task_id], new_start),
+          literal_reason_, reason_)) {
     return false;
   }
 
@@ -344,6 +380,7 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id,
 
   // Build the reason to increase the end min.
   reason_.clear();
+  literal_reason_.clear();
   reason_.push_back(integer_trail_->LowerBoundAsLiteral(start_vars_[task_id]));
   // Only use the duration variable if it is defined.
   if (duration_vars_[task_id] != kNoIntegerVariable) {
@@ -354,7 +391,7 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id,
   // Explain the increase of the end min.
   if (!integer_trail_->Enqueue(
           IntegerLiteral::GreaterOrEqual(end_vars_[task_id], new_end),
-          /*literal_reason=*/{}, reason_)) {
+          literal_reason_, reason_)) {
     return false;
   }
 
@@ -374,8 +411,8 @@ bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
 
   // Explain the decrease of the end max.
   if (!integer_trail_->Enqueue(
-          IntegerLiteral::LowerOrEqual(end_vars_[task_id], new_end), {},
-          reason_)) {
+          IntegerLiteral::LowerOrEqual(end_vars_[task_id], new_end),
+          literal_reason_, reason_)) {
     return false;
   }
 
@@ -399,7 +436,7 @@ bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
   // Explain the decrease of the start max.
   if (!integer_trail_->Enqueue(
           IntegerLiteral::LowerOrEqual(start_vars_[task_id], new_start),
-          /*literal_reason=*/{}, reason_)) {
+          literal_reason_, reason_)) {
     return false;
   }
 
@@ -409,6 +446,14 @@ bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
   return true;
 }
 
+void TimeTablingPerTask::AddPresenceReasonIfNeeded(int task_id) {
+  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
+    literal_reason_.push_back(
+        intervals_repository_->IsPresentLiteral(interval_vars_[task_id])
+            .Negated());
+  }
+}
+
 void TimeTablingPerTask::ExplainProfileHeight(IntegerValue time) {
   for (int t = 0; t < num_tasks_; ++t) {
     // Tasks need to overlap the time point, i.e., start_max <= time < end_min.
@@ -416,6 +461,7 @@ void TimeTablingPerTask::ExplainProfileHeight(IntegerValue time) {
       reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
       reason_.push_back(IntegerLiteral::LowerOrEqual(start_vars_[t], time));
       reason_.push_back(IntegerLiteral::GreaterOrEqual(end_vars_[t], time + 1));
+      AddPresenceReasonIfNeeded(t);
     }
   }
 }

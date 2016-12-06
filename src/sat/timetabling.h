@@ -34,7 +34,8 @@ class TimeTablingPerTask : public PropagatorInterface {
  public:
   TimeTablingPerTask(const std::vector<IntervalVariable>& interval_vars,
                      const std::vector<IntegerVariable>& demand_vars,
-                     IntegerVariable capacity, IntegerTrail* integer_trail,
+                     IntegerVariable capacity, Trail* trail,
+                     IntegerTrail* integer_trail,
                      IntervalsRepository* intervals_repository);
 
   bool Propagate() final;
@@ -103,6 +104,9 @@ class TimeTablingPerTask : public PropagatorInterface {
     return intervals_repository_->FixedSize(interval_vars_[task_id]);
   }
 
+  bool IsAlwaysPresent(int task_id) const;
+  void AddPresenceReasonIfNeeded(int task_id);
+
   IntegerValue CapacityMin() const {
     return integer_trail_->LowerBound(capacity_var_);
   }
@@ -126,8 +130,10 @@ class TimeTablingPerTask : public PropagatorInterface {
   const IntegerVariable capacity_var_;
 
   // Reason vector.
+  std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> reason_;
 
+  Trail* trail_;
   IntegerTrail* integer_trail_;
   IntervalsRepository* intervals_repository_;
 

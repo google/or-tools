@@ -296,6 +296,31 @@ EncodingNode* LazyMergeAllNodeWithPQ(const std::vector<EncodingNode*>& nodes,
 }
 
 std::vector<EncodingNode*> CreateInitialEncodingNodes(
+    const std::vector<Literal>& literals,
+    const std::vector<Coefficient>& coeffs, Coefficient* offset,
+    std::deque<EncodingNode>* repository) {
+  CHECK_EQ(literals.size(), coeffs.size());
+  *offset = 0;
+  std::vector<EncodingNode*> nodes;
+  for (int i = 0; i < literals.size(); ++i) {
+    // We want to maximize the cost when this literal is true.
+    if (coeffs[i] > 0) {
+      repository->emplace_back(literals[i]);
+      nodes.push_back(&repository->back());
+      nodes.back()->set_weight(coeffs[i]);
+    } else {
+      repository->emplace_back(literals[i].Negated());
+      nodes.push_back(&repository->back());
+      nodes.back()->set_weight(-coeffs[i]);
+
+      // Note that this increase the offset since the coeff is negative.
+      *offset -= coeffs[i];
+    }
+  }
+  return nodes;
+}
+
+std::vector<EncodingNode*> CreateInitialEncodingNodes(
     const LinearObjective& objective_proto, Coefficient* offset,
     std::deque<EncodingNode>* repository) {
   *offset = 0;
@@ -318,6 +343,158 @@ std::vector<EncodingNode*> CreateInitialEncodingNodes(
     }
   }
   return nodes;
+}
+
+namespace {
+
+bool EncodingNodeByWeight(const EncodingNode* a, const EncodingNode* b) {
+  return a->weight() < b->weight();
+}
+
+bool EncodingNodeByDepth(const EncodingNode* a, const EncodingNode* b) {
+  return a->depth() < b->depth();
+}
+
+bool EmptyEncodingNode(const EncodingNode* a) { return a->size() == 0; }
+
+}  // namespace
+
+std::vector<Literal> ReduceNodesAndExtractAssumptions(
+    Coefficient upper_bound, Coefficient stratified_lower_bound,
+    Coefficient* lower_bound, std::vector<EncodingNode*>* nodes,
+    SatSolver* solver) {
+  // Remove the left-most variables fixed to one from each node.
+  // Also update the lower_bound. Note that Reduce() needs the solver to be
+  // at the root node in order to work.
+  solver->Backtrack(0);
+  for (EncodingNode* n : *nodes) {
+    *lower_bound += n->Reduce(*solver) * n->weight();
+  }
+
+  // Fix the nodes right-most variables that are above the gap.
+  if (upper_bound != kCoefficientMax) {
+    const Coefficient gap = upper_bound - *lower_bound;
+    if (gap <= 0) return {};
+    for (EncodingNode* n : *nodes) {
+      n->ApplyUpperBound((gap / n->weight()).value(), solver);
+    }
+  }
+
+  // Remove the empty nodes.
+  nodes->erase(std::remove_if(nodes->begin(), nodes->end(), EmptyEncodingNode),
+               nodes->end());
+
+  // Sort the nodes.
+  switch (solver->parameters().max_sat_assumption_order()) {
+    case SatParameters::DEFAULT_ASSUMPTION_ORDER:
+      break;
+    case SatParameters::ORDER_ASSUMPTION_BY_DEPTH:
+      std::sort(nodes->begin(), nodes->end(), EncodingNodeByDepth);
+      break;
+    case SatParameters::ORDER_ASSUMPTION_BY_WEIGHT:
+      std::sort(nodes->begin(), nodes->end(), EncodingNodeByWeight);
+      break;
+  }
+  if (solver->parameters().max_sat_reverse_assumption_order()) {
+    // TODO(user): with DEFAULT_ASSUMPTION_ORDER, this will lead to a somewhat
+    // weird behavior, since we will reverse the nodes at each iteration...
+    std::reverse(nodes->begin(), nodes->end());
+  }
+
+  // Extract the assumptions from the nodes.
+  std::vector<Literal> assumptions;
+  for (EncodingNode* n : *nodes) {
+    if (n->weight() >= stratified_lower_bound) {
+      assumptions.push_back(n->literal(0).Negated());
+    }
+  }
+  return assumptions;
+}
+
+Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
+                                 const std::vector<Literal>& core) {
+  Coefficient min_weight = kCoefficientMax;
+  int index = 0;
+  for (int i = 0; i < core.size(); ++i) {
+    for (;
+         index < nodes.size() && nodes[index]->literal(0).Negated() != core[i];
+         ++index) {
+    }
+    CHECK_LT(index, nodes.size());
+    min_weight = std::min(min_weight, nodes[index]->weight());
+  }
+  return min_weight;
+}
+
+Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
+                                     Coefficient upper_bound) {
+  Coefficient result(0);
+  for (EncodingNode* n : nodes) {
+    CHECK_GT(n->weight(), 0);
+    if (n->weight() < upper_bound) {
+      result = std::max(result, n->weight());
+    }
+  }
+  return result;
+}
+
+void ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
+                 std::deque<EncodingNode>* repository,
+                 std::vector<EncodingNode*>* nodes, SatSolver* solver) {
+  // Backtrack to be able to add new constraints.
+  solver->Backtrack(0);
+
+  if (core.size() == 1) {
+    // The core will be reduced at the beginning of the next loop.
+    // Find the associated node, and call IncreaseNodeSize() on it.
+    CHECK(solver->Assignment().LiteralIsFalse(core[0]));
+    for (EncodingNode* n : *nodes) {
+      if (n->literal(0).Negated() == core[0]) {
+        IncreaseNodeSize(n, solver);
+        return;
+      }
+    }
+    LOG(FATAL) << "Node with literal " << core[0] << " not found!";
+  }
+
+  // Remove from nodes the EncodingNode in the core, merge them, and add the
+  // resulting EncodingNode at the back.
+  int index = 0;
+  int new_node_index = 0;
+  std::vector<EncodingNode*> to_merge;
+  for (int i = 0; i < core.size(); ++i) {
+    // Since the nodes appear in order in the core, we can find the
+    // relevant "objective" variable efficiently with a simple linear scan
+    // in the nodes vector (done with index).
+    for (; (*nodes)[index]->literal(0).Negated() != core[i]; ++index) {
+      CHECK_LT(index, nodes->size());
+      (*nodes)[new_node_index] = (*nodes)[index];
+      ++new_node_index;
+    }
+    CHECK_LT(index, nodes->size());
+    to_merge.push_back((*nodes)[index]);
+
+    // Special case if the weight > min_weight. we keep it, but reduce its
+    // cost. This is the same "trick" as in WPM1 used to deal with weight.
+    // We basically split a clause with a larger weight in two identical
+    // clauses, one with weight min_weight that will be merged and one with
+    // the remaining weight.
+    if ((*nodes)[index]->weight() > min_weight) {
+      (*nodes)[index]->set_weight((*nodes)[index]->weight() - min_weight);
+      (*nodes)[new_node_index] = (*nodes)[index];
+      ++new_node_index;
+    }
+    ++index;
+  }
+  for (; index < nodes->size(); ++index) {
+    (*nodes)[new_node_index] = (*nodes)[index];
+    ++new_node_index;
+  }
+  nodes->resize(new_node_index);
+  nodes->push_back(LazyMergeAllNodeWithPQ(to_merge, solver, repository));
+  IncreaseNodeSize(nodes->back(), solver);
+  nodes->back()->set_weight(min_weight);
+  CHECK(solver->AddUnitClause(nodes->back()->literal(0)));
 }
 
 }  // namespace sat

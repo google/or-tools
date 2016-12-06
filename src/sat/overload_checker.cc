@@ -21,11 +21,13 @@ namespace sat {
 OverloadChecker::OverloadChecker(
     const std::vector<IntervalVariable>& interval_vars,
     const std::vector<IntegerVariable>& demand_vars, IntegerVariable capacity,
-    IntegerTrail* integer_trail, IntervalsRepository* intervals_repository)
+    Trail* trail, IntegerTrail* integer_trail,
+    IntervalsRepository* intervals_repository)
     : num_tasks_(interval_vars.size()),
       interval_vars_(interval_vars),
       demand_vars_(demand_vars),
       capacity_var_(capacity),
+      trail_(trail),
       integer_trail_(integer_trail),
       intervals_repository_(intervals_repository) {
   CHECK_GT(num_tasks_, 1);
@@ -80,6 +82,11 @@ void OverloadChecker::RegisterWith(GenericLiteralWatcher* watcher) {
     if (duration_vars_[t] != kNoIntegerVariable) {
       watcher->WatchLowerBound(duration_vars_[t], id);
     }
+    if (!IsAlwaysPresent(t)) {
+      const Literal is_present =
+          intervals_repository_->IsPresentLiteral(interval_vars_[t]);
+      watcher->WatchLiteral(is_present, id);
+    }
   }
 }
 
@@ -88,6 +95,23 @@ IntegerValue CeilOfDivision(IntegerValue a, IntegerValue b) {
   return (a + b - 1) / b;
 }
 }  // namespace
+
+void OverloadChecker::AddPresenceReasonIfNeeded(int task_id) {
+  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
+    literal_reason_.push_back(
+        intervals_repository_->IsPresentLiteral(interval_vars_[task_id])
+            .Negated());
+  }
+}
+
+bool OverloadChecker::IsAlwaysPresent(int task_id) const {
+  if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
+    const Literal is_present =
+        intervals_repository_->IsPresentLiteral(interval_vars_[task_id]);
+    return trail_->Assignment().LiteralIsTrue(is_present);
+  }
+  return true;
+}
 
 bool OverloadChecker::Propagate() {
   // Sort the tasks by start-min and end-max. Note that we reuse the current
@@ -115,7 +139,10 @@ bool OverloadChecker::Propagate() {
     const int task_id = by_end_max_[i].task_id;
 
     // Tasks with no energy have no impact in the algorithm. Skip them.
-    if (DurationMin(task_id) == 0 || DemandMin(task_id) == 0) continue;
+    if (DurationMin(task_id) == 0 || DemandMin(task_id) == 0 ||
+        !IsAlwaysPresent(task_id)) {
+      continue;
+    }
 
     // Insert the task in the Theta-tree. This will compute the envelope of the
     // left-cut ending with task task_id where the left-cut of task_id is the
@@ -125,6 +152,7 @@ bool OverloadChecker::Propagate() {
       // Compute the energy and envelope of the task.
       // TODO(user): This code will not work for negative start_min.
       // TODO(user): Deal with integer overflow.
+      // TODO(user): Deduce that some tasks cannot be executed.
       const int leaf_id = task_to_index_in_start_min_[task_id];
       const IntegerValue energy = DurationMin(task_id) * DemandMin(task_id);
       const IntegerValue envelope = StartMin(task_id) * capacity_max + energy;
@@ -140,6 +168,7 @@ bool OverloadChecker::Propagate() {
     if (new_capacity_min <= integer_trail_->LowerBound(capacity_var_)) continue;
 
     reason_.clear();
+    literal_reason_.clear();
 
     // Compute the bounds of the task interval responsible for the value of the
     // root envelope.
@@ -163,6 +192,7 @@ bool OverloadChecker::Propagate() {
         reason_.push_back(
             integer_trail_->LowerBoundAsLiteral(duration_vars_[t]));
       }
+      AddPresenceReasonIfNeeded(t);
     }
 
     // Current capacity of the resource.
@@ -171,7 +201,7 @@ bool OverloadChecker::Propagate() {
     // Explain the increase of minimum capacity.
     if (!integer_trail_->Enqueue(
             IntegerLiteral::GreaterOrEqual(capacity_var_, new_capacity_min),
-            /*literal_reason=*/{}, reason_)) {
+            literal_reason_, reason_)) {
       return false;
     }
   }

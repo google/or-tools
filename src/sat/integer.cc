@@ -384,6 +384,23 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   return i;
 }
 
+IntegerVariable IntegerTrail::GetOrCreateConstantIntegerVariable(
+    IntegerValue value) {
+  auto insert = constant_map_.insert(std::make_pair(value, kNoIntegerVariable));
+  if (insert.second) {  // new element.
+    const IntegerVariable new_var = AddIntegerVariable(value, value);
+    insert.first->second = new_var;
+    if (value != 0) InsertOrDie(&constant_map_, -value, NegationOf(new_var));
+  }
+  return insert.first->second;
+}
+
+int IntegerTrail::NumConstantVariables() const {
+  // The +1 if for the special key zero (the only case when we have an odd
+  // number of entries).
+  return (constant_map_.size() + 1) / 2;
+}
+
 int IntegerTrail::FindLowestTrailIndexThatExplainBound(
     IntegerLiteral i_lit) const {
   DCHECK_LE(i_lit.bound, vars_[i_lit.var].current_bound);
@@ -977,17 +994,22 @@ void GenericLiteralWatcher::RegisterReversibleInt(int id, int* rev) {
 }
 
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(
-    Model* model, const std::vector<IntegerVariable>& variables_to_finalize) {
+    const std::vector<Literal>& assumptions,
+    const std::vector<IntegerVariable>& variables_to_finalize, Model* model) {
   TimeLimit* time_limit = model->Mutable<TimeLimit>();
   IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
   SatSolver::Status status = SatSolver::Status::MODEL_UNSAT;
   for (;;) {
-    if (time_limit == nullptr) {
-      status = solver->Solve();
-    } else {
+    if (assumptions.empty()) {
+      // TODO(user): This one doesn't do Backtrack(0), and doing it seems to
+      // trigger a bug in apps/compote/scheduler
+      // :instruction_scheduler_test, investigate.
       status = solver->SolveWithTimeLimit(time_limit);
+    } else {
+      status =
+          solver->ResetAndSolveWithGivenAssumptions(assumptions, time_limit);
     }
     if (status != SatSolver::MODEL_SAT) break;
 

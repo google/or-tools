@@ -54,7 +54,8 @@ class OverloadChecker : public PropagatorInterface {
  public:
   OverloadChecker(const std::vector<IntervalVariable>& interval_vars,
                   const std::vector<IntegerVariable>& demand_vars,
-                  IntegerVariable capacity, IntegerTrail* integer_trail,
+                  IntegerVariable capacity, Trail* trail,
+                  IntegerTrail* integer_trail,
                   IntervalsRepository* intervals_repository);
 
   bool Propagate() final;
@@ -103,6 +104,9 @@ class OverloadChecker : public PropagatorInterface {
     return intervals_repository_->FixedSize(interval_vars_[task_id]);
   }
 
+  bool IsAlwaysPresent(int task_id) const;
+  void AddPresenceReasonIfNeeded(int task_id);
+
   // Number of tasks.
   const int num_tasks_;
 
@@ -118,8 +122,10 @@ class OverloadChecker : public PropagatorInterface {
   const IntegerVariable capacity_var_;
 
   // Reason vector.
+  std::vector<Literal> literal_reason_;
   std::vector<IntegerLiteral> reason_;
 
+  Trail* trail_;
   IntegerTrail* integer_trail_;
   IntervalsRepository* intervals_repository_;
 
