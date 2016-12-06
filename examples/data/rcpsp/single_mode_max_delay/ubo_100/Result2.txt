@@ -1,0 +1,32 @@
+Filename	Best solution	Time	Time found	First solution	Time	Number of nodes	Number of back's before 1st sol.
+E:\dfg\daten\ubo\ubo100\psp60.sch	189	60.397	4.116	192	2.133	3993	0
+E:\dfg\daten\ubo\ubo100\psp61.sch	680	2.744	0.581	680	0.581	496	0
+E:\dfg\daten\ubo\ubo100\psp62.sch	563	60.166	42.180	570	23.153	4138	38
+E:\dfg\daten\ubo\ubo100\psp63.sch	0	0.040					
+E:\dfg\daten\ubo\ubo100\psp64.sch	568	60.878	56.992	585	1.723	7983	0
+E:\dfg\daten\ubo\ubo100\psp65.sch	480	60.958	36.853	502	2.143	7790	0
+E:\dfg\daten\ubo\ubo100\psp66.sch	0	0.060					
+E:\dfg\daten\ubo\ubo100\psp67.sch	0	61.358					
+E:\dfg\daten\ubo\ubo100\psp68.sch	540	56.561	16.173	553	0.972	8115	0
+E:\dfg\daten\ubo\ubo100\psp69.sch	0	0.070					
+E:\dfg\daten\ubo\ubo100\psp70.sch	445	60.757	11.116	462	5.658	7170	1
+E:\dfg\daten\ubo\ubo100\psp71.sch	514	1.342	1.092	514	1.092	147	0
+E:\dfg\daten\ubo\ubo100\psp72.sch	0	0.040					
+E:\dfg\daten\ubo\ubo100\psp73.sch	407	60.507	6.039	412	2.143	7737	0
+E:\dfg\daten\ubo\ubo100\psp74.sch	278	60.948	56.632	279	54.048	926	81
+E:\dfg\daten\ubo\ubo100\psp75.sch	534	0.901	0.701	534	0.701	111	0
+E:\dfg\daten\ubo\ubo100\psp76.sch	411	61.008	0.952	411	0.952	9937	0
+E:\dfg\daten\ubo\ubo100\psp77.sch	351	60.948	43.853	367	2.834	6055	0
+E:\dfg\daten\ubo\ubo100\psp78.sch	415	60.978	4.677	426	2.684	6362	1
+E:\dfg\daten\ubo\ubo100\psp79.sch	483	60.947	17.755	485	0.851	8718	0
+E:\dfg\daten\ubo\ubo100\psp80.sch	503	0.611	0.511	503	0.511	87	0
+E:\dfg\daten\ubo\ubo100\psp81.sch	454	12.078	4.577	458	0.401	1699	0
+E:\dfg\daten\ubo\ubo100\psp82.sch	569	8.302	5.638	579	0.490	1166	0
+E:\dfg\daten\ubo\ubo100\psp83.sch	243	39.937	39.927	244	1.302	4009	0
+E:\dfg\daten\ubo\ubo100\psp84.sch	237	1.863	1.853	238	1.142	209	0
+E:\dfg\daten\ubo\ubo100\psp85.sch	497	0.671	0.541	499	0.410	135	0
+E:\dfg\daten\ubo\ubo100\psp86.sch	531	0.290	0.230	531	0.230	43	0
+E:\dfg\daten\ubo\ubo100\psp87.sch	363	0.691	0.451	363	0.451	102	0
+E:\dfg\daten\ubo\ubo100\psp88.sch	402	7.401	0.711	402	0.711	1328	0
+E:\dfg\daten\ubo\ubo100\psp89.sch	374	0.301	0.270	374	0.270	46	0
+E:\dfg\daten\ubo\ubo100\psp90.sch	477	0.360	0.340	478	0.220	60	0

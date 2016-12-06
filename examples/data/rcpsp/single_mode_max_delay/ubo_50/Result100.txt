@@ -1,0 +1,91 @@
+Filename	Best solution	Time	Time found	First solution	Time	Number of nodes	Number of back's before 1st sol.
+E:\dfg\daten\ubo\ubo50\psp1.sch	0	0.010					
+E:\dfg\daten\ubo\ubo50\psp2.sch	0	0.000					
+E:\dfg\daten\ubo\ubo50\psp3.sch	232	30.273	0.170	233	0.110	17383	0
+E:\dfg\daten\ubo\ubo50\psp4.sch	261	30.965	12.769	266	0.521	19855	217
+E:\dfg\daten\ubo\ubo50\psp5.sch	0	0.020					
+E:\dfg\daten\ubo\ubo50\psp6.sch	237	30.904	8.602	247	0.070	21600	1
+E:\dfg\daten\ubo\ubo50\psp7.sch	0	0.021					
+E:\dfg\daten\ubo\ubo50\psp8.sch	0	0.010					
+E:\dfg\daten\ubo\ubo50\psp9.sch	251	30.924	8.592	253	1.121	15353	724
+E:\dfg\daten\ubo\ubo50\psp10.sch	217	30.895	30.584	228	29.993	24219	11769
+E:\dfg\daten\ubo\ubo50\psp11.sch	168	30.974	0.280	176	0.240	11268	2
+E:\dfg\daten\ubo\ubo50\psp12.sch	121	30.935	1.773	128	0.231	19383	6
+E:\dfg\daten\ubo\ubo50\psp13.sch	147	30.974	0.701	184	0.160	24196	30
+E:\dfg\daten\ubo\ubo50\psp14.sch	153	30.965	3.756	167	0.111	18142	0
+E:\dfg\daten\ubo\ubo50\psp15.sch	110	30.974	1.933	117	0.431	13283	0
+E:\dfg\daten\ubo\ubo50\psp16.sch	140	30.964	0.550	154	0.180	20077	0
+E:\dfg\daten\ubo\ubo50\psp17.sch	111	30.985	13.419	123	0.110	15232	0
+E:\dfg\daten\ubo\ubo50\psp18.sch	164	30.964	0.470	172	0.150	20345	0
+E:\dfg\daten\ubo\ubo50\psp19.sch	165	30.975	28.061	219	0.120	21441	12
+E:\dfg\daten\ubo\ubo50\psp20.sch	144	5.708	5.698	152	0.100	4619	0
+E:\dfg\daten\ubo\ubo50\psp21.sch	111	0.581	0.551	112	0.331	219	0
+E:\dfg\daten\ubo\ubo50\psp22.sch	124	0.280	0.270	128	0.080	202	0
+E:\dfg\daten\ubo\ubo50\psp23.sch	161	30.294	0.101	162	0.081	23518	0
+E:\dfg\daten\ubo\ubo50\psp24.sch	272	0.020	0.010	272	0.010	15	0
+E:\dfg\daten\ubo\ubo50\psp25.sch	108	0.851	0.811	108	0.811	63	0
+E:\dfg\daten\ubo\ubo50\psp26.sch	129	0.070	0.050	129	0.050	51	0
+E:\dfg\daten\ubo\ubo50\psp27.sch	85	1.833	1.823	88	0.531	156	0
+E:\dfg\daten\ubo\ubo50\psp28.sch	181	0.170	0.150	183	0.080	136	0
+E:\dfg\daten\ubo\ubo50\psp29.sch	263	0.040	0.020	263	0.020	36	0
+E:\dfg\daten\ubo\ubo50\psp30.sch	289	30.855	0.031	289	0.031	28332	0
+E:\dfg\daten\ubo\ubo50\psp31.sch	303	30.984	11.937	337	0.070	14023	0
+E:\dfg\daten\ubo\ubo50\psp32.sch	0	0.021					
+E:\dfg\daten\ubo\ubo50\psp33.sch	0	0.020					
+E:\dfg\daten\ubo\ubo50\psp34.sch	237	30.874	15.712	244	0.090	17963	0
+E:\dfg\daten\ubo\ubo50\psp35.sch	0	0.020					
+E:\dfg\daten\ubo\ubo50\psp36.sch	229	30.925	20.850	238	0.130	18116	27
+E:\dfg\daten\ubo\ubo50\psp37.sch	234	30.994	26.147	268	0.090	15842	36
+E:\dfg\daten\ubo\ubo50\psp38.sch	0	0.020					
+E:\dfg\daten\ubo\ubo50\psp39.sch	0	0.020					
+E:\dfg\daten\ubo\ubo50\psp40.sch	217	30.875	0.131	221	0.110	20281	0
+E:\dfg\daten\ubo\ubo50\psp41.sch	143	30.994	9.974	160	0.090	21148	0
+E:\dfg\daten\ubo\ubo50\psp42.sch	148	30.955	9.314	154	0.070	23179	0
+E:\dfg\daten\ubo\ubo50\psp43.sch	106	30.964	5.979	114	0.280	19925	0
+E:\dfg\daten\ubo\ubo50\psp44.sch	190	0.101	0.081	192	0.051	107	0
+E:\dfg\daten\ubo\ubo50\psp45.sch	187	30.924	0.941	197	0.150	16364	0
+E:\dfg\daten\ubo\ubo50\psp46.sch	226	0.751	0.170	231	0.040	455	0
+E:\dfg\daten\ubo\ubo50\psp47.sch	197	30.144	0.451	206	0.100	19633	0
+E:\dfg\daten\ubo\ubo50\psp48.sch	0	0.010					
+E:\dfg\daten\ubo\ubo50\psp49.sch	151	30.934	22.863	183	0.130	9184	15
+E:\dfg\daten\ubo\ubo50\psp50.sch	210	0.090	0.060	210	0.060	102	0
+E:\dfg\daten\ubo\ubo50\psp51.sch	124	1.683	1.613	126	0.050	1282	0
+E:\dfg\daten\ubo\ubo50\psp52.sch	137	30.133	0.050	137	0.050	17531	0
+E:\dfg\daten\ubo\ubo50\psp53.sch	112	4.487	4.457	116	0.040	3613	0
+E:\dfg\daten\ubo\ubo50\psp54.sch	90	30.474	11.687	94	0.200	9687	0
+E:\dfg\daten\ubo\ubo50\psp55.sch	191	30.984	2.744	192	0.030	15285	0
+E:\dfg\daten\ubo\ubo50\psp56.sch	150	1.382	1.372	152	0.090	886	0
+E:\dfg\daten\ubo\ubo50\psp57.sch	132	30.574	0.080	134	0.030	17673	0
+E:\dfg\daten\ubo\ubo50\psp58.sch	182	30.965	0.030	182	0.030	26449	0
+E:\dfg\daten\ubo\ubo50\psp59.sch	199	0.050	0.040	199	0.040	39	0
+E:\dfg\daten\ubo\ubo50\psp60.sch	128	30.904	11.657	133	0.050	22639	0
+E:\dfg\daten\ubo\ubo50\psp61.sch	288	30.975	27.430	296	0.050	19232	0
+E:\dfg\daten\ubo\ubo50\psp62.sch	238	4.987	4.566	252	0.120	2779	0
+E:\dfg\daten\ubo\ubo50\psp63.sch	250	30.955	2.083	277	0.070	17671	7
+E:\dfg\daten\ubo\ubo50\psp64.sch	326	6.900	4.136	333	0.170	3561	128
+E:\dfg\daten\ubo\ubo50\psp65.sch	211	31.024	0.110	211	0.110	18164	0
+E:\dfg\daten\ubo\ubo50\psp66.sch	0	0.010					
+E:\dfg\daten\ubo\ubo50\psp67.sch	245	30.935	2.414	253	0.070	16233	0
+E:\dfg\daten\ubo\ubo50\psp68.sch	278	30.984	1.642	284	0.230	19941	91
+E:\dfg\daten\ubo\ubo50\psp69.sch	0	0.030					
+E:\dfg\daten\ubo\ubo50\psp70.sch	0	0.000					
+E:\dfg\daten\ubo\ubo50\psp71.sch	156	30.894	0.060	159	0.040	15543	0
+E:\dfg\daten\ubo\ubo50\psp72.sch	0	0.020					
+E:\dfg\daten\ubo\ubo50\psp73.sch	169	0.120	0.090	171	0.070	89	0
+E:\dfg\daten\ubo\ubo50\psp74.sch	0	0.020					
+E:\dfg\daten\ubo\ubo50\psp75.sch	226	0.201	0.181	240	0.040	126	0
+E:\dfg\daten\ubo\ubo50\psp76.sch	167	30.494	0.060	167	0.060	19323	0
+E:\dfg\daten\ubo\ubo50\psp77.sch	260	0.721	0.540	278	0.040	253	1
+E:\dfg\daten\ubo\ubo50\psp78.sch	219	30.203	9.383	241	0.090	14808	0
+E:\dfg\daten\ubo\ubo50\psp79.sch	0	0.010					
+E:\dfg\daten\ubo\ubo50\psp80.sch	298	0.321	0.070	299	0.030	224	0
+E:\dfg\daten\ubo\ubo50\psp81.sch	274	0.070	0.030	274	0.030	54	0
+E:\dfg\daten\ubo\ubo50\psp82.sch	149	30.494	0.060	149	0.060	23986	0
+E:\dfg\daten\ubo\ubo50\psp83.sch	139	0.120	0.110	141	0.040	95	0
+E:\dfg\daten\ubo\ubo50\psp84.sch	169	1.282	0.040	169	0.040	1143	0
+E:\dfg\daten\ubo\ubo50\psp85.sch	190	4.626	0.040	193	0.040	3363	0
+E:\dfg\daten\ubo\ubo50\psp86.sch	139	0.040	0.030	139	0.030	39	0
+E:\dfg\daten\ubo\ubo50\psp87.sch	269	0.190	0.110	275	0.020	157	0
+E:\dfg\daten\ubo\ubo50\psp88.sch	245	0.080	0.020	245	0.020	65	0
+E:\dfg\daten\ubo\ubo50\psp89.sch	218	30.484	0.030	218	0.030	27818	0
+E:\dfg\daten\ubo\ubo50\psp90.sch	243	0.210	0.080	251	0.020	186	0
