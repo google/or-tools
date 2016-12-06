@@ -326,9 +326,9 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
   }
 
   // Bounds
-  StringAppendF(output, "Bounds\n");
+  output->append("Bounds\n");
   if (proto_.objective_offset() != 0.0) {
-    StringAppendF(output, " 1 <= Constant <= 1\n");
+    output->append(" 1 <= Constant <= 1\n");
   }
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
     if (!show_variable[var_index]) continue;
@@ -342,17 +342,17 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
       if (lb != -std::numeric_limits<double>::infinity()) {
         StringAppendF(output, " %-.16G <= ", lb);
       }
-      StringAppendF(output, "%s", exported_variable_names_[var_index].c_str());
+      output->append(exported_variable_names_[var_index]);
       if (ub != std::numeric_limits<double>::infinity()) {
         StringAppendF(output, " <= %-.16G", ub);
       }
-      StringAppendF(output, "\n");
+      output->append("\n");
     }
   }
 
   // Binaries
   if (num_binary_variables_ > 0) {
-    StringAppendF(output, "Binaries\n");
+    output->append("Binaries\n");
     for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
       if (!show_variable[var_index]) continue;
       const MPVariableProto& var_proto = proto_.variable(var_index);
@@ -365,7 +365,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
 
   // Generals
   if (num_integer_variables_ > 0) {
-    StringAppendF(output, "Generals\n");
+    output->append("Generals\n");
     for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
       if (!show_variable[var_index]) continue;
       const MPVariableProto& var_proto = proto_.variable(var_index);
@@ -375,7 +375,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
       }
     }
   }
-  StringAppendF(output, "End\n");
+  output->append("End\n");
   return true;
 }
 

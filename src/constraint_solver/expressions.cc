@@ -2483,9 +2483,7 @@ std::string DomainIntVar::DebugString() const {
   if (min_.Value() == max_.Value()) {
     StringAppendF(&out, "%" GG_LL_FORMAT "d", min_.Value());
   } else if (bits_ != nullptr) {
-    StringAppendF(
-        &out, "%s",
-        bits_->pretty_DebugString(min_.Value(), max_.Value()).c_str());
+    out.append(bits_->pretty_DebugString(min_.Value(), max_.Value()));
   } else {
     StringAppendF(&out, "%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d", min_.Value(),
                   max_.Value());

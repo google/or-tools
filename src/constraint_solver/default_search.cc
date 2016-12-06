@@ -1250,7 +1250,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
         result.append(", ");
       }
       if (runs == 1) {
-        StringAppendF(&result, "1 heuristic run");
+        result.append("1 heuristic run");
       } else {
         StringAppendF(&result, "%d heuristic runs", runs);
       }
@@ -1260,7 +1260,7 @@ class DefaultIntegerSearch : public DecisionBuilder {
         result.append(", ");
       }
       if (last_conflict_count_ == 1) {
-        StringAppendF(&result, "1 last conflict hint");
+        result.append("1 last conflict hint");
       } else {
         StringAppendF(&result, "%d last conflict hints", last_conflict_count_);
       }

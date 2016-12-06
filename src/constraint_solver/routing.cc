@@ -4184,7 +4184,7 @@ std::string RoutingModel::DebugOutputAssignment(
         StringAppendF(&output, "Vehicles %d-%d: empty",
                       empty_vehicle_range_start, vehicle - 1);
       }
-      StringAppendF(&output, "\n");
+      output.append("\n");
     }
     if (vehicle < vehicles()) {
       StringAppendF(&output, "Vehicle %d:", vehicle);
@@ -4205,19 +4205,19 @@ std::string RoutingModel::DebugOutputAssignment(
         }
         if (IsEnd(index)) break;
         index = solution_assignment.Value(NextVar(index));
-        if (IsEnd(index)) StringAppendF(&output, "Route end ");
+        if (IsEnd(index)) output.append("Route end ");
       }
-      StringAppendF(&output, "\n");
+      output.append("\n");
     }
   }
-  StringAppendF(&output, "Unperformed nodes: ");
+  output.append("Unperformed nodes: ");
   for (int i = 0; i < Size(); ++i) {
     if (!IsEnd(i) && !IsStart(i) &&
         solution_assignment.Value(NextVar(i)) == i) {
       StringAppendF(&output, "%d ", i);
     }
   }
-  StringAppendF(&output, "\n");
+  output.append("\n");
   return output;
 }
 
@@ -5589,14 +5589,19 @@ void RoutingDimension::SetupCumulVarSoftUpperBoundCosts(
     std::vector<IntVar*>* cost_elements) const {
   CHECK(cost_elements != nullptr);
   Solver* const solver = model_->solver();
-  for (const SoftBound& soft_bound : cumul_var_soft_upper_bound_) {
+  for (int i = 0; i < cumul_var_soft_upper_bound_.size(); ++i) {
+    const SoftBound& soft_bound = cumul_var_soft_upper_bound_[i];
     if (soft_bound.var != nullptr) {
-      IntVar* const cost_var =
-          solver
-              ->MakeSemiContinuousExpr(
-                  solver->MakeSum(soft_bound.var, -soft_bound.bound), 0,
-                  soft_bound.coefficient)
-              ->Var();
+      IntExpr* const expr = solver->MakeSemiContinuousExpr(
+          solver->MakeSum(soft_bound.var, -soft_bound.bound), 0,
+          soft_bound.coefficient);
+      IntVar* cost_var = nullptr;
+      if (model_->IsEnd(i)) {
+        // No active variable for end nodes, always active.
+        cost_var = expr->Var();
+      } else {
+        cost_var = solver->MakeProd(expr, model_->ActiveVar(i))->Var();
+      }
       cost_elements->push_back(cost_var);
       // TODO(user): Check if it wouldn't be better to minimize
       // soft_bound.var here.
@@ -5731,14 +5736,19 @@ void RoutingDimension::SetupCumulVarSoftLowerBoundCosts(
     std::vector<IntVar*>* cost_elements) const {
   CHECK(cost_elements != nullptr);
   Solver* const solver = model_->solver();
-  for (const SoftBound& soft_bound : cumul_var_soft_lower_bound_) {
+  for (int i = 0; i < cumul_var_soft_lower_bound_.size(); ++i) {
+    const SoftBound& soft_bound = cumul_var_soft_lower_bound_[i];
     if (soft_bound.var != nullptr) {
-      IntVar* const cost_var =
-          solver
-              ->MakeSemiContinuousExpr(
-                  solver->MakeDifference(soft_bound.bound, soft_bound.var), 0,
-                  soft_bound.coefficient)
-              ->Var();
+      IntExpr* const expr = solver->MakeSemiContinuousExpr(
+          solver->MakeDifference(soft_bound.bound, soft_bound.var), 0,
+          soft_bound.coefficient);
+      IntVar* cost_var = nullptr;
+      if (model_->IsEnd(i)) {
+        // No active variable for end nodes, always active.
+        cost_var = expr->Var();
+      } else {
+        cost_var = solver->MakeProd(expr, model_->ActiveVar(i))->Var();
+      }
       cost_elements->push_back(cost_var);
       model_->AddVariableMaximizedByFinalizer(soft_bound.var);
     }

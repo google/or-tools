@@ -28,6 +28,7 @@
 #include "sat/sat_solver.h"
 #include "sat/table.h"
 #include "sat/timetabling.h"
+#include "util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -42,10 +43,6 @@ struct SatModel {
   // created lazily by LookupVar() when a constraint is requesting it.
   hash_map<fz::IntegerVariable*, IntegerVariable> var_map;
   hash_map<fz::IntegerVariable*, Literal> bool_map;
-
-  // For now, we need to create a constant sat::IntegerVariable for each
-  // constant appearing in the flatzinc model.
-  hash_map<int64, IntegerVariable> constant_map;
 
   // Utility functions to convert an fz::Argument to sat::IntegerVariable(s).
   IntegerVariable LookupConstant(int64 value);
@@ -77,10 +74,7 @@ struct SatModel {
 };
 
 IntegerVariable SatModel::LookupConstant(const int64 value) {
-  if (!ContainsKey(constant_map, value)) {
-    constant_map[value] = model.Add(NewIntegerVariable(value, value));
-  }
-  return FindOrDie(constant_map, value);
+  return model.Add(ConstantIntegerVariable(value));
 }
 
 IntegerVariable SatModel::LookupVar(fz::IntegerVariable* var) {
@@ -1231,8 +1225,8 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   // Extract all the variables.
   int num_constants = 0;
   std::set<int64> constant_values;
-  std::map<std::pair<int64, int64>, int> num_vars_per_bounds;
-  hash_map<std::pair<int64, int64>, int> num_fully_encoded_vars_per_bounds;
+  std::map<std::string, int> num_vars_per_domains;
+  hash_map<std::string, int> num_fully_encoded_vars_per_domains;
   FZLOG << "Extracting " << fz_model.variables().size() << " variables. "
         << FZENDL;
   int num_capped_variables = 0;
@@ -1254,7 +1248,14 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
       num_capped_variables++;
     }
 
-    num_vars_per_bounds[{safe_min, safe_max}]++;
+    std::string domain_as_string;
+    if (var->domain.is_interval) {
+      domain_as_string = ClosedInterval({safe_min, safe_max}).DebugString();
+    } else {
+      domain_as_string = IntervalsAsString(
+          SortedDisjointIntervalsFromValues(var->domain.values));
+    }
+    num_vars_per_domains[domain_as_string]++;
 
     // Special case for Boolean. We don't automatically create the associated
     // integer variable. It will only be created if a constraint needs to see
@@ -1278,18 +1279,16 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
     // Note that we also fully encode interval of size 2!
     if (!var->domain.is_interval ||
         (var->domain.Min() + 1 == var->domain.Max())) {
-      num_fully_encoded_vars_per_bounds[{var->domain.Min(),
-                                         var->domain.Max()}]++;
+      num_fully_encoded_vars_per_domains[domain_as_string]++;
       m.model.GetOrCreate<IntegerEncoder>()->FullyEncodeVariable(
           m.LookupVar(var),
           std::vector<IntegerValue>(var->domain.values.begin(),
                                     var->domain.values.end()));
     }
   }
-  for (const auto& entry : num_vars_per_bounds) {
-    FZLOG << " - " << entry.second << " variables in [" << entry.first.first
-          << ", " << entry.first.second << "] ("
-          << num_fully_encoded_vars_per_bounds[entry.first]
+  for (const auto& entry : num_vars_per_domains) {
+    FZLOG << " - " << entry.second << " variables in " << entry.first << " ("
+          << num_fully_encoded_vars_per_domains[entry.first]
           << " fully encoded)." << FZENDL;
   }
   FZLOG << " - " << num_constants << " constants in {"
@@ -1360,7 +1359,8 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
           << m.model.Get<SatSolver>()->NumVariables() << " ("
           << m.model.Get<SatSolver>()->LiteralTrail().Index() << " fixed)."
           << FZENDL;
-    FZLOG << "Num constants = " << m.constant_map.size() << FZENDL;
+    FZLOG << "Num constants = "
+          << m.model.Get<IntegerTrail>()->NumConstantVariables() << FZENDL;
     FZLOG << "Num integer propagators = "
           << m.model.GetOrCreate<GenericLiteralWatcher>()->NumPropagators()
           << FZENDL;
@@ -1397,7 +1397,8 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   if (fz_model.objective() == nullptr) {
     // Decision problem.
     while (num_solutions < p.num_solutions) {
-      status = SolveIntegerProblemWithLazyEncoding(&m.model, decision_vars);
+      status = SolveIntegerProblemWithLazyEncoding(/*assumptions=*/{},
+                                                   decision_vars, &m.model);
 
       if (status == SatSolver::MODEL_SAT) {
         ++num_solutions;
@@ -1445,16 +1446,32 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
     }
   }
 
-  if (fz_model.objective() == nullptr || num_solutions == 0) {
+  if (fz_model.objective() == nullptr) {
     FZLOG << "Status: " << status << FZENDL;
     FZLOG << "Objective: NA" << FZENDL;
+    FZLOG << "Best_bound: NA" << FZENDL;
   } else {
-    if (status == SatSolver::MODEL_SAT) {
-      FZLOG << "Status: OPTIMAL" << FZENDL;
-    } else {
+    m.model.GetOrCreate<SatSolver>()->Backtrack(0);
+    const IntegerVariable objective_var = m.LookupVar(fz_model.objective());
+    int64 best_bound =
+        m.model.Get(fz_model.maximize() ? UpperBound(objective_var)
+                                        : LowerBound(objective_var));
+    if (num_solutions == 0) {
       FZLOG << "Status: " << status << FZENDL;
+      FZLOG << "Objective: NA" << FZENDL;
+    } else {
+      if (status == SatSolver::MODEL_SAT) {
+        FZLOG << "Status: OPTIMAL" << FZENDL;
+
+        // We need this because even if we proved unsat, that doesn't mean we
+        // propagated the best bound to its current value.
+        best_bound = best_objective;
+      } else {
+        FZLOG << "Status: " << status << FZENDL;
+      }
+      FZLOG << "Objective: " << best_objective << FZENDL;
     }
-    FZLOG << "Objective: " << best_objective << FZENDL;
+    FZLOG << "Best_bound: " << best_bound;
   }
   FZLOG << "Booleans: " << m.model.Get<SatSolver>()->NumVariables() << FZENDL;
   FZLOG << "Conflicts: " << m.model.Get<SatSolver>()->num_failures() << FZENDL;

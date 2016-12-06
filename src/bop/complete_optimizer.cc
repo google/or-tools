@@ -66,39 +66,17 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::SynchronizeIfNeeded(
 }
 
 sat::SatSolver::Status SatCoreBasedOptimizer::SolveWithAssumptions() {
-  solver_.Backtrack(0);
-  for (sat::EncodingNode* n : nodes_) {
-    lower_bound_ += n->Reduce(solver_) * n->weight();
-  }
-  if (upper_bound_ != sat::kCoefficientMax) {
-    const sat::Coefficient gap = upper_bound_ - lower_bound_;
-    if (gap <= 0) {
-      // The lower bound is proved to equal the upper bound, the upper bound
-      // corresponding to the current solution value from the problem_state.
-      // As the optimizer is looking for a better solution (see
-      // LoadStateProblemToSatSolver), that means the current model is UNSAT
-      // and so the synchronized solution is optimal.
-      return sat::SatSolver::MODEL_UNSAT;
-    }
-    for (sat::EncodingNode* n : nodes_) {
-      n->ApplyUpperBound((gap / n->weight()).value(), &solver_);
-    }
-  }
-  std::vector<sat::Literal> assumptions;
-  {
-    int new_node_index = 0;
-    for (sat::EncodingNode* n : nodes_) {
-      if (n->size() > 0) {
-        if (n->weight() >= stratified_lower_bound_) {
-          assumptions.push_back(n->literal(0).Negated());
-        }
-        nodes_[new_node_index] = n;
-        ++new_node_index;
-      }
-    }
-    nodes_.resize(new_node_index);
-  }
-  CHECK_LE(assumptions.size(), nodes_.size());
+  const std::vector<sat::Literal> assumptions =
+      sat::ReduceNodesAndExtractAssumptions(upper_bound_,
+                                            stratified_lower_bound_,
+                                            &lower_bound_, &nodes_, &solver_);
+
+  // The lower bound is proved to equal the upper bound, the upper bound
+  // corresponding to the current solution value from the problem_state. As the
+  // optimizer is looking for a better solution (see
+  // LoadStateProblemToSatSolver), that means the current model is UNSAT and so
+  // the synchronized solution is optimal.
+  if (assumptions.empty()) return sat::SatSolver::MODEL_UNSAT;
   return solver_.ResetAndSolveWithGivenAssumptions(assumptions);
 }
 
@@ -156,19 +134,12 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
       return BopOptimizerBase::CONTINUE;
     }
     if (sat_status == sat::SatSolver::MODEL_SAT) {
-      const sat::Coefficient old_lower_bound = stratified_lower_bound_;
-      for (sat::EncodingNode* n : nodes_) {
-        if (n->weight() < old_lower_bound) {
-          if (stratified_lower_bound_ == old_lower_bound ||
-              n->weight() > stratified_lower_bound_) {
-            stratified_lower_bound_ = n->weight();
-          }
-        }
-      }
+      stratified_lower_bound_ =
+          MaxNodeWeightSmallerThan(nodes_, stratified_lower_bound_);
 
       // We found a better solution!
       SatAssignmentToBopSolution(solver_.Assignment(), &learned_info->solution);
-      if (stratified_lower_bound_ < old_lower_bound) {
+      if (stratified_lower_bound_ > 0) {
         assumptions_already_added_ = false;
         return BopOptimizerBase::SOLUTION_FOUND;
       }
@@ -180,60 +151,9 @@ BopOptimizerBase::Status SatCoreBasedOptimizer::Optimize(
     std::vector<sat::Literal> core = solver_.GetLastIncompatibleDecisions();
     sat::MinimizeCore(&solver_, &core);
 
-    // TODO(user): make a function.
-    sat::Coefficient min_weight = sat::kCoefficientMax;
-    {
-      int index = 0;
-      for (int i = 0; i < core.size(); ++i) {
-        for (; index < nodes_.size() &&
-                   nodes_[index]->literal(0).Negated() != core[i];
-             ++index) {
-        }
-        CHECK_LT(index, nodes_.size());
-        min_weight = std::min(min_weight, nodes_[index]->weight());
-      }
-    }
-    solver_.Backtrack(0);
+    const sat::Coefficient min_weight = sat::ComputeCoreMinWeight(nodes_, core);
+    sat::ProcessCore(core, min_weight, &repository_, &nodes_, &solver_);
     assumptions_already_added_ = false;
-
-    int new_node_index = 0;
-    if (core.size() == 1) {
-      CHECK(solver_.Assignment().LiteralIsFalse(core[0]));
-      for (sat::EncodingNode* n : nodes_) {
-        if (n->literal(0).Negated() == core[0]) {
-          sat::IncreaseNodeSize(n, &solver_);
-          continue;
-        }
-      }
-    } else {
-      int index = 0;
-      std::vector<sat::EncodingNode*> to_merge;
-      for (int i = 0; i < core.size(); ++i) {
-        for (; nodes_[index]->literal(0).Negated() != core[i]; ++index) {
-          CHECK_LT(index, nodes_.size());
-          nodes_[new_node_index] = nodes_[index];
-          ++new_node_index;
-        }
-        CHECK_LT(index, nodes_.size());
-        to_merge.push_back(nodes_[index]);
-        if (nodes_[index]->weight() > min_weight) {
-          nodes_[index]->set_weight(nodes_[index]->weight() - min_weight);
-          nodes_[new_node_index] = nodes_[index];
-          ++new_node_index;
-        }
-        ++index;
-      }
-      for (; index < nodes_.size(); ++index) {
-        nodes_[new_node_index] = nodes_[index];
-        ++new_node_index;
-      }
-      nodes_.resize(new_node_index);
-      nodes_.push_back(
-          sat::LazyMergeAllNodeWithPQ(to_merge, &solver_, &repository_));
-      sat::IncreaseNodeSize(nodes_.back(), &solver_);
-      nodes_.back()->set_weight(min_weight);
-      CHECK(solver_.AddUnitClause(nodes_.back()->literal(0)));
-    }
   }
   return BopOptimizerBase::CONTINUE;
 }
