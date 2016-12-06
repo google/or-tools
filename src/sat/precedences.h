@@ -37,11 +37,12 @@ namespace sat {
 //
 // This is also known as an "integer difference logic theory" in the SMT world.
 // Another word is "separation logic".
-class PrecedencesPropagator : public Propagator {
+class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
  public:
-  PrecedencesPropagator(IntegerTrail* integer_trail,
+  PrecedencesPropagator(Trail* trail, IntegerTrail* integer_trail,
                         GenericLiteralWatcher* watcher)
-      : Propagator("PrecedencesPropagator"),
+      : SatPropagator("PrecedencesPropagator"),
+        trail_(trail),
         integer_trail_(integer_trail),
         watcher_(watcher),
         watcher_id_(watcher->Register(this)) {
@@ -49,9 +50,9 @@ class PrecedencesPropagator : public Propagator {
   }
 
   static PrecedencesPropagator* CreateInModel(Model* model) {
-    PrecedencesPropagator* precedences =
-        new PrecedencesPropagator(model->GetOrCreate<IntegerTrail>(),
-                                  model->GetOrCreate<GenericLiteralWatcher>());
+    PrecedencesPropagator* precedences = new PrecedencesPropagator(
+        model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>(),
+        model->GetOrCreate<GenericLiteralWatcher>());
 
     // TODO(user): Find a way to have more control on the order in which
     // the propagators are added.
@@ -60,6 +61,7 @@ class PrecedencesPropagator : public Propagator {
     return precedences;
   }
 
+  bool Propagate() final;
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
 
@@ -86,6 +88,11 @@ class PrecedencesPropagator : public Propagator {
   // when I wrote this, I just had a couple of problems to test this on.
   void AddPrecedenceWithVariableOffset(IntegerVariable i1, IntegerVariable i2,
                                        IntegerVariable offset_var);
+
+  // Generic function that cover all of the above case and more.
+  void AddPrecedenceWithAllOptions(IntegerVariable i1, IntegerVariable i2,
+                                   IntegerValue offset,
+                                   IntegerVariable offset_var, LiteralIndex l);
 
   // An optional integer variable has a special behavior:
   // - If the bounds on i cross each other, then is_present must be false.
@@ -165,7 +172,6 @@ class PrecedencesPropagator : public Propagator {
   // from the current value of arc.tail_lb and the offset of this arc.
   bool EnqueueAndCheck(const ArcInfo& arc, IntegerValue new_head_lb,
                        Trail* trail);
-  bool PropagateMaxOffsetIfNeeded(const ArcInfo& arc, Trail* trail);
   IntegerValue ArcOffset(const ArcInfo& arc) const;
 
   // Returns true iff this arc should propagate. For now, this is true when:
@@ -197,7 +203,8 @@ class PrecedencesPropagator : public Propagator {
   // http://people.cs.nctu.edu.tw/~tjshen/doc/ne.pdf
   void InitializeBFQueueWithModifiedNodes();
   bool BellmanFordTarjan(Trail* trail);
-  bool DisassembleSubtree(int source, int target, std::vector<bool>* can_be_skipped);
+  bool DisassembleSubtree(int source, int target,
+                          std::vector<bool>* can_be_skipped);
   void ReportPositiveCycle(int first_arc, Trail* trail);
   void CleanUpMarkedArcsAndParents();
 
@@ -207,6 +214,7 @@ class PrecedencesPropagator : public Propagator {
 
   // External class needed to get the IntegerVariable lower bounds and Enqueue
   // new ones.
+  Trail* trail_;
   IntegerTrail* integer_trail_;
   GenericLiteralWatcher* watcher_;
   int watcher_id_;
@@ -307,29 +315,141 @@ inline void PrecedencesPropagator::AddPrecedenceWithVariableOffset(
   AddArc(i1, i2, /*offset=*/IntegerValue(0), offset_var, /*l=*/kNoLiteralIndex);
 }
 
+inline void PrecedencesPropagator::AddPrecedenceWithAllOptions(
+    IntegerVariable i1, IntegerVariable i2, IntegerValue offset,
+    IntegerVariable offset_var, LiteralIndex r) {
+  AddArc(i1, i2, offset, offset_var, r);
+}
+
 // =============================================================================
 // Model based functions.
 // =============================================================================
 
-inline std::function<void(Model*)> LowerOrEqual(IntegerVariable i1,
-                                                IntegerVariable i2) {
+// a <= b.
+inline std::function<void(Model*)> LowerOrEqual(IntegerVariable a,
+                                                IntegerVariable b) {
   return [=](Model* model) {
-    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(i1, i2);
+    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(a, b);
   };
 }
 
-inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable i1,
-                                                  IntegerVariable i2) {
+// a + offset <= b.
+inline std::function<void(Model*)> LowerOrEqualWithOffset(IntegerVariable a,
+                                                          IntegerVariable b,
+                                                          int64 offset) {
   return [=](Model* model) {
-    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(i2, i1);
+    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedenceWithOffset(
+        a, b, IntegerValue(offset));
   };
 }
 
-inline std::function<void(Model*)> ConditionalPrecedenceWithOffset(
-    IntegerVariable i1, IntegerVariable i2, int64 offset, Literal l) {
+// a + b <= ub.
+inline std::function<void(Model*)> Sum2LowerOrEqual(IntegerVariable a,
+                                                    IntegerVariable b,
+                                                    int64 ub) {
+  return LowerOrEqualWithOffset(a, NegationOf(b), -ub);
+}
+
+// l => (a + b <= ub).
+inline std::function<void(Model*)> ConditionalSum2LowerOrEqual(
+    IntegerVariable a, IntegerVariable b, int64 ub, Literal l) {
   return [=](Model* model) {
-    return model->GetOrCreate<PrecedencesPropagator>()
-        ->AddConditionalPrecedenceWithOffset(i1, i2, IntegerValue(offset), l);
+    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+    p->AddPrecedenceWithAllOptions(a, NegationOf(b), IntegerValue(-ub),
+                                   kNoIntegerVariable, l.Index());
+  };
+}
+
+// a + b + c <= ub.
+inline std::function<void(Model*)> Sum3LowerOrEqual(IntegerVariable a,
+                                                    IntegerVariable b,
+                                                    IntegerVariable c,
+                                                    int64 ub) {
+  return [=](Model* model) {
+    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+    p->AddPrecedenceWithAllOptions(a, NegationOf(c), IntegerValue(-ub), b,
+                                   kNoLiteralIndex);
+  };
+}
+
+// l => (a + b + c <= ub).
+inline std::function<void(Model*)> ConditionalSum3LowerOrEqual(
+    IntegerVariable a, IntegerVariable b, IntegerVariable c, int64 ub,
+    Literal l) {
+  return [=](Model* model) {
+    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+    p->AddPrecedenceWithAllOptions(a, NegationOf(c), IntegerValue(-ub), b,
+                                   l.Index());
+  };
+}
+
+// a >= b.
+inline std::function<void(Model*)> GreaterOrEqual(IntegerVariable a,
+                                                  IntegerVariable b) {
+  return [=](Model* model) {
+    return model->GetOrCreate<PrecedencesPropagator>()->AddPrecedence(b, a);
+  };
+}
+
+// a == b.
+inline std::function<void(Model*)> Equality(IntegerVariable a,
+                                            IntegerVariable b) {
+  return [=](Model* model) {
+    model->Add(LowerOrEqual(a, b));
+    model->Add(LowerOrEqual(b, a));
+  };
+}
+
+// is_le => (a + offset <= b).
+inline std::function<void(Model*)> ConditionalLowerOrEqualWithOffset(
+    IntegerVariable a, IntegerVariable b, int64 offset, Literal is_le) {
+  return [=](Model* model) {
+    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+    p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
+  };
+}
+
+// is_le <=> (a + offset <= b).
+inline std::function<void(Model*)> ReifiedLowerOrEqualWithOffset(
+    IntegerVariable a, IntegerVariable b, int64 offset, Literal is_le) {
+  return [=](Model* model) {
+    PrecedencesPropagator* p = model->GetOrCreate<PrecedencesPropagator>();
+    p->AddConditionalPrecedenceWithOffset(a, b, IntegerValue(offset), is_le);
+
+    // The negation of (a + offset <= b) is (a + offset > b) which can be
+    // rewritten as (b + 1 - offset <= a).
+    p->AddConditionalPrecedenceWithOffset(b, a, IntegerValue(1 - offset),
+                                          is_le.Negated());
+  };
+}
+
+// is_eq <=> (a == b).
+inline std::function<void(Model*)> ReifiedEquality(IntegerVariable a,
+                                                   IntegerVariable b,
+                                                   Literal is_eq) {
+  return [=](Model* model) {
+    // We creates two extra Boolean variables in this case.
+    //
+    // TODO(user): Avoid creating them if we already have some literal that
+    // have the same meaning. For instance if a client also wanted to know if
+    // a <= b, he would have called ReifiedLowerOrEqualWithOffset() directly.
+    const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
+    const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
+    model->Add(ReifiedBoolAnd({is_le, is_ge}, is_eq));
+    model->Add(ReifiedLowerOrEqualWithOffset(a, b, 0, is_le));
+    model->Add(ReifiedLowerOrEqualWithOffset(b, a, 0, is_ge));
+  };
+}
+
+// a != b.
+inline std::function<void(Model*)> NotEqual(IntegerVariable a,
+                                            IntegerVariable b) {
+  return [=](Model* model) {
+    // We have two options (is_gt or is_lt) and one must be true.
+    const Literal is_lt = Literal(model->Add(NewBooleanVariable()), true);
+    const Literal is_gt = is_lt.Negated();
+    model->Add(ConditionalLowerOrEqualWithOffset(a, b, 1, is_lt));
+    model->Add(ConditionalLowerOrEqualWithOffset(b, a, 1, is_gt));
   };
 }
 

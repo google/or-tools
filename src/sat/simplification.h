@@ -142,7 +142,9 @@ class SatPresolver {
   // All the clauses managed by this class.
   // Note that deleted clauses keep their indices (they are just empty).
   int NumClauses() const { return clauses_.size(); }
-  const std::vector<Literal>& Clause(ClauseIndex ci) const { return clauses_[ci]; }
+  const std::vector<Literal>& Clause(ClauseIndex ci) const {
+    return clauses_[ci];
+  }
 
   // The number of variables. This is computed automatically from the clauses
   // added to the SatPresolver.
@@ -200,7 +202,8 @@ class SatPresolver {
 
   // Finds the literal from the clause that occur the less in the clause
   // database.
-  Literal FindLiteralWithShortestOccurenceList(const std::vector<Literal>& clause);
+  Literal FindLiteralWithShortestOccurenceList(
+      const std::vector<Literal>& clause);
   LiteralIndex FindLiteralWithShortestOccurenceListExcluding(
       const std::vector<Literal>& clause, Literal to_exclude);
 

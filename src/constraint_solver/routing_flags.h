@@ -57,6 +57,10 @@ DECLARE_int64(routing_optimization_step);
 // Propagation control
 DECLARE_bool(routing_use_light_propagation);
 
+// Cache settings.
+DECLARE_bool(routing_cache_callbacks);
+DECLARE_int64(routing_max_cache_size);
+
 // Misc
 DECLARE_bool(routing_fingerprint_arc_cost_evaluators);
 DECLARE_bool(routing_trace);

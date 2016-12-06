@@ -50,9 +50,11 @@ void AppendLowerBoundReasonIfValid(IntegerVariable var,
 
 }  // namespace
 
-bool PrecedencesPropagator::Propagate(Trail* trail) {
-  while (propagation_trail_index_ < trail->Index()) {
-    const Literal literal = (*trail)[propagation_trail_index_++];
+bool PrecedencesPropagator::Propagate(Trail* trail) { return Propagate(); }
+
+bool PrecedencesPropagator::Propagate() {
+  while (propagation_trail_index_ < trail_->Index()) {
+    const Literal literal = (*trail_)[propagation_trail_index_++];
 
     if (literal.Index() < potential_nodes_.size()) {
       // We need to mark these nodes since they are now "present".
@@ -70,32 +72,28 @@ bool PrecedencesPropagator::Propagate(Trail* trail) {
     for (const int arc_index : potential_arcs_[literal.Index()]) {
       const ArcInfo& arc = arcs_[arc_index];
       impacted_arcs_[arc.tail_var].push_back(arc_index);
-      if (arc.offset_var != kNoIntegerVariable) {
-        impacted_arcs_[arc.offset_var].push_back(arc_index);
-      }
     }
 
     // Iterate again to check for a propagation and indirectly update
     // modified_vars_.
     for (const int arc_index : potential_arcs_[literal.Index()]) {
       const ArcInfo& arc = arcs_[arc_index];
-      if (!ArcShouldPropagate(arc, *trail)) continue;
+      if (!ArcShouldPropagate(arc, *trail_)) continue;
       const IntegerValue new_head_lb =
           CapAdd(integer_trail_->LowerBound(arc.tail_var), ArcOffset(arc));
       if (new_head_lb > integer_trail_->LowerBound(arc.head_var)) {
-        if (!EnqueueAndCheck(arc, new_head_lb, trail)) return false;
+        if (!EnqueueAndCheck(arc, new_head_lb, trail_)) return false;
       }
-      PropagateMaxOffsetIfNeeded(arc, trail);
     }
   }
 
   // Do the actual propagation of the IntegerVariable bounds.
   InitializeBFQueueWithModifiedNodes();
-  if (!BellmanFordTarjan(trail)) return false;
-  DCHECK(NoPropagationLeft(*trail));
+  if (!BellmanFordTarjan(trail_)) return false;
+  DCHECK(NoPropagationLeft(*trail_));
 
   // Propagate the presence literal of the arcs that can't be added.
-  PropagateOptionalArcs(trail);
+  PropagateOptionalArcs(trail_);
 
   // Clean-up modified_vars_ to do as little as possible on the next call.
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
@@ -115,9 +113,6 @@ void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
     for (const int arc_index : potential_arcs_[literal.Index()]) {
       const ArcInfo& arc = arcs_[arc_index];
       impacted_arcs_[arc.tail_var].pop_back();
-      if (arc.offset_var != kNoIntegerVariable) {
-        impacted_arcs_[arc.offset_var].pop_back();
-      }
     }
   }
 }
@@ -127,7 +122,8 @@ void PrecedencesPropagator::Untrail(const Trail& trail, int trail_index) {
 // by first computing how many times they appear and then apply the sorting
 // permutation.
 void PrecedencesPropagator::ComputePrecedences(
-    const std::vector<IntegerVariable>& vars, const std::vector<bool>& to_consider,
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<bool>& to_consider,
     std::vector<IntegerPrecedences>* output) {
   tmp_sorted_vars_.clear();
   tmp_precedences_.clear();
@@ -218,39 +214,96 @@ void PrecedencesPropagator::MarkIntegerVariableAsOptional(IntegerVariable i,
 void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
                                    IntegerValue offset,
                                    IntegerVariable offset_var, LiteralIndex l) {
+  // Handle level zero stuff.
+  DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
+  if (l != kNoLiteralIndex) {
+    // Check if the conditional literal is already fixed.
+    if (trail_->Assignment().LiteralIsTrue(Literal(l))) {
+      l = kNoLiteralIndex;  // At true, same as fixed arc.
+    } else if (trail_->Assignment().LiteralIsFalse(Literal(l))) {
+      return;  // At false, nothing to add.
+    }
+  }
+
+  if (head == tail) {
+    // A self-arc is either plain SAT or plan UNSAT or it forces something on
+    // the given offset_var or l. In any case it could be presolved in something
+    // more efficent.
+    LOG(WARNING) << "Self arc! This could be presolved. "
+                 << "var:" << tail << " offset:" << offset
+                 << " offset_var:" << offset_var << " conditioned_by:" << l;
+    if (offset_var == kNoIntegerVariable) {
+      // Always false => l is false, otherwise this is a no op.
+      if (offset > 0) trail_->EnqueueWithUnitReason(Literal(l).Negated());
+      return;
+    }
+  }
+
+  // Remove the offset_var if it is fixed.
+  // TODO(user): We should also handle the case where tail or head is fixed.
+  if (offset_var != kNoIntegerVariable) {
+    const IntegerValue lb = integer_trail_->LowerBound(offset_var);
+    if (lb == integer_trail_->UpperBound(offset_var)) {
+      offset += lb;
+      offset_var = kNoIntegerVariable;
+    }
+  }
+
   AdjustSizeFor(tail);
   AdjustSizeFor(head);
   if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
 
-  for (const bool forward : {true, false}) {
-    const IntegerVariable tail_var = forward ? tail : NegationOf(head);
-    const IntegerVariable head_var = forward ? head : NegationOf(tail);
+  if (l != kNoLiteralIndex && l.value() >= potential_arcs_.size()) {
+    potential_arcs_.resize(l.value() + 1);
+  }
 
+  struct InternalArc {
+    IntegerVariable tail_var;
+    IntegerVariable head_var;
+    IntegerVariable offset_var;
+
+    // Optimization: impacted_potential_arcs_ is only used by
+    // PropagateOptionalArcs() to detect when the literal l can be propagated to
+    // false. Because of how this function works, we only need to add one arc
+    // per tail_var in the code below.
+    bool add_to_impacted_potential_arcs;
+  };
+
+  std::vector<InternalArc> to_add;
+  if (offset_var == kNoIntegerVariable) {
+    // a + offset <= b and -b + offset <= -a
+    to_add.push_back({tail, head, kNoIntegerVariable, true});
+    to_add.push_back(
+        {NegationOf(head), NegationOf(tail), kNoIntegerVariable, true});
+  } else {
+    // tail (a) and offset_var (b) are symmetric, so we add:
+    // - a + b + offset <= c
+    to_add.push_back({tail, head, offset_var, true});
+    to_add.push_back({offset_var, head, tail, true});
+    // - a - c + offset <= -b
+    to_add.push_back({tail, NegationOf(offset_var), NegationOf(head), false});
+    to_add.push_back({NegationOf(head), NegationOf(offset_var), tail, true});
+    // - b - c + offset <= -a
+    to_add.push_back({offset_var, NegationOf(tail), NegationOf(head), false});
+    to_add.push_back({NegationOf(head), NegationOf(tail), offset_var, false});
+  }
+  for (const InternalArc a : to_add) {
     // Since we add a new arc, we will need to consider its tail during the next
     // propagation.
     //
     // TODO(user): Adding arcs and then calling Untrail() before Propagate()
     // will cause this mecanism to break. Find a more robust implementation.
-    modified_vars_.Set(tail_var);
-
+    modified_vars_.Set(a.tail_var);
     const int arc_index = arcs_.size();
     if (l == kNoLiteralIndex) {
-      impacted_arcs_[tail_var].push_back(arc_index);
-      if (offset_var != kNoIntegerVariable) {
-        impacted_arcs_[offset_var].push_back(arc_index);
-      }
+      impacted_arcs_[a.tail_var].push_back(arc_index);
     } else {
-      impacted_potential_arcs_[tail_var].push_back(arc_index);
-      if (offset_var != kNoIntegerVariable) {
-        impacted_potential_arcs_[offset_var].push_back(arc_index);
-      }
-
-      if (l.value() >= potential_arcs_.size()) {
-        potential_arcs_.resize(l.value() + 1);
+      if (a.add_to_impacted_potential_arcs) {
+        impacted_potential_arcs_[a.tail_var].push_back(arc_index);
       }
       potential_arcs_[l].push_back(arc_index);
     }
-    arcs_.push_back({tail_var, head_var, offset, offset_var, l});
+    arcs_.push_back({a.tail_var, a.head_var, offset, a.offset_var, l});
   }
 }
 
@@ -276,15 +329,12 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
     if (!IsInvalidOrTrue(OptionalLiteralOf(var), *trail)) continue;
 
     // Note that we can currently do the same computation up to 3 times:
-    // - if tail_var changed
-    // - if OtherLbVar(head_var) changed, we will process the "reverse" arc,
+    // - if tail_var changed.
+    // - if NegationOf(head_var) changed, we will process the "reverse" arc,
     //   but it will lead to the same computation and the same presence literal
     //   to be propagated.
     // - if offset_var changed.
-    //
-    // Note(user): I tried another option, but it was slower:
-    // - keep the unique and even (i.e direct arc) arc_index.
-    // - Only call PropagateArcIfNeeded() on them.
+    const IntegerValue tail_lb = integer_trail_->LowerBound(var);
     for (const int arc_index : impacted_potential_arcs_[var]) {
       const ArcInfo& arc = arcs_[arc_index];
       const Literal is_present(arc.presence_l);
@@ -299,21 +349,23 @@ void PrecedencesPropagator::PropagateOptionalArcs(Trail* trail) {
 
       // We want the other bound of head to test infeasibility of the head
       // IntegerVariable.
-      const IntegerValue tail_lb = integer_trail_->LowerBound(arc.tail_var);
+      DCHECK_EQ(var, arc.tail_var);
       const IntegerValue head_ub = integer_trail_->UpperBound(arc.head_var);
       if (CapAdd(tail_lb, ArcOffset(arc)) > head_ub) {
-        std::vector<Literal>* literal_reason;
-        std::vector<IntegerLiteral>* integer_reason;
-        integer_trail_->EnqueueLiteral(is_present.Negated(), &literal_reason,
-                                       &integer_reason);
-        integer_reason->push_back(
+        integer_reason_.clear();
+        integer_reason_.push_back(
             integer_trail_->LowerBoundAsLiteral(arc.tail_var));
-        integer_reason->push_back(
+        integer_reason_.push_back(
             integer_trail_->UpperBoundAsLiteral(arc.head_var));
         AppendLowerBoundReasonIfValid(arc.offset_var, *integer_trail_,
-                                      integer_reason);
-        AppendNegationIfValid(OptionalLiteralOf(arc.tail_var), literal_reason);
-        AppendNegationIfValid(OptionalLiteralOf(arc.head_var), literal_reason);
+                                      &integer_reason_);
+        literal_reason_.clear();
+        AppendNegationIfValid(OptionalLiteralOf(arc.tail_var),
+                              &literal_reason_);
+        AppendNegationIfValid(OptionalLiteralOf(arc.head_var),
+                              &literal_reason_);
+        integer_trail_->EnqueueLiteral(is_present.Negated(), literal_reason_,
+                                       integer_reason_);
       }
     }
   }
@@ -350,30 +402,6 @@ bool PrecedencesPropagator::EnqueueAndCheck(const ArcInfo& arc,
   return integer_trail_->Enqueue(
       IntegerLiteral::GreaterOrEqual(arc.head_var, new_head_lb),
       literal_reason_, integer_reason_);
-}
-
-bool PrecedencesPropagator::PropagateMaxOffsetIfNeeded(const ArcInfo& arc,
-                                                       Trail* trail) {
-  if (arc.offset_var == kNoIntegerVariable) return false;
-  if (!IsInvalidOrTrue(OptionalLiteralOf(arc.head_var), *trail)) return false;
-
-  const IntegerValue max_duration =
-      CapSub(integer_trail_->UpperBound(arc.head_var),
-             integer_trail_->LowerBound(arc.tail_var));
-  if (max_duration < integer_trail_->UpperBound(arc.offset_var)) {
-    literal_reason_.clear();
-    AppendNegationIfValid(arc.presence_l, &literal_reason_);
-    AppendNegationIfValid(OptionalLiteralOf(arc.tail_var), &literal_reason_);
-    integer_reason_.clear();
-    integer_reason_.push_back(
-        integer_trail_->LowerBoundAsLiteral(arc.tail_var));
-    integer_reason_.push_back(
-        integer_trail_->UpperBoundAsLiteral(arc.head_var));
-    return integer_trail_->Enqueue(
-        IntegerLiteral::LowerOrEqual(arc.offset_var, max_duration),
-        literal_reason_, integer_reason_);
-  }
-  return false;
 }
 
 bool PrecedencesPropagator::NoPropagationLeft(const Trail& trail) const {
@@ -426,8 +454,8 @@ void PrecedencesPropagator::CleanUpMarkedArcsAndParents() {
                       [](bool v) { return v; }));
 }
 
-bool PrecedencesPropagator::DisassembleSubtree(int source, int target,
-                                               std::vector<bool>* can_be_skipped) {
+bool PrecedencesPropagator::DisassembleSubtree(
+    int source, int target, std::vector<bool>* can_be_skipped) {
   // Note that we explore a tree, so we can do it in any order, and the one
   // below seems to be the fastest.
   tmp_vector_.clear();
@@ -459,7 +487,7 @@ bool PrecedencesPropagator::DisassembleSubtree(int source, int target,
 void PrecedencesPropagator::ReportPositiveCycle(int first_arc, Trail* trail) {
   // TODO(user): I am not sure we have a theoretical guarantee than the
   // set of arcs appearing in bf_parent_arc_of_[] form a tree here because
-  // we consider all of them, not just the non-maked one. Because of that,
+  // we consider all of them, not just the marked ones. Because of that,
   // for now we use an extra vector to be on the safe side.
   std::vector<bool> in_queue(impacted_arcs_.size(), false);
 
@@ -468,7 +496,7 @@ void PrecedencesPropagator::ReportPositiveCycle(int first_arc, Trail* trail) {
   tmp_vector_.push_back(first_node);
   in_queue[first_node] = true;
   std::vector<int> arc_queue{first_arc};
-  std::vector<int> arc_on_cycle{first_arc};
+  std::vector<int> arc_on_cycle;
   bool found = false;
   while (!found && !tmp_vector_.empty()) {
     const int node = tmp_vector_.back();
@@ -574,17 +602,6 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
       const ArcInfo& arc = arcs_[arc_index];
       if (!ArcShouldPropagate(arc, *trail)) continue;
 
-      if (PropagateMaxOffsetIfNeeded(arc, trail)) {
-        const IntegerVariable minus_offset = NegationOf(arc.offset_var);
-
-        // TODO(user): We currently don't have any cycle detection here.
-        bf_can_be_skipped_[minus_offset.value()] = false;
-        if (!bf_in_queue_[minus_offset.value()]) {
-          bf_queue_.push_back(minus_offset.value());
-          bf_in_queue_[minus_offset.value()] = true;
-        }
-      }
-
       const IntegerValue candidate =
           CapAdd(integer_trail_->LowerBound(arc.tail_var), ArcOffset(arc));
       if (candidate > integer_trail_->LowerBound(arc.head_var)) {
@@ -603,15 +620,28 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
         }
 
         // We need to enforce the invariant that only the arc_index in
-        // bf_parent_arc_of_[] are marked (but not necessarily all of them since
-        // we unmark some in DisassembleSubtree()).
+        // bf_parent_arc_of_[] are marked (but not necessarily all of them
+        // since we unmark some in DisassembleSubtree()).
         if (bf_parent_arc_of_[arc.head_var.value()] != -1) {
           arcs_[bf_parent_arc_of_[arc.head_var.value()]].is_marked = false;
         }
-        bf_parent_arc_of_[arc.head_var.value()] = arc_index;
-        bf_can_be_skipped_[arc.head_var.value()] = false;
-        arcs_[arc_index].is_marked = true;
 
+        // Tricky: We just enqueued the fact that the lower-bound of head is
+        // candidate. However, because the domain of head may be discrete, it is
+        // possible that the lower-bound of head is now higher than candidate!
+        // If this is the case, we don't update bf_parent_arc_of_[] so that we
+        // don't wrongly detect a positive weight cycle because of this "extra
+        // push".
+        if (integer_trail_->LowerBound(arc.head_var) == candidate) {
+          bf_parent_arc_of_[arc.head_var.value()] = arc_index;
+          arcs_[arc_index].is_marked = true;
+        } else {
+          // We still unmark any previous dependency, since we have pushed the
+          // value of arc.head_var further.
+          bf_parent_arc_of_[arc.head_var.value()] = -1;
+        }
+
+        bf_can_be_skipped_[arc.head_var.value()] = false;
         if (!bf_in_queue_[arc.head_var.value()]) {
           bf_queue_.push_back(arc.head_var.value());
           bf_in_queue_[arc.head_var.value()] = true;

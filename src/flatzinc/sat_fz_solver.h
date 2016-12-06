@@ -20,7 +20,8 @@
 namespace operations_research {
 namespace sat {
 
-void SolveWithSat(const fz::Model& model, const fz::FlatzincParameters& p);
+void SolveWithSat(const fz::Model& model, const fz::FlatzincParameters& p,
+                  bool* interup_solve);
 
 }  // namespace sat
 }  // namespace operations_research

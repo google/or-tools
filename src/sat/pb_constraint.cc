@@ -34,9 +34,9 @@ bool CoeffComparator(const LiteralWithCoeff& a, const LiteralWithCoeff& b) {
 
 }  // namespace
 
-bool ComputeBooleanLinearExpressionCanonicalForm(std::vector<LiteralWithCoeff>* cst,
-                                                 Coefficient* bound_shift,
-                                                 Coefficient* max_value) {
+bool ComputeBooleanLinearExpressionCanonicalForm(
+    std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
+    Coefficient* max_value) {
   // Note(user): For some reason, the IntType checking doesn't work here ?! that
   // is a bit worrying, but the code seems to behave correctly.
   *bound_shift = 0;
@@ -128,7 +128,8 @@ bool ApplyLiteralMapping(const ITIVector<LiteralIndex, LiteralIndex>& mapping,
 }
 
 // TODO(user): Also check for no duplicates literals + unit tests.
-bool BooleanLinearExpressionIsCanonical(const std::vector<LiteralWithCoeff>& cst) {
+bool BooleanLinearExpressionIsCanonical(
+    const std::vector<LiteralWithCoeff>& cst) {
   Coefficient previous(1);
   for (LiteralWithCoeff term : cst) {
     if (term.coefficient < previous) return false;
@@ -139,8 +140,8 @@ bool BooleanLinearExpressionIsCanonical(const std::vector<LiteralWithCoeff>& cst
 
 // TODO(user): Use more complex simplification like dividing by the gcd of
 // everyone and using less different coefficients if possible.
-void SimplifyCanonicalBooleanLinearConstraint(std::vector<LiteralWithCoeff>* cst,
-                                              Coefficient* rhs) {
+void SimplifyCanonicalBooleanLinearConstraint(
+    std::vector<LiteralWithCoeff>* cst, Coefficient* rhs) {
   // Replace all coefficient >= rhs by rhs + 1 (these literal must actually be
   // false). Note that the linear sum of literals remains canonical.
   //
@@ -463,7 +464,8 @@ bool UpperBoundedLinearConstraint::InitializeRhs(
   // i. Since we want the sums up to sum_at_previous_level[last_level + 1],
   // the size of the vector must be last_level + 2.
   const int last_level = trail->CurrentDecisionLevel();
-  std::vector<Coefficient> sum_at_previous_level(last_level + 2, Coefficient(0));
+  std::vector<Coefficient> sum_at_previous_level(last_level + 2,
+                                                 Coefficient(0));
 
   int max_relevant_trail_index = 0;
   if (trail_index > 0) {
@@ -875,8 +877,8 @@ bool PbConstraints::AddConstraint(const std::vector<LiteralWithCoeff>& cst,
   return true;
 }
 
-bool PbConstraints::AddLearnedConstraint(const std::vector<LiteralWithCoeff>& cst,
-                                         Coefficient rhs, Trail* trail) {
+bool PbConstraints::AddLearnedConstraint(
+    const std::vector<LiteralWithCoeff>& cst, Coefficient rhs, Trail* trail) {
   DeleteSomeLearnedConstraintIfNeeded();
   const int old_num_constraints = constraints_.size();
   const bool result = AddConstraint(cst, rhs, trail);

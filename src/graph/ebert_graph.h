@@ -2006,7 +2006,8 @@ class GraphBuilderFromArcs {
   typename GraphType::ArcIndex max_num_arcs_;
   typename GraphType::ArcIndex num_arcs_;
 
-  std::vector<std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex> >
+  std::vector<
+      std::pair<typename GraphType::NodeIndex, typename GraphType::NodeIndex> >
       arcs_;
 
   const bool sort_arcs_;

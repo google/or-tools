@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include "base/hash.h"
+#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
@@ -42,7 +43,6 @@
 #include "util/saturated_arithmetic.h"
 #include "util/string_array.h"
 
-
 namespace operations_research {
 namespace {
 // ----- Comparison functions -----
@@ -53,6 +53,15 @@ namespace {
 template <class Task>
 bool StartMinLessThan(Task* const w1, Task* const w2) {
   return (w1->interval->StartMin() < w2->interval->StartMin());
+}
+
+// A comparator that sorts the tasks by their effective earliest start time when
+// using the shortest duration possible. This comparator can be used when
+// sorting the tasks before they are inserted to a Theta-tree.
+template <class Task>
+bool ShortestDurationStartMinLessThan(Task* const w1, Task* const w2) {
+  return w1->interval->EndMin() - w1->interval->DurationMin() <
+         w2->interval->EndMin() - w2->interval->DurationMin();
 }
 
 template <class Task>
@@ -158,7 +167,7 @@ struct ThetaNode {
   // Single interval element
   explicit ThetaNode(const IntervalVar* const interval)
       : total_processing(interval->DurationMin()),
-        total_ect(interval->StartMin() + interval->DurationMin()) {
+        total_ect(interval->EndMin()) {
     // NOTE(user): Petr Vilim's thesis assumes that all tasks in the
     // scheduling problem have fixed duration and that propagation already
     // updated the bounds of the start/end times accordingly.
@@ -167,11 +176,6 @@ struct ThetaNode {
     // our case, we use StartMin() + DurationMin() for the earliest completion
     // time of a task, which should not break any assumptions, but may give
     // bounds that are too loose.
-    // LOG_IF_FIRST_N(WARNING,
-    //                (interval->DurationMin() != interval->DurationMax()), 1)
-    //     << "You are using the Theta-tree on tasks having variable durations. "
-    //        "This may lead to unexpected results, such as discarding valid "
-    //        "solutions or allowing invalid ones.";
   }
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
@@ -454,8 +458,9 @@ class NotLast {
   const bool strict_;
 };
 
-NotLast::NotLast(Solver* const solver, const std::vector<IntervalVar*>& intervals,
-                 bool mirror, bool strict)
+NotLast::NotLast(Solver* const solver,
+                 const std::vector<IntervalVar*>& intervals, bool mirror,
+                 bool strict)
     : theta_tree_(intervals.size()),
       by_start_min_(intervals.size()),
       by_end_max_(intervals.size()),
@@ -574,8 +579,8 @@ class EdgeFinderAndDetectablePrecedences {
 };
 
 EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
-    Solver* const solver, const std::vector<IntervalVar*>& intervals, bool mirror,
-    bool strict)
+    Solver* const solver, const std::vector<IntervalVar*>& intervals,
+    bool mirror, bool strict)
     : solver_(solver),
       theta_tree_(intervals.size()),
       lt_tree_(intervals.size()),
@@ -596,7 +601,7 @@ EdgeFinderAndDetectablePrecedences::EdgeFinderAndDetectablePrecedences(
 
 void EdgeFinderAndDetectablePrecedences::UpdateEst() {
   std::sort(by_start_min_.begin(), by_start_min_.end(),
-            StartMinLessThan<DisjunctiveTask>);
+            ShortestDurationStartMinLessThan<DisjunctiveTask>);
   for (int i = 0; i < size(); ++i) {
     by_start_min_[i]->index = i;
   }
@@ -1062,9 +1067,13 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
 
   const std::vector<IntVar*>& actives() const override { return actives_; }
 
-  const std::vector<IntVar*>& time_cumuls() const override { return time_cumuls_; }
+  const std::vector<IntVar*>& time_cumuls() const override {
+    return time_cumuls_;
+  }
 
-  const std::vector<IntVar*>& time_slacks() const override { return time_slacks_; }
+  const std::vector<IntVar*>& time_slacks() const override {
+    return time_slacks_;
+  }
 
  private:
   int64 Distance(int64 activity_plus_one, int64 next_activity_plus_one) {
@@ -1141,7 +1150,8 @@ class FullDisjunctiveConstraint : public DisjunctiveConstraint {
         s->MakePathCumul(nexts_, actives_, time_cumuls_, time_slacks_,
                          [this](int64 x, int64 y) { return Distance(x, y); }));
 
-    std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1, time_slacks_.end());
+    std::vector<IntVar*> short_slacks(time_slacks_.begin() + 1,
+                                      time_slacks_.end());
     s->AddConstraint(s->RevAlloc(
         new RankedPropagator(s, nexts_, intervals_, short_slacks, this)));
   }
@@ -1870,11 +1880,290 @@ class CumulativeTimeTable : public Constraint {
   DISALLOW_COPY_AND_ASSIGN(CumulativeTimeTable);
 };
 
+// Cumulative idempotent Time-Table.
+//
+// This propagator is based on Letort et al. 2012 add Gay et al. 2015.
+//
+// TODO(user): fill the description once the incremental aspect are
+// implemented.
+//
+// Worst case: O(n^2 log n) -- really unlikely in practice.
+// Best case:  Omega(1).
+// Practical:  Almost linear in the number of unfixed tasks.
+template <class Task>
+class TimeTableSync : public Constraint {
+ public:
+  TimeTableSync(Solver* const solver, const std::vector<Task*>& tasks,
+                IntVar* const capacity)
+      : Constraint(solver), tasks_(tasks), capacity_(capacity) {
+    num_tasks_ = tasks_.size();
+    gap_ = 0;
+    prev_gap_ = 0;
+    pos_ = kint64min;
+    next_pos_ = kint64min;
+    // Allocate vectors to contain no more than n_tasks.
+    start_min_.reserve(num_tasks_);
+    start_max_.reserve(num_tasks_);
+    end_min_.reserve(num_tasks_);
+    durations_.reserve(num_tasks_);
+    demands_.reserve(num_tasks_);
+  }
+
+  ~TimeTableSync() override { STLDeleteElements(&tasks_); }
+
+  void InitialPropagate() override {
+    // Reset data structures.
+    BuildEvents();
+    while (!events_scp_.empty() && !events_ecp_.empty()) {
+      // Move the sweep line.
+      pos_ = NextEventTime();
+      // Update the profile with compulsory part events.
+      ProcessEventsScp();
+      ProcessEventsEcp();
+      // Update minimum capacity (may fail)
+      capacity_->SetMin(capacity_->Max() - gap_);
+      // Time to the next possible profile increase.
+      next_pos_ = NextScpTime();
+      // Consider new task to schedule.
+      ProcessEventsPr();
+      // Filter.
+      FilterMin();
+    }
+  }
+
+  void Post() override {
+    Demon* demon = MakeDelayedConstraintDemon0(
+        solver(), this, &TimeTableSync::InitialPropagate, "InitialPropagate");
+    for (Task* const task : tasks_) {
+      task->WhenAnything(demon);
+    }
+    capacity_->WhenRange(demon);
+  }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    LOG(FATAL) << "Should not be visited";
+  }
+
+  std::string DebugString() const override { return "TimeTableSync"; }
+
+ private:
+  // Task state.
+  enum State { NONE, READY, CHECK, CONFLICT };
+
+  inline int64 NextScpTime() {
+    return !events_scp_.empty() ? events_scp_.top().first : kint64max;
+  }
+
+  inline int64 NextEventTime() {
+    int64 time = kint64max;
+    if (!events_pr_.empty()) {
+      time = events_pr_.top().first;
+    }
+    if (!events_scp_.empty()) {
+      int64 t = events_scp_.top().first;
+      time = t < time ? t : time;
+    }
+    if (!events_ecp_.empty()) {
+      int64 t = events_ecp_.top().first;
+      time = t < time ? t : time;
+    }
+    return time;
+  }
+
+  void ProcessEventsScp() {
+    while (!events_scp_.empty() && events_scp_.top().first == pos_) {
+      const int64 task_id = events_scp_.top().second;
+      events_scp_.pop();
+      const int64 old_end_min = end_min_[task_id];
+      if (states_[task_id] == State::CONFLICT) {
+        // Update cached values.
+        const int64 new_end_min = pos_ + durations_[task_id];
+        start_min_[task_id] = pos_;
+        end_min_[task_id] = new_end_min;
+        // Filter the domain
+        tasks_[task_id]->interval->SetStartMin(pos_);
+      }
+      // The task is scheduled.
+      states_[task_id] = State::READY;
+      // Update the profile if the task has a compulsory part.
+      if (pos_ < end_min_[task_id]) {
+        gap_ -= demands_[task_id];
+        if (old_end_min <= pos_) {
+          events_ecp_.push(kv(end_min_[task_id], task_id));
+        }
+      }
+    }
+  }
+
+  void ProcessEventsEcp() {
+    while (!events_ecp_.empty() && events_ecp_.top().first == pos_) {
+      const int64 task_id = events_ecp_.top().second;
+      events_ecp_.pop();
+      // Update the event if it is not up to date.
+      if (pos_ < end_min_[task_id]) {
+        events_ecp_.push(kv(end_min_[task_id], task_id));
+      } else {
+        gap_ += demands_[task_id];
+      }
+    }
+  }
+
+  void ProcessEventsPr() {
+    while (!events_pr_.empty() && events_pr_.top().first == pos_) {
+      const int64 task_id = events_pr_.top().second;
+      events_pr_.pop();
+      // The task is in conflict with the current profile.
+      if (demands_[task_id] > gap_) {
+        states_[task_id] = State::CONFLICT;
+        conflict_.push(kv(demands_[task_id], task_id));
+        continue;
+      }
+      // The task is not in conflict for the moment.
+      if (next_pos_ < end_min_[task_id]) {
+        states_[task_id] = State::CHECK;
+        check_.push(kv(demands_[task_id], task_id));
+        continue;
+      }
+      // The task is not in conflict and can be scheduled.
+      states_[task_id] = State::READY;
+    }
+  }
+
+  void FilterMin() {
+    // The profile exceeds the capacity.
+    capacity_->SetMin(capacity_->Max() - gap_);
+    // The profile has increased.
+    if (gap_ < prev_gap_) {
+      // Reconsider the task in check state.
+      while (!check_.empty() && demands_[check_.top().second] > gap_) {
+        const int64 task_id = check_.top().second;
+        check_.pop();
+        if (states_[task_id] == State::CHECK && pos_ < end_min_[task_id]) {
+          states_[task_id] = State::CONFLICT;
+          conflict_.push(kv(demands_[task_id], task_id));
+          continue;
+        }
+        states_[task_id] = State::READY;
+      }
+      prev_gap_ = gap_;
+    }
+    // The profile has decreased.
+    if (gap_ > prev_gap_) {
+      // Reconsider the tasks in conflict.
+      while (!conflict_.empty() && demands_[conflict_.top().second] <= gap_) {
+        const int64 task_id = conflict_.top().second;
+        conflict_.pop();
+        if (states_[task_id] != State::CONFLICT) {
+          continue;
+        }
+        const int64 old_end_min = end_min_[task_id];
+        // Update the cache.
+        start_min_[task_id] = pos_;
+        end_min_[task_id] = pos_ + durations_[task_id];
+        // Filter the domain.
+        tasks_[task_id]->interval->SetStartMin(pos_);  // should not fail.
+        // The task still have to be checked.
+        if (next_pos_ < end_min_[task_id]) {
+          states_[task_id] = State::CHECK;
+          check_.push(kv(demands_[task_id], task_id));
+        } else {
+          states_[task_id] = State::READY;
+        }
+        // Update possible compulsory part.
+        const int64 start_max = start_max_[task_id];
+        if (start_max >= old_end_min && start_max < end_min_[task_id]) {
+          events_ecp_.push(kv(end_min_[task_id], task_id));
+        }
+      }
+    }
+    prev_gap_ = gap_;
+  }
+
+  void BuildEvents() {
+    // Reset the sweep line.
+    pos_ = kint64min;
+    next_pos_ = kint64min;
+    gap_ = capacity_->Max();
+    prev_gap_ = capacity_->Max();
+    // Reset dynamic states.
+    conflict_ = min_heap();
+    check_ = max_heap();
+    // Reset profile events.
+    events_pr_ = min_heap();
+    events_scp_ = min_heap();
+    events_ecp_ = min_heap();
+    // Reset cache.
+    start_min_.clear();
+    start_max_.clear();
+    end_min_.clear();
+    durations_.clear();
+    demands_.clear();
+    states_.clear();
+    // Build events.
+    for (int i = 0; i < num_tasks_; i++) {
+      const int64 s_min = tasks_[i]->interval->StartMin();
+      const int64 s_max = tasks_[i]->interval->StartMax();
+      const int64 e_min = tasks_[i]->interval->EndMin();
+      // Cache the values.
+      start_min_.push_back(s_min);
+      start_max_.push_back(s_max);
+      end_min_.push_back(e_min);
+      durations_.push_back(tasks_[i]->interval->DurationMin());
+      demands_.push_back(tasks_[i]->DemandMin());
+      // Reset task state.
+      states_.push_back(State::NONE);
+      // Start compulsory part event.
+      events_scp_.push(kv(s_max, i));
+      // Pruning event only if the start time of the task is not fixed.
+      if (s_min != s_max) {
+        events_pr_.push(kv(s_min, i));
+      }
+      // End of compulsory part only if the task has a compulsory part.
+      if (s_max < e_min) {
+        events_ecp_.push(kv(e_min, i));
+      }
+    }
+  }
+
+  int64 num_tasks_;
+  std::vector<Task*> tasks_;
+  IntVar* const capacity_;
+
+  std::vector<int64> start_min_;
+  std::vector<int64> start_max_;
+  std::vector<int64> end_min_;
+  std::vector<int64> end_max_;
+  std::vector<int64> durations_;
+  std::vector<int64> demands_;
+
+  // Pair key value.
+  typedef std::pair<int64, int64> kv;
+  typedef std::priority_queue<kv, std::vector<kv>, std::greater<kv>> min_heap;
+  typedef std::priority_queue<kv, std::vector<kv>, std::less<kv>> max_heap;
+
+  // Profile events.
+  min_heap events_pr_;
+  min_heap events_scp_;
+  min_heap events_ecp_;
+
+  // Task state.
+  std::vector<State> states_;
+  min_heap conflict_;
+  max_heap check_;
+
+  // Sweep line state.
+  int64 pos_;
+  int64 next_pos_;
+  int64 gap_;
+  int64 prev_gap_;
+};
+
 class CumulativeConstraint : public Constraint {
  public:
-  CumulativeConstraint(Solver* const s, const std::vector<IntervalVar*>& intervals,
-                       const std::vector<int64>& demands, IntVar* const capacity,
-                       const std::string& name)
+  CumulativeConstraint(Solver* const s,
+                       const std::vector<IntervalVar*>& intervals,
+                       const std::vector<int64>& demands,
+                       IntVar* const capacity, const std::string& name)
       : Constraint(s),
         capacity_(capacity),
         intervals_(intervals),
@@ -1891,12 +2180,17 @@ class CumulativeConstraint : public Constraint {
     // by posting a bunch of different propagators.
     const ConstraintSolverParameters& params = solver()->parameters();
     if (params.use_cumulative_time_table()) {
-      PostOneSidedConstraint(false, false);
-      PostOneSidedConstraint(true, false);
+      if (params.use_cumulative_time_table_sync()) {
+        PostOneSidedConstraint(false, false, true);
+        PostOneSidedConstraint(true, false, true);
+      } else {
+        PostOneSidedConstraint(false, false, false);
+        PostOneSidedConstraint(true, false, false);
+      }
     }
     if (params.use_cumulative_edge_finder()) {
-      PostOneSidedConstraint(false, true);
-      PostOneSidedConstraint(true, true);
+      PostOneSidedConstraint(false, true, false);
+      PostOneSidedConstraint(true, true, false);
     }
     if (params.use_sequence_high_demand_tasks()) {
       PostHighDemandSequenceConstraint();
@@ -1983,8 +2277,8 @@ class CumulativeConstraint : public Constraint {
 
   // Populate the given vector with useful tasks, meaning the ones on which
   // some propagation can be done
-  void PopulateVectorUsefulTasks(bool mirror,
-                                 std::vector<CumulativeTask*>* const useful_tasks) {
+  void PopulateVectorUsefulTasks(
+      bool mirror, std::vector<CumulativeTask*>* const useful_tasks) {
     DCHECK(useful_tasks->empty());
     for (int i = 0; i < tasks_.size(); ++i) {
       const CumulativeTask& original_task = tasks_[i];
@@ -2010,7 +2304,8 @@ class CumulativeConstraint : public Constraint {
 
   // Makes and return an edge-finder or a time table, or nullptr if it is not
   // necessary.
-  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder) {
+  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder,
+                                     bool tt_sync) {
     std::vector<CumulativeTask*> useful_tasks;
     PopulateVectorUsefulTasks(mirror, &useful_tasks);
     if (useful_tasks.empty()) {
@@ -2023,16 +2318,20 @@ class CumulativeConstraint : public Constraint {
                    ? s->RevAlloc(new EdgeFinder<CumulativeTask>(s, useful_tasks,
                                                                 capacity_))
                    : nullptr;
-      } else {
-        return s->RevAlloc(new CumulativeTimeTable<CumulativeTask>(
-            s, useful_tasks, capacity_));
       }
+      if (tt_sync) {
+        return s->RevAlloc(
+            new TimeTableSync<CumulativeTask>(s, useful_tasks, capacity_));
+      }
+      return s->RevAlloc(
+          new CumulativeTimeTable<CumulativeTask>(s, useful_tasks, capacity_));
     }
   }
 
   // Post a straight or mirrored edge-finder, if needed
-  void PostOneSidedConstraint(bool mirror, bool edge_finder) {
-    Constraint* const constraint = MakeOneSidedConstraint(mirror, edge_finder);
+  void PostOneSidedConstraint(bool mirror, bool edge_finder, bool tt_sync) {
+    Constraint* const constraint =
+        MakeOneSidedConstraint(mirror, edge_finder, tt_sync);
     if (constraint != nullptr) {
       solver()->AddConstraint(constraint);
     }
@@ -2074,12 +2373,12 @@ class VariableDemandCumulativeConstraint : public Constraint {
     // by posting a bunch of different propagators.
     const ConstraintSolverParameters& params = solver()->parameters();
     if (params.use_cumulative_time_table()) {
-      PostOneSidedConstraint(false, false);
-      PostOneSidedConstraint(true, false);
+      PostOneSidedConstraint(false, false, false);
+      PostOneSidedConstraint(true, false, false);
     }
     if (params.use_cumulative_edge_finder()) {
-      PostOneSidedConstraint(false, true);
-      PostOneSidedConstraint(true, true);
+      PostOneSidedConstraint(false, true, false);
+      PostOneSidedConstraint(true, true, false);
     }
     if (params.use_sequence_high_demand_tasks()) {
       PostHighDemandSequenceConstraint();
@@ -2194,7 +2493,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
 
   // Makes and returns an edge-finder or a time table, or nullptr if it is not
   // necessary.
-  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder) {
+  Constraint* MakeOneSidedConstraint(bool mirror, bool edge_finder,
+                                     bool tt_sync) {
     std::vector<VariableCumulativeTask*> useful_tasks;
     PopulateVectorUsefulTasks(mirror, &useful_tasks);
     if (useful_tasks.empty()) {
@@ -2204,16 +2504,20 @@ class VariableDemandCumulativeConstraint : public Constraint {
       if (edge_finder) {
         return s->RevAlloc(
             new EdgeFinder<VariableCumulativeTask>(s, useful_tasks, capacity_));
-      } else {
-        return s->RevAlloc(new CumulativeTimeTable<VariableCumulativeTask>(
+      }
+      if (tt_sync) {
+        return s->RevAlloc(new TimeTableSync<VariableCumulativeTask>(
             s, useful_tasks, capacity_));
       }
+      return s->RevAlloc(new CumulativeTimeTable<VariableCumulativeTask>(
+          s, useful_tasks, capacity_));
     }
   }
 
   // Post a straight or mirrored edge-finder, if needed
-  void PostOneSidedConstraint(bool mirror, bool edge_finder) {
-    Constraint* const constraint = MakeOneSidedConstraint(mirror, edge_finder);
+  void PostOneSidedConstraint(bool mirror, bool edge_finder, bool tt_sync) {
+    Constraint* const constraint =
+        MakeOneSidedConstraint(mirror, edge_finder, tt_sync);
     if (constraint != nullptr) {
       solver()->AddConstraint(constraint);
     }
@@ -2239,7 +2543,8 @@ class VariableDemandCumulativeConstraint : public Constraint {
 // ----- Public class -----
 
 DisjunctiveConstraint::DisjunctiveConstraint(
-    Solver* const s, const std::vector<IntervalVar*>& intervals, const std::string& name)
+    Solver* const s, const std::vector<IntervalVar*>& intervals,
+    const std::string& name)
     : Constraint(s), intervals_(intervals) {
   if (!name.empty()) {
     set_name(name);
@@ -2273,8 +2578,8 @@ DisjunctiveConstraint* Solver::MakeStrictDisjunctiveConstraint(
 // Demands are constant
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
-                                   const std::vector<int64>& demands, int64 capacity,
-                                   const std::string& name) {
+                                   const std::vector<int64>& demands,
+                                   int64 capacity, const std::string& name) {
   CHECK_EQ(intervals.size(), demands.size());
   for (int i = 0; i < intervals.size(); ++i) {
     CHECK_GE(demands[i], 0);
@@ -2287,8 +2592,8 @@ Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
 }
 
 Constraint* Solver::MakeCumulative(const std::vector<IntervalVar*>& intervals,
-                                   const std::vector<int>& demands, int64 capacity,
-                                   const std::string& name) {
+                                   const std::vector<int>& demands,
+                                   int64 capacity, const std::string& name) {
   return MakeCumulative(intervals, ToInt64Vector(demands), capacity, name);
 }
 

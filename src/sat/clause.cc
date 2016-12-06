@@ -58,7 +58,7 @@ bool CleanUpPredicate(const Watcher& watcher) {
 // ----- LiteralWatchers -----
 
 LiteralWatchers::LiteralWatchers()
-    : Propagator("LiteralWatchers"),
+    : SatPropagator("LiteralWatchers"),
       is_clean_(true),
       num_inspected_clauses_(0),
       num_inspected_clause_literals_(0),
@@ -96,8 +96,8 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
   // small clauses like binary or ternary clauses will often propagate and thus
   // stay at the beginning of the list.
   std::vector<Watcher>::iterator new_it = watchers.begin();
-  for (std::vector<Watcher>::iterator it = watchers.begin(); it != watchers.end();
-       ++it) {
+  for (std::vector<Watcher>::iterator it = watchers.begin();
+       it != watchers.end(); ++it) {
     // Don't even look at the clause memory if the blocking literal is true.
     if (assignment.LiteralIsTrue(it->blocking_literal)) {
       *new_it++ = *it;
@@ -249,15 +249,17 @@ void BinaryImplicationGraph::AddBinaryClause(Literal a, Literal b) {
   ++num_implications_;
 }
 
-void BinaryImplicationGraph::AddBinaryConflict(Literal a, Literal b,
-                                               Trail* trail) {
+void BinaryImplicationGraph::AddBinaryClauseDuringSearch(Literal a, Literal b,
+                                                         Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   if (num_implications_ == 0) propagation_trail_index_ = trail->Index();
   AddBinaryClause(a, b);
   if (trail->Assignment().LiteralIsFalse(a)) {
+    DCHECK_EQ(trail->CurrentDecisionLevel(), trail->Info(a.Variable()).level);
     reasons_[trail->Index()] = a;
     trail->Enqueue(b, propagator_id_);
   } else if (trail->Assignment().LiteralIsFalse(b)) {
+    DCHECK_EQ(trail->CurrentDecisionLevel(), trail->Info(b.Variable()).level);
     reasons_[trail->Index()] = b;
     trail->Enqueue(a, propagator_id_);
   }

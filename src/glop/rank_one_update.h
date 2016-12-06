@@ -167,7 +167,8 @@ class RankOneUpdateFactorization {
 
   // Same as LeftSolve(), but if the given non_zeros are not empty, then all
   // the new non-zeros in the result are happended to it.
-  void LeftSolveWithNonZeros(DenseRow* y, std::vector<ColIndex>* non_zeros) const {
+  void LeftSolveWithNonZeros(DenseRow* y,
+                             std::vector<ColIndex>* non_zeros) const {
     RETURN_IF_NULL(y);
     if (non_zeros->empty()) {
       LeftSolve(y);

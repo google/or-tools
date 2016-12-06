@@ -223,7 +223,8 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
 // becomes satisfiable.
 SatSolver::Status SolveWithFuMalik(LogBehavior log,
                                    const LinearBooleanProblem& problem,
-                                   SatSolver* solver, std::vector<bool>* solution) {
+                                   SatSolver* solver,
+                                   std::vector<bool>* solution) {
   Logger logger(log);
   FuMalikSymmetryBreaker symmetry;
 
@@ -419,7 +420,8 @@ SatSolver::Status SolveWithFuMalik(LogBehavior log,
 
 SatSolver::Status SolveWithWPM1(LogBehavior log,
                                 const LinearBooleanProblem& problem,
-                                SatSolver* solver, std::vector<bool>* solution) {
+                                SatSolver* solver,
+                                std::vector<bool>* solution) {
   Logger logger(log);
   FuMalikSymmetryBreaker symmetry;
 
@@ -1157,7 +1159,6 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
 
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   if (log_info) {
     LOG(INFO) << "#Boolean_variables:" << sat_solver->NumVariables();
   }
@@ -1167,36 +1168,8 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   bool model_is_feasible = false;
   IntegerValue objective;
   while (true) {
-    result = sat_solver->Solve();
+    result = SolveIntegerProblemWithLazyEncoding(model, var_for_lazy_encoding);
     if (result != SatSolver::MODEL_SAT) break;
-
-    // Look for an integer variable whose domain is not singleton.
-    // Heuristic: we take the one with minimum lb amongst the given variables.
-    //
-    // TODO(user): consider better heuristics. Maybe we can use some kind of
-    // IntegerVariable activity or something from the CP world.
-    IntegerVariable candidate = kNoIntegerVariable;
-    IntegerValue candidate_lb(0);
-    for (const IntegerVariable i : var_for_lazy_encoding) {
-      // Note that we use < and not != for optional variable whose domain may
-      // be empty.
-      const IntegerValue lb = integer_trail->LowerBound(i);
-      if (lb < integer_trail->UpperBound(i)) {
-        if (candidate == kNoIntegerVariable || lb < candidate_lb) {
-          candidate = i;
-          candidate_lb = lb;
-        }
-      }
-    }
-
-    if (candidate != kNoIntegerVariable) {
-      // This add a literal with good polarity. It is very important that the
-      // decision heuristic assign it to false! Otherwise, our heuristic is not
-      // good.
-      encoder->CreateAssociatedLiteral(
-          IntegerLiteral::GreaterOrEqual(candidate, candidate_lb + 1));
-      continue;
-    }
 
     // The objective is the current lower bound of the objective_var.
     objective = integer_trail->LowerBound(objective_var);
@@ -1215,6 +1188,12 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     }
   }
 
+  CHECK_NE(result, SatSolver::MODEL_SAT);
+  if (result == SatSolver::MODEL_UNSAT && model_is_feasible) {
+    // We proved the optimal and use the MODEL_SAT value for this.
+    result = SatSolver::MODEL_SAT;
+  }
+
   if (!log_info) return result;
 
   // Display summary.
@@ -1223,8 +1202,9 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   } else {
     printf("objective: NA\n");
   }
-  printf("status: %s\n",
-         result == SatSolver::MODEL_UNSAT ? "OPTIMAL" : "LIMIT_REACHED");
+  printf("status: %s\n", result == SatSolver::MODEL_SAT
+                             ? "OPTIMAL"
+                             : SatStatusString(result).c_str());
   printf("conflicts: %lld\n", sat_solver->num_failures());
   printf("branches: %lld\n", sat_solver->num_branches());
   printf("propagations: %lld\n", sat_solver->num_propagations());

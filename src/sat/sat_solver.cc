@@ -249,9 +249,9 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals) {
   return true;
 }
 
-bool SatSolver::AddLinearConstraintInternal(const std::vector<LiteralWithCoeff>& cst,
-                                            Coefficient rhs,
-                                            Coefficient max_value) {
+bool SatSolver::AddLinearConstraintInternal(
+    const std::vector<LiteralWithCoeff>& cst, Coefficient rhs,
+    Coefficient max_value) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(BooleanLinearExpressionIsCanonical(cst));
   if (rhs < 0) return SetModelUnsat();  // Unsatisfiable constraint.
@@ -366,8 +366,8 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     if (track_binary_clauses_) {
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
-    binary_implication_graph_.AddBinaryConflict(literals[0], literals[1],
-                                                trail_);
+    binary_implication_graph_.AddBinaryClauseDuringSearch(literals[0],
+                                                          literals[1], trail_);
     lbd_running_average_.Add(2);
 
     // In case this is the first binary clauses.
@@ -396,7 +396,7 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   }
 }
 
-void SatSolver::AddPropagator(std::unique_ptr<Propagator> propagator) {
+void SatSolver::AddPropagator(std::unique_ptr<SatPropagator> propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   problem_is_pure_sat_ = false;
   trail_->RegisterPropagator(propagator.get());
@@ -404,7 +404,7 @@ void SatSolver::AddPropagator(std::unique_ptr<Propagator> propagator) {
   InitializePropagators();
 }
 
-void SatSolver::AddLastPropagator(std::unique_ptr<Propagator> propagator) {
+void SatSolver::AddLastPropagator(std::unique_ptr<SatPropagator> propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   CHECK(last_propagator_ == nullptr);
   problem_is_pure_sat_ = false;
@@ -853,7 +853,7 @@ void SatSolver::Backtrack(int target_level) {
   DCHECK_GE(target_level, 0);
   DCHECK_LE(target_level, CurrentDecisionLevel());
 
-  // Per the Propagator interface, this is needed before calling Untrail.
+  // Per the SatPropagator interface, this is needed before calling Untrail.
   trail_->SetDecisionLevel(target_level);
 
   int target_trail_index = 0;
@@ -1495,7 +1495,7 @@ bool SatSolver::Propagate() {
     // and that its Propagate() functions will not abort on the first
     // propagation to be slightly more efficient.
     const int old_index = trail_->Index();
-    for (Propagator* propagator : propagators_) {
+    for (SatPropagator* propagator : propagators_) {
       DCHECK(propagator->PropagatePreconditionsAreSatisfied(*trail_));
       if (!propagator->Propagate(trail_)) return false;
       if (trail_->Index() > old_index) break;
@@ -1533,7 +1533,7 @@ void SatSolver::InitializePropagators() {
 }
 
 bool SatSolver::PropagationIsDone() const {
-  for (Propagator* propagator : propagators_) {
+  for (SatPropagator* propagator : propagators_) {
     if (!propagator->PropagationIsDone(*trail_)) return false;
   }
   return true;
@@ -1807,7 +1807,7 @@ void SatSolver::Untrail(int target_trail_index) {
   DCHECK_LT(target_trail_index, trail_->Index());
 
   // Untrail the propagators.
-  for (Propagator* propagator : propagators_) {
+  for (SatPropagator* propagator : propagators_) {
     propagator->Untrail(*trail_, target_trail_index);
   }
 
@@ -2389,7 +2389,8 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
   variable_to_process_.push_back(variable);
 
   // First we expand the reason for the given variable.
-  DCHECK(!trail_->Reason(variable).IsEmpty());
+  DCHECK(!trail_->Reason(variable).IsEmpty())
+      << trail_->Info(variable).DebugString();
   for (Literal literal : trail_->Reason(variable)) {
     const BooleanVariable var = literal.Variable();
     DCHECK_NE(var, variable);
@@ -2586,7 +2587,8 @@ void SatSolver::DeleteDetachedClauses() {
   std::vector<SatClause*>::iterator iter =
       std::stable_partition(clauses_.begin(), clauses_.end(),
                             [](SatClause* a) { return a->IsAttached(); });
-  for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end(); ++it) {
+  for (std::vector<SatClause*>::iterator it = iter; it != clauses_.end();
+       ++it) {
     // We do not want to mark as deleted clause of size 2 because they are
     // still kept in the solver inside the BinaryImplicationGraph.
     if (drat_writer_ != nullptr && (*it)->Size() > 2) {

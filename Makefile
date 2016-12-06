@@ -7,8 +7,8 @@ help:
 	@echo "  - .NET: csharp test_csharp clean_csharp "
 	@echo "  - all: all test clean"
 
-OR_TOOLS_MAJOR = 4
-OR_TOOLS_MINOR = 4
+OR_TOOLS_MAJOR = 5
+OR_TOOLS_MINOR = 0
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
@@ -34,8 +34,8 @@ else
   endif
 endif
 
-.PHONY : python cc java csharp sat
-all: cc java python csharp
+.PHONY : python cc java csharp sat third_party_check
+all: third_party_check cc java python csharp
 clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
 # First, we try to detect the platform.
@@ -64,4 +64,12 @@ include $(OR_ROOT)makefiles/Makefile.test.$(SYSTEM)
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
 
+#check if "make third_party" have been run or not
+third_party_check:
+ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
+	@echo "One of the third party files was not found! did you run 'make third_party'?" && exit 1
+endif
+
 print-%  : ; @echo $* = $($*)
+
+

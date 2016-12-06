@@ -36,6 +36,7 @@
 """
 
 import math
+from six.moves import xrange
 from ortools.constraint_solver import pywrapcp
 from ortools.constraint_solver import routing_enums_pb2
 
@@ -128,7 +129,7 @@ def main():
     # The number of nodes of the VRP is num_locations.
     # Nodes are indexed from 0 to num_locations - 1. By default the start of
     # a route is node 0.
-    routing = pywrapcp.RoutingModel(num_locations, num_vehicles)
+    routing = pywrapcp.RoutingModel(num_locations, num_vehicles, depot)
     search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
 
     # Setting first solution heuristic: the
@@ -140,9 +141,6 @@ def main():
     # Starting from a route "start" node, connect it to the node which produces the
     # cheapest route segment, then extend the route by iterating on the last
     # node added to the route.
-
-    # Set the depot.
-    routing.SetDepot(depot)
 
     # Put callbacks to the distance function and travel time functions here.
 
@@ -187,7 +185,7 @@ def main():
     # Add limit on size of the time windows.
     time_dimension = routing.GetDimensionOrDie(time)
 
-    for order in range(1, num_locations):
+    for order in xrange(1, num_locations):
       start = start_times[order]
       time_dimension.CumulVar(order).SetRange(start, start + tw_duration)
     
@@ -202,12 +200,12 @@ def main():
       start_times = data[2]
       size = len(locations)
       # Solution cost.
-      print "Total distance of all routes: " + str(assignment.ObjectiveValue()) + "\n"
+      print ("Total distance of all routes: " , str(assignment.ObjectiveValue()))
       # Inspect solution.
       capacity_dimension = routing.GetDimensionOrDie(capacity);
       time_dimension = routing.GetDimensionOrDie(time);
 
-      for vehicle_nbr in range(num_vehicles):
+      for vehicle_nbr in xrange(num_vehicles):
         index = routing.Start(vehicle_nbr)
         plan_output = 'Route {0}:'.format(vehicle_nbr)
 
@@ -232,12 +230,11 @@ def main():
                       load=assignment.Value(load_var),
                       tmin=str(assignment.Min(time_var)),
                       tmax=str(assignment.Max(time_var)))
-        print plan_output
-        print "\n"
+        print (plan_output)
     else:
-      print 'No solution found.'
+      print ('No solution found.')
   else:
-    print 'Specify an instance greater than 0.'
+    print ('Specify an instance greater than 0.')
 
 
 

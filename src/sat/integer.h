@@ -15,6 +15,7 @@
 #define OR_TOOLS_SAT_INTEGER_H_
 
 #include <queue>
+#include <set>
 
 #include "base/port.h"
 #include "base/join.h"
@@ -109,6 +110,9 @@ struct IntegerLiteral {
   bool operator==(IntegerLiteral o) const {
     return var == o.var && bound == o.bound;
   }
+  bool operator!=(IntegerLiteral o) const {
+    return var != o.var || bound == o.bound;
+  }
 
   std::string DebugString() const { return StrCat("I", var, ">=", bound.value()); }
 
@@ -137,6 +141,8 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
   os << i_lit.DebugString();
   return os;
 }
+
+using InlinedIntegerLiteralVector = std::vector<IntegerLiteral>;
 
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
@@ -183,9 +189,11 @@ class IntegerEncoder {
   // 3/ The encoding for NegationOf(var) is automatically created too. It reuses
   //    the same Boolean variable as the encoding of var.
   //
-  // Calling this more than once is an error (Checked).
-  // TODO(user): we could instead only keep the intersection and fix the now
-  // impossible values to zero.
+  // Calling this more than once will take the intersection of all the given
+  // values arguments. However, this is not optimal because the first calls may
+  // creates new Boolean variables that will later be fixed, so we log a warning
+  // when this happen. Ideally, the intersection should be done in a presolve
+  // step to be as efficient as possible here.
   //
   // Note(user): There is currently no relation here between
   // FullyEncodeVariable() and CreateAssociatedLiteral(). However the
@@ -198,23 +206,48 @@ class IntegerEncoder {
   //
   // TODO(user): It is currently only possible to call that at the decision
   // level zero. This is Checked.
-  void FullyEncodeVariable(IntegerVariable var, std::vector<IntegerValue> values);
+  void FullyEncodeVariable(IntegerVariable var,
+                           std::vector<IntegerValue> values);
+  void FullyEncodeVariable(IntegerVariable var, IntegerValue lb,
+                           IntegerValue ub);
+
+  // Similar to FullyEncodeVariable() but use the given literal for each values.
+  // This can only be called on variable that are not fully encoded yet, This is
+  // checked.
+  //
+  // Note that duplicate values are supported, but exactly one literal must be
+  // true at the same time. The "exactly one" constraint will implicitely be
+  // enforced by the code in IntegerTrail.
+  void FullyEncodeVariableUsingGivenLiterals(
+      IntegerVariable var, const std::vector<Literal>& literals,
+      const std::vector<IntegerValue>& values);
 
   // Gets the full encoding of a variable on which FullyEncodeVariable() has
   // been called. The returned elements are always sorted by increasing
   // IntegerValue. Once created, the encoding never changes, but some Boolean
-  // variable may become fixed.
+  // variables may become fixed.
+  //
+  // IMPORTANT: the returned vector will be sorted by value, but may contain
+  // duplicates values! IntegerTrail is doing the correct thing in this case.
+  // This allows us to direcly support the "int element" constraint and its
+  // variant at the core level.
   struct ValueLiteralPair {
     ValueLiteralPair(IntegerValue v, Literal l) : value(v), literal(l) {}
     bool operator==(const ValueLiteralPair& o) const {
       return value == o.value && literal == o.literal;
     }
+    bool operator<(const ValueLiteralPair& o) const { return value < o.value; }
     IntegerValue value;
     Literal literal;
   };
   const std::vector<ValueLiteralPair>& FullDomainEncoding(
       IntegerVariable var) const {
     return full_encoding_[FindOrDie(full_encoding_index_, var)];
+  }
+
+  // Returns true if a variable is fully encoded.
+  bool VariableIsFullyEncoded(IntegerVariable var) const {
+    return ContainsKey(full_encoding_index_, var);
   }
 
   // Returns the set of variable encoded as the keys in a map. The map values
@@ -236,13 +269,23 @@ class IntegerEncoder {
   //
   // It is an error to call this with an already created literal. This is
   // Checked.
+  //
+  // The second version use the given literal instead of creating a new
+  // variable.
   Literal CreateAssociatedLiteral(IntegerLiteral i_lit);
+  void AssociateGivenLiteral(IntegerLiteral i_lit, Literal wanted);
 
-  // Returns the IntegerLiteral that was associated with the given Boolean
-  // literal or an IntegerLiteral with a variable set to kNoIntegerVariable if
-  // the argument does not correspond to such literal.
-  IntegerLiteral GetIntegerLiteral(Literal lit) const {
-    if (lit.Index() >= reverse_encoding_.size()) return IntegerLiteral();
+  // Return true iff the given integer literal is associated.
+  bool LiteralIsAssociated(IntegerLiteral i_lit) const;
+
+  // Same as CreateAssociatedLiteral() but safe to call if already created.
+  Literal GetOrCreateAssociatedLiteral(IntegerLiteral i_lit);
+
+  // Returns the IntegerLiterals that were associated with the given Literal.
+  const InlinedIntegerLiteralVector& GetIntegerLiterals(Literal lit) const {
+    if (lit.Index() >= reverse_encoding_.size()) {
+      return empty_integer_literal_vector_;
+    }
     return reverse_encoding_[lit.Index()];
   }
 
@@ -269,10 +312,9 @@ class IntegerEncoder {
   // corresponding to the same variable).
   ITIVector<IntegerVariable, std::map<IntegerValue, Literal>> encoding_by_var_;
 
-  // Store for a given LiteralIndex its associated IntegerLiteral or an
-  // IntegerLiteral with kNoIntegerVariable as a variable if the LiteralIndex
-  // doesn't correspond to an IntegerLiteral.
-  ITIVector<LiteralIndex, IntegerLiteral> reverse_encoding_;
+  // Store for a given LiteralIndex the list of its associated IntegerLiterals.
+  const InlinedIntegerLiteralVector empty_integer_literal_vector_;
+  ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
 
   // Full domain encoding. The map contains the index in full_encoding_ of
   // the fully encoded variable. Each entry in full_encoding_ is sorted by
@@ -286,10 +328,10 @@ class IntegerEncoder {
 // This class maintains a set of integer variables with their current bounds.
 // Bounds can be propagated from an external "source" and this class helps
 // to maintain the reason for each propagation.
-class IntegerTrail : public Propagator {
+class IntegerTrail : public SatPropagator {
  public:
   IntegerTrail(IntegerEncoder* encoder, Trail* trail)
-      : Propagator("IntegerTrail"),
+      : SatPropagator("IntegerTrail"),
         num_enqueues_(0),
         encoder_(encoder),
         trail_(trail) {}
@@ -304,7 +346,7 @@ class IntegerTrail : public Propagator {
     return integer_trail;
   }
 
-  // Propagator interface. These functions make sure the current bounds
+  // SatPropagator interface. These functions make sure the current bounds
   // information is in sync with the current solver literal trail. Any
   // class/propagator using this class must make sure it is synced to the
   // correct state before calling any of its functions.
@@ -374,17 +416,13 @@ class IntegerTrail : public Propagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
-  MUST_USE_RESULT bool Enqueue(IntegerLiteral bound,
-                               const std::vector<Literal>& literal_reason,
-                               const std::vector<IntegerLiteral>& integer_reason);
+  MUST_USE_RESULT bool Enqueue(
+      IntegerLiteral bound, const std::vector<Literal>& literal_reason,
+      const std::vector<IntegerLiteral>& integer_reason);
 
-  // Enqueues the given literal on the trail. The two returned vector pointers
-  // will point to empty vectors that can be filled to store the reason of this
-  // assignment. They are only valid just after this is called. The full literal
-  // reason will be computed lazily when it becomes needed.
-  void EnqueueLiteral(Literal literal, std::vector<Literal>** literal_reason,
-                      std::vector<IntegerLiteral>** integer_reason);
-  void EnqueueLiteral(Literal literal, const std::vector<Literal>& literal_reason,
+  // Enqueues the given literal on the trail.
+  void EnqueueLiteral(Literal literal,
+                      const std::vector<Literal>& literal_reason,
                       const std::vector<IntegerLiteral>& integer_reason);
 
   // Returns the reason (as set of Literal currently false) for a given integer
@@ -413,12 +451,38 @@ class IntegerTrail : public Propagator {
     watchers_.push_back(p);
   }
 
+  // Helper functions to report a conflict. Always return false so a client can
+  // simply do: return integer_trail_->ReportConflict(...);
+  bool ReportConflict(const std::vector<Literal>& literal_reason,
+                      const std::vector<IntegerLiteral>& integer_reason) {
+    std::vector<Literal>* conflict = trail_->MutableConflict();
+    *conflict = literal_reason;
+    MergeReasonInto(integer_reason, conflict);
+    return false;
+  }
+  bool ReportConflict(const std::vector<IntegerLiteral>& integer_reason) {
+    std::vector<Literal>* conflict = trail_->MutableConflict();
+    conflict->clear();
+    MergeReasonInto(integer_reason, conflict);
+    return false;
+  }
+
+  // Returns true if the variable lower bound is still the one from level zero.
+  bool VariableLowerBoundIsFixed(IntegerVariable var) const {
+    return vars_[var.value()].current_trail_index < vars_.size();
+  }
+
  private:
+  // Does the work of MergeReasonInto() when queue_ is already initialized.
+  void MergeReasonIntoInternal(std::vector<Literal>* output) const;
+
   // Helper used by Enqueue() to propagate one of the literal associated to
   // the given i_lit and maintained by encoder_.
-  bool EnqueueAssociatedLiteral(Literal literal, IntegerLiteral i_lit,
-                                const std::vector<Literal>& literals_reason,
-                                const std::vector<IntegerLiteral>& bounds_reason);
+  bool EnqueueAssociatedLiteral(
+      Literal literal, IntegerLiteral i_lit,
+      const std::vector<Literal>& literals_reason,
+      const std::vector<IntegerLiteral>& bounds_reason,
+      BooleanVariable* variable_with_same_reason);
 
   // Returns a lower bound on the given var that will always be valid.
   IntegerValue LevelZeroBound(int var) const {
@@ -435,12 +499,16 @@ class IntegerTrail : public Propagator {
   // Helper function to return the "dependencies" of a bound assignment.
   // All the TrailEntry at these indices are part of the reason for this
   // assignment.
-  BeginEndWrapper<std::vector<int>::const_iterator> Dependencies(
+  BeginEndWrapper<std::vector<IntegerLiteral>::const_iterator> Dependencies(
       int trail_index) const;
 
   // Helper function to append the Literal part of the reason for this bound
   // assignment.
-  void AppendLiteralsReason(int trail_index, std::vector<Literal>* output) const;
+  void AppendLiteralsReason(int trail_index,
+                            std::vector<Literal>* output) const;
+
+  // Returns some debuging info.
+  std::string DebugString();
 
   // Information for each internal variable about its current bound.
   struct VarInfo {
@@ -469,8 +537,12 @@ class IntegerTrail : public Propagator {
   std::vector<int> integer_decision_levels_;
 
   // Buffer to store the reason of each trail entry.
+  // Note that bounds_reason_buffer_ is an "union". It initially contains the
+  // IntegerLiteral, and is lazily replaced by the result of
+  // FindLowestTrailIndexThatExplainBound() applied to these literals. The
+  // encoding is a bit hacky, see Dependencies().
   std::vector<Literal> literals_reason_buffer_;
-  std::vector<int> dependencies_buffer_;
+  mutable std::vector<IntegerLiteral> bounds_reason_buffer_;
 
   // The "is_empty" literal of the optional variables or kNoLiteralIndex.
   ITIVector<IntegerVariable, LiteralIndex> is_empty_literals_;
@@ -479,7 +551,8 @@ class IntegerTrail : public Propagator {
   // for each variable the index in encoder_.GetDomainEncoding() of the first
   // literal that is not assigned to false, and call this the "min".
   int64 num_encoded_variables_ = 0;
-  RevMap<hash_map<LiteralIndex, std::pair<IntegerVariable, int>>> watched_min_;
+  std::vector<Literal> tmp_literals_reason_;
+  RevGrowingMultiMap<LiteralIndex, IntegerVariable> watched_min_;
   RevMap<hash_map<IntegerVariable, int>> current_min_;
 
   // Temporary data used by MergeReasonInto().
@@ -487,9 +560,11 @@ class IntegerTrail : public Propagator {
   mutable std::vector<int> tmp_trail_indices_;
   mutable std::vector<int> tmp_var_to_highest_explained_trail_index_;
 
-  // Lazy reason repository.
-  std::vector<std::vector<Literal>> literal_reasons_;
-  std::vector<std::vector<IntegerLiteral>> integer_reasons_;
+  // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
+  // lazily. This vector indicates the correspondance between a literal that
+  // was pushed by this class at a given trail index, and the index of its
+  // TrailEntry in integer_trail_.
+  std::vector<int> boolean_trail_index_to_integer_one_;
 
   int64 num_enqueues_;
 
@@ -501,16 +576,56 @@ class IntegerTrail : public Propagator {
   DISALLOW_COPY_AND_ASSIGN(IntegerTrail);
 };
 
+// Base class for CP like propagators.
+//
+// TODO(user): Think about an incremental Propagate() interface.
+//
+// TODO(user): Add shortcuts for the most used functions? like
+// Min(IntegerVariable) and Max(IntegerVariable)?
+class PropagatorInterface {
+ public:
+  PropagatorInterface() {}
+  virtual ~PropagatorInterface() {}
+
+  // This will be called after one or more literals that are watched by this
+  // propagator changed. It will also always be called on the first propagation
+  // cycle after registration.
+  virtual bool Propagate() = 0;
+
+  // This will only be called on a non-empty vector, otherwise Propagate() will
+  // be called. The passed vector will contain the "watch index" of all the
+  // literals that were given one at registration and that changed since the
+  // last call to Propagate(). This is only true when going down in the search
+  // tree, on backjump this list will be cleared.
+  //
+  // Notes:
+  // - The indices may contain duplicates if the same integer variable as been
+  //   updated many times or if different watched literals have the same
+  //   watch_index.
+  // - At level zero, it will not contain any indices associated with literals
+  //   that where already fixed when the propagator was registered. Only the
+  //   indices of the literals modified after the registration will be present.
+  virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
+    LOG(FATAL) << "Not implemented.";
+  }
+};
+
 // This class allows registering Propagator that will be called if a
 // watched Literal or LbVar changes.
-class GenericLiteralWatcher : public Propagator {
+class GenericLiteralWatcher : public SatPropagator {
  public:
-  explicit GenericLiteralWatcher(IntegerTrail* trail);
+  explicit GenericLiteralWatcher(IntegerTrail* trail,
+                                 RevRepository<int>* rev_int_repository);
   ~GenericLiteralWatcher() final {}
 
   static GenericLiteralWatcher* CreateInModel(Model* model) {
-    GenericLiteralWatcher* watcher =
-        new GenericLiteralWatcher(model->GetOrCreate<IntegerTrail>());
+    // TODO(user): Have a general mecanism to register "global" reversible
+    // classes and keep them synchronized with the search.
+    std::unique_ptr<RevRepository<int>> rev_int_repository(
+        new RevRepository<int>());
+    GenericLiteralWatcher* watcher = new GenericLiteralWatcher(
+        model->GetOrCreate<IntegerTrail>(), rev_int_repository.get());
+    model->SetSingleton(std::move(rev_int_repository));
 
     // TODO(user): This propagator currently needs to be last because it is the
     // only one enforcing that a fix-point is reached on the integer variables.
@@ -533,26 +648,73 @@ class GenericLiteralWatcher : public Propagator {
   // Watches the corresponding quantity. The propagator with given id will be
   // called if it changes. Note that WatchLiteral() only trigger when the
   // literal becomes true.
-  void WatchLiteral(Literal l, int id);
-  void WatchLowerBound(IntegerVariable i, int id);
-  void WatchUpperBound(IntegerVariable i, int id);
-  void WatchIntegerVariable(IntegerVariable i, int id);
+  //
+  // If watch_index is specified, it is associated with the watched literal.
+  // Doing this will cause IncrementalPropagate() to be called (see the
+  // documentation of this interface for more detail).
+  void WatchLiteral(Literal l, int id, int watch_index = -1);
+  void WatchLowerBound(IntegerVariable i, int id, int watch_index = -1);
+  void WatchUpperBound(IntegerVariable i, int id, int watch_index = -1);
+  void WatchIntegerVariable(IntegerVariable i, int id, int watch_index = -1);
+
+  // No-op overload for "constant" IntegerVariable that are sometimes templated
+  // as an IntegerValue.
+  void WatchLowerBound(IntegerValue i, int id) {}
+  void WatchUpperBound(IntegerValue i, int id) {}
+  void WatchIntegerVariable(IntegerValue v, int id) {}
+
+  // Registers a reversible class with a given propagator. This class will be
+  // changed to the correct state just before the propagator is called.
+  //
+  // Doing it just before should minimize cache-misses and bundle as much as
+  // possible the "backtracking" together. Many propagators only watches a
+  // few variables and will not be called at each decision levels.
+  void RegisterReversibleClass(int id, ReversibleInterface* rev);
+
+  // Registers a reversible int with a given propagator. The int will be changed
+  // to its correct value just before Propagate() is called.
+  //
+  // Note that this will work in O(num_rev_int_of_propagator_id) per call to
+  // Propagate() and happens at most once per decision level. As such this is
+  // meant for classes that have just a few reversible ints or that will have a
+  // similar complexity anyway.
+  //
+  // Alternatively, one can directly get the underlying RevRepository<int> with
+  // a call to model.Get<>(), and use SaveWithStamp() before each modification
+  // to have just a slight overhead per int updates. This later option is what
+  // is usually done in a CP solver at the cost of a sligthly more complex API.
+  void RegisterReversibleInt(int id, int* rev);
+
+  // Returns the number of registered propagators.
+  int NumPropagators() const { return in_queue_.size(); }
 
  private:
   // Updates queue_ and in_queue_ with the propagator ids that need to be
   // called.
-  void UpdateCallingNeeds();
+  void UpdateCallingNeeds(Trail* trail);
 
   IntegerTrail* integer_trail_;
+  RevRepository<int>* rev_int_repository_;
 
-  ITIVector<LiteralIndex, std::vector<int>> literal_to_watcher_ids_;
-  ITIVector<IntegerVariable, std::vector<int>> var_to_watcher_ids_;
+  struct WatchData {
+    int id;
+    int watch_index;
+  };
+  ITIVector<LiteralIndex, std::vector<WatchData>> literal_to_watcher_;
+  ITIVector<IntegerVariable, std::vector<WatchData>> var_to_watcher_;
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<IntegerVariable> modified_vars_;
 
   // Propagator ids that needs to be called.
   std::deque<int> queue_;
   std::vector<bool> in_queue_;
+
+  // Decision levels and reversible classes for each propagator.
+  std::vector<int> id_to_level_at_last_call_;
+  std::vector<int> id_to_greatest_common_level_since_last_call_;
+  std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;
+  std::vector<std::vector<int*>> id_to_reversible_ints_;
+  std::vector<std::vector<int>> id_to_watch_indices_;
 
   DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };
@@ -599,30 +761,32 @@ inline IntegerLiteral IntegerTrail::UpperBoundAsLiteral(
   return IntegerLiteral::LowerOrEqual(i, UpperBound(i));
 }
 
-inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id) {
-  if (l.Index() >= literal_to_watcher_ids_.size()) {
-    literal_to_watcher_ids_.resize(l.Index().value() + 1);
+inline void GenericLiteralWatcher::WatchLiteral(Literal l, int id,
+                                                int watch_index) {
+  if (l.Index() >= literal_to_watcher_.size()) {
+    literal_to_watcher_.resize(l.Index().value() + 1);
   }
-  literal_to_watcher_ids_[l.Index()].push_back(id);
+  literal_to_watcher_[l.Index()].push_back({id, watch_index});
 }
 
-inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var,
-                                                   int id) {
-  if (var.value() >= var_to_watcher_ids_.size()) {
-    var_to_watcher_ids_.resize(var.value() + 1);
+inline void GenericLiteralWatcher::WatchLowerBound(IntegerVariable var, int id,
+                                                   int watch_index) {
+  if (var.value() >= var_to_watcher_.size()) {
+    var_to_watcher_.resize(var.value() + 1);
   }
-  var_to_watcher_ids_[var].push_back(id);
+  var_to_watcher_[var].push_back({id, watch_index});
 }
 
-inline void GenericLiteralWatcher::WatchUpperBound(IntegerVariable var,
-                                                   int id) {
-  WatchLowerBound(NegationOf(var), id);
+inline void GenericLiteralWatcher::WatchUpperBound(IntegerVariable var, int id,
+                                                   int watch_index) {
+  WatchLowerBound(NegationOf(var), id, watch_index);
 }
 
 inline void GenericLiteralWatcher::WatchIntegerVariable(IntegerVariable i,
-                                                        int id) {
-  WatchLowerBound(i, id);
-  WatchUpperBound(i, id);
+                                                        int id,
+                                                        int watch_index) {
+  WatchLowerBound(i, id, watch_index);
+  WatchUpperBound(i, id, watch_index);
 }
 
 // ============================================================================
@@ -653,6 +817,18 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64 lb,
   };
 }
 
+// Creates a 0-1 integer variable "view" of the given literal. It will have a
+// value of 1 when the literal is true, and 0 when the literal is false.
+inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
+    Literal lit) {
+  return [=](Model* model) {
+    const IntegerVariable int_var = model->Add(NewIntegerVariable(0, 1));
+    model->GetOrCreate<IntegerEncoder>()->FullyEncodeVariableUsingGivenLiterals(
+        int_var, {lit.Negated(), lit}, {IntegerValue(0), IntegerValue(1)});
+    return int_var;
+  };
+}
+
 inline std::function<int64(const Model&)> LowerBound(IntegerVariable v) {
   return [=](const Model& model) {
     return model.Get<IntegerTrail>()->LowerBound(v).value();
@@ -662,6 +838,13 @@ inline std::function<int64(const Model&)> LowerBound(IntegerVariable v) {
 inline std::function<int64(const Model&)> UpperBound(IntegerVariable v) {
   return [=](const Model& model) {
     return model.Get<IntegerTrail>()->UpperBound(v).value();
+  };
+}
+
+inline std::function<bool(const Model&)> IsFixed(IntegerVariable v) {
+  return [=](const Model& model) {
+    const IntegerTrail* trail = model.Get<IntegerTrail>();
+    return trail->LowerBound(v) == trail->UpperBound(v);
   };
 }
 
@@ -701,6 +884,59 @@ inline std::function<void(Model*)> LowerOrEqual(IntegerVariable v, int64 ub) {
     }
   };
 }
+
+// Fix v to a given value.
+inline std::function<void(Model*)> Equality(IntegerVariable v, int64 value) {
+  return [=](Model* model) {
+    model->Add(LowerOrEqual(v, value));
+    model->Add(GreaterOrEqual(v, value));
+  };
+}
+
+// Associate the given literal to the given integer inequality.
+inline std::function<void(Model*)> Equality(IntegerLiteral i, Literal l) {
+  return [=](Model* model) {
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    if (encoder->LiteralIsAssociated(i)) {
+      const Literal current = encoder->GetOrCreateAssociatedLiteral(i);
+      model->Add(Equality(current, l));
+    } else {
+      encoder->AssociateGivenLiteral(i, l);
+    }
+  };
+}
+
+// in_interval <=> v in [lb, ub].
+inline std::function<void(Model*)> ReifiedInInterval(IntegerVariable v,
+                                                     int64 lb, int64 ub,
+                                                     Literal in_interval) {
+  return [=](Model* model) {
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    const auto lb_lit = IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb));
+    const auto ub_lit = IntegerLiteral::LowerOrEqual(v, IntegerValue(ub));
+    if (lb <= model->Get(LowerBound(v))) {
+      if (ub >= model->Get(UpperBound(v))) {
+        model->GetOrCreate<SatSolver>()->AddUnitClause(in_interval);
+      } else {
+        model->Add(Equality(ub_lit, in_interval));
+      }
+    } else if (ub >= model->Get(UpperBound(v))) {
+      model->Add(Equality(lb_lit, in_interval));
+    } else {
+      const Literal is_ge_lb = encoder->GetOrCreateAssociatedLiteral(lb_lit);
+      const Literal is_le_ub = encoder->GetOrCreateAssociatedLiteral(ub_lit);
+      model->Add(ReifiedBoolAnd({is_ge_lb, is_le_ub}, in_interval));
+    }
+  };
+}
+
+// A wrapper around SatSolver::Solve that handles integer variable with lazy
+// encoding. Repeatedly calls SatSolver::Solve on the model, and instantiates
+// literals for non-fixed variables in vars_with_lazy_encoding, until either all
+// variables are fixed to a single value, or the model is proved UNSAT. Returns
+// the status of the last call to SatSolver::Solve().
+SatSolver::Status SolveIntegerProblemWithLazyEncoding(
+    Model* model, const std::vector<IntegerVariable>& vars_with_lazy_encoding);
 
 }  // namespace sat
 }  // namespace operations_research

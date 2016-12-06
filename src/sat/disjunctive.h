@@ -26,7 +26,8 @@ namespace sat {
 
 // Enforces a disjunctive (or no overlap) constraint on the given interval
 // variables.
-std::function<void(Model*)> Disjunctive(const std::vector<IntervalVariable>& vars);
+std::function<void(Model*)> Disjunctive(
+    const std::vector<IntervalVariable>& vars);
 
 // Same as Disjunctive() but also creates a Boolean variable for all the
 // possible precedences of the form (task i is before task j).
@@ -105,15 +106,15 @@ class DisjunctiveConstraint : public PropagatorInterface {
   // given IntervalVariable.
   DisjunctiveConstraint(
       const std::vector<IntervalVariable>& non_overlapping_intervals,
-      IntegerTrail* integer_trail, IntervalsRepository* task_repository,
-      PrecedencesPropagator* precedences);
+      Trail* trail, IntegerTrail* integer_trail,
+      IntervalsRepository* task_repository, PrecedencesPropagator* precedences);
 
   ~DisjunctiveConstraint() final {
     IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
   }
 
   // The algorithm is quadratic in the number of tasks.
-  bool Propagate(Trail* trail) final;
+  bool Propagate() final;
 
   // Registers this constraint with the GenericLiteralWatcher.
   void RegisterWith(GenericLiteralWatcher* watcher);
@@ -159,6 +160,7 @@ class DisjunctiveConstraint : public PropagatorInterface {
   void AddPresenceAndDurationReason(int t);
   void AddMinDurationReason(int t);
   void AddMinStartReason(int t, IntegerValue lower_bound);
+  void AddMinEndReason(int t, IntegerValue lower_bound);
   void AddMaxEndReason(int t, IntegerValue upper_bound);
   void AddMaxStartReason(int t, IntegerValue upper_bound);
 
@@ -179,15 +181,15 @@ class DisjunctiveConstraint : public PropagatorInterface {
   // propagation, it is unclear if tree-based structure will be a lot better
   // here (especially because on the kind of problem we can solve n is
   // relatively small, like 30).
-  bool OverloadCheckingPass(IntegerTrail* integer_trail, Trail* trail);
-  bool DetectablePrecedencePass(IntegerTrail* integer_trail, Trail* trail);
-  bool NotLastPass(IntegerTrail* integer_trail, Trail* trail);
-  bool EdgeFindingPass(IntegerTrail* integer_trail, Trail* trail);
+  bool OverloadCheckingPass();
+  bool DetectablePrecedencePass();
+  bool NotLastPass();
+  bool EdgeFindingPass();
 
   // Exploits the precedences relations of the form "this set of disjoint
   // IntervalVariables must be performed before a given IntegerVariable". The
   // relations are computed with PrecedencesPropagator::ComputePrecedences().
-  bool PrecedencePass(IntegerTrail* integer_trail, Trail* trail);
+  bool PrecedencePass();
 
   // Sorts the corresponding vectors of tasks. See below.
   void UpdateTaskByIncreasingMinStart();
@@ -238,6 +240,7 @@ class DisjunctiveConstraint : public PropagatorInterface {
   std::vector<IntegerLiteral> integer_reason_;
 
   const std::vector<IntervalVariable> non_overlapping_intervals_;
+  Trail* trail_;
   IntegerTrail* integer_trail_;
   IntervalsRepository* intervals_;
   PrecedencesPropagator* precedences_;

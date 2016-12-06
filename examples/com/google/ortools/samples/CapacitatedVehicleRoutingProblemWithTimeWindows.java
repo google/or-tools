@@ -163,7 +163,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
 
     RoutingModel model =
         new RoutingModel(numberOfLocations, numberOfVehicles,
-                         vehicleStarts, vehicleEnds);
+            vehicleStarts, vehicleEnds);
 
     // Setting up dimensions
     final int bigNumber = 100000;

@@ -62,7 +62,8 @@ enum LogBehavior { DEFAULT_LOG, STDOUT_LOG };
 // negative.
 SatSolver::Status SolveWithFuMalik(LogBehavior log,
                                    const LinearBooleanProblem& problem,
-                                   SatSolver* solver, std::vector<bool>* solution);
+                                   SatSolver* solver,
+                                   std::vector<bool>* solution);
 
 // The WPM1 algorithm is a generalization of the Fu & Malik algorithm to
 // weighted problems. Note that if all objective weights are the same, this is
@@ -137,7 +138,6 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScan(
 // TODO(user): If it is too much work to provide this set, we could add a more
 // complex heuristic to decide the next IntegerLiteral that will be associated
 // to a decision in the SatSolver search.
-//
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     bool log_info, IntegerVariable objective_var,
     const std::vector<IntegerVariable>& var_for_lazy_encoding,

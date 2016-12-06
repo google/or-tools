@@ -38,6 +38,11 @@ const BooleanVariable kNoBooleanVariable(-1);
 DEFINE_INT_TYPE(LiteralIndex, int);
 const LiteralIndex kNoLiteralIndex(-1);
 
+// Special values used in some API to indicate a literal that is always true
+// or always false.
+const LiteralIndex kTrueLiteralIndex(-2);
+const LiteralIndex kFalseLiteralIndex(-3);
+
 // A literal is used to represent a variable or its negation. If it represents
 // the variable it is said to be positive. If it represent its negation, it is
 // said to be negative. We support two representations as an integer.
@@ -191,7 +196,7 @@ class ClauseRef {
 
 // Forward declaration.
 class SatClause;
-class Propagator;
+class SatPropagator;
 
 // Information about a variable assignment.
 struct AssignmentInfo {
@@ -217,6 +222,11 @@ struct AssignmentInfo {
 
   // The index of this assignment in the trail.
   int32 trail_index;
+
+  std::string DebugString() const {
+    return StringPrintf("level:%d type:%d trail_index:%d", level, type,
+                        trail_index);
+  }
 };
 COMPILE_ASSERT(sizeof(AssignmentInfo) == 8,
                ERROR_AssignmentInfo_is_not_well_compacted);
@@ -253,7 +263,7 @@ class Trail {
 
   // Registers a propagator. This assigns a unique id to this propagator and
   // calls SetPropagatorId() on it.
-  void RegisterPropagator(Propagator* propagator);
+  void RegisterPropagator(SatPropagator* propagator);
 
   // Enqueues the assignment that make the given literal true on the trail. This
   // should only be called on unassigned variables.
@@ -314,7 +324,8 @@ class Trail {
   // Reason() function of the associated propagator.
   void NotifyThatReasonIsCached(BooleanVariable var) const {
     DCHECK(assignment_.VariableIsAssigned(var));
-    const std::vector<Literal>& reason = reasons_repository_[info_[var].trail_index];
+    const std::vector<Literal>& reason =
+        reasons_repository_[info_[var].trail_index];
     reasons_[var] = reason.empty() ? ClauseRef() : ClauseRef(reason);
     old_type_[var] = info_[var].type;
     info_[var].type = AssignmentType::kCachedReason;
@@ -419,23 +430,17 @@ class Trail {
   mutable ITIVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().
-  std::vector<Propagator*> propagators_;
+  std::vector<SatPropagator*> propagators_;
 
   DISALLOW_COPY_AND_ASSIGN(Trail);
 };
 
 // Base class for all the SAT constraints.
-class PropagatorInterface {
+class SatPropagator {
  public:
-  PropagatorInterface() {}
-  virtual ~PropagatorInterface() {}
-  virtual bool Propagate(Trail* trail) = 0;
-};
-class Propagator : public PropagatorInterface {
- public:
-  explicit Propagator(const std::string& name)
+  explicit SatPropagator(const std::string& name)
       : name_(name), propagator_id_(-1), propagation_trail_index_(0) {}
-  virtual ~Propagator() {}
+  virtual ~SatPropagator() {}
 
   // Sets/Gets this propagator unique id.
   void SetPropagatorId(int id) { propagator_id_ = id; }
@@ -456,7 +461,7 @@ class Propagator : public PropagatorInterface {
   //
   // TODO(user): Currently this is called at each Backtrack(), but we could
   // bundle the calls in case multiple conflict one after the other are detected
-  // even before the Propagate() call of a Propagator is called.
+  // even before the Propagate() call of a SatPropagator is called.
   //
   // TODO(user): It is not yet 100% the case, but this can be guaranteed to be
   // called with a trail index that will always be the start of a new decision
@@ -497,14 +502,14 @@ class Propagator : public PropagatorInterface {
   int propagation_trail_index_;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(Propagator);
+  DISALLOW_COPY_AND_ASSIGN(SatPropagator);
 };
 
 // ########################  Implementations below  ########################
 
 // TODO(user): A few of these method should be moved in a .cc
 
-inline bool Propagator::PropagatePreconditionsAreSatisfied(
+inline bool SatPropagator::PropagatePreconditionsAreSatisfied(
     const Trail& trail) const {
   if (propagation_trail_index_ > trail.Index()) {
     LOG(INFO) << "Issue in '" << name_ << ":"
@@ -538,7 +543,7 @@ inline void Trail::Resize(int num_variables) {
   reference_var_with_same_reason_as_.resize(num_variables);
 }
 
-inline void Trail::RegisterPropagator(Propagator* propagator) {
+inline void Trail::RegisterPropagator(SatPropagator* propagator) {
   if (propagators_.empty()) {
     propagators_.resize(AssignmentType::kFirstFreePropagationId);
   }

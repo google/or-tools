@@ -24,6 +24,7 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "base/stringpiece_utils.h"
 #include "base/strutil.h"
 #include "algorithms/sparse_permutation.h"
 #include "sat/boolean_problem.h"
@@ -123,16 +124,16 @@ double GetScaledTrivialBestBound(const LinearBooleanProblem& problem) {
 }
 
 void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
-  if (HasSuffixString(filename, ".opb") ||
-      HasSuffixString(filename, ".opb.bz2")) {
+  if (strings::EndsWith(filename, ".opb") ||
+      strings::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
     if (!reader.Load(filename, problem)) {
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
-  } else if (HasSuffixString(filename, ".cnf") ||
-             HasSuffixString(filename, ".cnf.gz") ||
-             HasSuffixString(filename, ".wcnf") ||
-             HasSuffixString(filename, ".wcnf.gz")) {
+  } else if (strings::EndsWith(filename, ".cnf") ||
+             strings::EndsWith(filename, ".cnf.gz") ||
+             strings::EndsWith(filename, ".wcnf") ||
+             strings::EndsWith(filename, ".wcnf.gz")) {
     SatCnfReader reader;
     if (FLAGS_fu_malik || FLAGS_linear_scan || FLAGS_wpm1 || FLAGS_qmaxsat ||
         FLAGS_core_enc) {
@@ -325,7 +326,7 @@ int Run() {
       if (result == SatSolver::MODEL_SAT) {
         StoreAssignment(solver->Assignment(), problem.mutable_assignment());
       }
-      if (HasSuffixString(FLAGS_output, ".txt")) {
+      if (strings::EndsWith(FLAGS_output, ".txt")) {
         CHECK_OK(file::SetTextProto(FLAGS_output, problem, file::Defaults()));
       } else {
         CHECK_OK(file::SetBinaryProto(FLAGS_output, problem, file::Defaults()));

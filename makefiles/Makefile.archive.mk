@@ -24,8 +24,6 @@ create_dirs:
 	        $(MKDIR) temp$S$(INSTALL_DIR)$Slib
 	        $(MKDIR) temp$S$(INSTALL_DIR)$Sobjs
 	        $(MKDIR) temp$S$(INSTALL_DIR)$Sbin
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sbin$Scpp
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sbin$Scsharp
 	        $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude
 	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Salgorithms
 	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sbase
@@ -67,11 +65,12 @@ create_dirs:
 	$(COPY) tools$SREADME.cc.java.csharp temp$S$(INSTALL_DIR)$SREADME
 	$(COPY) tools$SMakefile.cc temp$S$(INSTALL_DIR)$SMakefile
 
-cc_archive:
+cc_archive: cc
 
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)dimacs.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) examples$Scpp$S*.cc temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) examples$Scpp$S*.h temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) src$Salgorithms$S*.h temp$S$(INSTALL_DIR)$Sinclude$Salgorithms
@@ -112,10 +111,10 @@ else
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v sparsehash | tar xvm
 endif
 
-dotnet_archive:
+dotnet_archive: csharp
 
-	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin$Scsharp
-	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin$Scsharp
+	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin
+	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin
 	$(COPY) examples$Scsharp$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Scsharp$Ssolution$SProperties$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
 	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
@@ -129,10 +128,10 @@ ifeq "$(SYSTEM)" "win"
 	$(COPY) examples$Scsharp$S*.sln temp$S$(INSTALL_DIR)$Sexamples
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 else
-	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin$Scsharp
+	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin
 endif
 
-java_archive:
+java_archive: java
 	$(COPY) lib$S*.jar temp$S$(INSTALL_DIR)$Slib
 	$(COPY) lib$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT) temp$S$(INSTALL_DIR)$Slib
 
@@ -144,41 +143,26 @@ java_archive:
 	$(COPY) examples$Sdata$Squasigroup_completion$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 	$(COPY) examples$Scom$Sgoogle$Sortools$Ssamples$S*.java temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
 
-
+fz_archive: cc fz
+	-$(DELREC) temp
+	mkdir temp
+	mkdir temp$S$(FZ_INSTALL_DIR)
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
+	mkdir temp$S$(FZ_INSTALL_DIR)$Slib
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
+	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
+	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
+	$(COPY) bin$Sfz$E temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) src$Sflatzinc$Smznlib_cp$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
+	$(COPY) src$Sflatzinc$Smznlib_sat$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
+	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
 ifeq "$(SYSTEM)" "win"
-fz_archive: fz
-	-$(DELREC) temp
-	mkdir temp
-	mkdir temp$S$(FZ_INSTALL_DIR)
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
-	mkdir temp$S$(FZ_INSTALL_DIR)$Slib
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
-	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
-	$(COPY) bin$Sfz$E temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
-	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
 	cd temp && ..$Stools$Szip.exe -r ..$S$(FZ_INSTALL_DIR).zip $(FZ_INSTALL_DIR)
-	-$(DELREC) temp
 else
-fz_archive: $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX)
-	-$(DELREC) temp
-	mkdir temp
-	mkdir temp$S$(FZ_INSTALL_DIR)
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
-	mkdir temp$S$(FZ_INSTALL_DIR)$Slib
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
-	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
-	$(COPY) bin$Sfz$E temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) src$Sflatzinc$Smznlib$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc
-	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
 ifeq ($(PLATFORM),LINUX)
 	$(DEP_BIN_DIR)$Spatchelf --set-rpath '$$ORIGIN/../lib' temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
 endif
@@ -189,8 +173,8 @@ ifeq ($(PLATFORM),MACOSX)
 	$(RM) temp$S$(FZ_INSTALL_DIR)$Sfix_fz_libraries_on_mac.sh
 endif
 	cd temp && tar cvzf ..$S$(FZ_INSTALL_DIR).tar.gz $(FZ_INSTALL_DIR)
-	-$(DELREC) temp
 endif
+	-$(DELREC) temp
 
 
 test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
@@ -247,7 +231,7 @@ ifeq "$(DISTRIBUTION_NUMBER)" "14.04"
     pre_release: archive test_archive fz_archive test_fz_archive python_examples_archive pypi_archive
     release: pypi_upload
 else 
-ifeq "$(DISTRIBUTION_NUMBER)" "16.0"
+ifeq "$(DISTRIBUTION_NUMBER)" "16.04"
     build_release: clean all test fz
     pre_release: archive test_archive fz_archive test_fz_archive
     release:

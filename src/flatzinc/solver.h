@@ -14,6 +14,9 @@
 #ifndef OR_TOOLS_FLATZINC_SOLVER_H_
 #define OR_TOOLS_FLATZINC_SOLVER_H_
 
+#include <unordered_map>
+#include <unordered_set>
+
 #include "constraint_solver/constraint_solver.h"
 #include "flatzinc/model.h"
 #include "flatzinc/reporting.h"
@@ -108,6 +111,9 @@ class Solver {
     return stored_values_[solution_index][var];
   }
 
+  static void ReportInconsistentModel(const Model& model, FlatzincParameters p,
+                                      SearchReportingInterface* report);
+
  private:
   void StoreSolution();
   bool HasSearchAnnotations() const;
@@ -117,10 +123,10 @@ class Solver {
                               std::vector<IntVar*>* active_variables,
                               std::vector<int>* defined_occurrences,
                               std::vector<int>* active_occurrences);
-  void AddCompletionDecisionBuilders(const std::vector<IntVar*>& defined_variables,
-                                     const std::vector<IntVar*>& active_variables,
-                                     SearchLimit* limit,
-                                     std::vector<DecisionBuilder*>* builders);
+  void AddCompletionDecisionBuilders(
+      const std::vector<IntVar*>& defined_variables,
+      const std::vector<IntVar*>& active_variables, SearchLimit* limit,
+      std::vector<DecisionBuilder*>* builders);
   DecisionBuilder* CreateDecisionBuilders(const FlatzincParameters& p,
                                           SearchLimit* limit);
   void CollectOutputVariables(std::vector<IntVar*>* output_variables);
@@ -130,15 +136,15 @@ class Solver {
   ModelStatistics statistics_;
   SolverData data_;
   std::vector<IntVar*> active_variables_;
-  hash_map<IntVar*, int> extracted_occurrences_;
-  hash_set<IntegerVariable*> implied_variables_;
+  std::unordered_map<IntVar*, int> extracted_occurrences_;
+  std::unordered_set<IntegerVariable*> implied_variables_;
   std::string search_name_;
   IntVar* objective_var_;
   OptimizeVar* objective_monitor_;
   // Default Search Phase (to get stats).
   DecisionBuilder* default_phase_;
   // Stored solutions.
-  std::vector<hash_map<IntegerVariable*, int64>> stored_values_;
+  std::vector<std::unordered_map<IntegerVariable*, int64>> stored_values_;
   operations_research::Solver* solver_;
 };
 }  // namespace fz

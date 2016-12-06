@@ -75,6 +75,9 @@ DEFINE_bool(cp_use_cumulative_edge_finder, true,
             "Resources in O(kn log n)' by Petr Vilim, CP 2009.");
 DEFINE_bool(cp_use_cumulative_time_table, true,
             "Use a O(n^2) cumulative time table propagation algorithm.");
+DEFINE_bool(cp_use_cumulative_time_table_sync, false,
+            "Use a synchronized O(n^2 log n) cumulative time table propagation "
+            "algorithm.");
 DEFINE_bool(cp_use_sequence_high_demand_tasks, true,
             "Use a sequence constraints for cumulative tasks that have a "
             "demand greater than half of the capacity of the resource.");
@@ -139,6 +142,8 @@ ConstraintSolverParameters Solver::DefaultSolverParameters() {
   params.set_use_mdd_table(FLAGS_cp_use_mdd_table);
   params.set_use_cumulative_edge_finder(FLAGS_cp_use_cumulative_edge_finder);
   params.set_use_cumulative_time_table(FLAGS_cp_use_cumulative_time_table);
+  params.set_use_cumulative_time_table_sync(
+      FLAGS_cp_use_cumulative_time_table_sync);
   params.set_use_sequence_high_demand_tasks(
       FLAGS_cp_use_sequence_high_demand_tasks);
   params.set_use_all_possible_disjunctions(
@@ -1085,11 +1090,11 @@ class Search {
 #define CP_DO_FAIL(search) longjmp(search->fail_buffer_, 1)
 #else  // CP_USE_EXCEPTIONS_FOR_BACKTRACK
 class FailException {};
-#define CP_TRY(search)                                                 \
-  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search";    \
-  search->jmpbuf_filled_ = true;                                       \
+#define CP_TRY(search)                                              \
+  CHECK(!search->jmpbuf_filled_) << "Fail() called outside search"; \
+  search->jmpbuf_filled_ = true;                                    \
   try
-#define CP_ON_FAIL catch(FailException&)
+#define CP_ON_FAIL catch (FailException&)
 #define CP_DO_FAIL(search) throw FailException()
 #endif  // CP_USE_EXCEPTIONS_FOR_BACKTRACK
 
@@ -2493,8 +2498,8 @@ void PropagationBaseObject::EnqueueAll(const SimpleRevFIFO<Demon*>& demons) {
 
 std::string DecisionBuilder::DebugString() const { return "DecisionBuilder"; }
 
-void DecisionBuilder::AppendMonitors(Solver* const solver,
-                                     std::vector<SearchMonitor*>* const extras) {}
+void DecisionBuilder::AppendMonitors(
+    Solver* const solver, std::vector<SearchMonitor*>* const extras) {}
 
 void DecisionBuilder::Accept(ModelVisitor* const visitor) const {}
 
@@ -2526,6 +2531,7 @@ const char ModelVisitor::kAbs[] = "Abs";
 const char ModelVisitor::kAbsEqual[] = "AbsEqual";
 const char ModelVisitor::kAllDifferent[] = "AllDifferent";
 const char ModelVisitor::kAllowedAssignments[] = "AllowedAssignments";
+const char ModelVisitor::kAtMost[] = "AtMost";
 const char ModelVisitor::kBetween[] = "Between";
 const char ModelVisitor::kConditionalExpr[] = "ConditionalExpr";
 const char ModelVisitor::kCircuit[] = "Circuit";
@@ -2745,7 +2751,8 @@ void ModelVisitor::VisitSequenceVariable(const SequenceVar* const variable) {
 void ModelVisitor::VisitIntegerArgument(const std::string& arg_name, int64 value) {}
 
 void ModelVisitor::VisitIntegerArrayArgument(const std::string& arg_name,
-                                             const std::vector<int64>& values) {}
+                                             const std::vector<int64>& values) {
+}
 
 void ModelVisitor::VisitIntegerMatrixArgument(const std::string& arg_name,
                                               const IntTupleSet& tuples) {}
@@ -2993,7 +3000,8 @@ class Trace : public PropagationMonitor {
     ForAll(monitors_, &PropagationMonitor::SetValues, var, values);
   }
 
-  void RemoveValues(IntVar* const var, const std::vector<int64>& values) override {
+  void RemoveValues(IntVar* const var,
+                    const std::vector<int64>& values) override {
     ForAll(monitors_, &PropagationMonitor::RemoveValues, var, values);
   }
 

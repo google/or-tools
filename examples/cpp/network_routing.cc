@@ -584,8 +584,8 @@ class NetworkRoutingSolver {
   class PathBasedLns : public BaseLns {
    public:
     PathBasedLns(const std::vector<IntVar*>& vars, int fragment_size,
-                 const std::vector<std::vector<OnePath> >& all_paths, int num_arcs,
-                 const std::vector<int64>& actual_usage_costs)
+                 const std::vector<std::vector<OnePath> >& all_paths,
+                 int num_arcs, const std::vector<int64>& actual_usage_costs)
         : BaseLns(vars),
           rand_(FLAGS_lns_seed),
           fragment_size_(fragment_size),
@@ -717,7 +717,8 @@ class NetworkRoutingSolver {
 
   class StoreUsageCosts : public DecisionBuilder {
    public:
-    StoreUsageCosts(const std::vector<IntVar*>& vars, std::vector<int64>* values)
+    StoreUsageCosts(const std::vector<IntVar*>& vars,
+                    std::vector<int64>* values)
         : vars_(vars), values_(values) {}
     ~StoreUsageCosts() override {}
 
@@ -874,8 +875,8 @@ class NetworkRoutingSolver {
   }
   void DisplaySolution(int num_arcs, int64 max_usage_cost,
                        const std::vector<IntVar*>& usage_costs,
-                       const std::vector<std::vector<IntVar*> >& path_vars, bool precise,
-                       int64 comfort_zone) {
+                       const std::vector<std::vector<IntVar*> >& path_vars,
+                       bool precise, int64 comfort_zone) {
     // We will show paths above the comfort zone, or above the max
     // utilization minus 5%.
     const int64 kFivePercentInThousandth = 50;

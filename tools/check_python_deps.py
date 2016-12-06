@@ -1,8 +1,5 @@
-import sys
-import inspect
-from sys import executable
-from sys import version_info
-import logging, sys
+import logging, sys, inspect
+from optparse import OptionParser
 
 #try to import setuptools
 try:
@@ -30,13 +27,12 @@ def wrong_version(module, modulename, minimum_version, installed_version):
 You are using """ + modulename + """-""" + installed_version + """ : """ + inspect.getfile(module) + """
 The minimum required version is : """ + minimum_version + """
 Please run \"""" + str(sys.executable) + """ setup.py install --user\" to upgrade
-If the problem persits, then """ + inspect.getfile(module) + """ is binding the newely installed version of """ + modulename + """
+If the problem persists, then """ + inspect.getfile(module) + """ is binding the newely installed version of """ + modulename + """
 You should either remove it, or use PYTHONPATH to manage your sys.path. If you decide to use PYTHONPATH, do it to run the ortools examples as well.
 Check https://docs.python.org/3/tutorial/modules.html#the-module-search-path from more information."""
 
 if __name__ == '__main__':
-	from optparse import OptionParser
-	parser = OptionParser('Test logging')
+	parser = OptionParser('Log level')
 	parser.add_option('-l','--log',type='string',help='Available levels are CRITICAL (3), ERROR (2), WARNING (1), INFO (0), DEBUG (-1)',default='INFO')
 	options,args = parser.parse_args()
  

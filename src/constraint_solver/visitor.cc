@@ -109,7 +109,8 @@ IntExpr* ArgumentHolder::FindIntegerExpressionArgumentOrDie(
   return FindOrDie(integer_expression_argument_, arg_name);
 }
 
-const std::vector<IntVar*>& ArgumentHolder::FindIntegerVariableArrayArgumentOrDie(
+const std::vector<IntVar*>&
+ArgumentHolder::FindIntegerVariableArrayArgumentOrDie(
     const std::string& arg_name) const {
   return FindOrDie(integer_variable_array_argument_, arg_name);
 }

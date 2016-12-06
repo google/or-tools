@@ -1,5 +1,7 @@
 # Makefile targets.
 
+.PHONY: ccc rcc clean_cc clean_compat ccexe
+
 # Main target
 cc: ortoolslibs ccexe
 
@@ -74,7 +76,7 @@ DIMACS_DEPS = \
 DIMACS_LNK = $(PRE_LIB)dimacs$(POST_LIB) $(OR_TOOLS_LNK)
 dimacslibs: $(DIMACS_LIBS)
 
-FAP_LIBS      = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
+FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
 FAP_DEPS = \
 	$(EX_DIR)/cpp/fap_model_printer.h \
 	$(EX_DIR)/cpp/fap_parser.h \
@@ -87,6 +89,7 @@ faplibs: $(FAP_LIBS)
 
 FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX)
 FLATZINC_DEPS = \
+	$(SRC_DIR)/flatzinc/checker.h \
 	$(SRC_DIR)/flatzinc/constraints.h \
 	$(SRC_DIR)/flatzinc/flatzinc_constraints.h \
 	$(SRC_DIR)/flatzinc/logging.h \
@@ -138,7 +141,8 @@ CC_BINARIES = \
 	$(BIN_DIR)/linear_solver_protocol_buffers$E \
 	$(BIN_DIR)/strawberry_fields_with_column_generation$E \
 	$(BIN_DIR)/mps_driver$E \
-	$(BIN_DIR)/solve$E
+	$(BIN_DIR)/solve$E \
+	$(BIN_DIR)/frequency_assignment_problem$E
 
 ccexe: $(CC_BINARIES)
 
@@ -178,10 +182,13 @@ $(OBJ_DIR)/fap_parser.$O: $(EX_DIR)/cpp/fap_parser.cc
 $(OBJ_DIR)/fap_utilities.$O: $(EX_DIR)/cpp/fap_utilities.cc
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Sfap_utilities.cc $(OBJ_OUT)$(OBJ_DIR)$Sfap_utilities.$O
 
+$(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX): $(FAP_OBJS)
+	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX) $(FAP_OBJS)
 
 # Flatzinc code
 
 FLATZINC_OBJS=\
+	$(OBJ_DIR)/flatzinc/checker.$O \
 	$(OBJ_DIR)/flatzinc/constraints.$O \
 	$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O \
 	$(OBJ_DIR)/flatzinc/logging.$O \
@@ -205,6 +212,9 @@ $(GEN_DIR)/flatzinc/parser.tab.cc: $(SRC_DIR)/flatzinc/parser.yy $(BISON)
 	$(BISON) -t -o $(GEN_DIR)/flatzinc/parser.tab.cc -d $<
 
 $(GEN_DIR)/flatzinc/parser.tab.hh: $(GEN_DIR)/flatzinc/parser.tab.cc
+
+$(OBJ_DIR)/flatzinc/checker.$O: $(SRC_DIR)/flatzinc/checker.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Schecker.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Schecker.$O
 
 $(OBJ_DIR)/flatzinc/constraints.$O: $(SRC_DIR)/flatzinc/constraints.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sconstraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sconstraints.$O
@@ -607,6 +617,13 @@ $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
 	  $(DEPENDENCIES_LNK) \
 	  $(OR_TOOLS_LD_FLAGS)
 
+# compile and run C++ examples
+
+ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+
+rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
 
 # Debug
 printdir:

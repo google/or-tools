@@ -518,7 +518,9 @@ LP_DATA_DEPS = \
     $(SRC_DIR)/base/thorough_hash.h \
     $(SRC_DIR)/base/time_support.h \
     $(SRC_DIR)/algorithms/dynamic_partition.h \
-    $(SRC_DIR)/algorithms/dynamic_permutation.h
+    $(SRC_DIR)/algorithms/dynamic_permutation.h \
+    $(SRC_DIR)/linear_solver/linear_solver.h \
+    $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
 LP_DATA_LIB_OBJS = \
     $(OBJ_DIR)/lp_data/lp_data.$O \
@@ -529,6 +531,7 @@ LP_DATA_LIB_OBJS = \
     $(OBJ_DIR)/lp_data/matrix_scaler.$O \
     $(OBJ_DIR)/lp_data/matrix_utils.$O \
     $(OBJ_DIR)/lp_data/mps_reader.$O \
+    $(OBJ_DIR)/lp_data/proto_utils.$O \
     $(OBJ_DIR)/lp_data/sparse.$O \
     $(OBJ_DIR)/lp_data/sparse_column.$O
 
@@ -587,6 +590,10 @@ $(SRC_DIR)/lp_data/mps_reader.h: \
 $(SRC_DIR)/lp_data/permutation.h: \
     $(SRC_DIR)/lp_data/lp_types.h \
     $(SRC_DIR)/util/return_macros.h
+
+$(SRC_DIR)/lp_data/proto_utils.h: \
+    $(SRC_DIR)/lp_data/lp_data.h \
+    $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
 $(SRC_DIR)/lp_data/sparse_column.h: \
     $(SRC_DIR)/lp_data/sparse_vector.h
@@ -679,6 +686,11 @@ $(OBJ_DIR)/lp_data/mps_reader.$O: \
     $(SRC_DIR)/base/strutil.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/lp_data/mps_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smps_reader.$O
 
+$(OBJ_DIR)/lp_data/proto_utils.$O: \
+    $(SRC_DIR)/lp_data/proto_utils.cc \
+    $(SRC_DIR)/lp_data/proto_utils.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/lp_data/proto_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Sproto_utils.$O
+
 $(OBJ_DIR)/lp_data/sparse.$O: \
     $(SRC_DIR)/lp_data/sparse.cc \
     $(SRC_DIR)/lp_data/lp_data.h \
@@ -750,7 +762,6 @@ GLOP_LIB_OBJS = \
     $(OBJ_DIR)/glop/markowitz.$O \
     $(OBJ_DIR)/glop/preprocessor.$O \
     $(OBJ_DIR)/glop/primal_edge_norms.$O \
-    $(OBJ_DIR)/glop/proto_utils.$O \
     $(OBJ_DIR)/glop/reduced_costs.$O \
     $(OBJ_DIR)/glop/revised_simplex.$O \
     $(OBJ_DIR)/glop/status.$O \
@@ -832,10 +843,6 @@ $(SRC_DIR)/glop/primal_edge_norms.h: \
     $(SRC_DIR)/util/stats.h \
     $(SRC_DIR)/lp_data/lp_data.h \
     $(SRC_DIR)/lp_data/lp_types.h
-
-$(SRC_DIR)/glop/proto_utils.h: \
-    $(SRC_DIR)/lp_data/lp_data.h \
-    $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
 $(SRC_DIR)/glop/rank_one_update.h: \
     $(SRC_DIR)/glop/status.h \
@@ -929,7 +936,6 @@ $(OBJ_DIR)/glop/lp_solver.$O: \
     $(SRC_DIR)/glop/lp_solver.cc \
     $(SRC_DIR)/glop/lp_solver.h \
     $(SRC_DIR)/glop/preprocessor.h \
-    $(SRC_DIR)/glop/proto_utils.h \
     $(SRC_DIR)/glop/status.h \
     $(SRC_DIR)/util/fp_utils.h \
     $(SRC_DIR)/util/proto_tools.h \
@@ -939,7 +945,8 @@ $(OBJ_DIR)/glop/lp_solver.$O: \
     $(SRC_DIR)/base/strutil.h \
     $(SRC_DIR)/base/timer.h \
     $(SRC_DIR)/lp_data/lp_types.h \
-    $(SRC_DIR)/lp_data/lp_utils.h
+    $(SRC_DIR)/lp_data/lp_utils.h \
+    $(SRC_DIR)/lp_data/proto_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/lp_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Slp_solver.$O
 
 $(OBJ_DIR)/glop/lu_factorization.$O: \
@@ -971,11 +978,6 @@ $(OBJ_DIR)/glop/primal_edge_norms.$O: \
     $(SRC_DIR)/base/timer.h \
     $(SRC_DIR)/lp_data/lp_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/primal_edge_norms.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sprimal_edge_norms.$O
-
-$(OBJ_DIR)/glop/proto_utils.$O: \
-    $(SRC_DIR)/glop/proto_utils.cc \
-    $(SRC_DIR)/glop/proto_utils.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/glop/proto_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sproto_utils.$O
 
 $(OBJ_DIR)/glop/reduced_costs.$O: \
     $(SRC_DIR)/glop/reduced_costs.cc \
@@ -1068,13 +1070,13 @@ GRAPH_LIB_OBJS = \
     $(OBJ_DIR)/graph/max_flow.$O \
     $(OBJ_DIR)/graph/min_cost_flow.$O \
     $(OBJ_DIR)/graph/shortestpaths.$O \
+    $(OBJ_DIR)/graph/util.$O \
     $(OBJ_DIR)/graph/flow_problem.pb.$O
 
 $(SRC_DIR)/graph/assignment.h: \
     $(SRC_DIR)/graph/ebert_graph.h
 
 $(SRC_DIR)/graph/cliques.h: \
-    $(SRC_DIR)/base/callback.h \
     $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
@@ -1117,6 +1119,15 @@ $(SRC_DIR)/graph/hamiltonian_path.h: \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/saturated_arithmetic.h
 
+$(SRC_DIR)/graph/io.h: \
+    $(SRC_DIR)/graph/graph.h \
+    $(SRC_DIR)/base/join.h \
+    $(SRC_DIR)/base/numbers.h \
+    $(SRC_DIR)/base/split.h \
+    $(SRC_DIR)/base/status.h \
+    $(SRC_DIR)/base/statusor.h \
+    $(SRC_DIR)/util/filelineiter.h
+
 $(SRC_DIR)/graph/linear_assignment.h: \
     $(SRC_DIR)/graph/ebert_graph.h \
     $(SRC_DIR)/base/commandlineflags.h \
@@ -1158,14 +1169,8 @@ $(SRC_DIR)/graph/shortestpaths.h: \
 
 $(SRC_DIR)/graph/util.h: \
     $(SRC_DIR)/graph/graph.h \
-    $(SRC_DIR)/base/join.h \
-    $(SRC_DIR)/base/map_util.h \
-    $(SRC_DIR)/base/murmur.h \
-    $(SRC_DIR)/base/numbers.h \
-    $(SRC_DIR)/base/split.h \
-    $(SRC_DIR)/base/status.h \
-    $(SRC_DIR)/base/statusor.h \
-    $(SRC_DIR)/util/filelineiter.h
+    $(SRC_DIR)/base/hash.h \
+    $(SRC_DIR)/base/map_util.h
 
 $(OBJ_DIR)/graph/assignment.$O: \
     $(SRC_DIR)/graph/assignment.cc \
@@ -1236,6 +1241,11 @@ $(OBJ_DIR)/graph/shortestpaths.$O: \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/shortestpaths.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sshortestpaths.$O
+
+$(OBJ_DIR)/graph/util.$O: \
+    $(SRC_DIR)/graph/util.cc \
+    $(SRC_DIR)/graph/util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/util.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Sutil.$O
 
 $(GEN_DIR)/graph/flow_problem.pb.cc: $(SRC_DIR)/graph/flow_problem.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/graph/flow_problem.proto
@@ -1434,6 +1444,7 @@ SAT_DEPS = \
 SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/boolean_problem.$O \
     $(OBJ_DIR)/sat/clause.$O \
+    $(OBJ_DIR)/sat/cp_constraints.$O \
     $(OBJ_DIR)/sat/disjunctive.$O \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
@@ -1443,12 +1454,14 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/lp_utils.$O \
     $(OBJ_DIR)/sat/no_cycle.$O \
     $(OBJ_DIR)/sat/optimization.$O \
+    $(OBJ_DIR)/sat/overload_checker.$O \
     $(OBJ_DIR)/sat/pb_constraint.$O \
     $(OBJ_DIR)/sat/precedences.$O \
     $(OBJ_DIR)/sat/sat_solver.$O \
     $(OBJ_DIR)/sat/simplification.$O \
     $(OBJ_DIR)/sat/symmetry.$O \
     $(OBJ_DIR)/sat/table.$O \
+    $(OBJ_DIR)/sat/timetabling.$O \
     $(OBJ_DIR)/sat/util.$O \
     $(OBJ_DIR)/sat/boolean_problem.pb.$O \
     $(OBJ_DIR)/sat/sat_parameters.pb.$O
@@ -1473,6 +1486,11 @@ $(SRC_DIR)/sat/clause.h: \
     $(SRC_DIR)/base/timer.h \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/stats.h
+
+$(SRC_DIR)/sat/cp_constraints.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/util/sorted_interval_list.h
 
 $(SRC_DIR)/sat/disjunctive.h: \
     $(SRC_DIR)/sat/integer.h \
@@ -1539,6 +1557,13 @@ $(SRC_DIR)/sat/optimization.h: \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/sat/sat_solver.h
 
+$(SRC_DIR)/sat/overload_checker.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h \
+    $(SRC_DIR)/base/macros.h
+
 $(SRC_DIR)/sat/pb_constraint.h: \
     $(SRC_DIR)/sat/sat_base.h \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
@@ -1595,6 +1620,12 @@ $(SRC_DIR)/sat/table.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h
 
+$(SRC_DIR)/sat/timetabling.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h
+
 $(SRC_DIR)/sat/util.h: \
     $(GEN_DIR)/sat/sat_parameters.pb.h \
     $(SRC_DIR)/base/random.h
@@ -1608,6 +1639,7 @@ $(OBJ_DIR)/sat/boolean_problem.$O: \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/algorithms/find_graph_symmetries.h \
     $(SRC_DIR)/graph/graph.h \
+    $(SRC_DIR)/graph/io.h \
     $(SRC_DIR)/graph/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/boolean_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sboolean_problem.$O
 
@@ -1621,6 +1653,12 @@ $(OBJ_DIR)/sat/clause.$O: \
     $(SRC_DIR)/base/sysinfo.h \
     $(SRC_DIR)/util/time_limit.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/clause.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sclause.$O
+
+$(OBJ_DIR)/sat/cp_constraints.$O: \
+    $(SRC_DIR)/sat/cp_constraints.cc \
+    $(SRC_DIR)/sat/cp_constraints.h \
+    $(SRC_DIR)/base/map_util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/cp_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_constraints.$O
 
 $(OBJ_DIR)/sat/disjunctive.$O: \
     $(SRC_DIR)/sat/disjunctive.cc \
@@ -1677,6 +1715,12 @@ $(OBJ_DIR)/sat/optimization.$O: \
     $(SRC_DIR)/sat/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/optimization.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soptimization.$O
 
+$(OBJ_DIR)/sat/overload_checker.$O: \
+    $(SRC_DIR)/sat/overload_checker.cc \
+    $(SRC_DIR)/sat/overload_checker.h \
+    $(SRC_DIR)/sat/sat_solver.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/overload_checker.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soverload_checker.$O
+
 $(OBJ_DIR)/sat/pb_constraint.$O: \
     $(SRC_DIR)/sat/pb_constraint.cc \
     $(SRC_DIR)/sat/pb_constraint.h \
@@ -1725,6 +1769,13 @@ $(OBJ_DIR)/sat/table.$O: \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/stl_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/table.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stable.$O
+
+$(OBJ_DIR)/sat/timetabling.$O: \
+    $(SRC_DIR)/sat/timetabling.cc \
+    $(SRC_DIR)/sat/overload_checker.h \
+    $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/sat/timetabling.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetabling.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetabling.$O
 
 $(OBJ_DIR)/sat/util.$O: \
     $(SRC_DIR)/sat/util.cc \
@@ -2840,6 +2891,7 @@ $(OBJ_DIR)/constraint_solver/routing.$O: \
 
 $(OBJ_DIR)/constraint_solver/routing_flags.$O: \
     $(SRC_DIR)/constraint_solver/routing_flags.cc \
+    $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/routing_flags.h \
     $(SRC_DIR)/base/map_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_flags.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_flags.$O

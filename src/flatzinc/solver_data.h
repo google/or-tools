@@ -15,6 +15,7 @@
 #define OR_TOOLS_FLATZINC_SOLVER_DATA_H_
 
 #include <set>
+#include <unordered_map>
 #include <vector>
 
 #include "constraint_solver/constraint_solver.h"
@@ -35,7 +36,7 @@ class SolverData {
   std::vector<IntVar*> GetOrCreateVariableArray(const Argument& argument);
   IntExpr* Extract(IntegerVariable* var);
   void SetExtracted(IntegerVariable* var, IntExpr* expr);
-  const hash_map<IntegerVariable*, IntExpr*>& extracted_map() const {
+  const std::unordered_map<IntegerVariable*, IntExpr*>& extracted_map() const {
     return extracted_map_;
   }
 
@@ -64,7 +65,7 @@ class SolverData {
  private:
   operations_research::Solver solver_;
   SatPropagator* sat_;
-  hash_map<IntegerVariable*, IntExpr*> extracted_map_;
+  std::unordered_map<IntegerVariable*, IntExpr*> extracted_map_;
 
   // Stores a set of sorted std::vector<IntegerVariables*>.
   // TODO(user, fdid): If it become too slow, switch to an unordered_set, it

@@ -24,6 +24,19 @@ def test_modulo():
   print(x % 3)
   print(x % y)
 
+def test_modulo2():
+  solver = pywrapcp.Solver('test modulo')
+  x = solver.IntVar([-7, 7], 'x')
+  y = solver.IntVar([-4, 4], 'y')
+  z = (x % y).Var()
+  t = (x // y).Var()
+  db = solver.Phase([x, y], solver.CHOOSE_FIRST_UNBOUND,
+                    solver.ASSIGN_MIN_VALUE)
+  solver.NewSearch(db)
+  while solver.NextSolution():
+    print 'x = %d, y = %d, x %% y = %d, x div y = %d' % (
+        x.Value(), y.Value(), z.Value(), t.Value())
+  solver.EndSearch()
 
 def test_limit():
   solver = pywrapcp.Solver('test limit')
@@ -323,6 +336,7 @@ def main():
   test_member()
   test_sparse_var()
   test_modulo()
+  test_modulo2()
   #  test_limit()
   #  test_export()
   test_search_monitor()

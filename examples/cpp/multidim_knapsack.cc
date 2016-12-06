@@ -290,14 +290,20 @@ void SolveKnapsack(MultiDimKnapsackData* const data) {
   std::vector<SearchMonitor*> monitors;
   OptimizeVar* const objective_monitor = solver.MakeMaximize(objective, 1);
   monitors.push_back(objective_monitor);
+
+  // Add a search collector of assign variables
+  SolutionCollector* const assign_solution_collector =
+      solver.MakeLastSolutionCollector();
+  assign_solution_collector->Add(assign);
+  monitors.push_back(assign_solution_collector);
   if (FLAGS_display_search_log) {
     SearchMonitor* const search_log = solver.MakeSearchLog(1000000, objective);
     monitors.push_back(search_log);
   }
-  DecisionBuilder* const db =
-      solver.MakePhase(assign, [data](int64 var, int64 value) {
-        return EvaluateItem(*data, var, value);
-      }, Solver::CHOOSE_STATIC_GLOBAL_BEST);
+  DecisionBuilder* const db = solver.MakePhase(
+      assign, [data](int64 var,
+                     int64 value) { return EvaluateItem(*data, var, value); },
+      Solver::CHOOSE_STATIC_GLOBAL_BEST);
   if (FLAGS_time_limit_in_ms != 0) {
     LOG(INFO) << "adding time limit of " << FLAGS_time_limit_in_ms << " ms";
     SearchLimit* const limit = solver.MakeLimit(
@@ -313,6 +319,19 @@ void SolveKnapsack(MultiDimKnapsackData* const data) {
 
   if (solver.Solve(db, monitors)) {
     LOG(INFO) << "Best solution found = " << objective_monitor->best();
+    std::string assigned_items = "";
+    for (int i = 0; i < assign.size(); i++) {
+      IntVar* assign_var = assign[i];
+      if (assign_solution_collector->Value(0, assign_var) == 1) {
+        assigned_items += ", " + std::to_string(i);
+      }
+    }
+    if (assigned_items == "") {
+      LOG(INFO) << "No items were assigned";
+    } else {
+      assigned_items.erase(0, 2);
+      LOG(INFO) << "Assigned items : " << assigned_items << ".";
+    }
   }
 }
 }  // namespace operations_research

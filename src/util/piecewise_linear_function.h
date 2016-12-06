@@ -119,8 +119,8 @@ class PiecewiseLinearFunction {
   // The segments represented by these vectors should not be overlapping.
   // Common endpoints are allowed.
   static PiecewiseLinearFunction* CreatePiecewiseLinearFunction(
-      std::vector<int64> points_x, std::vector<int64> points_y, std::vector<int64> slopes,
-      std::vector<int64> other_points_x);
+      std::vector<int64> points_x, std::vector<int64> points_y,
+      std::vector<int64> slopes, std::vector<int64> other_points_x);
 
   // Builds a multiple-segment step function with continuous or non continuous
   // domain. The arguments have the same semantics with the generic builder of
@@ -135,7 +135,8 @@ class PiecewiseLinearFunction {
   // which stops at kint64max. The first slope stops at the first point at
   // the level specified.
   static PiecewiseLinearFunction* CreateFullDomainFunction(
-      int64 initial_level, std::vector<int64> points_x, std::vector<int64> slopes);
+      int64 initial_level, std::vector<int64> points_x,
+      std::vector<int64> slopes);
 
   // Builds a function consisting of one segment.
   static PiecewiseLinearFunction* CreateOneSegmentFunction(int64 point_x,
@@ -218,7 +219,8 @@ class PiecewiseLinearFunction {
   void Subtract(const PiecewiseLinearFunction& function);
   // Decomposes the piecewise linear function in a set of convex piecewise
   // linear functions. The objects in the vector are owned by the client code.
-  void DecomposeToConvexFunctions(std::vector<PiecewiseLinearFunction*>* convex_set);
+  void DecomposeToConvexFunctions(
+      std::vector<PiecewiseLinearFunction*>* convex_set);
 
   const std::vector<PiecewiseSegment>& segments() const { return segments_; }
 

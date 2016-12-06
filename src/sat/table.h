@@ -24,7 +24,8 @@ namespace sat {
 // tuples. All the tuples must have the same size as var.size(), this is
 // Checked.
 std::function<void(Model*)> TableConstraint(
-    const std::vector<IntegerVariable>& vars, const std::vector<std::vector<int64>>& tuples);
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples);
 
 // Given an automata defined by a set of 3-tuples:
 //     (state, transition_with_value_as_label, next_state)
@@ -39,8 +40,9 @@ std::function<void(Model*)> TableConstraint(
 // We CHECK that there is only one possible transition for a state/value pair.
 // See the test for some examples.
 std::function<void(Model*)> TransitionConstraint(
-    const std::vector<IntegerVariable>& vars, const std::vector<std::vector<int64>>& automata,
-    int64 initial_state, const std::vector<int64>& final_states);
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& automata, int64 initial_state,
+    const std::vector<int64>& final_states);
 
 }  // namespace sat
 }  // namespace operations_research

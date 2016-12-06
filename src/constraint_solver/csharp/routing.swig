@@ -104,11 +104,10 @@ CS_TYPEMAP_STDVECTOR(operations_research::RoutingModel::NodeIndex, int, int);
   int actualIndex = 0;
   for (int index1 = 0; index1 < len$argnum_1; ++index1) {
     result[index1].reserve(len$argnum_2[index1]);
-	
     for (int index2 = 0; index2 < len$argnum_2[index1]; ++index2) {
       const TYPE value = inner_array[actualIndex];
       result[index1].emplace_back(value);
-	  actualIndex++;
+      actualIndex++;
     }
   }
 
@@ -238,6 +237,7 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %rename (AddDimensionWithVehicleCapacityAux) operations_research::RoutingModel::AddDimensionWithVehicleCapacity;
 %rename (SetArcCostEvaluatorOfAllVehiclesAux) operations_research::RoutingModel::SetArcCostEvaluatorOfAllVehicles;
 %rename (SetArcCostEvaluatorOfVehicleAux) operations_research::RoutingModel::SetArcCostEvaluatorOfVehicle;
+%rename (RoutingModelStatus) operations_research::RoutingModel::Status;
 
 %ignore operations_research::RoutingModel::AddVectorDimension(
     const int64* values,

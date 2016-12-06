@@ -158,7 +158,8 @@ ClauseRef NoCyclePropagator::Reason(const Trail& trail, int trail_index) const {
   const int source = reason_arc_[trail_index].second;
   const int target = reason_arc_[trail_index].first;
   const int trail_limit = reason_trail_limit_[trail_index];
-  std::vector<Literal>* const reason = trail.GetVectorToStoreReason(trail_index);
+  std::vector<Literal>* const reason =
+      trail.GetVectorToStoreReason(trail_index);
 
   // Note that this modify node_is_reached_ and reached_nodes_.
   FindReasonForPath(trail, source, target, trail_limit, reason);

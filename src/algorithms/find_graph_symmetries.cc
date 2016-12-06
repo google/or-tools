@@ -589,7 +589,8 @@ std::unique_ptr<SparsePermutation>
 GraphSymmetryFinder::FindOneSuitablePermutation(
     int root_node, int root_image_node, DynamicPartition* base_partition,
     DynamicPartition* image_partition,
-    const std::vector<std::unique_ptr<SparsePermutation>>& generators_found_so_far,
+    const std::vector<std::unique_ptr<SparsePermutation>>&
+        generators_found_so_far,
     const std::vector<std::vector<int>>& permutations_displacing_node) {
   // DCHECKs() and statistics.
   ScopedTimeDistributionUpdater search_time_updater(&stats_.search_time);
@@ -860,7 +861,8 @@ void GraphSymmetryFinder::PruneOrbitsUnderPermutationsCompatibleWithPartition(
   // Iterate on all targeted permutations. If they are compatible, apply
   // them to tmp_partition_ which will contain the incrementally merged
   // equivalence classes.
-  std::vector<int>& tmp_nodes_on_support = tmp_stack_;  // Rename, for readability.
+  std::vector<int>& tmp_nodes_on_support =
+      tmp_stack_;  // Rename, for readability.
   DCHECK(tmp_nodes_on_support.empty());
   // TODO(user): investigate further optimizations: maybe it's possible
   // to incrementally maintain the set of permutations that is compatible

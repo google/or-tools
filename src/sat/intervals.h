@@ -54,6 +54,8 @@ class IntervalsRepository {
   IntervalVariable CreateIntervalWithFixedSize(IntegerValue size);
   IntervalVariable CreateOptionalIntervalWithFixedSize(IntegerValue size,
                                                        Literal is_present);
+  IntervalVariable CreateIntervalFromStartAndSizeVars(IntegerVariable start,
+                                                      IntegerVariable size);
 
   // Returns whether or not a interval is optional and the associated literal.
   bool IsOptional(IntervalVariable i) const {
@@ -145,6 +147,14 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
   };
 }
 
+inline std::function<IntervalVariable(Model*)> NewIntervalFromStartAndSizeVars(
+    IntegerVariable start, IntegerVariable size) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntervalsRepository>()
+        ->CreateIntervalFromStartAndSizeVars(start, size);
+  };
+}
+
 inline std::function<void(Model*)> EndBefore(IntervalVariable i1,
                                              IntegerVariable ivar) {
   return [=](Model* model) {
@@ -174,6 +184,17 @@ inline std::function<void(Model*)> EndBeforeStart(IntervalVariable i1,
     PrecedencesPropagator* precedences =
         model->GetOrCreate<PrecedencesPropagator>();
     precedences->AddPrecedence(intervals->EndVar(i1), intervals->StartVar(i2));
+  };
+}
+
+inline std::function<void(Model*)> StartAtEnd(IntervalVariable i1,
+                                              IntervalVariable i2) {
+  return [=](Model* model) {
+    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
+    PrecedencesPropagator* precedences =
+        model->GetOrCreate<PrecedencesPropagator>();
+    precedences->AddPrecedence(intervals->EndVar(i1), intervals->StartVar(i2));
+    precedences->AddPrecedence(intervals->StartVar(i2), intervals->EndVar(i1));
   };
 }
 

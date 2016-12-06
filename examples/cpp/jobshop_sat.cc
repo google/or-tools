@@ -149,8 +149,14 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
 }
 
 }  // namespace sat
+}  // namespace operations_research
 
-void LoadAndSolve() {
+int main(int argc, char** argv) {
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  if (FLAGS_input.empty()) {
+    LOG(FATAL) << "Please supply a data file with --input=";
+  }
+
   // Read a flexible/normal job shop problem based on the file extension.
   int new_task_id = 0;
   int horizon = 0;
@@ -190,15 +196,6 @@ void LoadAndSolve() {
   }
 
   // Solve it.
-  sat::Solve(data, horizon);
-}
-}  // namespace operations_research
-
-int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
-  if (FLAGS_input.empty()) {
-    LOG(FATAL) << "Please supply a data file with --input=";
-  }
-  operations_research::LoadAndSolve();
+  operations_research::sat::Solve(data, horizon);
   return EXIT_SUCCESS;
 }

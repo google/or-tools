@@ -82,7 +82,8 @@ class NQueenSymmetry : public SymmetryBreaker {
 // Symmetry vertical axis.
 class SX : public NQueenSymmetry {
  public:
-  SX(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  SX(Solver* const s, const std::vector<IntVar*>& vars)
+      : NQueenSymmetry(s, vars) {}
   ~SX() override {}
 
   void VisitSetVariableValue(IntVar* const var, int64 value) override {
@@ -95,7 +96,8 @@ class SX : public NQueenSymmetry {
 // Symmetry horizontal axis.
 class SY : public NQueenSymmetry {
  public:
-  SY(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  SY(Solver* const s, const std::vector<IntVar*>& vars)
+      : NQueenSymmetry(s, vars) {}
   ~SY() override {}
 
   void VisitSetVariableValue(IntVar* const var, int64 value) override {
@@ -106,7 +108,8 @@ class SY : public NQueenSymmetry {
 // Symmetry first diagonal axis.
 class SD1 : public NQueenSymmetry {
  public:
-  SD1(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  SD1(Solver* const s, const std::vector<IntVar*>& vars)
+      : NQueenSymmetry(s, vars) {}
   ~SD1() override {}
 
   void VisitSetVariableValue(IntVar* const var, int64 value) override {
@@ -119,7 +122,8 @@ class SD1 : public NQueenSymmetry {
 // Symmetry second diagonal axis.
 class SD2 : public NQueenSymmetry {
  public:
-  SD2(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  SD2(Solver* const s, const std::vector<IntVar*>& vars)
+      : NQueenSymmetry(s, vars) {}
   ~SD2() override {}
 
   void VisitSetVariableValue(IntVar* const var, int64 value) override {
@@ -132,7 +136,8 @@ class SD2 : public NQueenSymmetry {
 // Rotate 1/4 turn.
 class R90 : public NQueenSymmetry {
  public:
-  R90(Solver* const s, const std::vector<IntVar*>& vars) : NQueenSymmetry(s, vars) {}
+  R90(Solver* const s, const std::vector<IntVar*>& vars)
+      : NQueenSymmetry(s, vars) {}
   ~R90() override {}
 
   void VisitSetVariableValue(IntVar* const var, int64 value) override {

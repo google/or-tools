@@ -28,10 +28,10 @@ namespace sat {
 // Each arc will be associated to a literal and this propagator will make sure
 // that there is no cycle in the graph with only the arcs whose associated
 // literal is set to true.
-class NoCyclePropagator : public Propagator {
+class NoCyclePropagator : public SatPropagator {
  public:
   NoCyclePropagator()
-      : Propagator("NoCyclePropagator"),
+      : SatPropagator("NoCyclePropagator"),
         num_arcs_(0),
         problem_is_unsat_(false),
         initialization_is_done_(false),
@@ -79,7 +79,7 @@ class NoCyclePropagator : public Propagator {
   void AddPotentialArc(int tail, int head, Literal literal);
 
   // Getters for the current graph. This is only in sync with the trail iff
-  // Propagator::PropagationIsDone() is true.
+  // SatPropagator::PropagationIsDone() is true.
   //
   // Note that these graphs will NOT contain all the arcs but will correctly
   // encode the reachability of every node. More specifically, when an arc (tail
@@ -90,14 +90,18 @@ class NoCyclePropagator : public Propagator {
     LiteralIndex literal_index;
   };
   const std::vector<std::vector<Arc>>& Graph() const { return graph_; }
-  const std::vector<std::vector<Arc>>& ReverseGraph() const { return reverse_graph_; }
+  const std::vector<std::vector<Arc>>& ReverseGraph() const {
+    return reverse_graph_;
+  }
 
   // Getters for the "potential" arcs. That is the arcs that could be added to
   // the graph or not depending on their associated literal value. Note that
   // some already added arcs may not appear here for optimization purposes.
-  const std::vector<std::vector<Arc>>& PotentialGraph() const { return potential_graph_; }
-  const ITIVector<LiteralIndex, std::vector<std::pair<int, int>>>& PotentialArcs()
-      const {
+  const std::vector<std::vector<Arc>>& PotentialGraph() const {
+    return potential_graph_;
+  }
+  const ITIVector<LiteralIndex, std::vector<std::pair<int, int>>>&
+  PotentialArcs() const {
     return potential_arcs_;
   }
 
@@ -117,7 +121,8 @@ class NoCyclePropagator : public Propagator {
   // not in the given already_reached. The already_reached vector is not const
   // because this function temporarily modifies it before restoring it to its
   // original value for performance reason.
-  std::vector<int> NewlyReachable(int source, std::vector<bool>* already_reached) const;
+  std::vector<int> NewlyReachable(int source,
+                                  std::vector<bool>* already_reached) const;
 
   // Finds a path from source to target and output its reason.
   // Only the arcs whose associated literal is assigned before the given

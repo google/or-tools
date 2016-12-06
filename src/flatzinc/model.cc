@@ -13,8 +13,8 @@
 
 #include "flatzinc/model.h"
 
-#include "base/hash.h"
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 #include "base/join.h"
@@ -49,7 +49,7 @@ Domain Domain::AllInt64() {
   return result;
 }
 
-Domain Domain::Singleton(int64 value) {
+Domain Domain::IntegerValue(int64 value) {
   Domain result;
   result.is_interval = false;
   result.values.push_back(value);
@@ -162,7 +162,7 @@ void Domain::IntersectWithListOfIntegers(const std::vector<int64>& ovalues) {
   } else {
     // TODO(user): Investigate faster code for small arrays.
     std::sort(values.begin(), values.end());
-    hash_set<int64> other_values(ovalues.begin(), ovalues.end());
+    std::unordered_set<int64> other_values(ovalues.begin(), ovalues.end());
     std::vector<int64> new_values;
     new_values.reserve(std::min(values.size(), ovalues.size()));
     for (const int64 val : values) {
@@ -179,7 +179,10 @@ bool Domain::HasOneValue() const {
   return (values.size() == 1 || (values.size() == 2 && values[0] == values[1]));
 }
 
-bool Domain::empty() const { return values.size() == 0 && !is_interval; }
+bool Domain::empty() const {
+  return is_interval ? (values.size() == 2 && values[0] > values[1])
+                     : values.empty();
+}
 
 int64 Domain::Min() const {
   CHECK(!empty());
@@ -189,6 +192,11 @@ int64 Domain::Min() const {
 int64 Domain::Max() const {
   CHECK(!empty());
   return is_interval && values.empty() ? kint64max : values.back();
+}
+
+int64 Domain::Value() const {
+  CHECK(HasOneValue());
+  return values.front();
 }
 
 bool Domain::IsAllInt64() const {
@@ -208,17 +216,79 @@ bool Domain::Contains(int64 value) const {
   }
 }
 
+namespace {
+bool IntervalOverlapValues(int64 lb, int64 ub,
+                           const std::vector<int64>& values) {
+  for (int64 value : values) {
+    if (lb <= value && value <= ub) {
+      return true;
+    }
+  }
+  return false;
+}
+}  // namespace
+
+bool Domain::OverlapsIntList(const std::vector<int64>& vec) const {
+  if (IsAllInt64()) {
+    return true;
+  }
+  if (is_interval) {
+    CHECK(!values.empty());
+    return IntervalOverlapValues(values[0], values[1], vec);
+  } else {
+    // TODO(user): Better algorithm, sort and compare increasingly.
+    const std::vector<int64>& to_scan =
+        values.size() <= vec.size() ? values : vec;
+    const std::unordered_set<int64> container =
+        values.size() <= vec.size()
+            ? std::unordered_set<int64>(vec.begin(), vec.end())
+            : std::unordered_set<int64>(values.begin(), values.end());
+    for (int64 value : to_scan) {
+      if (ContainsKey(container, value)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+bool Domain::OverlapsIntInterval(int64 lb, int64 ub) const {
+  if (IsAllInt64()) {
+    return true;
+  }
+  if (is_interval) {
+    CHECK(!values.empty());
+    const int64 dlb = values[0];
+    const int64 dub = values[1];
+    return !(dub < lb || dlb > ub);
+  } else {
+    return IntervalOverlapValues(lb, ub, values);
+  }
+}
+
+bool Domain::OverlapsDomain(const Domain& other) const {
+  if (other.is_interval) {
+    if (other.values.empty()) {
+      return true;
+    } else {
+      return OverlapsIntInterval(other.values[0], other.values[1]);
+    }
+  } else {
+    return OverlapsIntList(other.values);
+  }
+}
+
 bool Domain::RemoveValue(int64 value) {
   if (is_interval) {
     if (values.empty()) {
       return false;
-    } else if (value == values[0]) {
+    } else if (value == values[0] && value != values[1]) {
       values[0]++;
       return true;
-    } else if (value == values[1]) {
+    } else if (value == values[1] && value != values[0]) {
       values[1]--;
       return true;
-    } else if (values[1] - values[0] < 64 && value > values[0] &&
+    } else if (values[1] - values[0] < 1024 && value > values[0] &&
                value < values[1]) {  // small
       const int64 vmax = values[1];
       values.pop_back();
@@ -231,8 +301,11 @@ bool Domain::RemoveValue(int64 value) {
       is_interval = false;
       return true;
     }
+  } else {
+    values.erase(std::remove(values.begin(), values.end(), value),
+                 values.end());
+    return true;
   }
-  // TODO(user): Remove value from list.
   return false;
 }
 
@@ -361,12 +434,93 @@ int64 Argument::Value() const {
     case INT_VAR_REF: {
       return variables[0]->domain.values[0];
     }
-    default: { return 0; }  // Should fail anyway.
+    default: {
+      LOG(FATAL) << "Should not be here";
+      return 0;
+    }
+  }
+}
+
+bool Argument::IsArrayOfValues() const {
+  switch (type) {
+    case INT_VALUE:
+      return false;
+    case INT_INTERVAL:
+      return false;
+    case INT_LIST:
+      return true;
+    case DOMAIN_LIST: {
+      for (const Domain& domain : domains) {
+        if (!domain.HasOneValue()) {
+          return false;
+        }
+      }
+      return true;
+    }
+    case INT_VAR_REF:
+      return false;
+    case INT_VAR_REF_ARRAY: {
+      for (IntegerVariable* var : variables) {
+        if (!var->domain.HasOneValue()) {
+          return false;
+        }
+      }
+      return true;
+    }
+    case VOID_ARGUMENT:
+      return false;
+  }
+}
+
+bool Argument::Contains(int64 value) const {
+  switch (type) {
+    case Argument::INT_LIST: {
+      return std::find(values.begin(), values.end(), value) != values.end();
+    }
+    case Argument::INT_INTERVAL: {
+      return value >= values.front() && value <= values.back();
+    }
+    case Argument::INT_VALUE: {
+      return value == values.front();
+    }
+    default: {
+      LOG(FATAL) << "Cannot call Constains() on " << DebugString();
+      return 0;
+    }
+  }
+}
+
+int64 Argument::ValueAt(int pos) const {
+  switch (type) {
+    case INT_LIST:
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, values.size());
+      return values[pos];
+    case DOMAIN_LIST: {
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, domains.size());
+      CHECK(domains[pos].HasOneValue());
+      return domains[pos].Value();
+    }
+    case INT_VAR_REF_ARRAY: {
+      CHECK_GE(pos, 0);
+      CHECK_LT(pos, variables.size());
+      CHECK(variables[pos]->domain.HasOneValue());
+      return variables[pos]->domain.Value();
+    }
+    default: {
+      LOG(FATAL) << "Should not be here";
+      return 0;
+    }
   }
 }
 
 IntegerVariable* Argument::Var() const {
   return type == INT_VAR_REF ? variables[0] : nullptr;
+}
+
+IntegerVariable* Argument::VarAt(int pos) const {
+  return type == INT_VAR_REF_ARRAY ? variables[pos] : nullptr;
 }
 
 // ----- IntegerVariable -----
@@ -660,7 +814,7 @@ IntegerVariable* Model::AddVariable(const std::string& name, const Domain& domai
 IntegerVariable* Model::AddConstant(int64 value) {
   IntegerVariable* const var =
       new IntegerVariable(StringPrintf("%" GG_LL_FORMAT "d", value),
-                          Domain::Singleton(value), true);
+                          Domain::IntegerValue(value), true);
   variables_.push_back(var);
   return var;
 }
@@ -729,6 +883,21 @@ std::string Model::DebugString() const {
   return output;
 }
 
+bool Model::IsInconsistent() const {
+  for (IntegerVariable* var : variables_) {
+    if (var->domain.empty()) {
+      return true;
+    }
+  }
+  for (Constraint* ct : constraints_) {
+    if (ct->type == "false_constraint") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // ----- Model statistics -----
 
 void ModelStatistics::PrintStatistics() const {
@@ -750,7 +919,7 @@ void ModelStatistics::BuildStatistics() {
   for (Constraint* const ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
       constraints_per_type_[ct->type].push_back(ct);
-      hash_set<const IntegerVariable*> marked;
+      std::unordered_set<const IntegerVariable*> marked;
       for (const Argument& arg : ct->arguments) {
         for (IntegerVariable* const var : arg.variables) {
           marked.insert(var);

@@ -249,7 +249,8 @@ void PrimalEdgeNorms::UpdateEdgeSquaredNorms(ColIndex entering_col,
     //
     // TODO(user): also update num_operations_.
     std::vector<int> thread_local_stat_lower_bounded_norms(num_omp_threads, 0);
-    const std::vector<ColIndex>& relevant_rows = update_row.GetNonZeroPositions();
+    const std::vector<ColIndex>& relevant_rows =
+        update_row.GetNonZeroPositions();
     const int parallel_loop_size = relevant_rows.size();
 #pragma omp parallel for num_threads(num_omp_threads)
     for (int i = 0; i < parallel_loop_size; i++) {

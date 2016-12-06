@@ -66,7 +66,8 @@ class SatClause {
   // Creates a sat clause. There must be at least 2 literals. Smaller clause are
   // treated separatly and never constructed. A redundant clause can be removed
   // without changing the problem.
-  static SatClause* Create(const std::vector<Literal>& literals, bool is_redundant);
+  static SatClause* Create(const std::vector<Literal>& literals,
+                           bool is_redundant);
 
   // Non-sized delete because this is a tail-padded class.
   void operator delete(void* p) {
@@ -157,7 +158,7 @@ class SatClause {
 // Stores the 2-watched literals data structure.  See
 // http://www.cs.berkeley.edu/~necula/autded/lecture24-sat.pdf for
 // detail.
-class LiteralWatchers : public Propagator {
+class LiteralWatchers : public SatPropagator {
  public:
   LiteralWatchers();
   ~LiteralWatchers();
@@ -328,10 +329,10 @@ class BinaryClauseManager {
 //   of Satisfiability Testing - SAT 2011, Lecture Notes in Computer Science
 //   Volume 6695, 2011, pp 201-215
 //   http://www.cs.helsinki.fi/u/mjarvisa/papers/heule-jarvisalo-biere.sat11.pdf
-class BinaryImplicationGraph : public Propagator {
+class BinaryImplicationGraph : public SatPropagator {
  public:
   BinaryImplicationGraph()
-      : Propagator("BinaryImplicationGraph"),
+      : SatPropagator("BinaryImplicationGraph"),
         num_implications_(0),
         num_propagations_(0),
         num_inspections_(0),
@@ -356,9 +357,10 @@ class BinaryImplicationGraph : public Propagator {
   // Note that it is also equivalent to (not b => a).
   void AddBinaryClause(Literal a, Literal b);
 
-  // Same as AddBinaryClause() but enqueues a possible unit propagation.
-  void AddBinaryConflict(Literal a, Literal b, Trail* trail);
-
+  // Same as AddBinaryClause() but enqueues a possible unit propagation. Note
+  // that if the binary clause propagates, it must do so at the last level, this
+  // is DCHECKed.
+  void AddBinaryClauseDuringSearch(Literal a, Literal b, Trail* trail);
 
   // Uses the binary implication graph to minimize the given conflict by
   // removing literals that implies others. The idea is that if a and b are two
@@ -370,7 +372,8 @@ class BinaryImplicationGraph : public Propagator {
   // See the binary_minimization_algorithm SAT parameter and the .cc for more
   // details about the different algorithms.
   void MinimizeConflictWithReachability(std::vector<Literal>* c);
-  void MinimizeConflictExperimental(const Trail& trail, std::vector<Literal>* c);
+  void MinimizeConflictExperimental(const Trail& trail,
+                                    std::vector<Literal>* c);
   void MinimizeConflictFirst(const Trail& trail, std::vector<Literal>* c,
                              SparseBitset<BooleanVariable>* marked);
   void MinimizeConflictFirstWithTransitiveReduction(

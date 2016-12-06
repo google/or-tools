@@ -346,11 +346,12 @@ class RoutingModel {
   static const DimensionIndex kNoDimension;
 
   // In the following constructors, the versions which do not take
-  // RoutingModelParamters are equivalent to passing DefaultModelParameters.
-  // Supposes a single depot. A depot is the start and end node of the route of
-  // a vehicle.
-  RoutingModel(int nodes, int vehicles);
-  RoutingModel(int nodes, int vehicles,
+  // RoutingModelParameters are equivalent to passing DefaultModelParameters.
+  // A depot is the start and end node of the route of a vehicle.
+  // Constructor taking a single depot node which is used as the start and
+  // end node for all vehicles.
+  RoutingModel(int nodes, int vehicles, NodeIndex depot);
+  RoutingModel(int nodes, int vehicles, NodeIndex depot,
                const RoutingModelParameters& parameters);
   // Constructor taking a vector of (start node, end node) pairs for each
   // vehicle route. Used to model multiple depots.
@@ -441,8 +442,9 @@ class RoutingModel {
   // model.
   // Returns false if a dimension with the same name has already been created
   // (and doesn't create the new dimension).
-  bool AddMatrixDimension(std::vector<std::vector<int64> > values, int64 capacity,
-                          bool fix_start_cumul_to_zero, const std::string& name);
+  bool AddMatrixDimension(std::vector<std::vector<int64> > values,
+                          int64 capacity, bool fix_start_cumul_to_zero,
+                          const std::string& name);
 #if !defined(SWIG)
   // Creates a dimension with transits depending on the cumuls of another
   // dimension. 'pure_transits' are the per-vehicle fixed transits as above.
@@ -483,7 +485,7 @@ class RoutingModel {
 #endif  // SWIG
   // Outputs the names of all dimensions added to the routing engine.
   // TODO(user): rename.
-  std::vector<std::string> GetAllDimensionNames() const;
+  std::vector<::std::string> GetAllDimensionNames() const;
   // Returns true if a dimension exists for a given dimension name.
   bool HasDimension(const std::string& dimension_name) const;
   // Returns a dimension from its name. Dies if the dimension does not exist.
@@ -571,7 +573,8 @@ class RoutingModel {
   // Adds a soft contraint to force a set of nodes to be on the same vehicle.
   // If all nodes are not on the same vehicle, each extra vehicle used adds
   // 'cost' to the cost function.
-  void AddSoftSameVehicleConstraint(const std::vector<NodeIndex>& nodes, int64 cost);
+  void AddSoftSameVehicleConstraint(const std::vector<NodeIndex>& nodes,
+                                    int64 cost);
 
   // Notifies that node1 and node2 form a pair of nodes which should belong
   // to the same route. This methods helps the search find better solutions,
@@ -587,10 +590,6 @@ class RoutingModel {
   //
   // TODO(user): Remove this when model introspection detects linked nodes.
   void AddPickupAndDelivery(NodeIndex node1, NodeIndex node2) {
-    // TODO(user): Checking the depot ensures indices are up-to-date but sets
-    // the depot to node 0 if it has not been set already; find a way to avoid
-    // this.
-    CheckDepot();
     pickup_delivery_pairs_.push_back(
         std::make_pair(NodeToIndex(node1), NodeToIndex(node2)));
   }
@@ -613,8 +612,6 @@ class RoutingModel {
   // routes. If all routes start  and end at the same node (single depot), this
   // is the node returned.
   int64 GetDepot() const;
-  // Makes 'depot' the starting node of all routes.
-  void SetDepot(NodeIndex depot);
 
   // Sets the cost function of the model such that the cost of a segment of a
   // route between node 'from' and 'to' is evaluator(from, to), whatever the
@@ -652,6 +649,10 @@ class RoutingModel {
   void AddLocalSearchOperator(LocalSearchOperator* ls_operator);
   // Adds a search monitor to the search used to solve the routing model.
   void AddSearchMonitor(SearchMonitor* const monitor);
+  // Adds a callback called each time a solution is found during the search.
+  // This is a shortcut to creating a monitor to call the callback on
+  // AtSolution() and adding it with AddSearchMonitor.
+  void AddAtSolutionCallback(std::function<void()> callback);
   // Adds a variable to minimize in the solution finalizer. The solution
   // finalizer is called each time a solution is found during the search and
   // allows to instantiate secondary variables (such as dimension cumul
@@ -708,8 +709,8 @@ class RoutingModel {
   // vehicle and deactivates other nodes.
   // An assignment containing the locks can be obtained by calling
   // PreAssignment().
-  bool ApplyLocksToAllVehicles(const std::vector<std::vector<NodeIndex> >& locks,
-                               bool close_routes);
+  bool ApplyLocksToAllVehicles(
+      const std::vector<std::vector<NodeIndex> >& locks, bool close_routes);
   // Returns an assignment used to fix some of the variables of the problem.
   // In practice, this assignment locks partial routes of the problem. This
   // can be used in the context of locking the parts of the routes which have
@@ -733,8 +734,9 @@ class RoutingModel {
   // assign values to the dimension variables; this may take
   // considerable amount of time, especially when using dimensions
   // with slack.
-  Assignment* ReadAssignmentFromRoutes(const std::vector<std::vector<NodeIndex> >& routes,
-                                       bool ignore_inactive_nodes);
+  Assignment* ReadAssignmentFromRoutes(
+      const std::vector<std::vector<NodeIndex> >& routes,
+      bool ignore_inactive_nodes);
   // Fills an assignment from a specification of the routes of the
   // vehicles. The routes are specified as lists of nodes that appear
   // on the routes of the vehicles. The indices of the outer vector in
@@ -758,8 +760,9 @@ class RoutingModel {
   // Converts the solution in the given assignment to routes for all vehicles.
   // Expects that assignment contains a valid solution (i.e. routes for all
   // vehicles end with an end node for that vehicle).
-  void AssignmentToRoutes(const Assignment& assignment,
-                          std::vector<std::vector<NodeIndex> >* const routes) const;
+  void AssignmentToRoutes(
+      const Assignment& assignment,
+      std::vector<std::vector<NodeIndex> >* const routes) const;
   // Returns a compacted version of the given assignment, in which all vehicles
   // with id lower or equal to some N have non-empty routes, and all vehicles
   // with id greater than N have empty routes. Does not take ownership of the
@@ -1081,9 +1084,10 @@ class RoutingModel {
 
   // Internal methods.
   void Initialize();
-  void SetStartEnd(const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
-  void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes, int64 penalty,
-                              int64 max_cardinality);
+  void SetStartEnd(
+      const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
+  void AddDisjunctionInternal(const std::vector<NodeIndex>& nodes,
+                              int64 penalty, int64 max_cardinality);
   void AddNoCycleConstraintInternal();
   bool AddDimensionWithCapacityInternal(
       const std::vector<NodeEvaluator2*>& evaluators, int64 slack_max,
@@ -1147,7 +1151,6 @@ class RoutingModel {
   NodeEvaluator2* NewCachedCallback(NodeEvaluator2* callback);
   VariableNodeEvaluator2* NewCachedStateDependentCallback(
       VariableNodeEvaluator2* callback);
-  void CheckDepot();
   void QuietCloseModel();
   void QuietCloseModelWithParameters(
       const RoutingSearchParameters& parameters) {
@@ -1237,6 +1240,7 @@ class RoutingModel {
   ITIVector<CostClassIndex, CostClass> cost_classes_;
 #endif  // SWIG
   bool costs_are_homogeneous_across_vehicles_;
+  bool cache_callbacks_;
   std::vector<CostCacheElement> cost_cache_;  // Index by source index.
   std::vector<VehicleClassIndex> vehicle_class_index_of_vehicle_;
 #ifndef SWIG
@@ -1266,7 +1270,6 @@ class RoutingModel {
   std::vector<int64> ends_;
   int start_end_count_;
   // Model status
-  bool is_depot_set_;
   bool closed_;
   Status status_;
 
@@ -1586,13 +1589,16 @@ class RoutingDimension {
           state_dependent_transit_evaluators,
       int64 slack_max);
   // Sets up the cost variables related to cumul soft upper bounds.
-  void SetupCumulVarSoftUpperBoundCosts(std::vector<IntVar*>* cost_elements) const;
+  void SetupCumulVarSoftUpperBoundCosts(
+      std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to cumul soft lower bounds.
-  void SetupCumulVarSoftLowerBoundCosts(std::vector<IntVar*>* cost_elements) const;
+  void SetupCumulVarSoftLowerBoundCosts(
+      std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to the global span and per-vehicle span
   // costs (only for the "slack" part of the latter).
   void SetupGlobalSpanCost(std::vector<IntVar*>* cost_elements) const;
-  void SetupSlackAndDependentTransitCosts(std::vector<IntVar*>* cost_elements) const;
+  void SetupSlackAndDependentTransitCosts(
+      std::vector<IntVar*>* cost_elements) const;
   // Finalize the model of the dimension.
   void CloseModel(bool use_light_propagation);
 
@@ -1676,7 +1682,8 @@ class SweepArranger {
 // when the code is mature enough.
 class IntVarFilteredDecisionBuilder : public DecisionBuilder {
  public:
-  IntVarFilteredDecisionBuilder(Solver* solver, const std::vector<IntVar*>& vars,
+  IntVarFilteredDecisionBuilder(Solver* solver,
+                                const std::vector<IntVar*>& vars,
                                 const std::vector<LocalSearchFilter*>& filters);
   ~IntVarFilteredDecisionBuilder() override {}
   Decision* Next(Solver* solver) override;
@@ -1742,8 +1749,8 @@ class IntVarFilteredDecisionBuilder : public DecisionBuilder {
 // Filter-based decision builder dedicated to routing.
 class RoutingFilteredDecisionBuilder : public IntVarFilteredDecisionBuilder {
  public:
-  RoutingFilteredDecisionBuilder(RoutingModel* model,
-                                 const std::vector<LocalSearchFilter*>& filters);
+  RoutingFilteredDecisionBuilder(
+      RoutingModel* model, const std::vector<LocalSearchFilter*>& filters);
   ~RoutingFilteredDecisionBuilder() override {}
   RoutingModel* model() const { return model_; }
   // Initializes the current solution with empty or partial vehicle routes.
@@ -1783,9 +1790,9 @@ class CheapestInsertionFilteredDecisionBuilder
   // possible insertion positions of node 'node_to_insert' in the partial route
   // starting at node 'start' and adds them to 'valued_position', a list of
   // unsorted pairs of (cost, position to insert the node).
-  void AppendEvaluatedPositionsAfter(int64 node_to_insert, int64 start,
-                                     int64 next_after_start, int64 vehicle,
-                                     std::vector<ValuedPosition>* valued_positions);
+  void AppendEvaluatedPositionsAfter(
+      int64 node_to_insert, int64 start, int64 next_after_start, int64 vehicle,
+      std::vector<ValuedPosition>* valued_positions);
   // Returns the cost of unperforming node 'node_to_insert'. Returns kint64max
   // if penalty callback is null or if the node cannot be unperformed.
   int64 GetUnperformedValue(int64 node_to_insert) const;
@@ -1940,7 +1947,8 @@ class CheapestAdditionFilteredDecisionBuilder
   // node 'from'.
   // 'from' is a variable index corresponding to a node, 'sorted_nexts' is a
   // vector of variable indices corresponding to nodes which can follow 'from'.
-  virtual void SortPossibleNexts(int64 from, std::vector<int64>* sorted_nexts) = 0;
+  virtual void SortPossibleNexts(int64 from,
+                                 std::vector<int64>* sorted_nexts) = 0;
 };
 
 // A CheapestAdditionFilteredDecisionBuilder where the notion of 'cheapest arc'
@@ -1993,8 +2001,9 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
  public:
   // If savings_neighbors > 0 then for each node only its 'saving_neighbors'
   // neighbors leading to the smallest arc costs are considered.
-  SavingsFilteredDecisionBuilder(RoutingModel* model, int64 saving_neighbors,
-                                 const std::vector<LocalSearchFilter*>& filters);
+  SavingsFilteredDecisionBuilder(
+      RoutingModel* model, int64 saving_neighbors,
+      const std::vector<LocalSearchFilter*>& filters);
   ~SavingsFilteredDecisionBuilder() override {}
   bool BuildSolution() override;
 

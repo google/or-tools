@@ -136,8 +136,8 @@ class SatSolver {
 
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they where added.
-  void AddPropagator(std::unique_ptr<Propagator> propagator);
-  void AddLastPropagator(std::unique_ptr<Propagator> propagator);
+  void AddPropagator(std::unique_ptr<SatPropagator> propagator);
+  void AddLastPropagator(std::unique_ptr<SatPropagator> propagator);
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // set to true. Currently this take precedence over the phase saving heuristic
@@ -207,7 +207,8 @@ class SatSolver {
   //
   // If ASSUMPTIONS_UNSAT is returned, it is possible to get a "core" of unsat
   // assumptions by calling GetLastIncompatibleDecisions().
-  Status ResetAndSolveWithGivenAssumptions(const std::vector<Literal>& assumptions);
+  Status ResetAndSolveWithGivenAssumptions(
+      const std::vector<Literal>& assumptions);
 
   // Changes the assumption level. All the decisions below this level will be
   // treated as assumptions by the next Solve(). Note that this may impact some
@@ -371,7 +372,11 @@ class SatSolver {
     // The new clause should not propagate.
     CHECK(!trail_->Assignment().LiteralIsFalse(a));
     CHECK(!trail_->Assignment().LiteralIsFalse(b));
-    binary_implication_graph_.AddBinaryClause(a, b);
+    binary_implication_graph_.AddBinaryClauseDuringSearch(a, b, trail_);
+    if (binary_implication_graph_.NumberOfImplications() == 1) {
+      // This is needed because we just added the first binary clause.
+      InitializePropagators();
+    }
   }
 
   // Performs propagation of the recently enqueued elements.
@@ -394,7 +399,8 @@ class SatSolver {
   // See SaveDebugAssignment(). Note that these functions only consider the
   // variables at the time the debug_assignment_ was saved. If new variables
   // where added since that time, they will be considered unassigned.
-  bool ClauseIsValidUnderDebugAssignement(const std::vector<Literal>& clause) const;
+  bool ClauseIsValidUnderDebugAssignement(
+      const std::vector<Literal>& clause) const;
   bool PBConstraintIsValidUnderDebugAssignment(
       const std::vector<LiteralWithCoeff>& cst, const Coefficient rhs) const;
 
@@ -566,8 +572,9 @@ class SatSolver {
   // Precondidtion: is_marked_ should be set to true for all the variables of
   // the conflict. It can also contains false non-conflict variables that
   // are implied by the negation of the 1-UIP conflict literal.
-  void MinimizeConflict(std::vector<Literal>* conflict,
-                        std::vector<Literal>* reason_used_to_infer_the_conflict);
+  void MinimizeConflict(
+      std::vector<Literal>* conflict,
+      std::vector<Literal>* reason_used_to_infer_the_conflict);
   void MinimizeConflictExperimental(std::vector<Literal>* conflict);
   void MinimizeConflictSimple(std::vector<Literal>* conflict);
   void MinimizeConflictRecursively(std::vector<Literal>* conflict);
@@ -664,17 +671,17 @@ class SatSolver {
   hash_map<SatClause*, ClauseInfo> clauses_info_;
 
   // Internal propagators. We keep them here because we need more than the
-  // Propagator interface for them.
+  // SatPropagator interface for them.
   LiteralWatchers clauses_propagator_;
   BinaryImplicationGraph binary_implication_graph_;
   PbConstraints pb_constraints_;
 
   // Ordered list of propagators used by Propagate()/Untrail().
-  std::vector<Propagator*> propagators_;
+  std::vector<SatPropagator*> propagators_;
 
   // Ordered list of propagators added with AddPropagator().
-  std::vector<std::unique_ptr<Propagator>> external_propagators_;
-  std::unique_ptr<Propagator> last_propagator_;
+  std::vector<std::unique_ptr<SatPropagator>> external_propagators_;
+  std::unique_ptr<SatPropagator> last_propagator_;
 
   // Keep track of all binary clauses so they can be exported.
   bool track_binary_clauses_;
@@ -913,6 +920,34 @@ class SatSolver {
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
 
+// Returns the ith element of the strategy S^univ proposed by M. Luby et al. in
+// Optimal Speedup of Las Vegas Algorithms, Information Processing Letters 1993.
+// This is used to decide the number of conflicts allowed before the next
+// restart. This method, used by most SAT solvers, is usually referenced as
+// Luby.
+// Returns 2^{k-1} when i == 2^k - 1
+//    and  SUniv(i - 2^{k-1} + 1) when 2^{k-1} <= i < 2^k - 1.
+// The sequence is defined for i > 0 and starts with:
+//   {1, 1, 2, 1, 1, 2, 4, 1, 1, 2, 1, 1, 2, 4, 8, ...}
+inline int SUniv(int i) {
+  DCHECK_GT(i, 0);
+  while (i > 2) {
+    const int most_significant_bit_position =
+        MostSignificantBitPosition64(i + 1);
+    if ((1 << most_significant_bit_position) == i + 1) {
+      return 1 << (most_significant_bit_position - 1);
+    }
+    i -= (1 << most_significant_bit_position) - 1;
+  }
+  return 1;
+}
+
+// ============================================================================
+// Model based functions.
+//
+// TODO(user): move them in another file, and unit-test them.
+// ============================================================================
+
 inline std::function<void(Model*)> BooleanLinearConstraint(
     int64 lower_bound, int64 upper_bound, std::vector<LiteralWithCoeff>* cst) {
   return [=](Model* model) {
@@ -935,6 +970,19 @@ inline std::function<void(Model*)> ExactlyOneConstraint(
   };
 }
 
+inline std::function<void(Model*)> AtMostOneConstraint(
+    const std::vector<Literal>& literals) {
+  return [=](Model* model) {
+    std::vector<LiteralWithCoeff> cst;
+    for (const Literal l : literals) {
+      cst.push_back(LiteralWithCoeff(l, Coefficient(1)));
+    }
+    model->GetOrCreate<SatSolver>()->AddLinearConstraint(
+        /*use_lower_bound=*/false, Coefficient(0),
+        /*use_upper_bound=*/true, Coefficient(1), &cst);
+  };
+}
+
 inline std::function<void(Model*)> ClauseConstraint(
     const std::vector<Literal>& literals) {
   return [=](Model* model) {
@@ -948,10 +996,80 @@ inline std::function<void(Model*)> ClauseConstraint(
   };
 }
 
-// The a => b constraint.
+// a => b.
 inline std::function<void(Model*)> Implication(Literal a, Literal b) {
   return [=](Model* model) {
     model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
+  };
+}
+
+// a == b.
+inline std::function<void(Model*)> Equality(Literal a, Literal b) {
+  return [=](Model* model) {
+    model->GetOrCreate<SatSolver>()->AddBinaryClause(a.Negated(), b);
+    model->GetOrCreate<SatSolver>()->AddBinaryClause(a, b.Negated());
+  };
+}
+
+// r <=> (at least one literal is true). This is a reified clause.
+inline std::function<void(Model*)> ReifiedBoolOr(
+    const std::vector<Literal>& literals, Literal r) {
+  return [=](Model* model) {
+    std::vector<Literal> clause;
+    for (const Literal l : literals) {
+      model->Add(Implication(l, r));  // l => r.
+      clause.push_back(l);
+    }
+
+    // All false => r false.
+    clause.push_back(r.Negated());
+    model->Add(ClauseConstraint(clause));
+  };
+}
+
+// r <=> (all literals are true).
+//
+// Note(user): we could have called ReifiedBoolOr() with everything negated.
+inline std::function<void(Model*)> ReifiedBoolAnd(
+    const std::vector<Literal>& literals, Literal r) {
+  return [=](Model* model) {
+    std::vector<Literal> clause;
+    for (const Literal l : literals) {
+      model->Add(Implication(r, l));  // r => l.
+      clause.push_back(l.Negated());
+    }
+
+    // All true => r true.
+    clause.push_back(r);
+    model->Add(ClauseConstraint(clause));
+  };
+}
+
+// r <=> (a <= b).
+inline std::function<void(Model*)> ReifiedBoolLe(Literal a, Literal b,
+                                                 Literal r) {
+  return [=](Model* model) {
+    // r <=> (a <= b) is the same as r <=> not(a=1 and b=0).
+    // So r <=> a=0 OR b=1.
+    model->Add(ReifiedBoolOr({a.Negated(), b}, r));
+  };
+}
+
+// This checks that the variable is fixed.
+inline std::function<int64(const Model&)> Value(Literal l) {
+  return [=](const Model& model) {
+    const Trail* trail = model.Get<Trail>();
+    CHECK(trail->Assignment().VariableIsAssigned(l.Variable()));
+    return trail->Assignment().LiteralIsTrue(l);
+  };
+}
+
+// This checks that the variable is fixed.
+inline std::function<int64(const Model&)> Value(BooleanVariable b) {
+  return [=](const Model& model) {
+    const Trail* trail = model.Get<Trail>();
+    CHECK(trail->Assignment().VariableIsAssigned(b));
+    return trail->Assignment().LiteralIsTrue(Literal(b, true));
   };
 }
 
@@ -965,12 +1083,15 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
 
     // Note that we only exclude the current decisions, which is an efficient
     // way to not get the same SAT assignment.
-    std::vector<Literal> exlude_solution;
-    for (int i = 0; i < sat_solver->CurrentDecisionLevel(); ++i) {
-      exlude_solution.push_back(sat_solver->Decisions()[i].literal.Negated());
+    const int current_level = sat_solver->CurrentDecisionLevel();
+    std::vector<Literal> clause_to_exclude_solution;
+    clause_to_exclude_solution.reserve(current_level);
+    for (int i = 0; i < current_level; ++i) {
+      clause_to_exclude_solution.push_back(
+          sat_solver->Decisions()[i].literal.Negated());
     }
     sat_solver->Backtrack(0);
-    model->Add(ClauseConstraint(exlude_solution));
+    model->Add(ClauseConstraint(clause_to_exclude_solution));
   };
 }
 
@@ -985,39 +1106,11 @@ inline std::function<SatParameters(Model*)> NewSatParameters(std::string params)
   };
 }
 
-inline std::function<int64(const Model&)> ValueOf(Literal l) {
-  return [=](const Model& model) {
-    return model.Get<SatSolver>()->Assignment().LiteralIsTrue(l);
-  };
-}
-
 // Returns a std::string representation of a SatSolver::Status.
 std::string SatStatusString(SatSolver::Status status);
 inline std::ostream& operator<<(std::ostream& os, SatSolver::Status status) {
   os << SatStatusString(status);
   return os;
-}
-
-// Returns the ith element of the strategy S^univ proposed by M. Luby et al. in
-// Optimal Speedup of Las Vegas Algorithms, Information Processing Letters 1993.
-// This is used to decide the number of conflicts allowed before the next
-// restart. This method, used by most SAT solvers, is usually referenced as
-// Luby.
-// Returns 2^{k-1} when i == 2^k - 1
-//    and  SUniv(i - 2^{k-1} + 1) when 2^{k-1} <= i < 2^k - 1.
-// The sequence is defined for i > 0 and starts with:
-//   {1, 1, 2, 1, 1, 2, 4, 1, 1, 2, 1, 1, 2, 4, 8, ...}
-inline int SUniv(int i) {
-  DCHECK_GT(i, 0);
-  while (i > 2) {
-    const int most_significant_bit_position =
-        MostSignificantBitPosition64(i + 1);
-    if ((1 << most_significant_bit_position) == i + 1) {
-      return 1 << (most_significant_bit_position - 1);
-    }
-    i -= (1 << most_significant_bit_position) - 1;
-  }
-  return 1;
 }
 
 }  // namespace sat

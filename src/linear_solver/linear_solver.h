@@ -270,7 +270,8 @@ class MPSolver {
   void MakeIntVarArray(int nb, double lb, double ub, const std::string& name,
                        std::vector<MPVariable*>* vars);
   // Creates an array of boolean variables.
-  void MakeBoolVarArray(int nb, const std::string& name, std::vector<MPVariable*>* vars);
+  void MakeBoolVarArray(int nb, const std::string& name,
+                        std::vector<MPVariable*>* vars);
 
   // ----- Constraints -----
   // Returns the number of constraints.
@@ -378,8 +379,7 @@ class MPSolver {
       const MPModelProto& input_model, std::string* error_message);
 
   // Encodes the current solution in a solution response protocol buffer.
-  // Only nonzero variable values are stored in order to reduce the
-  // size of the MPSolutionResponse protocol buffer.
+
   void FillSolutionResponseProto(MPSolutionResponse* response) const;
 
   // Solves the model encoded by a MPModelRequest protocol buffer and

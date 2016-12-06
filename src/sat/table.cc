@@ -13,6 +13,8 @@
 
 #include "sat/table.h"
 
+#include <unordered_set>
+
 #include "base/map_util.h"
 #include "base/stl_util.h"
 
@@ -22,11 +24,13 @@ namespace sat {
 namespace {
 
 // Transpose the given "matrix" and transform the value to IntegerValue.
-std::vector<std::vector<IntegerValue>> Transpose(const std::vector<std::vector<int64>> tuples) {
+std::vector<std::vector<IntegerValue>> Transpose(
+    const std::vector<std::vector<int64>> tuples) {
   CHECK(!tuples.empty());
   const int n = tuples.size();
   const int m = tuples[0].size();
-  std::vector<std::vector<IntegerValue>> transpose(m, std::vector<IntegerValue>(n));
+  std::vector<std::vector<IntegerValue>> transpose(
+      m, std::vector<IntegerValue>(n));
   for (int i = 0; i < n; ++i) {
     CHECK_EQ(m, tuples[i].size());
     for (int j = 0; j < m; ++j) {
@@ -39,11 +43,44 @@ std::vector<std::vector<IntegerValue>> Transpose(const std::vector<std::vector<i
 // Converts the vector representation returned by FullDomainEncoding() to a map.
 hash_map<IntegerValue, Literal> GetEncoding(IntegerVariable var, Model* model) {
   hash_map<IntegerValue, Literal> encoding;
-  for (const auto& entry :
-       model->GetOrCreate<IntegerEncoder>()->FullDomainEncoding(var)) {
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  for (const auto& entry : encoder->FullDomainEncoding(var)) {
     encoding[entry.value] = entry.literal;
   }
   return encoding;
+}
+
+void FilterValues(IntegerVariable var, Model* model,
+                  std::unordered_set<int64>* values) {
+  const int64 lb = model->Get(LowerBound(var));
+  const int64 ub = model->Get(UpperBound(var));
+
+  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+  const VariablesAssignment& assignment =
+      model->GetOrCreate<Trail>()->Assignment();
+  if (encoder->VariableIsFullyEncoded(var)) {
+    const auto encoding = GetEncoding(var, model);
+    for (auto it = values->begin(); it != values->end();) {
+      const int64 v = *it;
+      auto copy = it++;
+      if (v < lb || v > ub || !ContainsKey(encoding, IntegerValue(v))) {
+        values->erase(copy);
+      } else {
+        const Literal literal = FindOrDie(encoding, IntegerValue(v));
+        if (assignment.LiteralIsFalse(literal)) {
+          values->erase(copy);
+        }
+      }
+    }
+  } else {
+    for (auto it = values->begin(); it != values->end();) {
+      const int64 v = *it;
+      auto copy = it++;
+      if (v < lb || v > ub) {
+        values->erase(copy);
+      }
+    }
+  }
 }
 
 // Add the implications and clauses to link one column of a table to the Literal
@@ -78,8 +115,39 @@ void ProcessOneColumn(const std::vector<Literal>& line_literals,
 }  // namespace
 
 std::function<void(Model*)> TableConstraint(
-    const std::vector<IntegerVariable>& vars, const std::vector<std::vector<int64>>& tuples) {
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples) {
   return [=](Model* model) {
+    const int n = vars.size();
+
+    // Compute the set of possible values for each variable (from the table).
+    std::vector<std::unordered_set<int64>> values_per_var(n);
+    for (const std::vector<int64>& tuple : tuples) {
+      for (int i = 0; i < n; ++i) {
+        values_per_var[i].insert(tuple[i]);
+      }
+    }
+
+    // Filter each values_per_var entries using the current variable domain.
+    for (int i = 0; i < n; ++i) {
+      FilterValues(vars[i], model, &values_per_var[i]);
+    }
+
+    // Remove the unreachable tuples.
+    std::vector<std::vector<int64>> new_tuples;
+    for (const std::vector<int64>& tuple : tuples) {
+      bool keep = true;
+      for (int i = 0; i < n; ++i) {
+        if (!ContainsKey(values_per_var[i], tuple[i])) {
+          keep = false;
+          break;
+        }
+      }
+      if (keep) {
+        new_tuples.push_back(tuple);
+      }
+    }
+
     // Create one Boolean variable per tuple to indicate if it can still be
     // selected or not. Note that we don't enforce exactly one tuple to be
     // selected because these variables are just used by this constraint, so
@@ -89,25 +157,33 @@ std::function<void(Model*)> TableConstraint(
     // new BooleanVariable corresponding to this line since we can use the one
     // corresponding to this value in that column.
     std::vector<Literal> tuple_literals;
-    for (int i = 0; i < tuples.size(); ++i) {
+    for (int i = 0; i < new_tuples.size(); ++i) {
       tuple_literals.push_back(Literal(model->Add(NewBooleanVariable()), true));
     }
 
     // Fully encode the variables using all the values appearing in the tuples.
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     hash_map<IntegerValue, Literal> encoding;
-    const std::vector<std::vector<IntegerValue>>& tr_tuples = Transpose(tuples);
-    for (int i = 0; i < vars.size(); ++i) {
-      encoder->FullyEncodeVariable(vars[i], tr_tuples[i]);
-      encoding = GetEncoding(vars[i], model);
-      ProcessOneColumn(tuple_literals, tr_tuples[i], encoding, model);
+    const std::vector<std::vector<IntegerValue>> tr_tuples =
+        Transpose(new_tuples);
+    for (int i = 0; i < n; ++i) {
+      const IntegerValue first = tr_tuples[i].front();
+      if (std::all_of(tr_tuples[i].begin(), tr_tuples[i].end(),
+                      [first](IntegerValue v) { return v == first; })) {
+        model->Add(Equality(vars[i], first.value()));
+      } else {
+        encoder->FullyEncodeVariable(vars[i], tr_tuples[i]);
+        encoding = GetEncoding(vars[i], model);
+        ProcessOneColumn(tuple_literals, tr_tuples[i], encoding, model);
+      }
     }
   };
 }
 
 std::function<void(Model*)> TransitionConstraint(
-    const std::vector<IntegerVariable>& vars, const std::vector<std::vector<int64>>& automata,
-    int64 initial_state, const std::vector<int64>& final_states) {
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& automata, int64 initial_state,
+    const std::vector<int64>& final_states) {
   return [=](Model* model) {
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     const int n = vars.size();
@@ -126,15 +202,41 @@ std::function<void(Model*)> TransitionConstraint(
       }
     }
 
+    // Construct a table with the possible values of each vars.
+    std::vector<hash_set<int64>> possible_values(n);
+    const VariablesAssignment& assignment =
+        model->GetOrCreate<Trail>()->Assignment();
+    for (int time = 0; time < n; ++time) {
+      if (encoder->VariableIsFullyEncoded(vars[time])) {
+        for (const auto& entry : encoder->FullDomainEncoding(vars[time])) {
+          if (!assignment.LiteralIsFalse(entry.literal)) {
+            possible_values[time].insert(entry.value.value());
+          }
+        }
+      } else {
+        const int64 lb = model->Get(LowerBound(vars[time]));
+        const int64 ub = model->Get(UpperBound(vars[time]));
+        for (const std::vector<int64>& transition : automata) {
+          if (lb <= transition[1] && transition[1] <= ub) {
+            possible_values[time].insert(transition[1]);
+          }
+        }
+      }
+    }
+
     // Compute the set of reachable state at each time point.
     std::vector<std::set<int64>> reachable_states(n + 1);
     reachable_states[0].insert(initial_state);
     reachable_states[n] = {final_states.begin(), final_states.end()};
 
     // Forward.
+    //
+    // TODO(user): filter using the domain of vars[time] that may not contain
+    // all the possible transitions.
     for (int time = 0; time + 1 < n; ++time) {
       for (const std::vector<int64>& transition : automata) {
         if (!ContainsKey(reachable_states[time], transition[0])) continue;
+        if (!ContainsKey(possible_values[time], transition[1])) continue;
         reachable_states[time + 1].insert(transition[2]);
       }
     }
@@ -144,6 +246,7 @@ std::function<void(Model*)> TransitionConstraint(
       std::set<int64> new_set;
       for (const std::vector<int64>& transition : automata) {
         if (!ContainsKey(reachable_states[time], transition[0])) continue;
+        if (!ContainsKey(possible_values[time], transition[1])) continue;
         if (!ContainsKey(reachable_states[time + 1], transition[2])) continue;
         new_set.insert(transition[0]);
       }
@@ -168,6 +271,7 @@ std::function<void(Model*)> TransitionConstraint(
       std::vector<IntegerValue> out_states;
       for (const std::vector<int64>& transition : automata) {
         if (!ContainsKey(reachable_states[time], transition[0])) continue;
+        if (!ContainsKey(possible_values[time], transition[1])) continue;
         if (!ContainsKey(reachable_states[time + 1], transition[2])) continue;
 
         // TODO(user): if this transition correspond to just one in-state or

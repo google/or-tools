@@ -1036,8 +1036,8 @@ class SequenceVarLocalSearchHandler {
       : op_(other.op_) {}
   explicit SequenceVarLocalSearchHandler(SequenceVarLocalSearchOperator* op)
       : op_(op) {}
-  void AddToAssignment(SequenceVar* var, const std::vector<int>& value, int64 index,
-                       Assignment* assignment) const;
+  void AddToAssignment(SequenceVar* var, const std::vector<int>& value,
+                       int64 index, Assignment* assignment) const;
   bool ValueFromAssignent(const Assignment& assignment, SequenceVar* var,
                           int64 index, std::vector<int>* value);
   void OnRevertChanges(int64 index);
@@ -1077,7 +1077,9 @@ class SequenceVarLocalSearchOperator
   ~SequenceVarLocalSearchOperator() override {}
   // Returns the value in the current assignment of the variable of given index.
   const std::vector<int>& Sequence(int64 index) const { return Value(index); }
-  const std::vector<int>& OldSequence(int64 index) const { return OldValue(index); }
+  const std::vector<int>& OldSequence(int64 index) const {
+    return OldValue(index);
+  }
   void SetForwardSequence(int64 index, const std::vector<int>& value) {
     SetValue(index, value);
   }
@@ -1489,8 +1491,10 @@ class PropagationMonitor : public SearchMonitor {
   virtual void RemoveValue(IntVar* const var, int64 value) = 0;
   virtual void SetValue(IntVar* const var, int64 value) = 0;
   virtual void RemoveInterval(IntVar* const var, int64 imin, int64 imax) = 0;
-  virtual void SetValues(IntVar* const var, const std::vector<int64>& values) = 0;
-  virtual void RemoveValues(IntVar* const var, const std::vector<int64>& values) = 0;
+  virtual void SetValues(IntVar* const var,
+                         const std::vector<int64>& values) = 0;
+  virtual void RemoveValues(IntVar* const var,
+                            const std::vector<int64>& values) = 0;
   // IntervalVar modifiers.
   virtual void SetStartMin(IntervalVar* const var, int64 new_min) = 0;
   virtual void SetStartMax(IntervalVar* const var, int64 new_max) = 0;
@@ -1870,7 +1874,8 @@ class ModelCache {
       VarConstantArrayExpressionType type) const = 0;
 
   virtual void InsertVarConstantArrayExpression(
-      IntExpr* const expression, IntVar* const var, const std::vector<int64>& values,
+      IntExpr* const expression, IntVar* const var,
+      const std::vector<int64>& values,
       VarConstantArrayExpressionType type) = 0;
 
   // Var Array Expressions.
@@ -2006,12 +2011,14 @@ class ModelParser : public ModelVisitor {
   void VisitIntervalArgument(const std::string& arg_name,
                              IntervalVar* const argument) override;
   void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override;
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& arguments) override;
   // Visit sequence argument.
   void VisitSequenceArgument(const std::string& arg_name,
                              SequenceVar* const argument) override;
   void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override;
+      const std::string& arg_name,
+      const std::vector<SequenceVar*>& arguments) override;
 
  protected:
   void PushArgumentHolder();
@@ -2624,7 +2631,8 @@ bool IsIncreasing(const std::vector<T>& values) {
 // ----- On integer variable vector -----
 
 template <class T>
-bool IsArrayInRange(const std::vector<IntVar*>& vars, T range_min, T range_max) {
+bool IsArrayInRange(const std::vector<IntVar*>& vars, T range_min,
+                    T range_max) {
   for (int i = 0; i < vars.size(); ++i) {
     if (vars[i]->Min() < range_min || vars[i]->Max() > range_max) {
       return false;
@@ -2649,7 +2657,8 @@ inline bool AreAllBooleans(const std::vector<IntVar*>& vars) {
 // Returns true if all the variables are assigned to a single value,
 // or if their corresponding value is null.
 template <class T>
-bool AreAllBoundOrNull(const std::vector<IntVar*>& vars, const std::vector<T>& values) {
+bool AreAllBoundOrNull(const std::vector<IntVar*>& vars,
+                       const std::vector<T>& values) {
   for (int i = 0; i < vars.size(); ++i) {
     if (values[i] != 0 && !vars[i]->Bound()) {
       return false;

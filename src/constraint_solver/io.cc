@@ -39,7 +39,8 @@ namespace operations_research {
 Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
                        const std::vector<IntVar*>& vars);
 
-Constraint* SetIsGreaterOrEqual(IntVar* const var, const std::vector<int64>& values,
+Constraint* SetIsGreaterOrEqual(IntVar* const var,
+                                const std::vector<int64>& values,
                                 const std::vector<IntVar*>& vars);
 
 namespace {
@@ -131,7 +132,8 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -144,7 +146,8 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<SequenceVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -542,7 +545,8 @@ class SecondPassVisitor : public ModelVisitor {
   }
 
   void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& arguments) override {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindIntervalIndexOrDie(arguments[i]));
@@ -557,7 +561,8 @@ class SecondPassVisitor : public ModelVisitor {
   }
 
   void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<SequenceVar*>& arguments) override {
     std::vector<int> indices;
     for (int i = 0; i < arguments.size(); ++i) {
       indices.push_back(FindSequenceIndexOrDie(arguments[i]));

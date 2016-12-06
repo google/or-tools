@@ -95,8 +95,8 @@ int64 TravelPlusServiceTime(const Coordinates* const coords,
 
 // Returns the demand (quantity picked up or delivered) of a node, demands
 // holds the demand of each node.
-int64 Demand(const std::vector<int64>* const demands, RoutingModel::NodeIndex from,
-             RoutingModel::NodeIndex to) {
+int64 Demand(const std::vector<int64>* const demands,
+             RoutingModel::NodeIndex from, RoutingModel::NodeIndex to) {
   return demands->at(from.value());
 }
 
@@ -206,6 +206,7 @@ bool LoadAndSolve(const std::string& pdp_file) {
   std::vector<RoutingModel::NodeIndex> pickups;
   std::vector<RoutingModel::NodeIndex> deliveries;
   int64 horizon = 0;
+  RoutingModel::NodeIndex depot(0);
   for (int line_index = 1; line_index < lines.size(); ++line_index) {
     if (!SafeParseInt64Array(lines[line_index], &parsed_int) ||
         parsed_int.size() != 9 || parsed_int[0] < 0 || parsed_int[4] < 0 ||
@@ -232,39 +233,39 @@ bool LoadAndSolve(const std::string& pdp_file) {
     service_times.push_back(service_time);
     pickups.push_back(RoutingModel::NodeIndex(pickup));
     deliveries.push_back(RoutingModel::NodeIndex(delivery));
+    if (pickup == 0 && delivery == 0) {
+      depot = RoutingModel::NodeIndex(pickups.size() - 1);
+    }
     horizon = std::max(horizon, close_time);
   }
 
   // Build pickup and delivery model.
   const int num_nodes = customer_ids.size();
-  RoutingModel routing(num_nodes, num_vehicles);
+  RoutingModel routing(num_nodes, num_vehicles, depot);
   routing.SetArcCostEvaluatorOfAllVehicles(
       NewPermanentCallback(Travel, const_cast<const Coordinates*>(&coords)));
   routing.AddDimension(
-      NewPermanentCallback(&Demand, const_cast<const std::vector<int64>*>(&demands)),
+      NewPermanentCallback(&Demand,
+                           const_cast<const std::vector<int64>*>(&demands)),
       0, capacity, /*fix_start_cumul_to_zero=*/true, "demand");
   routing.AddDimension(
-      NewPermanentCallback(&TravelPlusServiceTime,
-                           const_cast<const Coordinates*>(&coords),
-                           const_cast<const std::vector<int64>*>(&service_times)),
+      NewPermanentCallback(
+          &TravelPlusServiceTime, const_cast<const Coordinates*>(&coords),
+          const_cast<const std::vector<int64>*>(&service_times)),
       kScalingFactor * horizon, kScalingFactor * horizon,
       /*fix_start_cumul_to_zero=*/true, "time");
   const RoutingDimension& time_dimension = routing.GetDimensionOrDie("time");
   Solver* const solver = routing.solver();
   for (RoutingModel::NodeIndex i(0); i < num_nodes; ++i) {
     const int64 index = routing.NodeToIndex(i);
-    if (pickups[i.value()] == 0) {
-      if (deliveries[i.value()] == 0) {
-        routing.SetDepot(i);
-      } else {
-        const int64 delivery_index = routing.NodeToIndex(deliveries[i.value()]);
-        solver->AddConstraint(solver->MakeEquality(
-            routing.VehicleVar(index), routing.VehicleVar(delivery_index)));
-        solver->AddConstraint(
-            solver->MakeLessOrEqual(time_dimension.CumulVar(index),
-                                    time_dimension.CumulVar(delivery_index)));
-        routing.AddPickupAndDelivery(i, deliveries[i.value()]);
-      }
+    if (pickups[i.value()] == 0 && deliveries[i.value()] != 0) {
+      const int64 delivery_index = routing.NodeToIndex(deliveries[i.value()]);
+      solver->AddConstraint(solver->MakeEquality(
+          routing.VehicleVar(index), routing.VehicleVar(delivery_index)));
+      solver->AddConstraint(
+          solver->MakeLessOrEqual(time_dimension.CumulVar(index),
+                                  time_dimension.CumulVar(delivery_index)));
+      routing.AddPickupAndDelivery(i, deliveries[i.value()]);
     }
     IntVar* const cumul = time_dimension.CumulVar(index);
     cumul->SetMin(kScalingFactor * open_times[i.value()]);

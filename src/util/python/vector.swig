@@ -79,13 +79,23 @@ namespace operations_research {
 %typemap(out) std::vector<type>*, const std::vector<type>& {
   $result = vector_output_helper($1, &py_converter);
 }
-%enddef
+
+
+%apply const std::vector<type>& { const std::vector<type>& }
+%apply const std::vector<type>* { const std::vector<type>* }
+%apply std::vector<type>* { std::vector<type>* }
+%apply std::vector<type> { std::vector<type> }
+
+%apply std::vector<type>* OUTPUT { std::vector<type>* OUTPUT }
+%apply std::set<type>* OUTPUT { std::set<type>* OUTPUT }
+
+%enddef  // PY_LIST_OUTPUT_TYPEMAP
 
 PY_LIST_OUTPUT_TYPEMAP(int, PyInt_Check, PyInt_FromLong);
 PY_LIST_OUTPUT_TYPEMAP(long long, SwigPyIntOrLong_Check, PyInt_FromLong);
 PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
 
-// Add conversion list(tuple(int)) -> std::vector<vector>.
+// Add conversion list(tuple(int)) -> std::vector<std::vector>.
 // TODO(user): see if we can also get rid of this and utilize already
 // existing code.
 %define PY_LIST_LIST_INPUT_TYPEMAP(type, checker)
@@ -158,7 +168,9 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
     $1 = failed ? 0 : 1;
   }
 }
-%enddef
+
+%apply const std::vector<std::vector<type> >& { const std::vector<std::vector<type> >& }
+%enddef  // PY_LIST_LIST_INPUT_TYPEMAP
 
 PY_LIST_LIST_INPUT_TYPEMAP(long long, SwigPyIntOrLong_Check);
 }  // namespace operations_research

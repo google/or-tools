@@ -18,7 +18,8 @@
 namespace operations_research {
 namespace fz {
 
-void MarkComputedVariables(Constraint* ct, hash_set<IntegerVariable*>* marked) {
+void MarkComputedVariables(Constraint* ct,
+                           std::unordered_set<IntegerVariable*>* marked) {
   const std::string& id = ct->type;
   if (id == "global_cardinality") {
     FZVLOG << "  - marking " << ct->DebugString() << FZENDL;

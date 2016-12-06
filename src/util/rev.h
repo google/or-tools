@@ -15,6 +15,7 @@
 #ifndef OR_TOOLS_UTIL_REV_H_
 #define OR_TOOLS_UTIL_REV_H_
 
+#include "base/hash.h"
 #include <vector>
 
 #include "base/logging.h"
@@ -22,12 +23,89 @@
 
 namespace operations_research {
 
+// Interface for reversible objects used to maintain them in sync with a tree
+// search organized by decision levels.
+class ReversibleInterface {
+ public:
+  ReversibleInterface() {}
+  virtual ~ReversibleInterface() {}
+
+  // Initially a reversible class starts at level zero. Increasing the level
+  // saves the state of the current old level. Decreasing the level restores the
+  // state to what it was at this level and all higher levels are forgotten.
+  // Everything done at level zero cannot be backtracked over.
+  //
+  // The level is assumed to be non-negative.
+  virtual void SetLevel(int level) = 0;
+};
+
+// A repository that maintains a set of reversible objects of type T.
+// This is meant to be used for small types that are efficient to copy, like
+// all the basic types, std::pair and things like this.
+template <class T>
+class RevRepository : ReversibleInterface {
+ public:
+  RevRepository() : stamp_(0) {}
+
+  // This works in O(level_diff) on level increase.
+  // For level decrease, it is in O(level_diff + num_restored_states).
+  void SetLevel(int level) final;
+  int Level() const { return end_of_level_.size(); }
+
+  // Saves the given object value for the current level. If this is called
+  // multiple time by level, only the value of the first call matter. This is
+  // NOT optimized for many calls by level and should mainly be used just once
+  // for a given level. If a client cannot do that efficiently, it can use the
+  // SaveStateWithStamp() function below.
+  void SaveState(T* object) {
+    if (end_of_level_.empty()) return;  // Not useful for level zero.
+    stack_.push_back({object, *object});
+  }
+
+  // Calls SaveState() if the given stamp is not the same as the current one.
+  // This also sets the given stamp to the current one. The current stamp is
+  // maintained by this class and is updated on each level changes. The whole
+  // process make sure that only one SaveValue() par level will ever be called,
+  // so it is efficient to call this before each update to the object T.
+  void SaveStateWithStamp(T* object, int64* stamp) {
+    if (*stamp == stamp_) return;
+    *stamp = stamp_;
+    SaveState(object);
+  }
+
+ private:
+  int64 stamp_;
+  std::vector<int> end_of_level_;  // In stack_.
+
+  // TODO(user): If we ever see this in any cpu profile, consider using two
+  // vectors for a better memory packing in case sizeof(T) is not sizeof(T*).
+  std::vector<std::pair<T*, T>> stack_;
+};
+
+template <class T>
+void RevRepository<T>::SetLevel(int level) {
+  DCHECK_GE(level, 0);
+  if (level == Level()) return;
+  ++stamp_;
+  if (level < Level()) {
+    const int index = end_of_level_[level];
+    end_of_level_.resize(level);  // Shrinks.
+    while (stack_.size() > index) {
+      const auto& p = stack_.back();
+      *p.first = p.second;
+      stack_.pop_back();
+    }
+  } else {
+    end_of_level_.resize(level, stack_.size());  // Grows.
+  }
+}
+
 // Like a normal map but support backtrackable operations.
 //
 // This works on any class "Map" that supports: begin(), end(), find(), erase(),
 // insert(), key_type, value_type, mapped_type and const_iterator.
 template <class Map>
-class RevMap {
+class RevMap : ReversibleInterface {
  public:
   typedef typename Map::key_type key_type;
   typedef typename Map::mapped_type mapped_type;
@@ -40,7 +118,7 @@ class RevMap {
   // O(level diff) and saves the state of the current old level. Decreasing the
   // level restores the state to what it was at this level and all higher levels
   // are forgotten. Everything done at level zero cannot be backtracked over.
-  void SetLevel(int level);
+  void SetLevel(int level) final;
   int Level() const { return first_op_index_of_next_level_.size(); }
 
   bool ContainsKey(key_type key) const { return operations_research::ContainsKey(map_, key); }
@@ -122,6 +200,69 @@ void RevMap<Map>::Set(key_type key, mapped_type value) {
     }
   }
   insertion_result.first->second = value;
+}
+
+// A basic backtrackable multi map that can only grow (except on backtrack).
+template <class Key, class Value>
+class RevGrowingMultiMap : ReversibleInterface {
+ public:
+  void SetLevel(int level) final;
+
+  // Adds a new value at the given key.
+  void Add(Key key, Value value);
+
+  // Returns the list of values for a given key (can be empty).
+  const std::vector<Value>& Values(Key key) const;
+
+ private:
+  std::vector<Value> empty_values_;
+
+  // TODO(user): use inlined vectors. Another datastructure that may be more
+  // efficient is to use a linked list inside added_keys_ for the values sharing
+  // the same key.
+  hash_map<Key, std::vector<Value>> map_;
+
+  // Backtracking data.
+  std::vector<Key> added_keys_;
+  std::vector<int> first_added_key_of_next_level_;
+};
+
+template <class Key, class Value>
+void RevGrowingMultiMap<Key, Value>::SetLevel(int level) {
+  DCHECK_GE(level, 0);
+  if (level < first_added_key_of_next_level_.size()) {
+    const int backtrack_level = first_added_key_of_next_level_[level];
+    first_added_key_of_next_level_.resize(level);  // Shrinks.
+    while (added_keys_.size() > backtrack_level) {
+      auto it = map_.find(added_keys_.back());
+      if (it->second.size() > 1) {
+        it->second.pop_back();
+      } else {
+        map_.erase(it);
+      }
+      added_keys_.pop_back();
+    }
+    return;
+  }
+
+  // This is ok even if level == Level().
+  first_added_key_of_next_level_.resize(level, added_keys_.size());  // Grows.
+}
+
+template <class Key, class Value>
+const std::vector<Value>& RevGrowingMultiMap<Key, Value>::Values(
+    Key key) const {
+  const auto it = map_.find(key);
+  if (it != map_.end()) return it->second;
+  return empty_values_;
+}
+
+template <class Key, class Value>
+void RevGrowingMultiMap<Key, Value>::Add(Key key, Value value) {
+  if (!first_added_key_of_next_level_.empty()) {
+    added_keys_.push_back(key);
+  }
+  map_[key].push_back(value);
 }
 
 }  // namespace operations_research

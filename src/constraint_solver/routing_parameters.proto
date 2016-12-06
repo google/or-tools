@@ -121,7 +121,7 @@ message RoutingSearchParameters {
     // The OR_OPT operator is a limited version of 3-Opt (breaks 3 arcs on a
     // path).
     bool use_or_opt = 8;
-    // Lin–Kernighan operator.
+    // Lin-Kernighan operator.
     // While the accumulated local gain is positive, performs a 2-OPT or a 3-OPT
     // move followed by a series of 2-OPT moves. Returns a neighbor for which
     // the global gain is positive.
@@ -262,20 +262,14 @@ message RoutingSearchParameters {
 
 // Parameters which have to be set when creating a RoutingModel.
 message RoutingModelParameters {
+  // Parameters to use in the underlying constraint solver.
+  ConstraintSolverParameters solver_parameters = 1;
   // Advanced settings.
   // If set to true reduction of the underlying constraint model will be
   // attempted when all vehicles have exactly the same cost structure. This can
   // result in significant speedups.
-  bool reduce_vehicle_cost_model = 1;
-  // Algorithm to use to compress the constraint solver trail.
-  // TODO(user): This field is obsolete as it is redudant with the
-  // solver_parameters field which contains trail compression settings.
-  // Remove it.
-  enum TrailCompression {
-    NONE = 0;
-    ZLIB = 1;
-  }
-  TrailCompression trail_compression = 2;
-  // Parameters to use in the underlying constraint solver.
-  ConstraintSolverParameters solver_parameters = 3;
+  bool reduce_vehicle_cost_model = 2;
+  // Cache callback calls if the number of nodes in the model is less or equal
+  // to this value.
+  int32 max_callback_cache_size = 3;
 }

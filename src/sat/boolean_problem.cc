@@ -13,8 +13,6 @@
 
 #include "sat/boolean_problem.h"
 
-#include <math.h>
-
 #include "base/hash.h"
 
 #include "base/commandlineflags.h"
@@ -23,6 +21,7 @@
 #include "base/hash.h"
 #include "algorithms/find_graph_symmetries.h"
 #include "graph/graph.h"
+#include "graph/io.h"
 #include "graph/util.h"
 
 DEFINE_string(debug_dump_symmetry_graph_to_file, "",
@@ -100,7 +99,8 @@ std::string ValidateLinearTerms(const LinearTerms& terms,
 // Converts a linear expression from the protocol buffer format to a vector
 // of LiteralWithCoeff.
 template <typename ProtoFormat>
-std::vector<LiteralWithCoeff> ConvertLinearExpression(const ProtoFormat& input) {
+std::vector<LiteralWithCoeff> ConvertLinearExpression(
+    const ProtoFormat& input) {
   std::vector<LiteralWithCoeff> cst;
   cst.reserve(input.literals_size());
   for (int i = 0; i < input.literals_size(); ++i) {
@@ -249,7 +249,8 @@ void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
 
 bool AddObjectiveUpperBound(const LinearBooleanProblem& problem,
                             Coefficient upper_bound, SatSolver* solver) {
-  std::vector<LiteralWithCoeff> cst = ConvertLinearExpression(problem.objective());
+  std::vector<LiteralWithCoeff> cst =
+      ConvertLinearExpression(problem.objective());
   return solver->AddLinearConstraint(false, Coefficient(0), true, upper_bound,
                                      &cst);
 }
@@ -258,7 +259,8 @@ bool AddObjectiveConstraint(const LinearBooleanProblem& problem,
                             bool use_lower_bound, Coefficient lower_bound,
                             bool use_upper_bound, Coefficient upper_bound,
                             SatSolver* solver) {
-  std::vector<LiteralWithCoeff> cst = ConvertLinearExpression(problem.objective());
+  std::vector<LiteralWithCoeff> cst =
+      ConvertLinearExpression(problem.objective());
   return solver->AddLinearConstraint(use_lower_bound, lower_bound,
                                      use_upper_bound, upper_bound, &cst);
 }
@@ -503,7 +505,8 @@ Graph* GenerateGraphForSymmetryDetection(
   // canonical coefficient.
   Coefficient shift;
   Coefficient max_value;
-  std::vector<LiteralWithCoeff> expr = ConvertLinearExpression(problem.objective());
+  std::vector<LiteralWithCoeff> expr =
+      ConvertLinearExpression(problem.objective());
   ComputeBooleanLinearExpressionCanonicalForm(&expr, &shift, &max_value);
   for (LiteralWithCoeff term : expr) {
     (*initial_equivalence_classes)[term.literal.Index().value()] =

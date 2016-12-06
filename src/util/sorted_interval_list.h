@@ -72,10 +72,21 @@ class SortedDisjointIntervalList {
   // If start > end, it does LOG(DFATAL) and returns end() (no interval added).
   Iterator InsertInterval(int64 start, int64 end);
 
+  // If value is in an interval, increase its end by one, otherwise insert the
+  // interval [value, value]. In both cases, this returns an iterator to the
+  // new/modified interval (possibly merged with others) and fills newly_covered
+  // with the new value that was just added in the union of all the intervals.
+  //
+  // If this causes an interval ending at kint64max to grow, it will die with a
+  // CHECK fail.
+  Iterator GrowRightByOne(int64 value, int64* newly_covered);
+
   // Adds all intervals [starts[i]..ends[i]]. Same behavior as InsertInterval()
   // upon invalid intervals. There's a version with int64 and int32.
-  void InsertIntervals(const std::vector<int64>& starts, const std::vector<int64>& ends);
-  void InsertIntervals(const std::vector<int>& starts, const std::vector<int>& ends);
+  void InsertIntervals(const std::vector<int64>& starts,
+                       const std::vector<int64>& ends);
+  void InsertIntervals(const std::vector<int>& starts,
+                       const std::vector<int>& ends);
 
   // Returns the number of disjoint intervals in the list.
   int NumIntervals() const { return intervals_.size(); }

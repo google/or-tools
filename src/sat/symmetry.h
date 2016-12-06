@@ -52,7 +52,7 @@ namespace sat {
 //
 // TODO(user): Implement the optimizations mentioned in the paper?
 // TODO(user): Instrument and see if the code can be optimized.
-class SymmetryPropagator : public Propagator {
+class SymmetryPropagator : public SatPropagator {
  public:
   SymmetryPropagator();
   ~SymmetryPropagator();

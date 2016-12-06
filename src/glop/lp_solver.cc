@@ -25,10 +25,10 @@
 #include "base/join.h"
 #include "base/strutil.h"
 #include "glop/preprocessor.h"
-#include "glop/proto_utils.h"
 #include "glop/status.h"
 #include "lp_data/lp_types.h"
 #include "lp_data/lp_utils.h"
+#include "lp_data/proto_utils.h"
 #include "util/fp_utils.h"
 
 #ifndef ANDROID_JNI

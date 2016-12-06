@@ -636,7 +636,8 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -649,7 +650,8 @@ class ModelStatisticsVisitor : public ModelVisitor {
   }
 
   void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<SequenceVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -765,7 +767,8 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   void VisitIntervalArrayArgument(
-      const std::string& arg_name, const std::vector<IntervalVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<IntervalVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }
@@ -778,7 +781,8 @@ class VariableDegreeVisitor : public ModelVisitor {
   }
 
   void VisitSequenceArrayArgument(
-      const std::string& arg_name, const std::vector<SequenceVar*>& arguments) override {
+      const std::string& arg_name,
+      const std::vector<SequenceVar*>& arguments) override {
     for (int i = 0; i < arguments.size(); ++i) {
       VisitSubArgument(arguments[i]);
     }

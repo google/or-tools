@@ -201,7 +201,8 @@ bool IntTupleSet::Data::Contains(const std::vector<T>& candidate) const {
   }
   const int64 fingerprint = Fingerprint(candidate);
   if (ContainsKey(tuple_fprint_to_index_, fingerprint)) {
-    const std::vector<int>& indices = FindOrDie(tuple_fprint_to_index_, fingerprint);
+    const std::vector<int>& indices =
+        FindOrDie(tuple_fprint_to_index_, fingerprint);
     for (int i = 0; i < indices.size(); ++i) {
       const int tuple_index = indices[i];
       for (int j = 0; j < arity_; ++j) {
@@ -328,14 +329,16 @@ inline bool IntTupleSet::Contains(const std::vector<int64>& tuple) const {
   return data_->Contains(tuple);
 }
 
-inline void IntTupleSet::InsertAll(const std::vector<std::vector<int> >& tuples) {
+inline void IntTupleSet::InsertAll(
+    const std::vector<std::vector<int> >& tuples) {
   data_ = data_->CopyIfShared();
   for (int i = 0; i < tuples.size(); ++i) {
     Insert(tuples[i]);
   }
 }
 
-inline void IntTupleSet::InsertAll(const std::vector<std::vector<int64> >& tuples) {
+inline void IntTupleSet::InsertAll(
+    const std::vector<std::vector<int64> >& tuples) {
   data_ = data_->CopyIfShared();
   for (int i = 0; i < tuples.size(); ++i) {
     Insert(tuples[i]);

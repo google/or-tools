@@ -102,7 +102,7 @@ void Tsp() {
     // Second argument = 1 to build a single tour (it's a TSP).
     // Nodes are indexed from 0 to FLAGS_tsp_size - 1, by default the start of
     // the route is node 0.
-    RoutingModel routing(FLAGS_tsp_size, 1);
+    RoutingModel routing(FLAGS_tsp_size, 1, RoutingModel::NodeIndex(0));
     RoutingSearchParameters parameters = BuildSearchParametersFromFlags();
     // Setting first solution heuristic (cheapest addition).
     parameters.set_first_solution_strategy(

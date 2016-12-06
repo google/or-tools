@@ -47,7 +47,7 @@ class Tsp
 
   static void Solve(int size, int forbidden, int seed)
   {
-    RoutingModel routing = new RoutingModel(size, 1);
+    RoutingModel routing = new RoutingModel(size, 1, 0);
 
     // Setting the cost function.
     // Put a permanent callback to the distance accessor here. The callback
@@ -84,6 +84,7 @@ class Tsp
         FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
     Assignment solution = routing.SolveWithParameters(search_parameters);
+    Console.WriteLine("Status = {0}", routing.Status());
     if (solution != null) {
       // Solution cost.
       Console.WriteLine("Cost = {0}", solution.ObjectiveValue());

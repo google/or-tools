@@ -14,19 +14,22 @@
 #include "flatzinc/solver.h"
 
 #include <string>
+#include <unordered_set>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
+#include "flatzinc/checker.h"
 #include "flatzinc/constraints.h"
 #include "flatzinc/logging.h"
 #include "flatzinc/model.h"
 #include "flatzinc/sat_constraint.h"
 #include "util/string_array.h"
 
-DEFINE_bool(use_sat, true, "Use a sat solver for propagating on Booleans.");
+DEFINE_bool(fz_use_sat, true, "Use a sat solver for propagating on Booleans.");
+DEFINE_bool(fz_check_solutions, true, "Check solutions");
 
 namespace operations_research {
 
@@ -46,14 +49,17 @@ FlatzincParameters::FlatzincParameters()
       statistics(false),
       verbose_impact(false),
       restart_log_size(-1.0),
+      run_all_heuristics(false),
+      heuristic_period(100),
       log_period(1000000),
       luby_restart(0),
       num_solutions(1),
       random_seed(0),
-      threads(1),
+      threads(0),
       thread_id(-1),
       time_limit_in_ms(0),
-      search_type(MIN_SIZE) {}
+      search_type(MIN_SIZE),
+      store_all_solutions(false) {}
 
 // TODO(user): Investigate having the constants directly in the
 // definition of the struct. This has to be tested with visual studio
@@ -141,10 +147,11 @@ namespace {
 struct ConstraintsWithRequiredVariables {
   Constraint* ct;
   int index;
-  hash_set<IntegerVariable*> required;
+  std::unordered_set<IntegerVariable*> required;
 
-  ConstraintsWithRequiredVariables(Constraint* cte, int i,
-                                   const hash_set<IntegerVariable*>& defined)
+  ConstraintsWithRequiredVariables(
+      Constraint* cte, int i,
+      const std::unordered_set<IntegerVariable*>& defined)
       : ct(cte), index(i) {
     // Collect required variables.
     for (const Argument& arg : ct->arguments) {
@@ -180,7 +187,7 @@ struct ConstraintsWithRequiredVariablesComparator {
 
 bool Solver::Extract() {
   // Create the sat solver.
-  if (FLAGS_use_sat) {
+  if (FLAGS_fz_use_sat) {
     FZLOG << "  - Use sat" << FZENDL;
     data_.CreateSatPropagatorAndAddToSolver();
   }
@@ -193,7 +200,7 @@ bool Solver::Extract() {
   int extracted_variables = 0;
   int extracted_constants = 0;
   int skipped_variables = 0;
-  hash_set<IntegerVariable*> defined_variables;
+  std::unordered_set<IntegerVariable*> defined_variables;
   for (IntegerVariable* const var : model_.variables()) {
     if (var->defining_constraint == nullptr && var->active) {
       data_.Extract(var);
@@ -224,7 +231,8 @@ bool Solver::Extract() {
   int index = 0;
   std::vector<ConstraintsWithRequiredVariables*> to_sort;
   std::vector<Constraint*> sorted;
-  hash_map<const IntegerVariable*, std::vector<ConstraintsWithRequiredVariables*>>
+  std::unordered_map<const IntegerVariable*,
+                     std::vector<ConstraintsWithRequiredVariables*>>
       dependencies;
   for (Constraint* ct : model_.constraints()) {
     if (ct != nullptr && ct->active) {
@@ -367,8 +375,8 @@ void Solver::ParseSearchAnnotations(bool ignore_unknown,
     FlattenAnnotations(ann, &flat_annotations);
   }
 
-  FZLOG << "  - parsing search annotations" << std::endl;
-  hash_set<IntVar*> added;
+  FZLOG << "  - parsing search annotations" << FZENDL;
+  std::unordered_set<IntVar*> added;
   for (const Annotation& ann : flat_annotations) {
     FZLOG << "  - parse " << ann.DebugString() << FZENDL;
     if (ann.IsFunctionCallWithIdentifier("int_search")) {
@@ -522,8 +530,8 @@ void Solver::AddCompletionDecisionBuilders(
     const std::vector<IntVar*>& defined_variables,
     const std::vector<IntVar*>& active_variables, SearchLimit* limit,
     std::vector<DecisionBuilder*>* builders) {
-  hash_set<IntVar*> defined_set(defined_variables.begin(),
-                                defined_variables.end());
+  std::unordered_set<IntVar*> defined_set(defined_variables.begin(),
+                                          defined_variables.end());
   std::vector<IntVar*> output_variables;
   CollectOutputVariables(&output_variables);
   std::vector<IntVar*> secondary_vars;
@@ -549,7 +557,7 @@ void Solver::AddCompletionDecisionBuilders(
 DecisionBuilder* Solver::CreateDecisionBuilders(const FlatzincParameters& p,
                                                 SearchLimit* limit) {
   FZLOG << "Defining search" << (p.free_search ? "  (free)" : "  (fixed)")
-        << std::endl;
+        << FZENDL;
   // Fill builders_ with predefined search.
   std::vector<DecisionBuilder*> defined;
   std::vector<IntVar*> defined_variables;
@@ -695,6 +703,23 @@ void Solver::SyncWithModel() {
   }
 }
 
+void Solver::ReportInconsistentModel(const Model& model, FlatzincParameters p,
+                                     SearchReportingInterface* report) {
+  // Special mode. Print out failure status.
+  const std::string search_status = "=====UNSATISFIABLE=====";
+  report->Print(p.thread_id, search_status);
+  if (p.statistics) {
+    std::string solver_status =
+        "%%  name, status, obj, solns, s_time, b_time, br, "
+        "fails, cts, demon, delayed, mem, search\n";
+    StringAppendF(
+        &solver_status,
+        "%%%%  csv: %s, **unsat**, , 0, 0 ms, 0 ms, 0, 0, 0, 0, 0, %s, free",
+        model.name().c_str(), MemoryUsage().c_str());
+    report->Print(p.thread_id, solver_status);
+  }
+}
+
 void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
   SyncWithModel();
   SearchLimit* const limit = p.time_limit_in_ms > 0
@@ -734,29 +759,31 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
 
   if (limit != nullptr) {
     FZLOG << "  - adding a time limit of " << p.time_limit_in_ms << " ms"
-          << std::endl;
+          << FZENDL;
   }
   monitors.push_back(limit);
 
   if (p.all_solutions && p.num_solutions == kint32max) {
-    FZLOG << "  - searching for all solutions" << std::endl;
+    FZLOG << "  - searching for all solutions" << FZENDL;
   } else if (p.all_solutions && p.num_solutions > 1) {
-    FZLOG << "  - searching for " << p.num_solutions << " solutions"
-          << std::endl;
+    FZLOG << "  - searching for " << p.num_solutions << " solutions" << FZENDL;
   } else if (model_.objective() == nullptr ||
              (p.all_solutions && p.num_solutions == 1)) {
-    FZLOG << "  - searching for the first solution" << std::endl;
+    FZLOG << "  - searching for the first solution" << FZENDL;
   } else {
-    FZLOG << "  - search for the best solution" << std::endl;
+    FZLOG << "  - search for the best solution" << FZENDL;
   }
 
   if (p.luby_restart > 0) {
     FZLOG << "  - using luby restart with a factor of " << p.luby_restart
-          << std::endl;
+          << FZENDL;
     monitors.push_back(solver_->MakeLubyRestart(p.luby_restart));
   }
   if (p.last_conflict && p.free_search) {
-    FZLOG << "  - using last conflict search hints" << std::endl;
+    FZLOG << "  - using last conflict search hints" << FZENDL;
+  }
+  if (FLAGS_fz_check_solutions) {
+    FZLOG << "  - using solution checker" << FZENDL;
   }
 
   bool breaked = false;
@@ -764,6 +791,10 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
   const int64 build_time = solver_->wall_time();
   solver_->NewSearch(db, monitors);
   while (solver_->NextSolution()) {
+    if (FLAGS_fz_check_solutions) {
+      CHECK(CheckSolution(
+          model_, [this](IntegerVariable* v) { return SolutionValue(v); }));
+    }
     if (!report->ShouldFinish()) {
       solution_string.clear();
       if (!model_.output().empty()) {

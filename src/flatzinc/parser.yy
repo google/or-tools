@@ -197,7 +197,7 @@ variable_or_constant_declaration:
   CHECK(assignments != nullptr);
   CHECK_EQ(num_constants, assignments->size());
 
-  if (!AreAllSingleton(*assignments)) {
+  if (!AllDomainsHaveOneValue(*assignments)) {
     context->domain_array_map[identifier] = *assignments;
     // TODO(lperron): check that all assignments are included in the domain.
   } else {
@@ -228,7 +228,7 @@ variable_or_constant_declaration:
   } else if (assignment.variable == nullptr) {  // just an integer constant.
     CHECK(domain.Contains(assignment.value));
     var = model->AddVariable(
-        identifier, Domain::Singleton(assignment.value), introduced);
+        identifier, Domain::IntegerValue(assignment.value), introduced);
   } else {  // a variable.
     var = assignment.variable;
     var->Merge(identifier, domain, nullptr, introduced);
@@ -271,7 +271,7 @@ variable_or_constant_declaration:
       const int64 value = assignments->values[i];
       CHECK(domain.Contains(value));
       vars[i] =
-          model->AddVariable(var_name, Domain::Singleton(value), introduced);
+          model->AddVariable(var_name, Domain::IntegerValue(value), introduced);
     } else {
       IntegerVariable* const var = assignments->variables[i];
       CHECK(var != nullptr);
@@ -406,7 +406,7 @@ integer:
 }
 
 const_literal:
-  IVALUE { $$ = Domain::Singleton($1); }
+  IVALUE { $$ = Domain::IntegerValue($1); }
 | IVALUE DOTDOT IVALUE { $$ = Domain::Interval($1, $3); }
 | '{' integers '}' {
   CHECK($2 != nullptr);
@@ -415,9 +415,9 @@ const_literal:
 }
 | '{' '}' { $$ = Domain::EmptyDomain(); }
 | DVALUE { $$ = Domain::AllInt64(); }  // TODO(lperron): floats.
-| IDENTIFIER { $$ = Domain::Singleton(FindOrDie(context->integer_map, $1)); }
+| IDENTIFIER { $$ = Domain::IntegerValue(FindOrDie(context->integer_map, $1)); }
 | IDENTIFIER '[' IVALUE ']' {
-  $$ = Domain::Singleton(
+  $$ = Domain::IntegerValue(
       Lookup(FindOrDie(context->integer_array_map, $1), $3));
 }
 

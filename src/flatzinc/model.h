@@ -14,13 +14,13 @@
 #ifndef OR_TOOLS_FLATZINC_MODEL_H_
 #define OR_TOOLS_FLATZINC_MODEL_H_
 
-#include "base/hash.h"
+#include <map>
 #include <string>
+#include <unordered_map>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
-#include "base/hash.h"
 #include "util/iterators.h"
 #include "util/string_array.h"
 
@@ -47,7 +47,7 @@ struct Domain {
   // The values will be sorted and duplicate values will be removed.
   static Domain IntegerList(std::vector<int64> values);
   static Domain AllInt64();
-  static Domain Singleton(int64 value);
+  static Domain IntegerValue(int64 value);
   static Domain Interval(int64 included_min, int64 included_max);
   static Domain Boolean();
   static Domain EmptyDomain();
@@ -61,10 +61,17 @@ struct Domain {
   // Returns the max of the domain.
   int64 Max() const;
 
+  // Returns the value of the domain. HasOneValue() must return true.
+  int64 Value() const;
+
   // Returns true if the domain is [kint64min..kint64max]
   bool IsAllInt64() const;
 
+  // Various inclusion tests on a domain.
   bool Contains(int64 value) const;
+  bool OverlapsIntList(const std::vector<int64>& values) const;
+  bool OverlapsIntInterval(int64 lb, int64 ub) const;
+  bool OverlapsDomain(const Domain& other) const;
 
   // All the following modifiers change the internal representation
   //   list to interval or interval to list.
@@ -153,14 +160,26 @@ struct Argument {
 
   // Returns true if the argument is a variable.
   bool IsVariable() const;
-  // Returns true if the argument has only one value (single value, or variable
-  // with a singleton domain).
+  // Returns true if the argument has only one value (integer value, integer
+  // list of size 1, interval of size 1, or variable with a singleton domain).
   bool HasOneValue() const;
   // Returns the value of the argument. Does DCHECK(HasOneValue()).
   int64 Value() const;
+  // Returns true if if it an integer list, or an array of integer
+  // variables (or domain) each having only one value.
+  bool IsArrayOfValues() const;
+  // Returns true if the argument is an integer value, an integer
+  // list, or an interval, and it contains the given value.
+  // It will check that the type is actually one of the above.
+  bool Contains(int64 value) const;
+  // Returns the value of the pos-th element.
+  int64 ValueAt(int pos) const;
   // Returns the variable inside the argument if the type is INT_VAR_REF,
   // or nullptr otherwise.
   IntegerVariable* Var() const;
+  // Returns the variable at position pos inside the argument if the type is
+  // INT_VAR_REF_ARRAY or nullptr otherwise.
+  IntegerVariable* VarAt(int pos) const;
 
   Type type;
   std::vector<int64> values;
@@ -322,8 +341,12 @@ class Model {
   // problem, or minimize or maximize the given variable (which must have been
   // added with AddVariable() already).
   void Satisfy(std::vector<Annotation> search_annotations);
-  void Minimize(IntegerVariable* obj, std::vector<Annotation> search_annotations);
-  void Maximize(IntegerVariable* obj, std::vector<Annotation> search_annotations);
+  void Minimize(IntegerVariable* obj,
+                std::vector<Annotation> search_annotations);
+  void Maximize(IntegerVariable* obj,
+                std::vector<Annotation> search_annotations);
+
+  bool IsInconsistent() const;
 
   // ----- Accessors and mutators -----
 
@@ -380,8 +403,8 @@ class ModelStatistics {
 
  private:
   const Model& model_;
-  hash_map<std::string, std::vector<Constraint*>> constraints_per_type_;
-  hash_map<const IntegerVariable*, std::vector<Constraint*>>
+  std::map<std::string, std::vector<Constraint*>> constraints_per_type_;
+  std::unordered_map<const IntegerVariable*, std::vector<Constraint*>>
       constraints_per_variables_;
 };
 }  // namespace fz

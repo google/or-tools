@@ -579,6 +579,11 @@ void MPSolver::FillSolutionResponseProto(MPSolutionResponse* response) const {
 
     if (interface_->IsMIP()) {
       response->set_best_objective_bound(interface_->best_objective_bound());
+    } else {
+      // Dual values have no meaning in MIP.
+      for (int j = 0; j < constraints_.size(); ++j) {
+        response->add_dual_value(constraints_[j]->dual_value());
+      }
     }
   }
 }
@@ -774,7 +779,8 @@ MPVariable* MPSolver::MakeBoolVar(const std::string& name) {
 }
 
 void MPSolver::MakeVarArray(int nb, double lb, double ub, bool integer,
-                            const std::string& name, std::vector<MPVariable*>* vars) {
+                            const std::string& name,
+                            std::vector<MPVariable*>* vars) {
   DCHECK_GE(nb, 0);
   if (nb <= 0) return;
   const int num_digits = NumDigits(nb);

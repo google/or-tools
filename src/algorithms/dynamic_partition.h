@@ -132,7 +132,9 @@ class DynamicPartition {
   // Note that the order does get changed by Refine() operations.
   // This is a reference, so it'll only remain valid and constant until the
   // class is destroyed or until Refine() get called.
-  const std::vector<int>& ElementsInHierarchicalOrder() const { return element_; }
+  const std::vector<int>& ElementsInHierarchicalOrder() const {
+    return element_;
+  }
 
  private:
   // A DynamicPartition instance maintains a list of all of its elements,

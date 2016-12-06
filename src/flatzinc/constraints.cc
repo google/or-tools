@@ -14,6 +14,7 @@
 #include "flatzinc/constraints.h"
 
 #include <string>
+#include <unordered_set>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -27,7 +28,7 @@
 #include "flatzinc/solver_data.h"
 #include "util/string_array.h"
 
-DECLARE_bool(use_sat);
+DECLARE_bool(fz_use_sat);
 
 // TODO(user): minizinc 2.0 support: arg_sort, geost
 // TODO(user): Do we need to support knapsack and network_flow?
@@ -43,8 +44,8 @@ void AddConstraint(Solver* s, fz::Constraint* ct, Constraint* cte) {
 }
 
 void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                           const std::vector<IntVar*>& variables, int64 range_min,
-                           int64 range_max) {
+                           const std::vector<IntVar*>& variables,
+                           int64 range_min, int64 range_max) {
   // TODO(user): Use sat_solver::AddLinearConstraint()
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
@@ -68,18 +69,19 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
     solver->AddConstraint(ct);
   } else if (range_min <= 0 && range_max >= possible_vars) {
     FZVLOG << "  - ignore true constraint" << FZENDL;
-  } else if (FLAGS_use_sat && AddSumInRange(sat, alt, range_min, range_max)) {
+  } else if (FLAGS_fz_use_sat &&
+             AddSumInRange(sat, alt, range_min, range_max)) {
     FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 0 && range_max == 1 &&
+  } else if (FLAGS_fz_use_sat && range_min == 0 && range_max == 1 &&
              AddAtMostOne(sat, alt)) {
     FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 0 && range_max == size - 1 &&
+  } else if (FLAGS_fz_use_sat && range_min == 0 && range_max == size - 1 &&
              AddAtMostNMinusOne(sat, alt)) {
     FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 1 && range_max == 1 &&
+  } else if (FLAGS_fz_use_sat && range_min == 1 && range_max == 1 &&
              AddBoolOrArrayEqualTrue(sat, alt) && AddAtMostOne(sat, alt)) {
     FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 1 && range_max == possible_vars &&
+  } else if (FLAGS_fz_use_sat && range_min == 1 && range_max == possible_vars &&
              AddBoolOrArrayEqualTrue(sat, alt)) {
     FZVLOG << "  - posted to sat" << FZENDL;
   } else {
@@ -91,8 +93,8 @@ void PostBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
-                             const std::vector<IntVar*>& variables, int64 range_min,
-                             int64 range_max, IntVar* target) {
+                             const std::vector<IntVar*>& variables,
+                             int64 range_min, int64 range_max, IntVar* target) {
   const int64 size = variables.size();
   range_min = std::max(0LL, range_min);
   range_max = std::min(size, range_max);
@@ -112,14 +114,14 @@ void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
   } else if (true_vars >= range_min && possible_vars <= range_max) {
     target->SetValue(1);
     FZVLOG << "  - set target to 1" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == size &&
+  } else if (FLAGS_fz_use_sat && range_min == size &&
              AddBoolAndArrayEqVar(sat, variables, target)) {
     FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_max == 0 &&
+  } else if (FLAGS_fz_use_sat && range_max == 0 &&
              AddBoolOrArrayEqVar(sat, variables,
                                  solver->MakeDifference(1, target)->Var())) {
     FZVLOG << "  - posted to sat" << FZENDL;
-  } else if (FLAGS_use_sat && range_min == 1 && range_max == size &&
+  } else if (FLAGS_fz_use_sat && range_min == 1 && range_max == size &&
              AddBoolOrArrayEqVar(sat, variables, target)) {
     FZVLOG << "  - posted to sat" << FZENDL;
     // TODO(user): Implement range_min == 0 and range_max = size - 1.
@@ -132,8 +134,8 @@ void PostIsBooleanSumInRange(SatPropagator* sat, Solver* solver,
 }
 
 void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
-                               const std::vector<IntVar*>& variables, int64 value,
-                               IntVar* target) {
+                               const std::vector<IntVar*>& variables,
+                               int64 value, IntVar* target) {
   const int64 size = variables.size();
   if (value == 0) {
     PostIsBooleanSumInRange(sat, solver, variables, 1, size, target);
@@ -149,14 +151,16 @@ void PostIsBooleanSumDifferent(SatPropagator* sat, Solver* solver,
 
 void ExtractAllDifferentInt(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const s = data->solver();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   Constraint* const constraint = s->MakeAllDifferent(vars, vars.size() < 100);
   AddConstraint(s, ct, constraint);
 }
 
 void ExtractAlldifferentExcept0(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const s = data->solver();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   AddConstraint(s, ct, s->MakeAllDifferentExcept(vars, 0));
 }
 
@@ -197,10 +201,20 @@ void ExtractAmong(fz::SolverData* data, fz::Constraint* ct) {
   }
 }
 
+void ExtractAtMostInt(fz::SolverData* data, fz::Constraint* ct) {
+  Solver* const solver = data->solver();
+  const int64 max_count = ct->arguments[0].Value();
+  const int64 value = ct->arguments[2].Value();
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[1]);
+  Constraint* const constraint = solver->MakeAtMost(vars, value, max_count);
+  AddConstraint(solver, ct, constraint);
+}
+
 void ExtractArrayBoolAnd(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
   std::vector<IntVar*> variables;
-  hash_set<IntExpr*> added;
+  std::unordered_set<IntExpr*> added;
   const std::vector<IntVar*> tmp_vars =
       data->GetOrCreateVariableArray(ct->arguments[0]);
   for (IntVar* const to_add : tmp_vars) {
@@ -222,7 +236,7 @@ void ExtractArrayBoolAnd(fz::SolverData* data, fz::Constraint* ct) {
   } else {
     if (ct->arguments[1].HasOneValue()) {
       if (ct->arguments[1].Value() == 0) {
-        if (FLAGS_use_sat &&
+        if (FLAGS_fz_use_sat &&
             AddBoolAndArrayEqualFalse(data->Sat(), variables)) {
           FZVLOG << "  - posted to sat" << FZENDL;
         } else {
@@ -238,7 +252,7 @@ void ExtractArrayBoolAnd(fz::SolverData* data, fz::Constraint* ct) {
     } else {
       IntVar* const boolvar =
           data->GetOrCreateExpression(ct->arguments[1])->Var();
-      if (FLAGS_use_sat &&
+      if (FLAGS_fz_use_sat &&
           AddBoolAndArrayEqVar(data->Sat(), variables, boolvar)) {
         FZVLOG << "  - posted to sat" << FZENDL;
       } else {
@@ -253,7 +267,7 @@ void ExtractArrayBoolAnd(fz::SolverData* data, fz::Constraint* ct) {
 void ExtractArrayBoolOr(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
   std::vector<IntVar*> variables;
-  hash_set<IntExpr*> added;
+  std::unordered_set<IntExpr*> added;
   const std::vector<IntVar*> tmp_vars =
       data->GetOrCreateVariableArray(ct->arguments[0]);
   for (IntVar* const to_add : tmp_vars) {
@@ -275,7 +289,8 @@ void ExtractArrayBoolOr(fz::SolverData* data, fz::Constraint* ct) {
   } else {
     if (ct->arguments[1].HasOneValue()) {
       if (ct->arguments[1].Value() == 1) {
-        if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(data->Sat(), variables)) {
+        if (FLAGS_fz_use_sat &&
+            AddBoolOrArrayEqualTrue(data->Sat(), variables)) {
           FZVLOG << "  - posted to sat" << FZENDL;
         } else {
           Constraint* const constraint =
@@ -290,7 +305,7 @@ void ExtractArrayBoolOr(fz::SolverData* data, fz::Constraint* ct) {
     } else {
       IntVar* const boolvar =
           data->GetOrCreateExpression(ct->arguments[1])->Var();
-      if (FLAGS_use_sat &&
+      if (FLAGS_fz_use_sat &&
           AddBoolOrArrayEqVar(data->Sat(), variables, boolvar)) {
         FZVLOG << "  - posted to sat" << FZENDL;
       } else {
@@ -304,7 +319,8 @@ void ExtractArrayBoolOr(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractArrayBoolXor(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
-  std::vector<IntVar*> tmp_vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  std::vector<IntVar*> tmp_vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   std::vector<IntVar*> variables;
   bool even = true;
   for (IntVar* const var : tmp_vars) {
@@ -331,14 +347,14 @@ void ExtractArrayBoolXor(fz::SolverData* data, fz::Constraint* ct) {
     }
     case 2: {
       if (even) {
-        if (FLAGS_use_sat &&
+        if (FLAGS_fz_use_sat &&
             AddBoolNot(data->Sat(), variables[0], variables[1])) {
           FZVLOG << "  - posted to sat" << FZENDL;
         } else {
           PostBooleanSumInRange(data->Sat(), solver, variables, 1, 1);
         }
       } else {
-        if (FLAGS_use_sat &&
+        if (FLAGS_fz_use_sat &&
             AddBoolEq(data->Sat(), variables[0], variables[1])) {
           FZVLOG << "  - posted to sat" << FZENDL;
         } else {
@@ -426,7 +442,8 @@ void ExtractArrayVarIntElement(fz::SolverData* data, fz::Constraint* ct) {
   const int64 imin = std::max(index->Min(), 1LL);
   const int64 imax = std::min(index->Max(), array_size);
   IntVar* const shifted_index = solver->MakeSum(index, -imin)->Var();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[1]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[1]);
   const int64 size = imax - imin + 1;
   std::vector<IntVar*> var_array(size);
   for (int i = 0; i < size; ++i) {
@@ -471,7 +488,7 @@ void ExtractBoolAnd(fz::SolverData* data, fz::Constraint* ct) {
     data->SetExtracted(ct->target_variable, target);
   } else {
     IntExpr* const target = data->GetOrCreateExpression(ct->arguments[2]);
-    if (FLAGS_use_sat && AddBoolAndEqVar(data->Sat(), left, right, target)) {
+    if (FLAGS_fz_use_sat && AddBoolAndEqVar(data->Sat(), left, right, target)) {
       FZVLOG << "  - posted to sat" << FZENDL;
     } else {
       Constraint* const constraint =
@@ -504,8 +521,8 @@ void ExtractBoolClause(fz::SolverData* data, fz::Constraint* ct) {
       vars.push_back(solver->MakeDifference(1, var)->Var());
     }
   }
-  if (FLAGS_use_sat && AddBoolOrArrayEqualTrue(data->Sat(), vars)) {
-    FZVLOG << "  - posted to sat";
+  if (FLAGS_fz_use_sat && AddBoolOrArrayEqualTrue(data->Sat(), vars)) {
+    FZVLOG << "  - posted to sat" << FZENDL;
   } else {
     Constraint* const constraint = solver->MakeSumGreaterOrEqual(vars, 1);
     AddConstraint(solver, ct, constraint);
@@ -531,7 +548,7 @@ void ExtractBoolNot(fz::SolverData* data, fz::Constraint* ct) {
   } else {
     IntExpr* const left = data->GetOrCreateExpression(ct->arguments[0]);
     IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1]);
-    if (FLAGS_use_sat && AddBoolNot(data->Sat(), left, right)) {
+    if (FLAGS_fz_use_sat && AddBoolNot(data->Sat(), left, right)) {
       FZVLOG << "  - posted to sat" << FZENDL;
     } else {
       Constraint* const constraint =
@@ -552,8 +569,8 @@ void ExtractBoolOr(fz::SolverData* data, fz::Constraint* ct) {
     data->SetExtracted(ct->target_variable, target);
   } else {
     IntExpr* const target = data->GetOrCreateExpression(ct->arguments[2]);
-    if (FLAGS_use_sat && AddBoolOrEqVar(data->Sat(), left, right, target)) {
-      FZVLOG << "  - posted to sat";
+    if (FLAGS_fz_use_sat && AddBoolOrEqVar(data->Sat(), left, right, target)) {
+      FZVLOG << "  - posted to sat" << FZENDL;
     } else {
       Constraint* const constraint =
           solver->MakeEquality(solver->MakeMax(left, right), target);
@@ -567,7 +584,7 @@ void ExtractBoolXor(fz::SolverData* data, fz::Constraint* ct) {
   IntExpr* const left = data->GetOrCreateExpression(ct->arguments[0]);
   IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1]);
   IntVar* const target = data->GetOrCreateExpression(ct->arguments[2])->Var();
-  if (FLAGS_use_sat && AddBoolIsNEqVar(data->Sat(), left, right, target)) {
+  if (FLAGS_fz_use_sat && AddBoolIsNEqVar(data->Sat(), left, right, target)) {
     FZVLOG << "  - posted to sat" << FZENDL;
   } else {
     Constraint* const constraint =
@@ -696,6 +713,16 @@ void ExtractCountGt(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractCountLeq(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
+  if (ct->arguments[2].HasOneValue() && ct->arguments[1].HasOneValue()) {
+    // At most in disguise.
+    const int64 max_count = ct->arguments[2].Value();
+    const int64 value = ct->arguments[1].Value();
+    const std::vector<IntVar*> vars =
+        data->GetOrCreateVariableArray(ct->arguments[0]);
+    Constraint* const constraint = solver->MakeAtMost(vars, value, max_count);
+    AddConstraint(solver, ct, constraint);
+  }
+
   const std::vector<IntVar*> tmp_sum = BuildCount(data, ct);
   if (ct->arguments[2].HasOneValue()) {
     const int64 count = ct->arguments[2].Value();
@@ -710,6 +737,17 @@ void ExtractCountLeq(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractCountLt(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
+  if (ct->arguments[2].HasOneValue() && ct->arguments[1].HasOneValue()) {
+    // At most in disguise.
+    const int64 max_count = ct->arguments[2].Value();
+    const int64 value = ct->arguments[1].Value();
+    const std::vector<IntVar*> vars =
+        data->GetOrCreateVariableArray(ct->arguments[0]);
+    Constraint* const constraint =
+        solver->MakeAtMost(vars, value, max_count - 1);
+    AddConstraint(solver, ct, constraint);
+  }
+
   const std::vector<IntVar*> tmp_sum = BuildCount(data, ct);
   if (ct->arguments[2].HasOneValue()) {
     const int64 count = ct->arguments[2].Value();
@@ -1299,7 +1337,7 @@ void ExtractIntEq(fz::SolverData* data, fz::Constraint* ct) {
     IntExpr* const left = data->GetOrCreateExpression(ct->arguments[0]);
     if (ct->arguments[1].type == fz::Argument::INT_VAR_REF) {
       IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1]);
-      if (FLAGS_use_sat && AddBoolEq(data->Sat(), left, right)) {
+      if (FLAGS_fz_use_sat && AddBoolEq(data->Sat(), left, right)) {
         FZVLOG << "  - posted to sat" << FZENDL;
       } else {
         AddConstraint(s, ct, s->MakeEquality(left, right));
@@ -1346,7 +1384,7 @@ void ExtractIntEqReif(fz::SolverData* data, fz::Constraint* ct) {
       IntVar* tmp_var = nullptr;
       bool tmp_neg = 0;
       bool success = false;
-      if (FLAGS_use_sat && solver->IsBooleanVar(left, &tmp_var, &tmp_neg) &&
+      if (FLAGS_fz_use_sat && solver->IsBooleanVar(left, &tmp_var, &tmp_neg) &&
           solver->IsBooleanVar(right, &tmp_var, &tmp_neg)) {
         // Try to post to sat.
         IntVar* const boolvar = solver->MakeBoolVar();
@@ -1385,7 +1423,7 @@ void ExtractIntEqReif(fz::SolverData* data, fz::Constraint* ct) {
       IntExpr* const left = data->GetOrCreateExpression(ct->arguments[0]);
       IntExpr* const right =
           data->GetOrCreateExpression(ct->arguments[1])->Var();
-      if (FLAGS_use_sat && AddIntEqReif(data->Sat(), left, right, boolvar)) {
+      if (FLAGS_fz_use_sat && AddIntEqReif(data->Sat(), left, right, boolvar)) {
         FZVLOG << "  - posted to sat" << FZENDL;
       } else {
         Constraint* const constraint =
@@ -1402,7 +1440,7 @@ void ExtractIntGe(fz::SolverData* data, fz::Constraint* ct) {
     IntExpr* const left = data->GetOrCreateExpression(ct->arguments[0]);
     if (ct->arguments[1].type == fz::Argument::INT_VAR_REF) {
       IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1]);
-      if (FLAGS_use_sat && AddBoolLe(data->Sat(), right, left)) {
+      if (FLAGS_fz_use_sat && AddBoolLe(data->Sat(), right, left)) {
         FZVLOG << "  - posted to sat" << FZENDL;
       } else {
         AddConstraint(s, ct, s->MakeGreaterOrEqual(left, right));
@@ -1479,7 +1517,7 @@ void ExtractIntGe(fz::SolverData* data, fz::Constraint* ct) {
           data->GetOrCreateExpression(ct->arguments[2])->Var();             \
       FZVLOG << "  - creating and linking " << boolvar->DebugString()       \
              << " to " << previous->DebugString() << FZENDL;                \
-      if (FLAGS_use_sat && AddBoolEq(data->Sat(), boolvar, previous)) {     \
+      if (FLAGS_fz_use_sat && AddBoolEq(data->Sat(), boolvar, previous)) {  \
         FZVLOG << "  - posted to sat" << FZENDL;                            \
       } else {                                                              \
         Constraint* const constraint =                                      \
@@ -1528,7 +1566,7 @@ void ExtractIntLe(fz::SolverData* data, fz::Constraint* ct) {
     IntExpr* const left = data->GetOrCreateExpression(ct->arguments[0]);
     if (ct->arguments[1].type == fz::Argument::INT_VAR_REF) {
       IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1]);
-      if (FLAGS_use_sat && AddBoolLe(data->Sat(), left, right)) {
+      if (FLAGS_fz_use_sat && AddBoolLe(data->Sat(), left, right)) {
         FZVLOG << "  - posted to sat" << FZENDL;
       } else {
         AddConstraint(s, ct, s->MakeLessOrEqual(left, right));
@@ -1692,7 +1730,8 @@ void ParseShortIntLin(fz::SolverData* data, fz::Constraint* ct, IntExpr** left,
 }
 
 void ParseLongIntLin(fz::SolverData* data, fz::Constraint* ct,
-                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs, int64* rhs) {
+                     std::vector<IntVar*>* vars, std::vector<int64>* coeffs,
+                     int64* rhs) {
   CHECK(vars != nullptr);
   CHECK(coeffs != nullptr);
   CHECK(rhs != nullptr);
@@ -1715,8 +1754,8 @@ void ParseLongIntLin(fz::SolverData* data, fz::Constraint* ct,
   }
 }
 
-bool AreAllExtractedAsVariables(fz::SolverData* data,
-                                const std::vector<fz::IntegerVariable*>& fz_vars) {
+bool AreAllExtractedAsVariables(
+    fz::SolverData* data, const std::vector<fz::IntegerVariable*>& fz_vars) {
   for (fz::IntegerVariable* const fz_var : fz_vars) {
     IntExpr* const expr = data->Extract(fz_var);
     if (!expr->IsVar()) {
@@ -1978,7 +2017,8 @@ void ExtractIntLinGeReif(fz::SolverData* data, fz::Constraint* ct) {
   }
 }
 
-bool PostHiddenClause(SatPropagator* const sat, const std::vector<int64>& coeffs,
+bool PostHiddenClause(SatPropagator* const sat,
+                      const std::vector<int64>& coeffs,
                       const std::vector<IntVar*>& vars) {
   std::vector<IntVar*> others;
   others.reserve(vars.size() - 1);
@@ -2024,10 +2064,10 @@ void ExtractIntLinLe(fz::SolverData* data, fz::Constraint* ct) {
     ParseLongIntLin(data, ct, &vars, &coeffs, &rhs);
     if (AreAllBooleans(vars) && AreAllOnes(coeffs)) {
       PostBooleanSumInRange(data->Sat(), solver, vars, 0, rhs);
-    } else if (FLAGS_use_sat && AreAllBooleans(vars) && rhs == 0 &&
+    } else if (FLAGS_fz_use_sat && AreAllBooleans(vars) && rhs == 0 &&
                PostHiddenClause(data->Sat(), coeffs, vars)) {
       FZVLOG << "  - posted to sat" << FZENDL;
-    } else if (FLAGS_use_sat && AreAllBooleans(vars) && rhs == 0 &&
+    } else if (FLAGS_fz_use_sat && AreAllBooleans(vars) && rhs == 0 &&
                PostHiddenLeMax(data->Sat(), coeffs, vars)) {
       FZVLOG << "  - posted to sat" << FZENDL;
     } else {
@@ -2286,7 +2326,7 @@ void ExtractIntNe(fz::SolverData* data, fz::Constraint* ct) {
     IntExpr* const left = data->GetOrCreateExpression(ct->arguments[0]);
     if (ct->arguments[1].type == fz::Argument::INT_VAR_REF) {
       IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1]);
-      if (FLAGS_use_sat && AddBoolNot(data->Sat(), left, right)) {
+      if (FLAGS_fz_use_sat && AddBoolNot(data->Sat(), left, right)) {
         FZVLOG << "  - posted to sat" << FZENDL;
       } else {
         AddConstraint(s, ct, s->MakeNonEquality(left, right));
@@ -2325,7 +2365,7 @@ void ExtractIntNeReif(fz::SolverData* data, fz::Constraint* ct) {
       IntVar* tmp_var = nullptr;
       bool tmp_neg = 0;
       bool success = false;
-      if (FLAGS_use_sat && solver->IsBooleanVar(left, &tmp_var, &tmp_neg) &&
+      if (FLAGS_fz_use_sat && solver->IsBooleanVar(left, &tmp_var, &tmp_neg) &&
           solver->IsBooleanVar(right, &tmp_var, &tmp_neg)) {
         // Try to post to sat.
         IntVar* const boolvar = solver->MakeBoolVar();
@@ -2349,7 +2389,7 @@ void ExtractIntNeReif(fz::SolverData* data, fz::Constraint* ct) {
     IntExpr* const right = data->GetOrCreateExpression(ct->arguments[1])->Var();
     IntVar* const boolvar =
         data->GetOrCreateExpression(ct->arguments[2])->Var();
-    if (FLAGS_use_sat && AddIntEqReif(data->Sat(), left, right, boolvar)) {
+    if (FLAGS_fz_use_sat && AddIntEqReif(data->Sat(), left, right, boolvar)) {
       FZVLOG << "  - posted to sat" << FZENDL;
     } else {
       Constraint* const constraint =
@@ -2422,7 +2462,7 @@ void ExtractIntTimes(fz::SolverData* data, fz::Constraint* ct) {
     data->SetExtracted(ct->target_variable, target);
   } else {
     IntExpr* const target = data->GetOrCreateExpression(ct->arguments[2]);
-    if (FLAGS_use_sat && AddBoolAndEqVar(data->Sat(), left, right, target)) {
+    if (FLAGS_fz_use_sat && AddBoolAndEqVar(data->Sat(), left, right, target)) {
       FZVLOG << "  - posted to sat" << FZENDL;
     } else {
       Constraint* const constraint =
@@ -2437,7 +2477,8 @@ void ExtractInverse(fz::SolverData* data, fz::Constraint* ct) {
   std::vector<IntVar*> left;
   // Account for 1 based arrays.
   left.push_back(solver->MakeIntConst(0));
-  std::vector<IntVar*> tmp_vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  std::vector<IntVar*> tmp_vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   left.insert(left.end(), tmp_vars.begin(), tmp_vars.end());
 
   std::vector<IntVar*> right;
@@ -2536,7 +2577,8 @@ void ExtractMinimumInt(fz::SolverData* data, fz::Constraint* ct) {
 void ExtractNvalue(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
 
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[1]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[1]);
 
   int64 lb = kint64max;
   int64 ub = kint64min;
@@ -2568,7 +2610,7 @@ void ExtractNvalue(fz::SolverData* data, fz::Constraint* ct) {
       cards.push_back(contributors.back());
     } else if (contributors.size() > 1) {
       IntVar* const contribution = solver->MakeBoolVar();
-      if (FLAGS_use_sat &&
+      if (FLAGS_fz_use_sat &&
           AddBoolOrArrayEqVar(data->Sat(), contributors, contribution)) {
         FZVLOG << "  - posted to sat" << FZENDL;
       } else {
@@ -2764,6 +2806,9 @@ void ExtractSetInReif(fz::SolverData* data, fz::Constraint* ct) {
         Constraint* const constraint =
             solver->MakeIsBetweenCt(expr, arg.values[0], arg.values[1], target);
         AddConstraint(solver, ct, constraint);
+      } else {
+        Constraint* const constraint = solver->MakeEquality(target, 1);
+        AddConstraint(solver, ct, constraint);
       }
       break;
     }
@@ -2796,7 +2841,8 @@ void ExtractSlidingSum(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractSort(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const solver = data->solver();
-  const std::vector<IntVar*> left = data->GetOrCreateVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> left =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   const std::vector<IntVar*> right =
       data->GetOrCreateVariableArray(ct->arguments[1]);
   Constraint* const constraint = solver->MakeSortingConstraint(left, right);
@@ -2856,7 +2902,8 @@ void ExtractTableInt(fz::SolverData* data, fz::Constraint* ct) {
 
 void ExtractSymmetricAllDifferent(fz::SolverData* data, fz::Constraint* ct) {
   Solver* const s = data->solver();
-  const std::vector<IntVar*> vars = data->GetOrCreateVariableArray(ct->arguments[0]);
+  const std::vector<IntVar*> vars =
+      data->GetOrCreateVariableArray(ct->arguments[0]);
   Constraint* const constraint =
       s->MakeInversePermutationConstraint(vars, vars);
   AddConstraint(s, ct, constraint);
@@ -2887,6 +2934,8 @@ void ExtractConstraint(SolverData* data, Constraint* ct) {
     ExtractArrayVarIntElement(data, ct);
   } else if (type == "array_var_int_element") {
     ExtractArrayVarIntElement(data, ct);
+  } else if (type == "at_most_int") {
+    ExtractAtMostInt(data, ct);
   } else if (type == "bool_and") {
     ExtractBoolAnd(data, ct);
   } else if (type == "bool_clause") {

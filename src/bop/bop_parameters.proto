@@ -249,8 +249,8 @@ message BopParameters {
   // overall best bound.
   // This is useful to improve the best_bound, but also to fix some variables
   // during search.
-  // Note that using probing might be time consuming as it runs
-  // 2 * num_variables times the LP solver.
+  // Note that using probing might be time consuming as it runs the LP solver
+  // 2 * num_variables times.
   optional bool use_lp_strong_branching = 29 [default = false];
 
   // Only try to decompose the problem when the number of variables is greater

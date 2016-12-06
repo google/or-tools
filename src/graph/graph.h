@@ -738,7 +738,8 @@ void Permute(const IntVector& permutation, Array* array_to_permute) {
 // We need a specialization for std::vector<bool>, because the default code uses
 // (*array_to_permute)[0] as ElementType, which isn't 'bool' in that case.
 template <class IntVector>
-void Permute(const IntVector& permutation, std::vector<bool>* array_to_permute) {
+void Permute(const IntVector& permutation,
+             std::vector<bool>* array_to_permute) {
   if (permutation.size() == 0) {
     return;
   }

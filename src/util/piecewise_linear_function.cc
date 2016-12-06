@@ -292,8 +292,8 @@ PiecewiseLinearFunction::PiecewiseLinearFunction(
 }
 
 PiecewiseLinearFunction* PiecewiseLinearFunction::CreatePiecewiseLinearFunction(
-    std::vector<int64> points_x, std::vector<int64> points_y, std::vector<int64> slopes,
-    std::vector<int64> other_points_x) {
+    std::vector<int64> points_x, std::vector<int64> points_y,
+    std::vector<int64> slopes, std::vector<int64> other_points_x) {
   CHECK_EQ(points_x.size(), points_y.size());
   CHECK_EQ(points_x.size(), other_points_x.size());
   CHECK_EQ(points_x.size(), slopes.size());
@@ -325,7 +325,8 @@ PiecewiseLinearFunction* PiecewiseLinearFunction::CreateStepFunction(
 }
 
 PiecewiseLinearFunction* PiecewiseLinearFunction::CreateFullDomainFunction(
-    int64 initial_level, std::vector<int64> points_x, std::vector<int64> slopes) {
+    int64 initial_level, std::vector<int64> points_x,
+    std::vector<int64> slopes) {
   CHECK_EQ(points_x.size(), slopes.size() - 1);
   CHECK_GT(points_x.size(), 0);
 

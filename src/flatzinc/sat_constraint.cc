@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "base/commandlineflags.h"
@@ -173,7 +174,7 @@ class SatPropagator : public Constraint {
  private:
   sat::SatSolver sat_;
   std::vector<IntVar*> vars_;
-  hash_map<IntVar*, sat::BooleanVariable> indices_;
+  std::unordered_map<IntVar*, sat::BooleanVariable> indices_;
   std::vector<sat::Literal> bound_literals_;
   NumericalRev<int> sat_decision_level_;
   std::vector<Demon*> demons_;
@@ -251,7 +252,8 @@ bool AddBoolAndArrayEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
 }
 
 bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
-                                 const std::vector<IntVar*>& vars, IntExpr* target) {
+                                 const std::vector<IntVar*>& vars,
+                                 IntExpr* target) {
   if (!sat->AllVariablesAreBoolean(vars) || !sat->ExpressionIsBoolean(target)) {
     return false;
   }
@@ -265,7 +267,8 @@ bool AddSumBoolArrayGreaterEqVar(SatPropagator* sat,
   return true;
 }
 
-bool AddMaxBoolArrayLessEqVar(SatPropagator* sat, const std::vector<IntVar*>& vars,
+bool AddMaxBoolArrayLessEqVar(SatPropagator* sat,
+                              const std::vector<IntVar*>& vars,
                               IntExpr* target) {
   if (!sat->AllVariablesAreBoolean(vars) || !sat->ExpressionIsBoolean(target)) {
     return false;
@@ -365,7 +368,8 @@ bool AddBoolIsLeVar(SatPropagator* sat, IntExpr* left, IntExpr* right,
   return true;
 }
 
-bool AddBoolOrArrayEqualTrue(SatPropagator* sat, const std::vector<IntVar*>& vars) {
+bool AddBoolOrArrayEqualTrue(SatPropagator* sat,
+                             const std::vector<IntVar*>& vars) {
   if (!sat->AllVariablesAreBoolean(vars)) {
     return false;
   }

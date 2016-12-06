@@ -37,4 +37,6 @@ DECLARE_bool(fz_debug);
 
 #define FZDLOG \
   if (FLAGS_fz_debug) std::cout << "%%%%%% "
+
+#define HASVLOG FLAGS_fz_verbose
 #endif  // OR_TOOLS_FLATZINC_LOGGING_H_

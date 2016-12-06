@@ -44,7 +44,7 @@ public class SimpleRoutingTest {
 
   //Solve Method
   public void solve() {
-    RoutingModel routing = new RoutingModel(costMatrix.length, 1);
+    RoutingModel routing = new RoutingModel(costMatrix.length, 1, 0);
     routing.setFirstSolutionStrategy(RoutingModel.ROUTING_PATH_CHEAPEST_ARC);
     NodeDistance distances = new NodeDistance(costMatrix);
     routing.setCost(distances);

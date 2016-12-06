@@ -40,7 +40,8 @@ namespace operations_research {
 // RoutingLocalSearchFilter
 
 RoutingLocalSearchFilter::RoutingLocalSearchFilter(
-    const std::vector<IntVar*>& nexts, Solver::ObjectiveWatcher objective_callback)
+    const std::vector<IntVar*>& nexts,
+    Solver::ObjectiveWatcher objective_callback)
     : IntVarLocalSearchFilter(nexts),
       injected_objective_value_(0),
       objective_callback_(objective_callback) {}
@@ -2556,7 +2557,8 @@ SavingsFilteredDecisionBuilder::ComputeSavings() const {
             !model()->IsStart(before_node)) {
           const int64 in_saving =
               model()->GetArcCostForClass(before_node, end, cost_class);
-          std::vector<std::pair</*cost*/ int64, /*node*/ int64>> costed_after_nodes;
+          std::vector<std::pair</*cost*/ int64, /*node*/ int64>>
+              costed_after_nodes;
           costed_after_nodes.reserve(size);
           for (int after_node = 0; after_node < size; ++after_node) {
             if (after_node != before_node && !Contains(after_node) &&

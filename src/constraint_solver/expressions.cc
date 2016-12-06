@@ -1617,8 +1617,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
     }
   }
 
-  SimpleBitSet(Solver* const s, const std::vector<int64>& sorted_values, int64 vmin,
-               int64 vmax)
+  SimpleBitSet(Solver* const s, const std::vector<int64>& sorted_values,
+               int64 vmin, int64 vmax)
       : BitSet(s),
         bits_(nullptr),
         stamps_(nullptr),
@@ -1735,8 +1735,8 @@ class SimpleBitSet : public DomainIntVar::BitSet {
 
   void ApplyRemovedValues(DomainIntVar* var) override {
     std::sort(removed_.begin(), removed_.end());
-    for (std::vector<int64>::iterator it = removed_.begin(); it != removed_.end();
-         ++it) {
+    for (std::vector<int64>::iterator it = removed_.begin();
+         it != removed_.end(); ++it) {
       var->RemoveValue(*it);
     }
   }
@@ -1818,8 +1818,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
     bits_ = OneRange64(0, size_.Value() - 1);
   }
 
-  SmallBitSet(Solver* const s, const std::vector<int64>& sorted_values, int64 vmin,
-              int64 vmax)
+  SmallBitSet(Solver* const s, const std::vector<int64>& sorted_values,
+              int64 vmin, int64 vmax)
       : BitSet(s),
         bits_(GG_ULONGLONG(0)),
         stamp_(s->stamp() - 1),
@@ -1950,8 +1950,8 @@ class SmallBitSet : public DomainIntVar::BitSet {
 
   void ApplyRemovedValues(DomainIntVar* var) override {
     std::sort(removed_.begin(), removed_.end());
-    for (std::vector<int64>::iterator it = removed_.begin(); it != removed_.end();
-         ++it) {
+    for (std::vector<int64>::iterator it = removed_.begin();
+         it != removed_.end(); ++it) {
       var->RemoveValue(*it);
     }
   }
@@ -2204,7 +2204,8 @@ DomainIntVar::DomainIntVar(Solver* const s, int64 vmin, int64 vmax,
       value_watcher_(nullptr),
       bound_watcher_(nullptr) {}
 
-DomainIntVar::DomainIntVar(Solver* const s, const std::vector<int64>& sorted_values,
+DomainIntVar::DomainIntVar(Solver* const s,
+                           const std::vector<int64>& sorted_values,
                            const std::string& name)
     : IntVar(s, name),
       min_(kint64max),
@@ -6381,7 +6382,8 @@ Constraint* SetIsEqual(IntVar* const var, const std::vector<int64>& values,
   return dvar->SetIsEqual(values, vars);
 }
 
-Constraint* SetIsGreaterOrEqual(IntVar* const var, const std::vector<int64>& values,
+Constraint* SetIsGreaterOrEqual(IntVar* const var,
+                                const std::vector<int64>& values,
                                 const std::vector<IntVar*>& vars) {
   DomainIntVar* const dvar = reinterpret_cast<DomainIntVar*>(var);
   CHECK(dvar != nullptr);
@@ -6424,7 +6426,8 @@ IntVar* Solver::MakeBoolVar() {
   return RegisterIntVar(RevAlloc(new ConcreteBooleanVar(this, "")));
 }
 
-IntVar* Solver::MakeIntVar(const std::vector<int64>& values, const std::string& name) {
+IntVar* Solver::MakeIntVar(const std::vector<int64>& values,
+                           const std::string& name) {
   DCHECK(!values.empty());
   // Fast-track the case where we have a single value.
   if (values.size() == 1) return MakeIntConst(values[0], name);

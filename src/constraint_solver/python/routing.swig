@@ -132,6 +132,31 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
     Solver::IndexEvaluator2* evaluator);
 
 %ignore operations_research::RoutingModel::RoutingModel(
+    int nodes, int vehicles, NodeIndex depot);
+
+%ignore operations_research::RoutingModel::RoutingModel(
+    int nodes, int vehicles, NodeIndex depot,
+    const RoutingModelParameters& parameters);
+
+%extend operations_research::RoutingModel {
+  RoutingModel(int nodes, int vehicles, int depot) {
+    operations_research::RoutingModel* model =
+        new operations_research::RoutingModel(
+            nodes, vehicles,
+            operations_research::RoutingModel::NodeIndex(depot));
+    return model;
+  }
+  RoutingModel(int nodes, int vehicles, int depot,
+               const RoutingModelParameters& parameters) {
+      operations_research::RoutingModel* model =
+          new operations_research::RoutingModel(
+              nodes, vehicles,
+              operations_research::RoutingModel::NodeIndex(depot), parameters);
+      return model;
+  }
+}
+
+%ignore operations_research::RoutingModel::RoutingModel(
     int nodes, int vehicles,
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end);
 

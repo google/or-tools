@@ -26,12 +26,13 @@
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
+#include "base/stringpiece_utils.h"
 #include "base/strutil.h"
 #include "glop/lp_solver.h"
 #include "glop/parameters.pb.h"
-#include "glop/proto_utils.h"
 #include "lp_data/lp_print_utils.h"
 #include "lp_data/mps_reader.h"
+#include "lp_data/proto_utils.h"
 #include "util/proto_tools.h"
 #include "base/status.h"
 
@@ -100,8 +101,8 @@ int main(int argc, char* argv[]) {
     const std::string& file_name = file_list[i];
     MPSReader mps_reader;
     operations_research::MPModelProto model_proto;
-    if (HasSuffixString(file_name, ".mps") ||
-        HasSuffixString(file_name, ".mps.gz")) {
+    if (strings::EndsWith(file_name, ".mps") ||
+        strings::EndsWith(file_name, ".mps.gz")) {
       if (!mps_reader.LoadFileAndTryFreeFormOnFail(file_name,
                                                    &linear_program)) {
         LOG(INFO) << "Parse error for " << file_name;

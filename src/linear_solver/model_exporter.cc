@@ -263,7 +263,7 @@ bool MPModelProtoExporter::ExportModelAsLpFormat(bool obfuscated,
                                          proto_.objective_offset()));
   }
   std::vector<bool> show_variable(proto_.variable_size(),
-                             FLAGS_lp_shows_unused_variables);
+                                  FLAGS_lp_shows_unused_variables);
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
     const double coeff = proto_.variable(var_index).objective_coefficient();
     std::string term;
@@ -437,8 +437,10 @@ void MPModelProtoExporter::AppendNewLineIfTwoColumns(std::string* output) {
   }
 }
 
-void MPModelProtoExporter::AppendMpsColumns(bool integrality,
-    const std::vector<std::vector<std::pair<int, double>>>& transpose, std::string* output) {
+void MPModelProtoExporter::AppendMpsColumns(
+    bool integrality,
+    const std::vector<std::vector<std::pair<int, double>>>& transpose,
+    std::string* output) {
   current_mps_column_ = 0;
   for (int var_index = 0; var_index < proto_.variable_size(); ++var_index) {
     const MPVariableProto& var_proto = proto_.variable(var_index);
@@ -450,7 +452,8 @@ void MPModelProtoExporter::AppendMpsColumns(bool integrality,
                                var_proto.objective_coefficient(),
                                output);
     }
-    for (const std::pair<int, double> cst_index_and_coeff : transpose[var_index]) {
+    for (const std::pair<int, double> cst_index_and_coeff :
+         transpose[var_index]) {
       const std::string& cst_name =
           exported_constraint_names_[cst_index_and_coeff.first];
       AppendMpsTermWithContext(var_name, cst_name, cst_index_and_coeff.second,
@@ -506,7 +509,8 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
   // As the information regarding a column needs to be contiguous, we create
   // a vector associating a variable index to a vector containing the indices
   // of the constraints where this variable appears.
-  std::vector<std::vector<std::pair<int, double>>> transpose(proto_.variable_size());
+  std::vector<std::vector<std::pair<int, double>>> transpose(
+      proto_.variable_size());
   for (int cst_index = 0; cst_index < proto_.constraint_size(); ++cst_index) {
     const MPConstraintProto& ct_proto = proto_.constraint(cst_index);
     for (int k = 0; k < ct_proto.var_index_size(); ++k) {
@@ -518,7 +522,8 @@ bool MPModelProtoExporter::ExportModelAsMpsFormat(bool fixed_format,
       }
       const double coeff = ct_proto.coefficient(k);
       if (coeff != 0.0) {
-        transpose[var_index].push_back(std::pair<int, double>(cst_index, coeff));
+        transpose[var_index].push_back(
+            std::pair<int, double>(cst_index, coeff));
       }
     }
   }
