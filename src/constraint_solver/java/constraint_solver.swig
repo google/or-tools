@@ -15,7 +15,6 @@
 
 %include "enumsimple.swg"
 %include "exception.i"
-%include "std_vector.i"
 
 %include "base/base.swig"
 %include "util/java/tuple_set.swig"
