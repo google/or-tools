@@ -1,0 +1,552 @@
+:j20:PSP1: OK
+
+:j20:PSP2: OK
+
+:j20:PSP3: OK
+
+:j20:PSP4: OK
+
+:j20:PSP5: OK
+
+:j20:PSP6: OK
+
+:j20:PSP7: OK
+
+:j20:PSP8: OK
+
+:j20:PSP9: OK
+
+:j20:PSP10: OK
+
+:j20:PSP11: OK
+
+:j20:PSP12: OK
+
+:j20:PSP13: OK
+
+:j20:PSP14: OK
+
+:j20:PSP15: OK
+
+:j20:PSP16: OK
+
+:j20:PSP17: OK
+
+:j20:PSP18: OK
+
+:j20:PSP19: OK
+
+:j20:PSP20: OK
+
+:j20:PSP21: OK
+
+:j20:PSP22: OK
+
+:j20:PSP23: OK
+
+:j20:PSP24: OK
+
+:j20:PSP25: OK
+
+:j20:PSP26: OK
+
+:j20:PSP27: OK
+
+:j20:PSP28: OK
+
+:j20:PSP29: OK
+
+:j20:PSP30: OK
+
+:j20:PSP31: OK
+
+:j20:PSP32: OK
+
+:j20:PSP33: OK
+
+:j20:PSP34: OK
+
+:j20:PSP35: OK
+
+:j20:PSP36: OK
+
+:j20:PSP37: OK
+
+:j20:PSP38: OK
+
+:j20:PSP39: OK
+
+:j20:PSP40: OK
+
+:j20:PSP41: OK
+
+:j20:PSP42: OK
+
+:j20:PSP43: OK
+
+:j20:PSP44: OK
+
+:j20:PSP45: OK
+
+:j20:PSP46: OK
+
+:j20:PSP47: OK
+
+:j20:PSP48: OK
+
+:j20:PSP49: OK
+
+:j20:PSP50: OK
+
+:j20:PSP51: OK
+
+:j20:PSP52: OK
+
+:j20:PSP53: OK
+
+:j20:PSP54: OK
+
+:j20:PSP55: OK
+
+:j20:PSP56: OK
+
+:j20:PSP57: OK
+
+:j20:PSP58: OK
+
+:j20:PSP59: OK
+
+:j20:PSP60: OK
+
+:j20:PSP61: OK
+
+:j20:PSP62: OK
+
+:j20:PSP63: OK
+
+:j20:PSP64
+Restrictiveness more than 10.0 % too small: 0.631579 < 0.75
+
+:j20:PSP65: OK
+
+:j20:PSP66: OK
+
+:j20:PSP67: OK
+
+:j20:PSP68: OK
+
+:j20:PSP69
+Restrictiveness more than 10.0 % too small: 0.615789 < 0.75
+
+:j20:PSP70
+Restrictiveness more than 10.0 % too small: 0.5 < 0.75
+
+:j20:PSP71: OK
+
+:j20:PSP72
+Restrictiveness more than 10.0 % too small: 0.494737 < 0.75
+
+:j20:PSP73: OK
+
+:j20:PSP74: OK
+
+:j20:PSP75: OK
+
+:j20:PSP76: OK
+
+:j20:PSP77: OK
+
+:j20:PSP78: OK
+
+:j20:PSP79
+Restrictiveness more than 10.0 % too small: 0.589474 < 0.75
+
+:j20:PSP80: OK
+
+:j20:PSP81: OK
+
+:j20:PSP82: OK
+
+:j20:PSP83: OK
+
+:j20:PSP84: OK
+
+:j20:PSP85: OK
+
+:j20:PSP86: OK
+
+:j20:PSP87
+Restrictiveness more than 10.0 % too small: 0.647368 < 0.75
+
+:j20:PSP88: OK
+
+:j20:PSP89: OK
+
+:j20:PSP90: OK
+
+:j20:PSP91: OK
+
+:j20:PSP92: OK
+
+:j20:PSP93: OK
+
+:j20:PSP94: OK
+
+:j20:PSP95: OK
+
+:j20:PSP96: OK
+
+:j20:PSP97: OK
+
+:j20:PSP98: OK
+
+:j20:PSP99: OK
+
+:j20:PSP100: OK
+
+:j20:PSP101: OK
+
+:j20:PSP102: OK
+
+:j20:PSP103: OK
+
+:j20:PSP104: OK
+
+:j20:PSP105: OK
+
+:j20:PSP106: OK
+
+:j20:PSP107: OK
+
+:j20:PSP108: OK
+
+:j20:PSP109: OK
+
+:j20:PSP110: OK
+
+:j20:PSP111: OK
+
+:j20:PSP112: OK
+
+:j20:PSP113: OK
+
+:j20:PSP114: OK
+
+:j20:PSP115: OK
+
+:j20:PSP116: OK
+
+:j20:PSP117: OK
+
+:j20:PSP118: OK
+
+:j20:PSP119: OK
+
+:j20:PSP120: OK
+
+:j20:PSP121: OK
+
+:j20:PSP122: OK
+
+:j20:PSP123: OK
+
+:j20:PSP124: OK
+
+:j20:PSP125: OK
+
+:j20:PSP126: OK
+
+:j20:PSP127: OK
+
+:j20:PSP128: OK
+
+:j20:PSP129: OK
+
+:j20:PSP130: OK
+
+:j20:PSP131: OK
+
+:j20:PSP132: OK
+
+:j20:PSP133: OK
+
+:j20:PSP134: OK
+
+:j20:PSP135: OK
+
+:j20:PSP136: OK
+
+:j20:PSP137: OK
+
+:j20:PSP138: OK
+
+:j20:PSP139: OK
+
+:j20:PSP140: OK
+
+:j20:PSP141: OK
+
+:j20:PSP142: OK
+
+:j20:PSP143: OK
+
+:j20:PSP144: OK
+
+:j20:PSP145: OK
+
+:j20:PSP146: OK
+
+:j20:PSP147: OK
+
+:j20:PSP148: OK
+
+:j20:PSP149: OK
+
+:j20:PSP150: OK
+
+:j20:PSP151: OK
+
+:j20:PSP152: OK
+
+:j20:PSP153: OK
+
+:j20:PSP154: OK
+
+:j20:PSP155: OK
+
+:j20:PSP156: OK
+
+:j20:PSP157: OK
+
+:j20:PSP158
+Restrictiveness more than 10.0 % too small: 0.457895 < 0.75
+
+:j20:PSP159: OK
+
+:j20:PSP160: OK
+
+:j20:PSP161: OK
+
+:j20:PSP162: OK
+
+:j20:PSP163: OK
+
+:j20:PSP164: OK
+
+:j20:PSP165: OK
+
+:j20:PSP166
+Restrictiveness more than 10.0 % too small: 0.621053 < 0.75
+
+:j20:PSP167: OK
+
+:j20:PSP168: OK
+
+:j20:PSP169: OK
+
+:j20:PSP170: OK
+
+:j20:PSP171: OK
+
+:j20:PSP172: OK
+
+:j20:PSP173: OK
+
+:j20:PSP174: OK
+
+:j20:PSP175: OK
+
+:j20:PSP176: OK
+
+:j20:PSP177: OK
+
+:j20:PSP178: OK
+
+:j20:PSP179: OK
+
+:j20:PSP180: OK
+
+:j20:PSP181: OK
+
+:j20:PSP182: OK
+
+:j20:PSP183: OK
+
+:j20:PSP184: OK
+
+:j20:PSP185: OK
+
+:j20:PSP186: OK
+
+:j20:PSP187: OK
+
+:j20:PSP188: OK
+
+:j20:PSP189: OK
+
+:j20:PSP190: OK
+
+:j20:PSP191: OK
+
+:j20:PSP192: OK
+
+:j20:PSP193: OK
+
+:j20:PSP194: OK
+
+:j20:PSP195: OK
+
+:j20:PSP196: OK
+
+:j20:PSP197: OK
+
+:j20:PSP198: OK
+
+:j20:PSP199: OK
+
+:j20:PSP200: OK
+
+:j20:PSP201: OK
+
+:j20:PSP202: OK
+
+:j20:PSP203: OK
+
+:j20:PSP204: OK
+
+:j20:PSP205: OK
+
+:j20:PSP206: OK
+
+:j20:PSP207: OK
+
+:j20:PSP208: OK
+
+:j20:PSP209: OK
+
+:j20:PSP210
+Percentage of backward arcs: 0.529412 > 0.5
+
+:j20:PSP211: OK
+
+:j20:PSP212: OK
+
+:j20:PSP213: OK
+
+:j20:PSP214: OK
+
+:j20:PSP215: OK
+
+:j20:PSP216: OK
+
+:j20:PSP217: OK
+
+:j20:PSP218: OK
+
+:j20:PSP219: OK
+
+:j20:PSP220: OK
+
+:j20:PSP221: OK
+
+:j20:PSP222: OK
+
+:j20:PSP223: OK
+
+:j20:PSP224: OK
+
+:j20:PSP225: OK
+
+:j20:PSP226: OK
+
+:j20:PSP227: OK
+
+:j20:PSP228: OK
+
+:j20:PSP229: OK
+
+:j20:PSP230: OK
+
+:j20:PSP231: OK
+
+:j20:PSP232: OK
+
+:j20:PSP233: OK
+
+:j20:PSP234: OK
+
+:j20:PSP235: OK
+
+:j20:PSP236: OK
+
+:j20:PSP237: OK
+
+:j20:PSP238: OK
+
+:j20:PSP239: OK
+
+:j20:PSP240: OK
+
+:j20:PSP241: OK
+
+:j20:PSP242: OK
+
+:j20:PSP243: OK
+
+:j20:PSP244
+Percentage of backward arcs: 0.52381 > 0.5
+
+:j20:PSP245: OK
+
+:j20:PSP246: OK
+
+:j20:PSP247: OK
+
+:j20:PSP248: OK
+
+:j20:PSP249: OK
+
+:j20:PSP250: OK
+
+:j20:PSP251
+Restrictiveness more than 10.0 % too small: 0.573684 < 0.75
+
+:j20:PSP252: OK
+
+:j20:PSP253: OK
+
+:j20:PSP254: OK
+
+:j20:PSP255: OK
+
+:j20:PSP256: OK
+
+:j20:PSP257: OK
+
+:j20:PSP258
+Percentage of backward arcs: 0.52 > 0.5
+
+:j20:PSP259: OK
+
+:j20:PSP260: OK
+
+:j20:PSP261: OK
+
+:j20:PSP262: OK
+
+:j20:PSP263: OK
+
+:j20:PSP264: OK
+
+:j20:PSP265: OK
+
+:j20:PSP266: OK
+
+:j20:PSP267: OK
+
+:j20:PSP268: OK
+
+:j20:PSP269: OK
+
+:j20:PSP270: OK
+

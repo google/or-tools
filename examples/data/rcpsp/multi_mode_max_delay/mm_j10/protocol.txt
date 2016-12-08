@@ -1,0 +1,566 @@
+:j10:PSP1: OK
+
+:j10:PSP2: OK
+
+:j10:PSP3: OK
+
+:j10:PSP4: OK
+
+:j10:PSP5: OK
+
+:j10:PSP6: OK
+
+:j10:PSP7: OK
+
+:j10:PSP8
+Restrictiveness more than 10.0 % too large: 0.333333 > 0.25
+
+:j10:PSP9: OK
+
+:j10:PSP10: OK
+
+:j10:PSP11: OK
+
+:j10:PSP12: OK
+
+:j10:PSP13: OK
+
+:j10:PSP14: OK
+
+:j10:PSP15: OK
+
+:j10:PSP16: OK
+
+:j10:PSP17: OK
+
+:j10:PSP18: OK
+
+:j10:PSP19: OK
+
+:j10:PSP20: OK
+
+:j10:PSP21: OK
+
+:j10:PSP22: OK
+
+:j10:PSP23: OK
+
+:j10:PSP24: OK
+
+:j10:PSP25: OK
+
+:j10:PSP26: OK
+
+:j10:PSP27
+Restrictiveness more than 10.0 % too large: 0.733333 > 0.25
+
+:j10:PSP28: OK
+
+:j10:PSP29: OK
+
+:j10:PSP30: OK
+
+:j10:PSP31: OK
+
+:j10:PSP32: OK
+
+:j10:PSP33: OK
+
+:j10:PSP34: OK
+
+:j10:PSP35: OK
+
+:j10:PSP36: OK
+
+:j10:PSP37: OK
+
+:j10:PSP38: OK
+
+:j10:PSP39
+Percentage of backward arcs: 0.0434783 < 0.05
+
+:j10:PSP40: OK
+
+:j10:PSP41: OK
+
+:j10:PSP42: OK
+
+:j10:PSP43: OK
+
+:j10:PSP44: OK
+
+:j10:PSP45: OK
+
+:j10:PSP46: OK
+
+:j10:PSP47: OK
+
+:j10:PSP48: OK
+
+:j10:PSP49: OK
+
+:j10:PSP50: OK
+
+:j10:PSP51: OK
+
+:j10:PSP52: OK
+
+:j10:PSP53: OK
+
+:j10:PSP54: OK
+
+:j10:PSP55: OK
+
+:j10:PSP56: OK
+
+:j10:PSP57: OK
+
+:j10:PSP58: OK
+
+:j10:PSP59: OK
+
+:j10:PSP60: OK
+
+:j10:PSP61: OK
+
+:j10:PSP62: OK
+
+:j10:PSP63: OK
+
+:j10:PSP64: OK
+
+:j10:PSP65
+Restrictiveness more than 10.0 % too small: 0.666667 < 0.75
+
+:j10:PSP66: OK
+
+:j10:PSP67: OK
+
+:j10:PSP68: OK
+
+:j10:PSP69: OK
+
+:j10:PSP70: OK
+
+:j10:PSP71: OK
+
+:j10:PSP72
+Restrictiveness more than 10.0 % too small: 0.533333 < 0.75
+
+:j10:PSP73: OK
+
+:j10:PSP74: OK
+
+:j10:PSP75: OK
+
+:j10:PSP76: OK
+
+:j10:PSP77: OK
+
+:j10:PSP78: OK
+
+:j10:PSP79: OK
+
+:j10:PSP80
+Percentage of backward arcs: 0.555556 > 0.5
+
+:j10:PSP81: OK
+
+:j10:PSP82: OK
+
+:j10:PSP83: OK
+
+:j10:PSP84: OK
+
+:j10:PSP85
+Restrictiveness more than 10.0 % too small: 0.533333 < 0.75
+
+:j10:PSP86: OK
+
+:j10:PSP87: OK
+
+:j10:PSP88: OK
+
+:j10:PSP89
+Restrictiveness more than 10.0 % too small: 0.555556 < 0.75
+
+:j10:PSP90: OK
+
+:j10:PSP91: OK
+
+:j10:PSP92: OK
+
+:j10:PSP93: OK
+
+:j10:PSP94: OK
+
+:j10:PSP95: OK
+
+:j10:PSP96: OK
+
+:j10:PSP97: OK
+
+:j10:PSP98
+Restrictiveness more than 10.0 % too large: 0.288889 > 0.25
+
+:j10:PSP99: OK
+
+:j10:PSP100: OK
+
+:j10:PSP101
+Restrictiveness more than 10.0 % too large: 0.577778 > 0.25
+
+:j10:PSP102: OK
+
+:j10:PSP103: OK
+
+:j10:PSP104: OK
+
+:j10:PSP105: OK
+
+:j10:PSP106: OK
+
+:j10:PSP107
+Restrictiveness more than 10.0 % too large: 0.466667 > 0.25
+
+:j10:PSP108: OK
+
+:j10:PSP109: OK
+
+:j10:PSP110: OK
+
+:j10:PSP111: OK
+
+:j10:PSP112: OK
+
+:j10:PSP113: OK
+
+:j10:PSP114: OK
+
+:j10:PSP115: OK
+
+:j10:PSP116: OK
+
+:j10:PSP117: OK
+
+:j10:PSP118: OK
+
+:j10:PSP119: OK
+
+:j10:PSP120: OK
+
+:j10:PSP121: OK
+
+:j10:PSP122: OK
+
+:j10:PSP123: OK
+
+:j10:PSP124: OK
+
+:j10:PSP125: OK
+
+:j10:PSP126: OK
+
+:j10:PSP127: OK
+
+:j10:PSP128: OK
+
+:j10:PSP129: OK
+
+:j10:PSP130: OK
+
+:j10:PSP131: OK
+
+:j10:PSP132: OK
+
+:j10:PSP133: OK
+
+:j10:PSP134: OK
+
+:j10:PSP135: OK
+
+:j10:PSP136: OK
+
+:j10:PSP137: OK
+
+:j10:PSP138
+Percentage of backward arcs: 0.0434783 < 0.05
+
+:j10:PSP139: OK
+
+:j10:PSP140: OK
+
+:j10:PSP141: OK
+
+:j10:PSP142: OK
+
+:j10:PSP143: OK
+
+:j10:PSP144: OK
+
+:j10:PSP145: OK
+
+:j10:PSP146: OK
+
+:j10:PSP147: OK
+
+:j10:PSP148: OK
+
+:j10:PSP149: OK
+
+:j10:PSP150: OK
+
+:j10:PSP151: OK
+
+:j10:PSP152: OK
+
+:j10:PSP153: OK
+
+:j10:PSP154: OK
+
+:j10:PSP155: OK
+
+:j10:PSP156: OK
+
+:j10:PSP157: OK
+
+:j10:PSP158: OK
+
+:j10:PSP159: OK
+
+:j10:PSP160: OK
+
+:j10:PSP161: OK
+
+:j10:PSP162: OK
+
+:j10:PSP163: OK
+
+:j10:PSP164: OK
+
+:j10:PSP165
+Restrictiveness more than 10.0 % too small: 0.622222 < 0.75
+
+:j10:PSP166: OK
+
+:j10:PSP167: OK
+
+:j10:PSP168: OK
+
+:j10:PSP169: OK
+
+:j10:PSP170: OK
+
+:j10:PSP171: OK
+
+:j10:PSP172: OK
+
+:j10:PSP173: OK
+
+:j10:PSP174: OK
+
+:j10:PSP175: OK
+
+:j10:PSP176
+Restrictiveness more than 10.0 % too small: 0.6 < 0.75
+
+:j10:PSP177: OK
+
+:j10:PSP178: OK
+
+:j10:PSP179: OK
+
+:j10:PSP180: OK
+
+:j10:PSP181: OK
+
+:j10:PSP182: OK
+
+:j10:PSP183
+Restrictiveness more than 10.0 % too large: 0.6 > 0.25
+Percentage of backward arcs: 0.571429 > 0.5
+
+:j10:PSP184: OK
+
+:j10:PSP185
+Restrictiveness more than 10.0 % too large: 0.288889 > 0.25
+
+:j10:PSP186: OK
+
+:j10:PSP187: OK
+
+:j10:PSP188: OK
+
+:j10:PSP189: OK
+
+:j10:PSP190: OK
+
+:j10:PSP191
+Restrictiveness more than 10.0 % too large: 0.755556 > 0.25
+
+:j10:PSP192: OK
+
+:j10:PSP193
+Restrictiveness more than 10.0 % too large: 0.355556 > 0.25
+
+:j10:PSP194: OK
+
+:j10:PSP195: OK
+
+:j10:PSP196: OK
+
+:j10:PSP197: OK
+
+:j10:PSP198: OK
+
+:j10:PSP199: OK
+
+:j10:PSP200: OK
+
+:j10:PSP201: OK
+
+:j10:PSP202: OK
+
+:j10:PSP203: OK
+
+:j10:PSP204: OK
+
+:j10:PSP205: OK
+
+:j10:PSP206: OK
+
+:j10:PSP207
+Restrictiveness more than 10.0 % too large: 0.288889 > 0.25
+
+:j10:PSP208: OK
+
+:j10:PSP209: OK
+
+:j10:PSP210: OK
+
+:j10:PSP211: OK
+
+:j10:PSP212: OK
+
+:j10:PSP213: OK
+
+:j10:PSP214: OK
+
+:j10:PSP215: OK
+
+:j10:PSP216: OK
+
+:j10:PSP217: OK
+
+:j10:PSP218: OK
+
+:j10:PSP219: OK
+
+:j10:PSP220: OK
+
+:j10:PSP221: OK
+
+:j10:PSP222: OK
+
+:j10:PSP223: OK
+
+:j10:PSP224: OK
+
+:j10:PSP225: OK
+
+:j10:PSP226: OK
+
+:j10:PSP227: OK
+
+:j10:PSP228: OK
+
+:j10:PSP229: OK
+
+:j10:PSP230: OK
+
+:j10:PSP231: OK
+
+:j10:PSP232: OK
+
+:j10:PSP233: OK
+
+:j10:PSP234: OK
+
+:j10:PSP235: OK
+
+:j10:PSP236: OK
+
+:j10:PSP237: OK
+
+:j10:PSP238: OK
+
+:j10:PSP239: OK
+
+:j10:PSP240: OK
+
+:j10:PSP241: OK
+
+:j10:PSP242: OK
+
+:j10:PSP243: OK
+
+:j10:PSP244: OK
+
+:j10:PSP245
+Restrictiveness more than 10.0 % too small: 0.622222 < 0.75
+
+:j10:PSP246: OK
+
+:j10:PSP247: OK
+
+:j10:PSP248: OK
+
+:j10:PSP249: OK
+
+:j10:PSP250: OK
+
+:j10:PSP251: OK
+
+:j10:PSP252: OK
+
+:j10:PSP253: OK
+
+:j10:PSP254
+Percentage of backward arcs: 0.555556 > 0.5
+
+:j10:PSP255: OK
+
+:j10:PSP256: OK
+
+:j10:PSP257: OK
+
+:j10:PSP258: OK
+
+:j10:PSP259: OK
+
+:j10:PSP260
+Restrictiveness more than 10.0 % too small: 0.555556 < 0.75
+
+:j10:PSP261
+Restrictiveness more than 10.0 % too small: 0.533333 < 0.75
+
+:j10:PSP262
+Restrictiveness more than 10.0 % too small: 0.6 < 0.75
+
+:j10:PSP263: OK
+
+:j10:PSP264: OK
+
+:j10:PSP265: OK
+
+:j10:PSP266: OK
+
+:j10:PSP267: OK
+
+:j10:PSP268
+Percentage of backward arcs: 0.555556 > 0.5
+
+:j10:PSP269: OK
+
+:j10:PSP270: OK
+
