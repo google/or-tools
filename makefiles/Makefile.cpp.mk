@@ -117,32 +117,34 @@ CC_BINARIES = \
 	$(BIN_DIR)/cvrptw_with_refueling$E \
 	$(BIN_DIR)/cvrptw_with_resources$E \
 	$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E \
+	$(BIN_DIR)/dimacs_assignment$E \
 	$(BIN_DIR)/dobble_ls$E \
 	$(BIN_DIR)/flow_api$E \
+	$(BIN_DIR)/frequency_assignment_problem$E \
 	$(BIN_DIR)/golomb$E \
+	$(BIN_DIR)/integer_programming$E \
 	$(BIN_DIR)/jobshop$E \
+	$(BIN_DIR)/jobshop_earlytardy$E \
 	$(BIN_DIR)/jobshop_ls$E \
 	$(BIN_DIR)/jobshop_sat$E \
-	$(BIN_DIR)/jobshop_earlytardy$E \
 	$(BIN_DIR)/linear_assignment_api$E \
+	$(BIN_DIR)/linear_programming$E \
+	$(BIN_DIR)/linear_solver_protocol_buffers$E \
 	$(BIN_DIR)/ls_api$E \
 	$(BIN_DIR)/magic_square$E \
 	$(BIN_DIR)/model_util$E \
+	$(BIN_DIR)/mps_driver$E \
 	$(BIN_DIR)/multidim_knapsack$E \
 	$(BIN_DIR)/network_routing$E \
 	$(BIN_DIR)/nqueens$E \
 	$(BIN_DIR)/pdptw$E \
-	$(BIN_DIR)/dimacs_assignment$E \
-	$(BIN_DIR)/sports_scheduling$E \
-	$(BIN_DIR)/tsp$E \
-	$(BIN_DIR)/weighted_tardiness_sat$E \
-	$(BIN_DIR)/integer_programming$E \
-	$(BIN_DIR)/linear_programming$E \
-	$(BIN_DIR)/linear_solver_protocol_buffers$E \
-	$(BIN_DIR)/strawberry_fields_with_column_generation$E \
-	$(BIN_DIR)/mps_driver$E \
+	$(BIN_DIR)/rcpsp_sat$E \
+	$(BIN_DIR)/shift_minimization_sat$E \
 	$(BIN_DIR)/solve$E \
-	$(BIN_DIR)/frequency_assignment_problem$E
+	$(BIN_DIR)/sports_scheduling$E \
+	$(BIN_DIR)/strawberry_fields_with_column_generation$E \
+	$(BIN_DIR)/tsp$E \
+	$(BIN_DIR)/weighted_tardiness_sat$E
 
 ccexe: $(CC_BINARIES)
 
@@ -434,6 +436,18 @@ $(OBJ_DIR)/pdptw.$O: $(EX_DIR)/cpp/pdptw.cc $(ROUTING_DEPS)
 
 $(BIN_DIR)/pdptw$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/pdptw.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/pdptw.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Spdptw$E
+
+$(OBJ_DIR)/rcpsp_sat.$O: $(EX_DIR)/cpp/rcpsp_sat.cc $(CP_DEPS)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/rcpsp_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Srcpsp_sat.$O
+
+$(BIN_DIR)/rcpsp_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/rcpsp_sat.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/rcpsp_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Srcpsp_sat$E
+
+$(OBJ_DIR)/shift_minimization_sat.$O: $(EX_DIR)/cpp/shift_minimization_sat.cc $(CP_DEPS)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/shift_minimization_sat.cc $(OBJ_OUT)$(OBJ_DIR)$Sshift_minimization_sat.$O
+
+$(BIN_DIR)/shift_minimization_sat$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/shift_minimization_sat.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/shift_minimization_sat.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sshift_minimization_sat$E
 
 $(OBJ_DIR)/slitherlink.$O: $(EX_DIR)/cpp/slitherlink.cc $(CP_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/slitherlink.cc $(OBJ_OUT)$(OBJ_DIR)$Sslitherlink.$O

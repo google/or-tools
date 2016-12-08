@@ -93,8 +93,8 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
         min_duration = std::min(min_duration, task.durations[i]);
         max_duration = std::max(max_duration, task.durations[i]);
       }
-      const IntervalVariable interval =
-          model.Add(NewIntervalWithVariableSize(min_duration, max_duration));
+      const IntervalVariable interval = model.Add(
+          NewIntervalWithVariableSize(0, horizon, min_duration, max_duration));
       decision_variables.push_back(model.Get(StartVar(interval)));
 
       // Chain the task belonging to the same job.
@@ -109,8 +109,8 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
         std::vector<IntervalVariable> alternatives;
         for (int i = 0; i < num_alternatives; ++i) {
           const Literal is_present(model.Add(NewBooleanVariable()), true);
-          const IntervalVariable alternative =
-              model.Add(NewOptionalInterval(task.durations[i], is_present));
+          const IntervalVariable alternative = model.Add(
+              NewOptionalInterval(0, horizon, task.durations[i], is_present));
           alternatives.push_back(alternative);
           machine_to_intervals[task.machines[i]].push_back(alternative);
         }

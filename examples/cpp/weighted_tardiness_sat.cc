@@ -90,8 +90,7 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   std::vector<IntervalVariable> tasks(num_tasks);
   std::vector<IntegerVariable> tardiness_vars(num_tasks);
   for (int i = 0; i < num_tasks; ++i) {
-    tasks[i] = model.Add(NewInterval(durations[i]));
-    model.Add(LowerOrEqual(model.Get(EndVar(tasks[i])), horizon));
+    tasks[i] = model.Add(NewInterval(0, horizon, durations[i]));
     if (due_dates[i] == 0) {
       tardiness_vars[i] = model.Get(EndVar(tasks[i]));
     } else {

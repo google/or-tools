@@ -111,7 +111,7 @@ std::string VerboseOutput(const RoutingModel& routing, const Assignment& assignm
     StringAppendF(&output, "Vehicle %d: ", i);
     int64 index = routing.Start(i);
     if (routing.IsEnd(assignment.Value(routing.NextVar(index)))) {
-      StringAppendF(&output, "empty");
+      output.append("empty");
     } else {
       while (!routing.IsEnd(index)) {
         RoutingModel::NodeIndex real_node = routing.IndexToNode(index);
@@ -129,7 +129,7 @@ std::string VerboseOutput(const RoutingModel& routing, const Assignment& assignm
                       TravelPlusServiceTime(&coords, &service_times, real_node,
                                             routing.IndexToNode(index)));
       }
-      StringAppendF(&output, "Route end ");
+      output.append("Route end ");
       const IntVar* vehicle = routing.VehicleVar(index);
       StringAppendF(&output, "Vehicle(%lld) ", assignment.Value(vehicle));
       const IntVar* arrival = time_dimension.CumulVar(index);
@@ -139,7 +139,7 @@ std::string VerboseOutput(const RoutingModel& routing, const Assignment& assignm
       StringAppendF(&output, "Load(%lld..%lld) ", assignment.Min(load),
                     assignment.Max(load));
     }
-    StringAppendF(&output, "\n");
+    output.append("\n");
   }
   return output;
 }

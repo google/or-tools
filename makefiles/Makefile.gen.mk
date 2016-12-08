@@ -289,6 +289,7 @@ UTIL_LIB_OBJS = \
     $(OBJ_DIR)/util/proto_tools.$O \
     $(OBJ_DIR)/util/range_query_function.$O \
     $(OBJ_DIR)/util/rational_approximation.$O \
+    $(OBJ_DIR)/util/rcpsp_parser.$O \
     $(OBJ_DIR)/util/sorted_interval_list.$O \
     $(OBJ_DIR)/util/stats.$O \
     $(OBJ_DIR)/util/time_limit.$O \
@@ -350,7 +351,11 @@ $(SRC_DIR)/util/range_query_function.h: \
 $(SRC_DIR)/util/rational_approximation.h: \
     $(SRC_DIR)/base/integral_types.h
 
+$(SRC_DIR)/util/rcpsp_parser.h: \
+    $(SRC_DIR)/base/integral_types.h
+
 $(SRC_DIR)/util/rev.h: \
+    $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/map_util.h
 
@@ -459,6 +464,16 @@ $(OBJ_DIR)/util/rational_approximation.$O: \
     $(SRC_DIR)/util/rational_approximation.h \
     $(SRC_DIR)/base/logging.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/rational_approximation.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srational_approximation.$O
+
+$(OBJ_DIR)/util/rcpsp_parser.$O: \
+    $(SRC_DIR)/util/rcpsp_parser.cc \
+    $(SRC_DIR)/util/filelineiter.h \
+    $(SRC_DIR)/util/rcpsp_parser.h \
+    $(SRC_DIR)/base/numbers.h \
+    $(SRC_DIR)/base/split.h \
+    $(SRC_DIR)/base/stringpiece_utils.h \
+    $(SRC_DIR)/base/strtoint.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/rcpsp_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srcpsp_parser.$O
 
 $(OBJ_DIR)/util/sorted_interval_list.$O: \
     $(SRC_DIR)/util/sorted_interval_list.cc \
@@ -1526,7 +1541,8 @@ $(SRC_DIR)/sat/integer.h: \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/iterators.h \
     $(SRC_DIR)/util/rev.h \
-    $(SRC_DIR)/util/saturated_arithmetic.h
+    $(SRC_DIR)/util/saturated_arithmetic.h \
+    $(SRC_DIR)/util/sorted_interval_list.h
 
 $(SRC_DIR)/sat/intervals.h: \
     $(SRC_DIR)/sat/integer_expr.h \
@@ -1561,8 +1577,7 @@ $(SRC_DIR)/sat/overload_checker.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
-    $(SRC_DIR)/sat/sat_base.h \
-    $(SRC_DIR)/base/macros.h
+    $(SRC_DIR)/sat/sat_base.h
 
 $(SRC_DIR)/sat/pb_constraint.h: \
     $(SRC_DIR)/sat/sat_base.h \
@@ -1657,13 +1672,15 @@ $(OBJ_DIR)/sat/clause.$O: \
 $(OBJ_DIR)/sat/cp_constraints.$O: \
     $(SRC_DIR)/sat/cp_constraints.cc \
     $(SRC_DIR)/sat/cp_constraints.h \
-    $(SRC_DIR)/base/map_util.h
+    $(SRC_DIR)/base/map_util.h \
+    $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/cp_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_constraints.$O
 
 $(OBJ_DIR)/sat/disjunctive.$O: \
     $(SRC_DIR)/sat/disjunctive.cc \
     $(SRC_DIR)/sat/disjunctive.h \
-    $(SRC_DIR)/sat/sat_solver.h
+    $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/disjunctive.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdisjunctive.$O
 
 $(OBJ_DIR)/sat/drat.$O: \
@@ -1718,7 +1735,8 @@ $(OBJ_DIR)/sat/optimization.$O: \
 $(OBJ_DIR)/sat/overload_checker.$O: \
     $(SRC_DIR)/sat/overload_checker.cc \
     $(SRC_DIR)/sat/overload_checker.h \
-    $(SRC_DIR)/sat/sat_solver.h
+    $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/overload_checker.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soverload_checker.$O
 
 $(OBJ_DIR)/sat/pb_constraint.$O: \
@@ -1773,6 +1791,7 @@ $(OBJ_DIR)/sat/table.$O: \
 $(OBJ_DIR)/sat/timetabling.$O: \
     $(SRC_DIR)/sat/timetabling.cc \
     $(SRC_DIR)/sat/overload_checker.h \
+    $(SRC_DIR)/sat/precedences.h \
     $(SRC_DIR)/sat/sat_solver.h \
     $(SRC_DIR)/sat/timetabling.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetabling.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetabling.$O
@@ -3108,4 +3127,3 @@ $(GEN_DIR)/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/constraint_solve
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
