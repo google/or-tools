@@ -105,6 +105,7 @@ class TimeTablingPerTask : public PropagatorInterface {
   }
 
   bool IsAlwaysPresent(int task_id) const;
+  bool IsAbsent(int task_id) const;
   void AddPresenceReasonIfNeeded(int task_id);
 
   IntegerValue CapacityMin() const {

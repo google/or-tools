@@ -28,6 +28,7 @@
 #include "util/iterators.h"
 #include "util/rev.h"
 #include "util/saturated_arithmetic.h"
+#include "util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -367,6 +368,18 @@ class IntegerTrail : public SatPropagator {
   IntegerVariable AddIntegerVariable(IntegerValue lower_bound,
                                      IntegerValue upper_bound);
 
+  // Same as above but for a more complex domain specified as a sorted list of
+  // disjoint intervals. Note that the ClosedInterval struct use int64 instead
+  // of integer values (but we will convert them internally).
+  //
+  // Precondition: we check that IntervalsAreSortedAndDisjoint(domain) is true.
+  IntegerVariable AddIntegerVariable(const std::vector<ClosedInterval>& domain);
+
+  // Returns the initial domain of the given variable. Note that for variables
+  // whose domain is a single interval, this is updated with level zero
+  // propagations, but not if the domain is more complex.
+  std::vector<ClosedInterval> InitialVariableDomain(IntegerVariable var) const;
+
   // Same as AddIntegerVariable(value, value), but this is a bit more efficient
   // because it reuses another constant with the same value if its exist.
   //
@@ -568,6 +581,20 @@ class IntegerTrail : public SatPropagator {
   std::vector<Literal> tmp_literals_reason_;
   RevGrowingMultiMap<LiteralIndex, IntegerVariable> watched_min_;
   RevMap<hash_map<IntegerVariable, int>> current_min_;
+
+  // This is only filled for variables with a domain more complex than a single
+  // interval of values. All intervals are stored in a vector, and we keep
+  // indices to the current interval of the lower bound, and to the end index
+  // which is exclusive.
+  //
+  // TODO(user): Avoid using hash_map here and above, a simple vector should
+  // be more efficient. Except if there is really little variables like this.
+  //
+  // TODO(user): We could share the std::vector<ClosedInterval> entry between a
+  // variable and its negations instead of having duplicates.
+  RevMap<hash_map<IntegerVariable, int>> var_to_current_lb_interval_index_;
+  hash_map<IntegerVariable, int> var_to_end_interval_index_;  // const entries.
+  std::vector<ClosedInterval> all_intervals_;                 // const entries.
 
   // Temporary data used by MergeReasonInto().
   mutable std::vector<int> tmp_queue_;
@@ -839,6 +866,13 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64 lb,
   };
 }
 
+inline std::function<IntegerVariable(Model*)> NewIntegerVariable(
+    const std::vector<ClosedInterval>& domain) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntegerTrail>()->AddIntegerVariable(domain);
+  };
+}
+
 // Creates a 0-1 integer variable "view" of the given literal. It will have a
 // value of 1 when the literal is true, and 0 when the literal is false.
 inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
@@ -949,6 +983,29 @@ inline std::function<void(Model*)> ReifiedInInterval(IntegerVariable v,
       const Literal is_le_ub = encoder->GetOrCreateAssociatedLiteral(ub_lit);
       model->Add(ReifiedBoolAnd({is_ge_lb, is_le_ub}, in_interval));
     }
+  };
+}
+
+// Calling model.Add(FullyEncodeVariable(var)) will create one literal per value
+// in the domain of var (if not already done), and wire everything correctly.
+// This also returns the full encoding, see the FullDomainEncoding() method of
+// the IntegerEncoder class.
+inline std::function<std::vector<IntegerEncoder::ValueLiteralPair>(Model*)>
+FullyEncodeVariable(IntegerVariable var) {
+  return [=](Model* model) {
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    if (!encoder->VariableIsFullyEncoded(var)) {
+      IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+      std::vector<IntegerValue> values;
+      for (const ClosedInterval interval :
+           integer_trail->InitialVariableDomain(var)) {
+        for (IntegerValue v(interval.start); v <= interval.end; ++v) {
+          values.push_back(v);
+        }
+      }
+      encoder->FullyEncodeVariable(var, values);
+    }
+    return encoder->FullDomainEncoding(var);
   };
 }
 

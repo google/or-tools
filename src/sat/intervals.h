@@ -50,9 +50,14 @@ class IntervalsRepository {
   int NumIntervals() const { return start_vars_.size(); }
 
   // Functions to add a new interval to the repository.
-  IntervalVariable CreateInterval(IntegerValue min_size, IntegerValue max_size);
-  IntervalVariable CreateIntervalWithFixedSize(IntegerValue size);
-  IntervalVariable CreateOptionalIntervalWithFixedSize(IntegerValue size,
+  IntervalVariable CreateInterval(IntegerValue min_start, IntegerValue max_end,
+                                  IntegerValue min_size, IntegerValue max_size);
+  IntervalVariable CreateIntervalWithFixedSize(IntegerValue min_start,
+                                               IntegerValue max_end,
+                                               IntegerValue size);
+  IntervalVariable CreateOptionalIntervalWithFixedSize(IntegerValue min_start,
+                                                       IntegerValue max_end,
+                                                       IntegerValue size,
                                                        Literal is_present);
   IntervalVariable CreateIntervalFromStartAndSizeVars(IntegerVariable start,
                                                       IntegerVariable size);
@@ -81,7 +86,8 @@ class IntervalsRepository {
 
  private:
   // Creates a new interval and returns its id.
-  IntervalVariable CreateNewInterval();
+  IntervalVariable CreateNewInterval(IntegerValue min_start,
+                                     IntegerValue max_end);
 
   // External classes needed.
   IntegerTrail* integer_trail_;
@@ -124,26 +130,32 @@ inline std::function<IntegerVariable(const Model&)> SizeVar(
   };
 }
 
-inline std::function<IntervalVariable(Model*)> NewInterval(int64 size) {
+inline std::function<IntervalVariable(Model*)> NewInterval(int64 min_start,
+                                                           int64 max_end,
+                                                           int64 size) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()
-        ->CreateIntervalWithFixedSize(IntegerValue(size));
+        ->CreateIntervalWithFixedSize(
+            IntegerValue(min_start), IntegerValue(max_end), IntegerValue(size));
   };
 }
 
 inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
-    int64 min_size, int64 max_size) {
+    int64 min_start, int64 max_end, int64 min_size, int64 max_size) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        IntegerValue(min_size), IntegerValue(max_size));
+        IntegerValue(min_start), IntegerValue(max_end), IntegerValue(min_size),
+        IntegerValue(max_size));
   };
 }
 
 inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
-    int64 size, Literal is_present) {
+    int64 min_start, int64 max_end, int64 size, Literal is_present) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()
-        ->CreateOptionalIntervalWithFixedSize(IntegerValue(size), is_present);
+        ->CreateOptionalIntervalWithFixedSize(IntegerValue(min_start),
+                                              IntegerValue(max_end),
+                                              IntegerValue(size), is_present);
   };
 }
 

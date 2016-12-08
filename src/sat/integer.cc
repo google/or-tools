@@ -13,6 +13,7 @@
 
 #include "sat/integer.h"
 
+//#include "base/iterator_adaptors.h"
 #include "base/stl_util.h"
 
 namespace operations_research {
@@ -238,6 +239,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
   // The data structure are reversible.
   watched_min_.SetLevel(trail->CurrentDecisionLevel());
   current_min_.SetLevel(trail->CurrentDecisionLevel());
+  var_to_current_lb_interval_index_.SetLevel(trail->CurrentDecisionLevel());
   if (encoder_->GetFullyEncodedVariables().size() != num_encoded_variables_) {
     num_encoded_variables_ = encoder_->GetFullyEncodedVariables().size();
 
@@ -330,6 +332,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
 void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   watched_min_.SetLevel(trail.CurrentDecisionLevel());
   current_min_.SetLevel(trail.CurrentDecisionLevel());
+  var_to_current_lb_interval_index_.SetLevel(trail.CurrentDecisionLevel());
   propagation_trail_index_ =
       std::min(propagation_trail_index_, literal_trail_index);
 
@@ -382,6 +385,53 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
     w->Resize(NumIntegerVariables());
   }
   return i;
+}
+
+IntegerVariable IntegerTrail::AddIntegerVariable(
+    const std::vector<ClosedInterval>& domain) {
+  CHECK(!domain.empty());
+  CHECK(IntervalsAreSortedAndDisjoint(domain));
+  const IntegerVariable var = AddIntegerVariable(
+      IntegerValue(domain.front().start), IntegerValue(domain.back().end));
+
+  // We only stores the vector of closed intervals for "complex" domain.
+  if (domain.size() > 1) {
+    var_to_current_lb_interval_index_.Set(var, all_intervals_.size());
+    for (const ClosedInterval interval : domain) {
+      all_intervals_.push_back(interval);
+    }
+    InsertOrDie(&var_to_end_interval_index_, var, all_intervals_.size());
+
+    // Copy for the negated variable.
+    var_to_current_lb_interval_index_.Set(NegationOf(var),
+                                          all_intervals_.size());
+    for (int i = domain.size() - 1; i >= 0; --i) {
+      const ClosedInterval interval = domain[i];
+      all_intervals_.push_back({-interval.end, -interval.start});
+    }
+    InsertOrDie(&var_to_end_interval_index_, NegationOf(var),
+                all_intervals_.size());
+  }
+
+  return var;
+}
+
+// TODO(user): we could return a reference, but this is likely not in any
+// critical code path.
+std::vector<ClosedInterval> IntegerTrail::InitialVariableDomain(
+    IntegerVariable var) const {
+  const int interval_index =
+      FindWithDefault(var_to_current_lb_interval_index_, var, -1);
+  if (interval_index >= 0) {
+    return std::vector<ClosedInterval>(
+        &all_intervals_[interval_index],
+        &all_intervals_[FindOrDie(var_to_end_interval_index_, var)]);
+  } else {
+    std::vector<ClosedInterval> result;
+    result.push_back({LevelZeroBound(var.value()).value(),
+                      -LevelZeroBound(NegationOf(var).value()).value()});
+    return result;
+  }
 }
 
 IntegerVariable IntegerTrail::GetOrCreateConstantIntegerVariable(
@@ -523,12 +573,34 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
         << DebugString();
   }
 
+  const IntegerVariable var(i_lit.var);
+
+  // If the domain of var is not a single intervals and i_lit.bound fall into a
+  // "hole", we increase it to the next possible value.
+  {
+    int interval_index =
+        FindWithDefault(var_to_current_lb_interval_index_, var, -1);
+    if (interval_index >= 0) {
+      const int end_index = FindOrDie(var_to_end_interval_index_, var);
+      while (interval_index < end_index &&
+             i_lit.bound > all_intervals_[interval_index].end) {
+        ++interval_index;
+      }
+      if (interval_index == end_index) {
+        return ReportConflict(literals_reason, bounds_reason);
+      } else {
+        var_to_current_lb_interval_index_.Set(var, interval_index);
+        i_lit.bound = std::max(
+            i_lit.bound, IntegerValue(all_intervals_[interval_index].start));
+      }
+    }
+  }
+
   // For the EnqueueWithSameReasonAs() mechanism.
   BooleanVariable first_propagated_variable = kNoBooleanVariable;
 
   // Deal with fully encoded variable. We want to do that first because this may
   // make the IntegerLiteral bound stronger.
-  const IntegerVariable var(i_lit.var);
   const int min_index = FindWithDefault(current_min_, var, -1);
   if (min_index >= 0) {
     // Recover the current min, and propagate to false all the values that
