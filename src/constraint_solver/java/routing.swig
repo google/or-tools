@@ -59,8 +59,6 @@ VECTOR_AS_JAVA_ARRAY(operations_research::RoutingModel::NodeIndex, int, Int);
 %feature("director") LongResultCallback3;
 %feature("director") NodeEvaluator2;
 
-%include "std_vector.i"
-
 %{
 #include <vector>
 #include "base/callback.h"
