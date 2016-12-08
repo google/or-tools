@@ -181,6 +181,7 @@ bool OverloadChecker::Propagate() {
       // Do not consider tasks that are not contained in the task interval.
       if (task_to_index_in_start_min_[t] < interval_start_leaf) continue;
       if (DurationMin(t) == 0 || DemandMin(t) == 0) continue;
+      if (!IsAlwaysPresent(t)) continue;
 
       // Add the task to the explanation.
       reason_.push_back(

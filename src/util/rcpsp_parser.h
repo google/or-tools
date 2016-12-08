@@ -12,7 +12,7 @@
 // limitations under the License.
 
 // A Project Scheduling Library parser.
-// See: http://www.om-db.wi.tum.de/psplib/
+// See: http://www.om-db.wi.tum.de/psplib/  # PSP-Lib homepage.
 
 #ifndef OR_TOOLS_UTIL_RCPSP_PARSER_H_
 #define OR_TOOLS_UTIL_RCPSP_PARSER_H_
@@ -38,8 +38,7 @@ namespace operations_research {
 // The tasks dependencies form a dag with a single source and a single end.
 // Both source and end tasks have a zero duration, and no resource consumption.
 //
-// The project has a due date, and a penalty linked to the tardiness
-// of the last task against this due date. The goal is to minimize this penalty.
+// The objective is to minimize the makespan of the problem.
 class RcpspParser {
  public:
   struct Resource {
