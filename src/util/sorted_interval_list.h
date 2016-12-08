@@ -42,12 +42,16 @@ std::ostream& operator<<(std::ostream& out, const std::vector<ClosedInterval>& i
 // intervals: [1,3] [5] [7,8] [10,11]. Input values may be repeated, with no
 // consequence on the output.
 //
-// Properties of the output:
+// The output will satisfy the criteria of IntervalsAreSortedAndDisjoint().
+std::vector<ClosedInterval> SortedDisjointIntervalsFromValues(
+    std::vector<int64> values);
+
+// Returns true iff we have:
 // - The intervals appear in increasing order.
 // - for all i: intervals[i].start <= intervals[i].end
 // - for all i but the last: intervals[i].end + 1 < intervals[i+1].start
-std::vector<ClosedInterval> SortedDisjointIntervalsFromValues(
-    std::vector<int64> values);
+bool IntervalsAreSortedAndDisjoint(
+    const std::vector<ClosedInterval>& intervals);
 
 // This class represents a sorted list of disjoint, closed intervals.  When an
 // interval is inserted, all intervals that overlap it or that are even adjacent

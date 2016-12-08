@@ -57,6 +57,24 @@ std::vector<ClosedInterval> SortedDisjointIntervalsFromValues(
   return result;
 }
 
+bool IntervalsAreSortedAndDisjoint(
+    const std::vector<ClosedInterval>& intervals) {
+  if (intervals.empty()) return true;
+  int64 previous_end;
+  bool is_first_interval = true;
+  for (const ClosedInterval interval : intervals) {
+    if (interval.start > interval.end) return false;
+    if (!is_first_interval) {
+      // First test make sure that previous_end + 1 will not overflow.
+      if (interval.start <= previous_end) return false;
+      if (interval.start <= previous_end + 1) return false;
+    }
+    is_first_interval = false;
+    previous_end = interval.end;
+  }
+  return true;
+}
+
 SortedDisjointIntervalList::SortedDisjointIntervalList() {}
 
 SortedDisjointIntervalList::SortedDisjointIntervalList(
