@@ -63,6 +63,23 @@ class LPSolver {
   // result, assuming that no time limit was specified.
   void Clear();
 
+  // Advanced usage. This should be called before calling Solve(). It will
+  // configure the solver to try to start from the given point. Note that
+  // calling Clear() will invalidate this information.
+  //
+  // If the set of variables/constraints with a BASIC status does not form a
+  // basis a warning will be logged and the code will ignore it. Otherwise, the
+  // non-basic variables will be initialized to their given status and solving
+  // will start from there (even if the solution is not primal/dual feasible).
+  //
+  // Important: There is no facility to transform this information in sync with
+  // presolve. So you should probably disable presolve when using this since
+  // otherwise there is a good chance that the matrix will change and that the
+  // given basis will make no sense. Even worse if it happens to be factorizable
+  // but doesn't correspond to what was intended.
+  void SetInitialBasis(const VariableStatusRow& variable_statuses,
+                       const ConstraintStatusColumn& constraint_statuses);
+
   // This loads a given solution and computes related quantities so that the
   // getters below will refer to it.
   //

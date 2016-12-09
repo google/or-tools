@@ -194,6 +194,39 @@ void LPSolver::Clear() {
   revised_simplex_.reset(nullptr);
 }
 
+void LPSolver::SetInitialBasis(
+    const VariableStatusRow& variable_statuses,
+    const ConstraintStatusColumn& constraint_statuses) {
+  // Create the associated basis state.
+  BasisState state;
+  state.statuses = variable_statuses;
+  for (const ConstraintStatus status : constraint_statuses) {
+    // Note the change of upper/lower bound between the status of a constraint
+    // and the status of its associated slack variable.
+    switch (status) {
+      case ConstraintStatus::FREE:
+        state.statuses.push_back(VariableStatus::FREE);
+        break;
+      case ConstraintStatus::AT_LOWER_BOUND:
+        state.statuses.push_back(VariableStatus::AT_UPPER_BOUND);
+        break;
+      case ConstraintStatus::AT_UPPER_BOUND:
+        state.statuses.push_back(VariableStatus::AT_LOWER_BOUND);
+        break;
+      case ConstraintStatus::FIXED_VALUE:
+        state.statuses.push_back(VariableStatus::FIXED_VALUE);
+        break;
+      case ConstraintStatus::BASIC:
+        state.statuses.push_back(VariableStatus::BASIC);
+        break;
+    }
+  }
+  if (revised_simplex_ == nullptr) {
+    revised_simplex_.reset(new RevisedSimplex());
+  }
+  revised_simplex_->LoadStateForNextSolve(state);
+}
+
 namespace {
 // Computes the "real" problem objective from the one without offset nor
 // scaling.

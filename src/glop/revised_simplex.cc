@@ -118,8 +118,6 @@ RevisedSimplex::RevisedSimplex()
 
 void RevisedSimplex::ClearStateForNextSolve() {
   SCOPED_TIME_STAT(&function_stats_);
-  solution_state_.num_rows = RowIndex(0);
-  solution_state_.num_cols = ColIndex(0);
   solution_state_.statuses.clear();
 }
 
@@ -834,10 +832,8 @@ void RevisedSimplex::InitializeVariableStatusesForWarmStart(
 
     // Start with the given "warm" status from the BasisState if it exists.
     VariableStatus status = default_status;
-    if (col < num_cols_) {
-      if (col < state.num_cols) {
-        status = state.statuses[col];
-      }
+    if (col < state.statuses.size()) {
+      status = state.statuses[col];
     }
 
     // Remove incompatibilities between the warm status and the variable bounds.
@@ -1176,8 +1172,6 @@ void RevisedSimplex::DisplayBasicVariableStatistics() {
 
 void RevisedSimplex::SaveState() {
   DCHECK_EQ(num_cols_, variables_info_.GetStatusRow().size());
-  solution_state_.num_rows = num_rows_;
-  solution_state_.num_cols = num_cols_;
   solution_state_.statuses = variables_info_.GetStatusRow();
   solution_state_has_been_set_externally_ = false;
 }

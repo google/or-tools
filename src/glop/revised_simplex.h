@@ -120,24 +120,19 @@
 namespace operations_research {
 namespace glop {
 
-// This is the minimal amount of information needed to perform a "warm start".
+// Holds the statuses of the all the variables, including slack variables. There
+// is no point storing constraint statuses since internally all constraints are
+// always fixed to zero.
 //
-// Holds the statuses of the variables and the slack variables. Using this
-// information and the original linear program, the basis can be refactorized
-// and all the needed quantities derived.
+// Note that this is the minimal amount of information needed to perform a "warm
+// start". Using this information and the original linear program, the basis can
+// be refactorized and all the needed quantities derived.
 //
 // TODO(user): Introduce another state class to store a complete state of the
 // solver. Using this state and the original linear program, the solver can be
 // restarted with as little time overhead as possible. This is especially useful
 // for strong branching in a MIP context.
 struct BasisState {
-  // The linear program size for which this state was saved.
-  RowIndex num_rows;
-  ColIndex num_cols;
-
-  // This vector first contains the num_cols normal variable statuses and then
-  // the num_rows slack variable statuses.
-  //
   // TODO(user): A MIP solver will potentially store a lot of BasicStates so
   // memory usage is important. It is possible to use only 2 bits for one
   // VariableStatus enum. To achieve this, the FIXED_VALUE status can be
