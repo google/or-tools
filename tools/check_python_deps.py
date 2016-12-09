@@ -89,4 +89,12 @@ if __name__ == '__main__':
 		logging.error(wrong_version(google.protobuf, "protobuf", minimum_protobuf_version, google.protobuf.__version__))
 		raise SystemExit
 
+	# Check if python can load the libraries' modules
+	# this is useful when the library architecture is not compatbile with the python executable,
+	# or when the library's dependencies are not available or not compatible.
+	from ortools.constraint_solver import _pywrapcp
+	from ortools.linear_solver import _pywraplp
+	from ortools.algorithms import _pywrapknapsack_solver
+	from ortools.graph import _pywrapgraph
+
 
