@@ -120,7 +120,7 @@ dotnet_archive: csharp
 	$(COPY) examples$Sdata$Squasigroup_completion$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 
 ifeq "$(SYSTEM)" "win"
-	$(COPY) examples$Scsharp$SCsharp_examples.sln temp$S$(INSTALL_DIR)$Sexamples
+	$(COPY) examples$Scsharp$SCsharp_examples.sln temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 	$(COPY) examples$Scsharp$Ssolution$Sapp.config temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 else
