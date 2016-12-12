@@ -16,7 +16,6 @@ endif
 endif
 	-$(DELREC) temp
 
-
 create_dirs:
 	-$(DELREC) temp
 	$(MKDIR) temp
@@ -59,7 +58,6 @@ create_dirs:
 	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 
-
 #credits
 	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
 	$(COPY) tools$SREADME.cc.java.csharp temp$S$(INSTALL_DIR)$SREADME
@@ -88,9 +86,6 @@ cc_archive: cc
 	$(COPY) src$Ssat$S*.h temp$S$(INSTALL_DIR)$Sinclude$Ssat
 	$(COPY) src$Sgen$Ssat$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Ssat
 	$(COPY) src$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sutil
-
-
-
 
 ifeq "$(SYSTEM)" "win"
 	cd temp$S$(INSTALL_DIR) && ..$S..$Stools$Star.exe -C ..$S.. -c -v --exclude *svn* --exclude *roadef* examples$Sdata | ..$S..$Stools$Star.exe xvm
@@ -125,8 +120,9 @@ dotnet_archive: csharp
 	$(COPY) examples$Sdata$Squasigroup_completion$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 
 ifeq "$(SYSTEM)" "win"
-	$(COPY) examples$Scsharp$S*.sln temp$S$(INSTALL_DIR)$Sexamples
+	$(COPY) examples$Scsharp$SCsharp_examples.sln temp$S$(INSTALL_DIR)$Sexamples
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
+	$(COPY) examples$Scsharp$Ssolution$Sapp.config temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 else
 	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin
 endif
@@ -247,4 +243,3 @@ endif #ifeq "$(PLATFORM)" "MACOSX"
 
 endif #ifeq "$(SYSTEM)" "win"
 endif #ifeq "$(PYTHON3)" "true"
-

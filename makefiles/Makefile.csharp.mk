@@ -72,10 +72,10 @@ else   # REAL_MCS
 csharp:
 endif  # REAL_MCS
 else   # MCS
-csharp: csharportools csharpexe
+csharp: csharpsolution csharportools csharpexe
 endif  # MCS
 else   # Windows
-csharp: csharportools csharpexe
+csharp: csharpsolution csharportools csharpexe
 endif  # Windows
 
 warn_mcs:
@@ -110,6 +110,8 @@ clean_csharp:
 	-$(DEL) $(OBJ_DIR)$Sswig$S*csharp_wrap.$O
 	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	-$(DEL) examples$Scsharp$SCsharp_examples.sln
+	-$(DEL) examples$Scsharp$Ssolution$S*.csproj
 
 $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_VERSION).txt
 ifeq ("$(SYSTEM)","win")
@@ -438,3 +440,39 @@ ifeq ("$(SYSTEM)","win")
 	cd temp\or-tools && nuget pack or-tools.nuspec
 	cd temp\or-tools && nuget push Google.OrTools-$(OR_TOOLS_VERSION).nupkg
 endif
+
+
+# csharpsolution
+# create solution files for visual studio
+
+ifeq ("$(SYSTEM)","win")
+csharpsolution: examples/csharp/Csharp_examples.sln
+else
+csharpsolution:
+endif
+
+examples/csharp/solution/%.csproj: examples/csharp/%.cs tools/template.csproj
+	$(COPY) tools$Stemplate.csproj examples$Scsharp$Ssolution$S$(@F)
+# Replace all "SOURCEFILE" instances with the C# example source file
+# AND
+# Replace all "EXECUTABLE" instances with the name of the executable. the first letter is capitalized.
+	$(SED) -i -e "s/SOURCEFILE/$*.cs/" -e "s/EXECUTABLE/\u$*/" examples$Scsharp$Ssolution$S$(@F)
+
+all_csproj: $(patsubst examples/csharp/%.cs, examples/csharp/solution/%.csproj, $(wildcard examples/csharp/*.cs))
+
+examples/csharp/Csharp_examples.sln: tools/template.sln all_csproj
+	-$(DEL) examples$Scsharp$SCsharp_examples.sln
+	$(COPY) tools$Stemplate.sln examples$Scsharp$SCsharp_examples.sln
+#Add the *csproj files to the solution
+	$(SED) -i '/#End Projects/i $(join \
+	$(patsubst examples/csharp/solution/%.csproj, Project\(\"{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}\"\)=\"%\"$(COMMA) , $(wildcard examples/csharp/solution/*.csproj)), \
+$(patsubst examples/csharp/solution/%.csproj, \"solution%.csproj\"$(COMMA)\"{}\"EndProject, $(wildcard examples/csharp/solution/*.csproj)) \
+)' examples/csharp/Csharp_examples.sln
+	$(SED) -i -e "s/solution/solution\\/g" -e "s/EndProject/\r\nEndProject\r\n/g" -e "s/ Project/Project/g" examples$Scsharp$SCsharp_examples.sln
+
+
+
+
+
+
+
