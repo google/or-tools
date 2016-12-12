@@ -61,25 +61,26 @@ if __name__ == '__main__':
 	    logging.error (notinstalled("ortools"))
 	    raise SystemExit
 
-	#try to import protobuf
-	try:
-		import google.protobuf
-	except ImportError:
-	    logging.error (notinstalled("protobuf"))
-	    raise SystemExit
-
 	#check if we're using ortools from the sources or it's binded by pypi's module
 	ortools_module_file = inspect.getfile(ortools)
 	ortools_module_path = dirname(dirname(dirname(ortools_module_file)))
 	ortools_project_path = dirname(dirname(dirname(abspath(inspect.getfile(inspect.currentframe())))))
 	try:
 		if(ortools_module_path == ortools_project_path):
-			logging.info("The python examples are importing the ortools module from the sources")
+			logging.info("Good! The python examples are importing the ortools module from the sources. The imported module is : " + inspect.getfile(ortools))
 		else:
 			raise Exception
 	except (Exception):
 		logging.error(wrong_module(ortools_module_file, "ortools"))
 		raise SystemExit
+
+	#try to import protobuf
+	try:
+		import google.protobuf
+		logging.info("Protobuf is imported from " + inspect.getfile(google.protobuf))
+	except ImportError:
+	    logging.error (notinstalled("protobuf"))
+	    raise SystemExit
 
 	# Check if python can load the libraries' modules
 	# this is useful when the library architecture is not compatbile with the python executable,
