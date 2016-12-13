@@ -167,73 +167,6 @@ inline std::function<IntervalVariable(Model*)> NewIntervalFromStartAndSizeVars(
   };
 }
 
-inline std::function<void(Model*)> EndBefore(IntervalVariable i1,
-                                             IntegerVariable ivar) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->EndVar(i1), ivar);
-  };
-}
-
-inline std::function<void(Model*)> EndBeforeWithOffset(IntervalVariable i1,
-                                                       IntegerVariable ivar,
-                                                       int64 offset) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedenceWithOffset(intervals->EndVar(i1), ivar,
-                                         IntegerValue(offset));
-  };
-}
-
-inline std::function<void(Model*)> EndBeforeStart(IntervalVariable i1,
-                                                  IntervalVariable i2) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->EndVar(i1), intervals->StartVar(i2));
-  };
-}
-
-inline std::function<void(Model*)> StartAtEnd(IntervalVariable i1,
-                                              IntervalVariable i2) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->EndVar(i1), intervals->StartVar(i2));
-    precedences->AddPrecedence(intervals->StartVar(i2), intervals->EndVar(i1));
-  };
-}
-
-inline std::function<void(Model*)> StartAtStart(IntervalVariable i1,
-                                                IntervalVariable i2) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->StartVar(i1),
-                               intervals->StartVar(i2));
-    precedences->AddPrecedence(intervals->StartVar(i2),
-                               intervals->StartVar(i1));
-  };
-}
-
-inline std::function<void(Model*)> EndAtEnd(IntervalVariable i1,
-                                            IntervalVariable i2) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->EndVar(i1), intervals->EndVar(i2));
-    precedences->AddPrecedence(intervals->EndVar(i2), intervals->EndVar(i1));
-  };
-}
-
 // This requires that all the alternatives are optional tasks.
 inline std::function<void(Model*)> IntervalWithAlternatives(
     IntervalVariable master, const std::vector<IntervalVariable>& members) {
@@ -249,8 +182,10 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
       CHECK(intervals->IsOptional(member));
       const Literal is_present = intervals->IsPresentLiteral(member);
       sat_ct.push_back({is_present, Coefficient(1)});
-      model->Add(StartAtStart(master, member));
-      model->Add(EndAtEnd(member, master));
+      model->Add(
+          Equality(model->Get(StartVar(master)), model->Get(StartVar(member))));
+      model->Add(
+          Equality(model->Get(EndVar(master)), model->Get(EndVar(member))));
 
       // TODO(user): This only work for members with fixed size. Generalize.
       CHECK_EQ(intervals->SizeVar(member), kNoIntegerVariable);

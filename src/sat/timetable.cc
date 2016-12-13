@@ -16,48 +16,10 @@
 #include "sat/overload_checker.h"
 #include "sat/precedences.h"
 #include "sat/sat_solver.h"
-#include "sat/timetabling.h"
+#include "sat/timetable.h"
 
 namespace operations_research {
 namespace sat {
-
-std::function<void(Model*)> Cumulative(
-    const std::vector<IntervalVariable>& vars,
-    const std::vector<IntegerVariable>& demands,
-    const IntegerVariable& capacity) {
-  return [=](Model* model) {
-    if (vars.empty()) return;
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-
-    if (vars.size() == 1) {
-      if (intervals->IsOptional(vars[0])) {
-        model->Add(ConditionalLowerOrEqualWithOffset(
-            demands[0], capacity, 0, intervals->IsPresentLiteral(vars[0])));
-      } else {
-        model->Add(LowerOrEqual(demands[0], capacity));
-      }
-      return;
-    }
-
-    // Propagator responsible for applying the Overload Checking filtering rule.
-    // This propagator increases the minimum of the capacity variable.
-    OverloadChecker* overload_checker = new OverloadChecker(
-        vars, demands, capacity, trail, integer_trail, intervals);
-    overload_checker->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(overload_checker);
-
-    // Propagator responsible for applying Timetabling filtering rule. This
-    // propagator increases the minimum of the start variables, decrease the
-    // maximum of the end variables, and increasing the minimum of the capacity
-    // variable.
-    TimeTablingPerTask* time_tabling = new TimeTablingPerTask(
-        vars, demands, capacity, trail, integer_trail, intervals);
-    time_tabling->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(time_tabling);
-  };
-}
 
 TimeTablingPerTask::TimeTablingPerTask(
     const std::vector<IntervalVariable>& interval_vars,
@@ -245,11 +207,10 @@ bool TimeTablingPerTask::Propagate() {
       // The task cannot be pushed.
       // TODO(user): exclude fixed tasks for all the subtree.
       //
-      // Note: We still push the optional task that may be present. It is OK to
-      // propagate the bounds of such tasks. They should become unperformed if
-      // the bounds are no longer consistent.
+      // Note: We do not check that the task t is optional.
+      // It is OK to propagate the bounds of optional variables. They should
+      // become unperformed if the bounds are no longer consistent.
       if (demand_min_[t] <= min_demand || duration_min_[t] == 0) continue;
-      if (IsAbsent(t)) continue;
 
       // Increase the start min of task t.
       if (start_min_[t] != start_max_[t] && !SweepTaskRight(t)) return false;
@@ -413,7 +374,6 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id,
 
 bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
   reason_.clear();
-  literal_reason_.clear();
   ExplainProfileHeight(new_end);
   reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
   reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
@@ -437,7 +397,6 @@ bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
 
   // Build the reason to decrease the start max.
   reason_.clear();
-  literal_reason_.clear();
   reason_.push_back(integer_trail_->UpperBoundAsLiteral(end_vars_[task_id]));
   // Only use the duration variable if it is defined.
   if (duration_vars_[task_id] != kNoIntegerVariable) {
@@ -469,7 +428,7 @@ void TimeTablingPerTask::AddPresenceReasonIfNeeded(int task_id) {
 void TimeTablingPerTask::ExplainProfileHeight(IntegerValue time) {
   for (int t = 0; t < num_tasks_; ++t) {
     // Tasks need to overlap the time point, i.e., start_max <= time < end_min.
-    if (start_max_[t] <= time && time < end_min_[t] && IsAlwaysPresent(t)) {
+    if (start_max_[t] <= time && time < end_min_[t]) {
       reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
       reason_.push_back(IntegerLiteral::LowerOrEqual(start_vars_[t], time));
       reason_.push_back(IntegerLiteral::GreaterOrEqual(end_vars_[t], time + 1));

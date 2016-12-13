@@ -1072,14 +1072,15 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   if (!log_info) return result;
 
   // Display summary.
+  printf("status: %s\n",
+         result == SatSolver::MODEL_SAT ? "OPTIMAL"
+                                        : SatStatusString(result).c_str());
   if (model_is_feasible) {
     printf("objective: %lld\n", static_cast<int64>(objective.value()));
   } else {
     printf("objective: NA\n");
   }
-  printf("status: %s\n", result == SatSolver::MODEL_SAT
-                             ? "OPTIMAL"
-                             : SatStatusString(result).c_str());
+  printf("booleans: %d\n", sat_solver->NumVariables());
   printf("conflicts: %lld\n", sat_solver->num_failures());
   printf("branches: %lld\n", sat_solver->num_branches());
   printf("propagations: %lld\n", sat_solver->num_propagations());
@@ -1219,14 +1220,15 @@ SatSolver::Status MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
   if (!log_info) return result;
 
   // Display summary.
+  printf("status: %s\n",
+         result == SatSolver::MODEL_SAT ? "OPTIMAL"
+                                        : SatStatusString(result).c_str());
   if (upper_bound != kCoefficientMax) {
     printf("objective: %lld\n", upper_bound.value());
   } else {
     printf("objective: NA\n");
   }
-  printf("status: %s\n", result == SatSolver::MODEL_SAT
-                             ? "OPTIMAL"
-                             : SatStatusString(result).c_str());
+  printf("booleans: %d\n", sat_solver->NumVariables());
   printf("conflicts: %lld\n", sat_solver->num_failures());
   printf("branches: %lld\n", sat_solver->num_branches());
   printf("propagations: %lld\n", sat_solver->num_propagations());

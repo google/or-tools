@@ -982,7 +982,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   if (restart_algorithms.size() == 0) {
     SatParameters::RestartAlgorithm tmp;
     const std::vector<std::string> string_values = strings::Split(
-        parameters_.default_restart_algorithms(), ",", strings::SkipEmpty());
+        parameters_.default_restart_algorithms(), ',', strings::SkipEmpty());
     for (const std::string& string_value : string_values) {
       if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"

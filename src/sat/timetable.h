@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_SAT_TIMETABLING_H_
-#define OR_TOOLS_SAT_TIMETABLING_H_
+#ifndef OR_TOOLS_SAT_TIMETABLE_H_
+#define OR_TOOLS_SAT_TIMETABLE_H_
 
 #include "sat/integer.h"
 #include "sat/intervals.h"
@@ -21,12 +21,6 @@
 
 namespace operations_research {
 namespace sat {
-
-// Enforces a cumulative constraint on the given interval variables.
-std::function<void(Model*)> Cumulative(
-    const std::vector<IntervalVariable>& vars,
-    const std::vector<IntegerVariable>& demands,
-    const IntegerVariable& capacity);
 
 // A strongly quadratic version of Time Tabling filtering. This propagator
 // is similar to the CumulativeTimeTable propagator of the constraint solver.
@@ -165,4 +159,4 @@ class TimeTablingPerTask : public PropagatorInterface {
 }  // namespace sat
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_SAT_TIMETABLING_H_
+#endif  // OR_TOOLS_SAT_TIMETABLE_H_
