@@ -38,3 +38,5 @@ src/gen/
 objs/
 temp/
 lib/
+examples/csharp/solution/*.csproj
+examples/csharp/*.sln
