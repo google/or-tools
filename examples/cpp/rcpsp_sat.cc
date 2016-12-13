@@ -17,13 +17,13 @@
 #include "base/commandlineflags.h"
 #include "base/logging.h"
 #include "base/timer.h"
+#include "sat/cumulative.h"
 #include "sat/disjunctive.h"
 #include "sat/integer_expr.h"
 #include "sat/intervals.h"
 #include "sat/model.h"
 #include "sat/optimization.h"
 #include "sat/precedences.h"
-#include "sat/timetabling.h"
 #include "util/rcpsp_parser.h"
 
 DEFINE_string(input, "", "Input file.");
@@ -31,6 +31,17 @@ DEFINE_string(params, "", "Sat parameters in text proto format.");
 
 namespace operations_research {
 namespace sat {
+int ComputeNaiveHorizon(const RcpspParser& parser) {
+  int horizon = 0;
+  for (const RcpspParser::Task& task : parser.tasks()) {
+    int max_duration = 0;
+    for (const RcpspParser::Recipe& recipe : task.recipes) {
+      max_duration = std::max(max_duration, recipe.duration);
+    }
+    horizon += max_duration;
+  }
+  return horizon;
+}
 
 void LoadAndSolve(const std::string& file_name) {
   RcpspParser parser;
@@ -42,7 +53,8 @@ void LoadAndSolve(const std::string& file_name) {
 
   const int num_tasks = parser.tasks().size();
   const int num_resources = parser.resources().size();
-  const int horizon = parser.horizon();
+  const int horizon =
+      parser.is_rcpsp_max() ? ComputeNaiveHorizon(parser) : parser.horizon();
 
   std::vector<std::vector<IntervalVariable>> intervals_per_resources(
       num_resources);
@@ -52,6 +64,7 @@ void LoadAndSolve(const std::string& file_name) {
   std::vector<std::vector<IntegerVariable>> presences_per_resources(
       num_resources);
   std::vector<IntervalVariable> master_interval_per_task(num_tasks);
+  std::vector<std::vector<IntervalVariable>> alternatives_per_task(num_tasks);
 
   for (int t = 1; t < num_tasks - 1; ++t) {  // Ignore both sentinels.
     const RcpspParser::Task& task = parser.tasks()[t];
@@ -63,6 +76,7 @@ void LoadAndSolve(const std::string& file_name) {
       const IntervalVariable interval =
           model.Add(NewInterval(0, horizon, recipe.duration));
       master_interval_per_task[t] = interval;
+      alternatives_per_task[t].push_back(interval);
 
       // Add intervals to the resources.
       for (int r = 0; r < num_resources; ++r) {
@@ -80,7 +94,6 @@ void LoadAndSolve(const std::string& file_name) {
         }
       }
     } else {
-      std::vector<IntervalVariable> alternatives;
       int min_size = kint32max;
       int max_size = 0;
       for (const RcpspParser::Recipe& recipe : task.recipes) {
@@ -92,7 +105,7 @@ void LoadAndSolve(const std::string& file_name) {
             Literal(model.Add(NewBooleanVariable()), true);
         const IntervalVariable interval =
             model.Add(NewOptionalInterval(0, horizon, duration, is_present));
-        alternatives.push_back(interval);
+        alternatives_per_task[t].push_back(interval);
         const IntegerVariable presence_var =
             model.Add(NewIntegerVariableFromLiteral(is_present));
 
@@ -112,15 +125,11 @@ void LoadAndSolve(const std::string& file_name) {
       }
 
       // Fill in the master interval.
-      CHECK_GT(alternatives.size(), 0);
-      if (alternatives.size() == 1) {
-        master_interval_per_task[t] = alternatives.front();
-      } else {
-        const IntervalVariable master = model.Add(
-            NewIntervalWithVariableSize(0, horizon, min_size, max_size));
-        model.Add(IntervalWithAlternatives(master, alternatives));
-        master_interval_per_task[t] = master;
-      }
+      CHECK_GT(alternatives_per_task[t].size(), 1);
+      const IntervalVariable master = model.Add(
+          NewIntervalWithVariableSize(0, horizon, min_size, max_size));
+      model.Add(IntervalWithAlternatives(master, alternatives_per_task[t]));
+      master_interval_per_task[t] = master;
     }
   }
 
@@ -128,16 +137,44 @@ void LoadAndSolve(const std::string& file_name) {
   const IntegerVariable makespan = model.Add(NewIntegerVariable(0, horizon));
 
   // Add precedences.
-  for (int t = 1; t < num_tasks - 1; ++t) {
-    const IntervalVariable main = master_interval_per_task[t];
-    for (int n : parser.tasks()[t].successors) {
-      if (n == num_tasks - 1) {
-        // By construction, we do not need to add the precedence
-        // constraint between all tasks and the makespan, just the one described
-        // in the problem.
-        model.Add(EndBefore(main, makespan));
-      } else {
-        model.Add(EndBeforeStart(main, master_interval_per_task[n]));
+  if (parser.is_rcpsp_max()) {
+    for (int t = 1; t < num_tasks - 1; ++t) {
+      const RcpspParser::Task& task = parser.tasks()[t];
+      const int num_modes = task.recipes.size();
+      int count = 0;
+      for (int m1 = 0; m1 < num_modes; ++m1) {
+        const IntegerVariable s1 =
+            model.Get(StartVar(alternatives_per_task[t][m1]));
+        for (int n : parser.tasks()[t].successors) {
+          if (n == num_tasks - 1) {
+            const int delay = task.delays[count++];
+            model.Add(LowerOrEqualWithOffset(s1, makespan, delay));
+          } else {
+            const int num_other_modes = parser.tasks()[n].recipes.size();
+            for (int m2 = 0; m2 < num_other_modes; ++m2) {
+              const int delay = task.delays[count++];
+              const IntegerVariable s2 =
+                  model.Get(StartVar(alternatives_per_task[n][m2]));
+              model.Add(LowerOrEqualWithOffset(s1, s2, delay));
+            }
+          }
+        }
+      }
+    }
+  } else {
+    for (int t = 1; t < num_tasks - 1; ++t) {
+      const IntervalVariable main = master_interval_per_task[t];
+      for (int n : parser.tasks()[t].successors) {
+        if (n == num_tasks - 1) {
+          // By construction, we do not need to add the precedence
+          // constraint between all tasks and the makespan, just the one
+          // described in the problem.
+          model.Add(LowerOrEqual(model.Get(EndVar(main)), makespan));
+        } else {
+          model.Add(
+              LowerOrEqual(model.Get(EndVar(main)),
+                           model.Get(StartVar(master_interval_per_task[n]))));
+        }
       }
     }
   }

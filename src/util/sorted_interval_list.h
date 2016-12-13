@@ -34,7 +34,8 @@ struct ClosedInterval {
 std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals);
 
 std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval);
-std::ostream& operator<<(std::ostream& out, const std::vector<ClosedInterval>& intervals);
+std::ostream& operator<<(std::ostream& out,
+                         const std::vector<ClosedInterval>& intervals);
 
 // Converts an unsorted list of integer values to the unique list of
 // non-adjacent, disjoint ClosedInterval spanning exactly these values. Eg. for

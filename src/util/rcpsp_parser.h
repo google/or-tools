@@ -38,6 +38,13 @@ namespace operations_research {
 // The tasks dependencies form a dag with a single source and a single end.
 // Both source and end tasks have a zero duration, and no resource consumption.
 //
+// In case the problem is of type RCPSP/Max. The data contains an additional
+// array of delays per task. This flattened array contains the following
+// information for task i with mode mi and successor j with mode mj, then
+// start(i) + delay[i, mi, j, mj] <= start(j). This subsumes the normal
+// successor predecence of the non RCPSP/Max variation, i.e.:
+//   start(i) + duration(i, mi) <= start(j).
+//
 // The objective is to minimize the makespan of the problem.
 class RcpspParser {
  public:
@@ -53,6 +60,15 @@ class RcpspParser {
 
   struct Task {
     std::vector<int> successors;
+    // Flattened delays:
+    // the current task has m modes, and n successors.
+    // The array is the concatenation of smaller integer vectors, 1 per
+    // successor.
+    // For a given successor with m' mode. Then the corresponding slice of the
+    // delays vector is [d0_0, .., d0_m', .., dm_0, .., dm_m'].
+    // Thus if mode i is chosed for the current task, and j for the successor
+    // task, then start(current_task) + di_j <= start(successor task).
+    std::vector<int> delays;
     std::vector<Recipe> recipes;
   };
 
@@ -66,6 +82,7 @@ class RcpspParser {
   int due_date() const { return due_date_; }
   int tardiness_cost() const { return tardiness_cost_; }
   int mpm_time() const { return mpm_time_; }
+  bool is_rcpsp_max() const { return is_rcpsp_max_; }
 
   bool LoadFile(const std::string& file_name);
 
@@ -82,7 +99,8 @@ class RcpspParser {
     ERROR_FOUND
   };
 
-  void ProcessLine(const std::string& line);
+  void ProcessRcpspLine(const std::string& line);
+  void ProcessRcpspMaxLine(const std::string& line);
   void ReportError(const std::string& line);
 
   std::string name_;
@@ -98,6 +116,7 @@ class RcpspParser {
   LoadStatus load_status_;
   int declared_tasks_;
   int current_task_;
+  bool is_rcpsp_max_;
 };
 
 }  // namespace operations_research

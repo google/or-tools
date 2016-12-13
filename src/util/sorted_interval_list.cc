@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval) {
 }
 
 std::ostream& operator<<(std::ostream& out,
-                    const std::vector<ClosedInterval>& intervals) {
+                         const std::vector<ClosedInterval>& intervals) {
   return out << IntervalsAsString(intervals);
 }
 

@@ -32,17 +32,24 @@ RcpspParser::RcpspParser()
       mpm_time_(-1),
       load_status_(NOT_STARTED),
       declared_tasks_(-1),
-      current_task_(-1) {}
+      current_task_(-1),
+      is_rcpsp_max_(false) {}
 
 bool RcpspParser::LoadFile(const std::string& file_name) {
   if (load_status_ != NOT_STARTED) {
     return false;
   }
 
+  is_rcpsp_max_ = strings::EndsWith(file_name, ".sch") ||
+                  strings::EndsWith(file_name, ".SCH");
   load_status_ = HEADER_SECTION;
 
   for (const std::string& line : FileLines(file_name)) {
-    ProcessLine(line);
+    if (is_rcpsp_max_) {
+      ProcessRcpspMaxLine(line);
+    } else {
+      ProcessRcpspLine(line);
+    }
     if (load_status_ == ERROR_FOUND) {
       return false;
     }
@@ -57,7 +64,7 @@ void RcpspParser::ReportError(const std::string& line) {
   load_status_ = ERROR_FOUND;
 }
 
-void RcpspParser::ProcessLine(const std::string& line) {
+void RcpspParser::ProcessRcpspLine(const std::string& line) {
   if (strings::StartsWith(line, "***")) return;
   if (strings::StartsWith(line, "---")) return;
 
@@ -183,6 +190,136 @@ void RcpspParser::ProcessLine(const std::string& line) {
       if (words.size() == 2 * resources_.size()) {
         // Nothing to do.
       } else if (words.size() == resources_.size()) {
+        for (int i = 0; i < words.size(); ++i) {
+          resources_[i].capacity = atoi32(words[i]);
+        }
+        load_status_ = PARSING_FINISHED;
+      } else {
+        ReportError(line);
+      }
+      break;
+    }
+    case PARSING_FINISHED: {
+      break;
+    }
+    case ERROR_FOUND: {
+      break;
+    }
+  }
+}
+
+void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
+  const std::vector<std::string> words =
+      strings::Split(line, AnyOf(" :\t[]\r"), strings::SkipEmpty());
+
+  switch (load_status_) {
+    case NOT_STARTED: {
+      ReportError(line);
+      break;
+    }
+    case HEADER_SECTION: {
+      if (words.size() != 4) {
+        ReportError(line);
+        break;
+      }
+      if (atoi32(words[3])) {
+        ReportError(line);
+        break;
+      }
+      declared_tasks_ = atoi32(words[0]);
+      tasks_.resize(declared_tasks_ + 2);  // 2 sentinels.
+
+      // Creates resources.
+      const int num_renewable_resources = atoi32(words[1]);
+      const int num_nonrenewable_resources = atoi32(words[2]);
+      resources_.resize(num_renewable_resources, {-1, true});
+      resources_.resize(num_renewable_resources + num_nonrenewable_resources,
+                        {-1, false});
+
+      // Set up for the next section.
+      load_status_ = PRECEDENCE_SECTION;
+      current_task_ = 0;
+      break;
+    }
+    case PROJECT_SECTION: {
+      LOG(FATAL) << "Should not be here";
+      break;
+    }
+    case INFO_SECTION: {
+      LOG(FATAL) << "Should not be here";
+      break;
+    }
+    case PRECEDENCE_SECTION: {
+      if (words.size() < 3) {
+        ReportError(line);
+        break;
+      }
+
+      const int task_id = atoi32(words[0]);
+      if (task_id != current_task_) {
+        ReportError(line);
+        break;
+      } else {
+        current_task_++;
+      }
+
+      const int num_modes = atoi32(words[1]);
+      const int num_successors = atoi32(words[2]);
+
+      RcpspParser::Task& task = tasks_[task_id];
+      task.recipes.resize(num_modes);
+
+      // Read successors.
+      for (int i = 0; i < num_successors; ++i) {
+        tasks_[task_id].successors.push_back(atoi32(words[3 + i]));
+      }
+
+      // Read flattened delays.
+      for (int i = 3 + num_successors; i < words.size(); ++i) {
+        task.delays.push_back(atoi32(words[i]));
+      }
+
+      // Setup for next section.
+      if (task_id == declared_tasks_ + 1) {
+        current_task_ = 0;
+        load_status_ = REQUEST_SECTION;
+      }
+      break;
+    }
+    case REQUEST_SECTION: {
+      if (words.size() == 3 + resources_.size()) {
+        // Start of a new task.
+        current_task_ = atoi32(words[0]);
+
+        // 0 based indices for the mode.
+        const int current_mode = atoi32(words[1]) - 1;
+        CHECK_LT(current_mode, tasks_[current_task_].recipes.size());
+        if (current_mode != 0) {
+          ReportError(line);
+          break;
+        }
+        Recipe& recipe = tasks_[current_task_].recipes[current_mode];
+        recipe.duration = atoi32(words[2]);
+        for (int i = 0; i < resources_.size(); ++i) {
+          recipe.demands_per_resource.push_back(atoi32(words[3 + i]));
+        }
+      } else if (words.size() == 2 + resources_.size()) {
+        // New mode for a current task.
+        const int current_mode = atoi32(words[0]) - 1;
+        CHECK_LT(current_mode, tasks_[current_task_].recipes.size());
+        Recipe& recipe = tasks_[current_task_].recipes[current_mode];
+        recipe.duration = atoi32(words[1]);
+        for (int i = 0; i < resources_.size(); ++i) {
+          recipe.demands_per_resource.push_back(atoi32(words[2 + i]));
+        }
+      }
+      if (current_task_ == declared_tasks_ + 1) {
+        load_status_ = RESOURCE_SECTION;
+      }
+      break;
+    }
+    case RESOURCE_SECTION: {
+      if (words.size() == resources_.size()) {
         for (int i = 0; i < words.size(); ++i) {
           resources_[i].capacity = atoi32(words[i]);
         }
