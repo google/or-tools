@@ -19,6 +19,7 @@
 #include "flatzinc/checker.h"
 #include "flatzinc/logging.h"
 #include "sat/cp_constraints.h"
+#include "sat/cumulative.h"
 #include "sat/disjunctive.h"
 #include "sat/integer.h"
 #include "sat/integer_expr.h"
@@ -27,7 +28,6 @@
 #include "sat/optimization.h"
 #include "sat/sat_solver.h"
 #include "sat/table.h"
-#include "sat/timetabling.h"
 #include "util/sorted_interval_list.h"
 
 namespace operations_research {

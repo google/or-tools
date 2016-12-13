@@ -153,8 +153,9 @@ bool OverlapsAt(const Argument& array, int pos, const Argument& other) {
 
 // ----- Rule helpers -----
 
-bool Presolver::ApplyRule(Constraint* ct, const std::string& rule_name,
-                          std::function<bool(Constraint* ct, std::string*)> rule) {
+bool Presolver::ApplyRule(
+    Constraint* ct, const std::string& rule_name,
+    const std::function<bool(Constraint* ct, std::string*)>& rule) {
   const std::string before = HASVLOG ? ct->DebugString() : "";
   std::string log;
   const bool modified = rule(ct, &log);
@@ -3093,7 +3094,7 @@ CliqueResponse StoreClique(const std::vector<int>& vec, std::vector<int>* out) {
   }
 }
 
-void PrintGraph(const std::vector<std::vector<bool>> neighbors,
+void PrintGraph(const std::vector<std::vector<bool>>& neighbors,
                 int num_variables) {
   for (int i = 0; i < num_variables; ++i) {
     std::string out = StringPrintf("%i : [", i);

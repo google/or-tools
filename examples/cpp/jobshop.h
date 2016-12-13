@@ -121,7 +121,7 @@ class JobShopData {
   void ProcessNewLine(const std::string& line) {
     // TODO(user): more robust logic to support single-task jobs.
     const std::vector<std::string> words =
-        strings::Split(line, " ", strings::SkipEmpty());
+        strings::Split(line, ' ', strings::SkipEmpty());
     switch (problem_type_) {
       case UNDEFINED: {
         if (words.size() == 2 && words[0] == "instance") {

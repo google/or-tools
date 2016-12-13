@@ -26,6 +26,8 @@
 namespace strings {
 std::vector<std::string> Split(const std::string& full, const char* delim, int flags);
 
+std::vector<std::string> Split(const std::string& full, char delim, int flags);
+
 // StringPiece version. Its advantages is that it avoids creating a lot of
 // small strings. Note however that the full std::string must outlive the usage
 // of the result.

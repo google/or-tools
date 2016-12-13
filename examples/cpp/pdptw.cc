@@ -177,7 +177,7 @@ bool LoadAndSolve(const std::string& pdp_file) {
                    << kMaxInputFileSize << " bytes).";
       return false;
     }
-    lines = strings::Split(contents, "\n", strings::SkipEmpty());
+    lines = strings::Split(contents, '\n', strings::SkipEmpty());
   }
   // Reading header.
   if (lines.empty()) {

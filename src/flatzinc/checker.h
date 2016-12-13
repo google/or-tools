@@ -25,7 +25,7 @@ namespace fz {
 // feasible solution of the given model. Returns true iff this is the
 // case.
 bool CheckSolution(const Model& model,
-                   std::function<int64(IntegerVariable*)> evaluator);
+                   const std::function<int64(IntegerVariable*)>& evaluator);
 
 }  // namespace fz
 }  // namespace operations_research

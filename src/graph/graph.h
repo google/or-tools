@@ -842,10 +842,10 @@ class SVector {
 
   void grow(const T& left = T(), const T& right = T()) {
     if (size_ == capacity_) {
-      // We have to copy the elements because they are allowed to be element
-      // of *this.
-      T left_copy(left);
-      T right_copy(right);
+      // We have to copy the elements because they are allowed to be element of
+      // *this.
+      T left_copy(left);    // NOLINT
+      T right_copy(right);  // NOLINT
       reserve(NewCapacity(1));
       new (base_ + size_) T(right_copy);
       new (base_ - size_ - 1) T(left_copy);

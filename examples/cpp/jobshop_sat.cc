@@ -99,7 +99,8 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
 
       // Chain the task belonging to the same job.
       if (previous_interval != kNoIntervalVariable) {
-        model.Add(EndBeforeStart(previous_interval, interval));
+        model.Add(LowerOrEqual(model.Get(EndVar(previous_interval)),
+                               model.Get(StartVar(interval))));
       }
       previous_interval = interval;
 
@@ -119,7 +120,7 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
     }
 
     // The makespan will be greater than the end of each job.
-    model.Add(EndBefore(previous_interval, makespan));
+    model.Add(LowerOrEqual(model.Get(EndVar(previous_interval)), makespan));
   }
 
   // Add all the potential precedences between tasks on the same machine.

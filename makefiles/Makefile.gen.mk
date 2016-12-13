@@ -1460,6 +1460,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/boolean_problem.$O \
     $(OBJ_DIR)/sat/clause.$O \
     $(OBJ_DIR)/sat/cp_constraints.$O \
+    $(OBJ_DIR)/sat/cumulative.$O \
     $(OBJ_DIR)/sat/disjunctive.$O \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
@@ -1476,7 +1477,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/simplification.$O \
     $(OBJ_DIR)/sat/symmetry.$O \
     $(OBJ_DIR)/sat/table.$O \
-    $(OBJ_DIR)/sat/timetabling.$O \
+    $(OBJ_DIR)/sat/timetable.$O \
     $(OBJ_DIR)/sat/util.$O \
     $(OBJ_DIR)/sat/boolean_problem.pb.$O \
     $(OBJ_DIR)/sat/sat_parameters.pb.$O
@@ -1506,6 +1507,12 @@ $(SRC_DIR)/sat/cp_constraints.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/util/sorted_interval_list.h
+
+$(SRC_DIR)/sat/cumulative.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h
 
 $(SRC_DIR)/sat/disjunctive.h: \
     $(SRC_DIR)/sat/integer.h \
@@ -1635,7 +1642,7 @@ $(SRC_DIR)/sat/table.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h
 
-$(SRC_DIR)/sat/timetabling.h: \
+$(SRC_DIR)/sat/timetable.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
@@ -1675,6 +1682,14 @@ $(OBJ_DIR)/sat/cp_constraints.$O: \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/cp_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_constraints.$O
+
+$(OBJ_DIR)/sat/cumulative.$O: \
+    $(SRC_DIR)/sat/cumulative.cc \
+    $(SRC_DIR)/sat/cumulative.h \
+    $(SRC_DIR)/sat/overload_checker.h \
+    $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/sat/timetable.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/cumulative.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scumulative.$O
 
 $(OBJ_DIR)/sat/disjunctive.$O: \
     $(SRC_DIR)/sat/disjunctive.cc \
@@ -1788,13 +1803,13 @@ $(OBJ_DIR)/sat/table.$O: \
     $(SRC_DIR)/base/stl_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/table.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stable.$O
 
-$(OBJ_DIR)/sat/timetabling.$O: \
-    $(SRC_DIR)/sat/timetabling.cc \
+$(OBJ_DIR)/sat/timetable.$O: \
+    $(SRC_DIR)/sat/timetable.cc \
     $(SRC_DIR)/sat/overload_checker.h \
     $(SRC_DIR)/sat/precedences.h \
     $(SRC_DIR)/sat/sat_solver.h \
-    $(SRC_DIR)/sat/timetabling.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetabling.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetabling.$O
+    $(SRC_DIR)/sat/timetable.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetable.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetable.$O
 
 $(OBJ_DIR)/sat/util.$O: \
     $(SRC_DIR)/sat/util.cc \
@@ -3127,3 +3142,4 @@ $(GEN_DIR)/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/constraint_solve
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+
