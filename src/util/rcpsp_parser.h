@@ -60,15 +60,13 @@ class RcpspParser {
 
   struct Task {
     std::vector<int> successors;
-    // Flattened delays:
-    // the current task has m modes, and n successors.
-    // The array is the concatenation of smaller integer vectors, 1 per
-    // successor.
-    // For a given successor with m' mode. Then the corresponding slice of the
-    // delays vector is [d0_0, .., d0_m', .., dm_0, .., dm_m'].
-    // Thus if mode i is chosed for the current task, and j for the successor
-    // task, then start(current_task) + di_j <= start(successor task).
-    std::vector<int> delays;
+    // If the current task has n successors and m modes then this is
+    // an n x m matrix where each entry at line i is a vector with the
+    // same length as the number of mode for the task successor[i]. If
+    // mode m1 is chosen for the current task, and mode m2 is choosen
+    // for its succesor i, we have:
+    //    start(current_task) + delay[i][m1][m2] <= start(successor task).
+    std::vector<std::vector<std::vector<int>>> delays;
     std::vector<Recipe> recipes;
   };
 
@@ -117,6 +115,7 @@ class RcpspParser {
   int declared_tasks_;
   int current_task_;
   bool is_rcpsp_max_;
+  std::vector<std::vector<int>> temp_delays_;
 };
 
 }  // namespace operations_research

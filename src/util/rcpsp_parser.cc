@@ -228,6 +228,7 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
       }
       declared_tasks_ = atoi32(words[0]);
       tasks_.resize(declared_tasks_ + 2);  // 2 sentinels.
+      temp_delays_.resize(declared_tasks_ + 2);
 
       // Creates resources.
       const int num_renewable_resources = atoi32(words[1]);
@@ -271,16 +272,36 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
 
       // Read successors.
       for (int i = 0; i < num_successors; ++i) {
-        tasks_[task_id].successors.push_back(atoi32(words[3 + i]));
+        task.successors.push_back(atoi32(words[3 + i]));
       }
 
-      // Read flattened delays.
+      // Read flattened delays into temp_delays_.
       for (int i = 3 + num_successors; i < words.size(); ++i) {
-        task.delays.push_back(atoi32(words[i]));
+        temp_delays_[task_id].push_back(atoi32(words[i]));
       }
 
-      // Setup for next section.
       if (task_id == declared_tasks_ + 1) {
+        // Convert the flattened delays into structured delays (1 vector per
+        // successor) in the task_size.
+        for (int t = 1; t <= declared_tasks_; ++t) {
+          const int num_modes = tasks_[t].recipes.size();
+          const int num_successors = tasks_[t].successors.size();
+          tasks_[t].delays.resize(num_successors);
+          int count = 0;
+          for (int s = 0; s < num_successors; ++s) {
+            tasks_[t].delays[s].resize(num_modes);
+            for (int m1 = 0; m1 < num_modes; ++m1) {
+              const int other = tasks_[t].successors[s];
+              const int num_other_modes = tasks_[other].recipes.size();
+              for (int m2 = 0; m2 < num_other_modes; ++m2) {
+                tasks_[t].delays[s][m1].push_back(temp_delays_[t][count++]);
+              }
+            }
+          }
+          CHECK_EQ(count, temp_delays_[t].size());
+        }
+
+        // Setup for next section.
         current_task_ = 0;
         load_status_ = REQUEST_SECTION;
       }

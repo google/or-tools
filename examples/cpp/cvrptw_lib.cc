@@ -212,9 +212,19 @@ void DisplayPlan(
             capacity_dimension.CumulVar(order);
         operations_research::IntVar* const time_var =
             time_dimension.CumulVar(order);
-        StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld) -> ",
-                      order, plan.Value(load_var), plan.Min(time_var),
-                      plan.Max(time_var));
+        operations_research::IntVar* const slack_var =
+            routing.IsEnd(order) ? nullptr : time_dimension.SlackVar(order);
+        if (slack_var != nullptr && plan.Contains(slack_var)) {
+          StringAppendF(
+              &plan_output,
+              "%lld Load(%lld) Time(%lld, %lld) Slack(%lld, %lld) -> ", order,
+              plan.Value(load_var), plan.Min(time_var), plan.Max(time_var),
+              plan.Min(slack_var), plan.Max(slack_var));
+        } else {
+          StringAppendF(&plan_output, "%lld Load(%lld) Time(%lld, %lld) -> ",
+                        order, plan.Value(load_var), plan.Min(time_var),
+                        plan.Max(time_var));
+        }
         if (routing.IsEnd(order)) break;
         order = plan.Value(routing.NextVar(order));
       }

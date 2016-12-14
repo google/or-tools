@@ -63,7 +63,8 @@ void LoadAndSolve(const std::string& file_name) {
   std::vector<std::vector<int64>> consumptions_per_resources(num_resources);
   std::vector<std::vector<IntegerVariable>> presences_per_resources(
       num_resources);
-  std::vector<IntervalVariable> master_interval_per_task(num_tasks);
+  std::vector<IntegerVariable> task_starts(num_tasks);
+  std::vector<IntegerVariable> task_ends(num_tasks);
   std::vector<std::vector<IntervalVariable>> alternatives_per_task(num_tasks);
 
   for (int t = 1; t < num_tasks - 1; ++t) {  // Ignore both sentinels.
@@ -75,7 +76,8 @@ void LoadAndSolve(const std::string& file_name) {
       CHECK_EQ(num_resources, recipe.demands_per_resource.size());
       const IntervalVariable interval =
           model.Add(NewInterval(0, horizon, recipe.duration));
-      master_interval_per_task[t] = interval;
+      task_starts[t] = model.Get(StartVar(interval));
+      task_ends[t] = model.Get(EndVar(interval));
       alternatives_per_task[t].push_back(interval);
 
       // Add intervals to the resources.
@@ -129,7 +131,8 @@ void LoadAndSolve(const std::string& file_name) {
       const IntervalVariable master = model.Add(
           NewIntervalWithVariableSize(0, horizon, min_size, max_size));
       model.Add(IntervalWithAlternatives(master, alternatives_per_task[t]));
-      master_interval_per_task[t] = master;
+      task_starts[t] = model.Get(StartVar(master));
+      task_ends[t] = model.Get(EndVar(master));
     }
   }
 
@@ -141,18 +144,25 @@ void LoadAndSolve(const std::string& file_name) {
     for (int t = 1; t < num_tasks - 1; ++t) {
       const RcpspParser::Task& task = parser.tasks()[t];
       const int num_modes = task.recipes.size();
-      int count = 0;
-      for (int m1 = 0; m1 < num_modes; ++m1) {
-        const IntegerVariable s1 =
-            model.Get(StartVar(alternatives_per_task[t][m1]));
-        for (int n : parser.tasks()[t].successors) {
+
+      for (int s = 0; s < task.successors.size(); ++s) {
+        const int n = task.successors[s];
+        const std::vector<std::vector<int>>& delay_matrix = task.delays[s];
+        CHECK_EQ(delay_matrix.size(), num_modes);
+        const int num_other_modes = parser.tasks()[n].recipes.size();
+
+        for (int m1 = 0; m1 < num_modes; ++m1) {
+          const IntegerVariable s1 =
+              model.Get(StartVar(alternatives_per_task[t][m1]));
+          CHECK_EQ(num_other_modes, delay_matrix[m1].size());
+
           if (n == num_tasks - 1) {
-            const int delay = task.delays[count++];
+            CHECK_EQ(1, num_other_modes);
+            const int delay = delay_matrix[m1][0];
             model.Add(LowerOrEqualWithOffset(s1, makespan, delay));
           } else {
-            const int num_other_modes = parser.tasks()[n].recipes.size();
             for (int m2 = 0; m2 < num_other_modes; ++m2) {
-              const int delay = task.delays[count++];
+              const int delay = delay_matrix[m1][m2];
               const IntegerVariable s2 =
                   model.Get(StartVar(alternatives_per_task[n][m2]));
               model.Add(LowerOrEqualWithOffset(s1, s2, delay));
@@ -163,17 +173,14 @@ void LoadAndSolve(const std::string& file_name) {
     }
   } else {
     for (int t = 1; t < num_tasks - 1; ++t) {
-      const IntervalVariable main = master_interval_per_task[t];
       for (int n : parser.tasks()[t].successors) {
         if (n == num_tasks - 1) {
           // By construction, we do not need to add the precedence
           // constraint between all tasks and the makespan, just the one
           // described in the problem.
-          model.Add(LowerOrEqual(model.Get(EndVar(main)), makespan));
+          model.Add(LowerOrEqual(task_ends[t], makespan));
         } else {
-          model.Add(
-              LowerOrEqual(model.Get(EndVar(main)),
-                           model.Get(StartVar(master_interval_per_task[n]))));
+          model.Add(LowerOrEqual(task_ends[t], task_starts[n]));
         }
       }
     }
@@ -199,8 +206,7 @@ void LoadAndSolve(const std::string& file_name) {
   // Search.
   std::vector<IntegerVariable> decision_variables;
   for (int t = 1; t < num_tasks - 1; ++t) {
-    decision_variables.push_back(
-        model.Get(StartVar(master_interval_per_task[t])));
+    decision_variables.push_back(task_starts[t]);
   }
 
   MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
