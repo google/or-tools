@@ -752,6 +752,12 @@ void MPSolver::Reset() { interface_->Reset(); }
 
 bool MPSolver::InterruptSolve() { return interface_->InterruptSolve(); }
 
+void MPSolver::SetStartingLpBasis(
+    const std::vector<BasisStatus>& variable_statuses,
+    const std::vector<BasisStatus>& constraint_statuses) {
+  interface_->SetStartingLpBasis(variable_statuses, constraint_statuses);
+}
+
 MPVariable* MPSolver::MakeVar(double lb, double ub, bool integer,
                               const std::string& name) {
   const int var_index = NumVariables();

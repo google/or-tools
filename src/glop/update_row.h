@@ -103,7 +103,6 @@ class UpdateRow {
   const CompactSparseMatrix& matrix_;
   const CompactSparseMatrix& transposed_matrix_;
   const VariablesInfo& variables_info_;
-  const RowToColMapping& basis_;
   const BasisFactorization& basis_factorization_;
 
   // Left inverse by B of a unit row. Its scalar product with a column 'a' of A
@@ -118,7 +117,6 @@ class UpdateRow {
   DenseRow coefficient_;
 
   // Boolean used to avoid recomputing many times the same thing.
-  bool compute_unit_row_left_inverse_;
   bool compute_update_row_;
 
   // Statistics about this class.

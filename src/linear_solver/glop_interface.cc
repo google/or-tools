@@ -35,6 +35,7 @@
 #include "base/hash.h"
 #include "glop/lp_solver.h"
 #include "glop/parameters.pb.h"
+#include "linear_solver/glop_utils.h"
 #include "linear_solver/linear_solver.h"
 #include "lp_data/lp_data.h"
 #include "lp_data/lp_types.h"
@@ -44,69 +45,6 @@ namespace operations_research {
 
 namespace {
 
-MPSolver::ResultStatus TranslateProblemStatus(glop::ProblemStatus status) {
-  switch (status) {
-    case glop::ProblemStatus::OPTIMAL:
-      return MPSolver::OPTIMAL;
-    case glop::ProblemStatus::PRIMAL_FEASIBLE:
-      return MPSolver::FEASIBLE;
-    case glop::ProblemStatus::PRIMAL_INFEASIBLE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::DUAL_UNBOUNDED:
-      return MPSolver::INFEASIBLE;
-    case glop::ProblemStatus::PRIMAL_UNBOUNDED:
-      return MPSolver::UNBOUNDED;
-    case glop::ProblemStatus::DUAL_FEASIBLE:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INIT:
-      return MPSolver::NOT_SOLVED;
-    // TODO(user): Glop may return ProblemStatus::DUAL_INFEASIBLE or
-    // ProblemStatus::INFEASIBLE_OR_UNBOUNDED.
-    // Unfortunatley, the wrapper does not support this return status at this
-    // point (even though Cplex and Gurobi have the equivalent). So we convert
-    // it to MPSolver::ABNORMAL instead.
-    case glop::ProblemStatus::DUAL_INFEASIBLE:          // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INFEASIBLE_OR_UNBOUNDED:  // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::ABNORMAL:                 // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::IMPRECISE:                // PASS_THROUGH_INTENDED
-    case glop::ProblemStatus::INVALID_PROBLEM:
-      return MPSolver::ABNORMAL;
-  }
-  LOG(DFATAL) << "Invalid glop::ProblemStatus " << status;
-  return MPSolver::ABNORMAL;
-}
-
-MPSolver::BasisStatus TranslateVariableStatus(glop::VariableStatus status) {
-  switch (status) {
-    case glop::VariableStatus::FREE:
-      return MPSolver::FREE;
-    case glop::VariableStatus::AT_LOWER_BOUND:
-      return MPSolver::AT_LOWER_BOUND;
-    case glop::VariableStatus::AT_UPPER_BOUND:
-      return MPSolver::AT_UPPER_BOUND;
-    case glop::VariableStatus::FIXED_VALUE:
-      return MPSolver::FIXED_VALUE;
-    case glop::VariableStatus::BASIC:
-      return MPSolver::BASIC;
-  }
-  LOG(DFATAL) << "Unknown variable status: " << status;
-  return MPSolver::FREE;
-}
-
-MPSolver::BasisStatus TranslateConstraintStatus(glop::ConstraintStatus status) {
-  switch (status) {
-    case glop::ConstraintStatus::FREE:
-      return MPSolver::FREE;
-    case glop::ConstraintStatus::AT_LOWER_BOUND:
-      return MPSolver::AT_LOWER_BOUND;
-    case glop::ConstraintStatus::AT_UPPER_BOUND:
-      return MPSolver::AT_UPPER_BOUND;
-    case glop::ConstraintStatus::FIXED_VALUE:
-      return MPSolver::FIXED_VALUE;
-    case glop::ConstraintStatus::BASIC:
-      return MPSolver::BASIC;
-  }
-  LOG(DFATAL) << "Unknown constraint status: " << status;
-  return MPSolver::FREE;
-}
 }  // Anonymous namespace
 
 class GLOPInterface : public MPSolverInterface {
@@ -154,6 +92,10 @@ class GLOPInterface : public MPSolverInterface {
   void ExtractNewConstraints() override;
   void ExtractObjective() override;
 
+  void SetStartingLpBasis(
+      const std::vector<MPSolver::BasisStatus>& variable_statuses,
+      const std::vector<MPSolver::BasisStatus>& constraint_statuses) override;
+
   void SetParameters(const MPSolverParameters& param) override;
   void SetRelativeMipGap(double value) override;
   void SetPrimalTolerance(double value) override;
@@ -186,8 +128,11 @@ GLOPInterface::GLOPInterface(MPSolver* const solver)
 GLOPInterface::~GLOPInterface() {}
 
 MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
-  // Reset extraction as Glop is not incremental yet.
-  Reset();
+  // Re-extract the problem from scratch. We don't support modifying the
+  // LinearProgram in sync with changes done in the MPSolver.
+  ResetExtractionInformation();
+  linear_program_.Clear();
+  interrupt_solver_ = false;
   ExtractModel();
   SetParameters(param);
 
@@ -212,7 +157,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
 
   // The solution must be marked as synchronized even when no solution exists.
   sync_status_ = SOLUTION_SYNCHRONIZED;
-  result_status_ = TranslateProblemStatus(status);
+  result_status_ = GlopToMPSolverResultStatus(status);
   objective_value_ = lp_solver_.GetObjectiveValue();
 
   const size_t num_vars = solver_->variables_.size();
@@ -231,7 +176,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
 
     const glop::VariableStatus variable_status =
         lp_solver_.variable_statuses()[lp_solver_var_id];
-    column_status_.at(var_id) = TranslateVariableStatus(variable_status);
+    column_status_.at(var_id) = GlopToMPSolverVariableStatus(variable_status);
   }
 
   const size_t num_constraints = solver_->constraints_.size();
@@ -246,7 +191,7 @@ MPSolver::ResultStatus GLOPInterface::Solve(const MPSolverParameters& param) {
 
     const glop::ConstraintStatus constraint_status =
         lp_solver_.constraint_statuses()[lp_solver_ct_id];
-    row_status_.at(ct_id) = TranslateConstraintStatus(constraint_status);
+    row_status_.at(ct_id) = GlopToMPSolverConstraintStatus(constraint_status);
   }
 
   return result_status_;
@@ -258,9 +203,9 @@ bool GLOPInterface::InterruptSolve() {
 }
 
 void GLOPInterface::Reset() {
-  ResetExtractionInformation();
-  linear_program_.Clear();
-  interrupt_solver_ = false;
+  // Ignore any incremental info for the next solve. Note that the parameters
+  // will not be reset as we re-read them on each Solve().
+  lp_solver_.Clear();
 }
 
 void GLOPInterface::SetOptimizationDirection(bool maximize) {
@@ -389,6 +334,20 @@ void GLOPInterface::ExtractObjective() {
     const double coeff = entry.second;
     linear_program_.SetObjectiveCoefficient(col, coeff);
   }
+}
+
+void GLOPInterface::SetStartingLpBasis(
+    const std::vector<MPSolver::BasisStatus>& variable_statuses,
+    const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
+  glop::VariableStatusRow glop_variable_statuses;
+  glop::ConstraintStatusColumn glop_constraint_statuses;
+  for (const MPSolver::BasisStatus& status : variable_statuses) {
+    glop_variable_statuses.push_back(MPSolverToGlopVariableStatus(status));
+  }
+  for (const MPSolver::BasisStatus& status : constraint_statuses) {
+    glop_constraint_statuses.push_back(MPSolverToGlopConstraintStatus(status));
+  }
+  lp_solver_.SetInitialBasis(glop_variable_statuses, glop_constraint_statuses);
 }
 
 void GLOPInterface::SetParameters(const MPSolverParameters& param) {

@@ -102,14 +102,14 @@
 #include "base/macros.h"
 #include "glop/basis_representation.h"
 #include "glop/dual_edge_norms.h"
+#include "glop/entering_variable.h"
 #include "glop/parameters.pb.h"
 #include "glop/primal_edge_norms.h"
-#include "glop/entering_variable.h"
 #include "glop/reduced_costs.h"
 #include "glop/status.h"
 #include "glop/update_row.h"
-#include "glop/variables_info.h"
 #include "glop/variable_values.h"
+#include "glop/variables_info.h"
 #include "lp_data/lp_data.h"
 #include "lp_data/lp_print_utils.h"
 #include "lp_data/lp_types.h"
@@ -120,7 +120,7 @@
 namespace operations_research {
 namespace glop {
 
-// Holds the statuses of the all the variables, including slack variables. There
+// Holds the statuses of all the variables, including slack variables. There
 // is no point storing constraint statuses since internally all constraints are
 // always fixed to zero.
 //
@@ -305,14 +305,24 @@ class RevisedSimplex {
                    VariableStatus leaving_variable_status);
 
   // Initializes matrix-related internal data. Returns true if this data was
-  // unchanged. If not, also sets only_new_rows to true if compared to the
-  // current matrix, the only difference is that new rows have been added (with
-  // their corresponding extra slack variables).
+  // unchanged. If not, also sets only_change_is_new_rows to true if compared
+  // to the current matrix, the only difference is that new rows have been
+  // added (with their corresponding extra slack variables).  Similarly, sets
+  // only_change_is_new_cols to true if the only difference is that new columns
+  // have been added, in which case also sets num_new_cols to the number of
+  // new columns.
   bool InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
-                                          bool* only_new_rows);
+                                          bool* only_change_is_new_rows,
+                                          bool* only_change_is_new_cols,
+                                          ColIndex* num_new_cols);
 
   // Initializes bound-related internal data. Returns true if unchanged.
   bool InitializeBoundsAndTestIfUnchanged(const LinearProgram& lp);
+
+  // Checks if the only change to the bounds is the addition of new columns,
+  // and that the new columns have at least one bound equal to zero.
+  bool OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
+      const LinearProgram& lp, ColIndex num_new_cols);
 
   // Initializes objective-related internal data. Returns true if unchanged.
   bool InitializeObjectiveAndTestIfUnchanged(const LinearProgram& lp);
@@ -321,7 +331,8 @@ class RevisedSimplex {
   void InitializeObjectiveLimit(const LinearProgram& lp);
 
   // Initializes the variable statuses using a warm-start basis.
-  void InitializeVariableStatusesForWarmStart(const BasisState& state);
+  void InitializeVariableStatusesForWarmStart(const BasisState& state,
+                                              ColIndex num_new_cols);
 
   // Initializes the starting basis. In most cases it starts by the all slack
   // basis and tries to apply some heuristics to replace fixed variables.

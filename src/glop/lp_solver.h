@@ -64,8 +64,8 @@ class LPSolver {
   void Clear();
 
   // Advanced usage. This should be called before calling Solve(). It will
-  // configure the solver to try to start from the given point. Note that
-  // calling Clear() will invalidate this information.
+  // configure the solver to try to start from the given point for the next
+  // Solve() only. Note that calling Clear() will invalidate this information.
   //
   // If the set of variables/constraints with a BASIC status does not form a
   // basis a warning will be logged and the code will ignore it. Otherwise, the

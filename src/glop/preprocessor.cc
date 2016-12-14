@@ -24,10 +24,6 @@ namespace operations_research {
 namespace glop {
 
 namespace {
-// Returns an interval as an human readable std::string for debugging.
-std::string IntervalString(Fractional lb, Fractional ub) {
-  return StringPrintf("[%g, %g]", lb, ub);
-}
 
 #if defined(_MSC_VER)
 double trunc(double d) { return d > 0 ? floor(d) : ceil(d); }
@@ -104,14 +100,15 @@ bool MainLpPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
       RUN_PREPROCESSOR(EmptyColumnPreprocessor);
       RUN_PREPROCESSOR(EmptyConstraintPreprocessor);
     }
+
+    RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
   }
 
-  // These are implemented as preprocessors, but are not controlled by the
-  // use_preprocessing() parameter.
-  RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
+  // The scaling is controled by use_scaling, not use_preprocessing.
   RUN_PREPROCESSOR(ScalingPreprocessor);
-  RUN_PREPROCESSOR(AddSlackVariablesPreprocessor);
 
+  // This one must always run. It is needed by the revised simplex code.
+  RUN_PREPROCESSOR(AddSlackVariablesPreprocessor);
   return !preprocessors_.empty();
 }
 

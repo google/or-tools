@@ -119,13 +119,6 @@ class RankOneUpdateElementaryMatrix {
   }
 
  private:
-  // This is only used in debug mode.
-  Fractional ComputeUScalarV() const {
-    DenseColumn dense_u;
-    storage_->ColumnCopyToDenseColumn(u_index_, &dense_u);
-    return storage_->ColumnScalarProduct(v_index_, Transpose(dense_u));
-  }
-
   // Note that we allow copy and assignment so we can store a
   // RankOneUpdateElementaryMatrix in an STL container.
   const CompactSparseMatrix* storage_;
