@@ -81,8 +81,12 @@ class IntervalsRepository {
   IntegerVariable StartVar(IntervalVariable i) const { return start_vars_[i]; }
   IntegerVariable EndVar(IntervalVariable i) const { return end_vars_[i]; }
 
-  // Only meaningfull if SizeVar(i) == kNoIntegerVariable.
-  IntegerValue FixedSize(IntervalVariable i) const { return fixed_sizes_[i]; }
+  // Return the minimum size of the given IntervalVariable.
+  IntegerValue MinSize(IntervalVariable i) const {
+    const IntegerVariable size_var = size_vars_[i];
+    if (size_var == kNoIntegerVariable) return fixed_sizes_[i];
+    return integer_trail_->LowerBound(size_var);
+  }
 
  private:
   // Creates a new interval and returns its id.
@@ -187,10 +191,11 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
       model->Add(
           Equality(model->Get(EndVar(master)), model->Get(EndVar(member))));
 
-      // TODO(user): This only work for members with fixed size. Generalize.
+      // TODO(user): IsOneOf() only work for members with fixed size.
+      // Generalize to an "int_var_element" constraint.
       CHECK_EQ(intervals->SizeVar(member), kNoIntegerVariable);
       presences.push_back(is_present);
-      durations.push_back(intervals->FixedSize(member));
+      durations.push_back(intervals->MinSize(member));
     }
     if (intervals->SizeVar(master) != kNoIntegerVariable) {
       model->Add(IsOneOf(intervals->SizeVar(master), presences, durations));

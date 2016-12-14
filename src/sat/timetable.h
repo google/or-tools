@@ -93,12 +93,10 @@ class TimeTablingPerTask : public PropagatorInterface {
   }
 
   IntegerValue DurationMin(int task_id) const {
-    if (duration_vars_[task_id] != kNoIntegerVariable)
-      return integer_trail_->LowerBound(duration_vars_[task_id]);
-    return intervals_repository_->FixedSize(interval_vars_[task_id]);
+    return intervals_repository_->MinSize(interval_vars_[task_id]);
   }
 
-  bool IsAlwaysPresent(int task_id) const;
+  bool IsPresent(int task_id) const;
   bool IsAbsent(int task_id) const;
   void AddPresenceReasonIfNeeded(int task_id);
 

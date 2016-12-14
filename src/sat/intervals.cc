@@ -32,6 +32,7 @@ IntervalVariable IntervalsRepository::CreateInterval(IntegerValue min_start,
                                                      IntegerValue max_end,
                                                      IntegerValue min_size,
                                                      IntegerValue max_size) {
+  CHECK_GE(min_size, 0);
   CHECK_LE(min_size, max_size);
   if (min_size == max_size) {
     return CreateIntervalWithFixedSize(min_start, max_end, min_size);
@@ -55,6 +56,7 @@ IntervalVariable IntervalsRepository::CreateIntervalFromStartAndSizeVars(
 
   // Create the "end" variable.
   // TODO(user): deal with overflow.
+  CHECK_GE(integer_trail_->LowerBound(size), 0);
   const IntegerValue end_lb =
       integer_trail_->LowerBound(start) + integer_trail_->LowerBound(size);
   const IntegerValue end_ub =
@@ -71,6 +73,7 @@ IntervalVariable IntervalsRepository::CreateIntervalFromStartAndSizeVars(
 
 IntervalVariable IntervalsRepository::CreateIntervalWithFixedSize(
     IntegerValue min_start, IntegerValue max_end, IntegerValue size) {
+  CHECK_GE(size, 0);
   const IntervalVariable t = CreateNewInterval(min_start, max_end);
   fixed_sizes_.back() = size;
   precedences_->AddPrecedenceWithOffset(StartVar(t), EndVar(t), size);

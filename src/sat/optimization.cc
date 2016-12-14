@@ -1020,6 +1020,29 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScan(
       true, objective_var, {}, feasible_solution_observer, model);
 }
 
+namespace {
+void LogSolveInfo(SatSolver::Status result, const SatSolver& sat_solver,
+                  const WallTimer& wall_timer, const UserTimer& user_timer,
+                  int64 objective, int64 best_bound) {
+  printf("status: %s\n",
+         result == SatSolver::MODEL_SAT ? "OPTIMAL"
+                                        : SatStatusString(result).c_str());
+  if (objective < kint64max) {
+    printf("objective: %lld\n", objective);
+  } else {
+    printf("objective: NA\n");
+  }
+  printf("best_bound: %lld\n", best_bound);
+  printf("booleans: %d\n", sat_solver.NumVariables());
+  printf("conflicts: %lld\n", sat_solver.num_failures());
+  printf("branches: %lld\n", sat_solver.num_branches());
+  printf("propagations: %lld\n", sat_solver.num_propagations());
+  printf("walltime: %f\n", wall_timer.Get());
+  printf("usertime: %f\n", user_timer.Get());
+  printf("deterministic_time: %f\n", sat_solver.deterministic_time());
+}
+}  // namespace
+
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     bool log_info, IntegerVariable objective_var,
     const std::vector<IntegerVariable>& var_for_lazy_encoding,
@@ -1040,7 +1063,7 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   // Simple linear scan algorithm to find the optimal.
   SatSolver::Status result;
   bool model_is_feasible = false;
-  IntegerValue objective;
+  IntegerValue objective(kint64max);
   while (true) {
     result = SolveIntegerProblemWithLazyEncoding(/*assumptions=*/{},
                                                  var_for_lazy_encoding, model);
@@ -1063,30 +1086,21 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     }
   }
 
+  IntegerValue best_bound;
   CHECK_NE(result, SatSolver::MODEL_SAT);
   if (result == SatSolver::MODEL_UNSAT && model_is_feasible) {
     // We proved the optimal and use the MODEL_SAT value for this.
     result = SatSolver::MODEL_SAT;
-  }
-
-  if (!log_info) return result;
-
-  // Display summary.
-  printf("status: %s\n",
-         result == SatSolver::MODEL_SAT ? "OPTIMAL"
-                                        : SatStatusString(result).c_str());
-  if (model_is_feasible) {
-    printf("objective: %lld\n", static_cast<int64>(objective.value()));
+    best_bound = objective;
   } else {
-    printf("objective: NA\n");
+    sat_solver->Backtrack(0);
+    best_bound = integer_trail->LowerBound(objective_var);
   }
-  printf("booleans: %d\n", sat_solver->NumVariables());
-  printf("conflicts: %lld\n", sat_solver->num_failures());
-  printf("branches: %lld\n", sat_solver->num_branches());
-  printf("propagations: %lld\n", sat_solver->num_propagations());
-  printf("walltime: %f\n", wall_timer.Get());
-  printf("usertime: %f\n", user_timer.Get());
-  printf("deterministic_time: %f\n", sat_solver->deterministic_time());
+
+  if (log_info) {
+    LogSolveInfo(result, *sat_solver, wall_timer, user_timer, objective.value(),
+                 best_bound.value());
+  }
   return result;
 }
 
@@ -1217,24 +1231,10 @@ SatSolver::Status MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
     max_depth = std::max(max_depth, nodes.back()->depth());
   }
 
-  if (!log_info) return result;
-
-  // Display summary.
-  printf("status: %s\n",
-         result == SatSolver::MODEL_SAT ? "OPTIMAL"
-                                        : SatStatusString(result).c_str());
-  if (upper_bound != kCoefficientMax) {
-    printf("objective: %lld\n", upper_bound.value());
-  } else {
-    printf("objective: NA\n");
+  if (log_info) {
+    LogSolveInfo(result, *sat_solver, wall_timer, user_timer,
+                 upper_bound.value(), lower_bound.value() - offset.value());
   }
-  printf("booleans: %d\n", sat_solver->NumVariables());
-  printf("conflicts: %lld\n", sat_solver->num_failures());
-  printf("branches: %lld\n", sat_solver->num_branches());
-  printf("propagations: %lld\n", sat_solver->num_propagations());
-  printf("walltime: %f\n", wall_timer.Get());
-  printf("usertime: %f\n", user_timer.Get());
-  printf("deterministic_time: %f\n", sat_solver->deterministic_time());
   return result;
 }
 

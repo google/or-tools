@@ -170,7 +170,7 @@ bool DisjunctiveConstraint::Propagate() {
     }
     if (intervals_->SizeVar(i) == kNoIntegerVariable) {
       duration_vars_.push_back(kNoIntegerVariable);
-      fixed_durations_.push_back(intervals_->FixedSize(i));
+      fixed_durations_.push_back(intervals_->MinSize(i));
     } else {
       duration_vars_.push_back(intervals_->SizeVar(i));
       fixed_durations_.push_back(IntegerValue(0));

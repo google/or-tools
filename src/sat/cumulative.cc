@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "sat/cumulative.h"
+#include "sat/disjunctive.h"
 #include "sat/overload_checker.h"
 #include "sat/sat_solver.h"
 #include "sat/timetable.h"
@@ -35,6 +36,54 @@ std::function<void(Model*)> Cumulative(
             demands[0], capacity, 0, intervals->IsPresentLiteral(vars[0])));
       } else {
         model->Add(LowerOrEqual(demands[0], capacity));
+      }
+      return;
+    }
+
+    // Detect a subset of intervals that needs to be in disjunction.
+    //
+    // TODO(user): We need to exclude intervals that can be of size zero because
+    // the disjunctive do not "ignore" them like the cumulative does. That is,
+    // the interval [2,2) will be assumed to be in disjunction with [1, 3) for
+    // instance. We need to uniformize the handling of interval with size zero.
+    std::vector<IntervalVariable> in_disjunction;
+    for (int i = 0; i < vars.size(); ++i) {
+      if (intervals->MinSize(vars[i]) > 0 &&
+          2 * model->Get(LowerBound(demands[i])) >
+              model->Get(UpperBound(capacity))) {
+        in_disjunction.push_back(vars[i]);
+      }
+    }
+
+    // Add a disjunctive constraint on the intervals in in_disjunction. Do not
+    // create the cumulative at all when all intervals must be in disjunction.
+    //
+    // TODO(user): Do proper experiments to see how beneficial this is, the
+    // disjunctive will propagate more but is also using slower algorithms. That
+    // said, this is more a question of optimizing the disjunctive propagation
+    // code.
+    //
+    // TODO(user): Another "known" idea is to detect pair of tasks that must be
+    // in disjunction and to create a Boolean to indicate which one is before
+    // the other. It shouldn't change the propagation, but may result in a
+    // faster one with smaller explanations, and the solver can also take
+    // decision on such Boolean.
+    //
+    // TODO(user): A better place for stuff like this could be in the presolver
+    // so that it is easier to disable and play with alternatives.
+    if (in_disjunction.size() > 1) {
+      model->Add(Disjunctive(in_disjunction));
+    }
+    if (in_disjunction.size() == vars.size()) {
+      // We still need to propagate the minimum capacity though. Note that
+      // this works since we don't have interval of size zero here.
+      for (int i = 0; i < vars.size(); ++i) {
+        if (intervals->IsOptional(vars[i])) {
+          model->Add(ConditionalLowerOrEqualWithOffset(
+              demands[i], capacity, 0, intervals->IsPresentLiteral(vars[i])));
+        } else {
+          model->Add(LowerOrEqual(demands[i], capacity));
+        }
       }
       return;
     }

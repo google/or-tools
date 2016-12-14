@@ -67,7 +67,7 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
     if (duration_vars_[t] != kNoIntegerVariable) {
       watcher->WatchLowerBound(duration_vars_[t], id);
     }
-    if (!IsAlwaysPresent(t)) {
+    if (!IsPresent(t) && !IsAbsent(t)) {
       const Literal is_present =
           intervals_repository_->IsPresentLiteral(interval_vars_[t]);
       watcher->WatchLiteral(is_present, id);
@@ -75,7 +75,7 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
   }
 }
 
-bool TimeTablingPerTask::IsAlwaysPresent(int task_id) const {
+bool TimeTablingPerTask::IsPresent(int task_id) const {
   if (intervals_repository_->IsOptional(interval_vars_[task_id])) {
     const Literal is_present =
         intervals_repository_->IsPresentLiteral(interval_vars_[task_id]);
@@ -111,7 +111,7 @@ bool TimeTablingPerTask::Propagate() {
       end_max_[t] = EndMax(t);
       demand_min_[t] = DemandMin(t);
       duration_min_[t] = DurationMin(t);
-      if (start_max_[t] < end_min_[t] && IsAlwaysPresent(t)) {
+      if (start_max_[t] < end_min_[t] && IsPresent(t)) {
         scp_.push_back(Event(start_max_[t], t));
         ecp_.push_back(Event(end_min_[t], t));
       }
@@ -207,10 +207,11 @@ bool TimeTablingPerTask::Propagate() {
       // The task cannot be pushed.
       // TODO(user): exclude fixed tasks for all the subtree.
       //
-      // Note: We do not check that the task t is optional.
-      // It is OK to propagate the bounds of optional variables. They should
-      // become unperformed if the bounds are no longer consistent.
+      // Note: We still push the optional task that may be present. It is OK to
+      // propagate the bounds of such tasks. They should become unperformed if
+      // the bounds are no longer consistent.
       if (demand_min_[t] <= min_demand || duration_min_[t] == 0) continue;
+      if (IsAbsent(t)) continue;
 
       // Increase the start min of task t.
       if (start_min_[t] != start_max_[t] && !SweepTaskRight(t)) return false;
@@ -374,6 +375,7 @@ bool TimeTablingPerTask::UpdateStartingTime(int task_id,
 
 bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
   reason_.clear();
+  literal_reason_.clear();
   ExplainProfileHeight(new_end);
   reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
   reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
@@ -397,6 +399,7 @@ bool TimeTablingPerTask::UpdateEndingTime(int task_id, IntegerValue new_end) {
 
   // Build the reason to decrease the start max.
   reason_.clear();
+  literal_reason_.clear();
   reason_.push_back(integer_trail_->UpperBoundAsLiteral(end_vars_[task_id]));
   // Only use the duration variable if it is defined.
   if (duration_vars_[task_id] != kNoIntegerVariable) {
@@ -428,7 +431,7 @@ void TimeTablingPerTask::AddPresenceReasonIfNeeded(int task_id) {
 void TimeTablingPerTask::ExplainProfileHeight(IntegerValue time) {
   for (int t = 0; t < num_tasks_; ++t) {
     // Tasks need to overlap the time point, i.e., start_max <= time < end_min.
-    if (start_max_[t] <= time && time < end_min_[t]) {
+    if (start_max_[t] <= time && time < end_min_[t] && IsPresent(t)) {
       reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
       reason_.push_back(IntegerLiteral::LowerOrEqual(start_vars_[t], time));
       reason_.push_back(IntegerLiteral::GreaterOrEqual(end_vars_[t], time + 1));
