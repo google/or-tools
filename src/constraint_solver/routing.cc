@@ -5363,6 +5363,114 @@ void RoutingDimension::InitializeTransits(
   }
 }
 
+namespace {
+
+// Break constraint ensures break intervals fit on the route of a vehicle.
+// It posts a disjunction constraint on break intervals + intervals
+// corresponding to route nodes. For each node, |break_intervals|+1 intervals
+// are created representing the fixed transit after the node; the transit
+// can therefore be interrupted at most |break_intervals|+1 times. The
+// constraint ensures that the sum of the duration of the "node" intervals
+// is at least the value of the fixed transit after the node.
+class BreakConstraint : public Constraint {
+ public:
+  BreakConstraint(const RoutingDimension* dimension, int vehicle,
+                  std::vector<IntervalVar*> break_intervals)
+      : Constraint(dimension->model()->solver()),
+        dimension_(dimension),
+        vehicle_(vehicle),
+        break_intervals_(std::move(break_intervals)),
+        status_(solver()->MakeBoolVar(StrCat("status", vehicle))) {}
+  void Post() override {
+    RoutingModel* const model = dimension_->model();
+    solver()->AddConstraint(
+        solver()->MakePathConnected(model->Nexts(), {model->Start(vehicle_)},
+                                    {model->End(vehicle_)}, {status_}));
+    status_->WhenBound(MakeDelayedConstraintDemon0(
+        solver(), this, &BreakConstraint::PathClosed, "PathClosed"));
+  }
+  void InitialPropagate() override {
+    if (status_->Bound()) {
+      PathClosed();
+    }
+  }
+
+ private:
+  void PathClosed() {
+    // TODO(user): Make sure that 0 duration intervals are pushed at the end
+    // of the list.
+    if (status_->Max() == 0) {
+      for (IntervalVar* const break_interval : break_intervals_) {
+        break_interval->SetPerformed(false);
+      }
+    } else {
+      RoutingModel* const model = dimension_->model();
+      int64 current = model->Start(vehicle_);
+      std::vector<IntervalVar*> vehicle_intervals = break_intervals_;
+      while (!model->IsEnd(current)) {
+        const int next = model->NextVar(current)->Min();
+        std::vector<IntervalVar*> transit_intervals;
+        IntervalVar* last = nullptr;
+        for (int i = 0; i <= break_intervals_.size(); ++i) {
+          IntervalVar* const interval = solver()->MakeIntervalVar(
+              dimension_->CumulVar(current)->Min(),
+              dimension_->CumulVar(next)->Max(), 0,
+              dimension_->FixedTransitVar(current)->Value(), 0, kint64max,
+              false, StrCat(current, "-", i));
+          transit_intervals.push_back(interval);
+          vehicle_intervals.push_back(interval);
+          // Order transit intervals to cut symmetries.
+          if (last != nullptr) {
+            solver()->AddConstraint(solver()->MakeIntervalVarRelation(
+                interval, Solver::STARTS_AFTER_END, last));
+            last = interval;
+          }
+        }
+        std::vector<IntVar*> durations(transit_intervals.size());
+        for (int i = 0; i < transit_intervals.size(); ++i) {
+          durations[i] = transit_intervals[i]->DurationExpr()->Var();
+          if (i == 0) {
+            solver()->AddConstraint(
+                solver()->MakeEquality(transit_intervals[i]->StartExpr(),
+                                       dimension_->CumulVar(current)));
+          } else {
+            solver()->AddConstraint(
+                solver()->MakeGreaterOrEqual(transit_intervals[i]->StartExpr(),
+                                             dimension_->CumulVar(current)));
+          }
+          if (i == break_intervals_.size()) {
+            solver()->AddConstraint(solver()->MakeEquality(
+                dimension_->CumulVar(next), transit_intervals[i]->EndExpr()));
+          } else {
+            solver()->AddConstraint(solver()->MakeGreaterOrEqual(
+                dimension_->CumulVar(next), transit_intervals[i]->EndExpr()));
+          }
+        }
+        solver()->AddConstraint(solver()->MakeGreaterOrEqual(
+            solver()->MakeSum(durations),
+            dimension_->FixedTransitVar(current)->Value()));
+        current = next;
+      }
+      solver()->AddConstraint(solver()->MakeStrictDisjunctiveConstraint(
+          vehicle_intervals, StrCat("Vehicle breaks ", vehicle_)));
+    }
+  }
+
+  const RoutingDimension* const dimension_;
+  const int vehicle_;
+  const std::vector<IntervalVar*> break_intervals_;
+  IntVar* const status_;
+};
+
+Constraint* MakeBreakConstraint(const RoutingDimension* dimension, int vehicle,
+                                std::vector<IntervalVar*> break_intervals) {
+  Solver* const solver = dimension->model()->solver();
+  return solver->RevAlloc(
+      new BreakConstraint(dimension, vehicle, std::move(break_intervals)));
+}
+
+}  // namespace
+
 void RoutingDimension::CloseModel(bool use_light_propagation) {
   Solver* const solver = model_->solver();
   const auto capacity_lambda = [this](int64 vehicle) {
@@ -5777,6 +5885,19 @@ void RoutingDimension::SetupGlobalSpanCost(
             ->MakeProd(solver->MakeDifference(max_end_cumul, min_start_cumul),
                        global_span_cost_coefficient_)
             ->Var());
+  }
+}
+
+void RoutingDimension::SetBreakIntervalsOfVehicle(
+    std::vector<IntervalVar*> breaks, int vehicle) {
+  if (!breaks.empty()) {
+    for (IntervalVar* const interval : breaks) {
+      model_->AddIntervalToAssignment(interval);
+      model_->AddVariableMinimizedByFinalizer(
+          interval->SafeStartExpr(0)->Var());
+    }
+    model_->solver()->AddConstraint(
+        MakeBreakConstraint(this, vehicle, std::move(breaks)));
   }
 }
 
