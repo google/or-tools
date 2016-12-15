@@ -147,8 +147,6 @@ ifeq ("$(SYSTEM)","win")
     CMAKE_PLATFORM = "Visual Studio $(VISUAL_STUDIO_MAJOR) $(VISUAL_STUDIO_YEAR) $(CMAKE_SUFFIX)"
   endif
 
-  # Third party specific
-  CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
   SCIP_MAKEFILE = \# SCIP not compiled
 
   # Java specific
