@@ -1686,6 +1686,7 @@ $(OBJ_DIR)/sat/cp_constraints.$O: \
 $(OBJ_DIR)/sat/cumulative.$O: \
     $(SRC_DIR)/sat/cumulative.cc \
     $(SRC_DIR)/sat/cumulative.h \
+    $(SRC_DIR)/sat/disjunctive.h \
     $(SRC_DIR)/sat/overload_checker.h \
     $(SRC_DIR)/sat/sat_solver.h \
     $(SRC_DIR)/sat/timetable.h
@@ -2207,6 +2208,10 @@ LP_LIB_OBJS = \
     $(OBJ_DIR)/linear_solver/sulum_interface.$O \
     $(OBJ_DIR)/linear_solver/linear_solver.pb.$O
 
+$(SRC_DIR)/linear_solver/glop_utils.h: \
+    $(SRC_DIR)/linear_solver/linear_solver.h \
+    $(SRC_DIR)/lp_data/lp_types.h
+
 $(SRC_DIR)/linear_solver/linear_solver_ext.h: \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(SRC_DIR)/base/commandlineflags.h \
@@ -2280,6 +2285,7 @@ $(OBJ_DIR)/linear_solver/cplex_interface.$O: \
 
 $(OBJ_DIR)/linear_solver/glop_interface.$O: \
     $(SRC_DIR)/linear_solver/glop_interface.cc \
+    $(SRC_DIR)/linear_solver/glop_utils.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
@@ -2296,18 +2302,7 @@ $(OBJ_DIR)/linear_solver/glop_interface.$O: \
 
 $(OBJ_DIR)/linear_solver/glop_utils.$O: \
     $(SRC_DIR)/linear_solver/glop_utils.cc \
-    $(SRC_DIR)/linear_solver/linear_solver.h \
-    $(SRC_DIR)/base/commandlineflags.h \
-    $(SRC_DIR)/base/file.h \
-    $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/integral_types.h \
-    $(SRC_DIR)/base/logging.h \
-    $(SRC_DIR)/base/stringprintf.h \
-    $(SRC_DIR)/util/time_limit.h \
-    $(SRC_DIR)/lp_data/lp_data.h \
-    $(SRC_DIR)/lp_data/lp_types.h \
-    $(SRC_DIR)/glop/lp_solver.h \
-    $(GEN_DIR)/glop/parameters.pb.h
+    $(SRC_DIR)/linear_solver/glop_utils.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/glop_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglop_utils.$O
 
 $(OBJ_DIR)/linear_solver/glpk_interface.$O: \
@@ -3159,3 +3154,4 @@ $(GEN_DIR)/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/constraint_solve
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+
