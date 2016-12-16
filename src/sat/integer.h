@@ -420,21 +420,17 @@ class IntegerTrail : public SatPropagator {
   IntegerLiteral LowerBoundAsLiteral(IntegerVariable i) const;
   IntegerLiteral UpperBoundAsLiteral(IntegerVariable i) const;
 
-  // Enqueue new information about a variable bound. Note that this can be used
-  // at the decision level zero to change the initial variable bounds, but only
-  // to make them more restricted. Calling this with a less restrictive bound
-  // than the current one will have no effect.
+  // Enqueue new information about a variable bound. Calling this with a less
+  // restrictive bound than the current one will have no effect.
   //
-  // The reason for this "assignment" can be a combination of:
+  // The reason for this "assignment" must be provided as:
   // - A set of Literal currently beeing all false.
-  // - A set of IntegerLiteral currently beeing all satisfied.
+  // - A set of IntegerLiteral currently beeing all true.
+  //
+  // IMPORTANT: Notice the inversed sign in the literal reason. This is a bit
+  // confusing but internally SAT use this direction for efficiency.
   //
   // TODO(user): provide an API to give the reason lazily.
-  //
-  // TODO(user): change the Literal signs to all true? it is often confusing to
-  // have all false as a reason. But this is kind of historical because of a
-  // clause beeing a reason for an assignment when all but one of its literals
-  // are false.
   //
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
@@ -444,6 +440,7 @@ class IntegerTrail : public SatPropagator {
       const std::vector<IntegerLiteral>& integer_reason);
 
   // Enqueues the given literal on the trail.
+  // See the comment of Enqueue() for the reason format.
   void EnqueueLiteral(Literal literal,
                       const std::vector<Literal>& literal_reason,
                       const std::vector<IntegerLiteral>& integer_reason);
@@ -496,6 +493,10 @@ class IntegerTrail : public SatPropagator {
   }
 
  private:
+  // Tests that all the literals in the given reason are assigned to false.
+  // This is used to DCHECK the given reasons to the Enqueue*() functions.
+  bool AllLiteralsAreFalse(const std::vector<Literal>& literals) const;
+
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;
 
@@ -503,8 +504,8 @@ class IntegerTrail : public SatPropagator {
   // the given i_lit and maintained by encoder_.
   bool EnqueueAssociatedLiteral(
       Literal literal, IntegerLiteral i_lit,
-      const std::vector<Literal>& literals_reason,
-      const std::vector<IntegerLiteral>& bounds_reason,
+      const std::vector<Literal>& literal_reason,
+      const std::vector<IntegerLiteral>& integer_reason,
       BooleanVariable* variable_with_same_reason);
 
   // Returns a lower bound on the given var that will always be valid.

@@ -30,8 +30,8 @@ namespace {
 // the characters in the std::string, not the entire std::string as a single delimiter.
 // ----------------------------------------------------------------------
 template <typename ITR>
-static inline void InternalSplitStringUsingChar(const std::string& full,
-                                                char c, ITR* result) {
+static inline void InternalSplitStringUsingChar(const std::string& full, char c,
+                                                ITR* result) {
   const char* p = full.data();
   const char* end = p + full.size();
   while (p != end) {
@@ -88,8 +88,8 @@ std::vector<std::string> Split(const std::string& full, const char* delim, int f
 }
 
 std::vector<::operations_research::StringPiece> Split(const std::string& full,
-                                                 const char* delim,
-                                                 int64 flags) {
+                                                      const char* delim,
+                                                      int64 flags) {
   CHECK_EQ(SkipEmpty(), flags);
   std::vector<::operations_research::StringPiece> out;
   InternalSplitStringUsing(full, delim, &out);

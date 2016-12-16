@@ -25,7 +25,8 @@
 //
 // SIMPLE EXAMPLE:
 //
-// Fill a std::vector<std::vector<int>> graph; representing your graph adjacency lists.
+// Fill a std::vector<std::vector<int>> graph; representing your graph adjacency
+// lists.
 // That is, graph[i] contains the nodes adjacent to node #i. The nodes must be
 // integers in [0, num_nodes). Then just do:
 //
@@ -76,9 +77,11 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
                                      SccOutput* components);
 
 // A simple custom output class that just counts the number of SCC. Not
-// allocating many vectors can save both space and speed if your graph is large.
+// allocating many std::vectors can save both space and speed if your graph is
+// large.
 //
-// Note: If this matters, you probably don't want to use std::vector<std::vector<int>> as
+// Note: If this matters, you probably don't want to use
+// std::vector<std::vector<int>> as
 // an input either. See StaticGraph in graph/graph.h
 // for an efficient graph data structure compatible with this algorithm.
 template<typename NodeIndex>
@@ -97,7 +100,7 @@ struct SccCounterOutput {
 // still an iterative DFS.
 //
 // TODO(user): Possible optimizations:
-// - Try to reserve the vectors which sizes are bounded by num_nodes.
+// - Try to reserve the std::vectors which sizes are bounded by num_nodes.
 // - Use an index rather than doing push_back(), pop_back() on them.
 // - For a client needing many Scc computations one after another, it could be
 //   better to wrap this in a class so we don't need to allocate the stacks at
