@@ -84,6 +84,10 @@ inline IntegerVariable NegationOf(IntegerVariable i) {
   return IntegerVariable(i.value() ^ 1);
 }
 
+// Returns the vector of the negated variables.
+std::vector<IntegerVariable> NegationOf(
+    const std::vector<IntegerVariable>& vars);
+
 class IntegerEncoder;
 class IntegerTrail;
 

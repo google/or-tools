@@ -19,6 +19,15 @@
 namespace operations_research {
 namespace sat {
 
+std::vector<IntegerVariable> NegationOf(
+    const std::vector<IntegerVariable>& vars) {
+  std::vector<IntegerVariable> result(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    result[i] = NegationOf(vars[i]);
+  }
+  return result;
+}
+
 void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var,
                                          std::vector<IntegerValue> values) {
   CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());

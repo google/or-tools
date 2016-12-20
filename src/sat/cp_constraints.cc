@@ -792,6 +792,56 @@ bool NonOverlappingRectanglesPropagator<S>::PushOneBox(int box, int other) {
 template class NonOverlappingRectanglesPropagator<IntegerVariable>;
 template class NonOverlappingRectanglesPropagator<IntegerValue>;
 
+OneOfVarMinPropagator::OneOfVarMinPropagator(
+    IntegerVariable target_var, const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& selectors, Trail* trail,
+    IntegerTrail* integer_trail)
+    : target_var_(target_var),
+      vars_(vars),
+      selectors_(selectors),
+      trail_(trail),
+      integer_trail_(integer_trail) {}
+
+bool OneOfVarMinPropagator::Propagate() {
+  // Compute the min of the lower-bound for the still possible variables.
+  IntegerValue target_min = kMaxIntegerValue;
+  for (int i = 0; i < vars_.size(); ++i) {
+    if (trail_->Assignment().LiteralIsTrue(selectors_[i])) return true;
+    if (trail_->Assignment().LiteralIsFalse(selectors_[i])) {
+      literal_reason_.push_back(selectors_[i]);
+      continue;
+    }
+    target_min = std::min(target_min, integer_trail_->LowerBound(vars_[i]));
+  }
+  if (target_min == kMaxIntegerValue) {
+    // All false, conflit.
+    *(trail_->MutableConflict()) = selectors_;
+    return false;
+  }
+
+  // Increase the min of the target var if we got a better bound.
+  if (target_min <= integer_trail_->LowerBound(target_var_)) return true;
+  literal_reason_.clear();
+  integer_reason_.clear();
+  for (int i = 0; i < vars_.size(); ++i) {
+    if (trail_->Assignment().LiteralIsFalse(selectors_[i])) {
+      literal_reason_.push_back(selectors_[i]);
+    } else {
+      integer_reason_.push_back(
+          IntegerLiteral::GreaterOrEqual(vars_[i], target_min));
+    }
+  }
+  return integer_trail_->Enqueue(
+      IntegerLiteral::GreaterOrEqual(target_var_, target_min), literal_reason_,
+      integer_reason_);
+}
+
+void OneOfVarMinPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  for (const Literal l : selectors_) watcher->WatchLiteral(l.Negated(), id);
+  for (const IntegerVariable v : vars_) watcher->WatchLowerBound(v, id);
+}
+
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
     const std::vector<std::vector<LiteralIndex>>& square_matrix) {
   return [=](Model* model) {

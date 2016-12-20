@@ -81,6 +81,7 @@ class RcpspParser {
   int tardiness_cost() const { return tardiness_cost_; }
   int mpm_time() const { return mpm_time_; }
   bool is_rcpsp_max() const { return is_rcpsp_max_; }
+  bool is_patterson() const { return is_patterson_; }
 
   bool LoadFile(const std::string& file_name);
 
@@ -98,6 +99,7 @@ class RcpspParser {
   };
 
   void ProcessRcpspLine(const std::string& line);
+  void ProcessPattersonLine(const std::string& line);
   void ProcessRcpspMaxLine(const std::string& line);
   void ReportError(const std::string& line);
 
@@ -115,7 +117,9 @@ class RcpspParser {
   int declared_tasks_;
   int current_task_;
   bool is_rcpsp_max_;
+  bool is_patterson_;
   std::vector<std::vector<int>> temp_delays_;
+  int unreads_;
 };
 
 }  // namespace operations_research

@@ -172,6 +172,7 @@ class PrimalEdgeNorms {
   Stats stats_;
 
   // Booleans to control what happens on the next ChooseEnteringColumn() call.
+  bool must_refactorize_basis_;
   bool recompute_edge_squared_norms_;
   bool reset_devex_weights_;
 

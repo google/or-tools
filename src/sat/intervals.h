@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_INTERVALS_H_
 #define OR_TOOLS_SAT_INTERVALS_H_
 
+#include "sat/cp_constraints.h"
 #include "sat/integer.h"
 #include "sat/integer_expr.h"
 #include "sat/model.h"
@@ -86,6 +87,13 @@ class IntervalsRepository {
     const IntegerVariable size_var = size_vars_[i];
     if (size_var == kNoIntegerVariable) return fixed_sizes_[i];
     return integer_trail_->LowerBound(size_var);
+  }
+
+  // Return the maximum size of the given IntervalVariable.
+  IntegerValue MaxSize(IntervalVariable i) const {
+    const IntegerVariable size_var = size_vars_[i];
+    if (size_var == kNoIntegerVariable) return fixed_sizes_[i];
+    return integer_trail_->UpperBound(size_var);
   }
 
  private:
@@ -201,6 +209,23 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
       model->Add(IsOneOf(intervals->SizeVar(master), presences, durations));
     }
     model->Add(BooleanLinearConstraint(1, 1, &sat_ct));
+
+    // Propagate from the candidate bounds to the master interval ones.
+    {
+      std::vector<IntegerVariable> starts;
+      for (const IntervalVariable member : members) {
+        starts.push_back(intervals->StartVar(member));
+      }
+      model->Add(
+          PartialIsOneOfVar(intervals->StartVar(master), starts, presences));
+    }
+    {
+      std::vector<IntegerVariable> ends;
+      for (const IntervalVariable member : members) {
+        ends.push_back(intervals->EndVar(member));
+      }
+      model->Add(PartialIsOneOfVar(intervals->EndVar(master), ends, presences));
+    }
   };
 }
 

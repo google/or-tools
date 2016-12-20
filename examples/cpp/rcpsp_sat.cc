@@ -54,7 +54,7 @@ void LoadAndSolve(const std::string& file_name) {
   const int num_tasks = parser.tasks().size();
   const int num_resources = parser.resources().size();
   const int horizon =
-      parser.is_rcpsp_max() ? ComputeNaiveHorizon(parser) : parser.horizon();
+      parser.horizon() == -1 ? ComputeNaiveHorizon(parser) : parser.horizon();
 
   std::vector<std::vector<IntervalVariable>> intervals_per_resources(
       num_resources);

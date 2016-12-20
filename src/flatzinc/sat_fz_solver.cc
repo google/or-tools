@@ -813,13 +813,21 @@ void ExtractArrayVarIntElement(const fz::Constraint& ct, SatModel* m) {
     FZVLOG << "array_var_int_element could have been slightly presolved."
            << FZENDL;
   }
+
+  std::vector<Literal> selectors;
+  std::vector<IntegerVariable> possible_vars;
   for (const auto literal_value : encoding) {
     const int i = literal_value.value.value() - 1;  // minizinc use 1-index.
     CHECK_GE(i, 0);
     CHECK_LT(i, vars.size());
+    possible_vars.push_back(vars[i]);
+    selectors.push_back(literal_value.literal);
     ImpliesEquality(/*reverse_implication=*/false, literal_value.literal,
                     vars[i], t, m);
   }
+
+  // TODO(user): make a IsOneOfVar() support the full propagation.
+  m->model.Add(PartialIsOneOfVar(t, possible_vars, selectors));
 }
 
 void ExtractRegular(const fz::Constraint& ct, SatModel* m) {

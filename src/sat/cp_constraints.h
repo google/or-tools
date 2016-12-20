@@ -270,6 +270,33 @@ class NonOverlappingRectanglesPropagator : public CpPropagator {
   DISALLOW_COPY_AND_ASSIGN(NonOverlappingRectanglesPropagator);
 };
 
+// In an "int element" constraint, a target variable is equal to one of a given
+// set of candidate variables, each selected by a given literal. This propagator
+// is reponsible for updating the min of the target variable using the min of
+// the candidate variables that can still be choosen.
+class OneOfVarMinPropagator : public PropagatorInterface {
+ public:
+  OneOfVarMinPropagator(IntegerVariable target_var,
+                        const std::vector<IntegerVariable>& vars,
+                        const std::vector<Literal>& selectors, Trail* trail,
+                        IntegerTrail* integer_trail);
+
+  bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  const IntegerVariable target_var_;
+  const std::vector<IntegerVariable> vars_;
+  const std::vector<Literal> selectors_;
+  Trail* trail_;
+  IntegerTrail* integer_trail_;
+
+  std::vector<Literal> literal_reason_;
+  std::vector<IntegerLiteral> integer_reason_;
+
+  DISALLOW_COPY_AND_ASSIGN(OneOfVarMinPropagator);
+};
+
 // ============================================================================
 // Model based functions.
 // ============================================================================
@@ -412,6 +439,38 @@ inline std::function<void(Model*)> SubcircuitConstraint(
         graph, /*allow_subcircuit=*/true, model->GetOrCreate<Trail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
+  };
+}
+
+// The target variable is equal to exactly one of the candidate variable. The
+// equality is controlled by the given "selector" literals.
+//
+// Note(user): This only propagate from the min/max of still possible candidates
+// to the min/max of the target variable. The full constraint also requires
+// to deal with the case when one of the literal is true.
+//
+// Note(user): If there is just one or two candiates, this doesn't add anything.
+inline std::function<void(Model*)> PartialIsOneOfVar(
+    IntegerVariable target_var, const std::vector<IntegerVariable>& vars,
+    const std::vector<Literal>& selectors) {
+  CHECK_EQ(vars.size(), selectors.size());
+  return [=](Model* model) {
+    if (vars.size() > 2) {
+      // Propagate the min.
+      OneOfVarMinPropagator* constraint = new OneOfVarMinPropagator(
+          target_var, vars, selectors, model->GetOrCreate<Trail>(),
+          model->GetOrCreate<IntegerTrail>());
+      constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+      model->TakeOwnership(constraint);
+    }
+    if (vars.size() > 2) {
+      // Propagate the max.
+      OneOfVarMinPropagator* constraint = new OneOfVarMinPropagator(
+          NegationOf(target_var), NegationOf(vars), selectors,
+          model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>());
+      constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
+      model->TakeOwnership(constraint);
+    }
   };
 }
 

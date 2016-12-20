@@ -24,6 +24,10 @@ namespace operations_research {
 namespace glop {
 
 namespace {
+// Returns an interval as an human readable std::string for debugging.
+std::string IntervalString(Fractional lb, Fractional ub) {
+  return StringPrintf("[%g, %g]", lb, ub);
+}
 
 #if defined(_MSC_VER)
 double trunc(double d) { return d > 0 ? floor(d) : ceil(d); }

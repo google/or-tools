@@ -33,7 +33,9 @@ RcpspParser::RcpspParser()
       load_status_(NOT_STARTED),
       declared_tasks_(-1),
       current_task_(-1),
-      is_rcpsp_max_(false) {}
+      is_rcpsp_max_(false),
+      is_patterson_(false),
+      unreads_(0) {}
 
 bool RcpspParser::LoadFile(const std::string& file_name) {
   if (load_status_ != NOT_STARTED) {
@@ -42,11 +44,14 @@ bool RcpspParser::LoadFile(const std::string& file_name) {
 
   is_rcpsp_max_ = strings::EndsWith(file_name, ".sch") ||
                   strings::EndsWith(file_name, ".SCH");
+  is_patterson_ = strings::EndsWith(file_name, ".rcp");
   load_status_ = HEADER_SECTION;
 
   for (const std::string& line : FileLines(file_name)) {
     if (is_rcpsp_max_) {
       ProcessRcpspMaxLine(line);
+    } else if (is_patterson_) {
+      ProcessPattersonLine(line);
     } else {
       ProcessRcpspLine(line);
     }
@@ -69,7 +74,9 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
   if (strings::StartsWith(line, "---")) return;
 
   const std::vector<std::string> words =
-      strings::Split(line, AnyOf(" :\t"), strings::SkipEmpty());
+      strings::Split(line, AnyOf(" :\t\r"), strings::SkipEmpty());
+
+  if (words.empty()) return;
 
   switch (load_status_) {
     case NOT_STARTED: {
@@ -82,6 +89,10 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
       } else if (words[0] == "initial") {
         seed_ = atoi64(words[4]);
         load_status_ = PROJECT_SECTION;
+      } else if (words[0] == "jobs") {
+        // Workaround for the mmlib files which has less headers.
+        declared_tasks_ = atoi32(words[4]) - 2;
+        load_status_ = PROJECT_SECTION;
       } else {
         ReportError(line);
       }
@@ -91,7 +102,8 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
       if (words[0] == "projects") {
         // Nothing to do.
       } else if (words[0] == "jobs") {
-        declared_tasks_ = atoi32(words[4]);
+        // This declaration counts the 2 sentinels.
+        declared_tasks_ = atoi32(words[4]) - 2;
       } else if (words[0] == "horizon") {
         horizon_ = atoi32(words[1]);
       } else if (words[0] == "RESOURCES") {
@@ -108,6 +120,9 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
         // Nothing to do.
       } else if (words.size() == 2 && words[0] == "PROJECT") {
         load_status_ = INFO_SECTION;
+      } else if (words.size() == 2 && words[0] == "PRECEDENCE") {
+        // mmlib files have no info section.
+        load_status_ = PRECEDENCE_SECTION;
       } else {
         ReportError(line);
       }
@@ -179,7 +194,8 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
         for (int i = 0; i < resources_.size(); ++i) {
           recipe.demands_per_resource.push_back(atoi32(words[2 + i]));
         }
-      } else if (words[0] == "RESOURCEAVAILABILITIES") {
+      } else if (words[0] == "RESOURCEAVAILABILITIES" ||
+                 (words[0] == "RESOURCE" && words[1] == "AVAILABILITIES")) {
         load_status_ = RESOURCE_SECTION;
       } else {
         ReportError(line);
@@ -345,6 +361,104 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
           resources_[i].capacity = atoi32(words[i]);
         }
         load_status_ = PARSING_FINISHED;
+      } else {
+        ReportError(line);
+      }
+      break;
+    }
+    case PARSING_FINISHED: {
+      break;
+    }
+    case ERROR_FOUND: {
+      break;
+    }
+  }
+}
+
+void RcpspParser::ProcessPattersonLine(const std::string& line) {
+  const std::vector<std::string> words =
+      strings::Split(line, AnyOf(" :\t[]\r"), strings::SkipEmpty());
+
+  if (words.empty()) return;
+
+  switch (load_status_) {
+    case NOT_STARTED: {
+      ReportError(line);
+      break;
+    }
+    case HEADER_SECTION: {
+      if (words.size() != 2) {
+        ReportError(line);
+        break;
+      }
+      declared_tasks_ = atoi32(words[0]) - 2;  // Remove the 2 sentinels.
+      tasks_.resize(declared_tasks_ + 2);      // 2 sentinels.
+
+      // Creates resources.
+      const int num_renewable_resources = atoi32(words[1]);
+      resources_.resize(num_renewable_resources, {-1, true});
+
+      // Set up for the next section.
+      load_status_ = RESOURCE_SECTION;
+      break;
+    }
+    case PROJECT_SECTION: {
+      LOG(FATAL) << "Should not be here";
+      break;
+    }
+    case INFO_SECTION: {
+      LOG(FATAL) << "Should not be here";
+      break;
+    }
+    case PRECEDENCE_SECTION: {
+      if (unreads_ > 0) {
+        for (int i = 0; i < words.size(); ++i) {
+          tasks_[current_task_].successors.push_back(atoi32(words[i]) - 1);
+          unreads_--;
+          CHECK_GE(unreads_, 0);
+        }
+      } else {
+        if (words.size() < 2 + resources_.size()) {
+          ReportError(line);
+          break;
+        }
+
+        RcpspParser::Task& task = tasks_[current_task_];
+        task.recipes.resize(1);
+
+        const int num_resources = resources_.size();
+
+        RcpspParser::Recipe& recipe = task.recipes.front();
+        recipe.duration = atoi32(words[0]);
+        for (int i = 1; i <= num_resources; ++i) {
+          recipe.demands_per_resource.push_back(atoi32(words[i]));
+        }
+
+        unreads_ = atoi32(words[1 + num_resources]);
+        for (int i = 2 + num_resources; i < words.size(); ++i) {
+          // Successors are 1 based in the data file.
+          task.successors.push_back(atoi32(words[i]) - 1);
+          unreads_--;
+          CHECK_GE(unreads_, 0);
+        }
+      }
+
+      if (unreads_ == 0 && ++current_task_ == declared_tasks_ + 2) {
+        load_status_ = PARSING_FINISHED;
+      }
+      break;
+    }
+    case REQUEST_SECTION: {
+      LOG(FATAL) << "Should not be here";
+      break;
+    }
+    case RESOURCE_SECTION: {
+      if (words.size() == resources_.size()) {
+        for (int i = 0; i < words.size(); ++i) {
+          resources_[i].capacity = atoi32(words[i]);
+        }
+        load_status_ = PRECEDENCE_SECTION;
+        current_task_ = 0;
       } else {
         ReportError(line);
       }
