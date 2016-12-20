@@ -434,8 +434,8 @@ makefile_third_party: Makefile.local
 # Install python modules
 install_python_modules: install_protobuf
 	copy dependencies\install\bin\protoc.exe dependencies\sources\protobuf-$(PROTOBUF_TAG)\src
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py build
-	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PYTHON_PATH)\\python.exe setup.py install --user
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PATH_TO_PYTHON)\\python.exe setup.py build
+	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)/python && $(WINDOWS_PATH_TO_PYTHON)\\python.exe setup.py install --user
 
 Makefile.local:
 	@echo Generating Makefile.local
@@ -455,4 +455,4 @@ Makefile.local:
 	@echo # Please define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo WINDOWS_PYTHON_VERSION = \# Please define the python version (27 by default)>> Makefile.local
-	@echo WINDOWS_PYTHON_PATH = \# Please define WINDOWS_PYTHON_PATH (c:\\python27 by default)>> Makefile.local
+	@echo WINDOWS_PATH_TO_PYTHON = \# Please define WINDOWS_PATH_TO_PYTHON (c:\\python27 by default)>> Makefile.local
