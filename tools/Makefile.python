@@ -2,12 +2,13 @@
 
 # Define WINDOWS_PATH_TO_PYTHON (c:\\python27-64 by default)
 WINDOWS_PATH_TO_PYTHON = c:\\python27-64
+
 # Set this variable to use it as PYTHONPATH
 WINDOWS_PYTHONPATH = 
 
 ###############################Unix specific part################################
 
-# Set this variable to use a different python version. Example : UNIX_PYTHON_VER = 3.5 or UNIX_PYTHON_VER = 2
+# Set this variable to use a different python version. Example : UNIX_PYTHON_VER = 3.5 or UNIX_PYTHON_VER = 2.7
 UNIX_PYTHON_VER = 
 
 # Set this variable to use it as PYTHONPATH
