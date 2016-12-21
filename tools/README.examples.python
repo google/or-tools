@@ -21,16 +21,18 @@ or-tools/
     graph/             <- Graph algorithms.
     linear_solver/     <- Linear solver wrapper.
 
+To install the package : 
+  1/Open the Makefile.
+  
+  2/In the following lines of the Makefile, add the version of Python you are using 
+  and set the UNIX_PYTHONPATH variable to the value of PYTHONPATH.
 
-To install the package, please run:
-  make install
-or  
-  python setup.py install --user 
+  3/Save the file.
+  
+  4/Run these command :
+    make install
+  This will check the ortools module dependecies. You still can do it by running: 
+    make check
 
-This will check the ortools module dependecies. You still can do it by running: 
-  make check
-or
-  python check_python_deps.py
-
-Once this is done, you can run the samples in the examples/ directory.
-As in python examples/hidato_puzzle.py
+  5/Once this is done, you can run the samples in the examples/ directory :
+    make rpy EX=examples/python/hidato_table.py
