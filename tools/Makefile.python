@@ -1,7 +1,7 @@
 ##############################Windows specific part##############################
 
-# Define WINDOWS_PATH_TO_PYTHON (c:\\python27-64 by default)
-WINDOWS_PATH_TO_PYTHON = c:\\python27-64
+# set this variable to the full path to your Python installation
+WINDOWS_PATH_TO_PYTHON =
 
 # Set this variable to use it as PYTHONPATH
 WINDOWS_PYTHONPATH = 
@@ -33,11 +33,18 @@ endif
 
 ifeq ($(SYSTEM),win)
 PYTHON_EXECUTABLE = $(WINDOWS_PYTHON_PATH)$Spython
+#Set PYTHONPATH only when WINDOWS_PYTHONPATH is used. 
+ifneq ($(WINDOWS_PYTHONPATH),)
 SET_PYTHONPATH = @set PYTHONPATH=$(WINDOWS_PYTHONPATH) &&
-else
+endif
+else #UNIX
 PYTHON_EXECUTABLE = python$(UNIX_PYTHON_VER)
+#Set PYTHONPATH only when UNIX_PYTHONPATH is used. 
+ifneq ($(UNIX_PYTHONPATH),)
 SET_PYTHONPATH = @PYTHONPATH=$(UNIX_PYTHONPATH)
 endif
+
+endif #ifeq ($(SYSTEM),win)
 
 install: 
 	$(PYTHON_EXECUTABLE) setup.py install --user
