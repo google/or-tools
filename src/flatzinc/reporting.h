@@ -137,9 +137,11 @@ class MonoThreadReporting : public SearchReportingInterface {
   bool ShouldFinish() const override;
   void OnSearchEnd(int thread_id, bool interrupted) override;
   int64 BestSolution() const override;
+#if !defined(SWIG)
   OptimizeVar* CreateObjective(Solver* s, bool maximize, IntVar* var,
                                int64 step, int thread_id) const override;
   SearchLimit* CreateLimit(Solver* s, int thread_id) const override;
+#endif
   bool Interrupted() const override;
 
  private:
@@ -162,9 +164,11 @@ class MultiThreadReporting : public SearchReportingInterface {
   bool ShouldFinish() const override;
   void OnSearchEnd(int thread_id, bool interrupted) override;
   int64 BestSolution() const override;
+#if !defined(SWIG)
   OptimizeVar* CreateObjective(Solver* s, bool maximize, IntVar* var,
                                int64 step, int w) const override;
   SearchLimit* CreateLimit(Solver* s, int thread_id) const override;
+#endif 
   bool Interrupted() const override;
 
  private:
@@ -172,12 +176,12 @@ class MultiThreadReporting : public SearchReportingInterface {
 
   const bool verbose_;
   mutable Mutex mutex_;
-  Type type_ GUARDED_BY(mutex_);
-  std::string last_solution_ GUARDED_BY(mutex_);
-  int last_thread_ GUARDED_BY(mutex_);
-  int64 best_objective_ GUARDED_BY(mutex_);
-  bool should_finish_ GUARDED_BY(mutex_);
-  bool interrupted_ GUARDED_BY(mutex_);
+  Type type_ ;//GUARDED_BY(mutex_);
+  std::string last_solution_ ;//GUARDED_BY(mutex_);
+  int last_thread_ ;//GUARDED_BY(mutex_);
+  int64 best_objective_ ;//GUARDED_BY(mutex_);
+  bool should_finish_ ;//GUARDED_BY(mutex_);
+  bool interrupted_ ;//GUARDED_BY(mutex_);
 };
 }  // namespace fz
 }  // namespace operations_research

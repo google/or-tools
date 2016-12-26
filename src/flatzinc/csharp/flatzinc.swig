@@ -20,52 +20,40 @@
 #include "flatzinc/model.h"
 #include "flatzinc/parser.h"
 #include "flatzinc/presolve.h"
-#include "flatzinc/search.h"
 #include "flatzinc/solver.h"
+#include "flatzinc/reporting.h"
 
 DECLARE_bool(fz_logging);
 %}
 
 %include "std_vector.i"
-%template(FzInt64Vector) std::vector<int64>;
-%template(FzAnnotationVector) std::vector<operations_research::FzAnnotation>;
-%template(FzArgumentVector) std::vector<operations_research::FzArgument>;
-%template(FzConstraintVector) std::vector<operations_research::FzConstraint*>;
-%template(FzDomainVector) std::vector<operations_research::FzDomain>;
-%template(FzOnSolutionOutputVector) std::vector<operations_research::FzOnSolutionOutput>;
-%template(FzIntegerVariableVector) std::vector<operations_research::FzIntegerVariable*>;
+%template(Int64Vector) std::vector<int64>;
+%template(AnnotationVector) std::vector<operations_research::fz::Annotation>;
+%template(ArgumentVector) std::vector<operations_research::fz::Argument>;
+%template(ConstraintVector) std::vector<operations_research::fz::Constraint*>;
+%template(DomainVector) std::vector<operations_research::fz::Domain>;
+%template(SolutionOutputSpecsVector) std::vector<operations_research::fz::SolutionOutputSpecs>;
+%template(IntegerVariableVector) std::vector<operations_research::fz::IntegerVariable*>;
 
-%extend operations_research::FzModel {
+%extend operations_research::fz::Model {
   bool LoadFromFile(const std::string& filename) {
-    return operations_research::ParseFlatzincFile(filename, $self);
+    return operations_research::fz::ParseFlatzincFile(filename, $self);
   }
   void PresolveForCp() {
-    operations_research::FzPresolver presolve;
+    operations_research::fz::Presolver presolve;
     presolve.CleanUpModelForTheCpSolver($self, true);
     presolve.Run($self);
   }
   void PrintStatistics() {
     const bool log = FLAGS_fz_logging;
     FLAGS_fz_logging = true;
-    operations_research::FzModelStatistics stats(*$self);
+    operations_research::fz::ModelStatistics stats(*$self);
     stats.PrintStatistics();
     FLAGS_fz_logging = log;
   }
 }
 
-%extend operations_research::FzSolver {
-  void SequentialSolve(const operations_research::FzSolverParameters& params) {
-    std::unique_ptr<operations_research::FzParallelSupportInterface>
-        parallel_support(operations_research::MakeSequentialSupport(
-            params.all_solutions, params.num_solutions));
-    if ($self->Extract()) {
-      $self->Solve(params, parallel_support.get());
-    }
-  }
-}
-
 %rename (ToString) *::DebugString;
-
 %include "flatzinc/model.h"
-%include "flatzinc/search.h"
+%include "flatzinc/reporting.h"
 %include "flatzinc/solver.h"

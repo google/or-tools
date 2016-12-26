@@ -21,7 +21,7 @@ public class CsFz
    */
   private static void Solve(String filename)
   {
-    FzModel model = new FzModel(filename);
+    Model model = new Model(filename);
     model.LoadFromFile(filename);
     // Uncomment to see the model.
     // Console.WriteLine(model.ToString());
@@ -30,7 +30,7 @@ public class CsFz
     // Display basic statistics on the model.
     model.PrintStatistics();
 
-    FzSolverParameters parameters = new FzSolverParameters();
+    FlatzincParameters parameters = new FlatzincParameters();
     // Initialize to default values as in the C++ runner.
     parameters.all_solutions = false;
     parameters.free_search = false;
@@ -43,25 +43,26 @@ public class CsFz
     parameters.restart_log_size = -1;
     parameters.threads = 0;
     parameters.time_limit_in_ms = 10000;
-    parameters.use_log = true;
+    parameters.logging = true;
     parameters.verbose_impact = false;
-    parameters.worker_id = -1;
-    parameters.search_type = FzSolverParameters.DEFAULT;
+    parameters.thread_id = -1;
+    parameters.search_type = FlatzincParameters.DEFAULT;
     // Mandatory to retrieve solutions.
     parameters.store_all_solutions = true;
 
-    FzSolver solver = new FzSolver(model);
-    solver.SequentialSolve(parameters);
+    Solver solver = new Solver(model);
+    SearchReportingInterface reporting = new MonoThreadReporting(true, 10);
+    solver.Solve(parameters, reporting);
 
     int last = solver.NumStoredSolutions() - 1;
     if (last >= 0) {
-      FzOnSolutionOutputVector output_vector = model.output();
-      foreach (FzOnSolutionOutput output in output_vector) {
+      SolutionOutputSpecsVector output_vector = model.output();
+      foreach (SolutionOutputSpecs output in output_vector) {
         if (output.variable != null) {
-          FzIntegerVariable var = output.variable;
+          IntegerVariable var = output.variable;
           Console.WriteLine(var.name +  " = " + solver.StoredValue(last, var));
         }
-        foreach (FzIntegerVariable var in output.flat_variables) {
+        foreach (IntegerVariable var in output.flat_variables) {
           Console.WriteLine(var.name +  " = " + solver.StoredValue(last, var));
         }
       }
