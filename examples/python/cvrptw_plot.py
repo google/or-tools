@@ -617,15 +617,14 @@ def main():
     start_fn = vehicles.return_starting_callback(customers,
                                                  sameStartFinish=False)
 
-
     # Set model parameters
     model_parameters = pywrapcp.RoutingModel.DefaultModelParameters()
 
-    # The solver parameters can be accessed from the model parameters. For example :
-#   model_parameters.solver_parameters.CopyFrom(
-#       pywrapcp.Solver.DefaultSolverParameters())
-#    model_parameters.solver_parameters.trace_propagation = True
-
+    # The solver parameters can be accessed from the model parameters.
+    # For example :
+    #   model_parameters.solver_parameters.CopyFrom(
+    #       pywrapcp.Solver.DefaultSolverParameters())
+    #   model_parameters.solver_parameters.trace_propagation = True
 
     # Make the routing model instance.
     routing = pywrapcp.RoutingModel(customers.number,  # int number
@@ -641,7 +640,7 @@ def main():
     # Disabling Large Neighborhood Search, (this is the default behaviour)
     parameters.local_search_operators.use_path_lns = False
     parameters.local_search_operators.use_inactive_lns = False
-    # Routing: forbids use of TSPOpt neighborhood, 
+    # Routing: forbids use of TSPOpt neighborhood,
     parameters.local_search_operators.use_tsp_opt = False
 
     parameters.time_limit_ms = 10 * 1000  # 10 seconds
