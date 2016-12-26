@@ -153,12 +153,41 @@ EncodingNode* LazyMergeAllNodeWithPQ(const std::vector<EncodingNode*>& nodes,
                                      std::deque<EncodingNode>* repository);
 
 // Returns a vector with one new EncodingNode by variable in the given
-// objective.
-// All the variables must have the same cost (modulo the sign), this is CHECKed.
-// Also returns in offset the number of negative variables.
+// objective. Sets the offset to the negated sum of the negative coefficient,
+// because in this case we negate the literals to have only positive
+// coefficients.
+std::vector<EncodingNode*> CreateInitialEncodingNodes(
+    const std::vector<Literal>& literals,
+    const std::vector<Coefficient>& coeffs, Coefficient* offset,
+    std::deque<EncodingNode>* repository);
 std::vector<EncodingNode*> CreateInitialEncodingNodes(
     const LinearObjective& objective_proto, Coefficient* offset,
     std::deque<EncodingNode>* repository);
+
+// Reduces the nodes using the now fixed literals, update the lower-bound, and
+// returns the set of assumptions for the next round of the core-based
+// algorithm. Returns an empty set of assumptions if everything is fixed.
+std::vector<Literal> ReduceNodesAndExtractAssumptions(
+    Coefficient upper_bound, Coefficient stratified_lower_bound,
+    Coefficient* lower_bound, std::vector<EncodingNode*>* nodes,
+    SatSolver* solver);
+
+// Returns the minimum weight of the nodes in the core. Note that the literal in
+// the core must appear in the same order as the one in nodes.
+Coefficient ComputeCoreMinWeight(const std::vector<EncodingNode*>& nodes,
+                                 const std::vector<Literal>& core);
+
+// Returns the maximum node weight under the given upper_bound. Returns zero if
+// no such weight exist (note that a node weight is strictly positive, so this
+// make sense).
+Coefficient MaxNodeWeightSmallerThan(const std::vector<EncodingNode*>& nodes,
+                                     Coefficient upper_bound);
+
+// Updates the encoding using the given core. The literals in the core must
+// match the order in nodes.
+void ProcessCore(const std::vector<Literal>& core, Coefficient min_weight,
+                 std::deque<EncodingNode>* repository,
+                 std::vector<EncodingNode*>* nodes, SatSolver* solver);
 
 }  // namespace sat
 }  // namespace operations_research

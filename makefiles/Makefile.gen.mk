@@ -289,6 +289,7 @@ UTIL_LIB_OBJS = \
     $(OBJ_DIR)/util/proto_tools.$O \
     $(OBJ_DIR)/util/range_query_function.$O \
     $(OBJ_DIR)/util/rational_approximation.$O \
+    $(OBJ_DIR)/util/rcpsp_parser.$O \
     $(OBJ_DIR)/util/sorted_interval_list.$O \
     $(OBJ_DIR)/util/stats.$O \
     $(OBJ_DIR)/util/time_limit.$O \
@@ -350,7 +351,11 @@ $(SRC_DIR)/util/range_query_function.h: \
 $(SRC_DIR)/util/rational_approximation.h: \
     $(SRC_DIR)/base/integral_types.h
 
+$(SRC_DIR)/util/rcpsp_parser.h: \
+    $(SRC_DIR)/base/integral_types.h
+
 $(SRC_DIR)/util/rev.h: \
+    $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/map_util.h
 
@@ -459,6 +464,16 @@ $(OBJ_DIR)/util/rational_approximation.$O: \
     $(SRC_DIR)/util/rational_approximation.h \
     $(SRC_DIR)/base/logging.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/rational_approximation.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srational_approximation.$O
+
+$(OBJ_DIR)/util/rcpsp_parser.$O: \
+    $(SRC_DIR)/util/rcpsp_parser.cc \
+    $(SRC_DIR)/util/filelineiter.h \
+    $(SRC_DIR)/util/rcpsp_parser.h \
+    $(SRC_DIR)/base/numbers.h \
+    $(SRC_DIR)/base/split.h \
+    $(SRC_DIR)/base/stringpiece_utils.h \
+    $(SRC_DIR)/base/strtoint.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/rcpsp_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srcpsp_parser.$O
 
 $(OBJ_DIR)/util/sorted_interval_list.$O: \
     $(SRC_DIR)/util/sorted_interval_list.cc \
@@ -1445,6 +1460,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/boolean_problem.$O \
     $(OBJ_DIR)/sat/clause.$O \
     $(OBJ_DIR)/sat/cp_constraints.$O \
+    $(OBJ_DIR)/sat/cumulative.$O \
     $(OBJ_DIR)/sat/disjunctive.$O \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
@@ -1461,7 +1477,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/simplification.$O \
     $(OBJ_DIR)/sat/symmetry.$O \
     $(OBJ_DIR)/sat/table.$O \
-    $(OBJ_DIR)/sat/timetabling.$O \
+    $(OBJ_DIR)/sat/timetable.$O \
     $(OBJ_DIR)/sat/util.$O \
     $(OBJ_DIR)/sat/boolean_problem.pb.$O \
     $(OBJ_DIR)/sat/sat_parameters.pb.$O
@@ -1491,6 +1507,12 @@ $(SRC_DIR)/sat/cp_constraints.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h \
     $(SRC_DIR)/util/sorted_interval_list.h
+
+$(SRC_DIR)/sat/cumulative.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h
 
 $(SRC_DIR)/sat/disjunctive.h: \
     $(SRC_DIR)/sat/integer.h \
@@ -1526,7 +1548,8 @@ $(SRC_DIR)/sat/integer.h: \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/iterators.h \
     $(SRC_DIR)/util/rev.h \
-    $(SRC_DIR)/util/saturated_arithmetic.h
+    $(SRC_DIR)/util/saturated_arithmetic.h \
+    $(SRC_DIR)/util/sorted_interval_list.h
 
 $(SRC_DIR)/sat/intervals.h: \
     $(SRC_DIR)/sat/integer_expr.h \
@@ -1561,8 +1584,7 @@ $(SRC_DIR)/sat/overload_checker.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
-    $(SRC_DIR)/sat/sat_base.h \
-    $(SRC_DIR)/base/macros.h
+    $(SRC_DIR)/sat/sat_base.h
 
 $(SRC_DIR)/sat/pb_constraint.h: \
     $(SRC_DIR)/sat/sat_base.h \
@@ -1620,7 +1642,7 @@ $(SRC_DIR)/sat/table.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h
 
-$(SRC_DIR)/sat/timetabling.h: \
+$(SRC_DIR)/sat/timetable.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/intervals.h \
     $(SRC_DIR)/sat/model.h \
@@ -1657,13 +1679,24 @@ $(OBJ_DIR)/sat/clause.$O: \
 $(OBJ_DIR)/sat/cp_constraints.$O: \
     $(SRC_DIR)/sat/cp_constraints.cc \
     $(SRC_DIR)/sat/cp_constraints.h \
-    $(SRC_DIR)/base/map_util.h
+    $(SRC_DIR)/base/map_util.h \
+    $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/cp_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_constraints.$O
+
+$(OBJ_DIR)/sat/cumulative.$O: \
+    $(SRC_DIR)/sat/cumulative.cc \
+    $(SRC_DIR)/sat/cumulative.h \
+    $(SRC_DIR)/sat/disjunctive.h \
+    $(SRC_DIR)/sat/overload_checker.h \
+    $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/sat/timetable.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/cumulative.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scumulative.$O
 
 $(OBJ_DIR)/sat/disjunctive.$O: \
     $(SRC_DIR)/sat/disjunctive.cc \
     $(SRC_DIR)/sat/disjunctive.h \
-    $(SRC_DIR)/sat/sat_solver.h
+    $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/disjunctive.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdisjunctive.$O
 
 $(OBJ_DIR)/sat/drat.$O: \
@@ -1718,7 +1751,8 @@ $(OBJ_DIR)/sat/optimization.$O: \
 $(OBJ_DIR)/sat/overload_checker.$O: \
     $(SRC_DIR)/sat/overload_checker.cc \
     $(SRC_DIR)/sat/overload_checker.h \
-    $(SRC_DIR)/sat/sat_solver.h
+    $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/overload_checker.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Soverload_checker.$O
 
 $(OBJ_DIR)/sat/pb_constraint.$O: \
@@ -1770,12 +1804,13 @@ $(OBJ_DIR)/sat/table.$O: \
     $(SRC_DIR)/base/stl_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/table.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stable.$O
 
-$(OBJ_DIR)/sat/timetabling.$O: \
-    $(SRC_DIR)/sat/timetabling.cc \
+$(OBJ_DIR)/sat/timetable.$O: \
+    $(SRC_DIR)/sat/timetable.cc \
     $(SRC_DIR)/sat/overload_checker.h \
+    $(SRC_DIR)/sat/precedences.h \
     $(SRC_DIR)/sat/sat_solver.h \
-    $(SRC_DIR)/sat/timetabling.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetabling.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetabling.$O
+    $(SRC_DIR)/sat/timetable.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetable.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetable.$O
 
 $(OBJ_DIR)/sat/util.$O: \
     $(SRC_DIR)/sat/util.cc \
@@ -2163,6 +2198,7 @@ LP_LIB_OBJS = \
     $(OBJ_DIR)/linear_solver/clp_interface.$O \
     $(OBJ_DIR)/linear_solver/cplex_interface.$O \
     $(OBJ_DIR)/linear_solver/glop_interface.$O \
+    $(OBJ_DIR)/linear_solver/glop_utils.$O \
     $(OBJ_DIR)/linear_solver/glpk_interface.$O \
     $(OBJ_DIR)/linear_solver/gurobi_interface.$O \
     $(OBJ_DIR)/linear_solver/linear_solver.$O \
@@ -2171,6 +2207,10 @@ LP_LIB_OBJS = \
     $(OBJ_DIR)/linear_solver/scip_interface.$O \
     $(OBJ_DIR)/linear_solver/sulum_interface.$O \
     $(OBJ_DIR)/linear_solver/linear_solver.pb.$O
+
+$(SRC_DIR)/linear_solver/glop_utils.h: \
+    $(SRC_DIR)/linear_solver/linear_solver.h \
+    $(SRC_DIR)/lp_data/lp_types.h
 
 $(SRC_DIR)/linear_solver/linear_solver_ext.h: \
     $(SRC_DIR)/linear_solver/linear_solver.h \
@@ -2245,6 +2285,7 @@ $(OBJ_DIR)/linear_solver/cplex_interface.$O: \
 
 $(OBJ_DIR)/linear_solver/glop_interface.$O: \
     $(SRC_DIR)/linear_solver/glop_interface.cc \
+    $(SRC_DIR)/linear_solver/glop_utils.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/file.h \
@@ -2258,6 +2299,11 @@ $(OBJ_DIR)/linear_solver/glop_interface.$O: \
     $(SRC_DIR)/glop/lp_solver.h \
     $(GEN_DIR)/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/glop_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglop_interface.$O
+
+$(OBJ_DIR)/linear_solver/glop_utils.$O: \
+    $(SRC_DIR)/linear_solver/glop_utils.cc \
+    $(SRC_DIR)/linear_solver/glop_utils.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/glop_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sglop_utils.$O
 
 $(OBJ_DIR)/linear_solver/glpk_interface.$O: \
     $(SRC_DIR)/linear_solver/glpk_interface.cc \

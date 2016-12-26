@@ -118,8 +118,6 @@ RevisedSimplex::RevisedSimplex()
 
 void RevisedSimplex::ClearStateForNextSolve() {
   SCOPED_TIME_STAT(&function_stats_);
-  solution_state_.num_rows = RowIndex(0);
-  solution_state_.num_cols = ColIndex(0);
   solution_state_.statuses.clear();
 }
 
@@ -674,19 +672,29 @@ void RevisedSimplex::UseSingletonColumnInInitialBasis(RowToColMapping* basis) {
   }
 }
 
-bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
-                                                        bool* only_new_rows) {
+bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
+    const LinearProgram& lp, bool* only_change_is_new_rows,
+    bool* only_change_is_new_cols, ColIndex* num_new_cols) {
   SCOPED_TIME_STAT(&function_stats_);
-  DCHECK_NE(only_new_rows, nullptr);
+  DCHECK_NE(only_change_is_new_rows, nullptr);
+  DCHECK_NE(only_change_is_new_cols, nullptr);
+  DCHECK_NE(num_new_cols, nullptr);
   DCHECK_NE(kInvalidCol, lp.GetFirstSlackVariable());
   DCHECK_EQ(num_cols_, compact_matrix_.num_cols());
   DCHECK_EQ(num_rows_, compact_matrix_.num_rows());
 
-  // Test if the matrix is unchanged, and if yes, just returns true. Note that
-  // we compare also the columns corresponding to the slack variables.
-  if (lp.num_constraints() == num_rows_ && lp.num_variables() == num_cols_ &&
+  DCHECK_EQ(lp.num_variables(),
+            lp.GetFirstSlackVariable() + RowToColIndex(lp.num_constraints()));
+  DCHECK(IsRightMostSquareMatrixIdentity(lp.GetSparseMatrix()));
+  const bool old_part_of_matrix_is_unchanged =
       AreFirstColumnsAndRowsExactlyEquals(
-          num_rows_, num_cols_, lp.GetSparseMatrix(), compact_matrix_)) {
+          num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_);
+
+  // Test if the matrix is unchanged, and if yes, just returns true. Note that
+  // this doesn't check the columns corresponding to the slack variables,
+  // because they were checked by lp.IsInEquationForm() when Solve() was called.
+  if (old_part_of_matrix_is_unchanged && lp.num_constraints() == num_rows_ &&
+      lp.num_variables() == num_cols_) {
     // IMPORTANT: we need to recreate matrix_with_slack_ because this matrix
     // view was refering to a previous lp.GetSparseMatrix(). The matrices are
     // the same, but we do need to update the pointers.
@@ -697,17 +705,18 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
   }
 
   // Check if the new matrix can be derived from the old one just by adding
-  // new rows (i.e new constraints). In this case, we make two separate tests:
-  // first we compare the coefficients for the non-slack variables, and then we
-  // check that the coefficients for slack variables form an identity matrix.
-  *only_new_rows =
-      lp.num_constraints() > num_rows_ &&
-      lp.GetFirstSlackVariable() == first_slack_col_ &&
-      lp.num_variables() ==
-          lp.GetFirstSlackVariable() + RowToColIndex(lp.num_constraints()) &&
-      AreFirstColumnsAndRowsExactlyEquals(
-          num_rows_, first_slack_col_, lp.GetSparseMatrix(), compact_matrix_) &&
-      IsRightMostSquareMatrixIdentity(lp.GetSparseMatrix());
+  // new rows (i.e new constraints).
+  *only_change_is_new_rows = old_part_of_matrix_is_unchanged &&
+                             lp.num_constraints() > num_rows_ &&
+                             lp.GetFirstSlackVariable() == first_slack_col_;
+
+  // Check if the new matrix can be derived from the old one just by adding
+  // new columns (i.e new variables).
+  *only_change_is_new_cols = old_part_of_matrix_is_unchanged &&
+                             lp.num_constraints() == num_rows_ &&
+                             lp.GetFirstSlackVariable() > first_slack_col_;
+  *num_new_cols =
+      *only_change_is_new_cols ? lp.num_variables() - num_cols_ : ColIndex(0);
 
   // Initialize matrix_with_slack_.
   matrix_with_slack_.PopulateFromMatrix(lp.GetSparseMatrix());
@@ -725,6 +734,37 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(const LinearProgram& lp,
     transposed_matrix_.PopulateFromTranspose(compact_matrix_);
   }
   return false;
+}
+
+bool RevisedSimplex::OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
+    const LinearProgram& lp, ColIndex num_new_cols) {
+  SCOPED_TIME_STAT(&function_stats_);
+  DCHECK_EQ(lp.num_variables(), num_cols_);
+  DCHECK_LE(num_new_cols, first_slack_col_);
+  const ColIndex first_new_col(first_slack_col_ - num_new_cols);
+
+  // Check the original variable bounds.
+  for (ColIndex col(0); col < first_new_col; ++col) {
+    if (lower_bound_[col] != lp.variable_lower_bounds()[col] ||
+        upper_bound_[col] != lp.variable_upper_bounds()[col]) {
+      return false;
+    }
+  }
+  // Check that each new variable has a bound of zero.
+  for (ColIndex col(first_new_col); col < first_slack_col_; ++col) {
+    if (lp.variable_lower_bounds()[col] != 0.0 &&
+        lp.variable_upper_bounds()[col] != 0.0) {
+      return false;
+    }
+  }
+  // Check that the slack bounds are unchanged.
+  for (ColIndex col(first_slack_col_); col < num_cols_; ++col) {
+    if (lower_bound_[col - num_new_cols] != lp.variable_lower_bounds()[col] ||
+        upper_bound_[col - num_new_cols] != lp.variable_upper_bounds()[col]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool RevisedSimplex::InitializeBoundsAndTestIfUnchanged(
@@ -823,10 +863,11 @@ void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
 }
 
 void RevisedSimplex::InitializeVariableStatusesForWarmStart(
-    const BasisState& state) {
+    const BasisState& state, ColIndex num_new_cols) {
   variables_info_.Initialize();
   RowIndex num_basic_variables(0);
-
+  DCHECK_LE(num_new_cols, first_slack_col_);
+  const ColIndex first_new_col(first_slack_col_ - num_new_cols);
   // Compute the status for all the columns (note that the slack variables are
   // already added at the end of the matrix at this stage).
   for (ColIndex col(0); col < num_cols_; ++col) {
@@ -834,10 +875,11 @@ void RevisedSimplex::InitializeVariableStatusesForWarmStart(
 
     // Start with the given "warm" status from the BasisState if it exists.
     VariableStatus status = default_status;
-    if (col < num_cols_) {
-      if (col < state.num_cols) {
-        status = state.statuses[col];
-      }
+    if (col < first_new_col && col < state.statuses.size()) {
+      status = state.statuses[col];
+    } else if (col >= first_slack_col_ &&
+               col - num_new_cols < state.statuses.size()) {
+      status = state.statuses[col - num_new_cols];
     }
 
     // Remove incompatibilities between the warm status and the variable bounds.
@@ -1011,9 +1053,14 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   //
   // Note that these functions can't depend on use_dual_simplex() since we may
   // change it below.
-  bool only_new_rows = false;
-  const bool is_matrix_unchanged =
-      InitializeMatrixAndTestIfUnchanged(lp, &only_new_rows);
+  bool only_change_is_new_rows = false;
+  bool only_change_is_new_cols = false;
+  ColIndex num_new_cols(0);
+  const bool is_matrix_unchanged = InitializeMatrixAndTestIfUnchanged(
+      lp, &only_change_is_new_rows, &only_change_is_new_cols, &num_new_cols);
+  const bool only_new_bounds =
+      only_change_is_new_cols && num_new_cols > 0 &&
+      OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(lp, num_new_cols);
   const bool objective_is_unchanged = InitializeObjectiveAndTestIfUnchanged(lp);
   const bool bounds_are_unchanged = InitializeBoundsAndTestIfUnchanged(lp);
 
@@ -1052,7 +1099,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     if (solution_state_has_been_set_externally_) {
       // If an external basis has been provided we need to perform more work,
       // e.g., factorize and validate it.
-      InitializeVariableStatusesForWarmStart(solution_state_);
+      InitializeVariableStatusesForWarmStart(solution_state_, ColIndex(0));
       basis_.assign(num_rows_, kInvalidCol);
       RowIndex row(0);
       for (ColIndex col : variables_info_.GetIsBasicBitRow()) {
@@ -1069,18 +1116,33 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
         reduced_costs_.ClearAndRemoveCostShifts();
         solve_from_scratch = false;
       } else {
-        VLOG(1) << "RevisedSimplex is not using the externally provided basis "
-                   "because it is not factorizable.";
+        LOG(WARNING) << "RevisedSimplex is not using the externally provided "
+                        "basis because it is not factorizable.";
       }
     } else if (!parameters_.use_dual_simplex()) {
       // With primal simplex, always clear dual norms and dual pricing.
-      // Incrementality is supported only if both the matrix and the bounds
-      // remain the same (objective may change).
+      // Incrementality is supported only if only change to the matrix and
+      // bounds is adding new columns (objective may change), and that all
+      // new columns have a bound equal to zero.
       dual_edge_norms_.Clear();
       dual_pricing_vector_.clear();
       if (is_matrix_unchanged && bounds_are_unchanged) {
         // TODO(user): Do not do that if objective_is_unchanged. Currently
         // this seems to break something. Investigate.
+        reduced_costs_.ClearAndRemoveCostShifts();
+        solve_from_scratch = false;
+      } else if (only_change_is_new_cols && only_new_bounds) {
+        InitializeVariableStatusesForWarmStart(solution_state_, num_new_cols);
+        const ColIndex first_new_col(first_slack_col_ - num_new_cols);
+        for (ColIndex& col_ref : basis_) {
+          if (col_ref >= first_new_col) {
+            col_ref += num_new_cols;
+          }
+        }
+        // Make sure the primal edge norm are recomputed from scratch.
+        // TODO(user): only the norms of the new columns actually need to be
+        // computed.
+        primal_edge_norms_.Clear();
         reduced_costs_.ClearAndRemoveCostShifts();
         solve_from_scratch = false;
       }
@@ -1092,14 +1154,15 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
       if (objective_is_unchanged) {
         if (is_matrix_unchanged) {
           if (!bounds_are_unchanged) {
-            InitializeVariableStatusesForWarmStart(solution_state_);
+            InitializeVariableStatusesForWarmStart(solution_state_,
+                                                   ColIndex(0));
             variable_values_.RecomputeBasicVariableValues();
           }
           solve_from_scratch = false;
-        } else if (only_new_rows) {
+        } else if (only_change_is_new_rows) {
           // For the dual-simplex, we also perform a warm start if a couple of
           // new rows where added.
-          InitializeVariableStatusesForWarmStart(solution_state_);
+          InitializeVariableStatusesForWarmStart(solution_state_, ColIndex(0));
 
           // TODO(user): Both the edge norms and the reduced costs do not really
           // need to be recomputed. We just need to initialize the ones of the
@@ -1176,8 +1239,6 @@ void RevisedSimplex::DisplayBasicVariableStatistics() {
 
 void RevisedSimplex::SaveState() {
   DCHECK_EQ(num_cols_, variables_info_.GetStatusRow().size());
-  solution_state_.num_rows = num_rows_;
-  solution_state_.num_cols = num_cols_;
   solution_state_.statuses = variables_info_.GetStatusRow();
   solution_state_has_been_set_externally_ = false;
 }
@@ -1271,8 +1332,9 @@ void RevisedSimplex::ComputeDirection(ColIndex col) {
         std::max(direction_infinity_norm_, fabs(direction_[row]));
   }
   IF_STATS_ENABLED(ratio_test_stats_.direction_density.Add(
-      num_rows_ == 0 ? 0.0 : static_cast<double>(direction_non_zero_.size()) /
-                                 static_cast<double>(num_rows_.value())));
+      num_rows_ == 0 ? 0.0
+                     : static_cast<double>(direction_non_zero_.size()) /
+                           static_cast<double>(num_rows_.value())));
 }
 
 Fractional RevisedSimplex::ComputeDirectionError(ColIndex col) {

@@ -40,7 +40,7 @@ void FapModelPrinter::PrintFapVariables() {
     for (const int value : it.second.domain) {
       StringAppendF(&domain, "%d ", value);
     }
-    StringAppendF(&domain, "}");
+    domain.append("}");
 
     std::string hard = " ";
     if (it.second.hard) {

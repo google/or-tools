@@ -19,6 +19,7 @@
 #include "flatzinc/checker.h"
 #include "flatzinc/logging.h"
 #include "sat/cp_constraints.h"
+#include "sat/cumulative.h"
 #include "sat/disjunctive.h"
 #include "sat/integer.h"
 #include "sat/integer_expr.h"
@@ -27,7 +28,7 @@
 #include "sat/optimization.h"
 #include "sat/sat_solver.h"
 #include "sat/table.h"
-#include "sat/timetabling.h"
+#include "util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -42,10 +43,6 @@ struct SatModel {
   // created lazily by LookupVar() when a constraint is requesting it.
   hash_map<fz::IntegerVariable*, IntegerVariable> var_map;
   hash_map<fz::IntegerVariable*, Literal> bool_map;
-
-  // For now, we need to create a constant sat::IntegerVariable for each
-  // constant appearing in the flatzinc model.
-  hash_map<int64, IntegerVariable> constant_map;
 
   // Utility functions to convert an fz::Argument to sat::IntegerVariable(s).
   IntegerVariable LookupConstant(int64 value);
@@ -63,13 +60,7 @@ struct SatModel {
 
   // Returns the full domain Boolean encoding of the given variable (encoding it
   // if not already done).
-  //
-  // WARNING: The returned reference may be invalidated by a next call to
-  // FullEncoding(). TODO(user): It is easy to forget this, find a more robust
-  // solution.
-  const std::vector<IntegerEncoder::ValueLiteralPair>& FullEncoding(
-      IntegerVariable v);
-  std::string FullEncodingValuesAsString(IntegerVariable v) const;
+  std::vector<IntegerEncoder::ValueLiteralPair> FullEncoding(IntegerVariable v);
 
   // Returns the value of the given variable in the current assigment. It must
   // be assigned, otherwise this will crash.
@@ -77,10 +68,7 @@ struct SatModel {
 };
 
 IntegerVariable SatModel::LookupConstant(const int64 value) {
-  if (!ContainsKey(constant_map, value)) {
-    constant_map[value] = model.Add(NewIntegerVariable(value, value));
-  }
-  return FindOrDie(constant_map, value);
+  return model.Add(ConstantIntegerVariable(value));
 }
 
 IntegerVariable SatModel::LookupVar(fz::IntegerVariable* var) {
@@ -127,25 +115,9 @@ std::vector<IntegerVariable> SatModel::LookupVars(
   return result;
 }
 
-const std::vector<IntegerEncoder::ValueLiteralPair>& SatModel::FullEncoding(
+std::vector<IntegerEncoder::ValueLiteralPair> SatModel::FullEncoding(
     IntegerVariable var) {
-  IntegerEncoder* encoder = model.GetOrCreate<IntegerEncoder>();
-  if (!encoder->VariableIsFullyEncoded(var)) {
-    const IntegerValue lb(model.Get(LowerBound(var)));
-    const IntegerValue ub(model.Get(UpperBound(var)));
-    CHECK_LT(lb, ub);
-    encoder->FullyEncodeVariable(var, lb, ub);
-  }
-  return encoder->FullDomainEncoding(var);
-}
-
-std::string SatModel::FullEncodingValuesAsString(IntegerVariable v) const {
-  std::vector<int64> values;
-  IntegerEncoder const* encoder = model.Get<IntegerEncoder>();
-  for (const auto p : encoder->FullDomainEncoding(v)) {
-    values.push_back(p.value.value());
-  }
-  return strings::Join(values, ", ");
+  return model.Add(FullyEncodeVariable(var));
 }
 
 bool SatModel::IsBoolean(fz::IntegerVariable* var) const {
@@ -750,11 +722,9 @@ void ExtractArray2dIntElement(const fz::Constraint& ct, SatModel* m) {
   const int64 coeff2 = ct.arguments[3].values[1];
   const int64 offset = ct.arguments[4].values[0] - 1;
 
-  // Tricky: FullEncoding() may invalidate any reference to a previously
-  // returned vector, so we copy the result of the first call.
   std::vector<std::vector<int64>> tuples;
   const auto encoding1 = m->FullEncoding(vars[0]);
-  const auto& encoding2 = m->FullEncoding(vars[1]);
+  const auto encoding2 = m->FullEncoding(vars[1]);
   for (const auto& entry1 : encoding1) {
     const int64 v1 = entry1.value.value();
     for (const auto& entry2 : encoding2) {
@@ -779,7 +749,7 @@ void ExtractArrayIntElement(const fz::Constraint& ct, SatModel* m) {
 
   std::map<int64, std::vector<Literal>> value_to_literals;
   {
-    const auto& encoding = m->FullEncoding(m->LookupVar(ct.arguments[0]));
+    const auto encoding = m->FullEncoding(m->LookupVar(ct.arguments[0]));
     const std::vector<int64>& values = ct.arguments[1].values;
     if (encoding.size() != values.size()) {
       FZVLOG << "array_int_element could have been slightly presolved."
@@ -838,18 +808,26 @@ void ExtractArrayVarIntElement(const fz::Constraint& ct, SatModel* m) {
     return;
   }
 
-  const auto& encoding = m->FullEncoding(index_var);
+  const auto encoding = m->FullEncoding(index_var);
   if (encoding.size() != vars.size()) {
     FZVLOG << "array_var_int_element could have been slightly presolved."
            << FZENDL;
   }
+
+  std::vector<Literal> selectors;
+  std::vector<IntegerVariable> possible_vars;
   for (const auto literal_value : encoding) {
     const int i = literal_value.value.value() - 1;  // minizinc use 1-index.
     CHECK_GE(i, 0);
     CHECK_LT(i, vars.size());
+    possible_vars.push_back(vars[i]);
+    selectors.push_back(literal_value.literal);
     ImpliesEquality(/*reverse_implication=*/false, literal_value.literal,
                     vars[i], t, m);
   }
+
+  // TODO(user): make a IsOneOfVar() support the full propagation.
+  m->model.Add(PartialIsOneOfVar(t, possible_vars, selectors));
 }
 
 void ExtractRegular(const fz::Constraint& ct, SatModel* m) {
@@ -919,7 +897,7 @@ void ExtractSetInReif(const fz::Constraint& ct, SatModel* m) {
   if (ct.arguments[1].type == fz::Argument::INT_LIST) {
     std::set<int64> values(ct.arguments[1].values.begin(),
                       ct.arguments[1].values.end());
-    const auto& encoding = m->FullEncoding(var);
+    const auto encoding = m->FullEncoding(var);
     for (const auto& literal_value : encoding) {
       if (ContainsKey(values, literal_value.value.value())) {
         m->model.Add(Implication(literal_value.literal, in_set));
@@ -1230,9 +1208,9 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
 
   // Extract all the variables.
   int num_constants = 0;
+  int num_variables_with_two_values = 0;
   std::set<int64> constant_values;
-  std::map<std::pair<int64, int64>, int> num_vars_per_bounds;
-  hash_map<std::pair<int64, int64>, int> num_fully_encoded_vars_per_bounds;
+  std::map<std::string, int> num_vars_per_domains;
   FZLOG << "Extracting " << fz_model.variables().size() << " variables. "
         << FZENDL;
   int num_capped_variables = 0;
@@ -1254,8 +1232,6 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
       num_capped_variables++;
     }
 
-    num_vars_per_bounds[{safe_min, safe_max}]++;
-
     // Special case for Boolean. We don't automatically create the associated
     // integer variable. It will only be created if a constraint needs to see
     // the Boolean variable as an IntegerVariable
@@ -1268,29 +1244,35 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
       continue;
     }
 
-    InsertOrDie(&m.var_map, var,
-                m.model.Add(NewIntegerVariable(safe_min, safe_max)));
-
-    // We fully encode a variable if it is given as a list of values. Otherwise,
-    // we will lazily-encode it depending on the constraints it appears in or if
-    // needed to fully specify a solution.
+    // Create the associated sat::IntegerVariable. Note that it will be lazily
+    // fully-encoded by the propagators that need it, except for the variables
+    // with just two values because it seems more efficient to do so.
     //
-    // Note that we also fully encode interval of size 2!
-    if (!var->domain.is_interval ||
-        (var->domain.Min() + 1 == var->domain.Max())) {
-      num_fully_encoded_vars_per_bounds[{var->domain.Min(),
-                                         var->domain.Max()}]++;
-      m.model.GetOrCreate<IntegerEncoder>()->FullyEncodeVariable(
-          m.LookupVar(var),
-          std::vector<IntegerValue>(var->domain.values.begin(),
-                                    var->domain.values.end()));
+    // TODO(user): Experiment more with proactive full-encoding. Chuffed seems
+    // to fully encode all variables with a small domain.
+    std::string domain_as_string;
+    bool only_two_values = false;
+    if (var->domain.is_interval) {
+      only_two_values = (safe_min + 1 == safe_max);
+      domain_as_string = ClosedInterval({safe_min, safe_max}).DebugString();
+      InsertOrDie(&m.var_map, var,
+                  m.model.Add(NewIntegerVariable(safe_min, safe_max)));
+    } else {
+      only_two_values = (var->domain.values.size() == 2);
+      const std::vector<ClosedInterval> domain =
+          SortedDisjointIntervalsFromValues(var->domain.values);
+      InsertOrDie(&m.var_map, var, m.model.Add(NewIntegerVariable(domain)));
+      domain_as_string = IntervalsAsString(domain);
+    }
+    num_vars_per_domains[domain_as_string]++;
+
+    if (only_two_values) {
+      ++num_variables_with_two_values;
+      m.model.Add(FullyEncodeVariable(m.LookupVar(var)));
     }
   }
-  for (const auto& entry : num_vars_per_bounds) {
-    FZLOG << " - " << entry.second << " variables in [" << entry.first.first
-          << ", " << entry.first.second << "] ("
-          << num_fully_encoded_vars_per_bounds[entry.first]
-          << " fully encoded)." << FZENDL;
+  for (const auto& entry : num_vars_per_domains) {
+    FZLOG << " - " << entry.second << " vars in " << entry.first << FZENDL;
   }
   FZLOG << " - " << num_constants << " constants in {"
         << strings::Join(constant_values, ",") << "}." << FZENDL;
@@ -1360,7 +1342,10 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
           << m.model.Get<SatSolver>()->NumVariables() << " ("
           << m.model.Get<SatSolver>()->LiteralTrail().Index() << " fixed)."
           << FZENDL;
-    FZLOG << "Num constants = " << m.constant_map.size() << FZENDL;
+    FZLOG << "Num vars with 2 values = " << num_variables_with_two_values
+          << FZENDL;
+    FZLOG << "Num constants = "
+          << m.model.Get<IntegerTrail>()->NumConstantVariables() << FZENDL;
     FZLOG << "Num integer propagators = "
           << m.model.GetOrCreate<GenericLiteralWatcher>()->NumPropagators()
           << FZENDL;
@@ -1397,7 +1382,8 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   if (fz_model.objective() == nullptr) {
     // Decision problem.
     while (num_solutions < p.num_solutions) {
-      status = SolveIntegerProblemWithLazyEncoding(&m.model, decision_vars);
+      status = SolveIntegerProblemWithLazyEncoding(/*assumptions=*/{},
+                                                   decision_vars, &m.model);
 
       if (status == SatSolver::MODEL_SAT) {
         ++num_solutions;
@@ -1445,16 +1431,32 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
     }
   }
 
-  if (fz_model.objective() == nullptr || num_solutions == 0) {
+  if (fz_model.objective() == nullptr) {
     FZLOG << "Status: " << status << FZENDL;
     FZLOG << "Objective: NA" << FZENDL;
+    FZLOG << "Best_bound: NA" << FZENDL;
   } else {
-    if (status == SatSolver::MODEL_SAT) {
-      FZLOG << "Status: OPTIMAL" << FZENDL;
-    } else {
+    m.model.GetOrCreate<SatSolver>()->Backtrack(0);
+    const IntegerVariable objective_var = m.LookupVar(fz_model.objective());
+    int64 best_bound =
+        m.model.Get(fz_model.maximize() ? UpperBound(objective_var)
+                                        : LowerBound(objective_var));
+    if (num_solutions == 0) {
       FZLOG << "Status: " << status << FZENDL;
+      FZLOG << "Objective: NA" << FZENDL;
+    } else {
+      if (status == SatSolver::MODEL_SAT) {
+        FZLOG << "Status: OPTIMAL" << FZENDL;
+
+        // We need this because even if we proved unsat, that doesn't mean we
+        // propagated the best bound to its current value.
+        best_bound = best_objective;
+      } else {
+        FZLOG << "Status: " << status << FZENDL;
+      }
+      FZLOG << "Objective: " << best_objective << FZENDL;
     }
-    FZLOG << "Objective: " << best_objective << FZENDL;
+    FZLOG << "Best_bound: " << best_bound;
   }
   FZLOG << "Booleans: " << m.model.Get<SatSolver>()->NumVariables() << FZENDL;
   FZLOG << "Conflicts: " << m.model.Get<SatSolver>()->num_failures() << FZENDL;

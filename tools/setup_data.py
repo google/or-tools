@@ -23,9 +23,9 @@ def read(fname):
     return open(pjoin(dirname(__file__), fname)).read()
 
 if version_info[0] >= 3:
-    install_requires = ["py3-ortools >= VVVV"]
+    install_requires = ["py3-ortools == VVVV"]
 else:
-    install_requires = ["ortools >= VVVV"]
+    install_requires = ["ortools == VVVV"]
 
 setup(
     name='ortools_examples',

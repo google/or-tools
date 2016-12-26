@@ -207,7 +207,7 @@ endif
 rpy: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(EX)
 	@echo Running $(EX)
 ifeq ($(SYSTEM),win)
-	@set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) && $(WINDOWS_PYTHON_PATH)$Spython $(EX) $(ARGS)
+	@set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) && $(WINDOWS_PATH_TO_PYTHON)$Spython $(EX) $(ARGS)
 else
 	@PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX) $(ARGS)
 endif
@@ -304,7 +304,7 @@ pypi_upload: pypi_archive
 	@echo Uploading Pypi module for python$(PYTHON_VERSION).
 ifeq ($(SYSTEM),win)
 	set VS90COMNTOOLS=$(VS$(VS_COMTOOLS)COMNTOOLS)
-	cd temp\ortools && $(WINDOWS_PYTHON_PATH)\python setup.py register bdist_egg bdist_wheel bdist_wininst upload
+	cd temp\ortools && $(WINDOWS_PATH_TO_PYTHON)\python setup.py register bdist_egg bdist_wheel bdist_wininst upload
 else
   ifeq ($(PLATFORM),MACOSX)
 	cd temp/ortools && python$(PYTHON_VERSION) setup.py register bdist_egg bdist_wheel upload

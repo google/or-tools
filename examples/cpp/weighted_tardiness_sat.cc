@@ -90,15 +90,14 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   std::vector<IntervalVariable> tasks(num_tasks);
   std::vector<IntegerVariable> tardiness_vars(num_tasks);
   for (int i = 0; i < num_tasks; ++i) {
-    tasks[i] = model.Add(NewInterval(durations[i]));
-    model.Add(LowerOrEqual(model.Get(EndVar(tasks[i])), horizon));
+    tasks[i] = model.Add(NewInterval(0, horizon, durations[i]));
     if (due_dates[i] == 0) {
       tardiness_vars[i] = model.Get(EndVar(tasks[i]));
     } else {
       tardiness_vars[i] =
           model.Add(NewIntegerVariable(0, horizon - due_dates[i]));
-      model.Add(
-          EndBeforeWithOffset(tasks[i], tardiness_vars[i], -due_dates[i]));
+      model.Add(LowerOrEqualWithOffset(model.Get(EndVar(tasks[i])),
+                                       tardiness_vars[i], -due_dates[i]));
     }
 
     // Experiments showed that the heuristic of choosing first the task that
@@ -150,7 +149,8 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
         }
 
         ++num_added_precedences;
-        model.Add(EndBeforeStart(tasks[i], tasks[j]));
+        model.Add(LowerOrEqual(model.Get(EndVar(tasks[i])),
+                               model.Get(StartVar(tasks[j]))));
       }
     }
   }

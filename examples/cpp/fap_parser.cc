@@ -27,7 +27,7 @@ void ParseFileByLines(const std::string& filename, std::vector<std::string>* lin
   CHECK_NOTNULL(lines);
   std::string result;
   CHECK(file::GetContents(filename, &result, file::Defaults()).ok());
-  *lines = strings::Split(result, "\n", strings::SkipEmpty());
+  *lines = strings::Split(result, '\n', strings::SkipEmpty());
 }
 
 // VariableParser Implementation
@@ -41,7 +41,7 @@ void VariableParser::Parse() {
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
     std::vector<std::string> tokens =
-        strings::Split(line, " ", strings::SkipEmpty());
+        strings::Split(line, ' ', strings::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -68,7 +68,7 @@ void DomainParser::Parse() {
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
     std::vector<std::string> tokens =
-        strings::Split(line, " ", strings::SkipEmpty());
+        strings::Split(line, ' ', strings::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -99,7 +99,7 @@ void ConstraintParser::Parse() {
   ParseFileByLines(filename_, &lines);
   for (const std::string& line : lines) {
     std::vector<std::string> tokens =
-        strings::Split(line, " ", strings::SkipEmpty());
+        strings::Split(line, ' ', strings::SkipEmpty());
     if (tokens.empty()) {
       continue;
     }
@@ -158,7 +158,7 @@ void ParametersParser::Parse() {
       objective = false;
       if (line.find("=") != std::string::npos) {
         std::vector<std::string> tokens =
-            strings::Split(line, " ", strings::SkipEmpty());
+            strings::Split(line, ' ', strings::SkipEmpty());
         CHECK_GE(tokens.size(), 3);
         coefficients.push_back(atoi32(tokens[2].c_str()));
       }
@@ -275,8 +275,8 @@ void FindComponents(const std::vector<FapConstraint>& constraints,
 int EvaluateConstraintImpact(const std::map<int, FapVariable>& variables,
                              const int max_weight_cost,
                              const FapConstraint constraint) {
-  const FapVariable variable1 = FindOrDie(variables, constraint.variable1);
-  const FapVariable variable2 = FindOrDie(variables, constraint.variable2);
+  const FapVariable& variable1 = FindOrDie(variables, constraint.variable1);
+  const FapVariable& variable2 = FindOrDie(variables, constraint.variable2);
   const int degree1 = variable1.degree;
   const int degree2 = variable2.degree;
   const int max_degree = std::max(degree1, degree2);

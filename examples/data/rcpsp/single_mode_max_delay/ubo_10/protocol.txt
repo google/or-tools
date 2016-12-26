@@ -1,0 +1,282 @@
+psp1
+Restrictiveness more than 10.0 % too large: 0.377778 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp2
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp3
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp4
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp5
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp6
+Restrictiveness more than 10.0 % too large: 0.444444 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp7
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp8
+Restrictiveness more than 10.0 % too large: 0.511111 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp9
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp10
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp11
+Restrictiveness more than 10.0 % too large: 0.777778 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp12
+Restrictiveness more than 10.0 % too large: 0.4 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp13
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp14
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp15
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp16
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp17
+Restrictiveness more than 10.0 % too large: 0.444444 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp18
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp19
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp20
+Restrictiveness more than 10.0 % too large: 0.844444 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp21
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp22
+Restrictiveness more than 10.0 % too large: 0.488889 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp23
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp24
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp26
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp27
+Restrictiveness more than 10.0 % too large: 0.755556 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp28
+Restrictiveness more than 10.0 % too large: 0.333333 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp29
+Restrictiveness more than 10.0 % too large: 0.288889 > 0.25
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp30
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp31
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp32
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp33
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp34
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp35
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp36
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp37
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp38
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp39
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp40
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp41
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp42
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp43
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp44
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp45
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp46
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp47
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp48
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp49
+Restrictiveness more than 10.0 % too large: 0.822222 > 0.5
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp50
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp51
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp52
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp53
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp54
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp55
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp56
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp57
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp58
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp59
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp60
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp61
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp62
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp63
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp64
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp65
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp66
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp67
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp68
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp69
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp70
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp71
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp72
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp73
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp74
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp75
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp76
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp77
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp78
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp79
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp80
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp81
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp82
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp83
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp84
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp85
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp86
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp87
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp88
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp89
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+
+psp90
+Resource factor more than 1.0 % too large: 0.76 > 0.75
+

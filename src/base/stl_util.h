@@ -75,7 +75,7 @@ inline char* string_as_array(std::string* str) {
 }
 
 // STLDeleteElements() deletes all the elements in an STL container and clears
-// the container.  This function is suitable for use with a vector, set,
+// the container.  This function is suitable for use with a std::vector, set,
 // hash_set, or any other STL container which defines sensible begin(), end(),
 // and clear() methods.
 //

@@ -15,9 +15,12 @@
 //   for (const std::string& line : FileLines("myfile.txt")) { ... }
 //
 // More details:
-// * The lines are separated by '\n' (which is removed) and have no size limits.
+// * The lines are separated by '\n' (which is removed by default) and have no
+//   size limits.
 // * Consecutive '\n' result in empty lines being produced.
 // * If not empty, the std::string after the last '\n' is produced as the last line.
+// * Options are available to keep the trailing '\n' for each line, to remove
+//   carriage-return chararters ('\r'), and to remove blank lines.
 //
 #ifndef OR_TOOLS_UTIL_FILELINEITER_H_
 #define OR_TOOLS_UTIL_FILELINEITER_H_
@@ -32,8 +35,18 @@ namespace operations_research {
 // Implements the minimum interface for a range-based for loop iterator.
 class FileLineIterator {
  public:
-  explicit FileLineIterator(File* file)
-      : next_position_after_eol_(0), buffer_size_(0), file_(file) {
+  enum {
+    DEFAULT = 0x0000,
+    KEEP_LINEFEED = 0x0001,       // Terminating \n in result.
+    REMOVE_INLINE_CR = 0x0002,    // Remove \r characters.
+    REMOVE_BLANK_LINES = 0x0004,  // Remove empty or \n-only lines.
+  };
+
+  FileLineIterator(File* file, int options)
+      : next_position_after_eol_(0),
+        buffer_size_(0),
+        file_(file),
+        options_(options) {
     ReadNextLine();
   }
   const std::string& operator*() const { return line_; }
@@ -43,34 +56,52 @@ class FileLineIterator {
   void operator++() { ReadNextLine(); }
 
  private:
+  bool HasOption(int option) const { return options_ & option; }
+
   void ReadNextLine() {
     line_.clear();
     if (file_ == nullptr) return;
-    while (true) {
-      int i = next_position_after_eol_;
-      for (; i < buffer_size_; ++i) {
-        if (buffer_[i] == '\n') break;
-      }
-      line_.append(&buffer_[next_position_after_eol_],
-                   i - next_position_after_eol_);
-      if (i == buffer_size_) {
-        buffer_size_ = file_->Read(&buffer_, kBufferSize);
-        if (buffer_size_ < 0) {
-          LOG(WARNING) << "Error while reading file.";
-          file_ = nullptr;
-          break;
+    do {
+      while (true) {
+        int i = next_position_after_eol_;
+        for (; i < buffer_size_; ++i) {
+          if (buffer_[i] == '\n') break;
         }
-        next_position_after_eol_ = 0;
-        if (buffer_size_ == 0) {
-          if (line_.empty()) {
+        if (i == buffer_size_) {
+          line_.append(&buffer_[next_position_after_eol_],
+                       i - next_position_after_eol_);
+          buffer_size_ = file_->Read(&buffer_, kBufferSize);
+          if (buffer_size_ < 0) {
+            LOG(WARNING) << "Error while reading file.";
             file_ = nullptr;
+            break;
           }
+          next_position_after_eol_ = 0;
+          if (buffer_size_ == 0) {
+            if (line_.empty()) {
+              file_ = nullptr;
+            }
+            break;
+          }
+        } else {
+          line_.append(&buffer_[next_position_after_eol_],
+                       i - next_position_after_eol_ + 1);
+          next_position_after_eol_ = i + 1;
           break;
         }
-      } else {
-        next_position_after_eol_ = i + 1;
-        break;
       }
+      PostProcessLine();
+    } while (file_ != nullptr && HasOption(REMOVE_BLANK_LINES) &&
+             (line_.empty() || line_ == "\n"));
+  }
+
+  void PostProcessLine() {
+    if (HasOption(REMOVE_INLINE_CR)) {
+      line_.erase(std::remove(line_.begin(), line_.end(), '\r'), line_.end());
+    }
+    const auto eol = std::find(line_.begin(), line_.end(), '\n');
+    if (!HasOption(KEEP_LINEFEED) && eol != line_.end()) {
+      line_.erase(eol);
     }
   }
 
@@ -80,21 +111,25 @@ class FileLineIterator {
   int64 buffer_size_;
   File* file_;
   std::string line_;
+  const int options_;
 };
 
 class FileLines {
  public:
-  explicit FileLines(const std::string& filename) {
+  FileLines(const std::string& filename, int options) : options_(options) {
     file_ = File::Open(filename, "r");
   }
+  explicit FileLines(const std::string& filename)
+      : FileLines(filename, FileLineIterator::DEFAULT) {}
   ~FileLines() {
     if (file_ != nullptr) file_->Close(file::Defaults()).IgnoreError();
   }
-  FileLineIterator begin() { return FileLineIterator(file_); }
-  FileLineIterator end() const { return FileLineIterator(nullptr); }
+  FileLineIterator begin() { return FileLineIterator(file_, options_); }
+  FileLineIterator end() const { return FileLineIterator(nullptr, options_); }
 
  private:
   File* file_;
+  const int options_;
   DISALLOW_COPY_AND_ASSIGN(FileLines);
 };
 

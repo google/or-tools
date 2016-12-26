@@ -337,6 +337,9 @@ int Run() {
     printf("s UNSATISFIABLE\n");
   }
 
+  // Print status.
+  printf("c status: %s\n", SatStatusString(result).c_str());
+
   // Print objective value.
   if (solution.empty()) {
     printf("c objective: na\n");
@@ -349,13 +352,13 @@ int Run() {
   }
 
   // Print final statistics.
-  printf("c status: %s\n", SatStatusString(result).c_str());
+  printf("c booleans: %d\n", solver->NumVariables());
   printf("c conflicts: %lld\n", solver->num_failures());
   printf("c branches: %lld\n", solver->num_branches());
   printf("c propagations: %lld\n", solver->num_propagations());
   printf("c walltime: %f\n", wall_timer.Get());
   printf("c usertime: %f\n", user_timer.Get());
-  printf("c deterministic time: %f\n", solver->deterministic_time());
+  printf("c deterministic_time: %f\n", solver->deterministic_time());
 
   // The SAT competition requires a particular exit code and since we don't
   // really use it for any other purpose, we comply.

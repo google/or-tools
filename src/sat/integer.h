@@ -28,6 +28,7 @@
 #include "util/iterators.h"
 #include "util/rev.h"
 #include "util/saturated_arithmetic.h"
+#include "util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {
@@ -82,6 +83,10 @@ const IntegerVariable kNoIntegerVariable(-1);
 inline IntegerVariable NegationOf(IntegerVariable i) {
   return IntegerVariable(i.value() ^ 1);
 }
+
+// Returns the vector of the negated variables.
+std::vector<IntegerVariable> NegationOf(
+    const std::vector<IntegerVariable>& vars);
 
 class IntegerEncoder;
 class IntegerTrail;
@@ -367,6 +372,28 @@ class IntegerTrail : public SatPropagator {
   IntegerVariable AddIntegerVariable(IntegerValue lower_bound,
                                      IntegerValue upper_bound);
 
+  // Same as above but for a more complex domain specified as a sorted list of
+  // disjoint intervals. Note that the ClosedInterval struct use int64 instead
+  // of integer values (but we will convert them internally).
+  //
+  // Precondition: we check that IntervalsAreSortedAndDisjoint(domain) is true.
+  IntegerVariable AddIntegerVariable(const std::vector<ClosedInterval>& domain);
+
+  // Returns the initial domain of the given variable. Note that for variables
+  // whose domain is a single interval, this is updated with level zero
+  // propagations, but not if the domain is more complex.
+  std::vector<ClosedInterval> InitialVariableDomain(IntegerVariable var) const;
+
+  // Same as AddIntegerVariable(value, value), but this is a bit more efficient
+  // because it reuses another constant with the same value if its exist.
+  //
+  // Note(user): Creating constant integer variable is a bit wasteful, but not
+  // that much, and it allows to simplify a lot of constraints that do not need
+  // to handle this case any differently than the general one. Maybe there is a
+  // better solution, but this is not really high priority as of December 2016.
+  IntegerVariable GetOrCreateConstantIntegerVariable(IntegerValue value);
+  int NumConstantVariables() const;
+
   // Same as AddIntegerVariable() but uses the maximum possible range. Note
   // that since we take negation of bounds in various places, we make sure that
   // we don't have overflow when we take the negation of the lower bound or of
@@ -397,21 +424,17 @@ class IntegerTrail : public SatPropagator {
   IntegerLiteral LowerBoundAsLiteral(IntegerVariable i) const;
   IntegerLiteral UpperBoundAsLiteral(IntegerVariable i) const;
 
-  // Enqueue new information about a variable bound. Note that this can be used
-  // at the decision level zero to change the initial variable bounds, but only
-  // to make them more restricted. Calling this with a less restrictive bound
-  // than the current one will have no effect.
+  // Enqueue new information about a variable bound. Calling this with a less
+  // restrictive bound than the current one will have no effect.
   //
-  // The reason for this "assignment" can be a combination of:
+  // The reason for this "assignment" must be provided as:
   // - A set of Literal currently beeing all false.
-  // - A set of IntegerLiteral currently beeing all satisfied.
+  // - A set of IntegerLiteral currently beeing all true.
+  //
+  // IMPORTANT: Notice the inversed sign in the literal reason. This is a bit
+  // confusing but internally SAT use this direction for efficiency.
   //
   // TODO(user): provide an API to give the reason lazily.
-  //
-  // TODO(user): change the Literal signs to all true? it is often confusing to
-  // have all false as a reason. But this is kind of historical because of a
-  // clause beeing a reason for an assignment when all but one of its literals
-  // are false.
   //
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
@@ -421,6 +444,7 @@ class IntegerTrail : public SatPropagator {
       const std::vector<IntegerLiteral>& integer_reason);
 
   // Enqueues the given literal on the trail.
+  // See the comment of Enqueue() for the reason format.
   void EnqueueLiteral(Literal literal,
                       const std::vector<Literal>& literal_reason,
                       const std::vector<IntegerLiteral>& integer_reason);
@@ -473,6 +497,10 @@ class IntegerTrail : public SatPropagator {
   }
 
  private:
+  // Tests that all the literals in the given reason are assigned to false.
+  // This is used to DCHECK the given reasons to the Enqueue*() functions.
+  bool AllLiteralsAreFalse(const std::vector<Literal>& literals) const;
+
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;
 
@@ -480,8 +508,8 @@ class IntegerTrail : public SatPropagator {
   // the given i_lit and maintained by encoder_.
   bool EnqueueAssociatedLiteral(
       Literal literal, IntegerLiteral i_lit,
-      const std::vector<Literal>& literals_reason,
-      const std::vector<IntegerLiteral>& bounds_reason,
+      const std::vector<Literal>& literal_reason,
+      const std::vector<IntegerLiteral>& integer_reason,
       BooleanVariable* variable_with_same_reason);
 
   // Returns a lower bound on the given var that will always be valid.
@@ -520,6 +548,10 @@ class IntegerTrail : public SatPropagator {
   };
   std::vector<VarInfo> vars_;
 
+  // Used by GetOrCreateConstantIntegerVariable() to return already created
+  // constant variables that share the same value.
+  hash_map<IntegerValue, IntegerVariable> constant_map_;
+
   // The integer trail. It always start by num_vars sentinel values with the
   // level 0 bounds (in one to one correspondance with vars_).
   struct TrailEntry {
@@ -554,6 +586,20 @@ class IntegerTrail : public SatPropagator {
   std::vector<Literal> tmp_literals_reason_;
   RevGrowingMultiMap<LiteralIndex, IntegerVariable> watched_min_;
   RevMap<hash_map<IntegerVariable, int>> current_min_;
+
+  // This is only filled for variables with a domain more complex than a single
+  // interval of values. All intervals are stored in a vector, and we keep
+  // indices to the current interval of the lower bound, and to the end index
+  // which is exclusive.
+  //
+  // TODO(user): Avoid using hash_map here and above, a simple vector should
+  // be more efficient. Except if there is really little variables like this.
+  //
+  // TODO(user): We could share the std::vector<ClosedInterval> entry between a
+  // variable and its negations instead of having duplicates.
+  RevMap<hash_map<IntegerVariable, int>> var_to_current_lb_interval_index_;
+  hash_map<IntegerVariable, int> var_to_end_interval_index_;  // const entries.
+  std::vector<ClosedInterval> all_intervals_;                 // const entries.
 
   // Temporary data used by MergeReasonInto().
   mutable std::vector<int> tmp_queue_;
@@ -607,6 +653,7 @@ class PropagatorInterface {
   //   indices of the literals modified after the registration will be present.
   virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
     LOG(FATAL) << "Not implemented.";
+    return false;
   }
 };
 
@@ -809,11 +856,26 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable() {
   };
 }
 
+inline std::function<IntegerVariable(Model*)> ConstantIntegerVariable(
+    int64 value) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntegerTrail>()
+        ->GetOrCreateConstantIntegerVariable(IntegerValue(value));
+  };
+}
+
 inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64 lb,
                                                                  int64 ub) {
   return [=](Model* model) {
     return model->GetOrCreate<IntegerTrail>()->AddIntegerVariable(
         IntegerValue(lb), IntegerValue(ub));
+  };
+}
+
+inline std::function<IntegerVariable(Model*)> NewIntegerVariable(
+    const std::vector<ClosedInterval>& domain) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntegerTrail>()->AddIntegerVariable(domain);
   };
 }
 
@@ -930,13 +992,37 @@ inline std::function<void(Model*)> ReifiedInInterval(IntegerVariable v,
   };
 }
 
+// Calling model.Add(FullyEncodeVariable(var)) will create one literal per value
+// in the domain of var (if not already done), and wire everything correctly.
+// This also returns the full encoding, see the FullDomainEncoding() method of
+// the IntegerEncoder class.
+inline std::function<std::vector<IntegerEncoder::ValueLiteralPair>(Model*)>
+FullyEncodeVariable(IntegerVariable var) {
+  return [=](Model* model) {
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    if (!encoder->VariableIsFullyEncoded(var)) {
+      IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+      std::vector<IntegerValue> values;
+      for (const ClosedInterval interval :
+           integer_trail->InitialVariableDomain(var)) {
+        for (IntegerValue v(interval.start); v <= interval.end; ++v) {
+          values.push_back(v);
+        }
+      }
+      encoder->FullyEncodeVariable(var, values);
+    }
+    return encoder->FullDomainEncoding(var);
+  };
+}
+
 // A wrapper around SatSolver::Solve that handles integer variable with lazy
 // encoding. Repeatedly calls SatSolver::Solve on the model, and instantiates
 // literals for non-fixed variables in vars_with_lazy_encoding, until either all
 // variables are fixed to a single value, or the model is proved UNSAT. Returns
 // the status of the last call to SatSolver::Solve().
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(
-    Model* model, const std::vector<IntegerVariable>& vars_with_lazy_encoding);
+    const std::vector<Literal>& assumptions,
+    const std::vector<IntegerVariable>& vars_with_lazy_encoding, Model* model);
 
 }  // namespace sat
 }  // namespace operations_research

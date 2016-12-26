@@ -133,12 +133,16 @@ void PrecedencesPropagator::ComputePrecedences(
     if (!to_consider[index] || var >= impacted_arcs_.size()) continue;
     for (const int i : impacted_arcs_[var]) {
       const ArcInfo& arc = arcs_[i];
-      if (arc.tail_var != var) continue;  // Skip variable duration.
+
+      IntegerValue min_offset = arc.offset;
+      if (arc.offset_var != kNoIntegerVariable) {
+        min_offset += integer_trail_->LowerBound(arc.offset_var);
+      }
 
       // We don't handle offsets and just care about "is before or at", so we
       // skip negative offsets and just treat a positive one as zero. Because of
       // this, we may miss some propagation opportunities.
-      if (arc.offset < 0) continue;
+      if (min_offset < 0) continue;
       if (var_to_degree_[arc.head_var] == 0) {
         tmp_sorted_vars_.push_back(
             {arc.head_var, integer_trail_->LowerBound(arc.head_var)});

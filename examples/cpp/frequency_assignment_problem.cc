@@ -48,6 +48,7 @@
 
 #include <algorithm>
 #include <map>
+#include <utility>
 #include <vector>
 
 #include "base/commandlineflags.h"
@@ -95,7 +96,7 @@ class OrderingDecision : public Decision {
       : variable1_(variable1),
         variable2_(variable2),
         value_(value),
-        operator_(operation) {}
+        operator_(std::move(operation)) {}
   ~OrderingDecision() override {}
 
   // Apply will be called first when the decision is executed.

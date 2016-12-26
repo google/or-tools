@@ -104,14 +104,15 @@ bool MainLpPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
       RUN_PREPROCESSOR(EmptyColumnPreprocessor);
       RUN_PREPROCESSOR(EmptyConstraintPreprocessor);
     }
+
+    RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
   }
 
-  // These are implemented as preprocessors, but are not controlled by the
-  // use_preprocessing() parameter.
-  RUN_PREPROCESSOR(SingletonColumnSignPreprocessor);
+  // The scaling is controled by use_scaling, not use_preprocessing.
   RUN_PREPROCESSOR(ScalingPreprocessor);
-  RUN_PREPROCESSOR(AddSlackVariablesPreprocessor);
 
+  // This one must always run. It is needed by the revised simplex code.
+  RUN_PREPROCESSOR(AddSlackVariablesPreprocessor);
   return !preprocessors_.empty();
 }
 

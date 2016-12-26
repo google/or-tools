@@ -1,0 +1,60 @@
+17 January 1999, 8:16:52 pm
+
+Problem type: RCPSP
+Maximal time lags: true
+Multi mode: true
+Mode-varying resource demand: true
+CPM-case: false
+Cycle creation: direct
+Output format: ProGenMax
+Number: 10
+Minimal number of activities: 100 
+Maximal number of activities: 100 
+Minimal number of modes per activity: 3 4 5 
+Maximal number of modes per activity: 3 4 5 
+Minimal duration of activity: 1 
+Maximal duration of activity: 10 
+Minimal number of initial activities: 2 
+Maximal number of initial activities: 5 
+Minimal number of terminal activities: 2 
+Maximal number of terminal activities: 5 
+Maximal number of predecessor activities: 5 
+Maximal number of successor activities: 5 
+Restrictiveness of Thesen: 0.5 
+Degree of redundancy: 0.05 
+Deviation of minimal time lags from durations: 1.0 
+Minimal percentage of maximal time lags: 0.05 
+Maximal percentage of maximal time lags: 0.25 
+Minimal number of cycle structures: 1 
+Maximal number of cycle structures: 50 
+Minimal number of nodes per cycle structure: 2 
+Maximal number of nodes per cycle structure: 100 
+Coefficient of cycle structure density: 0.5 
+Tightness of maximal time lags: 0.5 
+Slack factor: 0.0 
+Minimal number of renewable resources: 3 
+Maximal number of renewable resources: 3 
+Minimal number of nonrenewable resources: 3 
+Maximal number of nonrenewable resources: 3 
+Minimal number of doubly-constrained resources: 0 
+Maximal number of doubly-constrained resources: 0 
+Minimal number of renewable resources per activity: 1 
+Maximal number of renewable resources per activity: 3 
+Minimal number of nonrenewable resources per activity: 1 
+Maximal number of nonrenewable resources  per activity: 3 
+Minimal number of doubly-constrained resources per activity: 0 
+Maximal number of doubly-constrained resources per activity: 0 
+Minimal renewable demand of resources per activity: 1 
+Maximal renewable demand of resources per activity: 10 
+Minimal nonrenewable demand of resources per activity: 1 
+Maximal nonrenewable demand of resources  per activity: 10 
+Minimal resource factor of renewable resources: 1 
+Maximal resource factor of renewable resources: 1 
+Minimal resource factor of nonrenewable resources: 1 
+Maximal resource factor of nonrenewable resources: 1 
+Minimal resource factor of doubly-constrained resources: 1 
+Maximal resource factor of doubly-constrained resources: 1 
+Minimal resource strength (renewable): 0.25 0.5 0.75 
+Maximal resource strength (renewable): 0.25 0.5 0.75 
+Minimal resource strength (nonrenewable): 0.25 0.5 0.75 
+Maximal resource strength (nonrenewable): 0.25 0.5 0.75 

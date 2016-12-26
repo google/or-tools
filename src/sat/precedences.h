@@ -400,6 +400,16 @@ inline std::function<void(Model*)> Equality(IntegerVariable a,
   };
 }
 
+// a + offset == b.
+inline std::function<void(Model*)> EqualityWithOffset(IntegerVariable a,
+                                                      IntegerVariable b,
+                                                      int64 offset) {
+  return [=](Model* model) {
+    model->Add(LowerOrEqualWithOffset(a, b, offset));
+    model->Add(LowerOrEqualWithOffset(b, a, -offset));
+  };
+}
+
 // is_le => (a + offset <= b).
 inline std::function<void(Model*)> ConditionalLowerOrEqualWithOffset(
     IntegerVariable a, IntegerVariable b, int64 offset, Literal is_le) {

@@ -16,28 +16,28 @@
 namespace operations_research {
 namespace sat {
 
-IntervalVariable IntervalsRepository::CreateNewInterval() {
+IntervalVariable IntervalsRepository::CreateNewInterval(IntegerValue min_start,
+                                                        IntegerValue max_end) {
   const IntervalVariable task_id(start_vars_.size());
 
-  // Our interval always starts at zero.
-  // TODO(user): there is no reason for this, let the user decide.
-  const IntegerValue lb(0);
-  const IntegerValue ub(kMaxIntegerValue);
-  start_vars_.push_back(integer_trail_->AddIntegerVariable(lb, ub));
-  end_vars_.push_back(integer_trail_->AddIntegerVariable(lb, ub));
+  start_vars_.push_back(integer_trail_->AddIntegerVariable(min_start, max_end));
+  end_vars_.push_back(integer_trail_->AddIntegerVariable(min_start, max_end));
   size_vars_.push_back(kNoIntegerVariable);
   fixed_sizes_.push_back(IntegerValue(0));
   is_present_.push_back(kNoLiteralIndex);
   return task_id;
 }
 
-IntervalVariable IntervalsRepository::CreateInterval(IntegerValue min_size,
+IntervalVariable IntervalsRepository::CreateInterval(IntegerValue min_start,
+                                                     IntegerValue max_end,
+                                                     IntegerValue min_size,
                                                      IntegerValue max_size) {
+  CHECK_GE(min_size, 0);
   CHECK_LE(min_size, max_size);
   if (min_size == max_size) {
-    return CreateIntervalWithFixedSize(min_size);
+    return CreateIntervalWithFixedSize(min_start, max_end, min_size);
   }
-  const IntervalVariable t = CreateNewInterval();
+  const IntervalVariable t = CreateNewInterval(min_start, max_end);
   size_vars_.back() = integer_trail_->AddIntegerVariable(min_size, max_size);
   precedences_->AddPrecedenceWithVariableOffset(StartVar(t), EndVar(t),
                                                 SizeVar(t));
@@ -56,6 +56,7 @@ IntervalVariable IntervalsRepository::CreateIntervalFromStartAndSizeVars(
 
   // Create the "end" variable.
   // TODO(user): deal with overflow.
+  CHECK_GE(integer_trail_->LowerBound(size), 0);
   const IntegerValue end_lb =
       integer_trail_->LowerBound(start) + integer_trail_->LowerBound(size);
   const IntegerValue end_ub =
@@ -71,8 +72,9 @@ IntervalVariable IntervalsRepository::CreateIntervalFromStartAndSizeVars(
 }
 
 IntervalVariable IntervalsRepository::CreateIntervalWithFixedSize(
-    IntegerValue size) {
-  const IntervalVariable t = CreateNewInterval();
+    IntegerValue min_start, IntegerValue max_end, IntegerValue size) {
+  CHECK_GE(size, 0);
+  const IntervalVariable t = CreateNewInterval(min_start, max_end);
   fixed_sizes_.back() = size;
   precedences_->AddPrecedenceWithOffset(StartVar(t), EndVar(t), size);
   precedences_->AddPrecedenceWithOffset(EndVar(t), StartVar(t), -size);
@@ -80,8 +82,10 @@ IntervalVariable IntervalsRepository::CreateIntervalWithFixedSize(
 }
 
 IntervalVariable IntervalsRepository::CreateOptionalIntervalWithFixedSize(
-    IntegerValue size, Literal is_present) {
-  const IntervalVariable t = CreateIntervalWithFixedSize(size);
+    IntegerValue min_start, IntegerValue max_end, IntegerValue size,
+    Literal is_present) {
+  const IntervalVariable t =
+      CreateIntervalWithFixedSize(min_start, max_end, size);
   is_present_.back() = is_present.Index();
   precedences_->MarkIntegerVariableAsOptional(StartVar(t), is_present);
   integer_trail_->MarkIntegerVariableAsOptional(StartVar(t), is_present);

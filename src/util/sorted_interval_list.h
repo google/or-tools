@@ -23,38 +23,64 @@
 
 namespace operations_research {
 
+// Represents a closed interval [start, end]. We must have start <= end.
+struct ClosedInterval {
+  int64 start;  // Inclusive.
+  int64 end;    // Inclusive.
+  std::string DebugString() const;
+};
+
+// Returns a compact std::string of a vector of intervals like "[1,4][6][10,20]".
+std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals);
+
+std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval);
+std::ostream& operator<<(std::ostream& out,
+                         const std::vector<ClosedInterval>& intervals);
+
+// Converts an unsorted list of integer values to the unique list of
+// non-adjacent, disjoint ClosedInterval spanning exactly these values. Eg. for
+// values (after sorting): {1, 2, 3, 5, 7, 8, 10, 11}, it returns the list of
+// intervals: [1,3] [5] [7,8] [10,11]. Input values may be repeated, with no
+// consequence on the output.
+//
+// The output will satisfy the criteria of IntervalsAreSortedAndDisjoint().
+std::vector<ClosedInterval> SortedDisjointIntervalsFromValues(
+    std::vector<int64> values);
+
+// Returns true iff we have:
+// - The intervals appear in increasing order.
+// - for all i: intervals[i].start <= intervals[i].end
+// - for all i but the last: intervals[i].end + 1 < intervals[i+1].start
+bool IntervalsAreSortedAndDisjoint(
+    const std::vector<ClosedInterval>& intervals);
+
 // This class represents a sorted list of disjoint, closed intervals.  When an
 // interval is inserted, all intervals that overlap it or that are even adjacent
-// to it are merged into one. I.e. [0, 14] and [15, 30] will be merged to
-// [0, 30].
+// to it are merged into one. I.e. [0,14] and [15,30] will be merged to [0,30].
 //
 // Iterators returned by this class are invalidated by non-const operations.
 //
 // TODO(user): Templatize the class on the type of the bounds.
 class SortedDisjointIntervalList {
  public:
-  struct Interval {
-    int64 start;  // Inclusive.
-    int64 end;    // Inclusive.
-    std::string DebugString() const;
-  };
-
   struct IntervalComparator {
-    bool operator()(const Interval& a, const Interval& b) const {
+    bool operator()(const ClosedInterval& a, const ClosedInterval& b) const {
       return a.start != b.start ? a.start < b.start : a.end < b.end;
     }
   };
-  typedef std::set<Interval, IntervalComparator> IntervalSet;
+  typedef std::set<ClosedInterval, IntervalComparator> IntervalSet;
   typedef IntervalSet::iterator Iterator;
 
   SortedDisjointIntervalList();
+  explicit SortedDisjointIntervalList(
+      const std::vector<ClosedInterval>& intervals);
 
   // Creates a SortedDisjointIntervalList and fills it with intervals
   // [starts[i]..ends[i]]. All intervals must be consistent (starts[i] <=
   // ends[i]). There's two version, one for int64, one for int.
   //
   // TODO(user): Explain why we favored this API to the more natural
-  // input std::vector<Interval> or std::vector<std::pair<int, int>>.
+  // input std::vector<ClosedInterval> or std::vector<std::pair<int, int>>.
   SortedDisjointIntervalList(const std::vector<int64>& starts,
                              const std::vector<int64>& ends);
   SortedDisjointIntervalList(const std::vector<int>& starts,
@@ -105,7 +131,7 @@ class SortedDisjointIntervalList {
   // This is to use range loops in C++:
   // SortedDisjointIntervalList list;
   // ...
-  // for (const Interval interval : list) {
+  // for (const ClosedInterval interval : list) {
   //    ...
   // }
   const Iterator begin() const { return intervals_.begin(); }
@@ -122,9 +148,6 @@ class SortedDisjointIntervalList {
 
   IntervalSet intervals_;
 };
-
-std::ostream& operator<<(std::ostream& out,
-                    const SortedDisjointIntervalList::Interval& interval);
 
 }  // namespace operations_research
 

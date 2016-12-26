@@ -34,8 +34,8 @@ def test_modulo2():
                     solver.ASSIGN_MIN_VALUE)
   solver.NewSearch(db)
   while solver.NextSolution():
-    print 'x = %d, y = %d, x %% y = %d, x div y = %d' % (
-        x.Value(), y.Value(), z.Value(), t.Value())
+    print ('x = %d, y = %d, x %% y = %d, x div y = %d' % (
+        x.Value(), y.Value(), z.Value(), t.Value()))
   solver.EndSearch()
 
 def test_limit():

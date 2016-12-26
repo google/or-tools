@@ -11,7 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file provides the ITIVector container that wraps around the STL vector.
+// This file provides the ITIVector container that wraps around the STL
+// std::vector.
 // The wrapper restricts indexing to a pre-specified type-safe integer type or
 // IntType (see base/int_type.h).  It prevents accidental indexing
 // by different "logical" integer-like types (e.g.  another IntType) or native
@@ -28,7 +29,8 @@
 // and the ValueType is a supported native integer type such as int or
 // uint64 (see base/int_type.h for details).
 //
-// The wrapper exposes all public methods of STL vector and behaves mostly as
+// The wrapper exposes all public methods of STL std::vector and behaves mostly
+// as
 // a pass-through. The only method modified to ensure type-safety is the
 // operator [] and the at() method.
 //
@@ -65,7 +67,8 @@
 #include "base/macros.h"
 #include "base/int_type.h"
 
-// STL vector ------------------------------------------------------------------
+// STL std::vector
+// ------------------------------------------------------------------
 template <typename IntType, typename T, typename Alloc = std::allocator<T> >
 class ITIVector : protected std::vector<T, Alloc> {
  public:
@@ -99,10 +102,11 @@ class ITIVector : protected std::vector<T, Alloc> {
   // This const accessor is useful in defining the comparison operators below.
   const ParentType& get() const { return *this; }
   // The mutable accessor is useful when using auxiliar methods relying on
-  // vector parameters such as JoinUsing(), strings::Split(), etc.  Methods
+  // std::vector parameters such as JoinUsing(), strings::Split(), etc.  Methods
   // relying solely on iterators (e.g. STLDeleteElements) should work just fine
   // without the need for mutable_get().  NB: It should be used only in this
-  // case and thus should not be abused to index the underlying vector without
+  // case and thus should not be abused to index the underlying std::vector
+  // without
   // the appropriate IntType.
   ParentType* mutable_get() { return this; }
 
@@ -118,7 +122,8 @@ class ITIVector : protected std::vector<T, Alloc> {
     return ParentType::at(i.template value<size_t>());
   }
 
-  // -- Pass-through methods to STL vector -------------------------------------
+  // -- Pass-through methods to STL std::vector
+  // -------------------------------------
   ITIVector& operator=(const ITIVector& x) {
     ParentType::operator=(x.get());
     return *this;

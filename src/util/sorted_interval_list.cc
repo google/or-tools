@@ -21,6 +21,60 @@
 
 namespace operations_research {
 
+std::string ClosedInterval::DebugString() const {
+  if (start == end) return StringPrintf("[%" GG_LL_FORMAT "d]", start);
+  return StringPrintf("[%" GG_LL_FORMAT "d,%" GG_LL_FORMAT "d]", start, end);
+}
+
+std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals) {
+  std::string result;
+  for (ClosedInterval interval : intervals) {
+    result += interval.DebugString();
+  }
+  return result;
+}
+
+std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval) {
+  return out << interval.DebugString();
+}
+
+std::ostream& operator<<(std::ostream& out,
+                         const std::vector<ClosedInterval>& intervals) {
+  return out << IntervalsAsString(intervals);
+}
+
+std::vector<ClosedInterval> SortedDisjointIntervalsFromValues(
+    std::vector<int64> values) {
+  std::sort(values.begin(), values.end());
+  std::vector<ClosedInterval> result;
+  for (const int64 v : values) {
+    if (result.empty() || v > result.back().end + 1) {
+      result.push_back({v, v});
+    } else {
+      result.back().end = v;
+    }
+  }
+  return result;
+}
+
+bool IntervalsAreSortedAndDisjoint(
+    const std::vector<ClosedInterval>& intervals) {
+  if (intervals.empty()) return true;
+  int64 previous_end;
+  bool is_first_interval = true;
+  for (const ClosedInterval interval : intervals) {
+    if (interval.start > interval.end) return false;
+    if (!is_first_interval) {
+      // First test make sure that previous_end + 1 will not overflow.
+      if (interval.start <= previous_end) return false;
+      if (interval.start <= previous_end + 1) return false;
+    }
+    is_first_interval = false;
+    previous_end = interval.end;
+  }
+  return true;
+}
+
 SortedDisjointIntervalList::SortedDisjointIntervalList() {}
 
 SortedDisjointIntervalList::SortedDisjointIntervalList(
@@ -33,12 +87,19 @@ SortedDisjointIntervalList::SortedDisjointIntervalList(
   InsertIntervals(starts, ends);
 }
 
+SortedDisjointIntervalList::SortedDisjointIntervalList(
+    const std::vector<ClosedInterval>& vector_representation) {
+  for (ClosedInterval interval : vector_representation) {
+    InsertInterval(interval.start, interval.end);
+  }
+}
+
 SortedDisjointIntervalList
 SortedDisjointIntervalList::BuildComplementOnInterval(int64 start, int64 end) {
   SortedDisjointIntervalList interval_list;
   int64 next_start = start;
   for (auto it = FirstIntervalGreaterOrEqual(start); it != this->end(); ++it) {
-    const Interval& interval = *it;
+    const ClosedInterval& interval = *it;
     const int64 next_end = CapSub(interval.start, 1);
     if (next_end > end) break;
     if (next_start <= next_end) {
@@ -57,8 +118,7 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
   // start > end could mean an empty interval, but we prefer to LOG(DFATAL)
   // anyway. Really, the user should never give us that.
   if (start > end) {
-    LOG(DFATAL) << "Invalid (start, end) given as Interval: " << start << " .. "
-                << end;
+    LOG(DFATAL) << "Invalid interval: " << ClosedInterval({start, end});
     return intervals_.end();
   }
 
@@ -112,8 +172,8 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::InsertInterval(
   // because if one alters a set element's value, then it collapses the set
   // property! But in this very special case, we know that we can just overwrite
   // it->start, so we do it.
-  const_cast<Interval*>(&(*it))->start = new_start;
-  const_cast<Interval*>(&(*it))->end = new_end;
+  const_cast<ClosedInterval*>(&(*it))->start = new_start;
+  const_cast<ClosedInterval*>(&(*it))->end = new_end;
   return it;
 }
 
@@ -134,7 +194,7 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::GrowRightByOne(
       // interval on the left, since there were no interval adjacent to "value"
       // on the left.
       DCHECK_EQ(it->start, value + 1);
-      const_cast<Interval*>(&(*it))->start = value;
+      const_cast<ClosedInterval*>(&(*it))->start = value;
       return it;
     }
   }
@@ -148,10 +208,10 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::GrowRightByOne(
   *newly_covered = it_prev->end + 1;
   if (it != end() && it_prev->end + 2 == it->start) {
     // We need to merge it_prev with 'it'.
-    const_cast<Interval*>(&(*it_prev))->end = it->end;
+    const_cast<ClosedInterval*>(&(*it_prev))->end = it->end;
     intervals_.erase(it);
   } else {
-    const_cast<Interval*>(&(*it_prev))->end = it_prev->end + 1;
+    const_cast<ClosedInterval*>(&(*it_prev))->end = it_prev->end + 1;
   }
   return it_prev;
 }
@@ -193,22 +253,12 @@ SortedDisjointIntervalList::LastIntervalLessOrEqual(int64 value) const {
   return it_prev;
 }
 
-std::string SortedDisjointIntervalList::Interval::DebugString() const {
-  return StringPrintf("[%" GG_LL_FORMAT "d .. %" GG_LL_FORMAT "d]", start, end);
-}
-
 std::string SortedDisjointIntervalList::DebugString() const {
-  std::string str = "[";
-  for (const Interval& interval : intervals_) {
-    if (str.size() > 1) str += ", ";
+  std::string str;
+  for (const ClosedInterval& interval : intervals_) {
     str += interval.DebugString();
   }
-  str += "]";
   return str;
 }
 
-std::ostream& operator<<(std::ostream& out,
-                    const SortedDisjointIntervalList::Interval& interval) {
-  return out << interval.DebugString();
-}
 }  // namespace operations_research

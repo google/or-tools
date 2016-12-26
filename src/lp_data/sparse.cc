@@ -399,11 +399,11 @@ std::string SparseMatrix::Dump() const {
   const ColIndex num_cols(columns_.size());
 
   for (RowIndex row(0); row < num_rows_; ++row) {
-    StringAppendF(&result, "{ ");
+    result.append("{ ");
     for (ColIndex col(0); col < num_cols; ++col) {
       StringAppendF(&result, "%g ", ToDouble(LookUpValue(row, col)));
     }
-    StringAppendF(&result, "}\n");
+    result.append("}\n");
   }
   return result;
 }

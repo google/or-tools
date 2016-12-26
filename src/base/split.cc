@@ -30,23 +30,30 @@ namespace {
 // the characters in the std::string, not the entire std::string as a single delimiter.
 // ----------------------------------------------------------------------
 template <typename ITR>
+static inline void InternalSplitStringUsingChar(const std::string& full, char c,
+                                                ITR* result) {
+  const char* p = full.data();
+  const char* end = p + full.size();
+  while (p != end) {
+    if (*p == c) {
+      ++p;
+    } else {
+      const char* start = p;
+      while (++p != end && *p != c) {
+      }
+      result->emplace_back(start, p - start);
+    }
+  }
+  return;
+}
+
+template <typename ITR>
 static inline void InternalSplitStringUsing(const std::string& full,
                                             const char* delim, ITR* result) {
   // Optimize the common case where delim is a single character.
   if (delim[0] != '\0' && delim[1] == '\0') {
     char c = delim[0];
-    const char* p = full.data();
-    const char* end = p + full.size();
-    while (p != end) {
-      if (*p == c) {
-        ++p;
-      } else {
-        const char* start = p;
-        while (++p != end && *p != c) {
-        }
-        result->emplace_back(start, p - start);
-      }
-    }
+    InternalSplitStringUsingChar(full, c, result);
     return;
   }
 
@@ -66,6 +73,13 @@ static inline void InternalSplitStringUsing(const std::string& full,
 
 }  // namespace
 
+std::vector<std::string> Split(const std::string& full, char delim, int flags) {
+  CHECK_EQ(SkipEmpty(), flags);
+  std::vector<std::string> out;
+  InternalSplitStringUsingChar(full, delim, &out);
+  return out;
+}
+
 std::vector<std::string> Split(const std::string& full, const char* delim, int flags) {
   CHECK_EQ(SkipEmpty(), flags);
   std::vector<std::string> out;
@@ -74,8 +88,8 @@ std::vector<std::string> Split(const std::string& full, const char* delim, int f
 }
 
 std::vector<::operations_research::StringPiece> Split(const std::string& full,
-                                                 const char* delim,
-                                                 int64 flags) {
+                                                      const char* delim,
+                                                      int64 flags) {
   CHECK_EQ(SkipEmpty(), flags);
   std::vector<::operations_research::StringPiece> out;
   InternalSplitStringUsing(full, delim, &out);

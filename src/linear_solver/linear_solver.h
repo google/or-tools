@@ -459,6 +459,18 @@ class MPSolver {
     BASIC
   };
 
+  // Advanced usage: Incrementality. This function takes a starting basis to be
+  // used in the next LP Solve() call. The statuses of a current solution can be
+  // retrieved via the basis_status() function of a MPVariable or a
+  // MPConstraint.
+  //
+  // WARNING: With Glop, you should disable presolve when using this because
+  // this information will not be modified in sync with the presolve and will
+  // likely not mean much on the presolved problem.
+  void SetStartingLpBasis(
+      const std::vector<MPSolver::BasisStatus>& variable_statuses,
+      const std::vector<MPSolver::BasisStatus>& constraint_statuses);
+
   // Infinity. You can use -MPSolver::infinity() for negative infinity.
   static double infinity() { return std::numeric_limits<double>::infinity(); }
 
@@ -847,9 +859,13 @@ class MPConstraint {
   // Advanced usage: returns the dual value of the constraint in the
   // current solution (only available for continuous problems).
   double dual_value() const;
-  // Advanced usage: returns the basis status of the slack variable
-  // associated with the constraint (only available for continuous
-  // problems).
+
+  // Advanced usage: returns the basis status of the constraint (only available
+  // for continuous problems). Note that if a constraint "linear_expression in
+  // [lb, ub]" is transformed into "linear_expression + slack = 0" with slack in
+  // [-ub, -lb], then this status is the same as the status of the slack
+  // variable with AT_UPPER_BOUND and AT_LOWER_BOUND swapped.
+  //
   // @see MPSolver::BasisStatus.
   MPSolver::BasisStatus basis_status() const;
 
@@ -1231,6 +1247,13 @@ class MPSolverInterface {
   // Computes exact condition number. Only available for continuous
   // problems and only implemented in GLPK.
   virtual double ComputeExactConditionNumber() const;
+
+  // See MPSolver::SetStartingLpBasis().
+  virtual void SetStartingLpBasis(
+      const std::vector<MPSolver::BasisStatus>& variable_statuses,
+      const std::vector<MPSolver::BasisStatus>& constraint_statuses) {
+    LOG(FATAL) << "Not supported by this solver.";
+  }
 
   virtual bool InterruptSolve() { return false; }
 

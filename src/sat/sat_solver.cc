@@ -896,15 +896,20 @@ int NextMultipleOf(int64 value, int64 interval) {
 
 SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
     const std::vector<Literal>& assumptions) {
+  return ResetAndSolveWithGivenAssumptions(assumptions, nullptr);
+}
+
+SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
+    const std::vector<Literal>& assumptions, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
-  DCHECK(!is_model_unsat_);
+  if (is_model_unsat_) return MODEL_UNSAT;
   CHECK_LE(assumptions.size(), num_variables_);
   Backtrack(0);
+  assumption_level_ = assumptions.size();
   for (int i = 0; i < assumptions.size(); ++i) {
     decisions_[i].literal = assumptions[i];
   }
-  assumption_level_ = assumptions.size();
-  return SolveInternal(time_limit_.get());
+  return SolveInternal(time_limit == nullptr ? time_limit_.get() : time_limit);
 }
 
 SatSolver::Status SatSolver::StatusWithLog(Status status) {
@@ -977,7 +982,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   if (restart_algorithms.size() == 0) {
     SatParameters::RestartAlgorithm tmp;
     const std::vector<std::string> string_values = strings::Split(
-        parameters_.default_restart_algorithms(), ",", strings::SkipEmpty());
+        parameters_.default_restart_algorithms(), ',', strings::SkipEmpty());
     for (const std::string& string_value : string_values) {
       if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
         LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
@@ -1110,6 +1115,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
 }
 
 SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
+  if (time_limit == nullptr) SolveInternal(time_limit_.get());
   deterministic_time_at_last_advanced_time_limit_ = deterministic_time();
   return SolveInternal(time_limit);
 }

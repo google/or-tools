@@ -1523,6 +1523,13 @@ class RoutingDimension {
   // Returns the cost coefficient of the soft lower bound of a cumul variable
   // for a variable index. If no soft lower bound has been set, 0 is returned.
   int64 GetCumulVarSoftLowerBoundCoefficientFromIndex(int64 index) const;
+  // Sets the breaks for a given vehicle. Breaks are represented by
+  // IntervalVars. They may interrupt transits between nodes and increase
+  // the value of corresponding slack variables. However an interval cannot
+  // overlap the cumul variable of a node (the interval must either be before
+  // or after the node).
+  void SetBreakIntervalsOfVehicle(std::vector<IntervalVar*> breaks,
+                                  int vehicle);
   // Returns the parent in the dependency tree if any or nullptr otherwise.
   const RoutingDimension* base_dimension() const { return base_dimension_; }
   // It makes sense to use the function only for self-dependent dimension.

@@ -1,0 +1,27 @@
+Filename	Best solution	Time	Time found	First solution	Time	Number of nodes	Number of back's before 1st sol.
+E:\dfg\daten\ubo\ubo100\psp1.sch	0	0.030					
+E:\dfg\daten\ubo\ubo100\psp2.sch	0	0.020					
+E:\dfg\daten\ubo\ubo100\psp3.sch	0	0.010					
+E:\dfg\daten\ubo\ubo100\psp4.sch	436	30.304	0.681	448	0.381	5918	0
+E:\dfg\daten\ubo\ubo100\psp5.sch	0	0.020					
+E:\dfg\daten\ubo\ubo100\psp6.sch	0	0.020					
+E:\dfg\daten\ubo\ubo100\psp7.sch	459	30.824	0.461	459	0.461	7677	2
+E:\dfg\daten\ubo\ubo100\psp8.sch	447	30.945	17.145	471	0.621	4936	0
+E:\dfg\daten\ubo\ubo100\psp9.sch	0	0.060					
+E:\dfg\daten\ubo\ubo100\psp10.sch	0	30.884					
+E:\dfg\daten\ubo\ubo100\psp11.sch	0	30.964					
+E:\dfg\daten\ubo\ubo100\psp12.sch	227	30.965	9.163	233	0.271	8491	0
+E:\dfg\daten\ubo\ubo100\psp13.sch	204	31.024	14.741	207	5.588	2470	6
+E:\dfg\daten\ubo\ubo100\psp14.sch	215	30.855	6.610	225	0.581	7792	17
+E:\dfg\daten\ubo\ubo100\psp15.sch	275	3.895	3.865	280	1.001	868	29
+E:\dfg\daten\ubo\ubo100\psp16.sch	0	31.014					
+E:\dfg\daten\ubo\ubo100\psp17.sch	287	3.405	3.385	294	0.801	966	0
+E:\dfg\daten\ubo\ubo100\psp18.sch	0	67.277					
+E:\dfg\daten\ubo\ubo100\psp19.sch	200	30.213	5.047	214	1.031	7264	0
+E:\dfg\daten\ubo\ubo100\psp20.sch	226	30.945	30.074	232	29.883	6267	2755
+E:\dfg\daten\ubo\ubo100\psp21.sch	262	30.965	19.107	264	0.110	11519	0
+E:\dfg\daten\ubo\ubo100\psp22.sch	492	30.944	0.630	493	0.080	9085	1
+E:\dfg\daten\ubo\ubo100\psp23.sch	269	0.351	0.331	269	0.331	255	0
+E:\dfg\daten\ubo\ubo100\psp24.sch	196	30.634	2.954	200	0.881	2605	0
+E:\dfg\daten\ubo\ubo100\psp25.sch	194	0.340	0.320	194	0.320	131	0
+E:\dfg\daten\ubo\ubo100\psp26.sch	178	0.281	0.271	179	0.191	111	0

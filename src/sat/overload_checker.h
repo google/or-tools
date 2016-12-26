@@ -54,7 +54,8 @@ class OverloadChecker : public PropagatorInterface {
  public:
   OverloadChecker(const std::vector<IntervalVariable>& interval_vars,
                   const std::vector<IntegerVariable>& demand_vars,
-                  IntegerVariable capacity, IntegerTrail* integer_trail,
+                  IntegerVariable capacity, Trail* trail,
+                  IntegerTrail* integer_trail,
                   IntervalsRepository* intervals_repository);
 
   bool Propagate() final;
@@ -69,11 +70,14 @@ class OverloadChecker : public PropagatorInterface {
     bool operator<(TaskTime other) const { return time < other.time; }
   };
 
-  // Inserts the task task_id to the leaf leaf_id with the given energy and
-  // envelope. The change is propagated to the top of the Theta-tree by
-  // recomputing the energy and the envelope of all the leaf's ancestors.
-  void InsertTaskInThetaTree(int task_id, int leaf_id, IntegerValue energy,
+  // Inserts the task at leaf_id with the given energy and envelope. The change
+  // is propagated to the top of the Theta-tree by recomputing the energy and
+  // the envelope of all the leaf's ancestors.
+  void InsertTaskInThetaTree(int leaf_id, IntegerValue energy,
                              IntegerValue envelope);
+
+  // Remove the task at leaf_id from the Theta-tree.
+  void RemoveTaskFromThetaTree(int leaf_id);
 
   // Resets the theta-tree such that its deepest level is the first that can
   // contain at least num_tasks leaves. All nodes are resets to energy = 0 and
@@ -97,11 +101,14 @@ class OverloadChecker : public PropagatorInterface {
   }
 
   IntegerValue DurationMin(int task_id) const {
-    if (duration_vars_[task_id] != kNoIntegerVariable) {
-      return integer_trail_->LowerBound(duration_vars_[task_id]);
-    }
-    return intervals_repository_->FixedSize(interval_vars_[task_id]);
+    return intervals_repository_->MinSize(interval_vars_[task_id]);
   }
+
+  // An optional task can be present, absent or its status still unknown. Normal
+  // tasks are always present.
+  bool IsPresent(int task_id) const;
+  bool IsAbsent(int task_id) const;
+  void AddPresenceReasonIfNeeded(int task_id);
 
   // Number of tasks.
   const int num_tasks_;
@@ -118,8 +125,10 @@ class OverloadChecker : public PropagatorInterface {
   const IntegerVariable capacity_var_;
 
   // Reason vector.
-  std::vector<IntegerLiteral> reason_;
+  std::vector<Literal> literal_reason_;
+  std::vector<IntegerLiteral> integer_reason_;
 
+  Trail* trail_;
   IntegerTrail* integer_trail_;
   IntervalsRepository* intervals_repository_;
 

@@ -29,7 +29,7 @@ namespace fz {
 // objects.
 class SolverData {
  public:
-  SolverData(const std::string& name) : solver_(name), sat_(nullptr) {}
+  explicit SolverData(const std::string& name) : solver_(name), sat_(nullptr) {}
 
   // ----- Methods that deals with expressions and variables -----
   IntExpr* GetOrCreateExpression(const Argument& argument);

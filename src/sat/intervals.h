@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_INTERVALS_H_
 #define OR_TOOLS_SAT_INTERVALS_H_
 
+#include "sat/cp_constraints.h"
 #include "sat/integer.h"
 #include "sat/integer_expr.h"
 #include "sat/model.h"
@@ -50,9 +51,14 @@ class IntervalsRepository {
   int NumIntervals() const { return start_vars_.size(); }
 
   // Functions to add a new interval to the repository.
-  IntervalVariable CreateInterval(IntegerValue min_size, IntegerValue max_size);
-  IntervalVariable CreateIntervalWithFixedSize(IntegerValue size);
-  IntervalVariable CreateOptionalIntervalWithFixedSize(IntegerValue size,
+  IntervalVariable CreateInterval(IntegerValue min_start, IntegerValue max_end,
+                                  IntegerValue min_size, IntegerValue max_size);
+  IntervalVariable CreateIntervalWithFixedSize(IntegerValue min_start,
+                                               IntegerValue max_end,
+                                               IntegerValue size);
+  IntervalVariable CreateOptionalIntervalWithFixedSize(IntegerValue min_start,
+                                                       IntegerValue max_end,
+                                                       IntegerValue size,
                                                        Literal is_present);
   IntervalVariable CreateIntervalFromStartAndSizeVars(IntegerVariable start,
                                                       IntegerVariable size);
@@ -76,12 +82,24 @@ class IntervalsRepository {
   IntegerVariable StartVar(IntervalVariable i) const { return start_vars_[i]; }
   IntegerVariable EndVar(IntervalVariable i) const { return end_vars_[i]; }
 
-  // Only meaningfull if SizeVar(i) == kNoIntegerVariable.
-  IntegerValue FixedSize(IntervalVariable i) const { return fixed_sizes_[i]; }
+  // Return the minimum size of the given IntervalVariable.
+  IntegerValue MinSize(IntervalVariable i) const {
+    const IntegerVariable size_var = size_vars_[i];
+    if (size_var == kNoIntegerVariable) return fixed_sizes_[i];
+    return integer_trail_->LowerBound(size_var);
+  }
+
+  // Return the maximum size of the given IntervalVariable.
+  IntegerValue MaxSize(IntervalVariable i) const {
+    const IntegerVariable size_var = size_vars_[i];
+    if (size_var == kNoIntegerVariable) return fixed_sizes_[i];
+    return integer_trail_->UpperBound(size_var);
+  }
 
  private:
   // Creates a new interval and returns its id.
-  IntervalVariable CreateNewInterval();
+  IntervalVariable CreateNewInterval(IntegerValue min_start,
+                                     IntegerValue max_end);
 
   // External classes needed.
   IntegerTrail* integer_trail_;
@@ -124,26 +142,32 @@ inline std::function<IntegerVariable(const Model&)> SizeVar(
   };
 }
 
-inline std::function<IntervalVariable(Model*)> NewInterval(int64 size) {
+inline std::function<IntervalVariable(Model*)> NewInterval(int64 min_start,
+                                                           int64 max_end,
+                                                           int64 size) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()
-        ->CreateIntervalWithFixedSize(IntegerValue(size));
+        ->CreateIntervalWithFixedSize(
+            IntegerValue(min_start), IntegerValue(max_end), IntegerValue(size));
   };
 }
 
 inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
-    int64 min_size, int64 max_size) {
+    int64 min_start, int64 max_end, int64 min_size, int64 max_size) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        IntegerValue(min_size), IntegerValue(max_size));
+        IntegerValue(min_start), IntegerValue(max_end), IntegerValue(min_size),
+        IntegerValue(max_size));
   };
 }
 
 inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
-    int64 size, Literal is_present) {
+    int64 min_start, int64 max_end, int64 size, Literal is_present) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()
-        ->CreateOptionalIntervalWithFixedSize(IntegerValue(size), is_present);
+        ->CreateOptionalIntervalWithFixedSize(IntegerValue(min_start),
+                                              IntegerValue(max_end),
+                                              IntegerValue(size), is_present);
   };
 }
 
@@ -152,73 +176,6 @@ inline std::function<IntervalVariable(Model*)> NewIntervalFromStartAndSizeVars(
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()
         ->CreateIntervalFromStartAndSizeVars(start, size);
-  };
-}
-
-inline std::function<void(Model*)> EndBefore(IntervalVariable i1,
-                                             IntegerVariable ivar) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->EndVar(i1), ivar);
-  };
-}
-
-inline std::function<void(Model*)> EndBeforeWithOffset(IntervalVariable i1,
-                                                       IntegerVariable ivar,
-                                                       int64 offset) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedenceWithOffset(intervals->EndVar(i1), ivar,
-                                         IntegerValue(offset));
-  };
-}
-
-inline std::function<void(Model*)> EndBeforeStart(IntervalVariable i1,
-                                                  IntervalVariable i2) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->EndVar(i1), intervals->StartVar(i2));
-  };
-}
-
-inline std::function<void(Model*)> StartAtEnd(IntervalVariable i1,
-                                              IntervalVariable i2) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->EndVar(i1), intervals->StartVar(i2));
-    precedences->AddPrecedence(intervals->StartVar(i2), intervals->EndVar(i1));
-  };
-}
-
-inline std::function<void(Model*)> StartAtStart(IntervalVariable i1,
-                                                IntervalVariable i2) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->StartVar(i1),
-                               intervals->StartVar(i2));
-    precedences->AddPrecedence(intervals->StartVar(i2),
-                               intervals->StartVar(i1));
-  };
-}
-
-inline std::function<void(Model*)> EndAtEnd(IntervalVariable i1,
-                                            IntervalVariable i2) {
-  return [=](Model* model) {
-    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
-    PrecedencesPropagator* precedences =
-        model->GetOrCreate<PrecedencesPropagator>();
-    precedences->AddPrecedence(intervals->EndVar(i1), intervals->EndVar(i2));
-    precedences->AddPrecedence(intervals->EndVar(i2), intervals->EndVar(i1));
   };
 }
 
@@ -237,18 +194,38 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
       CHECK(intervals->IsOptional(member));
       const Literal is_present = intervals->IsPresentLiteral(member);
       sat_ct.push_back({is_present, Coefficient(1)});
-      model->Add(StartAtStart(master, member));
-      model->Add(EndAtEnd(member, master));
+      model->Add(
+          Equality(model->Get(StartVar(master)), model->Get(StartVar(member))));
+      model->Add(
+          Equality(model->Get(EndVar(master)), model->Get(EndVar(member))));
 
-      // TODO(user): This only work for members with fixed size. Generalize.
+      // TODO(user): IsOneOf() only work for members with fixed size.
+      // Generalize to an "int_var_element" constraint.
       CHECK_EQ(intervals->SizeVar(member), kNoIntegerVariable);
       presences.push_back(is_present);
-      durations.push_back(intervals->FixedSize(member));
+      durations.push_back(intervals->MinSize(member));
     }
     if (intervals->SizeVar(master) != kNoIntegerVariable) {
       model->Add(IsOneOf(intervals->SizeVar(master), presences, durations));
     }
     model->Add(BooleanLinearConstraint(1, 1, &sat_ct));
+
+    // Propagate from the candidate bounds to the master interval ones.
+    {
+      std::vector<IntegerVariable> starts;
+      for (const IntervalVariable member : members) {
+        starts.push_back(intervals->StartVar(member));
+      }
+      model->Add(
+          PartialIsOneOfVar(intervals->StartVar(master), starts, presences));
+    }
+    {
+      std::vector<IntegerVariable> ends;
+      for (const IntervalVariable member : members) {
+        ends.push_back(intervals->EndVar(member));
+      }
+      model->Add(PartialIsOneOfVar(intervals->EndVar(master), ends, presences));
+    }
   };
 }
 

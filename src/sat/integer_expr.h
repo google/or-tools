@@ -174,6 +174,14 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     int64 upper_bound) {
   // Special cases.
   CHECK_GE(vars.size(), 1) << "Should be encoded differently.";
+  if (vars.size() == 1) {
+    CHECK_NE(coefficients[0], 0);
+    if (coefficients[0] > 0) {
+      return LowerOrEqual(vars[0], upper_bound / coefficients[0]);
+    } else {
+      return GreaterOrEqual(vars[0], upper_bound / coefficients[0]);
+    }
+  }
   if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&
       (coefficients[1] == 1 || coefficients[1] == -1)) {
     return Sum2LowerOrEqual(
@@ -205,9 +213,8 @@ inline std::function<void(Model*)> WeightedSumGreaterOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
     int64 lower_bound) {
   // We just negate everything and use an <= constraints.
-  std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
-                                           coefficients.end());
-  for (IntegerValue& ref : negated_coeffs) ref = -ref;
+  std::vector<int64> negated_coeffs(coefficients.begin(), coefficients.end());
+  for (int64& ref : negated_coeffs) ref = -ref;
   return WeightedSumLowerOrEqual(vars, negated_coeffs, -lower_bound);
 }
 
@@ -228,7 +235,11 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
     Literal is_le, const std::vector<IntegerVariable>& vars,
     const VectorInt& coefficients, int64 upper_bound) {
   // Special cases.
-  CHECK_GE(vars.size(), 1) << "Should be encoded differently.";
+  CHECK_GE(vars.size(), 1);
+  if (vars.size() == 1) {
+    LOG(INFO) << "ConditionalWeightedSumLowerOrEqual() with 1 term. Should "
+                 "have been presolved!";
+  }
   if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&
       (coefficients[1] == 1 || coefficients[1] == -1)) {
     return ConditionalSum2LowerOrEqual(
@@ -262,9 +273,8 @@ inline std::function<void(Model*)> ConditionalWeightedSumGreaterOrEqual(
     Literal is_ge, const std::vector<IntegerVariable>& vars,
     const VectorInt& coefficients, int64 lower_bound) {
   // We just negate everything and use an <= constraint.
-  std::vector<IntegerValue> negated_coeffs(coefficients.begin(),
-                                           coefficients.end());
-  for (IntegerValue& ref : negated_coeffs) ref = -ref;
+  std::vector<int64> negated_coeffs(coefficients.begin(), coefficients.end());
+  for (int64& ref : negated_coeffs) ref = -ref;
   return ConditionalWeightedSumLowerOrEqual(is_ge, vars, negated_coeffs,
                                             -lower_bound);
 }
@@ -332,8 +342,8 @@ inline std::function<void(Model*)> WeightedSumNotEqual(
 // Model-based function to create an IntegerVariable that corresponds to the
 // given weighted sum of other IntegerVariables.
 //
-// Note that this is templated so that it can seemlessly accept std::vector<int>,
-// std::vector<int64> or std::vector<IntegerValue>!
+// Note that this is templated so that it can seemlessly accept std::vector<int> or
+// std::vector<int64>.
 //
 // TODO(user): invert the coefficients/vars arguments.
 template <typename VectorInt>
@@ -341,9 +351,6 @@ inline std::function<IntegerVariable(Model*)> NewWeightedSum(
     const VectorInt& coefficients, const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
     std::vector<IntegerVariable> new_vars = vars;
-    std::vector<IntegerValue> new_coeffs(coefficients.begin(),
-                                         coefficients.end());
-
     // To avoid overflow in the FixedWeightedSum() constraint, we need to
     // compute the basic bounds on the sum.
     //
@@ -362,8 +369,8 @@ inline std::function<IntegerVariable(Model*)> NewWeightedSum(
 
     const IntegerVariable sum = model->Add(NewIntegerVariable(sum_lb, sum_ub));
     new_vars.push_back(sum);
-    new_coeffs.push_back(IntegerValue(-1));
-
+    std::vector<int64> new_coeffs(coefficients.begin(), coefficients.end());
+    new_coeffs.push_back(-1);
     model->Add(FixedWeightedSum(new_vars, new_coeffs, 0));
     return sum;
   };

@@ -1,18 +1,18 @@
-
 ##############################Windows specific part##############################
 
-# Please define WINDOWS_PYTHON_PATH (c:\\python27 by default)
-WINDOWS_PYTHON_PATH = c:\\python27-64
+# set this variable to the full path to your Python installation
+WINDOWS_PATH_TO_PYTHON =
+
 # Set this variable to use it as PYTHONPATH
-WINDOWS_OR_TOOLS_PYTHONPATH = 
+WINDOWS_PYTHONPATH = 
 
 ###############################Unix specific part################################
 
-# Set this variable to use a different python version. Example : PYTHON_VERSION = 3.5 or PYTHON_VERSION = 2
-PYTHON_VERSION = 
+# Set this variable to use a different python version. Example : UNIX_PYTHON_VER = 3.5 or UNIX_PYTHON_VER = 2.7
+UNIX_PYTHON_VER = 
 
 # Set this variable to use it as PYTHONPATH
-UNIX_OR_TOOLS_PYTHONPATH = 
+UNIX_PYTHONPATH = 
 
 ##################################################################################
 
@@ -33,24 +33,29 @@ endif
 
 ifeq ($(SYSTEM),win)
 PYTHON_EXECUTABLE = $(WINDOWS_PYTHON_PATH)$Spython
-SET_PYTHON_PATH = @set PYTHONPATH=$(WINDOWS_OR_TOOLS_PYTHONPATH) &&
-else
-PYTHON_EXECUTABLE = python$(PYTHON_VERSION)
-SET_PYTHON_PATH = @PYTHONPATH=$(UNIX_OR_TOOLS_PYTHONPATH)
+#Set PYTHONPATH only when WINDOWS_PYTHONPATH is used. 
+ifneq ($(WINDOWS_PYTHONPATH),)
+SET_PYTHONPATH = @set PYTHONPATH=$(WINDOWS_PYTHONPATH) &&
 endif
+else #UNIX
+PYTHON_EXECUTABLE = python$(UNIX_PYTHON_VER)
+#Set PYTHONPATH only when UNIX_PYTHONPATH is used. 
+ifneq ($(UNIX_PYTHONPATH),)
+SET_PYTHONPATH = @PYTHONPATH=$(UNIX_PYTHONPATH)
+endif
+
+endif #ifeq ($(SYSTEM),win)
 
 install: 
 	$(PYTHON_EXECUTABLE) setup.py install --user
-	$(SET_PYTHON_PATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=ERROR
+	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=ERROR
 
 check:
-	$(SET_PYTHON_PATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=INFO
+	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=INFO
 
 rpy: $(EX)
 	@echo Running $(EX)
-	$(SET_PYTHON_PATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=ERROR
-	$(SET_PYTHON_PATH) $(PYTHON_EXECUTABLE) $(EX) $(ARGS)
-
-
+	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=ERROR
+	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX) $(ARGS)
 
 print-% : ; @echo $* = $($*)

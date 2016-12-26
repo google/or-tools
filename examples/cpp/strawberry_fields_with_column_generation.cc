@@ -483,7 +483,7 @@ class CoveringProblem {
         }
       }
     }
-    StringAppendF(&output, "%s", display.get());
+    output.append(display.get());
     return output;
   }
 

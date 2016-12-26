@@ -89,7 +89,7 @@
 // as key to hashable containers such as hash_map and hash_set.
 //
 // We suggest using the IntTypeIndexedContainer wrapper around STL
-// vector (see int_type_indexed_vector.h) if an IntType is intended
+// std::vector (see int_type_indexed_std::vector.h) if an IntType is intended
 // to be used as an index into these containers.  These wrappers are
 // indexed in a type-safe manner using IntTypes to ensure type-safety.
 //
@@ -259,7 +259,7 @@ std::ostream& operator<<(std::ostream& os,  // NOLINT
 // -- NON-MEMBER ARITHMETIC OPERATORS ------------------------------------------
 // We support only the +, -, *, and / operators with the same IntType and
 // ValueType types.  The reason is to allow simple manipulation on these IDs
-// when used as indices in vectors and arrays.
+// when used as indices in std::vectors and arrays.
 //
 // NB: Although it is possible to do IntType * IntType and IntType / IntType,
 // it is probably non-sensical from a dimensionality analysis perspective.

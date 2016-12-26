@@ -168,7 +168,7 @@ class Presolver {
 
   // This method wraps each rule, calls it and log its effect.
   bool ApplyRule(Constraint* ct, const std::string& rule_name,
-                 std::function<bool(Constraint* ct, std::string*)> rule);
+                 const std::function<bool(Constraint* ct, std::string*)>& rule);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same

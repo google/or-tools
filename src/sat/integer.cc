@@ -13,10 +13,20 @@
 
 #include "sat/integer.h"
 
+//#include "base/iterator_adaptors.h"
 #include "base/stl_util.h"
 
 namespace operations_research {
 namespace sat {
+
+std::vector<IntegerVariable> NegationOf(
+    const std::vector<IntegerVariable>& vars) {
+  std::vector<IntegerVariable> result(vars.size());
+  for (int i = 0; i < vars.size(); ++i) {
+    result[i] = NegationOf(vars[i]);
+  }
+  return result;
+}
 
 void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var,
                                          std::vector<IntegerValue> values) {
@@ -238,6 +248,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
   // The data structure are reversible.
   watched_min_.SetLevel(trail->CurrentDecisionLevel());
   current_min_.SetLevel(trail->CurrentDecisionLevel());
+  var_to_current_lb_interval_index_.SetLevel(trail->CurrentDecisionLevel());
   if (encoder_->GetFullyEncodedVariables().size() != num_encoded_variables_) {
     num_encoded_variables_ = encoder_->GetFullyEncodedVariables().size();
 
@@ -330,6 +341,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
 void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
   watched_min_.SetLevel(trail.CurrentDecisionLevel());
   current_min_.SetLevel(trail.CurrentDecisionLevel());
+  var_to_current_lb_interval_index_.SetLevel(trail.CurrentDecisionLevel());
   propagation_trail_index_ =
       std::min(propagation_trail_index_, literal_trail_index);
 
@@ -384,6 +396,70 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   return i;
 }
 
+IntegerVariable IntegerTrail::AddIntegerVariable(
+    const std::vector<ClosedInterval>& domain) {
+  CHECK(!domain.empty());
+  CHECK(IntervalsAreSortedAndDisjoint(domain));
+  const IntegerVariable var = AddIntegerVariable(
+      IntegerValue(domain.front().start), IntegerValue(domain.back().end));
+
+  // We only stores the vector of closed intervals for "complex" domain.
+  if (domain.size() > 1) {
+    var_to_current_lb_interval_index_.Set(var, all_intervals_.size());
+    for (const ClosedInterval interval : domain) {
+      all_intervals_.push_back(interval);
+    }
+    InsertOrDie(&var_to_end_interval_index_, var, all_intervals_.size());
+
+    // Copy for the negated variable.
+    var_to_current_lb_interval_index_.Set(NegationOf(var),
+                                          all_intervals_.size());
+    for (int i = domain.size() - 1; i >= 0; --i) {
+      const ClosedInterval interval = domain[i];
+      all_intervals_.push_back({-interval.end, -interval.start});
+    }
+    InsertOrDie(&var_to_end_interval_index_, NegationOf(var),
+                all_intervals_.size());
+  }
+
+  return var;
+}
+
+// TODO(user): we could return a reference, but this is likely not in any
+// critical code path.
+std::vector<ClosedInterval> IntegerTrail::InitialVariableDomain(
+    IntegerVariable var) const {
+  const int interval_index =
+      FindWithDefault(var_to_current_lb_interval_index_, var, -1);
+  if (interval_index >= 0) {
+    return std::vector<ClosedInterval>(
+        &all_intervals_[interval_index],
+        &all_intervals_[FindOrDie(var_to_end_interval_index_, var)]);
+  } else {
+    std::vector<ClosedInterval> result;
+    result.push_back({LevelZeroBound(var.value()).value(),
+                      -LevelZeroBound(NegationOf(var).value()).value()});
+    return result;
+  }
+}
+
+IntegerVariable IntegerTrail::GetOrCreateConstantIntegerVariable(
+    IntegerValue value) {
+  auto insert = constant_map_.insert(std::make_pair(value, kNoIntegerVariable));
+  if (insert.second) {  // new element.
+    const IntegerVariable new_var = AddIntegerVariable(value, value);
+    insert.first->second = new_var;
+    if (value != 0) InsertOrDie(&constant_map_, -value, NegationOf(new_var));
+  }
+  return insert.first->second;
+}
+
+int IntegerTrail::NumConstantVariables() const {
+  // The +1 if for the special key zero (the only case when we have an odd
+  // number of entries).
+  return (constant_map_.size() + 1) / 2;
+}
+
 int IntegerTrail::FindLowestTrailIndexThatExplainBound(
     IntegerLiteral i_lit) const {
   DCHECK_LE(i_lit.bound, vars_[i_lit.var].current_bound);
@@ -401,8 +477,8 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
 
 bool IntegerTrail::EnqueueAssociatedLiteral(
     Literal literal, IntegerLiteral i_lit,
-    const std::vector<Literal>& literals_reason,
-    const std::vector<IntegerLiteral>& bounds_reason,
+    const std::vector<Literal>& literal_reason,
+    const std::vector<IntegerLiteral>& integer_reason,
     BooleanVariable* variable_with_same_reason) {
   if (!trail_->Assignment().VariableIsAssigned(literal.Variable())) {
     if (integer_decision_levels_.empty()) {
@@ -429,7 +505,7 @@ bool IntegerTrail::EnqueueAssociatedLiteral(
   }
   if (trail_->Assignment().LiteralIsFalse(literal)) {
     std::vector<Literal>* conflict = trail_->MutableConflict();
-    *conflict = literals_reason;
+    *conflict = literal_reason;
 
     // This is tricky, in some corner cases, the same Enqueue() will call
     // EnqueueAssociatedLiteral() on a literal and its opposite. In this case,
@@ -442,7 +518,7 @@ bool IntegerTrail::EnqueueAssociatedLiteral(
             integer_trail_.size()) {
       conflict->push_back(literal);
     }
-    MergeReasonInto(bounds_reason, conflict);
+    MergeReasonInto(integer_reason, conflict);
     return false;
   }
   return true;
@@ -450,15 +526,15 @@ bool IntegerTrail::EnqueueAssociatedLiteral(
 
 namespace {
 
-std::string ReasonDebugString(const std::vector<Literal>& literals_reason,
-                         const std::vector<IntegerLiteral>& bounds_reason) {
+std::string ReasonDebugString(const std::vector<Literal>& literal_reason,
+                         const std::vector<IntegerLiteral>& integer_reason) {
   std::string result = "literals:{";
-  for (const Literal l : literals_reason) {
+  for (const Literal l : literal_reason) {
     if (result.back() != '{') result += ",";
     result += l.DebugString();
   }
   result += "} bounds:{";
-  for (const IntegerLiteral l : bounds_reason) {
+  for (const IntegerLiteral l : integer_reason) {
     if (result.back() != '{') result += ",";
     result += l.DebugString();
   }
@@ -488,8 +564,10 @@ std::string IntegerTrail::DebugString() {
 }
 
 bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
-                           const std::vector<Literal>& literals_reason,
-                           const std::vector<IntegerLiteral>& bounds_reason) {
+                           const std::vector<Literal>& literal_reason,
+                           const std::vector<IntegerLiteral>& integer_reason) {
+  DCHECK(AllLiteralsAreFalse(literal_reason));
+
   // Nothing to do if the bound is not better than the current one.
   if (i_lit.bound <= vars_[i_lit.var].current_bound) return true;
   ++num_enqueues_;
@@ -497,13 +575,36 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   // This may not indicate an incorectness, but just some propagators that
   // didn't reach a fixed-point at level zero.
   if (DEBUG_MODE && !integer_decision_levels_.empty()) {
-    std::vector<Literal> l = literals_reason;
-    MergeReasonInto(bounds_reason, &l);
+    std::vector<Literal> l = literal_reason;
+    MergeReasonInto(integer_reason, &l);
     CHECK(!l.empty())
         << "Propagating a literal with no reason at a positive level!\n"
         << "level:" << integer_decision_levels_.size() << " i_lit:" << i_lit
-        << " " << ReasonDebugString(literals_reason, bounds_reason) << "\n"
+        << " " << ReasonDebugString(literal_reason, integer_reason) << "\n"
         << DebugString();
+  }
+
+  const IntegerVariable var(i_lit.var);
+
+  // If the domain of var is not a single intervals and i_lit.bound fall into a
+  // "hole", we increase it to the next possible value.
+  {
+    int interval_index =
+        FindWithDefault(var_to_current_lb_interval_index_, var, -1);
+    if (interval_index >= 0) {
+      const int end_index = FindOrDie(var_to_end_interval_index_, var);
+      while (interval_index < end_index &&
+             i_lit.bound > all_intervals_[interval_index].end) {
+        ++interval_index;
+      }
+      if (interval_index == end_index) {
+        return ReportConflict(literal_reason, integer_reason);
+      } else {
+        var_to_current_lb_interval_index_.Set(var, interval_index);
+        i_lit.bound = std::max(
+            i_lit.bound, IntegerValue(all_intervals_[interval_index].start));
+      }
+    }
   }
 
   // For the EnqueueWithSameReasonAs() mechanism.
@@ -511,7 +612,6 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
 
   // Deal with fully encoded variable. We want to do that first because this may
   // make the IntegerLiteral bound stronger.
-  const IntegerVariable var(i_lit.var);
   const int min_index = FindWithDefault(current_min_, var, -1);
   if (min_index >= 0) {
     // Recover the current min, and propagate to false all the values that
@@ -526,8 +626,8 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
       for (; i < encoding.size(); ++i) {
         if (i_lit.bound <= encoding[i].value) break;
         const Literal literal = encoding[i].literal.Negated();
-        if (!EnqueueAssociatedLiteral(literal, i_lit, literals_reason,
-                                      bounds_reason,
+        if (!EnqueueAssociatedLiteral(literal, i_lit, literal_reason,
+                                      integer_reason,
                                       &first_propagated_variable)) {
           return false;
         }
@@ -535,7 +635,7 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
 
       if (i == encoding.size()) {
         // Conflict: no possible values left.
-        return ReportConflict(literals_reason, bounds_reason);
+        return ReportConflict(literal_reason, integer_reason);
       } else {
         // We have a new min. Note that watched_min_ will be updated on the next
         // call to Propagate() since we just pushed the watched literal if it
@@ -555,19 +655,19 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
     if (!IsOptional(var) ||
         trail_->Assignment().LiteralIsFalse(Literal(is_empty_literals_[var]))) {
       std::vector<Literal>* conflict = trail_->MutableConflict();
-      *conflict = literals_reason;
+      *conflict = literal_reason;
       if (IsOptional(var)) {
         conflict->push_back(Literal(is_empty_literals_[var]));
       }
 
       // This is the same as:
-      //   MergeReasonInto(bounds_reason, conflict);
+      //   MergeReasonInto(integer_reason, conflict);
       //   MergeReasonInto({UpperBoundAsLiteral(var)}, conflict);
       // but with just one call to MergeReasonIntoInternal() for speed. Note
       // that it may also produce a smaller reason overall.
       DCHECK(tmp_queue_.empty());
       const int size = vars_.size();
-      for (const IntegerLiteral& literal : bounds_reason) {
+      for (const IntegerLiteral& literal : integer_reason) {
         const int trail_index = FindLowestTrailIndexThatExplainBound(literal);
         if (trail_index >= size) tmp_queue_.push_back(trail_index);
       }
@@ -597,9 +697,8 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   const LiteralIndex literal_index =
       encoder_->SearchForLiteralAtOrBefore(i_lit);
   if (literal_index != kNoLiteralIndex) {
-    if (!EnqueueAssociatedLiteral(Literal(literal_index), i_lit,
-                                  literals_reason, bounds_reason,
-                                  &first_propagated_variable)) {
+    if (!EnqueueAssociatedLiteral(Literal(literal_index), i_lit, literal_reason,
+                                  integer_reason, &first_propagated_variable)) {
       return false;
     }
   }
@@ -627,15 +726,15 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   vars_[i_lit.var].current_trail_index = integer_trail_.size() - 1;
 
   // Save the reason into our internal buffers.
-  if (!literals_reason.empty()) {
+  if (!literal_reason.empty()) {
     literals_reason_buffer_.insert(literals_reason_buffer_.end(),
-                                   literals_reason.begin(),
-                                   literals_reason.end());
+                                   literal_reason.begin(),
+                                   literal_reason.end());
   }
-  if (!bounds_reason.empty()) {
-    CHECK_NE(bounds_reason[0].var, kNoIntegerVariable);
+  if (!integer_reason.empty()) {
+    CHECK_NE(integer_reason[0].var, kNoIntegerVariable);
     bounds_reason_buffer_.insert(bounds_reason_buffer_.end(),
-                                 bounds_reason.begin(), bounds_reason.end());
+                                 integer_reason.begin(), integer_reason.end());
   }
 
   // Subtle: We do that after the IntegerLiteral as been enqueued for 2 reasons:
@@ -644,7 +743,7 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   //    TODO(user): The point 2 is brittle, try to clean it up.
   if (propagate_is_empty) {
     const Literal is_empty = Literal(is_empty_literals_[var]);
-    EnqueueLiteral(is_empty, literals_reason, bounds_reason);
+    EnqueueLiteral(is_empty, literal_reason, integer_reason);
     bounds_reason_buffer_.push_back(UpperBoundAsLiteral(var));
   }
 
@@ -699,6 +798,14 @@ std::vector<Literal> IntegerTrail::ReasonFor(IntegerLiteral literal) const {
   std::vector<Literal> reason;
   MergeReasonInto({literal}, &reason);
   return reason;
+}
+
+bool IntegerTrail::AllLiteralsAreFalse(
+    const std::vector<Literal>& literals) const {
+  for (const Literal lit : literals) {
+    if (!trail_->Assignment().LiteralIsFalse(lit)) return false;
+  }
+  return true;
 }
 
 // TODO(user): If this is called many time on the same variables, it could be
@@ -803,6 +910,7 @@ ClauseRef IntegerTrail::Reason(const Trail& trail, int trail_index) const {
 void IntegerTrail::EnqueueLiteral(
     Literal literal, const std::vector<Literal>& literal_reason,
     const std::vector<IntegerLiteral>& integer_reason) {
+  DCHECK(AllLiteralsAreFalse(literal_reason));
   if (integer_decision_levels_.empty()) {
     // Level zero. We don't keep any reason.
     trail_->EnqueueWithUnitReason(literal);
@@ -977,17 +1085,22 @@ void GenericLiteralWatcher::RegisterReversibleInt(int id, int* rev) {
 }
 
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(
-    Model* model, const std::vector<IntegerVariable>& variables_to_finalize) {
+    const std::vector<Literal>& assumptions,
+    const std::vector<IntegerVariable>& variables_to_finalize, Model* model) {
   TimeLimit* time_limit = model->Mutable<TimeLimit>();
   IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
   SatSolver::Status status = SatSolver::Status::MODEL_UNSAT;
   for (;;) {
-    if (time_limit == nullptr) {
-      status = solver->Solve();
-    } else {
+    if (assumptions.empty()) {
+      // TODO(user): This one doesn't do Backtrack(0), and doing it seems to
+      // trigger a bug in apps/compote/scheduler
+      // :instruction_scheduler_test, investigate.
       status = solver->SolveWithTimeLimit(time_limit);
+    } else {
+      status =
+          solver->ResetAndSolveWithGivenAssumptions(assumptions, time_limit);
     }
     if (status != SatSolver::MODEL_SAT) break;
 

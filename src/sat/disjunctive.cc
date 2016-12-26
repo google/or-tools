@@ -23,10 +23,27 @@ namespace sat {
 std::function<void(Model*)> Disjunctive(
     const std::vector<IntervalVariable>& vars) {
   return [=](Model* model) {
+    bool is_all_different = true;
+    IntervalsRepository* intervals = model->GetOrCreate<IntervalsRepository>();
+    for (const IntervalVariable var : vars) {
+      if (intervals->IsOptional(var) || intervals->MinSize(var) != 1 ||
+          intervals->MaxSize(var) != 1) {
+        is_all_different = false;
+        break;
+      }
+    }
+    if (is_all_different) {
+      std::vector<IntegerVariable> starts;
+      for (const IntervalVariable var : vars) {
+        starts.push_back(model->Get(StartVar(var)));
+      }
+      model->Add(AllDifferentOnBounds(starts));
+      return;
+    }
+
     DisjunctiveConstraint* disjunctive = new DisjunctiveConstraint(
         vars, model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>(),
-        model->GetOrCreate<IntervalsRepository>(),
-        model->GetOrCreate<PrecedencesPropagator>());
+        intervals, model->GetOrCreate<PrecedencesPropagator>());
     disjunctive->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     disjunctive->SetParameters(model->GetOrCreate<SatSolver>()->parameters());
     model->TakeOwnership(disjunctive);
@@ -170,7 +187,7 @@ bool DisjunctiveConstraint::Propagate() {
     }
     if (intervals_->SizeVar(i) == kNoIntegerVariable) {
       duration_vars_.push_back(kNoIntegerVariable);
-      fixed_durations_.push_back(intervals_->FixedSize(i));
+      fixed_durations_.push_back(intervals_->MinSize(i));
     } else {
       duration_vars_.push_back(intervals_->SizeVar(i));
       fixed_durations_.push_back(IntegerValue(0));

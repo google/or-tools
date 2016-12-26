@@ -2654,7 +2654,7 @@ class WeightedOptimizeVar : public OptimizeVar {
 
 std::string WeightedOptimizeVar::Print() const {
   std::string result(OptimizeVar::Print());
-  StringAppendF(&result, "\nWeighted Objective:\n");
+  result.append("\nWeighted Objective:\n");
   for (int i = 0; i < sub_objectives_.size(); ++i) {
     StringAppendF(&result, "Variable %s,\tvalue %lld,\tweight %lld\n",
                   sub_objectives_[i]->name().c_str(),

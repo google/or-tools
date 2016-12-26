@@ -214,7 +214,7 @@ std::string IntervalVarElement::DebugString() const {
     if (performed_max_ != performed_min_) {
       StringAppendF(&out, "..%" GG_LL_FORMAT "d", performed_max_);
     }
-    StringAppendF(&out, ")");
+    out.append(")");
     return out;
   } else {
     return "(...)";

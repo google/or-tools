@@ -1,0 +1,187 @@
+psp1: OK
+
+psp2: OK
+
+psp3
+Restrictiveness more than 10.0 % too large: 0.279184 > 0.25
+
+psp4: OK
+
+psp5: OK
+
+psp6: OK
+
+psp7: OK
+
+psp8: OK
+
+psp9: OK
+
+psp10: OK
+
+psp11: OK
+
+psp12: OK
+
+psp13: OK
+
+psp14
+Restrictiveness more than 10.0 % too large: 0.339592 > 0.25
+
+psp15: OK
+
+psp16: OK
+
+psp17: OK
+
+psp18
+Restrictiveness more than 10.0 % too large: 0.420408 > 0.25
+
+psp19: OK
+
+psp20: OK
+
+psp21: OK
+
+psp22: OK
+
+psp23: OK
+
+psp24
+Restrictiveness more than 10.0 % too large: 0.727347 > 0.25
+
+psp25: OK
+
+psp26: OK
+
+psp27: OK
+
+psp28
+Restrictiveness more than 10.0 % too large: 0.380408 > 0.25
+
+psp29
+Restrictiveness more than 10.0 % too large: 0.395918 > 0.25
+
+psp30
+Restrictiveness more than 10.0 % too large: 0.641633 > 0.25
+
+psp31: OK
+
+psp32: OK
+
+psp33: OK
+
+psp34: OK
+
+psp35: OK
+
+psp36: OK
+
+psp37: OK
+
+psp38: OK
+
+psp39: OK
+
+psp40: OK
+
+psp41: OK
+
+psp42: OK
+
+psp43: OK
+
+psp44: OK
+
+psp45: OK
+
+psp46: OK
+
+psp47: OK
+
+psp48: OK
+
+psp49: OK
+
+psp50: OK
+
+psp51: OK
+
+psp52: OK
+
+psp53: OK
+
+psp54: OK
+
+psp55: OK
+
+psp56: OK
+
+psp57: OK
+
+psp58: OK
+
+psp59: OK
+
+psp60: OK
+
+psp61: OK
+
+psp62: OK
+
+psp63: OK
+
+psp64: OK
+
+psp65: OK
+
+psp66: OK
+
+psp67: OK
+
+psp68: OK
+
+psp69: OK
+
+psp70: OK
+
+psp71: OK
+
+psp72: OK
+
+psp73: OK
+
+psp74: OK
+
+psp75: OK
+
+psp76: OK
+
+psp77: OK
+
+psp78: OK
+
+psp79: OK
+
+psp80: OK
+
+psp81: OK
+
+psp82: OK
+
+psp83: OK
+
+psp84: OK
+
+psp85: OK
+
+psp86: OK
+
+psp87: OK
+
+psp88: OK
+
+psp89: OK
+
+psp90: OK
+
