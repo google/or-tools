@@ -71,6 +71,10 @@ public class CsFz
 
   public static void Main(String[] args)
   {
-    Solve(args[0]);
+    if (args.Length == 0) {
+      Console.WriteLine("A file name is required!");
+    } else {
+      Solve(args[0]);
+    }
   }
 }
