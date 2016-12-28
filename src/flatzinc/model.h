@@ -368,6 +368,7 @@ class Model {
 #endif
   bool maximize() const { return maximize_; }
   IntegerVariable* objective() const { return objective_; }
+  void SetObjective(IntegerVariable* obj) { objective_ = obj; }
 
   // Services.
   std::string DebugString() const;

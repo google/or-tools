@@ -3419,6 +3419,15 @@ void Presolver::SubstituteEverywhere(Model* model) {
   for (const auto& iter : var_representative_map_) {
     iter.second->domain.IntersectWithDomain(iter.first->domain);
   }
+
+  // Change the objective variable.
+  IntegerVariable* const current_objective = model->objective();
+  if (current_objective == nullptr) return;
+  IntegerVariable* const new_objective =
+      FindRepresentativeOfVar(current_objective);
+  if (new_objective != current_objective) {
+    model->SetObjective(new_objective);
+  }
 }
 
 void Presolver::SubstituteAnnotation(Annotation* ann) {
