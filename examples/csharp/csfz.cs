@@ -26,7 +26,7 @@ public class CsFz
     // Uncomment to see the model.
     // Console.WriteLine(model.ToString());
     // This is mandatory.
-    model.PresolveForCp();
+    model.PresolveForCp(/*verbose=*/false);
     // Display basic statistics on the model.
     model.PrintStatistics();
 
@@ -43,7 +43,7 @@ public class CsFz
     parameters.restart_log_size = -1;
     parameters.threads = 0;
     parameters.time_limit_in_ms = 10000;
-    parameters.logging = true;
+    parameters.logging = false;
     parameters.verbose_impact = false;
     parameters.thread_id = -1;
     parameters.search_type = FlatzincParameters.DEFAULT;
@@ -51,8 +51,7 @@ public class CsFz
     parameters.store_all_solutions = true;
 
     Solver solver = new Solver(model);
-    SearchReportingInterface reporting = new MonoThreadReporting(true, 10);
-    solver.Solve(parameters, reporting);
+    solver.Solve(parameters);
 
     int last = solver.NumStoredSolutions() - 1;
     if (last >= 0) {

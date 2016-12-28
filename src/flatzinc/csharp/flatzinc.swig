@@ -39,7 +39,8 @@ DECLARE_bool(fz_logging);
   bool LoadFromFile(const std::string& filename) {
     return operations_research::fz::ParseFlatzincFile(filename, $self);
   }
-  void PresolveForCp() {
+  void PresolveForCp(bool verbose) {
+    FLAGS_fz_logging = verbose;
     operations_research::fz::Presolver presolve;
     presolve.CleanUpModelForTheCpSolver($self, true);
     presolve.Run($self);
@@ -53,7 +54,19 @@ DECLARE_bool(fz_logging);
   }
 }
 
+%extend operations_research::fz::Solver {
+  void Solve(const FlatzincParameters& parameters) {
+    const int num_solutions = parameters.num_solutions == 0 ?
+      (parameters.all_solutions ? kint32max : 1) : parameters.num_solutions;
+    operations_research::fz::MonoThreadReporting reporting(
+        parameters.all_solutions, num_solutions);
+    $self->Extract();
+    $self->Solve(parameters, &reporting);
+  }
+}
+
 %rename (ToString) *::DebugString;
+
 %include "flatzinc/model.h"
 %include "flatzinc/reporting.h"
 %include "flatzinc/solver.h"
