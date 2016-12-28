@@ -29,6 +29,7 @@
 #include <numeric>
 #include <vector>
 
+#include "base/callback.h"
 #include "base/logging.h"
 #include "base/join.h"
 #include "base/int_type.h"
@@ -42,8 +43,9 @@ namespace operations_research {
 // if there is an arc between i and j.
 // This function takes ownership of 'callback' and deletes it after it has run.
 // If 'callback' returns true, then the search for cliques stops.
-void FindCliques(std::function<bool(int, int)> graph, int node_count,
-                 std::function<bool(const std::vector<int>&)> callback);
+void FindCliques(
+    ResultCallback2<bool, int, int>* const graph, int node_count,
+    ResultCallback1<bool, const std::vector<int>&>* const callback);
 
 // Covers the maximum number of arcs of the graph with cliques. The graph
 // is described by the graph callback. graph->Run(i, j) indicates if
@@ -51,8 +53,9 @@ void FindCliques(std::function<bool(int, int)> graph, int node_count,
 // This function takes ownership of 'callback' and deletes it after it has run.
 // It calls 'callback' upon each clique.
 // It ignores cliques of size 1.
-void CoverArcsByCliques(std::function<bool(int, int)> graph, int node_count,
-                        std::function<bool(const std::vector<int>&)> callback);
+void CoverArcsByCliques(
+    ResultCallback2<bool, int, int>* const graph, int node_count,
+    ResultCallback1<bool, const std::vector<int>&>* const callback);
 
 // Possible return values of the callback for reporting cliques. The returned
 // value determines whether the algorithm will continue the search.

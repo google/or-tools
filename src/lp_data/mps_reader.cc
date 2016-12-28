@@ -108,7 +108,7 @@ void MPSReader::DisplaySummary() {
 
 void MPSReader::SplitLineIntoFields() {
   if (free_form_) {
-    fields_ = strings::Split(line_, " ", strings::SkipEmpty());
+    fields_ = strings::Split(line_, ' ', strings::SkipEmpty());
     CHECK_GE(kNumFields, fields_.size());
   } else {
     int length = line_.length();

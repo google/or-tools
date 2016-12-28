@@ -608,6 +608,9 @@ bool DisjunctiveConstraint::NotLastPass() {
   for (auto it = task_by_decreasing_max_end_.rbegin();
        it != task_by_decreasing_max_end_.rend(); ++it) {
     const int t = *it;
+    // task_set_ contains all the tasks that must start before the max-end of t.
+    // These are the only candidates that have a chance to decrease the max-end
+    // of t.
     const IntegerValue max_end = MaxEnd(t);
     while (queue_index >= 0) {
       const int to_insert = task_by_decreasing_max_start_[queue_index];

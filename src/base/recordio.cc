@@ -34,7 +34,7 @@ std::string RecordWriter::Compress(std::string const& s) const {
   const char* source = s.c_str();
 
   unsigned long dsize = source_size + (source_size * 0.1f) + 16;  // NOLINT
-  std::unique_ptr<char> destination(new char[dsize]);
+  std::unique_ptr<char[]> destination(new char[dsize]);
   // Use compress() from zlib.h.
   const int result =
       compress(reinterpret_cast<unsigned char*>(destination.get()), &dsize,
