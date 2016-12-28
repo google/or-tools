@@ -171,7 +171,7 @@ void BaseIntExprElement::UpdateSupports() const {
     int64 max_value = min_value;
     int min_support = emax;
     int max_support = emax;
-    const int64 expr_size = expr_->Size();
+    const uint64 expr_size = expr_->Size();
     if (expr_size > 1) {
       if (expr_size == emax - emin + 1) {
         // Value(emax) already stored in min_value, max_value.

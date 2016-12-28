@@ -225,6 +225,11 @@ void LPSolver::SetInitialBasis(
     revised_simplex_.reset(new RevisedSimplex());
   }
   revised_simplex_->LoadStateForNextSolve(state);
+  if (parameters_.use_preprocessing()) {
+    LOG(WARNING) << "In GLOP, SetInitialBasis() was called but the parameter "
+                    "use_preprocessing is true, this will likely not result in "
+                    "what you want.";
+  }
 }
 
 namespace {

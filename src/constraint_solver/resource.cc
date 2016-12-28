@@ -176,12 +176,16 @@ struct ThetaNode {
     // our case, we use StartMin() + DurationMin() for the earliest completion
     // time of a task, which should not break any assumptions, but may give
     // bounds that are too loose.
+    DLOG_IF(WARNING, interval->DurationMin() != interval->DurationMax())
+        << "You are using the Theta-tree on tasks having variable durations. "
+           "This may lead to unexpected results, such as discarding valid "
+           "solutions or allowing invalid ones.";
   }
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
-    total_processing = left.total_processing + right.total_processing;
-    total_ect =
-        std::max(left.total_ect + right.total_processing, right.total_ect);
+    total_processing = CapAdd(left.total_processing, right.total_processing);
+    total_ect = std::max(CapAdd(left.total_ect, right.total_processing),
+                         right.total_ect);
   }
 
   bool IsIdentity() const {
@@ -243,7 +247,7 @@ struct LambdaThetaNode {
   // Constructor for a single cumulative task in the Theta set
   LambdaThetaNode(int64 capacity, const CumulativeTask& task)
       : energy(task.EnergyMin()),
-        energetic_end_min(capacity * task.interval->StartMin() + energy),
+        energetic_end_min(CapAdd(capacity * task.interval->StartMin(), energy)),
         energy_opt(energy),
         argmax_energy_opt(kNone),
         energetic_end_min_opt(energetic_end_min),
@@ -264,7 +268,7 @@ struct LambdaThetaNode {
   // Constructor for a single cumulative task in the Theta set
   LambdaThetaNode(int64 capacity, const VariableCumulativeTask& task)
       : energy(task.EnergyMin()),
-        energetic_end_min(capacity * task.interval->StartMin() + energy),
+        energetic_end_min(CapAdd(capacity * task.interval->StartMin(), energy)),
         energy_opt(energy),
         argmax_energy_opt(kNone),
         energetic_end_min_opt(energetic_end_min),
@@ -311,11 +315,11 @@ struct LambdaThetaNode {
   // No set operation actually occur: we only maintain the relevant quantities
   // associated with such sets.
   void Compute(const LambdaThetaNode& left, const LambdaThetaNode& right) {
-    energy = left.energy + right.energy;
+    energy = CapAdd(left.energy, right.energy);
     energetic_end_min = std::max(right.energetic_end_min,
-                                 left.energetic_end_min + right.energy);
-    const int64 energy_left_opt = left.energy_opt + right.energy;
-    const int64 energy_right_opt = left.energy + right.energy_opt;
+                                 CapAdd(left.energetic_end_min, right.energy));
+    const int64 energy_left_opt = CapAdd(left.energy_opt, right.energy);
+    const int64 energy_right_opt = CapAdd(left.energy, right.energy_opt);
     if (energy_left_opt > energy_right_opt) {
       energy_opt = energy_left_opt;
       argmax_energy_opt = left.argmax_energy_opt;
@@ -324,8 +328,8 @@ struct LambdaThetaNode {
       argmax_energy_opt = right.argmax_energy_opt;
     }
     const int64 ect1 = right.energetic_end_min_opt;
-    const int64 ect2 = left.energetic_end_min + right.energy_opt;
-    const int64 ect3 = left.energetic_end_min_opt + right.energy;
+    const int64 ect2 = CapAdd(left.energetic_end_min, right.energy_opt);
+    const int64 ect3 = CapAdd(left.energetic_end_min_opt, right.energy);
     if (ect1 >= ect2 && ect1 >= ect3) {  // ect1 max
       energetic_end_min_opt = ect1;
       argmax_energetic_end_min_opt = right.argmax_energetic_end_min_opt;
@@ -802,8 +806,8 @@ class RankedPropagator : public Constraint {
       IntVar* const slack = RankedSlack(i);
       const int64 transition_time = RankedTransitionTime(i, i + 1);
       next_interval->SetStartRange(
-          CapAdd(interval->StartMin(), slack->Min() + transition_time),
-          CapAdd(interval->StartMax(), slack->Max() + transition_time));
+          CapAdd(interval->StartMin(), CapAdd(slack->Min(), transition_time)),
+          CapAdd(interval->StartMax(), CapAdd(slack->Max(), transition_time)));
     }
     // Propagates on ranked last from right to left.
     for (int i = last_position; i > last_sentinel + 1; --i) {
@@ -811,9 +815,10 @@ class RankedPropagator : public Constraint {
       IntervalVar* const next_interval = RankedInterval(i);
       IntVar* const slack = RankedSlack(i - 1);
       const int64 transition_time = RankedTransitionTime(i - 1, i);
-      interval->SetStartRange(
-          CapSub(next_interval->StartMin(), slack->Max() + transition_time),
-          CapSub(next_interval->StartMax(), slack->Min() + transition_time));
+      interval->SetStartRange(CapSub(next_interval->StartMin(),
+                                     CapAdd(slack->Max(), transition_time)),
+                              CapSub(next_interval->StartMax(),
+                                     CapAdd(slack->Min(), transition_time)));
     }
     // Propagate across.
     IntervalVar* const first_interval =
@@ -838,29 +843,33 @@ class RankedPropagator : public Constraint {
         if (first_interval != nullptr) {
           const int64 transition_time =
               RankedTransitionTime(first_sentinel - 1, i);
-          interval->SetStartRange(CapAdd(first_interval->StartMin(),
-                                         first_slack->Min() + transition_time),
-                                  CapAdd(first_interval->StartMax(),
-                                         first_slack->Max() + transition_time));
+          interval->SetStartRange(
+              CapAdd(first_interval->StartMin(),
+                     CapAdd(first_slack->Min(), transition_time)),
+              CapAdd(first_interval->StartMax(),
+                     CapAdd(first_slack->Max(), transition_time)));
           if (performed) {
             first_interval->SetStartRange(
                 CapSub(interval->StartMin(),
-                       first_slack->Max() + transition_time),
+                       CapAdd(first_slack->Max(), transition_time)),
                 CapSub(interval->StartMax(),
-                       first_slack->Min() + transition_time));
+                       CapAdd(first_slack->Min(), transition_time)));
           }
         }
         if (last_interval != nullptr) {
           const int64 transition_time =
               RankedTransitionTime(i, last_sentinel + 1);
           interval->SetStartRange(
-              CapSub(last_interval->StartMin(), slack->Max() + transition_time),
+              CapSub(last_interval->StartMin(),
+                     CapAdd(slack->Max(), transition_time)),
               CapSub(last_interval->StartMax(),
-                     slack->Min() + transition_time));
+                     CapAdd(slack->Min(), transition_time)));
           if (performed) {
             last_interval->SetStartRange(
-                CapAdd(interval->StartMin(), slack->Min() + transition_time),
-                CapAdd(interval->StartMax(), slack->Max() + transition_time));
+                CapAdd(interval->StartMin(),
+                       CapAdd(slack->Min(), transition_time)),
+                CapAdd(interval->StartMax(),
+                       CapAdd(slack->Max(), transition_time)));
           }
         }
       }
@@ -872,9 +881,10 @@ class RankedPropagator : public Constraint {
       IntervalVar* const next_interval = RankedInterval(i + 1);
       IntVar* const slack = RankedSlack(i);
       const int64 transition_time = RankedTransitionTime(i, i + 1);
-      interval->SetStartRange(
-          CapSub(next_interval->StartMin(), slack->Max() + transition_time),
-          CapSub(next_interval->StartMax(), slack->Min() + transition_time));
+      interval->SetStartRange(CapSub(next_interval->StartMin(),
+                                     CapAdd(slack->Max(), transition_time)),
+                              CapSub(next_interval->StartMax(),
+                                     CapAdd(slack->Min(), transition_time)));
     }
     // Propagates on ranked last from left to right.
     for (int i = last_sentinel + 1; i < last_position - 1; ++i) {
@@ -883,8 +893,8 @@ class RankedPropagator : public Constraint {
       IntVar* const slack = RankedSlack(i);
       const int64 transition_time = RankedTransitionTime(i, i + 1);
       next_interval->SetStartRange(
-          CapAdd(interval->StartMin(), slack->Min() + transition_time),
-          CapAdd(interval->StartMax(), slack->Max() + transition_time));
+          CapAdd(interval->StartMin(), CapAdd(slack->Min(), transition_time)),
+          CapAdd(interval->StartMax(), CapAdd(slack->Max(), transition_time)));
     }
     // TODO(user) : Propagate on slacks.
   }
@@ -1191,17 +1201,17 @@ struct DualCapacityThetaNode {
   DualCapacityThetaNode(int64 capacity, int64 residual_capacity,
                         const CumulativeTask& task)
       : energy(task.EnergyMin()),
-        energetic_end_min(capacity * task.interval->StartMin() + energy),
+        energetic_end_min(CapAdd(capacity * task.interval->StartMin(), energy)),
         residual_energetic_end_min(
-            residual_capacity * task.interval->StartMin() + energy) {}
+            CapAdd(residual_capacity * task.interval->StartMin(), energy)) {}
 
   // Constructor for a single variable cumulative task in the Theta set.
   DualCapacityThetaNode(int64 capacity, int64 residual_capacity,
                         const VariableCumulativeTask& task)
       : energy(task.EnergyMin()),
-        energetic_end_min(capacity * task.interval->StartMin() + energy),
+        energetic_end_min(CapAdd(capacity * task.interval->StartMin(), energy)),
         residual_energetic_end_min(
-            residual_capacity * task.interval->StartMin() + energy) {}
+            CapAdd(residual_capacity * task.interval->StartMin(), energy)) {}
 
   // Sets this DualCapacityThetaNode to the result of the natural binary
   // operation over the two given operands, corresponding to the following set
@@ -1211,11 +1221,11 @@ struct DualCapacityThetaNode {
   // associated with such sets.
   void Compute(const DualCapacityThetaNode& left,
                const DualCapacityThetaNode& right) {
-    energy = left.energy + right.energy;
-    energetic_end_min = std::max(left.energetic_end_min + right.energy,
+    energy = CapAdd(left.energy, right.energy);
+    energetic_end_min = std::max(CapAdd(left.energetic_end_min, right.energy),
                                  right.energetic_end_min);
     residual_energetic_end_min =
-        std::max(left.residual_energetic_end_min + right.energy,
+        std::max(CapAdd(left.residual_energetic_end_min, right.energy),
                  right.residual_energetic_end_min);
   }
 
@@ -1318,14 +1328,15 @@ class EnvJCComputeDiver {
                            const DualCapacityThetaNode& right_child) {
     // The left subtree is included in the alpha set.
     // The right subtree intersects the alpha set.
-    energetic_end_min_alpha_ = std::max(
-        energetic_end_min_alpha_, left_child.energetic_end_min + energy_alpha_);
+    energetic_end_min_alpha_ =
+        std::max(energetic_end_min_alpha_,
+                 CapAdd(left_child.energetic_end_min, energy_alpha_));
     energy_alpha_ += left_child.energy;
   }
   int64 GetEnvJC(const DualCapacityThetaNode& root) const {
     const int64 energy = root.energy;
-    const int64 energy_beta = energy - energy_alpha_;
-    return energetic_end_min_alpha_ + energy_beta;
+    const int64 energy_beta = CapSub(energy, energy_alpha_);
+    return CapAdd(energetic_end_min_alpha_, energy_beta);
   }
 
  private:
@@ -1489,7 +1500,7 @@ class EdgeFinder : public Constraint {
     DCHECK_GT(demand_min, 0);
     DCHECK(updates != nullptr);
     const int64 capacity_max = capacity_->Max();
-    const int64 residual_capacity = capacity_max - demand_min;
+    const int64 residual_capacity = CapSub(capacity_max, demand_min);
     dual_capacity_tree_.Init(capacity_max, residual_capacity);
     // It's important to initialize the update at IntervalVar::kMinValidValue
     // rather than at kInt64min, because its opposite may be used if it's a
@@ -1508,7 +1519,7 @@ class EdgeFinder : public Constraint {
         EnvJCComputeDiver diver(energy_threshold);
         dual_capacity_tree_.DiveInTree(&diver);
         const int64 enjv = diver.GetEnvJC(dual_capacity_tree_.result());
-        const int64 numerator = enjv - energy_threshold;
+        const int64 numerator = CapSub(enjv, energy_threshold);
         const int64 diff = MathUtil::CeilOfRatio(numerator, demand_min);
         update = std::max(update, diff);
       }
@@ -1815,7 +1826,7 @@ class CumulativeTimeTable : public Constraint {
     if (demand_min == 0) {  // Demand can be null, nothing to propagate.
       return;
     }
-    const int64 residual_capacity = capacity_->Max() - demand_min;
+    const int64 residual_capacity = CapSub(capacity_->Max(), demand_min);
     const int64 duration = task->interval->DurationMin();
     const ProfileDelta& first_prof_delta = profile_unique_time_[profile_index];
 
@@ -1832,7 +1843,7 @@ class CumulativeTimeTable : public Constraint {
              (interval->StartMax() >= interval->EndMin()));
       // The 'usage' given in argument is valid at first_prof_delta.time. To
       // compute the usage at the start min, we need to remove the last delta.
-      const int64 usage_at_start_min = usage - first_prof_delta.delta;
+      const int64 usage_at_start_min = CapSub(usage, first_prof_delta.delta);
       if (usage_at_start_min > residual_capacity) {
         new_start_min = profile_unique_time_[profile_index].time;
       }
@@ -1848,7 +1859,7 @@ class CumulativeTimeTable : public Constraint {
       delta_end.delta = -demand_min;
     }
     while (profile_unique_time_[profile_index].time <
-           duration + new_start_min) {
+           CapAdd(duration, new_start_min)) {
       const ProfileDelta& profile_delta = profile_unique_time_[profile_index];
       DCHECK(profile_index < profile_unique_time_.size());
       // Compensate for current task
@@ -2231,7 +2242,7 @@ class CumulativeConstraint : public Constraint {
         for (int j = i + 1; j < intervals_.size(); ++j) {
           IntervalVar* const interval_j = intervals_[j];
           if (interval_j->MayBePerformed()) {
-            if (tasks_[i].demand + tasks_[j].demand > capacity_->Max()) {
+            if (CapAdd(tasks_[i].demand, tasks_[j].demand) > capacity_->Max()) {
               Constraint* const constraint =
                   solver()->MakeTemporalDisjunction(interval_i, interval_j);
               solver()->AddConstraint(constraint);
@@ -2419,7 +2430,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
         for (int j = i + 1; j < intervals_.size(); ++j) {
           IntervalVar* const interval_j = intervals_[j];
           if (interval_j->MayBePerformed()) {
-            if (tasks_[i].demand->Min() + tasks_[j].demand->Min() >
+            if (CapAdd(tasks_[i].demand->Min(), tasks_[j].demand->Min()) >
                 capacity_->Max()) {
               Constraint* const constraint =
                   solver()->MakeTemporalDisjunction(interval_i, interval_j);
