@@ -40,7 +40,14 @@ ARCHIVE_EXT = .tar.gz
 FZ_EXE = fzn-or-tools$E
 
 # This is needed to find python.h
-PYTHON_INC = -I/usr/include/python$(UNIX_PYTHON_VER) -I/usr/lib/python$(UNIX_PYTHON_VER) $(ADD_PYTHON_INC)
+PATH_TO_PYTHON = $(shell which python$(UNIX_PYTHON_VER) | xargs dirname | xargs dirname)
+PATH_TO_PYTHON_LIB = $(PATH_TO_PYTHON)/lib/python$(UNIX_PYTHON_VER)
+PATH_TO_PYTHON_INCLUDE = $(PATH_TO_PYTHON)/include/python$(UNIX_PYTHON_VER)
+#sometimes the path is include/python3.5m instead of include/python3.5
+ifeq ($(wildcard $(PATH_TO_PYTHON_INCLUDE)),)
+PATH_TO_PYTHON_INCLUDE = $(PATH_TO_PYTHON)/include/python$(UNIX_PYTHON_VER)m
+endif
+PYTHON_INC = -I/$(PATH_TO_PYTHON_INCLUDE) -I/$(PATH_TO_PYTHON_LIB) $(ADD_PYTHON_INC)
 PYTHON_VERSION = $(UNIX_PYTHON_VER)
 # This is needed to find gflags/gflags.h
 GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
