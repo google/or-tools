@@ -1,3 +1,5 @@
+.PHONY : install_python_modules
+
 # Python support using SWIG
 
 # Detect python3
@@ -23,11 +25,18 @@ ifeq ("$(PYTHON_VERSION)","35")
   SWIG_PYTHON3_FLAG=-py3 -DPY3
 endif
 
-
 OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$Ssrc$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
 
+ifeq ($(SYSTEM),win)
+  PYTHON_EXECUTABLE = $(WINDOWS_PYTHON_PATH)$Spython
+  SET_PYTHONPATH = @set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) &&
+else #UNIX
+  PYTHON_EXECUTABLE = python$(UNIX_PYTHON_VER)
+  SET_PYTHONPATH = @PYTHONPATH=$(OR_TOOLS_PYTHONPATH)
+endif
+
 # Main target
-python: pyinit pycp pyalgorithms pygraph pylp
+python: install_python_modules pyinit pycp pyalgorithms pygraph pylp
 
 # Clean target
 clean_python:
@@ -50,6 +59,15 @@ clean_python:
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pyc
 	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
+
+install_python_modules: dependencies/sources/protobuf-3.0.0/python/google/protobuf/descriptor_pb2.py
+
+dependencies/sources/protobuf-3.0.0/python/google/protobuf/descriptor_pb2.py: \
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/setup.py
+ifeq ("$(SYSTEM)", "win")
+	copy dependencies$Sinstall$Sbin$Sprotoc.exe dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Ssrc
+endif
+	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython && $(PYTHON_EXECUTABLE) setup.py build
 
 pyinit: $(GEN_DIR)$Sortools$S__init__.py
 
@@ -206,12 +224,7 @@ endif
 
 rpy: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(EX)
 	@echo Running $(EX)
-ifeq ($(SYSTEM),win)
-	@set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) && $(WINDOWS_PATH_TO_PYTHON)$Spython $(EX) $(ARGS)
-else
-	@PYTHONPATH=$(OR_TOOLS_PYTHONPATH) python$(PYTHON_VERSION) $(EX) $(ARGS)
-endif
-
+	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX) $(ARGS)
 
 # Build stand-alone archive file for redistribution.
 
@@ -301,15 +314,15 @@ endif
 endif
 
 pypi_upload: pypi_archive
-	@echo Uploading Pypi module for python$(PYTHON_VERSION).
+	@echo Uploading Pypi module for $(PYTHON_EXECUTABLE).
 ifeq ($(SYSTEM),win)
 	set VS90COMNTOOLS=$(VS$(VS_COMTOOLS)COMNTOOLS)
-	cd temp\ortools && $(WINDOWS_PATH_TO_PYTHON)\python setup.py register bdist_egg bdist_wheel bdist_wininst upload
+	cd temp\ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg bdist_wheel bdist_wininst upload
 else
   ifeq ($(PLATFORM),MACOSX)
-	cd temp/ortools && python$(PYTHON_VERSION) setup.py register bdist_egg bdist_wheel upload
+	cd temp/ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg bdist_wheel upload
   else
-	cd temp/ortools && python$(PYTHON_VERSION) setup.py register bdist_egg upload
+	cd temp/ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg upload
   endif
 endif
 

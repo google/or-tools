@@ -2,16 +2,19 @@ import logging, sys, inspect
 from os.path import dirname, abspath
 from optparse import OptionParser
 
+def log_error_and_exit(error_message):
+	logging.error(error_message)
+	raise SystemExit
+
 #try to import setuptools
 try:
     from setuptools import setup, Extension
     from setuptools.command import easy_install
 except ImportError:
-    raise ImportError("""setuptools is not installed for \"""" + sys.executable + """\"
+    log_error_and_exit("""setuptools is not installed for \"""" + sys.executable + """\"
 Follow this link for installing instructions :
 https://pypi.python.org/pypi/setuptools
 make sure you use \"""" + sys.executable + """\" during the installation""")
-    raise SystemExit
 
 from pkg_resources import parse_version
 
@@ -23,10 +26,6 @@ def wrong_module(module_file, modulename):
 	return """
 The python examples are not importing the """ + modulename + """ module from the sources.
 Remove the site-package that contains \"""" + module_file + """\", either manually or by using pip, and rerun this script again."""
-
-def log_error_and_exit(error_message):
-	logging.error(error_message)
-	raise SystemExit
 
 # Returns the n_th parent of file
 def n_dirname(n, file):
@@ -54,6 +53,8 @@ if __name__ == '__main__':
 	
 	logging.info("Python path : " + sys.executable)
 	logging.info("Python version : " + sys.version)
+	logging.info("sys.path : " + str(sys.path))
+	ortools_project_path = n_dirname(3, abspath(inspect.getfile(inspect.currentframe())))
 
 	#try to import ortools
 	try:
@@ -65,21 +66,10 @@ if __name__ == '__main__':
 	#check if we're using ortools from the sources or it's binded by pypi's module
 	ortools_module_file = inspect.getfile(ortools)
 	ortools_module_path = n_dirname(3, ortools_module_file)
-	ortools_project_path = n_dirname(3, abspath(inspect.getfile(inspect.currentframe())))
-	try:
-		if(ortools_module_path == ortools_project_path):
-			logging.info("Good! The python examples are importing the ortools module from the sources. The imported module is : " + inspect.getfile(ortools))
-		else:
-			raise Exception
-	except (Exception):
+	if(ortools_module_path == ortools_project_path):
+		logging.info("Or-tools is imported from : " + ortools_module_file)
+	else:
 		log_error_and_exit(wrong_module(ortools_module_file, "ortools"))
-
-	#try to import protobuf
-	try:
-		import google.protobuf
-		logging.info("Protobuf is imported from " + inspect.getfile(google.protobuf))
-	except ImportError:
-	    log_error_and_exit(notinstalled("protobuf"))
 
 	# Check if python can load the libraries' modules
 	# this is useful when the library architecture is not compatbile with the python executable,
@@ -89,4 +79,20 @@ if __name__ == '__main__':
 	from ortools.algorithms import _pywrapknapsack_solver
 	from ortools.graph import _pywrapgraph
 
+	#try to import protobuf
+	try:
+		import google.protobuf
+	except ImportError:
+	    log_error_and_exit(notinstalled("protobuf"))
 
+	#check if we're using protobuf from the sources or it's binded by pypi's module
+	protobuf_module_file = inspect.getfile(google.protobuf)
+	protobuf_module_path = n_dirname(7, protobuf_module_file)
+	if(protobuf_module_path == ortools_project_path):
+		logging.info("Protobuf is imported from : " + protobuf_module_file)
+	else:
+		log_error_and_exit(wrong_module(protobuf_module_file, "protobuf"))
+
+	#Check if the protobuf modules were successfully generated
+	from google.protobuf import descriptor as _descriptor
+	from google.protobuf import descriptor_pb2
