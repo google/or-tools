@@ -31,7 +31,7 @@ def log_error_and_exit(error_message):
 # Returns the n_th parent of file
 def n_dirname(n, file):
 	directory = file
-	for x in xrange(0, n):
+	for x in range(0, n):
 		directory = dirname(directory)
 	return directory
 
