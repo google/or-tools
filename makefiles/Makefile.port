@@ -67,14 +67,11 @@ ifeq ("$(SYSTEM)","unix")
     NETPLATFORM = x64
     PTRLENGTH = 64
     GUROBI_PLATFORM=mac64
-    CANDIDATE_JDK_HEADERS = \
-      /System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/include \
-      /Developer/SDKs/MacOSX10.7.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers \
-      /System/Library/Frameworks/JavaVM.framework/Versions/A/Headers \
-      /Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/include \
-      /Library/Java/JavaVirtualMachines/jdk1.7.0_51.jdk/Contents/Home/include
-
-    SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(wildcard $(CANDIDATE_JDK_HEADERS))
+    ifeq ($(wildcard /usr/libexec/java_home),)
+      SELECTED_JDK_DEF = MAC_JDK_HEADERS = \\\# /usr/libexec/java_home could not be found on your system. did you install JDK?
+    else
+      SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(shell /usr/libexec/java_home)/include
+    endif
     MAC_MIN_VERSION = 10.8
   endif
 
