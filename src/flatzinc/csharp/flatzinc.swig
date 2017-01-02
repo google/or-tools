@@ -49,16 +49,24 @@ DECLARE_bool(fz_logging);
     const bool log = FLAGS_fz_logging;
     FLAGS_fz_logging = true;
     operations_research::fz::ModelStatistics stats(*$self);
+    stats.BuildStatistics();
     stats.PrintStatistics();
     FLAGS_fz_logging = log;
   }
 }
 
+%ignore operations_research::fz::Solver::Solve(
+            operations_research::fz::FlatzincParameters,
+            operations_research::fz::SearchReportingInterface*);
+%ignore operations_research::fz::Solver::ReportInconsistentModel(
+            const operations_research::fz::Model&,
+            operations_research::fz::FlatzincParameters,
+            operations_research::fz::SearchReportingInterface*);
 %extend operations_research::fz::Solver {
   void Solve(const FlatzincParameters& parameters) {
     const int num_solutions = parameters.num_solutions == 0 ?
       (parameters.all_solutions ? kint32max : 1) : parameters.num_solutions;
-    operations_research::fz::MonoThreadReporting reporting(
+    operations_research::fz::SilentMonoThreadReporting reporting(
         parameters.all_solutions, num_solutions);
     $self->Extract();
     $self->Solve(parameters, &reporting);

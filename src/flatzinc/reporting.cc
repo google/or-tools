@@ -95,6 +95,22 @@ SearchLimit* MonoThreadReporting::CreateLimit(Solver* s, int thread_id) const {
 
 bool MonoThreadReporting::Interrupted() const { return interrupted_; }
 
+// Silent subclass.
+SilentMonoThreadReporting::SilentMonoThreadReporting(
+    bool print_all, int max_num_solutions)
+    : MonoThreadReporting(print_all, max_num_solutions) {}
+
+SilentMonoThreadReporting::~SilentMonoThreadReporting() {}
+
+void SilentMonoThreadReporting::Init(int thread_id,
+                                     const std::string& init_string) {}
+
+void SilentMonoThreadReporting::Log(int thread_id,
+                                    const std::string& final_output) const {}
+
+void SilentMonoThreadReporting::Print(int thread_id,
+                                      const std::string& final_output) const {}
+
 // ----- Helper classes for MultiThreadReporting -----
 
 class MtOptimizeVar : public OptimizeVar {
