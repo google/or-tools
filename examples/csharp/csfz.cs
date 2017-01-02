@@ -59,10 +59,26 @@ public class CsFz
       foreach (SolutionOutputSpecs output in output_vector) {
         if (output.variable != null) {
           IntegerVariable var = output.variable;
-          Console.WriteLine(var.name +  " = " + solver.StoredValue(last, var));
+          Console.WriteLine(output.name +  " = " +
+                            solver.StoredValue(last, var));
         }
-        foreach (IntegerVariable var in output.flat_variables) {
-          Console.WriteLine(var.name +  " = " + solver.StoredValue(last, var));
+        if (output.flat_variables.Count > 0) {
+          String line = output.name;
+          foreach (SolutionOutputSpecs.Bounds b in output.bounds) {
+            line += "[" + b.ToString() + "]";
+          }
+          line += " = {";
+          bool start = true;
+          foreach (IntegerVariable var in output.flat_variables) {
+            if (start) {
+              start = false;
+            } else {
+              line += ", ";
+            }
+            line += solver.StoredValue(last, var);
+          }
+          line += "}";
+          Console.WriteLine(line);
         }
       }
     }

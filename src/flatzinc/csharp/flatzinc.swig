@@ -33,6 +33,7 @@ DECLARE_bool(fz_logging);
 %template(ConstraintVector) std::vector<operations_research::fz::Constraint*>;
 %template(DomainVector) std::vector<operations_research::fz::Domain>;
 %template(SolutionOutputSpecsVector) std::vector<operations_research::fz::SolutionOutputSpecs>;
+%template(SolutionOutputSpecsBoundsVector) std::vector<operations_research::fz::SolutionOutputSpecs::Bounds>;
 %template(IntegerVariableVector) std::vector<operations_research::fz::IntegerVariable*>;
 
 %extend operations_research::fz::Model {
