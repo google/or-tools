@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
 	#check if we're using ortools from the sources or it's binded by pypi's module
 	ortools_module_file = inspect.getfile(ortools)
-	ortools_module_path = n_dirname(2, ortools_module_file)
+	ortools_module_path = n_dirname(3, ortools_module_file)
 	ortools_project_path = n_dirname(3, abspath(inspect.getfile(inspect.currentframe())))
 	try:
 		if(ortools_module_path == ortools_project_path):
