@@ -1,8 +1,0 @@
-var searchData=
-[
-  ['compareknapsackitemwithefficiencyindecreasingefficiencyorder',['CompareKnapsackItemWithEfficiencyInDecreasingEfficiencyOrder',['../namespaceoperations__research.html#a627ab892a9c19c32b05c8f118e7660e0',1,'operations_research']]],
-  ['computeprofitbounds',['ComputeProfitBounds',['../classoperations__research_1_1KnapsackPropagator.html#a8133fbb05961e760ed907e1f599966d8',1,'operations_research::KnapsackPropagator::ComputeProfitBounds()'],['../classoperations__research_1_1KnapsackCapacityPropagator.html#a6adba495113d9029500bdcf212558dd0',1,'operations_research::KnapsackCapacityPropagator::ComputeProfitBounds()']]],
-  ['copycurrentstatetosolution',['CopyCurrentStateToSolution',['../classoperations__research_1_1KnapsackPropagator.html#a8567625fe3844f064a469485c965e663',1,'operations_research::KnapsackPropagator']]],
-  ['copycurrentstatetosolutionpropagator',['CopyCurrentStateToSolutionPropagator',['../classoperations__research_1_1KnapsackPropagator.html#a95551ecb408465b2fcf57aaaac393336',1,'operations_research::KnapsackPropagator::CopyCurrentStateToSolutionPropagator()'],['../classoperations__research_1_1KnapsackCapacityPropagator.html#a0aa2a331de9344e7a5b108cd2767105d',1,'operations_research::KnapsackCapacityPropagator::CopyCurrentStateToSolutionPropagator()']]],
-  ['current_5fprofit',['current_profit',['../classoperations__research_1_1KnapsackSearchNode.html#a9fdd03da778dfedbb3c39c1a04e6ea45',1,'operations_research::KnapsackSearchNode::current_profit()'],['../classoperations__research_1_1KnapsackPropagator.html#ae3c81bb19d396fb12ff7262585f69306',1,'operations_research::KnapsackPropagator::current_profit()']]]
-];

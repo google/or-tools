@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration version="1.0" directory="/tmp"
-xsi:noNamespaceSchemaLocation="configuration.xsd" xmlns:xsi="http://
-www.w3.org/2001/XMLSchema-instance">
-<tool show="tree" type="layout" display="expanded" repeat="all"
-width="700" height="700" fileroot="tree"/>
-<tool show="viz" type="layout" display="expanded" repeat="all"
-width="700" height="700" fileroot="viz"/>
-</configuration>
