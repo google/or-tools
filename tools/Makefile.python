@@ -8,10 +8,11 @@ WINDOWS_PYTHONPATH =
 
 ###############################Unix specific part################################
 
-# Set this variable to use a different python version. Example : UNIX_PYTHON_VER = 3.5 or UNIX_PYTHON_VER = 2.7
+# Set UNIX_PYTHON_VER to the version number of the Python installation on your computer that you wish to use with or-tools.
+#Example : UNIX_PYTHON_VER = 3.5 or UNIX_PYTHON_VER = 2.7
 UNIX_PYTHON_VER = 
 
-# Set this variable to use it as PYTHONPATH
+# Set this variable to use it as PYTHONPATH.
 UNIX_PYTHONPATH = 
 
 ##################################################################################
@@ -32,7 +33,7 @@ endif
 endif
 
 ifeq ($(SYSTEM),win)
-PYTHON_EXECUTABLE = $(WINDOWS_PYTHON_PATH)$Spython
+PYTHON_EXECUTABLE = $(WINDOWS_PATH_TO_PYTHON)$Spython
 #Set PYTHONPATH only when WINDOWS_PYTHONPATH is used. 
 ifneq ($(WINDOWS_PYTHONPATH),)
 SET_PYTHONPATH = @set PYTHONPATH=$(WINDOWS_PYTHONPATH) &&
