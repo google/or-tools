@@ -7,24 +7,24 @@ try:
     from setuptools.command import easy_install
 except ImportError:
     raise ImportError("""setuptools is not installed for \"""" + sys.executable + """\"
-Please follow this link for installing instructions :
+Follow this link for installing instructions :
 https://pypi.python.org/pypi/setuptools
 make sure you use \"""" + sys.executable + """\" during the installation""")
     raise SystemExit
 
 from pkg_resources import parse_version
 
-required_ortools_version = "5.0.3919"
-required_protobuf_version = "3.0.0"
+required_ortools_version = "VVVV"
+required_protobuf_version = "PROTOBUF_TAG"
 
 def notinstalled(modulename):
 	return modulename + """ is not installed for \"""" + sys.executable + """\"
-Please run \"""" + str(sys.executable) + """ setup.py install --user\""""
+Run \"""" + sys.executable + """ setup.py install --user\" to install it"""
 
 def wrong_version(module, modulename, required_version, installed_version):
 	return """You are using """ + modulename + """-""" + installed_version + """ : """ + inspect.getfile(module) + """, while the required version is : """ + required_version + """
-Run \"""" + str(sys.executable) + """ setup.py install --user\" to upgrade.
-If the problem persists, then \"""" + inspect.getfile(module) + """\" is binding the newely installed version of """ + modulename + """. Remove it manually or by using pip."""
+Run \"""" + sys.executable + """ setup.py install --user\" to upgrade.
+If the problem persists, remove the site-package that contains \"""" + inspect.getfile(module) + """\". You can do so either manually or by using pip."""
 
 def log_error_and_exit(error_message):
 	logging.error(error_message)
