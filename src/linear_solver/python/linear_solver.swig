@@ -113,29 +113,41 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
   def RowConstraint(self, *args):
     return self.Constraint(*args)
 
-  def Minimize(self, expr):
+  def Minimize(self, expr, variables=None):
     objective = self.Objective()
     objective.Clear()
     objective.SetMinimization()
     if isinstance(expr, numbers.Number):
         objective.AddOffset(expr)
-    else:
-        coeffs = expr.GetCoeffs()
+    else:	
         objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
-        for v, c, in list(coeffs.items()):
-          objective.SetCoefficient(v, float(c))
+	if not isinstance(expr, list):
+	  coeffs = expr.GetCoeffs()
+	    for v, c, in list(coeffs.items()):
+	      objective.SetCoefficient(v, float(c))
+	else:
+	  coeffs = [(variables[expr.index(x)],x) for x in expr]
+	  for v,c in terms:
+	    objective.SetCoefficeint(v,c)
 
-  def Maximize(self, expr):
+
+  def Maximize(self, expr, variables=None):
     objective = self.Objective()
     objective.Clear()
     objective.SetMaximization()
     if isinstance(expr, numbers.Number):
-        objective.AddOffset(expr)
+      objective.AddOffset(expr)
     else:
-        coeffs = expr.GetCoeffs()
-        objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
-        for v, c, in list(coeffs.items()):
-          objective.SetCoefficient(v, float(c))
+      objective.AddOffset(coeffs.pop(OFFSET_KEY, 0.0))
+      if not isinstance(expr, list):
+         coeffs = expr.GetCoeffs()
+         for v, c, in list(coeffs.items()):
+           objective.SetCoefficient(v, float(c))
+      else:
+        coeffs = [(variables[expr.index(x)],x) for x in expr]
+	for v,c in coeffs:
+	  objective.SetCoefficient(v,c)
+    
   }  // %pythoncode
 }
 
