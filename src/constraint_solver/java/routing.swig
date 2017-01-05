@@ -149,7 +149,7 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
   operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback() {
     CHECK(!used_as_permanent_handler_);
     used_as_permanent_handler_ = true;
-    return this;
+    return NewPermanentCallback(this, &NodeEvaluator2::Run);
   }
   virtual ~NodeEvaluator2() {}
 
