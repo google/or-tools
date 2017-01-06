@@ -216,7 +216,7 @@ public class CapacitatedVehicleRoutingProblemWithTimeWindows {
             }
           }
         };
-      model.setVehicleCost(vehicle, manhattanCostCallback);
+      model.setArcCostEvaluatorOfVehicle(manhattanCostCallback, vehicle);
       model.cumulVar(model.end(vehicle), "time").setMax(vehicleEndTime.get(vehicle));
     }
 
