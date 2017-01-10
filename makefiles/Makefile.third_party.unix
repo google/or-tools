@@ -29,7 +29,7 @@ SULUM_TAG = 43
 # Detect if SCIP archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET =
-    SCIP_MAKEFILE = "\# Please add scipoptsuite-$(SCIP_TAG).tgz to dependencies/archives to add support for SCIP."
+    SCIP_MAKEFILE = "\# Download and put scipoptsuite-$(SCIP_TAG).tgz in the dependencies/archives directory to add support for SCIP."
 else
     SCIP_TARGET = dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
     SCIP_MAKEFILE = UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
@@ -44,7 +44,7 @@ endif
 # Detect if GLPK archive is there.
 ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
     GLPK_TARGET =
-    GLPK_MAKEFILE = "\# Please add glpk-$(GLPK_TAG).tar.gz in dependencies/archives to add support for GLPK."
+    GLPK_MAKEFILE = "\# Download and put glpk-$(GLPK_TAG).tar.gz under dependencies/archives to add support for GLPK."
 else
     GLPK_TARGET = dependencies/install/bin/glpsol
     GLPK_MAKEFILE = UNIX_GLPK_DIR = $(OR_ROOT_FULL)/dependencies/install
@@ -219,7 +219,7 @@ src/gen/sat:
 # Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh
 
-CMAKE_MISSING = "cmake not found in /Applications, nor in the PATH, please install the official version, or from brew"
+CMAKE_MISSING = "cmake not found in /Applications, nor in the PATH. Install the official version, or from brew"
 
 check_cmake:
 ifeq ($(PLATFORM),MACOSX)
@@ -468,21 +468,25 @@ clean_third_party:
 # Create Makefile.local
 makefile_third_party: Makefile.local
 
-Makefile.local:
+Makefile.local: makefiles/Makefile.third_party.unix
+	-$(DEL) Makefile.local
 	@echo Generating Makefile.local
-	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION) > Makefile.local
-	@echo UNIX_GFLAGS_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
-	@echo UNIX_PROTOBUF_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
-	@echo UNIX_SPARSEHASH_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
-	@echo UNIX_SWIG_BINARY = $(OR_ROOT_FULL)/dependencies/install/bin/swig >> Makefile.local
-	@echo UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
-	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install >> Makefile.local
-	@echo $(GLPK_MAKEFILE) >> Makefile.local
-	@echo $(SCIP_MAKEFILE) >> Makefile.local
-	@echo UNIX_SCIP_TAG = $(SCIP_TAG) >> Makefile.local
-	@echo CLR_KEYFILE = bin/or-tools.snk >> Makefile.local
-	@echo UNIX_SULUM_VERSION = $(SULUM_TAG) >> Makefile.local
-	@echo \# Please define UNIX_SLM_DIR to use Sulum Optimization. >> Makefile.local
-	@echo \# Please define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local
-	@echo \# Please define UNIX_CPLEX_DIR to use CPLEX. >> Makefile.local
-	@echo $(SELECTED_JDK_DEF) >> Makefile.local
+	@echo $(SELECTED_JDK_DEF)>> Makefile.local
+	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION)>> Makefile.local
+	@echo PATH_TO_CSHARP_COMPILER = $(DETECTED_MCS_BINARY)>> Makefile.local
+	@echo >> Makefile.local
+	@echo $(GLPK_MAKEFILE)>> Makefile.local
+	@echo $(SCIP_MAKEFILE)>> Makefile.local
+	@echo \# Define UNIX_SLM_DIR to use Sulum Optimization.>> Makefile.local
+	@echo \# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi.>> Makefile.local
+	@echo \# Define UNIX_CPLEX_DIR to use CPLEX.>> Makefile.local
+	@echo>> Makefile.local
+	@echo UNIX_GFLAGS_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
+	@echo UNIX_PROTOBUF_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
+	@echo UNIX_SPARSEHASH_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
+	@echo UNIX_SWIG_BINARY = $(OR_ROOT_FULL)/dependencies/install/bin/swig>> Makefile.local
+	@echo UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
+	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
+	@echo UNIX_SCIP_TAG = $(SCIP_TAG)>> Makefile.local
+	@echo CLR_KEYFILE = bin/or-tools.snk>> Makefile.local
+	@echo UNIX_SULUM_VERSION = $(SULUM_TAG)>> Makefile.local

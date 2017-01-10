@@ -123,7 +123,7 @@ ifeq ($(PLATFORM),LINUX)
   else
     ARCH  =
   endif
-  CSC = mcs
+  CSC = $(PATH_TO_CSHARP_COMPILER)
   MONO = LD_LIBRARY_PATH=$(LIB_DIR):$(LD_LIBRARY_PATH) mono
 
   # This is needed to find libgflags.a
@@ -171,10 +171,10 @@ ifeq ($(PLATFORM),LINUX)
     endif
   endif
   SYS_LNK = -lrt -lpthread
-  JAVA_INC = -I$(LINUX_JDK_ROOT)/include -I$(LINUX_JDK_ROOT)/include/linux
-  JAVAC_BIN = $(LINUX_JDK_ROOT)/bin/javac
-  JAVA_BIN = $(LINUX_JDK_ROOT)/bin/java
-  JAR_BIN = $(LINUX_JDK_ROOT)/bin/jar
+  JAVA_INC = -I$(JDK_DIRECTORY)/include -I$(JDK_DIRECTORY)/include/linux
+  JAVAC_BIN = $(JDK_DIRECTORY)/bin/javac
+  JAVA_BIN = $(JDK_DIRECTORY)/bin/java
+  JAR_BIN = $(JDK_DIRECTORY)/bin/jar
   JNI_LIB_EXT = so
   LIB_SUFFIX = so
   SWIG_LIB_SUFFIX = so
@@ -198,7 +198,7 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 
   JNI_LIB_EXT = jnilib
-  CSC = mcs
+  CSC = $(PATH_TO_CSHARP_COMPILER)
   MONO =  DYLD_FALLBACK_LIBRARY_PATH=$(LIB_DIR):$(DYLD_LIBRARY_PATH) mono64
 
   GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
@@ -207,7 +207,7 @@ ifeq ($(PLATFORM),MACOSX)
   ARCH = -DARCH_K8
   SYS_LNK =
 
-  JAVA_INC = -I$(MAC_JDK_HEADERS) -I$(MAC_JDK_HEADERS)/darwin
+  JAVA_INC = -I$(JDK_DIRECTORY) -I$(JDK_DIRECTORY)/darwin
   JAVAC_BIN = javac
   JAVA_BIN = java
   JAR_BIN = jar
@@ -246,7 +246,7 @@ ifeq ($(PLATFORM),MACOSX)
 endif  # MAC OS X
 
 CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
-	-Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
+  -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
         $(SCIP_INC) $(SLM_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP $(SPARSEHASH_INC)
 
 JNIFLAGS = $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \

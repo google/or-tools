@@ -64,22 +64,17 @@ CSHARPEXE = \
 csharpexe: $(CSHARPEXE)
 
 # Main target.
-ifeq ("$(SYSTEM)","unix")
-ifeq ($(MCS),)
-ifneq ($(REAL_MCS),)
-csharp: warn_mcs
-else   # REAL_MCS
+CANONIC_PATH_TO_CSHARP_COMPILER = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(PATH_TO_CSHARP_COMPILER))))
+ifeq ($(wildcard $(CANONIC_PATH_TO_CSHARP_COMPILER)),)
 csharp:
-endif  # REAL_MCS
-else   # MCS
-csharp: csharpsolution csharportools csharpexe
-endif  # MCS
-else   # Windows
-csharp: csharpsolution csharportools csharpexe
-endif  # Windows
+	@echo "The chsarp compiler was not set properly. Check Makefile.local for more information."
+test_csharp: csharp
 
-warn_mcs:
-	$(warning mcs version 4.2.0.0 or greater is required, csharp files will not be compiled)
+else
+csharp: csharpsolution csharportools csharpexe
+test_csharp: test_csharp_examples
+BUILT_LANGUAGES +=, C\#
+endif
 
 # Clean target.
 clean_csharp:
@@ -458,9 +453,9 @@ examples/csharp/solution/%.csproj: examples/csharp/%.cs tools/template.csproj
 # Replace all "EXECUTABLE" instances with the name of the executable. the first letter is capitalized.
 	$(SED) -i -e "s/SOURCEFILE/$*.cs/" -e "s/EXECUTABLE/\u$*/" examples$Scsharp$Ssolution$S$(@F)
 
-all_csproj: $(patsubst examples/csharp/%.cs, examples/csharp/solution/%.csproj, $(wildcard examples/csharp/*.cs))
+ALL_CSPROJ= $(patsubst examples/csharp/%.cs, examples/csharp/solution/%.csproj, $(wildcard examples/csharp/*.cs))
 
-examples/csharp/Csharp_examples.sln: tools/template.sln all_csproj
+examples/csharp/Csharp_examples.sln: tools/template.sln $(ALL_CSPROJ)
 	-$(DEL) examples$Scsharp$SCsharp_examples.sln
 	$(COPY) tools$Stemplate.sln examples$Scsharp$SCsharp_examples.sln
 #Add the *csproj files to the solution

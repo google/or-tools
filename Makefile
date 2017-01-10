@@ -36,6 +36,7 @@ endif
 
 .PHONY : python cc java csharp sat third_party_check
 all: third_party_check cc java python csharp
+	@echo Or-tools have been built for $(BUILT_LANGUAGES)
 clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
 # First, we try to detect the platform.
@@ -59,7 +60,7 @@ include $(OR_ROOT)makefiles/Makefile.csharp.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
 
 # Include test
-include $(OR_ROOT)makefiles/Makefile.test.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.test
 
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
@@ -71,5 +72,3 @@ ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
 endif
 
 print-%  : ; @echo $* = $($*)
-
-

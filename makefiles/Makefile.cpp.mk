@@ -5,6 +5,8 @@
 # Main target
 cc: ortoolslibs ccexe
 
+BUILT_LANGUAGES += C++
+
 # Clean target
 
 clean_cc:
