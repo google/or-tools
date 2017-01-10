@@ -474,13 +474,14 @@ Makefile.local: makefiles/Makefile.third_party.unix
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo UNIX_PYTHON_VER = $(DETECTED_PYTHON_VERSION)>> Makefile.local
 	@echo PATH_TO_CSHARP_COMPILER = $(DETECTED_MCS_BINARY)>> Makefile.local
+	@echo CLR_KEYFILE = bin/or-tools.snk>> Makefile.local
 	@echo >> Makefile.local
 	@echo $(GLPK_MAKEFILE)>> Makefile.local
 	@echo $(SCIP_MAKEFILE)>> Makefile.local
 	@echo \# Define UNIX_SLM_DIR to use Sulum Optimization.>> Makefile.local
 	@echo \# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi.>> Makefile.local
 	@echo \# Define UNIX_CPLEX_DIR to use CPLEX.>> Makefile.local
-	@echo>> Makefile.local
+	@echo >> Makefile.local
 	@echo UNIX_GFLAGS_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_PROTOBUF_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_SPARSEHASH_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
@@ -488,5 +489,4 @@ Makefile.local: makefiles/Makefile.third_party.unix
 	@echo UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_SCIP_TAG = $(SCIP_TAG)>> Makefile.local
-	@echo CLR_KEYFILE = bin/or-tools.snk>> Makefile.local
-	@echo UNIX_SULUM_VERSION = $(SULUM_TAG)>> Makefile.local
+	@echo UNIX_SULUM_VERSION = $(SULUM_TAG) >> Makefile.local
