@@ -40,7 +40,7 @@ ifeq ("$(SYSTEM)","unix")
         /usr/local/buildtools/java/jdk-64 \
         /usr/lib/jvm/java-1.7.0-openjdk.x86_64 \
         /usr/lib64/jvm/java-1.6.0-openjdk-1.6.0 \
-  /usr/lib64/jvm/java-6-sun-1.6.0.26 \
+        /usr/lib64/jvm/java-6-sun-1.6.0.26 \
         /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64 \
         /usr/lib/jvm/java-6-openjdk-amd64 \
         /usr/lib/jvm/java-7-openjdk-amd64 \
@@ -55,7 +55,7 @@ ifeq ("$(SYSTEM)","unix")
         /usr/local/buildtools/java/jdk-32 \
         /usr/lib/jvm/java-1.7.0-openjdk-i386 \
         /usr/lib/jvm/java-1.6.0-openjdk-1.6.0 \
-  /usr/lib/jvm/java-6-sun-1.6.0.26 \
+        /usr/lib/jvm/java-6-sun-1.6.0.26 \
         /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86 \
         /usr/lib/jvm/java-6-openjdk-i386 \
         /usr/lib/jvm/java-7-openjdk-i386
@@ -196,20 +196,20 @@ INSTALL_DIR=or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
 FZ_INSTALL_DIR=or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
 
 printport:
-  @echo SHELL = $(SHELL)
-  @echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
-  @echo SYSTEM = $(SYSTEM)
-  @echo PLATFORM = $(PLATFORM)
-  @echo PTRLENGTH = $(PTRLENGTH)
-  @echo GIT_REVISION = $(GIT_REVISION)
-  @echo GIT_HASH = $(GIT_HASH)
-  @echo PORT = $(PORT)
-  @echo OR_TOOLS_VERSION = $(OR_TOOLS_VERSION)
-  @echo OR_TOOLS_SHORT_VERSION = $(OR_TOOLS_SHORT_VERSION)
+	@echo SHELL = $(SHELL)
+	@echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
+	@echo SYSTEM = $(SYSTEM)
+	@echo PLATFORM = $(PLATFORM)
+	@echo PTRLENGTH = $(PTRLENGTH)
+	@echo GIT_REVISION = $(GIT_REVISION)
+	@echo GIT_HASH = $(GIT_HASH)
+	@echo PORT = $(PORT)
+	@echo OR_TOOLS_VERSION = $(OR_TOOLS_VERSION)
+	@echo OR_TOOLS_SHORT_VERSION = $(OR_TOOLS_SHORT_VERSION)
 ifeq ("$(SYSTEM)","unix")
-  @echo PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
-  @echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
-  @echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
+	@echo PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
+	@echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
+	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
 else
-  @echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
+	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
 endif
