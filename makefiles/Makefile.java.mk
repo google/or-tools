@@ -1,38 +1,6 @@
 # ---------- Java support using SWIG ----------
 
 .PHONY: java rjava cjava
- 
-CANONIC_JDK_DIRECTORY = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(JDK_DIRECTORY))))
-# Main target
-ifeq ($(wildcard $(CANONIC_JDK_DIRECTORY)),)
-java:
-	@echo "The java executable was not set properly. Check Makefile.local for more information."
-test_java: java
-else
-java: $(JAVA_ORTOOLS_LIBS)
-test_java: test_java_examples
-BUILT_LANGUAGES +=, java
-endif
-
-
-# Clean target
-clean_java:
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
-	-$(DEL) $(LIB_DIR)$S*.jar
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.java
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.java
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
-	-$(DEL) $(GEN_DIR)$Salgorithms$S*java_wrap*
-	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*java_wrap*
-	-$(DEL) $(GEN_DIR)$Sgraph$S*java_wrap*
-	-$(DEL) $(GEN_DIR)$Slinear_solver$S*java_wrap*
-	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.class
-	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.class
-	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.class
-	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.class
-	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Ssamples$S*.class
-	-$(DEL) $(OBJ_DIR)$Sswig$S*java_wrap.$O
 
 JAVA_ORTOOLS_LIBS= $(LIB_DIR)/com.google.ortools.jar $(LIB_DIR)/$(LIB_PREFIX)jniortools.$(JNI_LIB_EXT)
 
@@ -404,3 +372,35 @@ rjava: $(EX_class_file) $(JAVA_ORTOOLS_LIBS)
 endif
 
 endif # ifeq ($(EX),)
+
+# Main target
+CANONIC_JDK_DIRECTORY = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(JDK_DIRECTORY))))
+ifeq ($(wildcard $(CANONIC_JDK_DIRECTORY)),)
+java:
+	@echo "The java executable was not set properly. Check Makefile.local for more information."
+test_java: java
+else
+java: $(JAVA_ORTOOLS_LIBS)
+test_java: test_java_examples
+BUILT_LANGUAGES +=, java
+endif
+
+
+# Clean target
+clean_java:
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)jni*.$(JNI_LIB_EXT)
+	-$(DEL) $(LIB_DIR)$S*.jar
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.java
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.java
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.java
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.java
+	-$(DEL) $(GEN_DIR)$Salgorithms$S*java_wrap*
+	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*java_wrap*
+	-$(DEL) $(GEN_DIR)$Sgraph$S*java_wrap*
+	-$(DEL) $(GEN_DIR)$Slinear_solver$S*java_wrap*
+	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.class
+	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.class
+	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.class
+	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.class
+	-$(DEL) $(OBJ_DIR)$Scom$Sgoogle$Sortools$Ssamples$S*.class
+	-$(DEL) $(OBJ_DIR)$Sswig$S*java_wrap.$O
