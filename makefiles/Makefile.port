@@ -3,14 +3,10 @@ SPACE := $(empty) $(empty)
 BACKSLASH_SPACE := $(empty)\ $(empty)
 
 # Let's discover something about where we run
-ifeq "$(SHELL)" "cmd.exe"
+ifeq ($(OS), Windows_NT)
   SYSTEM = win
 else
-  ifeq "$(SHELL)" "sh.exe"
-    SYSTEM = win
-  else
-    SYSTEM = unix
-  endif
+  SYSTEM = unix
 endif
 
 # Unix specific part.
@@ -213,3 +209,4 @@ ifeq ("$(SYSTEM)","unix")
 else
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
 endif
+

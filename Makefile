@@ -23,14 +23,10 @@ OR_TOOLS_MINOR = 1
 ifeq ($(OR_TOOLS_TOP),)
   OR_ROOT =
 else
-  ifeq "$(SHELL)" "cmd.exe"
+  ifeq ($(OS), Windows_NT)
     OR_ROOT = $(OR_TOOLS_TOP)\\
   else
-    ifeq "$(SHELL)" "sh.exe"
-      OR_ROOT = $(OR_TOOLS_TOP)\\
-    else
-      OR_ROOT = $(OR_TOOLS_TOP)/
-    endif
+    OR_ROOT = $(OR_TOOLS_TOP)/
   endif
 endif
 
