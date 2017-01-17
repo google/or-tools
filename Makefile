@@ -23,19 +23,16 @@ OR_TOOLS_MINOR = 1
 ifeq ($(OR_TOOLS_TOP),)
   OR_ROOT =
 else
-  ifeq "$(SHELL)" "cmd.exe"
+  ifeq ($(OS), Windows_NT)
     OR_ROOT = $(OR_TOOLS_TOP)\\
   else
-    ifeq "$(SHELL)" "sh.exe"
-      OR_ROOT = $(OR_TOOLS_TOP)\\
-    else
-      OR_ROOT = $(OR_TOOLS_TOP)/
-    endif
+    OR_ROOT = $(OR_TOOLS_TOP)/
   endif
 endif
 
 .PHONY : python cc java csharp sat third_party_check
 all: third_party_check cc java python csharp
+	@echo Or-tools have been built for $(BUILT_LANGUAGES)
 clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
 # First, we try to detect the platform.
@@ -59,7 +56,7 @@ include $(OR_ROOT)makefiles/Makefile.csharp.mk
 include $(OR_ROOT)makefiles/Makefile.archive.mk
 
 # Include test
-include $(OR_ROOT)makefiles/Makefile.test.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.test
 
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
@@ -71,5 +68,3 @@ ifeq ($(wildcard dependencies/install/include/gflags/gflags.h),)
 endif
 
 print-%  : ; @echo $* = $($*)
-
-

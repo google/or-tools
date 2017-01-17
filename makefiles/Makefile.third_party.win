@@ -3,8 +3,8 @@ GFLAGS_TAG = master
 PROTOBUF_TAG = 3.0.0
 SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.8
-ZLIB_TAG = 1.2.10
-ZLIB_ARCHIVE_TAG = 1210
+ZLIB_TAG = 1.2.11
+ZLIB_ARCHIVE_TAG = 1211
 SWIG_TAG = 3.0.10
 BISON_FLEX_TAG = 2.5.5
 
@@ -431,9 +431,20 @@ clean_third_party:
 # Create Makefile.local
 makefile_third_party: Makefile.local
 
-Makefile.local:
-	@echo Generating Makefile.local
-	@echo WINDOWS_ZLIB_DIR = $(OR_ROOT_FULL)\\dependencies\\install> Makefile.local
+Makefile.local: makefiles/Makefile.third_party.win
+	-$(DEL) Makefile.local
+	@echo $(SELECTED_JDK_DEF)>> Makefile.local
+	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
+	@echo $(SELECTED_CSC_BINARY)>> Makefile.local
+	@echo #>> Makefile.local
+	@echo $(GLPK_MAKEFILE)>> Makefile.local
+	@echo $(SCIP_MAKEFILE)>> Makefile.local
+	@echo CLR_KEYFILE = bin\\or-tools.snk>> Makefile.local
+	@echo WINDOWS_SULUM_VERSION = $(SULUM_TAG)>> Makefile.local
+	@echo # Define WINDOWS_SLM_DIR to use Sulum Optimization.>> Makefile.local
+	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi.>> Makefile.local
+	@echo #>> Makefile.local
+	@echo WINDOWS_ZLIB_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_ZLIB_NAME=zlib.lib>> Makefile.local
 	@echo WINDOWS_GFLAGS_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_PROTOBUF_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
@@ -441,12 +452,3 @@ Makefile.local:
 	@echo WINDOWS_SWIG_BINARY = $(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe>> Makefile.local
 	@echo WINDOWS_CLP_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_CBC_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo $(GLPK_MAKEFILE)>> Makefile.local
-	@echo $(SCIP_MAKEFILE)>> Makefile.local
-	@echo CLR_KEYFILE = bin\\or-tools.snk >> Makefile.local
-	@echo WINDOWS_SULUM_VERSION = $(SULUM_TAG) >> Makefile.local
-	@echo # Please define WINDOWS_SLM_DIR to use Sulum Optimization. >> Makefile.local
-	@echo # Please define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi. >> Makefile.local
-	@echo $(SELECTED_JDK_DEF)>> Makefile.local
-	@echo WINDOWS_PYTHON_VERSION = \# Please define the python version (27 by default)>> Makefile.local
-	@echo WINDOWS_PATH_TO_PYTHON = \# Please define WINDOWS_PATH_TO_PYTHON (c:\\python27 by default)>> Makefile.local

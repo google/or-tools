@@ -1,12 +1,12 @@
+# Util variables
+SPACE := $(empty) $(empty)
+BACKSLASH_SPACE := $(empty)\ $(empty)
+
 # Let's discover something about where we run
-ifeq "$(SHELL)" "cmd.exe"
+ifeq ($(OS), Windows_NT)
   SYSTEM = win
 else
-  ifeq "$(SHELL)" "sh.exe"
-    SYSTEM = win
-  else
-    SYSTEM = unix
-  endif
+  SYSTEM = unix
 endif
 
 # Unix specific part.
@@ -36,7 +36,7 @@ ifeq ("$(SYSTEM)","unix")
         /usr/local/buildtools/java/jdk-64 \
         /usr/lib/jvm/java-1.7.0-openjdk.x86_64 \
         /usr/lib64/jvm/java-1.6.0-openjdk-1.6.0 \
-	/usr/lib64/jvm/java-6-sun-1.6.0.26 \
+        /usr/lib64/jvm/java-6-sun-1.6.0.26 \
         /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86_64 \
         /usr/lib/jvm/java-6-openjdk-amd64 \
         /usr/lib/jvm/java-7-openjdk-amd64 \
@@ -51,13 +51,13 @@ ifeq ("$(SYSTEM)","unix")
         /usr/local/buildtools/java/jdk-32 \
         /usr/lib/jvm/java-1.7.0-openjdk-i386 \
         /usr/lib/jvm/java-1.6.0-openjdk-1.6.0 \
-	/usr/lib/jvm/java-6-sun-1.6.0.26 \
+        /usr/lib/jvm/java-6-sun-1.6.0.26 \
         /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0.x86 \
         /usr/lib/jvm/java-6-openjdk-i386 \
         /usr/lib/jvm/java-7-openjdk-i386
 
     endif
-    SELECTED_JDK_DEF = LINUX_JDK_ROOT = $(firstword $(wildcard $(CANDIDATE_JDK_ROOTS)))
+    SELECTED_JDK_DEF = JDK_DIRECTORY = $(firstword $(wildcard $(CANDIDATE_JDK_ROOTS)))
   endif
   ifeq ($(OS),Darwin) # Assume Mac Os X
     PLATFORM = MACOSX
@@ -68,25 +68,27 @@ ifeq ("$(SYSTEM)","unix")
     PTRLENGTH = 64
     GUROBI_PLATFORM=mac64
     ifeq ($(wildcard /usr/libexec/java_home),)
-      SELECTED_JDK_DEF = MAC_JDK_HEADERS = \\\# /usr/libexec/java_home could not be found on your system. did you install JDK?
+      SELECTED_JDK_DEF = JDK_DIRECTORY = \\\# /usr/libexec/java_home could not be found on your system. Set this variable to the path to jdk to build the java files.
     else
-      SELECTED_JDK_DEF = MAC_JDK_HEADERS = $(shell /usr/libexec/java_home)/include
+      SELECTED_JDK_DEF = JDK_DIRECTORY = $(shell /usr/libexec/java_home)/include
     endif
     MAC_MIN_VERSION = 10.8
   endif
 
   # Look at mono compiler.
   REAL_MCS = $(shell which mcs)
+  MINIMUM_REQUIRED_MCS_VERSION = 4.2
   ifneq ($(REAL_MCS),)
     ifeq ($(PLATFORM),LINUX)
       MCS_VERSION = $(shell $(REAL_MCS) --version | grep -P '\d\.\d' -o | head -1)
     else # Mac OS X
       MCS_VERSION = $(shell $(REAL_MCS) --Version | grep -E '\d\.\d' -o | head -1)
     endif
-    ifneq ("4.2", "$(word 1,$(sort 4.2 $(MCS_VERSION)))")
-      MCS := $(null)
+    ifneq ("$(MINIMUM_REQUIRED_MCS_VERSION)", "$(word 1,$(sort $(MINIMUM_REQUIRED_MCS_VERSION) $(MCS_VERSION)))")
+      DETECTED_MCS_BINARY := \\\# The detected mcs version is $(MCS_VERSION) \
+      while the minimum required version is $(MINIMUM_REQUIRED_MCS_VERSION).
     else
-      MCS := $(REAL_MCS)
+      DETECTED_MCS_BINARY := $(REAL_MCS)
     endif
   endif
 endif
@@ -149,7 +151,31 @@ ifeq ("$(SYSTEM)","win")
   SCIP_MAKEFILE = \# SCIP not compiled
 
   # Java specific
-  SELECTED_JDK_DEF = WINDOWS_JDK_DIR = \# Please define JDK root.
+  ifeq ($(JAVA_HOME),)
+    SELECTED_JDK_DEF = JDK_DIRECTORY = \# JAVA_HOME is not set on your system. Set the JDK_DIRECTORY variable to the path to jdk to build the java files.
+  else
+    SELECTED_JDK_DEF = JDK_DIRECTORY = $(JAVA_HOME)
+  endif
+
+  # Detect Python
+  DETECTED_PATH_TO_PYTHON = $(shell python -c "from sys import executable; from os.path import sep; print(sep.join(executable.split(sep)[:-1]).rstrip())")
+   CANONIC_DETECTED_PATH_TO_PYTHON = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(DETECTED_PATH_TO_PYTHON))))
+   ifeq ($(wildcard $(CANONIC_DETECTED_PATH_TO_PYTHON)),)
+    SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON =\# python was not found. Set this variable to the path to python to build the python files. Don't include the name of the executable in the path! (ex: WINDOWS_PATH_TO_PYTHON = c:\\python27-64)
+  else
+    SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
+  endif
+  WINDOWS_PYTHON_VERSION = $(shell python -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
+
+  #Detect csc
+
+DETECTED_CSC_BINARY := $(shell where /F csc | tools\\sed.exe -n "/\".*\"/{p;q;}" | tools\\sed "s/\"//g")
+  ifeq ($(DETECTED_CSC_BINARY),)
+    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER =\# csc was not found. Set this variable to the path of csc to build the chsarp files. (ex: PATH_TO_CSHARP_COMPILER = C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\csc.exe)
+  else
+    SELECTED_CSC_BINARY = PATH_TO_CSHARP_COMPILER = $(DETECTED_CSC_BINARY)
+  endif
+  CSC = "$(PATH_TO_CSHARP_COMPILER)"
 endif
 
 # Get github revision level
@@ -177,9 +203,10 @@ printport:
 	@echo OR_TOOLS_VERSION = $(OR_TOOLS_VERSION)
 	@echo OR_TOOLS_SHORT_VERSION = $(OR_TOOLS_SHORT_VERSION)
 ifeq ("$(SYSTEM)","unix")
-	@echo MCS = $(MCS)
+	@echo PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
 	@echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
 	@echo SELECTED_JDK_DEF = $(SELECTED_JDK_DEF)
 else
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
 endif
+

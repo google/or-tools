@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import com.google.ortools.constraintsolver.Assignment;
 import com.google.ortools.constraintsolver.NodeEvaluator2;
 import com.google.ortools.constraintsolver.RoutingModel;
+import com.google.ortools.constraintsolver.FirstSolutionStrategy;
+import com.google.ortools.constraintsolver.RoutingSearchParameters;
 
 public class SimpleRoutingTest {
 
@@ -45,9 +47,13 @@ public class SimpleRoutingTest {
   //Solve Method
   public void solve() {
     RoutingModel routing = new RoutingModel(costMatrix.length, 1, 0);
-    routing.setFirstSolutionStrategy(RoutingModel.ROUTING_PATH_CHEAPEST_ARC);
+    RoutingSearchParameters parameters =
+        RoutingSearchParameters.newBuilder()
+            .mergeFrom(RoutingModel.defaultSearchParameters())
+            .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+            .build();
     NodeDistance distances = new NodeDistance(costMatrix);
-    routing.setCost(distances);
+    routing.setArcCostEvaluatorOfAllVehicles(distances);
 
     Assignment solution = routing.solve();
     if (solution != null) {

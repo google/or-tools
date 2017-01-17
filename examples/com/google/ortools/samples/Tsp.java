@@ -69,7 +69,7 @@ class Tsp {
     // has the following signature: ResultCallback2<int64, int64, int64>.
     // The two arguments are the from and to node inidices.
     RandomManhattan distances = new RandomManhattan(size, seed);
-    routing.setCost(distances);
+    routing.setArcCostEvaluatorOfAllVehicles(distances);
 
     // Forbid node connections (randomly).
     Random randomizer = new Random();

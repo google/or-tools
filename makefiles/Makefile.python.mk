@@ -28,15 +28,25 @@ endif
 OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$Ssrc$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
 
 ifeq ($(SYSTEM),win)
-  PYTHON_EXECUTABLE = $(WINDOWS_PATH_TO_PYTHON)$Spython
+  PYTHON_EXECUTABLE = $(WINDOWS_PATH_TO_PYTHON)$Spython.exe
   SET_PYTHONPATH = @set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) &&
 else #UNIX
-  PYTHON_EXECUTABLE = python$(UNIX_PYTHON_VER)
+  PYTHON_EXECUTABLE = $(shell which python$(UNIX_PYTHON_VER))
   SET_PYTHONPATH = @PYTHONPATH=$(OR_TOOLS_PYTHONPATH)
 endif
 
 # Main target
+CANONIC_PYTHON_EXECUTABLE = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(PYTHON_EXECUTABLE))))
+ifeq ($(wildcard  $(CANONIC_PYTHON_EXECUTABLE)),)
+python:
+	@echo "The python executable was not set properly. Check Makefile.local for more information."
+test_python: python
+
+else
 python: install_python_modules pyinit pycp pyalgorithms pygraph pylp
+test_python: test_python_examples
+BUILT_LANGUAGES +=, python
+endif
 
 # Clean target
 clean_python:
