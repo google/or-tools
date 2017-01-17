@@ -1,0 +1,43 @@
+5 January 1998, 2:58:46 pm
+
+Problem type: RIP
+Maximal time lags: true
+Multi mode: false
+Mode-varying resource demand: true
+CPM-case: false
+Cycle creation: direct
+Output format: ProGenMax
+Number: 10
+Minimal number of activities: 30 
+Maximal number of activities: 30 
+Minimal duration of activity: 1 
+Maximal duration of activity: 10 
+Slack of project duration: 0 0.25 0.5 
+Minimal number of initial activities: 1 
+Maximal number of initial activities: 15 
+Minimal number of terminal activities: 1 
+Maximal number of terminal activities: 15 
+Maximal number of predecessor activities: 15 
+Maximal number of successor activities: 15 
+Restrictiveness of Thesen: 0.25 0.5 0.75 
+Degree of redundancy: 0 
+Deviation of minimal time lags from durations: 2 
+Minimal percentage of maximal time lags: 0.05 
+Maximal percentage of maximal time lags: 0.5 
+Minimal number of cycle structures: 1 
+Maximal number of cycle structures: 10 
+Minimal number of nodes per cycle structure: 2 
+Maximal number of nodes per cycle structure: 30 
+Coefficient of cycle structure density: 0.5 
+Tightness of maximal time lags: 0.5 
+Slack factor: 0.25 
+Minimal number of resources: 1 3 5 
+Maximal number of resources: 1 3 5 
+Minimal number of resources used per activity: 1 1 1 
+Maximal number of resources used per activity: 1 3 5 
+Minimal demand of resources per activity: 1 
+Maximal demand of resources per activity: 5 
+Minimal resource factor: 1 
+Maximal resource factor: 1 
+Minimal cost coefficient: 1 
+Maximal cost coefficient: 10 

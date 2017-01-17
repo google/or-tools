@@ -1,0 +1,552 @@
+:j20:RIP1: OK
+
+:j20:RIP2: OK
+
+:j20:RIP3: OK
+
+:j20:RIP4: OK
+
+:j20:RIP5: OK
+
+:j20:RIP6: OK
+
+:j20:RIP7: OK
+
+:j20:RIP8: OK
+
+:j20:RIP9: OK
+
+:j20:RIP10: OK
+
+:j20:RIP11: OK
+
+:j20:RIP12: OK
+
+:j20:RIP13: OK
+
+:j20:RIP14: OK
+
+:j20:RIP15: OK
+
+:j20:RIP16: OK
+
+:j20:RIP17: OK
+
+:j20:RIP18: OK
+
+:j20:RIP19: OK
+
+:j20:RIP20: OK
+
+:j20:RIP21: OK
+
+:j20:RIP22: OK
+
+:j20:RIP23: OK
+
+:j20:RIP24: OK
+
+:j20:RIP25: OK
+
+:j20:RIP26: OK
+
+:j20:RIP27: OK
+
+:j20:RIP28: OK
+
+:j20:RIP29: OK
+
+:j20:RIP30: OK
+
+:j20:RIP31: OK
+
+:j20:RIP32: OK
+
+:j20:RIP33: OK
+
+:j20:RIP34: OK
+
+:j20:RIP35: OK
+
+:j20:RIP36: OK
+
+:j20:RIP37: OK
+
+:j20:RIP38: OK
+
+:j20:RIP39: OK
+
+:j20:RIP40: OK
+
+:j20:RIP41: OK
+
+:j20:RIP42: OK
+
+:j20:RIP43: OK
+
+:j20:RIP44: OK
+
+:j20:RIP45: OK
+
+:j20:RIP46: OK
+
+:j20:RIP47: OK
+
+:j20:RIP48: OK
+
+:j20:RIP49: OK
+
+:j20:RIP50: OK
+
+:j20:RIP51: OK
+
+:j20:RIP52: OK
+
+:j20:RIP53: OK
+
+:j20:RIP54: OK
+
+:j20:RIP55: OK
+
+:j20:RIP56: OK
+
+:j20:RIP57: OK
+
+:j20:RIP58: OK
+
+:j20:RIP59: OK
+
+:j20:RIP60: OK
+
+:j20:RIP61: OK
+
+:j20:RIP62: OK
+
+:j20:RIP63: OK
+
+:j20:RIP64: OK
+
+:j20:RIP65: OK
+
+:j20:RIP66: OK
+
+:j20:RIP67: OK
+
+:j20:RIP68: OK
+
+:j20:RIP69: OK
+
+:j20:RIP70: OK
+
+:j20:RIP71: OK
+
+:j20:RIP72: OK
+
+:j20:RIP73: OK
+
+:j20:RIP74: OK
+
+:j20:RIP75
+Restrictiveness more than 10.0 % too small: 0.489474 < 0.75
+
+:j20:RIP76
+Restrictiveness more than 10.0 % too small: 0.58421 < 0.75
+
+:j20:RIP77: OK
+
+:j20:RIP78: OK
+
+:j20:RIP79: OK
+
+:j20:RIP80: OK
+
+:j20:RIP81
+Restrictiveness more than 10.0 % too small: 0.5 < 0.75
+
+:j20:RIP82
+Restrictiveness more than 10.0 % too small: 0.578947 < 0.75
+
+:j20:RIP83: OK
+
+:j20:RIP84: OK
+
+:j20:RIP85: OK
+
+:j20:RIP86: OK
+
+:j20:RIP87: OK
+
+:j20:RIP88: OK
+
+:j20:RIP89: OK
+
+:j20:RIP90: OK
+
+:j20:RIP91: OK
+
+:j20:RIP92: OK
+
+:j20:RIP93: OK
+
+:j20:RIP94: OK
+
+:j20:RIP95: OK
+
+:j20:RIP96: OK
+
+:j20:RIP97: OK
+
+:j20:RIP98: OK
+
+:j20:RIP99: OK
+
+:j20:RIP100: OK
+
+:j20:RIP101: OK
+
+:j20:RIP102: OK
+
+:j20:RIP103: OK
+
+:j20:RIP104: OK
+
+:j20:RIP105: OK
+
+:j20:RIP106: OK
+
+:j20:RIP107: OK
+
+:j20:RIP108: OK
+
+:j20:RIP109: OK
+
+:j20:RIP110: OK
+
+:j20:RIP111: OK
+
+:j20:RIP112: OK
+
+:j20:RIP113: OK
+
+:j20:RIP114: OK
+
+:j20:RIP115: OK
+
+:j20:RIP116: OK
+
+:j20:RIP117: OK
+
+:j20:RIP118: OK
+
+:j20:RIP119: OK
+
+:j20:RIP120: OK
+
+:j20:RIP121: OK
+
+:j20:RIP122: OK
+
+:j20:RIP123: OK
+
+:j20:RIP124: OK
+
+:j20:RIP125: OK
+
+:j20:RIP126: OK
+
+:j20:RIP127: OK
+
+:j20:RIP128: OK
+
+:j20:RIP129: OK
+
+:j20:RIP130: OK
+
+:j20:RIP131: OK
+
+:j20:RIP132: OK
+
+:j20:RIP133: OK
+
+:j20:RIP134: OK
+
+:j20:RIP135: OK
+
+:j20:RIP136: OK
+
+:j20:RIP137: OK
+
+:j20:RIP138: OK
+
+:j20:RIP139: OK
+
+:j20:RIP140: OK
+
+:j20:RIP141: OK
+
+:j20:RIP142: OK
+
+:j20:RIP143: OK
+
+:j20:RIP144: OK
+
+:j20:RIP145: OK
+
+:j20:RIP146: OK
+
+:j20:RIP147: OK
+
+:j20:RIP148: OK
+
+:j20:RIP149: OK
+
+:j20:RIP150: OK
+
+:j20:RIP151: OK
+
+:j20:RIP152
+Restrictiveness more than 10.0 % too small: 0.578947 < 0.75
+
+:j20:RIP153
+Restrictiveness more than 10.0 % too small: 0.468421 < 0.75
+
+:j20:RIP154: OK
+
+:j20:RIP155: OK
+
+:j20:RIP156: OK
+
+:j20:RIP157: OK
+
+:j20:RIP158: OK
+
+:j20:RIP159: OK
+
+:j20:RIP160: OK
+
+:j20:RIP161: OK
+
+:j20:RIP162: OK
+
+:j20:RIP163: OK
+
+:j20:RIP164: OK
+
+:j20:RIP165: OK
+
+:j20:RIP166: OK
+
+:j20:RIP167: OK
+
+:j20:RIP168
+Restrictiveness more than 10.0 % too small: 0.542105 < 0.75
+
+:j20:RIP169: OK
+
+:j20:RIP170: OK
+
+:j20:RIP171: OK
+
+:j20:RIP172: OK
+
+:j20:RIP173: OK
+
+:j20:RIP174: OK
+
+:j20:RIP175: OK
+
+:j20:RIP176: OK
+
+:j20:RIP177
+Restrictiveness more than 10.0 % too small: 0.494737 < 0.75
+
+:j20:RIP178: OK
+
+:j20:RIP179: OK
+
+:j20:RIP180: OK
+
+:j20:RIP181: OK
+
+:j20:RIP182: OK
+
+:j20:RIP183: OK
+
+:j20:RIP184: OK
+
+:j20:RIP185: OK
+
+:j20:RIP186: OK
+
+:j20:RIP187: OK
+
+:j20:RIP188: OK
+
+:j20:RIP189: OK
+
+:j20:RIP190: OK
+
+:j20:RIP191: OK
+
+:j20:RIP192: OK
+
+:j20:RIP193: OK
+
+:j20:RIP194: OK
+
+:j20:RIP195: OK
+
+:j20:RIP196: OK
+
+:j20:RIP197: OK
+
+:j20:RIP198: OK
+
+:j20:RIP199: OK
+
+:j20:RIP200: OK
+
+:j20:RIP201: OK
+
+:j20:RIP202: OK
+
+:j20:RIP203: OK
+
+:j20:RIP204: OK
+
+:j20:RIP205: OK
+
+:j20:RIP206: OK
+
+:j20:RIP207: OK
+
+:j20:RIP208: OK
+
+:j20:RIP209: OK
+
+:j20:RIP210: OK
+
+:j20:RIP211: OK
+
+:j20:RIP212: OK
+
+:j20:RIP213: OK
+
+:j20:RIP214: OK
+
+:j20:RIP215: OK
+
+:j20:RIP216: OK
+
+:j20:RIP217: OK
+
+:j20:RIP218: OK
+
+:j20:RIP219: OK
+
+:j20:RIP220: OK
+
+:j20:RIP221: OK
+
+:j20:RIP222: OK
+
+:j20:RIP223: OK
+
+:j20:RIP224: OK
+
+:j20:RIP225: OK
+
+:j20:RIP226: OK
+
+:j20:RIP227: OK
+
+:j20:RIP228: OK
+
+:j20:RIP229: OK
+
+:j20:RIP230: OK
+
+:j20:RIP231: OK
+
+:j20:RIP232: OK
+
+:j20:RIP233: OK
+
+:j20:RIP234: OK
+
+:j20:RIP235: OK
+
+:j20:RIP236: OK
+
+:j20:RIP237: OK
+
+:j20:RIP238: OK
+
+:j20:RIP239: OK
+
+:j20:RIP240: OK
+
+:j20:RIP241
+Restrictiveness more than 10.0 % too small: 0.615789 < 0.75
+
+:j20:RIP242: OK
+
+:j20:RIP243
+Restrictiveness more than 10.0 % too small: 0.563158 < 0.75
+
+:j20:RIP244: OK
+
+:j20:RIP245: OK
+
+:j20:RIP246: OK
+
+:j20:RIP247: OK
+
+:j20:RIP248: OK
+
+:j20:RIP249: OK
+
+:j20:RIP250: OK
+
+:j20:RIP251
+Restrictiveness more than 10.0 % too small: 0.494737 < 0.75
+
+:j20:RIP252: OK
+
+:j20:RIP253: OK
+
+:j20:RIP254: OK
+
+:j20:RIP255: OK
+
+:j20:RIP256
+Restrictiveness more than 10.0 % too small: 0.526316 < 0.75
+
+:j20:RIP257: OK
+
+:j20:RIP258: OK
+
+:j20:RIP259: OK
+
+:j20:RIP260: OK
+
+:j20:RIP261: OK
+
+:j20:RIP262: OK
+
+:j20:RIP263: OK
+
+:j20:RIP264: OK
+
+:j20:RIP265: OK
+
+:j20:RIP266: OK
+
+:j20:RIP267: OK
+
+:j20:RIP268: OK
+
+:j20:RIP269: OK
+
+:j20:RIP270: OK
+
