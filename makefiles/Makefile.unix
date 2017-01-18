@@ -41,19 +41,9 @@ FZ_EXE = fzn-or-tools$E
 
 # This is needed to find python.h
 PYTHON_VERSION = $(UNIX_PYTHON_VER)
-PATH_TO_PYTHON = $(shell which python$(UNIX_PYTHON_VER) | xargs dirname | xargs dirname)
-ifeq ($(PLATFORM),MACOSX)
-  PYTHON_INC = -I/Library/Frameworks/Python.framework/Versions/$(PYTHON_VERSION)/include/python$(PYTHON_VERSION)/ \
-  -I/Library/Frameworks/Python.framework/Versions/$(PYTHON_VERSION)/lib $(ADD_PYTHON_INC)
-else
-  PATH_TO_PYTHON_LIB = $(PATH_TO_PYTHON)/lib/python$(UNIX_PYTHON_VER)
-  PATH_TO_PYTHON_INCLUDE = $(PATH_TO_PYTHON)/include/python$(UNIX_PYTHON_VER)
-  #sometimes the path is include/python3.5m instead of include/python3.5
-  ifeq ($(wildcard $(PATH_TO_PYTHON_INCLUDE)),)
-    PATH_TO_PYTHON_INCLUDE = $(PATH_TO_PYTHON)/include/python$(UNIX_PYTHON_VER)m
-  endif
-  PYTHON_INC = -I$(PATH_TO_PYTHON_INCLUDE) -I$(PATH_TO_PYTHON_LIB) $(ADD_PYTHON_INC)
-endif
+PATH_TO_PYTHON_INCLUDE = $(shell python$(UNIX_PYTHON_VER) -c 'import sysconfig; print (sysconfig.get_paths()["platinclude"])')
+PATH_TO_PYTHON_LIB = $(shell python$(UNIX_PYTHON_VER) -c 'import sysconfig; print (sysconfig.get_paths()["stdlib"])')
+PYTHON_INC = -I$(PATH_TO_PYTHON_INCLUDE) -I$(PATH_TO_PYTHON_LIB) $(ADD_PYTHON_INC)
 
 
 # This is needed to find gflags/gflags.h
