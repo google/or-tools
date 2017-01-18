@@ -755,6 +755,12 @@ bool IntegralProblemConverter::ConvertUsingExistingBooleans(
       continue;
     }
 
+    if (transpose.column(RowToColIndex(constraint)).num_entries() <= 1) {
+      // Can't replace the integer variable by Boolean variables when there are
+      // no Boolean variables.
+      continue;
+    }
+
     bool only_one_integral_variable = true;
     for (const SparseColumn::Entry constraint_entry :
          transpose.column(RowToColIndex(constraint))) {

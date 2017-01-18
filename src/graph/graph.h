@@ -935,8 +935,8 @@ void BaseGraph<NodeIndexType, ArcIndexType,
 // Computes the cummulative sum of the entry in v. We only use it with
 // in/out degree distribution, hence the Check() at the end.
 template <typename NodeIndexType, typename ArcIndexType, bool HasReverseArcs>
-void BaseGraph<NodeIndexType, ArcIndexType,
-               HasReverseArcs>::ComputeCumulativeSum(std::vector<ArcIndexType>* v) {
+void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
+    ComputeCumulativeSum(std::vector<ArcIndexType>* v) {
   ArcIndexType sum = 0;
   for (int i = 0; i < num_nodes_; ++i) {
     ArcIndexType temp = (*v)[i];

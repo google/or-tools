@@ -273,19 +273,28 @@ class IntegerDistribution : public DistributionStat {
   void Add(int64 value);
 };
 
-#ifdef OR_STATS
-
-// Helper class to time a block of code and add the result to a
+// Helper classes to time a block of code and add the result to a
 // TimeDistribution. Calls StartTimer() on creation and
 // StopTimerAndAddElapsedTime() on destruction.
-class ScopedTimeDistributionUpdater {
+//
+// There are three classes with the same interface:
+// * EnabledScopedTimeDistributionUpdater always collects the time stats of the
+//   scope in which it is defined. This class is used for stats that are always
+//   collected.
+// * ScopedTimeDistributionUpdater collects the time stats only when OR_STATS is
+//   defined. This symbol should be used for collecting stats in places where
+//   the overhead of collecting the stats may hurt the performance of the
+//   algorithm.
+// * DisabledScopedTimeDistributionUpdater is used to implement
+//   ScopedTimeDistributionUpdater when OR_STATS is not defined.
+class EnabledScopedTimeDistributionUpdater {
  public:
   // Note that this does not take ownership of the given stat.
-  explicit ScopedTimeDistributionUpdater(TimeDistribution* stat)
+  explicit EnabledScopedTimeDistributionUpdater(TimeDistribution* stat)
       : stat_(stat), also_update_(NULL) {
     stat->StartTimer();
   }
-  ~ScopedTimeDistributionUpdater() {
+  ~EnabledScopedTimeDistributionUpdater() {
     const double cycles = stat_->StopTimerAndAddElapsedTime();
     if (also_update_ != NULL) {
       also_update_->AddTimeInCycles(cycles);
@@ -295,7 +304,7 @@ class ScopedTimeDistributionUpdater {
   // Updates another TimeDistribution on destruction. This is useful to split
   // a total time measurement in different categories:
   //
-  // ScopedTimeDistributionUpdater timer(&total_timer);
+  // EnabledScopedTimeDistributionUpdater timer(&total_timer);
   // ...
   // switch (type) {
   //   case TypeA : timer.AlsoUpdate(&typeA_timer); break;
@@ -306,8 +315,21 @@ class ScopedTimeDistributionUpdater {
  private:
   TimeDistribution* stat_;
   TimeDistribution* also_update_;
-  DISALLOW_COPY_AND_ASSIGN(ScopedTimeDistributionUpdater);
+  DISALLOW_COPY_AND_ASSIGN(EnabledScopedTimeDistributionUpdater);
 };
+
+class DisabledScopedTimeDistributionUpdater {
+ public:
+  explicit DisabledScopedTimeDistributionUpdater(TimeDistribution* stat) {}
+  void AlsoUpdate(TimeDistribution* also_update) {}
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(DisabledScopedTimeDistributionUpdater);
+};
+
+#ifdef OR_STATS
+
+using ScopedTimeDistributionUpdater = EnabledScopedTimeDistributionUpdater;
 
 // Simple macro to be used by a client that want to execute costly operations
 // only if OR_STATS is defined.
@@ -328,14 +350,7 @@ class ScopedTimeDistributionUpdater {
 // If OR_STATS is not defined, we remove some instructions that may be time
 // consuming.
 
-class ScopedTimeDistributionUpdater {
- public:
-  explicit ScopedTimeDistributionUpdater(TimeDistribution* stat) {}
-  void AlsoUpdate(TimeDistribution* also_update) {}
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ScopedTimeDistributionUpdater);
-};
+using ScopedTimeDistributionUpdater = DisabledScopedTimeDistributionUpdater;
 
 #define IF_STATS_ENABLED(instructions)
 #define SCOPED_TIME_STAT(stats)

@@ -436,6 +436,10 @@ class LinearProgram {
   // Scales the problem using the given scaler.
   void Scale(SparseMatrixScaler* scaler);
 
+  // Scales the costs to always have a maximum cost magnitude of 1.0 and returns
+  // the used cost scaling factor.
+  Fractional ScaleObjective();
+
   // Removes the given row indices from the LinearProgram.
   // This needs to allocate O(num_variables) memory.
   void DeleteRows(const DenseBooleanColumn& rows_to_delete);

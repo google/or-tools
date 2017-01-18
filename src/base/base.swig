@@ -127,7 +127,10 @@
  std::set<type>* OUTPUT (std::set<type> temp) {
   $1 = &temp;
 }
-%typemap(argout) std::vector<type>* OUTPUT, std::set<type>* OUTPUT, hash_set<type>* OUTPUT {
+%typemap(argout)
+    std::vector<type>* OUTPUT,
+    std::set<type>* OUTPUT,
+    hash_set<type>* OUTPUT {
   %append_output(list_output_helper($1, &py_converter));
 }
 %typemap(out) std::vector<type> {

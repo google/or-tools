@@ -1105,30 +1105,32 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     if (status != SatSolver::MODEL_SAT) break;
 
     // Look for an integer variable whose domain is not singleton.
-    // Heuristic: we take the one with minimum lb amongst the given variables.
+    //
+    // Heuristic: we take the first non-fixed variable in the given order and
+    // try to fix it to its lower bound.
     //
     // TODO(user): consider better heuristics. Maybe we can use some kind of
-    // IntegerVariable activity or something from the CP world.
+    // IntegerVariable activity or something from the CP world. We also tried
+    // to take the one with minimum lb amongst the given variables, which work
+    // well on some problem but not on other.
     IntegerVariable candidate = kNoIntegerVariable;
-    IntegerValue candidate_lb(0);
     for (const IntegerVariable variable : variables_to_finalize) {
       // Note that we use < and not != for optional variable whose domain may
       // be empty.
       const IntegerValue lb = integer_trail->LowerBound(variable);
       if (lb < integer_trail->UpperBound(variable)) {
-        if (candidate == kNoIntegerVariable || lb < candidate_lb) {
-          candidate = variable;
-          candidate_lb = lb;
-        }
+        candidate = variable;
+        break;
       }
     }
 
     if (candidate == kNoIntegerVariable) break;
+
     // This add a literal with good polarity. It is very important that the
     // decision heuristic assign it to false! Otherwise, our heuristic is not
     // good.
-    integer_encoder->CreateAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(candidate, candidate_lb + 1));
+    integer_encoder->CreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+        candidate, integer_trail->LowerBound(candidate) + 1));
   }
   return status;
 }

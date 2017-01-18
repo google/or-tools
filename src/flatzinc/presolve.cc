@@ -459,7 +459,7 @@ bool Presolver::Unreify(Constraint* ct, std::string* log) {
   if (!last_argument.HasOneValue()) {
     return false;
   }
-  DCHECK(HasSuffixString(ct->type, "_reif")) << ct->DebugString();
+  DCHECK(strings::EndsWith(ct->type, "_reif")) << ct->DebugString();
   ct->type.resize(ct->type.size() - 5);
   ct->RemoveTargetVariable();
   if (last_argument.Value() == 1) {
@@ -3514,7 +3514,7 @@ void CheckRegroupStart(Constraint* ct, Constraint** start,
 //  - *_reif: arity
 //  - otherwise arity + 100.
 int SortWeight(Constraint* ct) {
-  int arity = HasSuffixString(ct->type, "_reif") ? 0 : 100;
+  int arity = strings::EndsWith(ct->type, "_reif") ? 0 : 100;
   for (const Argument& arg : ct->arguments) {
     arity += arg.variables.size();
   }

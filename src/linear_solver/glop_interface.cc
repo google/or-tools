@@ -367,7 +367,7 @@ void GLOPInterface::SetRelativeMipGap(double value) {
 void GLOPInterface::SetPrimalTolerance(double value) {
   // TODO(user): Modify parameters_ with the correct value.
   // The problem is that this is set by default by the wrapper to 1e-7 and for
-  // now we want to use higher degault tolerances in Glop.
+  // now we want to use higher default tolerances in Glop.
   if (value != MPSolverParameters::kDefaultDoubleParamValue) {
     SetDoubleParamToUnsupportedValue(MPSolverParameters::PRIMAL_TOLERANCE,
                                      value);
@@ -379,8 +379,7 @@ void GLOPInterface::SetDualTolerance(double value) {
   // The problem is that this is set by default by the wrapper to 1e-7 and for
   // now we want to use higher default tolerances in Glop.
   if (value != MPSolverParameters::kDefaultDoubleParamValue) {
-    SetDoubleParamToUnsupportedValue(MPSolverParameters::PRIMAL_TOLERANCE,
-                                     value);
+    SetDoubleParamToUnsupportedValue(MPSolverParameters::DUAL_TOLERANCE, value);
   }
 }
 

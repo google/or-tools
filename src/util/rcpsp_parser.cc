@@ -30,11 +30,13 @@ RcpspParser::RcpspParser()
       due_date_(-1),
       tardiness_cost_(-1),
       mpm_time_(-1),
+      deadline_(-1),
       load_status_(NOT_STARTED),
       declared_tasks_(-1),
       current_task_(-1),
       is_rcpsp_max_(false),
-      is_patterson_(false),
+      is_resource_investment_(false),
+      is_consumer_producer_(false),
       unreads_(0) {}
 
 bool RcpspParser::LoadFile(const std::string& file_name) {
@@ -44,13 +46,13 @@ bool RcpspParser::LoadFile(const std::string& file_name) {
 
   is_rcpsp_max_ = strings::EndsWith(file_name, ".sch") ||
                   strings::EndsWith(file_name, ".SCH");
-  is_patterson_ = strings::EndsWith(file_name, ".rcp");
+  const bool is_patterson = strings::EndsWith(file_name, ".rcp");
   load_status_ = HEADER_SECTION;
 
   for (const std::string& line : FileLines(file_name)) {
     if (is_rcpsp_max_) {
       ProcessRcpspMaxLine(line);
-    } else if (is_patterson_) {
+    } else if (is_patterson) {
       ProcessPattersonLine(line);
     } else {
       ProcessRcpspLine(line);
@@ -110,11 +112,11 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
         // Nothing to do.
       } else if (words.size() > 1 && words[1] == "renewable") {
         for (int i = 0; i < atoi32(words[2]); ++i) {
-          resources_.push_back({-1, true});
+          resources_.push_back({-1, -1, true, 0});
         }
       } else if (words.size() > 1 && words[1] == "nonrenewable") {
         for (int i = 0; i < atoi32(words[2]); ++i) {
-          resources_.push_back({-1, false});
+          resources_.push_back({-1, -1, false, 0});
         }
       } else if (words.size() > 1 && words[1] == "doubly") {
         // Nothing to do.
@@ -207,12 +209,16 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
         // Nothing to do.
       } else if (words.size() == resources_.size()) {
         for (int i = 0; i < words.size(); ++i) {
-          resources_[i].capacity = atoi32(words[i]);
+          resources_[i].max_capacity = atoi32(words[i]);
         }
         load_status_ = PARSING_FINISHED;
       } else {
         ReportError(line);
       }
+      break;
+    }
+    case RESOURCE_MIN_SECTION: {
+      LOG(FATAL) << "Should not be here";
       break;
     }
     case PARSING_FINISHED: {
@@ -234,24 +240,33 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
       break;
     }
     case HEADER_SECTION: {
-      if (words.size() != 4) {
+      if (words.size() == 2) {
+        is_consumer_producer_ = true;
+      } else if (words.size() < 4 || atoi32(words[3]) != 0) {
         ReportError(line);
         break;
       }
-      if (atoi32(words[3])) {
-        ReportError(line);
-        break;
+
+      if (words.size() == 5) {
+        deadline_ = atoi32(words[4]);
+        is_resource_investment_ = true;
       }
+
       declared_tasks_ = atoi32(words[0]);
       tasks_.resize(declared_tasks_ + 2);  // 2 sentinels.
       temp_delays_.resize(declared_tasks_ + 2);
 
       // Creates resources.
-      const int num_renewable_resources = atoi32(words[1]);
-      const int num_nonrenewable_resources = atoi32(words[2]);
-      resources_.resize(num_renewable_resources, {-1, true});
-      resources_.resize(num_renewable_resources + num_nonrenewable_resources,
-                        {-1, false});
+      if (is_consumer_producer_) {
+        const int num_nonrenewable_resources = atoi32(words[1]);
+        resources_.resize(num_nonrenewable_resources, {-1, -1, false, 0});
+      } else {
+        const int num_renewable_resources = atoi32(words[1]);
+        const int num_nonrenewable_resources = atoi32(words[2]);
+        resources_.resize(num_renewable_resources, {-1, -1, true, 0});
+        resources_.resize(num_renewable_resources + num_nonrenewable_resources,
+                          {-1, -1, false, 0});
+      }
 
       // Set up for the next section.
       load_status_ = PRECEDENCE_SECTION;
@@ -340,6 +355,23 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         for (int i = 0; i < resources_.size(); ++i) {
           recipe.demands_per_resource.push_back(atoi32(words[3 + i]));
         }
+      } else if (words.size() == 2 + resources_.size() &&
+                 is_consumer_producer_) {
+        // Start of a new task.
+        current_task_ = atoi32(words[0]);
+
+        // 0 based indices for the mode.
+        const int current_mode = atoi32(words[1]) - 1;
+        CHECK_LT(current_mode, tasks_[current_task_].recipes.size());
+        if (current_mode != 0) {
+          ReportError(line);
+          break;
+        }
+        Recipe& recipe = tasks_[current_task_].recipes[current_mode];
+        recipe.duration = 0;
+        for (int i = 0; i < resources_.size(); ++i) {
+          recipe.demands_per_resource.push_back(atoi32(words[2 + i]));
+        }
       } else if (words.size() == 2 + resources_.size()) {
         // New mode for a current task.
         const int current_mode = atoi32(words[0]) - 1;
@@ -358,7 +390,26 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
     case RESOURCE_SECTION: {
       if (words.size() == resources_.size()) {
         for (int i = 0; i < words.size(); ++i) {
-          resources_[i].capacity = atoi32(words[i]);
+          if (is_resource_investment_) {
+            resources_[i].unit_cost = atoi32(words[i]);
+          } else {
+            resources_[i].max_capacity = atoi32(words[i]);
+          }
+        }
+        if (is_consumer_producer_) {
+          load_status_ = RESOURCE_MIN_SECTION;
+        } else {
+          load_status_ = PARSING_FINISHED;
+        }
+      } else {
+        ReportError(line);
+      }
+      break;
+    }
+    case RESOURCE_MIN_SECTION: {
+      if (words.size() == resources_.size()) {
+        for (int i = 0; i < words.size(); ++i) {
+          resources_[i].min_capacity = atoi32(words[i]);
         }
         load_status_ = PARSING_FINISHED;
       } else {
@@ -396,7 +447,7 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
 
       // Creates resources.
       const int num_renewable_resources = atoi32(words[1]);
-      resources_.resize(num_renewable_resources, {-1, true});
+      resources_.resize(num_renewable_resources, {-1, -1, true, 0});
 
       // Set up for the next section.
       load_status_ = RESOURCE_SECTION;
@@ -455,13 +506,17 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
     case RESOURCE_SECTION: {
       if (words.size() == resources_.size()) {
         for (int i = 0; i < words.size(); ++i) {
-          resources_[i].capacity = atoi32(words[i]);
+          resources_[i].max_capacity = atoi32(words[i]);
         }
         load_status_ = PRECEDENCE_SECTION;
         current_task_ = 0;
       } else {
         ReportError(line);
       }
+      break;
+    }
+    case RESOURCE_MIN_SECTION: {
+      LOG(FATAL) << "Should not be here";
       break;
     }
     case PARSING_FINISHED: {

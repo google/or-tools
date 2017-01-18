@@ -65,7 +65,8 @@ class MatrixOrFunction {
 
 // Specialization for vector-based matrices.
 template <typename ScalarType, bool square>
-class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType>>, square> {
+class MatrixOrFunction<ScalarType, std::vector<std::vector<ScalarType>>,
+                       square> {
  public:
   explicit MatrixOrFunction(std::vector<std::vector<ScalarType>> matrix)
       : matrix_(std::move(matrix)) {}

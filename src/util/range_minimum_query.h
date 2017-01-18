@@ -99,7 +99,8 @@ inline RangeMinimumQuery<T, Compare>::RangeMinimumQuery(std::vector<T> array)
 // Note that cache_[k+1][i] = std::min(cache_[k][i], cache_[k][i+2^k]), hence every
 // row can be efficiently computed from the previous.
 template <typename T, typename Compare>
-RangeMinimumQuery<T, Compare>::RangeMinimumQuery(std::vector<T> array, Compare cmp)
+RangeMinimumQuery<T, Compare>::RangeMinimumQuery(std::vector<T> array,
+                                                 Compare cmp)
     : cache_(MostSignificantBitPosition32(array.size()) + 1),
       cmp_(std::move(cmp)) {
   const int array_size = array.size();

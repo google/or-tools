@@ -75,6 +75,36 @@ bool IntervalsAreSortedAndDisjoint(
   return true;
 }
 
+std::vector<ClosedInterval> IntersectionOfSortedDisjointIntervals(
+    const std::vector<ClosedInterval>& a,
+    const std::vector<ClosedInterval>& b) {
+  DCHECK(IntervalsAreSortedAndDisjoint(a));
+  DCHECK(IntervalsAreSortedAndDisjoint(b));
+  std::vector<ClosedInterval> result;
+  for (int i = 0, j = 0; i < a.size() && j < b.size();) {
+    const ClosedInterval intersection{std::max(a[i].start, b[j].start),
+                                      std::min(a[i].end, b[j].end)};
+    if (intersection.start > intersection.end) {
+      // Intersection is empty, we advance past the first interval of the two.
+      if (a[i].start < b[j].start) {
+        i++;
+      } else {
+        j++;
+      }
+    } else {
+      // Intersection is non-empty, we add it to the result and advance past
+      // the first interval to finish.
+      result.push_back(intersection);
+      if (a[i].end < b[j].end) {
+        i++;
+      } else {
+        j++;
+      }
+    }
+  }
+  return result;
+}
+
 SortedDisjointIntervalList::SortedDisjointIntervalList() {}
 
 SortedDisjointIntervalList::SortedDisjointIntervalList(

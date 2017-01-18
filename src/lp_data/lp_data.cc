@@ -1017,6 +1017,29 @@ void LinearProgram::Scale(SparseMatrixScaler* scaler) {
   transpose_matrix_is_consistent_ = false;
 }
 
+Fractional LinearProgram::ScaleObjective() {
+  Fractional cost_scaling_factor = 0.0;
+  for (ColIndex col(0); col < num_variables(); ++col) {
+    cost_scaling_factor =
+        std::max(cost_scaling_factor, std::abs(objective_coefficients()[col]));
+  }
+  VLOG(1) << "Objective stats (before objective scaling): "
+          << GetObjectiveStatsString();
+  if (cost_scaling_factor == 0.0) {
+    // This is needed for pure feasibility problems.
+    cost_scaling_factor = 1.0;
+  } else {
+    for (ColIndex col(0); col < num_variables(); ++col) {
+      SetObjectiveCoefficient(
+          col, objective_coefficients()[col] / cost_scaling_factor);
+    }
+    SetObjectiveScalingFactor(objective_scaling_factor() * cost_scaling_factor);
+    SetObjectiveOffset(objective_offset() / cost_scaling_factor);
+  }
+  VLOG(1) << "Objective stats: " << GetObjectiveStatsString();
+  return cost_scaling_factor;
+}
+
 void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {
   if (row_to_delete.empty()) return;
 

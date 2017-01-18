@@ -536,11 +536,23 @@ void GurobiInterface::SetRelativeMipGap(double value) {
   }
 }
 
+// Gurobi has two different types of primal tolerance (feasibility tolerance):
+// constraint and integrality. We need to set them both.
+// See:
+// http://www.gurobi.com/documentation/6.0/refman/feasibilitytol.html
+// and
+// http://www.gurobi.com/documentation/6.0/refman/intfeastol.html
 void GurobiInterface::SetPrimalTolerance(double value) {
   CheckedGurobiCall(
       GRBsetdblparam(GRBgetenv(model_), GRB_DBL_PAR_FEASIBILITYTOL, value));
+  CheckedGurobiCall(
+      GRBsetdblparam(GRBgetenv(model_), GRB_DBL_PAR_INTFEASTOL, value));
 }
 
+// As opposed to primal (feasibility) tolerance, the dual (optimality) tolerance
+// applies only to the reduced costs in the improving direction.
+// See:
+// http://www.gurobi.com/documentation/6.0/refman/optimalitytol.html
 void GurobiInterface::SetDualTolerance(double value) {
   CheckedGurobiCall(
       GRBsetdblparam(GRBgetenv(model_), GRB_DBL_PAR_OPTIMALITYTOL, value));

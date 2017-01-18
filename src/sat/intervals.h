@@ -51,17 +51,12 @@ class IntervalsRepository {
   int NumIntervals() const { return start_vars_.size(); }
 
   // Functions to add a new interval to the repository.
-  IntervalVariable CreateInterval(IntegerValue min_start, IntegerValue max_end,
-                                  IntegerValue min_size, IntegerValue max_size);
-  IntervalVariable CreateIntervalWithFixedSize(IntegerValue min_start,
-                                               IntegerValue max_end,
-                                               IntegerValue size);
-  IntervalVariable CreateOptionalIntervalWithFixedSize(IntegerValue min_start,
-                                                       IntegerValue max_end,
-                                                       IntegerValue size,
-                                                       Literal is_present);
-  IntervalVariable CreateIntervalFromStartAndSizeVars(IntegerVariable start,
-                                                      IntegerVariable size);
+  // - If size == kNoIntegerVariable, then the size is assumed to be fixed
+  //   to fixed_size.
+  // - If is_present != kNoLiteralIndex, then this is an optional interval.
+  IntervalVariable CreateInterval(IntegerVariable start, IntegerVariable end,
+                                  IntegerVariable size, IntegerValue fixed_size,
+                                  LiteralIndex is_present);
 
   // Returns whether or not a interval is optional and the associated literal.
   bool IsOptional(IntervalVariable i) const {
@@ -76,7 +71,7 @@ class IntervalsRepository {
   //
   // Note: For an optional interval, the start/end variables are propagated
   // asssuming the interval is present. Because of that, these variables can
-  // cross each other or have an empty domain. If any of this happend, then the
+  // cross each other or have an empty domain. If any of this happen, then the
   // IsPresentLiteral() of this interval will be propagated to false.
   IntegerVariable SizeVar(IntervalVariable i) const { return size_vars_[i]; }
   IntegerVariable StartVar(IntervalVariable i) const { return start_vars_[i]; }
@@ -97,10 +92,6 @@ class IntervalsRepository {
   }
 
  private:
-  // Creates a new interval and returns its id.
-  IntervalVariable CreateNewInterval(IntegerValue min_start,
-                                     IntegerValue max_end);
-
   // External classes needed.
   IntegerTrail* integer_trail_;
   PrecedencesPropagator* precedences_;
@@ -146,9 +137,18 @@ inline std::function<IntervalVariable(Model*)> NewInterval(int64 min_start,
                                                            int64 max_end,
                                                            int64 size) {
   return [=](Model* model) {
-    return model->GetOrCreate<IntervalsRepository>()
-        ->CreateIntervalWithFixedSize(
-            IntegerValue(min_start), IntegerValue(max_end), IntegerValue(size));
+    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+        model->Add(NewIntegerVariable(min_start, max_end)),
+        model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
+        IntegerValue(size), kNoLiteralIndex);
+  };
+}
+
+inline std::function<IntervalVariable(Model*)> NewInterval(
+    IntegerVariable start, IntegerVariable end, IntegerVariable size) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+        start, end, size, IntegerValue(0), kNoLiteralIndex);
   };
 }
 
@@ -156,26 +156,43 @@ inline std::function<IntervalVariable(Model*)> NewIntervalWithVariableSize(
     int64 min_start, int64 max_end, int64 min_size, int64 max_size) {
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
-        IntegerValue(min_start), IntegerValue(max_end), IntegerValue(min_size),
-        IntegerValue(max_size));
+        model->Add(NewIntegerVariable(min_start, max_end)),
+        model->Add(NewIntegerVariable(min_start, max_end)),
+        model->Add(NewIntegerVariable(min_size, max_size)), IntegerValue(0),
+        kNoLiteralIndex);
   };
 }
 
 inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
     int64 min_start, int64 max_end, int64 size, Literal is_present) {
   return [=](Model* model) {
-    return model->GetOrCreate<IntervalsRepository>()
-        ->CreateOptionalIntervalWithFixedSize(IntegerValue(min_start),
-                                              IntegerValue(max_end),
-                                              IntegerValue(size), is_present);
+    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+        model->Add(NewIntegerVariable(min_start, max_end)),
+        model->Add(NewIntegerVariable(min_start, max_end)), kNoIntegerVariable,
+        IntegerValue(size), is_present.Index());
+  };
+}
+
+inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
+    IntegerVariable start, IntegerVariable end, IntegerVariable size,
+    Literal is_present) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+        start, end, size, IntegerValue(0), is_present.Index());
   };
 }
 
 inline std::function<IntervalVariable(Model*)> NewIntervalFromStartAndSizeVars(
     IntegerVariable start, IntegerVariable size) {
   return [=](Model* model) {
-    return model->GetOrCreate<IntervalsRepository>()
-        ->CreateIntervalFromStartAndSizeVars(start, size);
+    // Create the "end" variable.
+    // TODO(user): deal with overflow.
+    IntegerTrail* t = model->GetOrCreate<IntegerTrail>();
+    const IntegerValue end_lb = t->LowerBound(start) + t->LowerBound(size);
+    const IntegerValue end_ub = t->UpperBound(start) + t->UpperBound(size);
+    const IntegerVariable end = t->AddIntegerVariable(end_lb, end_ub);
+    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+        start, end, size, IntegerValue(0), kNoLiteralIndex);
   };
 }
 

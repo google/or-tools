@@ -1049,6 +1049,7 @@ $(OBJ_DIR)/glop/parameters.pb.$O: $(GEN_DIR)/glop/parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/glop/parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Sparameters.pb.$O
 
 GRAPH_DEPS = \
+    $(SRC_DIR)/graph/christofides.h \
     $(SRC_DIR)/graph/connectivity.h \
     $(SRC_DIR)/graph/ebert_graph.h \
     $(SRC_DIR)/graph/eulerian_path.h \
@@ -1090,6 +1091,12 @@ GRAPH_LIB_OBJS = \
 
 $(SRC_DIR)/graph/assignment.h: \
     $(SRC_DIR)/graph/ebert_graph.h
+
+$(SRC_DIR)/graph/christofides.h: \
+    $(SRC_DIR)/graph/eulerian_path.h \
+    $(SRC_DIR)/graph/minimum_spanning_tree.h \
+    $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/logging.h
 
 $(SRC_DIR)/graph/cliques.h: \
     $(SRC_DIR)/base/hash.h \
@@ -1177,6 +1184,11 @@ $(SRC_DIR)/graph/minimum_spanning_tree.h: \
     $(SRC_DIR)/graph/graph.h \
     $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/util/vector_or_function.h
+
+$(SRC_DIR)/graph/one_tree_lower_bound.h: \
+    $(SRC_DIR)/graph/christofides.h \
+    $(SRC_DIR)/graph/minimum_spanning_tree.h \
+    $(SRC_DIR)/base/integral_types.h
 
 $(SRC_DIR)/graph/shortestpaths.h: \
     $(SRC_DIR)/base/integral_types.h \
@@ -1292,6 +1304,7 @@ ALGORITHMS_DEPS = \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/running_stat.h \
     $(SRC_DIR)/util/saturated_arithmetic.h \
+    $(SRC_DIR)/graph/christofides.h \
     $(SRC_DIR)/graph/connectivity.h \
     $(SRC_DIR)/graph/ebert_graph.h \
     $(SRC_DIR)/graph/eulerian_path.h \
@@ -1393,6 +1406,7 @@ SAT_DEPS = \
     $(SRC_DIR)/sat/boolean_problem.h \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/clause.h \
+    $(SRC_DIR)/sat/cp_constraints.h \
     $(SRC_DIR)/sat/drat.h \
     $(SRC_DIR)/sat/integer_expr.h \
     $(SRC_DIR)/sat/integer.h \
@@ -1425,6 +1439,7 @@ SAT_DEPS = \
     $(SRC_DIR)/util/saturated_arithmetic.h \
     $(SRC_DIR)/algorithms/dynamic_partition.h \
     $(SRC_DIR)/algorithms/dynamic_permutation.h \
+    $(SRC_DIR)/graph/christofides.h \
     $(SRC_DIR)/graph/connectivity.h \
     $(SRC_DIR)/graph/ebert_graph.h \
     $(SRC_DIR)/graph/eulerian_path.h \
@@ -1552,6 +1567,7 @@ $(SRC_DIR)/sat/integer.h: \
     $(SRC_DIR)/util/sorted_interval_list.h
 
 $(SRC_DIR)/sat/intervals.h: \
+    $(SRC_DIR)/sat/cp_constraints.h \
     $(SRC_DIR)/sat/integer_expr.h \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h \
@@ -1884,6 +1900,7 @@ BOP_DEPS = \
     $(SRC_DIR)/sat/boolean_problem.h \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/clause.h \
+    $(SRC_DIR)/sat/cp_constraints.h \
     $(SRC_DIR)/sat/drat.h \
     $(SRC_DIR)/sat/integer_expr.h \
     $(SRC_DIR)/sat/integer.h \
@@ -2426,6 +2443,7 @@ CP_DEPS = \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/running_stat.h \
     $(SRC_DIR)/util/saturated_arithmetic.h \
+    $(SRC_DIR)/graph/christofides.h \
     $(SRC_DIR)/graph/connectivity.h \
     $(SRC_DIR)/graph/ebert_graph.h \
     $(SRC_DIR)/graph/eulerian_path.h \
@@ -2437,6 +2455,7 @@ CP_DEPS = \
     $(SRC_DIR)/sat/boolean_problem.h \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/clause.h \
+    $(SRC_DIR)/sat/cp_constraints.h \
     $(SRC_DIR)/sat/drat.h \
     $(SRC_DIR)/sat/integer_expr.h \
     $(SRC_DIR)/sat/integer.h \
@@ -2949,7 +2968,7 @@ $(OBJ_DIR)/constraint_solver/routing_search.$O: \
     $(SRC_DIR)/base/small_ordered_set.h \
     $(SRC_DIR)/util/bitset.h \
     $(SRC_DIR)/util/saturated_arithmetic.h \
-    $(SRC_DIR)/graph/hamiltonian_path.h
+    $(SRC_DIR)/graph/christofides.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_search.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_search.$O
 
 $(OBJ_DIR)/constraint_solver/sat_constraint.$O: \

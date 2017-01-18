@@ -23,7 +23,7 @@
 #include "base/small_map.h"
 #include "base/small_ordered_set.h"
 #include "constraint_solver/routing.h"
-#include "graph/hamiltonian_path.h"
+#include "graph/christofides.h"
 #include "util/bitset.h"
 #include "util/saturated_arithmetic.h"
 

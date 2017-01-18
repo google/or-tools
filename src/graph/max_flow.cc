@@ -217,7 +217,8 @@ void GenericMaxFlow<Graph>::SetArcFlow(ArcIndex arc, FlowQuantity new_flow) {
 }
 
 template <typename Graph>
-void GenericMaxFlow<Graph>::GetSourceSideMinCut(std::vector<NodeIndex>* result) {
+void GenericMaxFlow<Graph>::GetSourceSideMinCut(
+    std::vector<NodeIndex>* result) {
   ComputeReachableNodes<false>(source_, result);
 }
 
@@ -922,8 +923,8 @@ const FlowQuantity GenericMaxFlow<Graph>::kMaxFlowQuantity =
 
 template <typename Graph>
 template <bool reverse>
-void GenericMaxFlow<Graph>::ComputeReachableNodes(NodeIndex start,
-                                                  std::vector<NodeIndex>* result) {
+void GenericMaxFlow<Graph>::ComputeReachableNodes(
+    NodeIndex start, std::vector<NodeIndex>* result) {
   // If start is not a valid node index, it can reach only itself.
   // Note(user): This is needed because source and sink are given independently
   // of the graph and sometimes before it is even constructed.

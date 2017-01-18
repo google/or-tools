@@ -114,6 +114,11 @@ void ProcessOneColumn(const std::vector<Literal>& line_literals,
 
 }  // namespace
 
+// Makes a static decomposition of a table constraint into clauses.
+// This uses an auxiliary vector of Literals tuple_literals.
+// For every column col, and every value val of that column,
+// the decomposition uses clauses corresponding to the equivalence:
+// (\/_{row | tuples[row][col] = val} tuple_literals[row]) <=> (vars[col] = val)
 std::function<void(Model*)> TableConstraint(
     const std::vector<IntegerVariable>& vars,
     const std::vector<std::vector<int64>>& tuples) {

@@ -189,7 +189,7 @@ void LoadAndSolve(const std::string& file_name) {
   // Create resources.
   for (int r = 0; r < num_resources; ++r) {
     const RcpspParser::Resource& res = parser.resources()[r];
-    const int c = res.capacity;
+    const int c = res.max_capacity;
     if (res.renewable) {
       if (intervals_per_resources[r].empty()) continue;
       const IntegerVariable capacity = model.Add(ConstantIntegerVariable(c));
