@@ -4576,7 +4576,7 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
   // Path-based cheapest addition heuristic.
   first_solution_decision_builders_[FirstSolutionStrategy::PATH_CHEAPEST_ARC] =
       solver_->MakePhase(nexts_, Solver::CHOOSE_PATH, eval);
-  if (vehicles() == 1) {
+  if (vehicles() == 1 && pickup_delivery_pairs_.empty()) {
     DecisionBuilder* fast_one_path_builder =
         solver_->RevAlloc(new FastOnePathBuilder(
             this, NewPermanentCallback(
