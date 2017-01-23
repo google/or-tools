@@ -13,13 +13,7 @@ endif
 ifeq ("$(SYSTEM)","unix")
   OR_TOOLS_TOP ?= $(shell pwd)
   OS = $(shell uname -s)
-  ifneq ($(shell which python2.7),)
-    DETECTED_PYTHON_VERSION = 2.7
-  else
-    ifneq ($(shell which python2.6),)
-      DETECTED_PYTHON_VERSION = 2.6
-    endif
-  endif
+  DETECTED_PYTHON_VERSION = $(shell python -c "from sys import version_info as v; print (str(v[0]) + '.' + str(v[1]))")
   ifeq ($(OS),Linux)
     PLATFORM = LINUX
     CODEPORT = OpSys-Linux
