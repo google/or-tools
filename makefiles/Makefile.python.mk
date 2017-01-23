@@ -4,11 +4,6 @@
 
 # Detect python3
 
-ifeq ($(shell $(PYTHON_EXECUTABLE) -c "from sys import version_info as v; print (str(v[0]))"),3)
-  PYTHON3 = true
-  SWIG_PYTHON3_FLAG=-py3 -DPY3
-endif
-
 OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$Ssrc$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
 
 ifeq ($(SYSTEM),win)
@@ -17,6 +12,11 @@ ifeq ($(SYSTEM),win)
 else #UNIX
   PYTHON_EXECUTABLE = $(shell which python$(UNIX_PYTHON_VER))
   SET_PYTHONPATH = @PYTHONPATH=$(OR_TOOLS_PYTHONPATH)
+endif
+
+ifeq ($(shell $(PYTHON_EXECUTABLE) -c "from sys import version_info as v; print (str(v[0]))"),3)
+  PYTHON3 = true
+  SWIG_PYTHON3_FLAG=-py3 -DPY3
 endif
 
 # Main target
