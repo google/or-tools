@@ -4,14 +4,11 @@
 # contains the trailing separator if not empty.
 
 # Let's discover something about where we run
-ifeq "$(SHELL)" "cmd.exe"
-	SYSTEM = win
+# Let's discover something about where we run
+ifeq ($(OS), Windows_NT)
+  SYSTEM = win
 else
-	ifeq "$(SHELL)" "sh.exe"
-		SYSTEM = win
-	else
-		SYSTEM = unix
-	endif
+  SYSTEM = unix
 endif
 
 # Define the OR_ROOT directory.
@@ -52,7 +49,8 @@ ifeq ("$(SYSTEM)","unix")
 	DIMACS_LNK = $(PRE_LIB) -ldimacs $(PRE_LIB) -lortools
 	FAP_LNK = $(PRE_LIB) -lfap $(PRE_LIB) -lortools
 	ifeq ($(OS),Linux)
-		CCC = g++ -fPIC -std=c++0x
+		CPP_COMPILER = g++
+		CCC = $(CPP_COMPILER) -fPIC -std=c++0x
 		LD_FLAGS = -lz -lrt -lpthread
 		LBITS = $(shell getconf LONG_BIT)
 		ifeq ($(LBITS),64)
@@ -68,7 +66,8 @@ ifeq ("$(SYSTEM)","unix")
 		LIB_SUFFIX = so
 	endif
 	ifeq ($(OS),Darwin) # Assume Mac Os X
-		CCC = clang++ -fPIC -std=c++11
+		CPP_COMPILER = clang++
+		CCC = $(CPP_COMPILER) -fPIC -std=c++11
 		LD_FLAGS = -lz
 		ARCH = -DARCH_K8
 		PORT = MacOsX64
@@ -91,6 +90,8 @@ ifeq ("$(SYSTEM)","unix")
 	DEBUG = -O4 -DNDEBUG
 	CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(INC_EX_DIR) $(ARCH) -Wno-deprecated \
 		$(CBC_INC) $(CLP_INC) $(GLOP_INC) $(BOP_INC)
+	WHICH = which
+	TO_NULL = 2\> /dev/null
 endif
 
 # Windows specific part.
@@ -131,9 +132,12 @@ ifeq ("$(SYSTEM)","win")
 	S = \\
 	CPSEP = ;
 	DEBUG=/O2 -DNDEBUG
-	CCC=cl /EHsc /MD /nologo
+	CPP_COMPILER = cl
+	CCC = $(CPP_COMPILER) /EHsc /MD /nologo
 	CSC=csc
 	MONO=
+	WHICH = where
+	TO_NULL = 2> NUL
 endif
 
 OR_TOOLS_LIBS = $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX)
@@ -143,7 +147,9 @@ FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
 
 .PHONY: all clean test
 
-all: \
+all: cc test
+
+cc: \
 	$(BIN_DIR)/costas_array$E \
 	$(BIN_DIR)/cryptarithm$E \
 	$(BIN_DIR)/cvrp_disjoint_tw$E \
@@ -178,27 +184,92 @@ clean:
 	$(DEL) $(BIN_DIR)$S*
 	$(DEL) $(OBJ_DIR)$S*$O
 
+ifeq ($(shell $(WHICH) $(CPP_COMPILER) $(TO_NULL)),)
+test_cc ccc rcc:
+	@echo the $(CPP_COMPILER) command was not find in your Path 
+else
 test_cc: $(BIN_DIR)/golomb$E $(BIN_DIR)/cvrptw$E
 	$(BIN_DIR)$Sgolomb$E
 	$(BIN_DIR)/cvrptw$E
+# C++ generic running command
+  ifeq ($(EX),)
+ccc rcc:
+	@echo No C++ file was provided, the $@ target must be used like so: \
+	make $@ EX=path/to/the/example/example.cc
+  else
+ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
 
+rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
+	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
+  endif
+endif
 
-test_java: EX:=Tsp
+ifeq ($(shell $(WHICH) java $(TO_NULL)),)
+test_java rjava cjava:
+	@echo the java command was not find in your Path 
+else
 test_java: 
-	javac -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$S$(EX).java
-	java -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.$(EX) $(ARGS)
+	javac -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_DIR)$Scom$Sgoogle$Sortools$Ssamples$STsp.java
+	java -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar com.google.ortools.samples.Tsp $(ARGS)
+	@echo $(WHICH) javaa $(TO_NULL)
 
-test_cs: EX:=csflow
+# Java generic compilation command.
+  ifeq ($(EX),)
+rjava cjava:
+	@echo No java file was provided, the rjava target must be used like so: \
+	make rjava EX=path/to/the/example/example.java
+  else
+    ifeq ($(SYSTEM),win)
+      EX_read_package = $(shell findstr /r "^package.*\;" $(EX))
+    else
+      EX_read_package = $(shell grep '^package.*\;' $(EX))
+    endif
+    EX_name = $(basename $(notdir $(EX)))
+    EX_package = $(subst ;,,$(subst package ,,$(EX_read_package)))
+    ifeq ($(EX_read_package),)
+      EX_class_file = $(OBJ_DIR)$S$(EX_name).class
+      EX_class = $(EX_name)
+    else
+    EX_class_file = $(OBJ_DIR)$S$(subst .,$S,$(EX_package))$S$(EX_name).class
+    EX_class = $(EX_package).$(EX_name)
+    endif
+$(EX_class_file): $(LIB_DIR)$Scom.google.ortools.jar $(LIB_DIR)$Sprotobuf.jar  $(EX)
+	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX)
+
+cjava: $(EX_class_file)
+
+rjava: $(EX_class_file)
+	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_class) $(ARGS)
+  endif
+endif
+
+ifeq ($(shell $(WHICH) $(CSC) $(TO_NULL)),)
+test_cs:
+	@echo the $(CSC) command was not find in your Path 
+else
 test_cs: 
-	$(CSC) /target:exe /out:$(BIN_DIR)$S$(EX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.dll /r:Google.Protobuf.dll $(CS_EX_DIR)$S$(EX).cs
-	$(MONO) $(BIN_DIR)$S$(EX).exe $(ARGS)
+	$(CSC) /target:exe /out:$(BIN_DIR)$Scsflow.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.dll /r:Google.Protobuf.dll $(CS_EX_DIR)$Scsflow.cs
+	$(MONO) $(BIN_DIR)$Scsflow.exe $(ARGS)
 
 test: test_cc test_java test_cs
 
+  ifeq ($(EX),)
+rcs:
+	@echo No csharp file was provided, the rcs target must be used like so: \
+	make rcs EX=path/to/the/example/example.cs
+  else
+# .NET generic compilation command.
+$(BIN_DIR)$S$(basename $(notdir $(EX))).exe: $(BIN_DIR)/$(CLR_DLL_NAME).dll $(EX)
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$S$(basename $(notdir $(EX))).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_DLL_NAME).dll /r:Google.Protobuf.dll $(EX)
 
-#test_csharp:
-# make rcs EX=csflow
+csc: $(BIN_DIR)$S$(basename $(notdir $(EX))).exe
 
+rcs: $(BIN_DIR)$S$(basename $(notdir $(EX))).exe
+	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX))).exe
+	$(MONO) $(BIN_DIR)$S$(basename $(notdir $(EX))).exe $(ARGS)
+  endif
+endif
 
 
 # Constraint Programming and Routing examples.
@@ -374,54 +445,6 @@ $(OBJ_DIR)$Sinteger_programming.$O: $(CPP_EX_DIR)$Sinteger_programming.cc $(INC_
 
 $(BIN_DIR)/integer_programming$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)$Sinteger_programming.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sinteger_programming.$O $(OR_TOOLS_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sinteger_programming$E
-
-
-# C++ generic running command
-
-ccc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
-
-rcc: $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
-	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX)))$E
-	$(BIN_DIR)$S$(basename $(notdir $(EX)))$E $(ARGS)
-
-# Java generic compilation command.
-
-ifneq ($(EX),)
-ifeq ($(SYSTEM),win)
-EX_read_package = $(shell findstr /r "^package.*\;" $(EX))
-else
-EX_read_package = $(shell grep '^package.*\;' $(EX))
-endif
-EX_name = $(basename $(notdir $(EX)))
-EX_package = $(subst ;,,$(subst package ,,$(EX_read_package)))
-ifeq ($(EX_read_package),)
-EX_class_file = $(OBJ_DIR)$S$(EX_name).class
-EX_class = $(EX_name)
-else
-EX_class_file = $(OBJ_DIR)$S$(subst .,$S,$(EX_package))$S$(EX_name).class
-EX_class = $(EX_package).$(EX_name)
-endif
-
-
-$(EX_class_file): $(LIB_DIR)$Scom.google.ortools.jar $(LIB_DIR)$Sprotobuf.jar  $(EX)
-	$(JAVAC_BIN) -d $(OBJ_DIR) -cp $(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX)
-
-cjava: $(EX_class_file)
-
-rjava: $(EX_class_file)
-	$(JAVA_BIN) -Djava.library.path=$(LIB_DIR) -cp $(OBJ_DIR)$(CPSEP)$(LIB_DIR)$Scom.google.ortools.jar$(CPSEP)$(LIB_DIR)$Sprotobuf.jar $(EX_class) $(ARGS)
-endif
-
-# .NET generic compilation command.
-
-$(BIN_DIR)$S$(basename $(notdir $(EX))).exe: $(BIN_DIR)/$(CLR_DLL_NAME).dll $(EX)
-	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$S$(basename $(notdir $(EX))).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_DLL_NAME).dll /r:Google.Protobuf.dll $(EX)
-
-csc: $(BIN_DIR)$S$(basename $(notdir $(EX))).exe
-
-rcs: $(BIN_DIR)$S$(basename $(notdir $(EX))).exe
-	@echo running $(BIN_DIR)$S$(basename $(notdir $(EX))).exe
-	$(MONO) $(BIN_DIR)$S$(basename $(notdir $(EX))).exe $(ARGS)
 
 # Debug
 
