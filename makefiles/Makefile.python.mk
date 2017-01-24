@@ -317,12 +317,12 @@ pypi_upload: pypi_archive
 	@echo Uploading Pypi module for $(PYTHON_EXECUTABLE).
 ifeq ($(SYSTEM),win)
 	set VS90COMNTOOLS=$(VS$(VS_COMTOOLS)COMNTOOLS)
-	cd temp\ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg bdist_wheel bdist_wininst upload
+	cd $(PYPI_ARCHIVE_TEMP_DIR)\ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg bdist_wheel bdist_wininst upload
 else
   ifeq ($(PLATFORM),MACOSX)
-	cd temp/ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg bdist_wheel upload
+	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg bdist_wheel upload
   else
-	cd temp/ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg upload
+	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py register bdist_egg upload
   endif
 endif
 
