@@ -249,7 +249,7 @@ endif
 
 PYPI_ARCHIVE_TEMP_DIR = temp-python$(PYTHON_VERSION)
 
-OR_TOOLS_PYTHON_GEN_SCRIPTS = $(wildcard src/gen/ortools/*/*)
+OR_TOOLS_PYTHON_GEN_SCRIPTS = $(wildcard src/gen/ortools/*/*.py) $(wildcard src/gen/ortools/*/*.cc)
 
 pypi_archive: python $(PYPI_ARCHIVE_TEMP_DIR)
 
