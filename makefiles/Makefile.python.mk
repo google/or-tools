@@ -313,10 +313,9 @@ ifeq ($(PLATFORM),LINUX)
 endif
 endif
 
-pypi_upload: pypi_archive
+pypi_upload:
 	@echo Uploading Pypi module for $(PYTHON_EXECUTABLE).
 ifeq ($(SYSTEM),win)
-	set VS90COMNTOOLS=$(VS$(VS_COMTOOLS)COMNTOOLS)
 	cd $(PYPI_ARCHIVE_TEMP_DIR)\ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel bdist_wininst
 else
   ifeq ($(PLATFORM),MACOSX)

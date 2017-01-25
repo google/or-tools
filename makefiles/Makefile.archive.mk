@@ -139,38 +139,39 @@ java_archive: java
 	$(COPY) examples$Sdata$Squasigroup_completion$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 	$(COPY) examples$Scom$Sgoogle$Sortools$Ssamples$S*.java temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
 
+TEMP_FZ_DIR = temp_fz
 fz_archive: cc fz
-	-$(DELREC) temp
-	mkdir temp
-	mkdir temp$S$(FZ_INSTALL_DIR)
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sbin
-	mkdir temp$S$(FZ_INSTALL_DIR)$Slib
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
-	mkdir temp$S$(FZ_INSTALL_DIR)$Sexamples
-	$(COPY) LICENSE-2.0.txt temp$S$(FZ_INSTALL_DIR)
-	$(COPY) bin$Sfz$E temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) temp$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) src$Sflatzinc$Smznlib_cp$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
-	$(COPY) src$Sflatzinc$Smznlib_sat$S* temp$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
-	$(COPY) examples$Sflatzinc$S* temp$S$(FZ_INSTALL_DIR)$Sexamples
+	-$(DELREC) $(TEMP_FZ_DIR)
+	mkdir $(TEMP_FZ_DIR)
+	mkdir $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
+	mkdir $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin
+	mkdir $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
+	mkdir $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare
+	mkdir $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
+	mkdir $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
+	mkdir $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
+	$(COPY) LICENSE-2.0.txt $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
+	$(COPY) bin$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
+	$(COPY) src$Sflatzinc$Smznlib_cp$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
+	$(COPY) src$Sflatzinc$Smznlib_sat$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
+	$(COPY) examples$Sflatzinc$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
 ifeq "$(SYSTEM)" "win"
-	cd temp && ..$Stools$Szip.exe -r ..$S$(FZ_INSTALL_DIR).zip $(FZ_INSTALL_DIR)
+	cd $(TEMP_FZ_DIR) && ..$Stools$Szip.exe -r ..$S$(FZ_INSTALL_DIR).zip $(FZ_INSTALL_DIR)
 else
 ifeq ($(PLATFORM),LINUX)
-	$(DEP_BIN_DIR)$Spatchelf --set-rpath '$$ORIGIN/../lib' temp$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
+	$(DEP_BIN_DIR)$Spatchelf --set-rpath '$$ORIGIN/../lib' $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools
 endif
 ifeq ($(PLATFORM),MACOSX)
-	$(COPY) tools$Sfix_fz_libraries_on_mac.sh temp$S$(FZ_INSTALL_DIR)
-	chmod u+x temp/$(FZ_INSTALL_DIR)$Sfix_fz_libraries_on_mac.sh
-	cd temp$S$(FZ_INSTALL_DIR) && .$Sfix_fz_libraries_on_mac.sh
-	$(RM) temp$S$(FZ_INSTALL_DIR)$Sfix_fz_libraries_on_mac.sh
+	$(COPY) tools$Sfix_fz_libraries_on_mac.sh $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)
+	chmod u+x $(TEMP_FZ_DIR)/$(FZ_INSTALL_DIR)$Sfix_fz_libraries_on_mac.sh
+	cd $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR) && .$Sfix_fz_libraries_on_mac.sh
+	$(RM) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sfix_fz_libraries_on_mac.sh
 endif
-	cd temp && tar cvzf ..$S$(FZ_INSTALL_DIR).tar.gz $(FZ_INSTALL_DIR)
+	cd $(TEMP_FZ_DIR) && tar cvzf ..$S$(FZ_INSTALL_DIR).tar.gz $(FZ_INSTALL_DIR)
 endif
-	-$(DELREC) temp
+	-$(DELREC) $(TEMP_FZ_DIR)
 
 
 test_archive: $(INSTALL_DIR)$(ARCHIVE_EXT)
@@ -185,17 +186,18 @@ else
 endif
 	cd temp$S$(INSTALL_DIR) && $(MAKE) test && cd ../.. && $(RENAME) lib2 lib && echo "archive test succeeded" || ( cd ../.. && $(RENAME) lib2 lib && echo "archive test failed" && exit 1)
 
+TEMP_FZ_TEST_DIR = temp_test_fz
 test_fz_archive: $(FZ_INSTALL_DIR)$(ARCHIVE_EXT)
-	-$(DELREC) temp
-	$(MKDIR) temp
+	-$(DELREC) $(TEMP_FZ_TEST_DIR)
+	$(MKDIR) $(TEMP_FZ_TEST_DIR)
 #this is to make sure the archive tests don't use the root libraries
 	$(RENAME) lib lib2
 ifeq "$(SYSTEM)" "win"
-	tools$Sunzip.exe $(FZ_INSTALL_DIR).zip -d temp
+	tools$Sunzip.exe $(FZ_INSTALL_DIR).zip -d $(TEMP_FZ_TEST_DIR)
 else
-	tar -x -v -f $(FZ_INSTALL_DIR).tar.gz -C temp
+	tar -x -v -f $(FZ_INSTALL_DIR).tar.gz -C $(TEMP_FZ_TEST_DIR)
 endif
-	cd temp$S$(FZ_INSTALL_DIR) && .$Sbin$S$(FZ_EXE) examples$Scircuit_test.fzn && cd ../.. && $(RENAME) lib2 lib && echo "fz archive test succeeded" || ( cd ../.. && $(RENAME) lib2 lib && echo "fz archive test failed" && exit 1)
+	cd $(TEMP_FZ_TEST_DIR)$S$(FZ_INSTALL_DIR) && .$Sbin$S$(FZ_EXE) examples$Scircuit_test.fzn && cd ../.. && $(RENAME) lib2 lib && echo "fz archive test succeeded" || ( cd ../.. && $(RENAME) lib2 lib && echo "fz archive test failed" && exit 1)
 
 
 ifeq "$(PYTHON3)" "true"
