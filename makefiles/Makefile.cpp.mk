@@ -116,6 +116,7 @@ CC_BINARIES = \
 	$(BIN_DIR)/cryptarithm$E \
 	$(BIN_DIR)/cvrp_disjoint_tw$E \
 	$(BIN_DIR)/cvrptw$E \
+#	$(BIN_DIR)/cvrptw_with_breaks$E \
 	$(BIN_DIR)/cvrptw_with_refueling$E \
 	$(BIN_DIR)/cvrptw_with_resources$E \
 	$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E \
@@ -336,6 +337,12 @@ $(OBJ_DIR)/cvrptw.$O: $(EX_DIR)/cpp/cvrptw.cc $(CVRPTW_DEPS)
 
 $(BIN_DIR)/cvrptw$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrptw.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
+
+$(OBJ_DIR)/cvrptw_with_breaks.$O: $(EX_DIR)/cpp/cvrptw_with_breaks.cc $(CVRPTW_DEPS)
+	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_breaks.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_breaks.$O
+
+$(BIN_DIR)/cvrptw_with_breaks$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)/cvrptw_with_breaks.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)/cvrptw_with_breaks.$O $(OR_TOOLS_LNK) $(CVRPTW_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_breaks$E
 
 $(OBJ_DIR)/cvrptw_with_refueling.$O: $(EX_DIR)/cpp/cvrptw_with_refueling.cc $(CVRPTW_DEPS)
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_with_refueling.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_refueling.$O
