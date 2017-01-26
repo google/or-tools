@@ -116,7 +116,7 @@ CC_BINARIES = \
 	$(BIN_DIR)/cryptarithm$E \
 	$(BIN_DIR)/cvrp_disjoint_tw$E \
 	$(BIN_DIR)/cvrptw$E \
-#	$(BIN_DIR)/cvrptw_with_breaks$E \
+	$(BIN_DIR)/cvrptw_with_breaks$E \
 	$(BIN_DIR)/cvrptw_with_refueling$E \
 	$(BIN_DIR)/cvrptw_with_resources$E \
 	$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E \

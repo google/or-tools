@@ -154,6 +154,7 @@ cc: \
 	$(BIN_DIR)/cryptarithm$E \
 	$(BIN_DIR)/cvrp_disjoint_tw$E \
 	$(BIN_DIR)/cvrptw$E \
+	$(BIN_DIR)/cvrptw_with_breaks$E \
 	$(BIN_DIR)/cvrptw_with_refueling$E \
 	$(BIN_DIR)/cvrptw_with_resources$E \
 	$(BIN_DIR)/cvrptw_with_stop_times_and_resources$E \
@@ -297,6 +298,12 @@ $(OBJ_DIR)$Scvrptw.$O: $(CPP_EX_DIR)$Scvrptw.cc $(INC_DIR)$Sconstraint_solver$Sc
 
 $(BIN_DIR)/cvrptw$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)$Scvrptw.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrptw.$O $(CVRPTW_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw$E
+
+$(OBJ_DIR)$Scvrptw_with_breaks.$O: $(CPP_EX_DIR)$Scvrptw_with_breaks.cc $(INC_DIR)$Sconstraint_solver$Sconstraint_solver.h
+	$(CCC) $(CFLAGS) -c $(CPP_EX_DIR)$Scvrptw_with_breaks.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_breaks.$O
+
+$(BIN_DIR)/cvrptw_with_breaks$E: $(OR_TOOLS_LIBS) $(CVRPTW_LIBS) $(CVRPTW_LIBS) $(OBJ_DIR)$Scvrptw_with_breaks.$O
+	$(CCC) $(CFLAGS) $(OBJ_DIR)$Scvrptw_with_breaks.$O $(CVRPTW_LNK) $(LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scvrptw_with_breaks$E
 
 $(OBJ_DIR)$Scvrptw_with_refueling.$O: $(CPP_EX_DIR)$Scvrptw_with_refueling.cc $(INC_DIR)$Sconstraint_solver$Sconstraint_solver.h
 	$(CCC) $(CFLAGS) -c $(CPP_EX_DIR)$Scvrptw_with_refueling.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_with_refueling.$O
