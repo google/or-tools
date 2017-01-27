@@ -185,8 +185,6 @@ ifeq ($(PLATFORM),LINUX)
   LINK_PREFIX = -o # Need the space.
   PRE_LIB = -Wl,-rpath $(OR_ROOT_FULL)/lib -L$(OR_ROOT_FULL)/lib -l
   POST_LIB =
-  BISON = dependencies/install/bin/bison
-  FLEX = dependencies/install/bin/flex
 endif  # LINUX
 ifeq ($(PLATFORM),MACOSX)
   MAC_VERSION = -mmacosx-version-min=$(MAC_MIN_VERSION)
@@ -244,9 +242,10 @@ ifeq ($(PLATFORM),MACOSX)
   ifdef UNIX_SLM_DIR
       SLM_LNK = -rpath $(UNIX_SLM_DIR)/mac64/bin/ -L$(UNIX_SLM_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
   endif
-  BISON = dependencies/install/bin/bison
-  FLEX = dependencies/install/bin/flex
 endif  # MAC OS X
+
+BISON = dependencies/install/bin/bison
+FLEX = dependencies/install/bin/flex
 
 CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
   -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
