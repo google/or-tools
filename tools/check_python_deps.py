@@ -21,6 +21,11 @@ def notinstalled(modulename):
 	return modulename + """ is not installed for \"""" + sys.executable + """\"
 Run \"""" + sys.executable + """ setup.py install --user\" to install it"""
 
+def absent_version(module, modulename):
+	return """You are using a """ + modulename + """ module that doesn't have a __version__ attribute : """ + inspect.getfile(module) + """\"
+Run \"""" + sys.executable + """ setup.py install --user\" to upgrade.
+If the problem persists, remove the site-package that contains \"""" + inspect.getfile(module) + """\". You can do so either manually or by using pip."""
+
 def wrong_version(module, modulename, required_version, installed_version):
 	return """You are using """ + modulename + """-""" + installed_version + """ : """ + inspect.getfile(module) + """, while the required version is : """ + required_version + """
 Run \"""" + sys.executable + """ setup.py install --user\" to upgrade.
@@ -29,6 +34,10 @@ If the problem persists, remove the site-package that contains \"""" + inspect.g
 def log_error_and_exit(error_message):
 	logging.error(error_message)
 	raise SystemExit
+
+def check_absent_version(module, modulename):
+	if not hasattr(module, '__version__'):
+		log_error_and_exit(absent_version(module, modulename))
 
 if __name__ == '__main__':
 	parser = OptionParser('Log level')
@@ -72,6 +81,7 @@ if __name__ == '__main__':
 
 	#check ortools version
 	try:
+		check_absent_version(ortools, "ortools")
 		if required_ortools_version != ortools.__version__:
 			raise Exception
 		logging.info("or-tools version : " + ortools.__version__ + "\n" + inspect.getfile(ortools))
@@ -80,6 +90,7 @@ if __name__ == '__main__':
 
 	#check protobuf version
 	try:
+		check_absent_version(google.protobuf, "protobuf")
 		if required_protobuf_version != google.protobuf.__version__:
 			raise Exception
 		logging.info("protobuf version : " + google.protobuf.__version__+ "\n" + inspect.getfile(google.protobuf) )
