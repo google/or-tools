@@ -1750,7 +1750,16 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
     const int64 index = ct->arguments[0].Value() - 1;
     const int64 value = ct->arguments[1].values[index];
     // Rewrite as equality.
-    SetConstraintAsIntEq(ct, ct->arguments[2].Var(), value);
+    if (ct->arguments[2].HasOneValue()) {
+      const int64 target = ct->arguments[2].Value();
+      if (value == target) {
+        ct->MarkAsInactive();
+      } else {
+        ct->SetAsFalse();
+      }
+    } else {
+      SetConstraintAsIntEq(ct, ct->arguments[2].Var(), value);
+    }
     return true;
   }
 
