@@ -354,7 +354,7 @@ dependencies/sources/bison-$(BISON_TAG)/Makefile: dependencies/sources/bison-$(B
 	cd dependencies/sources/bison-$(BISON_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
 
 dependencies/sources/bison-$(BISON_TAG)/configure: dependencies/archives/bison-$(BISON_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/bison-$(BISON_TAG).tar.gz
+	cd dependencies/sources && tar xvzf ../archives/bison-$(BISON_TAG).tar.gz
 
 dependencies/archives/bison-$(BISON_TAG).tar.gz:
 	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/bison/bison-$(BISON_TAG).tar.gz
