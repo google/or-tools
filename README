@@ -41,4 +41,4 @@ or-tools/
   tools/                 <- Windows binaries
 
 For installation instructions (both source and binary), visit
-https://developers.google.com/optimization/installing.
+https://developers.google.com/optimization/introduction/installing.
