@@ -6,7 +6,13 @@ dependencies/archives/
 
 dependencies/install/
 dependencies/sources/
-
+dependencies/Build/
+dependencies/Download/
+dependencies/Install/
+dependencies/Source/
+dependencies/Stamp/
+dependencies/include/
+dependencies/tmp/
 
 or-tools*.tar.gz
 or-tools*.zip
@@ -18,6 +24,10 @@ or-tools*.zip
 *.exp
 *.pdb
 *.ass
+
+*cmake_install.cmake
+*CMakeCache.txt
+CMakeFiles
 
 bin/
 src/gen/
