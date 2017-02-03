@@ -1,0 +1,7 @@
+#TODO(compiling with optimizations enabled and by defining NDEBUG : linear_programming.cc)
+if(UNIX)
+    set(CMAKE_CXX_COMPILER "g++" CACHE INTERNAL "" FORCE)
+    #TODO(verify if we can always compile with -DUSE_CBC)
+    set(CMAKE_CXX_FLAGS "-O1 -DNDEBUG -fPIC -std=c++0x -fwrapv -DARCH_K8 -Wno-deprecated -DUSE_CBC -DUSE_CLP -DUSE_GLOP -DUSE_BOP" CACHE INTERNAL "" FORCE)
+#    set(CMAKE_CXX_FLAGS_DEBUG "-DNDEBUG" CACHE INTERNAL "" FORCE)
+endif()
