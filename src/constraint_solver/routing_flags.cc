@@ -58,6 +58,8 @@ DEFINE_double(routing_guided_local_search_lambda_coefficient, 0.1,
 DEFINE_bool(routing_simulated_annealing, false,
             "Routing: use simulated annealing.");
 DEFINE_bool(routing_tabu_search, false, "Routing: use tabu search.");
+DEFINE_bool(routing_objective_tabu_search, false,
+            "Routing: use tabu search based on objective value.");
 
 // Search limits
 DEFINE_int64(routing_solution_limit, kint64max,
@@ -133,6 +135,9 @@ void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {
   if (FLAGS_routing_tabu_search) {
     parameters->set_local_search_metaheuristic(
         LocalSearchMetaheuristic::TABU_SEARCH);
+  } else if (FLAGS_routing_objective_tabu_search) {
+    parameters->set_local_search_metaheuristic(
+        LocalSearchMetaheuristic::OBJECTIVE_TABU_SEARCH);
   } else if (FLAGS_routing_simulated_annealing) {
     parameters->set_local_search_metaheuristic(
         LocalSearchMetaheuristic::SIMULATED_ANNEALING);

@@ -163,9 +163,7 @@ bool OverloadChecker::Propagate() {
     const int leaf_id = task_to_index_in_start_min_[task_id];
     {
       // Compute the energy and envelope of the task.
-      // TODO(user): This code will not work for negative start_min.
       // TODO(user): Deal with integer overflow.
-      // TODO(user): Deduce that some tasks cannot be executed.
       const IntegerValue energy = DurationMin(task_id) * DemandMin(task_id);
       const IntegerValue envelope = StartMin(task_id) * capacity_max + energy;
       InsertTaskInThetaTree(leaf_id, energy, envelope);

@@ -133,7 +133,7 @@ bool AllDifferentBoundsPropagator::PropagateLowerBounds() {
   }
 
   // Loop over the variables by increasing ub.
-  std::sort(
+  IncrementalSort(
       vars_.begin(), vars_.end(), [this](IntegerVariable a, IntegerVariable b) {
         return integer_trail_->UpperBound(a) < integer_trail_->UpperBound(b);
       });

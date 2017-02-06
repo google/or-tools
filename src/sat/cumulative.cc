@@ -18,6 +18,7 @@
 #include "sat/overload_checker.h"
 #include "sat/sat_solver.h"
 #include "sat/timetable.h"
+#include "sat/timetable_edgefinding.h"
 
 namespace operations_research {
 namespace sat {
@@ -91,21 +92,36 @@ std::function<void(Model*)> Cumulative(
     Trail* trail = model->GetOrCreate<Trail>();
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
-    // Propagator responsible for applying the Overload Checking filtering rule.
-    // This propagator increases the minimum of the capacity variable.
-    OverloadChecker* overload_checker = new OverloadChecker(
-        vars, demands, capacity, trail, integer_trail, intervals);
-    overload_checker->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(overload_checker);
-
-    // Propagator responsible for applying Timetabling filtering rule. This
-    // propagator increases the minimum of the start variables, decrease the
-    // maximum of the end variables, and increase the minimum of the capacity
-    // variable.
+    // Propagator responsible for applying Timetabling filtering rule. It
+    // increases the minimum of the start variables, decrease the maximum of the
+    // end variables, and increase the minimum of the capacity variable.
     TimeTablingPerTask* time_tabling = new TimeTablingPerTask(
         vars, demands, capacity, trail, integer_trail, intervals);
     time_tabling->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(time_tabling);
+
+    const SatParameters& parameters = model->Get<SatSolver>()->parameters();
+
+    // Propagator responsible for applying the Overload Checking filtering rule.
+    // It increases the minimum of the capacity variable.
+    if (parameters.use_overload_checker_in_cumulative_constraint()) {
+      OverloadChecker* overload_checker = new OverloadChecker(
+          vars, demands, capacity, trail, integer_trail, intervals);
+      overload_checker->RegisterWith(
+          model->GetOrCreate<GenericLiteralWatcher>());
+      model->TakeOwnership(overload_checker);
+    }
+
+    // Propagator responsible for applying the Timetable Edge finding filtering
+    // rule. It increases the minimum of the start variables and decreases the
+    // maximum of the end variables,
+    if (parameters.use_timetable_edge_finding_in_cumulative_constraint()) {
+      TimeTableEdgeFinding* time_table_edge_finding = new TimeTableEdgeFinding(
+          vars, demands, capacity, trail, integer_trail, intervals);
+      time_table_edge_finding->RegisterWith(
+          model->GetOrCreate<GenericLiteralWatcher>());
+      model->TakeOwnership(time_table_edge_finding);
+    }
   };
 }
 

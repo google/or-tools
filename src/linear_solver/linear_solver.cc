@@ -1128,7 +1128,7 @@ double MPSolver::ComputeExactConditionNumber() const {
 }
 
 bool MPSolver::OwnsVariable(const MPVariable* var) const {
-  if (var == NULL) return false;
+  if (var == nullptr) return false;
   // First, verify that a variable with the same name exists, and look up
   // its index (names are unique, so there can be only one).
   const int var_index =

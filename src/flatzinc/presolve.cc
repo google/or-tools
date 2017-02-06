@@ -82,6 +82,7 @@ std::unordered_set<int64> GetValueSet(const Argument& arg) {
 }
 
 void SetConstraintAsIntEq(Constraint* ct, IntegerVariable* var, int64 value) {
+  CHECK(var != nullptr);
   ct->type = "int_eq";
   ct->arguments.clear();
   ct->arguments.push_back(Argument::IntVarRef(var));

@@ -42,6 +42,7 @@ DECLARE_bool(routing_guided_local_search);
 DECLARE_double(routing_guided_local_search_lambda_coefficient);
 DECLARE_bool(routing_simulated_annealing);
 DECLARE_bool(routing_tabu_search);
+DECLARE_bool(routing_objective_tabu_search);
 
 // Search limits
 DECLARE_int64(routing_solution_limit);

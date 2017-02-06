@@ -1293,6 +1293,8 @@ bool ImpliedFreePreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   // use two handy utility classes that allow us to do that efficiently while
   // dealing properly with infinite bounds.
   const int size = num_rows.value();
+  // TODO(user) : Replace SumWithNegativeInfiniteAndOneMissing and
+  // SumWithPositiveInfiniteAndOneMissing with IntervalSumWithOneMissing.
   ITIVector<RowIndex, SumWithNegativeInfiniteAndOneMissing> lb_sums(size);
   ITIVector<RowIndex, SumWithPositiveInfiniteAndOneMissing> ub_sums(size);
 
@@ -1993,6 +1995,7 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
       std::max(lp->variable_lower_bounds()[e.col], implied_lower_bound);
   Fractional new_upper_bound =
       std::min(lp->variable_upper_bounds()[e.col], implied_upper_bound);
+
   if (new_upper_bound < new_lower_bound) {
     if (!IsSmallerWithinFeasibilityTolerance(new_lower_bound,
                                              new_upper_bound)) {
@@ -2019,6 +2022,7 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
     deleted_columns_.mutable_column(e.col)->PopulateFromSparseVector(
         lp->GetSparseColumn(e.col));
   }
+
   lp->SetVariableBounds(e.col, new_lower_bound, new_upper_bound);
 }
 
@@ -2101,6 +2105,7 @@ void SingletonPreprocessor::UpdateConstraintBoundsWithVariableBounds(
                           lp->constraint_lower_bounds()[e.row] + lower_delta,
                           lp->constraint_upper_bounds()[e.row] + upper_delta);
 }
+
 
 void SingletonPreprocessor::DeleteZeroCostSingletonColumn(
     const SparseMatrix& transpose, MatrixEntry e, LinearProgram* lp) {
@@ -2477,7 +2482,6 @@ bool SingletonPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   }
 
   // Process current singleton rows/columns and enqueue new ones.
-  int num_singleton_columns_left_ = 0;
   while (status_ == ProblemStatus::INIT &&
          (!column_to_process.empty() || !row_to_process.empty())) {
     while (status_ == ProblemStatus::INIT && !column_to_process.empty()) {
@@ -2485,7 +2489,6 @@ bool SingletonPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
       column_to_process.pop_back();
       if (column_degree[col] <= 0) continue;
       const MatrixEntry e = GetSingletonColumnMatrixEntry(col, matrix);
-
       // TODO(user): It seems better to process all the singleton columns with
       // a cost of zero first.
       if (lp->objective_coefficients()[col] == 0.0) {
@@ -2493,7 +2496,6 @@ bool SingletonPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
       } else if (MakeConstraintAnEqualityIfPossible(transpose, e, lp)) {
         DeleteSingletonColumnInEquality(transpose, e, lp);
       } else {
-        ++num_singleton_columns_left_;
         continue;
       }
       --row_degree[e.row];
@@ -3302,26 +3304,7 @@ bool ScalingPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   // that this makes a lot of sense since internally we use absolute tolerances.
   // We don't want to have a completely different behavior just because the user
   // changed the units in the objective for instance.
-  cost_scaling_factor_ = 0.0;
-  for (ColIndex col(0); col < num_cols; ++col) {
-    cost_scaling_factor_ = std::max(
-        cost_scaling_factor_, std::abs(lp->objective_coefficients()[col]));
-  }
-  VLOG(1) << "Objective stats (before objective scaling): "
-          << lp->GetObjectiveStatsString();
-  if (cost_scaling_factor_ == 0.0) {
-    // This is needed for pure feasibility problems.
-    cost_scaling_factor_ = 1.0;
-  } else {
-    for (ColIndex col(0); col < num_cols; ++col) {
-      lp->SetObjectiveCoefficient(
-          col, lp->objective_coefficients()[col] / cost_scaling_factor_);
-    }
-  }
-  VLOG(1) << "Objective stats: " << lp->GetObjectiveStatsString();
-  lp->SetObjectiveScalingFactor(lp->objective_scaling_factor() *
-                                cost_scaling_factor_);
-  lp->SetObjectiveOffset(lp->objective_offset() / cost_scaling_factor_);
+  cost_scaling_factor_ = lp->ScaleObjective();
   return true;
 }
 

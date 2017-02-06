@@ -116,5 +116,8 @@ message LocalSearchMetaheuristic {
     // Uses tabu search to escape local minima
     // (cf. http://en.wikipedia.org/wiki/Tabu_search).
     TABU_SEARCH = 4;
+    // Uses tabu search on the objective value of solution to escape local
+    // minima
+    OBJECTIVE_TABU_SEARCH = 5;
   }
 }

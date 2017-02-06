@@ -17,8 +17,6 @@
 
 #include "base/stringprintf.h"
 #include "base/join.h"
-#include "lp_data/lp_data.h"
-#include "util/return_macros.h"
 
 namespace operations_research {
 namespace glop {

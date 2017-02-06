@@ -118,6 +118,7 @@ LinearProgram::LinearProgram()
       variable_upper_bounds_(),
       variable_names_(),
       is_variable_integer_(),
+      is_variable_implied_integer_(),
       integer_variables_list_(),
       variable_table_(),
       constraint_table_(),
@@ -142,6 +143,7 @@ void LinearProgram::Clear() {
   variable_lower_bounds_.clear();
   variable_upper_bounds_.clear();
   is_variable_integer_.clear();
+  is_variable_implied_integer_.clear();
   integer_variables_list_.clear();
   variable_names_.clear();
 
@@ -167,6 +169,7 @@ ColIndex LinearProgram::CreateNewVariable() {
   variable_lower_bounds_.push_back(0);
   variable_upper_bounds_.push_back(kInfinity);
   is_variable_integer_.push_back(false);
+  is_variable_implied_integer_.push_back(false);
   variable_names_.push_back("");
   transpose_matrix_is_consistent_ = false;
   return matrix_.AppendEmptyColumn();
@@ -180,6 +183,7 @@ ColIndex LinearProgram::CreateNewSlackVariable(bool is_integer_slack_variable,
   variable_lower_bounds_.push_back(lower_bound);
   variable_upper_bounds_.push_back(upper_bound);
   is_variable_integer_.push_back(is_integer_slack_variable);
+  is_variable_implied_integer_.push_back(is_integer_slack_variable);
   variable_names_.push_back(name);
   transpose_matrix_is_consistent_ = false;
   return matrix_.AppendEmptyColumn();
@@ -244,6 +248,14 @@ void LinearProgram::SetVariableIntegrality(ColIndex col, bool is_integer) {
   integer_variables_list_is_consistent_ &=
       (is_variable_integer_[col] == is_integer);
   is_variable_integer_[col] = is_integer;
+}
+
+void LinearProgram::SetVariableImpliedInteger(ColIndex col,
+                                              bool is_implied_integer) {
+  is_variable_implied_integer_[col] = is_implied_integer;
+  if (is_implied_integer) {
+    SetVariableIntegrality(col, true);
+  }
 }
 
 void LinearProgram::UpdateAllIntegerVariableLists() const {
@@ -827,6 +839,7 @@ void LinearProgram::PopulateNameObjectiveAndVariablesFromLinearProgram(
   variable_upper_bounds_ = linear_program.variable_upper_bounds_;
   variable_names_ = linear_program.variable_names_;
   is_variable_integer_ = linear_program.is_variable_integer_;
+  is_variable_implied_integer_ = linear_program.is_variable_implied_integer_;
   integer_variables_list_is_consistent_ =
       linear_program.integer_variables_list_is_consistent_;
   integer_variables_list_ = linear_program.integer_variables_list_;
@@ -914,6 +927,8 @@ void LinearProgram::Swap(LinearProgram* linear_program) {
   variable_upper_bounds_.swap(linear_program->variable_upper_bounds_);
   variable_names_.swap(linear_program->variable_names_);
   is_variable_integer_.swap(linear_program->is_variable_integer_);
+  is_variable_implied_integer_.swap(
+      linear_program->is_variable_implied_integer_);
   integer_variables_list_.swap(linear_program->integer_variables_list_);
   binary_variables_list_.swap(linear_program->binary_variables_list_);
   non_binary_variables_list_.swap(linear_program->non_binary_variables_list_);
@@ -948,6 +963,8 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
       variable_lower_bounds_[new_index] = variable_lower_bounds_[col];
       variable_upper_bounds_[new_index] = variable_upper_bounds_[col];
       is_variable_integer_[new_index] = is_variable_integer_[col];
+      is_variable_implied_integer_[new_index] =
+          is_variable_implied_integer_[col];
       variable_names_[new_index] = variable_names_[col];
       ++new_index;
     } else {
@@ -960,6 +977,7 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
   variable_lower_bounds_.resize(new_index, 0.0);
   variable_upper_bounds_.resize(new_index, 0.0);
   is_variable_integer_.resize(new_index, false);
+  is_variable_implied_integer_.resize(new_index, false);
   variable_names_.resize(new_index, "");
 
   // Remove the id of the deleted columns and adjust the index of the other.

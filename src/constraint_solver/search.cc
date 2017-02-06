@@ -2301,8 +2301,8 @@ const std::vector<int>& SolutionCollector::BackwardSequence(
   return solutions_[n]->BackwardSequence(v);
 }
 
-const std::vector<int>& SolutionCollector::Unperformed(int n,
-                                                  SequenceVar* const v) const {
+const std::vector<int>& SolutionCollector::Unperformed(
+    int n, SequenceVar* const v) const {
   return solutions_[n]->Unperformed(v);
 }
 
@@ -2864,6 +2864,7 @@ void TabuSearch::ApplyDecision(Decision* const d) {
     s->AddConstraint(forbid_cst);
     tabu_vars.push_back(tabu_var);
   }
+
   if (tabu_vars.size() > 0) {
     IntVar* const tabu = s->MakeBoolVar();
     s->AddConstraint(s->MakeIsGreaterOrEqualCstCt(
@@ -2901,10 +2902,14 @@ bool TabuSearch::AtSolution() {
       const int64 old_value = assignment_.Value(var);
       const int64 new_value = var->Value();
       if (old_value != new_value) {
-        VarValue keep_value(var, new_value, stamp_);
-        keep_tabu_list_.push_front(keep_value);
-        VarValue forbid_value(var, old_value, stamp_);
-        forbid_tabu_list_.push_front(forbid_value);
+        if (keep_tenure_ > 0) {
+          VarValue keep_value(var, new_value, stamp_);
+          keep_tabu_list_.push_front(keep_value);
+        }
+        if (forbid_tenure_ > 0) {
+          VarValue forbid_value(var, old_value, stamp_);
+          forbid_tabu_list_.push_front(forbid_value);
+        }
       }
     }
   }
@@ -2949,6 +2954,14 @@ SearchMonitor* Solver::MakeTabuSearch(bool maximize, IntVar* const v,
                                       double tabu_factor) {
   return RevAlloc(new TabuSearch(this, maximize, v, step, vars, keep_tenure,
                                  forbid_tenure, tabu_factor));
+}
+
+SearchMonitor* Solver::MakeObjectiveTabuSearch(bool maximize, IntVar* const v,
+                                               int64 step,
+                                               int64 forbid_tenure) {
+  const std::vector<IntVar*>& vars = {v};
+  return RevAlloc(
+      new TabuSearch(this, maximize, v, step, vars, 0, forbid_tenure, 1));
 }
 
 // ---------- Simulated Annealing ----------

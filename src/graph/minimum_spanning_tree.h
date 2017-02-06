@@ -21,6 +21,8 @@
 #include "graph/connectivity.h"
 #include "graph/graph.h"
 #include "util/vector_or_function.h"
+#include "base/adjustable_priority_queue-inl.h"
+#include "base/adjustable_priority_queue.h"
 
 namespace operations_research {
 
@@ -124,53 +126,55 @@ std::vector<typename Graph::ArcIndex> BuildPrimMinimumSpanningTree(
   }
   const int expected_tree_size = graph.num_nodes() - 1;
   tree_arcs.reserve(expected_tree_size);
-  std::vector<ArcValueType> node_value(graph.num_nodes(),
-                                  std::numeric_limits<ArcValueType>::max());
   std::vector<ArcIndex> node_neighbor(graph.num_nodes(), Graph::kNilArc);
   std::vector<bool> node_active(graph.num_nodes(), true);
+
+  // This struct represents entries in the adjustable priority queue which
+  // maintains active nodes (not added to the tree yet) in decreasing insertion
+  // cost order. AdjustablePriorityQueue requires the existence of the
+  // SetHeapIndex and GetHeapIndex methods.
   struct Entry {
+    void SetHeapIndex(int index) { heap_index = index; }
+    int GetHeapIndex() const { return heap_index; }
+    bool operator<(const Entry& other) const { return value > other.value; }
+
     NodeIndex node;
     ArcValueType value;
-    bool operator<(const Entry& other) const { return value > other.value; }
+    int heap_index;
   };
-  std::priority_queue<Entry> pq;
-  pq.push({0, 0});
-  size_t pq_size = 0;
-  while (!pq.empty() && tree_arcs.size() != expected_tree_size) {
-    pq_size = std::max(pq_size, pq.size());
-    const Entry best = pq.top();
-    const NodeIndex node = best.node;
-    pq.pop();
 
-    // Checking consistency of the pq element in case it is stale (stale entries
-    // are entries for a given node which have been pushed before the latest
-    // update to this node); since we are using a normal priority queue instead
-    // of an adjustable one (which is much slower) to implement the heap, such
-    // entries are just left in the queue instead of calling an increase-key
-    // operation.
-    // TODO(user): Add a safeguard to make sure the size of the queue
-    // remains O(num_nodes).
-    if (best.value > node_value[node] || !node_active[node]) {
-      continue;
-    }
+  AdjustablePriorityQueue<Entry> pq;
+  std::vector<Entry> entries;
+  for (NodeIndex node : graph.AllNodes()) {
+    entries.push_back({node, std::numeric_limits<ArcValueType>::max(), -1});
+  }
+  entries[0].value = 0;
+  pq.Add(&entries[0]);
+  while (!pq.IsEmpty() && tree_arcs.size() != expected_tree_size) {
+    const Entry* best = pq.Top();
+    const NodeIndex node = best->node;
+    pq.Pop();
     node_active[node] = false;
     if (node_neighbor[node] != Graph::kNilArc) {
       tree_arcs.push_back(node_neighbor[node]);
     }
-    for (const int arc : graph.OutgoingArcs(node)) {
+    for (const ArcIndex arc : graph.OutgoingArcs(node)) {
       const NodeIndex neighbor = graph.Head(arc);
       if (node_active[neighbor]) {
         const ArcValueType value = arc_value(arc);
-        if (value < node_value[neighbor]) {
-          node_value[neighbor] = value;
+        Entry& entry = entries[neighbor];
+        if (value < entry.value) {
           node_neighbor[neighbor] = arc;
-          pq.push({neighbor, value});
+          entry.value = value;
+          if (pq.Contains(&entry)) {
+            pq.NoteChangedPriority(&entry);
+          } else {
+            pq.Add(&entry);
+          }
         }
       }
     }
   }
-  VLOG(1) << "Prim actual PQ size / nodes: " << pq_size << " / "
-          << graph.num_nodes();
   return tree_arcs;
 }
 

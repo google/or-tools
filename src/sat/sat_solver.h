@@ -1123,6 +1123,15 @@ inline std::function<SatParameters(Model*)> NewSatParameters(std::string params)
   };
 }
 
+inline std::function<SatParameters(Model*)> NewSatParameters(
+    const sat::SatParameters& parameters) {
+  return [=](Model* model) {
+    model->GetOrCreate<SatSolver>()->SetParameters(parameters);
+    model->SetSingleton(TimeLimit::FromParameters(parameters));
+    return parameters;
+  };
+}
+
 // Returns a std::string representation of a SatSolver::Status.
 std::string SatStatusString(SatSolver::Status status);
 inline std::ostream& operator<<(std::ostream& os, SatSolver::Status status) {

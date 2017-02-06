@@ -2112,7 +2112,9 @@ template <typename NodeIndexType, typename ArcIndexType>
 IntegerRange<ArcIndexType> CompleteGraph<
     NodeIndexType, ArcIndexType>::OutgoingArcs(NodeIndexType node) const {
   DCHECK_LT(node, num_nodes_);
-  return IntegerRange<ArcIndexType>(num_nodes_ * node, num_nodes_ * (node + 1));
+  return IntegerRange<ArcIndexType>(
+      static_cast<ArcIndexType>(num_nodes_) * node,
+      static_cast<ArcIndexType>(num_nodes_) * (node + 1));
 }
 
 template <typename NodeIndexType, typename ArcIndexType>
@@ -2120,7 +2122,8 @@ IntegerRange<ArcIndexType>
 CompleteGraph<NodeIndexType, ArcIndexType>::OutgoingArcsStartingFrom(
     NodeIndexType node, ArcIndexType from) const {
   DCHECK_LT(node, num_nodes_);
-  return IntegerRange<ArcIndexType>(from, num_nodes_ * (node + 1));
+  return IntegerRange<ArcIndexType>(
+      from, static_cast<ArcIndexType>(num_nodes_) * (node + 1));
 }
 
 template <typename NodeIndexType, typename ArcIndexType>

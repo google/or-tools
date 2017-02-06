@@ -19,6 +19,8 @@
 #include <cstdlib>
 #include <map>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include "base/small_map.h"
 #include "base/small_ordered_set.h"
@@ -275,7 +277,7 @@ bool BasePathFilter::Accept(const Assignment* delta,
   bool accept = true;
   // Finding touched subchains from ranks of touched nodes in paths; the first
   // and last node of a subchain will have remained on the same path and will
-  // correspond the the min and max ranks of touched nodes in the current
+  // correspond to the min and max ranks of touched nodes in the current
   // assignment.
   for (const int64 touched_start : touched_paths_.PositionsSetAtLeastOnce()) {
     int min_rank = kint32max;
@@ -686,7 +688,7 @@ class PathCumulFilter : public BasePathFilter {
   int64 total_current_cumul_cost_value_;
   // Map between paths and path soft cumul bound costs. The paths are indexed
   // by the index of the start node of the path.
-  hash_map<int64, int64> current_cumul_cost_values_;
+  std::unordered_map<int64, int64> current_cumul_cost_values_;
   int64 cumul_cost_delta_;
   const int64 global_span_cost_coefficient_;
   std::vector<SoftBound> cumul_soft_bounds_;
@@ -1169,9 +1171,9 @@ NodePrecedenceFilter::NodePrecedenceFilter(const std::vector<IntVar*>& nexts,
       pair_firsts_(next_domain_size, kUnassigned),
       pair_seconds_(next_domain_size, kUnassigned),
       visited_(Size()) {
-  for (const std::pair<int64, int64> node_pair : pairs) {
-    pair_firsts_[node_pair.first] = node_pair.second;
-    pair_seconds_[node_pair.second] = node_pair.first;
+  for (const auto& node_pair : pairs) {
+    pair_firsts_[node_pair.first[0]] = node_pair.second[0];
+    pair_seconds_[node_pair.second[0]] = node_pair.first[0];
   }
 }
 
@@ -1755,8 +1757,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePairPositions(
   delivery_to_entries->resize(model()->Size());
   for (const RoutingModel::NodePair node_pair :
        model()->GetPickupAndDeliveryPairs()) {
-    const int64 pickup = node_pair.first;
-    const int64 delivery = node_pair.second;
+    const int64 pickup = node_pair.first[0];
+    const int64 delivery = node_pair.second[0];
     if (Contains(pickup) || Contains(delivery)) {
       continue;
     }
@@ -1826,15 +1828,14 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
         pickup_to_entries,
     std::vector<GlobalCheapestInsertionFilteredDecisionBuilder::PairEntries>*
         delivery_to_entries) {
-// First, remove entries which have already been inserted and keep track of
-// the entries which are being kept and must be updated.
+  // First, remove entries which have already been inserted and keep track of
+  // the entries which are being kept and must be updated.
+  using Pair = std::pair<int64, int64>;
+  using Insertion = std::pair<Pair, /*delivery_insert_after*/ int64>;
 #if defined(_MSC_VER)
-  hash_set<std::pair<RoutingModel::NodePair, /*delivery_insert_after*/ int64>,
-           PairPairInt64Hasher>
-      existing_insertions;
+  std::unordered_set<Insertion, PairPairInt64Hasher> existing_insertions;
 #else
-  hash_set<std::pair<RoutingModel::NodePair, /*delivery_insert_after*/ int64>>
-      existing_insertions;
+  std::unordered_set<Insertion, hash<Insertion>> existing_insertions;
 #endif
   std::vector<PairEntry*> to_remove;
   for (PairEntry* const pair_entry :
@@ -1846,9 +1847,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
       to_remove.push_back(pair_entry);
     } else {
       existing_insertions.insert(
-          std::make_pair(std::make_pair(pair_entry->pickup_to_insert(),
-                                        pair_entry->delivery_to_insert()),
-                         pair_entry->delivery_insert_after()));
+          {{pair_entry->pickup_to_insert(), pair_entry->delivery_to_insert()},
+           pair_entry->delivery_insert_after()});
     }
   }
   for (PairEntry* const pair_entry : to_remove) {
@@ -1860,14 +1860,13 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
   const int64 pickup_insert_before = Value(pickup_insert_after);
   for (const RoutingModel::NodePair& node_pair :
        model()->GetPickupAndDeliveryPairs()) {
-    const int64 pickup = node_pair.first;
-    const int64 delivery = node_pair.second;
+    const int64 pickup = node_pair.first[0];
+    const int64 delivery = node_pair.second[0];
     if (!Contains(pickup) && !Contains(delivery)) {
       int64 delivery_insert_after = pickup;
       while (!model()->IsEnd(delivery_insert_after)) {
-        const std::pair<RoutingModel::NodePair, int64> insertion =
-            std::make_pair(std::make_pair(pickup, delivery),
-                           delivery_insert_after);
+        const std::pair<Pair, int64> insertion = {{pickup, delivery},
+                                                  delivery_insert_after};
         if (!ContainsKey(existing_insertions, insertion)) {
           PairEntry* const entry =
               new PairEntry(pickup, pickup_insert_after, delivery,
@@ -1933,15 +1932,14 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
         pickup_to_entries,
     std::vector<GlobalCheapestInsertionFilteredDecisionBuilder::PairEntries>*
         delivery_to_entries) {
-// First, remove entries which have already been inserted and keep track of
-// the entries which are being kept and must be updated.
+  // First, remove entries which have already been inserted and keep track of
+  // the entries which are being kept and must be updated.
+  using Pair = std::pair<int64, int64>;
+  using Insertion = std::pair<Pair, /*pickup_insert_after*/ int64>;
 #if defined(_MSC_VER)
-  hash_set<std::pair<RoutingModel::NodePair, /*pickup_insert_after*/ int64>,
-           PairPairInt64Hasher>
-      existing_insertions;
+  std::unordered_set<Insertion, PairPairInt64Hasher> existing_insertions;
 #else
-  hash_set<std::pair<RoutingModel::NodePair, /*pickup_insert_after*/ int64>>
-      existing_insertions;
+  std::unordered_set<Insertion, hash<Insertion>> existing_insertions;
 #endif
   std::vector<PairEntry*> to_remove;
   for (PairEntry* const pair_entry :
@@ -1953,9 +1951,8 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
       to_remove.push_back(pair_entry);
     } else {
       existing_insertions.insert(
-          std::make_pair(std::make_pair(pair_entry->pickup_to_insert(),
-                                        pair_entry->delivery_to_insert()),
-                         pair_entry->pickup_insert_after()));
+          {{pair_entry->pickup_to_insert(), pair_entry->delivery_to_insert()},
+           pair_entry->pickup_insert_after()});
     }
   }
   for (PairEntry* const pair_entry : to_remove) {
@@ -1967,13 +1964,13 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
   const int64 delivery_insert_before = Value(delivery_insert_after);
   for (const RoutingModel::NodePair& node_pair :
        model()->GetPickupAndDeliveryPairs()) {
-    const int64 pickup = node_pair.first;
-    const int64 delivery = node_pair.second;
+    const int64 pickup = node_pair.first[0];
+    const int64 delivery = node_pair.second[0];
     if (!Contains(pickup) && !Contains(delivery)) {
       int64 pickup_insert_after = model()->Start(vehicle);
       while (pickup_insert_after != delivery_insert_after) {
-        std::pair<RoutingModel::NodePair, int64> insertion = std::make_pair(
-            std::make_pair(pickup, delivery), pickup_insert_after);
+        std::pair<Pair, int64> insertion = {{pickup, delivery},
+                                            pickup_insert_after};
         if (!ContainsKey(existing_insertions, insertion)) {
           PairEntry* const entry =
               new PairEntry(pickup, pickup_insert_after, delivery,
@@ -2182,9 +2179,9 @@ bool LocalCheapestInsertionFilteredDecisionBuilder::BuildSolution() {
   // Iterating on pickup and delivery pairs
   const RoutingModel::NodePairs& node_pairs =
       model()->GetPickupAndDeliveryPairs();
-  for (const std::pair<int64, int64> node_pair : node_pairs) {
-    const int64 pickup = node_pair.first;
-    const int64 delivery = node_pair.second;
+  for (const auto& node_pair : node_pairs) {
+    const int64 pickup = node_pair.first[0];
+    const int64 delivery = node_pair.second[0];
     // If either is already in the solution, let it be inserted in the standard
     // node insertion loop.
     if (Contains(pickup) || Contains(delivery)) {
@@ -2284,7 +2281,7 @@ bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
   const RoutingModel::NodePairs& pairs = model()->GetPickupAndDeliveryPairs();
   std::vector<int> deliveries(Size(), kUnassigned);
   for (const RoutingModel::NodePair pair : pairs) {
-    deliveries[pair.first] = pair.second;
+    deliveries[pair.first[0]] = pair.second[0];
   }
   // To mimic the behavior of PathSelector (cf. search.cc), iterating on
   // routes with partial route at their start first then on routes with largest
@@ -2623,16 +2620,16 @@ bool ChristofidesFilteredDecisionBuilder::BuildSolution() {
       class_covered[cost_class] = true;
       const int64 start = model()->Start(vehicle);
       const int64 end = model()->End(vehicle);
-      ChristofidesPathSolver<int64> christofides_solver(
-          indices.size(),
-          [this, &indices, start, end, cost_class](int from, int to) {
-            CHECK(from < indices.size() && to < indices.size())
-                << from << " " << to << " " << indices.size();
-            const int from_index = (from == 0) ? start : indices[from];
-            const int to_index = (to == 0) ? end : indices[to];
-            return model()->GetArcCostForClass(from_index, to_index,
-                                               cost_class);
-          });
+      auto cost = [this, &indices, start, end, cost_class](int from, int to) {
+        DCHECK_LT(from, indices.size());
+        DCHECK_LT(to, indices.size());
+        const int from_index = (from == 0) ? start : indices[from];
+        const int to_index = (to == 0) ? end : indices[to];
+        return model()->GetArcCostForClass(from_index, to_index, cost_class);
+      };
+      using Cost = decltype(cost);
+      ChristofidesPathSolver<int64, int64, int, Cost> christofides_solver(
+          indices.size(), cost);
       path_per_cost_class[cost_class] =
           christofides_solver.TravelingSalesmanPath();
     }

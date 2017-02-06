@@ -34,6 +34,7 @@ extern "C" {
 #include "gurobi_c.h"
 }
 
+
 DEFINE_int32(num_gurobi_threads, 4, "Number of threads available for Gurobi.");
 
 namespace operations_research {
@@ -174,10 +175,10 @@ class GurobiInterface : public MPSolverInterface {
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
     : MPSolverInterface(solver), model_(0), env_(0), mip_(mip) {
-  if (GRBloadenv(&env_, nullptr) != 0 || env_ == nullptr) {
-    LOG(FATAL) << "Error: could not create environment: "
-               << GRBgeterrormsg(env_);
-  }
+    if (GRBloadenv(&env_, nullptr) != 0 || env_ == nullptr) {
+      LOG(FATAL) << "Error: could not create environment: "
+                 << GRBgeterrormsg(env_);
+    }
 
   CheckedGurobiCall(GRBnewmodel(env_, &model_, solver_->name_.c_str(),
                                 0,          // numvars

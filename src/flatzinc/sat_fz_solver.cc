@@ -21,6 +21,7 @@
 #include "sat/cp_constraints.h"
 #include "sat/cumulative.h"
 #include "sat/disjunctive.h"
+#include "sat/flow_costs.h"
 #include "sat/integer.h"
 #include "sat/integer_expr.h"
 #include "sat/intervals.h"
@@ -1006,6 +1007,86 @@ void ExtractCircuit(const fz::Constraint& ct, bool allow_subcircuit,
                                 : CircuitConstraint(graph));
 }
 
+// network_flow(arcs, balance, flow)
+// network_flow_cost(arcs, balance, weight, flow, cost)
+void ExtractNetworkFlow(const fz::Constraint& ct, SatModel* m) {
+  const bool has_cost = ct.type == "network_flow_cost";
+  const std::vector<IntegerVariable> flow =
+      m->LookupVars(ct.arguments[has_cost ? 3 : 2]);
+
+  // First, encode the flow conservation constraints as sums for performance:
+  // updating balance variables is done faster locally.
+  const int num_nodes = ct.arguments[1].values.size();
+  std::vector<std::vector<IntegerVariable>> flows_per_node(num_nodes);
+  std::vector<std::vector<int>> coeffs_per_node(num_nodes);
+
+  const int num_arcs = ct.arguments[0].values.size() / 2;
+  for (int arc = 0; arc < num_arcs; arc++) {
+    const int tail = ct.arguments[0].values[2 * arc] - 1;
+    flows_per_node[tail].push_back(flow[arc]);
+    coeffs_per_node[tail].push_back(1);
+
+    const int head = ct.arguments[0].values[2 * arc + 1] - 1;
+    flows_per_node[head].push_back(flow[arc]);
+    coeffs_per_node[head].push_back(-1);
+  }
+
+  for (int node = 0; node < num_nodes; node++) {
+    m->model.Add(FixedWeightedSum(flows_per_node[node], coeffs_per_node[node],
+                                  ct.arguments[1].values[node]));
+  }
+
+  if (has_cost) {
+    std::vector<IntegerVariable> filtered_flows;
+    std::vector<int64> filtered_costs;
+
+    for (int arc = 0; arc < num_arcs; arc++) {
+      const int64 weight = ct.arguments[2].values[arc];
+      if (weight == 0) continue;
+
+      filtered_flows.push_back(flow[arc]);
+      filtered_costs.push_back(weight);
+    }
+
+    filtered_flows.push_back(m->LookupVar(ct.arguments[4]));
+    filtered_costs.push_back(-1);
+
+    m->model.Add(FixedWeightedSum(filtered_flows, filtered_costs, 0));
+  }
+
+  // Then pass the problem to global FlowCosts constraint.
+  std::vector<IntegerVariable> balance;
+  for (const int value : ct.arguments[1].values) {
+    balance.push_back(m->model.Add(ConstantIntegerVariable(value)));
+  }
+
+  const std::vector<int64> arcs = ct.arguments[0].values;
+  std::vector<int> tails;
+  std::vector<int> heads;
+  for (int arc = 0; arc < num_arcs; arc++) {
+    tails.push_back(arcs[2 * arc] - 1);
+    heads.push_back(arcs[2 * arc + 1] - 1);
+  }
+
+  std::vector<std::vector<int>> weights_per_cost_type;
+  if (has_cost) {
+    std::vector<int> weights;
+    for (const int64 value : ct.arguments[2].values) {
+      weights.push_back(static_cast<int>(value));
+    }
+    weights_per_cost_type.push_back(weights);
+  }
+
+  std::vector<IntegerVariable> total_costs_per_cost_type;
+  if (has_cost) {
+    total_costs_per_cost_type.push_back(m->LookupVar(ct.arguments[4]));
+  }
+
+  m->model.Add(FlowCostsConstraint(balance, flow, tails, heads,
+                                   weights_per_cost_type,
+                                   total_costs_per_cost_type));
+}
+
 // Returns false iff the constraint type is not supported.
 bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
   if (ct.type == "bool_eq") {
@@ -1108,6 +1189,8 @@ bool ExtractConstraint(const fz::Constraint& ct, SatModel* m) {
              ct.type == "variable_cumulative" ||
              ct.type == "fixed_cumulative") {
     ExtractCumulative(ct, m);
+  } else if (ct.type == "network_flow" || ct.type == "network_flow_cost") {
+    ExtractNetworkFlow(ct, m);
   } else if (ct.type == "false_constraint") {
     m->model.GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
   } else {

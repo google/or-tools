@@ -838,6 +838,53 @@ bool CheckMinimumInt(const Constraint& ct,
   return min_value == Eval(ct.arguments[0], evaluator);
 }
 
+bool CheckNetworkFlowConservation(
+    const Argument& arcs, const Argument& balance_input,
+    const Argument& flow_vars,
+    const std::function<int64(IntegerVariable*)>& evaluator) {
+  std::vector<int64> balance(balance_input.values);
+
+  const int num_arcs = Size(arcs) / 2;
+  for (int arc = 0; arc < num_arcs; arc++) {
+    const int tail = arcs.values[arc * 2] - 1;
+    const int head = arcs.values[arc * 2 + 1] - 1;
+    const int64 flow = EvalAt(flow_vars, arc, evaluator);
+    balance[tail] -= flow;
+    balance[head] += flow;
+  }
+
+  for (const int64 value : balance) {
+    if (value != 0) return false;
+  }
+
+  return true;
+}
+
+bool CheckNetworkFlow(const Constraint& ct,
+                      const std::function<int64(IntegerVariable*)>& evaluator) {
+  return CheckNetworkFlowConservation(ct.arguments[0], ct.arguments[1],
+                                      ct.arguments[2], evaluator);
+}
+
+bool CheckNetworkFlowCost(
+    const Constraint& ct,
+    const std::function<int64(IntegerVariable*)>& evaluator) {
+  if (!CheckNetworkFlowConservation(ct.arguments[0], ct.arguments[1],
+                                    ct.arguments[3], evaluator)) {
+    return false;
+  }
+
+  int64 total_cost = 0;
+  const int num_arcs = Size(ct.arguments[3]);
+  for (int arc = 0; arc < num_arcs; arc++) {
+    const int64 flow = EvalAt(ct.arguments[3], arc, evaluator);
+    const int64 cost = EvalAt(ct.arguments[2], arc, evaluator);
+    total_cost += flow * cost;
+  }
+
+  return total_cost == Eval(ct.arguments[4], evaluator);
+}
+
 bool CheckNvalue(const Constraint& ct,
                  const std::function<int64(IntegerVariable*)>& evaluator) {
   const int64 count = Eval(ct.arguments[0], evaluator);
@@ -1077,6 +1124,8 @@ CallMap CreateCallMap() {
   m["minimum_arg_int"] = CheckMinimumArgInt;
   m["minimum_int"] = CheckMinimumInt;
   m["array_int_minimum"] = CheckMinimumInt;
+  m["network_flow"] = CheckNetworkFlow;
+  m["network_flow_cost"] = CheckNetworkFlowCost;
   m["nvalue"] = CheckNvalue;
   m["regular"] = CheckRegular;
   m["regular_nfa"] = CheckRegularNfa;

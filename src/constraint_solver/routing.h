@@ -155,10 +155,10 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_
 
 #include <stddef.h>
-#include "base/hash.h"
-#include "base/hash.h"
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -221,8 +221,10 @@ class RoutingModel {
   typedef _RoutingModel_VehicleClassIndex VehicleClassIndex;
   typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
   typedef std::function<int64(int64, int64)> TransitEvaluator2;
-  typedef std::pair<int, int> NodePair;
+#if !defined(SWIG)
+  typedef std::pair<std::vector<int64>, std::vector<int64>> NodePair;
   typedef std::vector<NodePair> NodePairs;
+#endif
 // TODO(user): Remove all SWIG guards by adding the @ignore in .swig.
 #if !defined(SWIG)
   // What follows is relevant for models with time/state dependent transits.
@@ -591,7 +593,7 @@ class RoutingModel {
   // TODO(user): Remove this when model introspection detects linked nodes.
   void AddPickupAndDelivery(NodeIndex node1, NodeIndex node2) {
     pickup_delivery_pairs_.push_back(
-        std::make_pair(NodeToIndex(node1), NodeToIndex(node2)));
+        {{NodeToIndex(node1)}, {NodeToIndex(node2)}});
   }
 #ifndef SWIG
   // Returns pickup and delivery pairs currently in the model.
@@ -1228,7 +1230,7 @@ class RoutingModel {
   std::vector<IntVar*> is_bound_to_end_;
   RevSwitch is_bound_to_end_ct_added_;
   // Dimensions
-  hash_map<std::string, DimensionIndex> dimension_name_to_index_;
+  std::unordered_map<std::string, DimensionIndex> dimension_name_to_index_;
   ITIVector<DimensionIndex, RoutingDimension*> dimensions_;
   std::string primary_constrained_dimension_;
   // Costs
@@ -1248,8 +1250,9 @@ class RoutingModel {
 #endif  // SWIG
   std::function<int(int64)> vehicle_start_class_callback_;
   // Cached callbacks
-  hash_map<const NodeEvaluator2*, NodeEvaluator2*> cached_node_callbacks_;
-  hash_map<const VariableNodeEvaluator2*, VariableNodeEvaluator2*>
+  std::unordered_map<const NodeEvaluator2*, NodeEvaluator2*>
+      cached_node_callbacks_;
+  std::unordered_map<const VariableNodeEvaluator2*, VariableNodeEvaluator2*>
       cached_state_dependent_callbacks_;
   // Disjunctions
   ITIVector<DisjunctionIndex, Disjunction> disjunctions_;
@@ -1303,8 +1306,9 @@ class RoutingModel {
   SearchLimit* lns_limit_;
 
   // Callbacks to be deleted
-  hash_set<const NodeEvaluator2*> owned_node_callbacks_;
-  hash_set<const VariableNodeEvaluator2*> owned_state_dependent_callbacks_;
+  std::unordered_set<const NodeEvaluator2*> owned_node_callbacks_;
+  std::unordered_set<const VariableNodeEvaluator2*>
+      owned_state_dependent_callbacks_;
 
   friend class RoutingDimension;
   friend class RoutingModelInspector;
@@ -1829,8 +1833,8 @@ class GlobalCheapestInsertionFilteredDecisionBuilder
  private:
   class PairEntry;
   class NodeEntry;
-  typedef hash_set<PairEntry*> PairEntries;
-  typedef hash_set<NodeEntry*> NodeEntries;
+  typedef std::unordered_set<PairEntry*> PairEntries;
+  typedef std::unordered_set<NodeEntry*> NodeEntries;
 
   // Inserts all non-inserted pickup and delivery pairs. Maintains a priority
   // queue of possible pair insertions, which is incrementally updated when a
@@ -2129,6 +2133,7 @@ class BasePathFilter : public RoutingLocalSearchFilter {
   std::vector<int> ranks_;
 };
 
+#if !defined(SWIG)
 RoutingLocalSearchFilter* MakeNodeDisjunctionFilter(
     const RoutingModel& routing_model,
     std::function<void(int64)> objective_callback);
@@ -2139,5 +2144,6 @@ RoutingLocalSearchFilter* MakeNodePrecedenceFilter(
     const RoutingModel& routing_model, const RoutingModel::NodePairs& pairs);
 RoutingLocalSearchFilter* MakeVehicleVarFilter(
     const RoutingModel& routing_model);
+#endif
 }  // namespace operations_research
 #endif  // OR_TOOLS_CONSTRAINT_SOLVER_ROUTING_H_

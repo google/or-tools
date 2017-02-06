@@ -555,6 +555,16 @@ class Bitset64 {
     }
   }
 
+  // Sets "this" to be the union of "this" and "other". The
+  // bitsets do not have to be the same size. If other is smaller, all
+  // the higher order bits are assumed to be 0.
+  void Union(const Bitset64<IndexType>& other) {
+    const int min_size = std::min(data_.size(), other.data_.size());
+    for (int i = 0; i < min_size; ++i) {
+      data_[i] |= other.data_[i];
+    }
+  }
+
   // Class to iterate over the bit positions at 1 of a Bitset64.
   //
   // IMPORTANT: Because the iterator "caches" the current uint64 bucket, this

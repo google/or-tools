@@ -2193,6 +2193,17 @@ class Solver {
                                 int64 keep_tenure, int64 forbid_tenure,
                                 double tabu_factor);
 
+  // Creates a Tabu Search monitor based on the solution value of the objective.
+  // In the context of local search the behavior is similar to MakeOptimize(),
+  // creating an objective in a given sense. The behavior differs once a local
+  // optimum is reached: thereafter solutions which degrade the value of the
+  // objective are allowed if they are not "tabu". A solution is "tabu" if it
+  // doesn't respect the following rules:
+  // - improving the best solution found so far
+  // - objective value must be different from the last considered solutions.
+  SearchMonitor* MakeObjectiveTabuSearch(bool maximize, IntVar* const v,
+                                         int64 step, int64 forbid_tenure);
+
   // Creates a Simulated Annealing monitor.
   // TODO(user): document behavior
   SearchMonitor* MakeSimulatedAnnealing(bool maximize, IntVar* const v,

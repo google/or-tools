@@ -708,9 +708,7 @@ $(OBJ_DIR)/lp_data/proto_utils.$O: \
 
 $(OBJ_DIR)/lp_data/sparse.$O: \
     $(SRC_DIR)/lp_data/sparse.cc \
-    $(SRC_DIR)/lp_data/lp_data.h \
     $(SRC_DIR)/lp_data/sparse.h \
-    $(SRC_DIR)/util/return_macros.h \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/stringprintf.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/lp_data/sparse.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Ssparse.$O
@@ -1134,12 +1132,11 @@ $(SRC_DIR)/graph/graphs.h: \
     $(SRC_DIR)/graph/graph.h
 
 $(SRC_DIR)/graph/hamiltonian_path.h: \
-    $(SRC_DIR)/graph/eulerian_path.h \
-    $(SRC_DIR)/graph/minimum_spanning_tree.h \
     $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/util/bitset.h \
-    $(SRC_DIR)/util/saturated_arithmetic.h
+    $(SRC_DIR)/util/saturated_arithmetic.h \
+    $(SRC_DIR)/util/vector_or_function.h
 
 $(SRC_DIR)/graph/io.h: \
     $(SRC_DIR)/graph/graph.h \
@@ -1182,6 +1179,8 @@ $(SRC_DIR)/graph/min_cost_flow.h: \
 $(SRC_DIR)/graph/minimum_spanning_tree.h: \
     $(SRC_DIR)/graph/connectivity.h \
     $(SRC_DIR)/graph/graph.h \
+    $(SRC_DIR)/base/adjustable_priority_queue.h \
+    $(SRC_DIR)/base/adjustable_priority_queue-inl.h \
     $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/util/vector_or_function.h
 
@@ -1479,6 +1478,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/disjunctive.$O \
     $(OBJ_DIR)/sat/drat.$O \
     $(OBJ_DIR)/sat/encoding.$O \
+    $(OBJ_DIR)/sat/flow_costs.$O \
     $(OBJ_DIR)/sat/integer.$O \
     $(OBJ_DIR)/sat/integer_expr.$O \
     $(OBJ_DIR)/sat/intervals.$O \
@@ -1493,6 +1493,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/symmetry.$O \
     $(OBJ_DIR)/sat/table.$O \
     $(OBJ_DIR)/sat/timetable.$O \
+    $(OBJ_DIR)/sat/timetable_edgefinding.$O \
     $(OBJ_DIR)/sat/util.$O \
     $(OBJ_DIR)/sat/boolean_problem.pb.$O \
     $(OBJ_DIR)/sat/sat_parameters.pb.$O
@@ -1545,6 +1546,12 @@ $(SRC_DIR)/sat/drat.h: \
 $(SRC_DIR)/sat/encoding.h: \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
     $(SRC_DIR)/sat/sat_solver.h
+
+$(SRC_DIR)/sat/flow_costs.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h \
+    $(SRC_DIR)/linear_solver/linear_solver.h
 
 $(SRC_DIR)/sat/integer_expr.h: \
     $(SRC_DIR)/sat/integer.h \
@@ -1658,6 +1665,12 @@ $(SRC_DIR)/sat/table.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/model.h
 
+$(SRC_DIR)/sat/timetable_edgefinding.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/intervals.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h
+
 $(SRC_DIR)/sat/timetable.h: \
     $(SRC_DIR)/sat/integer.h \
     $(SRC_DIR)/sat/intervals.h \
@@ -1705,6 +1718,7 @@ $(OBJ_DIR)/sat/cumulative.$O: \
     $(SRC_DIR)/sat/disjunctive.h \
     $(SRC_DIR)/sat/overload_checker.h \
     $(SRC_DIR)/sat/sat_solver.h \
+    $(SRC_DIR)/sat/timetable_edgefinding.h \
     $(SRC_DIR)/sat/timetable.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/cumulative.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scumulative.$O
 
@@ -1725,6 +1739,11 @@ $(OBJ_DIR)/sat/encoding.$O: \
     $(SRC_DIR)/sat/encoding.cc \
     $(SRC_DIR)/sat/encoding.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/encoding.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sencoding.$O
+
+$(OBJ_DIR)/sat/flow_costs.$O: \
+    $(SRC_DIR)/sat/flow_costs.cc \
+    $(SRC_DIR)/sat/flow_costs.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/flow_costs.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sflow_costs.$O
 
 $(OBJ_DIR)/sat/integer.$O: \
     $(SRC_DIR)/sat/integer.cc \
@@ -1827,6 +1846,13 @@ $(OBJ_DIR)/sat/timetable.$O: \
     $(SRC_DIR)/sat/sat_solver.h \
     $(SRC_DIR)/sat/timetable.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetable.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetable.$O
+
+$(OBJ_DIR)/sat/timetable_edgefinding.$O: \
+    $(SRC_DIR)/sat/timetable_edgefinding.cc \
+    $(SRC_DIR)/sat/timetable_edgefinding.h \
+    $(SRC_DIR)/base/int_type.h \
+    $(SRC_DIR)/util/sort.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetable_edgefinding.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetable_edgefinding.$O
 
 $(OBJ_DIR)/sat/util.$O: \
     $(SRC_DIR)/sat/util.cc \

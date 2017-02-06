@@ -18,7 +18,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 78
+// NEXT TAG: 80
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -432,4 +432,24 @@ message SatParameters {
   // This always result in better propagation, but it is usually slow, so
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_precedences_in_disjunctive_constraint = 74 [default = true];
+
+  // When this is true, the cumulative constraint is reinforced with overload
+  // checking, i.e., an additional level of reasoning based on energy. This
+  // additional level supplements the default level of reasoning as well as
+  // timetable edge finding.
+  //
+  // This always result in better propagation, but it is usually slow, so
+  // depending on the problem, turning this off may lead to a faster solution.
+  optional bool use_overload_checker_in_cumulative_constraint = 78
+      [default = false];
+
+  // When this is true, the cumulative constraint is reinforced with timetable
+  // edge finding, i.e., an additional level of reasoning based on the
+  // conjunction of energy and mandatory parts. This additional level
+  // supplements the default level of reasoning as well as overload_checker.
+  //
+  // This always result in better propagation, but it is usually slow, so
+  // depending on the problem, turning this off may lead to a faster solution.
+  optional bool use_timetable_edge_finding_in_cumulative_constraint = 79
+      [default = false];
 }

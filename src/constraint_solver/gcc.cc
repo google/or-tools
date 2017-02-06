@@ -339,7 +339,8 @@ class GccConstraint : public Constraint {
   }
 
  private:
-  void PathSet(std::vector<int64>* const tree, int64 start, int64 end, int64 to) {
+  void PathSet(std::vector<int64>* const tree, int64 start, int64 end,
+               int64 to) {
     int64 l = start;
     while (l != end) {
       int64 k = l;

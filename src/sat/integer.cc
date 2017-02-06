@@ -577,7 +577,7 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   if (DEBUG_MODE && !integer_decision_levels_.empty()) {
     std::vector<Literal> l = literal_reason;
     MergeReasonInto(integer_reason, &l);
-    CHECK(!l.empty())
+    LOG_IF(WARNING, l.empty())
         << "Propagating a literal with no reason at a positive level!\n"
         << "level:" << integer_decision_levels_.size() << " i_lit:" << i_lit
         << " " << ReasonDebugString(literal_reason, integer_reason) << "\n"
@@ -1094,8 +1094,6 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
   SatSolver::Status status = SatSolver::Status::MODEL_UNSAT;
   for (;;) {
     if (assumptions.empty()) {
-      // TODO(user): This one doesn't do Backtrack(0), and doing it seems to
-      // trigger a bug in apps/compote/scheduler
       // :instruction_scheduler_test, investigate.
       status = solver->SolveWithTimeLimit(time_limit);
     } else {

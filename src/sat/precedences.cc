@@ -192,7 +192,8 @@ void PrecedencesPropagator::ComputePrecedences(
 void PrecedencesPropagator::AdjustSizeFor(IntegerVariable i) {
   const int index = std::max(i.value(), NegationOf(i).value());
   if (index >= impacted_arcs_.size()) {
-    modified_vars_.Resize(IntegerVariable(index) + 1);
+    // TODO(user): only watch lower bound of the relevant variable instead
+    // of watching everything in [0, max_index_of_variable_used_in_this_class).
     for (IntegerVariable var(impacted_arcs_.size()); var <= index; ++var) {
       watcher_->WatchLowerBound(var, watcher_id_);
     }
@@ -293,7 +294,9 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
   }
   for (const InternalArc a : to_add) {
     // Since we add a new arc, we will need to consider its tail during the next
-    // propagation.
+    // propagation. Note that the size of modified_vars_ will be automatically
+    // updated when new integer variables are created since we register it with
+    // IntegerTrail in this class contructor.
     //
     // TODO(user): Adding arcs and then calling Untrail() before Propagate()
     // will cause this mecanism to break. Find a more robust implementation.

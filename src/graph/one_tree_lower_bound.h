@@ -171,7 +171,8 @@ class VolgenantJonkerEvaluator {
                step1_;
   }
 
-  void OnOneTree(CostType one_tree_cost, double w, const std::vector<int>& degrees) {
+  void OnOneTree(CostType one_tree_cost, double w,
+                 const std::vector<int>& degrees) {
     if (!step1_initialized_) {
       step1_initialized_ = true;
       UpdateStep(one_tree_cost);
@@ -211,7 +212,8 @@ class HeldWolfeCrowderEvaluator {
         step_(0) {
     // TODO(user): Improve upper bound with some local search; tighter upper
     // bounds lead to faster convergence.
-    ChristofidesPathSolver<CostType> solver(number_of_nodes, cost);
+    ChristofidesPathSolver<CostType, int64, int, CostFunction> solver(
+        number_of_nodes, cost);
     upper_bound_ = solver.TravelingSalesmanCost();
   }
 
@@ -230,7 +232,8 @@ class HeldWolfeCrowderEvaluator {
 
   double GetStep() const { return step_; }
 
-  void OnOneTree(CostType one_tree_cost, double w, const std::vector<int>& degrees) {
+  void OnOneTree(CostType one_tree_cost, double w,
+                 const std::vector<int>& degrees) {
     double norm = 0;
     for (int degree : degrees) {
       const double delta = degree - 2;

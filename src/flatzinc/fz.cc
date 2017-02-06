@@ -29,6 +29,7 @@
 #include "base/stringprintf.h"
 #include "base/timer.h"
 #include "base/threadpool.h"
+#include "base/commandlineflags.h"
 #include "flatzinc/logging.h"
 #include "flatzinc/model.h"
 #include "flatzinc/parser.h"

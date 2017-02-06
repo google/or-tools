@@ -51,10 +51,21 @@ namespace operations_research {
 // replaced by a strict deadline, and each task must finish before
 // this deadline.  In that case, resources have a unit cost, and the
 // objective is to minimize the sum of resource cost.
+//
+// In the consumer/producer case, tasks have a zero duration, and demands can be
+// negative. The constraint states that at each time point, the sum of demands
+// happening before or during this time must be between the min and max
+// capacity. Note that in that case, both min and max capacity can be negative.
+// Furthermore, if 0 si not in [min_capacity, max_capacity], then a sufficient
+// set of events must happen at time 0 such that the sum of their demands must
+// fall inside the capacity interval.
 class RcpspParser {
  public:
   struct Resource {
+    // The max capacity of the cumulative.
     int max_capacity;
+    // This field is used only in the consumer/producer case. It states the
+    // minimum capacity that must be valid at each time point.
     int min_capacity;
     bool renewable;
     // If non zero, then a demand (duration, demand) will incur a cost of
@@ -64,6 +75,10 @@ class RcpspParser {
 
   struct Recipe {
     int duration;
+    // In the general case, demand must be >= 0. In the consumer/producer case,
+    // it can be < 0. Note that in this case, the tasks always have a duration
+    // of zero. Thus the effect of the demand (increase or decrease of the
+    // current usage) happens at the start of the task.
     std::vector<int> demands_per_resource;
   };
 

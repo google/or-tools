@@ -18,9 +18,9 @@
 #include <cmath>
 #include <cstddef>
 #include <cstring>
-#include "base/hash.h"
 #include <map>
 #include <memory>
+#include <unordered_set>
 
 #include "base/callback.h"
 #include "base/casts.h"
@@ -500,7 +500,7 @@ class MakePairActiveOperator : public PathOperator {
 
 void MakePairActiveOperator::OnNodeInitialization() {
   for (int i = 0; i < pairs_.size(); ++i) {
-    if (IsInactive(pairs_[i].first) && IsInactive(pairs_[i].second)) {
+    if (IsInactive(pairs_[i].first[0]) && IsInactive(pairs_[i].second[0])) {
       inactive_pair_ = i;
       return;
     }
@@ -511,8 +511,8 @@ void MakePairActiveOperator::OnNodeInitialization() {
 bool MakePairActiveOperator::MakeNextNeighbor(Assignment* delta,
                                               Assignment* deltadelta) {
   while (inactive_pair_ < pairs_.size()) {
-    if (!IsInactive(pairs_[inactive_pair_].first) ||
-        !IsInactive(pairs_[inactive_pair_].second) ||
+    if (!IsInactive(pairs_[inactive_pair_].first[0]) ||
+        !IsInactive(pairs_[inactive_pair_].second[0]) ||
         !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
       ResetPosition();
       ++inactive_pair_;
@@ -530,8 +530,8 @@ bool MakePairActiveOperator::MakeNeighbor() {
   // first node before the second (the move is not symmetric and doing it this
   // way ensures that a potential precedence constraint between the nodes of the
   // pair is not violated).
-  return MakeActive(pairs_[inactive_pair_].second, BaseNode(1)) &&
-         MakeActive(pairs_[inactive_pair_].first, BaseNode(0));
+  return MakeActive(pairs_[inactive_pair_].second[0], BaseNode(1)) &&
+         MakeActive(pairs_[inactive_pair_].first[0], BaseNode(0));
 }
 
 LocalSearchOperator* MakePairActive(
@@ -552,15 +552,15 @@ class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
                            const RoutingModel::NodePairs& node_pairs)
       : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
                                       std::move(start_empty_path_class)) {
-    int max_pair_index = -1;
+    int64 max_pair_index = -1;
     for (const auto& node_pair : node_pairs) {
-      max_pair_index = std::max(max_pair_index, node_pair.first);
-      max_pair_index = std::max(max_pair_index, node_pair.second);
+      max_pair_index = std::max(max_pair_index, node_pair.first[0]);
+      max_pair_index = std::max(max_pair_index, node_pair.second[0]);
     }
     pairs_.resize(max_pair_index + 1, -1);
     for (const auto& node_pair : node_pairs) {
-      pairs_[node_pair.first] = node_pair.second;
-      pairs_[node_pair.second] = node_pair.first;
+      pairs_[node_pair.first[0]] = node_pair.second[0];
+      pairs_[node_pair.second[0]] = node_pair.first[0];
     }
   }
   std::string DebugString() const override { return "MakePairInActive"; }
@@ -612,15 +612,15 @@ class PairRelocateOperator : public PathOperator {
     prevs_.resize(index_max + 1, -1);
     is_first_.resize(index_max + 1, false);
     int64 max_pair_index = -1;
-    for (const std::pair<int64, int64> node_pair : node_pairs) {
-      max_pair_index = std::max(max_pair_index, node_pair.first);
-      max_pair_index = std::max(max_pair_index, node_pair.second);
+    for (const auto& node_pair : node_pairs) {
+      max_pair_index = std::max(max_pair_index, node_pair.first[0]);
+      max_pair_index = std::max(max_pair_index, node_pair.second[0]);
     }
     pairs_.resize(max_pair_index + 1, -1);
-    for (const std::pair<int64, int64> node_pair : node_pairs) {
-      pairs_[node_pair.first] = node_pair.second;
-      pairs_[node_pair.second] = node_pair.first;
-      is_first_[node_pair.first] = true;
+    for (const auto& node_pair : node_pairs) {
+      pairs_[node_pair.first[0]] = node_pair.second[0];
+      pairs_[node_pair.second[0]] = node_pair.first[0];
+      is_first_[node_pair.first[0]] = true;
     }
   }
   ~PairRelocateOperator() override {}
@@ -705,14 +705,14 @@ class NodePairSwapActiveOperator : public PathWithPreviousNodesOperator {
                                       std::move(start_empty_path_class)),
         inactive_node_(0) {
     int64 max_pair_index = -1;
-    for (const std::pair<int64, int64>& node_pair : node_pairs) {
-      max_pair_index = std::max(max_pair_index, node_pair.first);
-      max_pair_index = std::max(max_pair_index, node_pair.second);
+    for (const auto& node_pair : node_pairs) {
+      max_pair_index = std::max(max_pair_index, node_pair.first[0]);
+      max_pair_index = std::max(max_pair_index, node_pair.second[0]);
     }
     pairs_.resize(max_pair_index + 1, -1);
-    for (const std::pair<int64, int64>& node_pair : node_pairs) {
-      pairs_[node_pair.first] = node_pair.second;
-      pairs_[node_pair.second] = node_pair.first;
+    for (const auto& node_pair : node_pairs) {
+      pairs_[node_pair.first[0]] = node_pair.second[0];
+      pairs_[node_pair.second[0]] = node_pair.first[0];
     }
   }
   ~NodePairSwapActiveOperator() override {}
@@ -825,7 +825,7 @@ class PairNodeSwapActiveOperator : public PathOperator {
 template <bool swap_first>
 void PairNodeSwapActiveOperator<swap_first>::OnNodeInitialization() {
   for (int i = 0; i < pairs_.size(); ++i) {
-    if (IsInactive(pairs_[i].first) && IsInactive(pairs_[i].second)) {
+    if (IsInactive(pairs_[i].first[0]) && IsInactive(pairs_[i].second[0])) {
       inactive_pair_ = i;
       return;
     }
@@ -837,8 +837,8 @@ template <bool swap_first>
 bool PairNodeSwapActiveOperator<swap_first>::MakeNextNeighbor(
     Assignment* delta, Assignment* deltadelta) {
   while (inactive_pair_ < pairs_.size()) {
-    if (!IsInactive(pairs_[inactive_pair_].first) ||
-        !IsInactive(pairs_[inactive_pair_].second) ||
+    if (!IsInactive(pairs_[inactive_pair_].first[0]) ||
+        !IsInactive(pairs_[inactive_pair_].second[0]) ||
         !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
       ResetPosition();
       ++inactive_pair_;
@@ -855,8 +855,8 @@ bool PairNodeSwapActiveOperator<swap_first>::MakeNeighbor() {
   if (IsPathEnd(base)) {
     return false;
   }
-  const int64 pair_first = pairs_[inactive_pair_].first;
-  const int64 pair_second = pairs_[inactive_pair_].second;
+  const int64 pair_first = pairs_[inactive_pair_].first[0];
+  const int64 pair_second = pairs_[inactive_pair_].second[0];
   if (swap_first) {
     return MakeActive(pair_second, BaseNode(1)) &&
            MakeActive(pair_first, base) &&
@@ -942,8 +942,8 @@ class StateDependentRoutingCache : public RoutingModel::VariableNodeEvaluator2 {
     CHECK(callback->IsRepeatable());
   }
   ~StateDependentRoutingCache() override {
-    hash_set<RangeIntToIntFunction*> value_functions_delete;
-    hash_set<RangeMinMaxIndexFunction*> index_functions_delete;
+    std::unordered_set<RangeIntToIntFunction*> value_functions_delete;
+    std::unordered_set<RangeMinMaxIndexFunction*> index_functions_delete;
     for (const auto& cache_line : cache_) {
       for (const RoutingModel::StateDependentTransit& transit : cache_line) {
         value_functions_delete.insert(transit.transit);
@@ -1087,7 +1087,11 @@ RoutingModel::RoutingModel(
   solver_.reset(new Solver("Routing", solver_parameters));
   InitializeBuilders(solver_.get());
   CHECK_EQ(vehicles, start_ends.size());
-  hash_set<NodeIndex> depot_set;
+#if defined(_MSC_VER)
+  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> depot_set;
+#else
+  std::unordered_set<NodeIndex, hash<NodeIndex>> depot_set;
+#endif
   for (const std::pair<NodeIndex, NodeIndex> start_end : start_ends) {
     depot_set.insert(start_end.first);
     depot_set.insert(start_end.second);
@@ -1139,7 +1143,11 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
   InitializeBuilders(solver_.get());
   CHECK_EQ(vehicles, starts.size());
   CHECK_EQ(vehicles, ends.size());
-  hash_set<NodeIndex> depot_set;
+#if defined(_MSC_VER)
+  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> depot_set;
+#else
+  std::unordered_set<NodeIndex, hash<NodeIndex>> depot_set;
+#endif
   std::vector<std::pair<NodeIndex, NodeIndex>> start_ends(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
     depot_set.insert(starts[i]);
@@ -1342,10 +1350,10 @@ bool RoutingModel::InitializeDimensionInternal(
     return true;
   } else {
     delete dimension;
-    hash_set<NodeEvaluator2*> evaluator_set(evaluators.begin(),
-                                            evaluators.end());
+    std::unordered_set<NodeEvaluator2*> evaluator_set(evaluators.begin(),
+                                                      evaluators.end());
     STLDeleteElements(&evaluator_set);
-    hash_set<VariableNodeEvaluator2*> dependent_evaluator_set(
+    std::unordered_set<VariableNodeEvaluator2*> dependent_evaluator_set(
         state_dependent_evaluators.begin(), state_dependent_evaluators.end());
     STLDeleteElements(&dependent_evaluator_set);
     return false;
@@ -1692,8 +1700,8 @@ void RoutingModel::ComputeCostClasses(
   // Pre-insert the built-in cost class 'zero cost' with index 0.
   const uint64 kNullEvaluatorFprint = 0;
   NodeEvaluator2* const null_evaluator = nullptr;
-  hash_map<NodeEvaluator2*, uint64> evaluator_to_fprint;
-  hash_map<uint64, NodeEvaluator2*> fprint_to_cached_evaluator;
+  std::unordered_map<NodeEvaluator2*, uint64> evaluator_to_fprint;
+  std::unordered_map<uint64, NodeEvaluator2*> fprint_to_cached_evaluator;
   NodeEvaluator2* const zero_evaluator =
       NewPermanentCallback(&ReturnZero<NodeIndex, NodeIndex>);
   owned_node_callbacks_.insert(zero_evaluator);
@@ -1968,8 +1976,13 @@ void RoutingModel::SetStartEnd(
     const std::vector<std::pair<NodeIndex, NodeIndex>>& start_ends) {
   CHECK_EQ(start_ends.size(), vehicles_);
   const int size = Size();
-  hash_set<NodeIndex> starts;
-  hash_set<NodeIndex> ends;
+#if defined(_MSC_VER)
+  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> starts;
+  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> ends;
+#else
+  std::unordered_set<NodeIndex, hash<NodeIndex>> starts;
+  std::unordered_set<NodeIndex, hash<NodeIndex>> ends;
+#endif
   for (const std::pair<NodeIndex, NodeIndex> start_end : start_ends) {
     const NodeIndex start = start_end.first;
     const NodeIndex end = start_end.second;
@@ -1990,7 +2003,11 @@ void RoutingModel::SetStartEnd(
       ++index;
     }
   }
-  hash_set<NodeIndex> node_set;
+#if defined(_MSC_VER)
+  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> node_set;
+#else
+  std::unordered_set<NodeIndex, hash<NodeIndex>> node_set;
+#endif
   index_to_vehicle_.resize(size + vehicles_, kUnassigned);
   for (int i = 0; i < vehicles_; ++i) {
     const NodeIndex start = start_ends[i].first;
@@ -2151,7 +2168,7 @@ class RoutingModelInspector : public ModelVisitor {
   ~RoutingModelInspector() override {}
   void EndVisitModel(const std::string& solver_name) override {
     // Compact same vehicle component indices.
-    hash_map<int, int> component_indices;
+    std::unordered_map<int, int> component_indices;
     int component_index = 0;
     for (int node = 0; node < model_->Size(); ++node) {
       const int component =
@@ -2252,12 +2269,12 @@ class RoutingModelInspector : public ModelVisitor {
 
   RoutingModel* const model_;
   ConnectedComponents<int, int> same_vehicle_components_;
-  hash_map<const IntExpr*, std::pair<RoutingDimension*, int>>
+  std::unordered_map<const IntExpr*, std::pair<RoutingDimension*, int>>
       cumul_to_dim_indices_;
-  hash_map<const IntExpr*, int> vehicle_var_to_indices_;
-  hash_map<std::string, ExprInspector> expr_inspectors_;
-  hash_map<std::string, ArrayInspector> array_inspectors_;
-  hash_map<std::string, ConstraintInspector> constraint_inspectors_;
+  std::unordered_map<const IntExpr*, int> vehicle_var_to_indices_;
+  std::unordered_map<std::string, ExprInspector> expr_inspectors_;
+  std::unordered_map<std::string, ArrayInspector> array_inspectors_;
+  std::unordered_map<std::string, ConstraintInspector> constraint_inspectors_;
   const IntExpr* expr_ = nullptr;
   const IntExpr* left_ = nullptr;
   const IntExpr* right_ = nullptr;
@@ -2378,8 +2395,12 @@ void RoutingModel::CloseModelWithParameters(
   cost_->set_name("Cost");
 
   // Precedences
+  std::vector<std::pair<int, int>> precedences;
+  for (const auto& pair : pickup_delivery_pairs_) {
+    precedences.push_back({pair.first[0], pair.second[0]});
+  }
   solver_->AddConstraint(
-      solver_->MakePathPrecedenceConstraint(nexts_, pickup_delivery_pairs_));
+      solver_->MakePathPrecedenceConstraint(nexts_, precedences));
 
   // Detect constraints
   std::unique_ptr<RoutingModelInspector> inspector(
@@ -2924,13 +2945,13 @@ class RouteConstructor {
   std::vector<IntVar*> nexts_;
   std::vector<const RoutingDimension*> dimensions_;  // Not owned.
   std::vector<std::vector<int64>> cumuls_;
-  std::vector<hash_map<int, int64>> new_possible_cumuls_;
+  std::vector<std::unordered_map<int, int64>> new_possible_cumuls_;
   std::vector<std::vector<int>> routes_;
   std::vector<int> in_route_;
-  hash_set<int> deleted_routes_;
+  std::unordered_set<int> deleted_routes_;
   std::vector<std::vector<int>> final_routes_;
   std::vector<Chain> chains_;
-  hash_set<int> deleted_chains_;
+  std::unordered_set<int> deleted_chains_;
   std::vector<Chain> final_chains_;
   std::vector<int> node_to_chain_index_;
   std::vector<int> node_to_vehicle_class_index_;
@@ -3763,12 +3784,12 @@ bool RoutingModel::RoutesToAssignment(
     return false;
   }
 
-  hash_set<int> visited_indices;
+  std::unordered_set<int> visited_indices;
   // Set value to NextVars based on the routes.
   for (int vehicle = 0; vehicle < num_routes; ++vehicle) {
     const std::vector<NodeIndex>& route = routes[vehicle];
     int from_index = Start(vehicle);
-    std::pair<hash_set<int>::iterator, bool> insert_result =
+    std::pair<std::unordered_set<int>::iterator, bool> insert_result =
         visited_indices.insert(from_index);
     if (!insert_result.second) {
       LOG(ERROR) << "Index " << from_index << " (start node for vehicle "
@@ -3835,7 +3856,7 @@ bool RoutingModel::RoutesToAssignment(
     const int start_index = Start(vehicle);
     // Even if close_routes is false, we still need to add the start index to
     // visited_indices so that deactivating other nodes works correctly.
-    std::pair<hash_set<int>::iterator, bool> insert_result =
+    std::pair<std::unordered_set<int>::iterator, bool> insert_result =
         visited_indices.insert(start_index);
     if (!insert_result.second) {
       LOG(ERROR) << "Index " << start_index << " is used multiple times";
@@ -4163,7 +4184,7 @@ std::string RoutingModel::DebugOutputAssignment(
     }
   }
   std::string output;
-  hash_set<std::string> dimension_names;
+  std::unordered_set<std::string> dimension_names;
   if (dimension_to_print == "") {
     const std::vector<std::string> all_dimension_names = GetAllDimensionNames();
     dimension_names.insert(all_dimension_names.begin(),
@@ -4392,6 +4413,8 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
       search_parameters.local_search_metaheuristic();
   if (local_search_metaheuristic != LocalSearchMetaheuristic::TABU_SEARCH &&
       local_search_metaheuristic !=
+          LocalSearchMetaheuristic::OBJECTIVE_TABU_SEARCH &&
+      local_search_metaheuristic !=
           LocalSearchMetaheuristic::SIMULATED_ANNEALING) {
     CP_ROUTING_PUSH_OPERATOR(LIN_KERNIGHAN, lin_kernighan, operators);
   }
@@ -4410,10 +4433,14 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
   // loop.
   if (local_search_metaheuristic != LocalSearchMetaheuristic::TABU_SEARCH &&
       local_search_metaheuristic !=
+          LocalSearchMetaheuristic::OBJECTIVE_TABU_SEARCH &&
+      local_search_metaheuristic !=
           LocalSearchMetaheuristic::SIMULATED_ANNEALING) {
     CP_ROUTING_PUSH_OPERATOR(TSP_OPT, tsp_opt, operators);
   }
   if (local_search_metaheuristic != LocalSearchMetaheuristic::TABU_SEARCH &&
+      local_search_metaheuristic !=
+          LocalSearchMetaheuristic::OBJECTIVE_TABU_SEARCH &&
       local_search_metaheuristic !=
           LocalSearchMetaheuristic::SIMULATED_ANNEALING) {
     CP_ROUTING_PUSH_OPERATOR(TSP_LNS, tsp_lns, operators);
@@ -4722,9 +4749,15 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
           this, GetOrCreateFeasibilityFilters()));
   // Automatic
   // TODO(user): make this smarter.
-  first_solution_decision_builders_[FirstSolutionStrategy::AUTOMATIC] =
-      first_solution_decision_builders_
-          [FirstSolutionStrategy::PATH_CHEAPEST_ARC];
+  if (pickup_delivery_pairs_.empty()) {
+    first_solution_decision_builders_[FirstSolutionStrategy::AUTOMATIC] =
+        first_solution_decision_builders_
+            [FirstSolutionStrategy::PATH_CHEAPEST_ARC];
+  } else {
+    first_solution_decision_builders_[FirstSolutionStrategy::AUTOMATIC] =
+        first_solution_decision_builders_
+            [FirstSolutionStrategy::PARALLEL_CHEAPEST_INSERTION];
+  }
 }
 
 DecisionBuilder* RoutingModel::GetFirstSolutionDecisionBuilder(
@@ -4829,6 +4862,10 @@ void RoutingModel::SetupMetaheuristics(
       optimize = solver_->MakeTabuSearch(false, cost_,
                                          search_parameters.optimization_step(),
                                          nexts_, 10, 10, .8);
+      break;
+    case LocalSearchMetaheuristic::OBJECTIVE_TABU_SEARCH:
+      optimize = solver_->MakeObjectiveTabuSearch(
+          false, cost_, search_parameters.optimization_step(), 100);
       break;
     default:
       optimize =
@@ -5241,7 +5278,7 @@ void ComputeTransitClasses(const std::vector<NodeEvaluator*>& node_evaluators,
   CHECK(vehicle_to_class != nullptr);
   class_evaluators->clear();
   vehicle_to_class->resize(node_evaluators.size(), -1);
-  hash_map<NodeEvaluator*, int64> evaluator_to_class;
+  std::unordered_map<NodeEvaluator*, int64> evaluator_to_class;
   for (int i = 0; i < node_evaluators.size(); ++i) {
     NodeEvaluator* const evaluator = node_evaluators[i];
     int evaluator_class = -1;

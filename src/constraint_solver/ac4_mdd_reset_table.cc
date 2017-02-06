@@ -1021,7 +1021,8 @@ class MddTableVar {
  public:
   MddTableVar(Solver* const solver, IntVar* var, int index,
               int number_of_different_value, int* shared_positions_edges,
-              int number_of_edges, const std::vector<int>& number_of_edges_by_value,
+              int number_of_edges,
+              const std::vector<int>& number_of_edges_by_value,
               const MyMdd& mdd)
       : solver_(solver),
         edges_per_value_(number_of_different_value),
