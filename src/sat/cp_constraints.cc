@@ -82,24 +82,14 @@ AllDifferentBoundsPropagator::AllDifferentBoundsPropagator(
 
 bool AllDifferentBoundsPropagator::Propagate() {
   if (vars_.empty()) return true;
+  if (!PropagateLowerBounds()) return false;
 
-  // Unfortunately, we may not reach a fixed-point in one pass.
-  // TODO(user): can we change the code to achieve this?
-  while (true) {
-    const int64 old_timestamp = integer_trail_->num_enqueues();
-
-    if (!PropagateLowerBounds()) return false;
-
-    // Note that it is not required to swap back vars_ and negated_vars_.
-    // TODO(user): investigate the impact.
-    std::swap(vars_, negated_vars_);
-    const bool result = PropagateLowerBounds();
-    std::swap(vars_, negated_vars_);
-    if (!result) return false;
-
-    if (old_timestamp == integer_trail_->num_enqueues()) break;
-  }
-  return true;
+  // Note that it is not required to swap back vars_ and negated_vars_.
+  // TODO(user): investigate the impact.
+  std::swap(vars_, negated_vars_);
+  const bool result = PropagateLowerBounds();
+  std::swap(vars_, negated_vars_);
+  return result;
 }
 
 // TODO(user): we could gain by pushing all the new bound at the end, so that
@@ -191,6 +181,7 @@ void AllDifferentBoundsPropagator::RegisterWith(
   for (const IntegerVariable& var : vars_) {
     watcher->WatchIntegerVariable(var, id);
   }
+  watcher->NotifyThatPropagatorMayNotReachFixedPointInOnePass(id);
 }
 
 std::function<void(Model*)> AllDifferent(
