@@ -431,11 +431,6 @@ struct hash<const string> {
   }
 };
 
-template <>
-struct hash<string> {
-  size_t operator()(const string& x) const { return hash<const string>()(x); }
-};
-
 template <class T, size_t N>
 struct hash<array<T, N>> {
  public:
