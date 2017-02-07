@@ -402,4 +402,60 @@ using stdext::hash_set;
 
 #endif  // SWIG
 
+#if !defined(STLPORT)
+// Support a few hash<> operators, in the std namespace.
+namespace std {
+template <class First, class Second>
+struct hash<pair<First, Second>> {
+  size_t operator()(const pair<First, Second>& p) const {
+    size_t h1 = hash<First>()(p.first);
+    size_t h2 = hash<Second>()(p.second);
+    // The decision below is at compile time
+    return (sizeof(h1) <= sizeof(uint32))
+               ?  // NOLINT
+               operations_research::Hash32NumWithSeed(h1, h2)
+               : operations_research::Hash64NumWithSeed(h1, h2);
+  }
+};
+
+template <>
+struct hash<const string> {
+  size_t operator()(const string& x) const {
+    size_t hash = 0;
+    int c;
+    const char* s = x.c_str();
+    while ((c = *s++)) {  // Extra () to remove a warning on Windows.
+      hash = ((hash << 5) + hash) ^ c;
+    }
+    return hash;
+  }
+};
+
+template <>
+struct hash<string> {
+  size_t operator()(const string& x) const { return hash<const string>()(x); }
+};
+
+template <class T, size_t N>
+struct hash<array<T, N>> {
+ public:
+  size_t operator()(const array<T, N>& t) const {
+    uint64 current = 71;
+    for (int index = 0; index < N; ++index) {
+      const T& elem = t[index];
+      const uint64 new_hash = hash<T>()(elem);
+      current = operations_research::Hash64NumWithSeed(current, new_hash);
+    }
+    return current;
+  }
+  // Less than operator for MSVC.
+  bool operator()(const array<T, N>& a, const array<T, N>& b) const {
+    return a < b;
+  }
+  static const size_t bucket_size = 4;  // These are required by MSVC.
+  static const size_t min_buckets = 8;  // 4 and 8 are defaults.
+};
+}  // namespace std
+#endif  // !STLPORT
+
 #endif  // OR_TOOLS_BASE_HASH_H_

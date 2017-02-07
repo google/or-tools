@@ -1090,7 +1090,7 @@ RoutingModel::RoutingModel(
 #if defined(_MSC_VER)
   std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> depot_set;
 #else
-  std::unordered_set<NodeIndex, hash<NodeIndex>> depot_set;
+  std::unordered_set<NodeIndex, std::hash<NodeIndex>> depot_set;
 #endif
   for (const std::pair<NodeIndex, NodeIndex> start_end : start_ends) {
     depot_set.insert(start_end.first);
@@ -1146,7 +1146,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
 #if defined(_MSC_VER)
   std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> depot_set;
 #else
-  std::unordered_set<NodeIndex, hash<NodeIndex>> depot_set;
+  std::unordered_set<NodeIndex, std::hash<NodeIndex>> depot_set;
 #endif
   std::vector<std::pair<NodeIndex, NodeIndex>> start_ends(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
@@ -1980,8 +1980,8 @@ void RoutingModel::SetStartEnd(
   std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> starts;
   std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> ends;
 #else
-  std::unordered_set<NodeIndex, hash<NodeIndex>> starts;
-  std::unordered_set<NodeIndex, hash<NodeIndex>> ends;
+  std::unordered_set<NodeIndex, std::hash<NodeIndex>> starts;
+  std::unordered_set<NodeIndex, std::hash<NodeIndex>> ends;
 #endif
   for (const std::pair<NodeIndex, NodeIndex> start_end : start_ends) {
     const NodeIndex start = start_end.first;
@@ -2006,7 +2006,7 @@ void RoutingModel::SetStartEnd(
 #if defined(_MSC_VER)
   std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> node_set;
 #else
-  std::unordered_set<NodeIndex, hash<NodeIndex>> node_set;
+  std::unordered_set<NodeIndex, std::hash<NodeIndex>> node_set;
 #endif
   index_to_vehicle_.resize(size + vehicles_, kUnassigned);
   for (int i = 0; i < vehicles_; ++i) {

@@ -1835,7 +1835,7 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
 #if defined(_MSC_VER)
   std::unordered_set<Insertion, PairPairInt64Hasher> existing_insertions;
 #else
-  std::unordered_set<Insertion, hash<Insertion>> existing_insertions;
+  std::unordered_set<Insertion, std::hash<Insertion>> existing_insertions;
 #endif
   std::vector<PairEntry*> to_remove;
   for (PairEntry* const pair_entry :
@@ -1939,7 +1939,7 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
 #if defined(_MSC_VER)
   std::unordered_set<Insertion, PairPairInt64Hasher> existing_insertions;
 #else
-  std::unordered_set<Insertion, hash<Insertion>> existing_insertions;
+  std::unordered_set<Insertion, std::hash<Insertion>> existing_insertions;
 #endif
   std::vector<PairEntry*> to_remove;
   for (PairEntry* const pair_entry :

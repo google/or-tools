@@ -349,4 +349,13 @@ inline size_t hash_value(const IntType<IntTypeName, ValueType>& idx) {
 }  //  namespace stdext
 #endif  // _MSC_VER
 
+namespace std {
+template <typename IntTypeName, typename ValueType>
+struct hash<IntType<IntTypeName, ValueType> > {
+  size_t operator()(const IntType<IntTypeName, ValueType>& idx) const {
+    return static_cast<size_t>(idx.value());
+  }
+};
+}  // namespace std
+
 #endif  // OR_TOOLS_BASE_INT_TYPE_H_
