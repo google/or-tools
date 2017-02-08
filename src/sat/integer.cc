@@ -941,6 +941,7 @@ GenericLiteralWatcher::GenericLiteralWatcher(
       integer_trail_(integer_trail),
       rev_int_repository_(rev_int_repository) {
   integer_trail_->RegisterWatcher(&modified_vars_);
+  queue_by_priority_.resize(2);  // Because default priority is 1.
 }
 
 void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
@@ -951,7 +952,7 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
     for (const auto entry : literal_to_watcher_[literal.Index()]) {
       if (!in_queue_[entry.id]) {
         in_queue_[entry.id] = true;
-        queue_.push_back(entry.id);
+        queue_by_priority_[id_to_priority_[entry.id]].push_back(entry.id);
       }
       if (entry.watch_index >= 0) {
         id_to_watch_indices_[entry.id].push_back(entry.watch_index);
@@ -965,7 +966,7 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
     for (const auto entry : var_to_watcher_[var]) {
       if (!in_queue_[entry.id]) {
         in_queue_[entry.id] = true;
-        queue_.push_back(entry.id);
+        queue_by_priority_[id_to_priority_[entry.id]].push_back(entry.id);
       }
       if (entry.watch_index >= 0) {
         id_to_watch_indices_[entry.id].push_back(entry.watch_index);
@@ -975,59 +976,93 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
 }
 
-// TODO(user): With the current setup, we will reach a fix-point of all the
-// "integer" propagators registered with this class before going back to the SAT
-// solver that will propagate its clauses. It may be more efficient to go back
-// earlier to the SAT solver, like each time we propagate a literal. This is
-// unclear though, so it will require a lot of experiments. Maybe expose the
-// various posibilities in the parameters, so that it is easy to try on
-// different problems.
 bool GenericLiteralWatcher::Propagate(Trail* trail) {
   const int level = trail->CurrentDecisionLevel();
   rev_int_repository_->SetLevel(level);
-
   UpdateCallingNeeds(trail);
-  while (!queue_.empty()) {
-    const int id = queue_.front();
-    queue_.pop_front();
 
-    // Before we propagate, make sure any reversible structure are up to date.
-    // Note that we never do anything expensive more than once per level.
-    {
-      const int low = id_to_greatest_common_level_since_last_call_[id];
-      const int high = id_to_level_at_last_call_[id];
-      if (low < high || level > low) {  // Equivalent to not all equal.
-        id_to_level_at_last_call_[id] = level;
-        id_to_greatest_common_level_since_last_call_[id] = level;
-        for (ReversibleInterface* rev : id_to_reversible_classes_[id]) {
-          if (low < high) rev->SetLevel(low);
-          if (level > low) rev->SetLevel(level);
+  // Note that the priority may be set to -1 inside the loop in order to restart
+  // at zero.
+  for (int priority = 0; priority < queue_by_priority_.size(); ++priority) {
+    std::deque<int>& queue = queue_by_priority_[priority];
+    while (!queue.empty()) {
+      const int id = queue.front();
+      queue.pop_front();
+
+      // Before we propagate, make sure any reversible structure are up to date.
+      // Note that we never do anything expensive more than once per level.
+      {
+        const int low = id_to_greatest_common_level_since_last_call_[id];
+        const int high = id_to_level_at_last_call_[id];
+        if (low < high || level > low) {  // Equivalent to not all equal.
+          id_to_level_at_last_call_[id] = level;
+          id_to_greatest_common_level_since_last_call_[id] = level;
+          for (ReversibleInterface* rev : id_to_reversible_classes_[id]) {
+            if (low < high) rev->SetLevel(low);
+            if (level > low) rev->SetLevel(level);
+          }
+          for (int* rev_int : id_to_reversible_ints_[id]) {
+            rev_int_repository_->SaveState(rev_int);
+          }
         }
-        for (int* rev_int : id_to_reversible_ints_[id]) {
-          rev_int_repository_->SaveState(rev_int);
+      }
+
+      // This is needed to detect if the propagator propagated anything or not.
+      const int64 old_integer_timestamp = integer_trail_->num_enqueues();
+      const int64 old_boolean_timestamp = trail->Index();
+
+      // TODO(user): Maybe just provide one function Propagate(watch_indices) ?
+      std::vector<int>& watch_indices_ref = id_to_watch_indices_[id];
+      const bool result =
+          watch_indices_ref.empty()
+              ? watchers_[id]->Propagate()
+              : watchers_[id]->IncrementalPropagate(watch_indices_ref);
+      if (!result) {
+        watch_indices_ref.clear();
+        in_queue_[id] = false;
+        return false;
+      }
+
+      // Update the propagation queue. At this point, the propagator has been
+      // removed from the queue but in_queue_ is still true.
+      if (id_to_idempotence_[id]) {
+        // If the propagator is assumed to be idempotent, then we set in_queue_
+        // to false after UpdateCallingNeeds() so this later function will never
+        // add it back.
+        UpdateCallingNeeds(trail);
+        watch_indices_ref.clear();
+        in_queue_[id] = false;
+      } else {
+        // Otherwise, we set in_queue_ to false first so that
+        // UpdateCallingNeeds() may add it back if the propagator modified any
+        // of its watched variables.
+        watch_indices_ref.clear();
+        in_queue_[id] = false;
+        UpdateCallingNeeds(trail);
+      }
+
+      // If the propagator pushed an integer bound, we revert to priority = 0.
+      if (integer_trail_->num_enqueues() > old_integer_timestamp) {
+        priority = -1;  // Because of the ++priority in the for loop.
+      }
+
+      // If the propagator pushed a literal, we have two options.
+      //
+      // TODO(user): expose the parameter. Early experiments are counter
+      // intuitive and seems to indicate that it is better not to re-run the SAT
+      // propagators each time we push a literal.
+      if (trail->Index() > old_boolean_timestamp) {
+        const bool run_sat_propagators_at_higher_priority = false;
+        if (run_sat_propagators_at_higher_priority) {
+          // We exit in order to rerun all SAT only propagators first. Note that
+          // since a literal was pushed we are guaranteed to be called again,
+          // and we will resume from priority 0.
+          return true;
+        } else {
+          priority = -1;
         }
       }
     }
-
-    // TODO(user): Maybe just provide one function Propagate(watch_indices) ?
-    std::vector<int>& watch_indices_ref = id_to_watch_indices_[id];
-    const bool result =
-        watch_indices_ref.empty()
-            ? watchers_[id]->Propagate()
-            : watchers_[id]->IncrementalPropagate(watch_indices_ref);
-    if (!result) {
-      watch_indices_ref.clear();
-      in_queue_[id] = false;
-      return false;
-    }
-
-    // We mark the node after UpdateCallingNeeds() because we assume that the
-    // Propagate() method is idempotent and never need to be called twice in a
-    // row. If some propagator don't have this property, we could add an option
-    // to call them again until nothing changes.
-    UpdateCallingNeeds(trail);
-    watch_indices_ref.clear();
-    in_queue_[id] = false;
   }
   return true;
 }
@@ -1040,8 +1075,11 @@ void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
   }
 
   // We need to clear the watch indices on untrail.
-  for (const int id : queue_) {
-    id_to_watch_indices_[id].clear();
+  for (std::deque<int>& queue : queue_by_priority_) {
+    for (const int id : queue) {
+      id_to_watch_indices_[id].clear();
+    }
+    queue.clear();
   }
 
   // This means that we already propagated all there is to propagate
@@ -1050,7 +1088,6 @@ void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
   propagation_trail_index_ = trail_index;
   modified_vars_.ClearAndResize(integer_trail_->NumIntegerVariables());
   in_queue_.assign(watchers_.size(), false);
-  queue_.clear();
 
   const int level = trail.CurrentDecisionLevel();
   rev_int_repository_->SetLevel(level);
@@ -1068,11 +1105,31 @@ int GenericLiteralWatcher::Register(PropagatorInterface* propagator) {
   id_to_reversible_classes_.push_back(std::vector<ReversibleInterface*>());
   id_to_reversible_ints_.push_back(std::vector<int*>());
   id_to_watch_indices_.push_back(std::vector<int>());
+  id_to_priority_.push_back(1);
+  id_to_idempotence_.push_back(true);
 
   // Call this propagator at least once the next time Propagate() is called.
+  //
+  // TODO(user): This initial propagation does not respect any later priority
+  // settings. Fix this. Maybe we should force users to pass the priority at
+  // registration. For now I didn't want to change the interface because there
+  // are plans to implement a kind of "dynamic" priority, and if it works we may
+  // want to get rid of this altogether.
   in_queue_.push_back(true);
-  queue_.push_back(id);
+  queue_by_priority_[1].push_back(id);
   return id;
+}
+
+void GenericLiteralWatcher::SetPropagatorPriority(int id, int priority) {
+  id_to_priority_[id] = priority;
+  if (priority >= queue_by_priority_.size()) {
+    queue_by_priority_.resize(priority + 1);
+  }
+}
+
+void GenericLiteralWatcher::NotifyThatPropagatorMayNotReachFixedPointInOnePass(
+    int id) {
+  id_to_idempotence_[id] = false;
 }
 
 void GenericLiteralWatcher::RegisterReversibleClass(int id,
@@ -1094,6 +1151,8 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
   SatSolver::Status status = SatSolver::Status::MODEL_UNSAT;
   for (;;) {
     if (assumptions.empty()) {
+      // TODO(user): This one doesn't do Backtrack(0), and doing it seems to
+      // trigger a bug in research/devtools/compote/scheduler
       // :instruction_scheduler_test, investigate.
       status = solver->SolveWithTimeLimit(time_limit);
     } else {

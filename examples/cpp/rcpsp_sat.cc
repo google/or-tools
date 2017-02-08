@@ -43,10 +43,23 @@ int ComputeNaiveHorizon(const RcpspParser& parser) {
   return horizon;
 }
 
+int64 VectorSum(const std::vector<int64>& v) {
+  int64 res = 0;
+  for (const int64 c : v) res += c;
+  return res;
+}
+
 void LoadAndSolve(const std::string& file_name) {
   RcpspParser parser;
   CHECK(parser.LoadFile(file_name));
   LOG(INFO) << "Successfully read '" << file_name << "'.";
+  const std::string problem_type =
+      parser.is_rcpsp_max()
+          ? (parser.is_resource_investment() ? "Resource investment/Max"
+                                             : "RCPSP/Max")
+          : (parser.is_resource_investment() ? "Resource investment" : "RCPSP");
+  LOG(INFO) << problem_type << " problem with " << parser.resources().size()
+            << " resources, and " << parser.tasks().size() << " tasks.";
 
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
@@ -54,7 +67,11 @@ void LoadAndSolve(const std::string& file_name) {
   const int num_tasks = parser.tasks().size();
   const int num_resources = parser.resources().size();
   const int horizon =
-      parser.horizon() == -1 ? ComputeNaiveHorizon(parser) : parser.horizon();
+      parser.deadline() == -1
+          ? (parser.horizon() == -1 ? ComputeNaiveHorizon(parser)
+                                    : parser.horizon())
+          : parser.deadline();
+  LOG(INFO) << "Horizon = " << horizon;
 
   std::vector<std::vector<IntervalVariable>> intervals_per_resources(
       num_resources);
@@ -85,12 +102,12 @@ void LoadAndSolve(const std::string& file_name) {
         const int demand = recipe.demands_per_resource[r];
         if (demand == 0) continue;
 
+        consumptions_per_resources[r].push_back(demand);
         if (parser.resources()[r].renewable) {
           intervals_per_resources[r].push_back(interval);
           demands_per_resources[r].push_back(
               model.Add(ConstantIntegerVariable(demand)));
         } else {
-          consumptions_per_resources[r].push_back(demand);
           presences_per_resources[r].push_back(
               model.Add(ConstantIntegerVariable(1)));
         }
@@ -115,12 +132,12 @@ void LoadAndSolve(const std::string& file_name) {
           const int demand = recipe.demands_per_resource[r];
           if (demand == 0) continue;
 
+          consumptions_per_resources[r].push_back(demand);
           if (parser.resources()[r].renewable) {
             intervals_per_resources[r].push_back(interval);
             demands_per_resources[r].push_back(
                 model.Add(ConstantIntegerVariable(demand)));
           } else {
-            consumptions_per_resources[r].push_back(demand);
             presences_per_resources[r].push_back(presence_var);
           }
         }
@@ -186,21 +203,43 @@ void LoadAndSolve(const std::string& file_name) {
     }
   }
 
+  std::vector<int> weights;
+  std::vector<IntegerVariable> capacities;
+
   // Create resources.
   for (int r = 0; r < num_resources; ++r) {
     const RcpspParser::Resource& res = parser.resources()[r];
-    const int c = res.max_capacity;
-    if (res.renewable) {
+    const int64 c = res.max_capacity == -1
+                        ? VectorSum(consumptions_per_resources[r])
+                        : res.max_capacity;
+
+    const IntegerVariable capacity = model.Add(ConstantIntegerVariable(c));
+    model.Add(Cumulative(intervals_per_resources[r], demands_per_resources[r],
+                         capacity));
+    if (parser.is_resource_investment()) {
+      const IntegerVariable capacity = model.Add(NewIntegerVariable(0, c));
+      model.Add(Cumulative(intervals_per_resources[r], demands_per_resources[r],
+                           capacity));
+      capacities.push_back(capacity);
+      weights.push_back(res.unit_cost);
+    } else if (res.renewable) {
       if (intervals_per_resources[r].empty()) continue;
       const IntegerVariable capacity = model.Add(ConstantIntegerVariable(c));
       model.Add(Cumulative(intervals_per_resources[r], demands_per_resources[r],
                            capacity));
-
     } else {
       if (presences_per_resources[r].empty()) continue;
       model.Add(WeightedSumLowerOrEqual(presences_per_resources[r],
                                         consumptions_per_resources[r], c));
     }
+  }
+
+  // Create objective var.
+  IntegerVariable objective_var;
+  if (parser.is_resource_investment()) {
+    objective_var = model.Add(NewWeightedSum(weights, capacities));
+  } else {
+    objective_var = makespan;
   }
 
   // Search.
@@ -210,10 +249,10 @@ void LoadAndSolve(const std::string& file_name) {
   }
 
   MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-      /*log_info=*/true, makespan, decision_variables,
+      /*log_info=*/true, objective_var, decision_variables,
       /*feasible_solution_observer=*/
-      [makespan](const Model& model) {
-        LOG(INFO) << "Makespan " << model.Get(LowerBound(makespan));
+      [objective_var](const Model& model) {
+        LOG(INFO) << "Objective " << model.Get(LowerBound(objective_var));
       },
       &model);
 }

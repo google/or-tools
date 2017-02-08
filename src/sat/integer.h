@@ -659,6 +659,8 @@ class PropagatorInterface {
 
 // This class allows registering Propagator that will be called if a
 // watched Literal or LbVar changes.
+//
+// TODO(user): Move this to its own file. Add unit tests!
 class GenericLiteralWatcher : public SatPropagator {
  public:
   explicit GenericLiteralWatcher(IntegerTrail* trail,
@@ -691,6 +693,16 @@ class GenericLiteralWatcher : public SatPropagator {
 
   // Registers a propagator and returns its unique ids.
   int Register(PropagatorInterface* propagator);
+
+  // Changes the priority of the propagator with given id. The priority is a
+  // non-negative integer. Propagators with a lower priority will always be
+  // run before the ones with a higher one. The default priority is one.
+  void SetPropagatorPriority(int id, int priority);
+
+  // The default behavior is to assume that a propagator does not need to be
+  // called twice in a row. However, propagators on which this is called will be
+  // called again if they change one of their own watched variables.
+  void NotifyThatPropagatorMayNotReachFixedPointInOnePass(int id);
 
   // Watches the corresponding quantity. The propagator with given id will be
   // called if it changes. Note that WatchLiteral() only trigger when the
@@ -752,16 +764,19 @@ class GenericLiteralWatcher : public SatPropagator {
   std::vector<PropagatorInterface*> watchers_;
   SparseBitset<IntegerVariable> modified_vars_;
 
-  // Propagator ids that needs to be called.
-  std::deque<int> queue_;
+  // Propagator ids that needs to be called. There is one queue per priority but
+  // just one Boolean to indicate if a propagator is in one of them.
+  std::vector<std::deque<int>> queue_by_priority_;
   std::vector<bool> in_queue_;
 
-  // Decision levels and reversible classes for each propagator.
+  // Data for each propagator.
   std::vector<int> id_to_level_at_last_call_;
   std::vector<int> id_to_greatest_common_level_since_last_call_;
   std::vector<std::vector<ReversibleInterface*>> id_to_reversible_classes_;
   std::vector<std::vector<int*>> id_to_reversible_ints_;
   std::vector<std::vector<int>> id_to_watch_indices_;
+  std::vector<int> id_to_priority_;
+  std::vector<int> id_to_idempotence_;
 
   DISALLOW_COPY_AND_ASSIGN(GenericLiteralWatcher);
 };

@@ -419,11 +419,14 @@ class IsEqualCstCt : public CastConstraint {
     int64 l = inhibit ? u : 0;
     target_var_->SetRange(l, u);
     if (target_var_->Bound()) {
-      inhibit = true;
       if (target_var_->Min() == 0) {
-        var_->RemoveValue(cst_);
+        if (var_->Size() <= 0xFFFFFF) {
+          var_->RemoveValue(cst_);
+          inhibit = true;
+        }
       } else {
         var_->SetValue(cst_);
+        inhibit = true;
       }
     }
     if (inhibit) {
@@ -534,11 +537,14 @@ class IsDiffCstCt : public CastConstraint {
     int64 u = inhibit ? l : 1;
     target_var_->SetRange(l, u);
     if (target_var_->Bound()) {
-      inhibit = true;
       if (target_var_->Min() == 1) {
-        var_->RemoveValue(cst_);
+        if (var_->Size() <= 0xFFFFFF) {
+          var_->RemoveValue(cst_);
+          inhibit = true;
+        }
       } else {
         var_->SetValue(cst_);
+        inhibit = true;
       }
     }
     if (inhibit) {

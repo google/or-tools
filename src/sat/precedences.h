@@ -47,6 +47,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
         watcher_(watcher),
         watcher_id_(watcher->Register(this)) {
     integer_trail_->RegisterWatcher(&modified_vars_);
+    watcher->SetPropagatorPriority(watcher_id_, 0);
   }
 
   static PrecedencesPropagator* CreateInModel(Model* model) {

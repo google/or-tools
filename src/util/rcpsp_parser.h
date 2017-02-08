@@ -59,6 +59,20 @@ namespace operations_research {
 // Furthermore, if 0 si not in [min_capacity, max_capacity], then a sufficient
 // set of events must happen at time 0 such that the sum of their demands must
 // fall inside the capacity interval.
+//
+// The supported file format are:
+//   - standard psplib (.sm and .mm):
+//     http://www.om-db.wi.tum.de/psplib/data.html
+//   - rcpsp problem in the patterson format (.rcp):
+//     http://www.om-db.wi.tum.de/psplib/dataob.html
+//   - rcpsp/max (.sch):
+//     https://www.wiwi.tu-clausthal.de/de/abteilungen/produktion/forschung/
+//           schwerpunkte/project-generator/rcpspmax/
+//     https://www.wiwi.tu-clausthal.de/de/abteilungen/produktion/forschung/
+//           schwerpunkte/project-generator/mrcpspmax/
+//   - resource investment problem with max delay (.sch):
+//     https://www.wiwi.tu-clausthal.de/de/abteilungen/produktion/forschung/
+//           schwerpunkte/project-generator/ripmax/
 class RcpspParser {
  public:
   struct Resource {
@@ -68,8 +82,7 @@ class RcpspParser {
     // minimum capacity that must be valid at each time point.
     int min_capacity;
     bool renewable;
-    // If non zero, then a demand (duration, demand) will incur a cost of
-    // unit_cost * duration * demand.
+    // If non zero, then a each unit of capacity will incur a cost of unit_cost.
     int unit_cost;
   };
 
