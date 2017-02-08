@@ -798,10 +798,7 @@ bool OneOfVarMinPropagator::Propagate() {
   IntegerValue target_min = kMaxIntegerValue;
   for (int i = 0; i < vars_.size(); ++i) {
     if (trail_->Assignment().LiteralIsTrue(selectors_[i])) return true;
-    if (trail_->Assignment().LiteralIsFalse(selectors_[i])) {
-      literal_reason_.push_back(selectors_[i]);
-      continue;
-    }
+    if (trail_->Assignment().LiteralIsFalse(selectors_[i])) continue;
     target_min = std::min(target_min, integer_trail_->LowerBound(vars_[i]));
   }
   if (target_min == kMaxIntegerValue) {
