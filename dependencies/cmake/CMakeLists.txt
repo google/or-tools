@@ -197,6 +197,7 @@ endif()
 #TODO(fix how scip and glpk are included)
 if(EXISTS ${MAKEFILE_LOCAL})
 else()
-  file(APPEND ${MAKEFILE_LOCAL} "${SCIP_MAKEFILE}\n")
+#TODO(deal with scip and glpk)
+#  file(APPEND ${MAKEFILE_LOCAL} "${SCIP_MAKEFILE}\n")
 endif()
 

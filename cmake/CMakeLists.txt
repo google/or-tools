@@ -34,8 +34,20 @@ SET(REL_GEN_DIR "src/gen" CACHE INTERNAL "Relative or-tools generated sources di
 SET(GEN_DIR "${OR_TOOLS_SOURCE_DIR}/${REL_GEN_DIR}" CACHE INTERNAL "or-tools generated sources directory" FORCE)
 file(MAKE_DIRECTORY ${GEN_DIR})
 
-SET(REL_EXAMPLES_DIR "examples" CACHE INTERNAL "Relative or-tools generated examples directory" FORCE)
-SET(EXAMPLES_DIR "${OR_TOOLS_SOURCE_DIR}/${REL_EXAMPLES_DIR}" CACHE INTERNAL "or-tools generated examples directory" FORCE)
+SET(REL_EXAMPLES_DIR "examples" CACHE INTERNAL "Relative or-tools examples directory" FORCE)
+SET(EXAMPLES_DIR "${OR_TOOLS_SOURCE_DIR}/${REL_EXAMPLES_DIR}" CACHE INTERNAL "or-tools examples directory" FORCE)
+
+SET(REL_CPP_EXAMPLES_DIR "examples/cpp" CACHE INTERNAL "Relative or-tools C++ examples directory" FORCE)
+SET(CPP_EXAMPLES_DIR "${OR_TOOLS_SOURCE_DIR}/${REL_CPP_EXAMPLES_DIR}" CACHE INTERNAL "or-tools C++ examples directory" FORCE)
+
+SET(REL_CS_EXAMPLES_DIR "examples/chsarp" CACHE INTERNAL "Relative or-tools C# examples directory" FORCE)
+SET(CS_EXAMPLES_DIR "${OR_TOOLS_SOURCE_DIR}/${REL_CS_EXAMPLES_DIR}" CACHE INTERNAL "or-tools C# examples directory" FORCE)
+
+SET(REL_PYTHON_EXAMPLES_DIR "examples/python" CACHE INTERNAL "Relative or-tools python examples directory" FORCE)
+SET(PYTHON_EXAMPLES_DIR "${OR_TOOLS_SOURCE_DIR}/${REL_PYTHON_EXAMPLES_DIR}" CACHE INTERNAL "or-tools python examples directory" FORCE)
+
+SET(REL_FZ_EXAMPLES_DIR "examples/flatzinc" CACHE INTERNAL "Relative or-tools flatzinc examples directory" FORCE)
+SET(FZ_EXAMPLES_DIR "${OR_TOOLS_SOURCE_DIR}/${REL_FZ_EXAMPLES_DIR}" CACHE INTERNAL "or-tools flatzinc examples directory" FORCE)
 
 SET(REL_LIB_DIR "lib" CACHE INTERNAL "Relative or-tools lib directory" FORCE)
 SET(LIB_DIR "${OR_TOOLS_SOURCE_DIR}/${REL_LIB_DIR}" CACHE INTERNAL "or-tools lib directory" FORCE)
