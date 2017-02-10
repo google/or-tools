@@ -21,6 +21,7 @@ function(OR_TOOLS_PROTOBUF_GENERATE_CPP SRCS HDRS)
     add_custom_command(
       OUTPUT  ${out_pb_cc} ${out_pb_h}
       COMMAND ${COMMAND}
+      DEPENDS ${SRC_DIR}/${FIL}
       COMMENT "Running protocol buffer compiler : ${COMMAND}"
     )
   endforeach()

@@ -1,11 +1,13 @@
 include(ortools_protobuf.cmake)
 
+#TODO(include this once)
 include_directories(${SRC_DIR} ${GEN_DIR} ${DEPENDENCIES_INCLUDE})
 
 set(LINKER_LANGUAGE CXX)
 if(UNIX)
     set(CMAKE_CXX_COMPILER "g++" CACHE INTERNAL "" FORCE)
-    set(CMAKE_CXX_FLAGS "-fPIC -std=c++0x -fwrapv -DARCH_K8 -Wno-deprecated -DUSE_CLP -DUSE_GLOP -DUSE_BOP" CACHE INTERNAL "" FORCE)
+    #TODO(verify if we can always compile with -DUSE_CBC)
+    set(CMAKE_CXX_FLAGS "-fPIC -std=c++0x -fwrapv -DARCH_K8 -Wno-deprecated -DUSE_CBC -DUSE_CLP -DUSE_GLOP -DUSE_BOP" CACHE INTERNAL "" FORCE)
     set(CMAKE_CXX_FLAGS_DEBUG "-DNDEBUG" CACHE INTERNAL "" FORCE)
 endif()
 
@@ -30,7 +32,7 @@ OR_TOOLS_PROTOBUF_GENERATE_CPP(ortools_proto_srcs ortools_proto_hdrs ${ortools_p
 #TODO(find a way to factorize this)
 set(ortools_static_lnk ${DEPENDENCIES_LIB}/libCbcSolver${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libCbc${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libCgl${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libOsi${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libOsiCbc${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libOsiClp${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libClp${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libCoinUtils${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libgflags${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libprotobuf${CMAKE_STATIC_LIBRARY_SUFFIX})
 
-add_library( ortools SHARED ${ortools_src} ${ortools_proto_srcs})
+add_library(ortools SHARED ${ortools_proto_srcs} ${ortools_src})
 
 target_link_libraries(ortools ${ortools_static_lnk} z rt pthread)
 
