@@ -264,9 +264,8 @@ void Solve(const std::string& filename, const std::string& solution_file) {
     }
   }
 
-  RoutingModel routing(num_active_periods + 1, 1);
   const RoutingModel::NodeIndex kDepot(0);
-  routing.SetDepot(kDepot);
+  RoutingModel routing(num_active_periods + 1, 1, kDepot);
 
   // Setting first solution heuristic (cheapest addition).
   FLAGS_routing_first_solution = "Savings";
