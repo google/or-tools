@@ -22,6 +22,7 @@ endif()
 
 
 
+#TODO(omit this)
 #[[
 set(FLEX_TAG "flex-2.6.0")
 set(FLEX_DIR "${FLEX_TAG}")
