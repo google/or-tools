@@ -134,7 +134,7 @@ else
 	@echo "[assembly:System.Reflection.AssemblyConfiguration( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyCompany( \"Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyProduct( \"OR-Tools\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyCopyright( \"Copyright (c) 2010-2015 Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+	@echo "[assembly:System.Reflection.AssemblyCopyright( \"Copyright (c) 2010-2017 Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyCulture( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyVersion( \"$(OR_TOOLS_SHORT_VERSION).*\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	@echo "[assembly:System.Reflection.AssemblyFileVersion( \"$(OR_TOOLS_VERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
