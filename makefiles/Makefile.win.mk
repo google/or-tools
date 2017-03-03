@@ -30,6 +30,7 @@ LDOUT = /OUT:
 DYNAMIC_LD = link /DLL /LTCG /debug
 CPSEP =;
 DEL = del
+# Will maintain DELREC for now, but rename to something more descriptive like RM_RECURSE_FORCED
 DELREC = tools\rm.exe -rf
 RENAME = rename
 MKDIR = md
@@ -42,6 +43,10 @@ FLEX = dependencies\install\bin\win_flex.exe
 CMAKE = cmake
 ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
+
+# Add some additional macros
+RM = tools\rm.exe
+RM_RECURSE_FORCED = tools\rm.exe -fr
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
