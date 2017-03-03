@@ -431,7 +431,7 @@ clean_third_party:
 # Create Makefile.local
 makefile_third_party: Makefile.local
 
-Makefile.local: makefiles/Makefile.third_party.win
+Makefile.local: makefiles/Makefile.third_party.win.mk
 	-$(DEL) Makefile.local
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local

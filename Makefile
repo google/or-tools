@@ -35,6 +35,7 @@ all: third_party_check cc java python csharp
 	@echo Or-tools have been built for $(BUILT_LANGUAGES)
 clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
+# TODO: TBD: .port and .local are probably okay, for now; but may be prepared to rename those as well
 # First, we try to detect the platform.
 include $(OR_ROOT)makefiles/Makefile.port
 OR_ROOT_FULL=$(OR_TOOLS_TOP)
@@ -43,10 +44,10 @@ OR_ROOT_FULL=$(OR_TOOLS_TOP)
 include $(OR_ROOT)Makefile.local
 
 # Then include specific system commands and definitions
-include $(OR_ROOT)makefiles/Makefile.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.$(SYSTEM).mk
 
 # Rules to fetch and build third party dependencies.
-include $(OR_ROOT)makefiles/Makefile.third_party.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.third_party.$(SYSTEM).mk
 
 # Include .mk files.
 include $(OR_ROOT)makefiles/Makefile.cpp.mk
