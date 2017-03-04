@@ -47,8 +47,23 @@ ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
 
 # Add some additional macros
+CD = cd
+RMDIR = rmdir /q
+RMDIR_S = rmdir /s /q
+NMAKE = nmake
+ATTRIB = attrib
+TASKKILL = taskkill
+GIT = git
 RM = tools\rm.exe
 RM_RECURSE_FORCED = tools\rm.exe -fr
+WGET = tools\wget
+WGET_P = tools\get -P
+UNZIP = tools\unzip
+UNZIP_EXTRACT = tools\unzip -d
+
+# Add some option macros
+CSCOUT = /out:
+CSCLIB = /lib:
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
