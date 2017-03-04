@@ -17,6 +17,10 @@ SOPLEX_TAG = 2.2.0
 # Version of Sulum
 SULUM_TAG = 43
 
+# Used to support dealing with Subversion concerns
+# Remember to kill any TortoiseSVN Cache process(es) prior to clean
+TSVNCACHE_EXE ?= TSVNCache.exe
+
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET =
@@ -416,17 +420,33 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
 	  ../src/google/protobuf/descriptor.proto
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && jar cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
 
-# Clean everything.
-clean_third_party:
-	-$(DEL) Makefile.local
-	-$(DELREC) dependencies\install
-	-$(DELREC) dependencies\sources\cbc-*
-	-$(DELREC) dependencies\sources\gflags*
-	-$(DELREC) dependencies\sources\glpk*
-	-$(DELREC) dependencies\sources\google*
-	-$(DELREC) dependencies\sources\protobuf*
-	-$(DELREC) dependencies\sources\sparsehash*
-	-$(DELREC) dependencies\sources\zlib*
+# Handle a couple of extraneous circumstances involving TortoiseSVN caching and .svn readonly attributes.
+kill_tortoisesvn_cache:
+ifeq ($(SYSTEM),win)
+	$(TASKKILL) /IM "$(TSVNCACHE_EXE)" /F /FI "STATUS eq RUNNING"
+else
+# TODO: TBD: Don't know if this is a ubiquitous issue across platforms...
+endif
+
+remove_readonly_svn_attribs: kill_tortoisesvn_cache
+ifeq ($(SYSTEM),win)
+	if exist dependencies\sources\* $(ATTRIB) -r /s dependencies\sources\*
+else
+# TODO: TBD: Don't know if this is a ubiquitous issue across platforms...
+endif
+
+# Clean everything but the sources\README
+clean_third_party: remove_readonly_svn_attribs
+	-$(RM) Makefile.local
+# Otherwise, the rest of the target is just fine just as long as the process(es) and file attributes are properly handled.
+	-$(RM_RECURSE_FORCED) dependencies\install
+	-$(RM_RECURSE_FORCED) dependencies\sources\cbc-*
+	-$(RM_RECURSE_FORCED) dependencies\sources\gflags*
+	-$(RM_RECURSE_FORCED) dependencies\sources\glpk*
+	-$(RM_RECURSE_FORCED) dependencies\sources\google*
+	-$(RM_RECURSE_FORCED) dependencies\sources\protobuf*
+	-$(RM_RECURSE_FORCED) dependencies\sources\sparsehash*
+	-$(RM_RECURSE_FORCED) dependencies\sources\zlib*
 
 # Create Makefile.local
 makefile_third_party: Makefile.local
