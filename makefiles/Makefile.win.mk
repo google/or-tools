@@ -60,6 +60,7 @@ WGET = tools\wget
 WGET_P = tools\get -P
 UNZIP = tools\unzip
 UNZIP_EXTRACT = tools\unzip -d
+TOUCH = tools\touch.exe
 
 # Add some option macros
 CSCOUT = /out:
