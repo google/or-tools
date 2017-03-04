@@ -250,7 +250,7 @@ test_cs:
 	@echo the $(CSC) command was not find in your Path 
 else
 test_cs: 
-	$(CSC) /target:exe /out:$(BIN_DIR)$Scsflow.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.dll /r:Google.Protobuf.dll $(CS_EX_DIR)$Scsflow.cs
+	$(CSC) /target:exe /out:$(BIN_DIR)$Scsflow.exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools$DLL /r:Google.Protobuf$DLL $(CS_EX_DIR)$Scsflow.cs
 	$(MONO) $(BIN_DIR)$Scsflow.exe $(ARGS)
 
 test: test_cc test_java test_cs
@@ -261,8 +261,8 @@ rcs:
 	make rcs EX=path/to/the/example/example.cs
   else
 # .NET generic compilation command.
-$(BIN_DIR)$S$(basename $(notdir $(EX))).exe: $(BIN_DIR)/$(CLR_DLL_NAME).dll $(EX)
-	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$S$(basename $(notdir $(EX))).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_DLL_NAME).dll /r:Google.Protobuf.dll $(EX)
+$(BIN_DIR)$S$(basename $(notdir $(EX))).exe: $(BIN_DIR)/$(CLR_DLL_NAME)$DLL $(EX)
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$S$(basename $(notdir $(EX))).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_DLL_NAME)$DLL /r:Google.Protobuf$DLL $(EX)
 
 csc: $(BIN_DIR)$S$(basename $(notdir $(EX))).exe
 
