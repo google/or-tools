@@ -17,6 +17,9 @@ SOPLEX_TAG = 2.2.0
 # Version of Sulum
 SULUM_TAG = 43
 
+# Arrange for a base CLR SNK key file for signature purposes
+BASE_CLR_KEYFILE = or-tools.snk
+
 # Used to support dealing with Subversion concerns
 # Remember to kill any TortoiseSVN Cache process(es) prior to clean
 TSVNCACHE_EXE ?= TSVNCache.exe
@@ -27,7 +30,7 @@ ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
     SCIP_MAKEFILE = \# WINDOWS_SCIP_DIR support not included.
 else
     SCIP_TARGET = dependencies/install/lib/scip.lib
-    SCIP_MAKEFILE = WINDOWS_SCIP_DIR = $(OR_ROOT_FULL)\\dependencies\\install
+    SCIP_MAKEFILE = WINDOWS_SCIP_DIR = $(OR_ROOT_FULL)$Sdependencies$Sinstall
 endif
 
 # Detect if GLPK archive is there.
@@ -36,7 +39,7 @@ ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
     GLPK_MAKEFILE = \# GLPK support not included.
 else
     GLPK_TARGET = dependencies\install\bin\glpsol.exe
-    GLPK_MAKEFILE = WINDOWS_GLPK_DIR = $(OR_ROOT_FULL)\\dependencies\\install
+    GLPK_MAKEFILE = WINDOWS_GLPK_DIR = $(OR_ROOT_FULL)$Sdependencies$Sinstall
 endif
 # Main target.
 .PHONY: third_party build_third_party makefile_third_party
@@ -189,7 +192,6 @@ src/gen/ortools/linear_solver:
 src/gen/sat:
 	$(MKDIR_P) src$Sgen$Ssat
 
-
 download_third_party: \
     dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
 	dependencies/sources/gflags/autogen.sh \
@@ -223,22 +225,22 @@ dependencies\install:
 install_zlib: dependencies\install\include\zlib.h dependencies\install\include\zconf.h dependencies\install\lib\zlib.lib
 
 dependencies\install\include\zlib.h: dependencies\install\include dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h dependencies\install\include
+	$(COPY) dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h dependencies\install\include
 
 dependencies\install\include\zconf.h: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zconf.h dependencies\install\include
-	tools\touch.exe dependencies\install\include\zconf.h
+	$(COPY) dependencies\sources\zlib-$(ZLIB_TAG)\zconf.h dependencies\install\include
+	$(TOUCH) dependencies\install\include\zconf.h
 
 dependencies\install\lib\zlib.lib: dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
 	cd dependencies\sources\zlib-$(ZLIB_TAG) && nmake -f win32\Makefile.msc zlib.lib
-	copy dependencies\sources\zlib-$(ZLIB_TAG)\zlib.lib dependencies\install\lib
+	$(COPY) dependencies\sources\zlib-$(ZLIB_TAG)\zlib.lib dependencies\install\lib
 
 dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h: dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
-	tools\touch.exe dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
+	$(UNZIP_EXTRACT) dependencies\sources dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip
+	$(TOUCH) dependencies\sources\zlib-$(ZLIB_TAG)\zlib.h
 
 dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
-	tools\wget -P dependencies\archives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
+	$(WGET_P) dependencies\archives http://zlib.net/zlib$(ZLIB_ARCHIVE_TAG).zip
 
 install_gflags: dependencies/install/lib/gflags.lib
 
@@ -252,28 +254,27 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 	$(TOUCH) dependencies/install/lib/gflags_static.lib
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
-	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
+	$(UNZIP_EXTRACT) dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
 	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
-#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/master.zip
+#	$(WGET_P) dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
+	$(WGET_P) dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/master.zip
 	cd dependencies/archives && rename master.zip gflags-$(GFLAGS_TAG).zip
-
 
 # Install protocol buffers.
 install_protobuf: dependencies\install\bin\protoc.exe  dependencies\install\include\google\protobuf\message.h
 
 dependencies\install\bin\protoc.exe: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe
-	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe dependencies\install\bin
-	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\*.lib dependencies\install\lib
+	$(COPY) dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe dependencies\install\bin
+	$(COPY) dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\*.lib dependencies\install\lib
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\Release\protoc.exe: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && msbuild protobuf.sln /t:Build /p:Configuration=Release;LinkIncremental=false
 
 dependencies\install\include\google\protobuf\message.h: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar
 	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar
-#	copy dependencies\sources\protobuf-$(PROTOBUF_TAG)\src\google\protobuf-$(PROTOBUF_TAG)\stubs\stl_util.h dependencies\install\include\google\protobuf-$(PROTOBUF_TAG)\stubs
+#	$(COPY) dependencies\sources\protobuf-$(PROTOBUF_TAG)\src\google\protobuf-$(PROTOBUF_TAG)\stubs\stl_util.h dependencies\install\include\google\protobuf-$(PROTOBUF_TAG)\stubs
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && extract_includes.bat
@@ -281,13 +282,13 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\include.tar: dependenc
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
 	-md dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build
-	tools\sed -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
+	$(SED) -i -e '/\"\/MD\"/d' dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
-#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
+#	$(WGET_P) dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
+	$(WGET_P) dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
+	$(UNZIP_EXTRACT) dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
 
 # Install sparsehash.
 install_sparsehash: dependencies\install\include\google\dense_hash_map
@@ -297,74 +298,74 @@ dependencies\install\include\google\dense_hash_map: dependencies\sources\sparseh
 	-md dependencies\install\include\sparsehash\internal
 	-md dependencies\install\include\google
 	-md dependencies\install\include\google\sparsehash
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\* dependencies\install\include\sparsehash
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\google\* dependencies\install\include\google
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\google\* dependencies\install\include\google
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
+	-$(COPY) dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\* dependencies\install\include\sparsehash
+	-$(COPY) dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
+	-$(COPY) dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\google\* dependencies\install\include\google
+	-$(COPY) dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\google\* dependencies\install\include\google
+	-$(COPY) dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
+	-$(COPY) dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
 
 dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\autogen.sh:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/sparsehash/sparsehash/archive/sparsehash-$(SPARSEHASH_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\sparsehash-$(SPARSEHASH_TAG).zip
+	$(WGET_P) dependencies\archives --no-check-certificate https://github.com/sparsehash/sparsehash/archive/sparsehash-$(SPARSEHASH_TAG).zip
+	$(UNZIP_EXTRACT) dependencies\sources dependencies\archives\sparsehash-$(SPARSEHASH_TAG).zip
 
 
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
 
 dependencies\install\bin\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe
-	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\*.lib dependencies\install\lib\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\src\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Clp\src\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Clp\src\OsiClp\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Cgl\src\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Osi\src\Osi\*.hpp dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\src\*.h dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Clp\src\*.h dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\*.h dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Cgl\src\*.h dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Osi\src\Osi\*.h dependencies\install\include\coin
-	copy dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\*.lib dependencies\install\lib\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Cbc\src\*.hpp dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Clp\src\*.hpp dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Clp\src\OsiClp\*.hpp dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\*.hpp dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Cgl\src\*.hpp dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Osi\src\Osi\*.hpp dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Cbc\src\*.h dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Clp\src\*.h dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\*.h dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Cgl\src\*.h dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Osi\src\Osi\*.h dependencies\install\include\coin
+	$(COPY) dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe dependencies\install\bin
 
 dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.exe: dependencies\sources\cbc-$(CBC_TAG)\configure
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libOsiClp\\libOsiClp.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Clp\\MSVisualStudio\\v10\\libClp\\libClp.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libOsiCbc\\libOsiCbc.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbc\\libCbc.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\cbc\\cbc.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Osi\\MSVisualStudio\\v10\\libOsi\\libOsi.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\CoinUtils\\MSVisualStudio\\v10\\libCoinUtils\\libCoinUtils.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\sources\\cbc-$(CBC_TAG)\\Cgl\\MSVisualStudio\\v10\\libCgl\\libCgl.vcxproj $(VS_RELEASE)
-	tools\sed -i 's/CBC_BUILD;/CBC_BUILD;CBC_THREAD_SAFE;CBC_NO_INTERRUPT;/g' dependencies\\sources\\cbc-$(CBC_TAG)\\Cbc\\MSVisualStudio\\v10\\libCbcSolver\\libCbcSolver.vcxproj
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SClp$SMSVisualStudio$Sv10$SlibOsiClp$SlibOsiClp.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SClp$SMSVisualStudio$Sv10$SlibClp$SlibClp.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SCbc$SMSVisualStudio$Sv10$SlibOsiCbc$SlibOsiCbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SCbc$SMSVisualStudio$Sv10$SlibCbc$SlibCbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SCbc$SMSVisualStudio$Sv10$Scbc$Scbc.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SCbc$SMSVisualStudio$Sv10$SlibCbcSolver$SlibCbcSolver.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SOsi$SMSVisualStudio$Sv10$SlibOsi$SlibOsi.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SCoinUtils$SMSVisualStudio$Sv10$SlibCoinUtils$SlibCoinUtils.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssources$Scbc-$(CBC_TAG)$SCgl$SMSVisualStudio$Sv10$SlibCgl$SlibCgl.vcxproj $(VS_RELEASE)
+	$(SED) -i 's/CBC_BUILD;/CBC_BUILD;CBC_THREAD_SAFE;CBC_NO_INTERRUPT;/g' dependencies$Ssources$Scbc-$(CBC_TAG)$SCbc$SMSVisualStudio$Sv10$SlibCbcSolver$SlibCbcSolver.vcxproj
 	cd dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10 && msbuild Cbc.sln /t:cbc /p:Configuration=Release;BuildCmd=ReBuild
 
 dependencies\sources\cbc-$(CBC_TAG)\configure:
-	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
-	tools\sed -i -e "s/#  include <direct.h>/#  include <direct.h>\n#  include <cctype>/g" dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\CoinHelperFunctions.hpp
+	$(SVN) co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
+	$(SED) -i -e "s/#  include <direct.h>/#  include <direct.h>\n#  include <cctype>/g" dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\CoinHelperFunctions.hpp
 
 
 # Install SWIG.
 install_swig: dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
 
 dependencies\install\swigwin-$(SWIG_TAG)\swig.exe: dependencies\archives\swigwin-$(SWIG_TAG).zip
-	tools\unzip -d dependencies/install dependencies\archives\swigwin-$(SWIG_TAG).zip
-	tools\touch.exe dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
+	$(UNZIP_EXTRACT) dependencies/install dependencies\archives\swigwin-$(SWIG_TAG).zip
+	$(TOUCH) dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
 
 dependencies\archives\swigwin-$(SWIG_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running 'tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
+	$(WGET_P) dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running '$(WGET_P) dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
 
 dependencies\install\bin\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe
-	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpk.lib dependencies\install\lib
-	copy dependencies\sources\glpk-$(GLPK_TAG)\src\glpk.h dependencies\install\include
-	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe dependencies\install\bin
+	$(COPY) dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpk.lib dependencies\install\lib
+	$(COPY) dependencies\sources\glpk-$(GLPK_TAG)\src\glpk.h dependencies\install\include
+	$(COPY) dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe dependencies\install\bin
 
  dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\configure
-	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\config_VC  dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\config.h
+	$(COPY) dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\config_VC  dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\config.h
 	cd dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM) && nmake -f makefile_VC
 
 dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GLPK_TAG).tar.gz
@@ -381,22 +382,20 @@ dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG
 #	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
 	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -d scip-$(SCIP_TAG).tgz
 	- cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\tar.exe xvmf scip-$(SCIP_TAG).tar
-	tools\upgrade_vs_project.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssolutions$SScip$Ssoplex$Ssoplex.vcxproj $(VS_RELEASE)
+	tools\upgrade_vs_project.cmd dependencies$Ssolutions$SScip$Sscip$Sscip.vcxproj $(VS_RELEASE)
 	cd dependencies\solutions\Scip && msbuild /t:soplex
 	cd dependencies\solutions\Scip && msbuild /t:scip
-	-mkdir dependencies\install\include
-	-mkdir dependencies\install\include\scip
-	-mkdir dependencies\install\include\scip\scip
-	-mkdir dependencies\install\include\scip\blockmemshell
-	-mkdir dependencies\install\include\scip\lpi
-	-mkdir dependencies\install\include\scip\nlpi
-	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\scip\*.h dependencies\install\include\scip\scip
-	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\lpi\*.h dependencies\install\include\scip\lpi
-	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\nlpi\*.h dependencies\install\include\scip\nlpi
-	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\blockmemshell\*.h dependencies\install\include\scip\blockmemshell
-	git checkout dependencies/solutions/Scip/soplex/soplex.vcxproj
-	git checkout dependencies/solutions/Scip/scip/scip.vcxproj
+	-$(MKDIR_P)dependencies\install\include\scip\scip
+	-$(MKDIR_P)dependencies\install\include\scip\blockmemshell
+	-$(MKDIR_P)dependencies\install\include\scip\lpi
+	-$(MKDIR_P) dependencies\install\include\scip\nlpi
+	$(COPY) dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\scip\*.h dependencies\install\include\scip\scip
+	$(COPY) dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\lpi\*.h dependencies\install\include\scip\lpi
+	$(COPY) dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\nlpi\*.h dependencies\install\include\scip\nlpi
+	$(COPY) dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\blockmemshell\*.h dependencies\install\include\scip\blockmemshell
+	$(GIT) checkout dependencies/solutions/Scip/soplex/soplex.vcxproj
+	$(GIT) checkout dependencies/solutions/Scip/scip/scip.vcxproj
 
 # Install bison and flex in one package.
 install_bison: dependencies\install\bin\win_bison.exe
@@ -404,21 +403,21 @@ install_bison: dependencies\install\bin\win_bison.exe
 dependencies\install\bin\win_flex.exe: dependencies\install\bin\win_bison.exe
 
 dependencies\install\bin\win_bison.exe: dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
-	tools\unzip -d dependencies\install\bin dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
-	tools\touch.exe dependencies\install\bin/win_bison.exe
+	$(UNZIP_EXTRACT) dependencies\install\bin dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
+	$(TOUCH) dependencies\install\bin/win_bison.exe
 
 dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate https://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
+	$(WGET_P) dependencies\archives --no-check-certificate https://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
 
 # Install Java protobuf
 
 install_java_protobuf: dependencies/install/lib/protobuf.jar
 
 dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
-	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
-	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
+	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Sjava && \
+	  ..$S..$S..$Sinstall$Sbin$Sprotoc --java_out=core/src/main/java -I../src \
 	  ../src/google/protobuf/descriptor.proto
-	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && jar cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
+	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Sjava$Score$Ssrc$Smain$Sjava && jar cvf ..$S..$S..$S..$S..$S..$S..$Sinstall$Slib$Sprotobuf.jar com$Sgoogle$Sprotobuf$S*java
 
 # Handle a couple of extraneous circumstances involving TortoiseSVN caching and .svn readonly attributes.
 kill_tortoisesvn_cache:
@@ -459,16 +458,16 @@ Makefile.local: makefiles/Makefile.third_party.win.mk
 	@echo #>> Makefile.local
 	@echo $(GLPK_MAKEFILE)>> Makefile.local
 	@echo $(SCIP_MAKEFILE)>> Makefile.local
-	@echo CLR_KEYFILE = bin\\or-tools.snk>> Makefile.local
+	@echo CLR_KEYFILE = bin$S$(BASE_CLR_KEYFILE)>> Makefile.local
 	@echo WINDOWS_SULUM_VERSION = $(SULUM_TAG)>> Makefile.local
 	@echo # Define WINDOWS_SLM_DIR to use Sulum Optimization.>> Makefile.local
 	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi.>> Makefile.local
 	@echo #>> Makefile.local
-	@echo WINDOWS_ZLIB_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
+	@echo WINDOWS_ZLIB_DIR = $(OR_ROOT_FULL)$Sdependencies$Sinstall>> Makefile.local
 	@echo WINDOWS_ZLIB_NAME=zlib.lib>> Makefile.local
-	@echo WINDOWS_GFLAGS_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_PROTOBUF_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_SPARSEHASH_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_SWIG_BINARY = $(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe>> Makefile.local
-	@echo WINDOWS_CLP_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_CBC_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
+	@echo WINDOWS_GFLAGS_DIR = $(OR_ROOT_FULL)$Sdependencies$Sinstall>> Makefile.local
+	@echo WINDOWS_PROTOBUF_DIR = $(OR_ROOT_FULL)$Sdependencies$Sinstall>> Makefile.local
+	@echo WINDOWS_SPARSEHASH_DIR = $(OR_ROOT_FULL)$Sdependencies$Sinstall>> Makefile.local
+	@echo WINDOWS_SWIG_BINARY = $(OR_ROOT_FULL)$Sdependencies$Sinstall$Sswigwin-$(SWIG_TAG)$Sswig.exe>> Makefile.local
+	@echo WINDOWS_CLP_DIR = $(OR_ROOT_FULL)$Sdependencies$Sinstall>> Makefile.local
+	@echo WINDOWS_CBC_DIR = $(OR_ROOT_FULL)$Sdependencies$Sinstall>> Makefile.local
