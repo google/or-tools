@@ -15,6 +15,9 @@
     </metadata>
     <files>
         <file src="bin\Google.OrTools.dll" target="lib\net40"/>
+        <file src="bin\Google.OrTools.pdb" target="lib\net40"/>
+        <file src="bin\Google.OrTools.lib" target="lib\net40"/>
+        <file src="bin\Google.OrTools.exp" target="lib\net40"/>
         <file src="examples\**\*.*" target="examples"/>
         <file src="examples\data\**\*.*" target="data"/>
         <file src="LICENSE-2.0.txt"/>

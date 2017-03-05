@@ -24,11 +24,13 @@ endif
 
 # Set a couple of additional macro replacements
 NETMODULE = .netmodule
+PDB = .pdb
+EXP = .exp
 
 # The generated DLL name. Defaults to Google.OrTools
 CLR_PROTOBUF_DLL_NAME ?= Google.Protobuf
 CLR_ORTOOLS_DLL_NAME ?= Google.OrTools
-CLR_FZ_DLL_NAME ?= Google.OrTools.FlatZinc
+CLR_ORTOOLS_FZ_DLL_NAME ?= Google.OrTools.FlatZinc
 BASE_CLR_DLL_NAME := $(CLR_ORTOOLS_DLL_NAME)
 
 # The AssemblyInfo file name
@@ -38,7 +40,9 @@ FZ_ASSEMBLY_INFO_CS_NAME := FlatZincAssemblyInfo.cs
 
 # NuGet specification file name
 ORTOOLS_NUSPEC_NAME := or-tools.nuspec
-FZ_NUSPEC_NAME := or-tools-flatzinc.nuspec
+ORTOOLS_FZ_NUSPEC_NAME := or-tools-flatzinc.nuspec
+ORTOOLS_NUGET_DIR = temp\or-tools
+ORTOOLS_FZ_NUGET_DIR = temp\or-tools-flatzinc
 
 # Building to DLLs named per-platform
 # -----------------------------------
@@ -96,14 +100,14 @@ clean_csharp:
 	-$(RM) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*$(DLL)
 	-$(RM) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*.mdb
 	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*$(L)
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.pdb
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.exp
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*$(PDB)
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*$(EXP)
 	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*$(NETMODULE)
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*$(L)
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*.pdb
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*.exp
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*$(NETMODULE)
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*$(L)
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*$(PDB)
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*$(EXP)
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*$(NETMODULE)
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)
 	-$(RM) $(GEN_DIR)$Slinear_solver$S*csharp_wrap*
 	-$(RM) $(GEN_DIR)$Sconstraint_solver$S*csharp_wrap*
 	-$(RM) $(GEN_DIR)$Salgorithms$S*csharp_wrap*
@@ -405,14 +409,14 @@ endif # ifeq ($(EX),)
 # C# Fz support
 
 csharpfz: \
-	$(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL) \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) \
 	$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX)$(E)
 
 $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc: \
 	$(SRC_DIR)/flatzinc/csharp/flatzinc.swig \
 	$(SRC_DIR)/base/base.swig $(SRC_DIR)/util/csharp/proto.swig \
 	$(FLATZINC_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -nodefaultctor -csharp -o $(GEN_DIR)$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace $(BASE_CLR_DLL_NAME).Flatzinc -dllimport "$(CLR_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)/flatzinc$Scsharp$Sflatzinc.swig
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -nodefaultctor -csharp -o $(GEN_DIR)$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace $(BASE_CLR_DLL_NAME).Flatzinc -dllimport "$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)/flatzinc$Scsharp$Sflatzinc.swig
 
 $(OBJ_DIR)/swig/flatzinc_csharp_wrap$(O): \
 	$(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc
@@ -422,21 +426,21 @@ fz_assembly_info: common_assembly_info
 	$(MKDIR_P) $(SRC_DIR)$SProperties
 	$(COPY) tools$Scsharp$Sproperties$Sflatzinc$S$(FZ_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties
 
-$(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL): fz_assembly_info \
+$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL): fz_assembly_info \
 	$(OBJ_DIR)/swig/flatzinc_csharp_wrap$(O) \
 	$(OR_TOOLS_LIBS) $(FLATZINC_LIBS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)$(NETMODULE) /warn:0 /nologo /debug $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties$S$(FZ_ASSEMBLY_INFO_CS_NAME) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_FZ_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)$(NETMODULE) $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap$(O) $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)$(NETMODULE) /warn:0 /nologo /debug $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties$S$(FZ_ASSEMBLY_INFO_CS_NAME) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)$(NETMODULE) $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap$(O) $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
 else
-	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties$S$(FZ_ASSEMBLY_INFO_CS_NAME) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap$(O) $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties$S$(FZ_ASSEMBLY_INFO_CS_NAME) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap$(O) $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
 endif
 
 $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX)$(E): \
-	$(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL) \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) \
 	$(EX_DIR)/csharp/csfz.cs
-	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX)$(E) /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_FZ_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsfz.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX)$(E) /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsfz.cs
 
 rcsfz: $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX)$(E)
 	$(MONO) $(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX)$(E) $(ARGS)
@@ -444,57 +448,140 @@ rcsfz: $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX)$(E)
 
 # Package output for NuGet distribution
 
+ifeq ($(SYSTEM),win)
+
 clean_csharp_nuget:
 ifeq ($(SYSTEM),win)
-	if exist temp $(ATTRIB) -r /s temp
+	if not exist temp $(MKDIR) temp
+	if exist $(ORTOOLS_NUGET_DIR) $(ATTRIB) -r /s temp
 else
 # TODO: TBD: what to do for across platforms
 endif
-	-$(RM_RECURSE_FORCED) temp
+	-$(RM_RECURSE_FORCED) $(ORTOOLS_NUGET_DIR)
 
 # TODO: TBD: refactor a "nuget clean" target
-csharp_nuget_stage: clean_csharp_nuget
+csharp_nuget_stage: clean_csharp_nuget \
+	$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL)
 ifeq ($(SYSTEM),win)
-	$(MKDIR_P) temp\or-tools\bin
-	$(MKDIR_P) temp\or-tools\examples\solution\Properties
-	$(MKDIR_P) temp\or-tools\examples\data\discrete_tomography
-	$(MKDIR_P) temp\or-tools\examples\data\fill_a_pix
-	$(MKDIR_P) temp\or-tools\examples\data\minesweeper
-	$(MKDIR_P) temp\or-tools\examples\data\rogo
-	$(MKDIR_P) temp\or-tools\examples\data\survo_puzzle
-	$(MKDIR_P) temp\or-tools\examples\data\quasigroup_completion
-	$(COPY) LICENSE-2.0.txt temp$Sor-tools
-	$(COPY) tools\README.dotnet temp\or-tools\README
-	$(COPY) bin\$(CLR_ORTOOLS_DLL_NAME)$(DLL) temp\or-tools\bin
-	$(COPY) examples\csharp\*.cs temp\or-tools\examples
-	$(COPY) examples\csharp\*.sln temp\or-tools\examples
-	$(COPY) examples\csharp\solution\*.csproj temp\or-tools\examples\solution
-	$(COPY) examples\csharp\solution\Properties\*.cs temp\or-tools\examples\solution\Properties
-	$(COPY) examples\data\discrete_tomography\* temp\or-tools\examples\data\discrete_tomography
-	$(COPY) examples\data\fill_a_pix\* temp\or-tools\examples\data\fill_a_pix
-	$(COPY) examples\data\minesweeper\* temp\or-tools\examples\data\minesweeper
-	$(COPY) examples\data\rogo\* temp\or-tools\examples\data\rogo
-	$(COPY) examples\data\survo_puzzle\* temp\or-tools\examples\data\survo_puzzle
-	$(COPY) examples\data\quasigroup_completion\* temp\or-tools\examples\data\quasigroup_completion
+	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
+	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\solution\Properties
+	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\data\discrete_tomography
+	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\data\fill_a_pix
+	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\data\minesweeper
+	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\data\rogo
+	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\data\survo_puzzle
+	$(MKDIR_P) $(ORTOOLS_NUGET_DIR)\examples\data\quasigroup_completion
+	$(COPY) LICENSE-2.0.txt $(ORTOOLS_NUGET_DIR)
+	$(COPY) tools\README.dotnet $(ORTOOLS_NUGET_DIR)\README
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$(PDB) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$(L) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_DLL_NAME)$(EXP) $(ORTOOLS_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) examples\csharp\*.cs $(ORTOOLS_NUGET_DIR)\examples
+	$(COPY) examples\csharp\*.sln $(ORTOOLS_NUGET_DIR)\examples
+	$(COPY) examples\csharp\solution\*.csproj $(ORTOOLS_NUGET_DIR)\examples\solution
+	$(COPY) examples\csharp\solution\Properties\*.cs $(ORTOOLS_NUGET_DIR)\examples\solution\Properties
+	$(COPY) examples\data\discrete_tomography\* $(ORTOOLS_NUGET_DIR)\examples\data\discrete_tomography
+	$(COPY) examples\data\fill_a_pix\* $(ORTOOLS_NUGET_DIR)\examples\data\fill_a_pix
+	$(COPY) examples\data\minesweeper\* $(ORTOOLS_NUGET_DIR)\examples\data\minesweeper
+	$(COPY) examples\data\rogo\* $(ORTOOLS_NUGET_DIR)\examples\data\rogo
+	$(COPY) examples\data\survo_puzzle\* $(ORTOOLS_NUGET_DIR)\examples\data\survo_puzzle
+	$(COPY) examples\data\quasigroup_completion\* $(ORTOOLS_NUGET_DIR)\examples\data\quasigroup_completion
 endif
 
 tools\$(ORTOOLS_NUSPEC_NAME): csharp_nuget_stage
 ifeq ($(SYSTEM),win)
-	$(COPY) tools\$(ORTOOLS_NUSPEC_NAME) temp\or-tools
-	$(SED) -i -e "s/NNNN/$(CLR_ORTOOLS_DLL_NAME)/" temp\or-tools\$(ORTOOLS_NUSPEC_NAME)
-	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" temp\or-tools\$(ORTOOLS_NUSPEC_NAME)
-	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/" temp\or-tools\$(ORTOOLS_NUSPEC_NAME)
+	$(COPY) tools\$(ORTOOLS_NUSPEC_NAME) $(ORTOOLS_NUGET_DIR)
+	$(SED) -i -e "s/NNNN/$(CLR_ORTOOLS_DLL_NAME)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
+	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
 endif
 
 csharp_nuget_pack: tools\$(ORTOOLS_NUSPEC_NAME)
 ifeq ($(SYSTEM),win)
-	$(CD) temp\or-tools && $(NUGET_PACK) $(ORTOOLS_NUSPEC_NAME)
+	$(CD) $(ORTOOLS_NUGET_DIR) && $(NUGET_PACK) $(ORTOOLS_NUSPEC_NAME)
 endif
 
 csharp_nuget_push: csharp_nuget_pack
 ifeq ($(SYSTEM),win)
-	$(CD) temp\or-tools && $(NUGET_PUSH) Google.OrTools.$(OR_TOOLS_VERSION).nupkg
+	$(CD) $(ORTOOLS_NUGET_DIR) && $(NUGET_PUSH) $(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg
 endif
+
+clean_csharpfz_nuget:
+ifeq ($(SYSTEM),win)
+	if not exist temp $(MKDIR) temp
+	if exist $(ORTOOLS_FZ_NUGET_DIR) $(ATTRIB) -r /s temp
+else
+# TODO: TBD: what to do for across platforms
+endif
+	-$(RM_RECURSE_FORCED) $(ORTOOLS_NUGET_DIR)
+
+else # ifeq ($(SYSTEM),win)
+
+# TODO: TBD: what if anything to do across platforms...
+
+clean_csharp_nuget:
+
+csharp_nuget_stage:
+
+tools\$(ORTOOLS_NUSPEC_NAME):
+
+csharp_nuget_push:
+
+clean_csharpfz_nuget:
+
+endif # ifeq ($(SYSTEM),win)
+
+
+# Rinse and repeat NuGet packaging for the FlatZinc concerns
+
+ifeq ($(SYSTEM),win)
+
+clean_csharpfz_nuget:
+	if not exist temp $(MKDIR) temp
+	if exist $(ORTOOLS_FZ_NUGET_DIR) $(ATTRIB) -r /s temp
+	-$(RM_RECURSE_FORCED) $(ORTOOLS_FZ_NUGET_DIR)
+
+csharpfz_nuget_stage: clean_csharpfz_nuget \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL)
+	$(MKDIR_P) $(ORTOOLS_FZ_NUGET_DIR)\$(BIN_DIR)
+	$(MKDIR_P) $(ORTOOLS_FZ_NUGET_DIR)\examples\flatzinc
+	$(COPY) LICENSE-2.0.txt $(ORTOOLS_FZ_NUGET_DIR)
+	$(COPY) tools\README.dotnet $(ORTOOLS_FZ_NUGET_DIR)\README
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(ORTOOLS_FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(PDB) $(ORTOOLS_FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(L) $(ORTOOLS_FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(EXP) $(ORTOOLS_FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) examples\flatzinc\*.fzn $(ORTOOLS_FZ_NUGET_DIR)\examples\flatzinc
+
+# As long as OR-tools is being built, go ahead and re-build FlatZinc as well, since the dependencies are precisely aligned.
+tools\$(ORTOOLS_FZ_NUSPEC_NAME): csharpfz_nuget_stage
+	$(COPY) tools\$(ORTOOLS_FZ_NUSPEC_NAME) $(ORTOOLS_FZ_NUGET_DIR)
+	$(SED) -i -e "s/NNNN/$(CLR_ORTOOLS_FZ_DLL_NAME)/" $(ORTOOLS_FZ_NUGET_DIR)\$(ORTOOLS_FZ_NUSPEC_NAME)
+	$(SED) -i -e "s/MMMM/$(CLR_ORTOOLS_DLL_NAME)/" $(ORTOOLS_FZ_NUGET_DIR)\$(ORTOOLS_FZ_NUSPEC_NAME)
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" $(ORTOOLS_FZ_NUGET_DIR)\$(ORTOOLS_FZ_NUSPEC_NAME)
+
+csharpfz_nuget_pack: tools\$(ORTOOLS_FZ_NUSPEC_NAME)
+	$(CD) $(ORTOOLS_FZ_NUGET_DIR) && $(NUGET_PACK) $(ORTOOLS_FZ_NUSPEC_NAME)
+
+csharpfz_nuget_push: csharpfz_nuget_pack
+	$(CD) $(ORTOOLS_FZ_NUGET_DIR) && $(NUGET_PUSH) $(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg
+
+else # ifeq ($(SYSTEM),win)
+
+# TODO: TBD: what if anything to do across platforms...
+
+clean_csharpfz_nuget:
+
+csharpfz_nuget_stage:
+
+tools\$(ORTOOLS_FZ_NUSPEC_NAME):
+
+csharpfz_nuget_pack:
+
+csharpfz_nuget_push:
+
+endif # ifeq ($(SYSTEM),win)
 
 
 # csharpsolution
