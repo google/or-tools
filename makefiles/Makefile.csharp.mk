@@ -442,15 +442,18 @@ rcsfz: $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX)$(E)
 	$(MONO) $(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX)$(E) $(ARGS)
 
 
-# Build archive.
+# Package output for NuGet distribution
 
-nuget_upload:
+clean_csharp_nuget:
 ifeq ($(SYSTEM),win)
 	if exist temp $(ATTRIB) -r /s temp
 else
 # TODO: TBD: what to do for across platforms
 endif
 	-$(RM_RECURSE_FORCED) temp
+
+# TODO: TBD: refactor a "nuget clean" target
+csharp_nuget_stage: clean_csharp_nuget
 ifeq ($(SYSTEM),win)
 	$(MKDIR_P) temp\or-tools\bin
 	$(MKDIR_P) temp\or-tools\examples\solution\Properties
@@ -473,13 +476,26 @@ ifeq ($(SYSTEM),win)
 	$(COPY) examples\data\rogo\* temp\or-tools\examples\data\rogo
 	$(COPY) examples\data\survo_puzzle\* temp\or-tools\examples\data\survo_puzzle
 	$(COPY) examples\data\quasigroup_completion\* temp\or-tools\examples\data\quasigroup_completion
+endif
+
+tools\$(ORTOOLS_NUSPEC_NAME): csharp_nuget_stage
+ifeq ($(SYSTEM),win)
 	$(COPY) tools\$(ORTOOLS_NUSPEC_NAME) temp\or-tools
-# TODO: TBD: separate single target pack/push to two separate targets.
+	$(SED) -i -e "s/NNNN/$(CLR_ORTOOLS_DLL_NAME)/" temp\or-tools\$(ORTOOLS_NUSPEC_NAME)
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" temp\or-tools\$(ORTOOLS_NUSPEC_NAME)
 	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/" temp\or-tools\$(ORTOOLS_NUSPEC_NAME)
-	$(CD) temp\or-tools && nuget pack $(ORTOOLS_NUSPEC_NAME)
-	$(CD) temp\or-tools && nuget push Google.OrTools-$(OR_TOOLS_VERSION).nupkg
 endif
+
+csharp_nuget_pack: tools\$(ORTOOLS_NUSPEC_NAME)
+ifeq ($(SYSTEM),win)
+	$(CD) temp\or-tools && $(NUGET_PACK) $(ORTOOLS_NUSPEC_NAME)
+endif
+
+csharp_nuget_push: csharp_nuget_pack
+ifeq ($(SYSTEM),win)
+	$(CD) temp\or-tools && $(NUGET_PUSH) Google.OrTools.$(OR_TOOLS_VERSION).nupkg
+endif
+
 
 # csharpsolution
 # create solution files for visual studio
