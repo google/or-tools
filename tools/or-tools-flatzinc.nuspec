@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package >
+    <metadata>
+        <id>NNNN</id>
+        <version>VVVV</version>
+        <authors>Google, Inc</authors>
+        <licenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</licenseUrl>
+        <projectUrl>https://developers.google.com/optimization</projectUrl>
+        <description>.NET Assembly for the Operations Research Tools project</description>
+        <copyright>Copyright 2010-2017 Google, Inc</copyright>
+        <tags>Google Operations Research Math Linear Constraint Satisfaction Programming SWIG C++ Python .NET Flat Zinc</tags>
+        <dependencies>
+            <dependency id="MMMM" version="VVVV" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="bin\Google.OrTools.FlatZinc.dll" target="lib\net40"/>
+        <file src="bin\Google.OrTools.FlatZinc.pdb" target="lib\net40"/>
+        <file src="bin\Google.OrTools.FlatZinc.lib" target="lib\net40"/>
+        <file src="bin\Google.OrTools.FlatZinc.exp" target="lib\net40"/>
+        <file src="examples\**\*.*" target="examples"/>
+        <file src="LICENSE-2.0.txt"/>
+    </files>
+</package>
