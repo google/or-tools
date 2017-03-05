@@ -37,6 +37,7 @@ DELREC = tools\rm.exe -rf
 RENAME = rename
 MKDIR = md
 MKDIR_P = tools\mkdir.exe -p
+# TODO: TBD: consider using XCOPY instead; historically more efficient and with more elaborate options
 COPY = copy
 TOUCH = tools\touch.exe
 SED = tools\sed.exe
@@ -54,6 +55,7 @@ NMAKE = nmake
 ATTRIB = attrib
 TASKKILL = taskkill
 GIT = git
+SVN = svn
 RM = tools\rm.exe
 RM_RECURSE_FORCED = tools\rm.exe -fr
 WGET = tools\wget
