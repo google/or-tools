@@ -22,6 +22,9 @@ SIGNING_FLAGS:= /keyfile:"$(CLR_KEYFILE)"
 endif
 endif
 
+# Set a couple of additional macro replacements
+NETMODULE = .netmodule
+
 # The generated DLL name. Defaults to Google.OrTools
 CLR_PROTOBUF_DLL_NAME ?= Google.Protobuf
 CLR_ORTOOLS_DLL_NAME ?= Google.OrTools
@@ -92,14 +95,14 @@ clean_csharp:
 	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)
 	-$(RM) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*$(DLL)
 	-$(RM) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*.mdb
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.lib
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*$(L)
 	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.pdb
 	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.exp
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.netmodule
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*.lib
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*$(NETMODULE)
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*$(L)
 	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*.pdb
 	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*.exp
-	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*.netmodule
+	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)*$(NETMODULE)
 	-$(RM) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)
 	-$(RM) $(GEN_DIR)$Slinear_solver$S*csharp_wrap*
 	-$(RM) $(GEN_DIR)$Sconstraint_solver$S*csharp_wrap*
@@ -210,22 +213,22 @@ endif
 #  https://social.msdn.microsoft.com/Forums/vstudio/en-US/27894a09-1eed-48d9-8a0f-2198388d492c/csc-modulelink-or-just-csc-dll-plus-some-external-dllobj-references
 #  also, https://blogs.msdn.microsoft.com/texblog/2007/04/05/linking-native-c-into-c-applications/
 common_assembly_info:
-	$(MKDIR_P) $(SRC_DIR)$Sproperties
-	$(COPY) tools$Scsharp$Sproperties$Scommon$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$Sproperties
-	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)\.\*/" $(SRC_DIR)$Sproperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME)
-	$(SED) -i -e "s/XXXX/$(OR_TOOLS_VERSION)\.0/" $(SRC_DIR)$Sproperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME)
+	$(MKDIR_P) $(SRC_DIR)$SProperties
+	$(COPY) tools$Scsharp$Sproperties$Scommon$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)\.\*/" $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME)
+	$(SED) -i -e "s/XXXX/$(OR_TOOLS_VERSION)\.0/" $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME)
 ifdef CLR_KEYFILE
 ifeq ($(SYSTEM),win)
-	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")]>> $(SRC_DIR)$Sproperties$S$(ASSEMBLY_INFO_CS_NAME)
+	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")]>> $(SRC_DIR)$SProperties$S$(ASSEMBLY_INFO_CS_NAME)
 else
-	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(SRC_DIR)$Sproperties$S$(ASSEMBLY_INFO_CS_NAME)
+	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(SRC_DIR)$SProperties$S$(ASSEMBLY_INFO_CS_NAME)
 endif
 endif
 
 # TODO: TBD: it seems perhaps an AssemblyInfo build step is poised? why is it not being invoked?
 assembly_info: $(CLR_KEYFILE) common_assembly_info
-	$(MKDIR_P) $(SRC_DIR)$Sproperties
-	$(COPY) tools$Scsharp$Sproperties$Sortools$S$(ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$Sproperties
+	$(MKDIR_P) $(SRC_DIR)$SProperties
+	$(COPY) tools$Scsharp$Sproperties$Sortools$S$(ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties
 
 # TODO: TBD: "replace" the top level bin/ folder with the src/tools/ folder...
 $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): assembly_info \
@@ -250,16 +253,16 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): assembly_info \
 	$(SRC_DIR)/com/google/ortools/linearsolver/VariableHelper.cs \
 	$(SRC_DIR)/com/google/ortools/util/NestedArrayHelper.cs \
 	$(SRC_DIR)/com/google/ortools/util/ProtoHelper.cs \
-	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs\
-	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs\
-	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs\
-	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
+	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs \
+	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs \
+	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs \
+	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs \
 	$(OR_TOOLS_LIBS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).netmodule /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)$Sproperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$Sproperties$S$(ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap$(O) $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)$(NETMODULE) /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties$S$(ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)$(NETMODULE) $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap$(O) $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 else
-	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)$properties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$Sproperties$S$(ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
+	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL) /lib:$(BIN_DIR) /r:$(CLR_PROTOBUF_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)$properties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties$S$(ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(SRC_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Salgorithms$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver$S*.cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap$(O) $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap$(O) $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 endif
 
@@ -411,25 +414,28 @@ $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc: \
 	$(FLATZINC_DEPS)
 	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -nodefaultctor -csharp -o $(GEN_DIR)$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace $(BASE_CLR_DLL_NAME).Flatzinc -dllimport "$(CLR_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)/flatzinc$Scsharp$Sflatzinc.swig
 
-$(OBJ_DIR)/swig/flatzinc_csharp_wrap$(O): $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc
+$(OBJ_DIR)/swig/flatzinc_csharp_wrap$(O): \
+	$(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap$(O)
 
 fz_assembly_info: common_assembly_info
-	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
-	$(COPY) tools$Scsharp$Sproperties$Sflatzinc$(FZ_ASSEMBLY_INFO_CS_NAME) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
+	$(MKDIR_P) $(SRC_DIR)$SProperties
+	$(COPY) tools$Scsharp$Sproperties$Sflatzinc$S$(FZ_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties
 
 $(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL): fz_assembly_info \
 	$(OBJ_DIR)/swig/flatzinc_csharp_wrap$(O) \
 	$(OR_TOOLS_LIBS) $(FLATZINC_LIBS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME).netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\*.cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_FZ_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap$(O) $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)$(NETMODULE) /warn:0 /nologo /debug $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties$S$(FZ_ASSEMBLY_INFO_CS_NAME) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_FZ_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME)$(NETMODULE) $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap$(O) $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
 else
-	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/flatzinc/*.cs
+	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(SRC_DIR)$SProperties$S$(COMMON_ASSEMBLY_INFO_CS_NAME) $(SRC_DIR)$SProperties$S$(FZ_ASSEMBLY_INFO_CS_NAME) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap$(O) $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
 endif
 
-$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX)$(E): $(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL) $(EX_DIR)/csharp/csfz.cs
+$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX)$(E): \
+	$(BIN_DIR)/$(CLR_FZ_DLL_NAME)$(DLL) \
+	$(EX_DIR)/csharp/csfz.cs
 	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX)$(E) /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_FZ_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsfz.cs
 
 rcsfz: $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX)$(E)
