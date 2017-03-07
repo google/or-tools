@@ -26,9 +26,6 @@ endif
 CLR_DLL_NAME?=Google.OrTools
 BASE_CLR_DLL_NAME:= $(CLR_DLL_NAME)
 
-COMMON_ASSEMBLY_INFO_CS_NAME := CommonAssemblyInfo.cs
-ASSEMBLY_INFO_CS_NAME := AssemblyInfo.cs
-
 # Building to DLLs named per-platform
 # -----------------------------------
 # If CLR_PER_PLATFORM_ASSEMBLY_NAMING is defined, the generated .NET dll will
@@ -227,7 +224,6 @@ $(BIN_DIR)/$(CLR_DLL_NAME).dll: assembly_info \
 	$(SRC_DIR)/com/google/ortools/linearsolver/VariableHelper.cs \
 	$(SRC_DIR)/com/google/ortools/util/NestedArrayHelper.cs \
 	$(SRC_DIR)/com/google/ortools/util/ProtoHelper.cs \
-	$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs\
@@ -237,7 +233,7 @@ ifeq ($(SYSTEM),win)
 	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).netmodule /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(SRC_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs $(GEN_DIR)\\com\\google\\ortools\\properties\\*.cs
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_DLL_NAME).dll $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 else
-	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_DLL_NAME).dll /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(SRC_DIR)/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs
+	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_DLL_NAME).dll /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(SRC_DIR)/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs $(GEN_DIR)/com/google/ortools/properties/*.cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O $(OBJ_DIR)/swig/constraint_solver_csharp_wrap.$O $(OBJ_DIR)/swig/knapsack_solver_csharp_wrap.$O $(OBJ_DIR)/swig/graph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 endif
 
@@ -360,15 +356,14 @@ $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc: \
 $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O
 
-$(BIN_DIR)/Google.OrTools.Flatzinc.dll: \
+$(BIN_DIR)/Google.OrTools.Flatzinc.dll: common_assembly_info \
 	$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O \
-	$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs \
 	$(OR_TOOLS_LIBS) $(FLATZINC_LIBS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\*.cs $(GEN_DIR)\\com\\google\\ortools\\properties\\*cs
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$SGoogle.OrTools.Flatzinc.dll $(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
 else
-	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.Flatzinc.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/flatzinc/*.cs $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs
+	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.Flatzinc.dll /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/flatzinc/*.cs $(GEN_DIR)/com/google/ortools/properties/*cs
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
 endif
 
