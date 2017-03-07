@@ -432,9 +432,15 @@ remove_readonly_svn_attribs: kill_tortoisesvn_cache
 	if exist dependencies\sources\* $(ATTRIB) -r /s dependencies\sources\*
 
 
-# Clean everything.
+# Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
 clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) Makefile.local
+	-$(DEL) dependencies\archives\swigwin*.zip
+	-$(DEL) dependencies\archives\gflags*.zip
+	-$(DEL) dependencies\archives\sparsehash*.zip
+	-$(DEL) dependencies\archives\zlib*.zip
+	-$(DEL) dependencies\archives\v*.zip
+	-$(DEL) dependencies\archives\win_flex_bison*.zip
 	-$(DELREC) dependencies\install
 	-$(DELREC) dependencies\sources\cbc-*
 	-$(DELREC) dependencies\sources\gflags*
