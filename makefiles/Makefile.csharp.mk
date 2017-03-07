@@ -116,7 +116,7 @@ common_assembly_info:
 	$(SED) -i -e "s/XXXX/$(OR_TOOLS_VERSION)\.0/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
 ifdef CLR_KEYFILE
 ifeq ($(SYSTEM),win)
-	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")]>> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
+	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
 else
 	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
 endif
