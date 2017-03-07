@@ -118,7 +118,7 @@ common_assembly_info:
 # TODO: TBD: it seems perhaps an AssemblyInfo build step is poised? why is it not being invoked?
 assembly_info: $(CLR_KEYFILE) common_assembly_info
 	$(MKDIR_P) $(GEN_DIR)$Sproperties
-	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(GEN_DIR)$Sproperties
+	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
 ifdef CLR_KEYFILE
 ifeq ($(SYSTEM),win)
 	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
@@ -356,7 +356,7 @@ $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc: \
 $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/flatzinc/flatzinc_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O
 
-$(BIN_DIR)/Google.OrTools.Flatzinc.dll: common_assembly_info \
+$(BIN_DIR)/Google.OrTools.Flatzinc.dll: assembly_info \
 	$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O \
 	$(OR_TOOLS_LIBS) $(FLATZINC_LIBS)
 ifeq ($(SYSTEM),win)
