@@ -114,18 +114,18 @@ common_assembly_info:
 	$(COPY) tools$Scsharp$SCommonAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)\.\*/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
 	$(SED) -i -e "s/XXXX/$(OR_TOOLS_VERSION)\.0/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
-ifdef CLR_KEYFILE
-ifeq ($(SYSTEM),win)
-	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
-else
-	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
-endif
-endif
 
 # TODO: TBD: it seems perhaps an AssemblyInfo build step is poised? why is it not being invoked?
 assembly_info: $(CLR_KEYFILE) common_assembly_info
 	$(MKDIR_P) $(GEN_DIR)$Sproperties
 	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(GEN_DIR)$Sproperties
+ifdef CLR_KEYFILE
+ifeq ($(SYSTEM),win)
+	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
+else
+	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
+endif
+endif
 
 # csharportools
 
