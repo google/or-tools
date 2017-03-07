@@ -26,6 +26,9 @@ endif
 CLR_DLL_NAME?=Google.OrTools
 BASE_CLR_DLL_NAME:= $(CLR_DLL_NAME)
 
+COMMON_ASSEMBLY_INFO_CS_NAME := CommonAssemblyInfo.cs
+ASSEMBLY_INFO_CS_NAME := AssemblyInfo.cs
+
 # Building to DLLs named per-platform
 # -----------------------------------
 # If CLR_PER_PLATFORM_ASSEMBLY_NAMING is defined, the generated .NET dll will
@@ -104,50 +107,28 @@ clean_csharp:
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs
 	-$(DEL) $(OBJ_DIR)$Sswig$S*csharp_wrap.$O
 	-$(DEL) $(BIN_DIR)$S*$(CLR_EXE_SUFFIX).exe
-	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
 	-$(DEL) examples$Scsharp$SCsharp_examples.sln
 	-$(DEL) examples$Scsharp$Ssolution$S*.csproj
 
-$(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs : $(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_VERSION).txt
-ifeq ("$(SYSTEM)","win")
-	@echo using System.Reflection; > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo using System.Runtime.CompilerServices; >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo using System.Runtime.InteropServices; >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyTitle( "OR-Tools Assembly" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyDescription( ".NET Assembly for the OR-Tools project" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyConfiguration( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyCompany( "Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyProduct( "OR-Tools" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyCopyright( "Copyright (c) 2010-2016 Google" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyCulture( "" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyVersion( "$(OR_TOOLS_SHORT_VERSION).*" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyFileVersion( "$(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:System.Reflection.AssemblyInformationalVersion( "OR-Tools $(OR_TOOLS_SHORT_VERSION)" )] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:ComVisible(false)] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo [assembly:Guid("0a227c4c-8bb3-4db0-808f-55dae227d8c5")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-else
-	@echo "using System.Reflection;" > $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "using System.Runtime.CompilerServices;" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "using System.Runtime.InteropServices;" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyTitle( \"OR-Tools Assembly\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyDescription( \".NET Assembly for the OR-Tools project\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyConfiguration( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyCompany( \"Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyProduct( \"OR-Tools\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyCopyright( \"Copyright (c) 2010-2015 Google\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyCulture( \"\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyVersion( \"$(OR_TOOLS_SHORT_VERSION).*\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyFileVersion( \"$(OR_TOOLS_VERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:System.Reflection.AssemblyInformationalVersion( \"OR-Tools $(OR_TOOLS_VERSION)\" )]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:ComVisible(false)]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
-	@echo "[assembly:Guid(\"0a227c4c-8bb3-4db0-808f-55dae227d8c5\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+# See for background on Windows Explorer File Info Details:
+#  https://social.msdn.microsoft.com/Forums/vstudio/en-US/27894a09-1eed-48d9-8a0f-2198388d492c/csc-modulelink-or-just-csc-dll-plus-some-external-dllobj-references
+#  also, https://blogs.msdn.microsoft.com/texblog/2007/04/05/linking-native-c-into-c-applications/
+common_assembly_info:
+	$(COPY) tools$Scsharp$common$SCommonAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)\.\*/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
+	$(SED) -i -e "s/XXXX/$(OR_TOOLS_VERSION)\.0/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
 ifdef CLR_KEYFILE
-	@echo "[assembly:AssemblyKeyFile (\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$SCommonAssemblyAttributes.cs
+ifeq ($(SYSTEM),win)
+	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")]>> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
+else
+	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
 endif
 endif
 
-$(GEN_DIR)/com/google/ortools/SvnVersion$(OR_TOOLS_VERSION).txt:
-	@echo $(OR_TOOLS_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$SSvnVersion$(OR_TOOLS_VERSION).txt
+# TODO: TBD: it seems perhaps an AssemblyInfo build step is poised? why is it not being invoked?
+assembly_info: $(CLR_KEYFILE) common_assembly_info
+	$(MKDIR_P) $(GEN_DIR)$Sproperties
+	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(GEN_DIR)$Sproperties
 
 # csharportools
 
@@ -225,7 +206,7 @@ ifdef CLR_KEYFILE
 	sn -k $(CLR_KEYFILE)
 endif
 
-$(BIN_DIR)/$(CLR_DLL_NAME).dll: \
+$(BIN_DIR)/$(CLR_DLL_NAME).dll: assembly_info \
 	$(CLR_KEYFILE) \
 	$(BIN_DIR)/Google.Protobuf.dll \
 	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
@@ -253,7 +234,7 @@ $(BIN_DIR)/$(CLR_DLL_NAME).dll: \
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingEnums.g.cs\
 	$(OR_TOOLS_LIBS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).netmodule /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(SRC_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs $(GEN_DIR)\\com\\google\\ortools\\CommonAssemblyAttributes.cs
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).netmodule /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\linearsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(SRC_DIR)\\com\\google\\ortools\\constraintsolver\\*.cs $(GEN_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(SRC_DIR)\\com\\google\\ortools\\algorithms\\*.cs $(GEN_DIR)\\com\\google\\ortools\\graph\\*.cs $(SRC_DIR)\\com\\google\\ortools\\util\\*.cs $(GEN_DIR)\\com\\google\\ortools\\properties\\*.cs
 	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_DLL_NAME).dll $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sconstraint_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sknapsack_solver_csharp_wrap.$O $(OBJ_DIR)$Sswig$Sgraph_csharp_wrap.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS)
 else
 	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_DLL_NAME).dll /lib:$(BIN_DIR) /r:Google.Protobuf.dll /warn:0 /nologo /debug $(SRC_DIR)/com/google/ortools/util/*.cs $(GEN_DIR)/com/google/ortools/linearsolver/*.cs $(SRC_DIR)/com/google/ortools/linearsolver/*.cs $(GEN_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/constraintsolver/*.cs $(SRC_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/algorithms/*.cs $(GEN_DIR)/com/google/ortools/graph/*.cs $(GEN_DIR)/com/google/ortools/CommonAssemblyAttributes.cs

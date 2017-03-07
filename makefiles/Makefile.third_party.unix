@@ -91,9 +91,10 @@ MISSING_DIRECTORIES = \
 	src/gen/bop \
 	src/gen/com/google/ortools/algorithms \
 	src/gen/com/google/ortools/constraintsolver \
+	src/gen/com/google/ortools/flatzinc \
 	src/gen/com/google/ortools/graph \
 	src/gen/com/google/ortools/linearsolver \
-	src/gen/com/google/ortools/flatzinc \
+	src/gen/com/google/ortools/properties \
 	src/gen/constraint_solver \
 	src/gen/flatzinc \
 	src/gen/glop \
@@ -185,6 +186,9 @@ src/gen/com/google/ortools/linearsolver:
 
 src/gen/com/google/ortools/flatzinc:
 	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sflatzinc
+
+src/gen/com/google/ortools/properties:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sproperties
 
 src/gen/constraint_solver:
 	$(MKDIR_P) src$Sgen$Sconstraint_solver
