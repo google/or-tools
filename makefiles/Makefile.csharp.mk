@@ -409,7 +409,7 @@ ifeq ("$(SYSTEM)","win")
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" temp\or-tools\or-tools.nuspec
 	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/" temp\or-tools\or-tools.nuspec
 	cd temp\or-tools && nuget pack or-tools.nuspec
-	cd temp\or-tools && nuget push Google.OrTools-$(OR_TOOLS_VERSION).nupkg
+	cd temp\or-tools && nuget push Google.OrTools-$(OR_TOOLS_VERSION).nupkg -Source https://www.nuget.org/api/v2/package
 endif
 
 
