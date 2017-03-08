@@ -1,40 +1,44 @@
-# On Linux : sudo apt-get install bison flex
+include(dependencies.cmake)
 
-# On Mac : flex comes with Xcode
-# Install bison with cmake :
-if (APPLE)
-    set(BISON_TAG "bison-3.0.4")
-    set(BISON_DIR "${BISON_TAG}")
-    ExternalProject_Add( ${BISON_DIR}
-      DEPENDS ${HELP2MAN_DIR}
-      URL http://ftpmirror.gnu.org/bison/${BISON_TAG}.tar.gz
-      BUILD_COMMAND ""
-      CONFIGURE_COMMAND cd ${DEPENDENCIES_SOURCES}/${BISON_DIR} && autoreconf && ./configure --prefix=${DEPENDENCIES_INSTALL}
-      INSTALL_COMMAND cd ${DEPENDENCIES_SOURCES}/${BISON_DIR} && make install
-      PATCH_COMMAND ""
-      UPDATE_COMMAND ""  
-      TEST_COMMAND ""
-    )
+find_package(FLEX ${FLEX_VERSION})
+if(NOT FLEX_FOUND)
+  message(FATAL_ERROR "flex could not be found. The minimum required version is ${FLEX_VERSION}.")
 endif()
 
-# On Windows download https://sourceforge.net/projects/winflexbison/files/win_flex_bison-2.5.5.zip and add it to the path
+find_package(BISON ${BISON_VERSION})
+if(NOT BISON_FOUND)
+  message(FATAL_ERROR "bison could not be found. The minimum required version is ${BISON_VERSION}.")
+endif()
 
+#TODO(include this once)
+include_directories(${SRC_DIR} ${GEN_DIR} ${DEPENDENCIES_INCLUDE} ${EX_DIR})
 
+set(FZ_SRC_DIR ${SRC_DIR}/flatzinc)
+set(FZ_GEN_DIR ${GEN_DIR}/flatzinc)
+file(MAKE_DIRECTORY ${FZ_GEN_DIR})
 
-
-#TODO(omit this)
-#[[
-set(FLEX_TAG "flex-2.6.0")
-set(FLEX_DIR "${FLEX_TAG}")
-ExternalProject_Add(
-  ${FLEX_DIR} 
-  URL http://sourceforge.net/projects/flex/files/${FLEX_TAG}.tar.bz2
-  BUILD_COMMAND ""
-  CONFIGURE_COMMAND cd ${DEPENDENCIES_SOURCES}/${FLEX_DIR} && ./configure --prefix=${DEPENDENCIES_INSTALL}
-  INSTALL_COMMAND cd ${DEPENDENCIES_SOURCES}/${FLEX_DIR} && make install
-  PATCH_COMMAND ""
-  UPDATE_COMMAND ""  
-  TEST_COMMAND ""
+add_custom_command(
+    OUTPUT  ${FZ_GEN_DIR}/parser.yy.cc
+    COMMAND ${FLEX_EXECUTABLE} -o${FZ_GEN_DIR}/parser.yy.cc ${FZ_SRC_DIR}/parser.lex
+    DEPENDS ${FZ_SRC_DIR}/parser.lex
+    COMMENT "Flex : Generating ${REL_GEN_DIR}/flatzinc/parser.yy.cc"
 )
-]]
 
+add_custom_command(
+    OUTPUT  ${FZ_GEN_DIR}/parser.tab.cc
+    COMMAND ${BISON_EXECUTABLE} -t -o  ${FZ_GEN_DIR}/parser.tab.cc -d ${FZ_SRC_DIR}/parser.yy
+    DEPENDS ${FZ_GEN_DIR}/parser.yy.cc
+    COMMENT "Bison : Generating ${FZ_GEN_DIR}/parser.tab.cc"
+)
+
+file(GLOB fz_src "${FZ_SRC_DIR}/*.cc")
+list(REMOVE_ITEM fz_src ${FZ_SRC_DIR}/fz.cc ${FZ_SRC_DIR}/parser_main.cc ${FZ_SRC_DIR}/parser_util.cc)
+list(APPEND fz_src ${FZ_GEN_DIR}/parser.tab.cc ${FZ_GEN_DIR}/parser.yy.cc)
+
+add_library(fz_lib SHARED ${fz_src})
+target_link_libraries(fz_lib ortools)
+
+add_executable(fz ${FZ_SRC_DIR}/fz.cc)
+target_link_libraries(fz fz_lib)
+add_executable(parser_main ${FZ_SRC_DIR}/parser_main.cc)
+target_link_libraries(parser_main fz_lib)

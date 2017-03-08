@@ -1,17 +1,13 @@
+set(LINKER_LANGUAGE CXX)
+
 include(ortools_protobuf.cmake)
 
 #TODO(include this once)
 include_directories(${SRC_DIR} ${GEN_DIR} ${DEPENDENCIES_INCLUDE} ${EX_DIR})
 
-set(LINKER_LANGUAGE CXX)
-if(UNIX)
-    set(CMAKE_CXX_COMPILER "g++" CACHE INTERNAL "" FORCE)
-    #TODO(verify if we can always compile with -DUSE_CBC)
-    set(CMAKE_CXX_FLAGS "-fPIC -std=c++0x -fwrapv -DARCH_K8 -Wno-deprecated -DUSE_CBC -DUSE_CLP -DUSE_GLOP -DUSE_BOP" CACHE INTERNAL "" FORCE)
-    set(CMAKE_CXX_FLAGS_DEBUG "-DNDEBUG" CACHE INTERNAL "" FORCE)
-endif()
+#Preparing files lists#
 
-file(GLOB flatzinc_src "${SRC_DIR}/flatzinc/*.cc" CACHE INTERNAL "" FORCE)
+file(GLOB flatzinc_src "${SRC_DIR}/flatzinc/*.cc")
 file (GLOB_RECURSE gen_src "${GEN_DIR}/*.cc")
 
 file(GLOB_RECURSE ortools_src "${SRC_DIR}/*.cc")
@@ -23,8 +19,14 @@ endif()
 file(GLOB_RECURSE ortools_proto_files RELATIVE ${SRC_DIR} "${SRC_DIR}/*.proto")
 OR_TOOLS_PROTOBUF_GENERATE_CPP(ortools_proto_srcs ortools_proto_hdrs ${ortools_proto_files})
 
-#TODO(find a way to factorize this)
-set(ortools_static_lnk ${DEPENDENCIES_LIB}/libCbcSolver${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libCbc${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libCgl${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libOsi${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libOsiCbc${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libOsiClp${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libClp${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libCoinUtils${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libgflags${CMAKE_STATIC_LIBRARY_SUFFIX} ${DEPENDENCIES_LIB}/libprotobuf${CMAKE_STATIC_LIBRARY_SUFFIX})
+PREFIX_SUFFIX(
+	PREFIX ${DEPENDENCIES_LIB}/
+	SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX}
+	LIST libCbcSolver libCbc libCgl libOsi libOsiCbc libOsiClp libClp libCoinUtils libgflags libprotobuf
+	RESULT ortools_static_lnk
+)
+
+#Adding libraries#
 
 add_library(ortools SHARED ${ortools_proto_srcs} ${ortools_src})
 

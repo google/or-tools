@@ -17,7 +17,7 @@ function(OR_TOOLS_PROTOBUF_GENERATE_CPP SRCS HDRS)
     set(out_pb_h "${GEN_DIR}/${FIL_REL_DIR}/${FIL_WE}.pb.h")
     list(APPEND ${SRCS} "${out_pb_cc}")
     list(APPEND ${HDRS} "${out_pb_h}")
-    set(COMMAND ${PROTOC_EXECUTABLE} --proto_path ${SRC_DIR} --cpp_out ${GEN_DIR} ${SRC_DIR}/${FIL})
+    set(COMMAND ${PROTOC_EXECUTABLE} --proto_path ${SRC_DIR} --cpp_out=${GEN_DIR} ${SRC_DIR}/${FIL})
     add_custom_command(
       OUTPUT  ${out_pb_cc} ${out_pb_h}
       COMMAND ${COMMAND}
