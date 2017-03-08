@@ -115,13 +115,13 @@ $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: $(GE
 # See for background on Windows Explorer File Info Details:
 #  https://social.msdn.microsoft.com/Forums/vstudio/en-US/27894a09-1eed-48d9-8a0f-2198388d492c/csc-modulelink-or-just-csc-dll-plus-some-external-dllobj-references
 #  also, https://blogs.msdn.microsoft.com/texblog/2007/04/05/linking-native-c-into-c-applications/
-common_assembly_info: $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt
+$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs: $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt
 	$(COPY) tools$Scsharp$SCommonAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)\.\*/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
 	$(SED) -i -e "s/XXXX/$(OR_TOOLS_VERSION)\.0/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
 
 # TODO: TBD: it seems perhaps an AssemblyInfo build step is poised? why is it not being invoked?
-assembly_info: $(CLR_KEYFILE) common_assembly_info
+$(GEN_DIR)/com/google/ortools/properties/AssemblyInfo.cs: $(CLR_KEYFILE) $(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs
 	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
 ifdef CLR_KEYFILE
 	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
@@ -203,7 +203,8 @@ ifdef CLR_KEYFILE
 	sn -k $(CLR_KEYFILE)
 endif
 
-$(BIN_DIR)/$(CLR_DLL_NAME).dll: assembly_info \
+$(BIN_DIR)/$(CLR_DLL_NAME).dll:
+	$(GEN_DIR)/com/google/ortools/properties/AssemblyInfo.cs \
 	$(CLR_KEYFILE) \
 	$(BIN_DIR)/Google.Protobuf.dll \
 	$(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O \
