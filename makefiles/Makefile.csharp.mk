@@ -107,21 +107,24 @@ clean_csharp:
 	-$(DEL) examples$Scsharp$SCsharp_examples.sln
 	-$(DEL) examples$Scsharp$Ssolution$S*.csproj
 
+# Assembly Info
+
 $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt: $(GEN_DIR)/com/google/ortools/properties
 	@echo $(OR_TOOLS_VERSION) > $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SGitVersion$(OR_TOOLS_VERSION).txt
-
-.PHONY: assembly_info common_assembly_info
 
 # See for background on Windows Explorer File Info Details:
 #  https://social.msdn.microsoft.com/Forums/vstudio/en-US/27894a09-1eed-48d9-8a0f-2198388d492c/csc-modulelink-or-just-csc-dll-plus-some-external-dllobj-references
 #  also, https://blogs.msdn.microsoft.com/texblog/2007/04/05/linking-native-c-into-c-applications/
-$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs: $(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt
+$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs: \
+	$(GEN_DIR)/com/google/ortools/properties/GitVersion$(OR_TOOLS_VERSION).txt
 	$(COPY) tools$Scsharp$SCommonAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)\.\*/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
 	$(SED) -i -e "s/XXXX/$(OR_TOOLS_VERSION)\.0/" $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs
 
 # TODO: TBD: it seems perhaps an AssemblyInfo build step is poised? why is it not being invoked?
-$(GEN_DIR)/com/google/ortools/properties/AssemblyInfo.cs: $(CLR_KEYFILE) $(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs
+$(GEN_DIR)/com/google/ortools/properties/AssemblyInfo.cs: \
+	$(CLR_KEYFILE) \
+	$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs
 	$(COPY) tools$Scsharp$SAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties
 ifdef CLR_KEYFILE
 	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SAssemblyInfo.cs
@@ -203,7 +206,7 @@ ifdef CLR_KEYFILE
 	sn -k $(CLR_KEYFILE)
 endif
 
-$(BIN_DIR)/$(CLR_DLL_NAME).dll:
+$(BIN_DIR)/$(CLR_DLL_NAME).dll: \
 	$(GEN_DIR)/com/google/ortools/properties/AssemblyInfo.cs \
 	$(CLR_KEYFILE) \
 	$(BIN_DIR)/Google.Protobuf.dll \
