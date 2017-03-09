@@ -1334,8 +1334,8 @@ class DomainIntVar : public IntVar {
   void SetValue(int64 v) override;
   bool Bound() const override { return (min_.Value() == max_.Value()); }
   int64 Value() const override {
-    CHECK_EQ(min_.Value(), max_.Value()) << "variable " << DebugString()
-                                         << "is not bound.";
+    CHECK_EQ(min_.Value(), max_.Value()) << " variable " << DebugString()
+                                         << " is not bound.";
     return min_.Value();
   }
   void RemoveValue(int64 v) override;
@@ -2853,7 +2853,7 @@ bool PlusCstDomainIntVar::Bound() const {
 
 int64 PlusCstDomainIntVar::Value() const {
   CHECK_EQ(domain_int_var()->min_.Value(), domain_int_var()->max_.Value())
-      << "variable is not bound";
+      << " variable is not bound";
   return domain_int_var()->min_.Value() + cst_;
 }
 
@@ -3402,7 +3402,7 @@ void TimesPosCstBoolVar::WhenRange(Demon* d) { boolean_var()->WhenRange(d); }
 
 int64 TimesPosCstBoolVar::Value() const {
   CHECK_NE(boolean_var()->RawValue(), BooleanVar::kUnboundBooleanVarValue)
-      << "variable is not bound";
+      << " variable is not bound";
   return boolean_var()->RawValue() * cst_;
 }
 
