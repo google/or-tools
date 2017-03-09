@@ -43,6 +43,13 @@ CMAKE = cmake
 ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
 
+# Add some additional macros
+ATTRIB = attrib
+TASKKILL = taskkill
+NUGET = nuget.exe
+NUGET_PACK = nuget.exe pack
+NUGET_PUSH = nuget.exe push
+
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
 ifeq ("$(VISUAL_STUDIO_YEAR)","2015")

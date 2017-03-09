@@ -42,11 +42,12 @@ OR_ROOT_FULL=$(OR_TOOLS_TOP)
 # Load local variables
 include $(OR_ROOT)Makefile.local
 
+# Change the file extensions to increase diff tool friendliness.
 # Then include specific system commands and definitions
-include $(OR_ROOT)makefiles/Makefile.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.$(SYSTEM).mk
 
 # Rules to fetch and build third party dependencies.
-include $(OR_ROOT)makefiles/Makefile.third_party.$(SYSTEM)
+include $(OR_ROOT)makefiles/Makefile.third_party.$(SYSTEM).mk
 
 # Include .mk files.
 include $(OR_ROOT)makefiles/Makefile.cpp.mk

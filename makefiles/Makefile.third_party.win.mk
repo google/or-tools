@@ -17,6 +17,9 @@ SOPLEX_TAG = 2.2.0
 # Version of Sulum
 SULUM_TAG = 43
 
+# Added in support of clean third party targets
+TSVNCACHE_EXE = TSVNCache.exe
+
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET =
@@ -420,9 +423,24 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
 	  ../src/google/protobuf/descriptor.proto
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && jar cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
 
-# Clean everything.
-clean_third_party:
+# TODO: TBD: Don't know if this is a ubiquitous issue across platforms...
+# Handle a couple of extraneous circumstances involving TortoiseSVN caching and .svn readonly attributes.
+kill_tortoisesvn_cache:
+	$(TASKKILL) /IM "$(TSVNCACHE_EXE)" /F /FI "STATUS eq RUNNING"
+
+remove_readonly_svn_attribs: kill_tortoisesvn_cache
+	if exist dependencies\sources\* $(ATTRIB) -r /s dependencies\sources\*
+
+
+# Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
+clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) Makefile.local
+	-$(DEL) dependencies\archives\swigwin*.zip
+	-$(DEL) dependencies\archives\gflags*.zip
+	-$(DEL) dependencies\archives\sparsehash*.zip
+	-$(DEL) dependencies\archives\zlib*.zip
+	-$(DEL) dependencies\archives\v*.zip
+	-$(DEL) dependencies\archives\win_flex_bison*.zip
 	-$(DELREC) dependencies\install
 	-$(DELREC) dependencies\sources\cbc-*
 	-$(DELREC) dependencies\sources\gflags*
@@ -435,7 +453,8 @@ clean_third_party:
 # Create Makefile.local
 makefile_third_party: Makefile.local
 
-Makefile.local: makefiles/Makefile.third_party.win
+# Make sure that local file lands correctly across platforms
+Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	-$(DEL) Makefile.local
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
