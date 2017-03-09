@@ -635,10 +635,12 @@ void SparseVector<IndexType, IteratorType>::PopulateFromSparseVector(
   // would not work correctly if this already had a greater capacity than
   // sparse_vector, because the coefficient_ pointer would be positioned
   // incorrectly.
-  std::memmove(index_, sparse_vector.index_,
-               sizeof(Index) * sparse_vector.num_entries_.value());
-  std::memmove(coefficient_, sparse_vector.coefficient_,
-               sizeof(Fractional) * sparse_vector.num_entries_.value());
+  if (sparse_vector.num_entries_.value() > 0) {
+    std::memmove(index_, sparse_vector.index_,
+                 sizeof(Index) * sparse_vector.num_entries_.value());
+    std::memmove(coefficient_, sparse_vector.coefficient_,
+                 sizeof(Fractional) * sparse_vector.num_entries_.value());
+  }
   num_entries_ = sparse_vector.num_entries_;
   may_contain_duplicates_ = sparse_vector.may_contain_duplicates_;
 }
