@@ -27,6 +27,10 @@ DEP_BIN_DIR = $(OR_ROOT)dependencies/install/bin
 
 O = o
 E =
+L=.a
+DLL=.dll
+PDB=.pdb
+EXP=.exp
 LDOUT = -o # need the space.
 OBJ_OUT = -o #
 EXE_OUT = -o #

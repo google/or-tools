@@ -472,7 +472,7 @@ clean_third_party:
 # Create Makefile.local
 makefile_third_party: Makefile.local
 
-Makefile.local: makefiles/Makefile.third_party.unix
+Makefile.local: makefiles/Makefile.third_party.unix.mk
 	-$(DEL) Makefile.local
 	@echo Generating Makefile.local
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
