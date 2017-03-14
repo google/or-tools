@@ -17,6 +17,9 @@ SOPLEX_TAG = 2.2.0
 # Version of Sulum
 SULUM_TAG = 43
 
+# Added in support of clean third party targets
+TSVNCACHE_EXE = TSVNCache.exe
+
 # Detect if scip archive is there.
 ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
     SCIP_TARGET =
@@ -63,6 +66,7 @@ MISSING_DIRECTORIES = \
 	src/gen/com/google/ortools/graph \
 	src/gen/com/google/ortools/linearsolver \
 	src/gen/com/google/ortools/flatzinc \
+	src/gen/com/google/ortools/properties \
 	src/gen/constraint_solver \
 	src/gen/flatzinc \
 	src/gen/glop \
@@ -154,6 +158,9 @@ src/gen/com/google/ortools/linearsolver:
 
 src/gen/com/google/ortools/flatzinc:
 	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sflatzinc
+
+src/gen/com/google/ortools/properties:
+	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sproperties
 
 src/gen/constraint_solver:
 	$(MKDIR_P) src$Sgen$Sconstraint_solver
@@ -349,7 +356,7 @@ dependencies\install\swigwin-$(SWIG_TAG)\swig.exe: dependencies\archives\swigwin
 	tools\touch.exe dependencies\install\swigwin-$(SWIG_TAG)\swig.exe
 
 dependencies\archives\swigwin-$(SWIG_TAG).zip:
-	tools\wget -P dependencies\archives http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running 'tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
+	tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running 'tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
 
 # Install glpk if needed.
 install_glpk: $(GLPK_TARGET)
@@ -416,9 +423,24 @@ dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
 	  ../src/google/protobuf/descriptor.proto
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && jar cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
 
-# Clean everything.
-clean_third_party:
+# TODO: TBD: Don't know if this is a ubiquitous issue across platforms...
+# Handle a couple of extraneous circumstances involving TortoiseSVN caching and .svn readonly attributes.
+kill_tortoisesvn_cache:
+	$(TASKKILL) /IM "$(TSVNCACHE_EXE)" /F /FI "STATUS eq RUNNING"
+
+remove_readonly_svn_attribs: kill_tortoisesvn_cache
+	if exist dependencies\sources\* $(ATTRIB) -r /s dependencies\sources\*
+
+
+# Clean everything. Remember to also delete archived dependencies, i.e. in the event of download failure, etc.
+clean_third_party: remove_readonly_svn_attribs
 	-$(DEL) Makefile.local
+	-$(DEL) dependencies\archives\swigwin*.zip
+	-$(DEL) dependencies\archives\gflags*.zip
+	-$(DEL) dependencies\archives\sparsehash*.zip
+	-$(DEL) dependencies\archives\zlib*.zip
+	-$(DEL) dependencies\archives\v*.zip
+	-$(DEL) dependencies\archives\win_flex_bison*.zip
 	-$(DELREC) dependencies\install
 	-$(DELREC) dependencies\sources\cbc-*
 	-$(DELREC) dependencies\sources\gflags*
@@ -431,7 +453,8 @@ clean_third_party:
 # Create Makefile.local
 makefile_third_party: Makefile.local
 
-Makefile.local: makefiles/Makefile.third_party.win
+# Make sure that local file lands correctly across platforms
+Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	-$(DEL) Makefile.local
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local

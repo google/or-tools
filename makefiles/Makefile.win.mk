@@ -21,6 +21,10 @@ STATIC_PRE_LIB = $(OR_ROOT)lib\\
 STATIC_POST_LIB = .lib
 O=obj
 E=.exe
+L=.lib
+DLL=.dll
+PDB=.pdb
+EXP=.exp
 OBJ_OUT = /Fo
 EXE_OUT = /Fe
 SWIG_LIB_SUFFIX = dll
@@ -42,6 +46,15 @@ FLEX = dependencies\install\bin\win_flex.exe
 CMAKE = cmake
 ARCHIVE_EXT = .zip
 FZ_EXE = fzn-or-tools$E
+
+# Add some additional macros
+CD = cd
+ATTRIB = attrib
+TASKKILL = taskkill
+NUGET = nuget.exe
+NUGET_PACK = nuget.exe pack
+NUGET_PUSH = nuget.exe push
+NUGET_SRC = https://www.nuget.org/api/v2/package
 
 # Compilation macros.
 DEBUG=/O2 -DNDEBUG
