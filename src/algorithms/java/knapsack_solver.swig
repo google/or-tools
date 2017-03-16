@@ -31,6 +31,7 @@
 %unignore operations_research;
 %unignore operations_research::KnapsackSolver;
 %unignore operations_research::KnapsackSolver::KnapsackSolver;
+%unignore operations_research::KnapsackSolver::~KnapsackSolver;
 %rename (init) operations_research::KnapsackSolver::Init;
 %rename (solve) operations_research::KnapsackSolver::Solve;
 %rename (bestSolutionContains)
