@@ -45,7 +45,7 @@ Flow algorithms:
   graphs with arc capacities, arc costs, and supplies/demands at nodes, based on
   a push-relabel algorithm of Goldberg and Tarjan.
 
-- flow.swig: SWIG instructions to wrap the C++ library in Python and Java.
+- flow.i: SWIG instructions to wrap the C++ library in Python and Java.
 
 C++ examples are available in the examples directory alongside the
 graph directory.

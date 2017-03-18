@@ -1,6 +1,6 @@
 set(LINKER_LANGUAGE CXX)
 
-include(ortools_protobuf.cmake)
+include(ortools_FindProtobuf.cmake)
 
 #TODO(include this once)
 include_directories(${SRC_DIR} ${GEN_DIR} ${DEPENDENCIES_INCLUDE} ${EX_DIR})

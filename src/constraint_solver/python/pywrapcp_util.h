@@ -12,10 +12,10 @@
 // limitations under the License.
 
 // This .h file cannot be used in isolation!
-// It represents some of the inlined C++ content of ./constraint_solver.swig,
+// It represents some of the inlined C++ content of ./constraint_solver.i,
 // and was split out because it's a large enough chunk of C++ code.
 //
-// It can only be interpreted in the context of ./constraint_solver.swig, where
+// It can only be interpreted in the context of ./constraint_solver.i, where
 // it is included.
 
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_PYTHON_PYWRAPCP_UTIL_H_

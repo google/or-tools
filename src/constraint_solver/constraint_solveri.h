@@ -966,7 +966,7 @@ class IntVarLocalSearchHandler {
 
 #ifdef SWIG
 // Unfortunately, we must put this code here and not in
-// */constraint_solver.swig, because it must be parsed by SWIG before the
+// */constraint_solver.i, because it must be parsed by SWIG before the
 // derived C++ class.
 // TODO(user): find a way to move this code back to the .swig file, where it
 // belongs.
@@ -1049,7 +1049,7 @@ class SequenceVarLocalSearchHandler {
 
 #ifdef SWIG
 // Unfortunately, we must put this code here and not in
-// */constraint_solver.swig, because it must be parsed by SWIG before the
+// */constraint_solver.i, because it must be parsed by SWIG before the
 // derived C++ class.
 // TODO(user): find a way to move this code back to the .swig file, where it
 // belongs.

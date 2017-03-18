@@ -14,7 +14,7 @@ is a useful extension that is implemented on top of the CP library.
 
 - routing.h: The point of entry for routing problems.
 
-- constraint_solver.swig: SWIG instructions to wrap the C++ library in python
+- constraint_solver.i: SWIG instructions to wrap the C++ library in python
   and java.
 
 - model.proto:  Holds the description of a constraint programming problem,

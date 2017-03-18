@@ -12,34 +12,36 @@ if(NOT SUBVERSION_FOUND)
   message(FATAL_ERROR "svn not found")
 endif()
 
+set(PROTOBUF_VERSION "3.2.0")
+
 #TODO(implement make clean_third_party that cleans all the downloaded sources/it is probably only for protobuf!)
 # download tags (git, svn, and URLs)
-SET(GFLAGS_TAG "v2.1.2")
-SET(PROTOBUF_TAG "v3.2.0")
-SET(CBC_TAG "2.9.8")
-SET(SPARSEHASH_TAG "sparsehash-2.0.3")
-SET(SWIG_TAG "rel-3.0.10")
-SET(PCRE_TAG "pcre-8.37")
-SET(AUTOCONF_TAG "autoconf-2.69")
-SET(AUTOMAKE_TAG "automake-1.15")
-SET(LIBTOOL_TAG "libtool-2.4.6")
-SET(HELP2MAN_TAG "help2man-1.43.3")
-SET(SCIP_TAG "scipoptsuite-3.2.1")
-SET(GLPK_TAG "glpk-4.57")
+set(GFLAGS_TAG "v2.1.2")
+set(PROTOBUF_TAG "v${PROTOBUF_VERSION}")
+set(CBC_TAG "2.9.8")
+set(SPARSEHASH_TAG "sparsehash-2.0.3")
+set(SWIG_TAG "rel-3.0.10")
+set(PCRE_TAG "pcre-8.37")
+set(AUTOCONF_TAG "autoconf-2.69")
+set(AUTOMAKE_TAG "automake-1.15")
+set(LIBTOOL_TAG "libtool-2.4.6")
+set(HELP2MAN_TAG "help2man-1.43.3")
+set(SCIP_TAG "scipoptsuite-3.2.1")
+set(GLPK_TAG "glpk-4.57")
 
 # Directories names
-SET(GFLAGS_DIR "gflags-${GFLAGS_TAG}")
-SET(PROTOBUF_DIR "protobuf-${PROTOBUF_TAG}")
-SET(CBC_DIR "cbc-${CBC_TAG}")
-SET(SPARSEHASH_DIR "${SPARSEHASH_TAG}")
-SET(SWIG_DIR "${SWIG_TAG}")
-SET(PCRE_DIR "${PCRE_TAG}")
-SET(AUTOCONF_DIR "${AUTOCONF_TAG}")
-SET(AUTOMAKE_DIR "${AUTOMAKE_TAG}")
-SET(LIBTOOL_DIR "${LIBTOOL_TAG}")
-SET(HELP2MAN_DIR "${HELP2MAN_TAG}")
-SET(SCIP_DIR "${SCIP_TAG}")
-SET(GLPK_DIR "${GLPK_TAG}")
+set(GFLAGS_DIR "gflags-${GFLAGS_TAG}")
+set(PROTOBUF_DIR "protobuf-${PROTOBUF_TAG}")
+set(CBC_DIR "cbc-${CBC_TAG}")
+set(SPARSEHASH_DIR "${SPARSEHASH_TAG}")
+set(SWIG_DIR "${SWIG_TAG}")
+set(PCRE_DIR "${PCRE_TAG}")
+set(AUTOCONF_DIR "${AUTOCONF_TAG}")
+set(AUTOMAKE_DIR "${AUTOMAKE_TAG}")
+set(LIBTOOL_DIR "${LIBTOOL_TAG}")
+set(HELP2MAN_DIR "${HELP2MAN_TAG}")
+set(SCIP_DIR "${SCIP_TAG}")
+set(GLPK_DIR "${GLPK_TAG}")
 
 #TODO(add test commands for external projects)
 
@@ -97,6 +99,12 @@ ExternalProject_Add(
   PATCH_COMMAND ""
   UPDATE_COMMAND ""
   TEST_COMMAND ""
+)
+
+add_custom_command(
+  OUTPUT ${LIB_DIR}/protobuf.jar
+  COMMAND file(DOWNLOAD http://central.maven.org/maven2/com/google/protobuf/protobuf-java/${PROTOBUF_VERSION}/protobuf-java-${PROTOBUF_VERSION}.jar ${LIB_DIR}/protobuf.jar SHOW_PROGRESS)
+  COMMENT "Downloading protobuf.jar"
 )
 
 ExternalProject_Add(
@@ -174,9 +182,9 @@ if(EXISTS "${DEPENDENCIES_ARCHIVES}/scipoptsuite-$(SCIP_TAG).tgz")
     UPDATE_COMMAND ""
     TEST_COMMAND ""
   )
-  SET(SCIP_MAKEFILE "UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/$(SCIP_DIR)/scip-$(SCIP_TAG)")
+  set(SCIP_MAKEFILE "UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/$(SCIP_DIR)/scip-$(SCIP_TAG)")
 else()
-  SET(SCIP_MAKEFILE "\# Please add scipoptsuite-$(SCIP_TAG).tgz to dependencies/archives to add support for SCIP.")
+  set(SCIP_MAKEFILE "\# Please add scipoptsuite-$(SCIP_TAG).tgz to dependencies/archives to add support for SCIP.")
 endif()
 
 if(EXISTS "${DEPENDENCIES_ARCHIVES}/scipoptsuite-$(GLPK_TAG).tgz")
@@ -190,9 +198,9 @@ if(EXISTS "${DEPENDENCIES_ARCHIVES}/scipoptsuite-$(GLPK_TAG).tgz")
     PATCH_COMMAND ""
     TEST_COMMAND ""
   )
-  SET(GLPK_MAKEFILE "UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/$(GLPK_DIR)/scip-$(SCIP_TAG)")
+  set(GLPK_MAKEFILE "UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/$(GLPK_DIR)/scip-$(SCIP_TAG)")
 else()
-  SET(GLPK_MAKEFILE "\# Please add scipoptsuite-$(SCIP_TAG).tgz to dependencies/archives to add support for SCIP.")
+  set(GLPK_MAKEFILE "\# Please add scipoptsuite-$(SCIP_TAG).tgz to dependencies/archives to add support for SCIP.")
 endif()
 
 #TODO(fix how scip and glpk are included)

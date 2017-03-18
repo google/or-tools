@@ -18,6 +18,9 @@ add_subdirectory(src/cpp)
 #Compiling the C++ examples
 add_subdirectory(examples/cpp)
 
+#Compiling the java examples
+add_subdirectory(examples/java)
+
 #Compiling the or-tools core source code
 add_subdirectory(src/flatzinc)
 

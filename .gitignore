@@ -38,3 +38,4 @@ temp/
 lib/
 examples/csharp/solution/*.csproj
 examples/csharp/*.sln
+class/
