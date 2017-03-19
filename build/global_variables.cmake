@@ -61,3 +61,8 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY "${BIN_DIR}" CACHE INTERNAL "or-tools bin di
 set(SWIG_WRAP_DIR "${GEN_DIR}/swig_wrappers" CACHE INTERNAL "or-tools generated swig wrappers directory" FORCE)
 file(MAKE_DIRECTORY ${SWIG_WRAP_DIR})
 
+set(CLASS_DIR "${OR_TOOLS_ROOT_DIR}/class" CACHE INTERNAL "or-tools generated class files directory" FORCE)
+
+set(PROTO_PYTHON_DIR ${DEPENDENCIES_SOURCES}/${PROTOBUF_DIR}/python CACHE INTERNAL "The python sources directory from protobuf" FORCE)
+
+

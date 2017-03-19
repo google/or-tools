@@ -31,7 +31,7 @@ set(GLPK_TAG "glpk-4.57")
 
 # Directories names
 set(GFLAGS_DIR "gflags-${GFLAGS_TAG}")
-set(PROTOBUF_DIR "protobuf-${PROTOBUF_TAG}")
+set(PROTOBUF_DIR "protobuf-${PROTOBUF_TAG}" CACHE INTERNAL "" FORCE)
 set(CBC_DIR "cbc-${CBC_TAG}")
 set(SPARSEHASH_DIR "${SPARSEHASH_TAG}")
 set(SWIG_DIR "${SWIG_TAG}")

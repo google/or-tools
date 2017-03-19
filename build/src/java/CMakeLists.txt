@@ -1,3 +1,11 @@
+#[[find_package(Java REQUIRED)
+if(JAVA_FOUND)
+  message("java found, Ok! "${Java_JAVA_EXECUTABLE})
+else()
+  message("java not found!")
+endif()
+]]
+
 
 include(ortools_protobuf.cmake)
 include(ortools_SWIG.cmake)
@@ -22,3 +30,7 @@ add_jar(
 
 add_dependencies(ortoolsJNI jniortools)
 
+add_custom_target(
+  java
+  DEPENDS ortoolsJNI
+)

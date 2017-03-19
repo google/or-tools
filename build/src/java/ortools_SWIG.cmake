@@ -43,6 +43,7 @@ set_source_files_properties(${SRC_DIR}/graph/java/graph.i PROPERTIES SWIG_FLAGS 
 
 set_source_files_properties(${SRC_DIR}/linear_solver/java/linear_solver.i PROPERTIES SWIG_FLAGS "-package;com.google.ortools.linearsolver;-module;operations_research_linear_solver;-outdir;${linearsolver_outdir}")
 
+#TODO(Add dependencies with other files)
 #Add the swig module
 swig_add_module(jniortools java ${swig_java_sources})
 

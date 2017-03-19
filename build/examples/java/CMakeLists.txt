@@ -1,8 +1,4 @@
-include(util.cmake)
-
-set(CLASS_DIR "${OR_TOOLS_ROOT_DIR}/class" CACHE INTERNAL "or-tools generated sources directory" FORCE)
 file(MAKE_DIRECTORY ${CLASS_DIR})
-
 
 file (GLOB_RECURSE java_files "${OR_TOOLS_ROOT_DIR}/*.java")
 file (GLOB_RECURSE java_gen_files "${GEN_DIR}/*.java")
@@ -32,4 +28,5 @@ endforeach()
 add_custom_target(
   rjava
   COMMAND ${CMAKE_COMMAND} -Dtarget=rjava -Dex_file=$(EX) -Dargs=$(ARGS) -DOR_TOOLS_ROOT_DIR=${OR_TOOLS_ROOT_DIR} -DLIB_DIR=${LIB_DIR} -DCLASS_DIR=${CLASS_DIR} -P rjava.cmake
+  DEPENDS java
 )
