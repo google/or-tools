@@ -66,7 +66,6 @@
 #include "base/casts.h"
 #include "base/timer.h"
 #include "base/join.h"
-#include "base/sparse_hash.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"

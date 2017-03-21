@@ -2,7 +2,6 @@
 
 GFLAGS_TAG = 2.1.2
 PROTOBUF_TAG = 3.0.0
-SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.8
 SWIG_TAG = 3.0.10
 PCRE_TAG = 8.37
@@ -112,7 +111,6 @@ install_third_party: \
 	missing_directories \
 	install_gflags \
 	install_protobuf \
-	install_sparsehash \
 	install_swig \
 	install_cbc \
 	install_glpk \
@@ -263,21 +261,6 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/pr
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
 	git clone https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && git checkout 3d9d1a1
-
-# Install sparsehash.
-install_sparsehash: dependencies/install/include/google/dense_hash_map
-
-dependencies/install/include/google/dense_hash_map: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) make install
-
-dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/Makefile: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
-
-dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/configure: dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/sparsehash-$(SPARSEHASH_TAG) && $(SET_PATH) $(SET_COMPILER) ./autogen.sh
-
-dependencies/sources/sparsehash-$(SPARSEHASH_TAG)/autogen.sh:
-	git clone -b sparsehash-$(SPARSEHASH_TAG) https://github.com/sparsehash/sparsehash.git dependencies/sources/sparsehash-$(SPARSEHASH_TAG)
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
@@ -488,7 +471,6 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo >> Makefile.local
 	@echo UNIX_GFLAGS_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_PROTOBUF_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
-	@echo UNIX_SPARSEHASH_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_SWIG_BINARY = $(OR_ROOT_FULL)/dependencies/install/bin/swig>> Makefile.local
 	@echo UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local

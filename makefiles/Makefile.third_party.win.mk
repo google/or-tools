@@ -1,7 +1,6 @@
 # tags of dependencies to checkout.
 GFLAGS_TAG = master
 PROTOBUF_TAG = 3.0.0
-SPARSEHASH_TAG = 2.0.3
 CBC_TAG = 2.9.8
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
@@ -86,7 +85,6 @@ build_third_party: \
 	install_zlib \
 	install_gflags \
 	install_protobuf \
-	install_sparsehash \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
@@ -197,7 +195,6 @@ download_third_party: \
     dependencies/archives/zlib$(ZLIB_ARCHIVE_TAG).zip \
 	dependencies/sources/gflags/autogen.sh \
 	dependencies/sources/protobuf/autogen.sh \
-	dependencies/sources/sparsehash/autogen.sh \
 	dependencies/archives/swigwin-$(SWIG_TAG).zip \
 	dependencies/sources/cbc-$(CBC_TAG)/configure
 
@@ -291,26 +288,6 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 #	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
-
-# Install sparsehash.
-install_sparsehash: dependencies\install\include\google\dense_hash_map
-
-dependencies\install\include\google\dense_hash_map: dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\autogen.sh
-	-md dependencies\install\include\sparsehash
-	-md dependencies\install\include\sparsehash\internal
-	-md dependencies\install\include\google
-	-md dependencies\install\include\google\sparsehash
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\* dependencies\install\include\sparsehash
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\sparsehash\internal\* dependencies\install\include\sparsehash\internal
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\google\* dependencies\install\include\google
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\google\* dependencies\install\include\google
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\google\sparsehash\* dependencies\install\include\google\sparsehash
-	-copy dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\src\windows\sparsehash\internal\* dependencies\install\include\sparsehash\internal
-
-dependencies\sources\sparsehash-sparsehash-$(SPARSEHASH_TAG)\autogen.sh:
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/sparsehash/sparsehash/archive/sparsehash-$(SPARSEHASH_TAG).zip
-	tools\unzip -d dependencies\sources dependencies\archives\sparsehash-$(SPARSEHASH_TAG).zip
-
 
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
@@ -471,7 +448,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo WINDOWS_ZLIB_NAME=zlib.lib>> Makefile.local
 	@echo WINDOWS_GFLAGS_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_PROTOBUF_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_SPARSEHASH_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_SWIG_BINARY = $(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe>> Makefile.local
 	@echo WINDOWS_CLP_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_CBC_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
