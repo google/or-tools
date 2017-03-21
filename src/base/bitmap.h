@@ -16,9 +16,24 @@
 
 #include <string.h>
 #include "base/basictypes.h"
-#include "util/bitset.h"
 
 namespace operations_research {
+namespace {
+inline uint64 OneBit64(int pos) { return GG_ULONGLONG(1) << pos; }
+inline uint64 BitPos64(uint64 pos) { return (pos & 63); }
+inline uint64 BitOffset64(uint64 pos) { return (pos >> 6); }
+inline uint64 BitLength64(uint64 size) { return ((size + 63) >> 6); }
+inline bool IsBitSet64(const uint64* const bitset, uint64 pos) {
+  return (bitset[BitOffset64(pos)] & OneBit64(BitPos64(pos)));
+}
+inline void SetBit64(uint64* const bitset, uint64 pos) {
+  bitset[BitOffset64(pos)] |= OneBit64(BitPos64(pos));
+}
+inline void ClearBit64(uint64* const bitset, uint64 pos) {
+  bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
+}
+}  // namespace
+
 
 class Bitmap {
  public:
