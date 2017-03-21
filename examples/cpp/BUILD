@@ -36,3 +36,14 @@ cc_binary(
         "@or_tools_libraries//sat:sat_solver",
     ],
 )
+
+cc_binary(
+    name = "linear_programming",
+    srcs = ["linear_programming.cc"],
+    copts = ["-DUSE_GLOP"],
+    deps = [
+        "@or_tools_libraries//base",
+        "@or_tools_libraries//linear_solver:linear_solver_glop",
+        "@or_tools_libraries//linear_solver:linear_solver_cc_proto",
+    ],
+)
