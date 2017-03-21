@@ -28,3 +28,5 @@ examples/csharp/solution/*.csproj
 examples/csharp/*.sln
 
 src/bazel-*
+examples/bazel-*
+
