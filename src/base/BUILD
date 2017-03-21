@@ -4,6 +4,6 @@ cc_library(
     name = 'base',
     srcs = glob(['*.cc']),
     hdrs = glob(['*.h']),
-    deps = ["//external:gflags",
-            "//external:protobuf",],
+    deps = ["@com_github_gflags_gflags//:gflags",
+            "@com_google_protobuf_cc//:protobuf",],
 )

@@ -135,7 +135,7 @@ cc_library(
         ":sat_base",
         ":sat_parameters_cc_proto",
         "//base",
-        "//external:protobuf",
+        "@com_google_protobuf_cc//:protobuf",
         "//util",
     ],
 )
@@ -403,7 +403,7 @@ cc_library(
         ":sat_solver",
         ":util",
         "//base",
-        "//external:protobuf",
+        "@com_google_protobuf_cc//:protobuf",
     ],
 )
 
