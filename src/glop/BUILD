@@ -1,0 +1,74 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_proto_library(
+    name = "parameters_cc_proto",
+    deps = [":parameters_proto"],
+)
+
+proto_library(
+    name = "parameters_proto",
+    srcs = ["parameters.proto"],
+)
+
+SAFE_FP_CODE = ["-fno-fast-math"]
+
+# GLOP library with minimal external dependencies for easier use on
+# portable targets (e.g., Android, iOS).
+# We define a separate target to:
+#  * Avoid select(), which doesn't work with blaze query
+#  * Define ANDROID_JNI, which is necessary for portable build
+cc_library(
+    name = "glop",
+    srcs = [
+        "basis_representation.cc",
+        "dual_edge_norms.cc",
+        "entering_variable.cc",
+        "initial_basis.cc",
+        "lp_solver.cc",
+        "lu_factorization.cc",
+        "markowitz.cc",
+        "preprocessor.cc",
+        "primal_edge_norms.cc",
+        "reduced_costs.cc",
+        "revised_simplex.cc",
+        "status.cc",
+        "update_row.cc",
+        "variable_values.cc",
+        "variables_info.cc",
+    ],
+    hdrs = [
+        "basis_representation.h",
+        "dual_edge_norms.h",
+        "entering_variable.h",
+        "initial_basis.h",
+        "lp_solver.h",
+        "lu_factorization.h",
+        "markowitz.h",
+        "preprocessor.h",
+        "primal_edge_norms.h",
+        "rank_one_update.h",
+        "reduced_costs.h",
+        "revised_simplex.h",
+        "status.h",
+        "update_row.h",
+        "variable_values.h",
+        "variables_info.h",
+    ],
+    copts = SAFE_FP_CODE,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":parameters_cc_proto",
+        "//base",
+        "//linear_solver:linear_solver_cc_proto",
+        "//lp_data",
+        "//lp_data:base",
+        "//lp_data:lp_print_utils",
+        "//lp_data:lp_utils",
+        "//lp_data:matrix_scaler",
+        "//lp_data:matrix_utils",
+        "//lp_data:proto_utils",
+        "//lp_data:sparse",
+ #       "//lp_data:sparse_row",
+        "//util",
+    ],
+)
