@@ -20,7 +20,7 @@
 namespace operations_research {
 
 void Bitmap::Resize(uint32 size, bool fill) {
-  const uint32 new_array_size = BitLength64(size);
+  const uint32 new_array_size = internal::BitLength64(size);
   const uint32 old_max_size = max_size_;
   if (new_array_size <= array_size_) {
     max_size_ = size;

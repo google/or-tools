@@ -18,7 +18,7 @@
 #include "base/basictypes.h"
 
 namespace operations_research {
-namespace {
+namespace internal {
 inline uint64 OneBit64(int pos) { return GG_ULONGLONG(1) << pos; }
 inline uint64 BitPos64(uint64 pos) { return (pos & 63); }
 inline uint64 BitOffset64(uint64 pos) { return (pos >> 6); }
@@ -32,7 +32,7 @@ inline void SetBit64(uint64* const bitset, uint64 pos) {
 inline void ClearBit64(uint64* const bitset, uint64 pos) {
   bitset[BitOffset64(pos)] &= ~OneBit64(BitPos64(pos));
 }
-}  // namespace
+}  // namespace internal
 
 
 class Bitmap {
@@ -41,7 +41,7 @@ class Bitmap {
   // fill: true = initialize with 1's, false = initialize with 0's.
   explicit Bitmap(uint32 size, bool fill = false)
       : max_size_(size),
-        array_size_(BitLength64(size)),
+        array_size_(internal::BitLength64(size)),
         map_(new uint64[array_size_]) {
     // initialize all of the bits
     SetAll(fill);
@@ -57,14 +57,14 @@ class Bitmap {
 
   bool Get(uint32 index) const {
     assert(max_size_ == 0 || index < max_size_);
-    return IsBitSet64(map_, index);
+    return internal::IsBitSet64(map_, index);
   }
   void Set(uint32 index, bool value) {
     assert(max_size_ == 0 || index < max_size_);
     if (value) {
-      SetBit64(map_, index);
+      internal::SetBit64(map_, index);
     } else {
-      ClearBit64(map_, index);
+      internal::ClearBit64(map_, index);
     }
   }
 
