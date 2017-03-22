@@ -2569,7 +2569,6 @@ $(SRC_DIR)/constraint_solver/constraint_solveri.h: \
     $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/map_util.h \
-    $(SRC_DIR)/base/sparse_hash.h \
     $(SRC_DIR)/base/sysinfo.h \
     $(SRC_DIR)/base/timer.h \
     $(SRC_DIR)/util/bitset.h \
