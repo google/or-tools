@@ -4,7 +4,7 @@ PROTOBUF_TAG = 3.0.0
 CBC_TAG = 2.9.8
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
-SWIG_TAG = 3.0.10
+SWIG_TAG = 3.0.12
 BISON_FLEX_TAG = 2.5.5
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
