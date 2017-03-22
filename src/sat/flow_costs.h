@@ -72,7 +72,7 @@ class FlowCosts : public PropagatorInterface {
   const int num_arcs_;
   const int num_costs_;
   const int num_vars_;
-  static constexpr double kEpsilon = 1e-6;
+  static const double kEpsilon;
 
   // CP variables representing the flow cost.
   std::vector<IntegerVariable> demands_cp_;

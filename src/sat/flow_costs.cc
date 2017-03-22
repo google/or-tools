@@ -19,6 +19,8 @@
 namespace operations_research {
 namespace sat {
 
+const double FlowCosts::kEpsilon = 1e-6;
+
 FlowCosts::FlowCosts(
     const std::vector<IntegerVariable>& demands,
     const std::vector<IntegerVariable>& flow, const std::vector<int>& tails,

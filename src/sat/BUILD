@@ -476,46 +476,6 @@ cc_library(
     ],
 )
 
-#cc_binary(
-#    name = "sat_runner",
-#    srcs = [
-#        "opb_reader.h",
-#        "sat_cnf_reader.h",
-#        "sat_runner.cc",
-#    ],
-#    copts = [W_FLOAT_CONVERSION],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        ":boolean_problem",
-#        ":boolean_problem_proto",
-#        ":cp_model_proto",
-#        ":cp_model_solver",
-#        ":drat",
-#        ":lp_utils",
-#        ":optimization",
-#        ":sat_solver",
-#        ":simplification",
-#        ":symmetry",
-#        "//base",
-#        "//file/base",
-#        "//file/colossus/public:cns",
-#        "//file/localfile",
-#        "//external:protobuf",
-#        "//strings",
-#        "//third_party/absl/strings",
-#        "//thread",
-#        "//thread:signal",
-#        "//algorithms:sparse_permutation",
-#        "//glip:preprocessor",
-#        "//lp_data:mps_reader",
-#        "//lp_data:proto_utils",
-#        "//util:filelineiter",
-#        "//util:time_limit",
-#        "//util/random:random_no_openssl",
-#        "//util/task:status",
-#    ],
-#)
-
 #cc_library(
 #    name = "sat_cnf_reader",
 #    hdrs = ["sat_cnf_reader.h"],
