@@ -36,7 +36,7 @@ message RoutingSearchParameters {
 
   // Local search neighborhood operators used to build a solutions neighborhood.
   message LocalSearchNeighborhoodOperators {
-    // --- Intra-route operators ---
+    // --- Inter-route operators ---
     // Operator which moves a single node to another position.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 -> 5
     // (where (1, 5) are first and last nodes of the path and can therefore not
@@ -98,7 +98,7 @@ message RoutingSearchParameters {
     bool use_cross = 5;
     // Not implemented as of 10/2015.
     bool use_cross_exchange = 6;
-    // --- Inter-route operators ---
+    // --- Intra-route operators ---
     // Operator which reverves a sub-chain of a path. It is called TwoOpt
     // because it breaks two arcs on the path; resulting paths are called
     // two-optimal.
@@ -133,7 +133,7 @@ message RoutingSearchParameters {
     // nodes A, 2, 3, 4, 5, where A is a merger of nodes 1 and 6 such that
     // cost(A,i) = cost(1,i) and cost(i,A) = cost(i,6).
     bool use_tsp_opt = 10;
-    // --- Operators on unactive nodes ---
+    // --- Operators on inactive nodes ---
     // Operator which inserts an inactive node into a path.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 with 5 inactive
     // (where 1 and 4 are first and last nodes of the path) are:
@@ -141,6 +141,17 @@ message RoutingSearchParameters {
     //   1 ->  2  -> [5] ->  3  -> 4
     //   1 ->  2  ->  3  -> [5] -> 4
     bool use_make_active = 11;
+    // Operator which relocates a node while making an inactive one active.
+    // As of 3/2017, the operator is limited to two kinds of moves:
+    // - Relocating a node and replacing it by an inactive node.
+    //   Possible neighbor for path 1 -> 5, 2 -> 3 -> 6 and 4 inactive
+    //   (where 1,2 and 5,6 are first and last nodes of paths) is:
+    //   1 -> 3 -> 5, 2 -> 4 -> 6.
+    // - Relocating a node and inserting an inactive node next to it.
+    //   Possible neighbor for path 1 -> 5, 2 -> 3 -> 6 and 4 inactive
+    //   (where 1,2 and 5,6 are first and last nodes of paths) is:
+    //   1 -> 4 -> 3 -> 5, 2 -> 6.
+    bool use_relocate_and_make_active = 21;
     // Operator which makes path nodes inactive.
     // Possible neighbors for the path 1 -> 2 -> 3 -> 4 (where 1 and 4 are first
     // and last nodes of the path) are:

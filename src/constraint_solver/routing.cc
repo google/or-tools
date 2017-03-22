@@ -1226,6 +1226,7 @@ RoutingSearchParameters RoutingModel::DefaultSearchParameters() {
       "  use_lin_kernighan: true"
       "  use_tsp_opt: false"
       "  use_make_active: true"
+      "  use_relocate_and_make_active: false"  // costly if true by default
       "  use_make_inactive: true"
       "  use_make_chain_inactive: false"
       "  use_swap_active: true"
@@ -4373,6 +4374,9 @@ void RoutingModel::CreateNeighborhoodOperators() {
   CP_ROUTING_ADD_OPERATOR(OR_OPT, OROPT);
   CP_ROUTING_ADD_CALLBACK_OPERATOR(LIN_KERNIGHAN, LK);
   local_search_operators_[MAKE_ACTIVE] = CreateInsertionOperator();
+  CP_ROUTING_ADD_OPERATOR2(RELOCATE_AND_MAKE_ACTIVE,
+                           RelocateAndMakeActiveOperator);
+  CP_ROUTING_ADD_OPERATOR2(MAKE_ACTIVE_AND_RELOCATE, MakeActiveAndRelocate);
   local_search_operators_[MAKE_INACTIVE] = CreateMakeInactiveOperator();
   CP_ROUTING_ADD_OPERATOR2(MAKE_CHAIN_INACTIVE, MakeChainInactiveOperator);
   CP_ROUTING_ADD_OPERATOR2(SWAP_ACTIVE, SwapActiveOperator);
@@ -4425,6 +4429,14 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(MAKE_CHAIN_INACTIVE, make_chain_inactive,
                              operators);
     CP_ROUTING_PUSH_OPERATOR(MAKE_ACTIVE, make_active, operators);
+
+    // The relocate_and_make_active parameter activates all neighborhoods
+    // relocating a node together with making another active.
+    CP_ROUTING_PUSH_OPERATOR(RELOCATE_AND_MAKE_ACTIVE, relocate_and_make_active,
+                             operators);
+    CP_ROUTING_PUSH_OPERATOR(MAKE_ACTIVE_AND_RELOCATE, relocate_and_make_active,
+                             operators);
+
     CP_ROUTING_PUSH_OPERATOR(SWAP_ACTIVE, swap_active, operators);
     CP_ROUTING_PUSH_OPERATOR(EXTENDED_SWAP_ACTIVE, extended_swap_active,
                              operators);

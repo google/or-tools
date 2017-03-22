@@ -1390,6 +1390,7 @@ class MakeChainInactiveOperator;
 class SwapActiveOperator;
 class ExtendedSwapActiveOperator;
 class MakeActiveAndRelocate;
+class RelocateAndMakeActiveOperator;
 
 // ----- Local Search Filters ------
 

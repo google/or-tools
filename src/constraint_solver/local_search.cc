@@ -970,9 +970,40 @@ bool MakeActiveOperator::MakeNeighbor() {
   return MakeActive(GetInactiveNode(), BaseNode(0));
 }
 
+// ---- RelocateAndMakeActiveOperator -----
+
+// RelocateAndMakeActiveOperator relocates a node and replaces it by an inactive
+// node.
+// The idea is to make room for inactive nodes.
+// Possible neighbor for paths 0 -> 4, 1 -> 2 -> 5 and 3 inactive is:
+// 0 -> 2 -> 4, 1 -> 3 -> 5.
+class RelocateAndMakeActiveOperator : public BaseInactiveNodeToPathOperator {
+ public:
+  RelocateAndMakeActiveOperator(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      std::function<int(int64)> start_empty_path_class)
+      : BaseInactiveNodeToPathOperator(vars, secondary_vars, 2,
+                                       std::move(start_empty_path_class)) {}
+  ~RelocateAndMakeActiveOperator() override {}
+  bool MakeNeighbor() override {
+    const int64 before_node_to_move = BaseNode(1);
+    if (IsPathEnd(before_node_to_move)) {
+      return false;
+    }
+    return MoveChain(before_node_to_move, Next(before_node_to_move),
+                     BaseNode(0)) &&
+           MakeActive(GetInactiveNode(), before_node_to_move);
+  }
+
+  std::string DebugString() const override {
+    return "RelocateAndMakeActiveOperator";
+  }
+};
+
 // ----- MakeActiveAndRelocate -----
 
-// MakeActiveAndRelocat makes a node active next to a node being relocated.
+// MakeActiveAndRelocate makes a node active next to a node being relocated.
 // Possible neighbor for paths 0 -> 4, 1 -> 2 -> 5 and 3 inactive is:
 // 0 -> 3 -> 2 -> 4, 1 -> 5.
 
@@ -1883,6 +1914,7 @@ MAKE_LOCAL_SEARCH_OPERATOR(MakeChainInactiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(SwapActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(ExtendedSwapActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeActiveAndRelocate)
+MAKE_LOCAL_SEARCH_OPERATOR(RelocateAndMakeActiveOperator)
 
 #undef MAKE_LOCAL_SEARCH_OPERATOR
 
