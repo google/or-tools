@@ -203,6 +203,14 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %typemap(jstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
 %typemap(javain) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($javainput.getPermanentCallback())";
 
+namespace operations_research {
+%define NODE_EVALUATOR_CAST(CType, ptr)
+reinterpret_cast<NodeEvaluator2*>(ptr)->getPermanentCallback()
+%enddef
+
+CONVERT_VECTOR_WITH_CAST(RoutingModel::NodeEvaluator2, NodeEvaluator2, NODE_EVALUATOR_CAST);
+}  // namespace operations_research
+
 %typemap(in) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >&
 (std::vector<std::vector<operations_research::RoutingModel::NodeIndex> > temp) {
   if ($input) {
@@ -255,7 +263,9 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %rename (setArcCostEvaluatorOfAllVehicles) SetArcCostEvaluatorOfAllVehicles;
 %rename (setArcCostEvaluatorOfVehicle) SetArcCostEvaluatorOfVehicle;
 %rename (addDimension) AddDimension;
+%rename (addDimensionWithVehicleTransits) AddDimensionWithVehicleTransits;
 %rename (addDimensionWithVehicleCapacity) AddDimensionWithVehicleCapacity;
+%rename (addDimensionWithVehicleTransitAndCapacity) AddDimensionWithVehicleTransitAndCapacity;
 %rename (addConstantDimension) AddConstantDimension;
 %rename (addVectorDimension) AddVectorDimension;
 %rename (getDimensionOrDie) GetDimensionOrDie;
