@@ -36,11 +36,6 @@ class SearchLimitParameters;
 %module(directors="1", allprotected="1") operations_research;
 #pragma SWIG nowarn=473
 
-%typemap(javaimports) operations_research::Solver %{
-import com.google.ortools.constraintsolver.ConstraintSolverParameters;
-import com.google.ortools.constraintsolver.SearchLimitParameters;
-%}
-
 %feature("director") BaseLns;
 %feature("director") Decision;
 %feature("director") DecisionBuilder;
@@ -877,6 +872,12 @@ PROTO_INPUT(operations_research::SearchLimitParameters,
             proto)
 PROTO2_RETURN(operations_research::SearchLimitParameters,
               Google.OrTools.ConstraintSolver.SearchLimitParameters)
+
+PROTO_INPUT(operations_research::CpModel,
+            Google.OrTools.ConstraintSolver.CpModel,
+            proto)
+PROTO2_RETURN(operations_research::CpModel,
+              Google.OrTools.ConstraintSolver.CpModel)
 
 // Wrap cp includes
 %include "constraint_solver/constraint_solver.h"

@@ -318,7 +318,7 @@ int Run() {
       FLAGS_collect_variables) {
     Solver solver(model_proto.model());
     std::vector<SearchMonitor*> monitors;
-    if (!solver.LoadModel(model_proto, &monitors)) {
+    if (!solver.LoadModelWithSearchMonitors(model_proto, &monitors)) {
       LOG(INFO) << "Could not load model into the solver";
       return kProblem;
     }

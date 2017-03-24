@@ -204,6 +204,9 @@ $(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs: $(SRC_DIR)/cons
 $(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs: $(SRC_DIR)/constraint_solver/solver_parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver --csharp_opt=file_extension=.g.cs $(SRC_DIR)$Sconstraint_solver$Ssolver_parameters.proto
 
+$(GEN_DIR)/com/google/ortools/constraintsolver/Model.g.cs: $(SRC_DIR)/constraint_solver/solver_parameters.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver --csharp_opt=file_extension=.g.cs $(SRC_DIR)$Sconstraint_solver$Smodel.proto
+
 $(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs: $(SRC_DIR)/constraint_solver/routing_parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --csharp_out=$(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver --csharp_opt=file_extension=.g.cs $(SRC_DIR)$Sconstraint_solver$Srouting_parameters.proto
 
@@ -239,6 +242,7 @@ $(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL): \
 	$(SRC_DIR)/com/google/ortools/linearsolver/VariableHelper.cs \
 	$(SRC_DIR)/com/google/ortools/util/NestedArrayHelper.cs \
 	$(SRC_DIR)/com/google/ortools/util/ProtoHelper.cs \
+	$(GEN_DIR)/com/google/ortools/constraintsolver/Model.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/SearchLimit.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/SolverParameters.g.cs\
 	$(GEN_DIR)/com/google/ortools/constraintsolver/RoutingParameters.g.cs\

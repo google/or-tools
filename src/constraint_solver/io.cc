@@ -2434,39 +2434,34 @@ bool CpModelLoader::ScanOneArgument(int type_index, const CpArgument& arg_proto,
 
 // ----- Solver API -----
 
-void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
-                         CpModel* const model_proto,
-                         DecisionBuilder* const db) const {
-  CHECK(model_proto != nullptr);
+CpModel Solver::ExportModelWithSearchMonitorsAndDecisionBuilder(
+      const std::vector<SearchMonitor*>& monitors,
+      DecisionBuilder* const db) const {
+  CpModel model_proto;
   FirstPassVisitor first_pass;
   Accept(&first_pass, monitors, db);
-  SecondPassVisitor second_pass(first_pass, model_proto);
+  SecondPassVisitor second_pass(first_pass, &model_proto);
   Accept(&second_pass, monitors, db);
+  return model_proto;
 }
 
-void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
-                         CpModel* const model_proto) const {
-  CHECK(model_proto != nullptr);
-  FirstPassVisitor first_pass;
-  Accept(&first_pass, monitors);
-  SecondPassVisitor second_pass(first_pass, model_proto);
-  Accept(&second_pass, monitors);
+CpModel Solver::ExportModelWithSearchMonitors(
+    const std::vector<SearchMonitor*>& monitors) const {
+  return ExportModelWithSearchMonitorsAndDecisionBuilder(monitors, nullptr);
 }
 
-void Solver::ExportModel(CpModel* const model_proto) const {
-  CHECK(model_proto != nullptr);
-  FirstPassVisitor first_pass;
-  Accept(&first_pass);
-  SecondPassVisitor second_pass(first_pass, model_proto);
-  Accept(&second_pass);
+CpModel Solver::ExportModel() const {
+  std::vector<SearchMonitor*> monitors;
+  return ExportModelWithSearchMonitorsAndDecisionBuilder(monitors, nullptr);
 }
 
 bool Solver::LoadModel(const CpModel& model_proto) {
-  return LoadModel(model_proto, nullptr);
+  return LoadModelWithSearchMonitors(model_proto, nullptr);
 }
 
-bool Solver::LoadModel(const CpModel& model_proto,
-                       std::vector<SearchMonitor*>* monitors) {
+bool Solver::LoadModelWithSearchMonitors(
+    const CpModel& model_proto,
+    std::vector<SearchMonitor*>* monitors) {
   if (model_proto.version() > kModelVersion) {
     LOG(ERROR) << "Model protocol buffer version is greater than"
                << " the one compiled in the reader (" << model_proto.version()

@@ -595,6 +595,16 @@ public class CsTestCpOperator
                 "GetHoles() iterator, or the WhenDomain() demon invocation.");
   }
 
+  static void CpModelTest() {
+    Solver solver = new Solver("TestConstraint");
+    IntVar x = solver.MakeIntVar(0, 10, "x");
+    IntVar y = solver.MakeIntVar(0, 10, "y");
+    solver.Add(x + y == 5);
+    CpModel model = solver.ExportModel();
+
+    Console.WriteLine(model);
+  }
+
   static void Main() {
     ConstructorsTest();
     ConstraintWithExprTest();
@@ -607,6 +617,7 @@ public class CsTestCpOperator
     FailingConstraintTest();
     DomainIteratorTest();
     HoleIteratorTest();
+    CpModelTest();
     if (error_count_ != 0) {
       Console.WriteLine("Found " + error_count_ + " errors.");
       Environment.Exit(1);

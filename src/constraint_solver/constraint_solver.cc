@@ -1671,8 +1671,7 @@ void Solver::ProcessConstraints() {
     if (!file::Open(export_file, "wb", &file, file::Defaults()).ok()) {
       LOG(WARNING) << "Cannot open " << export_file;
     } else {
-      CpModel export_proto;
-      ExportModel(&export_proto);
+      CpModel export_proto = ExportModel();
       VLOG(1) << export_proto.DebugString();
       RecordWriter writer(file);
       writer.WriteProtocolMessage(export_proto);

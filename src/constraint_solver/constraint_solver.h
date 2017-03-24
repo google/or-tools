@@ -982,20 +982,22 @@ class Solver {
 
   // Exports the model to protobuf. This code will be called
   // from inside the solver during the start of the search.
-  void ExportModel(CpModel* const proto) const;
+  CpModel ExportModel() const;
   // Exports the model to protobuf. Search monitors are useful to pass
   // the objective and limits to the protobuf.
-  void ExportModel(const std::vector<SearchMonitor*>& monitors,
-                   CpModel* const proto) const;
+  CpModel ExportModelWithSearchMonitors(
+      const std::vector<SearchMonitor*>& monitors) const;
   // Exports the model to protobuf. Search monitors are useful to pass
   // the objective and limits to the protobuf.
-  void ExportModel(const std::vector<SearchMonitor*>& monitors,
-                   CpModel* const proto, DecisionBuilder* const db) const;
+  CpModel ExportModelWithSearchMonitorsAndDecisionBuilder(
+      const std::vector<SearchMonitor*>& monitors,
+      DecisionBuilder* const db) const;
   // Loads the model into the solver, and returns true upon success.
   bool LoadModel(const CpModel& proto);
   // Loads the model into the solver, appends search monitors to monitors,
   // and returns true upon success.
-  bool LoadModel(const CpModel& proto, std::vector<SearchMonitor*>* monitors);
+  bool LoadModelWithSearchMonitors(
+      const CpModel& proto, std::vector<SearchMonitor*>* monitors);
   // Upgrades the model to the latest version.
   static bool UpgradeModel(CpModel* const proto);
 
