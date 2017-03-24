@@ -26,7 +26,8 @@
 #include "base/logging.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
-#include "base/hash.h"
+//#include "base/hash.h"
+#include "base/recordio.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/model.pb.h"
@@ -2434,31 +2435,140 @@ bool CpModelLoader::ScanOneArgument(int type_index, const CpArgument& arg_proto,
 
 // ----- Solver API -----
 
+//
+// Provides a functional focal point for all things ExportModel. Just provide the file path
+// and functional proto.
+//
+void _ExportModel(const std::string& export_file_path,
+                  const std::function<CpModel* const()>& get_proto) {
+  // Don't do any processing when there is no file path.
+  if (export_file_path.empty()) {
+      LOG(INFO) << "Please provide a file path in order to export the CpModel proto.";
+      return;
+  }
+  // The caller maintains ownership of the CpModel proto instance/reference/ and/or pointer.
+  auto* const proto = get_proto();
+  CHECK(proto != nullptr);
+  // MWP: To avoid confusion. Actually, I'm surprised the compiler was not
+  // confused over variable name versus namespace.
+  File* f_;
+  if (!file::Open(export_file_path, "wb", &f_, file::Defaults()).ok()) {
+    LOG(WARNING) << "Cannot open file '" << export_file_path << "'";
+  } else {
+    VLOG(1) << proto->DebugString();
+    // Writer assumes ownership of the File pointer, which File has ownership of the underlying FILE resource.
+    RecordWriter writer(f_);
+    // Better use of destructors, closing resources as a matter of destruction, etc.
+    CHECK(writer.WriteProtocolMessage(*proto))
+      << "Unable to write protocol message to file '" << export_file_path << "'.";
+    // Writer and underlying File handle their own resource destruction, i.e. Close.
+  }
+}
+
 void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
-                         CpModel* const model_proto,
+                         DecisionBuilder* const db,
+                         CpModel* const proto) const {
+  CHECK(proto != nullptr);
+  _ExportModel(
+    parameters_.export_file(),
+    [this, &monitors, &db, proto]() {
+      FirstPassVisitor first_pass;
+      Accept(&first_pass, monitors, db);
+      SecondPassVisitor second_pass(first_pass, proto);
+      Accept(&second_pass, monitors, db);
+      return proto;
+    }
+  );
+}
+
+void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
+                         CpModel* const proto) const {
+  CHECK(proto != nullptr);
+  _ExportModel(
+    parameters_.export_file(),
+    [this, &monitors, proto]() {
+      FirstPassVisitor first_pass;
+      Accept(&first_pass, monitors);
+      SecondPassVisitor second_pass(first_pass, proto);
+      Accept(&second_pass, monitors);
+      return proto;
+    }
+  );
+}
+
+void Solver::ExportModel(CpModel* const proto) const {
+  CHECK(proto != nullptr);
+  _ExportModel(
+    parameters_.export_file(),
+    [this, proto]() {
+      FirstPassVisitor first_pass;
+      Accept(&first_pass);
+      SecondPassVisitor second_pass(first_pass, proto);
+      Accept(&second_pass);
+      return proto;
+    }
+  );
+}
+
+void Solver::ExportModel() const {
+  CpModel proto;
+  ExportModel(&proto);
+}
+
+void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors) const {
+  CpModel proto;
+  ExportModel(monitors, &proto);
+}
+
+void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
                          DecisionBuilder* const db) const {
-  CHECK(model_proto != nullptr);
-  FirstPassVisitor first_pass;
-  Accept(&first_pass, monitors, db);
-  SecondPassVisitor second_pass(first_pass, model_proto);
-  Accept(&second_pass, monitors, db);
+  CpModel proto;
+  ExportModel(monitors, db, &proto);
 }
 
-void Solver::ExportModel(const std::vector<SearchMonitor*>& monitors,
-                         CpModel* const model_proto) const {
-  CHECK(model_proto != nullptr);
-  FirstPassVisitor first_pass;
-  Accept(&first_pass, monitors);
-  SecondPassVisitor second_pass(first_pass, model_proto);
-  Accept(&second_pass, monitors);
+void Solver::ExportModel(const std::string& export_file_path,
+                         const std::vector<SearchMonitor*>& monitors,
+                         DecisionBuilder* const db) {
+  CpModel proto;
+  _ExportModel(
+    export_file_path,
+    [this, &monitors, &db, &proto]() {
+      FirstPassVisitor first_pass;
+      Accept(&first_pass, monitors, db);
+      SecondPassVisitor second_pass(first_pass, &proto);
+      Accept(&second_pass, monitors, db);
+      return &proto;
+    }
+  );
 }
 
-void Solver::ExportModel(CpModel* const model_proto) const {
-  CHECK(model_proto != nullptr);
-  FirstPassVisitor first_pass;
-  Accept(&first_pass);
-  SecondPassVisitor second_pass(first_pass, model_proto);
-  Accept(&second_pass);
+void Solver::ExportModel(const std::string& export_file_path,
+                         const std::vector<SearchMonitor*>& monitors) {
+  CpModel proto;
+  _ExportModel(
+    export_file_path,
+    [this, &monitors, &proto]() {
+      FirstPassVisitor first_pass;
+      Accept(&first_pass, monitors);
+      SecondPassVisitor second_pass(first_pass, &proto);
+      Accept(&second_pass, monitors);
+      return &proto;
+    }
+  );
+}
+
+void Solver::ExportModel(const std::string& export_file_path) {
+  CpModel proto;
+  _ExportModel(
+    export_file_path,
+    [this, &proto]() {
+      FirstPassVisitor first_pass;
+      Accept(&first_pass);
+      SecondPassVisitor second_pass(first_pass, &proto);
+      Accept(&second_pass);
+      return &proto;
+    }
+  );
 }
 
 bool Solver::LoadModel(const CpModel& model_proto) {

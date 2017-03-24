@@ -1665,20 +1665,10 @@ void Solver::ProcessConstraints() {
     ModelVisitor* const visitor = MakeStatisticsModelVisitor();
     Accept(visitor);
   }
-  const std::string export_file = parameters_.export_file();
-  if (!export_file.empty()) {
-    File* file;
-    if (!file::Open(export_file, "wb", &file, file::Defaults()).ok()) {
-      LOG(WARNING) << "Cannot open " << export_file;
-    } else {
-      CpModel export_proto;
-      ExportModel(&export_proto);
-      VLOG(1) << export_proto.DebugString();
-      RecordWriter writer(file);
-      writer.WriteProtocolMessage(export_proto);
-      writer.Close();
-    }
-  }
+
+  // TODO: TBD: much of the ExportModel has been re-factored; potentially could re-think
+  // the whole ExportFile portion of the ConstraintSolverParameters altogether.
+  ExportModel();
 
   if (parameters_.disable_solve()) {
     LOG(INFO) << "Forcing early failure";
