@@ -980,17 +980,54 @@ class Solver {
   // Abandon the current branch in the search tree. A backtrack will follow.
   void Fail();
 
-  // Exports the model to protobuf. This code will be called
-  // from inside the solver during the start of the search.
-  void ExportModel(CpModel* const proto) const;
-  // Exports the model to protobuf. Search monitors are useful to pass
-  // the objective and limits to the protobuf.
+  // TODO: TBD: this is called at the start of the search? and what is done with it?
+
+  // Exports the model to protobuf. This code will be called from inside the solver during the start
+  // of the search. This overload will attempt to use the ExportFile set in the parameters. This
+  // overload also assumes local responsibility for the proto, file, and writer involved during the
+  // operation.
+  void ExportModel() const;
+  // Exports the model to protobuf. Search monitors are useful to pass the objective and limits to the
+  // protobuf. This overload will attempt to use the ExportFile set in the parameters. This overload
+  // also assumes local responsibility for the proto, file, and writer involved during the operation.
+  void ExportModel(const std::vector<SearchMonitor*>& monitors) const;
+  // Exports the model to protobuf. Search monitors are useful to pass the objective and limits to the
+  // protobuf. This overload will attempt to use the ExportFile set in the parameters. This overload
+  // also assumes local responsibility for the proto, file, and writer involved during the operation.
   void ExportModel(const std::vector<SearchMonitor*>& monitors,
-                   CpModel* const proto) const;
-  // Exports the model to protobuf. Search monitors are useful to pass
-  // the objective and limits to the protobuf.
+                   DecisionBuilder* const db) const;
+
+  // Exports the model to protobuf. The code is intended for call by the user, ideally at an
+  // opportune moment such as after receiving search assignment. This overload also assumes
+  // local responsibility for the proto, file, and writer involved during the operation.
+  void ExportModel(const std::string& export_file_path);
+  // Exports the model to protobuf. Search monitors are useful to pass the objective and limits
+  // to the protobuf. This overload also assumes local responsibility for the proto, file, and
+  // writer involved during the operation.
+  void ExportModel(const std::string& export_file_path,
+                   const std::vector<SearchMonitor*>& monitors);
+  // Exports the model to protobuf. Search monitors are useful to pass the objective and limits
+  // to the protobuf. This overload also assumes local responsibility for the proto, file, and
+  // writer involved during the operation.
+  void ExportModel(const std::string& export_file_path,
+                   const std::vector<SearchMonitor*>& monitors,
+                   DecisionBuilder* const db);
+
+  // Exports the model to protobuf. This code will be called from inside the solver during the start of
+  // the search. This overload will attempt to use the ExportFile set in the parameters. This overload also
+  // assumes local responsibility for the file and writer involved during the operation.
+  void ExportModel(CpModel* proto) const;
+  // Exports the model to protobuf. Search monitors are useful to pass the objective and limits to the
+  // protobuf. This overload will attempt to use the ExportFile set in the parameters. This overload also
+  // assumes local responsibility for the file and writer involved during the operation.
   void ExportModel(const std::vector<SearchMonitor*>& monitors,
-                   CpModel* const proto, DecisionBuilder* const db) const;
+                   CpModel* proto) const;
+  // Exports the model to protobuf. Search monitors are useful to pass the objective and limits to the
+  // protobuf. This overload will attempt to use the ExportFile set in the parameters. This overload also
+  // assumes local responsibility for the file and writer involved during the operation.
+  void ExportModel(const std::vector<SearchMonitor*>& monitors,
+                   DecisionBuilder* const db, CpModel* const proto) const;
+
   // Loads the model into the solver, and returns true upon success.
   bool LoadModel(const CpModel& proto);
   // Loads the model into the solver, appends search monitors to monitors,
