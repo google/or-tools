@@ -63,16 +63,14 @@ def main(unused_argv):
 
   letters = [a, b, c, d, e, f, g, h, i, j]
 
-  x = solver.IntVar(list(range(0, 99999)), "x")
-  y = solver.IntVar(list(range(0, 99999)), "y")
-  diff = solver.IntVar(list(range(0, 99999)), "y")
-
+  digit_vector = [10000,1000,100,10,1]
+  x = solver.ScalProd(letters[0:5],digit_vector)
+  y = solver.ScalProd(letters[5:],digit_vector)
+  diff = x - y
+  
   #
   # constraints
   #
-  solver.Add(x == 10000 * a + 1000 * b + 100 * c + 10 * d + e)
-  solver.Add(y == 10000 * f + 1000 * g + 100 * h + 10 * i + j)
-  solver.Add(diff == x - y)
   solver.Add(diff > 0)
   solver.Add(solver.AllDifferent(letters))
 
@@ -93,7 +91,7 @@ def main(unused_argv):
   search_log = solver.SearchLog(100, diff)
   # Note: I'm not sure what CHOOSE_PATH do, but it is fast:
   #       find the solution in just 4 steps
-  solver.Solve(solver.Phase(letters + [x, y, diff],
+  solver.Solve(solver.Phase(letters,
                             solver.CHOOSE_PATH,
                             solver.ASSIGN_MIN_VALUE),
                [objective, search_log, collector])
