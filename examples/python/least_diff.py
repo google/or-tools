@@ -91,7 +91,7 @@ def main(unused_argv):
   search_log = solver.SearchLog(100, diff)
   # Note: I'm not sure what CHOOSE_PATH do, but it is fast:
   #       find the solution in just 4 steps
-  solver.Solve(solver.Phase(letters + [x, y, diff],
+  solver.Solve(solver.Phase(letters,
                             solver.CHOOSE_PATH,
                             solver.ASSIGN_MIN_VALUE),
                [objective, search_log, collector])
