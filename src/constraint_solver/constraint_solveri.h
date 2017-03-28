@@ -2063,6 +2063,7 @@ class ModelParser : public ModelVisitor {
  private:
   std::vector<ArgumentHolder*> holders_;
 };
+#endif  // SWIG
 
 // ---------- CpModelLoader -----------
 
@@ -2076,6 +2077,15 @@ class CpModelLoader {
 
   Solver* solver() const { return solver_; }
 
+  // Returns stored integer expression.
+  IntExpr* IntegerExpression(int index) const;
+  // Returns stored interval variable.
+  IntervalVar* IntervalVariable(int index) const;
+
+
+#if !defined(SWIG)
+  // Internal, do not use.
+
   // Builds integer expression from proto and stores it. It returns
   // true upon success.
   bool BuildFromProto(const CpIntegerExpression& proto);
@@ -2087,11 +2097,6 @@ class CpModelLoader {
   // Builds sequence variable from proto and stores it. It returns
   // true upon success.
   bool BuildFromProto(const CpSequenceVariable& proto);
-
-  // Returns stored integer expression.
-  IntExpr* IntegerExpression(int index) const;
-  // Returns stored interval variable.
-  IntervalVar* IntervalVariable(int index) const;
 
   bool ScanOneArgument(int type_index, const CpArgument& arg_proto,
                        int64* to_fill);
@@ -2137,6 +2142,7 @@ class CpModelLoader {
 
   // TODO(user): Use.
   void SetSequenceVariable(int index, SequenceVar* const var) {}
+#endif  // !defined(SWIG)
 
  private:
   Solver* const solver_;
@@ -2146,6 +2152,7 @@ class CpModelLoader {
   VectorMap<std::string> tags_;
 };
 
+#if !defined(SWIG)
 // ----- Utility Class for Callbacks -----
 
 template <class T>

@@ -994,6 +994,7 @@ class Solver {
       const std::vector<SearchMonitor*>& monitors,
       DecisionBuilder* const db) const;
   // Loads the model into the solver, and returns true upon success.
+  // This method can only be used once.
   bool LoadModel(const CpModel& proto);
   // Loads the model into the solver, appends search monitors to monitors,
   // and returns true upon success.
@@ -1001,6 +1002,9 @@ class Solver {
                                    std::vector<SearchMonitor*>* monitors);
   // Upgrades the model to the latest version.
   static bool UpgradeModel(CpModel* const proto);
+  // Get read only load context. LoadModel() or LoadModelWithSearchMonitors()
+  // must have beed called before.
+  const CpModelLoader* model_loader() const { return model_loader_.get(); }
 
 #if !defined(SWIG)
   // Collects decision variables.
@@ -3170,6 +3174,7 @@ class Solver {
   hash_map<std::string, ConstraintBuilder> constraint_builders_;
   hash_map<std::string, IntervalVariableBuilder> interval_builders_;
   hash_map<std::string, SequenceVariableBuilder> sequence_builders_;
+  std::unique_ptr<CpModelLoader> model_loader_;
 
   std::unique_ptr<ModelCache> model_cache_;
   std::unique_ptr<PropagationMonitor> propagation_monitor_;
