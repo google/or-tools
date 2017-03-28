@@ -27,7 +27,15 @@ namespace operations_research {
 struct ClosedInterval {
   int64 start;  // Inclusive.
   int64 end;    // Inclusive.
+
   std::string DebugString() const;
+  bool operator==(const ClosedInterval& other) const {
+    return start == other.start && end == other.end;
+  }
+  bool operator<(const ClosedInterval& other) const {
+    if (start == other.start) return end < other.end;
+    return start < other.start;
+  }
 };
 
 // Returns a compact std::string of a vector of intervals like "[1,4][6][10,20]".
@@ -36,6 +44,10 @@ std::string IntervalsAsString(const std::vector<ClosedInterval>& intervals);
 std::ostream& operator<<(std::ostream& out, const ClosedInterval& interval);
 std::ostream& operator<<(std::ostream& out,
                          const std::vector<ClosedInterval>& intervals);
+
+// TODO(user): Regroup all the functions below in a SortedDisjointIntervalVector
+// class, it will lead to shorter/easier to use names. This will also allow to
+// use an inlined vector for the most common case of one or two intervals.
 
 // Converts an unsorted list of integer values to the unique list of
 // non-adjacent, disjoint ClosedInterval spanning exactly these values. Eg. for
@@ -54,10 +66,43 @@ std::vector<ClosedInterval> SortedDisjointIntervalsFromValues(
 bool IntervalsAreSortedAndDisjoint(
     const std::vector<ClosedInterval>& intervals);
 
+// Returns true iff the given intervals contain the given value.
+//
+// TODO(user): This works in O(n), but could be made to work in O(log n) for
+// long list of intervals.
+bool SortedDisjointIntervalsContain(
+    const std::vector<ClosedInterval>& intervals, int64 value);
+
 // Returns the intersection of two lists of sorted disjoint intervals in a
 // sorted disjoint interval form.
 std::vector<ClosedInterval> IntersectionOfSortedDisjointIntervals(
     const std::vector<ClosedInterval>& a, const std::vector<ClosedInterval>& b);
+
+// Returns the domain of x + y given that the domain of x is a and the one of y
+// is b.
+std::vector<ClosedInterval> AdditionOfSortedDisjointIntervals(
+    const std::vector<ClosedInterval>& a, const std::vector<ClosedInterval>& b);
+
+// Returns [kint64min, kint64max] minus the given intervals.
+std::vector<ClosedInterval> ComplementOfSortedDisjointIntervals(
+    const std::vector<ClosedInterval>& intervals);
+
+// For an x in the given intervals, this returns the domain of -x.
+//
+// Tricky: because the negation of kint64min doesn't fit, we always remove
+// kint64min from the given intervals.
+std::vector<ClosedInterval> NegationOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals);
+
+// Returns the domain of x * coeff given the domain of x.
+std::vector<ClosedInterval> MultiplicationOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> a, int64 coeff);
+
+// If x * coeff is in the given intervals, this returns the domain of x. Note
+// that it is not the same as given the domains of x, return the domain of x /
+// coeff because of how the integer division work.
+std::vector<ClosedInterval> InverseMultiplicationOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals, int64 coeff);
 
 // This class represents a sorted list of disjoint, closed intervals.  When an
 // interval is inserted, all intervals that overlap it or that are even adjacent

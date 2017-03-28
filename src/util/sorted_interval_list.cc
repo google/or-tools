@@ -75,6 +75,14 @@ bool IntervalsAreSortedAndDisjoint(
   return true;
 }
 
+bool SortedDisjointIntervalsContain(
+    const std::vector<ClosedInterval>& intervals, int64 value) {
+  for (const ClosedInterval& interval : intervals) {
+    if (interval.start <= value && interval.end >= value) return true;
+  }
+  return false;
+}
+
 std::vector<ClosedInterval> IntersectionOfSortedDisjointIntervals(
     const std::vector<ClosedInterval>& a,
     const std::vector<ClosedInterval>& b) {
@@ -103,6 +111,116 @@ std::vector<ClosedInterval> IntersectionOfSortedDisjointIntervals(
     }
   }
   return result;
+}
+
+std::vector<ClosedInterval> ComplementOfSortedDisjointIntervals(
+    const std::vector<ClosedInterval>& intervals) {
+  std::vector<ClosedInterval> result;
+  int64 next_start = kint64min;
+  for (const ClosedInterval& interval : intervals) {
+    if (interval.start != kint64min) {
+      result.push_back({next_start, interval.start - 1});
+    }
+    if (interval.end == kint64max) return result;
+    next_start = interval.end + 1;
+  }
+  result.push_back({next_start, kint64max});
+  return result;
+}
+
+std::vector<ClosedInterval> NegationOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals) {
+  if (intervals.empty()) return intervals;
+  std::reverse(intervals.begin(), intervals.end());
+  if (intervals.back().end == kint64min) intervals.pop_back();  // corner-case
+  for (ClosedInterval& ref : intervals) {
+    std::swap(ref.start, ref.end);
+    ref.start = ref.start == kint64min ? kint64max : -ref.start;
+    ref.end = ref.end == kint64min ? kint64max : -ref.end;
+  }
+  return intervals;
+}
+
+namespace {
+
+// Transforms a sorted list of intervals in a sorted DISJOINT list for which
+// IntervalsAreSortedAndDisjoint() would return true.
+void IntersectionOfSortedIntervals(std::vector<ClosedInterval>* intervals) {
+  DCHECK(std::is_sorted(intervals->begin(), intervals->end()));
+  int new_size = 0;
+  for (const ClosedInterval& i : *intervals) {
+    if (new_size > 0 && i.start <= (*intervals)[new_size - 1].end + 1) {
+      (*intervals)[new_size - 1].end =
+          std::max(i.end, (*intervals)[new_size - 1].end);
+    } else {
+      (*intervals)[new_size++] = i;
+    }
+  }
+  intervals->resize(new_size);
+}
+
+}  // namespace
+
+std::vector<ClosedInterval> AdditionOfSortedDisjointIntervals(
+    const std::vector<ClosedInterval>& a,
+    const std::vector<ClosedInterval>& b) {
+  std::vector<ClosedInterval> result;
+  for (const ClosedInterval& i : a) {
+    for (const ClosedInterval& j : b) {
+      result.push_back({CapAdd(i.start, j.start), CapAdd(i.end, j.end)});
+    }
+  }
+  std::sort(result.begin(), result.end());
+  IntersectionOfSortedIntervals(&result);
+  return result;
+}
+
+std::vector<ClosedInterval> MultiplicationOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals, int64 coeff) {
+  const int64 abs_coeff = std::abs(coeff);
+  for (ClosedInterval& i : intervals) {
+    i.start = CapProd(i.start, abs_coeff);
+    i.end = CapProd(i.end, abs_coeff);
+  }
+  IntersectionOfSortedIntervals(&intervals);
+  return coeff > 0 ? intervals : NegationOfSortedDisjointIntervals(intervals);
+}
+
+int64 CeilRatio(int64 value, int64 positive_coeff) {
+  DCHECK_GT(positive_coeff, 0);
+  const int64 result = value / positive_coeff;
+  const int64 adjust = static_cast<int64>(result * positive_coeff < value);
+  return result + adjust;
+}
+
+int64 FloorRatio(int64 value, int64 positive_coeff) {
+  DCHECK_GT(positive_coeff, 0);
+  const int64 result = value / positive_coeff;
+  const int64 adjust = static_cast<int64>(result * positive_coeff > value);
+  return result - adjust;
+}
+
+std::vector<ClosedInterval> InverseMultiplicationOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals, int64 coeff) {
+  if (coeff == 0) {
+    return SortedDisjointIntervalsContain(intervals, 0)
+               ? std::vector<ClosedInterval>({{kint64min, kint64max}})
+               : std::vector<ClosedInterval>();
+  }
+  int new_size = 0;
+  const int64 abs_coeff = std::abs(coeff);
+  for (const ClosedInterval& i : intervals) {
+    const int64 start = CeilRatio(i.start, abs_coeff);
+    const int64 end = FloorRatio(i.end, abs_coeff);
+    if (start > end) continue;
+    if (new_size > 0 && start == intervals[new_size - 1].end + 1) {
+      intervals[new_size - 1].end = end;
+    } else {
+      intervals[new_size++] = {start, end};
+    }
+  }
+  intervals.resize(new_size);
+  return coeff > 0 ? intervals : NegationOfSortedDisjointIntervals(intervals);
 }
 
 SortedDisjointIntervalList::SortedDisjointIntervalList() {}

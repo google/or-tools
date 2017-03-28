@@ -27,10 +27,6 @@
 #include "base/integral_types.h"
 %}
 
-%{
-#include "base/jniutil.h"
-%}
-
 // Typemaps to represent const std::vector<CType>& arguments as arrays of
 // JavaType.
 %define VECTOR_AS_JAVA_ARRAY(CType, JavaType, JavaTypeName)

@@ -21,12 +21,12 @@
 #define OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "base/basictypes.h"
-#include "base/callback.h"
 #include "base/integral_types.h"
 #include "base/macros.h"
 
@@ -186,6 +186,10 @@ class PiecewiseLinearFunction {
   // Determines whether the piecewise linear function is convex or non-convex
   // and returns true when the function is convex.
   bool IsConvex() const;
+  // Returns true if the piecewise linear function is non-decreasing.
+  bool IsNonDecreasing() const;
+  // Returns true if the piecewise linear function is non-increasing.
+  bool IsNonIncreasing() const;
   // Returns the value of the piecewise linear function for x.
   int64 Value(int64 x) const;
   // Returns the maximum value of all the segments in the function.
@@ -200,6 +204,22 @@ class PiecewiseLinearFunction {
   // range. If the range is disjoint from the segments in the function, it
   // returns kint64max.
   int64 GetMinimum(int64 range_start, int64 range_end) const;
+  // Returns the smallest range within a given range containing all values
+  // greater than a given value.
+  std::pair<int64, int64> GetSmallestRangeGreaterThanValue(int64 range_start,
+                                                           int64 range_end,
+                                                           int64 value) const;
+  // Returns the smallest range within a given range containing all values
+  // less than a given value.
+  std::pair<int64, int64> GetSmallestRangeLessThanValue(int64 range_start,
+                                                        int64 range_end,
+                                                        int64 value) const;
+  // Returns the smallest range within a given range containing all values
+  // greater than value_min and less than value_max.
+  std::pair<int64, int64> GetSmallestRangeInValueRange(int64 range_start,
+                                                       int64 range_end,
+                                                       int64 value_min,
+                                                       int64 value_max) const;
 
   // Adds 'constant' to the 'x' of all segments. If the argument is positive,
   // the translation is to the right and when it's negative, to the left. The
@@ -219,8 +239,7 @@ class PiecewiseLinearFunction {
   void Subtract(const PiecewiseLinearFunction& function);
   // Decomposes the piecewise linear function in a set of convex piecewise
   // linear functions. The objects in the vector are owned by the client code.
-  void DecomposeToConvexFunctions(
-      std::vector<PiecewiseLinearFunction*>* convex_set);
+  std::vector<PiecewiseLinearFunction*> DecomposeToConvexFunctions() const;
 
   const std::vector<PiecewiseSegment>& segments() const { return segments_; }
 
@@ -229,17 +248,36 @@ class PiecewiseLinearFunction {
  private:
   // Takes the sequence of segments, sorts them on increasing start and inserts
   // them in the piecewise linear function.
-  explicit PiecewiseLinearFunction(std::vector<PiecewiseSegment>* segments);
+  explicit PiecewiseLinearFunction(std::vector<PiecewiseSegment> segments);
   // Inserts a segment in the function.
   void InsertSegment(const PiecewiseSegment& segment);
   // Operation between two functions. In any operation between two functions the
   // final domain is the intersection between the two domains.
   void Operation(const PiecewiseLinearFunction& other,
-                 ResultCallback2<int64, int64, int64>* operation);
+                 const std::function<int64(int64, int64)>& operation);
+  // Finds start and end segment indices from a range; returns false if the
+  // range is outside the domain of the function.
+  bool FindSegmentIndicesFromRange(int64 range_start, int64 range_end,
+                                   int* start_segment, int* end_segment) const;
+  void UpdateStatus() {
+    if (is_modified_) {
+      is_convex_ = IsConvexInternal();
+      is_non_decreasing_ = IsNonDecreasingInternal();
+      is_non_increasing_ = IsNonIncreasingInternal();
+      is_modified_ = false;
+    }
+  }
+  bool IsConvexInternal() const;
+  bool IsNonDecreasingInternal() const;
+  bool IsNonIncreasingInternal() const;
 
   // The vector of segments in the function, sorted in ascending order of start
   // points.
   std::vector<PiecewiseSegment> segments_;
+  bool is_modified_;
+  bool is_convex_;
+  bool is_non_decreasing_;
+  bool is_non_increasing_;
 };
 }  // namespace operations_research
 #endif  // OR_TOOLS_UTIL_PIECEWISE_LINEAR_FUNCTION_H_

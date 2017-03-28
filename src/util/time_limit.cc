@@ -25,10 +25,11 @@ const double TimeLimit::kSafetyBufferSeconds = 1e-4;
 const int TimeLimit::kHistorySize = 100;
 
 std::string TimeLimit::DebugString() const {
-  std::string buffer =
-      StrCat("Time left: ", GetTimeLeft(), "\nDeterministic time left: ",
-             GetDeterministicTimeLeft(), "\nElapsed time: ", GetElapsedTime(),
-             "\nElapsed deterministic time: ", GetElapsedDeterministicTime());
+  std::string buffer = StrCat(
+      "Time left: ", GetTimeLeft(),
+      "\nDeterministic time left: ", GetDeterministicTimeLeft(),
+      "\nElapsed time: ", GetElapsedTime(),
+      "\nElapsed deterministic time: ", GetElapsedDeterministicTime());
 #ifndef NDEBUG
   for (const auto& counter : deterministic_counters_) {
     const std::string& counter_name = counter.first;

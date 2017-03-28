@@ -35,7 +35,7 @@ namespace operations_research {
 // list of recipes. Each recipe consists of a duration, and a list of
 // demands, one per resource.
 //
-// The tasks dependencies form a dag with a single source and a single end.
+// The tasks dependencies form a DAG with a single source and a single end.
 // Both source and end tasks have a zero duration, and no resource consumption.
 //
 // In case the problem is of type RCPSP/Max. The data contains an additional
@@ -56,11 +56,11 @@ namespace operations_research {
 // negative. The constraint states that at each time point, the sum of demands
 // happening before or during this time must be between the min and max
 // capacity. Note that in that case, both min and max capacity can be negative.
-// Furthermore, if 0 si not in [min_capacity, max_capacity], then a sufficient
+// Furthermore, if 0 is not in [min_capacity, max_capacity], then a sufficient
 // set of events must happen at time 0 such that the sum of their demands must
 // fall inside the capacity interval.
 //
-// The supported file format are:
+// The supported file formats are:
 //   - standard psplib (.sm and .mm):
 //     http://www.om-db.wi.tum.de/psplib/data.html
 //   - rcpsp problem in the patterson format (.rcp):
@@ -82,7 +82,7 @@ class RcpspParser {
     // minimum capacity that must be valid at each time point.
     int min_capacity;
     bool renewable;
-    // If non zero, then a each unit of capacity will incur a cost of unit_cost.
+    // If non zero, then each unit of capacity will incur a cost of unit_cost.
     int unit_cost;
   };
 
@@ -99,10 +99,10 @@ class RcpspParser {
     std::vector<int> successors;
     // If the current task has n successors and m modes then this is
     // an n x m matrix where each entry at line i is a vector with the
-    // same length as the number of mode for the task successor[i]. If
-    // mode m1 is chosen for the current task, and mode m2 is choosen
+    // same length as the number of modes for the task successor[i]. If
+    // mode m1 is chosen for the current task, and mode m2 is chosen
     // for its successor i, we have:
-    //    start(current_task) + delay[i][m1][m2] <= start(successor task).
+    //    start(current_task) + delay[i][m1][m2] <= start(successor_task).
     std::vector<std::vector<std::vector<int>>> delays;
     std::vector<Recipe> recipes;
   };

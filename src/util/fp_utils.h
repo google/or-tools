@@ -221,9 +221,9 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 // - For all i, |round(factor * x[i]) / factor  - x[i]| <= error * |x[i]|
 // - The sum over i of |round(factor * x[i])| <= max_sum.
 //
-// The algorithm tries to minimize "error" (which is the relative error). Note
-// however than in really broken cases, the error might be infinity and the
-// factor zero.
+// The algorithm tries to minimize "error" (which is the relative error for one
+// coefficient). Note however than in really broken cases, the error might be
+// infinity and the factor zero.
 //
 // Note on the algorithm:
 // - It only uses factors of the form 2^n (i.e. ldexp(1.0, n)) for simplicity.
@@ -240,7 +240,24 @@ inline bool IsIntegerWithinTolerance(FloatType x, FloatType tolerance) {
 void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
                                     int64 max_absolute_sum,
                                     double* scaling_factor,
-                                    double* relative_error);
+                                    double* max_relative_coeff_error);
+
+// Same as the function above, but enforces that
+//  -  The sum over i of std::min(0, round(factor * x[i])) >= -max_sum.
+//  -  The sum over i of std::max(0, round(factor * x[i])) <= max_sum.
+// For any possible values of the x[i] such that x[i] is in [lb[i], ub[i]].
+//
+// This also computes the max_scaled_sum_error which is a bound on the maximum
+// difference between the exact scaled sum and the rounded one. One needs to
+// divide this by scaling_factor to have the maximum absolute error on the
+// original sum.
+void GetBestScalingOfDoublesToInt64(const std::vector<double>& x,
+                                    const std::vector<double>& lb,
+                                    const std::vector<double>& ub,
+                                    int64 max_absolute_sum,
+                                    double* scaling_factor,
+                                    double* max_relative_coeff_error,
+                                    double* max_scaled_sum_error);
 
 // Returns the Greatest Common Divisor of the numbers
 // round(fabs(x[i] * scaling_factor)). The numbers 0 are ignored and if they are
