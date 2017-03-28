@@ -103,8 +103,8 @@ void LPDecomposer::ExtractLocalProblem(int problem_index, LinearProgram* lp) {
 
     lp->SetVariableName(local_col,
                         original_problem_->GetVariableName(global_col));
-    lp->SetVariableIntegrality(
-        local_col, original_problem_->is_variable_integer()[global_col]);
+    lp->SetVariableType(local_col,
+                        original_problem_->GetVariableType(global_col));
     lp->SetVariableBounds(
         local_col, original_problem_->variable_lower_bounds()[global_col],
         original_problem_->variable_upper_bounds()[global_col]);

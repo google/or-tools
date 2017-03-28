@@ -28,7 +28,7 @@ void LinearProgramToMPModelProto(const LinearProgram& input,
     variable->set_lower_bound(input.variable_lower_bounds()[col]);
     variable->set_upper_bound(input.variable_upper_bounds()[col]);
     variable->set_name(input.GetVariableName(col));
-    variable->set_is_integer(input.is_variable_integer()[col]);
+    variable->set_is_integer(input.IsVariableInteger(col));
     variable->set_objective_coefficient(input.objective_coefficients()[col]);
   }
   // We need the matrix transpose because a LinearProgram stores the data
@@ -61,7 +61,9 @@ void MPModelProtoToLinearProgram(const MPModelProto& input,
     output->SetVariableName(col, var.name());
     output->SetVariableBounds(col, var.lower_bound(), var.upper_bound());
     output->SetObjectiveCoefficient(col, var.objective_coefficient());
-    output->SetVariableIntegrality(col, var.is_integer());
+    if (var.is_integer()) {
+      output->SetVariableType(col, LinearProgram::VariableType::INTEGER);
+    }
   }
   for (int j = 0; j < input.constraint_size(); ++j) {
     const MPConstraintProto& cst = input.constraint(j);

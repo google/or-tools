@@ -368,7 +368,7 @@ void MPSReader::ProcessColumnsSection() {
   const ColIndex col = data_->FindOrCreateVariable(column_name);
   is_binary_by_default_.resize(col + 1, false);
   if (in_integer_section_) {
-    data_->SetVariableIntegrality(col, true);
+    data_->SetVariableType(col, LinearProgram::VariableType::INTEGER);
     // The default bounds for integer variables are [0, 1].
     data_->SetVariableBounds(col, 0.0, 1.0);
     is_binary_by_default_[col] = true;
@@ -507,13 +507,13 @@ void MPSReader::StoreBound(const std::string& bound_type_mnemonic,
   }
   const ColIndex col = data_->FindOrCreateVariable(column_name);
   if (integer_type_names_set_.count(bound_type_mnemonic) != 0) {
-    data_->SetVariableIntegrality(col, true);
+    data_->SetVariableType(col, LinearProgram::VariableType::INTEGER);
   }
   // Resize the is_binary_by_default_ in case it is the first time this column
   // is encountered.
   is_binary_by_default_.resize(col + 1, false);
   // Check that "binary by default" implies "integer".
-  DCHECK(!is_binary_by_default_[col] || data_->is_variable_integer()[col]);
+  DCHECK(!is_binary_by_default_[col] || data_->IsVariableInteger(col));
   Fractional lower_bound = data_->variable_lower_bounds()[col];
   Fractional upper_bound = data_->variable_upper_bounds()[col];
   // If a variable is binary by default, its status is reset if any bound

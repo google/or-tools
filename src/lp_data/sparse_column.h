@@ -56,8 +56,6 @@ class SparseColumn : public SparseVector<RowIndex, SparseColumnIterator> {
   }
 };
 
-// TODO(user): create SparseRow and use it where appropriate.
-
 // --------------------------------------------------------
 // RandomAccessSparseColumn
 // --------------------------------------------------------

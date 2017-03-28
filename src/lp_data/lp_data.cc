@@ -117,8 +117,7 @@ LinearProgram::LinearProgram()
       variable_lower_bounds_(),
       variable_upper_bounds_(),
       variable_names_(),
-      is_variable_integer_(),
-      is_variable_implied_integer_(),
+      variable_types_(),
       integer_variables_list_(),
       variable_table_(),
       constraint_table_(),
@@ -142,8 +141,7 @@ void LinearProgram::Clear() {
   objective_coefficients_.clear();
   variable_lower_bounds_.clear();
   variable_upper_bounds_.clear();
-  is_variable_integer_.clear();
-  is_variable_implied_integer_.clear();
+  variable_types_.clear();
   integer_variables_list_.clear();
   variable_names_.clear();
 
@@ -168,8 +166,7 @@ ColIndex LinearProgram::CreateNewVariable() {
   objective_coefficients_.push_back(0.0);
   variable_lower_bounds_.push_back(0);
   variable_upper_bounds_.push_back(kInfinity);
-  is_variable_integer_.push_back(false);
-  is_variable_implied_integer_.push_back(false);
+  variable_types_.push_back(VariableType::CONTINUOUS);
   variable_names_.push_back("");
   transpose_matrix_is_consistent_ = false;
   return matrix_.AppendEmptyColumn();
@@ -182,8 +179,9 @@ ColIndex LinearProgram::CreateNewSlackVariable(bool is_integer_slack_variable,
   objective_coefficients_.push_back(0.0);
   variable_lower_bounds_.push_back(lower_bound);
   variable_upper_bounds_.push_back(upper_bound);
-  is_variable_integer_.push_back(is_integer_slack_variable);
-  is_variable_implied_integer_.push_back(is_integer_slack_variable);
+  variable_types_.push_back(is_integer_slack_variable
+                                ? (VariableType::IMPLIED_INTEGER)
+                                : (VariableType::CONTINUOUS));
   variable_names_.push_back(name);
   transpose_matrix_is_consistent_ = false;
   return matrix_.AppendEmptyColumn();
@@ -233,6 +231,14 @@ void LinearProgram::SetVariableName(ColIndex col, const std::string& name) {
   variable_names_[col] = name;
 }
 
+void LinearProgram::SetVariableType(ColIndex col, VariableType type) {
+  if (type == VariableType::INTEGER) {
+    integer_variables_list_is_consistent_ &=
+        (variable_types_[col] == VariableType::INTEGER);
+  }
+  variable_types_[col] = type;
+}
+
 void LinearProgram::SetConstraintName(RowIndex row, const std::string& name) {
   constraint_names_[row] = name;
 }
@@ -244,20 +250,6 @@ void LinearProgram::SetVariableBounds(ColIndex col, Fractional lower_bound,
   variable_upper_bounds_[col] = upper_bound;
 }
 
-void LinearProgram::SetVariableIntegrality(ColIndex col, bool is_integer) {
-  integer_variables_list_is_consistent_ &=
-      (is_variable_integer_[col] == is_integer);
-  is_variable_integer_[col] = is_integer;
-}
-
-void LinearProgram::SetVariableImpliedInteger(ColIndex col,
-                                              bool is_implied_integer) {
-  is_variable_implied_integer_[col] = is_implied_integer;
-  if (is_implied_integer) {
-    SetVariableIntegrality(col, true);
-  }
-}
-
 void LinearProgram::UpdateAllIntegerVariableLists() const {
   if (integer_variables_list_is_consistent_) return;
   integer_variables_list_.clear();
@@ -265,7 +257,7 @@ void LinearProgram::UpdateAllIntegerVariableLists() const {
   non_binary_variables_list_.clear();
   const ColIndex num_cols = num_variables();
   for (ColIndex col(0); col < num_cols; ++col) {
-    if (is_variable_integer_[col]) {
+    if (IsVariableInteger(col)) {
       integer_variables_list_.push_back(col);
       if (IsVariableBinary(col)) {
         binary_variables_list_.push_back(col);
@@ -292,11 +284,15 @@ const std::vector<ColIndex>& LinearProgram::NonBinaryVariablesList() const {
   return non_binary_variables_list_;
 }
 
+bool LinearProgram::IsVariableInteger(ColIndex col) const {
+  return variable_types_[col] == VariableType::INTEGER ||
+         variable_types_[col] == VariableType::IMPLIED_INTEGER;
+}
+
 bool LinearProgram::IsVariableBinary(ColIndex col) const {
   // TODO(user, bdb): bounds of binary variables (and of integer ones) should
   // be integer. Add a preprocessor for that.
-  return is_variable_integer_[col] &&
-         (variable_lower_bounds_[col] < kEpsilon) &&
+  return IsVariableInteger(col) && (variable_lower_bounds_[col] < kEpsilon) &&
          (variable_lower_bounds_[col] > Fractional(-1)) &&
          (variable_upper_bounds_[col] > Fractional(1) - kEpsilon) &&
          (variable_upper_bounds_[col] < 2);
@@ -363,6 +359,10 @@ std::string LinearProgram::GetConstraintName(RowIndex row) const {
   return row >= constraint_names_.size() || constraint_names_[row].empty()
              ? StringPrintf("r%d", row.value())
              : constraint_names_[row];
+}
+
+LinearProgram::VariableType LinearProgram::GetVariableType(ColIndex col) const {
+  return variable_types_[col];
 }
 
 const SparseMatrix& LinearProgram::GetTransposeSparseMatrix() const {
@@ -654,11 +654,11 @@ void LinearProgram::AddSlackVariablesWhereNecessary(
   if (detect_integer_constraints) {
     for (ColIndex col(0); col < num_variables(); ++col) {
       const SparseColumn& column = matrix_.column(col);
-      const bool is_integer_varaible = is_variable_integer_[col];
+      const bool is_integer_variable = IsVariableInteger(col);
       for (const SparseColumn::Entry& entry : column) {
         const RowIndex row = entry.row();
         has_integer_slack_variable[row] =
-            has_integer_slack_variable[row] && is_integer_varaible &&
+            has_integer_slack_variable[row] && is_integer_variable &&
             round(entry.coefficient()) == entry.coefficient();
       }
     }
@@ -838,8 +838,7 @@ void LinearProgram::PopulateNameObjectiveAndVariablesFromLinearProgram(
   variable_lower_bounds_ = linear_program.variable_lower_bounds_;
   variable_upper_bounds_ = linear_program.variable_upper_bounds_;
   variable_names_ = linear_program.variable_names_;
-  is_variable_integer_ = linear_program.is_variable_integer_;
-  is_variable_implied_integer_ = linear_program.is_variable_implied_integer_;
+  variable_types_ = linear_program.variable_types_;
   integer_variables_list_is_consistent_ =
       linear_program.integer_variables_list_is_consistent_;
   integer_variables_list_ = linear_program.integer_variables_list_;
@@ -926,9 +925,7 @@ void LinearProgram::Swap(LinearProgram* linear_program) {
   variable_lower_bounds_.swap(linear_program->variable_lower_bounds_);
   variable_upper_bounds_.swap(linear_program->variable_upper_bounds_);
   variable_names_.swap(linear_program->variable_names_);
-  is_variable_integer_.swap(linear_program->is_variable_integer_);
-  is_variable_implied_integer_.swap(
-      linear_program->is_variable_implied_integer_);
+  variable_types_.swap(linear_program->variable_types_);
   integer_variables_list_.swap(linear_program->integer_variables_list_);
   binary_variables_list_.swap(linear_program->binary_variables_list_);
   non_binary_variables_list_.swap(linear_program->non_binary_variables_list_);
@@ -962,10 +959,8 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
       objective_coefficients_[new_index] = objective_coefficients_[col];
       variable_lower_bounds_[new_index] = variable_lower_bounds_[col];
       variable_upper_bounds_[new_index] = variable_upper_bounds_[col];
-      is_variable_integer_[new_index] = is_variable_integer_[col];
-      is_variable_implied_integer_[new_index] =
-          is_variable_implied_integer_[col];
       variable_names_[new_index] = variable_names_[col];
+      variable_types_[new_index] = variable_types_[col];
       ++new_index;
     } else {
       permutation[col] = kInvalidCol;
@@ -976,8 +971,7 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
   objective_coefficients_.resize(new_index, 0.0);
   variable_lower_bounds_.resize(new_index, 0.0);
   variable_upper_bounds_.resize(new_index, 0.0);
-  is_variable_integer_.resize(new_index, false);
-  is_variable_implied_integer_.resize(new_index, false);
+  variable_types_.resize(new_index, VariableType::CONTINUOUS);
   variable_names_.resize(new_index, "");
 
   // Remove the id of the deleted columns and adjust the index of the other.

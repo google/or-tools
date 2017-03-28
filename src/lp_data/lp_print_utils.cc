@@ -53,8 +53,13 @@ std::string Stringify(const Fractional x, bool fraction) {
 std::string StringifyMonomial(const Fractional a, const std::string& x, bool fraction) {
   if (a == 0.0)  return "";
   return a > 0.0
-    ? StrCat(" + ", a == 1.0 ? x : StrCat(Stringify(a, fraction), " ", x))
-    : StrCat(" - ", a == -1.0 ? x : StrCat(Stringify(-a, fraction), " ", x));
+             ? StrCat(
+                   " + ",
+                   a == 1.0 ? x : StrCat(Stringify(a, fraction), " ", x))
+             : StrCat(
+                   " - ", a == -1.0
+                              ? x
+                              : StrCat(Stringify(-a, fraction), " ", x));
 }
 
 }  // namespace glop
