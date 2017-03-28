@@ -63,16 +63,16 @@ cc_library(
     ],
 )
 
-#cc_library(
-#    name = "sparse_row",
-#    hdrs = ["sparse_row.h"],
-#    copts = SAFE_FP_CODE,
-#    deps = [
-#        ":base",
-#        ":sparse_vector",
-#        "//base",
-#    ],
-#)
+cc_library(
+    name = "sparse_row",
+    hdrs = ["sparse_row.h"],
+    copts = SAFE_FP_CODE,
+    deps = [
+        ":base",
+        ":sparse_vector",
+        "//base",
+    ],
+)
 
 # Column-compressed sparse matrices.
 

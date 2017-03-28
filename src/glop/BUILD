@@ -68,7 +68,7 @@ cc_library(
         "//lp_data:matrix_utils",
         "//lp_data:proto_utils",
         "//lp_data:sparse",
- #       "//lp_data:sparse_row",
+        "//lp_data:sparse_row",
         "//util",
     ],
 )

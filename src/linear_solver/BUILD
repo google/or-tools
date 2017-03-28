@@ -15,12 +15,14 @@ cc_library(
     srcs = [
         "glop_interface.cc",
         "glop_utils.cc",
+        "linear_expr.cc",
         "linear_solver.cc",
         "model_exporter.cc",
         "model_validator.cc",
     ],
     hdrs = [
         "glop_utils.h",
+        "linear_expr.h",
         "linear_solver.h",
         "model_exporter.h",
         "model_validator.h",
