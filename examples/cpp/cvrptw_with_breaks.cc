@@ -32,6 +32,7 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/join.h"
 #include "constraint_solver/routing.h"
 #include "constraint_solver/routing_enums.pb.h"
 #include "constraint_solver/routing_flags.h"

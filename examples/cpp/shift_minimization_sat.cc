@@ -306,10 +306,7 @@ void LoadAndSolve(const std::string& file_name) {
   if (FLAGS_use_core) {
     const std::vector<int64> coeffs(num_workers, 1);
     MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
-        /*log_info=*/true, active_workers, coeffs,
-        std::vector<IntegerVariable>(),
-        /*feasible_solution_observer=*/
-        [&](const Model& model) {}, &model);
+        /*log_info=*/true, active_workers, coeffs, nullptr, nullptr, &model);
     return;
   }
 
@@ -328,7 +325,7 @@ void LoadAndSolve(const std::string& file_name) {
   model.Add(FixedWeightedSum(worker_vars, weights, 0));
 
   MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-      /*log_info=*/true, objective_var, std::vector<IntegerVariable>(),
+      /*log_info=*/true, objective_var, nullptr,
       /*feasible_solution_observer=*/
       [&](const Model& model) {
         LOG(INFO) << "Cost " << model.Get(Value(objective_var));

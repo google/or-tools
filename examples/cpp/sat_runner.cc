@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <csignal>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,7 @@
 #include "google/protobuf/text_format.h"
 #include "base/stringpiece_utils.h"
 #include "base/strutil.h"
+#include "base/threadpool.h"
 #include "algorithms/sparse_permutation.h"
 #include "sat/boolean_problem.h"
 #include "sat/drat.h"
@@ -186,6 +188,10 @@ int Run() {
 
   // The global time limit.
   std::unique_ptr<TimeLimit> time_limit(TimeLimit::FromParameters(parameters));
+
+  // Catch ^C.
+  bool interrupt_solve = false;
+  time_limit->RegisterExternalBooleanAsLimit(&interrupt_solve);
 
   // Read the problem.
   LinearBooleanProblem problem;

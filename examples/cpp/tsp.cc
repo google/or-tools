@@ -32,6 +32,7 @@
 #include "base/commandlineflags.h"
 #include "base/integral_types.h"
 #include "base/join.h"
+#include "base/join.h"
 #include "constraint_solver/routing.h"
 #include "constraint_solver/routing_flags.h"
 #include "base/random.h"
@@ -145,7 +146,7 @@ void Tsp() {
       for (int64 node = routing.Start(route_number); !routing.IsEnd(node);
            node = solution->Value(routing.NextVar(node))) {
         StrAppend(&route, routing.IndexToNode(node).value(), " (", node,
-                  ") -> ");
+                        ") -> ");
       }
       const int64 end = routing.End(route_number);
       StrAppend(&route, routing.IndexToNode(end).value(), " (", end, ")");

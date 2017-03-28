@@ -338,7 +338,6 @@ $(SRC_DIR)/util/permutation.h: \
 $(SRC_DIR)/util/piecewise_linear_function.h: \
     $(SRC_DIR)/util/saturated_arithmetic.h \
     $(SRC_DIR)/base/basictypes.h \
-    $(SRC_DIR)/base/callback.h \
     $(SRC_DIR)/base/integral_types.h \
     $(SRC_DIR)/base/macros.h
 
@@ -446,7 +445,6 @@ $(OBJ_DIR)/util/proto_tools.$O: \
     $(SRC_DIR)/util/proto_tools.cc \
     $(SRC_DIR)/util/proto_tools.h \
     $(SRC_DIR)/base/file.h \
-    $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/util/proto_tools.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sproto_tools.$O
 
@@ -534,6 +532,7 @@ LP_DATA_DEPS = \
     $(SRC_DIR)/base/time_support.h \
     $(SRC_DIR)/algorithms/dynamic_partition.h \
     $(SRC_DIR)/algorithms/dynamic_permutation.h \
+    $(SRC_DIR)/linear_solver/linear_expr.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
@@ -619,6 +618,9 @@ $(SRC_DIR)/lp_data/sparse.h: \
     $(SRC_DIR)/lp_data/sparse_column.h \
     $(SRC_DIR)/util/return_macros.h \
     $(SRC_DIR)/base/integral_types.h
+
+$(SRC_DIR)/lp_data/sparse_row.h: \
+    $(SRC_DIR)/lp_data/sparse_vector.h
 
 $(SRC_DIR)/lp_data/sparse_vector.h: \
     $(SRC_DIR)/lp_data/lp_types.h \
@@ -762,6 +764,7 @@ GLOP_DEPS = \
     $(SRC_DIR)/lp_data/sparse_column.h \
     $(SRC_DIR)/lp_data/sparse.h \
     $(SRC_DIR)/lp_data/sparse_vector.h \
+    $(SRC_DIR)/linear_solver/linear_expr.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
@@ -894,7 +897,8 @@ $(SRC_DIR)/glop/revised_simplex.h: \
     $(SRC_DIR)/lp_data/lp_data.h \
     $(SRC_DIR)/lp_data/lp_print_utils.h \
     $(SRC_DIR)/lp_data/lp_types.h \
-    $(SRC_DIR)/lp_data/matrix_scaler.h
+    $(SRC_DIR)/lp_data/matrix_scaler.h \
+    $(SRC_DIR)/lp_data/sparse_row.h
 
 $(SRC_DIR)/glop/status.h: \
     $(SRC_DIR)/base/port.h
@@ -1006,6 +1010,7 @@ $(OBJ_DIR)/glop/revised_simplex.$O: \
     $(SRC_DIR)/util/fp_utils.h \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/stringprintf.h \
     $(SRC_DIR)/lp_data/lp_data.h \
@@ -1310,6 +1315,7 @@ ALGORITHMS_DEPS = \
     $(GEN_DIR)/graph/flow_problem.pb.h \
     $(SRC_DIR)/graph/graph.h \
     $(SRC_DIR)/graph/minimum_spanning_tree.h \
+    $(SRC_DIR)/linear_solver/linear_expr.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
@@ -1467,6 +1473,7 @@ SAT_DEPS = \
     $(SRC_DIR)/glop/update_row.h \
     $(SRC_DIR)/glop/variables_info.h \
     $(SRC_DIR)/glop/variable_values.h \
+    $(SRC_DIR)/linear_solver/linear_expr.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h
 
@@ -1482,6 +1489,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/integer.$O \
     $(OBJ_DIR)/sat/integer_expr.$O \
     $(OBJ_DIR)/sat/intervals.$O \
+    $(OBJ_DIR)/sat/linear_programming_constraint.$O \
     $(OBJ_DIR)/sat/lp_utils.$O \
     $(OBJ_DIR)/sat/no_cycle.$O \
     $(OBJ_DIR)/sat/optimization.$O \
@@ -1565,6 +1573,7 @@ $(SRC_DIR)/sat/integer.h: \
     $(SRC_DIR)/sat/sat_solver.h \
     $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/join.h \
+    $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/port.h \
     $(SRC_DIR)/util/bitset.h \
@@ -1581,6 +1590,13 @@ $(SRC_DIR)/sat/intervals.h: \
     $(SRC_DIR)/sat/precedences.h \
     $(SRC_DIR)/sat/sat_base.h \
     $(SRC_DIR)/sat/sat_solver.h
+
+$(SRC_DIR)/sat/linear_programming_constraint.h: \
+    $(SRC_DIR)/sat/integer.h \
+    $(SRC_DIR)/sat/model.h \
+    $(SRC_DIR)/sat/sat_base.h \
+    $(SRC_DIR)/lp_data/lp_data.h \
+    $(SRC_DIR)/glop/revised_simplex.h
 
 $(SRC_DIR)/sat/lp_utils.h: \
     $(GEN_DIR)/sat/boolean_problem.pb.h \
@@ -1725,8 +1741,7 @@ $(OBJ_DIR)/sat/cumulative.$O: \
 $(OBJ_DIR)/sat/disjunctive.$O: \
     $(SRC_DIR)/sat/disjunctive.cc \
     $(SRC_DIR)/sat/disjunctive.h \
-    $(SRC_DIR)/sat/sat_solver.h \
-    $(SRC_DIR)/util/sort.h
+    $(SRC_DIR)/sat/sat_solver.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/disjunctive.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sdisjunctive.$O
 
 $(OBJ_DIR)/sat/drat.$O: \
@@ -1758,8 +1773,16 @@ $(OBJ_DIR)/sat/integer_expr.$O: \
 
 $(OBJ_DIR)/sat/intervals.$O: \
     $(SRC_DIR)/sat/intervals.cc \
-    $(SRC_DIR)/sat/intervals.h
+    $(SRC_DIR)/sat/intervals.h \
+    $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/intervals.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sintervals.$O
+
+$(OBJ_DIR)/sat/linear_programming_constraint.$O: \
+    $(SRC_DIR)/sat/linear_programming_constraint.cc \
+    $(SRC_DIR)/sat/linear_programming_constraint.h \
+    $(SRC_DIR)/base/commandlineflags.h \
+    $(SRC_DIR)/util/time_limit.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/linear_programming_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slinear_programming_constraint.$O
 
 $(OBJ_DIR)/sat/lp_utils.$O: \
     $(SRC_DIR)/sat/lp_utils.cc \
@@ -1844,7 +1867,8 @@ $(OBJ_DIR)/sat/timetable.$O: \
     $(SRC_DIR)/sat/overload_checker.h \
     $(SRC_DIR)/sat/precedences.h \
     $(SRC_DIR)/sat/sat_solver.h \
-    $(SRC_DIR)/sat/timetable.h
+    $(SRC_DIR)/sat/timetable.h \
+    $(SRC_DIR)/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/sat/timetable.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Stimetable.$O
 
 $(OBJ_DIR)/sat/timetable_edgefinding.$O: \
@@ -2185,6 +2209,7 @@ $(OBJ_DIR)/bop/bop_parameters.pb.$O: $(GEN_DIR)/bop/bop_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/bop/bop_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sbop$Sbop_parameters.pb.$O
 
 LP_DEPS = \
+    $(SRC_DIR)/linear_solver/linear_expr.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h \
     $(SRC_DIR)/base/adjustable_priority_queue.h \
@@ -2244,6 +2269,7 @@ LP_LIB_OBJS = \
     $(OBJ_DIR)/linear_solver/glop_utils.$O \
     $(OBJ_DIR)/linear_solver/glpk_interface.$O \
     $(OBJ_DIR)/linear_solver/gurobi_interface.$O \
+    $(OBJ_DIR)/linear_solver/linear_expr.$O \
     $(OBJ_DIR)/linear_solver/linear_solver.$O \
     $(OBJ_DIR)/linear_solver/model_exporter.$O \
     $(OBJ_DIR)/linear_solver/model_validator.$O \
@@ -2254,6 +2280,8 @@ LP_LIB_OBJS = \
 $(SRC_DIR)/linear_solver/glop_utils.h: \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(SRC_DIR)/lp_data/lp_types.h
+
+$(SRC_DIR)/linear_solver/linear_expr.h:
 
 $(SRC_DIR)/linear_solver/linear_solver_ext.h: \
     $(SRC_DIR)/linear_solver/linear_solver.h \
@@ -2267,6 +2295,7 @@ $(SRC_DIR)/linear_solver/linear_solver_ext.h: \
     $(SRC_DIR)/base/timer.h
 
 $(SRC_DIR)/linear_solver/linear_solver.h: \
+    $(SRC_DIR)/linear_solver/linear_expr.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h \
     $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/integral_types.h \
@@ -2371,6 +2400,12 @@ $(OBJ_DIR)/linear_solver/gurobi_interface.$O: \
     $(SRC_DIR)/base/timer.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/gurobi_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sgurobi_interface.$O
 
+$(OBJ_DIR)/linear_solver/linear_expr.$O: \
+    $(SRC_DIR)/linear_solver/linear_expr.cc \
+    $(SRC_DIR)/linear_solver/linear_expr.h \
+    $(SRC_DIR)/base/logging.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/linear_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_expr.$O
+
 $(OBJ_DIR)/linear_solver/linear_solver.$O: \
     $(SRC_DIR)/linear_solver/linear_solver.cc \
     $(SRC_DIR)/linear_solver/linear_solver.h \
@@ -2449,6 +2484,7 @@ CP_DEPS = \
     $(SRC_DIR)/constraint_solver/constraint_solveri.h \
     $(GEN_DIR)/constraint_solver/model.pb.h \
     $(GEN_DIR)/constraint_solver/routing_parameters.pb.h \
+    $(SRC_DIR)/constraint_solver/routing_types.h \
     $(GEN_DIR)/constraint_solver/solver_parameters.pb.h \
     $(SRC_DIR)/base/adjustable_priority_queue.h \
     $(SRC_DIR)/base/basictypes.h \
@@ -2476,6 +2512,7 @@ CP_DEPS = \
     $(GEN_DIR)/graph/flow_problem.pb.h \
     $(SRC_DIR)/graph/graph.h \
     $(SRC_DIR)/graph/minimum_spanning_tree.h \
+    $(SRC_DIR)/linear_solver/linear_expr.h \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h \
     $(SRC_DIR)/sat/boolean_problem.h \
@@ -2524,6 +2561,7 @@ CP_LIB_OBJS = \
     $(OBJ_DIR)/constraint_solver/resource.$O \
     $(OBJ_DIR)/constraint_solver/routing.$O \
     $(OBJ_DIR)/constraint_solver/routing_flags.$O \
+    $(OBJ_DIR)/constraint_solver/routing_neighborhoods.$O \
     $(OBJ_DIR)/constraint_solver/routing_search.$O \
     $(OBJ_DIR)/constraint_solver/sat_constraint.$O \
     $(OBJ_DIR)/constraint_solver/sched_constraints.$O \
@@ -2563,6 +2601,7 @@ $(SRC_DIR)/constraint_solver/constraint_solver.h: \
 $(SRC_DIR)/constraint_solver/constraint_solveri.h: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(GEN_DIR)/constraint_solver/model.pb.h \
+    $(SRC_DIR)/base/casts.h \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/integral_types.h \
@@ -2599,6 +2638,16 @@ $(SRC_DIR)/constraint_solver/routing.h: \
     $(SRC_DIR)/util/range_query_function.h \
     $(SRC_DIR)/util/sorted_interval_list.h \
     $(SRC_DIR)/graph/graph.h
+
+$(SRC_DIR)/constraint_solver/routing_neighborhoods.h: \
+    $(SRC_DIR)/constraint_solver/constraint_solver.h \
+    $(SRC_DIR)/constraint_solver/constraint_solveri.h \
+    $(SRC_DIR)/constraint_solver/routing_types.h
+
+$(SRC_DIR)/constraint_solver/routing_types.h: \
+    $(SRC_DIR)/base/callback.h \
+    $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/int_type.h
 
 $(SRC_DIR)/constraint_solver/sat_constraint.h: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
@@ -2986,6 +3035,11 @@ $(OBJ_DIR)/constraint_solver/routing_flags.$O: \
     $(SRC_DIR)/base/map_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_flags.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_flags.$O
 
+$(OBJ_DIR)/constraint_solver/routing_neighborhoods.$O: \
+    $(SRC_DIR)/constraint_solver/routing_neighborhoods.cc \
+    $(SRC_DIR)/constraint_solver/routing_neighborhoods.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/routing_neighborhoods.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Srouting_neighborhoods.$O
+
 $(OBJ_DIR)/constraint_solver/routing_search.$O: \
     $(SRC_DIR)/constraint_solver/routing_search.cc \
     $(SRC_DIR)/constraint_solver/routing.h \
@@ -3198,4 +3252,3 @@ $(GEN_DIR)/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/constraint_solve
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

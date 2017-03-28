@@ -249,7 +249,8 @@ void LoadAndSolve(const std::string& file_name) {
   }
 
   MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-      /*log_info=*/true, objective_var, decision_variables,
+      /*log_info=*/true, objective_var,
+      FirstUnassignedVarAtItsMinHeuristic(decision_variables, &model),
       /*feasible_solution_observer=*/
       [objective_var](const Model& model) {
         LOG(INFO) << "Objective " << model.Get(LowerBound(objective_var));

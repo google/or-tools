@@ -141,7 +141,8 @@ void Solve(const std::vector<std::vector<Task>>& tasks_per_job, int horizon) {
     decision_variables.clear();
   }
   MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
-      /*log_info=*/true, makespan, decision_variables,
+      /*log_info=*/true, makespan,
+      FirstUnassignedVarAtItsMinHeuristic(decision_variables, &model),
       /*feasible_solution_observer=*/
       [makespan](const Model& model) {
         LOG(INFO) << "Makespan " << model.Get(LowerBound(makespan));
