@@ -14,6 +14,7 @@
 #include "flatzinc/sat_fz_solver.h"
 
 #include "base/hash.h"
+#include <limits>
 #include "base/timer.h"
 #include "base/map_util.h"
 #include "flatzinc/checker.h"
@@ -25,11 +26,15 @@
 #include "sat/integer.h"
 #include "sat/integer_expr.h"
 #include "sat/intervals.h"
+#include "sat/linear_programming_constraint.h"
 #include "sat/model.h"
 #include "sat/optimization.h"
 #include "sat/sat_solver.h"
 #include "sat/table.h"
 #include "util/sorted_interval_list.h"
+
+DEFINE_bool(fz_use_lp_constraint, true,
+            "Use LP solver glop to enforce all linear inequalities at once.");
 
 namespace operations_research {
 namespace sat {
@@ -469,11 +474,28 @@ std::vector<Literal> IsSumOfLiteral(const fz::Argument& vars,
   return result;
 }
 
+void AddLinearConstraintToLP(const std::vector<IntegerVariable>& vars,
+                             const std::vector<int64>& coeffs, double lb,
+                             double ub, SatModel* m) {
+  LinearProgrammingConstraint* lp =
+      m->model.GetOrCreate<LinearProgrammingConstraint>();
+  const LinearProgrammingConstraint::ConstraintIndex ct =
+      lp->CreateNewConstraint(lb, ub);
+  for (int i = 0; i < vars.size(); i++) {
+    lp->SetCoefficient(ct, vars[i], coeffs[i]);
+  }
+}
+
 void ExtractIntLinEq(const fz::Constraint& ct, SatModel* m) {
   const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
   const std::vector<int64>& coeffs = ct.arguments[0].values;
   const int64 rhs = ct.arguments[2].values[0];
   m->model.Add(FixedWeightedSum(vars, coeffs, rhs));
+
+  if (FLAGS_fz_use_lp_constraint) {
+    const double value = static_cast<double>(rhs);
+    AddLinearConstraintToLP(vars, coeffs, value, value, m);
+  }
 }
 
 void ExtractIntLinNe(const fz::Constraint& ct, SatModel* m) {
@@ -499,6 +521,12 @@ void ExtractIntLinLe(const fz::Constraint& ct, SatModel* m) {
   } else {
     const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
     m->model.Add(WeightedSumLowerOrEqual(vars, coeffs, rhs));
+
+    if (FLAGS_fz_use_lp_constraint) {
+      AddLinearConstraintToLP(vars, coeffs,
+                              -std::numeric_limits<double>::infinity(),
+                              static_cast<double>(rhs), m);
+    }
   }
 }
 
@@ -517,6 +545,11 @@ void ExtractIntLinGe(const fz::Constraint& ct, SatModel* m) {
   } else {
     const std::vector<IntegerVariable> vars = m->LookupVars(ct.arguments[1]);
     m->model.Add(WeightedSumGreaterOrEqual(vars, coeffs, rhs));
+
+    if (FLAGS_fz_use_lp_constraint) {
+      AddLinearConstraintToLP(vars, coeffs, static_cast<double>(rhs),
+                              std::numeric_limits<double>::infinity(), m);
+    }
   }
 }
 
@@ -1394,11 +1427,21 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
     }
   }
   if (!unsupported_types.empty()) {
-    FZLOG << "There is unsuported constraints types in this model: " << FZENDL;
+    FZLOG << "There are unsupported constraints types in this model: "
+          << FZENDL;
     for (const std::string& type : unsupported_types) {
       FZLOG << " - " << type << FZENDL;
     }
     return;
+  }
+
+  // Use LinearProgrammingConstraint only if there was a linear inequality,
+  // i.e. if it is already instantiated in the model.
+  if (FLAGS_fz_use_lp_constraint &&
+      m.model.Get<LinearProgrammingConstraint>() != nullptr) {
+    LinearProgrammingConstraint* lp =
+        m.model.GetOrCreate<LinearProgrammingConstraint>();
+    lp->RegisterWith(m.model.GetOrCreate<GenericLiteralWatcher>());
   }
 
   // Some stats.
@@ -1465,8 +1508,10 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   if (fz_model.objective() == nullptr) {
     // Decision problem.
     while (num_solutions < p.num_solutions) {
-      status = SolveIntegerProblemWithLazyEncoding(/*assumptions=*/{},
-                                                   decision_vars, &m.model);
+      status = SolveIntegerProblemWithLazyEncoding(
+          /*assumptions=*/{},
+          FirstUnassignedVarAtItsMinHeuristic(decision_vars, &m.model),
+          &m.model);
 
       if (status == SatSolver::MODEL_SAT) {
         ++num_solutions;
@@ -1496,7 +1541,7 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
     status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
         /*log_info=*/false,
         fz_model.maximize() ? NegationOf(objective_var) : objective_var,
-        decision_vars,
+        FirstUnassignedVarAtItsMinHeuristic(decision_vars, &m.model),
         [objective_var, &num_solutions, &m, &fz_model, &best_objective,
          &solutions_string](const Model& sat_model) {
           num_solutions++;

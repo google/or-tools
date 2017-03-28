@@ -1519,18 +1519,25 @@ bool Presolver::SimplifyLinear(Constraint* ct, std::string* log) {
   const int64 rhs = ct->arguments[2].Value();
   if (ct->arguments[1].variables.empty()) return false;
 
-  // TODO(user): deal with integer overflow.
   int64 rhs_min = 0;
   int64 rhs_max = 0;
   const int n = ct->arguments[0].values.size();
   for (int i = 0; i < n; ++i) {
     const int64 coeff = ct->arguments[0].values[i];
-    if (coeff > 0) {
-      rhs_min += coeff * ct->arguments[1].variables[i]->domain.Min();
-      rhs_max += coeff * ct->arguments[1].variables[i]->domain.Max();
-    } else if (coeff < 0) {
-      rhs_min += coeff * ct->arguments[1].variables[i]->domain.Max();
-      rhs_max += coeff * ct->arguments[1].variables[i]->domain.Min();
+    const int64 add_min =
+        coeff > 0 ? CapProd(coeff, ct->arguments[1].variables[i]->domain.Min())
+                  : CapProd(coeff, ct->arguments[1].variables[i]->domain.Max());
+    const int64 add_max =
+        coeff > 0 ? CapProd(coeff, ct->arguments[1].variables[i]->domain.Max())
+                  : CapProd(coeff, ct->arguments[1].variables[i]->domain.Min());
+    if (rhs_min != kint64min) {
+      rhs_min = CapAdd(rhs_min, add_min);
+    }
+    if (rhs_max != kint64max) {
+      rhs_max = CapAdd(rhs_max, add_max);
+    }
+    if (rhs_min == kint64min && rhs_max == kint64max) {
+      break;  // Early exit the loop.
     }
   }
   if (ct->type == "int_lin_ge") {

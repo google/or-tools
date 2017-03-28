@@ -19,7 +19,6 @@
 
 #include <unordered_map>
 
-#include "base/strutil.h"
 #include "base/map_util.h"
 #include "flatzinc/model.h"
 

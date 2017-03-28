@@ -21,6 +21,8 @@
 %code requires {
 #if !defined(OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_)
 #define OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
+#include "base/strutil.h"
+#include "base/stringpiece_utils.h"
 #include "flatzinc/parser_util.h"
 
 // Tells flex to use the LexerInfo class to communicate with the bison parser.
@@ -221,7 +223,7 @@ variable_or_constant_declaration:
   std::vector<Annotation>* const annotations = $5;
   const VariableRefOrValue& assignment = $6;
   const bool introduced = ContainsId(annotations, "var_is_introduced") ||
-      HasPrefixString(identifier, "X_INTRODUCED");
+      strings::StartsWith(identifier, "X_INTRODUCED");
   IntegerVariable* var = nullptr;
   if (!assignment.defined) {
     var = model->AddVariable(identifier, domain, introduced);
@@ -258,7 +260,7 @@ variable_or_constant_declaration:
   CHECK(assignments == nullptr || assignments->variables.size() == num_vars);
   CHECK(assignments == nullptr || assignments->values.size() == num_vars);
   const bool introduced = ContainsId(annotations, "var_is_introduced") ||
-      HasPrefixString(identifier, "X_INTRODUCED");
+      strings::StartsWith(identifier, "X_INTRODUCED");
 
   std::vector<IntegerVariable*> vars(num_vars, nullptr);
 
