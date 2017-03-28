@@ -307,7 +307,10 @@ void BopInterface::ExtractNewVariables() {
     DCHECK_EQ(new_col, col);
     set_variable_as_extracted(col.value(), true);
     linear_program_.SetVariableBounds(col, var->lb(), var->ub());
-    linear_program_.SetVariableIntegrality(col, var->integer());
+    if (var->integer()) {
+      linear_program_.SetVariableType(
+          col, glop::LinearProgram::VariableType::INTEGER);
+    }
   }
 }
 

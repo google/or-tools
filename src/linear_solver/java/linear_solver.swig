@@ -152,7 +152,13 @@ import java.lang.reflect.*;
 
 // Expose the MPSolver's basic API, with some non-trivial renames.
 %rename (objective) operations_research::MPSolver::MutableObjective;
-%rename (makeConstraint) operations_research::MPSolver::MakeRowConstraint;
+// We intentionally don't expose MakeRowConstraint(LinearExpr), because this
+// "natural language" API is specific to C++: other languages may add their own
+// syntactic sugar on top of MPSolver instead of this.
+%rename (makeConstraint) operations_research::MPSolver::MakeRowConstraint(double, double);
+%rename (makeConstraint) operations_research::MPSolver::MakeRowConstraint();
+%rename (makeConstraint) operations_research::MPSolver::MakeRowConstraint(double, double, const std::string&);
+%rename (makeConstraint) operations_research::MPSolver::MakeRowConstraint(const std::string&);
 
 // Expose the MPSolver's basic API, with trivial renames.
 %rename (makeBoolVar) operations_research::MPSolver::MakeBoolVar;  // no test

@@ -196,6 +196,36 @@ void MPObjective::SetOffset(double value) {
   interface_->SetObjectiveOffset(offset_);
 }
 
+namespace {
+void CheckLinearExpr(const MPSolver& solver, const LinearExpr& linear_expr) {
+  for (auto var_value_pair : linear_expr.terms()) {
+    CHECK(solver.OwnsVariable(var_value_pair.first))
+        << "Bad MPVariable* in LinearExpr, did you try adding an integer to an "
+           "MPVariable* directly?";
+  }
+}
+}  // namespace
+
+void MPObjective::OptimizeLinearExpr(const LinearExpr& linear_expr,
+                                     bool is_maximization) {
+  CheckLinearExpr(*interface_->solver_, linear_expr);
+  interface_->ClearObjective();
+  coefficients_.clear();
+  offset_ = linear_expr.offset();
+  for (const auto& kv : linear_expr.terms()) {
+    SetCoefficient(kv.first, kv.second);
+  }
+  SetOptimizationDirection(is_maximization);
+}
+
+void MPObjective::AddLinearExpr(const LinearExpr& linear_expr) {
+  CheckLinearExpr(*interface_->solver_, linear_expr);
+  offset_ += linear_expr.offset();
+  for (const auto& kv : linear_expr.terms()) {
+    SetCoefficient(kv.first, GetCoefficient(kv.first) + kv.second);
+  }
+}
+
 void MPObjective::Clear() {
   interface_->ClearObjective();
   coefficients_.clear();
@@ -841,6 +871,21 @@ MPConstraint* MPSolver::MakeRowConstraint(const std::string& name) {
   return MakeRowConstraint(-infinity(), infinity(), name);
 }
 
+MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range) {
+  return MakeRowConstraint(range, "");
+}
+
+MPConstraint* MPSolver::MakeRowConstraint(const LinearRange& range,
+                                          const std::string& name) {
+  CheckLinearExpr(*this, range.linear_expr());
+  MPConstraint* constraint =
+      MakeRowConstraint(range.lower_bound(), range.upper_bound(), name);
+  for (const auto& kv : range.linear_expr().terms()) {
+    constraint->SetCoefficient(kv.first, kv.second);
+  }
+  return constraint;
+}
+
 int MPSolver::ComputeMaxConstraintSize(int min_constraint_index,
                                        int max_constraint_index) const {
   int max_constraint_size = 0;
@@ -900,6 +945,14 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
   }
   DCHECK_EQ(interface_->result_status_, status);
   return status;
+}
+
+double MPSolver::SolutionValue(const LinearExpr& linear_expr) const {
+  double ans = linear_expr.offset();
+  for (const auto& kv : linear_expr.terms()) {
+    ans += (kv.second * kv.first->solution_value());
+  }
+  return ans;
 }
 
 void MPSolver::Write(const std::string& file_name) { interface_->Write(file_name); }

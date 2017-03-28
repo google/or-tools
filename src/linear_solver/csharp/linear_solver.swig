@@ -90,7 +90,14 @@ class MPSolutionResponse;
 %unignore operations_research::MPSolver::NOT_SOLVED;
 
 // Expose the MPSolver's basic API, with some non-trivial renames.
-%rename (MakeConstraint) operations_research::MPSolver::MakeRowConstraint;
+// We intentionally don't expose MakeRowConstraint(LinearExpr), because this
+// "natural language" API is specific to C++: other languages may add their own
+// syntactic sugar on top of MPSolver instead of this.
+%rename (MakeConstraint) operations_research::MPSolver::MakeRowConstraint(double, double);
+%rename (MakeConstraint) operations_research::MPSolver::MakeRowConstraint();
+%rename (MakeConstraint) operations_research::MPSolver::MakeRowConstraint(double, double, const std::string&);
+%rename (MakeConstraint) operations_research::MPSolver::MakeRowConstraint(const std::string&);
+
 %rename (Objective) operations_research::MPSolver::MutableObjective;
 
 // Expose the MPSolver's basic API, with trivial renames when needed.

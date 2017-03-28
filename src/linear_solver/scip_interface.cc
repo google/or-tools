@@ -593,9 +593,9 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     default:
       if (solution != nullptr) {
         result_status_ = MPSolver::FEASIBLE;
+      } else if (scip_status == SCIP_STATUS_TIMELIMIT) {
+        result_status_ = MPSolver::NOT_SOLVED;
       } else {
-        // TODO(user): We could introduce additional values for the
-        // status: for example, stopped because of time limit.
         result_status_ = MPSolver::ABNORMAL;
       }
       break;

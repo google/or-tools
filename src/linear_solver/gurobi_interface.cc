@@ -700,9 +700,9 @@ MPSolver::ResultStatus GurobiInterface::Solve(const MPSolverParameters& param) {
     default: {
       if (solution_count > 0) {
         result_status_ = MPSolver::FEASIBLE;
+      } else if (optimization_status == GRB_TIME_LIMIT) {
+        result_status_ = MPSolver::NOT_SOLVED;
       } else {
-        // TODO(user,user): We could introduce additional values for the
-        // status: for example, stopped because of time limit.
         result_status_ = MPSolver::ABNORMAL;
       }
       break;

@@ -211,7 +211,13 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 %rename (BoolVar) operations_research::MPSolver::MakeBoolVar;  // No unit test
 %rename (IntVar) operations_research::MPSolver::MakeIntVar;
 %rename (NumVar) operations_research::MPSolver::MakeNumVar;
-%rename (Constraint) operations_research::MPSolver::MakeRowConstraint;
+// We intentionally don't expose MakeRowConstraint(LinearExpr), because this
+// "natural language" API is specific to C++: other languages may add their own
+// syntactic sugar on top of MPSolver instead of this.
+%rename (Constraint) operations_research::MPSolver::MakeRowConstraint(double, double);
+%rename (Constraint) operations_research::MPSolver::MakeRowConstraint();
+%rename (Constraint) operations_research::MPSolver::MakeRowConstraint(double, double, const std::string&);
+%rename (Constraint) operations_research::MPSolver::MakeRowConstraint(const std::string&);
 %unignore operations_research::MPSolver::~MPSolver;
 %unignore operations_research::MPSolver::Solve;
 %unignore operations_research::MPSolver::VerifySolution;
@@ -315,6 +321,6 @@ from ortools.linear_solver.linear_solver_natural_api import VariableExpr
 def setup_variable_operator(opname):
   setattr(Variable, opname,
           lambda self, *args: getattr(VariableExpr(self), opname)(*args))
-for opname in LinearExpr.SUPPORTED_OPERATOR_METHODS:
+for opname in LinearExpr.OVERRIDDEN_OPERATOR_METHODS:
   setup_variable_operator(opname)
 }  // %pythoncode

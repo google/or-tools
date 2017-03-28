@@ -542,25 +542,27 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
 
   // Solve
   timer.Restart();
+  int solver_status = glp_simplex(lp_, &lp_param_);
   if (mip_) {
     // glp_intopt requires to solve the root LP separately.
-    int simplex_status = glp_simplex(lp_, &lp_param_);
     // If the root LP was solved successfully, solve the MIP.
-    if (simplex_status == 0) {
-      glp_intopt(lp_, &mip_param_);
+    if (solver_status == 0) {
+      solver_status = glp_intopt(lp_, &mip_param_);
     } else {
       // Something abnormal occurred during the root LP solve. It is
       // highly unlikely that an integer feasible solution is
       // available at this point, so we don't put any effort in trying
       // to recover it.
       result_status_ = MPSolver::ABNORMAL;
+      if (solver_status == GLP_ETMLIM) {
+        result_status_ = MPSolver::NOT_SOLVED;
+      }
       sync_status_ = SOLUTION_SYNCHRONIZED;
       return result_status_;
     }
-  } else {
-    glp_simplex(lp_, &lp_param_);
   }
-  VLOG(1) << StringPrintf("Solved in %.3f seconds.", timer.Get());
+  VLOG(1) << StringPrintf("GLPK Status: %i (time spent: %.3f seconds).",
+                          solver_status, timer.Get());
 
   // Get the results.
   if (mip_) {
@@ -600,7 +602,7 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
   // Check the status: optimal, infeasible, etc.
   if (mip_) {
     int tmp_status = glp_mip_status(lp_);
-    VLOG(1) << "gplk result status: " << tmp_status;
+    VLOG(1) << "GLPK result status: " << tmp_status;
     if (tmp_status == GLP_OPT) {
       result_status_ = MPSolver::OPTIMAL;
     } else if (tmp_status == GLP_FEAS) {
@@ -610,6 +612,8 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
       // GLP_UNDEF. So this is never (?) reached.  Return infeasible
       // in case GLPK returns a correct status in future versions.
       result_status_ = MPSolver::INFEASIBLE;
+    } else if (solver_status == GLP_ETMLIM) {
+      result_status_ = MPSolver::NOT_SOLVED;
     } else {
       result_status_ = MPSolver::ABNORMAL;
       // GLPK does not have a status code for unbounded MIP models, so
@@ -617,7 +621,7 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
     }
   } else {
     int tmp_status = glp_get_status(lp_);
-    VLOG(1) << "gplk result status: " << tmp_status;
+    VLOG(1) << "GLPK result status: " << tmp_status;
     if (tmp_status == GLP_OPT) {
       result_status_ = MPSolver::OPTIMAL;
     } else if (tmp_status == GLP_FEAS) {
@@ -632,6 +636,8 @@ MPSolver::ResultStatus GLPKInterface::Solve(const MPSolverParameters& param) {
       // GLP_UNDEF. So this is never (?) reached.  Return unbounded
       // in case GLPK returns a correct status in future versions.
       result_status_ = MPSolver::UNBOUNDED;
+    } else if (solver_status == GLP_ETMLIM) {
+      result_status_ = MPSolver::NOT_SOLVED;
     } else {
       result_status_ = MPSolver::ABNORMAL;
     }

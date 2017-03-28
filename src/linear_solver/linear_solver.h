@@ -15,8 +15,8 @@
 //
 // A C++ wrapper that provides a simple and unified interface to
 // several linear programming and mixed integer programming solvers:
-// GLPK, CLP, CBC and SCIP. The wrapper can also be used in Java and
-// Python via SWIG.
+// GLOP, GLPK, CLP, CBC, and SCIP. The wrapper can also be used in Java, C#,
+// and Python via SWIG.
 //
 //
 // -----------------------------------
@@ -125,7 +125,7 @@
 //   MPSolver stores a representation of the model (variables,
 //   constraints and objective) in its own data structures and a
 //   pointer to a MPSolverInterface that wraps the underlying solver
-//   (CBC, CLP, GLPK or SCIP) that does the actual work. The
+//   (GLOP, CBC, CLP, GLPK, or SCIP) that does the actual work. The
 //   underlying solver also keeps a representation of the model in its
 //   own data structures. The model representations in MPSolver and in
 //   the underlying solver are kept in sync by the 'extraction'
@@ -150,6 +150,7 @@
 #include "base/logging.h"
 #include "base/timer.h"
 #include "glop/parameters.pb.h"
+#include "linear_solver/linear_expr.h"
 #include "linear_solver/linear_solver.pb.h"
 
 
@@ -166,7 +167,7 @@ class MPVariable;
 class MPSolver {
  public:
   // The type of problems (LP or MIP) that will be solved and the
-  // underlying solver (GLPK, CLP, CBC or SCIP) that will solve them.
+  // underlying solver (GLOP, GLPK, CLP, CBC or SCIP) that will solve them.
   // This must remain consistent with MPModelRequest::OptimizationProblemType
   // (take particular care of the open-source version).
   enum OptimizationProblemType {
@@ -294,6 +295,12 @@ class MPSolver {
   // Creates a named constraint with -infinity and +infinity bounds.
   MPConstraint* MakeRowConstraint(const std::string& name);
 
+  // Creates a constraint owned by MPSolver enforcing:
+  // range.lower_bound() <= range.linear_expr() <= range.upper_bound()
+  MPConstraint* MakeRowConstraint(const LinearRange& range);
+  // As above, but also names the constraint.
+  MPConstraint* MakeRowConstraint(const LinearRange& range, const std::string& name);
+
   // ----- Objective -----
   // Note that the objective is owned by the solver, and is initialized to
   // its default value (see the MPObjective class below) at construction.
@@ -323,6 +330,10 @@ class MPSolver {
   ResultStatus Solve();
   // Solves the problem using the specified parameter values.
   ResultStatus Solve(const MPSolverParameters& param);
+
+  // Call only after calling MPSolver::Solve. Evaluates "linear_expr" for the
+  // variable values at the solution found by solving.
+  double SolutionValue(const LinearExpr& linear_expr) const;
 
   // Writes the model using the solver internal write function.  Currently only
   // available for Gurobi.
@@ -667,6 +678,19 @@ class MPObjective {
   // Note: please use the less ambiguous SetOffset() if possible!
   // TODO(user): remove this.
   void AddOffset(double value) { SetOffset(offset() + value); }
+
+  // Resets the current objective to take the value of linear_expr, and sets
+  // the objective direction to maximize if "is_maximize", otherwise minimizes.
+  void OptimizeLinearExpr(const LinearExpr& linear_expr, bool is_maximize);
+  void MaximizeLinearExpr(const LinearExpr& linear_expr) {
+    OptimizeLinearExpr(linear_expr, true);
+  }
+  void MinimizeLinearExpr(const LinearExpr& linear_expr) {
+    OptimizeLinearExpr(linear_expr, false);
+  }
+
+  // Adds linear_expr to the current objective, does not change the direction.
+  void AddLinearExpr(const LinearExpr& linear_expr);
 
   // Sets the optimization direction (maximize: true or minimize: false).
   void SetOptimizationDirection(bool maximize);
@@ -1079,9 +1103,10 @@ class MPSolverParameters {
 };
 
 // This class wraps the actual mathematical programming solvers. Each
-// solver (CLP, CBC, GLPK, SCIP) has its own interface class that
+// solver (GLOP, CLP, CBC, GLPK, SCIP) has its own interface class that
 // derives from this abstract class. This class is never directly
 // accessed by the user.
+// @see glop_interface.cc
 // @see cbc_interface.cc
 // @see clp_interface.cc
 // @see glpk_interface.cc
