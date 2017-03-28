@@ -219,12 +219,12 @@ bool LoadAndSolve(const std::string& pdp_file) {
     const int customer_id = parsed_int[0];
     const int x = parsed_int[1];
     const int y = parsed_int[2];
-    const int delivery = parsed_int[8];  // Parse 'delivery' before 'demand'.
-    const int64 demand = delivery == 0 ? -parsed_int[3] : parsed_int[3];
+    const int64 demand = parsed_int[3];
     const int64 open_time = parsed_int[4];
     const int64 close_time = parsed_int[5];
     const int64 service_time = parsed_int[6];
     const int pickup = parsed_int[7];
+    const int delivery = parsed_int[8];
     customer_ids.push_back(customer_id);
     coords.push_back(std::make_pair(x, y));
     demands.push_back(demand);
