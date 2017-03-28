@@ -41,6 +41,10 @@ class VariablesInfo {
   // to call this if the status or the bound of a variable didn't change.
   void Update(ColIndex col, VariableStatus status);
 
+  // Slighlty optimized version of Update() above for the two separate cases.
+  void UpdateToBasicStatus(ColIndex col);
+  void UpdateToNonBasicStatus(ColIndex col, VariableStatus status);
+
   // Various getter, see the corresponding member declaration below for more
   // information.
   const VariableTypeRow& GetTypeRow() const;
@@ -76,7 +80,7 @@ class VariablesInfo {
   VariableType ComputeVariableType(ColIndex col) const;
 
   // Sets the column relevance and updates num_entries_in_relevant_columns_.
-  void SetRelevance(ColIndex col, VariableStatus status);
+  void SetRelevance(ColIndex col, bool relevance);
 
   // Problem data that should be updated from outside.
   const CompactSparseMatrix& matrix_;
@@ -98,7 +102,7 @@ class VariablesInfo {
 
   // Indicates if we should consider this variable for entering the basis during
   // the simplex algorithm. Only non-fixed and non-basic columns are relevant.
-  DenseBitRow is_relevant_;
+  DenseBitRow relevance_;
 
   // Indicates if a variable is BASIC or not. There are currently two members
   // because the DenseBitRow class only supports a nice range-based iteration on
@@ -109,7 +113,7 @@ class VariablesInfo {
   // Set of boxed variables that are non-basic.
   DenseBitRow non_basic_boxed_variables_;
 
-  // Number of entries for the relevant matrix columns (see is_relevant_).
+  // Number of entries for the relevant matrix columns (see relevance_).
   EntryIndex num_entries_in_relevant_columns_;
 
   // Whether or not a boxed variable should be considered relevant.

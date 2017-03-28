@@ -66,6 +66,10 @@ class UpdateRow {
     return coefficient_[col];
   }
 
+  // This must be called after a call to ComputeUpdateRow(). It will fill
+  // all the non-relevant positions that where not filled by ComputeUpdateRow().
+  void RecomputeFullUpdateRow(RowIndex leaving_row);
+
   // Sets to zero the coefficient for column col.
   void IgnoreUpdatePosition(ColIndex col);
 

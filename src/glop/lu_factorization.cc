@@ -559,7 +559,7 @@ Fractional LuFactorization::ComputeInverseOneNorm() const {
     Fractional column_norm = 0.0;
     // Compute sum_i |basis_matrix_ij|.
     for (RowIndex row(0); row < num_rows; ++row) {
-      column_norm += fabs(right_hand_side[row]);
+      column_norm += std::abs(right_hand_side[row]);
     }
     // Compute max_j sum_i |basis_matrix_ij|
     norm = std::max(norm, column_norm);
@@ -579,7 +579,7 @@ Fractional LuFactorization::ComputeInverseInfinityNorm() const {
     RightSolve(&right_hand_side);
     // Compute sum_j |basis_matrix_ij|.
     for (RowIndex row(0); row < num_rows; ++row) {
-      row_sum[row] += fabs(right_hand_side[row]);
+      row_sum[row] += std::abs(right_hand_side[row]);
     }
   }
   // Compute max_i sum_j |basis_matrix_ij|
@@ -646,7 +646,7 @@ bool LuFactorization::CheckFactorization(const MatrixView& matrix,
 
   for (ColIndex col(0); col < should_be_zero.num_cols(); ++col) {
     for (const SparseColumn::Entry e : should_be_zero.column(col)) {
-      const Fractional magnitude = fabs(e.coefficient());
+      const Fractional magnitude = std::abs(e.coefficient());
       if (magnitude > tolerance) {
         VLOG(2) << magnitude << " != 0, at column " << col;
         return false;

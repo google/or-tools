@@ -61,7 +61,7 @@ void DualEdgeNorms::UpdateBeforeBasisPivot(
       (sqrt(leaving_squared_norm) - sqrt(old_squared_norm)) /
       sqrt(leaving_squared_norm);
   stats_.edge_norms_accuracy.Add(estimated_edge_norms_accuracy);
-  if (fabs(estimated_edge_norms_accuracy) >
+  if (std::abs(estimated_edge_norms_accuracy) >
       parameters_.recompute_edges_norm_threshold()) {
     VLOG(1) << "Recomputing edge norms: " << sqrt(leaving_squared_norm)
             << " vs " << sqrt(old_squared_norm);

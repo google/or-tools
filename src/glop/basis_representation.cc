@@ -477,6 +477,12 @@ void BasisFactorization::RightSolveForProblemColumn(
   lu_factorization_.RightSolveLForSparseColumn(matrix_.column(col), d,
                                                non_zeros);
   rank_one_factorization_.RightSolveWithNonZeros(d, non_zeros);
+  if (col >= right_pool_mapping_.size()) {
+    // This is needed because when we do an incremental solve with only new
+    // columns, we still reuse the current factorization without calling
+    // Refactorize() which would have resized this vector.
+    right_pool_mapping_.resize(col + 1, kInvalidCol);
+  }
   if (non_zeros->empty()) {
     right_pool_mapping_[col] = right_storage_.AddDenseColumn(*d);
   } else {
@@ -546,7 +552,7 @@ Fractional BasisFactorization::ComputeInverseOneNorm() const {
     Fractional column_norm = 0.0;
     // Compute sum_i |inverse_ij|.
     for (RowIndex row(0); row < num_rows; ++row) {
-      column_norm += fabs(right_hand_side[row]);
+      column_norm += std::abs(right_hand_side[row]);
     }
     // Compute max_j sum_i |inverse_ij|
     norm = std::max(norm, column_norm);
@@ -566,7 +572,7 @@ Fractional BasisFactorization::ComputeInverseInfinityNorm() const {
     RightSolve(&right_hand_side);
     // Compute sum_j |inverse_ij|.
     for (RowIndex row(0); row < num_rows; ++row) {
-      row_sum[row] += fabs(right_hand_side[row]);
+      row_sum[row] += std::abs(right_hand_side[row]);
     }
   }
   // Compute max_i sum_j |inverse_ij|

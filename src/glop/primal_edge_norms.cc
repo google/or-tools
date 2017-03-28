@@ -80,7 +80,7 @@ void PrimalEdgeNorms::TestEnteringEdgeNormPrecision(
     const Fractional estimated_edges_norm_accuracy =
         (precise_norm - sqrt(old_squared_norm)) / precise_norm;
     stats_.edges_norm_accuracy.Add(estimated_edges_norm_accuracy);
-    if (fabs(estimated_edges_norm_accuracy) >
+    if (std::abs(estimated_edges_norm_accuracy) >
         parameters_.recompute_edges_norm_threshold()) {
       VLOG(1) << "Recomputing edge norms: " << sqrt(precise_squared_norm)
               << " vs " << sqrt(old_squared_norm);
@@ -285,12 +285,12 @@ void PrimalEdgeNorms::UpdateDevexWeights(
   // Compared to steepest edge update, the DEVEX weight uses the largest of the
   // norms of two vectors to approximate the norm of the sum.
   const Fractional entering_norm = sqrt(PreciseSquaredNorm(direction));
-  const Fractional pivot_magnitude = fabs(direction[leaving_row]);
+  const Fractional pivot_magnitude = std::abs(direction[leaving_row]);
   const Fractional leaving_norm =
       std::max(1.0, entering_norm / pivot_magnitude);
   for (const ColIndex col : update_row.GetNonZeroPositions()) {
     const Fractional coeff = update_row.GetCoefficient(col);
-    const Fractional update_vector_norm = fabs(coeff) * leaving_norm;
+    const Fractional update_vector_norm = std::abs(coeff) * leaving_norm;
     devex_weights_[col] = std::max(devex_weights_[col], update_vector_norm);
   }
   devex_weights_[leaving_col] = leaving_norm;

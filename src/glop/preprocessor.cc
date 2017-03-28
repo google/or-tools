@@ -306,12 +306,12 @@ VariableStatus ComputeVariableStatus(Fractional value, Fractional lower_bound,
 
 // Returns the input with the smallest magnitude or zero if both are infinite.
 Fractional MinInMagnitudeOrZeroIfInfinite(Fractional a, Fractional b) {
-  const Fractional value = fabs(a) < fabs(b) ? a : b;
+  const Fractional value = std::abs(a) < std::abs(b) ? a : b;
   return IsFinite(value) ? value : 0.0;
 }
 
 Fractional MagnitudeOrZeroIfInfinite(Fractional value) {
-  return IsFinite(value) ? fabs(value) : 0.0;
+  return IsFinite(value) ? std::abs(value) : 0.0;
 }
 
 // Returns the maximum magnitude of the finite variable bounds of the given
@@ -598,7 +598,7 @@ bool ProportionalColumnPreprocessor::Run(LinearProgram* lp,
     int num_merged = 0;
     for (++i; i < sorted_columns.size(); ++i) {
       if (sorted_columns[i].representative != target_representative) break;
-      if (fabs(sorted_columns[i].scaled_cost - target_scaled_cost) >=
+      if (std::abs(sorted_columns[i].scaled_cost - target_scaled_cost) >=
           parameters_.preprocessor_zero_tolerance()) {
         break;
       }
@@ -710,7 +710,7 @@ void ProportionalColumnPreprocessor::RecoverSolution(
         const Fractional bound_factor =
             column_factors_[col] / column_factors_[representative];
         const Fractional scaled_distance =
-            distance_to_bound[representative] / fabs(bound_factor);
+            distance_to_bound[representative] / std::abs(bound_factor);
         const Fractional width = upper_bounds_[col] - lower_bounds_[col];
         const bool to_upper_bound =
             (bound_factor > 0.0) == is_distance_to_upper_bound[representative];
@@ -720,7 +720,7 @@ void ProportionalColumnPreprocessor::RecoverSolution(
           solution->variable_statuses[col] =
               ComputeVariableStatus(solution->primal_values[col],
                                     lower_bounds_[col], upper_bounds_[col]);
-          distance_to_bound[representative] -= width * fabs(bound_factor);
+          distance_to_bound[representative] -= width * std::abs(bound_factor);
         } else {
           solution->primal_values[col] =
               to_upper_bound ? upper_bounds_[col] - scaled_distance
@@ -890,7 +890,8 @@ bool ProportionalRowPreprocessor::Run(LinearProgram* lp,
       // proportionality factor.
       RowIndex new_representative = lower_source;
       RowIndex other = upper_source;
-      if (fabs(row_factors_[new_representative]) < fabs(row_factors_[other])) {
+      if (std::abs(row_factors_[new_representative]) <
+          std::abs(row_factors_[other])) {
         std::swap(new_representative, other);
       }
 
@@ -1533,7 +1534,7 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp,
 
     // We prefer deleting the row with the larger coefficient magnitude because
     // we will divide by this magnitude. TODO(user): Impact?
-    if (fabs(r.coeff[DELETED]) < fabs(r.coeff[MODIFIED])) {
+    if (std::abs(r.coeff[DELETED]) < std::abs(r.coeff[MODIFIED])) {
       std::swap(r.coeff[DELETED], r.coeff[MODIFIED]);
       std::swap(r.row[DELETED], r.row[MODIFIED]);
     }
@@ -1577,9 +1578,9 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp,
         // the numerical error in the formula above, we have a really low
         // objective instead. The logic is the same as in
         // AddMultipleToSparseVectorAndIgnoreCommonIndex().
-        if (fabs(new_objective) > std::numeric_limits<Fractional>::epsilon() *
-                                      2.0 *
-                                      fabs(lp->objective_coefficients()[col])) {
+        if (std::abs(new_objective) >
+            std::numeric_limits<Fractional>::epsilon() * 2.0 *
+                std::abs(lp->objective_coefficients()[col])) {
           lp->SetObjectiveCoefficient(col, new_objective);
         } else {
           lp->SetObjectiveCoefficient(col, 0.0);
@@ -1791,10 +1792,10 @@ bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp,
     }
   }
 
-  // Change the rhs to reflect the fixed variables. Note that is is important to
-  // do that after all the calls to RemoveZeroCostUnconstrainedVariable()
-  // because RemoveZeroCostUnconstrainedVariable() needs to store the rhs before
-  // this modification!
+  // Change the rhs to reflect the fixed variables. Note that is important to do
+  // that after all the calls to RemoveZeroCostUnconstrainedVariable() because
+  // RemoveZeroCostUnconstrainedVariable() needs to store the rhs before this
+  // modification!
   const ColIndex end = column_deletion_helper_.GetMarkedColumns().size();
   for (ColIndex col(0); col < end; ++col) {
     if (column_deletion_helper_.IsColumnMarked(col)) {
@@ -1855,7 +1856,7 @@ void UnconstrainedVariablePreprocessor::RecoverSolution(
       // unbounded direction.
       if (activity * activity_sign_correction_[row] < 0.0) {
         const Fractional bound = activity / e.coefficient();
-        if (fabs(bound) > fabs(primal_value_shift)) {
+        if (std::abs(bound) > std::abs(primal_value_shift)) {
           primal_value_shift = bound;
           row_at_bound = row;
         }
@@ -2266,7 +2267,7 @@ void SingletonPreprocessor::DeleteSingletonColumnInEquality(
       // tolerances in a few preprocessors. Like an empty column with a cost of
       // 1e-17 and unbounded towards infinity is currently implying that the
       // problem is unbounded. This will need fixing.
-      if (fabs(new_cost) < parameters_.preprocessor_zero_tolerance()) {
+      if (std::abs(new_cost) < parameters_.preprocessor_zero_tolerance()) {
         new_cost = 0.0;
       }
       lp->SetObjectiveCoefficient(col, new_cost);
@@ -2613,7 +2614,7 @@ bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp,
     // and column bounds, and "propagate" the bounds as much as possible so we
     // can use this better estimate here and remove more near-zero entries.
     const Fractional max_magnitude =
-        std::max(fabs(lower_bound), fabs(upper_bound));
+        std::max(std::abs(lower_bound), std::abs(upper_bound));
     if (max_magnitude == kInfinity || max_magnitude == 0) continue;
     const Fractional threshold = allowed_impact / max_magnitude;
     lp->GetMutableSparseColumn(col)->RemoveNearZeroEntriesWithWeights(
@@ -2621,7 +2622,7 @@ bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp,
 
     if (lp->objective_coefficients()[col] != 0.0 &&
         num_non_zero_objective_coefficients *
-                fabs(lp->objective_coefficients()[col]) <
+                std::abs(lp->objective_coefficients()[col]) <
             threshold) {
       lp->SetObjectiveCoefficient(col, 0.0);
       ++num_zeroed_objective_coefficients;
@@ -2756,6 +2757,7 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp,
       continue;
     }
 
+
     // Look at the bounds of both variables and exit early if we can delegate
     // to another pre-processor; otherwise adjust the bounds of the remaining
     // variable as necessary.
@@ -2777,6 +2779,8 @@ bool DoubletonEqualityRowPreprocessor::Run(LinearProgram* lp,
         status_ = ProblemStatus::ABNORMAL;
         break;
       }
+
+
       Fractional lb = r.lb[MODIFIED];
       Fractional ub = r.ub[MODIFIED];
       Fractional carried_over_lb =
@@ -2934,6 +2938,17 @@ void DoubletonEqualityRowPreprocessor::RecoverSolution(
   }
 }
 
+void DoubletonEqualityRowPreprocessor::
+    SwapDeletedAndModifiedVariableRestoreInfo(RestoreInfo* r) {
+  using std::swap;
+  swap(r->col[DELETED], r->col[MODIFIED]);
+  swap(r->coeff[DELETED], r->coeff[MODIFIED]);
+  swap(r->lb[DELETED], r->lb[MODIFIED]);
+  swap(r->ub[DELETED], r->ub[MODIFIED]);
+  swap(r->column[DELETED], r->column[MODIFIED]);
+  swap(r->objective_coefficient[DELETED], r->objective_coefficient[MODIFIED]);
+}
+
 // --------------------------------------------------------
 // DualizerPreprocessor
 // --------------------------------------------------------
@@ -2949,7 +2964,7 @@ bool DualizerPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
   primal_num_rows_ = lp->num_constraints();
   primal_is_maximization_problem_ = lp->IsMaximizationProblem();
 
-  // If we need to decide wether or not to take the dual, we only take it when
+  // If we need to decide whether or not to take the dual, we only take it when
   // the matrix has more rows than columns. The number of rows of a linear
   // program gives the size of the square matrices we need to invert and the
   // order of iterations of the simplex method. So solving a program with less
@@ -3219,7 +3234,7 @@ bool ShiftVariableBoundsPreprocessor::Run(LinearProgram* lp,
     if (0.0 < variable_initial_lbs_[col] || 0.0 > variable_initial_ubs_[col]) {
       Fractional offset = MinInMagnitudeOrZeroIfInfinite(
           variable_initial_lbs_[col], variable_initial_ubs_[col]);
-      if (in_mip_context_ && lp->is_variable_integer()[col]) {
+      if (in_mip_context_ && lp->IsVariableInteger(col)) {
         // In the integer case, we truncate the number because if for instance
         // the lower bound is a positive integer + epsilon, we only want to
         // shift by the integer and leave the lower bound at epsilon.

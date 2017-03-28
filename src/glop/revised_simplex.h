@@ -114,6 +114,7 @@
 #include "lp_data/lp_print_utils.h"
 #include "lp_data/lp_types.h"
 #include "lp_data/matrix_scaler.h"
+#include "lp_data/sparse_row.h"
 #include "base/random.h"
 #include "util/time_limit.h"
 
@@ -206,6 +207,9 @@ class RevisedSimplex {
   const DenseRow& GetPrimalRay() const;
   const DenseColumn& GetDualRay() const;
 
+  // This is the "dual ray" linear combination of the matrix rows.
+  const DenseRow& GetDualRayRowCombination() const;
+
   // Returns the index of the column in the basis and the basis factorization.
   // Note that the order of the column in the basis is important since it is the
   // one used by the various solve functions provided by the BasisFactorization
@@ -215,6 +219,11 @@ class RevisedSimplex {
 
   // Returns statistics about this class as a std::string.
   std::string StatString();
+
+  // Computes the dictionary B^-1*N on-the-fly row by row. Returns the resulting
+  // matrix as a vector of sparse rows so that it is easy to use it on the left
+  // side in the matrix multiplication. Runs in O(num_non_zeros_in_matrix).
+  RowMajorSparseMatrix ComputeDictionary();
 
  private:
   // Propagates parameters_ to all the other classes that need it.
@@ -254,8 +263,12 @@ class RevisedSimplex {
   // Displays the bounds of the variables.
   void DisplayVariableBounds();
 
-  // Displays the Linear Programming problem as a dictionary,
-  // taking into account the iterations that have been made.
+  // Displays the following information:
+  //   * Linear Programming problem as a dictionary, taking into
+  //     account the iterations that have been made;
+  //   * Variable info;
+  //   * Reduced costs;
+  //   * Variable bounds.
   // A dictionary is in the form:
   // xB = value + sum_{j in N}  pa_ij x_j
   // z = objective_value + sum_{i in N}  rc_i x_i
@@ -264,7 +277,7 @@ class RevisedSimplex {
   // after the pivotings.
   // Dictionaries are the modern way of presenting the result of an iteration
   // of the Simplex algorithm in the literature.
-  void DisplayDictionary();
+  void DisplayRevisedSimplexDebugInfo();
 
   // Displays the Linear Programming problem as it was input.
   void DisplayProblem() const;
@@ -385,7 +398,7 @@ class RevisedSimplex {
   // See Chvatal's book for more detail (Chapter 7).
   void ComputeDirection(ColIndex col);
 
-  // Computes a - B.d in error_ and return the maximum fabs() of its coeffs.
+  // Computes a - B.d in error_ and return the maximum std::abs() of its coeffs.
   // TODO(user): Use this to trigger a refactorization of B? Or to track the
   // error created by calls to SkipVariableForRatioTest()?
   Fractional ComputeDirectionError(ColIndex col);
@@ -633,6 +646,7 @@ class RevisedSimplex {
   DenseRow solution_reduced_costs_;
   DenseRow solution_primal_ray_;
   DenseColumn solution_dual_ray_;
+  DenseRow solution_dual_ray_row_combination_;
   BasisState solution_state_;
   bool solution_state_has_been_set_externally_;
 
@@ -770,6 +784,31 @@ class RevisedSimplex {
 
   DISALLOW_COPY_AND_ASSIGN(RevisedSimplex);
 };
+
+// Hides the details of the dictionary matrix implementation. In the future,
+// GLOP will support generating the dictionary one row at a time without having
+// to store the whole matrix in memory.
+class RevisedSimplexDictionary {
+ public:
+  typedef RowMajorSparseMatrix::const_iterator ConstIterator;
+
+  // RevisedSimplex cannot be passed const because we have to call a non-const
+  // method ComputeDictionary.
+  explicit RevisedSimplexDictionary(RevisedSimplex* revised_simplex)
+      : dictionary_(CHECK_NOTNULL(revised_simplex)->ComputeDictionary()) {}
+
+  ConstIterator begin() const { return dictionary_.begin(); }
+  ConstIterator end() const { return dictionary_.end(); }
+
+  size_t size() const { return dictionary_.size(); }
+
+ private:
+  const RowMajorSparseMatrix dictionary_;
+  DISALLOW_COPY_AND_ASSIGN(RevisedSimplexDictionary);
+};
+
+// TODO(user): When a row-by-row generation of the dictionary is supported,
+// implement DictionaryIterator class that would call it inside operator*().
 
 }  // namespace glop
 }  // namespace operations_research

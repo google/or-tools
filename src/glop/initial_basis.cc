@@ -51,7 +51,7 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
   }
 
   // This is 'v' in Bixby's paper.
-  DenseColumn scaled_diagonal_fabs(matrix_.num_rows(), kInfinity);
+  DenseColumn scaled_diagonal_abs(matrix_.num_rows(), kInfinity);
 
   // Compute a list of candidate indices and sort them using the heuristic
   // described in Bixby's paper.
@@ -77,7 +77,7 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
     const Fractional kBixbyHighThreshold = 0.99;
     if (candidate_coeff > kBixbyHighThreshold) {
       enter_basis = true;
-    } else if (IsDominated(candidate_col, scaled_diagonal_fabs)) {
+    } else if (IsDominated(candidate_col, scaled_diagonal_abs)) {
       candidate_coeff = RestrictedInfinityNorm(candidate_col, can_be_replaced,
                                                &candidate_row);
       if (candidate_coeff != 0.0) {
@@ -89,8 +89,8 @@ void InitialBasis::CompleteBixbyBasis(ColIndex num_cols,
       can_be_replaced[candidate_row] = false;
       SetSupportToFalse(candidate_col, &has_zero_coefficient);
       const Fractional kBixbyLowThreshold = 0.01;
-      scaled_diagonal_fabs[candidate_row] =
-          kBixbyLowThreshold * fabs(candidate_coeff);
+      scaled_diagonal_abs[candidate_row] =
+          kBixbyLowThreshold * std::abs(candidate_coeff);
       (*basis)[candidate_row] = candidate_col_index;
     }
   }
@@ -138,7 +138,7 @@ bool InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
   max_scaled_abs_cost_ = 0.0;
   for (ColIndex col(0); col < num_cols; ++col) {
     max_scaled_abs_cost_ =
-        std::max(max_scaled_abs_cost_, fabs(objective_[col]));
+        std::max(max_scaled_abs_cost_, std::abs(objective_[col]));
     if (residual_pattern.ColDegree(col) == 1) {
       residual_singleton_column.push_back(col);
     }
@@ -172,7 +172,7 @@ bool InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
     Fractional coeff = 0.0;
     Fractional max_magnitude = 0.0;
     for (const SparseColumn::Entry e : matrix_.column(candidate)) {
-      max_magnitude = std::max(max_magnitude, fabs(e.coefficient()));
+      max_magnitude = std::max(max_magnitude, std::abs(e.coefficient()));
       if (can_be_replaced[e.row()]) {
         row = e.row();
         coeff = e.coefficient();
@@ -180,11 +180,11 @@ bool InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
       }
     }
     const Fractional kStabilityThreshold = 0.01;
-    if (fabs(coeff) < kStabilityThreshold * max_magnitude) continue;
+    if (std::abs(coeff) < kStabilityThreshold * max_magnitude) continue;
     DCHECK_NE(kInvalidRow, row);
 
     partial_diagonal_product *= coeff;
-    if (fabs(partial_diagonal_product) < kMinimumProductMagnitude) {
+    if (std::abs(partial_diagonal_product) < kMinimumProductMagnitude) {
       LOG(INFO) << "Numerical difficulties detected. The product of the "
                 << "diagonal coefficients is currently equal to "
                 << partial_diagonal_product;
@@ -204,7 +204,7 @@ bool InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
     }
   }
 
-  return fabs(partial_diagonal_product) >= kMinimumProductMagnitude;
+  return std::abs(partial_diagonal_product) >= kMinimumProductMagnitude;
 }
 
 void InitialBasis::ComputeCandidates(ColIndex num_cols,
@@ -216,7 +216,7 @@ void InitialBasis::ComputeCandidates(ColIndex num_cols,
         matrix_.column(col).num_entries() > 0) {
       candidates->push_back(col);
       max_scaled_abs_cost_ =
-          std::max(max_scaled_abs_cost_, fabs(objective_[col]));
+          std::max(max_scaled_abs_cost_, std::abs(objective_[col]));
     }
   }
   const Fractional kBixbyWeight = 1000.0;
@@ -258,7 +258,7 @@ Fractional InitialBasis::GetColumnPenalty(ColIndex col) const {
   if (type == VariableType::UPPER_AND_LOWER_BOUNDED) {
     penalty = lower_bound_[col] - upper_bound_[col];
   }
-  return penalty + fabs(objective_[col]) / max_scaled_abs_cost_;
+  return penalty + std::abs(objective_[col]) / max_scaled_abs_cost_;
 }
 
 bool InitialBasis::BixbyColumnComparator::operator()(ColIndex col_a,

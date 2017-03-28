@@ -162,7 +162,7 @@ void UpdateRow::ComputeUpdatesRowWise() {
   non_zero_position_list_.clear();
   const Fractional drop_tolerance = parameters_.drop_tolerance();
   for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
-    if (fabs(coefficient_[col]) > drop_tolerance) {
+    if (std::abs(coefficient_[col]) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
     }
   }
@@ -202,8 +202,33 @@ void UpdateRow::ComputeUpdatesRowWiseHypersparse() {
     // non-zero coefficients contiguously in a vector is better than keeping
     // them as they are. Note however that we will iterate only twice on the
     // update row coefficients during an iteration.
-    if (fabs(coefficient_[col]) > drop_tolerance) {
+    if (std::abs(coefficient_[col]) > drop_tolerance) {
       non_zero_position_list_.push_back(col);
+    }
+  }
+}
+
+// Note that we use the same algo as ComputeUpdatesColumnWise() here. The
+// others version might be faster, but this is called only once per solve, so
+// it shouldn't be too bad.
+void UpdateRow::RecomputeFullUpdateRow(RowIndex leaving_row) {
+  CHECK(!compute_update_row_);
+  const ColIndex num_cols = matrix_.num_cols();
+  const Fractional drop_tolerance = parameters_.drop_tolerance();
+  coefficient_.resize(num_cols, 0.0);
+  non_zero_position_list_.clear();
+
+  // Fills the only position at one in the basic columns.
+  coefficient_[basis_[leaving_row]] = 1.0;
+  non_zero_position_list_.push_back(basis_[leaving_row]);
+
+  // Fills the non-basic column.
+  for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
+    const Fractional coeff =
+        matrix_.ColumnScalarProduct(col, unit_row_left_inverse_);
+    if (std::abs(coeff) > drop_tolerance) {
+      non_zero_position_list_.push_back(col);
+      coefficient_[col] = coeff;
     }
   }
 }
@@ -227,7 +252,7 @@ void UpdateRow::ComputeUpdatesColumnWise() {
       // sparsity. Note that it shouldn't be too bad to use a non-zero drop
       // tolerance here because even if we introduce some precision issues, the
       // quantities updated by this update row will eventually be recomputed.
-      if (fabs(coeff) > drop_tolerance) {
+      if (std::abs(coeff) > drop_tolerance) {
         non_zero_position_list_.push_back(col);
         coefficient_[col] = coeff;
       }
@@ -248,7 +273,7 @@ void UpdateRow::ComputeUpdatesColumnWise() {
     }
     // End of omp parallel for.
     for (const ColIndex col : variables_info_.GetIsRelevantBitRow()) {
-      if (fabs(coefficient_[col]) > drop_tolerance) {
+      if (std::abs(coefficient_[col]) > drop_tolerance) {
         non_zero_position_list_.push_back(col);
       }
     }

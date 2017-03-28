@@ -32,7 +32,7 @@ void VariablesInfo::Initialize() {
   variable_status_.resize(num_cols, VariableStatus::FREE);
   can_increase_.ClearAndResize(num_cols);
   can_decrease_.ClearAndResize(num_cols);
-  is_relevant_.ClearAndResize(num_cols);
+  relevance_.ClearAndResize(num_cols);
   is_basic_.ClearAndResize(num_cols);
   not_basic_.ClearAndResize(num_cols);
   non_basic_boxed_variables_.ClearAndResize(num_cols);
@@ -40,24 +40,56 @@ void VariablesInfo::Initialize() {
 
 void VariablesInfo::MakeBoxedVariableRelevant(bool value) {
   if (value == boxed_variables_are_relevant_) return;
-  boxed_variables_are_relevant_ = value;
-  for (ColIndex col(0); col < is_relevant_.size(); ++col) {
-    SetRelevance(col, variable_status_[col]);
+  if (value) {
+    boxed_variables_are_relevant_ = true;
+    for (const ColIndex col : non_basic_boxed_variables_) {
+      SetRelevance(col, variable_status_[col] != VariableStatus::FIXED_VALUE);
+    }
+  } else {
+    boxed_variables_are_relevant_ = false;
+    for (const ColIndex col : non_basic_boxed_variables_) {
+      SetRelevance(col, false);
+    }
   }
 }
 
 void VariablesInfo::Update(ColIndex col, VariableStatus status) {
+  if (status == VariableStatus::BASIC) {
+    UpdateToBasicStatus(col);
+  } else {
+    UpdateToNonBasicStatus(col, status);
+  }
+}
+
+void VariablesInfo::UpdateToBasicStatus(ColIndex col) {
   variable_type_[col] = ComputeVariableType(col);
+  variable_status_[col] = VariableStatus::BASIC;
+  is_basic_.Set(col, true);
+  not_basic_.Set(col, false);
+  can_increase_.Set(col, false);
+  can_decrease_.Set(col, false);
+  non_basic_boxed_variables_.Set(col, false);
+  SetRelevance(col, false);
+}
+
+void VariablesInfo::UpdateToNonBasicStatus(ColIndex col,
+                                           VariableStatus status) {
+  DCHECK_NE(status, VariableStatus::BASIC);
+  const VariableType type = ComputeVariableType(col);
+  variable_type_[col] = type;
   variable_status_[col] = status;
-  is_basic_.Set(col, status == VariableStatus::BASIC);
-  not_basic_.Set(col, status != VariableStatus::BASIC);
+  is_basic_.Set(col, false);
+  not_basic_.Set(col, true);
   can_increase_.Set(col, status == VariableStatus::AT_LOWER_BOUND ||
-                         status == VariableStatus::FREE);
+                             status == VariableStatus::FREE);
   can_decrease_.Set(col, status == VariableStatus::AT_UPPER_BOUND ||
-                         status == VariableStatus::FREE);
-  SetRelevance(col, status);
-  non_basic_boxed_variables_.Set(col, status != VariableStatus::BASIC &&
-      variable_type_[col] == VariableType::UPPER_AND_LOWER_BOUNDED);
+                             status == VariableStatus::FREE);
+  non_basic_boxed_variables_.Set(col,
+                                 type == VariableType::UPPER_AND_LOWER_BOUNDED);
+  const bool relevance = status != VariableStatus::FIXED_VALUE &&
+                         (boxed_variables_are_relevant_ ||
+                          type != VariableType::UPPER_AND_LOWER_BOUNDED);
+  SetRelevance(col, relevance);
 }
 
 const VariableTypeRow& VariablesInfo::GetTypeRow() const {
@@ -77,7 +109,7 @@ const DenseBitRow& VariablesInfo::GetCanDecreaseBitRow() const {
 }
 
 const DenseBitRow& VariablesInfo::GetIsRelevantBitRow() const {
-  return is_relevant_;
+  return relevance_;
 }
 
 const DenseBitRow& VariablesInfo::GetIsBasicBitRow() const { return is_basic_; }
@@ -109,17 +141,13 @@ VariableType VariablesInfo::ComputeVariableType(ColIndex col) const {
   }
 }
 
-void VariablesInfo::SetRelevance(ColIndex col, VariableStatus status) {
-  const bool is_relevant = (status != VariableStatus::BASIC &&
-      status != VariableStatus::FIXED_VALUE &&
-      (boxed_variables_are_relevant_ ||
-      variable_type_[col] != VariableType::UPPER_AND_LOWER_BOUNDED));
-  if (is_relevant_.IsSet(col) == is_relevant) return;
-  if (is_relevant) {
-    is_relevant_.Set(col);
+void VariablesInfo::SetRelevance(ColIndex col, bool relevance) {
+  if (relevance_.IsSet(col) == relevance) return;
+  if (relevance) {
+    relevance_.Set(col);
     num_entries_in_relevant_columns_ += matrix_.ColumnNumEntries(col);
   } else {
-    is_relevant_.Clear(col);
+    relevance_.Clear(col);
     num_entries_in_relevant_columns_ -= matrix_.ColumnNumEntries(col);
   }
 }

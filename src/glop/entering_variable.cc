@@ -201,7 +201,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
   *entering_col = kInvalidCol;
   bound_flip_candidates->clear();
   Fractional best_coeff = -1.0;
-  Fractional variation_magnitude = fabs(cost_variation);
+  Fractional variation_magnitude = std::abs(cost_variation);
   equivalent_entering_choices_.clear();
   while (!breakpoints.empty()) {
     const ColWithRatio top = breakpoints.front();
@@ -327,7 +327,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     DCHECK_NE(variable_type[col], VariableType::FIXED_VARIABLE);
 
     // Skip if the coeff is too small to be a numerically stable pivot.
-    if (fabs(update_coefficient[col]) < threshold) continue;
+    if (std::abs(update_coefficient[col]) < threshold) continue;
 
     // We will add ratio * coeff to this column. cost_variation makes sure
     // the leaving variable will be dual-feasible (its update coeff is
@@ -340,7 +340,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
 
     // Only proceed if there is a transition, note that if reduced_costs[col]
     // is close to zero, then the variable is supposed to be dual-feasible.
-    if (fabs(reduced_costs[col]) <= dual_feasibility_tolerance) {
+    if (std::abs(reduced_costs[col]) <= dual_feasibility_tolerance) {
       // Continue if the variation goes in the dual-feasible direction.
       if (coeff > 0 && !can_decrease.IsSet(col)) continue;
       if (coeff < 0 && !can_increase.IsSet(col)) continue;
@@ -357,7 +357,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
 
     // We are sure there is a transition, add it to the set of breakpoints.
     breakpoints.push_back(
-        ColWithRatio(col, fabs(reduced_costs[col]), fabs(coeff)));
+        ColWithRatio(col, std::abs(reduced_costs[col]), std::abs(coeff)));
   }
 
   // Process the breakpoints in priority order.
@@ -372,7 +372,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   // numerically stable pivot.
   *entering_col = kInvalidCol;
   *step = -1.0;
-  Fractional improvement = fabs(cost_variation);
+  Fractional improvement = std::abs(cost_variation);
   while (!breakpoints.empty()) {
     const ColWithRatio top = breakpoints.front();
 
@@ -390,7 +390,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     // improvment, we also render it worse if we keep going in the same
     // direction.
     if (can_decrease.IsSet(top.col) && can_increase.IsSet(top.col) &&
-        fabs(reduced_costs[top.col]) > threshold) {
+        std::abs(reduced_costs[top.col]) > threshold) {
       improvement -= top.coeff_magnitude;
     }
 
@@ -444,7 +444,7 @@ void EnteringVariable::DantzigChooseEnteringColumn(ColIndex* entering_col) {
   *entering_col = kInvalidCol;
   for (const ColIndex col : reduced_costs_->GetDualInfeasiblePositions()) {
     if (nested_pricing && !unused_columns_.IsSet(col)) continue;
-    const Fractional unormalized_price = fabs(reduced_costs[col]);
+    const Fractional unormalized_price = std::abs(reduced_costs[col]);
     if (normalize) {
       if (unormalized_price > best_price * matrix_column_norms[col]) {
         best_price = unormalized_price / matrix_column_norms[col];
@@ -489,7 +489,7 @@ void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex* entering_col) {
         *entering_col = col;
       }
     } else {
-      const Fractional positive_reduced_cost = fabs(reduced_costs[col]);
+      const Fractional positive_reduced_cost = std::abs(reduced_costs[col]);
       if (positive_reduced_cost >= best_price * weights[col]) {
         if (positive_reduced_cost == best_price * weights[col]) {
           equivalent_entering_choices_.push_back(col);

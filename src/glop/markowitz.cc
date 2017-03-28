@@ -76,7 +76,7 @@ Status Markowitz::ComputeRowAndColumnPermutation(const MatrixView& basis_matrix,
     // but its magnitude can be really close to zero. In both cases, we
     // report the singularity of the matrix.
     if (pivot_row == kInvalidRow || pivot_col == kInvalidCol ||
-        fabs(pivot_coefficient) <= singularity_threshold) {
+        std::abs(pivot_coefficient) <= singularity_threshold) {
       RETURN_AND_LOG_ERROR(Status::ERROR_LU,
                            StringPrintf("The matrix is singular! pivot = %E",
                                         pivot_coefficient));
@@ -427,7 +427,7 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
 
     Fractional max_magnitude = 0.0;
     for (const SparseColumn::Entry e : column) {
-      max_magnitude = std::max(max_magnitude, fabs(e.coefficient()));
+      max_magnitude = std::max(max_magnitude, std::abs(e.coefficient()));
     }
     if (max_magnitude == 0.0) {
       // All symbolic non-zero entries have been cancelled!
@@ -438,7 +438,7 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
 
     const Fractional skip_threshold = threshold * max_magnitude;
     for (const SparseColumn::Entry e : column) {
-      const Fractional magnitude = fabs(e.coefficient());
+      const Fractional magnitude = std::abs(e.coefficient());
       if (magnitude < skip_threshold) continue;
 
       const int row_degree = residual_matrix_non_zero_.RowDegree(e.row());
@@ -446,7 +446,7 @@ int64 Markowitz::FindPivot(const RowPermutation& row_perm,
       DCHECK_NE(markowitz_number, 0);
       if (markowitz_number < min_markowitz_number ||
           ((markowitz_number == min_markowitz_number) &&
-           magnitude > fabs(*pivot_coefficient))) {
+           magnitude > std::abs(*pivot_coefficient))) {
         min_markowitz_number = markowitz_number;
         *pivot_col = col;
         *pivot_row = e.row();

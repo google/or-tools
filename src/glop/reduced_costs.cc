@@ -95,9 +95,9 @@ bool ReducedCosts::TestEnteringReducedCostPrecision(
     const Fractional estimated_reduced_costs_accuracy =
         old_reduced_cost - precise_reduced_cost;
     const Fractional scale =
-        (fabs(precise_reduced_cost) <= 1.0) ? 1.0 : precise_reduced_cost;
+        (std::abs(precise_reduced_cost) <= 1.0) ? 1.0 : precise_reduced_cost;
     stats_.reduced_costs_accuracy.Add(estimated_reduced_costs_accuracy / scale);
-    if (fabs(estimated_reduced_costs_accuracy) / scale >
+    if (std::abs(estimated_reduced_costs_accuracy) / scale >
         parameters_.recompute_reduced_costs_threshold()) {
       VLOG(1) << "Recomputing reduced costs: " << precise_reduced_cost << " vs "
               << old_reduced_cost;
@@ -127,7 +127,7 @@ Fractional ReducedCosts::ComputeMaximumDualResidual() const {
     const Fractional residual =
         objective_[basic_col] + objective_perturbation_[basic_col] -
         matrix_.ColumnScalarProduct(basic_col, dual_values);
-    dual_residual_error = std::max(dual_residual_error, fabs(residual));
+    dual_residual_error = std::max(dual_residual_error, std::abs(residual));
   }
   return dual_residual_error;
 }
@@ -144,7 +144,7 @@ Fractional ReducedCosts::ComputeMaximumDualInfeasibility() const {
     if ((can_increase.IsSet(col) && rc < 0.0) ||
         (can_decrease.IsSet(col) && rc > 0.0)) {
       maximum_dual_infeasibility =
-          std::max(maximum_dual_infeasibility, fabs(rc));
+          std::max(maximum_dual_infeasibility, std::abs(rc));
     }
   }
   return maximum_dual_infeasibility;
@@ -161,7 +161,7 @@ Fractional ReducedCosts::ComputeSumOfDualInfeasibilities() const {
     const Fractional rc = reduced_costs_[col];
     if ((can_increase.IsSet(col) && rc < 0.0) ||
         (can_decrease.IsSet(col) && rc > 0.0)) {
-      dual_infeasibility_sum += fabs(fabs(rc));
+      dual_infeasibility_sum += std::abs(std::abs(rc));
     }
   }
   return dual_infeasibility_sum;
@@ -372,7 +372,7 @@ void ReducedCosts::ComputeReducedCosts() {
       // We also compute the dual residual error y.B - c_B.
       if (is_basic.IsSet(col)) {
         dual_residual_error =
-            std::max(dual_residual_error, fabs(reduced_costs_[col]));
+            std::max(dual_residual_error, std::abs(reduced_costs_[col]));
       }
     }
   } else {
@@ -392,7 +392,7 @@ void ReducedCosts::ComputeReducedCosts() {
       if (is_basic.IsSet(col)) {
         thread_local_dual_residual_error[omp_get_thread_num()] =
             std::max(thread_local_dual_residual_error[omp_get_thread_num()],
-                fabs(reduced_costs_[col]));
+                std::abs(reduced_costs_[col]));
       }
     }
     // end of omp parallel for

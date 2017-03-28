@@ -394,7 +394,6 @@ class SingletonPreprocessor : public Preprocessor {
   ~SingletonPreprocessor() final {}
   bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
-  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   // Returns the MatrixEntry of the given singleton row or column, taking into
@@ -550,7 +549,6 @@ class ImpliedFreePreprocessor : public Preprocessor {
   ~ImpliedFreePreprocessor() final {}
   bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
-  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   // This preprocessor adds fixed offsets to some variables. We remember those
@@ -753,7 +751,6 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
   ~DoubletonEqualityRowPreprocessor() final {}
   bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
-  void UseInMipContext() final { LOG(FATAL) << "Not implemented."; }
 
  private:
   enum ColChoice {
@@ -799,6 +796,8 @@ class DoubletonEqualityRowPreprocessor : public Preprocessor {
     ColChoiceAndStatus bound_backtracking_at_lower_bound;
     ColChoiceAndStatus bound_backtracking_at_upper_bound;
   };
+  void SwapDeletedAndModifiedVariableRestoreInfo(RestoreInfo* r);
+
   std::vector<RestoreInfo> restore_stack_;
 
   DISALLOW_COPY_AND_ASSIGN(DoubletonEqualityRowPreprocessor);
