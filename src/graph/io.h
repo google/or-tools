@@ -144,7 +144,7 @@ util::StatusOr<Graph*> ReadGraphFile(
         return util::Status(
             util::error::INVALID_ARGUMENT,
             StrCat("First line of '", filename,
-                   "' should be at least two nonnegative integers."));
+                         "' should be at least two nonnegative integers."));
       }
       num_nodes = header_ints[0];
       num_expected_lines = header_ints[1];
@@ -158,10 +158,11 @@ util::StatusOr<Graph*> ReadGraphFile(
           if (header_ints.size() != num_colors + 2) {
             return util::Status(
                 util::error::INVALID_ARGUMENT,
-                StrCat("There should be num_colors-1 color cardinalities in the"
-                       " header of '",
-                       filename, "' (where num_colors=", num_colors,
-                       "): the last color cardinality should be", " skipped."));
+                StrCat(
+                    "There should be num_colors-1 color cardinalities in the"
+                    " header of '",
+                    filename, "' (where num_colors=", num_colors,
+                    "): the last color cardinality should be", " skipped."));
           }
           num_nodes_with_color_or_null->reserve(num_colors);
           int num_nodes_left = num_nodes;
@@ -171,9 +172,10 @@ util::StatusOr<Graph*> ReadGraphFile(
             if (header_ints[i] <= 0 || num_nodes_left <= 0) {
               return util::Status(
                   util::error::INVALID_ARGUMENT,
-                  StrCat("The color cardinalities in the header of '", filename,
-                         " should always be >0 and add up to less than the"
-                         " total number of nodes."));
+                  StrCat(
+                      "The color cardinalities in the header of '", filename,
+                      " should always be >0 and add up to less than the"
+                      " total number of nodes."));
             }
           }
           num_nodes_with_color_or_null->push_back(num_nodes_left);
@@ -189,8 +191,9 @@ util::StatusOr<Graph*> ReadGraphFile(
         node2 < 0 || node1 >= num_nodes || node2 >= num_nodes) {
       return util::Status(
           util::error::INVALID_ARGUMENT,
-          StrCat("In '", filename, "', line ", num_lines_read, ": Expected two",
-                 " integers in the range [0, ", num_nodes, ")."));
+          StrCat("In '", filename, "', line ", num_lines_read,
+                       ": Expected two", " integers in the range [0, ",
+                       num_nodes, ")."));
     }
     // We don't add superfluous arcs to the graph, but we still keep reading
     // the file, to get better error messages: we want to know the actual
@@ -204,11 +207,11 @@ util::StatusOr<Graph*> ReadGraphFile(
     return util::Status(util::error::INVALID_ARGUMENT, "Unknown or empty file");
   }
   if (num_lines_read != num_expected_lines + 1) {
-    return util::Status(
-        util::error::INVALID_ARGUMENT,
-        StrCat("The number of arcs/edges in '", filename, "' (",
-               num_lines_read - 1, " does not match the value announced in",
-               " the header (", num_expected_lines, ")"));
+    return util::Status(util::error::INVALID_ARGUMENT,
+                        StrCat("The number of arcs/edges in '", filename,
+                                     "' (", num_lines_read - 1,
+                                     " does not match the value announced in",
+                                     " the header (", num_expected_lines, ")"));
   }
   graph->Build();
   return graph.release();

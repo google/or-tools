@@ -500,7 +500,7 @@ int64 IntegralProblemConverter::GetSolutionValue(
 bool IntegralProblemConverter::CheckProblem(
     const LinearProgram& linear_problem) const {
   for (ColIndex col(0); col < linear_problem.num_variables(); ++col) {
-    if (!linear_problem.is_variable_integer()[col]) {
+    if (!linear_problem.IsVariableInteger(col)) {
       LOG(ERROR) << "Variable " << linear_problem.GetVariableName(col)
                  << " is continuous. This is not supported by BOP.";
       return false;
@@ -758,6 +758,9 @@ bool IntegralProblemConverter::ConvertUsingExistingBooleans(
     if (transpose.column(RowToColIndex(constraint)).num_entries() <= 1) {
       // Can't replace the integer variable by Boolean variables when there are
       // no Boolean variables.
+      // TODO(user): We could actually simplify the problem when the variable
+      //              is constant, but this should be done by the preprocessor,
+      //              not here. Consider activating the MIP preprocessing.
       continue;
     }
 

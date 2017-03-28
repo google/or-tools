@@ -63,10 +63,10 @@ class LinearExpr(object):
   floating-point value).
   """
 
-  SUPPORTED_OPERATOR_METHODS = [
+  OVERRIDDEN_OPERATOR_METHODS = [
       '__%s__' % opname
       for opname in ['add', 'radd', 'sub', 'rsub', 'mul', 'rmul', 'div',
-                     'truediv', 'neg', 'eq', 'ge', 'le']
+                     'truediv', 'neg', 'eq', 'ge', 'le', 'gt', 'lt', 'ne']
   ]
 
   def solution_value(self):  # pylint: disable=invalid-name
@@ -126,6 +126,17 @@ class LinearExpr(object):
       return LinearConstraint(self, -inf, arg)
     else:
       return LinearConstraint(self - arg, -inf, 0.0)
+
+  def __lt__(self, arg):
+    raise ValueError(
+        'Operators "<" and ">" not supported with the linear solver')
+
+  def __gt__(self, arg):
+    raise ValueError(
+        'Operators "<" and ">" not supported with the linear solver')
+
+  def __ne__(self, arg):
+    raise ValueError('Operator "!=" not supported with the linear solver')
 
 
 class VariableExpr(LinearExpr):

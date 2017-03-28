@@ -49,9 +49,6 @@ public partial class RoutingModel {
   private System.Collections.Generic.List<NodeEvaluator2>
       pinned_node_evaluator2_ =
           new System.Collections.Generic.List<NodeEvaluator2>();
-  private System.Collections.Generic.List<LongResultCallback1>
-      pinned_long_result_callback_1_ =
-          new System.Collections.Generic.List<LongResultCallback1>();
 }
 
 }  // namespace Google.OrTools.ConstraintSolver
