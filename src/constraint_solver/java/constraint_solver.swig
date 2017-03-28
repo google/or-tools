@@ -572,7 +572,7 @@ namespace operations_research {
 // Typemaps to represent const std::vector<CType*>& arguments as arrays of
 // JavaType, where CType is not a primitive type.
 // TODO(user): See if it makes sense to move this
-// util/operations_research/util/vector.swig.
+// util/vector.swig.
 
 // CastOp defines how to cast the output of CallStaticLongMethod to CType*;
 // its first argument is CType, its second is the output of

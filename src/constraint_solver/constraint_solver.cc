@@ -3139,6 +3139,12 @@ class LocalSearchMonitorMaster : public LocalSearchMonitor {
     ForAll(monitors_, &LocalSearchMonitor::EndAcceptNeighbor, op,
            neighbor_found);
   }
+  void BeginFiltering(const LocalSearchFilter* filter) override {
+    ForAll(monitors_, &LocalSearchMonitor::BeginFiltering, filter);
+  }
+  void EndFiltering(const LocalSearchFilter* filter, bool reject) override {
+    ForAll(monitors_, &LocalSearchMonitor::EndFiltering, filter, reject);
+  }
 
   // Does not take ownership of monitor.
   void Add(LocalSearchMonitor* monitor) {

@@ -65,6 +65,7 @@ DECLARE_int64(routing_max_cache_size);
 // Misc
 DECLARE_bool(routing_fingerprint_arc_cost_evaluators);
 DECLARE_bool(routing_trace);
+DECLARE_bool(routing_profile);
 
 // --- Routing model flags ---
 DECLARE_bool(routing_use_homogeneous_costs);

@@ -661,6 +661,12 @@ class PathCumulFilter : public BasePathFilter {
 
   int64 GetCumulSoftCost(int64 node, int64 cumul_value) const;
 
+  bool FilterCumulPiecewiseLinearCosts() const {
+    return !cumul_piecewise_linear_costs_.empty();
+  }
+
+  int64 GetCumulPiecewiseLinearCost(int64 node, int64 cumul_value) const;
+
   bool FilterCumulSoftLowerBounds() const {
     return !cumul_soft_lower_bounds_.empty();
   }
@@ -693,6 +699,7 @@ class PathCumulFilter : public BasePathFilter {
   const int64 global_span_cost_coefficient_;
   std::vector<SoftBound> cumul_soft_bounds_;
   std::vector<SoftBound> cumul_soft_lower_bounds_;
+  std::vector<const PiecewiseLinearFunction*> cumul_piecewise_linear_costs_;
   std::vector<int64> vehicle_span_cost_coefficients_;
   bool has_nonzero_vehicle_span_cost_coefficients_;
   IntVar* const cost_var_;
@@ -750,8 +757,10 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
   }
   cumul_soft_bounds_.resize(cumuls_.size());
   cumul_soft_lower_bounds_.resize(cumuls_.size());
+  cumul_piecewise_linear_costs_.resize(cumuls_.size());
   bool has_cumul_soft_bounds = false;
   bool has_cumul_soft_lower_bounds = false;
+  bool has_cumul_piecewise_linear_costs = false;
   bool has_cumul_hard_bounds = false;
   for (const IntVar* const slack : slacks_) {
     if (slack->Min() > 0) {
@@ -774,6 +783,11 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
       cumul_soft_lower_bounds_[i].coefficient =
           dimension.GetCumulVarSoftLowerBoundCoefficientFromIndex(i);
     }
+    if (dimension.HasCumulVarPiecewiseLinearCostFromIndex(i)) {
+      has_cumul_piecewise_linear_costs = true;
+      cumul_piecewise_linear_costs_[i] =
+          dimension.GetCumulVarPiecewiseLinearCostFromIndex(i);
+    }
     IntVar* const cumul_var = cumuls_[i];
     if (cumul_var->Min() > 0 && cumul_var->Max() < kint64max) {
       has_cumul_hard_bounds = true;
@@ -784,6 +798,9 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
   }
   if (!has_cumul_soft_lower_bounds) {
     cumul_soft_lower_bounds_.clear();
+  }
+  if (!has_cumul_piecewise_linear_costs) {
+    cumul_piecewise_linear_costs_.clear();
   }
   if (!has_cumul_hard_bounds) {
     // Slacks don't need to be constrained if the cumuls don't have hard bounds;
@@ -806,6 +823,17 @@ int64 PathCumulFilter::GetCumulSoftCost(int64 node, int64 cumul_value) const {
     const int64 coefficient = cumul_soft_bounds_[node].coefficient;
     if (coefficient > 0 && bound < cumul_value) {
       return CapProd(CapSub(cumul_value, bound), coefficient);
+    }
+  }
+  return 0;
+}
+
+int64 PathCumulFilter::GetCumulPiecewiseLinearCost(int64 node,
+                                                   int64 cumul_value) const {
+  if (node < cumul_piecewise_linear_costs_.size()) {
+    const PiecewiseLinearFunction* cost = cumul_piecewise_linear_costs_[node];
+    if (cost != nullptr) {
+      return cost->Value(cumul_value);
     }
   }
   return 0;
@@ -843,7 +871,7 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
   cumul_cost_delta_ = 0;
   current_cumul_cost_values_.clear();
   if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost() ||
-      FilterCumulSoftLowerBounds()) {
+      FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts()) {
     InitializeSupportedPathCumul(&current_min_start_, kint64max);
     InitializeSupportedPathCumul(&current_max_end_, kint64min);
     current_path_transits_.Clear();
@@ -864,6 +892,8 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
       node = Start(r);
       int64 cumul = cumuls_[node]->Min();
       int64 current_cumul_cost_value = GetCumulSoftCost(node, cumul);
+      current_cumul_cost_value = CapAdd(
+          current_cumul_cost_value, GetCumulPiecewiseLinearCost(node, cumul));
       int64 total_transit = 0;
       while (node < Size()) {
         const int64 next = Value(node);
@@ -878,6 +908,8 @@ void PathCumulFilter::OnBeforeSynchronizePaths() {
         node = next;
         current_cumul_cost_value =
             CapAdd(current_cumul_cost_value, GetCumulSoftCost(node, cumul));
+        current_cumul_cost_value = CapAdd(
+            current_cumul_cost_value, GetCumulPiecewiseLinearCost(node, cumul));
       }
       if (FilterSlackCost()) {
         const int64 start =
@@ -931,6 +963,8 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
   int64 node = path_start;
   int64 cumul = cumuls_[node]->Min();
   cumul_cost_delta_ = CapAdd(cumul_cost_delta_, GetCumulSoftCost(node, cumul));
+  cumul_cost_delta_ =
+      CapAdd(cumul_cost_delta_, GetCumulPiecewiseLinearCost(node, cumul));
   int64 total_transit = 0;
   const int path = delta_path_transits_.AddPaths(1);
   const int vehicle = start_to_vehicle_[path_start];
@@ -970,6 +1004,8 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
     node = next;
     cumul_cost_delta_ =
         CapAdd(cumul_cost_delta_, GetCumulSoftCost(node, cumul));
+    cumul_cost_delta_ =
+        CapAdd(cumul_cost_delta_, GetCumulPiecewiseLinearCost(node, cumul));
   }
   if (FilterSlackCost()) {
     const int64 start =
@@ -988,7 +1024,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
                GetPathCumulSoftLowerBoundCost(delta_path_transits_, path));
   }
   if (FilterSpanCost() || FilterCumulSoftBounds() || FilterSlackCost() ||
-      FilterCumulSoftLowerBounds()) {
+      FilterCumulSoftLowerBounds() || FilterCumulPiecewiseLinearCosts()) {
     delta_paths_.insert(GetPath(path_start));
     delta_max_end_cumul_ = std::max(delta_max_end_cumul_, cumul);
     cumul_cost_delta_ =
@@ -999,7 +1035,7 @@ bool PathCumulFilter::AcceptPath(int64 path_start, int64 chain_start,
 
 bool PathCumulFilter::FinalizeAcceptPath() {
   if ((!FilterSpanCost() && !FilterCumulSoftBounds() && !FilterSlackCost() &&
-       !FilterCumulSoftLowerBounds()) ||
+       !FilterCumulSoftLowerBounds() && !FilterCumulPiecewiseLinearCosts()) ||
       lns_detected_) {
     // Cleaning up for the next delta.
     delta_max_end_cumul_ = kint64min;
@@ -1122,6 +1158,10 @@ RoutingLocalSearchFilter* MakePathCumulFilter(
           new PathCumulFilter(routing_model, dimension, objective_callback));
     }
     if (dimension.HasCumulVarSoftLowerBoundFromIndex(i)) {
+      return routing_model.solver()->RevAlloc(
+          new PathCumulFilter(routing_model, dimension, objective_callback));
+    }
+    if (dimension.HasCumulVarPiecewiseLinearCostFromIndex(i)) {
       return routing_model.solver()->RevAlloc(
           new PathCumulFilter(routing_model, dimension, objective_callback));
     }

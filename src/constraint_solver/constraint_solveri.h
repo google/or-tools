@@ -564,8 +564,8 @@ class CallMethod1 : public Demon {
   void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
 
   std::string DebugString() const override {
-    return StrCat("CallMethod_", name_, "(", constraint_->DebugString(), ", ",
-                  ParameterDebugString(param1_), ")");
+    return StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
+                        ", ", ParameterDebugString(param1_), ")");
   }
 
  private:
@@ -720,8 +720,9 @@ class DelayedCallMethod1 : public Demon {
   }
 
   std::string DebugString() const override {
-    return StrCat("DelayedCallMethod_", name_, "(", constraint_->DebugString(),
-                  ", ", ParameterDebugString(param1_), ")");
+    return StrCat("DelayedCallMethod_", name_, "(",
+                        constraint_->DebugString(), ", ",
+                        ParameterDebugString(param1_), ")");
   }
 
  private:
@@ -1262,6 +1263,8 @@ class PathOperator : public IntVarLocalSearchOperator {
   // Returns the index of the variable corresponding to the current path
   // of the ith base node.
   int64 StartNode(int i) const { return path_starts_[base_paths_[i]]; }
+  // Returns the vector of path start nodes.
+  const std::vector<int64>& path_starts() const { return path_starts_; }
 
   // When the operator is being synchronized with a new solution (when Start()
   // is called), returns true to restart the exploration of the neighborhood
@@ -1370,6 +1373,34 @@ class PathOperator : public IntVarLocalSearchOperator {
   std::function<int(int64)> start_empty_path_class_;
 };
 
+// Simple PathOperator wrapper that also stores the current previous nodes,
+// and is thus able to provide the "Prev" and "IsPathStart" functions.
+class PathWithPreviousNodesOperator : public PathOperator {
+ public:
+  PathWithPreviousNodesOperator(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars, int number_of_base_nodes,
+      std::function<int(int64)> start_empty_path_class);
+  ~PathWithPreviousNodesOperator() override {}
+
+  bool IsPathStart(int64 node_index) const { return prevs_[node_index] == -1; }
+
+  int64 Prev(int64 node_index) const {
+    DCHECK(!IsPathStart(node_index));
+    return prevs_[node_index];
+  }
+
+  std::string DebugString() const override {
+    return "PathWithPreviousNodesOperator";
+  }
+
+ protected:
+  void OnNodeInitialization() override;  // Initializes the "prevs_" array.
+
+ private:
+  std::vector<int64> prevs_;
+};
+
 // ----- Operator Factories ------
 
 template <class T>
@@ -1391,6 +1422,7 @@ class SwapActiveOperator;
 class ExtendedSwapActiveOperator;
 class MakeActiveAndRelocate;
 class RelocateAndMakeActiveOperator;
+class RelocateAndMakeInactiveOperator;
 
 // ----- Local Search Filters ------
 
@@ -1544,6 +1576,8 @@ class LocalSearchMonitor : public SearchMonitor {
   virtual void BeginAcceptNeighbor(const LocalSearchOperator* op) = 0;
   virtual void EndAcceptNeighbor(const LocalSearchOperator* op,
                                  bool neighbor_found) = 0;
+  virtual void BeginFiltering(const LocalSearchFilter* filter) = 0;
+  virtual void EndFiltering(const LocalSearchFilter* filter, bool reject) = 0;
 
   // Install itself on the solver.
   void Install() override;

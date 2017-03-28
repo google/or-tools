@@ -771,6 +771,7 @@ namespace operations_research {
 %unignore Solver::CheckAssignment;
 %unignore Solver::CheckConstraint;
 %unignore Solver::MemoryUsage;
+%unignore Solver::LocalSearchProfile;
 
 // Solver: IntVar creation. We always strip the "Make" prefix in python.
 %rename (IntVar) Solver::MakeIntVar;

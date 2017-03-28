@@ -1334,8 +1334,8 @@ class DomainIntVar : public IntVar {
   void SetValue(int64 v) override;
   bool Bound() const override { return (min_.Value() == max_.Value()); }
   int64 Value() const override {
-    CHECK_EQ(min_.Value(), max_.Value()) << " variable " << DebugString()
-                                         << " is not bound.";
+    CHECK_EQ(min_.Value(), max_.Value())
+        << " variable " << DebugString() << " is not bound.";
     return min_.Value();
   }
   void RemoveValue(int64 v) override;
@@ -7183,6 +7183,64 @@ IntExpr* Solver::MakeSemiContinuousExpr(IntExpr* const e, int64 fixed_charge,
   }
   // TODO(user) : benchmark with virtualization of
   // PosIntDivDown and PosIntDivUp - or function pointers.
+}
+
+// ----- Piecewise Linear -----
+
+class PiecewiseLinearExpr : public BaseIntExpr {
+ public:
+  PiecewiseLinearExpr(Solver* solver, IntExpr* expr,
+                      const PiecewiseLinearFunction& f)
+      : BaseIntExpr(solver), expr_(expr), f_(f) {}
+  ~PiecewiseLinearExpr() override {}
+  int64 Min() const override {
+    return f_.GetMinimum(expr_->Min(), expr_->Max());
+  }
+  void SetMin(int64 m) override {
+    const auto& range =
+        f_.GetSmallestRangeGreaterThanValue(expr_->Min(), expr_->Max(), m);
+    expr_->SetRange(range.first, range.second);
+  }
+
+  int64 Max() const override {
+    return f_.GetMaximum(expr_->Min(), expr_->Max());
+  }
+
+  void SetMax(int64 m) override {
+    const auto& range =
+        f_.GetSmallestRangeLessThanValue(expr_->Min(), expr_->Max(), m);
+    expr_->SetRange(range.first, range.second);
+  }
+
+  void SetRange(int64 l, int64 u) override {
+    const auto& range =
+        f_.GetSmallestRangeInValueRange(expr_->Min(), expr_->Max(), l, u);
+    expr_->SetRange(range.first, range.second);
+  }
+  std::string name() const override {
+    return StringPrintf("PiecewiseLinear(%s, f = %s)", expr_->name().c_str(),
+                        f_.DebugString().c_str());
+  }
+
+  std::string DebugString() const override {
+    return StringPrintf("PiecewiseLinear(%s, f = %s)",
+                        expr_->DebugString().c_str(), f_.DebugString().c_str());
+  }
+
+  void WhenRange(Demon* d) override { expr_->WhenRange(d); }
+
+  void Accept(ModelVisitor* const visitor) const override {
+    // TODO(user): Implement visitor.
+  }
+
+ private:
+  IntExpr* const expr_;
+  const PiecewiseLinearFunction f_;
+};
+
+IntExpr* Solver::MakePiecewiseLinearExpr(IntExpr* expr,
+                                         const PiecewiseLinearFunction& f) {
+  return RegisterIntExpr(RevAlloc(new PiecewiseLinearExpr(this, expr, f)));
 }
 
 // ----- Conditional Expression -----

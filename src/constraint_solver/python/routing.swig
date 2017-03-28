@@ -165,5 +165,18 @@ PY_PROTO_TYPEMAP(ortools.constraint_solver.routing_parameters_pb2,
     const std::vector<std::pair<NodeIndex, NodeIndex> >& start_end,
     const RoutingModelParameters& parameters);
 
-// Wrap cp includes
+%ignoreall
+%unignore RoutingNodeIndex;
+%unignore RoutingCostClassIndex;
+%unignore RoutingDimensionIndex;
+%unignore RoutingDisjunctionIndex;
+%unignore RoutingVehicleClassIndex;
+%unignore RoutingNodeEvaluator2;
+%unignore RoutingTransitEvaluator2;
+%unignore RoutingNodePair;
+%unignore RoutingNodePairs;
+%include "constraint_solver/routing_types.h"
+%unignoreall
+
+// TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 %include "constraint_solver/routing.h"

@@ -3932,7 +3932,7 @@ class ORLimit : public SearchLimit {
   }
   std::string DebugString() const override {
     return StrCat("OR limit (", limit_1_->DebugString(), " OR ",
-                  limit_2_->DebugString(), ")");
+                        limit_2_->DebugString(), ")");
   }
 
  private:

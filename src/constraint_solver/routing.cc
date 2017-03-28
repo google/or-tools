@@ -32,7 +32,9 @@
 #include "base/stl_util.h"
 #include "base/thorough_hash.h"
 #include "base/hash.h"
+#include "constraint_solver/routing_neighborhoods.h"
 #include "constraint_solver/model.pb.h"
+#include "base/join.h"
 #include "graph/connectivity.h"
 #include "graph/linear_assignment.h"
 #include "util/saturated_arithmetic.h"
@@ -276,154 +278,9 @@ Constraint* BuildLightElement2(CpModelLoader* const builder,
 }
 }  // namespace
 
-// PathOperator subclass storing current previous nodes.
-// TODO(user): Move this to constraint_solveri.h and/or merge with
-// PathOperator.
-class PathWithPreviousNodesOperator : public PathOperator {
- public:
-  PathWithPreviousNodesOperator(
-      const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars, int number_of_base_nodes,
-      std::function<int(int64)> start_empty_path_class)
-      : PathOperator(vars, secondary_vars, number_of_base_nodes,
-                     std::move(start_empty_path_class)) {
-    int64 max_next = -1;
-    for (const IntVar* const var : vars) {
-      max_next = std::max(max_next, var->Max());
-    }
-    prevs_.resize(max_next + 1, -1);
-  }
-  ~PathWithPreviousNodesOperator() override {}
-  int64 Prev(int64 node_index) const {
-    DCHECK(!IsPathStart(node_index));
-    return prevs_[node_index];
-  }
-  bool IsPathStart(int64 node_index) const { return prevs_[node_index] == -1; }
-  std::string DebugString() const override {
-    return "PathWithPreviousNodesOperator";
-  }
-
- protected:
-  void OnNodeInitialization() override {
-    for (int node_index = 0; node_index < number_of_nexts(); ++node_index) {
-      prevs_[Next(node_index)] = node_index;
-    }
-  }
-
- private:
-  std::vector<int64> prevs_;
-};
-
-// Relocate neighborhood which moves chains of neighbors.
-// The operator starts by relocating a node n after a node m, then continues
-// moving nodes which were after n as long as the "cost" added is less than
-// the "cost" of the arc (m, n). If the new chain doesn't respect the domain of
-// next variables, it will try reordering the nodes.
-// Possible neighbors for path 1 -> A -> B -> C -> D -> E -> 2 (where (1, 2) are
-// first and last nodes of the path and can therefore not be moved, A must
-// be performed before B, and A, D and E are located at the same place):
-// 1 -> A -> C -> [B] -> D -> E -> 2
-// 1 -> A -> C -> D -> [B] -> E -> 2
-// 1 -> A -> C -> D -> E -> [B] -> 2
-// 1 -> A -> B -> D -> [C] -> E -> 2
-// 1 -> A -> B -> D -> E -> [C] -> 2
-// 1 -> A -> [D] -> [E] -> B -> C -> 2
-// 1 -> A -> B -> [D] -> [E] ->  C -> 2
-// 1 -> A -> [E] -> B -> C -> D -> 2
-// 1 -> A -> B -> [E] -> C -> D -> 2
-// 1 -> A -> B -> C -> [E] -> D -> 2
-// This operator is extremelly useful to move chains of nodes which are located
-// at the same place (for instance nodes part of a same stop).
-// TODO(user): move this to local_search.cc and see if it can be merged with
-// standard Relocate.
-
-class MakeRelocateNeighborsOperator : public PathWithPreviousNodesOperator {
- public:
-  MakeRelocateNeighborsOperator(
-      const std::vector<IntVar*>& vars,
-      const std::vector<IntVar*>& secondary_vars,
-      std::function<int(int64)> start_empty_path_class,
-      RoutingModel::TransitEvaluator2 arc_evaluator)
-      : PathWithPreviousNodesOperator(vars, secondary_vars, 2,
-                                      std::move(start_empty_path_class)),
-        arc_evaluator_(std::move(arc_evaluator)) {}
-  ~MakeRelocateNeighborsOperator() override {}
-  bool MakeNeighbor() override {
-    const int64 before_chain = BaseNode(0);
-    if (IsPathEnd(before_chain)) {
-      return false;
-    }
-    int64 chain_end = Next(before_chain);
-    if (IsPathEnd(chain_end)) {
-      return false;
-    }
-    const int64 destination = BaseNode(1);
-    const int64 max_arc_value = arc_evaluator_(destination, chain_end);
-    int64 next = Next(chain_end);
-    while (!IsPathEnd(next) &&
-           arc_evaluator_(chain_end, next) <= max_arc_value) {
-      chain_end = next;
-      next = Next(chain_end);
-    }
-    return MoveChainAndRepair(before_chain, chain_end, destination);
-  }
-  std::string DebugString() const override { return "RelocateNeighbors"; }
-
- private:
-  // Moves a chain starting after 'before_chain' and ending at 'chain_end'
-  // after node 'destination'. Tries to repair the resulting solution by
-  // checking if the new arc created after 'destination' is compatible with
-  // NextVar domains, and moves the 'destination' down the path if the solution
-  // is inconsistent. Iterates the process on the new arcs created before
-  // the node 'destination' (if destination was moved).
-  bool MoveChainAndRepair(int64 before_chain, int64 chain_end,
-                          int64 destination) {
-    if (MoveChain(before_chain, chain_end, destination)) {
-      if (!IsPathStart(destination)) {
-        int64 current = Prev(destination);
-        int64 last = chain_end;
-        if (current == last) {  // chain was just before destination
-          current = before_chain;
-        }
-        while (last >= 0 && !IsPathStart(current)) {
-          last = Reposition(current, last);
-          current = Prev(current);
-        }
-      }
-      return true;
-    }
-    return false;
-  }
-
-  // Moves node after 'before_to_move' down the path until a position is found
-  // where NextVar domains are not violated, it it exists. Stops when reaching
-  // position after 'up_to'.
-  int64 Reposition(int64 before_to_move, int64 up_to) {
-    const int64 kNoChange = -1;
-    const int64 to_move = Next(before_to_move);
-    int64 next = Next(to_move);
-    if (Var(to_move)->Contains(next)) {
-      return kNoChange;
-    }
-    int64 prev = next;
-    next = Next(next);
-    while (prev != up_to) {
-      if (Var(prev)->Contains(to_move) && Var(to_move)->Contains(next)) {
-        MoveChain(before_to_move, to_move, prev);
-        return up_to;
-      }
-      prev = next;
-      next = Next(next);
-    }
-    if (Var(prev)->Contains(to_move)) {
-      MoveChain(before_to_move, to_move, prev);
-      return to_move;
-    }
-    return kNoChange;
-  }
-
-  RoutingModel::TransitEvaluator2 arc_evaluator_;
-};
+// Shortcuts to spawn neighborhood operators from ./routing_neighborhoods.h.
+// TODO(user): Consider removing all these trivial wrappers and just inlining
+// the solver->RevAlloc(new ...Operator()) calls in the client code.
 
 LocalSearchOperator* MakeRelocateNeighbors(
     Solver* solver, const std::vector<IntVar*>& vars,
@@ -435,105 +292,6 @@ LocalSearchOperator* MakeRelocateNeighbors(
       std::move(arc_evaluator)));
 }
 
-// Pair-based neighborhood operators, designed to move nodes by pairs (pairs
-// are static and given). These neighborhoods are very useful for Pickup and
-// Delivery problems where pickup and delivery nodes must remain on the same
-// route.
-// TODO(user): Add option to prune neighbords where the order of node pairs
-//                is violated (ie precedence between pickup and delivery nodes).
-// TODO(user): Move this to local_search.cc if it's generic enough.
-// TODO(user): Detect pairs automatically by parsing the constraint model;
-//                we could then get rid of the pair API in the RoutingModel
-//                class.
-
-// Operator which inserts pairs of inactive nodes into a path.
-// Possible neighbors for the path 1 -> 2 -> 3 with pair (A, B) inactive
-// (where 1 and 3 are first and last nodes of the path) are:
-//   1 -> [A] -> [B] ->  2  ->  3
-//   1 -> [B] ->  2 ->  [A] ->  3
-//   1 -> [A] ->  2  -> [B] ->  3
-//   1 ->  2  -> [A] -> [B] ->  3
-// Note that this operator does not expicitely insert the nodes of a pair one
-// after the other which forbids the following solutions:
-//   1 -> [B] -> [A] ->  2  ->  3
-//   1 ->  2  -> [B] -> [A] ->  3
-// which can only be obtained by inserting A after B.
-class MakePairActiveOperator : public PathOperator {
- public:
-  MakePairActiveOperator(const std::vector<IntVar*>& vars,
-                         const std::vector<IntVar*>& secondary_vars,
-                         std::function<int(int64)> start_empty_path_class,
-                         const RoutingModel::NodePairs& pairs)
-      : PathOperator(vars, secondary_vars, 2,
-                     std::move(start_empty_path_class)),
-        inactive_pair_(0),
-        pairs_(pairs) {}
-  ~MakePairActiveOperator() override {}
-  std::string DebugString() const override { return "MakePairActive"; }
-  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
-  bool MakeNeighbor() override;
-
- protected:
-  bool OnSamePathAsPreviousBase(int64 base_index) override {
-    // Both base nodes have to be on the same path since they represent the
-    // nodes after which unactive node pairs will be moved.
-    return true;
-  }
-  int64 GetBaseNodeRestartPosition(int base_index) override {
-    // Base node 1 must be after base node 0 if they are both on the same path.
-    if (base_index == 0 || StartNode(base_index) != StartNode(base_index - 1)) {
-      return StartNode(base_index);
-    } else {
-      return BaseNode(base_index - 1);
-    }
-  }
-  // Required to ensure that after synchronization the operator is in a state
-  // compatible with GetBaseNodeRestartPosition.
-  bool RestartAtPathStartOnSynchronize() override { return true; }
-
- private:
-  void OnNodeInitialization() override;
-
-  int inactive_pair_;
-  RoutingModel::NodePairs pairs_;
-};
-
-void MakePairActiveOperator::OnNodeInitialization() {
-  for (int i = 0; i < pairs_.size(); ++i) {
-    if (IsInactive(pairs_[i].first[0]) && IsInactive(pairs_[i].second[0])) {
-      inactive_pair_ = i;
-      return;
-    }
-  }
-  inactive_pair_ = pairs_.size();
-}
-
-bool MakePairActiveOperator::MakeNextNeighbor(Assignment* delta,
-                                              Assignment* deltadelta) {
-  while (inactive_pair_ < pairs_.size()) {
-    if (!IsInactive(pairs_[inactive_pair_].first[0]) ||
-        !IsInactive(pairs_[inactive_pair_].second[0]) ||
-        !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
-      ResetPosition();
-      ++inactive_pair_;
-    } else {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool MakePairActiveOperator::MakeNeighbor() {
-  DCHECK_EQ(StartNode(0), StartNode(1));
-  // Inserting the second node of the pair before the first one which ensures
-  // that the only solutions where both nodes are next to each other have the
-  // first node before the second (the move is not symmetric and doing it this
-  // way ensures that a potential precedence constraint between the nodes of the
-  // pair is not violated).
-  return MakeActive(pairs_[inactive_pair_].second[0], BaseNode(1)) &&
-         MakeActive(pairs_[inactive_pair_].first[0], BaseNode(0));
-}
-
 LocalSearchOperator* MakePairActive(
     Solver* const solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
@@ -543,44 +301,6 @@ LocalSearchOperator* MakePairActive(
       vars, secondary_vars, std::move(start_empty_path_class), pairs));
 }
 
-// Operator which makes pairs of active nodes inactive.
-class MakePairInactiveOperator : public PathWithPreviousNodesOperator {
- public:
-  MakePairInactiveOperator(const std::vector<IntVar*>& vars,
-                           const std::vector<IntVar*>& secondary_vars,
-                           std::function<int(int64)> start_empty_path_class,
-                           const RoutingModel::NodePairs& node_pairs)
-      : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
-                                      std::move(start_empty_path_class)) {
-    int64 max_pair_index = -1;
-    for (const auto& node_pair : node_pairs) {
-      max_pair_index = std::max(max_pair_index, node_pair.first[0]);
-      max_pair_index = std::max(max_pair_index, node_pair.second[0]);
-    }
-    pairs_.resize(max_pair_index + 1, -1);
-    for (const auto& node_pair : node_pairs) {
-      pairs_[node_pair.first[0]] = node_pair.second[0];
-      pairs_[node_pair.second[0]] = node_pair.first[0];
-    }
-  }
-  std::string DebugString() const override { return "MakePairInActive"; }
-  bool MakeNeighbor() override {
-    const int64 base = BaseNode(0);
-    if (IsPathEnd(base)) {
-      return false;
-    }
-    const int64 next = Next(base);
-    if (next < pairs_.size() && pairs_[next] != -1) {
-      return MakeChainInactive(Prev(pairs_[next]), pairs_[next]) &&
-             MakeChainInactive(base, next);
-    }
-    return false;
-  }
-
- private:
-  std::vector<int> pairs_;
-};
-
 LocalSearchOperator* MakePairInactive(
     Solver* const solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
@@ -588,100 +308,6 @@ LocalSearchOperator* MakePairInactive(
     const RoutingModel::NodePairs& pairs) {
   return solver->RevAlloc(new MakePairInactiveOperator(
       vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-// Operator which moves a pair of nodes to another position where the first
-// node of the pair must be before the second node on the same path.
-// Possible neighbors for the path 1 -> A -> B -> 2 -> 3 (where (1, 3) are
-// first and last nodes of the path and can therefore not be moved, and (A, B)
-// is a pair of nodes):
-//   1 -> [A] ->  2  -> [B] -> 3
-//   1 ->  2  -> [A] -> [B] -> 3
-class PairRelocateOperator : public PathOperator {
- public:
-  PairRelocateOperator(const std::vector<IntVar*>& vars,
-                       const std::vector<IntVar*>& secondary_vars,
-                       std::function<int(int64)> start_empty_path_class,
-                       const RoutingModel::NodePairs& node_pairs)
-      : PathOperator(vars, secondary_vars, 3,
-                     std::move(start_empty_path_class)) {
-    int64 index_max = 0;
-    for (const IntVar* const var : vars) {
-      index_max = std::max(index_max, var->Max());
-    }
-    prevs_.resize(index_max + 1, -1);
-    is_first_.resize(index_max + 1, false);
-    int64 max_pair_index = -1;
-    for (const auto& node_pair : node_pairs) {
-      max_pair_index = std::max(max_pair_index, node_pair.first[0]);
-      max_pair_index = std::max(max_pair_index, node_pair.second[0]);
-    }
-    pairs_.resize(max_pair_index + 1, -1);
-    for (const auto& node_pair : node_pairs) {
-      pairs_[node_pair.first[0]] = node_pair.second[0];
-      pairs_[node_pair.second[0]] = node_pair.first[0];
-      is_first_[node_pair.first[0]] = true;
-    }
-  }
-  ~PairRelocateOperator() override {}
-  bool MakeNeighbor() override;
-  std::string DebugString() const override { return "PairRelocateOperator"; }
-
- protected:
-  bool OnSamePathAsPreviousBase(int64 base_index) override {
-    // Both destination nodes must be on the same path.
-    return base_index == kPairSecondNodeDestination;
-  }
-  int64 GetBaseNodeRestartPosition(int base_index) override {
-    // Destination node of the second node of a pair must be after the
-    // destination node of the first node of a pair.
-    if (base_index == kPairSecondNodeDestination) {
-      return BaseNode(kPairFirstNodeDestination);
-    } else {
-      return StartNode(base_index);
-    }
-  }
-
- private:
-  void OnNodeInitialization() override;
-  bool RestartAtPathStartOnSynchronize() override { return true; }
-
-  std::vector<int> pairs_;
-  std::vector<int> prevs_;
-  std::vector<bool> is_first_;
-  static const int kPairFirstNode = 0;
-  static const int kPairFirstNodeDestination = 1;
-  static const int kPairSecondNodeDestination = 2;
-};
-
-bool PairRelocateOperator::MakeNeighbor() {
-  DCHECK_EQ(StartNode(1), StartNode(2));
-  const int64 first_pair_node = BaseNode(kPairFirstNode);
-  const int64 prev = prevs_[first_pair_node];
-  if (prev < 0) {
-    return false;
-  }
-  const int sibling =
-      first_pair_node < pairs_.size() ? pairs_[first_pair_node] : -1;
-  if (sibling < 0) {
-    return false;
-  }
-  if (!is_first_[first_pair_node]) {
-    return false;
-  }
-  const int64 prev_sibling = prevs_[sibling];
-  if (prev_sibling < 0) {
-    return false;
-  }
-  return MoveChain(prev_sibling, sibling,
-                   BaseNode(kPairSecondNodeDestination)) &&
-         MoveChain(prev, first_pair_node, BaseNode(kPairFirstNodeDestination));
-}
-
-void PairRelocateOperator::OnNodeInitialization() {
-  for (int i = 0; i < number_of_nexts(); ++i) {
-    prevs_[Next(i)] = i;
-  }
 }
 
 LocalSearchOperator* MakePairRelocate(
@@ -693,78 +319,6 @@ LocalSearchOperator* MakePairRelocate(
       vars, secondary_vars, std::move(start_empty_path_class), pairs));
 }
 
-// Operator which inserts inactive nodes into a path and makes a pair of
-// active nodes inactive.
-class NodePairSwapActiveOperator : public PathWithPreviousNodesOperator {
- public:
-  NodePairSwapActiveOperator(const std::vector<IntVar*>& vars,
-                             const std::vector<IntVar*>& secondary_vars,
-                             std::function<int(int64)> start_empty_path_class,
-                             const RoutingModel::NodePairs& node_pairs)
-      : PathWithPreviousNodesOperator(vars, secondary_vars, 1,
-                                      std::move(start_empty_path_class)),
-        inactive_node_(0) {
-    int64 max_pair_index = -1;
-    for (const auto& node_pair : node_pairs) {
-      max_pair_index = std::max(max_pair_index, node_pair.first[0]);
-      max_pair_index = std::max(max_pair_index, node_pair.second[0]);
-    }
-    pairs_.resize(max_pair_index + 1, -1);
-    for (const auto& node_pair : node_pairs) {
-      pairs_[node_pair.first[0]] = node_pair.second[0];
-      pairs_[node_pair.second[0]] = node_pair.first[0];
-    }
-  }
-  ~NodePairSwapActiveOperator() override {}
-  std::string DebugString() const override { return "NodePairSwapActiveOperator"; }
-  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
-  bool MakeNeighbor() override;
-
- private:
-  void OnNodeInitialization() override;
-
-  int inactive_node_;
-  std::vector<int> pairs_;
-};
-
-void NodePairSwapActiveOperator::OnNodeInitialization() {
-  PathWithPreviousNodesOperator::OnNodeInitialization();
-  for (int i = 0; i < Size(); ++i) {
-    if (IsInactive(i) && i < pairs_.size() && pairs_[i] == -1) {
-      inactive_node_ = i;
-      return;
-    }
-  }
-  inactive_node_ = Size();
-}
-
-bool NodePairSwapActiveOperator::MakeNextNeighbor(Assignment* delta,
-                                                  Assignment* deltadelta) {
-  while (inactive_node_ < Size()) {
-    if (!IsInactive(inactive_node_) ||
-        !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
-      ResetPosition();
-      ++inactive_node_;
-    } else {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool NodePairSwapActiveOperator::MakeNeighbor() {
-  const int64 base = BaseNode(0);
-  if (IsPathEnd(base)) {
-    return false;
-  }
-  const int64 next = Next(base);
-  if (next < pairs_.size() && pairs_[next] != -1) {
-    return MakeChainInactive(Prev(pairs_[next]), pairs_[next]) &&
-           MakeChainInactive(base, next) && MakeActive(inactive_node_, base);
-  }
-  return false;
-}
-
 LocalSearchOperator* NodePairSwapActive(
     Solver* const solver, const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars,
@@ -772,100 +326,6 @@ LocalSearchOperator* NodePairSwapActive(
     const RoutingModel::NodePairs& pairs) {
   return solver->RevAlloc(new NodePairSwapActiveOperator(
       vars, secondary_vars, std::move(start_empty_path_class), pairs));
-}
-
-// Operator which inserts pairs of inactive nodes into a path and makes an
-// active node inactive.
-// There are two versions:
-// - one which makes inactive the node being replaced by the first node of the
-//   pair (with swap_first true);
-// - one which makes inactive the node being replaced by the second node of the
-//   pair (with swap_first false).
-template <bool swap_first>
-class PairNodeSwapActiveOperator : public PathOperator {
- public:
-  PairNodeSwapActiveOperator(const std::vector<IntVar*>& vars,
-                             const std::vector<IntVar*>& secondary_vars,
-                             std::function<int(int64)> start_empty_path_class,
-                             const RoutingModel::NodePairs& node_pairs)
-      : PathOperator(vars, secondary_vars, 2,
-                     std::move(start_empty_path_class)),
-        inactive_pair_(0),
-        pairs_(node_pairs) {}
-  ~PairNodeSwapActiveOperator() override {}
-  std::string DebugString() const override { return "PairNodeSwapActiveOperator"; }
-  bool MakeNextNeighbor(Assignment* delta, Assignment* deltadelta) override;
-  bool MakeNeighbor() override;
-
- protected:
-  bool OnSamePathAsPreviousBase(int64 base_index) override {
-    // Both base nodes have to be on the same path since they represent the
-    // nodes after which unactive node pairs will be moved.
-    return true;
-  }
-  int64 GetBaseNodeRestartPosition(int base_index) override {
-    // Base node 1 must be after base node 0 if they are both on the same path.
-    if (base_index == 0 || StartNode(base_index) != StartNode(base_index - 1)) {
-      return StartNode(base_index);
-    } else {
-      return BaseNode(base_index - 1);
-    }
-  }
-  // Required to ensure that after synchronization the operator is in a state
-  // compatible with GetBaseNodeRestartPosition.
-  bool RestartAtPathStartOnSynchronize() override { return true; }
-
- private:
-  void OnNodeInitialization() override;
-
-  int inactive_pair_;
-  RoutingModel::NodePairs pairs_;
-};
-
-template <bool swap_first>
-void PairNodeSwapActiveOperator<swap_first>::OnNodeInitialization() {
-  for (int i = 0; i < pairs_.size(); ++i) {
-    if (IsInactive(pairs_[i].first[0]) && IsInactive(pairs_[i].second[0])) {
-      inactive_pair_ = i;
-      return;
-    }
-  }
-  inactive_pair_ = pairs_.size();
-}
-
-template <bool swap_first>
-bool PairNodeSwapActiveOperator<swap_first>::MakeNextNeighbor(
-    Assignment* delta, Assignment* deltadelta) {
-  while (inactive_pair_ < pairs_.size()) {
-    if (!IsInactive(pairs_[inactive_pair_].first[0]) ||
-        !IsInactive(pairs_[inactive_pair_].second[0]) ||
-        !PathOperator::MakeNextNeighbor(delta, deltadelta)) {
-      ResetPosition();
-      ++inactive_pair_;
-    } else {
-      return true;
-    }
-  }
-  return false;
-}
-
-template <bool swap_first>
-bool PairNodeSwapActiveOperator<swap_first>::MakeNeighbor() {
-  const int64 base = BaseNode(0);
-  if (IsPathEnd(base)) {
-    return false;
-  }
-  const int64 pair_first = pairs_[inactive_pair_].first[0];
-  const int64 pair_second = pairs_[inactive_pair_].second[0];
-  if (swap_first) {
-    return MakeActive(pair_second, BaseNode(1)) &&
-           MakeActive(pair_first, base) &&
-           MakeChainInactive(pair_first, Next(pair_first));
-  } else {
-    return MakeActive(pair_second, BaseNode(1)) &&
-           MakeActive(pair_first, base) &&
-           MakeChainInactive(pair_second, Next(pair_second));
-  }
 }
 
 LocalSearchOperator* PairNodeSwapActive(
@@ -1901,6 +1361,40 @@ void RoutingModel::AddDisjunctionInternal(const std::vector<NodeIndex>& nodes,
   }
 }
 
+std::vector<std::pair<int, int>> RoutingModel::GetPerfectBinaryDisjunctions()
+    const {
+  std::vector<std::pair<int, int>> var_index_pairs;
+  for (const Disjunction& disjunction : disjunctions_) {
+    const std::vector<int>& var_indices = disjunction.nodes;
+    if (var_indices.size() != 2) continue;
+    const int v0 = var_indices[0];
+    const int v1 = var_indices[1];
+    if (node_to_disjunctions_[v0].size() == 1 &&
+        node_to_disjunctions_[v1].size() == 1) {
+      // We output sorted pairs.
+      var_index_pairs.push_back({std::min(v0, v1), std::max(v0, v1)});
+    }
+  }
+  std::sort(var_index_pairs.begin(), var_index_pairs.end());
+  return var_index_pairs;
+}
+
+void RoutingModel::IgnoreDisjunctionsAlreadyForcedToZero() {
+  CHECK(!closed_);
+  for (Disjunction& disjunction : disjunctions_) {
+    bool has_one_potentially_active_var = false;
+    for (const int var_index : disjunction.nodes) {
+      if (ActiveVar(var_index)->Max() > 0) {
+        has_one_potentially_active_var = true;
+        break;
+      }
+    }
+    if (!has_one_potentially_active_var) {
+      disjunction.value.max_cardinality = 0;
+    }
+  }
+}
+
 IntVar* RoutingModel::CreateDisjunction(DisjunctionIndex disjunction) {
   const std::vector<int>& nodes = disjunctions_[disjunction].nodes;
   const int nodes_size = nodes.size();
@@ -2387,6 +1881,7 @@ void RoutingModel::CloseModelWithParameters(
   for (const RoutingDimension* dimension : dimensions_) {
     dimension->SetupCumulVarSoftLowerBoundCosts(&cost_elements);
     dimension->SetupCumulVarSoftUpperBoundCosts(&cost_elements);
+    dimension->SetupCumulVarPiecewiseLinearCosts(&cost_elements);
   }
   // Same vehicle costs
   for (int i = 0; i < same_vehicle_costs_.size(); ++i) {
@@ -5617,6 +5112,129 @@ void RoutingDimension::SetSpanCostCoefficientForAllVehicles(int64 coefficient) {
 void RoutingDimension::SetGlobalSpanCostCoefficient(int64 coefficient) {
   CHECK_GE(coefficient, 0);
   global_span_cost_coefficient_ = coefficient;
+}
+
+void RoutingDimension::SetCumulVarPiecewiseLinearCost(
+    RoutingModel::NodeIndex node, const PiecewiseLinearFunction& cost) {
+  if (model_->HasIndex(node)) {
+    const int64 index = model_->NodeToIndex(node);
+    if (!model_->IsStart(index) && !model_->IsEnd(index)) {
+      SetCumulVarPiecewiseLinearCostFromIndex(index, cost);
+      return;
+    }
+  }
+  VLOG(2) << "Cannot set piecewise linear cost on start or end nodes";
+}
+
+void RoutingDimension::SetStartCumulVarPiecewiseLinearCost(
+    int vehicle, const PiecewiseLinearFunction& cost) {
+  SetCumulVarPiecewiseLinearCostFromIndex(model_->Start(vehicle), cost);
+}
+
+void RoutingDimension::SetEndCumulVarPiecewiseLinearCost(
+    int vehicle, const PiecewiseLinearFunction& cost) {
+  SetCumulVarPiecewiseLinearCostFromIndex(model_->End(vehicle), cost);
+}
+
+void RoutingDimension::SetCumulVarPiecewiseLinearCostFromIndex(
+    int64 index, const PiecewiseLinearFunction& cost) {
+  if (!cost.IsNonDecreasing()) {
+    LOG(WARNING) << "Only non-decreasing cost functions are supported.";
+    return;
+  }
+  if (cost.Value(0) < 0) {
+    LOG(WARNING) << "Only positive cost functions are supported.";
+    return;
+  }
+  if (index >= cumul_var_piecewise_linear_cost_.size()) {
+    cumul_var_piecewise_linear_cost_.resize(index + 1);
+  }
+  PiecewiseLinearCost& piecewise_linear_cost =
+      cumul_var_piecewise_linear_cost_[index];
+  piecewise_linear_cost.var = cumuls_[index];
+  piecewise_linear_cost.cost.reset(new PiecewiseLinearFunction(cost));
+}
+
+bool RoutingDimension::HasCumulVarPiecewiseLinearCost(
+    RoutingModel::NodeIndex node) const {
+  if (model_->HasIndex(node)) {
+    const int64 index = model_->NodeToIndex(node);
+    if (!model_->IsStart(index) && !model_->IsEnd(index)) {
+      return HasCumulVarPiecewiseLinearCostFromIndex(index);
+    }
+  }
+  VLOG(2) << "Cannot get piecewise linear cost on start or end nodes";
+  return false;
+}
+
+bool RoutingDimension::HasStartCumulVarPiecewiseLinearCost(int vehicle) const {
+  return HasCumulVarPiecewiseLinearCostFromIndex(model_->Start(vehicle));
+}
+
+bool RoutingDimension::HasEndCumulVarPiecewiseLinearCost(int vehicle) const {
+  return HasCumulVarPiecewiseLinearCostFromIndex(model_->End(vehicle));
+}
+
+bool RoutingDimension::HasCumulVarPiecewiseLinearCostFromIndex(
+    int64 index) const {
+  return (index < cumul_var_piecewise_linear_cost_.size() &&
+          cumul_var_piecewise_linear_cost_[index].var != nullptr);
+}
+
+const PiecewiseLinearFunction* RoutingDimension::GetCumulVarPiecewiseLinearCost(
+    RoutingModel::NodeIndex node) const {
+  if (model_->HasIndex(node)) {
+    const int64 index = model_->NodeToIndex(node);
+    if (!model_->IsStart(index) && !model_->IsEnd(index)) {
+      return GetCumulVarPiecewiseLinearCostFromIndex(index);
+    }
+  }
+  VLOG(2) << "Cannot get piecewise linear cost on start or end nodes";
+  return nullptr;
+}
+
+const PiecewiseLinearFunction*
+RoutingDimension::GetStartCumulVarPiecewiseLinearCost(int vehicle) const {
+  return GetCumulVarPiecewiseLinearCostFromIndex(model_->Start(vehicle));
+}
+
+const PiecewiseLinearFunction*
+RoutingDimension::GetEndCumulVarPiecewiseLinearCost(int vehicle) const {
+  return GetCumulVarPiecewiseLinearCostFromIndex(model_->End(vehicle));
+}
+
+const PiecewiseLinearFunction*
+RoutingDimension::GetCumulVarPiecewiseLinearCostFromIndex(int64 index) const {
+  if (index < cumul_var_piecewise_linear_cost_.size() &&
+      cumul_var_piecewise_linear_cost_[index].var != nullptr) {
+    return cumul_var_piecewise_linear_cost_[index].cost.get();
+  }
+  return nullptr;
+}
+
+void RoutingDimension::SetupCumulVarPiecewiseLinearCosts(
+    std::vector<IntVar*>* cost_elements) const {
+  CHECK(cost_elements != nullptr);
+  Solver* const solver = model_->solver();
+  for (int i = 0; i < cumul_var_piecewise_linear_cost_.size(); ++i) {
+    const PiecewiseLinearCost& piecewise_linear_cost =
+        cumul_var_piecewise_linear_cost_[i];
+    if (piecewise_linear_cost.var != nullptr) {
+      IntExpr* const expr = solver->MakePiecewiseLinearExpr(
+          piecewise_linear_cost.var, *piecewise_linear_cost.cost);
+      IntVar* cost_var = nullptr;
+      if (model_->IsEnd(i)) {
+        // No active variable for end nodes, always active.
+        cost_var = expr->Var();
+      } else {
+        cost_var = solver->MakeProd(expr, model_->ActiveVar(i))->Var();
+      }
+      cost_elements->push_back(cost_var);
+      // TODO(user): Check if it wouldn't be better to minimize
+      // piecewise_linear_cost.var here.
+      model_->AddVariableMinimizedByFinalizer(cost_var);
+    }
+  }
 }
 
 void RoutingDimension::SetCumulVarSoftUpperBound(RoutingModel::NodeIndex node,

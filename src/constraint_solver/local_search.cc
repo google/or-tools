@@ -29,6 +29,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
@@ -683,6 +684,25 @@ bool PathOperator::CheckChainValidity(int64 before_chain, int64 chain_end,
   return true;
 }
 
+PathWithPreviousNodesOperator::PathWithPreviousNodesOperator(
+    const std::vector<IntVar*>& vars,
+    const std::vector<IntVar*>& secondary_vars, int number_of_base_nodes,
+    std::function<int(int64)> start_empty_path_class)
+    : PathOperator(vars, secondary_vars, number_of_base_nodes,
+                   std::move(start_empty_path_class)) {
+  int64 max_next = -1;
+  for (const IntVar* const var : vars) {
+    max_next = std::max(max_next, var->Max());
+  }
+  prevs_.resize(max_next + 1, -1);
+}
+
+void PathWithPreviousNodesOperator::OnNodeInitialization() {
+  for (int node_index = 0; node_index < number_of_nexts(); ++node_index) {
+    prevs_[Next(node_index)] = node_index;
+  }
+}
+
 // ----- 2Opt -----
 
 // Reverves a sub-chain of a path. It is called 2Opt because it breaks
@@ -780,7 +800,8 @@ class Relocate : public PathOperator {
            const std::vector<IntVar*>& secondary_vars,
            std::function<int(int64)> start_empty_path_class,
            int64 chain_length = 1LL, bool single_path = false)
-      : Relocate(vars, secondary_vars, StrCat("Relocate<", chain_length, ">"),
+      : Relocate(vars, secondary_vars,
+                 StrCat("Relocate<", chain_length, ">"),
                  start_empty_path_class, chain_length, single_path) {}
   ~Relocate() override {}
   bool MakeNeighbor() override;
@@ -977,6 +998,8 @@ bool MakeActiveOperator::MakeNeighbor() {
 // The idea is to make room for inactive nodes.
 // Possible neighbor for paths 0 -> 4, 1 -> 2 -> 5 and 3 inactive is:
 // 0 -> 2 -> 4, 1 -> 3 -> 5.
+// TODO(user): Naming is close to MakeActiveAndRelocate but this one is
+// correct; rename MakeActiveAndRelocate if it is actually used.
 class RelocateAndMakeActiveOperator : public BaseInactiveNodeToPathOperator {
  public:
   RelocateAndMakeActiveOperator(
@@ -996,9 +1019,7 @@ class RelocateAndMakeActiveOperator : public BaseInactiveNodeToPathOperator {
            MakeActive(GetInactiveNode(), before_node_to_move);
   }
 
-  std::string DebugString() const override {
-    return "RelocateAndMakeActiveOperator";
-  }
+  std::string DebugString() const override { return "RelocateAndMakeActiveOpertor"; }
 };
 
 // ----- MakeActiveAndRelocate -----
@@ -1058,6 +1079,38 @@ class MakeInactiveOperator : public PathOperator {
   }
 
   std::string DebugString() const override { return "MakeInactiveOperator"; }
+};
+
+// ----- RelocateAndMakeInactiveOperator -----
+
+// RelocateAndMakeInactiveOperator relocates a node to a new position and makes
+// the node which was at that position inactive.
+// Possible neighbors for paths 0 -> 2 -> 4, 1 -> 3 -> 5 are:
+// 0 -> 3 -> 4, 1 -> 5 & 2 inactive
+// 0 -> 4, 1 -> 2 -> 5 & 3 inactive
+
+class RelocateAndMakeInactiveOperator : public PathOperator {
+ public:
+  RelocateAndMakeInactiveOperator(
+      const std::vector<IntVar*>& vars,
+      const std::vector<IntVar*>& secondary_vars,
+      std::function<int(int64)> start_empty_path_class)
+      : PathOperator(vars, secondary_vars, 2,
+                     std::move(start_empty_path_class)) {}
+  ~RelocateAndMakeInactiveOperator() override {}
+  bool MakeNeighbor() override {
+    const int64 destination = BaseNode(1);
+    const int64 before_to_move = BaseNode(0);
+    if (IsPathEnd(destination) || IsPathEnd(before_to_move)) {
+      return false;
+    }
+    return MakeChainInactive(destination, Next(destination)) &&
+           MoveChain(before_to_move, Next(before_to_move), destination);
+  }
+
+  std::string DebugString() const override {
+    return "RelocateAndMakeInactiveOperator";
+  }
 };
 
 // ----- MakeChainInactiveOperator -----
@@ -1915,6 +1968,7 @@ MAKE_LOCAL_SEARCH_OPERATOR(SwapActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(ExtendedSwapActiveOperator)
 MAKE_LOCAL_SEARCH_OPERATOR(MakeActiveAndRelocate)
 MAKE_LOCAL_SEARCH_OPERATOR(RelocateAndMakeActiveOperator)
+MAKE_LOCAL_SEARCH_OPERATOR(RelocateAndMakeInactiveOperator)
 
 #undef MAKE_LOCAL_SEARCH_OPERATOR
 
@@ -2558,7 +2612,10 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
 class LocalSearchProfiler : public LocalSearchMonitor {
  public:
   explicit LocalSearchProfiler(Solver* solver) : LocalSearchMonitor(solver) {}
-  void RestartSearch() override { operator_stats_.clear(); }
+  void RestartSearch() override {
+    operator_stats_.clear();
+    filter_stats_.clear();
+  }
   void ExitSearch() override {
     // Update times for current operator when the search ends.
     if (solver()->TopLevelSearch() == solver()->ActiveSearch()) {
@@ -2571,14 +2628,15 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       op_name_size = std::max(op_name_size, stat.first.length());
     }
     std::string overview = "Local search operator statistics:\n";
-    StringAppendF(&overview, StrCat("%", op_name_size,
-                                    "s | Neighbors | Filtered Neighbors | "
-                                    "Accepted Neighbors | Time (s)\n")
-                                 .c_str(),
+    StringAppendF(&overview,
+                  StrCat("%", op_name_size,
+                               "s | Neighbors | Filtered | "
+                               "Accepted | Time (s)\n")
+                      .c_str(),
                   "");
     OperatorStats total_stats;
     const std::string row_format =
-        StrCat("%", op_name_size, "s | %9d | %18d | %18d | %6.3f\n");
+        StrCat("%", op_name_size, "s | %9d | %8d | %8d | %7.2g\n");
     for (const auto& stat : operator_stats_) {
       StringAppendF(&overview, row_format.c_str(), stat.first.c_str(),
                     stat.second.neighbors, stat.second.filtered_neighbors,
@@ -2591,6 +2649,32 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     StringAppendF(&overview, row_format.c_str(), "Total", total_stats.neighbors,
                   total_stats.filtered_neighbors,
                   total_stats.accepted_neighbors, total_stats.seconds);
+    op_name_size = 0;
+    for (const auto& stat : filter_stats_) {
+      op_name_size = std::max(op_name_size, stat.first.length());
+    }
+    StringAppendF(
+        &overview,
+        StrCat("Local search filter statistics:\n%", op_name_size,
+                     "s |     Calls |   Rejects | Time (s) "
+                     "| Rejects/s\n")
+            .c_str(),
+        "");
+    FilterStats total_filter_stats;
+    const std::string filter_row_format =
+        StrCat("%", op_name_size, "s | %9d | %9d | %7.2g  | %7.2g\n");
+    for (const auto& stat : filter_stats_) {
+      StringAppendF(&overview, filter_row_format.c_str(), stat.first.c_str(),
+                    stat.second.calls, stat.second.rejects, stat.second.seconds,
+                    stat.second.rejects / stat.second.seconds);
+      total_filter_stats.calls += stat.second.calls;
+      total_filter_stats.rejects += stat.second.rejects;
+      total_filter_stats.seconds += stat.second.seconds;
+    }
+    StringAppendF(&overview, filter_row_format.c_str(), "Total",
+                  total_filter_stats.calls, total_filter_stats.rejects,
+                  total_filter_stats.seconds,
+                  total_filter_stats.rejects / total_filter_stats.seconds);
     return overview;
   }
   void BeginOperatorStart() override {}
@@ -2622,6 +2706,18 @@ class LocalSearchProfiler : public LocalSearchMonitor {
       operator_stats_[op->DebugString()].accepted_neighbors++;
     }
   }
+  void BeginFiltering(const LocalSearchFilter* filter) override {
+    filter_stats_[filter->DebugString()].calls++;
+    filter_timer_.Start();
+  }
+  void EndFiltering(const LocalSearchFilter* filter, bool reject) override {
+    filter_timer_.Stop();
+    auto& stats = filter_stats_[filter->DebugString()];
+    stats.seconds += filter_timer_.Get();
+    if (reject) {
+      stats.rejects++;
+    }
+  }
   void Install() override { SearchMonitor::Install(); }
 
  private:
@@ -2639,9 +2735,17 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     int accepted_neighbors = 0;
     double seconds = 0;
   };
+
+  struct FilterStats {
+    int calls = 0;
+    int rejects = 0;
+    double seconds = 0;
+  };
   WallTimer timer_;
+  WallTimer filter_timer_;
   std::string last_operator_;
   std::map<std::string, OperatorStats> operator_stats_;
+  std::map<std::string, FilterStats> filter_stats_;
 };
 
 void InstallLocalSearchProfiler(LocalSearchProfiler* monitor) {
@@ -2679,7 +2783,8 @@ class FindOneNeighbor : public DecisionBuilder {
   std::string DebugString() const override { return "FindOneNeighbor"; }
 
  private:
-  bool FilterAccept(const Assignment* delta, const Assignment* deltadelta);
+  bool FilterAccept(Solver* solver, const Assignment* delta,
+                    const Assignment* deltadelta);
   void SynchronizeAll(Solver* solver);
   void SynchronizeFilters(const Assignment* assignment);
 
@@ -2782,7 +2887,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
         solver->GetLocalSearchMonitor()->BeginFilterNeighbor(ls_operator_);
         const bool mh_filter =
             AcceptDelta(solver->ParentSearch(), delta, deltadelta);
-        const bool move_filter = FilterAccept(delta, deltadelta);
+        const bool move_filter = FilterAccept(solver, delta, deltadelta);
         solver->GetLocalSearchMonitor()->EndFilterNeighbor(
             ls_operator_, mh_filter && move_filter);
         if (mh_filter && move_filter) {
@@ -2818,14 +2923,16 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
   return nullptr;
 }
 
-bool FindOneNeighbor::FilterAccept(const Assignment* delta,
+bool FindOneNeighbor::FilterAccept(Solver* solver, const Assignment* delta,
                                    const Assignment* deltadelta) {
   bool ok = true;
+  LocalSearchMonitor* const monitor = solver->GetLocalSearchMonitor();
   for (int i = 0; i < filters_.size(); ++i) {
-    if (filters_[i]->IsIncremental()) {
-      ok = filters_[i]->Accept(delta, deltadelta) && ok;
-    } else {
-      ok = ok && filters_[i]->Accept(delta, deltadelta);
+    if (ok || filters_[i]->IsIncremental()) {
+      monitor->BeginFiltering(filters_[i]);
+      const bool accept = filters_[i]->Accept(delta, deltadelta);
+      monitor->EndFiltering(filters_[i], !accept);
+      ok = accept && ok;
     }
   }
   return ok;

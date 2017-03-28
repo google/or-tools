@@ -50,12 +50,17 @@
 //   * "active(i)" boolean variables, true if the node corresponding to i is
 //     visited and false if not; this can be false when nodes are either
 //     optional or part of a disjunction;
+//   * The following relationships hold for all i:
+//      active(i) == 0 <=> next(i) == i <=> vehicle(i) == -1,
+//      next(i) == j => vehicle(j) == vehicle(i).
 // - dimension variables, used when one is accumulating quantities along routes,
 //   such as weight or volume carried, distance or time:
 //   * "cumul(i,d)" variables representing the quantity of dimension d when
 //     arriving at the node corresponding to i;
 //   * "transit(i,d)" variables representing the quantity of dimension d added
 //     after visiting the node corresponding to i.
+//   * The following relationship holds for all (i,d):
+//       next(i) == j => cumul(j,d) == cumul(i,d) + transit(i,d).
 // Solving the vehicle routing problems is mainly done using approximate methods
 // (namely local search,
 // cf. http://en.wikipedia.org/wiki/Local_search_(optimization) ), potentially
@@ -164,15 +169,14 @@
 
 #include "base/callback.h"
 #include "base/commandlineflags.h"
-#include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/int_type.h"
 #include "base/int_type_indexed_vector.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
 #include "constraint_solver/constraint_solveri.h"
 #include "constraint_solver/routing_parameters.pb.h"
+#include "constraint_solver/routing_types.h"
 #include "graph/graph.h"
 #include "util/range_query_function.h"
 #include "util/sorted_interval_list.h"
@@ -190,14 +194,6 @@ class SweepArranger;
 #endif
 struct SweepNode;
 
-// The type must be defined outside the class RoutingModel, SWIG does not parse
-// it correctly if it's inside.
-DEFINE_INT_TYPE(_RoutingModel_NodeIndex, int);
-DEFINE_INT_TYPE(_RoutingModel_CostClassIndex, int);
-DEFINE_INT_TYPE(_RoutingModel_DimensionIndex, int);
-DEFINE_INT_TYPE(_RoutingModel_DisjunctionIndex, int);
-DEFINE_INT_TYPE(_RoutingModel_VehicleClassIndex, int);
-
 class RoutingModel {
  public:
   // Status of the search.
@@ -214,18 +210,20 @@ class RoutingModel {
     ROUTING_INVALID
   };
 
-  typedef _RoutingModel_NodeIndex NodeIndex;
-  typedef _RoutingModel_CostClassIndex CostClassIndex;
-  typedef _RoutingModel_DimensionIndex DimensionIndex;
-  typedef _RoutingModel_DisjunctionIndex DisjunctionIndex;
-  typedef _RoutingModel_VehicleClassIndex VehicleClassIndex;
-  typedef ResultCallback2<int64, NodeIndex, NodeIndex> NodeEvaluator2;
-  typedef std::function<int64(int64, int64)> TransitEvaluator2;
-#if !defined(SWIG)
-  typedef std::pair<std::vector<int64>, std::vector<int64>> NodePair;
-  typedef std::vector<NodePair> NodePairs;
-#endif
+  typedef RoutingNodeIndex NodeIndex;
+  typedef RoutingCostClassIndex CostClassIndex;
+  typedef RoutingDimensionIndex DimensionIndex;
+  typedef RoutingDisjunctionIndex DisjunctionIndex;
+  typedef RoutingVehicleClassIndex VehicleClassIndex;
+  typedef RoutingNodeEvaluator2 NodeEvaluator2;
+  typedef RoutingTransitEvaluator2 TransitEvaluator2;
+
 // TODO(user): Remove all SWIG guards by adding the @ignore in .swig.
+#if !defined(SWIG)
+  typedef RoutingNodePair NodePair;
+  typedef RoutingNodePairs NodePairs;
+#endif  // SWIG
+
 #if !defined(SWIG)
   // What follows is relevant for models with time/state dependent transits.
   // Such transits, say from node A to node B, are functions f: int64->int64
@@ -519,7 +517,7 @@ class RoutingModel {
   // p + Sum(i)active[i] == 1, where p is a boolean variable
   // and the following cost to the cost function:
   // p * penalty.
-  // "penalty" must be positive to make the disjunctionn optional; a negative
+  // "penalty" must be positive to make the disjunction optional; a negative
   // penalty will force one node of the disjunction to be performed, and
   // therefore p == 0.
   // Note: passing a vector with a single node will model an optional node
@@ -571,6 +569,17 @@ class RoutingModel {
   }
   // Returns the number of node disjunctions in the model.
   int GetNumberOfDisjunctions() const { return disjunctions_.size(); }
+  // Returns the list of all perfect binary disjunctions, as pairs of variable
+  // indices: a disjunction is "perfect" when its variables do not appear in
+  // any other disjunction. Each pair is sorted (lowest variable index first),
+  // and the output vector is also sorted (lowest pairs first).
+  std::vector<std::pair<int, int> > GetPerfectBinaryDisjunctions() const;
+  // SPECIAL: Makes the solver ignore all the disjunctions whose active
+  // variables are all trivially zero (i.e. Max() == 0), by setting their
+  // max_cardinality to 0.
+  // This can be useful when using the BaseBinaryDisjunctionNeighborhood
+  // operators, in the context of arc-based routing.
+  void IgnoreDisjunctionsAlreadyForcedToZero();
 
   // Adds a soft contraint to force a set of nodes to be on the same vehicle.
   // If all nodes are not on the same vehicle, each extra vehicle used adds
@@ -835,11 +844,13 @@ class RoutingModel {
   // the vehicle variable of the node corresponding to i.
   const std::vector<IntVar*>& VehicleVars() const { return vehicle_vars_; }
 #endif  // !defined(SWIGPYTHON)
-  // Returns the next variable of the node corresponding to index.
+  // Returns the next variable of the node corresponding to index. Note that
+  // NextVar(index) == index is equivalent to ActiveVar(index) == 0.
   IntVar* NextVar(int64 index) const { return nexts_[index]; }
   // Returns the active variable of the node corresponding to index.
   IntVar* ActiveVar(int64 index) const { return active_[index]; }
-  // Returns the vehicle variable of the node corresponding to index.
+  // Returns the vehicle variable of the node corresponding to index. Note that
+  // VehicleVar(index) == -1 is equivalent to ActiveVar(index) == 0.
   IntVar* VehicleVar(int64 index) const { return vehicle_vars_[index]; }
   // Returns the global cost variable which is being minimized.
   IntVar* CostVar() const { return cost_; }
@@ -1405,6 +1416,50 @@ class RoutingDimension {
   //   coefficient * (Max(dimension end value) - Min(dimension start value)).
   void SetGlobalSpanCostCoefficient(int64 coefficient);
 
+#ifndef SWIG
+  // Sets a piecewise linear cost on the cumul variable of a given node.
+  // If f is a piecewsie linear function, the resulting cost at node n will be
+  // f(CumulVar(n)).
+  // As of 3/2017, only non-decreasing positive cost functions are supported.
+  void SetCumulVarPiecewiseLinearCost(RoutingModel::NodeIndex node,
+                                      const PiecewiseLinearFunction& cost);
+  // Same as SetCumulVarPiecewiseLinearCost applied to vehicle start node,
+  void SetStartCumulVarPiecewiseLinearCost(int vehicle,
+                                           const PiecewiseLinearFunction& cost);
+  // Same as SetCumulVarPiecewiseLinearCost applied to vehicle end node,
+  void SetEndCumulVarPiecewiseLinearCost(int vehicle,
+                                         const PiecewiseLinearFunction& cost);
+  // Same as above but using a variable index.
+  void SetCumulVarPiecewiseLinearCostFromIndex(
+      int64 index, const PiecewiseLinearFunction& cost);
+  // Returns true if a piecewise linear cost has been set for a given node.
+  bool HasCumulVarPiecewiseLinearCost(RoutingModel::NodeIndex node) const;
+  // Returns true if a piecewise linear cost has been set for a given vehicle
+  // start node.
+  bool HasStartCumulVarPiecewiseLinearCost(int vehicle) const;
+  // Returns true if a piecewise linear cost has been set for a given vehicle
+  // end node.
+  bool HasEndCumulVarPiecewiseLinearCost(int vehicle) const;
+  // Returns true if a piecewise linear cost has been set for a given variable
+  // index.
+  bool HasCumulVarPiecewiseLinearCostFromIndex(int64 index) const;
+  // Returns the piecewise linear cost of a cumul variable for a given node.
+  const PiecewiseLinearFunction* GetCumulVarPiecewiseLinearCost(
+      RoutingModel::NodeIndex node) const;
+  // Returns the piecewise linear cost of a cumul variable for a given vehicle
+  // start node.
+  const PiecewiseLinearFunction* GetStartCumulVarPiecewiseLinearCost(
+      int vehicle) const;
+  // Returns the piecewise linear cost of a cumul variable for a given vehicle
+  // end node.
+  const PiecewiseLinearFunction* GetEndCumulVarPiecewiseLinearCost(
+      int vehicle) const;
+  // Returns the piecewise linear cost of a cumul variable for a given variable
+  // index.
+  const PiecewiseLinearFunction* GetCumulVarPiecewiseLinearCostFromIndex(
+      int64 index) const;
+#endif
+
   // Sets a soft upper bound to the cumul variable of a given node. If the
   // value of the cumul variable is greater than the bound, a cost proportional
   // to the difference between this value and the bound is added to the cost
@@ -1585,6 +1640,12 @@ class RoutingDimension {
     int64 coefficient;
   };
 
+  struct PiecewiseLinearCost {
+    PiecewiseLinearCost() : var(nullptr) {}
+    IntVar* var;
+    std::unique_ptr<PiecewiseLinearFunction> cost;
+  };
+
   class SelfBased {};
   RoutingDimension(RoutingModel* model, std::vector<int64> vehicle_capacities,
                    const std::string& name, const RoutingDimension* base_dimension);
@@ -1606,6 +1667,8 @@ class RoutingDimension {
       std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to cumul soft lower bounds.
   void SetupCumulVarSoftLowerBoundCosts(
+      std::vector<IntVar*>* cost_elements) const;
+  void SetupCumulVarPiecewiseLinearCosts(
       std::vector<IntVar*>* cost_elements) const;
   // Sets up the cost variables related to the global span and per-vehicle span
   // costs (only for the "slack" part of the latter).
@@ -1647,6 +1710,7 @@ class RoutingDimension {
   std::vector<int64> vehicle_span_cost_coefficients_;
   std::vector<SoftBound> cumul_var_soft_upper_bound_;
   std::vector<SoftBound> cumul_var_soft_lower_bound_;
+  std::vector<PiecewiseLinearCost> cumul_var_piecewise_linear_cost_;
   RoutingModel* const model_;
   const std::string name_;
 

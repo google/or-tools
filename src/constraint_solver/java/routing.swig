@@ -54,9 +54,6 @@ VECTOR_AS_JAVA_ARRAY(operations_research::RoutingModel::NodeIndex, int, Int);
 %typemap(javain) const std::vector<std::vector<operations_research::RoutingModel::NodeIndex> >& "$javainput"
 
 // Useful directors.
-%feature("director") LongResultCallback1;
-%feature("director") LongResultCallback2;
-%feature("director") LongResultCallback3;
 %feature("director") NodeEvaluator2;
 
 %{
@@ -78,70 +75,10 @@ VECTOR_AS_JAVA_ARRAY(operations_research::RoutingModel::NodeIndex, int, Int);
 // need it. But by destroying it, they also break the reference cycle and the
 // Java part may be processed by the GC.
 //
-// However, this behavior also means that the callback class can only be used
-// in one context and that if its C++ callback class is not received by someone
-// who destroys it in the end, it will stay in memory forever.
-class LongResultCallback1 : private ResultCallback1<int64, int64> {
- public:
-  LongResultCallback1() : used_as_permanent_handler_(false) {}
-  virtual int64 run(int64) = 0;
-  ResultCallback1<int64, int64>* getPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
-  }
-  virtual ~LongResultCallback1() {}
- private:
-  virtual bool IsRepeatable() const { return true; }
-
-  virtual int64 Run(int64 i) {
-    return run(i);
-  }
-  bool used_as_permanent_handler_;
-};
-
-class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
- public:
-  LongResultCallback2() : used_as_permanent_handler_(false) {}
-  virtual ~LongResultCallback2() {}
-  virtual int64 run(int64, int64) = 0;
-  ResultCallback2<int64, int64, int64>* getPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
-  }
- private:
-  virtual bool IsRepeatable() const { return true; }
-
-  virtual int64 Run(int64 i, int64 j) {
-    return run(i, j);
-  }
-  bool used_as_permanent_handler_;
-};
-
-class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
- public:
-  LongResultCallback3() : used_as_permanent_handler_(false) {}
-  virtual ~LongResultCallback3() {}
-  virtual int64 run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* getPermanentCallback() {
-    CHECK(!used_as_permanent_handler_);
-    used_as_permanent_handler_ = true;
-    return this;
-  }
- private:
-  virtual bool IsRepeatable() const { return true; }
-
-  virtual int64 Run(int64 i, int64 j, int64 k) {
-    return run(i, j, k);
-  }
-  bool used_as_permanent_handler_;
-};
-
-// When created, instances of NodeEvaluator2 must be used in a context where
-// someone takes ownership of the C++ part of the NodeEvaluator2 and deletes
-// it when no longer needed. Otherwise, the object would remain on the heap
-// forever.
+// When created, instances of NodeEvaluator2 must thus be used in a context
+// where someone takes ownership of the C++ part of the NodeEvaluator2 and
+// deletes it when no longer needed. Otherwise, the object would remain on the
+// heap forever.
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
   NodeEvaluator2() : used_as_permanent_handler_(false) {}
@@ -149,6 +86,10 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
   operations_research::RoutingModel::NodeEvaluator2* getPermanentCallback() {
     CHECK(!used_as_permanent_handler_);
     used_as_permanent_handler_ = true;
+    // The evaluator is wrapped to avoid having its ownership shared between
+    // jni/java and C++. C++ will take care of handling the wrapper while the
+    // actual evaluator will be handled by java. Refer to the typemap for
+    // NodeEvaluator2 below to see how this method is called.
     return NewPermanentCallback(this, &NodeEvaluator2::Run);
   }
   virtual ~NodeEvaluator2() {}
@@ -163,25 +104,6 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 };
 %}
 
-class LongResultCallback1 : private ResultCallback1<int64, int64> {
- public:
-  virtual int64 run(int64) = 0;
-  ResultCallback1<int64, int64>* getPermanentCallback();
-  virtual ~LongResultCallback1();
-};
-class LongResultCallback2 : private ResultCallback2<int64, int64, int64> {
- public:
-  virtual int64 run(int64, int64) = 0;
-  ResultCallback2<int64, int64, int64>* getPermanentCallback();
-  virtual ~LongResultCallback2();
-};
-class LongResultCallback3 : private ResultCallback3<int64, int64, int64, int64> {
- public:
-  virtual int64 run(int64, int64, int64) = 0;
-  ResultCallback3<int64, int64, int64, int64>* getPermanentCallback();
-  virtual ~LongResultCallback3();
-};
-
 class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2 {
  public:
   NodeEvaluator2() : used_as_permanent_handler_(false) {}
@@ -191,17 +113,8 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 };
 
 // Typemaps for callbacks in java.
-%typemap(jstype) ResultCallback1<int64, int64>* "LongResultCallback1";
-%typemap(javain) ResultCallback1<int64, int64>* "$descriptor(ResultCallback1<int64, int64>*).getCPtr($javainput.getPermanentCallback())";
-
-%typemap(jstype) ResultCallback2<int64, int64, int64>* "LongResultCallback2";
-%typemap(javain) ResultCallback2<int64, int64, int64>* "$descriptor(ResultCallback2<int64, int64, int64>*).getCPtr($javainput.getPermanentCallback())";
-
-%typemap(jstype) ResultCallback3<int64, int64, int64, int64>* "LongResultCallback3";
-%typemap(javain) ResultCallback3<int64, int64, int64, int64>* "$descriptor(ResultCallback3<int64, int64, int64, int64>*).getCPtr($javainput.getPermanentCallback())";
-
 %typemap(jstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
-%typemap(javain) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, _RoutingModel_NodeIndex, _RoutingModel_NodeIndex>*).getCPtr($javainput.getPermanentCallback())";
+%typemap(javain) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*).getCPtr($javainput.getPermanentCallback())";
 
 namespace operations_research {
 %define NODE_EVALUATOR_CAST(CType, ptr)
@@ -334,5 +247,18 @@ PROTO2_RETURN(operations_research::RoutingSearchParameters,
 PROTO2_RETURN(operations_research::RoutingModelParameters,
               com.google.ortools.constraintsolver.RoutingModelParameters)
 
-// Wrap cp includes
+%ignoreall
+%unignore RoutingNodeIndex;
+%unignore RoutingCostClassIndex;
+%unignore RoutingDimensionIndex;
+%unignore RoutingDisjunctionIndex;
+%unignore RoutingVehicleClassIndex;
+%unignore RoutingNodeEvaluator2;
+%unignore RoutingTransitEvaluator2;
+%unignore RoutingNodePair;
+%unignore RoutingNodePairs;
+%include "constraint_solver/routing_types.h"
+%unignoreall
+
+// TODO(user): Use ignoreall/unignoreall for this one. A lot of work.
 %include "constraint_solver/routing.h"

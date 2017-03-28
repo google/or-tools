@@ -34,6 +34,7 @@
 #include "base/macros.h"
 #include "base/stringprintf.h"
 #include "base/join.h"
+#include "base/join.h"
 #include "base/stl_util.h"
 #include "base/mathutil.h"
 #include "constraint_solver/constraint_solver.h"
@@ -176,10 +177,11 @@ struct ThetaNode {
     // our case, we use StartMin() + DurationMin() for the earliest completion
     // time of a task, which should not break any assumptions, but may give
     // bounds that are too loose.
-    DLOG_IF(WARNING, interval->DurationMin() != interval->DurationMax())
-        << "You are using the Theta-tree on tasks having variable durations. "
-           "This may lead to unexpected results, such as discarding valid "
-           "solutions or allowing invalid ones.";
+    // LOG_IF_FIRST_N(WARNING,
+    //                (interval->DurationMin() != interval->DurationMax()), 1)
+    //     << "You are using the Theta-tree on tasks having variable durations. "
+    //        "This may lead to unexpected results, such as discarding valid "
+    //        "solutions or allowing invalid ones.";
   }
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
@@ -193,8 +195,8 @@ struct ThetaNode {
   }
 
   std::string DebugString() const {
-    return StrCat("ThetaNode{ p = ", total_processing, ", e = ",
-                  total_ect < 0LL ? -1LL : total_ect, " }");
+    return StrCat("ThetaNode{ p = ", total_processing,
+                        ", e = ", total_ect < 0LL ? -1LL : total_ect, " }");
   }
 
   int64 total_processing;

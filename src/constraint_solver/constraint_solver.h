@@ -83,6 +83,7 @@
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/solver_parameters.pb.h"
+#include "util/piecewise_linear_function.h"
 #include "util/sorted_interval_list.h"
 #include "util/tuple_set.h"
 #include "base/random.h"
@@ -996,8 +997,8 @@ class Solver {
   bool LoadModel(const CpModel& proto);
   // Loads the model into the solver, appends search monitors to monitors,
   // and returns true upon success.
-  bool LoadModelWithSearchMonitors(
-      const CpModel& proto, std::vector<SearchMonitor*>* monitors);
+  bool LoadModelWithSearchMonitors(const CpModel& proto,
+                                   std::vector<SearchMonitor*>* monitors);
   // Upgrades the model to the latest version.
   static bool UpgradeModel(CpModel* const proto);
 
@@ -1245,6 +1246,15 @@ class Solver {
   // a >= 0 and b >= 0
   IntExpr* MakeSemiContinuousExpr(IntExpr* const e, int64 fixed_charge,
                                   int64 step);
+
+  // General piecewise-linear function expression, built from f(x) where f is
+  // piecewise-linear. The resulting expression is f(expr).
+  // TODO(user): Investigate if we can merge all three piecewise linear
+  // expressions.
+#ifndef SWIG
+  IntExpr* MakePiecewiseLinearExpr(IntExpr* expr,
+                                   const PiecewiseLinearFunction& f);
+#endif
 
   // Modulo expression x % mod (with the python convention for modulo).
   IntExpr* MakeModulo(IntExpr* const x, int64 mod);
@@ -1740,7 +1750,7 @@ class Solver {
   // Compatibility layer for python API.
   Constraint* MakeAllowedAssignments(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64> >& raw_tuples) {
+      const std::vector<std::vector<int64>>& raw_tuples) {
     IntTupleSet tuples(vars.size());
     tuples.InsertAll(raw_tuples);
     return MakeAllowedAssignments(vars, tuples);
@@ -1748,7 +1758,7 @@ class Solver {
 
   Constraint* MakeTransitionConstraint(
       const std::vector<IntVar*>& vars,
-      const std::vector<std::vector<int64> >& raw_transitions,
+      const std::vector<std::vector<int64>>& raw_transitions,
       int64 initial_state, const std::vector<int>& final_states) {
     IntTupleSet transitions(3);
     transitions.InsertAll(raw_transitions);
@@ -1962,7 +1972,7 @@ class Solver {
   Constraint* MakeIntervalVarRelation(IntervalVar* const t,
                                       UnaryIntervalRelation r, int64 d);
 
-  // This method creates a relation between two an interval vars.
+  // This method creates a relation between two interval vars.
   Constraint* MakeIntervalVarRelation(IntervalVar* const t1,
                                       BinaryIntervalRelation r,
                                       IntervalVar* const t2);
@@ -5295,13 +5305,13 @@ class Pack : public Constraint {
   const int bins_;
   std::vector<Dimension*> dims_;
   std::unique_ptr<RevBitMatrix> unprocessed_;
-  std::vector<std::vector<int> > forced_;
-  std::vector<std::vector<int> > removed_;
+  std::vector<std::vector<int>> forced_;
+  std::vector<std::vector<int>> removed_;
   std::vector<IntVarIterator*> holes_;
   uint64 stamp_;
   Demon* demon_;
-  std::vector<std::pair<int, int> > to_set_;
-  std::vector<std::pair<int, int> > to_unset_;
+  std::vector<std::pair<int, int>> to_set_;
+  std::vector<std::pair<int, int>> to_unset_;
   bool in_process_;
 };
 

@@ -91,6 +91,7 @@ DEFINE_bool(routing_fingerprint_arc_cost_evaluators, true,
             "Compare arc-cost evaluators using the fingerprint of their "
             "corresponding matrix instead of evaluator addresses.");
 DEFINE_bool(routing_trace, false, "Routing: trace search.");
+DEFINE_bool(routing_profile, false, "Routing: profile search.");
 
 // --- Routing model flags ---
 DEFINE_bool(routing_use_homogeneous_costs, true,
@@ -215,6 +216,7 @@ RoutingModelParameters BuildModelParametersFromFlags() {
   if (FLAGS_routing_cache_callbacks) {
     parameters.set_max_callback_cache_size(FLAGS_routing_max_cache_size);
   }
+  solver_parameters->set_profile_local_search(FLAGS_routing_profile);
   return parameters;
 }
 }  // namespace operations_research

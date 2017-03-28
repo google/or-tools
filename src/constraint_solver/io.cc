@@ -2435,8 +2435,8 @@ bool CpModelLoader::ScanOneArgument(int type_index, const CpArgument& arg_proto,
 // ----- Solver API -----
 
 CpModel Solver::ExportModelWithSearchMonitorsAndDecisionBuilder(
-      const std::vector<SearchMonitor*>& monitors,
-      DecisionBuilder* const db) const {
+    const std::vector<SearchMonitor*>& monitors,
+    DecisionBuilder* const db) const {
   CpModel model_proto;
   FirstPassVisitor first_pass;
   Accept(&first_pass, monitors, db);
@@ -2460,8 +2460,7 @@ bool Solver::LoadModel(const CpModel& model_proto) {
 }
 
 bool Solver::LoadModelWithSearchMonitors(
-    const CpModel& model_proto,
-    std::vector<SearchMonitor*>* monitors) {
+    const CpModel& model_proto, std::vector<SearchMonitor*>* monitors) {
   if (model_proto.version() > kModelVersion) {
     LOG(ERROR) << "Model protocol buffer version is greater than"
                << " the one compiled in the reader (" << model_proto.version()
