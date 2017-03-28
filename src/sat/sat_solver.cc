@@ -2044,7 +2044,6 @@ void SatSolver::ComputeFirstUIPConflict(
       clause_to_expand = ClauseRef();
     } else {
       clause_to_expand = trail_->Reason(literal.Variable());
-      DCHECK(!clause_to_expand.IsEmpty());
     }
     sat_clause = ReasonClauseOrNull(literal.Variable());
 

@@ -316,6 +316,8 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
 
 bool PrecedencesPropagator::ArcShouldPropagate(const ArcInfo& arc,
                                                const Trail& trail) const {
+  if (integer_trail_->IsCurrentlyIgnored(arc.head_var)) return false;
+
   const LiteralIndex index = OptionalLiteralOf(arc.tail_var);
   if (index == kNoLiteralIndex) return true;
   if (trail.Assignment().LiteralIsFalse(Literal(index))) return false;

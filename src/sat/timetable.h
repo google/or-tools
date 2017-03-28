@@ -37,11 +37,11 @@ class TimeTablingPerTask : public PropagatorInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  struct Event {
-    /* const */ IntegerValue time;
+  struct TaskTime {
     /* const */ int task_id;
-    Event(IntegerValue time, int task_id) : time(time), task_id(task_id) {}
-    bool operator<(Event other) const { return time < other.time; }
+    IntegerValue time;
+    TaskTime(int task_id, IntegerValue time) : task_id(task_id), time(time) {}
+    bool operator<(TaskTime other) const { return time < other.time; }
   };
 
   struct ProfileRectangle {
@@ -52,11 +52,15 @@ class TimeTablingPerTask : public PropagatorInterface {
         : start(start), end(end), height(height) {}
   };
 
-  // Increase the start min of task task_id. This function may call
+  // Builds the time table and increases the lower bound of the capacity
+  // variable accordingly.
+  bool BuildTimeTable();
+
+  // Increases the start min of task task_id. This function may call
   // UpdateStartingTime().
   bool SweepTaskRight(int task_id);
 
-  // Decrease the end max of task task_id. This function may call
+  // Decreases the end max of task task_id. This function may call
   // UpdateEndingTime().
   bool SweepTaskLeft(int task_id);
 
@@ -68,9 +72,13 @@ class TimeTablingPerTask : public PropagatorInterface {
   // reason_ with the corresponding reason.
   bool UpdateEndingTime(int task_id, IntegerValue new_end);
 
+  // Explains the resource overload at time or removes task_id if it is
+  // optional.
+  bool OverloadOrRemove(int task_id, IntegerValue time);
+
   // Fills reason_ with the reason that explains the height of the profile at
-  // the given time point.
-  void ExplainProfileHeight(IntegerValue time);
+  // the given time point. Also return the height of the profile at time.
+  IntegerValue ExplainProfileHeight(IntegerValue time);
 
   IntegerValue StartMin(int task_id) const {
     return integer_trail_->LowerBound(start_vars_[task_id]);
@@ -139,13 +147,20 @@ class TimeTablingPerTask : public PropagatorInterface {
   std::vector<IntegerValue> duration_min_;
   std::vector<IntegerValue> demand_min_;
 
-  // Events that represent the start of a compulsory part.
-  std::vector<Event> scp_;
-  // Events that represent the end of a compulsory part.
-  std::vector<Event> ecp_;
+  // Tasks sorted by start max (resp. end min).
+  std::vector<TaskTime> by_start_max_;
+  std::vector<TaskTime> by_end_min_;
+
+  // Start (resp. end) of the compulsory parts used to build the profile.
+  std::vector<TaskTime> scp_;
+  std::vector<TaskTime> ecp_;
 
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;
+  IntegerValue profile_max_height_;
+
+  // True if the corresponding task is part of the profile.
+  std::vector<bool> in_profile_;
 
   // True if the last call of the propagator has filtered the domain of a task
   // and changed the shape of the profile.

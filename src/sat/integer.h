@@ -18,6 +18,7 @@
 #include <set>
 
 #include "base/port.h"
+#include "base/logging.h"
 #include "base/join.h"
 #include "base/int_type.h"
 #include "base/map_util.h"
@@ -119,7 +120,12 @@ struct IntegerLiteral {
     return var != o.var || bound == o.bound;
   }
 
-  std::string DebugString() const { return StrCat("I", var, ">=", bound.value()); }
+  IntegerVariable Var() const { return IntegerVariable(var); }
+  IntegerValue Bound() const { return bound; }
+
+  std::string DebugString() const {
+    return StrCat("I", var, ">=", bound.value());
+  }
 
  private:
   friend class IntegerEncoder;
@@ -403,16 +409,24 @@ class IntegerTrail : public SatPropagator {
   }
 
   // The domain [lb, ub] of an "optional" variable is allowed to be empty (i.e.
-  // ub < lb) iff the given is_empty literal is true.
+  // ub < lb) if the given is_ignored literal is true. Moreover, if is_ignored
+  // is true, then the bound of such variable should NOT impact any non-ignored
+  // variable in any way (but the reverse is not true).
   bool IsOptional(IntegerVariable i) const {
-    return is_empty_literals_[i] != kNoLiteralIndex;
+    return is_ignored_literals_[i] != kNoLiteralIndex;
   }
-  LiteralIndex GetIsEmptyLiteral(IntegerVariable i) const {
-    return is_empty_literals_[i];
+  bool IsCurrentlyIgnored(IntegerVariable i) const {
+    const LiteralIndex is_ignored_literal = is_ignored_literals_[i];
+    return is_ignored_literal != kNoLiteralIndex &&
+           trail_->Assignment().LiteralIsTrue(Literal(is_ignored_literal));
   }
-  void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_non_empty) {
-    is_empty_literals_[i] = is_non_empty.NegatedIndex();
-    is_empty_literals_[NegationOf(i)] = is_non_empty.NegatedIndex();
+  Literal IsIgnoredLiteral(IntegerVariable i) const {
+    DCHECK(IsOptional(i));
+    return Literal(is_ignored_literals_[i]);
+  }
+  void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_considered) {
+    is_ignored_literals_[i] = is_considered.NegatedIndex();
+    is_ignored_literals_[NegationOf(i)] = is_considered.NegatedIndex();
   }
 
   // Returns the current lower/upper bound of the given integer variable.
@@ -576,8 +590,8 @@ class IntegerTrail : public SatPropagator {
   std::vector<Literal> literals_reason_buffer_;
   mutable std::vector<IntegerLiteral> bounds_reason_buffer_;
 
-  // The "is_empty" literal of the optional variables or kNoLiteralIndex.
-  ITIVector<IntegerVariable, LiteralIndex> is_empty_literals_;
+  // The "is_ignored" literal of the optional variables or kNoLiteralIndex.
+  ITIVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
 
   // Data used to support the propagation of fully encoded variable. We keep
   // for each variable the index in encoder_.GetDomainEncoding() of the first
@@ -653,7 +667,6 @@ class PropagatorInterface {
   //   indices of the literals modified after the registration will be present.
   virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
     LOG(FATAL) << "Not implemented.";
-    return false;
   }
 };
 
@@ -882,6 +895,7 @@ inline std::function<IntegerVariable(Model*)> ConstantIntegerVariable(
 inline std::function<IntegerVariable(Model*)> NewIntegerVariable(int64 lb,
                                                                  int64 ub) {
   return [=](Model* model) {
+    CHECK_LE(lb, ub);
     return model->GetOrCreate<IntegerTrail>()->AddIntegerVariable(
         IntegerValue(lb), IntegerValue(ub));
   };
@@ -894,15 +908,44 @@ inline std::function<IntegerVariable(Model*)> NewIntegerVariable(
   };
 }
 
+// Constraints might not accept Literals as input, forcing the user to pass
+// 0-1 integer views of a literal.
+// This class contains all such literal views of a given model, so that asking
+// for a view of a literal will always return the same IntegerVariable.
+class LiteralViews {
+ public:
+  explicit LiteralViews(Model* model) : model_(model) {}
+
+  static LiteralViews* CreateInModel(Model* model) {
+    return new LiteralViews(model);
+  }
+
+  IntegerVariable GetIntegerView(const Literal lit) {
+    const LiteralIndex index = lit.Index();
+
+    if (!ContainsKey(literal_index_to_integer_, index)) {
+      const IntegerVariable int_var = model_->Add(NewIntegerVariable(0, 1));
+      model_->GetOrCreate<IntegerEncoder>()
+          ->FullyEncodeVariableUsingGivenLiterals(
+              int_var, {lit.Negated(), lit},
+              {IntegerValue(0), IntegerValue(1)});
+      literal_index_to_integer_[index] = int_var;
+    }
+
+    return literal_index_to_integer_[index];
+  }
+
+ private:
+  hash_map<LiteralIndex, IntegerVariable> literal_index_to_integer_;
+  Model* model_;
+};
+
 // Creates a 0-1 integer variable "view" of the given literal. It will have a
 // value of 1 when the literal is true, and 0 when the literal is false.
 inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
     Literal lit) {
   return [=](Model* model) {
-    const IntegerVariable int_var = model->Add(NewIntegerVariable(0, 1));
-    model->GetOrCreate<IntegerEncoder>()->FullyEncodeVariableUsingGivenLiterals(
-        int_var, {lit.Negated(), lit}, {IntegerValue(0), IntegerValue(1)});
-    return int_var;
+    return model->GetOrCreate<LiteralViews>()->GetIntegerView(lit);
   };
 }
 
@@ -929,7 +972,7 @@ inline std::function<bool(const Model&)> IsFixed(IntegerVariable v) {
 inline std::function<int64(const Model&)> Value(IntegerVariable v) {
   return [=](const Model& model) {
     const IntegerTrail* trail = model.Get<IntegerTrail>();
-    CHECK_EQ(trail->LowerBound(v), trail->UpperBound(v));
+    CHECK_EQ(trail->LowerBound(v), trail->UpperBound(v)) << v;
     return trail->LowerBound(v).value();
   };
 }
@@ -983,6 +1026,30 @@ inline std::function<void(Model*)> Equality(IntegerLiteral i, Literal l) {
   };
 }
 
+// TODO(user): This is one of the rare case where it is better to use Equality()
+// rather than two Implications(). Maybe we should modify our internal
+// implementation to use half-reified encoding? that is do not propagate the
+// direction integer-bound => literal, but just literal => integer-bound? This
+// is the same as using different underlying variable for an integer literal and
+// its negation.
+inline std::function<void(Model*)> Implication(Literal l, IntegerLiteral i) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    if (i.Bound() <= integer_trail->LowerBound(i.Var())) {
+      // Always true! nothing to do.
+    } else if (i.Bound() > integer_trail->UpperBound(i.Var())) {
+      // Always false.
+      model->Add(ClauseConstraint({l.Negated()}));
+    } else {
+      // TODO(user): Double check what happen when we associate a trivially
+      // true or false literal. This applies to Equality() too.
+      IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+      const Literal current = encoder->GetOrCreateAssociatedLiteral(i);
+      model->Add(Implication(l, current));
+    }
+  };
+}
+
 // in_interval <=> v in [lb, ub].
 inline std::function<void(Model*)> ReifiedInInterval(IntegerVariable v,
                                                      int64 lb, int64 ub,
@@ -1031,13 +1098,46 @@ FullyEncodeVariable(IntegerVariable var) {
 }
 
 // A wrapper around SatSolver::Solve that handles integer variable with lazy
-// encoding. Repeatedly calls SatSolver::Solve on the model, and instantiates
-// literals for non-fixed variables in vars_with_lazy_encoding, until either all
-// variables are fixed to a single value, or the model is proved UNSAT. Returns
-// the status of the last call to SatSolver::Solve().
+// encoding. Repeatedly calls SatSolver::Solve() on the model until the given
+// next_decision() function return kNoLiteralIndex or the model is proved to
+// be UNSAT.
+//
+// Returns the status of the last call to SatSolver::Solve().
+//
+// Note that the next_decision() function must always return an unassigned
+// literal or kNoLiteralIndex to end the search.
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     const std::vector<Literal>& assumptions,
-    const std::vector<IntegerVariable>& vars_with_lazy_encoding, Model* model);
+    const std::function<LiteralIndex()>& next_decision, Model* model);
+
+// Shortcut for SolveIntegerProblemWithLazyEncoding() when there is no
+// assumption and we consider all variables in their index order for the next
+// search decision.
+SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
+
+// Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Returns a
+// function that will return the literal corresponding to the fact that the
+// first currently non-fixed variable value is <= its min. The function will
+// return kNoLiteralIndex if all the given variables are fixed.
+//
+// Note that this function will create the associated literal if needed.
+std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
+    const std::vector<IntegerVariable>& vars, Model* model);
+
+// Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Like
+// FirstUnassignedVarAtItsMinHeuristic() but the function will return the
+// literal corresponding to the fact that the currently non-assigned variable
+// with the lowest min has a value <= this min.
+std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
+    const std::vector<IntegerVariable>& vars, Model* model);
+
+// Same as ExcludeCurrentSolutionAndBacktrack() but this version works for an
+// integer problem with optional variables. The issue is that an optional
+// variable that is ignored can basically take any value, and we don't really
+// want to enumerate them. This function should exclude all solutions where
+// only the ignored variable values change.
+std::function<void(Model*)>
+ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack();
 
 }  // namespace sat
 }  // namespace operations_research

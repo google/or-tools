@@ -1045,7 +1045,7 @@ void LogSolveInfo(SatSolver::Status result, const SatSolver& sat_solver,
 
 SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     bool log_info, IntegerVariable objective_var,
-    const std::vector<IntegerVariable>& var_for_lazy_encoding,
+    const std::function<LiteralIndex()>& next_decision,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model) {
   // Timing.
@@ -1066,7 +1066,7 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
   IntegerValue objective(kint64max);
   while (true) {
     result = SolveIntegerProblemWithLazyEncoding(/*assumptions=*/{},
-                                                 var_for_lazy_encoding, model);
+                                                 next_decision, model);
     if (result != SatSolver::MODEL_SAT) break;
 
     // The objective is the current lower bound of the objective_var.
@@ -1074,7 +1074,9 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
 
     // We have a solution!
     model_is_feasible = true;
-    feasible_solution_observer(*model);
+    if (feasible_solution_observer != nullptr) {
+      feasible_solution_observer(*model);
+    }
 
     // Restrict the objective.
     sat_solver->Backtrack(0);
@@ -1107,7 +1109,7 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
 SatSolver::Status MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
     bool log_info, const std::vector<Literal>& literals,
     const std::vector<int64>& int64_coeffs,
-    const std::vector<IntegerVariable>& var_for_lazy_encoding,
+    const std::function<LiteralIndex()>& next_decision,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model) {
   // Timing.
@@ -1184,8 +1186,8 @@ SatSolver::Status MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
     }
 
     // Solve under the assumptions.
-    result = SolveIntegerProblemWithLazyEncoding(assumptions,
-                                                 var_for_lazy_encoding, model);
+    result =
+        SolveIntegerProblemWithLazyEncoding(assumptions, next_decision, model);
     if (result == SatSolver::MODEL_SAT) {
       // Extract the new solution and save it if it is the best found so far.
       Coefficient obj(0);
@@ -1195,7 +1197,9 @@ SatSolver::Status MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
         }
       }
       if (obj + offset < upper_bound) {
-        feasible_solution_observer(*model);
+        if (feasible_solution_observer != nullptr) {
+          feasible_solution_observer(*model);
+        }
         upper_bound = obj + offset;
         if (log_info) LOG(INFO) << "c ub:" << upper_bound;
       }

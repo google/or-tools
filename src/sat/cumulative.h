@@ -26,7 +26,7 @@ namespace sat {
 // and the capacity variables.
 //
 // Each interval represents a task to be scheduled in time such that the task
-// consumes the resource during the time range [lb, ub[ where lb and ub
+// consumes the resource during the time range [lb, ub) where lb and ub
 // respectively represent the lower and upper bounds of the corresponding
 // interval variable. The amount of resource consumed by the task is the value
 // of its associated demand variable.
@@ -46,9 +46,8 @@ std::function<void(Model*)> Cumulative(
 // demands and the capacity variables. See the comment of Cumulative() above for
 // a definition of the constraint.
 //
-// This constraint assumes that an interval cannot be optional and must have a
-// fixed size (which can be zero). The demands and the capacity must be assigned
-// to a non-negative number.
+// This constraint assumes that task demands and the resource capacity must be
+// assigned to a non-negative number.
 std::function<void(Model*)> CumulativeTimeDecomposition(
     const std::vector<IntervalVariable>& vars,
     const std::vector<IntegerVariable>& demand_vars,

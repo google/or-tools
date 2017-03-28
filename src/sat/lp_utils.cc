@@ -210,7 +210,7 @@ void ConvertBooleanProblemToLinearProgram(const LinearBooleanProblem& problem,
   lp->Clear();
   for (int i = 0; i < problem.num_variables(); ++i) {
     const ColIndex col = lp->CreateNewVariable();
-    lp->SetVariableIntegrality(col, true);
+    lp->SetVariableType(col, glop::LinearProgram::VariableType::INTEGER);
     lp->SetVariableBounds(col, 0.0, 1.0);
   }
 

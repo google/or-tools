@@ -173,7 +173,7 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     const std::vector<IntegerVariable>& vars, const VectorInt& coefficients,
     int64 upper_bound) {
   // Special cases.
-  CHECK_GE(vars.size(), 1) << "Should be encoded differently.";
+  CHECK_GE(vars.size(), 1);
   if (vars.size() == 1) {
     CHECK_NE(coefficients[0], 0);
     if (coefficients[0] > 0) {
@@ -237,8 +237,16 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
   // Special cases.
   CHECK_GE(vars.size(), 1);
   if (vars.size() == 1) {
-    LOG(INFO) << "ConditionalWeightedSumLowerOrEqual() with 1 term. Should "
-                 "have been presolved!";
+    CHECK_NE(coefficients[0], 0);
+    if (coefficients[0] > 0) {
+      return Implication(
+          is_le, IntegerLiteral::LowerOrEqual(
+                     vars[0], IntegerValue(upper_bound / coefficients[0])));
+    } else {
+      return Implication(
+          is_le, IntegerLiteral::GreaterOrEqual(
+                     vars[0], IntegerValue(upper_bound / coefficients[0])));
+    }
   }
   if (vars.size() == 2 && (coefficients[0] == 1 || coefficients[0] == -1) &&
       (coefficients[1] == 1 || coefficients[1] == -1)) {

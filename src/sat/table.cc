@@ -185,6 +185,52 @@ std::function<void(Model*)> TableConstraint(
   };
 }
 
+std::function<void(Model*)> LiteralTableConstraint(
+    const std::vector<std::vector<Literal>>& literal_tuples,
+    const std::vector<Literal>& line_literals) {
+  return [=](Model* model) {
+    CHECK_EQ(literal_tuples.size(), line_literals.size());
+    const int num_tuples = line_literals.size();
+    if (num_tuples == 0) return;
+    const int tuple_size = literal_tuples[0].size();
+    if (tuple_size == 0) return;
+    for (int i = 1; i < num_tuples; ++i) {
+      CHECK_EQ(tuple_size, literal_tuples[i].size());
+    }
+
+    hash_map<LiteralIndex, std::vector<LiteralIndex>> line_literals_per_literal;
+    for (int i = 0; i < num_tuples; ++i) {
+      const LiteralIndex selected_index = line_literals[i].Index();
+      for (const Literal l : literal_tuples[i]) {
+        line_literals_per_literal[l.Index()].push_back(selected_index);
+      }
+    }
+
+    // line_literals[i] == true => literal_tuples[i][j] == true.
+    // literal_tuples[i][j] == false => line_literals[i] == false.
+    for (int i = 0; i < num_tuples; ++i) {
+      const Literal line_is_selected = line_literals[i];
+      for (const Literal lit : literal_tuples[i]) {
+        model->Add(Implication(line_is_selected, lit));
+      }
+    }
+
+    // Exactly one selected literal is true.
+    model->Add(ExactlyOneConstraint(line_literals));
+
+    // If all selected literals of the lines containing a literal are false,
+    // then the literal is false.
+    for (const auto& p : line_literals_per_literal) {
+      std::vector<Literal> clause;
+      for (const auto& index : p.second) {
+        clause.push_back(Literal(index));
+      }
+      clause.push_back(Literal(p.first).Negated());
+      model->Add(ClauseConstraint(clause));
+    }
+  };
+}
+
 std::function<void(Model*)> TransitionConstraint(
     const std::vector<IntegerVariable>& vars,
     const std::vector<std::vector<int64>>& automata, int64 initial_state,

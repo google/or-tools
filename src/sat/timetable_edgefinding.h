@@ -176,6 +176,10 @@ class TimeTableEdgeFinding : public PropagatorInterface {
   std::vector<TaskTime> by_end_min_;
   std::vector<TaskTime> by_end_max_;
 
+  // Start (resp. end) of the compulsory parts used to build the profile.
+  std::vector<TaskTime> scp_;
+  std::vector<TaskTime> ecp_;
+
   // Energy of the free parts.
   std::vector<IntegerValue> energy_free_;
 

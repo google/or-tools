@@ -11,12 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "sat/timetable.h"
+
 #include <algorithm>
 
 #include "sat/overload_checker.h"
 #include "sat/precedences.h"
 #include "sat/sat_solver.h"
-#include "sat/timetable.h"
+#include "util/sort.h"
 
 namespace operations_research {
 namespace sat {
@@ -33,18 +35,13 @@ TimeTablingPerTask::TimeTablingPerTask(
       trail_(trail),
       integer_trail_(integer_trail),
       intervals_repository_(intervals_repository) {
+  // Cached domains.
   start_min_.resize(num_tasks_);
   start_max_.resize(num_tasks_);
   end_min_.resize(num_tasks_);
   end_max_.resize(num_tasks_);
   duration_min_.resize(num_tasks_);
   demand_min_.resize(num_tasks_);
-  scp_.reserve(num_tasks_);
-  ecp_.reserve(num_tasks_);
-  // Each task may create at most two profile rectangles. Such pattern appear if
-  // the profile is shaped like the Hanoi tower. The additional space is for
-  // both extremities and the sentinels.
-  profile_.reserve(2 * num_tasks_ + 4);
   // Collect the variables.
   start_vars_.resize(num_tasks_);
   end_vars_.resize(num_tasks_);
@@ -54,7 +51,16 @@ TimeTablingPerTask::TimeTablingPerTask(
     start_vars_[t] = intervals_repository->StartVar(i);
     end_vars_[t] = intervals_repository->EndVar(i);
     duration_vars_[t] = intervals_repository->SizeVar(i);
+    by_start_max_.push_back(TaskTime(t, IntegerValue(0)));
+    by_end_min_.push_back(TaskTime(t, IntegerValue(0)));
   }
+  // Each task may create at most two profile rectangles. Such pattern appear if
+  // the profile is shaped like the Hanoi tower. The additional space is for
+  // both extremities and the sentinels.
+  profile_.reserve(2 * num_tasks_ + 4);
+  in_profile_.resize(num_tasks_);
+  scp_.reserve(num_tasks_);
+  ecp_.reserve(num_tasks_);
 }
 
 void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
@@ -99,11 +105,7 @@ bool TimeTablingPerTask::Propagate() {
   while (profile_changed_) {
     profile_changed_ = false;
 
-    // Rebuild compulsory part events.
-    // -------------------------------
-    scp_.clear();
-    ecp_.clear();
-    // TODO(user): exclude extreme tasks during the search.
+    // Cache the variable bounds.
     for (int t = 0; t < num_tasks_; ++t) {
       start_min_[t] = StartMin(t);
       start_max_[t] = StartMax(t);
@@ -111,97 +113,15 @@ bool TimeTablingPerTask::Propagate() {
       end_max_[t] = EndMax(t);
       demand_min_[t] = DemandMin(t);
       duration_min_[t] = DurationMin(t);
-      if (start_max_[t] < end_min_[t] && IsPresent(t)) {
-        scp_.push_back(Event(start_max_[t], t));
-        ecp_.push_back(Event(end_min_[t], t));
-      }
     }
 
-    // No filtering is possible.
-    if (scp_.empty()) return true;
-
-    // TODO(user): use insertion sort with a fall back to std::sort.
-    // Sort compulsory part events.
-    std::sort(scp_.begin(), scp_.end());
-    std::sort(ecp_.begin(), ecp_.end());
-
-    // Build the profile.
-    // ------------------
-    profile_.clear();
-
-    // Add a sentinel to simplify the algorithm.
-    profile_.push_back(
-        ProfileRectangle(kMinIntegerValue, kMinIntegerValue, IntegerValue(0)));
-
-    // Start and height of the currently built profile rectange.
-    IntegerValue current_start = kMinIntegerValue;
-    IntegerValue current_height = IntegerValue(0);
-
-    // Start and height of the highest profile rectangle.
-    IntegerValue max_height_start = kMinIntegerValue;
-    IntegerValue max_height = IntegerValue(0);
-
-    // Next scp and ecp events to be processed.
-    int next_scp = 0;
-    int next_ecp = 0;
-
-    while (next_ecp < ecp_.size()) {
-      const IntegerValue old_height = current_height;
-
-      // Next time point.
-      IntegerValue t = ecp_[next_ecp].time;
-      if (next_scp < ecp_.size()) {
-        t = std::min(t, scp_[next_scp].time);
-      }
-
-      // Process the starting compulsory parts.
-      while (next_scp < scp_.size() && scp_[next_scp].time == t) {
-        current_height += demand_min_[scp_[next_scp].task_id];
-        next_scp++;
-      }
-
-      // Process the ending compulsory parts.
-      while (next_ecp < ecp_.size() && ecp_[next_ecp].time == t) {
-        current_height -= demand_min_[ecp_[next_ecp].task_id];
-        next_ecp++;
-      }
-
-      // Insert a new profile rectangle if any.
-      if (current_height != old_height) {
-        profile_.push_back(ProfileRectangle(current_start, t, old_height));
-        if (current_height > max_height) {
-          max_height = current_height;
-          max_height_start = t;
-        }
-        current_start = t;
-      }
-    }
-    // Build the last profile rectangle.
-    DCHECK_EQ(current_height, 0);
-    profile_.push_back(
-        ProfileRectangle(current_start, kMaxIntegerValue, IntegerValue(0)));
-
-    // Add a sentinel to simplify the algorithm.
-    profile_.push_back(
-        ProfileRectangle(kMaxIntegerValue, kMaxIntegerValue, IntegerValue(0)));
-
-    // Filter the capacity variable.
-    // -----------------------------
-    if (max_height > CapacityMin()) {
-      reason_.clear();
-      literal_reason_.clear();
-      ExplainProfileHeight(max_height_start);
-      if (!integer_trail_->Enqueue(
-              IntegerLiteral::GreaterOrEqual(capacity_var_, max_height),
-              literal_reason_, reason_)) {
-        return false;
-      }
-    }
+    // This can fail if the timetable exceeds the resource capacity.
+    if (!BuildTimeTable()) return false;
 
     // Update the start and end variables.
     // -----------------------------------
     // Tasks with a lower or equal demand will not be pushed.
-    const IntegerValue min_demand = CapacityMax() - max_height;
+    const IntegerValue min_demand = CapacityMax() - profile_max_height_;
 
     for (int t = 0; t < num_tasks_; ++t) {
       // The task cannot be pushed.
@@ -219,6 +139,110 @@ bool TimeTablingPerTask::Propagate() {
       if (end_min_[t] != end_max_[t] && !SweepTaskLeft(t)) return false;
     }
   }
+  return true;
+}
+
+bool TimeTablingPerTask::BuildTimeTable() {
+  // Update the value of the events to sort.
+  for (int i = 0; i < num_tasks_; ++i) {
+    by_start_max_[i].time = start_max_[by_start_max_[i].task_id];
+    by_end_min_[i].time = end_min_[by_end_min_[i].task_id];
+  }
+  // Likely to be already or almost sorted.
+  IncrementalSort(by_start_max_.begin(), by_start_max_.end());
+  IncrementalSort(by_end_min_.begin(), by_end_min_.end());
+
+  scp_.clear();
+  ecp_.clear();
+
+  // Build start of compulsory part events.
+  for (int i = 0; i < num_tasks_; ++i) {
+    const int t = by_start_max_[i].task_id;
+    in_profile_[t] = IsPresent(t) && start_max_[t] < end_min_[t];
+    if (in_profile_[t]) scp_.push_back(by_start_max_[i]);
+  }
+
+  // Build end of compulsory part events.
+  for (int i = 0; i < num_tasks_; ++i) {
+    const int t = by_end_min_[i].task_id;
+    if (in_profile_[t]) ecp_.push_back(by_end_min_[i]);
+  }
+
+  DCHECK_EQ(scp_.size(), ecp_.size());
+
+  // Build the profile.
+  // ------------------
+  profile_.clear();
+
+  // Start and height of the highest profile rectangle.
+  profile_max_height_ = kMinIntegerValue;
+  IntegerValue max_height_start = kMinIntegerValue;
+
+  // Add a sentinel to simplify the algorithm.
+  profile_.push_back(
+      ProfileRectangle(kMinIntegerValue, kMinIntegerValue, IntegerValue(0)));
+
+  // Start and height of the currently built profile rectange.
+  IntegerValue current_start = kMinIntegerValue;
+  IntegerValue current_height = IntegerValue(0);
+
+  // Next scp and ecp events to be processed.
+  int next_scp = 0;
+  int next_ecp = 0;
+
+  while (next_ecp < ecp_.size()) {
+    const IntegerValue old_height = current_height;
+
+    // Next time point.
+    IntegerValue t = ecp_[next_ecp].time;
+    if (next_scp < ecp_.size()) {
+      t = std::min(t, scp_[next_scp].time);
+    }
+
+    // Process the starting compulsory parts.
+    while (next_scp < scp_.size() && scp_[next_scp].time == t) {
+      current_height += demand_min_[scp_[next_scp].task_id];
+      next_scp++;
+    }
+
+    // Process the ending compulsory parts.
+    while (next_ecp < ecp_.size() && ecp_[next_ecp].time == t) {
+      current_height -= demand_min_[ecp_[next_ecp].task_id];
+      next_ecp++;
+    }
+
+    // Insert a new profile rectangle if any.
+    if (current_height != old_height) {
+      profile_.push_back(ProfileRectangle(current_start, t, old_height));
+      if (current_height > profile_max_height_) {
+        profile_max_height_ = current_height;
+        max_height_start = t;
+      }
+      current_start = t;
+    }
+  }
+  // Build the last profile rectangle.
+  DCHECK_EQ(current_height, 0);
+  profile_.push_back(
+      ProfileRectangle(current_start, kMaxIntegerValue, IntegerValue(0)));
+
+  // Add a sentinel to simplify the algorithm.
+  profile_.push_back(
+      ProfileRectangle(kMaxIntegerValue, kMaxIntegerValue, IntegerValue(0)));
+
+  // Filter the capacity variable.
+  // -----------------------------
+  if (profile_max_height_ > CapacityMin()) {
+    reason_.clear();
+    literal_reason_.clear();
+    ExplainProfileHeight(max_height_start);
+    if (!integer_trail_->Enqueue(
+            IntegerLiteral::GreaterOrEqual(capacity_var_, profile_max_height_),
+            literal_reason_, reason_)) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -246,8 +270,8 @@ bool TimeTablingPerTask::SweepTaskRight(int task_id) {
     }
     // If the task cannot be scheduled after the conflicting profile rectangle,
     // we explain all the intermediate pushes to schedule the task to its
-    // start max. Scheduling the task to its start max may result in a capacity
-    // overload that will be detected once the profile is rebuilt.
+    // start max. If the task is not in the profile, then remove the task if it
+    // is optional or explain the overload.
     if (s_max < profile_[rec_id].end) {
       while (end_min_[task_id] < s_max) {
         if (!UpdateStartingTime(task_id, end_min_[task_id])) return false;
@@ -255,6 +279,8 @@ bool TimeTablingPerTask::SweepTaskRight(int task_id) {
       if (start_min_[task_id] < s_max) {
         if (!UpdateStartingTime(task_id, s_max)) return false;
       }
+      // This function rely on the updated start_min above to build its reason.
+      if (!in_profile_[task_id]) return OverloadOrRemove(task_id, s_max);
       profile_changed_ = true;
       return true;
     }
@@ -297,8 +323,8 @@ bool TimeTablingPerTask::SweepTaskLeft(int task_id) {
     }
     // If the task cannot be scheduled before the conflicting profile rectangle,
     // we explain all the intermediate pushes to schedule the task to its
-    // end min. Scheduling the task to its end min may result in a capacity
-    // overload that will be detected once the profile is rebuilt.
+    // end min. If the task is not in the profile, then remove the task if it is
+    // optional or explain the overload.
     if (profile_[rec_id].start < e_min) {
       while (e_min < start_max_[task_id]) {
         if (!UpdateEndingTime(task_id, start_max_[task_id])) return false;
@@ -306,6 +332,8 @@ bool TimeTablingPerTask::SweepTaskLeft(int task_id) {
       if (e_min < end_max_[task_id]) {
         if (!UpdateEndingTime(task_id, e_min)) return false;
       }
+      // This function rely on the updated end_max above to build its reason.
+      if (!in_profile_[task_id]) return OverloadOrRemove(task_id, e_min - 1);
       profile_changed_ = true;
       return true;
     }
@@ -428,16 +456,46 @@ void TimeTablingPerTask::AddPresenceReasonIfNeeded(int task_id) {
   }
 }
 
-void TimeTablingPerTask::ExplainProfileHeight(IntegerValue time) {
+IntegerValue TimeTablingPerTask::ExplainProfileHeight(IntegerValue time) {
+  IntegerValue height = IntegerValue(0);
   for (int t = 0; t < num_tasks_; ++t) {
     // Tasks need to overlap the time point, i.e., start_max <= time < end_min.
     if (start_max_[t] <= time && time < end_min_[t] && IsPresent(t)) {
+      height += demand_min_[t];
       reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[t]));
       reason_.push_back(IntegerLiteral::LowerOrEqual(start_vars_[t], time));
       reason_.push_back(IntegerLiteral::GreaterOrEqual(end_vars_[t], time + 1));
       AddPresenceReasonIfNeeded(t);
     }
   }
+  return height;
+}
+
+bool TimeTablingPerTask::OverloadOrRemove(int task_id, IntegerValue time) {
+  reason_.clear();
+  literal_reason_.clear();
+  reason_.push_back(integer_trail_->UpperBoundAsLiteral(capacity_var_));
+
+  // Explain the resource overload if the task cannot be removed.
+  const IntegerValue height = ExplainProfileHeight(time);
+  if (IsPresent(task_id)) {
+    return integer_trail_->Enqueue(
+        IntegerLiteral::GreaterOrEqual(capacity_var_, height), literal_reason_,
+        reason_);
+  }
+
+  // Remove the task to prevent the overload.
+  reason_.push_back(integer_trail_->LowerBoundAsLiteral(demand_vars_[task_id]));
+  reason_.push_back(IntegerLiteral::LowerOrEqual(start_vars_[task_id], time));
+  reason_.push_back(
+      IntegerLiteral::GreaterOrEqual(end_vars_[task_id], time + 1));
+
+  integer_trail_->EnqueueLiteral(
+      intervals_repository_->IsPresentLiteral(interval_vars_[task_id])
+          .Negated(),
+      literal_reason_, reason_);
+
+  return true;
 }
 
 }  // namespace sat

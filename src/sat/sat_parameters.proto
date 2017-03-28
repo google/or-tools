@@ -18,7 +18,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 80
+// NEXT TAG: 83
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -452,4 +452,31 @@ message SatParameters {
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_timetable_edge_finding_in_cumulative_constraint = 79
       [default = false];
+
+  // When this is true, the cumulative constraint is reinforced with propagators
+  // from the disjunctive constraint to improve the inference on a set of tasks
+  // that are disjunctive at the root of the problem. This additional level
+  // supplements the default level of reasoning.
+  //
+  // Propagators of the cumulative constraint will not be used at all if all the
+  // tasks are disjunctive at root node.
+  //
+  // This always result in better propagation, but it is usually slow, so
+  // depending on the problem, turning this off may lead to a faster solution.
+  optional bool use_disjunctive_constraint_in_cumulative_constraint = 80
+      [default = false];
+
+  // When this is true, then we extract all the linear constraints of the
+  // CpModel and linearly encode some other constraints in an extra "linear
+  // programming" constraint that will run a LP solver to detect infeasibility
+  // and propagates the bounds on the objective.
+  optional bool use_global_lp_constraint = 81 [default = true];
+
+  // If true then all decisions taken by the solver are made using a fixed order
+  // as specified in the API or in the cp_model.proto search_order field.
+  //
+  // TODO(user): This is not working in all situation yet. The time limit is not
+  // really enforced properly, we don't support assumptions, and all the
+  // decisions variables must be integers.
+  optional bool use_fixed_search = 82 [default = false];
 }

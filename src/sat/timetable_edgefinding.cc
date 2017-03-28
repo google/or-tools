@@ -132,20 +132,28 @@ void TimeTableEdgeFinding::SwitchToMirrorProblem() {
 }
 
 void TimeTableEdgeFinding::BuildTimeTable() {
-  std::vector<TaskTime> scp;
-  std::vector<TaskTime> ecp;
+  scp_.clear();
+  ecp_.clear();
 
-  // Build the sorted mandatory parts.
+  // Build start of compulsory part events.
   for (int i = 0; i < num_tasks_; ++i) {
-    const IntegerValue s_max = by_start_max_[i].time;
-    if (s_max < end_min_[by_start_max_[i].task_id]) {
-      scp.push_back(by_start_max_[i]);
-    }
-    const IntegerValue e_min = by_end_min_[i].time;
-    if (start_max_[by_end_min_[i].task_id] < e_min) {
-      ecp.push_back(by_end_min_[i]);
+    const int t = by_start_max_[i].task_id;
+    if (!IsPresent(t)) continue;
+    if (start_max_[t] < end_min_[t]) {
+      scp_.push_back(by_start_max_[i]);
     }
   }
+
+  // Build end of compulsory part events.
+  for (int i = 0; i < num_tasks_; ++i) {
+    const int t = by_end_min_[i].task_id;
+    if (!IsPresent(t)) continue;
+    if (start_max_[t] < end_min_[t]) {
+      ecp_.push_back(by_end_min_[i]);
+    }
+  }
+
+  DCHECK_EQ(scp_.size(), ecp_.size());
 
   IntegerValue height = IntegerValue(0);
   IntegerValue energy = IntegerValue(0);
@@ -163,11 +171,11 @@ void TimeTableEdgeFinding::BuildTimeTable() {
     if (index_smin < num_tasks_) {
       time = std::min(time, by_start_min_[index_smin].time);
     }
-    if (index_scp < scp.size()) {
-      time = std::min(time, scp[index_scp].time);
+    if (index_scp < scp_.size()) {
+      time = std::min(time, scp_[index_scp].time);
     }
-    if (index_ecp < ecp.size()) {
-      time = std::min(time, ecp[index_ecp].time);
+    if (index_ecp < ecp_.size()) {
+      time = std::min(time, ecp_[index_ecp].time);
     }
 
     // Total amount of energy contained in the timetable until time.
@@ -188,14 +196,14 @@ void TimeTableEdgeFinding::BuildTimeTable() {
     }
 
     // Process the starting compulsory parts.
-    while (index_scp < scp.size() && scp[index_scp].time == time) {
-      height += demand_min_[scp[index_scp].task_id];
+    while (index_scp < scp_.size() && scp_[index_scp].time == time) {
+      height += demand_min_[scp_[index_scp].task_id];
       index_scp++;
     }
 
     // Process the ending compulsory parts.
-    while (index_ecp < ecp.size() && ecp[index_ecp].time == time) {
-      height -= demand_min_[ecp[index_ecp].task_id];
+    while (index_ecp < ecp_.size() && ecp_[index_ecp].time == time) {
+      height -= demand_min_[ecp_[index_ecp].task_id];
       index_ecp++;
     }
 

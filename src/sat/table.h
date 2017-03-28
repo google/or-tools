@@ -27,6 +27,14 @@ std::function<void(Model*)> TableConstraint(
     const std::vector<IntegerVariable>& vars,
     const std::vector<std::vector<int64>>& tuples);
 
+// Enforces that exactly one literal in line_literals is true, and that
+// all literals in the corresponding line of the literal_tuples matrix are true.
+// This constraint assumes that exactly one literal per column of the
+// literal_tuples matrix is true.
+std::function<void(Model*)> LiteralTableConstraint(
+    const std::vector<std::vector<Literal>>& literal_tuples,
+    const std::vector<Literal>& line_literals);
+
 // Given an automata defined by a set of 3-tuples:
 //     (state, transition_with_value_as_label, next_state)
 // this accepts the sequences of vars.size() variables that are recognized by

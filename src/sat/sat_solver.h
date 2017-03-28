@@ -501,6 +501,9 @@ class SatSolver {
   void EnqueueNewDecision(Literal literal);
 
   // Returns true if everything has been propagated.
+  //
+  // TODO(user): This test is fast but not exhaustive, especially regarding the
+  // integer propagators. Fix.
   bool PropagationIsDone() const;
 
   // Update the propagators_ list with the relevant propagators.

@@ -25,17 +25,26 @@ namespace operations_research {
 namespace sat {
 
 // Enforces a disjunctive (or no overlap) constraint on the given interval
-// variables.
+// variables. The intervals are interpreted as [start, end) and the constraint
+// enforces that no time point belongs to two intervals.
+//
+// TODO(user): This is not completely true for empty intervals (start == end).
+// Make sure such intervals are ignored by the constraint.
 std::function<void(Model*)> Disjunctive(
     const std::vector<IntervalVariable>& vars);
 
-// Same as Disjunctive() but also creates a Boolean variable for all the
-// possible precedences of the form (task i is before task j).
+// Creates Boolean variables for all the possible precedences of the form (task
+// i is before task j) and forces that, for each couple of task (i,j), either i
+// is before j or j is before i. Do not create any other propagators.
+std::function<void(Model*)> DisjunctiveWithBooleanPrecedencesOnly(
+    const std::vector<IntervalVariable>& vars);
+
+// Same as Disjunctive() + DisjunctiveWithBooleanPrecedencesOnly().
 std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
     const std::vector<IntervalVariable>& vars);
 
-// Helper class to compute the min-end of a set of tasks given their min-start
-// and min-duration. In Petr Vilim's PhD "Global Constraints in Scheduling",
+// Helper class to compute the end-min of a set of tasks given their start-min
+// and duration-min. In Petr Vilim's PhD "Global Constraints in Scheduling",
 // this corresponds to his Theta-tree except that we use a O(n) implementation
 // for most of the function here, not a O(log(n)) one.
 class TaskSet {
@@ -70,26 +79,26 @@ class TaskSet {
   void AddUnsortedEntry(const Entry& e) { sorted_tasks_.push_back(e); }
   void Sort() { std::sort(sorted_tasks_.begin(), sorted_tasks_.end()); }
 
-  // Returns the min-end for the task in the set. The time profile of the tasks
+  // Returns the end-min for the task in the set. The time profile of the tasks
   // packed to the left will always be a set of contiguous tasks separated by
   // empty space:
   //
   //   [Bunch of tasks]   ...   [Bunch of tasks]     ...    [critical tasks].
   //
   // We call "critical tasks" the last group. These tasks will be solely
-  // responsible for for the min-end of the whole set. The returned
+  // responsible for for the end-min of the whole set. The returned
   // critical_index will be the index of the first critical task in
   // SortedTasks().
   //
   // A reason for the min end is:
-  // - The min-duration of all the critical tasks.
-  // - The fact that all critical tasks have a min-start greater or equal to the
+  // - The duration-min of all the critical tasks.
+  // - The fact that all critical tasks have a start-min greater or equal to the
   //   first of them, that is SortedTasks()[critical_index].min_start.
   //
   // It is possible to behave like if one task was not in the set by setting
   // task_to_ignore to the id of this task. This returns 0 if the set is empty
   // in which case critical_index will be left unchanged.
-  IntegerValue ComputeMinEnd(int task_to_ignore, int* critical_index) const;
+  IntegerValue ComputeEndMin(int task_to_ignore, int* critical_index) const;
   const std::vector<Entry>& SortedTasks() const { return sorted_tasks_; }
 
  private:
@@ -98,160 +107,97 @@ class TaskSet {
   DISALLOW_COPY_AND_ASSIGN(TaskSet);
 };
 
-// This class contains the propagation algorithms with explanation for a
-// disjunctive constraint.
-class DisjunctiveConstraint : public PropagatorInterface {
+// ============================================================================
+// Below are many of the known propagation techniques for the disjunctive, each
+// implemented in only one time direction and in its own propagator class. The
+// Disjunctive() model function above will instanciate the used ones (according
+// to the solver parameters) in both time directions.
+//
+// See Petr Vilim PhD "Global Constraints in Scheduling" for a description of
+// some of the algorithm.
+// ============================================================================
+
+class DisjunctiveOverloadChecker : public PropagatorInterface {
  public:
-  // Creates a disjunctive constraint (or no overlap constraint) between the
-  // given IntervalVariable.
-  DisjunctiveConstraint(
-      const std::vector<IntervalVariable>& non_overlapping_intervals,
-      Trail* trail, IntegerTrail* integer_trail,
-      IntervalsRepository* task_repository, PrecedencesPropagator* precedences);
-
-  ~DisjunctiveConstraint() final {
-    IF_STATS_ENABLED(LOG(INFO) << stats_.StatString());
-  }
-
-  // The algorithm is quadratic in the number of tasks.
+  DisjunctiveOverloadChecker(bool time_direction,
+                             SchedulingConstraintHelper* helper)
+      : time_direction_(time_direction), helper_(helper) {}
   bool Propagate() final;
-
-  // Registers this constraint with the GenericLiteralWatcher.
-  void RegisterWith(GenericLiteralWatcher* watcher);
-
-  void SetParameters(const SatParameters& parameters) {
-    parameters_ = parameters;
-  }
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  // Reverses the time and all the relevant quantities. This is needed because
-  // most passes will propagate different stuff in the reverse time. For
-  // example, the not-last propagation will become the not-first one in the
-  // reverse time direction.
-  void SwitchToMirrorProblem();
+  const bool time_direction_;
+  SchedulingConstraintHelper* helper_;
+  TaskSet task_set_;
+};
 
-  // Helpers for the current bounds on a task time window.
-  //      [(min-duration)       ...      (min-duration)]
-  //      ^             ^                ^             ^
-  //   min-start     min-end          max-start     max-end
-  //
-  // Note that for tasks with variable durations, we don't necessarily have
-  // min-duration between the the min-XXX and max-XXX value.
-  IntegerValue MinDuration(int t) const {
-    return duration_vars_[t] == kNoIntegerVariable
-               ? fixed_durations_[t]
-               : integer_trail_->LowerBound(duration_vars_[t]);
-  }
-  IntegerValue MinStart(int t) const {
-    return integer_trail_->LowerBound(start_vars_[t]);
-  }
-  IntegerValue MaxStart(int t) const {
-    return integer_trail_->UpperBound(start_vars_[t]);
-  }
-  IntegerValue MinEnd(int t) const {
-    return integer_trail_->LowerBound(end_vars_[t]);
-  }
-  IntegerValue MaxEnd(int t) const {
-    return integer_trail_->UpperBound(end_vars_[t]);
-  }
+class DisjunctiveDetectablePrecedences : public PropagatorInterface {
+ public:
+  DisjunctiveDetectablePrecedences(bool time_direction,
+                                   SchedulingConstraintHelper* helper)
+      : time_direction_(time_direction), helper_(helper) {}
+  bool Propagate() final;
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
-  // Helper functions to compute the reason of a propagation.
-  // Append to literal_reason_ and integer_reason_ the corresponding reason.
-  void AddPresenceAndDurationReason(int t);
-  void AddMinDurationReason(int t);
-  void AddMinStartReason(int t, IntegerValue lower_bound);
-  void AddMinEndReason(int t, IntegerValue lower_bound);
-  void AddMaxEndReason(int t, IntegerValue upper_bound);
-  void AddMaxStartReason(int t, IntegerValue upper_bound);
+ private:
+  const bool time_direction_;
+  SchedulingConstraintHelper* helper_;
+  TaskSet task_set_;
+};
 
-  // Enqueues new bounds of an interval. The reasons (literal_reason_ and
-  // integer_reason_) must already be filled. Note that we automatically push
-  // min-end and max-start accordingly, so we maintain the invariants:
-  // - min-end >= min-start + min-duration
-  // - max-start <= max-end + min-duration
-  bool IncreaseMinStart(int t, IntegerValue new_min_start);
-  bool DecreaseMaxEnd(int t, IntegerValue new_max_end);
+class DisjunctiveNotLast : public PropagatorInterface {
+ public:
+  DisjunctiveNotLast(bool time_direction, SchedulingConstraintHelper* helper)
+      : time_direction_(time_direction), helper_(helper) {}
+  bool Propagate() final;
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
-  // All these passes use the algorithms described in Petr Vilim PhD "Global
-  // Constraints in Scheduling". Except that we don't use the O(log(n)) balanced
-  // tree to compute the min end of a set of task but O(n) algorithm.
-  //
-  // This allows to integrate right away any changes we make to the bounds and
-  // to have a simpler code. Since we also need to produces the reason of each
-  // propagation, it is unclear if tree-based structure will be a lot better
-  // here (especially because on the kind of problem we can solve n is
-  // relatively small, like 30).
-  bool OverloadCheckingPass();
-  bool DetectablePrecedencePass();
-  bool NotLastPass();
-  bool EdgeFindingPass();
+ private:
+  const bool time_direction_;
+  SchedulingConstraintHelper* helper_;
+  TaskSet task_set_;
+};
 
-  // Exploits the precedences relations of the form "this set of disjoint
-  // IntervalVariables must be performed before a given IntegerVariable". The
-  // relations are computed with PrecedencesPropagator::ComputePrecedences().
-  bool PrecedencePass();
+class DisjunctiveEdgeFinding : public PropagatorInterface {
+ public:
+  DisjunctiveEdgeFinding(bool time_direction,
+                         SchedulingConstraintHelper* helper)
+      : time_direction_(time_direction), helper_(helper) {}
+  bool Propagate() final;
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
-  // Sorts the corresponding vectors of tasks. See below.
-  void UpdateTaskByIncreasingMinStart();
-  void UpdateTaskByIncreasingMinEnd();
-  void UpdateTaskByDecreasingMaxStart();
-  void UpdateTaskByDecreasingMaxEnd();
+ private:
+  const bool time_direction_;
+  SchedulingConstraintHelper* helper_;
+  TaskSet task_set_;
+  std::vector<bool> is_gray_;
+};
 
-  // The IntegerVariable of each tasks that must be considered for this
-  // constraint (note that the index is not an IntevalVariable but a new one
-  // local to this constraint). For optional tasks, we don't list the one that
-  // are already known to be absent.
-  std::vector<IntegerVariable> start_vars_;
-  std::vector<IntegerVariable> end_vars_;
-  std::vector<IntegerVariable> duration_vars_;
-  std::vector<IntegerValue> fixed_durations_;
-  std::vector<LiteralIndex> reason_for_presence_;
+// Exploits the precedences relations of the form "this set of disjoint
+// IntervalVariables must be performed before a given IntegerVariable". The
+// relations are computed with PrecedencesPropagator::ComputePrecedences().
+class DisjunctivePrecedences : public PropagatorInterface {
+ public:
+  DisjunctivePrecedences(bool time_direction,
+                         SchedulingConstraintHelper* helper,
+                         IntegerTrail* integer_trail,
+                         PrecedencesPropagator* precedences)
+      : time_direction_(time_direction),
+        helper_(helper),
+        integer_trail_(integer_trail),
+        precedences_(precedences) {}
+  bool Propagate() final;
+  int RegisterWith(GenericLiteralWatcher* watcher);
 
-  // The negation of the start/end variable so that SwitchToMirrorProblem()
-  // can do its job in O(1) instead of calling NegationOf() on each entry.
-  std::vector<IntegerVariable> minus_start_vars_;
-  std::vector<IntegerVariable> minus_end_vars_;
-
-  // This is used by PrecedencePass().
-  std::vector<LiteralIndex> reason_for_beeing_before_;
-  std::vector<PrecedencesPropagator::IntegerPrecedences> before_;
-  std::vector<PrecedencesPropagator::IntegerPrecedences> after_;
-
-  // True for the optional tasks that are known to be present and false for the
-  // one we don't know yet. The one that are known to be absent are not listed.
-  // The index is the same as for the *_vars vector.
-  std::vector<bool> task_is_currently_present_;
-
-  // Various task orders. The indices are index in the *_vars vectors. We keep
-  // them separate so that in most cases they are almost sorted and std::sort()
-  // should be faster. The increasing/decreasing order is choosen so that
-  // SwitchToMirrorProblem() works in O(1) and permute these vectors
-  // accordingly.
-  //
-  // TODO(user): Using sets or maintaining these vectors sorted at all time
-  // may be faster.
-  std::vector<int> task_by_increasing_min_start_;
-  std::vector<int> task_by_increasing_min_end_;
-  std::vector<int> task_by_decreasing_max_start_;
-  std::vector<int> task_by_decreasing_max_end_;
-
-  // Reason vectors. Declared here to avoid costly initialization.
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> integer_reason_;
-
-  const std::vector<IntervalVariable> non_overlapping_intervals_;
-  Trail* trail_;
+ private:
+  const bool time_direction_;
+  SchedulingConstraintHelper* helper_;
   IntegerTrail* integer_trail_;
-  IntervalsRepository* intervals_;
   PrecedencesPropagator* precedences_;
 
   TaskSet task_set_;
-  std::vector<bool> is_gray_;
-
-  SatParameters parameters_;
-  mutable StatsGroup stats_;
-
-  DISALLOW_COPY_AND_ASSIGN(DisjunctiveConstraint);
+  std::vector<LiteralIndex> reason_for_beeing_before_;
+  std::vector<PrecedencesPropagator::IntegerPrecedences> before_;
 };
 
 }  // namespace sat

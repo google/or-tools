@@ -795,11 +795,17 @@ OneOfVarMinPropagator::OneOfVarMinPropagator(
 
 bool OneOfVarMinPropagator::Propagate() {
   // Compute the min of the lower-bound for the still possible variables.
+  // TODO(user): This could be optimized by keping more info from the last
+  // Propagate() calls.
   IntegerValue target_min = kMaxIntegerValue;
+  const IntegerValue current_min = integer_trail_->LowerBound(target_var_);
   for (int i = 0; i < vars_.size(); ++i) {
     if (trail_->Assignment().LiteralIsTrue(selectors_[i])) return true;
     if (trail_->Assignment().LiteralIsFalse(selectors_[i])) continue;
     target_min = std::min(target_min, integer_trail_->LowerBound(vars_[i]));
+
+    // Abort if we can't get a better bound.
+    if (target_min <= current_min) return true;
   }
   if (target_min == kMaxIntegerValue) {
     // All false, conflit.
@@ -807,8 +813,6 @@ bool OneOfVarMinPropagator::Propagate() {
     return false;
   }
 
-  // Increase the min of the target var if we got a better bound.
-  if (target_min <= integer_trail_->LowerBound(target_var_)) return true;
   literal_reason_.clear();
   integer_reason_.clear();
   for (int i = 0; i < vars_.size(); ++i) {

@@ -16,9 +16,9 @@
 #ifndef OR_TOOLS_SAT_LP_UTILS_H_
 #define OR_TOOLS_SAT_LP_UTILS_H_
 
-#include "sat/boolean_problem.pb.h"
 #include "linear_solver/linear_solver.pb.h"
 #include "lp_data/lp_data.h"
+#include "sat/boolean_problem.pb.h"
 #include "sat/sat_solver.h"
 
 namespace operations_research {

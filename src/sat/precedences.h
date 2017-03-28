@@ -420,6 +420,13 @@ inline std::function<void(Model*)> ConditionalLowerOrEqualWithOffset(
   };
 }
 
+// is_le => (a <= b).
+inline std::function<void(Model*)> ConditionalLowerOrEqual(IntegerVariable a,
+                                                           IntegerVariable b,
+                                                           Literal is_le) {
+  return ConditionalLowerOrEqualWithOffset(a, b, 0, is_le);
+}
+
 // is_le <=> (a + offset <= b).
 inline std::function<void(Model*)> ReifiedLowerOrEqualWithOffset(
     IntegerVariable a, IntegerVariable b, int64 offset, Literal is_le) {
@@ -449,6 +456,25 @@ inline std::function<void(Model*)> ReifiedEquality(IntegerVariable a,
     model->Add(ReifiedBoolAnd({is_le, is_ge}, is_eq));
     model->Add(ReifiedLowerOrEqualWithOffset(a, b, 0, is_le));
     model->Add(ReifiedLowerOrEqualWithOffset(b, a, 0, is_ge));
+  };
+}
+
+// is_eq <=> (a + offset == b).
+inline std::function<void(Model*)> ReifiedEqualityWithOffset(IntegerVariable a,
+                                                             IntegerVariable b,
+                                                             int64 offset,
+                                                             Literal is_eq) {
+  return [=](Model* model) {
+    // We creates two extra Boolean variables in this case.
+    //
+    // TODO(user): Avoid creating them if we already have some literal that
+    // have the same meaning. For instance if a client also wanted to know if
+    // a <= b, he would have called ReifiedLowerOrEqualWithOffset() directly.
+    const Literal is_le = Literal(model->Add(NewBooleanVariable()), true);
+    const Literal is_ge = Literal(model->Add(NewBooleanVariable()), true);
+    model->Add(ReifiedBoolAnd({is_le, is_ge}, is_eq));
+    model->Add(ReifiedLowerOrEqualWithOffset(a, b, offset, is_le));
+    model->Add(ReifiedLowerOrEqualWithOffset(b, a, -offset, is_ge));
   };
 }
 
