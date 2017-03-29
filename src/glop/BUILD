@@ -59,6 +59,10 @@ cc_library(
     deps = [
         ":parameters_cc_proto",
         "//base",
+        "//base:hash",
+        "//base:random",
+        "//base:stl_util",
+        "//base:strings",
         "//linear_solver:linear_solver_cc_proto",
         "//lp_data",
         "//lp_data:base",
@@ -69,6 +73,11 @@ cc_library(
         "//lp_data:proto_utils",
         "//lp_data:sparse",
         "//lp_data:sparse_row",
-        "//util",
+        "//util:bitset",
+        "//util:fp_utils",
+        "//util:iterators",
+        "//util:proto_tools",
+        "//util:stats",
+        "//util:time_limit",
     ],
 )

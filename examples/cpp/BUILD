@@ -3,7 +3,8 @@ cc_library(
     hdrs = ["jobshop.h"],
     deps = [
         "@or_tools_libraries//base",
-        "@or_tools_libraries//util",
+        "@or_tools_libraries//base:strings",
+        "@or_tools_libraries//util:filelineiter",
     ],
 )
 
@@ -12,7 +13,9 @@ cc_library(
     hdrs = ["flexible_jobshop.h"],
     deps = [
         "@or_tools_libraries//base",
-        "@or_tools_libraries//util",
+        "@or_tools_libraries//base:strings",
+        "@or_tools_libraries//util:filelineiter",
+        "@or_tools_libraries//util:string_array",
     ],
 )
 
@@ -25,7 +28,9 @@ cc_binary(
         ":flexible_jobshop_reader",
         ":jobshop_reader",
         "@or_tools_libraries//base",
-        "@or_tools_libraries//util",
+        "@or_tools_libraries//base:file",
+        "@or_tools_libraries//base:strings",
+        "@or_tools_libraries//base:timer",
         "@or_tools_libraries//sat:disjunctive",
         "@or_tools_libraries//sat:integer",
         "@or_tools_libraries//sat:intervals",
@@ -42,8 +47,8 @@ cc_binary(
     copts = ["-DUSE_GLOP"],
     deps = [
         "@or_tools_libraries//base",
-        "@or_tools_libraries//linear_solver:linear_solver_glop",
         "@or_tools_libraries//linear_solver:linear_solver_cc_proto",
+        "@or_tools_libraries//linear_solver:linear_solver_glop",
     ],
 )
 
@@ -55,10 +60,11 @@ cc_binary(
         "sat_runner.cc",
     ],
     deps = [
+        "@com_google_protobuf_cc//:protobuf",
         "@or_tools_libraries//sat:boolean_problem",
         "@or_tools_libraries//sat:boolean_problem_cc_proto",
-#        "@or_tools_libraries//sat:cp_model_proto",
-#        "@or_tools_libraries//sat:cp_model_solver",
+        #        "@or_tools_libraries//sat:cp_model_proto",
+        #        "@or_tools_libraries//sat:cp_model_solver",
         "@or_tools_libraries//sat:drat",
         "@or_tools_libraries//sat:lp_utils",
         "@or_tools_libraries//sat:optimization",
@@ -66,10 +72,15 @@ cc_binary(
         "@or_tools_libraries//sat:simplification",
         "@or_tools_libraries//sat:symmetry",
         "@or_tools_libraries//base",
-        "@com_google_protobuf_cc//:protobuf",
+        "@or_tools_libraries//base:file",
+        "@or_tools_libraries//base:strings",
+        "@or_tools_libraries//base:status",
+        "@or_tools_libraries//base:random",
+        "@or_tools_libraries//base:threadpool",
         "@or_tools_libraries//algorithms:sparse_permutation",
         "@or_tools_libraries//lp_data:mps_reader",
         "@or_tools_libraries//lp_data:proto_utils",
-        "@or_tools_libraries//util",
+        "@or_tools_libraries//util:filelineiter",
+        "@or_tools_libraries//util:time_limit",
     ],
 )

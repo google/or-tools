@@ -20,7 +20,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/callback.h"
 #include "base/hash.h"
 
 namespace operations_research {

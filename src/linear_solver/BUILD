@@ -32,9 +32,14 @@ cc_library(
     deps = [
         ":linear_solver_cc_proto",
         "//base",
-        "//glop:glop",
+        "//base:file",
+        "//base:hash",
+        "//base:map_util",
+        "//base:random",
+        "//glop",
         "//glop:parameters_cc_proto",
         "//lp_data",
-        "//util",
+        "//util:fp_utils",
+        "//util:proto_tools",
     ],
 )

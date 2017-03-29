@@ -1,17 +1,12 @@
 package(default_visibility = ["//visibility:public"])
 
-# Enable a warning to check for floating point to integer conversions.
-# In GCC-4.8, this was "-Wreal-conversion", but was removed in 4.9
-# In Clang, this warning is "-Wfloat-conversion"
 #W_FLOAT_CONVERSION = select({
 #    "//tools/cc_target_os:android": [""],
 #    "//tools/cc_target_os:ios": ["-Xclang-only=-Wfloat-conversion"],
 #    "//conditions:default": ["-Xclang-only=-Wfloat-conversion"],
 #})
 
-# Floating-point code in this directory must not be compiled with
-# dangerous optimizations. For example do not assume that FP expressions
-# are associative. This is what -fno-fast-math is for.
+#SAFE_FP_CODE = W_FLOAT_CONVERSION + ["-fno-fast-math"]
 SAFE_FP_CODE = ["-fno-fast-math"]
 
 cc_library(
@@ -20,11 +15,12 @@ cc_library(
     hdrs = ["lp_types.h"],
     deps = [
         "//base",
-        "//util",
+        "//base:hash",
+        "//base:int_type",
+        "//base:int_type_indexed_vector",
+        "//util:bitset",
     ],
 )
-
-# Handling of permutations.
 
 cc_library(
     name = "permutation",
@@ -33,11 +29,9 @@ cc_library(
     deps = [
         ":base",
         "//base",
-        "//util",
+        "//util:return_macros",
     ],
 )
-
-# Compressed sparse columns.
 
 cc_library(
     name = "sparse_vector",
@@ -47,7 +41,9 @@ cc_library(
         ":base",
         ":permutation",
         "//base",
-        "//util",
+        "//base:strings",
+        "//util:iterators",
+        "//util:return_macros",
     ],
 )
 
@@ -74,8 +70,6 @@ cc_library(
     ],
 )
 
-# Column-compressed sparse matrices.
-
 cc_library(
     name = "sparse",
     srcs = ["sparse.cc"],
@@ -89,11 +83,14 @@ cc_library(
         ":permutation",
         ":sparse_column",
         "//base",
-        "//util",
+        "//base:hash",
+        "//base:int_type",
+        "//base:int_type_indexed_vector",
+        "//base:strings",
+        "//util:fp_utils",
+        "//util:return_macros",
     ],
 )
-
-# Matrix scaler.
 
 cc_library(
     name = "matrix_scaler",
@@ -105,27 +102,21 @@ cc_library(
         ":lp_utils",
         ":sparse",
         "//base",
-        "//util",
+        "//base:hash",
+        "//base:int_type_indexed_vector",
+        "//util:fp_utils",
     ],
 )
 
-# This header-only library was inserted because the target
-#   //lp_data:sparse,
-# which includes matrix_scaler.h
-# cannot depend on the library
-#   :matrix_scaler: Found an inverse include path.
-# See http://go/cxx-layering-faq
 cc_library(
     name = "matrix_scaler_hdr",
     hdrs = ["matrix_scaler.h"],
-    visibility = ["//visibility:private"],
     deps = [
         ":base",
         "//base",
+        "//base:int_type_indexed_vector",
     ],
 )
-
-# Linear Programming data storage.
 
 cc_library(
     name = "lp_data",
@@ -141,11 +132,13 @@ cc_library(
         ":permutation",
         ":sparse",
         "//base",
-        "//util",
+        "//base:hash",
+        "//base:int_type",
+        "//base:int_type_indexed_vector",
+        "//base:strings",
+        "//util:fp_utils",
     ],
 )
-
-# Lp utilities.
 
 cc_library(
     name = "lp_utils",
@@ -156,6 +149,7 @@ cc_library(
         ":base",
         ":sparse_column",
         "//base",
+        "//base:accurate_sum",
     ],
 )
 
@@ -168,10 +162,35 @@ cc_library(
         ":base",
         ":sparse",
         "//base",
+        "//base:hash",
     ],
 )
 
-# Linear Programming printing utilities.
+#cc_library(
+#    name = "lp_parser",
+#    testonly = 1,
+#    srcs = ["lp_parser.cc"],
+#    hdrs = ["lp_parser.h"],
+#    copts = SAFE_FP_CODE,
+#    deps = [
+#        ":base",
+#        ":lp_data",
+#        "//base",
+#        "//base:strings",
+#        "//util/regexp/re2",
+#    ],
+#)
+
+#cc_library(
+#    name = "lp_constraint_classifier",
+#    srcs = ["lp_constraint_classifier.cc"],
+#    hdrs = ["lp_constraint_classifier.h"],
+#    copts = SAFE_FP_CODE,
+#    deps = [
+#        ":lp_data",
+#        "//util:fp_utils",
+#    ],
+#)
 
 cc_library(
     name = "lp_print_utils",
@@ -181,18 +200,16 @@ cc_library(
     deps = [
         ":base",
         "//base",
-        "//util",
+        "//base:strings",
+        "//util:rational_approximation",
     ],
 )
-
-# Proto conversion
 
 cc_library(
     name = "proto_utils",
     srcs = ["proto_utils.cc"],
     hdrs = ["proto_utils.h"],
     copts = SAFE_FP_CODE,
-    visibility = ["//visibility:public"],
     deps = [
         ":base",
         ":lp_data",
@@ -200,8 +217,6 @@ cc_library(
         "//linear_solver:linear_solver_cc_proto",
     ],
 )
-
-# MPS reader.
 
 cc_library(
     name = "mps_reader",
@@ -213,10 +228,20 @@ cc_library(
         ":lp_data",
         ":lp_print_utils",
         "//base",
+        "//base:file",
+        #        "//base:file:path",
+        "//base:filelinereader",
+        "//base:hash",
+        "//base:int_type",
+        "//base:int_type_indexed_vector",
+        "//base:map_util",
+        "//base:status",
+        "//base:strings",
+        #        "//file/localfile",
+        #        "//file/memfile",
+        #        "//file/zipfile",
     ],
 )
-
-# Decompose a LinearProgram into several independent LinearPrograms.
 
 cc_library(
     name = "lp_decomposer",
@@ -227,7 +252,9 @@ cc_library(
         ":base",
         ":lp_data",
         ":lp_utils",
-        "//base",
         "//algorithms:dynamic_partition",
+        "//base",
+        "//base:hash",
+        "//base:mutex",
     ],
 )

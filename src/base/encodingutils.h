@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_BASE_ENCODINGUTILS_H_
 #define OR_TOOLS_BASE_ENCODINGUTILS_H_
 
+#include <string>
+
 namespace operations_research {
 namespace EncodingUtils {
 
