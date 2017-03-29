@@ -216,6 +216,16 @@ cc_library(
 )
 
 cc_library(
+    name = "small_map",
+    hdrs = [
+        "small_map.h",
+    ],
+    deps = [
+        ":base",
+    ],
+)
+
+cc_library(
     name = "stl_util",
     hdrs = [
         "stl_util.h",
@@ -303,6 +313,19 @@ cc_library(
     ],
     deps = [
         "//base",
+    ],
+)
+
+cc_library(
+    name = "bitmap",
+    srcs = [
+        "bitmap.cc",
+    ],
+    hdrs = [
+        "bitmap.h",
+    ],
+    deps = [
+        ":base",
     ],
 )
 

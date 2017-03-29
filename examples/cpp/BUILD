@@ -84,3 +84,13 @@ cc_binary(
         "@or_tools_libraries//util:time_limit",
     ],
 )
+
+cc_binary(
+    name = "cryptarithm",
+    srcs = ["cryptarithm.cc"],
+    deps = [
+        "@com_google_protobuf_cc//:protobuf",
+        "@or_tools_libraries//base",
+        "@or_tools_libraries//constraint_solver:cp",
+    ],
+)
