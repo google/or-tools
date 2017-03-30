@@ -14,7 +14,7 @@ cc_test(
     name = "hungarian_test",
     size = "medium",
     srcs = ["hungarian_test.cc"],
-    copts = ["-Iexternal/gtest/googletest-release-1.8.0/googletest/include"],
+    copts = ["-Iexternal/gtest/include"],
     deps = [
         ":hungarian",
         "//base",
