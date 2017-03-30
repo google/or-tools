@@ -1,3 +1,13 @@
+cc_binary(
+    name = "cryptarithm",
+    srcs = ["cryptarithm.cc"],
+    deps = [
+        "@com_google_protobuf_cc//:protobuf",
+        "@or_tools_libraries//base",
+        "@or_tools_libraries//constraint_solver:cp",
+    ],
+)
+
 cc_library(
     name = "jobshop_reader",
     hdrs = ["jobshop.h"],
@@ -47,8 +57,8 @@ cc_binary(
     copts = ["-DUSE_GLOP"],
     deps = [
         "@or_tools_libraries//base",
+        "@or_tools_libraries//linear_solver:linear_solver",
         "@or_tools_libraries//linear_solver:linear_solver_cc_proto",
-        "@or_tools_libraries//linear_solver:linear_solver_glop",
     ],
 )
 
@@ -86,12 +96,17 @@ cc_binary(
 )
 
 cc_binary(
-    name = "cryptarithm",
-    srcs = ["cryptarithm.cc"],
+    name = "solve",
+    srcs = ["solve.cc"],
+    copts = [
+        "-DUSE_GLOP",
+        "-DUSE_BOP",
+    ],
     deps = [
-        "@com_google_protobuf_cc//:protobuf",
         "@or_tools_libraries//base",
-        "@or_tools_libraries//constraint_solver:cp",
+        "@or_tools_libraries//linear_solver:linear_solver",
+        "@or_tools_libraries//linear_solver:linear_solver_cc_proto",
+        "@or_tools_libraries//lp_data:mps_reader",
     ],
 )
 
