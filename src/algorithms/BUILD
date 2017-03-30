@@ -10,6 +10,21 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "hungarian_test",
+    size = "medium",
+    srcs = ["hungarian_test.cc"],
+    copts = ["-Iexternal/gtest/googletest-release-1.8.0/googletest/include"],
+    deps = [
+        ":hungarian",
+        "//base",
+        "//base:map_util",
+        "//base:random",
+        "//base:strings",
+        "@gtest//:main",
+    ],
+)
+
 cc_library(
     name = "knapsack_solver_base_lib",
     hdrs = ["knapsack_solver.h"],
