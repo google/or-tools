@@ -26,10 +26,7 @@ cc_library(
     deps = [
         ":knapsack_solver_for_interface_lib",
         "//base",
-        "//linear_solver:linear_solver_glop",
-        #        "//linear_solver:linear_solver_cbc",
-        #        "//linear_solver:linear_solver_glpk",
-        #        "//linear_solver:linear_solver_scip",
+        "//linear_solver",
         "//util:time_limit",
     ],
 )
@@ -41,9 +38,7 @@ cc_library(
     deps = [
         "//base",
         "//base:stl_util",
-        # We don't link any underlying solver to let the linear_solver_knapsack
-        # decide what solvers to include.
-        "//linear_solver:linear_solver_glop",
+        "//linear_solver",
         "//util:bitset",
         "//util:time_limit",
     ],

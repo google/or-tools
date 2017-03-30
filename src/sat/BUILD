@@ -521,11 +521,12 @@ cc_library(
     name = "flow_costs",
     srcs = ["flow_costs.cc"],
     hdrs = ["flow_costs.h"],
+    copts = ["-DUSE_GLOP"],
     deps = [
         ":integer",
         ":model",
         ":sat_base",
-        "//linear_solver:linear_solver_glop",
+        "//linear_solver",
     ],
 )
 

@@ -150,9 +150,8 @@ cc_library(
         ":eulerian_path",
         ":minimum_spanning_tree",
         "//base",
+        "//linear_solver",
         "//linear_solver:linear_solver_cc_proto",
-        "//linear_solver:linear_solver_glop",
-        #        "//linear_solver:linear_solver_wrapper",
     ],
 )
 

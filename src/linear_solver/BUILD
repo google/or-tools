@@ -11,8 +11,9 @@ cc_proto_library(
 )
 
 cc_library(
-    name = "linear_solver_glop",
+    name = "linear_solver",
     srcs = [
+        "bop_interface.cc",
         "glop_interface.cc",
         "glop_utils.cc",
         "linear_expr.cc",
@@ -27,7 +28,10 @@ cc_library(
         "model_exporter.h",
         "model_validator.h",
     ],
-    copts = ["-DUSE_GLOP"],
+    copts = [
+        "-DUSE_GLOP",
+        "-DUSE_BOP",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":linear_solver_cc_proto",
@@ -36,6 +40,8 @@ cc_library(
         "//base:hash",
         "//base:map_util",
         "//base:random",
+        "//bop:bop_parameters_cc_proto",
+        "//bop:integral_solver",
         "//glop",
         "//glop:parameters_cc_proto",
         "//lp_data",
