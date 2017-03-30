@@ -603,6 +603,20 @@ public class CsTestCpOperator
     CpModel model = solver.ExportModel();
 
     Console.WriteLine(model);
+
+    Solver copy = new Solver("loader");
+    copy.LoadModel(model);
+    CpModelLoader loader = copy.ModelLoader();
+    IntVar xc = loader.IntegerExpression(0).Var();
+    IntVar yc = loader.IntegerExpression(1).Var();
+    DecisionBuilder db = copy.MakePhase(new IntVar[]{xc, yc},
+                                        Solver.CHOOSE_FIRST_UNBOUND,
+                                        Solver.ASSIGN_MIN_VALUE);
+    copy.NewSearch(db);
+    while (copy.NextSolution()) {
+      Console.WriteLine("xc = " + xc.Value() + ", yx = " + yc.Value());
+    }
+    copy.EndSearch();
   }
 
   static void Main() {
