@@ -37,7 +37,9 @@ template <typename CostType, typename ArcIndex = int64,
 class ChristofidesPathSolver {
  public:
   enum class MatchingAlgorithm {
+#if defined(USE_CBC) || defined(USE_SCIP)
     MINIMUM_WEIGHT_MATCHING,
+#endif  // defined(USE_CBC) || defined(USE_SCIP)
     MINIMAL_WEIGHT_MATCHING,
   };
   ChristofidesPathSolver(NodeIndex num_nodes, CostFunction costs);
@@ -83,6 +85,7 @@ class ChristofidesPathSolver {
   bool solved_;
 };
 
+#if defined(USE_CBC) || defined(USE_SCIP)
 // Computes a minimum weight perfect matching on an undirected graph using a
 // Mixed Integer Programming model.
 // TODO(user): Handle infeasible cases if this algorithm is used outside of
@@ -155,6 +158,7 @@ std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
   }
   return matching;
 }
+#endif  // defined(USE_CBC) || defined(USE_SCIP)
 
 template <typename CostType, typename ArcIndex, typename NodeIndex,
           typename CostFunction>
@@ -223,6 +227,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
   std::vector<ArcIndex> closure_arcs;
   switch (matching_) {
+#if defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
       closure_arcs = ComputeMinimumWeightMatchingWithMIP(
           reduced_graph, [this, &reduced_graph,
@@ -232,6 +237,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
           });
       break;
     }
+#endif  // defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING: {
       // TODO(user): Cost caching was added and can gain up to 20% but
       // increases memory usage; see if we can avoid caching.

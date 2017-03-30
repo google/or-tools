@@ -226,6 +226,16 @@ cc_library(
 )
 
 cc_library(
+    name = "small_ordered_set",
+    hdrs = [
+        "small_ordered_set.h",
+    ],
+    deps = [
+        ":base",
+    ],
+)
+
+cc_library(
     name = "stl_util",
     hdrs = [
         "stl_util.h",

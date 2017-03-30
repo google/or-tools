@@ -94,3 +94,15 @@ cc_binary(
         "@or_tools_libraries//constraint_solver:cp",
     ],
 )
+
+cc_binary(
+    name = "tsp",
+    srcs = ["tsp.cc"],
+    deps = [
+        "@com_google_protobuf_cc//:protobuf",
+        "@or_tools_libraries//base",
+        "@or_tools_libraries//constraint_solver:cp",
+        "@or_tools_libraries//constraint_solver:routing",
+        "@or_tools_libraries//constraint_solver:routing_flags",
+    ],
+)
