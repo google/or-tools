@@ -106,7 +106,7 @@ cc_library(
         ":assignment_cc_proto",
         ":demon_profiler_cc_proto",
         ":model_cc_proto",
-        #        ":search_limit_cc_proto",
+        ":search_limit_cc_proto",
         ":solver_parameters_cc_proto",
         "//base",
         "//base:callback",
