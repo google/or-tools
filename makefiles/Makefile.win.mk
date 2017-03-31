@@ -100,11 +100,10 @@ STATIC_GLPK_LNK = $(WINDOWS_GLPK_DIR)\\lib\\glpk.lib
 endif
 # This is needed to find SCIP include files and libraries.
 ifdef WINDOWS_SCIP_DIR
-  SCIP_LNK_DIR = $(OR_ROOT)dependencies\\install
-  SCIP_INC = /I$(WINDOWS_SCIP_DIR)\\include\\scip /DUSE_SCIP
+  SCIP_INC = /I$(WINDOWS_SCIP_DIR)\\include /DUSE_SCIP
   SCIP_SWIG = -DUSE_SCIP
-  STATIC_SCIP_LNK = $(SCIP_LNK_DIR)\\lib\\scip.lib $(SCIP_LNK_DIR)\\lib\\soplex.lib
-  DYNAMIC_SCIP_LNK = $(SCIP_LNK_DIR)\\lib\\scip.lib $(SCIP_LNK_DIR)\\lib\\soplex.lib
+  STATIC_SCIP_LNK = $(WINDOWS_SCIP_DIR)\\libscipopt.lib
+  DYNAMIC_SCIP_LNK = $(WINDOWS_SCIP_DIR)\\libscipopt.lib
 endif
 ifdef WINDOWS_GUROBI_DIR
   ifeq ($(PTRLENGTH),64)

@@ -353,10 +353,10 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo $(SELECTED_CSC_BINARY)>> Makefile.local
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_SCIP_DIR to point to a compiled version of SCIP to use it >> Makefile.local
-	@echo #   i.e.: <path>\\scipoptsuite-4.0.0\\scip-4.0.0
-	@echo CLR_KEYFILE = bin\\or-tools.snk>> Makefile.local
-	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi.>> Makefile.local
-	@echo #>> Makefile.local
+	@echo #   i.e.: path\\scip-4.0.0 >> Makefile.local
+	@echo CLR_KEYFILE = bin\\or-tools.snk >> Makefile.local
+	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
+	@echo # >> Makefile.local
 	@echo WINDOWS_ZLIB_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
 	@echo WINDOWS_ZLIB_NAME=zlib.lib>> Makefile.local
 	@echo WINDOWS_GFLAGS_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
