@@ -12,40 +12,6 @@ AUTOCONF_TAG = 2.69
 AUTOMAKE_TAG = 1.15
 LIBTOOL_TAG = 2.4.6
 
-# Build extra dependencies (GLPK, SCIP) from archive only if the
-# archive is present.
-#
-# The GLPK archive should be glpk-4.57.tar.gz
-GLPK_TAG = 4.57
-# The SCIP archive should be scipoptsuite-3.2.1.tgz
-SCIP_TAG = 3.2.1
-# Version of Sulum
-SULUM_TAG = 43
-
-# Detect if SCIP archive is there.
-ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
-    SCIP_TARGET =
-    SCIP_MAKEFILE = "\# Download and put scipoptsuite-$(SCIP_TAG).tgz in the dependencies/archives directory to add support for SCIP."
-else
-    SCIP_TARGET = dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip
-    SCIP_MAKEFILE = UNIX_SCIP_DIR = $(OR_ROOT_FULL)/dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)
-    ifeq ($(PLATFORM), LINUX)
-	BUILD_SCIP = make ZIMPL=false READLINE=false USRCXXFLAGS=-fPIC CFLAGS=-fPIC GMP=false
-    endif
-    ifeq ($(PLATFORM), MACOSX)
-	BUILD_SCIP = make ZIMPL=false READLINE=false GMP=false
-    endif
-endif
-
-# Detect if GLPK archive is there.
-ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
-    GLPK_TARGET =
-    GLPK_MAKEFILE = "\# Download and put glpk-$(GLPK_TAG).tar.gz under dependencies/archives to add support for GLPK."
-else
-    GLPK_TARGET = dependencies/install/bin/glpsol
-    GLPK_MAKEFILE = UNIX_GLPK_DIR = $(OR_ROOT_FULL)/dependencies/install
-endif
-
 # Detect if patchelf is needed
 ifeq ($(PLATFORM), LINUX)
     PATCHELF=dependencies/install/bin/patchelf
@@ -110,8 +76,6 @@ install_third_party: \
 	install_protobuf \
 	install_swig \
 	install_cbc \
-	install_glpk \
-	install_scip \
 	$(CSHARP_THIRD_PARTY)
 
 bin:
@@ -297,24 +261,6 @@ dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/sources/swig-$(SWI
 dependencies/sources/swig-$(SWIG_TAG)/autogen.sh:
 	git clone -b rel-$(SWIG_TAG) https://github.com/swig/swig dependencies/sources/swig-$(SWIG_TAG)
 
-# Install glpk if needed.
-install_glpk: $(GLPK_TARGET)
-
-dependencies/install/bin/glpsol: dependencies/sources/glpk-$(GLPK_TAG)/Makefile
-	cd dependencies/sources/glpk-$(GLPK_TAG) && make install
-
-dependencies/sources/glpk-$(GLPK_TAG)/Makefile: dependencies/sources/glpk-$(GLPK_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/glpk-$(GLPK_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
-
-dependencies/sources/glpk-$(GLPK_TAG)/configure: dependencies/archives/glpk-$(GLPK_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/glpk-$(GLPK_TAG).tar.gz
-
-# Install scip if needed.
-install_scip: $(SCIP_TARGET)
-
-dependencies/install/scipoptsuite-$(SCIP_TAG)/scip-$(SCIP_TAG)/bin/scip: dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz
-	cd dependencies/install && tar xvzmf ../archives/scipoptsuite-$(SCIP_TAG).tgz && cd scipoptsuite-$(SCIP_TAG) && $(BUILD_SCIP)
-
 # Install patchelf on linux platforms.
 dependencies/install/bin/patchelf: dependencies/sources/patchelf-0.8/Makefile
 	cd dependencies/sources/patchelf-0.8 && make && make install
@@ -428,16 +374,15 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo PATH_TO_CSHARP_COMPILER = $(DETECTED_MCS_BINARY)>> Makefile.local
 	@echo CLR_KEYFILE = bin/or-tools.snk>> Makefile.local
 	@echo >> Makefile.local
-	@echo $(GLPK_MAKEFILE)>> Makefile.local
-	@echo $(SCIP_MAKEFILE)>> Makefile.local
-	@echo \# Define UNIX_SLM_DIR to use Sulum Optimization.>> Makefile.local
-	@echo \# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi.>> Makefile.local
-	@echo \# Define UNIX_CPLEX_DIR to use CPLEX.>> Makefile.local
+	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
+	@echo "# Define UNIX_SCIP_DIR to point to a compiled version of SCIP to use it ">> Makefile.local
+	@echo "#   i.e.: <path>/scipoptsuite-4.0.0/scip-4.0.0" >> Makefile.local
+	@echo "#   compile scip with GMP=false READLINE=false" >> Makefile.local
+	@echo "# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi" >> Makefile.local
+	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo >> Makefile.local
 	@echo UNIX_GFLAGS_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_PROTOBUF_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_SWIG_BINARY = $(OR_ROOT_FULL)/dependencies/install/bin/swig>> Makefile.local
 	@echo UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
 	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
-	@echo UNIX_SCIP_TAG = $(SCIP_TAG)>> Makefile.local
-	@echo UNIX_SULUM_VERSION = $(SULUM_TAG) >> Makefile.local

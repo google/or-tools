@@ -34,7 +34,6 @@
 %{
 #include "linear_solver/linear_solver.h"
 #include "linear_solver/linear_solver.pb.h"
-#include "linear_solver/linear_solver_ext.h"
 %}
 
 // We need to forward-declare the proto here, so that the PROTO_* macros
@@ -217,6 +216,5 @@ class MPSolutionResponse;
 %warnfilter(401) CoeffMap;
 
 %include "linear_solver/linear_solver.h"
-%include "linear_solver/linear_solver_ext.h"
 
 %unignoreall

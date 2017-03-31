@@ -45,7 +45,6 @@ class MPSolutionResponse;
 
 %{
 #include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver_ext.h"
 %}
 
 %typemap(javaimports) SWIGTYPE %{

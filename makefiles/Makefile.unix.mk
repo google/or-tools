@@ -89,11 +89,6 @@ ifdef UNIX_SCIP_DIR
   SCIP_INC = -I$(UNIX_SCIP_DIR)/src -DUSE_SCIP
   SCIP_SWIG = $(SCIP_INC)
 endif
-# This is needed to find SULUM include files.
-ifdef UNIX_SLM_DIR
-  SLM_INC = -I$(UNIX_SLM_DIR)/header -DUSE_SLM
-  SLM_SWIG = $(SLM_INC)
-endif
 ifdef UNIX_GUROBI_DIR
   GUROBI_INC = -I$(UNIX_GUROBI_DIR)/$(GUROBI_PLATFORM)/include -DUSE_GUROBI
   GUROBI_SWIG = $(GUROBI_INC)
@@ -103,7 +98,7 @@ ifdef UNIX_CPLEX_DIR
   CPLEX_SWIG = $(CPLEX_INC)
 endif
 
-SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(SLM_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG) -DUSE_GLOP -DUSE_BOP
+SWIG_INC = $(GLPK_SWIG) $(CLP_SWIG) $(CBC_SWIG) $(SCIP_SWIG) $(GUROBI_SWIG) $(CPLEX_SWIG) -DUSE_GLOP -DUSE_BOP
 
 # Compilation flags
 DEBUG = -O4 -DNDEBUG
@@ -154,14 +149,7 @@ ifeq ($(PLATFORM),LINUX)
     else
       SCIP_ARCH = linux.x86.gnu.opt
     endif
-    SCIP_LNK = $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
-  endif
-  ifdef UNIX_SLM_DIR
-    ifeq ($(PTRLENGTH),64)
-      SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux64/bin/ -L$(UNIX_SLM_DIR)/linux64/bin/ -m64 -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
-    else
-      SLM_LNK = -Wl,-rpath $(UNIX_SLM_DIR)/linux32/bin/ -L$(UNIX_SLM_DIR)/linux32/bin/ -m32 -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
-    endif
+    SCIP_LNK = $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/liblpispx.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a
   endif
   ifdef UNIX_GUROBI_DIR
     ifeq ($(PTRLENGTH),64)
@@ -235,7 +223,7 @@ ifeq ($(PLATFORM),MACOSX)
   endif
   ifdef UNIX_SCIP_DIR
     SCIP_ARCH = darwin.x86_64.gnu.opt
-    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/liblpispx.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/libsoplex.$(SCIP_ARCH).a
+    SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a
   endif
   ifdef UNIX_GUROBI_DIR
     GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/bin/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
@@ -243,16 +231,13 @@ ifeq ($(PLATFORM),MACOSX)
   ifdef UNIX_CPLEX_DIR
     CPLEX_LNK = -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a -lm -lpthread -framework CoreFoundation -framework IOKit
   endif
-  ifdef UNIX_SLM_DIR
-      SLM_LNK = -rpath $(UNIX_SLM_DIR)/mac64/bin/ -L$(UNIX_SLM_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lsulum$(UNIX_SULUM_VERSION)
-  endif
 endif  # MAC OS X
 
 CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
   -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
-        $(SCIP_INC) $(SLM_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP $(SPARSEHASH_INC)
+        $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP $(SPARSEHASH_INC)
 
 JNIFLAGS = $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
-        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(SLM_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP
+        -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP
 DEPENDENCIES_LNK = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK) $(LM_LNK) $(GUROBI_LNK) $(CPLEX_LNK) $(GFLAGS_LNK) $(PROTOBUF_LNK)
 OR_TOOLS_LD_FLAGS = $(ZLIB_LNK) $(SYS_LNK)

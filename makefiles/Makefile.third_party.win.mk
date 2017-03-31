@@ -6,35 +6,9 @@ ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
 SWIG_TAG = 3.0.12
 
-# Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
-# The archive should be glpk-4.57.tar.gz
-GLPK_TAG = 4.57
-# The archive should be scipoptsuite-3.2.0.tgz
-SCIP_TAG = 3.2.0
-SOPLEX_TAG = 2.2.0
-# Version of Sulum
-SULUM_TAG = 43
-
 # Added in support of clean third party targets
 TSVNCACHE_EXE = TSVNCache.exe
 
-# Detect if scip archive is there.
-ifeq ($(wildcard dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz),)
-    SCIP_TARGET =
-    SCIP_MAKEFILE = \# WINDOWS_SCIP_DIR support not included.
-else
-    SCIP_TARGET = dependencies/install/lib/scip.lib
-    SCIP_MAKEFILE = WINDOWS_SCIP_DIR = $(OR_ROOT_FULL)\\dependencies\\install
-endif
-
-# Detect if GLPK archive is there.
-ifeq ($(wildcard dependencies/archives/glpk-$(GLPK_TAG).tar.gz),)
-    GLPK_TARGET =
-    GLPK_MAKEFILE = \# GLPK support not included.
-else
-    GLPK_TARGET = dependencies\install\bin\glpsol.exe
-    GLPK_MAKEFILE = WINDOWS_GLPK_DIR = $(OR_ROOT_FULL)\\dependencies\\install
-endif
 # Main target.
 .PHONY: third_party build_third_party makefile_third_party
 third_party: build_third_party makefile_third_party
@@ -85,9 +59,7 @@ build_third_party: \
 	install_gflags \
 	install_protobuf \
 	install_swig \
-	install_coin_cbc \
-	install_glpk \
-	install_scip
+	install_coin_cbc
 
 bin:
 	$(MKDIR_P) bin
@@ -333,49 +305,6 @@ dependencies\install\swigwin-$(SWIG_TAG)\swig.exe: dependencies\archives\swigwin
 dependencies\archives\swigwin-$(SWIG_TAG).zip:
 	tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip || (@echo wget failed to dowload http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip, try running 'tools\wget -P dependencies\archives --no-check-certificate http://prdownloads.sourceforge.net/swig/swigwin-$(SWIG_TAG).zip' then rerun 'make third_party' && exit 1)
 
-# Install glpk if needed.
-install_glpk: $(GLPK_TARGET)
-
-dependencies\install\bin\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe
-	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpk.lib dependencies\install\lib
-	copy dependencies\sources\glpk-$(GLPK_TAG)\src\glpk.h dependencies\install\include
-	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe dependencies\install\bin
-
- dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\glpsol.exe: dependencies\sources\glpk-$(GLPK_TAG)\configure
-	copy dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\config_VC  dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)\config.h
-	cd dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM) && nmake -f makefile_VC
-
-dependencies\sources\glpk-$(GLPK_TAG)\configure: dependencies\archives\glpk-$(GLPK_TAG).tar.gz
-	cd dependencies\sources && ..\..\tools\gzip -dc ..\archives\glpk-$(GLPK_TAG).tar.gz | ..\..\tools\tar.exe xvmf -
-	$(SED) -i -e 's/nologo/nologo \/MD/g' dependencies\sources\glpk-$(GLPK_TAG)\$(GLPK_PLATFORM)/Makefile_VC
-
-# Install scip if needed.
-install_scip: $(SCIP_TARGET)
-
-dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG).tgz
-#	cd dependencies\install && ..\..\tools\gzip -dc ..\archives\scipoptsuite-$(SCIP_TAG).tgz | ..\..\tools\tar.exe xvmf -
-	cd dependencies\install && ..\..\tools\tar.exe xvmf ..\archives\scipoptsuite-$(SCIP_TAG).tgz
-	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc soplex-$(SOPLEX_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
-#	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -dc scip-$(SCIP_TAG).tgz | ..\..\..\tools\tar.exe xvmf -
-	cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\gzip -d scip-$(SCIP_TAG).tgz
-	- cd dependencies\install\scipoptsuite-$(SCIP_TAG) && ..\..\..\tools\tar.exe xvmf scip-$(SCIP_TAG).tar
-	tools\upgrade_vs_project.cmd dependencies\\solutions\\Scip\\soplex\\soplex.vcxproj $(VS_RELEASE)
-	tools\upgrade_vs_project.cmd dependencies\\solutions\\Scip\\scip\\scip.vcxproj $(VS_RELEASE)
-	cd dependencies\solutions\Scip && msbuild /t:soplex
-	cd dependencies\solutions\Scip && msbuild /t:scip
-	-mkdir dependencies\install\include
-	-mkdir dependencies\install\include\scip
-	-mkdir dependencies\install\include\scip\scip
-	-mkdir dependencies\install\include\scip\blockmemshell
-	-mkdir dependencies\install\include\scip\lpi
-	-mkdir dependencies\install\include\scip\nlpi
-	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\scip\*.h dependencies\install\include\scip\scip
-	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\lpi\*.h dependencies\install\include\scip\lpi
-	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\nlpi\*.h dependencies\install\include\scip\nlpi
-	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\blockmemshell\*.h dependencies\install\include\scip\blockmemshell
-	git checkout dependencies/solutions/Scip/soplex/soplex.vcxproj
-	git checkout dependencies/solutions/Scip/scip/scip.vcxproj
-
 # Install Java protobuf
 
 install_java_protobuf: dependencies/install/lib/protobuf.jar
@@ -422,12 +351,10 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo $(SELECTED_JDK_DEF)>> Makefile.local
 	@echo $(SELECTED_PATH_TO_PYTHON)>> Makefile.local
 	@echo $(SELECTED_CSC_BINARY)>> Makefile.local
-	@echo #>> Makefile.local
-	@echo $(GLPK_MAKEFILE)>> Makefile.local
-	@echo $(SCIP_MAKEFILE)>> Makefile.local
+	@echo # >> Makefile.local
+	@echo # Define WINDOWS_SCIP_DIR to point to a compiled version of SCIP to use it >> Makefile.local
+	@echo #   i.e.: <path>\\scipoptsuite-4.0.0\\scip-4.0.0
 	@echo CLR_KEYFILE = bin\\or-tools.snk>> Makefile.local
-	@echo WINDOWS_SULUM_VERSION = $(SULUM_TAG)>> Makefile.local
-	@echo # Define WINDOWS_SLM_DIR to use Sulum Optimization.>> Makefile.local
 	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi.>> Makefile.local
 	@echo #>> Makefile.local
 	@echo WINDOWS_ZLIB_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local

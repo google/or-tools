@@ -392,12 +392,6 @@ MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
     case MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING:
       return BuildSCIPInterface(solver);
 #endif
-#if defined(USE_SLM)
-    case MPSolver::SULUM_LINEAR_PROGRAMMING:
-      return BuildSLMInterface(solver, false);
-    case MPSolver::SULUM_MIXED_INTEGER_PROGRAMMING:
-      return BuildSLMInterface(solver, true);
-#endif
 #if defined(USE_GUROBI)
     case MPSolver::GUROBI_LINEAR_PROGRAMMING:
       return BuildGurobiInterface(false, solver);
@@ -462,10 +456,6 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     #endif
     #ifdef USE_GLOP
     if (problem_type == GLOP_LINEAR_PROGRAMMING) return true;
-    #endif
-    #if defined(USE_SLM)
-    if (problem_type == SULUM_LINEAR_PROGRAMMING) return true;
-    if (problem_type == SULUM_MIXED_INTEGER_PROGRAMMING) return true;
     #endif
     #ifdef USE_GUROBI
     if (problem_type == GUROBI_LINEAR_PROGRAMMING) return true;
@@ -1619,4 +1609,3 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
-

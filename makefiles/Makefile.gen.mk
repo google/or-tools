@@ -2274,7 +2274,6 @@ LP_LIB_OBJS = \
     $(OBJ_DIR)/linear_solver/model_exporter.$O \
     $(OBJ_DIR)/linear_solver/model_validator.$O \
     $(OBJ_DIR)/linear_solver/scip_interface.$O \
-    $(OBJ_DIR)/linear_solver/sulum_interface.$O \
     $(OBJ_DIR)/linear_solver/linear_solver.pb.$O
 
 $(SRC_DIR)/linear_solver/glop_utils.h: \
@@ -2459,17 +2458,6 @@ $(OBJ_DIR)/linear_solver/scip_interface.$O: \
     $(SRC_DIR)/base/stringprintf.h \
     $(SRC_DIR)/base/timer.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/scip_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Sscip_interface.$O
-
-$(OBJ_DIR)/linear_solver/sulum_interface.$O: \
-    $(SRC_DIR)/linear_solver/sulum_interface.cc \
-    $(SRC_DIR)/linear_solver/linear_solver.h \
-    $(SRC_DIR)/base/commandlineflags.h \
-    $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/integral_types.h \
-    $(SRC_DIR)/base/logging.h \
-    $(SRC_DIR)/base/stringprintf.h \
-    $(SRC_DIR)/base/timer.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/linear_solver/sulum_interface.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Ssulum_interface.$O
 
 $(GEN_DIR)/linear_solver/linear_solver.pb.cc: $(SRC_DIR)/linear_solver/linear_solver.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/linear_solver/linear_solver.proto

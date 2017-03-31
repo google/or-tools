@@ -181,9 +181,6 @@ class MPSolver {
     #ifdef USE_GLOP
     GLOP_LINEAR_PROGRAMMING = 2,
     #endif
-    #if defined(USE_SLM)
-    SULUM_LINEAR_PROGRAMMING = 8,
-    #endif
     #ifdef USE_GUROBI
     GUROBI_LINEAR_PROGRAMMING = 6,
     #endif
@@ -200,9 +197,6 @@ class MPSolver {
     #endif
     #ifdef USE_CBC
     CBC_MIXED_INTEGER_PROGRAMMING = 5,
-    #endif
-    #if defined(USE_SLM)
-    SULUM_MIXED_INTEGER_PROGRAMMING = 9,
     #endif
     #if defined(USE_GUROBI)
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7,

@@ -142,7 +142,6 @@ ifeq ("$(SYSTEM)","win")
 
   # Third party specific
   CBC_PLATFORM = $(CBC_PLATFORM_PREFIX)-$(VS_RELEASE)-Release
-  SCIP_MAKEFILE = \# SCIP not compiled
 
   # Java specific
   ifeq ($(JAVA_HOME),)
@@ -203,4 +202,3 @@ ifeq ("$(SYSTEM)","unix")
 else
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
 endif
-

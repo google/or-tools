@@ -525,7 +525,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
 
     SCIP_Bool is_feasible;
     ORTOOLS_SCIP_CALL(SCIPcheckSol(
-        scip_, solution, /*printreason=*/FALSE, /*checkbounds=*/TRUE,
+        scip_, solution, /*printreason=*/FALSE, /*completely=*/FALSE, /*checkbounds=*/TRUE,
         /*checkintegrality=*/TRUE, /*checklprows=*/TRUE, &is_feasible));
     VLOG(1) << "Solution hint is " << (is_feasible ? "FEASIBLE" : "INFEASIBLE");
 
@@ -536,7 +536,7 @@ MPSolver::ResultStatus SCIPInterface::Solve(const MPSolverParameters& param) {
     SCIP_Bool is_stored;
     if (SCIPisTransformed(scip_)) {
       ORTOOLS_SCIP_CALL(SCIPtrySolFree(
-          scip_, &solution, /*printreason=*/FALSE, /*checkbounds=*/TRUE,
+          scip_, &solution, /*printreason=*/FALSE, /*completely=*/FALSE, /*checkbounds=*/TRUE,
           /*checkintegrality=*/TRUE, /*checklprows=*/TRUE, &is_stored));
     } else {
       ORTOOLS_SCIP_CALL(SCIPaddSolFree(scip_, &solution, &is_stored));
