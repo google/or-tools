@@ -5,7 +5,6 @@ CBC_TAG = 2.9.8
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
 SWIG_TAG = 3.0.12
-BISON_FLEX_TAG = 2.5.5
 
 # Build extra dependencies (GLPK, SCIP) from archive only if the archive is present.
 # The archive should be glpk-4.57.tar.gz
@@ -88,8 +87,7 @@ build_third_party: \
 	install_swig \
 	install_coin_cbc \
 	install_glpk \
-	install_scip \
-	install_bison
+	install_scip
 
 bin:
 	$(MKDIR_P) bin
@@ -377,18 +375,6 @@ dependencies/install/lib/scip.lib: dependencies/archives/scipoptsuite-$(SCIP_TAG
 	copy dependencies\install\scipoptsuite-$(SCIP_TAG)\scip-$(SCIP_TAG)\src\blockmemshell\*.h dependencies\install\include\scip\blockmemshell
 	git checkout dependencies/solutions/Scip/soplex/soplex.vcxproj
 	git checkout dependencies/solutions/Scip/scip/scip.vcxproj
-
-# Install bison and flex in one package.
-install_bison: dependencies\install\bin\win_bison.exe
-
-dependencies\install\bin\win_flex.exe: dependencies\install\bin\win_bison.exe
-
-dependencies\install\bin\win_bison.exe: dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
-	tools\unzip -d dependencies\install\bin dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip
-	tools\touch.exe dependencies\install\bin/win_bison.exe
-
-dependencies\archives\win_flex_bison-$(BISON_FLEX_TAG).zip:
-	tools\wget -P dependencies\archives --no-check-certificate https://sourceforge.net/projects/winflexbison/files/win_flex_bison-$(BISON_FLEX_TAG).zip
 
 # Install Java protobuf
 

@@ -97,7 +97,7 @@ FLATZINC_DEPS = \
 	$(SRC_DIR)/flatzinc/logging.h \
 	$(SRC_DIR)/flatzinc/model.h \
 	$(SRC_DIR)/flatzinc/parser.h \
-	$(GEN_DIR)/flatzinc/parser.tab.hh \
+	$(SRC_DIR)/flatzinc/parser.tab.hh \
 	$(SRC_DIR)/flatzinc/presolve.h \
 	$(SRC_DIR)/flatzinc/reporting.h \
 	$(SRC_DIR)/flatzinc/sat_constraint.h \
@@ -209,14 +209,9 @@ FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/solver_data.$O \
 	$(OBJ_DIR)/flatzinc/solver_util.$O
 
-
-$(GEN_DIR)/flatzinc/parser.yy.cc: $(SRC_DIR)/flatzinc/parser.lex $(FLEX)
-	$(FLEX) -o$(GEN_DIR)/flatzinc/parser.yy.cc $(SRC_DIR)/flatzinc/parser.lex
-
-$(GEN_DIR)/flatzinc/parser.tab.cc: $(SRC_DIR)/flatzinc/parser.yy $(BISON)
-	$(BISON) -t -o $(GEN_DIR)/flatzinc/parser.tab.cc -d $<
-
-$(GEN_DIR)/flatzinc/parser.tab.hh: $(GEN_DIR)/flatzinc/parser.tab.cc
+fz_parser: $(SRC_DIR)/flatzinc/parser.lex $(SRC_DIR)/flatzinc/parser.yy
+	flex -o$(SRC_DIR)/flatzinc/parser.yy.cc $(SRC_DIR)/flatzinc/parser.lex
+	bison -t -o $(SRC_DIR)/flatzinc/parser.tab.cc -d $<
 
 $(OBJ_DIR)/flatzinc/checker.$O: $(SRC_DIR)/flatzinc/checker.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Schecker.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Schecker.$O
@@ -236,11 +231,11 @@ $(OBJ_DIR)/flatzinc/model.$O: $(SRC_DIR)/flatzinc/model.cc $(SRC_DIR)/flatzinc/m
 $(OBJ_DIR)/flatzinc/parser.$O: $(SRC_DIR)/flatzinc/parser.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.$O
 
-$(OBJ_DIR)/flatzinc/parser.tab.$O: $(GEN_DIR)/flatzinc/parser.tab.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc$Sparser.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.tab.$O
+$(OBJ_DIR)/flatzinc/parser.tab.$O: $(SRC_DIR)/flatzinc/parser.tab.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.tab.$O
 
-$(OBJ_DIR)/flatzinc/parser.yy.$O: $(GEN_DIR)/flatzinc/parser.yy.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(GEN_DIR)$Sflatzinc$Sparser.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.yy.$O
+$(OBJ_DIR)/flatzinc/parser.yy.$O: $(SRC_DIR)/flatzinc/parser.yy.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.yy.$O
 
 $(OBJ_DIR)/flatzinc/presolve.$O: $(SRC_DIR)/flatzinc/presolve.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Spresolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Spresolve.$O

@@ -5,10 +5,7 @@ PROTOBUF_TAG = 3.0.0
 CBC_TAG = 2.9.8
 SWIG_TAG = 3.0.12
 PCRE_TAG = 8.37
-# BISON, FLEX
-BISON_TAG = 3.0.4
-FLEX_TAG = 2.6.0
-# help2man is needed by bison
+
 HELP2MAN_TAG = 1.43.3
 # Autoconf support
 AUTOCONF_TAG = 2.69
@@ -115,8 +112,6 @@ install_third_party: \
 	install_cbc \
 	install_glpk \
 	install_scip \
-	install_bison \
-	install_flex \
 	$(CSHARP_THIRD_PARTY)
 
 bin:
@@ -330,36 +325,6 @@ dependencies/sources/patchelf-0.8/Makefile: dependencies/sources/patchelf-0.8/co
 dependencies/sources/patchelf-0.8/configure: dependencies/archives/patchelf-0.8.tar.gz
 	cd dependencies/sources && tar xzmf ../archives/patchelf-0.8.tar.gz
 
-# Install bison
-install_bison: dependencies/install/bin/bison
-
-dependencies/install/bin/bison: dependencies/sources/bison-$(BISON_TAG)/Makefile $(ACLOCAL_TARGET) dependencies/install/bin/help2man
-	cd dependencies/sources/bison-$(BISON_TAG) && $(SET_PATH) make install
-
-dependencies/sources/bison-$(BISON_TAG)/Makefile: dependencies/sources/bison-$(BISON_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/bison-$(BISON_TAG) && $(SET_PATH) autoreconf
-	cd dependencies/sources/bison-$(BISON_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
-
-dependencies/sources/bison-$(BISON_TAG)/configure: dependencies/archives/bison-$(BISON_TAG).tar.gz
-	cd dependencies/sources && tar xvzf ../archives/bison-$(BISON_TAG).tar.gz
-
-dependencies/archives/bison-$(BISON_TAG).tar.gz:
-	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/bison/bison-$(BISON_TAG).tar.gz
-
-# Install flex
-install_flex: dependencies/install/bin/flex
-
-dependencies/install/bin/flex: dependencies/sources/flex-$(FLEX_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/flex-$(FLEX_TAG) && $(SET_PATH) make install
-
-dependencies/sources/flex-$(FLEX_TAG)/Makefile: dependencies/sources/flex-$(FLEX_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/flex-$(FLEX_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
-
-dependencies/sources/flex-$(FLEX_TAG)/configure: dependencies/archives/flex-$(FLEX_TAG).tar.bz2
-	cd dependencies/sources && tar xvjmf ../archives/flex-$(FLEX_TAG).tar.bz2
-
-dependencies/archives/flex-$(FLEX_TAG).tar.bz2:
-	cd dependencies/archives && curl -OL http://sourceforge.net/projects/flex/files/flex-$(FLEX_TAG).tar.bz2
 
 # Install help2man
 dependencies/install/bin/help2man: dependencies/sources/help2man-$(HELP2MAN_TAG)/Makefile

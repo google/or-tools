@@ -248,9 +248,6 @@ ifeq ($(PLATFORM),MACOSX)
   endif
 endif  # MAC OS X
 
-BISON = dependencies/install/bin/bison
-FLEX = dependencies/install/bin/flex
-
 CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
   -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
         $(SCIP_INC) $(SLM_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP $(SPARSEHASH_INC)
