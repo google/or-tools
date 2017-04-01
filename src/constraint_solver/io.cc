@@ -83,8 +83,8 @@ class FirstPassVisitor : public ModelVisitor {
 
   void VisitIntegerVariable(const IntVar* const variable,
                             IntExpr* const delegate) override {
-    variable->Accept(this);
     //// TODO: TBD: I think this is at least potentially a confusion of visited terms...
+    //variable->Accept(this);
     //delegate_map_[variable] = variable;
     if (delegate != nullptr) {
       delegate->Accept(this);
