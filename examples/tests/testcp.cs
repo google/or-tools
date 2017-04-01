@@ -16,7 +16,7 @@ using Google.OrTools.ConstraintSolver;
 
 public class CsTestCpOperator
 {
-  // TODO(user): Add proper tests.
+  // TODO(user): Add proper tests. Use something like Xunit, or even Microsoft Test if you absolutely must.
 
   static int error_count_ = 0;
 
@@ -595,28 +595,42 @@ public class CsTestCpOperator
                 "GetHoles() iterator, or the WhenDomain() demon invocation.");
   }
 
-  static void CpModelTest() {
-    Solver solver = new Solver("TestConstraint");
-    IntVar x = solver.MakeIntVar(0, 10, "x");
-    IntVar y = solver.MakeIntVar(0, 10, "y");
-    solver.Add(x + y == 5);
-    CpModel model = solver.ExportModel();
+  static void CpSimpleLoadModelTest() {
 
-    Console.WriteLine(model);
+    CpModel model;
 
-    Solver copy = new Solver("loader");
-    copy.LoadModel(model);
-    CpModelLoader loader = copy.ModelLoader();
-    IntVar xc = loader.IntegerExpression(0).Var();
-    IntVar yc = loader.IntegerExpression(1).Var();
-    DecisionBuilder db = copy.MakePhase(new IntVar[]{xc, yc},
-                                        Solver.CHOOSE_FIRST_UNBOUND,
-                                        Solver.ASSIGN_MIN_VALUE);
-    copy.NewSearch(db);
-    while (copy.NextSolution()) {
-      Console.WriteLine("xc = " + xc.Value() + ", yx = " + yc.Value());
+    // Make sure that resources are isolated in the using block.
+    using (var s = new Solver("TestConstraint"))
+    {
+      var x = s.MakeIntVar(0, 10, "x");
+      var y = s.MakeIntVar(0, 10, "y");
+      Check(x.Name() == "x", "x variable name incorrect.");
+      Check(x.Name() == "y", "y variable name incorrect.");
+      var c = x + y == 5;
+      c.Cst.SetName("equation");
+      s.Add(c);
+      Check(c.Cst.Name() == "equation", "Constraint name incorrect.");
+      model = s.ExportModel();
+      Console.WriteLine(model);
     }
-    copy.EndSearch();
+
+    // While interesting, this is not very useful nor especially typical use case scenario.
+    using (var s = new Solver("Loader"))
+    {
+      s.LoadModel(model);
+      Check(s.Constraints() == 1, "Incorrect number of constraints.");
+      var loader = s.ModelLoader();
+      var x = loader.IntegerExpressionByName("x").Var();
+      var y = loader.IntegerExpressionByName("y").Var();
+      Check(x != null, "x variable not found after loaded model.");
+      Check(y != null, "y variable not found after loaded model.");
+      var db = s.MakePhase(x, y, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+      s.NewSearch(db);
+      while (s.NextSolution()) {
+        Console.WriteLine("x = {0}, y = {1}", x.Value(), y.Value());
+      }
+      s.EndSearch();
+    }
   }
 
   static void Main() {
