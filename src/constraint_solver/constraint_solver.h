@@ -252,6 +252,7 @@ struct DefaultPhaseParameters {
 //
 class Solver {
  public:
+  // TODO: TBD(MWP): obsolete: not to oversimplify the issue, but I think that there is NO VALID REASON, in my estimation, for IntegerCastInfo, when we simply treat the AST nodes as what they are. Let the polymorphism virtual tables pick up what they are and that should be that.
   // Holds semantic information stating that the 'expression' has been
   // cast into 'variable' using the Var() method, and that
   // 'maintainer' is responsible for maintaining the equality between
@@ -2915,6 +2916,10 @@ class Solver {
   // Counts the number of constraints that have been added
   // to the solver before the search.
   int constraints() const { return constraints_list_.size(); }
+
+  //// TODO: TBD(MWP): may expose these collections eventually, but not at the moment. at minimum be able to reference constraints by name
+  //const std::vector<Constraint*>* get_constraint_list() { return &constraints_list_; }
+  //const std::vector<Constraint*>* get_additional_constraints_list() { return &additional_constraints_list_; }
 
   // Accepts the given model visitor.
   void Accept(ModelVisitor* const visitor) const;

@@ -153,6 +153,8 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SequenceVar, SequenceVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreaker)
+// TODO: TBD: expecting that Constraints would require first-class exposure
+CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::Constraint, Constraint)
 
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
@@ -294,10 +296,18 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %unignore operations_research::IntVarLocalSearchFilter::Value;
 %unignore operations_research::IntVarLocalSearchFilter::Var;  // Inherited.
 
+//// TODO: TBD: would be a friendlier name to most C# users
+//// Rename the model_loader request accordingly.
+//%rename (GetModelLoader) operations_research::Solver::model_loader;
+
 // Rename NewSearch and EndSearch to add pinning. See the overrides of
 // NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
 %rename (NewSearchAux) operations_research::Solver::NewSearch;
 %rename (EndSearchAux) operations_research::Solver::EndSearch;
+
+// TODO: TBD: may require these collections exposed
+//%rename (GetConstraintList) operations_research::Solver::get_constraint_list;
+//%rename (GetAdditionalConstraintList) operations_research::Solver::get_additional_constraints_list;
 
 // Transform IntVar.
 %ignore operations_research::IntVar::MakeDomainIterator;
@@ -879,6 +889,7 @@ PROTO_INPUT(operations_research::CpModel,
 PROTO2_RETURN(operations_research::CpModel,
               Google.OrTools.ConstraintSolver.CpModel)
 
+// TODO: TBD: at first I was extending the ModelLoader, but decided to go straight to the C++ code for better named CpModelLoader exposure, count, by name, etc
 // Wrap cp includes
 %include "constraint_solver/constraint_solver.h"
 %include "constraint_solver/constraint_solveri.h"

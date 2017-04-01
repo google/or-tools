@@ -62,6 +62,8 @@ class FirstPassVisitor : public ModelVisitor {
   void BeginVisitModel(const std::string& solver_name) override {
     // Reset statistics.
     expression_map_.clear();
+    //// TODO: TBD: I'm not sure that expressions/variables, aren't being confused during AST visitation
+    //variable_map_.clear();
     delegate_map_.clear();
     expression_list_.clear();
     constraint_list_.clear();
@@ -81,6 +83,9 @@ class FirstPassVisitor : public ModelVisitor {
 
   void VisitIntegerVariable(const IntVar* const variable,
                             IntExpr* const delegate) override {
+    variable->Accept(this);
+    //// TODO: TBD: I think this is at least potentially a confusion of visited terms...
+    //delegate_map_[variable] = variable;
     if (delegate != nullptr) {
       delegate->Accept(this);
       delegate_map_[variable] = delegate;
@@ -154,6 +159,9 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   // Export
+  //const hash_map<const IntVar*, int>& variable_map() const {
+  //  return variable_map_;
+  //}
   const hash_map<const IntExpr*, int>& expression_map() const {
     return expression_map_;
   }
@@ -180,6 +188,16 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
  private:
+  //// TODO: TBD: not sure we are confusing terms with IntExpr, losing IntVar-iness, nevermind Boolean, etc...
+  //void Register(const IntVar* const variable) {
+  //  if (!ContainsKey(variable_map_, variable)) {
+  //    const int index = variable_map_.size();
+  //    CHECK_EQ(index, variable_list_.size());
+  //    variable_map_[variable] = index;
+  //    variable_list_.push_back(variable);
+  //  }
+  //}
+
   void Register(const IntExpr* const expression) {
     if (!ContainsKey(expression_map_, expression)) {
       const int index = expression_map_.size();
@@ -230,6 +248,7 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   const std::string filename_;
+  //hash_map<const IntVar*, int> variable_map_;
   hash_map<const IntExpr*, int> expression_map_;
   hash_map<const IntervalVar*, int> interval_map_;
   hash_map<const SequenceVar*, int> sequence_map_;
@@ -2291,11 +2310,26 @@ bool CpModelLoader::BuildFromProto(const CpSequenceVariable& proto) {
   return true;
 }
 
+size_t CpModelLoader::IntegerExpressionCount() const {
+  return expressions_.size();    
+}
+
 IntExpr* CpModelLoader::IntegerExpression(int index) const {
   CHECK_GE(index, 0);
   CHECK_LT(index, expressions_.size());
   CHECK(expressions_[index] != nullptr);
   return expressions_[index];
+}
+
+IntExpr* CpModelLoader::IntegerExpressionByName(const std::string& name) const {
+  if (name.length()) {
+    for (IntExpr* e : expressions_) {
+      if (e->name() == name) {
+        return e;
+      }
+    }
+  }
+  return nullptr;
 }
 
 IntervalVar* CpModelLoader::IntervalVariable(int index) const {
@@ -2488,6 +2522,7 @@ bool Solver::LoadModelWithSearchMonitors(
       return false;
     }
   }
+  // TODO: TBD: although IntVar are still IntExpr, is that appropriate here?
   for (int i = 0; i < model_proto.expressions_size(); ++i) {
     if (!model_loader_->BuildFromProto(model_proto.expressions(i))) {
       LOG(ERROR) << "Integer expression proto "
