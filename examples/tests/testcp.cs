@@ -25,7 +25,7 @@ public class CsTestCpOperator
     if (!test)
     {
       Console.WriteLine("Error: " + message);
-      error_count_++;
+      ++error_count_;
     }
   }
 
@@ -597,7 +597,10 @@ public class CsTestCpOperator
 
   static void CpSimpleLoadModelTest() {
 
-    CpModel model;
+    CpModel expected;
+
+    const string constraintName = "equation";
+    const string constraintText = "((x(0..10) + y(0..10)) == 5)";
 
     // Make sure that resources are isolated in the using block.
     using (var s = new Solver("TestConstraint"))
@@ -605,25 +608,106 @@ public class CsTestCpOperator
       var x = s.MakeIntVar(0, 10, "x");
       var y = s.MakeIntVar(0, 10, "y");
       Check(x.Name() == "x", "x variable name incorrect.");
-      Check(x.Name() == "y", "y variable name incorrect.");
+      Check(y.Name() == "y", "y variable name incorrect.");
       var c = x + y == 5;
-      c.Cst.SetName("equation");
+      c.Cst.SetName(constraintName);
+      Check(c.Cst.Name() == constraintName, "Constraint name incorrect.");
+      Check(c.Cst.ToString() == constraintText, "Constraint is incorrect.");
       s.Add(c);
-      Check(c.Cst.Name() == "equation", "Constraint name incorrect.");
-      model = s.ExportModel();
-      Console.WriteLine(model);
+      expected = s.ExportModel();
+      Console.WriteLine("Expected model string after export: {0}", expected);
     }
 
     // While interesting, this is not very useful nor especially typical use case scenario.
     using (var s = new Solver("Loader"))
     {
-      s.LoadModel(model);
+      s.LoadModel(expected);
       Check(s.Constraints() == 1, "Incorrect number of constraints.");
+      var actual = s.ExportModel();
+      Console.WriteLine("Actual model string after load: {0}", actual);
+      // Even the simple example should PASS this I think, but it is not currently.
+      Check(expected.ToString() == actual.ToString(), "Model string incorrect.");
       var loader = s.ModelLoader();
       var x = loader.IntegerExpressionByName("x").Var();
       var y = loader.IntegerExpressionByName("y").Var();
-      Check(x != null, "x variable not found after loaded model.");
-      Check(y != null, "y variable not found after loaded model.");
+      Check(!ReferenceEquals(null, x), "x variable not found after loaded model.");
+      Check(!ReferenceEquals(null, y), "y variable not found after loaded model.");
+      {
+        // Sanity check that what we loaded from the Proto is actually correct according to what we expected
+        var c = x + y == 5;
+        Check(c.Cst.ToString() == constraintText, "Constraint is incorrect.");
+      }
+      var db = s.MakePhase(x, y, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+      s.NewSearch(db);
+      while (s.NextSolution()) {
+        Console.WriteLine("x = {0}, y = {1}", x.Value(), y.Value());
+      }
+      s.EndSearch();
+    }
+  }
+
+  static void CpLoadModelAfterSearchTest() {
+
+    CpModel expected;
+
+    const string constraintName = "equation";
+    const string constraintText = "((x(0..10) + y(0..10)) == 5)";
+
+    // Make sure that resources are isolated in the using block.
+    using (var s = new Solver("TestConstraint"))
+    {
+      var x = s.MakeIntVar(0, 10, "x");
+      var y = s.MakeIntVar(0, 10, "y");
+      Check(x.Name() == "x", "x variable name incorrect.");
+      Check(y.Name() == "y", "y variable name incorrect.");
+      var c = x + y == 5;
+      c.Cst.SetName(constraintName);
+      Check(c.Cst.Name() == constraintName, "Constraint name incorrect.");
+      Check(c.Cst.ToString() == constraintText, "Constraint is incorrect.");
+      s.Add(c);
+      // TODO: TBD: support solution collector?
+      var db = s.MakePhase(x, y, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
+      Check(!ReferenceEquals(null, db), "Expected a valid Decision Builder");
+      s.NewSearch(db);
+      var count = 0;
+      while (s.NextSolution()) {
+        Console.WriteLine("x = {0}, y = {1}", x.Value(), y.Value());
+        ++count;
+        // Break after we found at least one solution.
+        break;
+      }
+      s.EndSearch();
+      Check(count > 0, "Must find at least one solution.");
+      // TODO: TBD: export with monitors and/or decision builder?
+      expected = s.ExportModel();
+      Console.WriteLine("Expected model string after export: {0}", expected);
+    }
+
+    // While interesting, this is not very useful nor especially typical use case scenario.
+    using (var s = new Solver("Loader"))
+    {
+      // TODO: TBD: load with monitors and/or decision builder?
+      s.LoadModel(expected);
+      // This is the first test that should PASS when loading; however, it FAILS because the Constraint is NOT loaded as it is a "TrueConstraint()"
+      Check(s.Constraints() == 1, "Incorrect number of constraints.");
+      var actual = s.ExportModel();
+      Console.WriteLine("Actual model string after load: {0}", actual);
+      // Should also be correct after re-load, but I suspect isn't even close, but I could be wrong.
+      Check(expected.ToString() == actual.ToString(), "Model string incorrect.");
+      var loader = s.ModelLoader();
+      var x = loader.IntegerExpressionByName("x").Var();
+      var y = loader.IntegerExpressionByName("y").Var();
+      Check(!ReferenceEquals(null, x), "x variable not found after loaded model.");
+      Check(!ReferenceEquals(null, y), "y variable not found after loaded model.");
+      {
+        // Do this sanity check that what we loaded is actually what we expected should load.
+        var c = x + y == 5;
+        // Further documented verification, provided we got this far, and/or with "proper" unit test Assertions...
+        Check(c.Cst.ToString() == constraintText, "Constraint is incorrect.");
+        Check(c.Cst.ToString() != "TrueConstraint()", "Constraint is incorrect.");
+      }
+      // TODO: TBD: support solution collector?
+      // Should pick up where we left off.
       var db = s.MakePhase(x, y, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
       s.NewSearch(db);
       while (s.NextSolution()) {
@@ -634,21 +718,29 @@ public class CsTestCpOperator
   }
 
   static void Main() {
-    ConstructorsTest();
-    ConstraintWithExprTest();
-    WrappedConstraintWithExprTest();
-    BaseEqualityWithExprTest();
-    DowncastTest();
-    SequenceTest();
-    DemonTest();
-    ConstraintTest();
-    FailingConstraintTest();
-    DomainIteratorTest();
-    HoleIteratorTest();
-    CpModelTest();
-    if (error_count_ != 0) {
-      Console.WriteLine("Found " + error_count_ + " errors.");
-      Environment.Exit(1);
+    try {
+      ConstructorsTest();
+      ConstraintWithExprTest();
+      WrappedConstraintWithExprTest();
+      BaseEqualityWithExprTest();
+      DowncastTest();
+      SequenceTest();
+      DemonTest();
+      ConstraintTest();
+      FailingConstraintTest();
+      DomainIteratorTest();
+      HoleIteratorTest();
+      CpSimpleLoadModelTest();
+      CpLoadModelAfterSearchTest();
+    }
+    catch (Exception ex) {
+      Console.WriteLine(ex.ToString());
+    }
+    finally {
+      if (error_count_ != 0) {
+        Console.WriteLine("Found " + error_count_ + " errors.");
+        Environment.Exit(1);
+      }
     }
   }
 }
