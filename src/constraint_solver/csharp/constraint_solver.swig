@@ -153,8 +153,6 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SequenceVar, SequenceVar)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchOperator, LocalSearchOperator)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::LocalSearchFilter, LocalSearchFilter)
 CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreaker)
-// TODO: TBD: expecting that Constraints would require first-class exposure
-CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::Constraint, Constraint)
 
 %ignore operations_research::Solver::MakeIntVarArray;
 %ignore operations_research::Solver::MakeBoolVarArray;
@@ -195,6 +193,9 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::Constraint, Constraint)
 
 // Rename rules on Solver.
 %rename (Add) operations_research::Solver::AddConstraint;
+
+%rename (ConstraintCount) operations_research::Solver::constraint_count;
+%rename (AdditionalConstraintCount) operations_research::Solver::additional_constraint_count;
 
 // Rename rule on DisjunctiveConstraint.
 %rename (SequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
