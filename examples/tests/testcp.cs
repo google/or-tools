@@ -29,6 +29,27 @@ public class CsTestCpOperator
     }
   }
 
+  static void CheckStringsEq(string expected, string actual, String message) {
+    var max = Math.Max(expected.Length, actual.Length);
+    for (var i = 0; i < max; i++) {
+      if (i > expected.Length - 1) {
+        Check(false, string.Format("Actual string longer than expected string starting with: {0}", actual.Substring(i + 1)));
+        return;
+      }
+      if (i > actual.Length - 1) {
+        Check(false, string.Format("Expected string longer than actual string starting with: {0}", actual.Substring(i + 1)));
+        return;
+      }
+      if (actual[i] != expected[i]) {
+          Check(false, string.Format("{0}: {1}", message, expected.Substring(i + 1)));
+          var spaces = string.Empty.PadLeft(message.Length + 7 + 2);
+          Console.WriteLine("{0}{1}", spaces, actual.Substring(i + 1));
+          Console.WriteLine("{0}^", spaces.Replace(" ", "-"));
+          return;
+      }
+    }
+  }
+
   static void CheckLongEq(long v1, long v2, String message)
   {
     if (v1 != v2)
@@ -599,34 +620,33 @@ public class CsTestCpOperator
 
     CpModel expected;
 
-    const string constraintName = "equation";
+    const string modelName = "TestModelLoader";
+    //const string constraintName = "equation";
     const string constraintText = "((x(0..10) + y(0..10)) == 5)";
 
     // Make sure that resources are isolated in the using block.
-    using (var s = new Solver("TestConstraint"))
+    using (var s = new Solver(modelName))
     {
       var x = s.MakeIntVar(0, 10, "x");
       var y = s.MakeIntVar(0, 10, "y");
       Check(x.Name() == "x", "x variable name incorrect.");
       Check(y.Name() == "y", "y variable name incorrect.");
       var c = x + y == 5;
-      c.Cst.SetName(constraintName);
-      Check(c.Cst.Name() == constraintName, "Constraint name incorrect.");
+      //c.Cst.SetName(constraintName);
+      //Check(c.Cst.Name() == constraintName, "Constraint name incorrect.");
       Check(c.Cst.ToString() == constraintText, "Constraint is incorrect.");
       s.Add(c);
       expected = s.ExportModel();
-      Console.WriteLine("Expected model string after export: {0}", expected);
     }
 
     // While interesting, this is not very useful nor especially typical use case scenario.
-    using (var s = new Solver("Loader"))
+    using (var s = new Solver(modelName))
     {
       s.LoadModel(expected);
-      Check(s.Constraints() == 1, "Incorrect number of constraints.");
+      Check(s.ConstraintCount() == 1, "Incorrect number of constraints.");
       var actual = s.ExportModel();
-      Console.WriteLine("Actual model string after load: {0}", actual);
       // Even the simple example should PASS this I think, but it is not currently.
-      Check(expected.ToString() == actual.ToString(), "Model string incorrect.");
+      CheckStringsEq(expected.ToString(), actual.ToString(), "Model string incorrect.");
       var loader = s.ModelLoader();
       var x = loader.IntegerExpressionByName("x").Var();
       var y = loader.IntegerExpressionByName("y").Var();
@@ -650,21 +670,23 @@ public class CsTestCpOperator
 
     CpModel expected;
 
-    const string constraintName = "equation";
+    const string modelName = "TestModelLoader";
+    //const string constraintName = "equation";
     const string constraintText = "((x(0..10) + y(0..10)) == 5)";
 
     // Make sure that resources are isolated in the using block.
-    using (var s = new Solver("TestConstraint"))
+    using (var s = new Solver(modelName))
     {
       var x = s.MakeIntVar(0, 10, "x");
       var y = s.MakeIntVar(0, 10, "y");
       Check(x.Name() == "x", "x variable name incorrect.");
       Check(y.Name() == "y", "y variable name incorrect.");
       var c = x + y == 5;
-      c.Cst.SetName(constraintName);
-      Check(c.Cst.Name() == constraintName, "Constraint name incorrect.");
+      //c.Cst.SetName(constraintName);
+      //Check(c.Cst.Name() == constraintName, "Constraint name incorrect.");
       Check(c.Cst.ToString() == constraintText, "Constraint is incorrect.");
       s.Add(c);
+      Check(s.ConstraintCount() == 1, "Expected one constraint.");
       // TODO: TBD: support solution collector?
       var db = s.MakePhase(x, y, Solver.CHOOSE_FIRST_UNBOUND, Solver.ASSIGN_MIN_VALUE);
       Check(!ReferenceEquals(null, db), "Expected a valid Decision Builder");
@@ -680,20 +702,18 @@ public class CsTestCpOperator
       Check(count > 0, "Must find at least one solution.");
       // TODO: TBD: export with monitors and/or decision builder?
       expected = s.ExportModel();
-      Console.WriteLine("Expected model string after export: {0}", expected);
     }
 
     // While interesting, this is not very useful nor especially typical use case scenario.
-    using (var s = new Solver("Loader"))
+    using (var s = new Solver(modelName))
     {
       // TODO: TBD: load with monitors and/or decision builder?
       s.LoadModel(expected);
       // This is the first test that should PASS when loading; however, it FAILS because the Constraint is NOT loaded as it is a "TrueConstraint()"
-      Check(s.Constraints() == 1, "Incorrect number of constraints.");
+      Check(s.ConstraintCount() == 1, "Incorrect number of constraints.");
       var actual = s.ExportModel();
-      Console.WriteLine("Actual model string after load: {0}", actual);
       // Should also be correct after re-load, but I suspect isn't even close, but I could be wrong.
-      Check(expected.ToString() == actual.ToString(), "Model string incorrect.");
+      CheckStringsEq(expected.ToString(), actual.ToString(), "Model string incorrect.");
       var loader = s.ModelLoader();
       var x = loader.IntegerExpressionByName("x").Var();
       var y = loader.IntegerExpressionByName("y").Var();
