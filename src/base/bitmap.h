@@ -34,7 +34,6 @@ inline void ClearBit64(uint64* const bitset, uint64 pos) {
 }
 }  // namespace internal
 
-
 class Bitmap {
  public:
   // Constructor : This allocates on a uint32 boundary.
