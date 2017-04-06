@@ -215,6 +215,11 @@ class RevisedSimplex {
   // one used by the various solve functions provided by the BasisFactorization
   // class.
   ColIndex GetBasis(RowIndex row) const;
+
+  // Returns a copy of basis_ vector for outside applications (like cuts) to
+  // have the correspondence between rows and columns of the dictionary.
+  RowToColMapping GetBasisVector() const { return basis_; }
+
   const BasisFactorization& GetBasisFactorization() const;
 
   // Returns statistics about this class as a std::string.
@@ -795,15 +800,20 @@ class RevisedSimplexDictionary {
   // RevisedSimplex cannot be passed const because we have to call a non-const
   // method ComputeDictionary.
   explicit RevisedSimplexDictionary(RevisedSimplex* revised_simplex)
-      : dictionary_(CHECK_NOTNULL(revised_simplex)->ComputeDictionary()) {}
+      : dictionary_(CHECK_NOTNULL(revised_simplex)->ComputeDictionary()),
+        basis_vars_(CHECK_NOTNULL(revised_simplex)->GetBasisVector()) {}
 
   ConstIterator begin() const { return dictionary_.begin(); }
   ConstIterator end() const { return dictionary_.end(); }
 
   size_t size() const { return dictionary_.size(); }
 
+  // TODO(user): this function is a better fit for the future custom iterator.
+  ColIndex GetVariableIndex(RowIndex r) const { return basis_vars_[r]; }
+
  private:
   const RowMajorSparseMatrix dictionary_;
+  const RowToColMapping basis_vars_;
   DISALLOW_COPY_AND_ASSIGN(RevisedSimplexDictionary);
 };
 
