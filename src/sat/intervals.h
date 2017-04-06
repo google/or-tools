@@ -169,6 +169,7 @@ class SchedulingConstraintHelper {
   void ClearReason();
   void AddPresenceReason(int t);
   void AddDurationMinReason(int t);
+  void AddDurationMinReason(int t, IntegerValue lower_bound);
   void AddStartMinReason(int t, IntegerValue lower_bound);
   void AddStartMaxReason(int t, IntegerValue upper_bound);
   void AddEndMinReason(int t, IntegerValue lower_bound);
@@ -280,6 +281,14 @@ inline void SchedulingConstraintHelper::AddDurationMinReason(int t) {
   if (duration_vars_[t] != kNoIntegerVariable) {
     integer_reason_.push_back(
         integer_trail_->LowerBoundAsLiteral(duration_vars_[t]));
+  }
+}
+
+inline void SchedulingConstraintHelper::AddDurationMinReason(
+    int t, IntegerValue lower_bound) {
+  if (duration_vars_[t] != kNoIntegerVariable) {
+    integer_reason_.push_back(
+        IntegerLiteral::GreaterOrEqual(duration_vars_[t], lower_bound));
   }
 }
 

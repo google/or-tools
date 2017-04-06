@@ -114,14 +114,17 @@ std::function<void(Model*)> Cumulative(
     Trail* trail = model->GetOrCreate<Trail>();
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
 
+    SchedulingConstraintHelper* helper =
+        new SchedulingConstraintHelper(vars, trail, integer_trail, intervals);
+    model->TakeOwnership(helper);
+
     // Propagator responsible for applying Timetabling filtering rule. It
     // increases the minimum of the start variables, decrease the maximum of the
     // end variables, and increase the minimum of the capacity variable.
-    TimeTablingPerTask* time_tabling = new TimeTablingPerTask(
-        vars, demands, capacity, trail, integer_trail, intervals);
+    TimeTablingPerTask* time_tabling =
+        new TimeTablingPerTask(demands, capacity, integer_trail, helper);
     time_tabling->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(time_tabling);
-
 
     // Propagator responsible for applying the Overload Checking filtering rule.
     // It increases the minimum of the capacity variable.

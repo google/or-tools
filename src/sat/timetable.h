@@ -26,24 +26,15 @@ namespace sat {
 // is similar to the CumulativeTimeTable propagator of the constraint solver.
 class TimeTablingPerTask : public PropagatorInterface {
  public:
-  TimeTablingPerTask(const std::vector<IntervalVariable>& interval_vars,
-                     const std::vector<IntegerVariable>& demand_vars,
-                     IntegerVariable capacity, Trail* trail,
-                     IntegerTrail* integer_trail,
-                     IntervalsRepository* intervals_repository);
+  TimeTablingPerTask(const std::vector<IntegerVariable>& demand_vars,
+                     IntegerVariable capacity, IntegerTrail* integer_trail,
+                     SchedulingConstraintHelper* helper);
 
   bool Propagate() final;
 
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  struct TaskTime {
-    /* const */ int task_id;
-    IntegerValue time;
-    TaskTime(int task_id, IntegerValue time) : task_id(task_id), time(time) {}
-    bool operator<(TaskTime other) const { return time < other.time; }
-  };
-
   struct ProfileRectangle {
     /* const */ IntegerValue start;
     /* const */ IntegerValue end;
@@ -52,61 +43,38 @@ class TimeTablingPerTask : public PropagatorInterface {
         : start(start), end(end), height(height) {}
   };
 
-  // Builds the time table and increases the lower bound of the capacity
+  // Builds the profile and increases the lower bound of the capacity
   // variable accordingly.
-  bool BuildTimeTable();
+  bool BuildProfile();
 
-  // Increases the start min of task task_id. This function may call
-  // UpdateStartingTime().
-  bool SweepTaskRight(int task_id);
+  // Reverses the profile. This is needed to reuse a given profile to update
+  // both the start and end times.
+  void ReverseProfile();
 
-  // Decreases the end max of task task_id. This function may call
-  // UpdateEndingTime().
-  bool SweepTaskLeft(int task_id);
+  // Tries to increase the minimum start time of each task according to the
+  // current profile. This function can be called after ReverseProfile() and
+  // ReverseVariables to update the maximum end time of each task.
+  bool SweepAllTasks();
 
-  // Updates the starting time of task_id to new_start and fills the vector
-  // reason_ with the corresponding reason.
-  bool UpdateStartingTime(int task_id, IntegerValue new_start);
+  // Tries to increase the minimum start time of task_id.
+  bool SweepTask(int task_id);
 
-  // Updates the ending time of task_id to new_end and fills the vector
-  // reason_ with the corresponding reason.
-  bool UpdateEndingTime(int task_id, IntegerValue new_end);
+  // Updates the starting time of task_id to right and explain it. The reason is
+  // all the mandatory parts contained in [left, right).
+  bool UpdateStartingTime(int task_id, IntegerValue left, IntegerValue right);
+
+  // Increases the minimum capacity to new_min and explain it. The reason is all
+  // the mandatory parts that overlap time.
+  bool IncreaseCapacity(IntegerValue time, IntegerValue new_min);
 
   // Explains the resource overload at time or removes task_id if it is
   // optional.
   bool OverloadOrRemove(int task_id, IntegerValue time);
 
-  // Fills reason_ with the reason that explains the height of the profile at
-  // the given time point. Also return the height of the profile at time.
-  IntegerValue ExplainProfileHeight(IntegerValue time);
-
-  IntegerValue StartMin(int task_id) const {
-    return integer_trail_->LowerBound(start_vars_[task_id]);
-  }
-
-  IntegerValue StartMax(int task_id) const {
-    return integer_trail_->UpperBound(start_vars_[task_id]);
-  }
-
-  IntegerValue EndMin(int task_id) const {
-    return integer_trail_->LowerBound(end_vars_[task_id]);
-  }
-
-  IntegerValue EndMax(int task_id) const {
-    return integer_trail_->UpperBound(end_vars_[task_id]);
-  }
-
-  IntegerValue DemandMin(int task_id) const {
-    return integer_trail_->LowerBound(demand_vars_[task_id]);
-  }
-
-  IntegerValue DurationMin(int task_id) const {
-    return intervals_repository_->MinSize(interval_vars_[task_id]);
-  }
-
-  bool IsPresent(int task_id) const;
-  bool IsAbsent(int task_id) const;
-  void AddPresenceReasonIfNeeded(int task_id);
+  // Explains the state of the profile in the time interval [left, right). The
+  // reason is all the mandatory parts that overlap the interval. The current
+  // reason is not cleared when this method is called.
+  void AddProfileReason(IntegerValue left, IntegerValue right);
 
   IntegerValue CapacityMin() const {
     return integer_trail_->LowerBound(capacity_var_);
@@ -116,50 +84,32 @@ class TimeTablingPerTask : public PropagatorInterface {
     return integer_trail_->UpperBound(capacity_var_);
   }
 
+  IntegerValue DemandMin(int task_id) const {
+    return integer_trail_->LowerBound(demand_vars_[task_id]);
+  }
+
   // Number of tasks.
   const int num_tasks_;
 
-  // IntervalVariable and IntegerVariable of each tasks that must be considered
-  // in this constraint.
-  std::vector<IntervalVariable> interval_vars_;
-  std::vector<IntegerVariable> start_vars_;
-  std::vector<IntegerVariable> end_vars_;
+  // The demand variables of the tasks.
   std::vector<IntegerVariable> demand_vars_;
-  std::vector<IntegerVariable> duration_vars_;
 
   // Capacity of the resource.
   const IntegerVariable capacity_var_;
 
-  // Reason vector.
-  std::vector<Literal> literal_reason_;
-  std::vector<IntegerLiteral> reason_;
-
-  Trail* trail_;
   IntegerTrail* integer_trail_;
-  IntervalsRepository* intervals_repository_;
-
-  // Used for fast access and to maintain the actual value of end_min since
-  // updating start_vars_[t] does not directly update end_vars_[t].
-  std::vector<IntegerValue> start_min_;
-  std::vector<IntegerValue> start_max_;
-  std::vector<IntegerValue> end_min_;
-  std::vector<IntegerValue> end_max_;
-  std::vector<IntegerValue> duration_min_;
-  std::vector<IntegerValue> demand_min_;
-
-  // Tasks sorted by start max (resp. end min).
-  std::vector<TaskTime> by_start_max_;
-  std::vector<TaskTime> by_end_min_;
+  SchedulingConstraintHelper* helper_;
 
   // Start (resp. end) of the compulsory parts used to build the profile.
-  std::vector<TaskTime> scp_;
-  std::vector<TaskTime> ecp_;
+  std::vector<SchedulingConstraintHelper::TaskTime> scp_;
+  std::vector<SchedulingConstraintHelper::TaskTime> ecp_;
 
   // Optimistic profile of the resource consumption over time.
   std::vector<ProfileRectangle> profile_;
   IntegerValue profile_max_height_;
 
-  // True if the corresponding task is part of the profile.
+  // True if the corresponding task is part of the profile, i.e., it has a
+  // mandatory part and is not optional.
   std::vector<bool> in_profile_;
 
   // True if the last call of the propagator has filtered the domain of a task
