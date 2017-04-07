@@ -194,6 +194,9 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 // Rename rules on Solver.
 %rename (Add) operations_research::Solver::AddConstraint;
 
+%rename (ConstraintCount) operations_research::Solver::constraint_count;
+%rename (AdditionalConstraintCount) operations_research::Solver::additional_constraint_count;
+
 // Rename rule on DisjunctiveConstraint.
 %rename (SequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
 
@@ -294,10 +297,18 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 %unignore operations_research::IntVarLocalSearchFilter::Value;
 %unignore operations_research::IntVarLocalSearchFilter::Var;  // Inherited.
 
+//// TODO: TBD: would be a friendlier name to most C# users
+//// Rename the model_loader request accordingly.
+//%rename (GetModelLoader) operations_research::Solver::model_loader;
+
 // Rename NewSearch and EndSearch to add pinning. See the overrides of
 // NewSearch in ../../open_source/csharp/constraint_solver/SolverHelper.cs
 %rename (NewSearchAux) operations_research::Solver::NewSearch;
 %rename (EndSearchAux) operations_research::Solver::EndSearch;
+
+// TODO: TBD: may require these collections exposed
+//%rename (GetConstraintList) operations_research::Solver::get_constraint_list;
+//%rename (GetAdditionalConstraintList) operations_research::Solver::get_additional_constraints_list;
 
 // Transform IntVar.
 %ignore operations_research::IntVar::MakeDomainIterator;
@@ -879,6 +890,7 @@ PROTO_INPUT(operations_research::CpModel,
 PROTO2_RETURN(operations_research::CpModel,
               Google.OrTools.ConstraintSolver.CpModel)
 
+// TODO: TBD: at first I was extending the ModelLoader, but decided to go straight to the C++ code for better named CpModelLoader exposure, count, by name, etc
 // Wrap cp includes
 %include "constraint_solver/constraint_solver.h"
 %include "constraint_solver/constraint_solveri.h"

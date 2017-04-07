@@ -229,7 +229,7 @@ void SearchLog::EndInitialPropagation() {
   const std::string buffer =
       StringPrintf("Root node processed (time = %" GG_LL_FORMAT
                    "d ms, constraints = %d, %s)",
-                   delta, solver()->constraints(), MemoryUsage().c_str());
+                   delta, solver()->constraint_count(), MemoryUsage().c_str());
   OutputLine(buffer);
 }
 
