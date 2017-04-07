@@ -137,6 +137,7 @@ class SchedulingConstraintHelper {
   // Note that for tasks with variable durations, we don't necessarily have
   // duration-min between the the XXX-min and XXX-max value.
   IntegerValue DurationMin(int t) const;
+  IntegerValue DurationMax(int t) const;
   IntegerValue StartMin(int t) const;
   IntegerValue StartMax(int t) const;
   IntegerValue EndMin(int t) const;
@@ -240,6 +241,12 @@ inline IntegerValue SchedulingConstraintHelper::DurationMin(int t) const {
              : integer_trail_->LowerBound(duration_vars_[t]);
 }
 
+inline IntegerValue SchedulingConstraintHelper::DurationMax(int t) const {
+  return duration_vars_[t] == kNoIntegerVariable
+             ? fixed_durations_[t]
+             : integer_trail_->UpperBound(duration_vars_[t]);
+}
+
 inline IntegerValue SchedulingConstraintHelper::StartMin(int t) const {
   return integer_trail_->LowerBound(start_vars_[t]);
 }
@@ -337,6 +344,19 @@ inline std::function<IntegerVariable(const Model&)> SizeVar(
     IntervalVariable v) {
   return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->SizeVar(v);
+  };
+}
+
+inline std::function<bool(const Model&)> IsOptional(IntervalVariable v) {
+  return [=](const Model& model) {
+    return model.Get<IntervalsRepository>()->IsOptional(v);
+  };
+}
+
+inline std::function<Literal(const Model&)> IsPresentLiteral(
+    IntervalVariable v) {
+  return [=](const Model& model) {
+    return model.Get<IntervalsRepository>()->IsPresentLiteral(v);
   };
 }
 
