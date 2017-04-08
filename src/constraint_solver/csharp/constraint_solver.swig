@@ -194,6 +194,9 @@ CS_TYPEMAP_STDVECTOR_OBJECT(operations_research::SymmetryBreaker, SymmetryBreake
 // Rename rules on Solver.
 %rename (Add) operations_research::Solver::AddConstraint;
 
+%rename (ConstraintCount) operations_research::Solver::constraint_count;
+%rename (AdditionalConstraintCount) operations_research::Solver::additional_constraint_count;
+
 // Rename rule on DisjunctiveConstraint.
 %rename (SequenceVar) operations_research::DisjunctiveConstraint::MakeSequenceVar;
 
