@@ -2912,9 +2912,10 @@ class Solver {
   // returns false if the solver is not in search at all.
   bool CurrentlyInSolve() const;
 
-  // Counts the number of constraints that have been added
-  // to the solver before the search.
-  int constraints() const { return constraints_list_.size(); }
+  // Counts the number of constraints that have been added to the solver before the search.
+  int constraint_count() const { return constraints_list_.size(); }
+  /// Counts the number of additional constraints that have been added during the search.
+  int additional_constraint_count() const { return additional_constraints_list_.size(); }
 
   // Accepts the given model visitor.
   void Accept(ModelVisitor* const visitor) const;
