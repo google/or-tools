@@ -2291,11 +2291,26 @@ bool CpModelLoader::BuildFromProto(const CpSequenceVariable& proto) {
   return true;
 }
 
+size_t CpModelLoader::IntegerExpressionCount() const {
+  return expressions_.size();    
+}
+
 IntExpr* CpModelLoader::IntegerExpression(int index) const {
   CHECK_GE(index, 0);
   CHECK_LT(index, expressions_.size());
   CHECK(expressions_[index] != nullptr);
   return expressions_[index];
+}
+
+IntExpr* CpModelLoader::IntegerExpressionByName(const std::string& name) const {
+  if (name.length()) {
+    for (IntExpr* e : expressions_) {
+      if (e->name() == name) {
+        return e;
+      }
+    }
+  }
+  return nullptr;
 }
 
 IntervalVar* CpModelLoader::IntervalVariable(int index) const {
