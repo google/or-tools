@@ -2077,8 +2077,13 @@ class CpModelLoader {
 
   Solver* solver() const { return solver_; }
 
+  // TODO: TBD: would be better if we could actually do something like std::vector<T>::size_type, but that gets seen in a strange way by SWIG
+  size_t IntegerExpressionCount() const;
+
   // Returns stored integer expression.
   IntExpr* IntegerExpression(int index) const;
+  // Returns stored integer expression.
+  IntExpr* IntegerExpressionByName(const std::string& name) const;
   // Returns stored interval variable.
   IntervalVar* IntervalVariable(int index) const;
 
