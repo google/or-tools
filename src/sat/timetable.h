@@ -88,6 +88,10 @@ class TimeTablingPerTask : public PropagatorInterface {
     return integer_trail_->LowerBound(demand_vars_[task_id]);
   }
 
+  IntegerValue DemandMax(int task_id) const {
+    return integer_trail_->UpperBound(demand_vars_[task_id]);
+  }
+
   // Number of tasks.
   const int num_tasks_;
 
@@ -110,11 +114,20 @@ class TimeTablingPerTask : public PropagatorInterface {
 
   // True if the corresponding task is part of the profile, i.e., it has a
   // mandatory part and is not optional.
-  std::vector<bool> in_profile_;
+  std::vector<bool> is_in_profile_;
+
+  // Tasks that are part of the profile. In other words, this vector contains
+  // all the tasks for which is_in_profile_ is true.
+  std::vector<int> in_profile_;
 
   // True if the last call of the propagator has filtered the domain of a task
   // and changed the shape of the profile.
   bool profile_changed_;
+
+  // Reversible set of tasks to consider for propagation. The set contains the
+  // tasks in the [0, num_tasks_to_sweep_) prefix of tasks_to_sweep_.
+  std::vector<int> tasks_to_sweep_;
+  int num_tasks_to_sweep_;
 
   DISALLOW_COPY_AND_ASSIGN(TimeTablingPerTask);
 };

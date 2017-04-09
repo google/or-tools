@@ -918,7 +918,9 @@ class LiteralViews {
   explicit LiteralViews(Model* model) : model_(model) {}
 
   static LiteralViews* CreateInModel(Model* model) {
-    return new LiteralViews(model);
+    LiteralViews* const views = new LiteralViews(model);
+    model->TakeOwnership(views);
+    return views;
   }
 
   IntegerVariable GetIntegerView(const Literal lit) {
