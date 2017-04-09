@@ -1227,7 +1227,6 @@ $(OBJ_DIR)/graph/bellman_ford.$O: \
 $(OBJ_DIR)/graph/cliques.$O: \
     $(SRC_DIR)/graph/cliques.cc \
     $(SRC_DIR)/graph/cliques.h \
-    $(SRC_DIR)/base/callback.h \
     $(SRC_DIR)/base/hash.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/graph/cliques.cc $(OBJ_OUT)$(OBJ_DIR)$Sgraph$Scliques.$O
 
@@ -1264,7 +1263,6 @@ $(OBJ_DIR)/graph/min_cost_flow.$O: \
 $(OBJ_DIR)/graph/shortestpaths.$O: \
     $(SRC_DIR)/graph/shortestpaths.cc \
     $(SRC_DIR)/graph/shortestpaths.h \
-    $(SRC_DIR)/base/callback.h \
     $(SRC_DIR)/base/casts.h \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/hash.h \
@@ -2280,19 +2278,6 @@ $(SRC_DIR)/linear_solver/glop_utils.h: \
     $(SRC_DIR)/linear_solver/linear_solver.h \
     $(SRC_DIR)/lp_data/lp_types.h
 
-$(SRC_DIR)/linear_solver/linear_expr.h:
-
-$(SRC_DIR)/linear_solver/linear_solver_ext.h: \
-    $(SRC_DIR)/linear_solver/linear_solver.h \
-    $(SRC_DIR)/base/commandlineflags.h \
-    $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/integral_types.h \
-    $(SRC_DIR)/base/logging.h \
-    $(SRC_DIR)/base/macros.h \
-    $(SRC_DIR)/base/sparsetable.h \
-    $(SRC_DIR)/base/strutil.h \
-    $(SRC_DIR)/base/timer.h
-
 $(SRC_DIR)/linear_solver/linear_solver.h: \
     $(SRC_DIR)/linear_solver/linear_expr.h \
     $(GEN_DIR)/linear_solver/linear_solver.pb.h \
@@ -2605,27 +2590,26 @@ $(SRC_DIR)/constraint_solver/constraint_solveri.h: \
 $(SRC_DIR)/constraint_solver/hybrid.h: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h
 
-$(SRC_DIR)/constraint_solver/routing_flags.h: \
-    $(GEN_DIR)/constraint_solver/routing_parameters.pb.h \
-    $(SRC_DIR)/base/commandlineflags.h
-
 $(SRC_DIR)/constraint_solver/routing.h: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
     $(SRC_DIR)/constraint_solver/constraint_solveri.h \
     $(GEN_DIR)/constraint_solver/routing_parameters.pb.h \
-    $(SRC_DIR)/base/adjustable_priority_queue.h \
+    $(SRC_DIR)/constraint_solver/routing_types.h \
     $(SRC_DIR)/base/adjustable_priority_queue-inl.h \
+    $(SRC_DIR)/base/adjustable_priority_queue.h \
     $(SRC_DIR)/base/callback.h \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/hash.h \
-    $(SRC_DIR)/base/integral_types.h \
-    $(SRC_DIR)/base/int_type.h \
     $(SRC_DIR)/base/int_type_indexed_vector.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/util/range_query_function.h \
     $(SRC_DIR)/util/sorted_interval_list.h \
     $(SRC_DIR)/graph/graph.h
+
+$(SRC_DIR)/constraint_solver/routing_flags.h: \
+    $(GEN_DIR)/constraint_solver/routing_parameters.pb.h \
+    $(SRC_DIR)/base/commandlineflags.h
 
 $(SRC_DIR)/constraint_solver/routing_neighborhoods.h: \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
@@ -2707,16 +2691,6 @@ $(OBJ_DIR)/constraint_solver/collect_variables.$O: \
     $(SRC_DIR)/base/stl_util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/collect_variables.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Scollect_variables.$O
 
-$(OBJ_DIR)/constraint_solver/constraints.$O: \
-    $(SRC_DIR)/constraint_solver/constraints.cc \
-    $(SRC_DIR)/constraint_solver/constraint_solver.h \
-    $(SRC_DIR)/constraint_solver/constraint_solveri.h \
-    $(SRC_DIR)/base/integral_types.h \
-    $(SRC_DIR)/base/logging.h \
-    $(SRC_DIR)/util/saturated_arithmetic.h \
-    $(SRC_DIR)/util/string_array.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraints.$O
-
 $(OBJ_DIR)/constraint_solver/constraint_solver.$O: \
     $(SRC_DIR)/constraint_solver/constraint_solver.cc \
     $(SRC_DIR)/constraint_solver/constraint_solver.h \
@@ -2735,6 +2709,17 @@ $(OBJ_DIR)/constraint_solver/constraint_solver.$O: \
     $(SRC_DIR)/base/stringprintf.h \
     $(SRC_DIR)/util/tuple_set.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraint_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraint_solver.$O
+
+$(OBJ_DIR)/constraint_solver/constraints.$O: \
+    $(SRC_DIR)/constraint_solver/constraints.cc \
+    $(SRC_DIR)/constraint_solver/constraint_solver.h \
+    $(SRC_DIR)/constraint_solver/constraint_solveri.h \
+    $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/join.h \
+    $(SRC_DIR)/base/logging.h \
+    $(SRC_DIR)/util/saturated_arithmetic.h \
+    $(SRC_DIR)/util/string_array.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)/constraint_solver/constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraints.$O
 
 $(OBJ_DIR)/constraint_solver/count_cst.$O: \
     $(SRC_DIR)/constraint_solver/count_cst.cc \
@@ -2933,6 +2918,7 @@ $(OBJ_DIR)/constraint_solver/local_search.$O: \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/macros.h \
     $(SRC_DIR)/base/map_util.h \
@@ -3002,11 +2988,13 @@ $(OBJ_DIR)/constraint_solver/routing.$O: \
     $(SRC_DIR)/constraint_solver/routing.cc \
     $(GEN_DIR)/constraint_solver/model.pb.h \
     $(SRC_DIR)/constraint_solver/routing.h \
+    $(SRC_DIR)/constraint_solver/routing_neighborhoods.h \
     $(SRC_DIR)/base/callback.h \
     $(SRC_DIR)/base/casts.h \
     $(SRC_DIR)/base/commandlineflags.h \
     $(SRC_DIR)/base/hash.h \
     $(SRC_DIR)/base/integral_types.h \
+    $(SRC_DIR)/base/join.h \
     $(SRC_DIR)/base/logging.h \
     $(SRC_DIR)/base/map_util.h \
     $(SRC_DIR)/base/stl_util.h \

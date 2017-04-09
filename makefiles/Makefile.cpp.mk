@@ -65,7 +65,7 @@ ortoolslibs: $(OR_TOOLS_LIBS)
 CVRPTW_LIBS   = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
 CVRPTW_DEPS = \
 	$(EX_DIR)/cpp/cvrptw_lib.h \
-	$(ROUTING_DEPS)
+	$(CP_DEPS) $(SRC_DIR)/constraint_solver/routing.h
 CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
 cvrptwlibs: $(CVRPTW_LIBS)
 
@@ -156,7 +156,7 @@ ccexe: $(CC_BINARIES)
 CVRPTW_OBJS=\
 	$(OBJ_DIR)/cvrptw_lib.$O
 
-$(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h $(ROUTING_DEPS)
+$(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h 	$(CP_DEPS) $(SRC_DIR)/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
 
 $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX): $(CVRPTW_OBJS)
@@ -435,7 +435,7 @@ $(OBJ_DIR)/nqueens2.$O: $(EX_DIR)/cpp/nqueens2.cc $(CP_DEPS)
 $(BIN_DIR)/nqueens2$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/nqueens2.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens2.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens2$E
 
-$(OBJ_DIR)/pdptw.$O: $(EX_DIR)/cpp/pdptw.cc $(ROUTING_DEPS)
+$(OBJ_DIR)/pdptw.$O: $(EX_DIR)/cpp/pdptw.cc $(CP_DEPS) $(SRC_DIR)/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/pdptw.cc $(OBJ_OUT)$(OBJ_DIR)$Spdptw.$O
 
 $(BIN_DIR)/pdptw$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/pdptw.$O
@@ -465,7 +465,7 @@ $(OBJ_DIR)/sports_scheduling.$O: $(EX_DIR)/cpp/sports_scheduling.cc $(CP_DEPS)
 $(BIN_DIR)/sports_scheduling$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/sports_scheduling.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/sports_scheduling.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssports_scheduling$E
 
-$(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(ROUTING_DEPS)
+$(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(CP_DEPS) $(SRC_DIR)/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/tsp.cc $(OBJ_OUT)$(OBJ_DIR)$Stsp.$O
 
 $(BIN_DIR)/tsp$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/tsp.$O
