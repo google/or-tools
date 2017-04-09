@@ -357,47 +357,51 @@ PiecewiseLinearFunction* PiecewiseLinearFunction::CreateOneSegmentFunction(
 
 PiecewiseLinearFunction* PiecewiseLinearFunction::CreateRightRayFunction(
     int64 point_x, int64 point_y, int64 slope) {
-  return new PiecewiseLinearFunction(
-      {PiecewiseSegment(point_x, point_y, slope, kint64max)});
+  std::vector<PiecewiseSegment> segments =
+      {PiecewiseSegment(point_x, point_y, slope, kint64max)};
+  return new PiecewiseLinearFunction(std::move(segments));
 }
 
 PiecewiseLinearFunction* PiecewiseLinearFunction::CreateLeftRayFunction(
     int64 point_x, int64 point_y, int64 slope) {
-  return new PiecewiseLinearFunction(
-      {PiecewiseSegment(point_x, point_y, slope, kint64min)});
+  std::vector<PiecewiseSegment> segments =
+      {PiecewiseSegment(point_x, point_y, slope, kint64min)};
+  return new PiecewiseLinearFunction(std::move(segments));
+
 }
 
 PiecewiseLinearFunction* PiecewiseLinearFunction::CreateFixedChargeFunction(
     int64 slope, int64 value) {
-  std::vector<PiecewiseSegment> segments;
+  std::vector<PiecewiseSegment> segments =
+      {PiecewiseSegment(0, 0, 0, kint64min),
+       PiecewiseSegment(0, value, slope, kint64max)};
   CHECK_GE(slope, 0);
   CHECK_GE(value, 0);
-  return new PiecewiseLinearFunction(
-      {PiecewiseSegment(0, 0, 0, kint64min),
-       PiecewiseSegment(0, value, slope, kint64max)});
+  return new PiecewiseLinearFunction(std::move(segments));
 }
 
 PiecewiseLinearFunction* PiecewiseLinearFunction::CreateEarlyTardyFunction(
     int64 reference, int64 earliness_slope, int64 tardiness_slope) {
-  std::vector<PiecewiseSegment> segments;
+  std::vector<PiecewiseSegment> segments =
+      {PiecewiseSegment(reference, 0, -earliness_slope, kint64min),
+       PiecewiseSegment(reference, 0, tardiness_slope, kint64max)};
   CHECK_GE(earliness_slope, 0);
   CHECK_GE(tardiness_slope, 0);
-  return new PiecewiseLinearFunction(
-      {PiecewiseSegment(reference, 0, -earliness_slope, kint64min),
-       PiecewiseSegment(reference, 0, tardiness_slope, kint64max)});
+  return new PiecewiseLinearFunction(std::move(segments));
 }
 
 PiecewiseLinearFunction*
 PiecewiseLinearFunction::CreateEarlyTardyFunctionWithSlack(
     int64 early_slack, int64 late_slack, int64 earliness_slope,
     int64 tardiness_slope) {
-  std::vector<PiecewiseSegment> segments;
-  CHECK_GE(earliness_slope, 0);
-  CHECK_GE(tardiness_slope, 0);
-  return new PiecewiseLinearFunction(
+  std::vector<PiecewiseSegment> segments =
       {PiecewiseSegment(early_slack, 0, -earliness_slope, kint64min),
        PiecewiseSegment(early_slack, 0, 0, late_slack),
-       PiecewiseSegment(late_slack, 0, tardiness_slope, kint64max)});
+       PiecewiseSegment(late_slack, 0, tardiness_slope, kint64max)};
+
+  CHECK_GE(earliness_slope, 0);
+  CHECK_GE(tardiness_slope, 0);
+  return new PiecewiseLinearFunction(std::move(segments));
 }
 
 bool PiecewiseLinearFunction::InDomain(int64 x) const {
