@@ -667,6 +667,7 @@ class PropagatorInterface {
   //   indices of the literals modified after the registration will be present.
   virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
     LOG(FATAL) << "Not implemented.";
+    return false;
   }
 };
 
