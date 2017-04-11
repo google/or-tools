@@ -149,7 +149,6 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/timer.h"
-#include "glop/parameters.pb.h"
 #include "linear_solver/linear_expr.h"
 #include "linear_solver/linear_solver.pb.h"
 
