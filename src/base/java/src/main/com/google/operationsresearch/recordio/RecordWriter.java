@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.zip.Deflater;
 
 public class RecordWriter {
@@ -35,7 +36,7 @@ public class RecordWriter {
     }
 
     public final void writeProtocolMessage(Message m) {
-        try (BufferedWriter writer = Files.newBufferedWriter(file, charset)) {
+        try (BufferedWriter writer = Files.newBufferedWriter(file, charset, StandardOpenOption.APPEND)) {
             writer.write(kMagicNumber);
             writer.write(m.toString().length());
             if(useCompression) {
