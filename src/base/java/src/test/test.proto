@@ -1,8 +1,10 @@
+syntax = "proto3";
+
 option java_package = "com.google.operationsresearch.recordio.test.proto";
 
 package recordio.test;
 
 message Test {
-    required string name = 1;
-    repeated string value = 2;
+    string name = 1;
+    string value = 2;
 }

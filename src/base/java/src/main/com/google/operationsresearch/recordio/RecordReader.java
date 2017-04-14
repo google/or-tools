@@ -12,7 +12,6 @@
 // limitations under the License.
 package com.google.operationsresearch.recordio;
 
-import com.google.protobuf.Extension;
 import com.google.protobuf.Parser;
 
 import java.io.File;
