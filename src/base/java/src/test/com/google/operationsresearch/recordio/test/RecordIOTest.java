@@ -14,38 +14,23 @@ package com.google.operationsresearch.recordio.test;
 
 import com.google.operationsresearch.recordio.RecordReader;
 import com.google.operationsresearch.recordio.RecordWriter;
-import com.google.operationsresearch.recordio.test.proto.TestOuterClass.Test;
+import com.google.operationsresearch.recordio.test.TestProtos.TestProto;
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
 
+import static org.junit.Assert.assertEquals;
+
 public class RecordIOTest {
 
-    public static void main(String[] args) {
-
-        testUncompressed();
-//        testCompressed();
-
-
-
-
-        /* This doesn't work, because the Reader most likely has the generics wrong. */
-        /*
-        // read uncompressed
-        File f = file.toFile();
-        RecordReader rr = new RecordReader<>(f);
-        ArrayList<TestOuterClass.Test> rs = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-
-        } */
-    }
-
-    private static final void testUncompressed() {
-        ArrayList<Test> protos = new ArrayList<>();
+    @Test
+    public final void testUncompressed() {
+        ArrayList<TestProto> protos = new ArrayList<>();
 
         for(int i = 0; i < 10; i++) {
-            protos.add(Test
+            protos.add(TestProto
                     .newBuilder()
                     .setName("uncompressed-" + i)
                     .setValue(String.valueOf(i))
@@ -56,32 +41,33 @@ public class RecordIOTest {
         File file = new File("uncompressed.log");
         RecordWriter rw = new RecordWriter(file);
         rw.setUseCompression(false);
-        for(Test p : protos) {
+        for(TestProto p : protos) {
             rw.writeProtocolMessage(p);
         }
 
         // read uncompressed
         RecordReader rr = new RecordReader(file);
-        ArrayList<Test> results = new ArrayList<>();
+        ArrayList<TestProto> results = new ArrayList<>();
 
         for(int i = 0; i < 10; i++) {
             byte[] r = rr.readProtocolMessage();
             try {
-                results.add(Test.parseFrom(r));
+                results.add(TestProto.parseFrom(r));
             } catch(InvalidProtocolBufferException e0) {
                 e0.printStackTrace();
             }
         }
 
-        assert(protos.containsAll(results));
-        assert(results.containsAll(protos));
+        assertEquals(protos, results);
+
     }
 
-    private static final void testCompressed() {
-        ArrayList<Test> protos = new ArrayList<>();
+    @Test
+    public  final void testCompressed() {
+        ArrayList<TestProto> protos = new ArrayList<>();
 
         for(int i = 0; i < 10; i++) {
-            protos.add(Test
+            protos.add(TestProto
                     .newBuilder()
                     .setName("compressed-" + i)
                     .setValue(String.valueOf(i))
@@ -92,24 +78,23 @@ public class RecordIOTest {
         File file = new File("compressed.log");
         RecordWriter rw = new RecordWriter(file);
         rw.setUseCompression(true);
-        for(Test p : protos) {
+        for(TestProto p : protos) {
             rw.writeProtocolMessage(p);
         }
 
         // read compressed
         RecordReader rr = new RecordReader(file);
-        ArrayList<Test> results = new ArrayList<>();
+        ArrayList<TestProto> results = new ArrayList<>();
 
         for(int i = 0; i < 10; i++) {
             byte[] r = rr.readProtocolMessage();
             try {
-                results.add(Test.parseFrom(r));
+                results.add(TestProto.parseFrom(r));
             } catch(InvalidProtocolBufferException e0) {
                 e0.printStackTrace();
             }
         }
 
-        assert(protos.containsAll(results));
-        assert(results.containsAll(protos));
+        assertEquals(protos, results);
     }
 }
