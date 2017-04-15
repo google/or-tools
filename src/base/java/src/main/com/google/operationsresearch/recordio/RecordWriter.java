@@ -14,63 +14,64 @@ package com.google.operationsresearch.recordio;
 
 import com.google.protobuf.Message;
 
-import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.zip.Deflater;
 
+import static com.google.operationsresearch.recordio.RecordIOUtils.i2b;
+import static com.google.operationsresearch.recordio.RecordIOUtils.magicNumber;
+
 public class RecordWriter {
-    // Magic number when reading and writing protocol buffers
-    private Path file;
-    private Charset charset = Charset.forName("UTF-8");
-    public int kMagicNumber = 0x3ed7230a;
+    private File file;
     private boolean useCompression;
     private Deflater deflater;
 
-    public RecordWriter(Path file) {
+    public RecordWriter(File file) {
         this.file = file;
         deflater = new Deflater();
     }
 
-    public final void writeProtocolMessage(Message m) {
-        try (BufferedWriter writer = Files.newBufferedWriter(file, charset, StandardOpenOption.APPEND)) {
-            writer.write(kMagicNumber);
-            writer.write(m.toString().length());
+    public final boolean writeProtocolMessage(Message m) {
+        try (FileOutputStream f = new FileOutputStream(file, true)) {
+            f.write(i2b(magicNumber));
+            f.write(i2b(m.getSerializedSize()));
             if(useCompression) {
-                String compressed = compress(m.toString());
-                writer.write(compressed.length());
-                writer.write(compressed);
+                byte[] compressed = compress(m.toByteArray());
+                f.write(i2b(compressed.length));
+                f.write(compressed);
             } else {
-                writer.write(0);
-                writer.write(m.toString());
+                f.write(i2b(0));
+                m.writeTo(f);
             }
-        } catch (IOException e0) {
+        } catch (FileNotFoundException e0) {
             e0.printStackTrace();
+            return false;
+        } catch (IOException e1) {
+            e1.printStackTrace();
+            return false;
         }
+        return true;
     }
 
     public final void setUseCompression(boolean useCompression) {
         this.useCompression = useCompression;
     }
 
-    private final String compress(String s) {
-        byte[] b = s.getBytes();
-        int sourceSize = b.length;
-        int dsize = (int)(sourceSize + (sourceSize * 0.1f) + 16); // NOLINT
-        byte[] output = new byte[dsize];
+    private final byte[] compress(byte[] input) {
+        int sourceSize = input.length;
+        int compressedSize = (int)(sourceSize + (sourceSize * 0.1f) + 16); // could be 1024, why not?
+        byte[] output = new byte[compressedSize];
 
-        deflater.setInput(b);
+        deflater.setInput(input);
         deflater.finish();
         int compressLength = deflater.deflate(output, 0, output.length);
 
-        byte[] trimmed = new byte[compressLength];
+        byte[] retVal = new byte[compressLength];
 
-        System.arraycopy(output,0, trimmed,0,compressLength);
+        System.arraycopy(output,0, retVal,0,compressLength);
 
-        String retVal = trimmed.toString();
         return retVal;
     }
 }

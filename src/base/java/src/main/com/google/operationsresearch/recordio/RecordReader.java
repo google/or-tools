@@ -18,18 +18,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.util.zip.Inflater;
 
-public class RecordReader<T extends Parser> {
+import static com.google.operationsresearch.recordio.RecordIOUtils.b2i;
+import static com.google.operationsresearch.recordio.RecordIOUtils.magicNumber;
+
+public class RecordReader<T extends com.google.protobuf.Message> {
     private FileInputStream file;
-    private Charset charset = Charset.forName("UTF-8");
-    private Parser parser;
     private Inflater inflater;
-
-    public int kMagicNumber = 0x3ed7230a;
-
+    private Parser parser;
 
     public RecordReader(File file) {
         try {
@@ -48,16 +45,17 @@ public class RecordReader<T extends Parser> {
         }
     }
 
-    public final boolean readProtocolMessage(T m) {
+    public final byte[] readProtocolMessage() {
         byte[] usizeb = new byte[4];
         byte[] csizeb = new byte[4];
+        byte[] retVal = new byte[4];
 
         try {
             byte[] magic_number = new byte[4];
             file.read(magic_number, 0,4);
 
-            if (b2i(magic_number) != kMagicNumber) {
-                return false;
+            if (b2i(magic_number) != magicNumber) {
+                // oops
             }
 
             file.read(usizeb, 0, 4);
@@ -69,25 +67,21 @@ public class RecordReader<T extends Parser> {
                 byte[] message = new byte[csize];
                 file.read(message, 0, csize);
                 try {
-                    m.parseFrom(uncompress(csize, usize, message));
+                    retVal = uncompress(csize, usize, message);
+                    return retVal;
                 } catch (Exception e0) {
                     e0.printStackTrace();
                 }
             } else {
-                byte[] message = new byte[usize];
-                file.read(message, 0, usize);
-                m.parseFrom(message);
+                retVal = new byte[usize];
+                file.read(retVal, 0, usize);
+                return retVal;
             }
 
         } catch (IOException e0) {
             e0.printStackTrace();
-            return false;
         }
-        return true;
-    }
-
-    private final int b2i(byte[] b) {
-        return new BigInteger(b).intValue();
+        return retVal; // ugly
     }
 
     private final byte[] uncompress(int sourceSize, int outputSize, byte[] message) throws Exception{
