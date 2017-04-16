@@ -12,8 +12,6 @@
 // limitations under the License.
 package com.google.operationsresearch.recordio;
 
-import com.google.protobuf.Parser;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -26,7 +24,6 @@ import static com.google.operationsresearch.recordio.RecordIOUtils.magicNumber;
 public class RecordReader<T extends com.google.protobuf.Message> {
     private FileInputStream file;
     private Inflater inflater;
-    private Parser parser;
 
     public RecordReader(File file) {
         try {
@@ -35,6 +32,10 @@ public class RecordReader<T extends com.google.protobuf.Message> {
         } catch (FileNotFoundException e0) {
             e0.printStackTrace();
         }
+    }
+
+    public RecordReader() {
+        inflater = new Inflater();
     }
 
     public void close() {
@@ -54,8 +55,12 @@ public class RecordReader<T extends com.google.protobuf.Message> {
             byte[] magic_number = new byte[4];
             file.read(magic_number, 0,4);
 
-            if (b2i(magic_number) != magicNumber) {
-                // oops
+            try {
+                if (b2i(magic_number) != magicNumber) {
+                    throw new Exception("Unexpected magic number.");
+                }
+            } catch (Exception e0) {
+                e0.printStackTrace();
             }
 
             file.read(usizeb, 0, 4);
@@ -84,11 +89,12 @@ public class RecordReader<T extends com.google.protobuf.Message> {
         return retVal; // ugly
     }
 
-    private final byte[] uncompress(int sourceSize, int outputSize, byte[] message) throws Exception{
+    public final byte[] uncompress(int sourceSize, int outputSize, byte[] message) throws Exception{
         byte[] retVal = new byte[outputSize];
+        inflater.reset();
         inflater.setInput(message,0, sourceSize);
         int resultLength = inflater.inflate(retVal);
-        inflater.end();
+        //inflater.end();
         if(resultLength != outputSize) {
             throw new Exception("Decompression failed: expected size (" + resultLength + ") and actual size (" + outputSize + ") don't match.");
         }

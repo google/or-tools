@@ -14,10 +14,7 @@ package com.google.operationsresearch.recordio;
 
 import com.google.protobuf.Message;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.zip.Deflater;
 
 import static com.google.operationsresearch.recordio.RecordIOUtils.i2b;
@@ -33,17 +30,23 @@ public class RecordWriter {
         deflater = new Deflater();
     }
 
+    public RecordWriter() {
+        this.file = new File("default.log");
+        deflater = new Deflater();
+    }
+
     public final boolean writeProtocolMessage(Message m) {
+        byte[] messageBytes = m.toByteArray();
         try (FileOutputStream f = new FileOutputStream(file, true)) {
             f.write(i2b(magicNumber));
             f.write(i2b(m.getSerializedSize()));
             if(useCompression) {
-                byte[] compressed = compress(m.toByteArray());
+                byte[] compressed = compress(messageBytes);
                 f.write(i2b(compressed.length));
                 f.write(compressed);
             } else {
                 f.write(i2b(0));
-                m.writeTo(f);
+                f.write(messageBytes);
             }
         } catch (FileNotFoundException e0) {
             e0.printStackTrace();
@@ -59,18 +62,24 @@ public class RecordWriter {
         this.useCompression = useCompression;
     }
 
-    private final byte[] compress(byte[] input) {
+    public final byte[] compress(byte[] input) {
+        deflater.reset();
+        deflater.setInput(input);
+        deflater.finish();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         int sourceSize = input.length;
         int compressedSize = (int)(sourceSize + (sourceSize * 0.1f) + 16); // could be 1024, why not?
         byte[] output = new byte[compressedSize];
 
-        deflater.setInput(input);
-        deflater.finish();
-        int compressLength = deflater.deflate(output, 0, output.length);
+        int length = deflater.deflate(output);
+        outputStream.write(output, 0, length);
+        try {
+            outputStream.close();
+        } catch (IOException e0) {
+            e0.printStackTrace();
+        }
 
-        byte[] retVal = new byte[compressLength];
-
-        System.arraycopy(output,0, retVal,0,compressLength);
+        byte[] retVal = outputStream.toByteArray();
 
         return retVal;
     }
