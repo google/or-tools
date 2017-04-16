@@ -34,10 +34,6 @@ public class RecordReader<T extends com.google.protobuf.Message> {
         }
     }
 
-    public RecordReader() {
-        inflater = new Inflater();
-    }
-
     public void close() {
         try {
             file.close();
@@ -89,12 +85,11 @@ public class RecordReader<T extends com.google.protobuf.Message> {
         return retVal; // ugly
     }
 
-    public final byte[] uncompress(int sourceSize, int outputSize, byte[] message) throws Exception{
+    private final byte[] uncompress(int sourceSize, int outputSize, byte[] message) throws Exception{
         byte[] retVal = new byte[outputSize];
         inflater.reset();
         inflater.setInput(message,0, sourceSize);
         int resultLength = inflater.inflate(retVal);
-        //inflater.end();
         if(resultLength != outputSize) {
             throw new Exception("Decompression failed: expected size (" + resultLength + ") and actual size (" + outputSize + ") don't match.");
         }

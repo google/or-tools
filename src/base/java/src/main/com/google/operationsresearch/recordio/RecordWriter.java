@@ -30,11 +30,6 @@ public class RecordWriter {
         deflater = new Deflater();
     }
 
-    public RecordWriter() {
-        this.file = new File("default.log");
-        deflater = new Deflater();
-    }
-
     public final boolean writeProtocolMessage(Message m) {
         byte[] messageBytes = m.toByteArray();
         try (FileOutputStream f = new FileOutputStream(file, true)) {
@@ -62,7 +57,7 @@ public class RecordWriter {
         this.useCompression = useCompression;
     }
 
-    public final byte[] compress(byte[] input) {
+    private final byte[] compress(byte[] input) {
         deflater.reset();
         deflater.setInput(input);
         deflater.finish();

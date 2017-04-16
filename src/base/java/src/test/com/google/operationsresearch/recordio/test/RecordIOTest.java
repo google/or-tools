@@ -21,7 +21,6 @@ import org.junit.Test;
 import java.io.File;
 import java.util.ArrayList;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class RecordIOTest {
@@ -66,7 +65,7 @@ public class RecordIOTest {
     public  final void testCompressed() {
         ArrayList<TestProto> protos = new ArrayList<>();
 
-        for(int i = 0; i < 2; i++) {
+        for(int i = 0; i < 10; i++) {
             protos.add(TestProto
                     .newBuilder()
                     .setName("compressed-" + i)
@@ -86,7 +85,7 @@ public class RecordIOTest {
         RecordReader rr = new RecordReader(file);
         ArrayList<TestProto> results = new ArrayList<>();
 
-        for(int i = 0; i < 2; i++) {
+        for(int i = 0; i < 10; i++) {
             byte[] r = rr.readProtocolMessage();
             try {
                 results.add(TestProto.parseFrom(r));
@@ -95,43 +94,8 @@ public class RecordIOTest {
             }
         }
 
-        //rr.close();
-
+        rr.close();
         file.deleteOnExit();
         assertEquals(protos, results);
-    }
-
-    @Test
-    public final void testCompression() {
-        TestProto p = TestProto
-                .newBuilder()
-                .setName("Test compression")
-                .setValue(String.valueOf(42))
-                .build();
-
-        RecordWriter rw = new RecordWriter();
-        RecordReader rr = new RecordReader();
-
-        byte[] uncompressed = p.toByteArray();
-        byte[] compressed = rw.compress(uncompressed);
-        byte[] decompressed = new byte[0];
-        try {
-            decompressed = rr.uncompress(compressed.length, uncompressed.length, compressed);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            TestProto q = TestProto.parseFrom(uncompressed);
-            assertEquals(p,q);
-
-            TestProto r = TestProto.parseFrom(decompressed);
-            assertEquals(p,r);
-
-        } catch (InvalidProtocolBufferException e) {
-            e.printStackTrace();
-        }
-
-        assertArrayEquals(uncompressed, decompressed);
     }
 }
