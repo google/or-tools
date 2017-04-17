@@ -20,62 +20,64 @@ import java.util.zip.Deflater;
 import static com.google.operationsresearch.recordio.RecordIOUtils.i2b;
 import static com.google.operationsresearch.recordio.RecordIOUtils.magicNumber;
 
-public class RecordWriter {
+public class RecordWriter implements AutoCloseable{
     private File file;
     private boolean useCompression;
     private Deflater deflater;
+    private FileOutputStream outputStream;
 
-    public RecordWriter(File file) {
+    public RecordWriter(File file) throws FileNotFoundException{
         this.file = file;
+        useCompression = false;
         deflater = new Deflater();
+        outputStream = new FileOutputStream(file, true);
     }
 
-    public final boolean writeProtocolMessage(Message m) {
-        byte[] messageBytes = m.toByteArray();
-        try (FileOutputStream f = new FileOutputStream(file, true)) {
-            f.write(i2b(magicNumber));
-            f.write(i2b(m.getSerializedSize()));
-            if(useCompression) {
-                byte[] compressed = compress(messageBytes);
-                f.write(i2b(compressed.length));
-                f.write(compressed);
-            } else {
-                f.write(i2b(0));
-                f.write(messageBytes);
-            }
-        } catch (FileNotFoundException e0) {
-            e0.printStackTrace();
-            return false;
-        } catch (IOException e1) {
-            e1.printStackTrace();
-            return false;
-        }
-        return true;
+    @Override
+    public void close() throws Exception {
+        deflater.end();
+        outputStream.close();
     }
 
     public final void setUseCompression(boolean useCompression) {
         this.useCompression = useCompression;
     }
 
-    private final byte[] compress(byte[] input) {
+    public final void writeProtocolMessage(Message m) throws IOException {
+        byte[] messageBytes = m.toByteArray();
+
+        outputStream.write(i2b(magicNumber));
+        outputStream.write(i2b(m.getSerializedSize()));
+        if (useCompression) {
+            byte[] compressed = compress(messageBytes);
+            outputStream.write(i2b(compressed.length));
+            outputStream.write(compressed);
+        } else {
+            outputStream.write(i2b(0));
+            outputStream.write(messageBytes);
+        }
+    }
+
+    private final byte[] compress(byte[] input){
         deflater.reset();
         deflater.setInput(input);
         deflater.finish();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         int sourceSize = input.length;
-        int compressedSize = (int)(sourceSize + (sourceSize * 0.1f) + 16); // could be 1024, why not?
+        int compressedSize = (int)(sourceSize + (sourceSize * 0.1f) + 16);
         byte[] output = new byte[compressedSize];
 
         int length = deflater.deflate(output);
         outputStream.write(output, 0, length);
         try {
             outputStream.close();
-        } catch (IOException e0) {
-            e0.printStackTrace();
+        } catch (Exception e0) {
+            // swallow, it'd mean we couldn't write to an in-memory byte array.
         }
 
         byte[] retVal = outputStream.toByteArray();
 
         return retVal;
     }
+
 }

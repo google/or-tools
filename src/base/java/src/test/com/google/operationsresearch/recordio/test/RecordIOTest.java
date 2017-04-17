@@ -15,10 +15,11 @@ package com.google.operationsresearch.recordio.test;
 import com.google.operationsresearch.recordio.RecordReader;
 import com.google.operationsresearch.recordio.RecordWriter;
 import com.google.operationsresearch.recordio.test.TestProtos.TestProto;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
@@ -39,26 +40,37 @@ public class RecordIOTest {
 
         // write uncompressed
         File file = new File("uncompressed.log");
-        RecordWriter rw = new RecordWriter(file);
-        rw.setUseCompression(false);
-        for(TestProto p : protos) {
-            rw.writeProtocolMessage(p);
+        try(RecordWriter rw = new RecordWriter(file)) {
+            rw.setUseCompression(false);
+            for (TestProto p : protos) {
+                rw.writeProtocolMessage(p);
+            }
+        } catch (FileNotFoundException e0) {
+            e0.printStackTrace();
+        } catch (Exception e1) {
+            e1.printStackTrace();
         }
 
         // read uncompressed
-        RecordReader rr = new RecordReader(file);
-        ArrayList<TestProto> results = new ArrayList<>();
+        try(RecordReader rr = new RecordReader(file)) {
+            ArrayList<TestProto> results = new ArrayList<>();
 
-        for(int i = 0; i < 10; i++) {
-            byte[] r = rr.readProtocolMessage();
-            try {
-                results.add(TestProto.parseFrom(r));
-            } catch(InvalidProtocolBufferException e0) {
-                e0.printStackTrace();
+            for (int i = 0; i < 10; i++) {
+                byte[] r = rr.readProtocolMessage();
+                    results.add(TestProto.parseFrom(r));
             }
+            assertEquals(protos, results);
+
+        } catch (FileNotFoundException e0) {
+            e0.printStackTrace();
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        } catch (Exception e2) {
+            e2.printStackTrace();
+        } finally {
+            file.deleteOnExit();
         }
-        file.deleteOnExit();
-        assertEquals(protos, results);
+
     }
 
     @Test
@@ -75,27 +87,28 @@ public class RecordIOTest {
 
         // write compressed
         File file = new File("compressed.log");
-        RecordWriter rw = new RecordWriter(file);
-        rw.setUseCompression(true);
-        for(TestProto p : protos) {
-            rw.writeProtocolMessage(p);
-        }
-
-        // read compressed
-        RecordReader rr = new RecordReader(file);
-        ArrayList<TestProto> results = new ArrayList<>();
-
-        for(int i = 0; i < 10; i++) {
-            byte[] r = rr.readProtocolMessage();
-            try {
-                results.add(TestProto.parseFrom(r));
-            } catch(InvalidProtocolBufferException e0) {
-                e0.printStackTrace();
+        try(RecordWriter rw = new RecordWriter(file); RecordReader rr = new RecordReader(file)) {
+            rw.setUseCompression(true);
+            for (TestProto p : protos) {
+                rw.writeProtocolMessage(p);
             }
-        }
 
-        rr.close();
-        file.deleteOnExit();
-        assertEquals(protos, results);
+            // read compressed
+            ArrayList<TestProto> results = new ArrayList<>();
+
+            for (int i = 0; i < 10; i++) {
+                byte[] r = rr.readProtocolMessage();
+                results.add(TestProto.parseFrom(r));
+            }
+
+            assertEquals(protos, results);
+
+        } catch (FileNotFoundException e0) {
+            e0.printStackTrace();
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        } finally {
+            file.deleteOnExit();
+        }
     }
 }

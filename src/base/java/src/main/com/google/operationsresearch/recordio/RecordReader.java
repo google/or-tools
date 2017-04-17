@@ -12,6 +12,8 @@
 // limitations under the License.
 package com.google.operationsresearch.recordio;
 
+import com.google.common.primitives.Ints;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -21,75 +23,54 @@ import java.util.zip.Inflater;
 import static com.google.operationsresearch.recordio.RecordIOUtils.b2i;
 import static com.google.operationsresearch.recordio.RecordIOUtils.magicNumber;
 
-public class RecordReader<T extends com.google.protobuf.Message> {
+public class RecordReader<T extends com.google.protobuf.Message> implements AutoCloseable {
     private FileInputStream file;
     private Inflater inflater;
 
-    public RecordReader(File file) {
-        try {
-            this.file = new FileInputStream(file);
-            inflater = new Inflater();
-        } catch (FileNotFoundException e0) {
-            e0.printStackTrace();
-        }
+    public RecordReader(File file) throws FileNotFoundException {
+        this.file = new FileInputStream(file);
+        this.inflater = new Inflater();
     }
 
-    public void close() {
-        try {
+    @Override
+    public void close() throws IOException{
             file.close();
-        } catch (IOException e0) {
-            // swallow
-        }
     }
 
-    public final byte[] readProtocolMessage() {
-        byte[] usizeb = new byte[4];
-        byte[] csizeb = new byte[4];
-        byte[] retVal = new byte[4];
+    public final byte[] readProtocolMessage() throws Exception{
+        byte[] usizeb = new byte[Ints.BYTES];
+        byte[] csizeb = new byte[Ints.BYTES];
+        byte[] magic_number = new byte[Ints.BYTES];
+        byte[] retVal;
 
-        try {
-            byte[] magic_number = new byte[4];
-            file.read(magic_number, 0,4);
+        file.read(magic_number, 0,Ints.BYTES);
 
-            try {
-                if (b2i(magic_number) != magicNumber) {
-                    throw new Exception("Unexpected magic number.");
-                }
-            } catch (Exception e0) {
-                e0.printStackTrace();
-            }
-
-            file.read(usizeb, 0, 4);
-            file.read(csizeb, 0, 4);
+        if (b2i(magic_number) != magicNumber) {
+            throw new Exception("Unexpected magic number.");
+        }
+            file.read(usizeb, 0, Ints.BYTES);
+            file.read(csizeb, 0, Ints.BYTES);
             int usize = b2i(usizeb);
             int csize = b2i(csizeb);
 
             if (csize != 0) {
                 byte[] message = new byte[csize];
                 file.read(message, 0, csize);
-                try {
-                    retVal = uncompress(csize, usize, message);
-                    return retVal;
-                } catch (Exception e0) {
-                    e0.printStackTrace();
-                }
+                retVal = uncompress(message, csize, usize);
+                return retVal;
             } else {
                 retVal = new byte[usize];
                 file.read(retVal, 0, usize);
                 return retVal;
             }
-
-        } catch (IOException e0) {
-            e0.printStackTrace();
-        }
-        return retVal; // ugly
     }
 
-    private final byte[] uncompress(int sourceSize, int outputSize, byte[] message) throws Exception{
+    private final byte[] uncompress(byte[] message, int sourceSize, int outputSize) throws Exception{
         byte[] retVal = new byte[outputSize];
         inflater.reset();
         inflater.setInput(message,0, sourceSize);
         int resultLength = inflater.inflate(retVal);
+
         if(resultLength != outputSize) {
             throw new Exception("Decompression failed: expected size (" + resultLength + ") and actual size (" + outputSize + ") don't match.");
         }
