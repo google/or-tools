@@ -30,3 +30,13 @@ examples/csharp/*.sln
 src/bazel-*
 examples/bazel-*
 
+
+src/base/java/.idea/.name
+
+*.xml
+
+*.class
+
+src/base/java/target/test-classes/test.proto
+
+src/base/java/target/protoc-3.2.0-osx-x86_64.exe
