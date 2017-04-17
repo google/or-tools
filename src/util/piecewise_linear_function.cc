@@ -351,8 +351,9 @@ PiecewiseLinearFunction* PiecewiseLinearFunction::CreateFullDomainFunction(
 
 PiecewiseLinearFunction* PiecewiseLinearFunction::CreateOneSegmentFunction(
     int64 point_x, int64 point_y, int64 slope, int64 other_point_x) {
-  return new PiecewiseLinearFunction(
-      {PiecewiseSegment(point_x, point_y, slope, other_point_x)});
+  std::vector<PiecewiseSegment> segments =
+    {PiecewiseSegment(point_x, point_y, slope, other_point_x)};
+  return new PiecewiseLinearFunction(segments);
 }
 
 PiecewiseLinearFunction* PiecewiseLinearFunction::CreateRightRayFunction(

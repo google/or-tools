@@ -25,6 +25,8 @@ DEFINE_bool(lp_constraint_use_dual_ray, true,
 namespace operations_research {
 namespace sat {
 
+const double LinearProgrammingConstraint::kEpsilon = 1e-6;
+
 LinearProgrammingConstraint::LinearProgrammingConstraint(
     IntegerTrail* integer_trail)
     : integer_trail_(integer_trail) {
