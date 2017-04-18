@@ -2079,8 +2079,12 @@ class CpModelLoader {
 
   // Returns stored integer expression.
   IntExpr* IntegerExpression(int index) const;
+  // Returns the number of stored integer expressions.
+  int NumIntegerExpressions() const { return expressions_.size(); }
   // Returns stored interval variable.
   IntervalVar* IntervalVariable(int index) const;
+  // Returns the number of stored interval variables.
+  int NumIntervalVariables() const { return intervals_.size(); }
 
 
 #if !defined(SWIG)

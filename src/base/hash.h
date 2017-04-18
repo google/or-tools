@@ -389,8 +389,8 @@ namespace stdext {
 template <>
 inline size_t hash_value<std::pair<int64, int64>>(
     const std::pair<int64, int64>& a) {
-  PairIntHasher pairIntHasher;
-  return pairIntHasher(a);
+  PairInt64Hasher pairInt64Hasher;
+  return pairInt64Hasher(a);
 }
 }  //  namespace stdext
 #endif  // _MSC_VER
