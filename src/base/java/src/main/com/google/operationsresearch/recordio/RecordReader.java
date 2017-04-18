@@ -23,7 +23,7 @@ import java.util.zip.Inflater;
 import static com.google.operationsresearch.recordio.RecordIOUtils.b2i;
 import static com.google.operationsresearch.recordio.RecordIOUtils.magicNumber;
 
-public class RecordReader<T extends com.google.protobuf.Message> implements AutoCloseable {
+public class RecordReader implements AutoCloseable {
     private FileInputStream file;
     private Inflater inflater;
 
@@ -37,7 +37,7 @@ public class RecordReader<T extends com.google.protobuf.Message> implements Auto
             file.close();
     }
 
-    public final byte[] readProtocolMessage() throws Exception{
+    public final byte[] read() throws Exception{
         byte[] usizeb = new byte[Ints.BYTES];
         byte[] csizeb = new byte[Ints.BYTES];
         byte[] magic_number = new byte[Ints.BYTES];

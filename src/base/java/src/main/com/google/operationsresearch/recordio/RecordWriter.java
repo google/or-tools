@@ -12,8 +12,6 @@
 // limitations under the License.
 package com.google.operationsresearch.recordio;
 
-import com.google.protobuf.Message;
-
 import java.io.*;
 import java.util.zip.Deflater;
 
@@ -43,18 +41,16 @@ public class RecordWriter implements AutoCloseable{
         this.useCompression = useCompression;
     }
 
-    public final void writeProtocolMessage(Message m) throws IOException {
-        byte[] messageBytes = m.toByteArray();
-
+    public final void write(byte[] message) throws IOException {
         outputStream.write(i2b(magicNumber));
-        outputStream.write(i2b(m.getSerializedSize()));
+        outputStream.write(i2b(message.length));
         if (useCompression) {
-            byte[] compressed = compress(messageBytes);
+            byte[] compressed = compress(message);
             outputStream.write(i2b(compressed.length));
             outputStream.write(compressed);
         } else {
             outputStream.write(i2b(0));
-            outputStream.write(messageBytes);
+            outputStream.write(message);
         }
     }
 

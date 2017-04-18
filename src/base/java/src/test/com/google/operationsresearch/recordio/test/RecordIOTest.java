@@ -43,7 +43,7 @@ public class RecordIOTest {
         try(RecordWriter rw = new RecordWriter(file)) {
             rw.setUseCompression(false);
             for (TestProto p : protos) {
-                rw.writeProtocolMessage(p);
+                rw.write(p.toByteArray());
             }
         } catch (FileNotFoundException e0) {
             e0.printStackTrace();
@@ -56,7 +56,7 @@ public class RecordIOTest {
             ArrayList<TestProto> results = new ArrayList<>();
 
             for (int i = 0; i < 10; i++) {
-                byte[] r = rr.readProtocolMessage();
+                byte[] r = rr.read();
                     results.add(TestProto.parseFrom(r));
             }
             assertEquals(protos, results);
@@ -90,14 +90,14 @@ public class RecordIOTest {
         try(RecordWriter rw = new RecordWriter(file); RecordReader rr = new RecordReader(file)) {
             rw.setUseCompression(true);
             for (TestProto p : protos) {
-                rw.writeProtocolMessage(p);
+                rw.write(p.toByteArray());
             }
 
             // read compressed
             ArrayList<TestProto> results = new ArrayList<>();
 
             for (int i = 0; i < 10; i++) {
-                byte[] r = rr.readProtocolMessage();
+                byte[] r = rr.read();
                 results.add(TestProto.parseFrom(r));
             }
 
