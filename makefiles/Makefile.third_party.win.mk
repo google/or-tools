@@ -1,5 +1,5 @@
 # tags of dependencies to checkout.
-GFLAGS_TAG = master
+GFLAGS_TAG = 2.2.0
 PROTOBUF_TAG = 3.2.0
 CBC_TAG = 2.9.8
 ZLIB_TAG = 1.2.11

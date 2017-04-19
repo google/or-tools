@@ -1,6 +1,6 @@
 # SVN tags of dependencies to checkout.
 
-GFLAGS_TAG = 2.1.2
+GFLAGS_TAG = 2.2.0
 PROTOBUF_TAG = 3.2.0
 CBC_TAG = 2.9.8
 SWIG_TAG = 3.0.12
