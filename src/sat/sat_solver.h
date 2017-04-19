@@ -1114,7 +1114,8 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
   };
 }
 
-inline std::function<SatParameters(Model*)> NewSatParameters(std::string params) {
+inline std::function<SatParameters(Model*)> NewSatParameters(
+    const std::string& params) {
   return [=](Model* model) {
     sat::SatParameters parameters;
     if (!params.empty()) {

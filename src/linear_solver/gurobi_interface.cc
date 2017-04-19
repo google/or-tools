@@ -174,7 +174,7 @@ class GurobiInterface : public MPSolverInterface {
 
 // Creates a LP/MIP instance with the specified name and minimization objective.
 GurobiInterface::GurobiInterface(MPSolver* const solver, bool mip)
-    : MPSolverInterface(solver), model_(0), env_(0), mip_(mip) {
+    : MPSolverInterface(solver), model_(nullptr), env_(nullptr), mip_(mip) {
     if (GRBloadenv(&env_, nullptr) != 0 || env_ == nullptr) {
       LOG(FATAL) << "Error: could not create environment: "
                  << GRBgeterrormsg(env_);
@@ -319,7 +319,7 @@ double GurobiInterface::best_objective_bound() const {
     if (!CheckSolutionIsSynchronized() || !CheckBestObjectiveBoundExists()) {
       return trivial_worst_objective_bound();
     }
-    if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
+    if (solver_->variables_.empty() && solver_->constraints_.empty()) {
       // Special case for empty model.
       return solver_->Objective().offset();
     }

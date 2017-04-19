@@ -151,7 +151,7 @@ class FileGraphExporter : public GraphExporter {
 
 GraphExporter* GraphExporter::MakeFileExporter(
     File* const file, GraphExporter::GraphFormat format) {
-  GraphSyntax* syntax = NULL;
+  GraphSyntax* syntax = nullptr;
   switch (format) {
     case GraphExporter::DOT_FORMAT: {
       syntax = new DotSyntax();
@@ -164,7 +164,7 @@ GraphExporter* GraphExporter::MakeFileExporter(
     default:
       LOG(FATAL) << "Unknown graph format";
   }
-  CHECK(syntax != NULL);
+  CHECK(syntax != nullptr);
   return new FileGraphExporter(file, syntax);
 }
 }  // namespace operations_research

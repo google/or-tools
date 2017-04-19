@@ -30,7 +30,7 @@ namespace {
 class Logger {
  public:
   explicit Logger(LogBehavior v) : use_stdout_(v == STDOUT_LOG) {}
-  void Log(std::string message) {
+  void Log(const std::string& message) {
     if (use_stdout_) {
       printf("%s\n", message.c_str());
     } else {

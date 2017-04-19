@@ -25,8 +25,8 @@
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
-#include <map>
 #include "base/hash.h"
+#include <map>
 #include <string>  // for std::string
 #include <vector>  // for vector
 

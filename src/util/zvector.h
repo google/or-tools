@@ -20,11 +20,11 @@
 #elif !defined(_MSC_VER)
 #include <endian.h>
 #endif
-#include <string>
 #include <climits>
 #include <cstdio>
 #include <limits>
 #include <memory>
+#include <string>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
@@ -46,10 +46,10 @@ template <class T>
 class ZVector {
  public:
   ZVector()
-      : base_(NULL), min_index_(0), max_index_(-1), size_(0), storage_() {}
+      : base_(nullptr), min_index_(0), max_index_(-1), size_(0), storage_() {}
 
   ZVector(int64 min_index, int64 max_index)
-      : base_(NULL), min_index_(0), max_index_(-1), size_(0), storage_() {
+      : base_(nullptr), min_index_(0), max_index_(-1), size_(0), storage_() {
     if (!Reserve(min_index, max_index)) {
       LOG(DFATAL) << "Could not reserve memory for indices ranging from "
                   << min_index << " to " << max_index;
@@ -64,7 +64,7 @@ class ZVector {
   T Value(int64 index) const {
     DCHECK_LE(min_index_, index);
     DCHECK_GE(max_index_, index);
-    DCHECK(base_ != NULL);
+    DCHECK(base_ != nullptr);
     return base_[index];
   }
 
@@ -73,14 +73,14 @@ class ZVector {
   T& operator[](int64 index) {
     DCHECK_LE(min_index_, index);
     DCHECK_GE(max_index_, index);
-    DCHECK(base_ != NULL);
+    DCHECK(base_ != nullptr);
     return base_[index];
   }
 
   const T operator[](int64 index) const {
     DCHECK_LE(min_index_, index);
     DCHECK_GE(max_index_, index);
-    DCHECK(base_ != NULL);
+    DCHECK(base_ != nullptr);
     return base_[index];
   }
 #endif
@@ -89,7 +89,7 @@ class ZVector {
   void Set(int64 index, T value) {
     DCHECK_LE(min_index_, index);
     DCHECK_GE(max_index_, index);
-    DCHECK(base_ != NULL);
+    DCHECK(base_ != nullptr);
     base_[index] = value;
   }
 
@@ -101,7 +101,7 @@ class ZVector {
       return false;
     }
     const uint64 new_size = new_max_index - new_min_index + 1;
-    if (base_ != NULL) {
+    if (base_ != nullptr) {
       if (new_min_index >= min_index_ && new_max_index <= max_index_) {
         min_index_ = new_min_index;
         max_index_ = new_max_index;
@@ -112,12 +112,12 @@ class ZVector {
       }
     }
     T* new_storage = new T[new_size];
-    if (new_storage == NULL) {
+    if (new_storage == nullptr) {
       return false;
     }
 
     T* const new_base = new_storage - new_min_index;
-    if (base_ != NULL) {
+    if (base_ != nullptr) {
       T* const destination = new_base + min_index_;
       memcpy(destination, storage_.get(), size_ * sizeof(*base_));
     }
@@ -132,7 +132,7 @@ class ZVector {
 
   // Sets all the elements in the array to value.
   void SetAll(T value) {
-    DLOG_IF(WARNING, base_ == NULL || size_ <= 0)
+    DLOG_IF(WARNING, base_ == nullptr || size_ <= 0)
         << "Trying to set values to uninitialized vector.";
     for (int64 i = 0; i < size_; ++i) {
       base_[min_index_ + i] = value;

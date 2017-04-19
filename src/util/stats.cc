@@ -121,7 +121,7 @@ std::string StatsGroup::StatString() const {
 
 TimeDistribution* StatsGroup::LookupOrCreateTimeDistribution(std::string name) {
   TimeDistribution*& ref = time_distributions_[name];
-  if (ref == NULL) {
+  if (ref == nullptr) {
     ref = new TimeDistribution(name);
     Register(ref);
   }

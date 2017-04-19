@@ -472,7 +472,7 @@ bool IntegralProblemConverter::ConvertToBooleanProblem(
         const std::vector<bool>& boolean_values =
             integral_variable.GetBooleanSolutionValues(
                 round(initial_solution[global_col]));
-        if (boolean_values.size() > 0) {
+        if (!boolean_values.empty()) {
           CHECK_EQ(boolean_cols.size(), boolean_values.size());
           for (int i = 0; i < boolean_values.size(); ++i) {
             const int boolean_col = boolean_cols[i].value();

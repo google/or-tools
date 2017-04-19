@@ -15,6 +15,7 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "base/integral_types.h"
@@ -96,7 +97,7 @@ NoCycle::NoCycle(Solver* const s, const std::vector<IntVar*>& nexts,
       ends_(nexts.size()),
       all_nexts_bound_(false),
       outbound_supports_(nexts.size(), -1),
-      sink_handler_(sink_handler),
+      sink_handler_(std::move(sink_handler)),
       assume_paths_(assume_paths) {
   support_leaves_.reserve(size());
   unsupported_.reserve(size());
@@ -621,7 +622,7 @@ Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
 Constraint* Solver::MakeNoCycle(const std::vector<IntVar*>& nexts,
                                 const std::vector<IntVar*>& active,
                                 Solver::IndexFilter1 sink_handler) {
-  return MakeNoCycle(nexts, active, sink_handler, true);
+  return MakeNoCycle(nexts, active, std::move(sink_handler), true);
 }
 
 // TODO(user): Merge NoCycle and Circuit.
@@ -1299,7 +1300,7 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
                                   Solver::IndexEvaluator2 transit_evaluator) {
   CHECK_EQ(nexts.size(), active.size());
   return RevAlloc(new IndexEvaluator2PathCumul(this, nexts, active, cumuls,
-                                               transit_evaluator));
+                                               std::move(transit_evaluator)));
 }
 
 Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
@@ -1308,8 +1309,8 @@ Constraint* Solver::MakePathCumul(const std::vector<IntVar*>& nexts,
                                   const std::vector<IntVar*>& slacks,
                                   Solver::IndexEvaluator2 transit_evaluator) {
   CHECK_EQ(nexts.size(), active.size());
-  return RevAlloc(new IndexEvaluator2SlackPathCumul(this, nexts, active, cumuls,
-                                                    slacks, transit_evaluator));
+  return RevAlloc(new IndexEvaluator2SlackPathCumul(
+      this, nexts, active, cumuls, slacks, std::move(transit_evaluator)));
 }
 
 Constraint* Solver::MakeDelayedPathCumul(const std::vector<IntVar*>& nexts,
@@ -1425,9 +1426,8 @@ Constraint* Solver::MakePathConnected(std::vector<IntVar*> nexts,
                                       std::vector<int64> sources,
                                       std::vector<int64> sinks,
                                       std::vector<IntVar*> status) {
-  return RevAlloc(
-      new PathConnectedConstraint(this, std::move(nexts), std::move(sources),
-                                  std::move(sinks), std::move(status)));
+  return RevAlloc(new PathConnectedConstraint(
+      this, std::move(nexts), sources, std::move(sinks), std::move(status)));
 }
 
 namespace {

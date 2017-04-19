@@ -16,6 +16,7 @@
 #include "base/hash.h"
 #include <limits>
 #include "base/timer.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "flatzinc/checker.h"
 #include "flatzinc/logging.h"
@@ -1267,7 +1268,7 @@ std::string SolutionString(const SatModel& m,
       if (output.display_as_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {
-        result.append(StringPrintf("%" GG_LL_FORMAT "d", value));
+        StrAppend(&result, value);
       }
       if (i != output.flat_variables.size() - 1) {
         result.append(", ");

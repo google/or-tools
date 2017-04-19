@@ -508,7 +508,7 @@ class PbConstraints : public SatPropagator {
         num_constraint_lookups_(0),
         num_inspected_constraint_literals_(0),
         num_threshold_updates_(0) {}
-  ~PbConstraints() {
+  ~PbConstraints() override {
     IF_STATS_ENABLED({
       LOG(INFO) << stats_.StatString();
       LOG(INFO) << "num_constraint_lookups_: " << num_constraint_lookups_;

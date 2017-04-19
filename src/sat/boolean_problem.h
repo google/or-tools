@@ -14,10 +14,10 @@
 #ifndef OR_TOOLS_SAT_BOOLEAN_PROBLEM_H_
 #define OR_TOOLS_SAT_BOOLEAN_PROBLEM_H_
 
+#include "algorithms/sparse_permutation.h"
 #include "sat/boolean_problem.pb.h"
 #include "sat/sat_solver.h"
 #include "sat/simplification.h"
-#include "algorithms/sparse_permutation.h"
 #include "base/status.h"
 
 namespace operations_research {

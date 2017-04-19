@@ -22,6 +22,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <utility>
 #include "base/random.h"
 
 #include "base/commandlineflags.h"
@@ -359,7 +360,7 @@ class Queue {
 
   void set_action_on_fail(Solver::Action a) {
     DCHECK(clean_variable_ == nullptr);
-    clean_action_ = a;
+    clean_action_ = std::move(a);
   }
 
   void set_variable_to_clean_on_fail(IntVar* var) {
@@ -437,7 +438,7 @@ struct StateInfo {  // This is an internal structure to store
         int_info(static_cast<int>(fast)),
         depth(0),
         left_depth(0),
-        reversible_action(a) {}
+        reversible_action(std::move(a)) {}
 
   void* ptr_info;
   int int_info;
@@ -1113,7 +1114,8 @@ Search* Solver::ActiveSearch() const { return searches_.back(); }
 namespace {
 class ApplyBranchSelector : public DecisionBuilder {
  public:
-  explicit ApplyBranchSelector(Solver::BranchSelector bs) : selector_(bs) {}
+  explicit ApplyBranchSelector(Solver::BranchSelector bs)
+      : selector_(std::move(bs)) {}
   ~ApplyBranchSelector() override {}
 
   Decision* Next(Solver* const s) override {
@@ -1128,7 +1130,9 @@ class ApplyBranchSelector : public DecisionBuilder {
 };
 }  // namespace
 
-void Search::SetBranchSelector(Solver::BranchSelector bs) { selector_ = bs; }
+void Search::SetBranchSelector(Solver::BranchSelector bs) {
+  selector_ = std::move(bs);
+}
 
 void Solver::SetBranchSelector(BranchSelector bs) {
   // We cannot use the trail as the search can be nested and thus
@@ -1142,11 +1146,11 @@ void Solver::SetBranchSelector(BranchSelector bs) {
         }
       },
       false);
-  searches_.back()->SetBranchSelector(bs);
+  searches_.back()->SetBranchSelector(std::move(bs));
 }
 
 DecisionBuilder* Solver::MakeApplyBranchSelector(BranchSelector bs) {
-  return RevAlloc(new ApplyBranchSelector(bs));
+  return RevAlloc(new ApplyBranchSelector(std::move(bs)));
 }
 
 int Solver::SolveDepth() const {
@@ -1527,7 +1531,7 @@ void Solver::PushState(Solver::MarkerType t, const StateInfo& info) {
 }
 
 void Solver::AddBacktrackAction(Action a, bool fast) {
-  StateInfo info(a, fast);
+  StateInfo info(std::move(a), fast);
   PushState(REVERSIBLE_ACTION, info);
 }
 
@@ -1584,7 +1588,9 @@ uint64 Solver::stamp() const { return queue_->stamp(); }
 
 uint64 Solver::fail_stamp() const { return fail_stamp_; }
 
-void Solver::set_action_on_fail(Action a) { queue_->set_action_on_fail(a); }
+void Solver::set_action_on_fail(Action a) {
+  queue_->set_action_on_fail(std::move(a));
+}
 
 void Solver::set_variable_to_clean_on_fail(IntVar* v) {
   queue_->set_variable_to_clean_on_fail(v);

@@ -339,7 +339,7 @@ class ListGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   // these, just call the simple no-output version Build().
   //
   // Note that some implementations become immutable after calling Build().
-  void Build() { Build(NULL); }
+  void Build() { Build(nullptr); }
   void Build(std::vector<ArcIndexType>* permutation);
 
   // Do not use directly.
@@ -435,7 +435,7 @@ class StaticGraph : public BaseGraph<NodeIndexType, ArcIndexType, false> {
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
-  void Build() { Build(NULL); }
+  void Build() { Build(nullptr); }
   void Build(std::vector<ArcIndexType>* permutation);
 
  private:
@@ -524,7 +524,7 @@ class ReverseArcListGraph
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
-  void Build() { Build(NULL); }
+  void Build() { Build(nullptr); }
   void Build(std::vector<ArcIndexType>* permutation);
 
  private:
@@ -599,7 +599,7 @@ class ReverseArcStaticGraph
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
-  void Build() { Build(NULL); }
+  void Build() { Build(nullptr); }
   void Build(std::vector<ArcIndexType>* permutation);
 
  private:
@@ -682,7 +682,7 @@ class ReverseArcMixedGraph
   void AddNode(NodeIndexType node);
   ArcIndexType AddArc(NodeIndexType tail, NodeIndexType head);
 
-  void Build() { Build(NULL); }
+  void Build() { Build(nullptr); }
   void Build(std::vector<ArcIndexType>* permutation);
 
  private:
@@ -728,7 +728,7 @@ void PermuteWithExplicitElementType(const IntVector& permutation,
 
 template <class IntVector, class Array>
 void Permute(const IntVector& permutation, Array* array_to_permute) {
-  if (permutation.size() == 0) {
+  if (permutation.empty()) {
     return;
   }
   PermuteWithExplicitElementType(permutation, array_to_permute,
@@ -740,7 +740,7 @@ void Permute(const IntVector& permutation, Array* array_to_permute) {
 template <class IntVector>
 void Permute(const IntVector& permutation,
              std::vector<bool>* array_to_permute) {
-  if (permutation.size() == 0) {
+  if (permutation.empty()) {
     return;
   }
   bool unused = false;
@@ -764,7 +764,7 @@ void Permute(const IntVector& permutation,
 template <typename T>
 class SVector {
  public:
-  SVector() : base_(NULL), size_(0), capacity_(0) {}
+  SVector() : base_(nullptr), size_(0), capacity_(0) {}
 
   ~SVector() {
     clear();
@@ -819,7 +819,7 @@ class SVector {
       int new_capacity = n;
       size_t requested_block_size = 2LL * new_capacity * sizeof(T);
       T* new_storage = static_cast<T*>(malloc(requested_block_size));
-      CHECK(new_storage != NULL);
+      CHECK(new_storage != nullptr);
       size_t block_size = requested_block_size;
       if (block_size > 0) {
         new_capacity = static_cast<int>(std::min(
@@ -978,7 +978,7 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
     for (int i = 0; i < num_arcs_; ++i) {
       (*head)[i] = (*head)[~i];
     }
-    if (permutation != NULL) {
+    if (permutation != nullptr) {
       permutation->clear();
     }
     return;
@@ -1002,7 +1002,7 @@ void BaseGraph<NodeIndexType, ArcIndexType, HasReverseArcs>::
   for (int i = 0; i < num_arcs_; ++i) {
     (*head)[perm[i]] = (*head)[~i];
   }
-  if (permutation != NULL) {
+  if (permutation != nullptr) {
     permutation->swap(perm);
   }
 }
@@ -1124,7 +1124,7 @@ void ListGraph<NodeIndexType, ArcIndexType>::ReserveArcs(ArcIndexType bound) {
 template <typename NodeIndexType, typename ArcIndexType>
 void ListGraph<NodeIndexType, ArcIndexType>::Build(
     std::vector<ArcIndexType>* permutation) {
-  if (permutation != NULL) {
+  if (permutation != nullptr) {
     permutation->clear();
   }
 }
@@ -1295,7 +1295,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
 
   // If Arc are in order, start_ already contains the degree distribution.
   if (arc_in_order_) {
-    if (permutation != NULL) {
+    if (permutation != nullptr) {
       permutation->clear();
     }
     this->ComputeCumulativeSum(&start_);
@@ -1324,7 +1324,7 @@ void StaticGraph<NodeIndexType, ArcIndexType>::Build(
     head_[perm[i]] = tail_[i];
   }
 
-  if (permutation != NULL) {
+  if (permutation != nullptr) {
     permutation->swap(perm);
   }
 
@@ -1472,7 +1472,7 @@ ArcIndexType ReverseArcListGraph<NodeIndexType, ArcIndexType>::AddArc(
 template <typename NodeIndexType, typename ArcIndexType>
 void ReverseArcListGraph<NodeIndexType, ArcIndexType>::Build(
     std::vector<ArcIndexType>* permutation) {
-  if (permutation != NULL) {
+  if (permutation != nullptr) {
     permutation->clear();
   }
 }

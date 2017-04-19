@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/integral_types.h"
@@ -539,7 +540,7 @@ class AllDifferentExcept : public Constraint {
  public:
   AllDifferentExcept(Solver* const s, std::vector<IntVar*> vars,
                      int64 escape_value)
-      : Constraint(s), vars_(vars), escape_value_(escape_value) {}
+      : Constraint(s), vars_(std::move(vars)), escape_value_(escape_value) {}
 
   ~AllDifferentExcept() override {}
 
@@ -599,16 +600,16 @@ class NullIntersectArrayExcept : public Constraint {
   NullIntersectArrayExcept(Solver* const s, std::vector<IntVar*> first_vars,
                            std::vector<IntVar*> second_vars, int64 escape_value)
       : Constraint(s),
-        first_vars_(first_vars),
-        second_vars_(second_vars),
+        first_vars_(std::move(first_vars)),
+        second_vars_(std::move(second_vars)),
         escape_value_(escape_value),
         has_escape_value_(true) {}
 
   NullIntersectArrayExcept(Solver* const s, std::vector<IntVar*> first_vars,
                            std::vector<IntVar*> second_vars)
       : Constraint(s),
-        first_vars_(first_vars),
-        second_vars_(second_vars),
+        first_vars_(std::move(first_vars)),
+        second_vars_(std::move(second_vars)),
         escape_value_(0),
         has_escape_value_(false) {}
 

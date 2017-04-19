@@ -220,7 +220,7 @@ HungarianOptimizer::HungarianOptimizer(
       image_(),
       width_(0),
       height_(0),
-      state_(NULL) {
+      state_(nullptr) {
   width_ = costs.size();
 
   if (width_ > 0) {
@@ -442,7 +442,7 @@ void HungarianOptimizer::PrintMatrix() {
 //  Run the Munkres algorithm!
 void HungarianOptimizer::DoMunkres() {
   state_ = &HungarianOptimizer::ReduceRows;
-  while (state_ != NULL) {
+  while (state_ != nullptr) {
     (this->*state_)();
   }
 }
@@ -509,7 +509,7 @@ void HungarianOptimizer::CoverStarredZeroes() {
   }
 
   if (num_covered >= matrix_size_) {
-    state_ = NULL;
+    state_ = nullptr;
     return;
   }
   state_ = &HungarianOptimizer::PrimeZeroes;

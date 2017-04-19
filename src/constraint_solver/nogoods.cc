@@ -134,7 +134,7 @@ bool NoGood::Apply(Solver* const solver) {
       }
     }
   }
-  if (first_undecided == nullptr && terms_.size() > 0) {
+  if (first_undecided == nullptr && !terms_.empty()) {
     VLOG(2) << "No Good " << DebugString() << " -> Fail";
     solver->Fail();
   }
