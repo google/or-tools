@@ -572,7 +572,7 @@ std::string LinearProgram::Dump() const {
   // Integer variables.
   // TODO(user): if needed provide similar output for binary variables.
   const std::vector<ColIndex>& integer_variables = IntegerVariablesList();
-  if (integer_variables.size() > 0) {
+  if (!integer_variables.empty()) {
     output += "int";
     for (ColIndex col : integer_variables) {
       output += " ";

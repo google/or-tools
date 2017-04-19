@@ -356,7 +356,7 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckFeasibility(
     const NodeIndex node = checker_graph.Head(arc);
     const FlowQuantity flow = checker.Flow(arc);
     feasible_node_excess_.Set(node, flow);
-    if (infeasible_supply_node != NULL) {
+    if (infeasible_supply_node != nullptr) {
       infeasible_supply_node->push_back(node);
     }
   }
@@ -366,7 +366,7 @@ GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::CheckFeasibility(
     const NodeIndex node = checker_graph.Tail(arc);
     const FlowQuantity flow = checker.Flow(arc);
     feasible_node_excess_.Set(node, -flow);
-    if (infeasible_demand_node != NULL) {
+    if (infeasible_demand_node != nullptr) {
       infeasible_demand_node->push_back(node);
     }
   }
@@ -496,7 +496,7 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Solve() {
     status_ = BAD_COST_RANGE;
     return false;
   }
-  if (check_feasibility_ && !CheckFeasibility(NULL, NULL)) {
+  if (check_feasibility_ && !CheckFeasibility(nullptr, nullptr)) {
     status_ = INFEASIBLE;
     return false;
   }

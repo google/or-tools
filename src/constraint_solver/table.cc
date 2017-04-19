@@ -306,7 +306,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
           to_remove_.push_back(value);
         }
       }
-      if (to_remove_.size() > 0) {
+      if (!to_remove_.empty()) {
         var->RemoveValues(to_remove_);
       }
     }
@@ -321,7 +321,7 @@ class PositiveTableConstraint : public BasePositiveTableConstraint {
           to_remove_.push_back(value);
         }
       }
-      if (to_remove_.size() > 0) {
+      if (!to_remove_.empty()) {
         var->RemoveValues(to_remove_);
       }
     }
@@ -678,7 +678,7 @@ class CompactPositiveTableConstraint : public BasePositiveTableConstraint {
           to_remove_.push_back(value);
         }
       }
-      if (to_remove_.size() > 0) {
+      if (!to_remove_.empty()) {
         var->RemoveValues(to_remove_);
       }
     }
@@ -898,7 +898,7 @@ class SmallCompactPositiveTableConstraint : public BasePositiveTableConstraint {
           to_remove_.push_back(value);
         }
       }
-      if (to_remove_.size() > 0) {
+      if (!to_remove_.empty()) {
         var->RemoveValues(to_remove_);
       }
     }

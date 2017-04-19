@@ -102,17 +102,17 @@ FlowQuantity SimpleMaxFlow::OptimalFlow() const { return optimal_flow_; }
 FlowQuantity SimpleMaxFlow::Flow(ArcIndex arc) const { return arc_flow_[arc]; }
 
 void SimpleMaxFlow::GetSourceSideMinCut(std::vector<NodeIndex>* result) {
-  if (underlying_max_flow_.get() == NULL) return;
+  if (underlying_max_flow_ == nullptr) return;
   underlying_max_flow_->GetSourceSideMinCut(result);
 }
 
 void SimpleMaxFlow::GetSinkSideMinCut(std::vector<NodeIndex>* result) {
-  if (underlying_max_flow_.get() == NULL) return;
+  if (underlying_max_flow_ == nullptr) return;
   underlying_max_flow_->GetSinkSideMinCut(result);
 }
 
 FlowModel SimpleMaxFlow::CreateFlowModelOfLastSolve() {
-  if (underlying_max_flow_.get() == NULL) return FlowModel();
+  if (underlying_max_flow_ == nullptr) return FlowModel();
   return underlying_max_flow_->CreateFlowModel();
 }
 

@@ -1177,7 +1177,7 @@ std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
             .Index();
       }
     }
-    return kNoLiteralIndex;
+    return LiteralIndex(kNoLiteralIndex);
   };
 }
 
@@ -1197,7 +1197,8 @@ std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
         candidate_lb = lb;
       }
     }
-    if (candidate == kNoIntegerVariable) return kNoLiteralIndex;
+    // Fix compilation error on visual studio 2013.
+    if (candidate == kNoIntegerVariable) return LiteralIndex(kNoLiteralIndex);
     return integer_encoder
         ->GetOrCreateAssociatedLiteral(
             IntegerLiteral::LowerOrEqual(candidate, candidate_lb))

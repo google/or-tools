@@ -994,7 +994,6 @@ class Solver {
       const std::vector<SearchMonitor*>& monitors,
       DecisionBuilder* const db) const;
   // Loads the model into the solver, and returns true upon success.
-  // This method can only be used once.
   bool LoadModel(const CpModel& proto);
   // Loads the model into the solver, appends search monitors to monitors,
   // and returns true upon success.
@@ -2930,7 +2929,7 @@ class Solver {
 // Internal
 #if !defined(SWIG)
   void set_fail_intercept(std::function<void()> fail_intercept) {
-    fail_intercept_ = fail_intercept;
+    fail_intercept_ = std::move(fail_intercept);
   }
 #endif  // SWIG
   void clear_fail_intercept() { fail_intercept_ = nullptr; }
@@ -3252,7 +3251,9 @@ class PropagationBaseObject : public BaseObject {
 #if !defined(SWIG)
   // This method sets a callback that will be called if a failure
   // happens during the propagation of the queue.
-  void set_action_on_fail(Solver::Action a) { solver_->set_action_on_fail(a); }
+  void set_action_on_fail(Solver::Action a) {
+    solver_->set_action_on_fail(std::move(a));
+  }
 #endif  // SWIG
 
   // This methods clears the failure callback.
@@ -3923,13 +3924,13 @@ class IntExpr : public PropagationBaseObject {
   virtual void WhenRange(Demon* d) = 0;
   // Attach a demon that will watch the min or the max of the expression.
   void WhenRange(Solver::Closure closure) {
-    WhenRange(solver()->MakeClosureDemon(closure));
+    WhenRange(solver()->MakeClosureDemon(std::move(closure)));
   }
 
 #if !defined(SWIG)
   // Attach a demon that will watch the min or the max of the expression.
   void WhenRange(Solver::Action action) {
-    WhenRange(solver()->MakeActionDemon(action));
+    WhenRange(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
 
@@ -4072,14 +4073,14 @@ class IntVar : public IntExpr {
   // This method attaches a closure that will be awakened when the
   // variable is bound.
   void WhenBound(Solver::Closure closure) {
-    WhenBound(solver()->MakeClosureDemon(closure));
+    WhenBound(solver()->MakeClosureDemon(std::move(closure)));
   }
 
 #if !defined(SWIG)
   // This method attaches an action that will be awakened when the
   // variable is bound.
   void WhenBound(Solver::Action action) {
-    WhenBound(solver()->MakeActionDemon(action));
+    WhenBound(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
 
@@ -4089,13 +4090,13 @@ class IntVar : public IntExpr {
   // This method attaches a closure that will watch any domain
   // modification of the domain of the variable.
   void WhenDomain(Solver::Closure closure) {
-    WhenDomain(solver()->MakeClosureDemon(closure));
+    WhenDomain(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   // This method attaches an action that will watch any domain
   // modification of the domain of the variable.
   void WhenDomain(Solver::Action action) {
-    WhenDomain(solver()->MakeActionDemon(action));
+    WhenDomain(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
 
@@ -4419,20 +4420,20 @@ class IntervalVar : public PropagationBaseObject {
   virtual int64 OldStartMax() const = 0;
   virtual void WhenStartRange(Demon* const d) = 0;
   void WhenStartRange(Solver::Closure closure) {
-    WhenStartRange(solver()->MakeClosureDemon(closure));
+    WhenStartRange(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   void WhenStartRange(Solver::Action action) {
-    WhenStartRange(solver()->MakeActionDemon(action));
+    WhenStartRange(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
   virtual void WhenStartBound(Demon* const d) = 0;
   void WhenStartBound(Solver::Closure closure) {
-    WhenStartBound(solver()->MakeClosureDemon(closure));
+    WhenStartBound(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   void WhenStartBound(Solver::Action action) {
-    WhenStartBound(solver()->MakeActionDemon(action));
+    WhenStartBound(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
 
@@ -4446,20 +4447,20 @@ class IntervalVar : public PropagationBaseObject {
   virtual int64 OldDurationMax() const = 0;
   virtual void WhenDurationRange(Demon* const d) = 0;
   void WhenDurationRange(Solver::Closure closure) {
-    WhenDurationRange(solver()->MakeClosureDemon(closure));
+    WhenDurationRange(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   void WhenDurationRange(Solver::Action action) {
-    WhenDurationRange(solver()->MakeActionDemon(action));
+    WhenDurationRange(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
   virtual void WhenDurationBound(Demon* const d) = 0;
   void WhenDurationBound(Solver::Closure closure) {
-    WhenDurationBound(solver()->MakeClosureDemon(closure));
+    WhenDurationBound(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   void WhenDurationBound(Solver::Action action) {
-    WhenDurationBound(solver()->MakeActionDemon(action));
+    WhenDurationBound(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
 
@@ -4473,20 +4474,20 @@ class IntervalVar : public PropagationBaseObject {
   virtual int64 OldEndMax() const = 0;
   virtual void WhenEndRange(Demon* const d) = 0;
   void WhenEndRange(Solver::Closure closure) {
-    WhenEndRange(solver()->MakeClosureDemon(closure));
+    WhenEndRange(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   void WhenEndRange(Solver::Action action) {
-    WhenEndRange(solver()->MakeActionDemon(action));
+    WhenEndRange(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
   virtual void WhenEndBound(Demon* const d) = 0;
   void WhenEndBound(Solver::Closure closure) {
-    WhenEndBound(solver()->MakeClosureDemon(closure));
+    WhenEndBound(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   void WhenEndBound(Solver::Action action) {
-    WhenEndBound(solver()->MakeActionDemon(action));
+    WhenEndBound(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
 
@@ -4502,11 +4503,11 @@ class IntervalVar : public PropagationBaseObject {
   virtual bool WasPerformedBound() const = 0;
   virtual void WhenPerformedBound(Demon* const d) = 0;
   void WhenPerformedBound(Solver::Closure closure) {
-    WhenPerformedBound(solver()->MakeClosureDemon(closure));
+    WhenPerformedBound(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   void WhenPerformedBound(Solver::Action action) {
-    WhenPerformedBound(solver()->MakeActionDemon(action));
+    WhenPerformedBound(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
 
@@ -4514,12 +4515,12 @@ class IntervalVar : public PropagationBaseObject {
   void WhenAnything(Demon* const d);
   // Attaches a closure awakened when anything about this interval changes.
   void WhenAnything(Solver::Closure closure) {
-    WhenAnything(solver()->MakeClosureDemon(closure));
+    WhenAnything(solver()->MakeClosureDemon(std::move(closure)));
   }
 #if !defined(SWIG)
   // Attaches an action awakened when anything about this interval changes.
   void WhenAnything(Solver::Action action) {
-    WhenAnything(solver()->MakeActionDemon(action));
+    WhenAnything(solver()->MakeActionDemon(std::move(action)));
   }
 #endif  // SWIG
 

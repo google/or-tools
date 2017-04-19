@@ -738,7 +738,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
         candidate_sequence->ComputePossibleFirstsAndLasts(
             &candidate_possible_firsts_, &candidate_possible_lasts_);
         // No possible first, failing.
-        if (candidate_possible_firsts_.size() == 0) {
+        if (candidate_possible_firsts_.empty()) {
           s->Fail();
         }
         // Only 1 candidate, and non optional: ranking without branching.
@@ -785,7 +785,7 @@ class RankFirstIntervalVars : public DecisionBuilder {
         candidate_sequence->ComputePossibleFirstsAndLasts(
             &candidate_possible_firsts_, &candidate_possible_lasts_);
         // No possible first, failing.
-        if (candidate_possible_firsts_.size() == 0) {
+        if (candidate_possible_firsts_.empty()) {
           s->Fail();
         }
         // Only 1 candidate, and non optional: ranking without branching.

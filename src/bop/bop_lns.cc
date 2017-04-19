@@ -13,9 +13,9 @@
 
 #include "bop/bop_lns.h"
 
+#include <deque>
 #include <string>
 #include <vector>
-#include <deque>
 
 #include "base/commandlineflags.h"
 #include "base/stringprintf.h"

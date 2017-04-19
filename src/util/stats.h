@@ -291,12 +291,12 @@ class EnabledScopedTimeDistributionUpdater {
  public:
   // Note that this does not take ownership of the given stat.
   explicit EnabledScopedTimeDistributionUpdater(TimeDistribution* stat)
-      : stat_(stat), also_update_(NULL) {
+      : stat_(stat), also_update_(nullptr) {
     stat->StartTimer();
   }
   ~EnabledScopedTimeDistributionUpdater() {
     const double cycles = stat_->StopTimerAndAddElapsedTime();
-    if (also_update_ != NULL) {
+    if (also_update_ != nullptr) {
       also_update_->AddTimeInCycles(cycles);
     }
   }

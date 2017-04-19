@@ -57,7 +57,7 @@ SearchLog::SearchLog(Solver* const s, OptimizeVar* const obj, IntVar* const var,
       timer_(new WallTimer),
       var_(var),
       obj_(obj),
-      display_callback_(display_callback),
+      display_callback_(std::move(display_callback)),
       nsol_(0),
       tick_(0LL),
       objective_min_(kint64max),
@@ -271,13 +271,14 @@ SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const var) {
 
 SearchMonitor* Solver::MakeSearchLog(int period,
                                      std::function<std::string()> display_callback) {
-  return RevAlloc(
-      new SearchLog(this, nullptr, nullptr, display_callback, period));
+  return RevAlloc(new SearchLog(this, nullptr, nullptr,
+                                std::move(display_callback), period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period, IntVar* const var,
                                      std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, nullptr, var, display_callback, period));
+  return RevAlloc(
+      new SearchLog(this, nullptr, var, std::move(display_callback), period));
 }
 
 SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj) {
@@ -286,7 +287,8 @@ SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj) {
 
 SearchMonitor* Solver::MakeSearchLog(int period, OptimizeVar* const obj,
                                      std::function<std::string()> display_callback) {
-  return RevAlloc(new SearchLog(this, obj, nullptr, display_callback, period));
+  return RevAlloc(
+      new SearchLog(this, obj, nullptr, std::move(display_callback), period));
 }
 
 
@@ -558,7 +560,7 @@ namespace {
 class ClosureDecision : public Decision {
  public:
   ClosureDecision(Solver::Action apply, Solver::Action refute)
-      : apply_(apply), refute_(refute) {}
+      : apply_(std::move(apply)), refute_(std::move(refute)) {}
   ~ClosureDecision() override {}
 
   void Apply(Solver* const s) override { apply_(s); }
@@ -574,7 +576,7 @@ class ClosureDecision : public Decision {
 }  // namespace
 
 Decision* Solver::MakeDecision(Action apply, Action refute) {
-  return RevAlloc(new ClosureDecision(apply, refute));
+  return RevAlloc(new ClosureDecision(std::move(apply), std::move(refute)));
 }
 
 // ---------- Try Decision Builder ----------
@@ -1202,7 +1204,7 @@ class CheapestValueSelector : public BaseObject {
  public:
   CheapestValueSelector(std::function<int64(int64, int64)> eval,
                         std::function<int64(int64)> tie_breaker)
-      : eval_(eval), tie_breaker_(tie_breaker) {}
+      : eval_(std::move(eval)), tie_breaker_(std::move(tie_breaker)) {}
   ~CheapestValueSelector() override {}
   int64 Select(const IntVar* v, int64 id);
   std::string DebugString() const override { return "CheapestValue"; }
@@ -1247,7 +1249,7 @@ class BestValueByComparisonSelector : public BaseObject {
  public:
   explicit BestValueByComparisonSelector(
       Solver::VariableValueComparator comparator)
-      : comparator_(comparator) {}
+      : comparator_(std::move(comparator)) {}
   ~BestValueByComparisonSelector() override {}
   int64 Select(const IntVar* v, int64 id);
   std::string DebugString() const override {
@@ -1281,8 +1283,8 @@ class VariableAssignmentSelector : public BaseVariableAssignmentSelector {
                              Solver::VariableValueSelector value_selector,
                              const std::string& name)
       : BaseVariableAssignmentSelector(solver, vars),
-        var_selector_(var_selector),
-        value_selector_(value_selector),
+        var_selector_(std::move(var_selector)),
+        value_selector_(std::move(value_selector)),
         name_(name) {}
   ~VariableAssignmentSelector() override {}
   int64 SelectValue(const IntVar* var, int64 id) override {
@@ -1332,7 +1334,8 @@ class BaseEvaluatorSelector : public BaseVariableAssignmentSelector {
 BaseEvaluatorSelector::BaseEvaluatorSelector(
     Solver* solver, const std::vector<IntVar*>& vars,
     std::function<int64(int64, int64)> evaluator)
-    : BaseVariableAssignmentSelector(solver, vars), evaluator_(evaluator) {}
+    : BaseVariableAssignmentSelector(solver, vars),
+      evaluator_(std::move(evaluator)) {}
 
 // ----- Global Dynamic Evaluator-based selector -----
 
@@ -1356,9 +1359,9 @@ DynamicEvaluatorSelector::DynamicEvaluatorSelector(
     Solver* solver, const std::vector<IntVar*>& vars,
     std::function<int64(int64, int64)> evaluator,
     std::function<int64(int64)> tie_breaker)
-    : BaseEvaluatorSelector(solver, vars, evaluator),
+    : BaseEvaluatorSelector(solver, vars, std::move(evaluator)),
       first_(-1),
-      tie_breaker_(tie_breaker) {}
+      tie_breaker_(std::move(tie_breaker)) {}
 
 int64 DynamicEvaluatorSelector::SelectValue(const IntVar* var, int64 id) {
   return cache_[first_].value;
@@ -1384,7 +1387,7 @@ int64 DynamicEvaluatorSelector::ChooseVariable() {
     }
   }
 
-  if (cache_.size() == 0) {
+  if (cache_.empty()) {
     return -1;
   }
 
@@ -1406,7 +1409,7 @@ std::string DynamicEvaluatorSelector::DebugString() const {
 class StaticEvaluatorSelector : public BaseEvaluatorSelector {
  public:
   StaticEvaluatorSelector(Solver* solver, const std::vector<IntVar*>& vars,
-                          std::function<int64(int64, int64)> evaluator);
+                          const std::function<int64(int64, int64)>& evaluator);
   ~StaticEvaluatorSelector() override {}
   int64 SelectValue(const IntVar* var, int64 id) override;
   int64 ChooseVariable() override;
@@ -1416,7 +1419,7 @@ class StaticEvaluatorSelector : public BaseEvaluatorSelector {
   class Compare {
    public:
     explicit Compare(std::function<int64(int64, int64)> evaluator)
-        : evaluator_(evaluator) {}
+        : evaluator_(std::move(evaluator)) {}
     bool operator()(const Element& lhs, const Element& rhs) const {
       const int64 value_lhs = Value(lhs);
       const int64 value_rhs = Value(rhs);
@@ -1440,7 +1443,7 @@ class StaticEvaluatorSelector : public BaseEvaluatorSelector {
 
 StaticEvaluatorSelector::StaticEvaluatorSelector(
     Solver* solver, const std::vector<IntVar*>& vars,
-    std::function<int64(int64, int64)> evaluator)
+    const std::function<int64(int64, int64)>& evaluator)
     : BaseEvaluatorSelector(solver, vars, evaluator),
       comp_(evaluator),
       first_(-1) {}
@@ -1828,7 +1831,8 @@ BaseAssignVariables* BaseAssignVariables::MakePhase(
     const std::string& value_selector_name, BaseAssignVariables::Mode mode) {
   BaseVariableAssignmentSelector* const selector =
       s->RevAlloc(new VariableAssignmentSelector(
-          s, vars, var_selector, value_selector, value_selector_name));
+          s, vars, std::move(var_selector), std::move(value_selector),
+          value_selector_name));
   return s->RevAlloc(new BaseAssignVariables(selector, mode));
 }
 
@@ -1980,7 +1984,7 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
   Solver::VariableIndexSelector choose_variable =
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
   CheapestValueSelector* const value_selector =
-      RevAlloc(new CheapestValueSelector(value_evaluator, nullptr));
+      RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
   Solver::VariableValueSelector select_value = [value_selector](
       const IntVar* var, int64 id) { return value_selector->Select(var, id); };
   const std::string name = ChooseVariableName(var_str) + "_SelectCheapestValue";
@@ -1994,8 +1998,8 @@ DecisionBuilder* Solver::MakePhase(
     VariableValueComparator var_val1_val2_comparator) {
   Solver::VariableIndexSelector choose_variable =
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
-  BestValueByComparisonSelector* const value_selector =
-      RevAlloc(new BestValueByComparisonSelector(var_val1_val2_comparator));
+  BestValueByComparisonSelector* const value_selector = RevAlloc(
+      new BestValueByComparisonSelector(std::move(var_val1_val2_comparator)));
   Solver::VariableValueSelector select_value = [value_selector](
       const IntVar* var, int64 id) { return value_selector->Select(var, id); };
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
@@ -2014,7 +2018,7 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
     return var_selector->Choose(solver, vars, first_unbound, last_unbound);
   };
   CheapestValueSelector* value_selector =
-      RevAlloc(new CheapestValueSelector(value_evaluator, nullptr));
+      RevAlloc(new CheapestValueSelector(std::move(value_evaluator), nullptr));
   Solver::VariableValueSelector select_value = [value_selector](
       const IntVar* var, int64 id) { return value_selector->Select(var, id); };
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
@@ -2028,8 +2032,8 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IndexEvaluator1 tie_breaker) {
   Solver::VariableIndexSelector choose_variable =
       BaseAssignVariables::MakeVariableSelector(this, vars, var_str);
-  CheapestValueSelector* value_selector =
-      RevAlloc(new CheapestValueSelector(value_evaluator, tie_breaker));
+  CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
+      std::move(value_evaluator), std::move(tie_breaker)));
   Solver::VariableValueSelector select_value = [value_selector](
       const IntVar* var, int64 id) { return value_selector->Select(var, id); };
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
@@ -2048,8 +2052,8 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
       int last_unbound) {
     return var_selector->Choose(solver, vars, first_unbound, last_unbound);
   };
-  CheapestValueSelector* value_selector =
-      RevAlloc(new CheapestValueSelector(value_evaluator, tie_breaker));
+  CheapestValueSelector* value_selector = RevAlloc(new CheapestValueSelector(
+      std::move(value_evaluator), std::move(tie_breaker)));
   Solver::VariableValueSelector select_value = [value_selector](
       const IntVar* var, int64 id) { return value_selector->Select(var, id); };
   return BaseAssignVariables::MakePhase(this, vars, choose_variable,
@@ -2060,7 +2064,7 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
                                    Solver::IndexEvaluator2 eval,
                                    Solver::EvaluatorStrategy str) {
-  return MakePhase(vars, eval, nullptr, str);
+  return MakePhase(vars, std::move(eval), nullptr, str);
 }
 
 DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
@@ -2075,8 +2079,8 @@ DecisionBuilder* Solver::MakePhase(const std::vector<IntVar*>& vars,
       break;
     }
     case Solver::CHOOSE_DYNAMIC_GLOBAL_BEST: {
-      selector =
-          RevAlloc(new DynamicEvaluatorSelector(this, vars, eval, tie_breaker));
+      selector = RevAlloc(new DynamicEvaluatorSelector(this, vars, eval,
+                                                       std::move(tie_breaker)));
       break;
     }
   }
@@ -2865,7 +2869,7 @@ void TabuSearch::ApplyDecision(Decision* const d) {
     tabu_vars.push_back(tabu_var);
   }
 
-  if (tabu_vars.size() > 0) {
+  if (!tabu_vars.empty()) {
     IntVar* const tabu = s->MakeBoolVar();
     s->AddConstraint(s->MakeIsGreaterOrEqualCstCt(
         s->MakeSum(tabu_vars)->Var(), tabu_vars.size() * tabu_factor_, tabu));
@@ -3133,7 +3137,7 @@ class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
  public:
   explicit GuidedLocalSearchPenaltiesMap(int size);
   ~GuidedLocalSearchPenaltiesMap() override {}
-  bool HasValues() const override { return (penalties_.size() != 0); }
+  bool HasValues() const override { return (!penalties_.empty()); }
   void Increment(const Arc& arc) override;
   int64 Value(const Arc& arc) const override;
   void Reset() override;
@@ -3441,7 +3445,7 @@ BinaryGuidedLocalSearch::BinaryGuidedLocalSearch(
     int64 step, const std::vector<IntVar*>& vars, double penalty_factor)
     : GuidedLocalSearch(solver, objective, maximize, step, vars,
                         penalty_factor),
-      objective_function_(objective_function) {}
+      objective_function_(std::move(objective_function)) {}
 
 IntExpr* BinaryGuidedLocalSearch::MakeElementPenalty(int index) {
   return solver()->MakeElement(
@@ -3521,7 +3525,7 @@ TernaryGuidedLocalSearch::TernaryGuidedLocalSearch(
     : GuidedLocalSearch(solver, objective, maximize, step, vars,
                         penalty_factor),
       secondary_vars_(secondary_vars),
-      objective_function_(objective_function) {
+      objective_function_(std::move(objective_function)) {
   if (!secondary_vars.empty()) {
     assignment_.Add(secondary_vars);
   }
@@ -3594,9 +3598,9 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     bool maximize, IntVar* const objective,
     Solver::IndexEvaluator2 objective_function, int64 step,
     const std::vector<IntVar*>& vars, double penalty_factor) {
-  return RevAlloc(new BinaryGuidedLocalSearch(this, objective,
-                                              objective_function, maximize,
-                                              step, vars, penalty_factor));
+  return RevAlloc(new BinaryGuidedLocalSearch(
+      this, objective, std::move(objective_function), maximize, step, vars,
+      penalty_factor));
 }
 
 SearchMonitor* Solver::MakeGuidedLocalSearch(
@@ -3605,8 +3609,8 @@ SearchMonitor* Solver::MakeGuidedLocalSearch(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, double penalty_factor) {
   return RevAlloc(new TernaryGuidedLocalSearch(
-      this, objective, objective_function, maximize, step, vars, secondary_vars,
-      penalty_factor));
+      this, objective, std::move(objective_function), maximize, step, vars,
+      secondary_vars, penalty_factor));
 }
 
 // ---------- Search Limits ----------
@@ -3970,7 +3974,7 @@ class CustomLimit : public SearchLimit {
 };
 
 CustomLimit::CustomLimit(Solver* const s, std::function<bool()> limiter)
-    : SearchLimit(s), limiter_(limiter) {}
+    : SearchLimit(s), limiter_(std::move(limiter)) {}
 
 bool CustomLimit::Check() {
   if (limiter_) return limiter_();
@@ -3991,7 +3995,7 @@ SearchLimit* CustomLimit::MakeClone() const {
 }  // namespace
 
 SearchLimit* Solver::MakeCustomLimit(std::function<bool()> limiter) {
-  return RevAlloc(new CustomLimit(this, limiter));
+  return RevAlloc(new CustomLimit(this, std::move(limiter)));
 }
 
 // ---------- SolveOnce ----------

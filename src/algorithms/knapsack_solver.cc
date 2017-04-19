@@ -100,7 +100,7 @@ int64 UpperBoundOfRatio(int64 numerator_1, int64 numerator_2,
 // ----- KnapsackSearchNode -----
 KnapsackSearchNode::KnapsackSearchNode(const KnapsackSearchNode* const parent,
                                        const KnapsackAssignment& assignment)
-    : depth_((parent == NULL) ? 0 : parent->depth() + 1),
+    : depth_((parent == nullptr) ? 0 : parent->depth() + 1),
       parent_(parent),
       assignment_(assignment),
       current_profit_(0),
@@ -110,7 +110,7 @@ KnapsackSearchNode::KnapsackSearchNode(const KnapsackSearchNode* const parent,
 // ----- KnapsackSearchPath -----
 KnapsackSearchPath::KnapsackSearchPath(const KnapsackSearchNode& from,
                                        const KnapsackSearchNode& to)
-    : from_(from), via_(NULL), to_(to) {}
+    : from_(from), via_(nullptr), to_(to) {}
 
 void KnapsackSearchPath::Init() {
   const KnapsackSearchNode* node_from = MoveUpToDepth(from_, to_.depth());
@@ -171,7 +171,7 @@ KnapsackPropagator::~KnapsackPropagator() { STLDeleteElements(&items_); }
 void KnapsackPropagator::Init(const std::vector<int64>& profits,
                               const std::vector<int64>& weights) {
   const int number_of_items = profits.size();
-  items_.assign(number_of_items, static_cast<KnapsackItemPtr>(NULL));
+  items_.assign(number_of_items, static_cast<KnapsackItemPtr>(nullptr));
   for (int i = 0; i < number_of_items; ++i) {
     items_[i] = new KnapsackItem(i, weights[i], profits[i]);
   }
@@ -399,7 +399,7 @@ int64 KnapsackGenericSolver::Solve(TimeLimit* time_limit,
 
   SearchQueue search_queue;
   const KnapsackAssignment assignment(kNoSelection, true);
-  KnapsackSearchNode* root_node = new KnapsackSearchNode(NULL, assignment);
+  KnapsackSearchNode* root_node = new KnapsackSearchNode(nullptr, assignment);
   root_node->set_current_profit(GetCurrentProfit());
   root_node->set_profit_upper_bound(GetAggregatedProfitUpperBound());
   root_node->set_next_item_id(GetNextItemId());

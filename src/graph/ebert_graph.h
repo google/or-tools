@@ -179,6 +179,7 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "util/permutation.h"
 #include "util/zvector.h"
 
@@ -304,7 +305,7 @@ class StarGraphBase {
     if (node == kNilNode) {
       return "NilNode";
     } else {
-      return StringPrintf("%lld", static_cast<int64>(node));
+      return StrCat(static_cast<int64>(node));
     }
   }
 
@@ -312,7 +313,7 @@ class StarGraphBase {
     if (arc == kNilArc) {
       return "NilArc";
     } else {
-      return StringPrintf("%lld", static_cast<int64>(arc));
+      return StrCat(static_cast<int64>(arc));
     }
   }
 
@@ -662,7 +663,7 @@ class ForwardStaticGraph
     DCHECK_EQ(num_arcs, next_arc);
     head_.Reserve(kFirstArc, kFirstArc + num_arcs - 1);
     std::unique_ptr<ArcIndexType[]> arc_permutation;
-    if (client_cycle_handler != NULL) {
+    if (client_cycle_handler != nullptr) {
       arc_permutation.reset(new ArcIndexType[end_arc_index()]);
       for (ArcIndexType input_arc = 0; input_arc < num_arcs; ++input_arc) {
         NodeIndexType tail = input_arcs[input_arc].first;
@@ -714,7 +715,7 @@ class ForwardStaticGraph
     first_incident_arc_[kFirstNode] = kFirstArc;
     if (sort_arcs_by_head) {
       ArcIndexType begin = first_incident_arc_[kFirstNode];
-      if (client_cycle_handler != NULL) {
+      if (client_cycle_handler != nullptr) {
         for (NodeIndexType node = 0; node < num_nodes; ++node) {
           ArcIndexType end = first_incident_arc_[node + 1];
           std::sort(
@@ -740,7 +741,7 @@ class ForwardStaticGraph
         }
       }
     }
-    if (client_cycle_handler != NULL && num_arcs > 0) {
+    if (client_cycle_handler != nullptr && num_arcs > 0) {
       // Apply the computed permutation if we haven't already.
       CycleHandlerForAnnotatedArcs handler_for_constructor(
           client_cycle_handler, &head_[kFirstArc] - kFirstArc);
@@ -781,7 +782,7 @@ class ForwardStaticGraph
 
   // Returns true if arc is a valid index into the (*tail_) array.
   bool CheckTailIndexValidity(const ArcIndexType arc) const {
-    return ((tail_ != NULL) && (arc >= kFirstArc) &&
+    return ((tail_ != nullptr) && (arc >= kFirstArc) &&
             (arc <= tail_->max_index()));
   }
 
@@ -817,7 +818,7 @@ class ForwardStaticGraph
     // If (*tail_) is already allocated, we have the invariant that
     // its contents are canonical, so we do not need to do anything
     // here in that case except return true.
-    if (tail_ == NULL) {
+    if (tail_ == nullptr) {
       if (!RepresentationClean()) {
         // We have been asked to build the (*tail_) array, but we have
         // no valid information from which to build it. The graph is
@@ -841,7 +842,7 @@ class ForwardStaticGraph
     return true;
   }
 
-  void ReleaseTailArray() { tail_.reset(NULL); }
+  void ReleaseTailArray() { tail_.reset(nullptr); }
 
   // To be used in a DCHECK().
   bool TailArrayComplete() const {
@@ -1056,7 +1057,7 @@ class EbertGraphBase
           tail_temp_(kNilNode) {}
 
     void SetTempFromIndex(ArcIndexType source) override {
-      if (annotation_handler_ != NULL) {
+      if (annotation_handler_ != nullptr) {
         annotation_handler_->SetTempFromIndex(source);
       }
       head_temp_ = graph_->Head(source);
@@ -1065,7 +1066,7 @@ class EbertGraphBase
 
     void SetIndexFromIndex(ArcIndexType source,
                            ArcIndexType destination) const override {
-      if (annotation_handler_ != NULL) {
+      if (annotation_handler_ != nullptr) {
         annotation_handler_->SetIndexFromIndex(source, destination);
       }
       graph_->SetHead(destination, graph_->Head(source));
@@ -1073,7 +1074,7 @@ class EbertGraphBase
     }
 
     void SetIndexFromTemp(ArcIndexType destination) const override {
-      if (annotation_handler_ != NULL) {
+      if (annotation_handler_ != nullptr) {
         annotation_handler_->SetIndexFromTemp(destination);
       }
       graph_->SetHead(destination, head_temp_);
@@ -1621,7 +1622,8 @@ class ForwardEbertGraph
 
   // Returns true if arc is a valid index into the (*tail_) array.
   bool CheckTailIndexValidity(const ArcIndexType arc) const {
-    return (tail_ != NULL) && (arc >= kFirstArc) && (arc <= tail_->max_index());
+    return (tail_ != nullptr) && (arc >= kFirstArc) &&
+           (arc <= tail_->max_index());
   }
 
   // Returns the tail or start-node of arc.
@@ -1654,7 +1656,7 @@ class ForwardEbertGraph
     // If (*tail_) is already allocated, we have the invariant that
     // its contents are canonical, so we do not need to do anything
     // here in that case except return true.
-    if (tail_ == NULL) {
+    if (tail_ == nullptr) {
       if (!representation_clean_) {
         // We have been asked to build the (*tail_) array, but we have
         // no valid information from which to build it. The graph is
@@ -1678,7 +1680,7 @@ class ForwardEbertGraph
     return true;
   }
 
-  void ReleaseTailArray() { tail_.reset(NULL); }
+  void ReleaseTailArray() { tail_.reset(nullptr); }
 
   // To be used in a DCHECK().
   bool TailArrayComplete() const {
@@ -1717,7 +1719,7 @@ class ForwardEbertGraph
   // ensure that it is called only when tail_ is guaranteed to have
   // been initialized.
   void ReserveTailArray(ArcIndexType new_max_num_arcs) {
-    if (tail_ != NULL) {
+    if (tail_ != nullptr) {
       // The (*tail_) values are already canonical, so we're just
       // reserving additional space for new arcs that haven't been
       // added yet.
@@ -1791,7 +1793,7 @@ class ForwardEbertGraph
     DCHECK(IsNodeValid(head));
     // Because Attach() is a public method, keeping (*tail_) canonical
     // requires us to record the new arc's tail here.
-    if (tail_ != NULL) {
+    if (tail_ != nullptr) {
       DCHECK(CheckTailIndexValidity(arc));
       tail_->Set(arc, tail);
     }
@@ -2083,7 +2085,7 @@ class AnnotatedGraphBuildManager
 // Returns false on an error.
 template <typename GraphType>
 bool BuildLineGraph(const GraphType& graph, GraphType* const line_graph) {
-  if (line_graph == NULL) {
+  if (line_graph == nullptr) {
     LOG(DFATAL) << "line_graph must not be NULL";
     return false;
   }

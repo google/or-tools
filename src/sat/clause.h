@@ -28,14 +28,14 @@
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/timer.h"
-#include "base/int_type_indexed_vector.h"
 #include "base/int_type.h"
+#include "base/int_type_indexed_vector.h"
 #include "base/hash.h"
-#include "base/random.h"
 #include "sat/sat_base.h"
 #include "sat/sat_parameters.pb.h"
 #include "util/bitset.h"
 #include "util/stats.h"
+#include "base/random.h"
 
 namespace operations_research {
 namespace sat {
@@ -161,7 +161,7 @@ class SatClause {
 class LiteralWatchers : public SatPropagator {
  public:
   LiteralWatchers();
-  ~LiteralWatchers();
+  ~LiteralWatchers() override;
 
   bool Propagate(Trail* trail) final;
   ClauseRef Reason(const Trail& trail, int trail_index) const final;
@@ -340,7 +340,7 @@ class BinaryImplicationGraph : public SatPropagator {
         num_literals_removed_(0),
         num_redundant_implications_(0),
         stats_("BinaryImplicationGraph") {}
-  ~BinaryImplicationGraph() {
+  ~BinaryImplicationGraph() override {
     IF_STATS_ENABLED({
       LOG(INFO) << stats_.StatString();
       LOG(INFO) << "num_redundant_implications " << num_redundant_implications_;

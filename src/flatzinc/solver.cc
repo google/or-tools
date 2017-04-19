@@ -18,6 +18,7 @@
 
 #include "base/integral_types.h"
 #include "base/logging.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
@@ -116,7 +117,7 @@ std::string Solver::SolutionString(const SolutionOutputSpecs& output) const {
       if (output.display_as_boolean) {
         result.append(StringPrintf(value ? "true" : "false"));
       } else {
-        result.append(StringPrintf("%" GG_LL_FORMAT "d", value));
+        StrAppend(&result, value);
       }
       if (i != output.flat_variables.size() - 1) {
         result.append(", ");
@@ -909,9 +910,8 @@ void Solver::Solve(FlatzincParameters p, SearchReportingInterface* report) {
                       : (model_.objective() == nullptr
                              ? "**sat**"
                              : (timeout ? "**feasible**" : "**proven**")));
-    const std::string obj_string = (model_.objective() != nullptr && !no_solutions
-                                   ? StringPrintf("%" GG_LL_FORMAT "d", best)
-                                   : "");
+    const std::string obj_string =
+        (model_.objective() != nullptr && !no_solutions ? StrCat(best) : "");
     solver_status.append(
         "%%  name, status, obj, solns, s_time, b_time, br, "
         "fails, cts, demon, delayed, mem, search\n");

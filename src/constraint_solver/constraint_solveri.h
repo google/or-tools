@@ -260,7 +260,7 @@ inline uint64 Hash1(void* const ptr) {
 
 template <class T>
 uint64 Hash1(const std::vector<T*>& ptrs) {
-  if (ptrs.size() == 0) {
+  if (ptrs.empty()) {
     return 0;
   } else if (ptrs.size() == 1) {
     return Hash1(ptrs[0]);
@@ -274,7 +274,7 @@ uint64 Hash1(const std::vector<T*>& ptrs) {
 }
 
 inline uint64 Hash1(const std::vector<int64>& ptrs) {
-  if (ptrs.size() == 0) {
+  if (ptrs.empty()) {
     return 0;
   } else if (ptrs.size() == 1) {
     return Hash1(ptrs[0]);
@@ -1265,6 +1265,12 @@ class PathOperator : public IntVarLocalSearchOperator {
   int64 StartNode(int i) const { return path_starts_[base_paths_[i]]; }
   // Returns the vector of path start nodes.
   const std::vector<int64>& path_starts() const { return path_starts_; }
+  // Returns the class of the current path of the ith base node.
+  int PathClass(int i) const {
+    return start_empty_path_class_ != nullptr
+               ? start_empty_path_class_(StartNode(i))
+               : StartNode(i);
+  }
 
   // When the operator is being synchronized with a new solution (when Start()
   // is called), returns true to restart the exploration of the neighborhood
@@ -2477,21 +2483,21 @@ class RevPartialSequence {
   std::string DebugString() const {
     std::string result = "[";
     for (int i = 0; i < first_ranked_.Value(); ++i) {
-      result.append(StringPrintf("%d", elements_[i]));
+      StrAppend(&result, elements_[i]);
       if (i != first_ranked_.Value() - 1) {
         result.append("-");
       }
     }
     result.append("|");
     for (int i = first_ranked_.Value(); i <= last_ranked_.Value(); ++i) {
-      result.append(StringPrintf("%d", elements_[i]));
+      StrAppend(&result, elements_[i]);
       if (i != last_ranked_.Value()) {
         result.append("-");
       }
     }
     result.append("|");
     for (int i = last_ranked_.Value() + 1; i < size_; ++i) {
-      result.append(StringPrintf("%d", elements_[i]));
+      StrAppend(&result, elements_[i]);
       if (i != size_ - 1) {
         result.append("-");
       }

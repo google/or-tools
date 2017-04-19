@@ -25,7 +25,7 @@ namespace {
 
 // Transpose the given "matrix" and transform the value to IntegerValue.
 std::vector<std::vector<IntegerValue>> Transpose(
-    const std::vector<std::vector<int64>> tuples) {
+    const std::vector<std::vector<int64>>& tuples) {
   CHECK(!tuples.empty());
   const int n = tuples.size();
   const int m = tuples[0].size();

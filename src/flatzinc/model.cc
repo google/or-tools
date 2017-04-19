@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "base/join.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "flatzinc/logging.h"
@@ -318,7 +319,7 @@ std::string Domain::DebugString() const {
                           values[1]);
     }
   } else if (values.size() == 1) {
-    return StringPrintf("%" GG_LL_FORMAT "d", values.back());
+    return StrCat(values.back());
   } else {
     return StringPrintf("[%s]", strings::Join(values, ", ").c_str());
   }
@@ -730,7 +731,7 @@ std::string Annotation::DebugString() const {
                           interval_min, interval_max);
     }
     case INT_VALUE: {
-      return StringPrintf("%" GG_LL_FORMAT "d", interval_min);
+      return StrCat(interval_min);
     }
     case INT_VAR_REF: {
       return variables.front()->name;
@@ -813,8 +814,7 @@ IntegerVariable* Model::AddVariable(const std::string& name, const Domain& domai
 // TODO(user): Create only once constant per value.
 IntegerVariable* Model::AddConstant(int64 value) {
   IntegerVariable* const var =
-      new IntegerVariable(StringPrintf("%" GG_LL_FORMAT "d", value),
-                          Domain::IntegerValue(value), true);
+      new IntegerVariable(StrCat(value), Domain::IntegerValue(value), true);
   variables_.push_back(var);
   return var;
 }

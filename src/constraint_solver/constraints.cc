@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/integral_types.h"
@@ -42,7 +43,7 @@ Demon* Solver::MakeDelayedConstraintInitialPropagateCallback(
 namespace {
 class ActionDemon : public Demon {
  public:
-  explicit ActionDemon(Solver::Action action) : action_(action) {
+  explicit ActionDemon(const Solver::Action& action) : action_(action) {
     CHECK(action != nullptr);
   }
 
@@ -56,7 +57,7 @@ class ActionDemon : public Demon {
 
 class ClosureDemon : public Demon {
  public:
-  explicit ClosureDemon(Solver::Closure closure) : closure_(closure) {
+  explicit ClosureDemon(const Solver::Closure& closure) : closure_(closure) {
     CHECK(closure != nullptr);
   }
 
