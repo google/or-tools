@@ -19,18 +19,20 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
 #include "base/file.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/hash.h"
 #include "constraint_solver/constraint_solver.h"
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include "util/xml_helper.h"
 
 namespace operations_research {
@@ -388,9 +390,8 @@ class TreeNode {
     if (node_type_ == FAIL) {
       visualization_writer->StartElement("failed");
       visualization_writer->AddAttribute("index", name);
-      visualization_writer->AddAttribute(
-          "value",
-          StringPrintf("%" GG_LL_FORMAT "d", parent_->branch_value(0)));
+      visualization_writer->AddAttribute("value",
+                                         StrCat(parent_->branch_value(0)));
       visualization_writer->EndElement();  // failed
     } else if (node_type_ == TRY) {
       visualization_writer->StartElement("focus");
@@ -439,13 +440,11 @@ class TreeNode {
         const std::vector<int64>* const domain_values =
             FindOrNull(domain, name_);
         if (domain_values) {
-          tree_writer->AddAttribute("size",
-                                    StringPrintf("%zu", domain_values->size()));
+          tree_writer->AddAttribute("size", StrCat(domain_values->size()));
         } else {
           tree_writer->AddAttribute("size", "unknown");
         }
-        tree_writer->AddAttribute(
-            "value", StringPrintf("%" GG_LL_FORMAT "d", branch_values_[i]));
+        tree_writer->AddAttribute("value", StrCat(branch_values_[i]));
       }
 
       tree_writer->EndElement();
@@ -565,7 +564,7 @@ void TreeMonitor::Init(const IntVar* const* vars, int size) {
     std::string name = vars[i]->name();
 
     if (name.empty()) {
-      name = StringPrintf("%d", i);
+      name = StrCat(i);
     }
 
     vars_[name] = vars[i];
@@ -675,11 +674,10 @@ std::string TreeMonitor::GenerateVisualizationXML() const {
   xml_writer.AddAttribute("id", 0);
   xml_writer.AddAttribute("type", "vector");
   xml_writer.AddAttribute("display", "expanded");
-  xml_writer.AddAttribute("min", StringPrintf("%" GG_LL_FORMAT "d", min_));
-  xml_writer.AddAttribute("max", StringPrintf("%" GG_LL_FORMAT "d", max_));
-  xml_writer.AddAttribute("width", StringPrintf("%zd", vars_.size()));
-  xml_writer.AddAttribute("height",
-                          StringPrintf("%" GG_LL_FORMAT "d", max_ - min_ + 1));
+  xml_writer.AddAttribute("min", StrCat(min_));
+  xml_writer.AddAttribute("max", StrCat(max_));
+  xml_writer.AddAttribute("width", StrCat(vars_.size()));
+  xml_writer.AddAttribute("height", StrCat(max_ - min_ + 1));
   xml_writer.EndElement();  // End of element: visualizer
 
   root_node_->GenerateVisualizationXML(&xml_writer);
@@ -774,7 +772,7 @@ std::string TreeMonitor::StripSpecialCharacters(std::string attribute) {
 
 // Strips characters that cause problems with CPViz from attributes
 std::string TreeMonitorStripSpecialCharacters(std::string attribute) {
-  return TreeMonitor::StripSpecialCharacters(attribute);
+  return TreeMonitor::StripSpecialCharacters(std::move(attribute));
 }
 
 // ----- API ----

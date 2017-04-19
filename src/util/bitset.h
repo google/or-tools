@@ -463,35 +463,35 @@ class Bitset64 {
   // Sets the bit at position i to 0.
   void Clear(IndexType i) {
     DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), size_);
+    DCHECK_LT(Value(i), Value(size_));
     data_[BitOffset64(Value(i))] &= ~OneBit64(BitPos64(Value(i)));
   }
 
   // Sets bucket containing bit i to 0.
   void ClearBucket(IndexType i) {
     DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), size_);
+    DCHECK_LT(Value(i), Value(size_));
     data_[BitOffset64(Value(i))] = 0;
   }
 
   // Clears the bits at position i and i ^ 1.
   void ClearTwoBits(IndexType i) {
     DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), size_);
+    DCHECK_LT(Value(i), Value(size_));
     data_[BitOffset64(Value(i))] &= ~TwoBitsFromPos64(Value(i));
   }
 
   // Returns true if the bit at position i or the one at position i ^ 1 is set.
   bool AreOneOfTwoBitsSet(IndexType i) const {
     DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), size_);
+    DCHECK_LT(Value(i), Value(size_));
     return data_[BitOffset64(Value(i))] & TwoBitsFromPos64(Value(i));
   }
 
   // Returns true if the bit at position i is set.
   bool IsSet(IndexType i) const {
     DCHECK_GE(Value(i), 0);
-    DCHECK_LT(Value(i), size_);
+    DCHECK_LT(Value(i), Value(size_));
     return data_[BitOffset64(Value(i))] & OneBit64(BitPos64(Value(i)));
   }
 
@@ -523,22 +523,24 @@ class Bitset64 {
   // Copies "other" to "this". The bitsets do not have to be of the same size.
   // If "other" is smaller, high order bits are not changed. If "other" is
   // larger, its high order bits are ignored. In any case "this" is not resized.
-  void SetContentFromBitset(const Bitset64<IndexType>& other) {
-    const int min_size = std::min(data_.size(), other.data_.size());
+  template <typename OtherIndexType>
+  void SetContentFromBitset(const Bitset64<OtherIndexType>& other) {
+    const int64 min_size = std::min(data_.size(), other.data_.size());
     if (min_size == 0) return;
     const uint64 last_common_bucket = data_[min_size - 1];
     memcpy(data_.data(), other.data_.data(), min_size * sizeof(uint64));
     if (data_.size() >= other.data_.size()) {
-      const uint64 bitmask =
-          kAllBitsButLsb64 << BitPos64(Value(other.size() - 1));
+      const uint64 bitmask = kAllBitsButLsb64
+                             << BitPos64(other.Value(other.size() - 1));
       data_[min_size - 1] &= ~bitmask;
       data_[min_size - 1] |= (bitmask & last_common_bucket);
     }
   }
 
   // Same as SetContentFromBitset where "this" and "other" have the same size.
-  void SetContentFromBitsetOfSameSize(const Bitset64<IndexType>& other) {
-    DCHECK_EQ(size(), other.size());
+  template <typename OtherIndexType>
+  void SetContentFromBitsetOfSameSize(const Bitset64<OtherIndexType>& other) {
+    DCHECK_EQ(Value(size()), other.Value(other.size()));
     memcpy(data_.data(), other.data_.data(), data_.size() * sizeof(uint64));
   }
 
@@ -682,6 +684,8 @@ class Bitset64 {
   // Note that we cannot do the same for begin().
   const Iterator end_;
 
+  template <class OtherIndexType>
+  friend class Bitset64;
   DISALLOW_COPY_AND_ASSIGN(Bitset64);
 };
 

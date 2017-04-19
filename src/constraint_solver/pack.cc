@@ -533,7 +533,7 @@ void SortIndexByWeight(std::vector<int>* const indices,
 }
 
 void SortIndexByWeight(std::vector<int>* const indices,
-                       Solver::IndexEvaluator1 weights) {
+                       const Solver::IndexEvaluator1& weights) {
   std::vector<WeightContainer> to_sort;
   for (int index = 0; index < indices->size(); ++index) {
     const int w = weights(index);
@@ -545,7 +545,7 @@ void SortIndexByWeight(std::vector<int>* const indices,
 }
 
 void SortIndexByWeight(std::vector<int>* const indices,
-                       Solver::IndexEvaluator2 weights, int bin_index) {
+                       const Solver::IndexEvaluator2& weights, int bin_index) {
   std::vector<WeightContainer> to_sort;
   for (int index = 0; index < indices->size(); ++index) {
     const int w = weights(index, bin_index);
@@ -615,7 +615,7 @@ class DimensionLessThanConstant : public Dimension {
 
   void Propagate(int bin_index, const std::vector<int>& forced,
                  const std::vector<int>& removed) override {
-    if (forced.size() > 0) {
+    if (!forced.empty()) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
       for (const int value : forced) {
@@ -655,7 +655,7 @@ class DimensionLessThanConstant : public Dimension {
 class DimensionSumCallbackLessThanConstant : public Dimension {
  public:
   DimensionSumCallbackLessThanConstant(Solver* const s, Pack* const p,
-                                       Solver::IndexEvaluator1 weights,
+                                       const Solver::IndexEvaluator1& weights,
                                        int vars_count,
                                        const std::vector<int64>& upper_bounds)
       : Dimension(s, p),
@@ -714,7 +714,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
 
   void Propagate(int bin_index, const std::vector<int>& forced,
                  const std::vector<int>& removed) override {
-    if (forced.size() > 0) {
+    if (!forced.empty()) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
       for (const int value : forced) {
@@ -755,7 +755,7 @@ class DimensionSumCallbackLessThanConstant : public Dimension {
 class DimensionLessThanConstantCallback2 : public Dimension {
  public:
   DimensionLessThanConstantCallback2(Solver* const s, Pack* const p,
-                                     Solver::IndexEvaluator2 weights,
+                                     const Solver::IndexEvaluator2& weights,
                                      int vars_count,
                                      const std::vector<int64>& upper_bounds)
       : Dimension(s, p),
@@ -818,7 +818,7 @@ class DimensionLessThanConstantCallback2 : public Dimension {
 
   void Propagate(int bin_index, const std::vector<int>& forced,
                  const std::vector<int>& removed) override {
-    if (forced.size() > 0) {
+    if (!forced.empty()) {
       Solver* const s = solver();
       int64 sum = sum_of_bound_variables_vector_[bin_index];
       for (const int value : forced) {
@@ -1005,7 +1005,7 @@ class DimensionWeightedCallback2SumEqVar : public Dimension {
   };
 
   DimensionWeightedCallback2SumEqVar(Solver* const s, Pack* const p,
-                                     Solver::IndexEvaluator2 weights,
+                                     const Solver::IndexEvaluator2& weights,
                                      int vars_count,
                                      const std::vector<IntVar*>& loads)
       : Dimension(s, p),
@@ -1404,10 +1404,10 @@ class CountUsedBinDimension : public Dimension {
 
   void InitialPropagate(int bin_index, const std::vector<int>& forced,
                         const std::vector<int>& undecided) override {
-    if (forced.size() > 0) {
+    if (!forced.empty()) {
       used_.SetToOne(solver(), bin_index);
       initial_min_++;
-    } else if (undecided.size() > 0) {
+    } else if (!undecided.empty()) {
       candidates_.SetValue(solver(), bin_index, undecided.size());
     } else {
       initial_max_--;
@@ -1427,10 +1427,10 @@ class CountUsedBinDimension : public Dimension {
   void Propagate(int bin_index, const std::vector<int>& forced,
                  const std::vector<int>& removed) override {
     if (!used_.IsSet(bin_index)) {
-      if (forced.size() > 0) {
+      if (!forced.empty()) {
         used_.SetToOne(solver(), bin_index);
         card_min_.SetValue(solver(), card_min_.Value() + 1);
-      } else if (removed.size() > 0) {
+      } else if (!removed.empty()) {
         candidates_.SetValue(solver(), bin_index,
                              candidates_.Value(bin_index) - removed.size());
         if (candidates_[bin_index] == 0) {

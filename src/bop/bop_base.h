@@ -21,8 +21,8 @@
 #include "bop/bop_solution.h"
 #include "lp_data/lp_types.h"
 #include "sat/boolean_problem.pb.h"
-#include "sat/sat_base.h"
 #include "sat/clause.h"
+#include "sat/sat_base.h"
 #include "util/stats.h"
 #include "util/time_limit.h"
 

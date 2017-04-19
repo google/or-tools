@@ -100,7 +100,7 @@ std::vector<std::string> MPModelProtoExporter::ExtractAndProcessNames(
   NameManager namer;
   const int num_digits = StrCat(num_items).size();
   int i = 0;
-  for (auto item : proto) {
+  for (const auto& item : proto) {
     const std::string obfuscated_name =
         StringPrintf("%s%0*d", prefix.c_str(), num_digits, i);
     if (obfuscate || !item.has_name()) {

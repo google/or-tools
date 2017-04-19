@@ -18,6 +18,7 @@
 
 #include "base/map_util.h"
 #include "constraint_solver/constraint_solver.h"
+#include "constraint_solver/routing_enums.pb.h"
 
 // --- Routing search flags ---
 

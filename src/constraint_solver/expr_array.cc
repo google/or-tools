@@ -2231,7 +2231,7 @@ class PositiveBooleanScalProd : public BaseIntExpr {
     int64 vmax = 0LL;
     Range(&vmin, &vmax);
     IntVar* const var = solver()->MakeIntVar(vmin, vmax);
-    if (vars_.size() > 0) {
+    if (!vars_.empty()) {
       CastConstraint* const ct =
           s->RevAlloc(new PositiveBooleanScalProdEqVar(s, vars_, coefs_, var));
       s->AddCastConstraint(ct, var, this);

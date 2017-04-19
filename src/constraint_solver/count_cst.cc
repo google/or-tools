@@ -967,7 +967,7 @@ Constraint* Solver::MakeAtMost(std::vector<IntVar*> vars, int64 value,
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<int64>& values,
                                    const std::vector<IntVar*>& cards) {
-  if (vars.size() == 0) {
+  if (vars.empty()) {
     return RevAlloc(new SetAllToZero(this, cards));
   }
   CHECK_EQ(values.size(), cards.size());
@@ -1001,7 +1001,7 @@ Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
 
 Constraint* Solver::MakeDistribute(const std::vector<IntVar*>& vars,
                                    const std::vector<IntVar*>& cards) {
-  if (vars.size() == 0) {
+  if (vars.empty()) {
     return RevAlloc(new SetAllToZero(this, cards));
   }
   for (IntVar* const var : vars) {

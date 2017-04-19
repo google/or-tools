@@ -19,6 +19,7 @@
 
 #include "base/stringprintf.h"
 #include "base/strutil.h"
+#include "base/join.h"
 
 namespace operations_research {
 
@@ -39,7 +40,7 @@ void XmlHelper::StartElement(const std::string& name) {
 }
 
 void XmlHelper::AddAttribute(const std::string& key, int value) {
-  AddAttribute(key, StringPrintf("%d", value));
+  AddAttribute(key, StrCat(value));
 }
 
 void XmlHelper::AddAttribute(const std::string& key, const std::string& value) {

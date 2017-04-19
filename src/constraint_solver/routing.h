@@ -653,7 +653,7 @@ class RoutingModel {
 #endif
   // Takes ownership of evaluator.
   void SetFirstSolutionEvaluator(Solver::IndexEvaluator2 evaluator) {
-    first_solution_evaluator_ = evaluator;
+    first_solution_evaluator_ = std::move(evaluator);
   }
   // Adds a local search operator to the set of operators used to solve the
   // vehicle routing problem.

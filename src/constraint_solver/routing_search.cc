@@ -46,7 +46,7 @@ RoutingLocalSearchFilter::RoutingLocalSearchFilter(
     Solver::ObjectiveWatcher objective_callback)
     : IntVarLocalSearchFilter(nexts),
       injected_objective_value_(0),
-      objective_callback_(objective_callback) {}
+      objective_callback_(std::move(objective_callback)) {}
 
 void RoutingLocalSearchFilter::InjectObjectiveValue(int64 objective_value) {
   injected_objective_value_ = objective_value;
@@ -66,7 +66,8 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
  public:
   NodeDisjunctionFilter(const RoutingModel& routing_model,
                         Solver::ObjectiveWatcher objective_callback)
-      : RoutingLocalSearchFilter(routing_model.Nexts(), objective_callback),
+      : RoutingLocalSearchFilter(routing_model.Nexts(),
+                                 std::move(objective_callback)),
         routing_model_(routing_model),
         active_per_disjunction_(routing_model.GetNumberOfDisjunctions(), 0),
         inactive_per_disjunction_(routing_model.GetNumberOfDisjunctions(), 0),
@@ -174,7 +175,12 @@ class NodeDisjunctionFilter : public RoutingLocalSearchFilter {
     } else {
       IntVar* const cost_var = routing_model_.CostVar();
       // Only compare to max as a cost lower bound is computed.
-      return new_objective_value <= cost_var->Max();
+      // TODO(user): Factor out the access to the objective upper bound.
+      int64 cost_max = cost_var->Max();
+      if (delta->Objective() == cost_var) {
+        cost_max = std::min(cost_max, delta->ObjectiveMax());
+      }
+      return new_objective_value <= cost_max;
     }
   }
   std::string DebugString() const override { return "NodeDisjunctionFilter"; }
@@ -222,7 +228,7 @@ RoutingLocalSearchFilter* MakeNodeDisjunctionFilter(
     const RoutingModel& routing_model,
     Solver::ObjectiveWatcher objective_callback) {
   return routing_model.solver()->RevAlloc(
-      new NodeDisjunctionFilter(routing_model, objective_callback));
+      new NodeDisjunctionFilter(routing_model, std::move(objective_callback)));
 }
 
 const int64 BasePathFilter::kUnassigned = -1;
@@ -230,7 +236,7 @@ const int64 BasePathFilter::kUnassigned = -1;
 BasePathFilter::BasePathFilter(const std::vector<IntVar*>& nexts,
                                int next_domain_size,
                                Solver::ObjectiveWatcher objective_callback)
-    : RoutingLocalSearchFilter(nexts, objective_callback),
+    : RoutingLocalSearchFilter(nexts, std::move(objective_callback)),
       node_path_starts_(next_domain_size, kUnassigned),
       paths_(nexts.size(), -1),
       new_nexts_(nexts.size(), kUnassigned),
@@ -491,7 +497,7 @@ ChainCumulFilter::ChainCumulFilter(const RoutingModel& routing_model,
                                    const RoutingDimension& dimension,
                                    Solver::ObjectiveWatcher objective_callback)
     : BasePathFilter(routing_model.Nexts(), dimension.cumuls().size(),
-                     objective_callback),
+                     std::move(objective_callback)),
       cumuls_(dimension.cumuls()),
       evaluators_(routing_model.vehicles(), nullptr),
       vehicle_capacities_(dimension.vehicle_capacities()),
@@ -724,7 +730,7 @@ PathCumulFilter::PathCumulFilter(const RoutingModel& routing_model,
                                  const RoutingDimension& dimension,
                                  Solver::ObjectiveWatcher objective_callback)
     : BasePathFilter(routing_model.Nexts(), dimension.cumuls().size(),
-                     objective_callback),
+                     std::move(objective_callback)),
       cumuls_(dimension.cumuls()),
       forbidden_intervals_(dimension.forbidden_intervals()),
       slacks_(dimension.slacks()),
@@ -1795,7 +1801,7 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::InitializePairPositions(
   pickup_to_entries->resize(model()->Size());
   delivery_to_entries->clear();
   delivery_to_entries->resize(model()->Size());
-  for (const RoutingModel::NodePair node_pair :
+  for (const RoutingModel::NodePair& node_pair :
        model()->GetPickupAndDeliveryPairs()) {
     const int64 pickup = node_pair.first[0];
     const int64 delivery = node_pair.second[0];
@@ -2320,7 +2326,7 @@ bool CheapestAdditionFilteredDecisionBuilder::BuildSolution() {
   const int kUnassigned = -1;
   const RoutingModel::NodePairs& pairs = model()->GetPickupAndDeliveryPairs();
   std::vector<int> deliveries(Size(), kUnassigned);
-  for (const RoutingModel::NodePair pair : pairs) {
+  for (const RoutingModel::NodePair& pair : pairs) {
     deliveries[pair.first[0]] = pair.second[0];
   }
   // To mimic the behavior of PathSelector (cf. search.cc), iterating on
@@ -2448,7 +2454,7 @@ ComparatorCheapestAdditionFilteredDecisionBuilder::
         RoutingModel* model, Solver::VariableValueComparator comparator,
         const std::vector<LocalSearchFilter*>& filters)
     : CheapestAdditionFilteredDecisionBuilder(model, filters),
-      comparator_(comparator) {}
+      comparator_(std::move(comparator)) {}
 
 void ComparatorCheapestAdditionFilteredDecisionBuilder::SortPossibleNexts(
     int64 from, std::vector<int64>* sorted_nexts) {
