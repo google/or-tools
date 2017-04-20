@@ -33,6 +33,6 @@ new_http_archive(
     name = "glpk",
     url = "http://ftp.gnu.org/gnu/glpk/glpk-4.52.tar.gz",
     sha256 = "9a5dab356268b4f177c33e00ddf8164496dc2434e83bd1114147024df983a3bb",
-    build_file = "../src/glpk.BUILD",
+    build_file = "../src/bazel/glpk.BUILD",
 )
 
