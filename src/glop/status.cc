@@ -13,6 +13,8 @@
 
 #include "glop/status.h"
 
+#include <utility>
+
 #include "base/logging.h"
 
 namespace operations_research {
@@ -22,7 +24,7 @@ Status::Status() : error_code_(NO_ERROR), error_message_() {}
 
 Status::Status(ErrorCode error_code, std::string error_message)
     : error_code_(error_code),
-      error_message_(error_code == NO_ERROR ? "" : error_message) {}
+      error_message_(error_code == NO_ERROR ? "" : std::move(error_message)) {}
 
 const Status Status::OK;
 

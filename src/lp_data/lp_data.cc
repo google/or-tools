@@ -36,8 +36,8 @@ namespace {
 // This should be the same as DCHECK(AreBoundsValid()), but the DCHECK() are
 // split to give more meaningful information to the user in case of failure.
 void DebugCheckBoundsValid(Fractional lower_bound, Fractional upper_bound) {
-  DCHECK(!isnan(lower_bound));
-  DCHECK(!isnan(upper_bound));
+  DCHECK(!std::isnan(lower_bound));
+  DCHECK(!std::isnan(upper_bound));
   DCHECK(!(lower_bound == kInfinity && upper_bound == kInfinity));
   DCHECK(!(lower_bound == -kInfinity && upper_bound == -kInfinity));
   DCHECK_LE(lower_bound, upper_bound);
@@ -572,7 +572,7 @@ std::string LinearProgram::Dump() const {
   // Integer variables.
   // TODO(user): if needed provide similar output for binary variables.
   const std::vector<ColIndex>& integer_variables = IntegerVariablesList();
-  if (integer_variables.size() > 0) {
+  if (!integer_variables.empty()) {
     output += "int";
     for (ColIndex col : integer_variables) {
       output += " ";

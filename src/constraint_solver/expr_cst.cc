@@ -1576,14 +1576,14 @@ Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
                                     std::vector<int64> starts,
                                     std::vector<int64> ends) {
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
-      this, expr->Var(), {std::move(starts), std::move(ends)}));
+      this, expr->Var(), {starts, ends}));
 }
 
 Constraint* Solver::MakeNotMemberCt(IntExpr* const expr,
                                     std::vector<int> starts,
                                     std::vector<int> ends) {
   return RevAlloc(new SortedDisjointForbiddenIntervalsConstraint(
-      this, expr->Var(), {std::move(starts), std::move(ends)}));
+      this, expr->Var(), {starts, ends}));
 }
 
 Constraint* Solver::MakeNotMemberCt(IntExpr* expr,

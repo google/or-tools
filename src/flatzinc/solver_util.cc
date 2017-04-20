@@ -13,6 +13,7 @@
 
 #include "flatzinc/solver_util.h"
 
+#include "base/join.h"
 #include "flatzinc/logging.h"
 
 namespace operations_research {
@@ -193,7 +194,7 @@ std::string MemoryUsage() {
   } else if (memory_usage > kDisplayThreshold * kKiloByte) {
     return StringPrintf("%2lf KB", memory_usage * 1.0 / kKiloByte);
   } else {
-    return StringPrintf("%" GG_LL_FORMAT "d", memory_usage);
+    return StrCat(memory_usage);
   }
 }
 

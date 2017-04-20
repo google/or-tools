@@ -59,6 +59,8 @@ void TimeTablingPerTask::RegisterWith(GenericLiteralWatcher* watcher) {
 }
 
 bool TimeTablingPerTask::Propagate() {
+  // TODO(user): understand why the following line creates a bug.
+  // if (num_tasks_to_sweep_ == 0) return true;
   // Repeat until the propagator does not filter anymore.
   profile_changed_ = true;
   while (profile_changed_) {
@@ -208,13 +210,15 @@ bool TimeTablingPerTask::SweepAllTasks() {
     const bool fixed_start = helper_->StartMin(t) == helper_->StartMax(t);
     const bool fixed_end = helper_->EndMin(t) == helper_->EndMax(t);
     // A task does not have to be considered for propagation in the rest of the
-    // sub-tree if it respects one of these conditions:
+    // sub-tree if it is absent or if it is present and respects one of these
+    // conditions:
     // - its start and end variables are fixed;
     // - it has a maximum duration of 0;
     // - it has a maximum demand of 0;
-    // - it is absent.
-    if ((fixed_start && fixed_end) || helper_->DurationMax(t) == 0 ||
-        DemandMax(t) == 0 || helper_->IsAbsent(t)) {
+    if (helper_->IsAbsent(t) ||
+        (helper_->IsPresent(t) &&
+         ((fixed_start && fixed_end) || helper_->DurationMax(t) == 0 ||
+          DemandMax(t) == 0))) {
       // Remove the task from the set of tasks to sweep.
       num_tasks_to_sweep_--;
       tasks_to_sweep_[i] = tasks_to_sweep_[num_tasks_to_sweep_];
@@ -223,10 +227,10 @@ bool TimeTablingPerTask::SweepAllTasks() {
     }
     // A task does not have to be considered for propagation in this particular
     // iteration if it respects one of these conditions:
-    // - its start variable is fixed;
+    // - it is present and its start variable is fixed;
     // - its minimum demand cannot lead to a resource overload;
     // - its minimum duration is 0.
-    if (fixed_start || DemandMin(t) <= min_demand ||
+    if ((helper_->IsPresent(t) && fixed_start) || DemandMin(t) <= min_demand ||
         helper_->DurationMin(t) == 0) {
       continue;
     }
@@ -240,9 +244,10 @@ bool TimeTablingPerTask::SweepAllTasks() {
 bool TimeTablingPerTask::SweepTask(int task_id) {
   const IntegerValue start_max = helper_->StartMax(task_id);
   const IntegerValue duration_min = helper_->DurationMin(task_id);
+  const IntegerValue initial_start_min = helper_->StartMin(task_id);
   const IntegerValue initial_end_min = helper_->EndMin(task_id);
 
-  IntegerValue new_start_min = helper_->StartMin(task_id);
+  IntegerValue new_start_min = initial_start_min;
   IntegerValue new_end_min = initial_end_min;
 
   // Find the profile rectangle that overlpas the minimum start time of task_id.
@@ -294,7 +299,8 @@ bool TimeTablingPerTask::SweepTask(int task_id) {
 
   if (!conflict_found) return true;
 
-  if (!UpdateStartingTime(task_id, last_initial_conflict, new_start_min)) {
+  if (initial_start_min != new_start_min &&
+      !UpdateStartingTime(task_id, last_initial_conflict, new_start_min)) {
     return false;
   }
 

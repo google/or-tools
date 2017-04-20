@@ -32,9 +32,9 @@
 #include "bop/bop_base.h"
 #include "bop/bop_solution.h"
 #include "bop/bop_types.h"
+#include "sat/boolean_problem.pb.h"
 #include "sat/encoding.h"
 #include "sat/sat_solver.h"
-#include "sat/boolean_problem.pb.h"
 
 namespace operations_research {
 namespace bop {

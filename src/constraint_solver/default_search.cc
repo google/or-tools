@@ -18,6 +18,7 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/commandlineflags.h"
@@ -340,7 +341,7 @@ class InitVarImpactsWithSplits : public DecisionBuilder {
   }
 
   void set_update_impact_callback(std::function<void(int, int64)> callback) {
-    update_impact_callback_ = callback;
+    update_impact_callback_ = std::move(callback);
   }
 
  private:

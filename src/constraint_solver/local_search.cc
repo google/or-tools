@@ -802,7 +802,8 @@ class Relocate : public PathOperator {
            int64 chain_length = 1LL, bool single_path = false)
       : Relocate(vars, secondary_vars,
                  StrCat("Relocate<", chain_length, ">"),
-                 start_empty_path_class, chain_length, single_path) {}
+                 std::move(start_empty_path_class), chain_length, single_path) {
+  }
   ~Relocate() override {}
   bool MakeNeighbor() override;
 
@@ -910,6 +911,11 @@ bool Cross::MakeNeighbor() {
     return false;
   }
   if (!IsPathEnd(node0) && !IsPathEnd(node1)) {
+    // If two paths are equivalent don't exchange them.
+    if (PathClass(0) == PathClass(1) && IsPathEnd(Next(node0)) &&
+        IsPathEnd(Next(node1))) {
+      return false;
+    }
     return MoveChain(start0, node0, start1) && MoveChain(node0, node1, start0);
   } else if (!IsPathEnd(node0)) {
     return MoveChain(start0, node0, start1);
@@ -1257,7 +1263,7 @@ TSPOpt::TSPOpt(const std::vector<IntVar*>& vars,
                Solver::IndexEvaluator3 evaluator, int chain_length)
     : PathOperator(vars, secondary_vars, 1, nullptr),
       hamiltonian_path_solver_(cost_),
-      evaluator_(evaluator),
+      evaluator_(std::move(evaluator)),
       chain_length_(chain_length) {}
 
 bool TSPOpt::MakeNeighbor() {
@@ -1461,7 +1467,7 @@ class NearestNeighbors {
 
 NearestNeighbors::NearestNeighbors(Solver::IndexEvaluator3 evaluator,
                                    const PathOperator& path_operator, int size)
-    : evaluator_(evaluator),
+    : evaluator_(std::move(evaluator)),
       path_operator_(path_operator),
       size_(size),
       initialized_(false) {}
@@ -1512,7 +1518,7 @@ class LinKernighan : public PathOperator {
  public:
   LinKernighan(const std::vector<IntVar*>& vars,
                const std::vector<IntVar*>& secondary_vars,
-               Solver::IndexEvaluator3 evaluator, bool topt);
+               const Solver::IndexEvaluator3& evaluator, bool topt);
   ~LinKernighan() override;
   bool MakeNeighbor() override;
 
@@ -1537,7 +1543,7 @@ class LinKernighan : public PathOperator {
 
 LinKernighan::LinKernighan(const std::vector<IntVar*>& vars,
                            const std::vector<IntVar*>& secondary_vars,
-                           Solver::IndexEvaluator3 evaluator, bool topt)
+                           const Solver::IndexEvaluator3& evaluator, bool topt)
     : PathOperator(vars, secondary_vars, 1, nullptr),
       evaluator_(evaluator),
       neighbors_(evaluator, *this, kNeighbors),
@@ -1771,7 +1777,7 @@ class CompoundOperator : public LocalSearchOperator {
    public:
     OperatorComparator(std::function<int64(int, int)> evaluator,
                        int active_operator)
-        : evaluator_(evaluator), active_operator_(active_operator) {}
+        : evaluator_(std::move(evaluator)), active_operator_(active_operator) {}
     bool operator()(int lhs, int rhs) const {
       const int64 lhs_value = Evaluate(lhs);
       const int64 rhs_value = Evaluate(rhs);
@@ -1811,7 +1817,7 @@ CompoundOperator::CompoundOperator(std::vector<LocalSearchOperator*> operators,
 void CompoundOperator::Start(const Assignment* assignment) {
   start_assignment_ = assignment;
   started_.ClearAll();
-  if (operators_.size() > 0) {
+  if (!operators_.empty()) {
     OperatorComparator comparator(evaluator_, operator_indices_[index_]);
     std::sort(operator_indices_.begin(), operator_indices_.end(), comparator);
     index_ = 0;
@@ -1820,7 +1826,7 @@ void CompoundOperator::Start(const Assignment* assignment) {
 
 bool CompoundOperator::MakeNextNeighbor(Assignment* delta,
                                         Assignment* deltadelta) {
-  if (operators_.size() > 0) {
+  if (!operators_.empty()) {
     do {
       // TODO(user): keep copy of delta in case MakeNextNeighbor
       // pollutes delta on a fail.
@@ -1876,7 +1882,7 @@ LocalSearchOperator* Solver::ConcatenateOperators(
 LocalSearchOperator* Solver::ConcatenateOperators(
     const std::vector<LocalSearchOperator*>& ops,
     std::function<int64(int, int)> evaluator) {
-  return RevAlloc(new CompoundOperator(ops, evaluator));
+  return RevAlloc(new CompoundOperator(ops, std::move(evaluator)));
 }
 
 namespace {
@@ -2052,7 +2058,7 @@ LocalSearchOperator* Solver::MakeOperator(
       break;
     }
     case Solver::INCREMENT: {
-      if (secondary_vars.size() == 0) {
+      if (secondary_vars.empty()) {
         result = RevAlloc(new IncrementValue(vars));
       } else {
         LOG(FATAL) << "Operator " << op
@@ -2061,7 +2067,7 @@ LocalSearchOperator* Solver::MakeOperator(
       break;
     }
     case Solver::DECREMENT: {
-      if (secondary_vars.size() == 0) {
+      if (secondary_vars.empty()) {
         result = RevAlloc(new DecrementValue(vars));
       } else {
         LOG(FATAL) << "Operator " << op
@@ -2070,7 +2076,7 @@ LocalSearchOperator* Solver::MakeOperator(
       break;
     }
     case Solver::SIMPLELNS: {
-      if (secondary_vars.size() == 0) {
+      if (secondary_vars.empty()) {
         result = RevAlloc(new SimpleLns(vars, 1));
       } else {
         LOG(FATAL) << "Operator " << op
@@ -2087,7 +2093,7 @@ LocalSearchOperator* Solver::MakeOperator(
 LocalSearchOperator* Solver::MakeOperator(
     const std::vector<IntVar*>& vars, Solver::IndexEvaluator3 evaluator,
     Solver::EvaluatorLocalSearchOperators op) {
-  return MakeOperator(vars, std::vector<IntVar*>(), evaluator, op);
+  return MakeOperator(vars, std::vector<IntVar*>(), std::move(evaluator), op);
 }
 
 LocalSearchOperator* Solver::MakeOperator(
@@ -2295,7 +2301,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
         primary_vars_size_(vars.size()),
         cache_(new int64[vars.size()]),
         delta_cache_(new int64[vars.size()]),
-        delta_objective_callback_(delta_objective_callback),
+        delta_objective_callback_(std::move(delta_objective_callback)),
         objective_(objective),
         filter_enum_(filter_enum),
         op_(),
@@ -2432,7 +2438,7 @@ class BinaryObjectiveFilter : public ObjectiveFilter<Operator> {
                         Solver::LocalSearchFilterBound filter_enum)
       : ObjectiveFilter<Operator>(vars, delta_objective_callback, objective,
                                   filter_enum),
-        value_evaluator_(value_evaluator) {}
+        value_evaluator_(std::move(value_evaluator)) {}
   ~BinaryObjectiveFilter() override {}
   int64 SynchronizedElementValue(int64 index) override {
     return IntVarLocalSearchFilter::IsVarSynced(index)
@@ -2472,7 +2478,7 @@ class TernaryObjectiveFilter : public ObjectiveFilter<Operator> {
       : ObjectiveFilter<Operator>(vars, delta_objective_callback, objective,
                                   filter_enum),
         secondary_vars_offset_(vars.size()),
-        value_evaluator_(value_evaluator) {
+        value_evaluator_(std::move(value_evaluator)) {
     IntVarLocalSearchFilter::AddVars(secondary_vars);
     CHECK_GE(IntVarLocalSearchFilter::Size(), 0);
   }

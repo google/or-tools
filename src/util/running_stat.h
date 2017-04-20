@@ -16,8 +16,8 @@
 
 #include <deque>
 
-#include "base/macros.h"
 #include "base/logging.h"
+#include "base/macros.h"
 
 namespace operations_research {
 
@@ -124,8 +124,8 @@ inline double RunningAverage::GlobalAverage() const {
 }
 
 inline double RunningAverage::WindowAverage() const {
-  return values_.size() == 0 ? 0.0
-                             : local_sum_ / static_cast<double>(values_.size());
+  return values_.empty() ? 0.0
+                         : local_sum_ / static_cast<double>(values_.size());
 }
 
 inline void RunningAverage::ClearWindow() {

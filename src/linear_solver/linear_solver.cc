@@ -90,13 +90,13 @@ std::string MPModelRequest_SolverType_Name(int type) {
 
 double MPConstraint::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
-  if (var == NULL) return 0.0;
+  if (var == nullptr) return 0.0;
   return FindWithDefault(coefficients_, var, 0.0);
 }
 
 void MPConstraint::SetCoefficient(const MPVariable* const var, double coeff) {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
-  if (var == NULL) return;
+  if (var == nullptr) return;
   if (coeff == 0.0) {
     CoeffMap::iterator it = coefficients_.find(var);
     // If setting a coefficient to 0 when this coefficient did not
@@ -172,13 +172,13 @@ bool MPConstraint::ContainsNewVariables() {
 
 double MPObjective::GetCoefficient(const MPVariable* const var) const {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
-  if (var == NULL) return 0.0;
+  if (var == nullptr) return 0.0;
   return FindWithDefault(coefficients_, var, 0.0);
 }
 
 void MPObjective::SetCoefficient(const MPVariable* const var, double coeff) {
   DLOG_IF(DFATAL, !interface_->solver_->OwnsVariable(var)) << var;
-  if (var == NULL) return;
+  if (var == nullptr) return;
   if (coeff == 0.0) {
     CoeffMap::iterator it = coefficients_.find(var);
     // See the discussion on MPConstraint::SetCoefficient() for 0 coefficients,
@@ -364,7 +364,7 @@ extern MPSolverInterface* BuildGLOPInterface(MPSolver* const solver);
 
 namespace {
 MPSolverInterface* BuildSolverInterface(MPSolver* const solver) {
-  DCHECK(solver != NULL);
+  DCHECK(solver != nullptr);
   switch (solver->ProblemType()) {
 #if defined(USE_BOP)
     case MPSolver::BOP_INTEGER_PROGRAMMING:
@@ -473,7 +473,7 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
   hash_map<std::string, int>::const_iterator it =
       variable_name_to_index_.find(var_name);
-  if (it == variable_name_to_index_.end()) return NULL;
+  if (it == variable_name_to_index_.end()) return nullptr;
   return variables_[it->second];
 }
 
@@ -481,7 +481,7 @@ MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_nam
     const {
   hash_map<std::string, int>::const_iterator it =
       constraint_name_to_index_.find(constraint_name);
-  if (it == constraint_name_to_index_.end()) return NULL;
+  if (it == constraint_name_to_index_.end()) return nullptr;
   return constraints_[it->second];
 }
 
@@ -640,7 +640,7 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
 }
 
 void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
-  DCHECK(output_model != NULL);
+  DCHECK(output_model != nullptr);
   output_model->Clear();
   // Name
   output_model->set_name(Name());
@@ -1033,7 +1033,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
     const MPVariable& var = *variables_[i];
     const double value = var.solution_value();
     // Check for NaN.
-    if (isnan(value)) {
+    if (std::isnan(value)) {
       ++num_errors;
       max_observed_error = infinity();
       LOG_IF(ERROR, log_errors) << "NaN value for " << PrettyPrintVar(var);
@@ -1080,7 +1080,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       inaccurate_activity += entry.first->solution_value() * entry.second;
     }
     // Catch NaNs.
-    if (isnan(activity) || isnan(inaccurate_activity)) {
+    if (std::isnan(activity) || std::isnan(inaccurate_activity)) {
       ++num_errors;
       max_observed_error = infinity();
       LOG_IF(ERROR, log_errors) << "NaN value for "

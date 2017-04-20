@@ -35,6 +35,7 @@
 #include "constraint_solver/routing_neighborhoods.h"
 #include "constraint_solver/model.pb.h"
 #include "base/join.h"
+#include "constraint_solver/routing_enums.pb.h"
 #include "graph/connectivity.h"
 #include "graph/linear_assignment.h"
 #include "util/saturated_arithmetic.h"
@@ -1818,7 +1819,7 @@ void RoutingModel::CloseModelWithParameters(
   }
 
   // Set all active unless there are disjunctions
-  if (disjunctions_.size() == 0) {
+  if (disjunctions_.empty()) {
     AddAllActive();
   }
 
@@ -2956,7 +2957,7 @@ int64 RoutingModel::ComputeLowerBound() {
     LOG(WARNING) << "Non-homogeneous vehicle costs not supported";
     return 0;
   }
-  if (disjunctions_.size() > 0) {
+  if (!disjunctions_.empty()) {
     LOG(WARNING)
         << "Node disjunction constraints or optional nodes not supported.";
     return 0;
@@ -3895,7 +3896,7 @@ void RoutingModel::CreateNeighborhoodOperators() {
 LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     const RoutingSearchParameters& search_parameters) const {
   std::vector<LocalSearchOperator*> operators = extra_operators_;
-  if (pickup_delivery_pairs_.size() > 0) {
+  if (!pickup_delivery_pairs_.empty()) {
     CP_ROUTING_PUSH_OPERATOR(RELOCATE_PAIR, relocate_pair, operators);
     CP_ROUTING_PUSH_OPERATOR(NODE_PAIR_SWAP, node_pair_swap_active, operators);
   }
@@ -3904,7 +3905,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
     CP_ROUTING_PUSH_OPERATOR(EXCHANGE, exchange, operators);
     CP_ROUTING_PUSH_OPERATOR(CROSS, cross, operators);
   }
-  if (pickup_delivery_pairs_.size() > 0 ||
+  if (!pickup_delivery_pairs_.empty() ||
       search_parameters.local_search_operators().use_relocate_neighbors()) {
     operators.push_back(local_search_operators_[RELOCATE_NEIGHBORS]);
   }
@@ -3919,7 +3920,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
   }
   CP_ROUTING_PUSH_OPERATOR(TWO_OPT, two_opt, operators);
   CP_ROUTING_PUSH_OPERATOR(OR_OPT, or_opt, operators);
-  if (disjunctions_.size() != 0) {
+  if (!disjunctions_.empty()) {
     CP_ROUTING_PUSH_OPERATOR(MAKE_INACTIVE, make_inactive, operators);
     CP_ROUTING_PUSH_OPERATOR(MAKE_CHAIN_INACTIVE, make_chain_inactive,
                              operators);
@@ -3954,7 +3955,7 @@ LocalSearchOperator* RoutingModel::GetNeighborhoodOperators(
   }
   CP_ROUTING_PUSH_OPERATOR(FULL_PATH_LNS, full_path_lns, operators);
   CP_ROUTING_PUSH_OPERATOR(PATH_LNS, path_lns, operators);
-  if (disjunctions_.size() != 0) {
+  if (!disjunctions_.empty()) {
     CP_ROUTING_PUSH_OPERATOR(INACTIVE_LNS, inactive_lns, operators);
   }
   return solver_->ConcatenateOperators(operators);
@@ -4035,7 +4036,7 @@ RoutingModel::GetOrCreateLocalSearchFilters() {
       // Must be added after ObjectiveFilter.
       filters_.push_back(node_disjunction_filter);
     }
-    if (pickup_delivery_pairs_.size() > 0) {
+    if (!pickup_delivery_pairs_.empty()) {
       filters_.push_back(
           MakeNodePrecedenceFilter(*this, pickup_delivery_pairs_));
     }
@@ -4059,7 +4060,7 @@ RoutingModel::GetOrCreateFeasibilityFilters() {
       feasibility_filters_.push_back(MakeNodeDisjunctionFilter(*this, nullptr));
     }
     feasibility_filters_.push_back(solver_->MakeVariableDomainFilter());
-    if (pickup_delivery_pairs_.size() > 0) {
+    if (!pickup_delivery_pairs_.empty()) {
       feasibility_filters_.push_back(
           MakeNodePrecedenceFilter(*this, pickup_delivery_pairs_));
     }

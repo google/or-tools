@@ -425,7 +425,7 @@ MPSolver::ResultStatus CLPInterface::Solve(const MPSolverParameters& param) {
 
     // Special case if the model is empty since CLP is not able to
     // handle this special case by itself.
-    if (solver_->variables_.size() == 0 && solver_->constraints_.size() == 0) {
+    if (solver_->variables_.empty() && solver_->constraints_.empty()) {
       sync_status_ = SOLUTION_SYNCHRONIZED;
       result_status_ = MPSolver::OPTIMAL;
       objective_value_ = solver_->Objective().offset();

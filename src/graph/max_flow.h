@@ -133,10 +133,10 @@
 #include "base/logging.h"
 #include "base/macros.h"
 #include "graph/ebert_graph.h"
+#include "graph/flow_problem.pb.h"
 #include "graph/graph.h"
 #include "util/stats.h"
 #include "util/zvector.h"
-#include "graph/flow_problem.pb.h"
 
 namespace operations_research {
 

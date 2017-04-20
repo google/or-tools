@@ -24,6 +24,7 @@
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/stringprintf.h"
+#include "base/join.h"
 #include "base/map_util.h"
 #include "base/stl_util.h"
 #include "base/mathutil.h"
@@ -2063,7 +2064,7 @@ class DomainIntVarHoleIterator : public IntVarIterator {
 
   void Init() override {
     bits_ = var_->bitset();
-    if (bits_ != 0) {
+    if (bits_ != nullptr) {
       bits_->InitHoles();
       values_ = bits_->Holes().data();
       size_ = bits_->Holes().size();
@@ -2649,7 +2650,7 @@ class IntConst : public IntVar {
     if (solver()->HasName(this)) {
       return PropagationBaseObject::name();
     } else {
-      return StringPrintf("%" GG_LL_FORMAT "d", value_);
+      return StrCat(value_);
     }
   }
 
@@ -6514,7 +6515,7 @@ std::string IndexedName(const std::string& prefix, int index, int max_index) {
 #endif
   return StringPrintf("%s%0*d", prefix.c_str(), digits, index);
 #else
-  return StringPrintf("%s%d", prefix.c_str(), index);
+  return StrCat(prefix, index);
 #endif
 }
 }  // namespace
@@ -7492,12 +7493,12 @@ bool Solver::IsBooleanVar(IntExpr* const expr, IntVar** inner_var,
 
 bool Solver::IsProduct(IntExpr* const expr, IntExpr** inner_expr,
                        int64* coefficient) {
-  if (dynamic_cast<TimesCstIntVar*>(expr) != NULL) {
+  if (dynamic_cast<TimesCstIntVar*>(expr) != nullptr) {
     TimesCstIntVar* const var = dynamic_cast<TimesCstIntVar*>(expr);
     *coefficient = var->Constant();
     *inner_expr = var->SubVar();
     return true;
-  } else if (dynamic_cast<TimesIntCstExpr*>(expr) != NULL) {
+  } else if (dynamic_cast<TimesIntCstExpr*>(expr) != nullptr) {
     TimesIntCstExpr* const prod = dynamic_cast<TimesIntCstExpr*>(expr);
     *coefficient = prod->Constant();
     *inner_expr = prod->Expr();

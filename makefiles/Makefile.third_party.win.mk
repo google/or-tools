@@ -1,6 +1,6 @@
 # tags of dependencies to checkout.
-GFLAGS_TAG = master
-PROTOBUF_TAG = 3.0.0
+GFLAGS_TAG = 2.2.0
+PROTOBUF_TAG = 3.2.0
 CBC_TAG = 2.9.8
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
@@ -223,12 +223,13 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
 	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
+	cd dependencies\sources && rename gflags-master gflags-$(GFLAGS_TAG)
 	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
-#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/master.zip
-	cd dependencies/archives && rename master.zip gflags-$(GFLAGS_TAG).zip
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
+#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/master.zip
+	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
 
 
 # Install protocol buffers.

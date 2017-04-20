@@ -654,7 +654,7 @@ IntVar* Solver::MakeIsDifferentVar(IntExpr* const v1, IntExpr* const v2) {
     cache = model_cache_->FindExprExprExpression(
         v2, v1, ModelCache::EXPR_EXPR_IS_NOT_EQUAL);
   }
-  if (cache != NULL) {
+  if (cache != nullptr) {
     return cache->Var();
   } else {
     IntVar* boolvar = nullptr;

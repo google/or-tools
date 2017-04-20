@@ -25,8 +25,8 @@
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
-#include <map>
 #include "base/hash.h"
+#include <map>
 #include <string>  // for std::string
 #include <vector>  // for vector
 
@@ -614,8 +614,8 @@ struct ProblemSolution {
 // Helper function to check the bounds of the SetVariableBounds() and
 // SetConstraintBounds() functions.
 inline bool AreBoundsValid(Fractional lower_bound, Fractional upper_bound) {
-  if (isnan(lower_bound)) return false;
-  if (isnan(upper_bound)) return false;
+  if (std::isnan(lower_bound)) return false;
+  if (std::isnan(upper_bound)) return false;
   if (lower_bound == kInfinity && upper_bound == kInfinity) return false;
   if (lower_bound == -kInfinity && upper_bound == -kInfinity) return false;
   if (lower_bound > upper_bound) return false;

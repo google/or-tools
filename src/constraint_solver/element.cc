@@ -16,6 +16,7 @@
 #include <memory>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/integral_types.h"
@@ -866,7 +867,7 @@ IntExpr* Solver::MakeElement(Solver::IndexEvaluator1 values,
                              IntVar* const index) {
   CHECK_EQ(this, index->solver());
   return RegisterIntExpr(
-      RevAlloc(new IntExprFunctionElement(this, values, index)));
+      RevAlloc(new IntExprFunctionElement(this, std::move(values), index)));
 }
 
 IntExpr* Solver::MakeMonotonicElement(Solver::IndexEvaluator1 values,
@@ -1117,8 +1118,8 @@ IntExpr* Solver::MakeElement(Solver::IndexEvaluator2 values,
                              IntVar* const index1, IntVar* const index2) {
   CHECK_EQ(this, index1->solver());
   CHECK_EQ(this, index2->solver());
-  return RegisterIntExpr(
-      RevAlloc(new IntIntExprFunctionElement(this, values, index1, index2)));
+  return RegisterIntExpr(RevAlloc(
+      new IntIntExprFunctionElement(this, std::move(values), index1, index2)));
 }
 
 // ---------- Generalized element ----------
@@ -1671,7 +1672,7 @@ IntExpr* Solver::MakeElement(const std::vector<IntVar*>& vars,
 IntExpr* Solver::MakeElement(Int64ToIntVar vars, int64 range_start,
                              int64 range_end, IntVar* argument) {
   const std::string index_name =
-      argument->name().size() > 0 ? argument->name() : argument->DebugString();
+      !argument->name().empty() ? argument->name() : argument->DebugString();
   const std::string vname =
       StringPrintf("ElementVar(%s, %s)",
                    StringifyInt64ToIntVar(vars, range_start, range_end).c_str(),

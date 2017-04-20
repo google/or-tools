@@ -127,7 +127,7 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   glop::Fractional GetVariableValueAtCpScale(glop::ColIndex var);
 
   // TODO(user): use solver's precision epsilon.
-  constexpr static double kEpsilon = 1e-6;
+  static const double kEpsilon;
 
   // Underlying LP solver API.
   glop::LinearProgram lp_data_;

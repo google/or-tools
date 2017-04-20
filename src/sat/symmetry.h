@@ -14,8 +14,8 @@
 #ifndef OR_TOOLS_SAT_SYMMETRY_H_
 #define OR_TOOLS_SAT_SYMMETRY_H_
 
-#include "sat/sat_base.h"
 #include "algorithms/sparse_permutation.h"
+#include "sat/sat_base.h"
 #include "util/stats.h"
 
 namespace operations_research {
@@ -55,7 +55,7 @@ namespace sat {
 class SymmetryPropagator : public SatPropagator {
  public:
   SymmetryPropagator();
-  ~SymmetryPropagator();
+  ~SymmetryPropagator() override;
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;

@@ -36,7 +36,7 @@ static const double kInfinity = std::numeric_limits<double>::infinity();
 
 // Internal method to detect errors in a single variable.
 std::string FindErrorInMPVariable(const MPVariableProto& variable) {
-  if (isnan(variable.lower_bound()) || isnan(variable.upper_bound()) ||
+  if (std::isnan(variable.lower_bound()) || std::isnan(variable.upper_bound()) ||
       variable.lower_bound() == kInfinity ||
       variable.upper_bound() == -kInfinity ||
       variable.lower_bound() > variable.upper_bound()) {

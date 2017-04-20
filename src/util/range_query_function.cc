@@ -173,7 +173,7 @@ class CachedRangeIntToIntFunction : public RangeIntToIntFunction {
 
 class CachedRangeMinMaxIndexFunction : public RangeMinMaxIndexFunction {
  public:
-  CachedRangeMinMaxIndexFunction(std::function<int64(int64)> f,
+  CachedRangeMinMaxIndexFunction(const std::function<int64(int64)>& f,
                                  int64 domain_start, int64 domain_end)
       : domain_start_(domain_start),
         domain_end_(domain_end),
