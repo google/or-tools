@@ -1033,7 +1033,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
     const MPVariable& var = *variables_[i];
     const double value = var.solution_value();
     // Check for NaN.
-    if (isnan(value)) {
+    if (std::isnan(value)) {
       ++num_errors;
       max_observed_error = infinity();
       LOG_IF(ERROR, log_errors) << "NaN value for " << PrettyPrintVar(var);
@@ -1080,7 +1080,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       inaccurate_activity += entry.first->solution_value() * entry.second;
     }
     // Catch NaNs.
-    if (isnan(activity) || isnan(inaccurate_activity)) {
+    if (std::isnan(activity) || std::isnan(inaccurate_activity)) {
       ++num_errors;
       max_observed_error = infinity();
       LOG_IF(ERROR, log_errors) << "NaN value for "
