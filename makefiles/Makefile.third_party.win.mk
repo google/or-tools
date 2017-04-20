@@ -223,12 +223,13 @@ dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/I
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
 	tools\unzip -d dependencies/sources dependencies\archives\gflags-$(GFLAGS_TAG).zip
+	cd dependencies\sources && rename gflags-master gflags-$(GFLAGS_TAG)
 	-$(TOUCH) dependencies\sources\gflags-$(GFLAGS_TAG)\INSTALL.md
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
-#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
-	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/master.zip
-	cd dependencies/archives && rename master.zip gflags-$(GFLAGS_TAG).zip
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
+#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/master.zip
+	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
 
 
 # Install protocol buffers.
