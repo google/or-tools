@@ -4651,6 +4651,14 @@ RoutingDimension::RoutingDimension(RoutingModel* model,
                                    const std::string& name, SelfBased)
     : RoutingDimension(model, std::move(vehicle_capacities), name, this) {}
 
+RoutingDimension::~RoutingDimension() {
+  for (auto& cumul_var_piecewise_linear_cost :
+       cumul_var_piecewise_linear_cost_) {
+    delete cumul_var_piecewise_linear_cost.cost;
+  }
+  cumul_var_piecewise_linear_cost_.clear();
+}
+
 void RoutingDimension::Initialize(
     const std::vector<RoutingModel::NodeEvaluator2*>& transit_evaluators,
     const std::vector<RoutingModel::VariableNodeEvaluator2*>&
@@ -5153,7 +5161,7 @@ void RoutingDimension::SetCumulVarPiecewiseLinearCostFromIndex(
   PiecewiseLinearCost& piecewise_linear_cost =
       cumul_var_piecewise_linear_cost_[index];
   piecewise_linear_cost.var = cumuls_[index];
-  piecewise_linear_cost.cost.reset(new PiecewiseLinearFunction(cost));
+  piecewise_linear_cost.cost = new PiecewiseLinearFunction(cost);
 }
 
 bool RoutingDimension::HasCumulVarPiecewiseLinearCost(
@@ -5208,7 +5216,7 @@ const PiecewiseLinearFunction*
 RoutingDimension::GetCumulVarPiecewiseLinearCostFromIndex(int64 index) const {
   if (index < cumul_var_piecewise_linear_cost_.size() &&
       cumul_var_piecewise_linear_cost_[index].var != nullptr) {
-    return cumul_var_piecewise_linear_cost_[index].cost.get();
+    return cumul_var_piecewise_linear_cost_[index].cost;
   }
   return nullptr;
 }

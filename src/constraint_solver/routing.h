@@ -1355,6 +1355,7 @@ class RoutingModelVisitor : public BaseObject {
 // make the model faster and easier to solve.
 class RoutingDimension {
  public:
+  ~RoutingDimension();
   // Returns the model on which the dimension was created.
   RoutingModel* model() const { return model_; }
   // Returns the transition value for a given pair of nodes (as var index);
@@ -1641,9 +1642,9 @@ class RoutingDimension {
   };
 
   struct PiecewiseLinearCost {
-    PiecewiseLinearCost() : var(nullptr) {}
+    PiecewiseLinearCost() : var(nullptr), cost(nullptr) {}
     IntVar* var;
-    std::unique_ptr<PiecewiseLinearFunction> cost;
+    PiecewiseLinearFunction* cost;
   };
 
   class SelfBased {};
