@@ -109,7 +109,7 @@ endif
 dotnet_archive: csharp
 
 	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin
-	$(COPY) bin$S$(CLR_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin
+	$(COPY) bin$S$(CLR_ORTOOLS_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin
 	$(COPY) examples$Scsharp$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp
 	$(COPY) examples$Scsharp$Ssolution$SProperties$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
 	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
@@ -124,7 +124,7 @@ ifeq "$(SYSTEM)" "win"
 	$(COPY) examples$Scsharp$Ssolution$S*.csproj temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 	$(COPY) examples$Scsharp$Ssolution$Sapp.config temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
 else
-	$(COPY) lib$Slib$(CLR_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin
+	$(COPY) lib$Slib$(CLR_ORTOOLS_DLL_NAME).so temp$S$(INSTALL_DIR)$Sbin
 endif
 
 java_archive: java
@@ -228,7 +228,7 @@ ifeq "$(DISTRIBUTION_NUMBER)" "14.04"
     build_release: clean all test fz
     pre_release: archive test_archive fz_archive test_fz_archive python_examples_archive pypi_archive
     release: pypi_upload
-else 
+else
 ifeq "$(DISTRIBUTION_NUMBER)" "16.04"
     build_release: clean all test fz
     pre_release: archive test_archive fz_archive test_fz_archive
