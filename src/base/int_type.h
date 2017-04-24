@@ -329,14 +329,14 @@ INT_TYPE_COMPARISON_OP(>=);  // NOLINT
 
 // Allows it to be used as a key to hashable containers.
 #if !defined(SWIG) && !defined(STLPORT) && !defined(_MSC_VER)
-namespace __gnu_cxx {
+namespace std {
 template <typename IntTypeName, typename ValueType>
 struct hash<IntType<IntTypeName, ValueType> > {
   size_t operator()(const IntType<IntTypeName, ValueType>& idx) const {
     return static_cast<size_t>(idx.value());
   }
 };
-}  // namespace __gnu_cxx
+} // namespace std
 #endif  // !defined(_MSC_VER) && !defined(SWIG) && !defined(STLPORT)
 
 #if defined(_MSC_VER) && !defined(SWIG)
