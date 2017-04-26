@@ -5,7 +5,7 @@ cc_library(
     srcs = ["logging.cc"],
     hdrs = ["logging.h"],
     deps = [
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -15,13 +15,13 @@ cc_library(
     hdrs = ["model.h"],
     deps = [
         ":logging",
-        "//base",
-        "//base:hash",
-        "//base:map_util",
-        "//base:stl_util",
-        "//base:strings",
-        "//util:iterators",
-        "//util:string_array",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "//ortools/base:strings",
+        "//ortools/util:iterators",
+        "//ortools/util:string_array",
     ],
 )
 
@@ -49,11 +49,11 @@ cc_library(
     ],
     deps = [
         ":model",
-        "//base",
-        "//base:map_util",
-        "//base:stl_util",
-        "//base:strings",
-        "//util:string_array",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "//ortools/base:strings",
+        "//ortools/util:string_array",
     ],
 )
 
@@ -66,7 +66,7 @@ cc_library(
     ],
     deps = [
         ":parser_yacc_lib",
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -94,8 +94,8 @@ cc_library(
 #        ":model",
 #        ":parser_lib",
 #        "//@gtest//:main",
-#        "//base:file",
-#        "//base:file:path",
+#        "//ortools/base:file",
+#        "//ortools/base:file:path",
 #    ],
 #)
 
@@ -106,13 +106,13 @@ cc_library(
     deps = [
         ":logging",
         ":model",
-        "//base",
-        "//base:hash",
-        "//base:map_util",
-        "//base:strings",
-        "//graph:cliques",
-        "//util:saturated_arithmetic",
-        "//util:vector_map",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/base:strings",
+        "//ortools/graph:cliques",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:vector_map",
     ],
 )
 
@@ -124,8 +124,8 @@ cc_library(
 #        ":model",
 #        ":presolve",
 #        "//@gtest//:main",
-#        "//base:file",
-#        "//base:file:path",
+#        "//ortools/base:file",
+#        "//ortools/base:file:path",
 #    ],
 #)
 
@@ -136,10 +136,10 @@ cc_library(
     deps = [
         ":logging",
         ":model",
-        "//base",
-        "//base:hash",
-        "//base:map_util",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/base:strings",
     ],
 )
 
@@ -149,16 +149,16 @@ cc_library(
     hdrs = ["sat_constraint.h"],
     deps = [
         ":logging",
-        "//base",
-        "//base:hash",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//base:map_util",
-        "//constraint_solver:cp",
-        "//sat:pb_constraint",
-        "//sat:sat_base",
-        "//sat:sat_solver",
-        "//util:string_array",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/constraint_solver:cp",
+        "//ortools/sat:pb_constraint",
+        "//ortools/sat:sat_base",
+        "//ortools/sat:sat_solver",
+        "//ortools/util:string_array",
     ],
 )
 
@@ -168,10 +168,10 @@ cc_library(
     hdrs = ["flatzinc_constraints.h"],
     deps = [
         ":logging",
-        "//base",
-        "//base:hash",
-        "//constraint_solver:cp",
-        "//util:string_array",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/constraint_solver:cp",
+        "//ortools/util:string_array",
     ],
 )
 
@@ -181,9 +181,9 @@ cc_library(
     hdrs = ["reporting.h"],
     deps = [
         ":logging",
-        "//base",
-        "//base:mutex",
-        "//constraint_solver:cp",
+        "//ortools/base",
+        "//ortools/base:mutex",
+        "//ortools/constraint_solver:cp",
     ],
 )
 
@@ -194,8 +194,8 @@ cc_library(
     deps = [
         ":logging",
         ":model",
-        "//base",
-        "//constraint_solver:cp",
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
     ],
 )
 
@@ -207,8 +207,8 @@ cc_library(
         ":logging",
         ":model",
         ":sat_constraint",
-        "//base",
-        "//constraint_solver:cp",
+        "//ortools/base",
+        "//ortools/constraint_solver:cp",
     ],
 )
 
@@ -222,10 +222,10 @@ cc_library(
         ":model",
         ":sat_constraint",
         ":solver_data",
-        "//base",
-        "//base:hash",
-        "//constraint_solver:cp",
-        "//util:string_array",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/constraint_solver:cp",
+        "//ortools/util:string_array",
     ],
 )
 
@@ -246,16 +246,16 @@ cc_library(
         ":sat_constraint",
         ":solver_data",
         ":solver_util",
-        "//base",
-        "//base:hash",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//base:map_util",
-        "//constraint_solver:cp",
-        "//sat:pb_constraint",
-        "//sat:sat_base",
-        "//sat:sat_solver",
-        "//util:string_array",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/constraint_solver:cp",
+        "//ortools/sat:pb_constraint",
+        "//ortools/sat:sat_base",
+        "//ortools/sat:sat_solver",
+        "//ortools/util:string_array",
     ],
 )
 
@@ -268,21 +268,21 @@ cc_library(
         ":logging",
         ":model",
         ":solver",
-        "//base",
-        "//base:map_util",
-        "//sat:cp_constraints",
-        "//sat:cumulative",
-        "//sat:disjunctive",
-        "//sat:flow_costs",
-        "//sat:integer",
-        "//sat:integer_expr",
-        "//sat:intervals",
-        "//sat:linear_programming_constraint",
-        "//sat:model",
-        "//sat:optimization",
-        "//sat:sat_solver",
-        "//sat:table",
-        "//util:sorted_interval_list",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/sat:cp_constraints",
+        "//ortools/sat:cumulative",
+        "//ortools/sat:disjunctive",
+        "//ortools/sat:flow_costs",
+        "//ortools/sat:integer",
+        "//ortools/sat:integer_expr",
+        "//ortools/sat:intervals",
+        "//ortools/sat:linear_programming_constraint",
+        "//ortools/sat:model",
+        "//ortools/sat:optimization",
+        "//ortools/sat:sat_solver",
+        "//ortools/sat:table",
+        "//ortools/util:sorted_interval_list",
     ],
 )
 
@@ -299,7 +299,7 @@ cc_binary(
         ":sat_fz_solver",
         ":solver",
         ":solver_util",
-        "//base",
-        "//base:threadpool",
+        "//ortools/base",
+        "//ortools/base:threadpool",
     ],
 )

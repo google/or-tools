@@ -5,8 +5,8 @@ cc_library(
     srcs = ["hungarian.cc"],
     hdrs = ["hungarian.h"],
     deps = [
-        "//base",
-        "//base:hash",
+        "//ortools/base",
+        "//ortools/base:hash",
     ],
 )
 
@@ -17,10 +17,10 @@ cc_test(
     copts = ["-Iexternal/gtest/include"],
     deps = [
         ":hungarian",
-        "//base",
-        "//base:map_util",
-        "//base:random",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:random",
+        "//ortools/base:strings",
         "@gtest//:main",
     ],
 )
@@ -30,8 +30,8 @@ cc_library(
     hdrs = ["knapsack_solver.h"],
     deps = [
         ":knapsack_solver_for_interface_lib",
-        "//base",
-        "//util:time_limit",
+        "//ortools/base",
+        "//ortools/util:time_limit",
     ],
 )
 
@@ -40,9 +40,9 @@ cc_library(
     hdrs = ["knapsack_solver.h"],
     deps = [
         ":knapsack_solver_for_interface_lib",
-        "//base",
-        "//linear_solver",
-        "//util:time_limit",
+        "//ortools/base",
+        "//ortools/linear_solver",
+        "//ortools/util:time_limit",
     ],
 )
 
@@ -51,11 +51,11 @@ cc_library(
     srcs = ["knapsack_solver.cc"],
     hdrs = ["knapsack_solver.h"],
     deps = [
-        "//base",
-        "//base:stl_util",
-        "//linear_solver",
-        "//util:bitset",
-        "//util:time_limit",
+        "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/linear_solver",
+        "//ortools/util:bitset",
+        "//ortools/util:time_limit",
     ],
 )
 
@@ -63,7 +63,7 @@ cc_library(
     name = "dense_doubly_linked_list",
     hdrs = ["dense_doubly_linked_list.h"],
     deps = [
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -72,9 +72,9 @@ cc_library(
     srcs = ["dynamic_partition.cc"],
     hdrs = ["dynamic_partition.h"],
     deps = [
-        "//base",
-        "//base:murmur",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:murmur",
+        "//ortools/base:strings",
     ],
 )
 
@@ -83,8 +83,8 @@ cc_library(
     srcs = ["sparse_permutation.cc"],
     hdrs = ["sparse_permutation.h"],
     deps = [
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
     ],
 )
 
@@ -94,8 +94,8 @@ cc_library(
     hdrs = ["dynamic_permutation.h"],
     deps = [
         ":sparse_permutation",
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
     ],
 )
 
@@ -108,13 +108,13 @@ cc_library(
         ":dynamic_partition",
         ":dynamic_permutation",
         ":sparse_permutation",
-        "//base",
-        "//base:status",
-        "//base:strings",
-        "//graph",
-        "//graph:util",
-        "//util:iterators",
-        "//util:stats",
-        "//util:time_limit",
+        "//ortools/base",
+        "//ortools/base:status",
+        "//ortools/base:strings",
+        "//ortools/graph",
+        "//ortools/graph:util",
+        "//ortools/util:iterators",
+        "//ortools/util:stats",
+        "//ortools/util:time_limit",
     ],
 )

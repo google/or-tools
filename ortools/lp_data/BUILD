@@ -14,11 +14,11 @@ cc_library(
     srcs = ["lp_types.cc"],
     hdrs = ["lp_types.h"],
     deps = [
-        "//base",
-        "//base:hash",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//util:bitset",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/util:bitset",
     ],
 )
 
@@ -28,8 +28,8 @@ cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         ":base",
-        "//base",
-        "//util:return_macros",
+        "//ortools/base",
+        "//ortools/util:return_macros",
     ],
 )
 
@@ -40,10 +40,10 @@ cc_library(
     deps = [
         ":base",
         ":permutation",
-        "//base",
-        "//base:strings",
-        "//util:iterators",
-        "//util:return_macros",
+        "//ortools/base",
+        "//ortools/base:strings",
+        "//ortools/util:iterators",
+        "//ortools/util:return_macros",
     ],
 )
 
@@ -55,7 +55,7 @@ cc_library(
     deps = [
         ":base",
         ":sparse_vector",
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -66,7 +66,7 @@ cc_library(
     deps = [
         ":base",
         ":sparse_vector",
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -82,13 +82,13 @@ cc_library(
         ":matrix_scaler_hdr",
         ":permutation",
         ":sparse_column",
-        "//base",
-        "//base:hash",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//base:strings",
-        "//util:fp_utils",
-        "//util:return_macros",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strings",
+        "//ortools/util:fp_utils",
+        "//ortools/util:return_macros",
     ],
 )
 
@@ -101,10 +101,10 @@ cc_library(
         ":base",
         ":lp_utils",
         ":sparse",
-        "//base",
-        "//base:hash",
-        "//base:int_type_indexed_vector",
-        "//util:fp_utils",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/util:fp_utils",
     ],
 )
 
@@ -113,8 +113,8 @@ cc_library(
     hdrs = ["matrix_scaler.h"],
     deps = [
         ":base",
-        "//base",
-        "//base:int_type_indexed_vector",
+        "//ortools/base",
+        "//ortools/base:int_type_indexed_vector",
     ],
 )
 
@@ -131,12 +131,12 @@ cc_library(
         ":matrix_utils",
         ":permutation",
         ":sparse",
-        "//base",
-        "//base:hash",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//base:strings",
-        "//util:fp_utils",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strings",
+        "//ortools/util:fp_utils",
     ],
 )
 
@@ -148,8 +148,8 @@ cc_library(
     deps = [
         ":base",
         ":sparse_column",
-        "//base",
-        "//base:accurate_sum",
+        "//ortools/base",
+        "//ortools/base:accurate_sum",
     ],
 )
 
@@ -161,8 +161,8 @@ cc_library(
     deps = [
         ":base",
         ":sparse",
-        "//base",
-        "//base:hash",
+        "//ortools/base",
+        "//ortools/base:hash",
     ],
 )
 
@@ -175,9 +175,9 @@ cc_library(
 #    deps = [
 #        ":base",
 #        ":lp_data",
-#        "//base",
-#        "//base:strings",
-#        "//util/regexp/re2",
+#        "//ortools/base",
+#        "//ortools/base:strings",
+#        "//ortools/util/regexp/re2",
 #    ],
 #)
 
@@ -188,7 +188,7 @@ cc_library(
 #    copts = SAFE_FP_CODE,
 #    deps = [
 #        ":lp_data",
-#        "//util:fp_utils",
+#        "//ortools/util:fp_utils",
 #    ],
 #)
 
@@ -199,9 +199,9 @@ cc_library(
     copts = SAFE_FP_CODE,
     deps = [
         ":base",
-        "//base",
-        "//base:strings",
-        "//util:rational_approximation",
+        "//ortools/base",
+        "//ortools/base:strings",
+        "//ortools/util:rational_approximation",
     ],
 )
 
@@ -213,8 +213,8 @@ cc_library(
     deps = [
         ":base",
         ":lp_data",
-        "//base",
-        "//linear_solver:linear_solver_cc_proto",
+        "//ortools/base",
+        "//ortools/linear_solver:linear_solver_cc_proto",
     ],
 )
 
@@ -227,19 +227,19 @@ cc_library(
         ":base",
         ":lp_data",
         ":lp_print_utils",
-        "//base",
-        "//base:file",
-        #        "//base:file:path",
-        "//base:filelinereader",
-        "//base:hash",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//base:map_util",
-        "//base:status",
-        "//base:strings",
-        #        "//file/localfile",
-        #        "//file/memfile",
-        #        "//file/zipfile",
+        "//ortools/base",
+        "//ortools/base:file",
+        #        "//ortools/base:file:path",
+        "//ortools/base:filelinereader",
+        "//ortools/base:hash",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/base:status",
+        "//ortools/base:strings",
+        #        "//ortools/file/localfile",
+        #        "//ortools/file/memfile",
+        #        "//ortools/file/zipfile",
     ],
 )
 
@@ -252,9 +252,9 @@ cc_library(
         ":base",
         ":lp_data",
         ":lp_utils",
-        "//algorithms:dynamic_partition",
-        "//base",
-        "//base:hash",
-        "//base:mutex",
+        "//ortools/algorithms:dynamic_partition",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:mutex",
     ],
 )

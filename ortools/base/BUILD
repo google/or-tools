@@ -322,7 +322,7 @@ cc_library(
         "adjustable_priority_queue-inl.h",
     ],
     deps = [
-        "//base",
+        ":base",
     ],
 )
 

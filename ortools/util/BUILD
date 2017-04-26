@@ -4,24 +4,24 @@ cc_library(
     name = "filelineiter",
     hdrs = ["filelineiter.h"],
     deps = [
-        "//base",
-        "//base:file",
-        "//base:status",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:status",
+        "//ortools/base:strings",
     ],
 )
 
 cc_library(
     name = "vector_map",
     hdrs = ["vector_map.h"],
-    deps = ["//base:map_util"],
+    deps = ["//ortools/base:map_util"],
 )
 
 cc_library(
     name = "bitset",
     srcs = ["bitset.cc"],
     hdrs = ["bitset.h"],
-    deps = ["//base"],
+    deps = ["//ortools/base"],
 )
 
 cc_library(
@@ -29,7 +29,7 @@ cc_library(
     srcs = ["cached_log.cc"],
     hdrs = ["cached_log.h"],
     deps = [
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -38,9 +38,9 @@ cc_library(
     srcs = ["graph_export.cc"],
     hdrs = ["graph_export.h"],
     deps = [
-        "//base",
-        "//base:file",
-        "//base:status",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:status",
     ],
 )
 
@@ -52,13 +52,13 @@ cc_library(
 cc_library(
     name = "zvector",
     hdrs = ["zvector.h"],
-    deps = ["//base"],
+    deps = ["//ortools/base"],
 )
 
 cc_library(
     name = "permutation",
     hdrs = ["permutation.h"],
-    deps = ["//base"],
+    deps = ["//ortools/base"],
 )
 
 cc_library(
@@ -66,8 +66,8 @@ cc_library(
     srcs = ["xml_helper.cc"],
     hdrs = ["xml_helper.h"],
     deps = [
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
     ],
 )
 
@@ -76,9 +76,9 @@ cc_library(
 #    srcs = ["step_function.cc"],
 #    hdrs = ["step_function.h"],
 #    deps = [
-#        "//base:strings",
+#        "//ortools/base:strings",
 #        ":iterators",
-#        "//base",
+#        "//ortools/base",
 #    ],
 #)
 
@@ -87,8 +87,8 @@ cc_library(
     hdrs = ["saturated_arithmetic.h"],
     deps = [
         ":bitset",
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
     ],
 )
 
@@ -98,8 +98,8 @@ cc_library(
     hdrs = ["piecewise_linear_function.h"],
     deps = [
         ":saturated_arithmetic",
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
     ],
 )
 
@@ -108,8 +108,8 @@ cc_library(
     srcs = ["rational_approximation.cc"],
     hdrs = ["rational_approximation.h"],
     deps = [
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
     ],
 )
 
@@ -119,8 +119,8 @@ cc_library(
     hdrs = ["sorted_interval_list.h"],
     deps = [
         ":saturated_arithmetic",
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
     ],
 )
 
@@ -133,9 +133,9 @@ cc_library(
     name = "tuple_set",
     hdrs = ["tuple_set.h"],
     deps = [
-        "//base",
-        "//base:hash",
-        "//base:map_util",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
     ],
 )
 
@@ -144,13 +144,13 @@ cc_library(
     srcs = ["stats.cc"],
     hdrs = ["stats.h"],
     deps = [
-        "//base",
-        "//base:stl_util",
-        "//base:strings",
-        #        "//base:strings:human_readable",
-        "//base:sysinfo",
-        "//base:timer",
-        "//base:encodingutils",  # To replace by port when we export them.
+        "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/base:strings",
+        #        "//ortools/base:strings:human_readable",
+        "//ortools/base:sysinfo",
+        "//ortools/base:timer",
+        "//ortools/base:encodingutils",  # To replace by port when we export them.
     ],
 )
 
@@ -160,9 +160,9 @@ cc_library(
     hdrs = ["time_limit.h"],
     deps = [
         ":running_stat",
-        "//base",
-        "//base:strings",
-        "//base:timer",
+        "//ortools/base",
+        "//ortools/base:strings",
+        "//ortools/base:timer",
     ],
 )
 
@@ -176,7 +176,7 @@ cc_library(
     copts = ["-frounding-math"],
     deps = [
         ":bitset",
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -184,19 +184,19 @@ cc_library(
     name = "monoid_operation_tree",
     srcs = [],
     hdrs = ["monoid_operation_tree.h"],
-    deps = ["//base"],
+    deps = ["//ortools/base"],
 )
 
 cc_library(
     name = "return_macros",
     hdrs = ["return_macros.h"],
-    deps = ["//base"],
+    deps = ["//ortools/base"],
 )
 
 cc_library(
     name = "running_stat",
     hdrs = ["running_stat.h"],
-    deps = ["//base"],
+    deps = ["//ortools/base"],
 )
 
 cc_library(
@@ -204,10 +204,10 @@ cc_library(
     srcs = ["proto_tools.cc"],
     hdrs = ["proto_tools.h"],
     deps = [
-        "//base:strings",
-        "//base",
-        "//base:file",
-        "//base:hash",
+        "//ortools/base:strings",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:hash",
         #        "//net/proto2/io/public",
         #        "//net/proto2/io/public:io",
         #        "//net/proto2/public",
@@ -221,7 +221,7 @@ cc_library(
     hdrs = [
         "functions_swig_helpers.h",
     ],
-    deps = ["//base"],
+    deps = ["//ortools/base"],
 )
 
 cc_library(
@@ -230,7 +230,7 @@ cc_library(
     hdrs = [
         "functions_swig_test_helpers.h",
     ],
-    deps = ["//base"],
+    deps = ["//ortools/base"],
 )
 
 cc_library(
@@ -245,7 +245,7 @@ cc_library(
     hdrs = ["range_query_function.h"],
     deps = [
         ":range_minimum_query",
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -253,9 +253,9 @@ cc_library(
     name = "rev",
     hdrs = ["rev.h"],
     deps = [
-        "//base",
-        "//base:map_util",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:strings",
     ],
 )
 
@@ -264,7 +264,7 @@ cc_library(
     hdrs = ["vector_or_function.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//base",
+        "//ortools/base",
     ],
 )
 
@@ -274,14 +274,14 @@ cc_library(
 #    hdrs = ["tsplib_parser.h"],
 #    visibility = ["//visibility:public"],
 #    deps = [
-#        "//base:strings",
+#        "//ortools/base:strings",
 #        ":filelineiter",
-#        "//base",
-#        "//base:file",
-#        "//base:file:path",
-#        "//base:map_util",
-#        "//base:mathutil",
-#        "///base:strings",
+#        "//ortools/base",
+#        "//ortools/base:file",
+#        "//ortools/base:file:path",
+#        "//ortools/base:map_util",
+#        "//ortools/base:mathutil",
+#        "///ortools/base:strings",
 #        "//file/zipfile",
 #        "//util/regexp/re2",
 #    ],
@@ -293,12 +293,12 @@ cc_library(
 #    hdrs = ["pdtsp_parser.h"],
 #    visibility = ["//visibility:public"],
 #    deps = [
-#        "//base:strings",
+#        "//ortools/base:strings",
 #        ":filelineiter",
-#        "//base",
-#        "//base:file",
-#        "//base:file:path",
-#        "//base:mathutil",
+#        "//ortools/base",
+#        "//ortools/base:file",
+#        "//ortools/base:file:path",
+#        "//ortools/base:mathutil",
 #    ],
 #)
 
@@ -308,10 +308,10 @@ cc_library(
 #    hdrs = ["bp_parser.h"],
 #    visibility = ["//visibility:public"],
 #    deps = [
-#        "//base:strings",
+#        "//ortools/base:strings",
 #        ":filelineiter",
-#        "//base",
-#        "//base:file",
+#        "//ortools/base",
+#        "//ortools/base:file",
 #    ],
 #)
 
@@ -322,9 +322,9 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":filelineiter",
-        "//base",
-        "//base:file",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:strings",
     ],
 )
 
@@ -333,6 +333,6 @@ cc_library(
     hdrs = ["sort.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//base",
+        "//ortools/base",
     ],
 )

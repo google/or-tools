@@ -36,9 +36,9 @@ proto_library(
 #    visibility = ["//visibility:public"],
 #    deps = [
 #        ":cp_model_proto",
-#        "//base",
-#        "//util/gtl:stl_util",
-#        "//util/operations_research/util:sorted_interval_list",
+#        "//ortools/base",
+#        "//ortools/util/gtl:stl_util",
+#        "//ortools/util/operations_research/util:sorted_interval_list",
 #    ],
 #)
 
@@ -50,12 +50,12 @@ proto_library(
 #    deps = [
 #        ":cp_model_proto",
 #        ":cp_model_utils",
-#        "//base",
-#        "//strings",
-#        "//third_party/absl/strings",
-#        "//util/gtl:map_util",
-#        "//util/operations_research/util:saturated_arithmetic",
-#        "//util/operations_research/util:sorted_interval_list",
+#        "//ortools/base",
+#        "//ortools/strings",
+#        "//ortools/third_party/absl/strings",
+#        "//ortools/util/gtl:map_util",
+#        "//ortools/util/operations_research/util:saturated_arithmetic",
+#        "//ortools/util/operations_research/util:sorted_interval_list",
 #    ],
 #)
 
@@ -78,11 +78,11 @@ proto_library(
 #        ":optimization",
 #        ":sat_solver",
 #        ":table",
-#        "//base",
-#        "//strings",
-#        "//third_party/absl/strings",
-#        "//util/gtl:stl_util",
-#        "//util/operations_research/graph:connectivity",
+#        "//ortools/base",
+#        "//ortools/strings",
+#        "//ortools/third_party/absl/strings",
+#        "//ortools/util/gtl:stl_util",
+#        "//ortools/util/operations_research/graph:connectivity",
 #    ],
 #)
 
@@ -95,12 +95,12 @@ proto_library(
 #        ":cp_model_checker",
 #        ":cp_model_proto",
 #        ":cp_model_utils",
-#        "//base",
-#        "//strings",
-#        "//util/gtl:map_util",
-#        "//util/gtl:stl_util",
-#        "//util/operations_research/util:bitset",
-#        "//util/operations_research/util:sorted_interval_list",
+#        "//ortools/base",
+#        "//ortools/strings",
+#        "//ortools/util/gtl:map_util",
+#        "//ortools/util/gtl:stl_util",
+#        "//ortools/util/operations_research/util:bitset",
+#        "//ortools/util/operations_research/util:sorted_interval_list",
 #    ],
 #)
 
@@ -108,9 +108,9 @@ cc_library(
     name = "model",
     hdrs = ["model.h"],
     deps = [
-        "//base",
-        "//base:map_util",
-        "//base:typeid",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:typeid",
     ],
 )
 
@@ -119,11 +119,11 @@ cc_library(
     hdrs = ["sat_base.h"],
     deps = [
         ":model",
-        "//base",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//base:strings",
-        "//util:bitset",
+        "//ortools/base",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:strings",
+        "//ortools/util:bitset",
     ],
 )
 
@@ -144,20 +144,20 @@ cc_library(
         ":pb_constraint",
         ":sat_base",
         ":sat_parameters_cc_proto",
-        "//base",
-        "//base:adjustable_priority_queue",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//base:map_util",
-        "//base:random",
-        "//base:stl_util",
-        "//base:strings",
-        "//util:bitset",
-        "//util:running_stat",
-        "//util:saturated_arithmetic",
-        "//util:stats",
-        "//util:time_limit",
-        #        "//util/time:clock",
+        "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:map_util",
+        "//ortools/base:random",
+        "//ortools/base:stl_util",
+        "//ortools/base:strings",
+        "//ortools/util:bitset",
+        "//ortools/util:running_stat",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:stats",
+        "//ortools/util:time_limit",
+        #        "//ortools/util/time:clock",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )
@@ -170,17 +170,17 @@ cc_library(
     deps = [
         ":sat_base",
         ":sat_parameters_cc_proto",
-        "//base",
-        "//base:hash",
-        #        "//base:inlined_vector",
-        "//base:int_type",
-        "//base:int_type_indexed_vector",
-        "//base:stl_util",
-        "//base:strings",
-        "//util:bitset",
-        "//util:stats",
-        "//util:time_limit",
-        "//base:random",
+        "//ortools/base",
+        "//ortools/base:hash",
+        #        "//ortools/base:inlined_vector",
+        "//ortools/base:int_type",
+        "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:stl_util",
+        "//ortools/base:strings",
+        "//ortools/util:bitset",
+        "//ortools/util:stats",
+        "//ortools/util:time_limit",
+        "//ortools/base:random",
     ],
 )
 
@@ -195,12 +195,12 @@ cc_library(
         ":sat_parameters_cc_proto",
         ":sat_solver",
         ":util",
-        "//algorithms:dynamic_partition",
-        "//base",
-        "//base:adjustable_priority_queue",
-        "//base:random",
-        "//base:stl_util",
-        "//base:strongly_connected_components",
+        "//ortools/algorithms:dynamic_partition",
+        "//ortools/base",
+        "//ortools/base:adjustable_priority_queue",
+        "//ortools/base:random",
+        "//ortools/base:stl_util",
+        "//ortools/base:strongly_connected_components",
     ],
 )
 
@@ -212,9 +212,9 @@ cc_library(
     deps = [
         ":sat_base",
         ":sat_parameters_cc_proto",
-        "//base:hash",
-        "//util:saturated_arithmetic",
-        "//util:stats",
+        "//ortools/base:hash",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:stats",
     ],
 )
 
@@ -225,9 +225,9 @@ cc_library(
     copts = [W_FLOAT_CONVERSION],
     deps = [
         ":sat_base",
-        "//algorithms:sparse_permutation",
-        "//base:hash",
-        "//util:stats",
+        "//ortools/algorithms:sparse_permutation",
+        "//ortools/base:hash",
+        "//ortools/util:stats",
     ],
 )
 
@@ -240,7 +240,7 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_solver",
-        "//base:stl_util",
+        "//ortools/base:stl_util",
     ],
 )
 
@@ -253,18 +253,18 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_solver",
-        "//base",
-        #        "//base:inlined_vector",
-        "//base:int_type",
-        #        "//base:iterator_adaptors",
-        "//base:map_util",
-        "//base:stl_util",
-        "//base:strings",
-        "//util:bitset",
-        "//util:iterators",
-        "//util:rev",
-        "//util:saturated_arithmetic",
-        "//util:sorted_interval_list",
+        "//ortools/base",
+        #        "//ortools/base:inlined_vector",
+        "//ortools/base:int_type",
+        #        "//ortools/base:iterator_adaptors",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "//ortools/base:strings",
+        "//ortools/util:bitset",
+        "//ortools/util:iterators",
+        "//ortools/util:rev",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
     ],
 )
 
@@ -281,7 +281,7 @@ cc_library(
         ":precedences",
         ":sat_base",
         ":sat_solver",
-        "//util:sort",
+        "//ortools/util:sort",
     ],
 )
 
@@ -295,9 +295,9 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_solver",
-        "//base:cleanup",
-        "//base:stl_util",
-        "//util:bitset",
+        "//ortools/base:cleanup",
+        "//ortools/base:stl_util",
+        "//ortools/util:bitset",
     ],
 )
 
@@ -327,8 +327,8 @@ cc_library(
         ":precedences",
         ":sat_base",
         ":sat_solver",
-        #        "//base:iterator_adaptors",
-        "//util:stats",
+        #        "//ortools/base:iterator_adaptors",
+        "//ortools/util:stats",
     ],
 )
 
@@ -345,7 +345,7 @@ cc_library(
         ":precedences",
         ":sat_base",
         ":sat_solver",
-        "//util:sort",
+        "//ortools/util:sort",
     ],
 )
 
@@ -360,8 +360,8 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_solver",
-        "//base:int_type",
-        "//util:sort",
+        "//ortools/base:int_type",
+        "//ortools/util:sort",
     ],
 )
 
@@ -394,9 +394,9 @@ cc_library(
         ":model",
         ":sat_base",
         ":sat_solver",
-        "//base",
-        #        "//base:iterator_adaptors",
-        "//util:sort",
+        "//ortools/base",
+        #        "//ortools/base:iterator_adaptors",
+        "//ortools/util:sort",
     ],
 )
 
@@ -409,16 +409,16 @@ cc_library(
         ":boolean_problem_cc_proto",
         ":sat_solver",
         ":simplification",
-        "//algorithms:find_graph_symmetries",
-        "//algorithms:sparse_permutation",
-        "//base",
-        "//base:hash",
-        "//base:map_util",
-        "//base:status",
-        "//base:strings",
-        "//graph",
-        "//graph:io",
-        "//graph:util",
+        "//ortools/algorithms:find_graph_symmetries",
+        "//ortools/algorithms:sparse_permutation",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:map_util",
+        "//ortools/base:status",
+        "//ortools/base:strings",
+        "//ortools/graph",
+        "//ortools/graph:io",
+        "//ortools/graph:util",
     ],
 )
 
@@ -430,10 +430,10 @@ cc_library(
         ":integer",
         ":model",
         ":sat_base",
-        "//base",
-        "//glop",
-        "//lp_data",
-        "//util:time_limit",
+        "//ortools/base",
+        "//ortools/glop",
+        "//ortools/lp_data",
+        "//ortools/util:time_limit",
     ],
 )
 
@@ -447,12 +447,12 @@ cc_library(
         ":boolean_problem_cc_proto",
         #        ":cp_model_cc_proto",
         ":sat_solver",
-        "//base:strings",
-        "//glop",
-        "//linear_solver:linear_solver_cc_proto",
-        "//lp_data",
-        "//lp_data:lp_print_utils",
-        "//util:fp_utils",
+        "//ortools/base:strings",
+        "//ortools/glop",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/lp_data",
+        "//ortools/lp_data:lp_print_utils",
+        "//ortools/util:fp_utils",
     ],
 )
 
@@ -468,8 +468,8 @@ cc_library(
         ":model",
         ":sat_solver",
         ":util",
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
         "@com_google_protobuf_cc//:protobuf",
     ],
 )
@@ -481,9 +481,9 @@ cc_library(
     copts = [W_FLOAT_CONVERSION],
     deps = [
         ":sat_parameters_cc_proto",
-        "//base",
-        "//base:random",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:random",
+        "//ortools/base:strings",
     ],
 )
 
@@ -495,10 +495,10 @@ cc_library(
     deps = [
         ":integer",
         ":model",
-        "//base",
-        "//base:map_util",
-        "//base:stl_util",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "//ortools/base:strings",
     ],
 )
 
@@ -510,10 +510,10 @@ cc_library(
     deps = [
         ":integer",
         ":model",
-        "//base",
-        "//base:map_util",
-        "//util:sort",
-        "//util:sorted_interval_list",
+        "//ortools/base",
+        "//ortools/base:map_util",
+        "//ortools/util:sort",
+        "//ortools/util:sorted_interval_list",
     ],
 )
 
@@ -526,7 +526,7 @@ cc_library(
         ":integer",
         ":model",
         ":sat_base",
-        "//linear_solver",
+        "//ortools/linear_solver",
     ],
 )
 
@@ -538,8 +538,8 @@ cc_library(
     deps = [
         ":boolean_problem_cc_proto",
         ":sat_solver",
-        "//base",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:strings",
     ],
 )
 
@@ -551,9 +551,9 @@ cc_library(
     deps = [
         ":model",
         ":sat_base",
-        "//base",
-        "//base:file",
-        "//base:hash",
-        "//base:strings",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:hash",
+        "//ortools/base:strings",
     ],
 )
