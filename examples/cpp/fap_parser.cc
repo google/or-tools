@@ -13,20 +13,20 @@
 
 //
 
-#include "cpp/fap_parser.h"
+#include "examples/cpp/fap_parser.h"
 #include <map>
 #include <string>
 #include <vector>
-#include "base/file.h"
-#include "base/split.h"
-#include "base/map_util.h"
+#include "ortools/base/file.h"
+#include "ortools/base/split.h"
+#include "ortools/base/map_util.h"
 
 namespace operations_research {
 
 void ParseFileByLines(const std::string& filename, std::vector<std::string>* lines) {
   CHECK_NOTNULL(lines);
   std::string result;
-  CHECK(file::GetContents(filename, &result, file::Defaults()).ok());
+  CHECK_OK(file::GetContents(filename, &result, file::Defaults()));
   *lines = strings::Split(result, '\n', strings::SkipEmpty());
 }
 

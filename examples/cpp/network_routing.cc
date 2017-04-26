@@ -26,24 +26,24 @@
 
 // A random problem generator is also included.
 
-#include "base/hash.h"
-#include "base/hash.h"
+#include "ortools/base/hash.h"
+#include "ortools/base/hash.h"
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "base/callback.h"
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/map_util.h"
-#include "base/hash.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "graph/shortestpaths.h"
-#include "util/tuple_set.h"
-#include "base/random.h"
+#include "ortools/base/callback.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/hash.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/graph/shortestpaths.h"
+#include "ortools/util/tuple_set.h"
+#include "ortools/base/random.h"
 
 // ----- Data Generator -----
 DEFINE_int32(clients, 0,
@@ -707,7 +707,7 @@ class NetworkRoutingSolver {
 
     Decision* Next(Solver* const solver) override {
       solver->SetBranchSelector([solver]() { return MaxDiscrepancy1(solver); });
-      return NULL;
+      return nullptr;
     }
 
     std::string DebugString() const override { return "ApplyMaxDiscrepancy"; }
@@ -726,7 +726,7 @@ class NetworkRoutingSolver {
       for (int i = 0; i < vars_.size(); ++i) {
         (*values_)[i] = vars_[i]->Value();
       }
-      return NULL;
+      return nullptr;
     }
 
    private:

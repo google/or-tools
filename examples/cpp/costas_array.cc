@@ -24,15 +24,15 @@
 #include <ctime>
 #include <set>
 #include <utility>
-#include "base/callback.h"
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "base/random.h"
+#include "ortools/base/callback.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/base/random.h"
 
 DEFINE_int32(minsize, 0, "Minimum degree of Costas matrix.");
 DEFINE_int32(maxsize, 0, "Maximum degree of Costas matrix.");

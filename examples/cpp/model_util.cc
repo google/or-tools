@@ -14,18 +14,20 @@
 
 #include <memory>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/macros.h"
-#include "base/file.h"
-#include "base/recordio.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/model.pb.h"
-#include "util/graph_export.h"
-#include "util/string_array.h"
-#include "base/status.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
+#include "ortools/base/file.h"
+#include "ortools/base/recordio.h"
+#include "ortools/base/join.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/model.pb.h"
+#include "ortools/constraint_solver/search_limit.pb.h"
+#include "ortools/util/graph_export.h"
+#include "ortools/util/string_array.h"
+#include "ortools/base/status.h"
 
 DEFINE_string(input, "", "Input file of the problem.");
 DEFINE_string(output, "", "Output file when doing modifications.");
@@ -141,7 +143,7 @@ void DeclareExpression(int index, const CpModel& proto,
   if (!expr.name().empty()) {
     exporter->WriteNode(label, expr.name(), "oval", kGreen1);
   } else if (GetValueIfConstant(proto, expr, &value)) {
-    exporter->WriteNode(label, StringPrintf("%lld", value), "oval", kYellow);
+    exporter->WriteNode(label, StrCat(value), "oval", kYellow);
   } else {
     const std::string& type = proto.tags(expr.type_index());
     exporter->WriteNode(label, type, "oval", kWhite);
@@ -260,7 +262,7 @@ int Run() {
   }
 
   CpModel model_proto;
-  RecordReader reader(file);
+  recordio::RecordReader reader(file);
   if (!(reader.ReadProtocolMessage(&model_proto) && reader.Close())) {
     LOG(INFO) << "No model found in " << file->filename();
     return kProblem;
@@ -360,7 +362,7 @@ int Run() {
       LOG(INFO) << "Cannot open " << FLAGS_output;
       return kProblem;
     }
-    RecordWriter writer(output);
+    recordio::RecordWriter writer(output);
     if (!(writer.WriteProtocolMessage(model_proto) && writer.Close())) {
       return kProblem;
     } else {

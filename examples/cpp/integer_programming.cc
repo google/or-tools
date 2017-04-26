@@ -14,9 +14,9 @@
 //
 // Integer programming example that shows how to use the API.
 
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "linear_solver/linear_solver.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
 void RunIntegerProgrammingExample(

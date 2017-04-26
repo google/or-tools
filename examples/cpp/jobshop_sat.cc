@@ -14,22 +14,22 @@
 #include <math.h>
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "base/timer.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/timer.h"
 #include "google/protobuf/text_format.h"
-#include "base/join.h"
-#include "base/stringpiece_utils.h"
-#include "base/strutil.h"
-#include "cpp/flexible_jobshop.h"
-#include "cpp/jobshop.h"
-#include "sat/disjunctive.h"
-#include "sat/intervals.h"
-#include "sat/model.h"
-#include "sat/optimization.h"
-#include "sat/precedences.h"
-#include "sat/sat_solver.h"
+#include "ortools/base/join.h"
+#include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/strutil.h"
+#include "examples/cpp/flexible_jobshop.h"
+#include "examples/cpp/jobshop.h"
+#include "ortools/sat/disjunctive.h"
+#include "ortools/sat/intervals.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/optimization.h"
+#include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_solver.h"
 
 DEFINE_string(input, "", "Jobshop data file name.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");

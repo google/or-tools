@@ -65,7 +65,7 @@ ortoolslibs: $(OR_TOOLS_LIBS)
 CVRPTW_LIBS   = $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX)
 CVRPTW_DEPS = \
 	$(EX_DIR)/cpp/cvrptw_lib.h \
-	$(CP_DEPS) $(SRC_DIR)/constraint_solver/routing.h
+	$(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 CVRPTW_LNK = $(PRE_LIB)cvrptw_lib$(POST_LIB) $(OR_TOOLS_LNK)
 cvrptwlibs: $(CVRPTW_LIBS)
 
@@ -91,20 +91,20 @@ faplibs: $(FAP_LIBS)
 
 FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX)
 FLATZINC_DEPS = \
-	$(SRC_DIR)/flatzinc/checker.h \
-	$(SRC_DIR)/flatzinc/constraints.h \
-	$(SRC_DIR)/flatzinc/flatzinc_constraints.h \
-	$(SRC_DIR)/flatzinc/logging.h \
-	$(SRC_DIR)/flatzinc/model.h \
-	$(SRC_DIR)/flatzinc/parser.h \
-	$(SRC_DIR)/flatzinc/parser.tab.hh \
-	$(SRC_DIR)/flatzinc/presolve.h \
-	$(SRC_DIR)/flatzinc/reporting.h \
-	$(SRC_DIR)/flatzinc/sat_constraint.h \
-	$(SRC_DIR)/flatzinc/sat_fz_solver.h \
-	$(SRC_DIR)/flatzinc/solver_data.h \
-	$(SRC_DIR)/flatzinc/solver.h \
-	$(SRC_DIR)/flatzinc/solver_util.h \
+	$(SRC_DIR)/ortools/flatzinc/checker.h \
+	$(SRC_DIR)/ortools/flatzinc/constraints.h \
+	$(SRC_DIR)/ortools/flatzinc/flatzinc_constraints.h \
+	$(SRC_DIR)/ortools/flatzinc/logging.h \
+	$(SRC_DIR)/ortools/flatzinc/model.h \
+	$(SRC_DIR)/ortools/flatzinc/parser.h \
+	$(SRC_DIR)/ortools/flatzinc/parser.tab.hh \
+	$(SRC_DIR)/ortools/flatzinc/presolve.h \
+	$(SRC_DIR)/ortools/flatzinc/reporting.h \
+	$(SRC_DIR)/ortools/flatzinc/sat_constraint.h \
+	$(SRC_DIR)/ortools/flatzinc/sat_fz_solver.h \
+	$(SRC_DIR)/ortools/flatzinc/solver_data.h \
+	$(SRC_DIR)/ortools/flatzinc/solver.h \
+	$(SRC_DIR)/ortools/flatzinc/solver_util.h \
 	$(CP_DEPS) \
 	$(SAT_DEPS)
 FLATZINC_LNK = $(PRE_LIB)fz$(POST_LIB) $(OR_TOOLS_LNK)
@@ -156,7 +156,7 @@ ccexe: $(CC_BINARIES)
 CVRPTW_OBJS=\
 	$(OBJ_DIR)/cvrptw_lib.$O
 
-$(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h 	$(CP_DEPS) $(SRC_DIR)/constraint_solver/routing.h
+$(OBJ_DIR)/cvrptw_lib.$O: $(EX_DIR)/cpp/cvrptw_lib.cc $(EX_DIR)/cpp/cvrptw_lib.h 	$(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cvrptw_lib.cc $(OBJ_OUT)$(OBJ_DIR)$Scvrptw_lib.$O
 
 $(LIB_DIR)/$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX): $(CVRPTW_OBJS)
@@ -209,63 +209,63 @@ FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/solver_data.$O \
 	$(OBJ_DIR)/flatzinc/solver_util.$O
 
-fz_parser: $(SRC_DIR)/flatzinc/parser.lex $(SRC_DIR)/flatzinc/parser.yy
-	flex -o$(SRC_DIR)/flatzinc/parser.yy.cc $(SRC_DIR)/flatzinc/parser.lex
-	bison -t -o $(SRC_DIR)/flatzinc/parser.tab.cc -d $<
+fz_parser: $(SRC_DIR)/ortools/flatzinc/parser.lex $(SRC_DIR)/ortools/flatzinc/parser.yy
+	flex -o$(SRC_DIR)/ortools/flatzinc/parser.yy.cc $(SRC_DIR)/ortools/flatzinc/parser.lex
+	bison -t -o $(SRC_DIR)/ortools/flatzinc/parser.tab.cc -d $<
 
-$(OBJ_DIR)/flatzinc/checker.$O: $(SRC_DIR)/flatzinc/checker.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Schecker.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Schecker.$O
+$(OBJ_DIR)/flatzinc/checker.$O: $(SRC_DIR)/ortools/flatzinc/checker.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Schecker.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Schecker.$O
 
-$(OBJ_DIR)/flatzinc/constraints.$O: $(SRC_DIR)/flatzinc/constraints.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sconstraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sconstraints.$O
+$(OBJ_DIR)/flatzinc/constraints.$O: $(SRC_DIR)/ortools/flatzinc/constraints.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sconstraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sconstraints.$O
 
-$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O: $(SRC_DIR)/flatzinc/flatzinc_constraints.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc_constraints.$O
+$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O: $(SRC_DIR)/ortools/flatzinc/flatzinc_constraints.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc_constraints.$O
 
-$(OBJ_DIR)/flatzinc/logging.$O: $(SRC_DIR)/flatzinc/logging.cc $(SRC_DIR)/flatzinc/logging.h $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Slogging.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Slogging.$O
+$(OBJ_DIR)/flatzinc/logging.$O: $(SRC_DIR)/ortools/flatzinc/logging.cc $(SRC_DIR)/ortools/flatzinc/logging.h $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Slogging.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Slogging.$O
 
-$(OBJ_DIR)/flatzinc/model.$O: $(SRC_DIR)/flatzinc/model.cc $(SRC_DIR)/flatzinc/model.h $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Smodel.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Smodel.$O
+$(OBJ_DIR)/flatzinc/model.$O: $(SRC_DIR)/ortools/flatzinc/model.cc $(SRC_DIR)/ortools/flatzinc/model.h $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Smodel.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Smodel.$O
 
-$(OBJ_DIR)/flatzinc/parser.$O: $(SRC_DIR)/flatzinc/parser.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.$O
+$(OBJ_DIR)/flatzinc/parser.$O: $(SRC_DIR)/ortools/flatzinc/parser.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sparser.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.$O
 
-$(OBJ_DIR)/flatzinc/parser.tab.$O: $(SRC_DIR)/flatzinc/parser.tab.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.tab.$O
+$(OBJ_DIR)/flatzinc/parser.tab.$O: $(SRC_DIR)/ortools/flatzinc/parser.tab.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sparser.tab.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.tab.$O
 
-$(OBJ_DIR)/flatzinc/parser.yy.$O: $(SRC_DIR)/flatzinc/parser.yy.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.yy.$O
+$(OBJ_DIR)/flatzinc/parser.yy.$O: $(SRC_DIR)/ortools/flatzinc/parser.yy.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sparser.yy.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser.yy.$O
 
-$(OBJ_DIR)/flatzinc/presolve.$O: $(SRC_DIR)/flatzinc/presolve.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Spresolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Spresolve.$O
+$(OBJ_DIR)/flatzinc/presolve.$O: $(SRC_DIR)/ortools/flatzinc/presolve.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Spresolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Spresolve.$O
 
-$(OBJ_DIR)/flatzinc/reporting.$O: $(SRC_DIR)/flatzinc/reporting.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sreporting.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sreporting.$O
+$(OBJ_DIR)/flatzinc/reporting.$O: $(SRC_DIR)/ortools/flatzinc/reporting.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sreporting.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sreporting.$O
 
-$(OBJ_DIR)/flatzinc/sat_constraint.$O: $(SRC_DIR)/flatzinc/sat_constraint.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssat_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssat_constraint.$O
+$(OBJ_DIR)/flatzinc/sat_constraint.$O: $(SRC_DIR)/ortools/flatzinc/sat_constraint.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Ssat_constraint.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssat_constraint.$O
 
-$(OBJ_DIR)/flatzinc/sat_fz_solver.$O: $(SRC_DIR)/flatzinc/sat_fz_solver.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssat_fz_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssat_fz_solver.$O
+$(OBJ_DIR)/flatzinc/sat_fz_solver.$O: $(SRC_DIR)/ortools/flatzinc/sat_fz_solver.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Ssat_fz_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssat_fz_solver.$O
 
-$(OBJ_DIR)/flatzinc/solver.$O: $(SRC_DIR)/flatzinc/solver.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver.$O
+$(OBJ_DIR)/flatzinc/solver.$O: $(SRC_DIR)/ortools/flatzinc/solver.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Ssolver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver.$O
 
-$(OBJ_DIR)/flatzinc/solver_data.$O: $(SRC_DIR)/flatzinc/solver_data.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver_data.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver_data.$O
+$(OBJ_DIR)/flatzinc/solver_data.$O: $(SRC_DIR)/ortools/flatzinc/solver_data.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Ssolver_data.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver_data.$O
 
-$(OBJ_DIR)/flatzinc/solver_util.$O: $(SRC_DIR)/flatzinc/solver_util.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Ssolver_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver_util.$O
+$(OBJ_DIR)/flatzinc/solver_util.$O: $(SRC_DIR)/ortools/flatzinc/solver_util.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Ssolver_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Ssolver_util.$O
 
 $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX): $(FLATZINC_OBJS)
 	$(LINK_CMD) $(LINK_PREFIX)$(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(FLATZINC_OBJS)
 
-$(OBJ_DIR)/flatzinc/fz.$O: $(SRC_DIR)/flatzinc/fz.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz.$O
+$(OBJ_DIR)/flatzinc/fz.$O: $(SRC_DIR)/ortools/flatzinc/fz.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sfz.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sfz.$O
 
-$(OBJ_DIR)/flatzinc/parser_main.$O: $(SRC_DIR)/flatzinc/parser_main.cc $(FLATZINC_DEPS)
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sflatzinc$Sparser_main.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser_main.$O
+$(OBJ_DIR)/flatzinc/parser_main.$O: $(SRC_DIR)/ortools/flatzinc/parser_main.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sparser_main.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sparser_main.$O
 
 fz : $(BIN_DIR)/fz$E $(BIN_DIR)/parser_main$E
 
@@ -297,25 +297,25 @@ $(BIN_DIR)/dimacs_assignment$E: $(DIMACS_LIBS) $(OR_TOOLS_LIBS) $(OBJ_DIR)/dimac
 
 # Pure CP and Routing Examples
 
-$(OBJ_DIR)/acp_challenge.$O: $(EX_DIR)/cpp/acp_challenge.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/acp_challenge.$O: $(EX_DIR)/cpp/acp_challenge.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/acp_challenge.cc $(OBJ_OUT)$(OBJ_DIR)$Sacp_challenge.$O
 
 $(BIN_DIR)/acp_challenge$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/acp_challenge.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge$E
 
-$(OBJ_DIR)/acp_challenge_routing.$O: $(EX_DIR)/cpp/acp_challenge_routing.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/acp_challenge_routing.$O: $(EX_DIR)/cpp/acp_challenge_routing.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/acp_challenge_routing.cc $(OBJ_OUT)$(OBJ_DIR)$Sacp_challenge_routing.$O
 
 $(BIN_DIR)/acp_challenge_routing$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/acp_challenge_routing.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/acp_challenge_routing.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sacp_challenge_routing$E
 
-$(OBJ_DIR)/costas_array.$O: $(EX_DIR)/cpp/costas_array.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/costas_array.$O: $(EX_DIR)/cpp/costas_array.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/costas_array.cc $(OBJ_OUT)$(OBJ_DIR)$Scostas_array.$O
 
 $(BIN_DIR)/costas_array$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/costas_array.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/costas_array.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Scostas_array$E
 
-$(OBJ_DIR)/cryptarithm.$O: $(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/cryptarithm.$O: $(EX_DIR)/cpp/cryptarithm.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/cryptarithm.cc $(OBJ_OUT)$(OBJ_DIR)$Scryptarithm.$O
 
 $(BIN_DIR)/cryptarithm$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/cryptarithm.$O
@@ -435,7 +435,7 @@ $(OBJ_DIR)/nqueens2.$O: $(EX_DIR)/cpp/nqueens2.cc $(CP_DEPS)
 $(BIN_DIR)/nqueens2$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/nqueens2.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/nqueens2.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Snqueens2$E
 
-$(OBJ_DIR)/pdptw.$O: $(EX_DIR)/cpp/pdptw.cc $(CP_DEPS) $(SRC_DIR)/constraint_solver/routing.h
+$(OBJ_DIR)/pdptw.$O: $(EX_DIR)/cpp/pdptw.cc $(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/pdptw.cc $(OBJ_OUT)$(OBJ_DIR)$Spdptw.$O
 
 $(BIN_DIR)/pdptw$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/pdptw.$O
@@ -465,7 +465,7 @@ $(OBJ_DIR)/sports_scheduling.$O: $(EX_DIR)/cpp/sports_scheduling.cc $(CP_DEPS)
 $(BIN_DIR)/sports_scheduling$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/sports_scheduling.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/sports_scheduling.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Ssports_scheduling$E
 
-$(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(CP_DEPS) $(SRC_DIR)/constraint_solver/routing.h
+$(OBJ_DIR)/tsp.$O: $(EX_DIR)/cpp/tsp.cc $(CP_DEPS) $(SRC_DIR)/ortools/constraint_solver/routing.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/tsp.cc $(OBJ_OUT)$(OBJ_DIR)$Stsp.$O
 
 $(BIN_DIR)/tsp$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/tsp.$O
@@ -491,55 +491,55 @@ $(OBJ_DIR)/bug_fz1.$O: $(EX_DIR)/tests/bug_fz1.cc $(CP_DEPS)
 $(BIN_DIR)/bug_fz1$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/bug_fz1.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/bug_fz1.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sbug_fz1$E
 
-$(OBJ_DIR)/ac4r_table_test.$O: $(EX_DIR)/tests/ac4r_table_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/ac4r_table_test.$O: $(EX_DIR)/tests/ac4r_table_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/ac4r_table_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sac4r_table_test.$O
 
 $(BIN_DIR)/ac4r_table_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/ac4r_table_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/ac4r_table_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sac4r_table_test$E
 
-$(OBJ_DIR)/forbidden_intervals_test.$O: $(EX_DIR)/tests/forbidden_intervals_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/forbidden_intervals_test.$O: $(EX_DIR)/tests/forbidden_intervals_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/forbidden_intervals_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sforbidden_intervals_test.$O
 
 $(BIN_DIR)/forbidden_intervals_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/forbidden_intervals_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/forbidden_intervals_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sforbidden_intervals_test$E
 
-$(OBJ_DIR)/gcc_test.$O: $(EX_DIR)/tests/gcc_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/gcc_test.$O: $(EX_DIR)/tests/gcc_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/gcc_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sgcc_test.$O
 
 $(BIN_DIR)/gcc_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/gcc_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/gcc_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sgcc_test$E
 
-$(OBJ_DIR)/min_max_test.$O: $(EX_DIR)/tests/min_max_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/min_max_test.$O: $(EX_DIR)/tests/min_max_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/min_max_test.cc $(OBJ_OUT)$(OBJ_DIR)$Smin_max_test.$O
 
 $(BIN_DIR)/min_max_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/min_max_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/min_max_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smin_max_test$E
 
-$(OBJ_DIR)/issue57.$O: $(EX_DIR)/tests/issue57.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/issue57.$O: $(EX_DIR)/tests/issue57.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/issue57.cc $(OBJ_OUT)$(OBJ_DIR)$Sissue57.$O
 
 $(BIN_DIR)/issue57$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/issue57.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue57.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue57$E
 
-$(OBJ_DIR)/issue173.$O: $(EX_DIR)/tests/issue173.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/issue173.$O: $(EX_DIR)/tests/issue173.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/issue173.cc $(OBJ_OUT)$(OBJ_DIR)$Sissue173.$O
 
 $(BIN_DIR)/issue173$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/issue173.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/issue173.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sissue173$E
 
-$(OBJ_DIR)/visitor_test.$O: $(EX_DIR)/tests/visitor_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/visitor_test.$O: $(EX_DIR)/tests/visitor_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/visitor_test.cc $(OBJ_OUT)$(OBJ_DIR)$Svisitor_test.$O
 
 $(BIN_DIR)/visitor_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/visitor_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/visitor_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Svisitor_test$E
 
-$(OBJ_DIR)/boolean_test.$O: $(EX_DIR)/tests/boolean_test.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/boolean_test.$O: $(EX_DIR)/tests/boolean_test.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Stests/boolean_test.cc $(OBJ_OUT)$(OBJ_DIR)$Sboolean_test.$O
 
 $(BIN_DIR)/boolean_test$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/boolean_test.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/boolean_test.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sboolean_test$E
 
-$(OBJ_DIR)/ls_api.$O: $(EX_DIR)/cpp/ls_api.cc $(SRC_DIR)/constraint_solver/constraint_solver.h
+$(OBJ_DIR)/ls_api.$O: $(EX_DIR)/cpp/ls_api.cc $(SRC_DIR)/ortools/constraint_solver/constraint_solver.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp/ls_api.cc $(OBJ_OUT)$(OBJ_DIR)$Sls_api.$O
 
 $(BIN_DIR)/ls_api$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/ls_api.$O
@@ -585,13 +585,13 @@ $(OBJ_DIR)/integer_programming.$O: $(EX_DIR)/cpp/integer_programming.cc $(LP_DEP
 $(BIN_DIR)/integer_programming$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/integer_programming.$O
 	$(CCC) $(CFLAGS) $(OBJ_DIR)/integer_programming.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Sinteger_programming$E
 
-$(OBJ_DIR)/glop/mps_driver.$O: $(EX_DIR)/cpp/mps_driver.cc $(GEN_DIR)/glop/parameters.pb.h
+$(OBJ_DIR)/glop/mps_driver.$O: $(EX_DIR)/cpp/mps_driver.cc $(GEN_DIR)/ortools/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Smps_driver.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Smps_driver.$O
 
 $(BIN_DIR)/mps_driver$E: $(OBJ_DIR)/glop/mps_driver.$O $(OR_TOOLS_LIBS)
 	$(CCC) $(CFLAGS) $(OBJ_DIR)$Sglop$Smps_driver.$O $(OR_TOOLS_LNK) $(OR_TOOLS_LD_FLAGS) $(EXE_OUT)$(BIN_DIR)$Smps_driver$E
 
-$(OBJ_DIR)/glop/solve.$O: $(EX_DIR)/cpp/solve.cc $(GEN_DIR)/glop/parameters.pb.h $(GEN_DIR)/linear_solver/linear_solver.pb.h
+$(OBJ_DIR)/glop/solve.$O: $(EX_DIR)/cpp/solve.cc $(GEN_DIR)/ortools/glop/parameters.pb.h $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h
 	$(CCC) $(CFLAGS) -c $(EX_DIR)$Scpp$Ssolve.cc $(OBJ_OUT)$(OBJ_DIR)$Sglop$Ssolve.$O
 
 $(BIN_DIR)/solve$E: $(OBJ_DIR)/glop/solve.$O $(OR_TOOLS_LIBS)

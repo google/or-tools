@@ -32,18 +32,18 @@
 #include <unordered_set>
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "base/strtoint.h"
-#include "util/filelineiter.h"
-#include "base/split.h"
-#include "sat/cp_constraints.h"
-#include "sat/integer_expr.h"
-#include "sat/model.h"
-#include "sat/optimization.h"
-#include "sat/precedences.h"
-#include "sat/sat_solver.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strtoint.h"
+#include "ortools/util/filelineiter.h"
+#include "ortools/base/split.h"
+#include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/optimization.h"
+#include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_solver.h"
 
 DEFINE_string(input, "", "Input file.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");
@@ -87,6 +87,12 @@ class ShiftMinimizationParser {
   // c: job_1 .. job_c  // repeated k times (a counter and job ids after).
   bool LoadFile(const std::string& file_name) {
     if (load_status_ != NOT_STARTED) {
+      return false;
+    }
+
+    File* file = nullptr;
+    if (!file::Open(file_name, "r", &file, file::Defaults()).ok()) {
+      LOG(WARNING) << "Can't open " << file_name;
       return false;
     }
 

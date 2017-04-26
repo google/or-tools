@@ -18,13 +18,14 @@
 #include <string>
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/strtoint.h"
-#include "base/split.h"
-#include "sat/boolean_problem.pb.h"
-#include "util/filelineiter.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strtoint.h"
+#include "ortools/base/split.h"
+#include "absl/ortools/base/string_view.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/util/filelineiter.h"
 
 DEFINE_bool(wcnf_use_strong_slack, true,
             "If true, when we add a slack variable to reify a soft clause, we "
@@ -102,7 +103,7 @@ class SatCnfReader {
     return problem_name;
   }
 
-  int64 StringPieceAtoi(StringPiece input) {
+  int64 StringPieceAtoi(string_view input) {
     // Hack: data() is not null terminated, but we do know that it points
     // inside a std::string where numbers are separated by " " and since atoi64 will
     // stop at the first invalid char, this works.
@@ -114,7 +115,7 @@ class SatCnfReader {
     words_ = strings::Split(
         line, kWordDelimiters,
         static_cast<int64>(strings::SkipEmpty()));
-    if (words_.size() == 0 || words_[0] == "c" || end_marker_seen_) return;
+    if (words_.empty() || words_[0] == "c" || end_marker_seen_) return;
     if (words_[0] == "%") {
       end_marker_seen_ = true;
       return;
@@ -130,7 +131,7 @@ class SatCnfReader {
         }
       } else {
         // TODO(user): The ToString() is only required for the open source. Fix.
-        LOG(FATAL) << "Unknown file type: " << words_[1].ToString();
+        LOG(FATAL) << "Unknown file type: " << words_[1];
       }
     } else {
       // In the cnf file format, the last words should always be 0.
@@ -224,7 +225,7 @@ class SatCnfReader {
   int num_variables_;
 
   // Temporary storage for ProcessNewLine().
-  std::vector<StringPiece> words_;
+  std::vector<string_view> words_;
 
   // We stores the objective in a map because we want the variables to appear
   // only once in the LinearObjective proto.

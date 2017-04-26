@@ -18,8 +18,8 @@
 
 #include <memory>
 
-#include "constraint_solver/routing.h"
-#include "base/random.h"
+#include "ortools/constraint_solver/routing.h"
+#include "ortools/base/random.h"
 
 namespace operations_research {
 

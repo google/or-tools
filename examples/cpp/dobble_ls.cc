@@ -33,13 +33,13 @@
 #include <algorithm>
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/map_util.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "util/bitset.h"
-#include "base/random.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/map_util.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/util/bitset.h"
+#include "ortools/base/random.h"
 
 DEFINE_int32(symbols_per_card, 8, "Number of symbols per card.");
 DEFINE_int32(ls_seed, 1,
@@ -724,10 +724,10 @@ void SolveDobble(int num_cards, int num_symbols, int num_symbols_per_card) {
       all_card_symbol_vars, build_db,
       solver.MakeLocalSearchPhaseParameters(
           solver.ConcatenateOperators(operators, true),
-          NULL,  // Sub decision builder, not needed here.
-          NULL,  // Limit the search for improving move, we will stop
-                 // the exploration of the local search at the first
-                 // improving solution (first accept).
+          nullptr,  // Sub decision builder, not needed here.
+          nullptr,  // Limit the search for improving move, we will stop
+                    // the exploration of the local search at the first
+                    // improving solution (first accept).
           filters));
 
   std::vector<SearchMonitor*> monitors;

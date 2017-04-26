@@ -39,13 +39,13 @@
 
 #include <vector>
 
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/strtoint.h"
-#include "base/random.h"
-#include "base/split.h"
-#include "util/filelineiter.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/strtoint.h"
+#include "ortools/base/random.h"
+#include "ortools/base/split.h"
+#include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 struct Task {

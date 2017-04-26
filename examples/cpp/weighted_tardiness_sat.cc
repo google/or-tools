@@ -14,22 +14,22 @@
 #include <math.h>
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "base/timer.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strtoint.h"
+#include "ortools/base/timer.h"
 #include "google/protobuf/text_format.h"
-#include "base/join.h"
-#include "base/split.h"
-#include "base/strutil.h"
-#include "base/strtoint.h"
-#include "sat/disjunctive.h"
-#include "sat/integer_expr.h"
-#include "sat/intervals.h"
-#include "sat/model.h"
-#include "sat/optimization.h"
-#include "sat/precedences.h"
-#include "util/filelineiter.h"
+#include "ortools/base/join.h"
+#include "ortools/base/split.h"
+#include "ortools/base/strutil.h"
+#include "ortools/sat/disjunctive.h"
+#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/intervals.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/optimization.h"
+#include "ortools/sat/precedences.h"
+#include "ortools/util/filelineiter.h"
 
 DEFINE_string(input, "examples/data/weighted_tardiness/wt40.txt",
               "wt data file name.");

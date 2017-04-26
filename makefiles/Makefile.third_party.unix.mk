@@ -49,24 +49,20 @@ MISSING_DIRECTORIES = \
 	objs/sat \
 	objs/swig \
 	objs/util \
-	src/gen/algorithms \
-	src/gen/bop \
-	src/gen/com/google/ortools/algorithms \
-	src/gen/com/google/ortools/constraintsolver \
-	src/gen/com/google/ortools/flatzinc \
-	src/gen/com/google/ortools/graph \
-	src/gen/com/google/ortools/linearsolver \
-	src/gen/com/google/ortools/properties \
-	src/gen/constraint_solver \
-	src/gen/flatzinc \
-	src/gen/glop \
-	src/gen/graph \
-	src/gen/linear_solver \
-	src/gen/ortools/algorithms \
-	src/gen/ortools/constraint_solver \
-	src/gen/ortools/graph \
-	src/gen/ortools/linear_solver \
-	src/gen/sat
+	ortools/gen/com/google/ortools/algorithms \
+	ortools/gen/com/google/ortools/constraintsolver \
+	ortools/gen/com/google/ortools/flatzinc \
+	ortools/gen/com/google/ortools/graph \
+	ortools/gen/com/google/ortools/linearsolver \
+	ortools/gen/com/google/ortools/properties \
+	ortools/gen/ortools/algorithms \
+	ortools/gen/ortools/bop \
+	ortools/gen/ortools/constraint_solver \
+	ortools/gen/ortools/flatzinc \
+	ortools/gen/ortools/glop \
+	ortools/gen/ortools/graph \
+	ortools/gen/ortools/linear_solver \
+	ortools/gen/ortools/sat
 
 missing_directories: $(MISSING_DIRECTORIES)
 
@@ -123,59 +119,47 @@ objs/swig:
 objs/util:
 	$(MKDIR_P) objs$Sutil
 
-src/gen/algorithms:
-	$(MKDIR_P) src$Sgen$Salgorithms
+ortools/gen/com/google/ortools/algorithms:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Salgorithms
 
-src/gen/bop:
-	$(MKDIR_P) src$Sgen$Sbop
+ortools/gen/com/google/ortools/constraintsolver:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
 
-src/gen/com/google/ortools/algorithms:
-	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Salgorithms
+ortools/gen/com/google/ortools/graph:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sgraph
 
-src/gen/com/google/ortools/constraintsolver:
-	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sconstraintsolver
+ortools/gen/com/google/ortools/linearsolver:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
 
-src/gen/com/google/ortools/graph:
-	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sgraph
+ortools/gen/com/google/ortools/flatzinc:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sflatzinc
 
-src/gen/com/google/ortools/linearsolver:
-	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Slinearsolver
+ortools/gen/com/google/ortools/properties:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sproperties
 
-src/gen/com/google/ortools/flatzinc:
-	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sflatzinc
+ortools/gen/ortools/algorithms:
+	$(MKDIR_P) ortools$Sgen$Sortools$Salgorithms
 
-src/gen/com/google/ortools/properties:
-	$(MKDIR_P) src$Sgen$Scom$Sgoogle$Sortools$Sproperties
+ortools/gen/ortools/bop:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sbop
 
-src/gen/constraint_solver:
-	$(MKDIR_P) src$Sgen$Sconstraint_solver
+ortools/gen/ortools/constraint_solver:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sconstraint_solver
 
-src/gen/flatzinc:
-	$(MKDIR_P) src$Sgen$Sflatzinc
+ortools/gen/ortools/flatzinc:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sflatzinc
 
-src/gen/glop:
-	$(MKDIR_P) src$Sgen$Sglop
+ortools/gen/ortools/glop:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sglop
 
-src/gen/graph:
-	$(MKDIR_P) src$Sgen$Sgraph
+ortools/gen/ortools/graph:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sgraph
 
-src/gen/linear_solver:
-	$(MKDIR_P) src$Sgen$Slinear_solver
+ortools/gen/ortools/linear_solver:
+	$(MKDIR_P) ortools$Sgen$Sortools$Slinear_solver
 
-src/gen/ortools/algorithms:
-	$(MKDIR_P) src$Sgen$Sortools$Salgorithms
-
-src/gen/ortools/constraint_solver:
-	$(MKDIR_P) src$Sgen$Sortools$Sconstraint_solver
-
-src/gen/ortools/graph:
-	$(MKDIR_P) src$Sgen$Sortools$Sgraph
-
-src/gen/ortools/linear_solver:
-	$(MKDIR_P) src$Sgen$Sortools$Slinear_solver
-
-src/gen/sat:
-	$(MKDIR_P) src$Sgen$Ssat
+ortools/gen/ortools/sat:
+	$(MKDIR_P) ortools$Sgen$Sortools$Ssat
 
 # Install gflags. This uses cmake.
 install_gflags: dependencies/install/bin/gflags_completions.sh

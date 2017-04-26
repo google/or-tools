@@ -13,12 +13,12 @@
 
 //
 
-#include "cpp/fap_model_printer.h"
+#include "examples/cpp/fap_model_printer.h"
 
 #include <map>
 #include <string>
 #include <vector>
-#include "base/stringprintf.h"
+#include "ortools/base/stringprintf.h"
 
 namespace operations_research {
 
@@ -36,7 +36,7 @@ FapModelPrinter::~FapModelPrinter() {}
 void FapModelPrinter::PrintFapVariables() {
   LOG(INFO) << "Variable File:";
   for (const auto& it : variables_) {
-    std::string domain = StringPrintf("{");
+    std::string domain = "{";
     for (const int value : it.second.domain) {
       StringAppendF(&domain, "%d ", value);
     }

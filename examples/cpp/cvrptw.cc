@@ -23,15 +23,16 @@
 
 #include <vector>
 
-#include "base/callback.h"
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "constraint_solver/routing.h"
-#include "constraint_solver/routing_flags.h"
-#include "cpp/cvrptw_lib.h"
-#include "base/random.h"
+#include "ortools/base/callback.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_flags.h"
+#include "examples/cpp/cvrptw_lib.h"
+#include "ortools/base/random.h"
 
 using operations_research::RoutingModel;
 using operations_research::RoutingSearchParameters;
@@ -140,7 +141,7 @@ int main(int argc, char** argv) {
   // Solve, returns a solution if any (owned by RoutingModel).
   const operations_research::Assignment* solution =
       routing.SolveWithParameters(parameters);
-  if (solution != NULL) {
+  if (solution != nullptr) {
     DisplayPlan(routing, *solution, FLAGS_vrp_use_same_vehicle_costs,
                 kMaxNodesPerGroup, kSameVehicleCost,
                 routing.GetDimensionOrDie(kCapacity),

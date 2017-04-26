@@ -1,10 +1,10 @@
 main_dir=$2
 
-# List all files on src/$main_dir
-all_cc=`ls src/$main_dir/*.cc`
-all_h=`ls src/$main_dir/*.h`
-if ls src/$main_dir/*proto 1> /dev/null 2>&1; then
-    all_proto=`ls src/$main_dir/*.proto`
+# List all files on ortools/$main_dir
+all_cc=`ls ortools/$main_dir/*.cc`
+all_h=`ls ortools/$main_dir/*.h`
+if ls ortools/$main_dir/*proto 1> /dev/null 2>&1; then
+    all_proto=`ls ortools/$main_dir/*.proto`
 else
     all_proto=
 fi
@@ -51,7 +51,7 @@ function print_list_with_prefix {
 all_deps_str=
 for dir in ${@:2}
 do
-    all_deps_str+=\ $(grep -e "^\#include \"$dir" src/$dir/*.h | cut -d '"' -f 2 | sort -u)
+    all_deps_str+=\ $(grep -e "^\#include \"ortools/$dir" ortools/$dir/*.h | cut -d '"' -f 2 | sort -u)
 done
 echo $1_DEPS = \\
 print_include_list "$all_deps_str"
@@ -59,9 +59,9 @@ echo
 
 # generate XXX_LIB_OBJS macro.
 # Get list of obj files to build.
-all_cc_objs_tmp=${all_cc//src/\$\(OBJ_DIR\)}
+all_cc_objs_tmp=${all_cc//ortools/\$\(OBJ_DIR\)}
 all_cc_objs=${all_cc_objs_tmp//\.cc/\.\$O}
-all_proto_objs_tmp=${all_proto//src/\$\(OBJ_DIR\)}
+all_proto_objs_tmp=${all_proto//ortools/\$\(OBJ_DIR\)}
 all_proto_objs=${all_proto_objs_tmp//\.proto/.pb.\$O}
 all_objs=$all_cc_objs
 all_objs+=\ $all_proto_objs
@@ -78,12 +78,12 @@ do
     all_deps_str=
     for dir in ${@:2}
     do
-        all_deps_str+=\ $(grep -e "^\#include \"$dir" $file | cut -d '"' -f 2 | sort -u)
+        all_deps_str+=\ $(grep -e "^\#include \"ortools/$dir" $file | cut -d '"' -f 2 | sort -u)
     done
     # Print makefile command.
     if [[ ! -z ${all_deps_str// } ]]
     then
-        echo \$\(SRC_DIR\)/$2/$name.h: \\
+        echo \$\(SRC_DIR\)/ortools/$2/$name.h: \\
         print_include_list "$all_deps_str"
         echo
     fi
@@ -97,13 +97,13 @@ do
     all_deps_str=
     for dir in ${@:2}
     do
-        all_deps_str+=\ $(grep -e "^\#include \"$dir" $file | cut -d '"' -f 2 | sort -u)
+        all_deps_str+=\ $(grep -e "^\#include \"ortools/$dir" $file | cut -d '"' -f 2 | sort -u)
     done
     # Print makefile command.
     echo \$\(OBJ_DIR\)/$2/$name.\$O: \\
-    echo \ \ \ \ \$\(SRC_DIR\)/$2/$name.cc \\
+    echo \ \ \ \ \$\(SRC_DIR\)/ortools/$2/$name.cc \\
     print_include_list "$all_deps_str"
-    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(SRC_DIR\)/$2/$name.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$name.\$O
+    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(SRC_DIR\)\$Sortools\$S$2\$S$name.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$name.\$O
     echo
 done
 
@@ -115,21 +115,21 @@ do
     all_deps_str=
     for dir in ${@:2}
     do
-        all_deps_str+=\ $(grep -e "^\import \"$dir" $file | cut -d '"' -f 2 | sed -e "s/proto/pb.h/" | sort -u)
+        all_deps_str+=\ $(grep -e "^\import \"ortools/$dir" $file | cut -d '"' -f 2 | sed -e "s/proto/pb.h/" | sort -u)
     done
     # Print makefile command.
-    echo \$\(GEN_DIR\)/$2/$name.pb.cc: \$\(SRC_DIR\)/$2/$name.proto
-    echo -e '\t'\$\(PROTOBUF_DIR\)/bin/protoc --proto_path=\$\(INC_DIR\) --cpp_out=\$\(GEN_DIR\) \$\(SRC_DIR\)/$2/$name.proto
+    echo \$\(GEN_DIR\)/ortools/$2/$name.pb.cc: \$\(SRC_DIR\)/ortools/$2/$name.proto
+    echo -e '\t'\$\(PROTOBUF_DIR\)/bin/protoc --proto_path=\$\(INC_DIR\) --cpp_out=\$\(GEN_DIR\) \$\(SRC_DIR\)/ortools/$2/$name.proto
     echo
     if [[ ! -z ${all_deps_str// } ]]
     then
-        echo \$\(GEN_DIR\)/$2/$name.pb.h: \$\(GEN_DIR\)/$2/$name.pb.cc \\
+        echo \$\(GEN_DIR\)/ortools/$2/$name.pb.h: \$\(GEN_DIR\)/ortools/$2/$name.pb.cc \\
         print_include_list "$all_deps_str"
     else
-        echo \$\(GEN_DIR\)/$2/$name.pb.h: \$\(GEN_DIR\)/$2/$name.pb.cc
+        echo \$\(GEN_DIR\)/ortools/$2/$name.pb.h: \$\(GEN_DIR\)/ortools/$2/$name.pb.cc
     fi
     echo
-    echo \$\(OBJ_DIR\)/$2/$name.pb.\$O: \$\(GEN_DIR\)/$2/$name.pb.cc
-    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(GEN_DIR\)/$2/$name.pb.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$name.pb.\$O
+    echo \$\(OBJ_DIR\)/$2/$name.pb.\$O: \$\(GEN_DIR\)/ortools/$2/$name.pb.cc
+    echo -e '\t'\$\(CCC\) \$\(CFLAGS\) -c \$\(GEN_DIR\)/ortools/$2/$name.pb.cc \$\(OBJ_OUT\)\$\(OBJ_DIR\)\$S$2$\S$name.pb.\$O
     echo
 done

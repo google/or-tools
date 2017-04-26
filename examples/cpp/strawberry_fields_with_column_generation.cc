@@ -60,12 +60,12 @@
 #include <utility>
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "base/macros.h"
-#include "base/stringprintf.h"
-#include "linear_solver/linear_solver.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/linear_solver/linear_solver.h"
 
 DEFINE_bool(colgen_verbose, false, "print verbosely");
 DEFINE_bool(colgen_complete, false, "generate all columns initially");

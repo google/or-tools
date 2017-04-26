@@ -21,12 +21,12 @@
 #include <cstdio>
 #include <string>
 
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/file.h"
-#include "graph/ebert_graph.h"
-#include "graph/linear_assignment.h"
-#include "base/status.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/file.h"
+#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/linear_assignment.h"
+#include "ortools/base/status.h"
 
 namespace operations_research {
 
@@ -52,13 +52,13 @@ void PrintDimacsAssignmentProblem(
   const GraphType& graph(assignment.Graph());
   std::string output_line =
       StringPrintf("p asn %d %d\n", graph.num_nodes(), graph.num_arcs());
-  CHECK(file::WriteString(output, output_line, file::Defaults()).ok());
+  CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
 
   for (typename LinearSumAssignment<GraphType>::BipartiteLeftNodeIterator
            node_it(assignment);
        node_it.Ok(); node_it.Next()) {
     output_line = StringPrintf("n %d\n", node_it.Index() + 1);
-    CHECK(file::WriteString(output, output_line, file::Defaults()).ok());
+    CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
   }
 
   tail_array_manager.BuildTailArrayFromAdjacencyListsIfForwardGraph();
@@ -68,7 +68,7 @@ void PrintDimacsAssignmentProblem(
     ArcIndex arc = arc_it.Index();
     output_line = StringPrintf("a %d %d %lld\n", graph.Tail(arc) + 1,
                                graph.Head(arc) + 1, assignment.ArcCost(arc));
-    CHECK(file::WriteString(output, output_line, file::Defaults()).ok());
+    CHECK_OK(file::WriteString(output, output_line, file::Defaults()));
   }
 }
 

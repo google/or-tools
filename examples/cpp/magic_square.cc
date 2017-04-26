@@ -19,12 +19,12 @@
 // The problem is trivial for odd orders, but not for even orders.
 // We do not handle odd orders with the trivial method here.
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "constraint_solver/constraint_solver.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_int32(size, 0, "Size of the magic square.");
 DEFINE_bool(impact, false, "Use impact search.");
@@ -125,7 +125,7 @@ void MagicSquare(int grid_size) {
       FLAGS_restart != -1
           ? (FLAGS_luby ? solver.MakeLubyRestart(FLAGS_restart)
                         : solver.MakeConstantRestart(FLAGS_restart))
-          : NULL;
+          : nullptr;
   if (restart) {
     monitors.push_back(restart);
   }

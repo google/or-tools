@@ -26,12 +26,12 @@
 
 #include <cstdio>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "constraint_solver/constraint_solver.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_bool(print, false, "If true, print the minimal solution.");
 DEFINE_int32(

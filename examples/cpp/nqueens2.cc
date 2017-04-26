@@ -18,11 +18,11 @@
 //  distinct solutions: http://www.research.att.com/~njas/sequences/A002562
 
 
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "constraint_solver/constraint_solver.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_int32(
     size, 88,

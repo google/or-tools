@@ -17,16 +17,16 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/strtoint.h"
-#include "base/split.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/hybrid.h"
-#include "util/filelineiter.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/strtoint.h"
+#include "ortools/base/split.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/hybrid.h"
+#include "ortools/util/filelineiter.h"
 
 DEFINE_string(
     data_file, "",
@@ -112,7 +112,7 @@ class MultiDimKnapsackData {
       // 6 = name passed
       switch (mode_) {
         case 0: {
-          if (words.size() != 0) {
+          if (!words.empty()) {
             CHECK_EQ(2, words.size());
             num_dims_ = atoi32(words[0]);
             num_items_ = atoi32(words[1]);
@@ -157,7 +157,7 @@ class MultiDimKnapsackData {
           break;
         }
         case 4: {
-          if (words.size() != 0) {
+          if (!words.empty()) {
             CHECK_EQ(1, words.size());
             optimal_value_ = atoi32(words[0]);
             mode_ = 5;
@@ -165,7 +165,7 @@ class MultiDimKnapsackData {
           break;
         }
         case 5: {
-          if (words.size() != 0) {
+          if (!words.empty()) {
             name_ = line;
             mode_ = 6;
           }
@@ -189,7 +189,7 @@ class MultiDimKnapsackData {
           break;
         }
         case 1: {
-          if (words.size() != 0) {
+          if (!words.empty()) {
             CHECK_EQ(2, words.size());
             num_items_ = atoi32(words[0]);
             num_dims_ = atoi32(words[1]);

@@ -27,17 +27,17 @@
 
 #include <vector>
 
-#include "base/callback.h"
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/join.h"
-#include "constraint_solver/routing.h"
-#include "constraint_solver/routing_enums.pb.h"
-#include "constraint_solver/routing_flags.h"
-#include "cpp/cvrptw_lib.h"
-#include "base/random.h"
+#include "ortools/base/callback.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/join.h"
+#include "ortools/constraint_solver/routing.h"
+#include "ortools/constraint_solver/routing_enums.pb.h"
+#include "ortools/constraint_solver/routing_flags.h"
+#include "examples/cpp/cvrptw_lib.h"
+#include "ortools/base/random.h"
 
 using operations_research::RoutingModel;
 using operations_research::RoutingSearchParameters;
@@ -46,7 +46,6 @@ using operations_research::RandomDemand;
 using operations_research::ServiceTimePlusTransition;
 using operations_research::GetSeed;
 using operations_research::ACMRandom;
-using operations_research::StrCat;
 
 
 DEFINE_int32(vrp_orders, 100, "Nodes in the problem.");

@@ -33,19 +33,19 @@
 //
 // Search will be implemented as local search on the sequence variables.
 
-#include "cpp/jobshop_ls.h"
+#include "examples/cpp/jobshop_ls.h"
 #include <cstdio>
 #include <cstdlib>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/bitmap.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "cpp/jobshop.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/bitmap.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "examples/cpp/jobshop.h"
 
 DEFINE_string(
     data_file, "",
@@ -203,7 +203,7 @@ void JobshopLs(const JobShopData& data) {
 
   SearchLimit* const limit = FLAGS_time_limit_in_ms > 0
                                  ? solver.MakeTimeLimit(FLAGS_time_limit_in_ms)
-                                 : NULL;
+                                 : nullptr;
 
   // Search.
   solver.Solve(final_db, search_log, objective_monitor, limit);

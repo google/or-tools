@@ -1,0 +1,118 @@
+// Copyright 2010-2014 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
+syntax = "proto3";
+import "ortools/constraint_solver/search_limit.proto";
+
+option java_package = "com.google.ortools.constraintsolver";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.ConstraintSolver";
+
+package operations_research;
+
+message CpIntegerMatrix {
+  int32 rows = 1;
+  int32 columns = 2;
+  repeated int64 values = 3;
+}
+
+// This message holds one argument of a constraint or expression.  It
+// is referenced by the argument_name. Only one field apart the name
+// must be set.
+message CpArgument {
+  int32 argument_index = 1;
+  int64 integer_value = 2;
+  repeated int64 integer_array = 3;
+  int32 integer_expression_index = 4;
+  repeated int32 integer_expression_array = 5;
+  int32 interval_index = 6;
+  repeated int32 interval_array = 7;
+  int32 sequence_index = 8;
+  repeated int32 sequence_array = 9;
+  CpIntegerMatrix integer_matrix = 10;
+
+  enum Type {
+    UNDEFINED = 0;
+    INTEGER_VALUE = 1;
+    INTEGER_ARRAY = 2;
+    EXPRESSION = 3;
+    EXPRESSION_ARRAY = 4;
+    INTERVAL = 5;
+    INTERVAL_ARRAY = 6;
+    SEQUENCE = 7;
+    SEQUENCE_ARRAY = 8;
+    INTEGER_MATRIX = 9;
+  }
+  Type type = 11;
+}
+
+message CpExtension {
+  int32 type_index = 1;
+  repeated CpArgument arguments = 2;
+}
+
+message CpIntegerExpression {
+  int32 index = 1;
+  int32 type_index = 2;
+  string name = 3;
+  repeated CpArgument arguments = 4;
+  repeated CpExtension extensions = 5;
+}
+
+message CpIntervalVariable {
+  int32 index = 1;
+  int32 type_index = 2;
+  string name = 3;
+  repeated CpArgument arguments = 4;
+}
+
+message CpSequenceVariable {
+  int32 index = 1;
+  int32 type_index = 2;
+  string name = 3;
+  repeated CpArgument arguments = 4;
+}
+
+message CpConstraint {
+  int32 index = 1;
+  int32 type_index = 2;
+  string name = 3;
+  repeated CpArgument arguments = 4;
+  repeated CpExtension extensions = 5;
+}
+
+message CpObjective {
+  bool maximize = 1;
+  int64 step = 2;
+  int32 objective_index = 3;
+}
+
+message CpVariableGroup {
+  repeated CpArgument arguments = 1;
+  string type = 2;
+}
+
+message CpModel {
+  string model = 1;
+  int32 version = 2;
+  repeated string tags = 3;
+  repeated CpIntegerExpression expressions = 4;
+  repeated CpIntervalVariable intervals = 5;
+  repeated CpSequenceVariable sequences = 6;
+  repeated CpConstraint constraints = 7;
+  CpObjective objective = 8;
+  SearchLimitParameters search_limit = 9;
+  repeated CpVariableGroup variable_groups = 10;
+  string license_text = 11;
+}

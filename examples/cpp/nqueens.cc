@@ -20,13 +20,13 @@
 #include <cstdio>
 #include <map>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/map_util.h"
-#include "constraint_solver/constraint_solveri.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/map_util.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
 
 DEFINE_bool(print, false, "If true, print one of the solution.");
 DEFINE_bool(print_all, false, "If true, print all the solutions.");
@@ -212,8 +212,9 @@ void NQueens(int size) {
   }
   s.AddConstraint(s.MakeAllDifferent(vars));
 
-  SolutionCollector* const solution_counter = s.MakeAllSolutionCollector(NULL);
-  SolutionCollector* const collector = s.MakeFirstSolutionCollector();
+  SolutionCollector* const solution_counter =
+      s.MakeAllSolutionCollector(nullptr);
+  SolutionCollector* const collector = s.MakeAllSolutionCollector();
   collector->Add(queens);
   std::vector<SearchMonitor*> monitors;
   monitors.push_back(solution_counter);

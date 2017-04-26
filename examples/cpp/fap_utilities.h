@@ -21,8 +21,8 @@
 #include <map>
 #include <vector>
 
-#include "constraint_solver/constraint_solver.h"
-#include "cpp/fap_parser.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "examples/cpp/fap_parser.h"
 
 namespace operations_research {
 

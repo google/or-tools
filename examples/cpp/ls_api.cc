@@ -16,13 +16,13 @@
 // Neighborhood Search approach, a Local Search approach, and a Local
 // Search with Filter approach.
 
-#include "base/commandlineflags.h"
-#include "base/map_util.h"
-#include "base/stl_util.h"
-#include "base/hash.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "base/random.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/map_util.h"
+#include "ortools/base/stl_util.h"
+#include "ortools/base/hash.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/base/random.h"
 
 namespace operations_research {
 class OneVarLns : public BaseLns {
@@ -161,7 +161,7 @@ void SolveProblem(SolveType solve_type) {
   OptimizeVar* const obj = s.MakeMinimize(sum_var, 1);
   DecisionBuilder* const db =
       s.MakePhase(vars, Solver::CHOOSE_FIRST_UNBOUND, Solver::ASSIGN_MAX_VALUE);
-  DecisionBuilder* ls = NULL;
+  DecisionBuilder* ls = nullptr;
   switch (solve_type) {
     case LNS: {
       LOG(INFO) << "Large Neighborhood Search";
@@ -186,7 +186,7 @@ void SolveProblem(SolveType solve_type) {
       filters.push_back(s.RevAlloc(new SumFilter(vars)));
 
       LocalSearchPhaseParameters* const ls_params =
-          s.MakeLocalSearchPhaseParameters(one_var_ls, db, NULL, filters);
+          s.MakeLocalSearchPhaseParameters(one_var_ls, db, nullptr, filters);
       ls = s.MakeLocalSearchPhase(vars, db, ls_params);
       break;
     }

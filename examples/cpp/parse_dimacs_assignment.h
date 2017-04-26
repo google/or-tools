@@ -25,12 +25,12 @@
 #include <memory>
 #include <string>
 
-#include "base/callback.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "graph/ebert_graph.h"
-#include "graph/linear_assignment.h"
-#include "util/filelineiter.h"
+#include "ortools/base/callback.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/linear_assignment.h"
+#include "ortools/util/filelineiter.h"
 
 DECLARE_bool(assignment_maximize_cost);
 DECLARE_bool(assignment_optimize_layout);
@@ -44,7 +44,7 @@ template <typename GraphType>
 class DimacsAssignmentParser {
  public:
   explicit DimacsAssignmentParser(const std::string& filename)
-      : filename_(filename), graph_builder_(NULL), assignment_(NULL) {}
+      : filename_(filename), graph_builder_(nullptr), assignment_(nullptr) {}
 
   // Reads an assignment problem description from the given file in
   // DIMACS format and returns a LinearSumAssignment object representing
@@ -77,7 +77,7 @@ class DimacsAssignmentParser {
     ErrorTrackingState()
         : bad(false),
           nodes_described(false),
-          reason(NULL),
+          reason(nullptr),
           num_left_nodes(0),
           num_arcs(0) {}
 
@@ -141,7 +141,7 @@ void DimacsAssignmentParser<GraphType>::ParseNodeLine(const std::string& line) {
 
 template <typename GraphType>
 void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
-  if (graph_builder_ == NULL) {
+  if (graph_builder_ == nullptr) {
     state_.bad = true;
     state_.reason =
         "Problem specification line must precede any arc specification.";
@@ -150,7 +150,7 @@ void DimacsAssignmentParser<GraphType>::ParseArcLine(const std::string& line) {
   }
   if (!state_.nodes_described) {
     state_.nodes_described = true;
-    DCHECK(assignment_ == NULL);
+    DCHECK(assignment_ == nullptr);
     assignment_ = new LinearSumAssignment<GraphType>(state_.num_left_nodes,
                                                      state_.num_arcs);
   }
@@ -233,18 +233,18 @@ LinearSumAssignment<GraphType>* DimacsAssignmentParser<GraphType>::Parse(
   if (state_.bad) {
     *error_message = state_.reason;
     *error_message = *error_message + ": \"" + *state_.bad_line + "\"";
-    return NULL;
+    return nullptr;
   }
-  if (graph_builder_ == NULL) {
+  if (graph_builder_ == nullptr) {
     *error_message = "empty graph description";
-    return NULL;
+    return nullptr;
   }
   std::unique_ptr<PermutationCycleHandler<ArcIndex> > cycle_handler(
       assignment_->ArcAnnotationCycleHandler());
   GraphType* graph = graph_builder_->Graph(cycle_handler.get());
-  if (graph == NULL) {
+  if (graph == nullptr) {
     *error_message = "unable to create compact static graph";
-    return NULL;
+    return nullptr;
   }
   assignment_->SetGraph(graph);
   *error_message = "";

@@ -13,15 +13,15 @@
 
 //
 
-#include "cpp/fap_utilities.h"
+#include "examples/cpp/fap_utilities.h"
 
 #include <map>
 #include <set>
 #include <vector>
 
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/map_util.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/map_util.h"
 
 namespace operations_research {
 

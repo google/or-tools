@@ -13,18 +13,18 @@
 
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "base/timer.h"
-#include "sat/cumulative.h"
-#include "sat/disjunctive.h"
-#include "sat/integer_expr.h"
-#include "sat/intervals.h"
-#include "sat/model.h"
-#include "sat/optimization.h"
-#include "sat/precedences.h"
-#include "util/rcpsp_parser.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/timer.h"
+#include "ortools/sat/cumulative.h"
+#include "ortools/sat/disjunctive.h"
+#include "ortools/sat/integer_expr.h"
+#include "ortools/sat/intervals.h"
+#include "ortools/sat/model.h"
+#include "ortools/sat/optimization.h"
+#include "ortools/sat/precedences.h"
+#include "ortools/util/rcpsp_parser.h"
 
 DEFINE_string(input, "", "Input file.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");

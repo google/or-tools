@@ -4,7 +4,7 @@
 
 # Detect python3
 
-OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$Ssrc$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
+OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
 
 ifeq ($(SYSTEM),win)
   PYTHON_EXECUTABLE = $(WINDOWS_PATH_TO_PYTHON)$Spython.exe
@@ -72,11 +72,11 @@ $(GEN_DIR)$Sortools$S__init__.py:
 pyalgorithms: $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py
 
 $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py: \
-		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/python/vector.swig \
-		$(SRC_DIR)/algorithms/python/knapsack_solver.swig \
-		$(SRC_DIR)/algorithms/knapsack_solver.h
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc -module pywrapknapsack_solver $(SRC_DIR)/algorithms$Spython$Sknapsack_solver.swig
+		$(SRC_DIR)/ortools/base/base.i \
+		$(SRC_DIR)/ortools/util/python/vector.i \
+		$(SRC_DIR)/ortools/algorithms/python/knapsack_solver.i \
+		$(SRC_DIR)/ortools/algorithms/knapsack_solver.h
+	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc -module pywrapknapsack_solver $(SRC_DIR)/ortools/algorithms$Spython$Sknapsack_solver.i
 
 $(GEN_DIR)/ortools/algorithms/knapsack_solver_python_wrap.cc: $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py
 
@@ -95,14 +95,14 @@ endif
 pygraph: $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/graph/pywrapgraph.py
 
 $(GEN_DIR)/ortools/graph/pywrapgraph.py: \
-		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/python/vector.swig \
-		$(SRC_DIR)/graph/python/graph.swig \
-		$(SRC_DIR)/graph/min_cost_flow.h \
-		$(SRC_DIR)/graph/max_flow.h \
-		$(SRC_DIR)/graph/ebert_graph.h \
-		$(SRC_DIR)/graph/shortestpaths.h
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_python_wrap.cc -module pywrapgraph $(SRC_DIR)/graph$Spython$Sgraph.swig
+		$(SRC_DIR)/ortools/base/base.i \
+		$(SRC_DIR)/ortools/util/python/vector.i \
+		$(SRC_DIR)/ortools/graph/python/graph.i \
+		$(SRC_DIR)/ortools/graph/min_cost_flow.h \
+		$(SRC_DIR)/ortools/graph/max_flow.h \
+		$(SRC_DIR)/ortools/graph/ebert_graph.h \
+		$(SRC_DIR)/ortools/graph/shortestpaths.h
+	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sgraph$Sgraph_python_wrap.cc -module pywrapgraph $(SRC_DIR)/ortools/graph$Spython$Sgraph.i
 
 $(GEN_DIR)/ortools/graph/graph_python_wrap.cc: $(GEN_DIR)/ortools/graph/pywrapgraph.py
 
@@ -121,50 +121,42 @@ endif
 
 pycp: $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX)
 
-$(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: $(SRC_DIR)/constraint_solver/search_limit.proto
-	$(COPY) $(SRC_DIR)$Sconstraint_solver$Ssearch_limit.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
+$(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py: $(SRC_DIR)/ortools/constraint_solver/search_limit.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Ssearch_limit.proto
 
-$(GEN_DIR)/ortools/constraint_solver/model_pb2.py: $(SRC_DIR)/constraint_solver/model.proto $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py
-	$(COPY) $(SRC_DIR)$Sconstraint_solver$Smodel.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
-	$(SED) -i -e "s/constraint_solver/ortools\/constraint_solver/g" $(GEN_DIR)$Sortools$Sconstraint_solver$Smodel.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Smodel.proto
+$(GEN_DIR)/ortools/constraint_solver/model_pb2.py: $(SRC_DIR)/ortools/constraint_solver/model.proto $(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Smodel.proto
 
-$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: $(SRC_DIR)/constraint_solver/assignment.proto
-	$(COPY) $(SRC_DIR)$Sconstraint_solver$Sassignment.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Sassignment.proto
+$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py: $(SRC_DIR)/ortools/constraint_solver/assignment.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Sassignment.proto
 
-$(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py: $(SRC_DIR)/constraint_solver/solver_parameters.proto
-	$(COPY) $(SRC_DIR)$Sconstraint_solver$Ssolver_parameters.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
+$(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py: $(SRC_DIR)/ortools/constraint_solver/solver_parameters.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Ssolver_parameters.proto
 
-$(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py: $(SRC_DIR)/constraint_solver/routing_enums.proto
-	$(COPY) $(SRC_DIR)$Sconstraint_solver$Srouting_enums.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
+$(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py: $(SRC_DIR)/ortools/constraint_solver/routing_enums.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_enums.proto
 
-$(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py: $(SRC_DIR)/constraint_solver/routing_parameters.proto $(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py $(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py
-	$(COPY) $(SRC_DIR)$Sconstraint_solver$Srouting_parameters.proto  $(GEN_DIR)$Sortools$Sconstraint_solver
-	$(SED) -i -e "s/constraint_solver/ortools\/constraint_solver/g" $(GEN_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(GEN_DIR) --python_out=$(GEN_DIR) $(GEN_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
+$(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py: $(SRC_DIR)/ortools/constraint_solver/routing_parameters.proto $(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py $(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)$Sortools$Sconstraint_solver$Srouting_parameters.proto
 
 $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
-		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/python/vector.swig \
-		$(SRC_DIR)/constraint_solver/python/constraint_solver.swig \
-		$(SRC_DIR)/constraint_solver/python/routing.swig \
-		$(SRC_DIR)/constraint_solver/constraint_solver.h \
-		$(SRC_DIR)/constraint_solver/constraint_solveri.h \
+		$(SRC_DIR)/ortools/base/base.i \
+		$(SRC_DIR)/ortools/util/python/vector.i \
+		$(SRC_DIR)/ortools/constraint_solver/python/constraint_solver.i \
+		$(SRC_DIR)/ortools/constraint_solver/python/routing.i \
+		$(SRC_DIR)/ortools/constraint_solver/constraint_solver.h \
+		$(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h \
 		$(GEN_DIR)/ortools/constraint_solver/assignment_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/model_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/routing_enums_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/routing_parameters_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/search_limit_pb2.py \
 		$(GEN_DIR)/ortools/constraint_solver/solver_parameters_pb2.py \
-		$(GEN_DIR)/constraint_solver/assignment.pb.h \
-		$(GEN_DIR)/constraint_solver/model.pb.h \
-		$(GEN_DIR)/constraint_solver/search_limit.pb.h \
+		$(GEN_DIR)/ortools/constraint_solver/assignment.pb.h \
+		$(GEN_DIR)/ortools/constraint_solver/model.pb.h \
+		$(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
 		$(CP_LIB_OBJS)
-	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/constraint_solver$Spython$Srouting.swig
+	$(SWIG_BINARY) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc -module pywrapcp $(SRC_DIR)/ortools/constraint_solver$Spython$Srouting.i
 
 # TODO(user): Support pywraprouting as well.
 
@@ -187,17 +179,17 @@ endif
 
 pylp: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/linear_solver/pywraplp.py
 
-$(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py: $(SRC_DIR)/linear_solver/linear_solver.proto
-	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(SRC_DIR) --python_out=$(GEN_DIR)$Sortools $(SRC_DIR)/linear_solver/linear_solver.proto
+$(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py: $(SRC_DIR)/ortools/linear_solver/linear_solver.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)/ortools/linear_solver/linear_solver.proto
 
 $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
-		$(SRC_DIR)/base/base.swig \
-		$(SRC_DIR)/util/python/vector.swig \
-		$(SRC_DIR)/linear_solver/python/linear_solver.swig \
-		$(SRC_DIR)/linear_solver/linear_solver.h \
-		$(GEN_DIR)/linear_solver/linear_solver.pb.h \
+		$(SRC_DIR)/ortools/base/base.i \
+		$(SRC_DIR)/ortools/util/python/vector.i \
+		$(SRC_DIR)/ortools/linear_solver/python/linear_solver.i \
+		$(SRC_DIR)/ortools/linear_solver/linear_solver.h \
+		$(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h \
 		$(GEN_DIR)/ortools/linear_solver/linear_solver_pb2.py
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc -module pywraplp $(SRC_DIR)/linear_solver$Spython$Slinear_solver.swig
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc -module pywraplp $(SRC_DIR)/ortools/linear_solver$Spython$Slinear_solver.i
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_python_wrap.cc: $(GEN_DIR)/ortools/linear_solver/pywraplp.py
 
@@ -321,7 +313,7 @@ else
   ifeq ($(PLATFORM),MACOSX)
 	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel
   else
-	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg 
+	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg
   endif
 endif
 	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && twine upload dist/*

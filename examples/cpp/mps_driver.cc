@@ -18,23 +18,23 @@
 #include <stdio.h>
 #include <string>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "base/timer.h"
-#include "base/file.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/timer.h"
+#include "ortools/base/file.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "base/stringpiece_utils.h"
-#include "base/strutil.h"
-#include "glop/lp_solver.h"
-#include "glop/parameters.pb.h"
-#include "lp_data/lp_print_utils.h"
-#include "lp_data/mps_reader.h"
-#include "lp_data/proto_utils.h"
-#include "util/proto_tools.h"
-#include "base/status.h"
+#include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/strutil.h"
+#include "ortools/glop/lp_solver.h"
+#include "ortools/glop/parameters.pb.h"
+#include "ortools/lp_data/lp_print_utils.h"
+#include "ortools/lp_data/mps_reader.h"
+#include "ortools/lp_data/proto_utils.h"
+#include "ortools/util/proto_tools.h"
+#include "ortools/base/status.h"
 
 DEFINE_bool(mps_dump_problem, false, "Dumps problem in readable form.");
 DEFINE_bool(mps_solve, true, "Solves problem.");
@@ -60,13 +60,7 @@ using operations_research::glop::MPSReader;
 using operations_research::glop::MPModelProtoToLinearProgram;
 using operations_research::glop::ProblemStatus;
 using operations_research::glop::ToDouble;
-using google::protobuf::Descriptor;
-using google::protobuf::FieldDescriptor;
-using google::protobuf::Message;
-using google::protobuf::Reflection;
 using google::protobuf::TextFormat;
-using operations_research::HasSuffixString;
-using operations_research::ScopedWallTime;
 
 
 // Parse glop parameters from the flags --params_file and --params.

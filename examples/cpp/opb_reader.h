@@ -17,13 +17,13 @@
 #include <string>
 #include <vector>
 
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/strtoint.h"
-#include "base/file.h"
-#include "base/split.h"
-#include "sat/boolean_problem.pb.h"
-#include "util/filelineiter.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/strtoint.h"
+#include "ortools/base/file.h"
+#include "ortools/base/split.h"
+#include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/util/filelineiter.h"
 
 namespace operations_research {
 namespace sat {
@@ -66,7 +66,7 @@ class OpbReader {
   void ProcessNewLine(LinearBooleanProblem* problem, const std::string& line) {
     const std::vector<std::string> words =
         strings::Split(line, ' ', strings::SkipEmpty());
-    if (words.size() == 0 || words[0].empty() || words[0][0] == '*') {
+    if (words.empty() || words[0].empty() || words[0][0] == '*') {
       return;
     }
 

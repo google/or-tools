@@ -56,12 +56,12 @@
 //
 // Usage: run this with --helpshort for a short usage manual.
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
 
 // Problem main flags.
 DEFINE_int32(num_teams, 10, "Number of teams in the problem.");

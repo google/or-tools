@@ -12,9 +12,9 @@
 // limitations under the License.
 
 
-#include "cpp/parse_dimacs_assignment.h"
+#include "examples/cpp/parse_dimacs_assignment.h"
 
-#include "base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
 
 DEFINE_bool(assignment_maximize_cost, false,
             "Negate costs so a max-cost assignment is found.");

@@ -12,10 +12,10 @@
 // limitations under the License.
 
 
-#include "graph/linear_assignment.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "graph/ebert_graph.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/linear_assignment.h"
 
 namespace operations_research {
 

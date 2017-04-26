@@ -35,14 +35,14 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "constraint_solver/constraint_solver.h"
-#include "cpp/flexible_jobshop.h"
-#include "util/string_array.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "examples/cpp/flexible_jobshop.h"
+#include "ortools/util/string_array.h"
 
 DEFINE_string(
     data_file,

@@ -51,14 +51,14 @@
 #include <utility>
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "base/map_util.h"
-#include "constraint_solver/constraint_solver.h"
-#include "cpp/fap_model_printer.h"
-#include "cpp/fap_parser.h"
-#include "cpp/fap_utilities.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/map_util.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "examples/cpp/fap_model_printer.h"
+#include "examples/cpp/fap_parser.h"
+#include "examples/cpp/fap_utilities.h"
 
 DEFINE_string(directory, "", "Specifies the directory of the data.");
 DEFINE_string(value_evaluator, "",
@@ -232,11 +232,11 @@ class OrderingBuilder : public DecisionBuilder {
         return s->RevAlloc(ordering_decision);
       } else {
         // The constraint was dropped.
-        return NULL;
+        return nullptr;
       }
     } else {
       // All the constraints were processed. No decision to take.
-      return NULL;
+      return nullptr;
     }
   }
 
@@ -498,7 +498,7 @@ void CreateAdditionalMonitors(OptimizeVar* const objective, Solver* solver,
       FLAGS_restart != -1
           ? (FLAGS_luby ? solver->MakeLubyRestart(FLAGS_restart)
                         : solver->MakeConstantRestart(FLAGS_restart))
-          : NULL;
+          : nullptr;
   if (restart) {
     monitors->push_back(restart);
   }
@@ -701,7 +701,7 @@ void PenalizeConstraintsViolation(
             ->MakeAbs(
                 solver->MakeDifference(variables[index1], variables[index2]))
             ->Var();
-    IntVar* violation = NULL;
+    IntVar* violation = nullptr;
     if (ct.operation == ">") {
       violation = solver->MakeIsLessCstVar(absolute_difference, ct.value);
     } else if (ct.operation == "=") {
@@ -755,7 +755,8 @@ int SoftFapSolver(const std::map<int, FapVariable>& data_variables,
 
   // Penalize variable and constraint violations.
   std::vector<IntVar*> cost;
-  std::vector<IntVar*> violated_constraints(ordered_constraints.size(), NULL);
+  std::vector<IntVar*> violated_constraints(ordered_constraints.size(),
+                                            nullptr);
   PenalizeVariablesViolation(soft_variables, index_from_key, variables, &cost,
                              &solver);
   PenalizeConstraintsViolation(ordered_constraints, soft_constraints,

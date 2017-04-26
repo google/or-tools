@@ -12,11 +12,11 @@
 // limitations under the License.
 
 
-#include "base/commandlineflags.h"
-#include "base/logging.h"
-#include "graph/ebert_graph.h"
-#include "graph/max_flow.h"
-#include "graph/min_cost_flow.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/logging.h"
+#include "ortools/graph/ebert_graph.h"
+#include "ortools/graph/max_flow.h"
+#include "ortools/graph/min_cost_flow.h"
 
 namespace operations_research {
 

@@ -18,22 +18,22 @@
 #include <cstdio>
 #include <string>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/timer.h"
-#include "base/file.h"
-//#include "base/options.h"
-#include "base/stringpiece_utils.h"
-#include "linear_solver/linear_solver.h"
-#include "linear_solver/linear_solver.pb.h"
-//#include "linear_solver/model_anonymizer.h"
-#include "lp_data/lp_data.h"
-#include "lp_data/mps_reader.h"
-#include "lp_data/proto_utils.h"
-#include "util/proto_tools.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/timer.h"
+#include "ortools/base/file.h"
+//#include "ortools/base/options.h"
+#include "ortools/base/stringpiece_utils.h"
+#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/linear_solver/linear_solver.pb.h"
+//#include "ortools/linear_solver/model_anonymizer.h"
+#include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/mps_reader.h"
+#include "ortools/lp_data/proto_utils.h"
+#include "ortools/util/proto_tools.h"
 
 DEFINE_string(input, "", "REQUIRED: Input file name.");
 DEFINE_string(solver, "glop",

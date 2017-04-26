@@ -17,11 +17,11 @@ else # No need to keep the path in the lib, it is not stored there on linux.
 LIB_DIR = $(OR_ROOT)lib
 endif
 BIN_DIR = $(OR_ROOT)bin
-GEN_DIR = $(OR_ROOT)src/gen
+GEN_DIR = $(OR_ROOT)ortools/gen
 OBJ_DIR = $(OR_ROOT)objs
-SRC_DIR = $(OR_ROOT)src
+SRC_DIR = $(OR_ROOT).
 EX_DIR  = $(OR_ROOT)examples
-INC_DIR = $(OR_ROOT)src
+INC_DIR = $(OR_ROOT).
 DEP_BIN_DIR = $(OR_ROOT)dependencies/install/bin
 
 

@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "cpp/print_dimacs_assignment.h"
+#include "examples/cpp/print_dimacs_assignment.h"
 
 #include <cstdio>
 #include <string>

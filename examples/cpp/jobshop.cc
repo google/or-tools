@@ -33,17 +33,17 @@
 //
 // Search will then be applied on the sequence constraints.
 
-#include "cpp/jobshop.h"
+#include "examples/cpp/jobshop.h"
 #include <cstdio>
 #include <cstdlib>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "base/join.h"
-#include "constraint_solver/constraint_solver.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/base/join.h"
+#include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_string(
     data_file, "",
@@ -150,7 +150,7 @@ void Jobshop(const JobShopData& data) {
   SearchMonitor* const search_log =
       solver.MakeSearchLog(kLogFrequency, objective_monitor);
 
-  SearchLimit* limit = NULL;
+  SearchLimit* limit = nullptr;
   if (FLAGS_time_limit_in_ms > 0) {
     limit = solver.MakeTimeLimit(FLAGS_time_limit_in_ms);
   }

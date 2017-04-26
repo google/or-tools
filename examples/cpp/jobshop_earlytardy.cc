@@ -36,16 +36,16 @@
 
 #include <vector>
 
-#include "base/commandlineflags.h"
-#include "base/commandlineflags.h"
-#include "base/integral_types.h"
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "constraint_solver/constraint_solver.h"
-#include "linear_solver/linear_solver.h"
-#include "util/string_array.h"
-#include "cpp/jobshop_earlytardy.h"
-#include "cpp/jobshop_ls.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/linear_solver/linear_solver.h"
+#include "ortools/util/string_array.h"
+#include "examples/cpp/jobshop_earlytardy.h"
+#include "examples/cpp/jobshop_ls.h"
 
 DEFINE_string(
     jet_file,

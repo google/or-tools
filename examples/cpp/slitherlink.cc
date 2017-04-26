@@ -3,9 +3,9 @@
 #include <string>
 #include <unordered_set>
 
-#include "constraint_solver/constraint_solver.h"
-#include "constraint_solver/constraint_solveri.h"
-#include "util/string_array.h"
+#include "ortools/constraint_solver/constraint_solver.h"
+#include "ortools/constraint_solver/constraint_solveri.h"
+#include "ortools/util/string_array.h"
 
 const std::vector<std::vector<int>> small = {
   { 3, 2, -1, 3 },

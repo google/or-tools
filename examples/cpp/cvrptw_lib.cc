@@ -11,15 +11,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "cpp/cvrptw_lib.h"
+#include "examples/cpp/cvrptw_lib.h"
 
 #include <set>
 
-#include "base/logging.h"
-#include "base/stringprintf.h"
-#include "constraint_solver/routing.h"
-#include "base/random.h"
-#include "base/random.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
+#include "ortools/constraint_solver/routing.h"
+#include "ortools/base/random.h"
+#include "ortools/base/random.h"
 
 namespace operations_research {
 
