@@ -315,6 +315,15 @@ cc_library(
 )
 
 cc_library(
+    name = "theta_tree",
+    srcs = ["theta_tree.cc"],
+    hdrs = ["theta_tree.h"],
+    deps = [
+        ":integer",
+    ],
+)
+
+cc_library(
     name = "disjunctive",
     srcs = ["disjunctive.cc"],
     hdrs = ["disjunctive.h"],
@@ -327,6 +336,7 @@ cc_library(
         ":precedences",
         ":sat_base",
         ":sat_solver",
+        ":theta_tree",
         #        "//ortools/base:iterator_adaptors",
         "//ortools/util:stats",
     ],

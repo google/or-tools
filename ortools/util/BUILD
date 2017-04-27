@@ -162,6 +162,7 @@ cc_library(
         ":running_stat",
         "//ortools/base",
         "//ortools/base:strings",
+        "//ortools/base:sysinfo",
         "//ortools/base:timer",
     ],
 )

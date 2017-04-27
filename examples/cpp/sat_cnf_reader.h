@@ -23,7 +23,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/base/split.h"
-#include "absl/ortools/base/string_view.h"
+#include "ortools/base/stringpiece.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/util/filelineiter.h"
 

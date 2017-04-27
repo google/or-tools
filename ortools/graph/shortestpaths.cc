@@ -21,7 +21,6 @@
 #include <memory>
 #include <utility>
 
-#include "ortools/base/callback.h"
 #include "ortools/base/casts.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
