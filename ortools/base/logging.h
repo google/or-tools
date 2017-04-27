@@ -14,8 +14,8 @@
 #ifndef OR_TOOLS_BASE_LOGGING_H_
 #define OR_TOOLS_BASE_LOGGING_H_
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 #include <iostream>  // NOLINT
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"

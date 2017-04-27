@@ -46,12 +46,11 @@ int64 GetProcessMemoryUsage() {
 #elif defined(__GNUC__)  // LINUX
 int64 GetProcessMemoryUsage() {
   unsigned size = 0;
-  int result;
   char buf[30];
   snprintf(buf, sizeof(buf), "/proc/%u/statm", (unsigned)getpid());
   FILE* const pf = fopen(buf, "r");
   if (pf) {
-    result = fscanf(pf, "%u", &size);
+    fscanf(pf, "%u", &size);
   }
   fclose(pf);
   return size * GG_LONGLONG(1024);

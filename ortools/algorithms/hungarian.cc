@@ -646,8 +646,8 @@ void HungarianOptimizer::AugmentPath() {
 }
 
 void MinimizeLinearAssignment(const std::vector<std::vector<double> >& cost,
-                              hash_map<int, int>* direct_assignment,
-                              hash_map<int, int>* reverse_assignment) {
+                              std::unordered_map<int, int>* direct_assignment,
+                              std::unordered_map<int, int>* reverse_assignment) {
   std::vector<int> agent;
   std::vector<int> task;
   HungarianOptimizer hungarian_optimizer(cost);
@@ -659,8 +659,8 @@ void MinimizeLinearAssignment(const std::vector<std::vector<double> >& cost,
 }
 
 void MaximizeLinearAssignment(const std::vector<std::vector<double> >& cost,
-                              hash_map<int, int>* direct_assignment,
-                              hash_map<int, int>* reverse_assignment) {
+                              std::unordered_map<int, int>* direct_assignment,
+                              std::unordered_map<int, int>* reverse_assignment) {
   std::vector<int> agent;
   std::vector<int> task;
   HungarianOptimizer hungarian_optimizer(cost);

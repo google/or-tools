@@ -17,38 +17,6 @@
 #include "ortools/base/stringpiece.h"
 #include "ortools/base/stringprintf.h"
 
-namespace {
-// ----- StrCat -----
-
-static char* Append1(char* out, const AlphaNum& x) {
-  memcpy(out, x.data(), x.size());
-  return out + x.size();
-}
-
-static char* Append2(char* out, const AlphaNum& x1, const AlphaNum& x2) {
-  memcpy(out, x1.data(), x1.size());
-  out += x1.size();
-
-  memcpy(out, x2.data(), x2.size());
-  return out + x2.size();
-}
-
-static char* Append4(char* out, const AlphaNum& x1, const AlphaNum& x2,
-                     const AlphaNum& x3, const AlphaNum& x4) {
-  memcpy(out, x1.data(), x1.size());
-  out += x1.size();
-
-  memcpy(out, x2.data(), x2.size());
-  out += x2.size();
-
-  memcpy(out, x3.data(), x3.size());
-  out += x3.size();
-
-  memcpy(out, x4.data(), x4.size());
-  return out + x4.size();
-}
-}  // namespace
-
 void StrAppend(std::string* s, const AlphaNum& a) { s->append(a.data(), a.size()); }
 void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b) {
   s->reserve(s->size() + a.size() + b.size());

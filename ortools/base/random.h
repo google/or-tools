@@ -94,7 +94,7 @@ class MTRandom : public ACMRandom {
  private:
   int32 GenerateInt32SeedFromString(const std::string& str) {
     uint32 seed = 1234567;
-    for (int i = 0; i < str.size(); ++i) {
+    for (size_t i = 0; i < str.size(); ++i) {
       seed *= 1000003;  // prime
       seed += static_cast<uint32>(str[i]);
     }

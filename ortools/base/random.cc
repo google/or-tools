@@ -77,7 +77,7 @@ int32 ACMRandom::HostnamePidTimeSeed() {
     strcpy(name, "default-hostname");  // NOLINT
   }
   const int namelen = strlen(name);
-  for (int i = 0; i < sizeof(uint32) * 3; ++i) {
+  for (size_t i = 0; i < sizeof(uint32) * 3; ++i) {
     name[namelen + i] = '\0';  // so we mix 0's once we get to end-of-std::string
   }
 #if defined(__GNUC__)

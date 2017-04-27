@@ -35,20 +35,20 @@
 #ifndef OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
 #define OR_TOOLS_ALGORITHMS_HUNGARIAN_H_
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <vector>
 
 namespace operations_research {
 
 // See IMPORTANT NOTE at the top of the file.
 void MinimizeLinearAssignment(const std::vector<std::vector<double> >& cost,
-                              hash_map<int, int>* direct_assignment,
-                              hash_map<int, int>* reverse_assignment);
+                              std::unordered_map<int, int>* direct_assignment,
+                              std::unordered_map<int, int>* reverse_assignment);
 
 // See IMPORTANT NOTE at the top of the file.
 void MaximizeLinearAssignment(const std::vector<std::vector<double> >& cost,
-                              hash_map<int, int>* direct_assignment,
-                              hash_map<int, int>* reverse_assignment);
+                              std::unordered_map<int, int>* direct_assignment,
+                              std::unordered_map<int, int>* reverse_assignment);
 
 }  // namespace operations_research
 

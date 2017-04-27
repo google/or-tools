@@ -2,12 +2,12 @@
 
 #include "ortools/algorithms/hungarian.h"
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/random.h"
-#include "ortools/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 namespace operations_research {
 
@@ -15,8 +15,8 @@ namespace operations_research {
 // result as well as whether the result is the expected one.
 
 void GenericCheck(const int expected_assignment_size,
-                  const hash_map<int, int>& direct_assignment,
-                  const hash_map<int, int>& reverse_assignment,
+                  const std::unordered_map<int, int>& direct_assignment,
+                  const std::unordered_map<int, int>& reverse_assignment,
                   const int expected_agents[], const int expected_tasks[]) {
   EXPECT_EQ(expected_assignment_size, direct_assignment.size());
   EXPECT_EQ(expected_assignment_size, reverse_assignment.size());
@@ -36,8 +36,8 @@ void GenericCheck(const int expected_assignment_size,
 void TestMinimization(const std::vector<std::vector<double> >& cost,
                       const int expected_assignment_size,
                       const int expected_agents[], const int expected_tasks[]) {
-  hash_map<int, int> direct_assignment;
-  hash_map<int, int> reverse_assignment;
+  std::unordered_map<int, int> direct_assignment;
+  std::unordered_map<int, int> reverse_assignment;
   MinimizeLinearAssignment(cost, &direct_assignment, &reverse_assignment);
   SCOPED_TRACE("Minimization");
   GenericCheck(expected_assignment_size, direct_assignment, reverse_assignment,
@@ -47,8 +47,8 @@ void TestMinimization(const std::vector<std::vector<double> >& cost,
 void TestMaximization(const std::vector<std::vector<double> >& cost,
                       const int expected_assignment_size,
                       const int expected_agents[], const int expected_tasks[]) {
-  hash_map<int, int> direct_assignment;
-  hash_map<int, int> reverse_assignment;
+  std::unordered_map<int, int> direct_assignment;
+  std::unordered_map<int, int> reverse_assignment;
   MaximizeLinearAssignment(cost, &direct_assignment, &reverse_assignment);
   SCOPED_TRACE("Maximization");
   GenericCheck(expected_assignment_size, direct_assignment, reverse_assignment,
