@@ -180,7 +180,7 @@ class TreeDecisionVisitor : public DecisionVisitor {
 // not support this.
 class TreeMonitor : public SearchMonitor {
  public:
-  typedef hash_map<std::string, IntVar const*> IntVarMap;
+  typedef std::unordered_map<std::string, IntVar const*> IntVarMap;
 
   TreeMonitor(Solver* const solver, const IntVar* const* vars, int size,
               const std::string& filename_tree, const std::string& filename_visualizer);
@@ -236,7 +236,7 @@ class TreeMonitor : public SearchMonitor {
   const std::string filename_visualizer_;
   int id_counter_;
   std::string last_decision_;
-  hash_map<std::string, int64> last_value_;
+  std::unordered_map<std::string, int64> last_value_;
   std::string last_variable_;
   int64 min_;
   int64 max_;
@@ -314,7 +314,7 @@ class TreeNode {
 
   // Adds a new child, initializes it and returns the corresponding pointer.
   bool AddChild(int id, const std::string& name,
-                hash_map<std::string, int64> const& last_value, bool is_final_node,
+                std::unordered_map<std::string, int64> const& last_value, bool is_final_node,
                 TreeMonitor::IntVarMap const& vars, TreeNode** child) {
     CHECK(child != nullptr);
 

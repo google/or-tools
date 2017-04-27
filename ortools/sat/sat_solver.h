@@ -673,7 +673,7 @@ class SatSolver {
     int32 lbd = 0;
     bool protected_during_next_cleanup = false;
   };
-  hash_map<SatClause*, ClauseInfo> clauses_info_;
+  std::unordered_map<SatClause*, ClauseInfo> clauses_info_;
 
   // Internal propagators. We keep them here because we need more than the
   // SatPropagator interface for them.

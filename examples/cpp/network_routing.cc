@@ -147,13 +147,8 @@ class NetworkRoutingData {
   int num_nodes_;
   int max_capacity_;
   int fixed_charge_cost_;
-#if defined(_MSC_VER)
-  hash_map<std::pair<int, int>, int, PairIntHasher> all_arcs_;
-  hash_map<std::pair<int, int>, int, PairIntHasher> all_demands_;
-#else
-  hash_map<std::pair<int, int>, int> all_arcs_;
-  hash_map<std::pair<int, int>, int> all_demands_;
-#endif
+  std::unordered_map<std::pair<int, int>, int> all_arcs_;
+  std::unordered_map<std::pair<int, int>, int> all_demands_;
 };
 
 // ----- Data Generation -----
@@ -231,8 +226,8 @@ class NetworkRoutingDataBuilder {
       AddEdge(i, j);
     }
 
-    hash_set<int> to_complete;
-    hash_set<int> not_full;
+    std::unordered_set<int> to_complete;
+    std::unordered_set<int> not_full;
     for (int i = 0; i < num_backbones; ++i) {
       if (degrees_[i] < min_backbone_degree) {
         to_complete.insert(i);
@@ -356,7 +351,7 @@ struct Demand {
 
 class NetworkRoutingSolver {
  public:
-  typedef hash_set<int> OnePath;
+  typedef std::unordered_set<int> OnePath;
 
   NetworkRoutingSolver() : arcs_data_(3), num_nodes_(-1) {}
 
@@ -403,7 +398,7 @@ class NetworkRoutingSolver {
 
   // This method will fill the all_paths_ data structure. all_paths
   // contains, for each demand, a vector of possible paths, stored as
-  // a hash_set of arc indices.
+  // a std::unordered_set of arc indices.
   int ComputeAllPaths(int extra_hops, int max_paths) {
     int num_paths = 0;
     for (int demand_index = 0; demand_index < demands_array_.size();
@@ -614,7 +609,7 @@ class NetworkRoutingSolver {
 
     bool NextFragment() override {
       // First we select a set of arcs to release.
-      hash_set<int> arcs_to_release;
+      std::unordered_set<int> arcs_to_release;
       if (arc_wrappers_.size() <= fragment_size_) {
         // There are not enough used arcs, we will release all of them.
         for (int index = 0; index < arc_wrappers_.size(); ++index) {

@@ -275,11 +275,7 @@ class SatPresolver {
   // Temporary data for SimpleBva().
   std::set<LiteralIndex> m_lit_;
   std::vector<ClauseIndex> m_cls_;
-#if defined(_MSC_VER)
-  hash_map<LiteralIndex, std::vector<ClauseIndex>, TypedIntHasher<LiteralIndex>> p_;
-#else
-  hash_map<LiteralIndex, std::vector<ClauseIndex>> p_;
-#endif
+  std::unordered_map<LiteralIndex, std::vector<ClauseIndex>> p_;
   std::vector<Literal> tmp_new_clause_;
 
   // List of clauses on which we need to call ProcessClauseToSimplifyOthers().

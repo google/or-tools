@@ -321,7 +321,7 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
   const int first_slack_variable = problem.original_num_variables();
 
   // This will contains the objective.
-  hash_map<int, int64> literal_to_weight;
+  std::unordered_map<int, int64> literal_to_weight;
   std::vector<std::pair<int, int64>> non_slack_objective;
 
   // This will be the weight of the "hard" clauses in the wcnf format. It must
@@ -432,11 +432,7 @@ class IdGenerator {
   }
 
  private:
-#if defined(_MSC_VER)
-  hash_map<std::pair<int, int64>, int, PairIntInt64Hasher> id_map_;
-#else
-  hash_map<std::pair<int, int64>, int> id_map_;
-#endif
+  std::unordered_map<std::pair<int, int64>, int> id_map_;
 };
 }  // namespace.
 

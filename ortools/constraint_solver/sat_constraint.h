@@ -126,7 +126,7 @@ class BooleanVariableManager {
   sat::SatSolver* solver_;
   std::vector<IntVar*> registered_int_vars_;
   std::vector<IntVarLiteralGetter> associated_variables_;
-  hash_map<IntVar*, int> registration_index_map_;
+  std::unordered_map<IntVar*, int> registration_index_map_;
   ITIVector<sat::BooleanVariable, std::pair<IntVar*, int64>> variable_meaning_;
   DISALLOW_COPY_AND_ASSIGN(BooleanVariableManager);
 };

@@ -67,16 +67,6 @@ DEFINE_int64(sweep_sectors, 1,
 // TODO(user): Move most of the following settings to a model parameter
 // proto.
 
-#if defined(_MSC_VER)
-namespace stdext {
-template <>
-size_t hash_value<operations_research::RoutingModel::NodeIndex>(
-    const operations_research::RoutingModel::NodeIndex& a) {
-  return a.value();
-}
-}  //  namespace stdext
-#endif  // _MSC_VER
-
 namespace operations_research {
 
 namespace {
@@ -548,11 +538,7 @@ RoutingModel::RoutingModel(
   solver_.reset(new Solver("Routing", solver_parameters));
   InitializeBuilders(solver_.get());
   CHECK_EQ(vehicles, start_ends.size());
-#if defined(_MSC_VER)
-  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> depot_set;
-#else
   std::unordered_set<NodeIndex, std::hash<NodeIndex>> depot_set;
-#endif
   for (const std::pair<NodeIndex, NodeIndex> start_end : start_ends) {
     depot_set.insert(start_end.first);
     depot_set.insert(start_end.second);
@@ -604,11 +590,7 @@ RoutingModel::RoutingModel(int nodes, int vehicles,
   InitializeBuilders(solver_.get());
   CHECK_EQ(vehicles, starts.size());
   CHECK_EQ(vehicles, ends.size());
-#if defined(_MSC_VER)
-  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> depot_set;
-#else
   std::unordered_set<NodeIndex, std::hash<NodeIndex>> depot_set;
-#endif
   std::vector<std::pair<NodeIndex, NodeIndex>> start_ends(starts.size());
   for (int i = 0; i < starts.size(); ++i) {
     depot_set.insert(starts[i]);
@@ -1472,13 +1454,8 @@ void RoutingModel::SetStartEnd(
     const std::vector<std::pair<NodeIndex, NodeIndex>>& start_ends) {
   CHECK_EQ(start_ends.size(), vehicles_);
   const int size = Size();
-#if defined(_MSC_VER)
-  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> starts;
-  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> ends;
-#else
   std::unordered_set<NodeIndex, std::hash<NodeIndex>> starts;
   std::unordered_set<NodeIndex, std::hash<NodeIndex>> ends;
-#endif
   for (const std::pair<NodeIndex, NodeIndex> start_end : start_ends) {
     const NodeIndex start = start_end.first;
     const NodeIndex end = start_end.second;
@@ -1499,11 +1476,7 @@ void RoutingModel::SetStartEnd(
       ++index;
     }
   }
-#if defined(_MSC_VER)
-  std::unordered_set<NodeIndex, TypedIntHasher<NodeIndex>> node_set;
-#else
   std::unordered_set<NodeIndex, std::hash<NodeIndex>> node_set;
-#endif
   index_to_vehicle_.resize(size + vehicles_, kUnassigned);
   for (int i = 0; i < vehicles_; ++i) {
     const NodeIndex start = start_ends[i].first;

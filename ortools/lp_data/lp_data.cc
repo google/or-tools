@@ -202,7 +202,7 @@ RowIndex LinearProgram::CreateNewConstraint() {
 }
 
 ColIndex LinearProgram::FindOrCreateVariable(const std::string& variable_id) {
-  const hash_map<std::string, ColIndex>::iterator it =
+  const std::unordered_map<std::string, ColIndex>::iterator it =
       variable_table_.find(variable_id);
   if (it != variable_table_.end()) {
     return it->second;
@@ -215,7 +215,7 @@ ColIndex LinearProgram::FindOrCreateVariable(const std::string& variable_id) {
 }
 
 RowIndex LinearProgram::FindOrCreateConstraint(const std::string& constraint_id) {
-  const hash_map<std::string, RowIndex>::iterator it =
+  const std::unordered_map<std::string, RowIndex>::iterator it =
       constraint_table_.find(constraint_id);
   if (it != constraint_table_.end()) {
     return it->second;
@@ -975,7 +975,7 @@ void LinearProgram::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
   variable_names_.resize(new_index, "");
 
   // Remove the id of the deleted columns and adjust the index of the other.
-  hash_map<std::string, ColIndex>::iterator it = variable_table_.begin();
+  std::unordered_map<std::string, ColIndex>::iterator it = variable_table_.begin();
   while (it != variable_table_.end()) {
     const ColIndex col = it->second;
     if (col >= columns_to_delete.size() || !columns_to_delete[col]) {
@@ -1079,7 +1079,7 @@ void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {
   matrix_.DeleteRows(new_index, permutation);
 
   // Remove the id of the deleted rows and adjust the index of the other.
-  hash_map<std::string, RowIndex>::iterator it = constraint_table_.begin();
+  std::unordered_map<std::string, RowIndex>::iterator it = constraint_table_.begin();
   while (it != constraint_table_.end()) {
     const RowIndex row = it->second;
     if (permutation[row] != kInvalidRow) {

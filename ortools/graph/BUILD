@@ -219,7 +219,6 @@ cc_library(
 #        ":graph",
 #        "//ortools/base",
 #        "//ortools/base:adjustable_priority_queue",
-#        "//ortools/base:dense_hash_map",
 #        "//ortools/base:file",
 #        "//ortools/base:map_util",
 #        "//ortools/base:stl_util",

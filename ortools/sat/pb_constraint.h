@@ -636,7 +636,7 @@ class PbConstraints : public SatPropagator {
 
   // Pointers to the constraints grouped by their hash.
   // This is used to find duplicate constraints by AddConstraint().
-  hash_map<int64, std::vector<UpperBoundedLinearConstraint*>>
+  std::unordered_map<int64, std::vector<UpperBoundedLinearConstraint*>>
       possible_duplicates_;
 
   // Helper to enqueue propagated literals on the trail and store their reasons.

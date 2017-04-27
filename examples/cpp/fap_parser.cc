@@ -190,7 +190,7 @@ void ParametersParser::Parse() {
 void FindComponents(const std::vector<FapConstraint>& constraints,
                     const std::map<int, FapVariable>& variables,
                     const int maximum_variable_id,
-                    hash_map<int, FapComponent>* components) {
+                    std::unordered_map<int, FapComponent>* components) {
   std::vector<int> in_component(maximum_variable_id + 1, -1);
   int constraint_index = 0;
   for (const FapConstraint& constraint : constraints) {
@@ -297,7 +297,7 @@ void ParseInstance(const std::string& data_directory, bool find_components,
                    std::map<int, FapVariable>* variables,
                    std::vector<FapConstraint>* constraints, std::string* objective,
                    std::vector<int>* frequencies,
-                   hash_map<int, FapComponent>* components) {
+                   std::unordered_map<int, FapComponent>* components) {
   CHECK_NOTNULL(variables);
   CHECK_NOTNULL(constraints);
   CHECK_NOTNULL(objective);

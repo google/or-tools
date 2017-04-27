@@ -249,7 +249,7 @@ class BasePositiveTableConstraint : public Constraint {
 
 class PositiveTableConstraint : public BasePositiveTableConstraint {
  public:
-  typedef hash_map<int, std::vector<uint64>> ValueBitset;
+  typedef std::unordered_map<int, std::vector<uint64>> ValueBitset;
 
   PositiveTableConstraint(Solver* const s, const std::vector<IntVar*>& vars,
                           const IntTupleSet& tuples)

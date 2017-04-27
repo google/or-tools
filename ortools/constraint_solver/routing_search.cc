@@ -1878,11 +1878,7 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdatePickupPositions(
   // the entries which are being kept and must be updated.
   using Pair = std::pair<int64, int64>;
   using Insertion = std::pair<Pair, /*delivery_insert_after*/ int64>;
-#if defined(_MSC_VER)
-  std::unordered_set<Insertion, PairPairInt64Hasher> existing_insertions;
-#else
   std::unordered_set<Insertion, std::hash<Insertion>> existing_insertions;
-#endif
   std::vector<PairEntry*> to_remove;
   for (PairEntry* const pair_entry :
        pickup_to_entries->at(pickup_insert_after)) {
@@ -1982,11 +1978,7 @@ void GlobalCheapestInsertionFilteredDecisionBuilder::UpdateDeliveryPositions(
   // the entries which are being kept and must be updated.
   using Pair = std::pair<int64, int64>;
   using Insertion = std::pair<Pair, /*pickup_insert_after*/ int64>;
-#if defined(_MSC_VER)
-  std::unordered_set<Insertion, PairPairInt64Hasher> existing_insertions;
-#else
   std::unordered_set<Insertion, std::hash<Insertion>> existing_insertions;
-#endif
   std::vector<PairEntry*> to_remove;
   for (PairEntry* const pair_entry :
        delivery_to_entries->at(delivery_insert_after)) {

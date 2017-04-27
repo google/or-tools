@@ -92,7 +92,7 @@ class GlobalArithmeticConstraint : public Constraint {
   ConstraintRef Store(ArithmeticConstraint* const constraint);
 
   scoped_ptr<ArithmeticPropagator> propagator_;
-  hash_map<IntVar*, int> var_indices_;
+  std::unordered_map<IntVar*, int> var_indices_;
   vector<ArithmeticConstraint*> constraints_;
 };
 

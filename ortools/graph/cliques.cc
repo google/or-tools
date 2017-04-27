@@ -218,11 +218,7 @@ class FindAndEliminate {
   std::function<bool(int, int)> graph_;
   int node_count_;
   std::function<bool(const std::vector<int>&)> callback_;
-#if defined(_MSC_VER)
-  hash_set<std::pair<int, int>, PairIntHasher> visited_;
-#else
-  hash_set<std::pair<int, int> > visited_;
-#endif
+  std::unordered_set<std::pair<int, int> > visited_;
 };
 }  // namespace
 

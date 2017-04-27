@@ -125,7 +125,7 @@ class IntTupleSet {
     // Maps a tuple's fingerprint to the list of tuples with this
     // fingerprint, represented by their start index in the
     // flat_tuples_ vector.
-    hash_map<int64, std::vector<int> > tuple_fprint_to_index_;
+    std::unordered_map<int64, std::vector<int> > tuple_fprint_to_index_;
   };
 
   // Used to represent a light representation of a tuple.
@@ -359,7 +359,7 @@ inline int IntTupleSet::NumDifferentValuesInColumn(int col) const {
   if (col < 0 || col >= data_->Arity()) {
     return 0;
   }
-  hash_set<int64> values;
+  std::unordered_set<int64> values;
   for (int i = 0; i < data_->NumTuples(); ++i) {
     values.insert(data_->Value(i, col));
   }

@@ -92,10 +92,10 @@ class LinearProgram {
   //
   // Note that these ids are NOT copied over by the Populate*() functions.
   //
-  // TODO(user): Move these and the two corresponding hash_table into a new
+  // TODO(user): Move these and the two corresponding std::unordered_table into a new
   // LinearProgramBuilder class to simplify the code of some functions like
   // DeleteColumns() here and make the behavior on copy clear? or simply remove
-  // them as it is almost as easy to maintain a hash_table on the client side.
+  // them as it is almost as easy to maintain a std::unordered_table on the client side.
   ColIndex FindOrCreateVariable(const std::string& variable_id);
   RowIndex FindOrCreateConstraint(const std::string& constraint_id);
 
@@ -538,10 +538,10 @@ class LinearProgram {
   mutable std::vector<ColIndex> non_binary_variables_list_;
 
   // Map used to find the index of a variable based on its id.
-  hash_map<std::string, ColIndex> variable_table_;
+  std::unordered_map<std::string, ColIndex> variable_table_;
 
   // Map used to find the index of a constraint based on its id.
-  hash_map<std::string, RowIndex> constraint_table_;
+  std::unordered_map<std::string, RowIndex> constraint_table_;
 
   // Offset of the objective, i.e. value of the objective when all variables
   // are set to zero.

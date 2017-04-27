@@ -105,7 +105,7 @@ void SequenceVar::HorizonRange(int64* const hmin, int64* const hmax) const {
 
 void SequenceVar::ActiveHorizonRange(int64* const hmin,
                                      int64* const hmax) const {
-  hash_set<int> decided;
+  std::unordered_set<int> decided;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (intervals_[i]->CannotBePerformed()) {
       decided.insert(i);
@@ -190,7 +190,7 @@ void SequenceVar::ComputePossibleFirstsAndLasts(
     std::vector<int>* const possible_lasts) {
   possible_firsts->clear();
   possible_lasts->clear();
-  hash_set<int> to_check;
+  std::unordered_set<int> to_check;
   for (int i = 0; i < intervals_.size(); ++i) {
     if (intervals_[i]->MayBePerformed()) {
       to_check.insert(i);

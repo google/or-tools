@@ -220,7 +220,7 @@ class RevGrowingMultiMap : ReversibleInterface {
   // TODO(user): use inlined vectors. Another datastructure that may be more
   // efficient is to use a linked list inside added_keys_ for the values sharing
   // the same key.
-  hash_map<Key, std::vector<Value>> map_;
+  std::unordered_map<Key, std::vector<Value>> map_;
 
   // Backtracking data.
   std::vector<Key> added_keys_;

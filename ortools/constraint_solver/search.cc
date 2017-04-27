@@ -3131,7 +3131,7 @@ int64 GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
   }
 }
 
-// Sparse GLS penalties implementation using a hash_map to store penalties.
+// Sparse GLS penalties implementation using a std::unordered_map to store penalties.
 
 class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
  public:
@@ -3144,11 +3144,7 @@ class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
 
  private:
   Bitmap penalized_;
-#if defined(_MSC_VER)
-  hash_map<Arc, int64, PairInt64Hasher> penalties_;
-#else
-  hash_map<Arc, int64> penalties_;
-#endif
+  std::unordered_map<Arc, int64> penalties_;
 };
 
 GuidedLocalSearchPenaltiesMap::GuidedLocalSearchPenaltiesMap(int size)
@@ -3208,7 +3204,7 @@ class GuidedLocalSearch : public Metaheuristic {
   int64 assignment_penalized_value_;
   int64 old_penalized_value_;
   const std::vector<IntVar*> vars_;
-  hash_map<const IntVar*, int64> indices_;
+  std::unordered_map<const IntVar*, int64> indices_;
   const double penalty_factor_;
   std::unique_ptr<GuidedLocalSearchPenalties> penalties_;
   std::unique_ptr<int64[]> current_penalized_values_;

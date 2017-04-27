@@ -48,8 +48,8 @@ struct SatModel {
   // A flatzinc Boolean variable can appear in both maps if a constraint needs
   // its integer representation as a 0-1 variable. Such an IntegerVariable is
   // created lazily by LookupVar() when a constraint is requesting it.
-  hash_map<fz::IntegerVariable*, IntegerVariable> var_map;
-  hash_map<fz::IntegerVariable*, Literal> bool_map;
+  std::unordered_map<fz::IntegerVariable*, IntegerVariable> var_map;
+  std::unordered_map<fz::IntegerVariable*, Literal> bool_map;
 
   // Utility functions to convert an fz::Argument to sat::IntegerVariable(s).
   IntegerVariable LookupConstant(int64 value);
@@ -686,7 +686,7 @@ void ImpliesEquality(bool reverse_implication, Literal r, IntegerVariable a,
     return;
   }
 
-  hash_map<IntegerValue, std::vector<Literal>> by_value;
+  std::unordered_map<IntegerValue, std::vector<Literal>> by_value;
   for (const auto p : m->FullEncoding(a)) {
     by_value[p.value].push_back(p.literal);
   }
@@ -1314,7 +1314,7 @@ void SolveWithSat(const fz::Model& fz_model, const fz::FlatzincParameters& p,
   m.model.SetSingleton(std::move(time_limit));
 
   // Process the bool_not constraints to avoid creating extra Boolean variables.
-  hash_map<fz::IntegerVariable*, fz::IntegerVariable*> not_map;
+  std::unordered_map<fz::IntegerVariable*, fz::IntegerVariable*> not_map;
   for (fz::Constraint* ct : fz_model.constraints()) {
     if (ct != nullptr && ct->active &&
         (ct->type == "bool_not" || ct->type == "bool_ne")) {

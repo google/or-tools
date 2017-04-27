@@ -44,13 +44,7 @@
 
 %{
 #include <vector>
-#ifdef __GNUC__
-#include <ext/hash_map>
-#include <ext/hash_set>
-#else
-#include <hash_map>
-#include <hash_set>
-#endif
+#include <unordered_set>
 #include <set>
 #include <map>
 #include <string>
@@ -123,14 +117,14 @@
 }
 %typemap(in,numinputs=0)
  std::vector<type>* OUTPUT (std::vector<type> temp),
- hash_set<type>* OUTPUT (hash_set<type> temp),
+ std::unordered_set<type>* OUTPUT (std::unordered_set<type> temp),
  std::set<type>* OUTPUT (std::set<type> temp) {
   $1 = &temp;
 }
 %typemap(argout)
     std::vector<type>* OUTPUT,
     std::set<type>* OUTPUT,
-    hash_set<type>* OUTPUT {
+   std::unordered_set<type>* OUTPUT {
   %append_output(list_output_helper($1, &py_converter));
 }
 %typemap(out) std::vector<type> {
@@ -249,13 +243,7 @@ COPY_TYPEMAPS(uint64, Fprint);
 #ifdef SWIGJAVA
 %{
 #include <vector>
-#ifdef __GNUC__
-#include <ext/hash_map>
-#include <ext/hash_set>
-#else
-#include <hash_map>
-#include <hash_set>
-#endif
+#include <unordered_set>
 #include <set>
 #include <map>
 #include <string>
@@ -379,13 +367,7 @@ COPY_TYPEMAPS(unsigned long long, uint64);
 %include "enumsimple.swg"
 %{
 #include <vector>
-#ifdef __GNUC__
-#include <ext/hash_map>
-#include <ext/hash_set>
-#else
-#include <hash_map>
-#include <hash_set>
-#endif
+#include <unordered_set>
 #include <set>
 #include <map>
 #include <string>

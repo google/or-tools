@@ -114,7 +114,7 @@ class SimplexConnection : public SearchMonitor {
 
 // ----- Useful typedefs -----
 
-typedef hash_map<const IntExpr*, MPVariable*> ExprTranslation;
+typedef std::unordered_map<const IntExpr*, MPVariable*> ExprTranslation;
 
 #define IS_TYPE(type, tag) type.compare(ModelVisitor::tag) == 0
 

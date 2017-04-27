@@ -207,16 +207,16 @@ class MPSReader {
   SectionId section_;
 
   // Maps section mnemonic --> section id.
-  hash_map<std::string, SectionId> section_name_to_id_map_;
+  std::unordered_map<std::string, SectionId> section_name_to_id_map_;
 
   // Maps row type mnemonic --> row type id.
-  hash_map<std::string, MPSRowType> row_name_to_id_map_;
+  std::unordered_map<std::string, MPSRowType> row_name_to_id_map_;
 
   // Maps bound type mnemonic --> bound type id.
-  hash_map<std::string, BoundTypeId> bound_name_to_id_map_;
+  std::unordered_map<std::string, BoundTypeId> bound_name_to_id_map_;
 
   // Set of bound type mnemonics that constrain variables to be integer.
-  hash_set<std::string> integer_type_names_set_;
+  std::unordered_set<std::string> integer_type_names_set_;
 
   // The current line number in the file being parsed.
   int64 line_num_;

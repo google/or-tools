@@ -289,7 +289,7 @@ class Diffn : public Constraint {
   const bool strict_;
   const int64 size_;
   Demon* delayed_demon_;
-  hash_set<int> to_propagate_;
+  std::unordered_set<int> to_propagate_;
   std::vector<int> neighbors_;
   uint64 fail_stamp_;
 };

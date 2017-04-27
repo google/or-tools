@@ -590,14 +590,14 @@ class MPSolver {
   // The vector of variables in the problem.
   std::vector<MPVariable*> variables_;
   // A map from a variable's name to its index in variables_.
-  hash_map<std::string, int> variable_name_to_index_;
+  std::unordered_map<std::string, int> variable_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> variable_is_extracted_;
 
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  hash_map<std::string, int> constraint_name_to_index_;
+  std::unordered_map<std::string, int> constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
 
@@ -636,11 +636,11 @@ inline std::ostream& operator<<(std::ostream& os,
 // The data structure used to store the coefficients of the contraints and of
 // the objective. Also define a type to facilitate iteration over them with:
 //  for (CoeffEntry entry : coefficients_) { ... }
-class CoeffMap : public hash_map<const MPVariable*, double> {
+class CoeffMap : public std::unordered_map<const MPVariable*, double> {
  public:
   explicit CoeffMap(int num_buckets)
 #if !defined(_MSC_VER)  // Visual C++ doesn't support this constructor
-      : hash_map<const MPVariable*, double>(num_buckets)
+      : std::unordered_map<const MPVariable*, double>(num_buckets)
 #endif  // _MSC_VER
   {
   }

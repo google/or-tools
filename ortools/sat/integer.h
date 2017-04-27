@@ -264,7 +264,7 @@ class IntegerEncoder {
   // Returns the set of variable encoded as the keys in a map. The map values
   // only have an internal meaning. The set of encoded variables is returned
   // with this "weird" api for efficiency.
-  const hash_map<IntegerVariable, int>& GetFullyEncodedVariables() const {
+  const std::unordered_map<IntegerVariable, int>& GetFullyEncodedVariables() const {
     return full_encoding_index_;
   }
 
@@ -330,7 +330,7 @@ class IntegerEncoder {
   // Full domain encoding. The map contains the index in full_encoding_ of
   // the fully encoded variable. Each entry in full_encoding_ is sorted by
   // IntegerValue and contains the encoding of one IntegerVariable.
-  hash_map<IntegerVariable, int> full_encoding_index_;
+  std::unordered_map<IntegerVariable, int> full_encoding_index_;
   std::vector<std::vector<ValueLiteralPair>> full_encoding_;
 
   DISALLOW_COPY_AND_ASSIGN(IntegerEncoder);
@@ -564,7 +564,7 @@ class IntegerTrail : public SatPropagator {
 
   // Used by GetOrCreateConstantIntegerVariable() to return already created
   // constant variables that share the same value.
-  hash_map<IntegerValue, IntegerVariable> constant_map_;
+  std::unordered_map<IntegerValue, IntegerVariable> constant_map_;
 
   // The integer trail. It always start by num_vars sentinel values with the
   // level 0 bounds (in one to one correspondance with vars_).
@@ -599,20 +599,20 @@ class IntegerTrail : public SatPropagator {
   int64 num_encoded_variables_ = 0;
   std::vector<Literal> tmp_literals_reason_;
   RevGrowingMultiMap<LiteralIndex, IntegerVariable> watched_min_;
-  RevMap<hash_map<IntegerVariable, int>> current_min_;
+  RevMap<std::unordered_map<IntegerVariable, int>> current_min_;
 
   // This is only filled for variables with a domain more complex than a single
   // interval of values. All intervals are stored in a vector, and we keep
   // indices to the current interval of the lower bound, and to the end index
   // which is exclusive.
   //
-  // TODO(user): Avoid using hash_map here and above, a simple vector should
+  // TODO(user): Avoid using std::unordered_map here and above, a simple vector should
   // be more efficient. Except if there is really little variables like this.
   //
   // TODO(user): We could share the std::vector<ClosedInterval> entry between a
   // variable and its negations instead of having duplicates.
-  RevMap<hash_map<IntegerVariable, int>> var_to_current_lb_interval_index_;
-  hash_map<IntegerVariable, int> var_to_end_interval_index_;  // const entries.
+  RevMap<std::unordered_map<IntegerVariable, int>> var_to_current_lb_interval_index_;
+  std::unordered_map<IntegerVariable, int> var_to_end_interval_index_;  // const entries.
   std::vector<ClosedInterval> all_intervals_;                 // const entries.
 
   // Temporary data used by MergeReasonInto().
@@ -939,7 +939,7 @@ class LiteralViews {
   }
 
  private:
-  hash_map<LiteralIndex, IntegerVariable> literal_index_to_integer_;
+  std::unordered_map<LiteralIndex, IntegerVariable> literal_index_to_integer_;
   Model* model_;
 };
 

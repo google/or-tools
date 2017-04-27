@@ -91,8 +91,8 @@ CostValue BuildAndSolveHungarianInstance(
       hungarian_cost[tail][head] = cost;
     }
   }
-  hash_map<int, int> result;
-  hash_map<int, int> wish_this_could_be_null;
+  std::unordered_map<int, int> result;
+  std::unordered_map<int, int> wish_this_could_be_null;
   WallTimer timer;
   VLOG(1) << "Beginning Hungarian method.";
   timer.Start();

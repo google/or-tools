@@ -569,7 +569,7 @@ void PathOperator::InitializePathStarts() {
     // path starts (there could be fewer if a new path was made empty, or more
     // if nodes were added to a formerly empty path).
     int new_index = 0;
-    hash_set<int> found_bases;
+    std::unordered_set<int> found_bases;
     for (int i = 0; i < path_starts_.size(); ++i) {
       int index = new_index;
       // Note: old and new path starts are sorted by construction.
@@ -1367,7 +1367,7 @@ bool TSPLns::MakeNeighbor() {
   }
   // Randomly select break nodes (final nodes of a meta-node, after which
   // an arc is relaxed.
-  hash_set<int64> breaks_set;
+  std::unordered_set<int64> breaks_set;
   // Always add base node to break nodes (diversification)
   breaks_set.insert(base_node);
   while (breaks_set.size() < tsp_size_) {
@@ -1533,7 +1533,7 @@ class LinKernighan : public PathOperator {
 
   Solver::IndexEvaluator3 const evaluator_;
   NearestNeighbors neighbors_;
-  hash_set<int64> marked_;
+  std::unordered_set<int64> marked_;
   const bool topt_;
 };
 

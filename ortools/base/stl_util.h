@@ -25,7 +25,7 @@ namespace operations_research {
 // NOTE: for these three functions, we could just implement a DeleteObject
 // functor and then call for_each() on the range and functor, but this
 // requires us to pull in all of algorithm.h, which seems expensive.
-// For hash_[multi]set, it is important that this deletes behind the iterator
+// For <hash_[multi]set, it is important that this deletes behind the iterator
 // because the hash_set may call the hash function on the iterator when it is
 // advanced, which could result in the hash function trying to deference a
 // stale pointer.

@@ -468,7 +468,7 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
 }
 
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
-  hash_map<std::string, int>::const_iterator it =
+  std::unordered_map<std::string, int>::const_iterator it =
       variable_name_to_index_.find(var_name);
   if (it == variable_name_to_index_.end()) return nullptr;
   return variables_[it->second];
@@ -476,7 +476,7 @@ MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
 
 MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_name)
     const {
-  hash_map<std::string, int>::const_iterator it =
+  std::unordered_map<std::string, int>::const_iterator it =
       constraint_name_to_index_.find(constraint_name);
   if (it == constraint_name_to_index_.end()) return nullptr;
   return constraints_[it->second];
@@ -663,7 +663,7 @@ void MPSolver::ExportModelToProto(MPModelProto* output_model) const {
   // This step is needed as long as the variable indices are given by the
   // underlying solver at the time of model extraction.
   // TODO(user): remove this step.
-  hash_map<const MPVariable*, int> var_to_index;
+  std::unordered_map<const MPVariable*, int> var_to_index;
   for (int j = 0; j < variables_.size(); ++j) {
     var_to_index[variables_[j]] = j;
   }
@@ -1606,4 +1606,3 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
-

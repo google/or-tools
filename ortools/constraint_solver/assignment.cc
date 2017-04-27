@@ -380,7 +380,7 @@ void SequenceVarElement::SetUnperformed(const std::vector<int>& unperformed) {
 }
 
 bool SequenceVarElement::CheckClassInvariants() {
-  hash_set<int> visited;
+  std::unordered_set<int> visited;
   for (const int forward_sequence : forward_sequence_) {
     if (ContainsKey(visited, forward_sequence)) {
       return false;
@@ -444,7 +444,7 @@ namespace {
 
 template <class V, class E>
 void IdToElementMap(AssignmentContainer<V, E>* container,
-                    hash_map<std::string, E*>* id_to_element_map) {
+                    std::unordered_map<std::string, E*>* id_to_element_map) {
   CHECK(id_to_element_map != nullptr);
   id_to_element_map->clear();
   for (int i = 0; i < container->Size(); ++i) {
@@ -464,7 +464,7 @@ void IdToElementMap(AssignmentContainer<V, E>* container,
 }
 
 template <class E, class P>
-void LoadElement(const hash_map<std::string, E*>& id_to_element_map,
+void LoadElement(const std::unordered_map<std::string, E*>& id_to_element_map,
                  const P& proto) {
   const std::string& var_id = proto.var_id();
   CHECK(!var_id.empty());
@@ -516,7 +516,7 @@ void RealLoad(const AssignmentProto& assignment_proto,
     }
   }
   if (!fast_load) {
-    hash_map<std::string, Element*> id_to_element_map;
+    std::unordered_map<std::string, Element*> id_to_element_map;
     IdToElementMap<Var, Element>(container, &id_to_element_map);
     for (int i = 0; i < (assignment_proto.*GetSize)(); ++i) {
       LoadElement<Element, Proto>(id_to_element_map,

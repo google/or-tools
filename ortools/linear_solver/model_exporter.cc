@@ -55,7 +55,7 @@ class NameManager {
   std::string MakeUniqueName(const std::string& name);
 
  private:
-  hash_set<std::string> names_set_;
+  std::unordered_set<std::string> names_set_;
   int last_n_;
 };
 

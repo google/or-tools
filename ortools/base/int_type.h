@@ -86,7 +86,7 @@
 // the stored value into protocol buffer fields and using it as printf args.
 //
 // The class also defines a hash functor that allows the IntType to be used
-// as key to hashable containers such as hash_map and hash_set.
+// as key to hashable containers such as std::unordered_{map|set}.
 //
 // We suggest using the IntTypeIndexedContainer wrapper around STL
 // std::vector (see int_type_indexed_std::vector.h) if an IntType is intended
@@ -326,28 +326,6 @@ INT_TYPE_COMPARISON_OP(<=);  // NOLINT
 INT_TYPE_COMPARISON_OP(>);   // NOLINT
 INT_TYPE_COMPARISON_OP(>=);  // NOLINT
 #undef INT_TYPE_COMPARISON_OP
-
-// Allows it to be used as a key to hashable containers.
-#if !defined(SWIG) && !defined(STLPORT) && !defined(_MSC_VER)
-namespace __gnu_cxx {
-template <typename IntTypeName, typename ValueType>
-struct hash<IntType<IntTypeName, ValueType> > {
-  size_t operator()(const IntType<IntTypeName, ValueType>& idx) const {
-    return static_cast<size_t>(idx.value());
-  }
-};
-}  // namespace __gnu_cxx
-#endif  // !defined(_MSC_VER) && !defined(SWIG) && !defined(STLPORT)
-
-#if defined(_MSC_VER) && !defined(SWIG)
-#include <xhash>
-namespace stdext {
-template <typename IntTypeName, typename ValueType>
-inline size_t hash_value(const IntType<IntTypeName, ValueType>& idx) {
-  return static_cast<size_t>(idx.value());
-}
-}  //  namespace stdext
-#endif  // _MSC_VER
 
 namespace std {
 template <typename IntTypeName, typename ValueType>

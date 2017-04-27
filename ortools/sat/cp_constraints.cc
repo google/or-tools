@@ -187,7 +187,7 @@ void AllDifferentBoundsPropagator::RegisterWith(
 std::function<void(Model*)> AllDifferent(
     const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
-    hash_set<IntegerValue> fixed_values;
+    std::unordered_set<IntegerValue> fixed_values;
 
     // First, we fully encode all the given integer variables.
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
@@ -205,7 +205,7 @@ std::function<void(Model*)> AllDifferent(
 
     // Then we construct a mapping value -> List of literal each indicating
     // that a given variable takes this value.
-    hash_map<IntegerValue, std::vector<Literal>> value_to_literals;
+    std::unordered_map<IntegerValue, std::vector<Literal>> value_to_literals;
     for (const IntegerVariable var : vars) {
       if (!encoder->VariableIsFullyEncoded(var)) continue;
       for (const auto& entry : encoder->FullDomainEncoding(var)) {
@@ -244,7 +244,7 @@ CircuitPropagator::CircuitPropagator(
   prev_.resize(num_nodes_, -1);
   next_literal_.resize(num_nodes_);
   self_arcs_.resize(num_nodes_);
-  hash_map<LiteralIndex, int> literal_to_watch_index;
+  std::unordered_map<LiteralIndex, int> literal_to_watch_index;
   const VariablesAssignment& assignment = trail->Assignment();
   for (int tail = 0; tail < num_nodes_; ++tail) {
     self_arcs_[tail] = graph[tail][tail];

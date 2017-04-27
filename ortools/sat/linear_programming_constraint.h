@@ -147,7 +147,7 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   // both are used in IncrementalPropagate() and Propagate() calls;
   // integer_variable_to_index_ is used to find which mirroring variable's
   // coefficient must be modified on SetCoefficient().
-  hash_map<IntegerVariable, int> integer_variable_to_index_;
+  std::unordered_map<IntegerVariable, int> integer_variable_to_index_;
   std::vector<IntegerVariable> integer_variables_;
   std::vector<glop::ColIndex> mirror_lp_variables_;
 

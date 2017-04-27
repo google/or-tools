@@ -106,7 +106,7 @@ class VectorMap {
 
  private:
   std::vector<T> list_;
-  hash_map<T, int> map_;
+  std::unordered_map<T, int> map_;
 };
 
 }  // namespace operations_research

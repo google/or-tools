@@ -1653,7 +1653,7 @@ class EdgeFinder : public Constraint {
   // Stack of updates to the new start min to do.
   std::vector<std::pair<IntervalVar*, int64>> start_min_update_;
 
-  typedef hash_map<int64, UpdatesForADemand*> UpdateMap;
+  typedef std::unordered_map<int64, UpdatesForADemand*> UpdateMap;
 
   // update_map_[d][i] is an integer such that if a task
   // whose demand is d cannot end before by_end_max_[i], then it cannot start

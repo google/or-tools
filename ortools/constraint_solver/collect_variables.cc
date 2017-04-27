@@ -82,7 +82,7 @@ class CollectVariablesVisitor : public ModelParser {
     } else if (type_name.compare(ModelVisitor::kAllowedAssignments) == 0) {
       const IntTupleSet& matrix =
           Top()->FindIntegerMatrixArgumentOrDie(ModelVisitor::kTuplesArgument);
-      std::vector<hash_set<int> > counters(matrix.Arity());
+      std::vector<std::unordered_set<int> > counters(matrix.Arity());
       for (int i = 0; i < matrix.NumTuples(); ++i) {
         for (int j = 0; j < matrix.Arity(); ++j) {
           counters[j].insert(matrix.Value(i, j));
@@ -204,13 +204,13 @@ class CollectVariablesVisitor : public ModelParser {
   std::vector<IntVar*>* const secondaries_;
   std::vector<SequenceVar*>* const sequences_;
   std::vector<IntervalVar*>* const intervals_;
-  // These hash_set can't easily hold const IntVar*, because they
+  // These std::unordered_set can't easily hold const IntVar*, because they
   // ultimately serve as containers of mutable IntVar.
-  hash_set<IntVar*> primary_set_;
-  hash_set<IntVar*> secondary_set_;
-  hash_set<IntVar*> ignored_set_;
-  hash_set<SequenceVar*> sequence_set_;
-  hash_set<IntervalVar*> interval_set_;
+  std::unordered_set<IntVar*> primary_set_;
+  std::unordered_set<IntVar*> secondary_set_;
+  std::unordered_set<IntVar*> ignored_set_;
+  std::unordered_set<SequenceVar*> sequence_set_;
+  std::unordered_set<IntervalVar*> interval_set_;
 };
 }  // namespace
 

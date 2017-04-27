@@ -1997,15 +1997,15 @@ class ArgumentHolder {
 
  private:
   std::string type_name_;
-  hash_map<std::string, int64> integer_argument_;
-  hash_map<std::string, std::vector<int64> > integer_array_argument_;
-  hash_map<std::string, IntTupleSet> matrix_argument_;
-  hash_map<std::string, IntExpr*> integer_expression_argument_;
-  hash_map<std::string, IntervalVar*> interval_argument_;
-  hash_map<std::string, SequenceVar*> sequence_argument_;
-  hash_map<std::string, std::vector<IntVar*> > integer_variable_array_argument_;
-  hash_map<std::string, std::vector<IntervalVar*> > interval_array_argument_;
-  hash_map<std::string, std::vector<SequenceVar*> > sequence_array_argument_;
+  std::unordered_map<std::string, int64> integer_argument_;
+  std::unordered_map<std::string, std::vector<int64> > integer_array_argument_;
+  std::unordered_map<std::string, IntTupleSet> matrix_argument_;
+  std::unordered_map<std::string, IntExpr*> integer_expression_argument_;
+  std::unordered_map<std::string, IntervalVar*> interval_argument_;
+  std::unordered_map<std::string, SequenceVar*> sequence_argument_;
+  std::unordered_map<std::string, std::vector<IntVar*> > integer_variable_array_argument_;
+  std::unordered_map<std::string, std::vector<IntervalVar*> > interval_array_argument_;
+  std::unordered_map<std::string, std::vector<SequenceVar*> > sequence_array_argument_;
 };
 
 // Model Parser

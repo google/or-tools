@@ -41,8 +41,8 @@ std::vector<std::vector<IntegerValue>> Transpose(
 }
 
 // Converts the vector representation returned by FullDomainEncoding() to a map.
-hash_map<IntegerValue, Literal> GetEncoding(IntegerVariable var, Model* model) {
-  hash_map<IntegerValue, Literal> encoding;
+std::unordered_map<IntegerValue, Literal> GetEncoding(IntegerVariable var, Model* model) {
+  std::unordered_map<IntegerValue, Literal> encoding;
   IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
   for (const auto& entry : encoder->FullDomainEncoding(var)) {
     encoding[entry.value] = entry.literal;
@@ -89,10 +89,10 @@ void FilterValues(IntegerVariable var, Model* model,
 // map.
 void ProcessOneColumn(const std::vector<Literal>& line_literals,
                       const std::vector<IntegerValue>& values,
-                      const hash_map<IntegerValue, Literal>& encoding,
+                      const std::unordered_map<IntegerValue, Literal>& encoding,
                       Model* model) {
   CHECK_EQ(line_literals.size(), values.size());
-  hash_map<IntegerValue, std::vector<Literal>> value_to_list_of_line_literals;
+  std::unordered_map<IntegerValue, std::vector<Literal>> value_to_list_of_line_literals;
 
   // If a value is false (i.e not possible), then the tuple with this value
   // is false too (i.e not possible).
@@ -168,7 +168,7 @@ std::function<void(Model*)> TableConstraint(
 
     // Fully encode the variables using all the values appearing in the tuples.
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    hash_map<IntegerValue, Literal> encoding;
+    std::unordered_map<IntegerValue, Literal> encoding;
     const std::vector<std::vector<IntegerValue>> tr_tuples =
         Transpose(new_tuples);
     for (int i = 0; i < n; ++i) {
@@ -198,7 +198,7 @@ std::function<void(Model*)> LiteralTableConstraint(
       CHECK_EQ(tuple_size, literal_tuples[i].size());
     }
 
-    hash_map<LiteralIndex, std::vector<LiteralIndex>> line_literals_per_literal;
+    std::unordered_map<LiteralIndex, std::vector<LiteralIndex>> line_literals_per_literal;
     for (int i = 0; i < num_tuples; ++i) {
       const LiteralIndex selected_index = line_literals[i].Index();
       for (const Literal l : literal_tuples[i]) {
@@ -254,7 +254,7 @@ std::function<void(Model*)> TransitionConstraint(
     }
 
     // Construct a table with the possible values of each vars.
-    std::vector<hash_set<int64>> possible_values(n);
+    std::vector<std::unordered_set<int64>> possible_values(n);
     const VariablesAssignment& assignment =
         model->GetOrCreate<Trail>()->Assignment();
     for (int time = 0; time < n; ++time) {
@@ -309,9 +309,9 @@ std::function<void(Model*)> TransitionConstraint(
     // initial state, and at time n we should be in one of the final states. We
     // don't need to create Booleans at at time when there is just one possible
     // state (like at time zero).
-    hash_map<IntegerValue, Literal> encoding;
-    hash_map<IntegerValue, Literal> in_encoding;
-    hash_map<IntegerValue, Literal> out_encoding;
+    std::unordered_map<IntegerValue, Literal> encoding;
+    std::unordered_map<IntegerValue, Literal> in_encoding;
+    std::unordered_map<IntegerValue, Literal> out_encoding;
     for (int time = 0; time < n; ++time) {
       // All these vector have the same size. We will use them to enforce a
       // local table constraint representing one step of the automata at the

@@ -92,7 +92,7 @@ class TimePlacement : public DecisionBuilder {
   virtual Decision* Next(Solver* const solver) {
     mp_solver_.Clear();
     std::vector<std::vector<MPVariable*> > all_vars;
-    hash_map<IntervalVar*, MPVariable*> mapping;
+    std::unordered_map<IntervalVar*, MPVariable*> mapping;
     const double infinity = mp_solver_.infinity();
     all_vars.resize(all_sequences_.size());
 

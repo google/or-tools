@@ -210,7 +210,7 @@ class RandomIntervalLns : public BaseLns {
         break;
       }
       case 3: {
-        hash_set<int> to_release;
+        std::unordered_set<int> to_release;
         while (to_release.size() < num_product_) {
           to_release.insert(rand_.Uniform(item_to_product_.back() + 1));
         }
@@ -328,7 +328,7 @@ class NRandomSwaps : public IntVarLocalSearchOperator {
   // Make a neighbor assigning one variable to its target value.
   virtual bool MakeOneNeighbor() {
     const int num_swaps = rand_.Uniform(num_swaps_ - 1) + 2;
-    hash_set<int> inserted;
+    std::unordered_set<int> inserted;
     for (int i = 0; i < num_swaps; ++i) {
       int index1 = rand_.Uniform(Size());
       while (ContainsKey(inserted, index1)) {
@@ -778,7 +778,7 @@ void Solve(const std::string& filename, const std::string& solution_file) {
                                 solver.MakeIsEqualCstVar(products[0], -1)));
 
   // Redundant due date constraints on non variables.
-  hash_set<int> due_date_set(due_dates.begin(), due_dates.end());
+  std::unordered_set<int> due_date_set(due_dates.begin(), due_dates.end());
   for (const int due_date : due_date_set) {
     std::vector<IntVar*> outside;
     int inside_count = 0;

@@ -154,16 +154,16 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   // Export
-  const hash_map<const IntExpr*, int>& expression_map() const {
+  const std::unordered_map<const IntExpr*, int>& expression_map() const {
     return expression_map_;
   }
-  const hash_map<const IntervalVar*, int>& interval_map() const {
+  const std::unordered_map<const IntervalVar*, int>& interval_map() const {
     return interval_map_;
   }
-  const hash_map<const SequenceVar*, int>& sequence_map() const {
+  const std::unordered_map<const SequenceVar*, int>& sequence_map() const {
     return sequence_map_;
   }
-  const hash_map<const IntVar*, IntExpr*>& delegate_map() const {
+  const std::unordered_map<const IntVar*, IntExpr*>& delegate_map() const {
     return delegate_map_;
   }
   const std::vector<const IntExpr*>& expression_list() const {
@@ -230,10 +230,10 @@ class FirstPassVisitor : public ModelVisitor {
   }
 
   const std::string filename_;
-  hash_map<const IntExpr*, int> expression_map_;
-  hash_map<const IntervalVar*, int> interval_map_;
-  hash_map<const SequenceVar*, int> sequence_map_;
-  hash_map<const IntVar*, IntExpr*> delegate_map_;
+  std::unordered_map<const IntExpr*, int> expression_map_;
+  std::unordered_map<const IntervalVar*, int> interval_map_;
+  std::unordered_map<const SequenceVar*, int> sequence_map_;
+  std::unordered_map<const IntVar*, IntExpr*> delegate_map_;
   std::vector<const IntExpr*> expression_list_;
   std::vector<const Constraint*> constraint_list_;
   std::vector<const IntervalVar*> interval_list_;
@@ -401,15 +401,15 @@ class ArgumentHolder {
 
  private:
   std::string type_name_;
-  hash_map<std::string, int> integer_expression_argument_;
-  hash_map<std::string, int64> integer_argument_;
-  hash_map<std::string, int> interval_argument_;
-  hash_map<std::string, int> sequence_argument_;
-  hash_map<std::string, std::vector<int64>> integer_array_argument_;
-  hash_map<std::string, std::pair<int, std::vector<int64>>> integer_matrix_argument_;
-  hash_map<std::string, std::vector<int>> integer_variable_array_argument_;
-  hash_map<std::string, std::vector<int>> interval_array_argument_;
-  hash_map<std::string, std::vector<int>> sequence_array_argument_;
+  std::unordered_map<std::string, int> integer_expression_argument_;
+  std::unordered_map<std::string, int64> integer_argument_;
+  std::unordered_map<std::string, int> interval_argument_;
+  std::unordered_map<std::string, int> sequence_argument_;
+  std::unordered_map<std::string, std::vector<int64>> integer_array_argument_;
+  std::unordered_map<std::string, std::pair<int, std::vector<int64>>> integer_matrix_argument_;
+  std::unordered_map<std::string, std::vector<int>> integer_variable_array_argument_;
+  std::unordered_map<std::string, std::vector<int>> interval_array_argument_;
+  std::unordered_map<std::string, std::vector<int>> sequence_array_argument_;
 };
 
 // ----- Second Pass Visitor -----
@@ -812,10 +812,10 @@ class SecondPassVisitor : public ModelVisitor {
     return FindOrDie(sequence_map_, sequence);
   }
 
-  hash_map<const IntExpr*, int> expression_map_;
-  hash_map<const IntervalVar*, int> interval_map_;
-  hash_map<const SequenceVar*, int> sequence_map_;
-  hash_map<const IntVar*, IntExpr*> delegate_map_;
+  std::unordered_map<const IntExpr*, int> expression_map_;
+  std::unordered_map<const IntervalVar*, int> interval_map_;
+  std::unordered_map<const SequenceVar*, int> sequence_map_;
+  std::unordered_map<const IntVar*, IntExpr*> delegate_map_;
   std::vector<const IntExpr*> expression_list_;
   std::vector<const Constraint*> constraint_list_;
   std::vector<const IntervalVar*> interval_list_;

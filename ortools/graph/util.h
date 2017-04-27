@@ -213,7 +213,7 @@ std::unique_ptr<Graph> RemoveSelfArcsAndDuplicateArcs(const Graph& graph) {
   std::unique_ptr<Graph> g(new Graph(graph.num_nodes(), graph.num_arcs()));
   typedef typename Graph::ArcIndex ArcIndex;
   typedef typename Graph::NodeIndex NodeIndex;
-  hash_set<std::pair<NodeIndex, NodeIndex>> arcs;
+  std::unordered_set<std::pair<NodeIndex, NodeIndex>> arcs;
   for (const NodeIndex tail : graph.AllNodes()) {
     for (const ArcIndex arc : graph.OutgoingArcs(tail)) {
       const NodeIndex head = graph.Head(arc);
@@ -266,7 +266,7 @@ template <class Graph>
 std::vector<int> ComputeOnePossibleReverseArcMapping(const Graph& graph,
                                                 bool die_if_not_symmetric) {
   std::vector<int> reverse_arc(graph.num_arcs(), -1);
-  hash_multimap<std::pair</*tail*/ int, /*head*/ int>, /*arc index*/ int>
+  std::unordered_multimap<std::pair</*tail*/ int, /*head*/ int>, /*arc index*/ int>
       arc_map;
   for (int arc = 0; arc < graph.num_arcs(); ++arc) {
     const int tail = graph.Tail(arc);

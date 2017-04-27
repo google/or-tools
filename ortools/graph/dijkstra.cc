@@ -71,8 +71,8 @@ class DijkstraSP {
   std::unique_ptr<int[]> predecessor_;
   AdjustablePriorityQueue<Element> frontier_;
   std::vector<Element> elements_;
-  hash_set<int> not_visited_;
-  hash_set<int> added_to_the_frontier_;
+  std::unordered_set<int> not_visited_;
+  std::unordered_set<int> added_to_the_frontier_;
 };
 
 void DijkstraSP::Initialize() {
@@ -100,7 +100,7 @@ int DijkstraSP::SelectClosestNode(int64* distance) {
 }
 
 void DijkstraSP::Update(int node) {
-  for (hash_set<int>::const_iterator it = not_visited_.begin();
+  for (std::unordered_set<int>::const_iterator it = not_visited_.begin();
        it != not_visited_.end(); ++it) {
     const int other_node = *it;
     const int64 graph_node_i = graph_(node, other_node);

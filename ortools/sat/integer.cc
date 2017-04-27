@@ -46,7 +46,7 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var,
   // these intersection should happen in the presolve.
   if (ContainsKey(full_encoding_index_, i_var)) {
     int num_fixed = 0;
-    hash_set<IntegerValue> to_interset(values.begin(), values.end());
+    std::unordered_set<IntegerValue> to_interset(values.begin(), values.end());
     const std::vector<ValueLiteralPair>& encoding = FullDomainEncoding(i_var);
     for (const ValueLiteralPair& p : encoding) {
       if (!ContainsKey(to_interset, p.value)) {
