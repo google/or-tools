@@ -103,7 +103,7 @@ class SatCnfReader {
     return problem_name;
   }
 
-  int64 StringPieceAtoi(string_view input) {
+  int64 StringPieceAtoi(const StringPiece& input) {
     // Hack: data() is not null terminated, but we do know that it points
     // inside a std::string where numbers are separated by " " and since atoi64 will
     // stop at the first invalid char, this works.
@@ -225,7 +225,7 @@ class SatCnfReader {
   int num_variables_;
 
   // Temporary storage for ProcessNewLine().
-  std::vector<string_view> words_;
+  std::vector<StringPiece> words_;
 
   // We stores the objective in a map because we want the variables to appear
   // only once in the LinearObjective proto.
