@@ -17,8 +17,8 @@
 #define OR_TOOLS_GRAPH_UTIL_H_
 
 #include <algorithm>
-#include "ortools/base/hash.h"
-#include "ortools/base/hash.h"
+#include <unordered_map>
+#include <unordered_set>
 #include <map>
 #include <memory>
 #include <set>
@@ -231,7 +231,7 @@ void RemoveCyclesFromPath(const Graph& graph, std::vector<int>* arc_path) {
   if (arc_path->empty()) return;
 
   // This maps each node to the latest arc in the given path that leaves it.
-  std::map<int, int> last_arc_leaving_node;
+  std::unordered_map<int, int> last_arc_leaving_node;
   for (const int arc : *arc_path) last_arc_leaving_node[graph.Tail(arc)] = arc;
 
   // Special case for the destination.

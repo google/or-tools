@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <limits>
+#include <unordered_set>
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"

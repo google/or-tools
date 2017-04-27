@@ -269,5 +269,4 @@ util::Status Delete(const std::string& path, int flags) {
   return util::Status(util::error::INVALID_ARGUMENT,
                       StrCat("Could not delete '", path, "'."));
 }
-
 }  // namespace file

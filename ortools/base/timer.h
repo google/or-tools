@@ -102,5 +102,4 @@ class ScopedWallTime {
 
   DISALLOW_COPY_AND_ASSIGN(ScopedWallTime);
 };
-
 #endif  // OR_TOOLS_BASE_TIMER_H_

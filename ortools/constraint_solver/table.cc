@@ -15,7 +15,7 @@
 // This file implements the table constraints.
 
 #include <algorithm>
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <vector>

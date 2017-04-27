@@ -25,7 +25,7 @@
 #define OR_TOOLS_LP_DATA_LP_DATA_H_
 
 #include <algorithm>  // for max
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <map>
 #include <string>  // for std::string
 #include <vector>  // for vector
@@ -92,10 +92,10 @@ class LinearProgram {
   //
   // Note that these ids are NOT copied over by the Populate*() functions.
   //
-  // TODO(user): Move these and the two corresponding std::unordered_table into a new
+  // TODO(user): Move these and the two corresponding hash_table into a new
   // LinearProgramBuilder class to simplify the code of some functions like
   // DeleteColumns() here and make the behavior on copy clear? or simply remove
-  // them as it is almost as easy to maintain a std::unordered_table on the client side.
+  // them as it is almost as easy to maintain a hash_table on the client side.
   ColIndex FindOrCreateVariable(const std::string& variable_id);
   RowIndex FindOrCreateConstraint(const std::string& constraint_id);
 

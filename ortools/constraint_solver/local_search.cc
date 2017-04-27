@@ -13,8 +13,8 @@
 
 
 #include <algorithm>
-#include "ortools/base/hash.h"
-#include "ortools/base/hash.h"
+#include <unordered_map>
+#include <unordered_set>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -29,6 +29,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"

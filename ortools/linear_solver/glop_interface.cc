@@ -12,7 +12,7 @@
 // limitations under the License.
 
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <string>
 #include <vector>
 #include <fstream>

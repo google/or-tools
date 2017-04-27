@@ -13,7 +13,7 @@
 
 
 #include <cstddef>
-#include "ortools/base/hash.h"
+#include <unordered_set>
 #include <string>
 #include <vector>
 
@@ -204,7 +204,7 @@ class CollectVariablesVisitor : public ModelParser {
   std::vector<IntVar*>* const secondaries_;
   std::vector<SequenceVar*>* const sequences_;
   std::vector<IntervalVar*>* const intervals_;
-  // These std::unordered_set can't easily hold const IntVar*, because they
+  // These hash_set can't easily hold const IntVar*, because they
   // ultimately serve as containers of mutable IntVar.
   std::unordered_set<IntVar*> primary_set_;
   std::unordered_set<IntVar*> secondary_set_;

@@ -78,6 +78,11 @@ bool SortedDisjointIntervalsContain(
 std::vector<ClosedInterval> IntersectionOfSortedDisjointIntervals(
     const std::vector<ClosedInterval>& a, const std::vector<ClosedInterval>& b);
 
+// Returns the union of two lists of sorted disjoint intervals in a
+// sorted disjoint interval form.
+std::vector<ClosedInterval> UnionOfSortedDisjointIntervals(
+    const std::vector<ClosedInterval>& a, const std::vector<ClosedInterval>& b);
+
 // Returns the domain of x + y given that the domain of x is a and the one of y
 // is b.
 std::vector<ClosedInterval> AdditionOfSortedDisjointIntervals(
@@ -95,8 +100,15 @@ std::vector<ClosedInterval> NegationOfSortedDisjointIntervals(
     std::vector<ClosedInterval> intervals);
 
 // Returns the domain of x * coeff given the domain of x.
+// To avoid an explosion in the size of the returned vector, the first function
+// will actually return a super-set of the domain. For instance [1, 100] * 2
+// will be transformed in [2, 200] not [2][4][6]...[200]. The second version
+// will try to be exact as long as the result is not too large, and will set
+// success to true when this is the case.
 std::vector<ClosedInterval> MultiplicationOfSortedDisjointIntervals(
-    std::vector<ClosedInterval> a, int64 coeff);
+    std::vector<ClosedInterval> intervals, int64 coeff);
+std::vector<ClosedInterval> PreciseMultiplicationOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals, int64 coeff, bool* success);
 
 // If x * coeff is in the given intervals, this returns the domain of x. Note
 // that it is not the same as given the domains of x, return the domain of x /

@@ -606,7 +606,7 @@ class IntegerTrail : public SatPropagator {
   // indices to the current interval of the lower bound, and to the end index
   // which is exclusive.
   //
-  // TODO(user): Avoid using std::unordered_map here and above, a simple vector should
+  // TODO(user): Avoid using hash_map here and above, a simple vector should
   // be more efficient. Except if there is really little variables like this.
   //
   // TODO(user): We could share the std::vector<ClosedInterval> entry between a

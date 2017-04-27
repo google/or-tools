@@ -17,7 +17,7 @@
 
 #include <cmath>
 #include <cstddef>
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <limits>
 #include <memory>
 #include <string>

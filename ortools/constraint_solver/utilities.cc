@@ -12,8 +12,8 @@
 // limitations under the License.
 
 
-#include "ortools/base/hash.h"
-#include "ortools/base/hash.h"
+#include <unordered_map>
+#include <unordered_set>
 #include <string>
 
 #include "ortools/base/integral_types.h"

@@ -14,14 +14,14 @@
 
 #include <algorithm>
 #include <functional>
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <list>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "ortools/base/casts.h"
+//#include "ortools/base/casts.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
@@ -3131,7 +3131,7 @@ int64 GuidedLocalSearchPenaltiesTable::Value(const Arc& arc) const {
   }
 }
 
-// Sparse GLS penalties implementation using a std::unordered_map to store penalties.
+// Sparse GLS penalties implementation using a hash_map to store penalties.
 
 class GuidedLocalSearchPenaltiesMap : public GuidedLocalSearchPenalties {
  public:

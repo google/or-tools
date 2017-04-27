@@ -19,7 +19,7 @@
 #ifndef OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 #define OR_TOOLS_EXAMPLES_FAP_PARSER_H_
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <map>
 #include <string>
 #include <vector>

@@ -17,6 +17,7 @@
 #include <set>
 #include <unordered_set>
 
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/strutil.h"

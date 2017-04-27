@@ -19,7 +19,7 @@
 #ifndef OR_TOOLS_SAT_SAT_SOLVER_H_
 #define OR_TOOLS_SAT_SAT_SOLVER_H_
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <memory>
 #include <queue>
 #include <string>

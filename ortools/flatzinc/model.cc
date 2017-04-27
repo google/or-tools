@@ -17,6 +17,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"

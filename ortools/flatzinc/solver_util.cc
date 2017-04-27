@@ -13,6 +13,7 @@
 
 #include "ortools/flatzinc/solver_util.h"
 
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/flatzinc/logging.h"
 

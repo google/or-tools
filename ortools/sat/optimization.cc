@@ -16,6 +16,7 @@
 #include <deque>
 #include <queue>
 
+#include "ortools/base/stringprintf.h"
 #include "google/protobuf/descriptor.h"
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/util.h"

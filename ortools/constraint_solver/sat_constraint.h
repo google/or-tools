@@ -28,8 +28,8 @@
 #ifndef OR_TOOLS_CONSTRAINT_SOLVER_SAT_CONSTRAINT_H_
 #define OR_TOOLS_CONSTRAINT_SOLVER_SAT_CONSTRAINT_H_
 
-#include "ortools/base/hash.h"
-#include "ortools/base/hash.h"
+#include <unordered_map>
+#include <unordered_set>
 
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"

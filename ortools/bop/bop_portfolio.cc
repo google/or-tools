@@ -13,6 +13,7 @@
 
 #include "ortools/bop/bop_portfolio.h"
 
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/bop/bop_fs.h"
 #include "ortools/bop/bop_lns.h"

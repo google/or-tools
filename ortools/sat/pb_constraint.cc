@@ -13,6 +13,7 @@
 
 #include "ortools/sat/pb_constraint.h"
 
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/thorough_hash.h"
 #include "ortools/util/saturated_arithmetic.h"
 

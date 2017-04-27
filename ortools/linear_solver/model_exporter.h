@@ -14,7 +14,7 @@
 #ifndef OR_TOOLS_LINEAR_SOLVER_MODEL_EXPORTER_H_
 #define OR_TOOLS_LINEAR_SOLVER_MODEL_EXPORTER_H_
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <string>
 #include "ortools/base/macros.h"
 #include "ortools/base/hash.h"

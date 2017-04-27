@@ -87,9 +87,8 @@ std::vector<std::string> Split(const std::string& full, const char* delim, int f
   return out;
 }
 
-std::vector<StringPiece> Split(const std::string& full,
-                                                      const char* delim,
-                                                      int64 flags) {
+std::vector<StringPiece> Split(const std::string& full, const char* delim,
+                               int64 flags) {
   CHECK_EQ(SkipEmpty(), flags);
   std::vector<StringPiece> out;
   InternalSplitStringUsing(full, delim, &out);

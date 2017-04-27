@@ -17,7 +17,7 @@
 #ifndef OR_TOOLS_UTIL_VECTOR_MAP_H_
 #define OR_TOOLS_UTIL_VECTOR_MAP_H_
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <vector>
 #include "ortools/base/map_util.h"
 

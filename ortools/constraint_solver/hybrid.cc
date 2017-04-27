@@ -16,7 +16,7 @@
 
 #include <math.h>
 #include <functional>
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <memory>
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"

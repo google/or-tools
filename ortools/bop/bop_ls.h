@@ -28,7 +28,7 @@
 #define OR_TOOLS_BOP_BOP_LS_H_
 
 #include <array>
-#include "ortools/base/hash.h"
+#include <unordered_set>
 
 #include "ortools/base/hash.h"
 #include "ortools/bop/bop_base.h"

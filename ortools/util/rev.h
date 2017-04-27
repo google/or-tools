@@ -15,7 +15,7 @@
 #ifndef OR_TOOLS_UTIL_REV_H_
 #define OR_TOOLS_UTIL_REV_H_
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <vector>
 
 #include "ortools/base/logging.h"

@@ -41,6 +41,7 @@
 #include "ortools/base/callback.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/base/file.h"
 #include "ortools/base/split.h"

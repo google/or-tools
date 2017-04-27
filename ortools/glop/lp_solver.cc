@@ -20,6 +20,7 @@
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 
 #include "ortools/base/join.h"

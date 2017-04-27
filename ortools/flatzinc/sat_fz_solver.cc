@@ -13,8 +13,9 @@
 
 #include "ortools/flatzinc/sat_fz_solver.h"
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <limits>
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"

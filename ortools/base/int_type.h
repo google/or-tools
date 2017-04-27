@@ -145,7 +145,7 @@
 #define OR_TOOLS_BASE_INT_TYPE_H_
 
 #include <stddef.h>
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <iosfwd>
 #include <ostream>  // NOLINT
 

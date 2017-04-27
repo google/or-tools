@@ -43,11 +43,12 @@
 }
 
 %{
-#include <vector>
-#include <unordered_set>
-#include <set>
 #include <map>
+#include <set>
 #include <string>
+#include <unordered_set>
+#include <vector>
+
 #include "ortools/base/basictypes.h"
 #include "ortools/base/python-swig.h"
 %}
@@ -124,7 +125,7 @@
 %typemap(argout)
     std::vector<type>* OUTPUT,
     std::set<type>* OUTPUT,
-   std::unordered_set<type>* OUTPUT {
+    std::unordered_set<type>* OUTPUT {
   %append_output(list_output_helper($1, &py_converter));
 }
 %typemap(out) std::vector<type> {
@@ -242,11 +243,12 @@ COPY_TYPEMAPS(uint64, Fprint);
 
 #ifdef SWIGJAVA
 %{
-#include <vector>
-#include <unordered_set>
-#include <set>
 #include <map>
+#include <set>
 #include <string>
+#include <unordered_set>
+#include <vector>
+
 #include "ortools/base/basictypes.h"
 %}
 
@@ -366,11 +368,12 @@ COPY_TYPEMAPS(unsigned long long, uint64);
 #ifdef SWIGCSHARP
 %include "enumsimple.swg"
 %{
-#include <vector>
-#include <unordered_set>
-#include <set>
 #include <map>
+#include <set>
 #include <string>
+#include <unordered_set>
+#include <vector>
+
 #include "ortools/base/basictypes.h"
 %}
 

@@ -78,10 +78,11 @@ const typename Collection::value_type::second_type FindPtrOrNull(
   return it->second;
 }
 
-// Change the value associated with a particular key in a map or std::unordered_map.
-// If the key is not present in the map the key and value are inserted,
-// otherwise the value is updated to be a copy of the value provided.
-// True indicates that an insert took place, false indicates an update.
+// Change the value associated with a particular key in a map or
+// std::unordered_map. If the key is not present in the map the key and value
+// are inserted, otherwise the value is updated to be a copy of the value
+// provided. True indicates that an insert took place, false indicates an
+// update.
 template <class Collection, class Key, class Value>
 bool InsertOrUpdate(Collection* const collection, const Key& key,
                     const Value& value) {
@@ -143,9 +144,8 @@ bool FindCopy(const Collection& collection, const Key& key,
   return true;
 }
 
-// Test to see if a set, map, std::unordered_set or std::unordered_map
-// contains a particular key.
-// Returns true if the key is in the collection.
+// Test to see if a set, map, std::unordered_set or std::unordered_map contains
+// a particular key. Returns true if the key is in the collection.
 template <class Collection, class Key>
 bool ContainsKey(const Collection& collection, const Key& key) {
   typename Collection::const_iterator it = collection.find(key);

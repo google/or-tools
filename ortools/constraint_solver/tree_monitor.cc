@@ -13,7 +13,7 @@
 
 
 #include <algorithm>
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <limits>
 #include <map>
 #include <memory>

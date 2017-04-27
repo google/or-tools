@@ -115,6 +115,7 @@ std::vector<ClosedInterval> IntersectionOfSortedDisjointIntervals(
 
 std::vector<ClosedInterval> ComplementOfSortedDisjointIntervals(
     const std::vector<ClosedInterval>& intervals) {
+  DCHECK(IntervalsAreSortedAndDisjoint(intervals));
   std::vector<ClosedInterval> result;
   int64 next_start = kint64min;
   for (const ClosedInterval& interval : intervals) {
@@ -130,6 +131,7 @@ std::vector<ClosedInterval> ComplementOfSortedDisjointIntervals(
 
 std::vector<ClosedInterval> NegationOfSortedDisjointIntervals(
     std::vector<ClosedInterval> intervals) {
+  DCHECK(IntervalsAreSortedAndDisjoint(intervals));
   if (intervals.empty()) return intervals;
   std::reverse(intervals.begin(), intervals.end());
   if (intervals.back().end == kint64min) intervals.pop_back();  // corner-case
@@ -145,11 +147,11 @@ namespace {
 
 // Transforms a sorted list of intervals in a sorted DISJOINT list for which
 // IntervalsAreSortedAndDisjoint() would return true.
-void IntersectionOfSortedIntervals(std::vector<ClosedInterval>* intervals) {
+void UnionOfSortedIntervals(std::vector<ClosedInterval>* intervals) {
   DCHECK(std::is_sorted(intervals->begin(), intervals->end()));
   int new_size = 0;
   for (const ClosedInterval& i : *intervals) {
-    if (new_size > 0 && i.start <= (*intervals)[new_size - 1].end + 1) {
+    if (new_size > 0 && i.start <= CapAdd((*intervals)[new_size - 1].end, 1)) {
       (*intervals)[new_size - 1].end =
           std::max(i.end, (*intervals)[new_size - 1].end);
     } else {
@@ -157,13 +159,27 @@ void IntersectionOfSortedIntervals(std::vector<ClosedInterval>* intervals) {
     }
   }
   intervals->resize(new_size);
+  DCHECK(IntervalsAreSortedAndDisjoint(*intervals)) << *intervals;
 }
 
 }  // namespace
 
+std::vector<ClosedInterval> UnionOfSortedDisjointIntervals(
+    const std::vector<ClosedInterval>& a,
+    const std::vector<ClosedInterval>& b) {
+  DCHECK(IntervalsAreSortedAndDisjoint(a));
+  DCHECK(IntervalsAreSortedAndDisjoint(b));
+  std::vector<ClosedInterval> result(a.size() + b.size());
+  std::merge(a.begin(), a.end(), b.begin(), b.end(), result.begin());
+  UnionOfSortedIntervals(&result);
+  return result;
+}
+
 std::vector<ClosedInterval> AdditionOfSortedDisjointIntervals(
     const std::vector<ClosedInterval>& a,
     const std::vector<ClosedInterval>& b) {
+  DCHECK(IntervalsAreSortedAndDisjoint(a));
+  DCHECK(IntervalsAreSortedAndDisjoint(b));
   std::vector<ClosedInterval> result;
   for (const ClosedInterval& i : a) {
     for (const ClosedInterval& j : b) {
@@ -171,18 +187,42 @@ std::vector<ClosedInterval> AdditionOfSortedDisjointIntervals(
     }
   }
   std::sort(result.begin(), result.end());
-  IntersectionOfSortedIntervals(&result);
+  UnionOfSortedIntervals(&result);
   return result;
 }
 
 std::vector<ClosedInterval> MultiplicationOfSortedDisjointIntervals(
     std::vector<ClosedInterval> intervals, int64 coeff) {
+  DCHECK(IntervalsAreSortedAndDisjoint(intervals));
   const int64 abs_coeff = std::abs(coeff);
   for (ClosedInterval& i : intervals) {
     i.start = CapProd(i.start, abs_coeff);
     i.end = CapProd(i.end, abs_coeff);
   }
-  IntersectionOfSortedIntervals(&intervals);
+  UnionOfSortedIntervals(&intervals);
+  return coeff > 0 ? intervals : NegationOfSortedDisjointIntervals(intervals);
+}
+
+std::vector<ClosedInterval> PreciseMultiplicationOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals, int64 coeff, bool* success) {
+  DCHECK(IntervalsAreSortedAndDisjoint(intervals));
+  *success = true;
+  if (intervals.empty() || coeff == 0) return {};
+  const int64 abs_coeff = std::abs(coeff);
+  if (abs_coeff != 1) {
+    if (CapSub(intervals.back().end, intervals.front().start) <= 1000) {
+      std::vector<int64> individual_values;
+      for (ClosedInterval& i : intervals) {
+        for (int v = i.start; v <= i.end; ++v) {
+          individual_values.push_back(CapProd(v, abs_coeff));
+        }
+      }
+      intervals = SortedDisjointIntervalsFromValues(individual_values);
+    } else {
+      *success = false;
+      return {};
+    }
+  }
   return coeff > 0 ? intervals : NegationOfSortedDisjointIntervals(intervals);
 }
 
@@ -202,6 +242,7 @@ int64 FloorRatio(int64 value, int64 positive_coeff) {
 
 std::vector<ClosedInterval> InverseMultiplicationOfSortedDisjointIntervals(
     std::vector<ClosedInterval> intervals, int64 coeff) {
+  DCHECK(IntervalsAreSortedAndDisjoint(intervals));
   if (coeff == 0) {
     return SortedDisjointIntervalsContain(intervals, 0)
                ? std::vector<ClosedInterval>({{kint64min, kint64max}})

@@ -137,8 +137,8 @@
 #define OR_TOOLS_LINEAR_SOLVER_LINEAR_SOLVER_H_
 
 #include <functional>
-#include "ortools/base/hash.h"
-#include "ortools/base/hash.h"
+#include <unordered_map>
+#include <unordered_set>
 #include <limits>
 #include <map>
 #include <memory>

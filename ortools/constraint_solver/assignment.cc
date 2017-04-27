@@ -13,7 +13,7 @@
 
 
 #include <stddef.h>
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <string>
 #include <vector>
 

@@ -307,12 +307,10 @@ inline TimeLimit::TimeLimit(double limit_in_seconds, double deterministic_limit)
       deterministic_limit_(deterministic_limit),
       elapsed_deterministic_time_(0.0),
       external_boolean_as_limit_(nullptr) {
-#ifndef ANDROID_JNI
   if (FLAGS_time_limit_use_usertime) {
     user_timer_.Start();
     limit_in_seconds_ = limit_in_seconds;
   }
-#endif
 }
 
 inline bool TimeLimit::LimitReached() {
@@ -328,7 +326,6 @@ inline bool TimeLimit::LimitReached() {
   running_max_.Add(std::max(safety_buffer_ns_, current_ns - last_ns_));
   last_ns_ = current_ns;
   if (current_ns + running_max_.GetCurrentMax() >= limit_ns_) {
-#ifndef ANDROID_JNI
     if (FLAGS_time_limit_use_usertime) {
       // To avoid making many system calls, we only check the user time when
       // the "absolute" time limit has been reached. Note that the user time
@@ -339,7 +336,6 @@ inline bool TimeLimit::LimitReached() {
         return false;
       }
     }
-#endif
 
     // To ensure that future calls to LimitReached() will return true.
     limit_ns_ = 0;
@@ -352,15 +348,11 @@ inline double TimeLimit::GetTimeLeft() const {
   if (limit_ns_ == kint64max) return std::numeric_limits<double>::infinity();
   const int64 delta_ns = limit_ns_ - base::GetCurrentTimeNanos();
   if (delta_ns < 0) return 0.0;
-#ifdef ANDROID_JNI
-  return delta_ns * 1e-9;
-#else
   if (FLAGS_time_limit_use_usertime) {
     return std::max(limit_in_seconds_ - user_timer_.Get(), 0.0);
   } else {
     return delta_ns * 1e-9;
   }
-#endif
 }
 
 }  // namespace operations_research

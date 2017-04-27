@@ -34,8 +34,7 @@ std::vector<std::string> Split(const std::string& full, char delim, int flags);
 //
 // Hack: the int64 allow the C++ compiler to distinguish the two functions. It
 // is possible to implement this more cleanly at the cost of more complexity.
-std::vector<StringPiece> Split(const std::string& full,
-                               const char* delim,
+std::vector<StringPiece> Split(const std::string& full, const char* delim,
                                int64 flags);
 
 namespace delimiter {
@@ -87,6 +86,5 @@ bool SplitStringAndParse(const std::string& source, const std::string& delim,
   }
   return true;
 }
-
 
 #endif  // OR_TOOLS_BASE_SPLIT_H_

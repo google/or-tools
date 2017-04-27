@@ -152,3 +152,4 @@ std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
   StrAppend(&out, a, b, c, d, e, f, g, h, i, j, k);
   return out;
 }
+

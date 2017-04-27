@@ -25,7 +25,7 @@
 #define OR_TOOLS_GRAPH_CLIQUES_H_
 
 #include <functional>
-#include "ortools/base/hash.h"
+#include <unordered_set>
 #include <numeric>
 #include <vector>
 

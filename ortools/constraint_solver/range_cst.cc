@@ -18,6 +18,7 @@
 #include <string>
 
 #include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 

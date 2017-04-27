@@ -212,7 +212,7 @@ class MPSolutionResponse;
 %unignore operations_research::MPSolverParameters::kDefaultPrimalTolerance;
 
 // We want to ignore the CoeffMap class; but since it inherits from some
-// hash_map<>, swig complains about an undefined base class. Silence it.
+// std::unordered_map<>, swig complains about an undefined base class. Silence it.
 %warnfilter(401) CoeffMap;
 
 %include "ortools/linear_solver/linear_solver.h"

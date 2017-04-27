@@ -18,7 +18,7 @@
 #define OR_TOOLS_SAT_CLAUSE_H_
 
 #include <deque>
-#include "ortools/base/hash.h"
+#include <unordered_set>
 #include <memory>
 #include <queue>
 #include <string>

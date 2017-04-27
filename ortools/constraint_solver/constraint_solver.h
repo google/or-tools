@@ -65,8 +65,8 @@
 #define OR_TOOLS_CONSTRAINT_SOLVER_CONSTRAINT_SOLVER_H_
 
 #include <functional>
-#include "ortools/base/hash.h"
-#include "ortools/base/hash.h"
+#include <unordered_map>
+#include <unordered_set>
 #include <iosfwd>
 #include <memory>
 #include <string>
@@ -4983,7 +4983,7 @@ class AssignmentContainer {
     }
     // The == should be order-independent
     EnsureMapIsUpToDate();
-    // Do not use the std::unordered_map::== operator! It does not just compare content,
+    // Do not use the hash_map::== operator! It does not just compare content,
     // but also how the map is hashed (e.g., number of buckets). This is not
     // what we want.
     for (const E& element : container.elements_) {

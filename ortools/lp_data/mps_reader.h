@@ -26,7 +26,8 @@
 #define OR_TOOLS_LP_DATA_MPS_READER_H_
 
 #include <algorithm>  // for max
-#include "ortools/base/hash.h"
+#include <unordered_map>
+#include <unordered_set>
 #include <string>  // for std::string
 #include <vector>  // for vector
 

@@ -1752,7 +1752,7 @@ class SweepArranger {
 // build delta assigment representing possible extensions to the current
 // solution and validate them with filters.
 // The tricky bit comes from using the assignment and filter APIs in a way
-// which avoids the lazy creation of internal std::unordered_maps between variables
+// which avoids the lazy creation of internal hash_maps between variables
 // and indices.
 
 // Generic filter-based decision builder applied to IntVars.

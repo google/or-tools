@@ -14,6 +14,7 @@
 #include "ortools/sat/drat.h"
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/stringprintf.h"
 
 DEFINE_string(
     drat_output, "",

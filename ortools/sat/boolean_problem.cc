@@ -13,9 +13,10 @@
 
 #include "ortools/sat/boolean_problem.h"
 
-#include "ortools/base/hash.h"
+#include <unordered_map>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"

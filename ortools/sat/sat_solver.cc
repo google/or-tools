@@ -20,6 +20,7 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/sysinfo.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/split.h"

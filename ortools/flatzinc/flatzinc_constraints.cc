@@ -16,6 +16,7 @@
 #include <unordered_set>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/util/string_array.h"

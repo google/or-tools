@@ -142,4 +142,5 @@ void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
 util::Status Delete(const std::string& path, int flags);
 
 }  // namespace file
+
 #endif  // OR_TOOLS_BASE_FILE_H_

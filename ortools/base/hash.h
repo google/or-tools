@@ -14,8 +14,6 @@
 #ifndef OR_TOOLS_BASE_HASH_H_
 #define OR_TOOLS_BASE_HASH_H_
 
-#include <unordered_set>
-#include <unordered_map>
 
 #include <array>
 #include <string>
@@ -110,7 +108,7 @@ inline uint64 Hash64NumWithSeed(uint64 num, uint64 c) {
 }
 }  // namespace operations_research
 
-// Support a few hash<> operators, in the std namespace.
+// Support a few hash<> operators, in the hash namespace.
 namespace std {
 template <class First, class Second>
 struct hash<std::pair<First, Second>> {
@@ -147,4 +145,5 @@ struct hash<std::array<T, N>> {
 }  // namespace std
 
 #endif  // SWIG
+
 #endif  // OR_TOOLS_BASE_HASH_H_

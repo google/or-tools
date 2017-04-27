@@ -35,8 +35,8 @@
 #define OR_TOOLS_UTIL_TUPLE_SET_H_
 
 #include <algorithm>
-#include "ortools/base/hash.h"
-#include "ortools/base/hash.h"
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "ortools/base/integral_types.h"

@@ -22,7 +22,7 @@
 // on a set of interval variables.
 
 #include <algorithm>
-#include "ortools/base/hash.h"
+#include <unordered_map>
 #include <queue>
 #include <string>
 #include <utility>

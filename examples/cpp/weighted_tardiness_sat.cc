@@ -17,6 +17,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/stringprintf.h"
 #include "ortools/base/strtoint.h"
 #include "ortools/base/timer.h"
 #include "google/protobuf/text_format.h"
