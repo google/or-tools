@@ -19,9 +19,8 @@
 
 namespace operations_research {
 
+LinearExpr::LinearExpr(double constant) : offset_(constant), terms_() {}
 
-LinearExpr::LinearExpr(double constant) : offset_(constant), terms_() {
-}
 LinearExpr::LinearExpr() : LinearExpr(0.0) {}
 
 LinearExpr::LinearExpr(const MPVariable* var) : LinearExpr(0.0) {

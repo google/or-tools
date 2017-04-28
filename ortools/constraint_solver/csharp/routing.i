@@ -11,7 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 %include "ortools/constraint_solver/csharp/constraint_solver.i"
 

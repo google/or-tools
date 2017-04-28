@@ -26,6 +26,7 @@
 
 #include <algorithm>  // for max
 #include <unordered_map>
+#include <unordered_set>
 #include <map>
 #include <string>  // for std::string
 #include <vector>  // for vector

@@ -13,6 +13,7 @@
 
 #include "ortools/sat/integer.h"
 
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/stl_util.h"
 
 namespace operations_research {
@@ -421,8 +422,7 @@ IntegerVariable IntegerTrail::AddIntegerVariable(
     // Copy for the negated variable.
     var_to_current_lb_interval_index_.Set(NegationOf(var),
                                           all_intervals_.size());
-    for (int i = domain.size() - 1; i >= 0; --i) {
-            const ClosedInterval interval = domain[i];
+    for (const ClosedInterval interval : ::gtl::reversed_view(domain)) {
       all_intervals_.push_back({-interval.end, -interval.start});
     }
     InsertOrDie(&var_to_end_interval_index_, NegationOf(var),

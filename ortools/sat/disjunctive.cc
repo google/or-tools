@@ -13,6 +13,7 @@
 
 #include "ortools/sat/disjunctive.h"
 
+#include "ortools/base/iterator_adaptors.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {
@@ -220,9 +221,9 @@ bool DisjunctiveOverloadChecker::Propagate() {
   theta_tree_.Reset(start_event_time_, start_event_duration_);
 
   // Overload checker loop.
-  for (auto it = helper_->TaskByDecreasingEndMax().rbegin();
-       it != helper_->TaskByDecreasingEndMax().rend(); ++it) {
-    const auto& task_time = *it;
+  const auto& task_by_increasing_max_end =
+      ::gtl::reversed_view(helper_->TaskByDecreasingEndMax());
+  for (const auto task_time : task_by_increasing_max_end) {
     const int current_task = task_time.task_index;
     if (task_to_start_event_[current_task] == -1) {
       continue;
@@ -457,9 +458,9 @@ bool DisjunctiveNotLast::Propagate() {
   int queue_index = num_tasks - 1;
 
   task_set_.Clear();
-  for (auto it = helper_->TaskByDecreasingEndMax().rbegin();
-         it != helper_->TaskByDecreasingEndMax().rend(); ++it) {
-      const auto& task_time = *it;
+  const auto& task_by_increasing_max_end =
+      ::gtl::reversed_view(helper_->TaskByDecreasingEndMax());
+  for (const auto task_time : task_by_increasing_max_end) {
     const int t = task_time.task_index;
     const IntegerValue max_end = task_time.time;
 

@@ -119,8 +119,8 @@ class LinearExpr {
 
   double offset() const { return offset_; }
   const std::unordered_map<const MPVariable*, double>& terms() const {
-      return terms_;
-    }
+    return terms_;
+  }
 
  private:
   double offset_;
