@@ -331,7 +331,7 @@ namespace std {
 template <typename IntTypeName, typename ValueType>
 struct hash<IntType<IntTypeName, ValueType> > {
   size_t operator()(const IntType<IntTypeName, ValueType>& idx) const {
-    return static_cast<size_t>(idx.value());
+    return hash<ValueType>()(idx.value());
   }
 };
 }  // namespace std
