@@ -5,7 +5,7 @@ cc_library(
         "glpk-4.52/src/*/*.c",
         "glpk-4.52/src/*.h",
         "glpk-4.52/src/*/*.h",
-    ]),
+    ], exclude = ["glpk-4.52/src/proxy/main.c"]),
     hdrs = [
         "glpk-4.52/src/glpk.h",
     ],
