@@ -10,6 +10,7 @@ cc_library(
         "casts.h",
         "commandlineflags.h",
         "integral_types.h",
+        "iterator_adaptors.h",
         "logging.h",
         "macros.h",
         "port.h",
