@@ -7,8 +7,8 @@ help:
 	@echo "  - .NET: csharp test_csharp clean_csharp "
 	@echo "  - all: all test clean"
 
-OR_TOOLS_MAJOR = 5
-OR_TOOLS_MINOR = 1
+OR_TOOLS_MAJOR = 6
+OR_TOOLS_MINOR = 0
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is

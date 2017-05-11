@@ -255,11 +255,11 @@ $(PYPI_ARCHIVE_TEMP_DIR) : $(OR_TOOLS_PYTHON_GEN_SCRIPTS)
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sdummy
-	$(COPY) src$Sgen$Sortools$Sconstraint_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
-	$(COPY) src$Sortools$Slinear_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
-	$(COPY) src$Sgen$Sortools$Slinear_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
-	$(COPY) src$Sgen$Sortools$Sgraph$Spywrapgraph.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
-	$(COPY) src$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
+	$(COPY) ortools$Sgen$Sortools$Sconstraint_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
+	$(COPY) ortools$Slinear_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
+	$(COPY) ortools$Sgen$Sortools$Slinear_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
+	$(COPY) ortools$Sgen$Sortools$Sgraph$Spywrapgraph.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
+	$(COPY) ortools$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(COPY) $(GEN_DIR)$Sortools$S__init__.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver$S__init__.py
@@ -278,10 +278,10 @@ endif
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 	$(SED) -i -e 's/PROTOBUF_TAG/$(PROTOBUF_TAG)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 ifeq ($(SYSTEM),win)
-	copy src\gen\ortools\constraint_solver\_pywrapcp.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
-	copy src\gen\ortools\linear_solver\_pywraplp.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
-	copy src\gen\ortools\graph\_pywrapgraph.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
-	copy src\gen\ortools\algorithms\_pywrapknapsack_solver.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
+	copy ortools\gen\ortools\constraint_solver\_pywrapcp.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
+	copy ortools\gen\ortools\linear_solver\_pywraplp.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
+	copy ortools\gen\ortools\graph\_pywrapgraph.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
+	copy ortools\gen\ortools\algorithms\_pywrapknapsack_solver.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.pyd/' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e '/DELETEWIN/d' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
 	$(SED) -i -e 's/DELETEUNIX/          /g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py

@@ -19,44 +19,45 @@ endif
 create_dirs:
 	-$(DELREC) temp
 	$(MKDIR) temp
-	    $(MKDIR) temp$S$(INSTALL_DIR)
-	        $(MKDIR) temp$S$(INSTALL_DIR)$Slib
-	        $(MKDIR) temp$S$(INSTALL_DIR)$Sobjs
-	        $(MKDIR) temp$S$(INSTALL_DIR)$Sbin
-	        $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Salgorithms
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sbase
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sconstraint_solver
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sgflags
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sbop
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sglop
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sgoogle
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sgraph
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Slinear_solver
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Ssat
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sutil
-	        $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scpp
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scsharp
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
-	                    $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools
-	                    $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
-	            $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sflexible_jobshop
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sjobshop
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Smultidim_knapsack
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Scvrptw
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Spdptw
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sminesweeper
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Srogo
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
-	                $(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
+	$(MKDIR) temp$S$(INSTALL_DIR)
+	$(MKDIR) temp$S$(INSTALL_DIR)$Slib
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sobjs
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sbin
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Salgorithms
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbase
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sconstraint_solver
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgflags
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbop
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sglop
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgoogle
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgraph
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Slinear_solver
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scpp
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scsharp
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Scom$Sgoogle$Sortools$Ssamples
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sflexible_jobshop
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sjobshop
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Smultidim_knapsack
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Scvrptw
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Spdptw
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sminesweeper
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Srogo
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Ssurvo_puzzle
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 
 #credits
 	$(COPY) LICENSE-2.0.txt temp$S$(INSTALL_DIR)
@@ -71,28 +72,27 @@ cc_archive: cc
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fap.$(LIB_SUFFIX) temp$S$(INSTALL_DIR)$Slib
 	$(COPY) examples$Scpp$S*.cc temp$S$(INSTALL_DIR)$Sexamples$Scpp
 	$(COPY) examples$Scpp$S*.h temp$S$(INSTALL_DIR)$Sexamples$Scpp
-	$(COPY) src$Salgorithms$S*.h temp$S$(INSTALL_DIR)$Sinclude$Salgorithms
-	$(COPY) src$Sbase$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sbase
-	$(COPY) src$Sconstraint_solver$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sconstraint_solver
-	$(COPY) src$Sgen$Sconstraint_solver$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sconstraint_solver
-	$(COPY) src$Sbop$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sbop
-	$(COPY) src$Sgen$Sbop$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sbop
-	$(COPY) src$Sglop$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sglop
-	$(COPY) src$Sgen$Sglop$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sglop
-	$(COPY) src$Sgraph$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sgraph
-	$(COPY) src$Sgen$Sgraph$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sgraph
-	$(COPY) src$Slinear_solver$S*.h temp$S$(INSTALL_DIR)$Sinclude$Slinear_solver
-	$(COPY) src$Sgen$Slinear_solver$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Slinear_solver
-	$(COPY) src$Ssat$S*.h temp$S$(INSTALL_DIR)$Sinclude$Ssat
-	$(COPY) src$Sgen$Ssat$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Ssat
-	$(COPY) src$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sutil
+	$(COPY) ortools$Salgorithms$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Salgorithms
+	$(COPY) ortools$Sbase$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbase
+	$(COPY) ortools$Sconstraint_solver$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sconstraint_solver
+	$(COPY) ortools$Sgen$Sortools$Sconstraint_solver$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sconstraint_solver
+	$(COPY) ortools$Sbop$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbop
+	$(COPY) ortools$Sgen$Sortools$Sbop$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbop
+	$(COPY) ortools$Sglop$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sglop
+	$(COPY) ortools$Sgen$Sortools$Sglop$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sglop
+	$(COPY) ortools$Sgraph$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgraph
+	$(COPY) ortools$Sgen$Sortools$Sgraph$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgraph
+	$(COPY) ortools$Slinear_solver$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Slinear_solver
+	$(COPY) ortools$Sgen$Sortools$Slinear_solver$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Slinear_solver
+	$(COPY) ortools$Ssat$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
+	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
+	$(COPY) ortools$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
 
 ifeq "$(SYSTEM)" "win"
 	cd temp$S$(INSTALL_DIR) && ..$S..$Stools$Star.exe -C ..$S.. -c -v --exclude *svn* --exclude *roadef* examples$Sdata | ..$S..$Stools$Star.exe xvm
 
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | ..$S..$S..$Stools$Star.exe xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v google | ..$S..$S..$Stools$Star.exe xvm
-	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v sparsehash | ..$S..$S..$Stools$Star.exe xvm
 else
 	$(COPY) -R examples$Sdata$Set_jobshop$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
 	$(COPY) -R examples$Sdata$Sflexible_jobshop$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sflexible_jobshop
@@ -103,7 +103,6 @@ else
 
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | tar xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v google | tar xvm
-	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v sparsehash | tar xvm
 endif
 
 dotnet_archive: csharp
@@ -154,8 +153,8 @@ fz_archive: cc fz
 	$(COPY) bin$Sfz$E $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sbin$Sfzn-or-tools$E
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)fz.$(LIB_SUFFIX) $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Slib
-	$(COPY) src$Sflatzinc$Smznlib_cp$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
-	$(COPY) src$Sflatzinc$Smznlib_sat$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
+	$(COPY) ortools$Sflatzinc$Smznlib_cp$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_cp
+	$(COPY) ortools$Sflatzinc$Smznlib_sat$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sshare$Sminizinc_sat
 	$(COPY) examples$Sflatzinc$S* $(TEMP_FZ_DIR)$S$(FZ_INSTALL_DIR)$Sexamples
 ifeq "$(SYSTEM)" "win"
 	cd $(TEMP_FZ_DIR) && ..$Stools$Szip.exe -r ..$S$(FZ_INSTALL_DIR).zip $(FZ_INSTALL_DIR)
