@@ -131,12 +131,27 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
 
+// Same as MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
+// a core-based approach instead. The given objective_var must be equal to the
+// sum of the given variables using the given coefficients.
+//
+// TODO(user): It is not needed to have objective_var and the linear objective
+// constraint encoded in the model. Remove this preconditions in order to
+// improve the solving time.
+SatSolver::Status MinimizeWithCoreAndLazyEncoding(
+    bool log_info, IntegerVariable objective_var,
+    const std::vector<IntegerVariable>& variables,
+    const std::vector<IntegerValue>& coefficients,
+    const std::function<LiteralIndex()>& next_decision,
+    const std::function<void(const Model&)>& feasible_solution_observer,
+    Model* model);
+
 // Similar to MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
 // a core based approach. Note that this require the objective to be given as
 // a weighted sum of literals
 //
-// TODO(user): It should be easy to adapt this to a weighted sum of
-// IntegerVariable.
+// TODO(user): The function above is more general, remove this one after
+// checking that the performances are similar.
 SatSolver::Status MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
     bool log_info, const std::vector<Literal>& literals,
     const std::vector<int64>& coeffs,

@@ -349,7 +349,7 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   SCOPED_TIME_STAT(&stats_);
 
   // Note that we need to output the learned clause before cleaning the clause
-  // database. This is because we already backtacked and some of the clauses
+  // database. This is because we already backtracked and some of the clauses
   // that where needed to infer the conflict may not be "reasons" anymore and
   // may be deleted.
   if (drat_writer_ != nullptr) {
@@ -544,7 +544,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     }
   }
 
-  // A conflict occured, compute a nice reason for this failure.
+  // A conflict occurred, compute a nice reason for this failure.
   same_reason_identifier_.Clear();
   const int max_trail_index = ComputeMaxTrailIndex(trail_->FailingClause());
   ComputeFirstUIPConflict(max_trail_index, &learned_conflict_,
@@ -798,7 +798,7 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
     *first_propagation_index = std::min(*first_propagation_index, index);
     if (index == kUnsatTrailIndex) return MODEL_UNSAT;
     if (current_decision_level_ <= old_level) {
-      // A conflict occured which backjumped to an earlier decision level.
+      // A conflict occurred which backjumped to an earlier decision level.
       // We potentially backjumped over some valid decisions, so we need to
       // continue the loop and try to re-enqueue them.
       //
@@ -1045,7 +1045,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     }
 
     if (!PropagateAndStopAfterOneConflictResolution()) {
-      // A conflict occured, continue the loop.
+      // A conflict occurred, continue the loop.
       if (is_model_unsat_) return StatusWithLog(MODEL_UNSAT);
     } else {
       // We need to reapply any assumptions that are not currently applied.

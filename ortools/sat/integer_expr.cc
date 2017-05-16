@@ -94,9 +94,27 @@ bool IntegerSumLE::Propagate() {
   const IntegerValue new_lb = rev_lb_fixed_vars_ + lb_unfixed_vars;
 
   // Conflict?
-  const IntegerValue slack = upper_bound_ - new_lb;
+  IntegerValue slack = upper_bound_ - new_lb;
   if (slack < 0) {
-    FillIntegerReason();
+    // Like FillIntegerReason() but try to relax the reason a bit.
+    //
+    // TODO(user): if not all the slack is consumed, we could relax it even
+    // more. It might also be advantageous to relax first the variable with the
+    // highest "trail index".
+    integer_reason_.clear();
+    for (int i = 0; i < vars_.size(); ++i) {
+      const IntegerVariable var = vars_[i];
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue prev_lb = integer_trail_->PreviousLowerBound(var);
+      if (lb == prev_lb) continue;  // level zero.
+      const IntegerValue diff = (lb - prev_lb) * coeffs_[i];
+      if (slack + diff < 0) {
+        integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, prev_lb));
+        slack += diff;
+      } else {
+        integer_reason_.push_back(IntegerLiteral::GreaterOrEqual(var, lb));
+      }
+    }
 
     // Reified case: If the reified literal is unassigned, we set it to false,
     // otherwise we have a conflict.
@@ -132,9 +150,7 @@ bool IntegerSumLE::Propagate() {
         FillIntegerReason();
       }
 
-      // We need to remove the entry index from the reason temporarily. This is
-      // OK with the reversible aspect of integer_reason_ because fixed
-      // variables will never be swapped.
+      // We need to remove the entry index from the reason temporarily.
       IntegerLiteral saved;
       const int index = index_in_integer_reason_[i];
       if (index >= 0) {

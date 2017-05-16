@@ -19,80 +19,42 @@ namespace sat {
 ThetaLambdaTree::ThetaLambdaTree() {}
 
 // Make a tree using the first num_events events of the vectors.
-void ThetaLambdaTree::Reset(std::vector<IntegerValue> event_initial_envelope,
-                            std::vector<IntegerValue> event_energy) {
-  const int num_events = event_initial_envelope.size();
-  DCHECK_EQ(num_events, event_energy.size());
-  DCHECK(std::is_sorted(event_initial_envelope.begin(),
-                        event_initial_envelope.end()));
-  event_initial_envelope_ = std::move(event_initial_envelope);
-  event_energy_ = std::move(event_energy);
-
+void ThetaLambdaTree::Reset(int num_events) {
   // Use 2^k leaves in the tree, with 2^k >= std::max(num_events, 2).
   num_events_ = num_events;
   for (num_leaves_ = 2; num_leaves_ < num_events; num_leaves_ <<= 1) {
   }
   const int num_nodes = 2 * num_leaves_;
-  tree_energy_.assign(num_nodes, IntegerValue(0));
+  tree_energy_min_.assign(num_nodes, IntegerValue(0));
   tree_energy_opt_.assign(num_nodes, IntegerValue(0));
   tree_envelope_.assign(num_nodes, kMinIntegerValue);
   tree_envelope_opt_.assign(num_nodes, kMinIntegerValue);
-  is_present_.assign(num_events, false);
-  is_optional_.assign(num_events, false);
 }
 
-void ThetaLambdaTree::AddEvent(int event) {
+void ThetaLambdaTree::AddOrUpdateEvent(int event, IntegerValue initial_envelope,
+                                       IntegerValue energy_min,
+                                       IntegerValue energy_max) {
   DCHECK_LE(0, event);
   DCHECK_LT(event, num_events_);
-  DCHECK(!IsPresent(event) && !IsOptional(event));
-  is_present_[event] = true;
-  is_optional_[event] = false;
+  DCHECK_LE(0, energy_min);
+  DCHECK_LE(energy_min, energy_max);
   const int node = num_leaves_ + event;
-  tree_envelope_[node] = event_initial_envelope_[event] + event_energy_[event];
-  tree_energy_[node] = event_energy_[event];
-  tree_envelope_opt_[node] = tree_envelope_[node];
-  tree_energy_opt_[node] = tree_energy_[node];
-  RefreshNode(node);
-}
-
-void ThetaLambdaTree::AddOptionalEvent(int event) {
-  DCHECK_LE(0, event);
-  DCHECK_LT(event, num_events_);
-  DCHECK(!IsPresent(event) && !IsOptional(event));
-  is_present_[event] = false;
-  is_optional_[event] = true;
-  const int node = num_leaves_ + event;
-  tree_envelope_[node] = kMinIntegerValue;
-  tree_energy_[node] = IntegerValue(0);
-  tree_envelope_opt_[node] =
-      event_initial_envelope_[event] + event_energy_[event];
-  tree_energy_opt_[node] = event_energy_[event];
+  tree_envelope_[node] = initial_envelope + energy_min;
+  tree_energy_min_[node] = energy_min;
+  tree_envelope_opt_[node] = initial_envelope + energy_max;
+  tree_energy_opt_[node] = energy_max;
   RefreshNode(node);
 }
 
 void ThetaLambdaTree::RemoveEvent(int event) {
   DCHECK_LE(0, event);
   DCHECK_LT(event, num_events_);
-  DCHECK(IsPresent(event) || IsOptional(event));
-  is_present_[event] = false;
-  is_optional_[event] = false;
   const int node = num_leaves_ + event;
   tree_envelope_[node] = kMinIntegerValue;
-  tree_energy_[node] = IntegerValue(0);
+  tree_energy_min_[node] = IntegerValue(0);
   tree_envelope_opt_[node] = kMinIntegerValue;
   tree_energy_opt_[node] = IntegerValue(0);
   RefreshNode(node);
-}
-
-bool ThetaLambdaTree::IsPresent(int event) const {
-  DCHECK_LE(0, event);
-  DCHECK_LT(event, num_events_);
-  return is_present_[event];
-}
-bool ThetaLambdaTree::IsOptional(int event) const {
-  DCHECK_LE(0, event);
-  DCHECK_LT(event, num_events_);
-  return is_optional_[event];
 }
 
 IntegerValue ThetaLambdaTree::GetEnvelope() const { return tree_envelope_[1]; }
@@ -100,36 +62,32 @@ IntegerValue ThetaLambdaTree::GetOptionalEnvelope() const {
   return tree_envelope_opt_[1];
 }
 
-int ThetaLambdaTree::GetRightmostEventWithEnvelopeGreaterOrEqualTo(
+int ThetaLambdaTree::GetMaxEventWithEnvelopeGreaterThan(
     IntegerValue target_envelope) const {
-  DCHECK_LE(target_envelope, tree_envelope_[1]);
-  const int event = GetLeafRealizingEnvelope(1, target_envelope) - num_leaves_;
-  DCHECK(IsPresent(event));
-  return event;
+  DCHECK_LT(target_envelope, tree_envelope_[1]);
+  return GetMaxLeafWithEnvelopeGreaterThan(1, target_envelope) - num_leaves_;
+}
+
+void ThetaLambdaTree::GetEventsWithOptionalEnvelopeGreaterThan(
+    IntegerValue target_envelope, int* critical_event, int* optional_event,
+    IntegerValue* available_energy) const {
+  int critical_leaf;
+  int optional_leaf;
+  GetLeavesWithOptionalEnvelopeGreaterThan(target_envelope, &critical_leaf,
+                                           &optional_leaf, available_energy);
+  *critical_event = critical_leaf - num_leaves_;
+  *optional_event = optional_leaf - num_leaves_;
 }
 
 IntegerValue ThetaLambdaTree::GetEnvelopeOf(int event) const {
-  DCHECK(IsPresent(event));
   DCHECK_LE(0, event);
   DCHECK_LT(event, num_events_);
   IntegerValue env = tree_envelope_[event + num_leaves_];
   for (int node = event + num_leaves_; node > 1; node >>= 1) {
     const int right = node | 1;
-    if (right != node) env += tree_energy_[right];
+    if (right != node) env += tree_energy_min_[right];
   }
   return env;
-}
-
-int ThetaLambdaTree::GetOptionalEventRealizingOptionalEnvelope() const {
-  const int event = GetLeafRealizingOptionalEnvelope<false>(1) - num_leaves_;
-  DCHECK(IsOptional(event));
-  return event;
-}
-
-int ThetaLambdaTree::GetEventRealizingOptionalEnvelope() const {
-  const int event = GetLeafRealizingOptionalEnvelope<true>(1) - num_leaves_;
-  DCHECK(IsPresent(event) || IsOptional(event));
-  return event;
 }
 
 void ThetaLambdaTree::RefreshNode(int node) {
@@ -137,70 +95,86 @@ void ThetaLambdaTree::RefreshNode(int node) {
     const int right = node | 1;
     const int left = right ^ 1;
     node >>= 1;
-    tree_energy_[node] = tree_energy_[left] + tree_energy_[right];
-    tree_envelope_[node] = std::max(tree_envelope_[right],
-                                    tree_envelope_[left] + tree_energy_[right]);
+    tree_energy_min_[node] = tree_energy_min_[left] + tree_energy_min_[right];
+    tree_envelope_[node] = std::max(
+        tree_envelope_[right], tree_envelope_[left] + tree_energy_min_[right]);
     tree_energy_opt_[node] =
-        std::max(tree_energy_[left] + tree_energy_opt_[right],
-                 tree_energy_[right] + tree_energy_opt_[left]);
+        std::max(tree_energy_min_[left] + tree_energy_opt_[right],
+                 tree_energy_min_[right] + tree_energy_opt_[left]);
     tree_envelope_opt_[node] =
-        std::max(tree_envelope_opt_[left] + tree_energy_[right],
+        std::max(tree_envelope_opt_[left] + tree_energy_min_[right],
                  tree_envelope_[left] + tree_energy_opt_[right]);
     tree_envelope_opt_[node] =
         std::max(tree_envelope_opt_[node], tree_envelope_opt_[right]);
   } while (node > 1);
 }
 
-int ThetaLambdaTree::GetLeafRealizingEnvelope(int node,
-                                              IntegerValue envelope) const {
-  DCHECK_LE(envelope, tree_envelope_[node]);
+int ThetaLambdaTree::GetMaxLeafWithEnvelopeGreaterThan(
+    int node, IntegerValue target_envelope) const {
+  DCHECK_LT(target_envelope, tree_envelope_[node]);
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
 
-    if (envelope <= tree_envelope_[right]) {
+    if (target_envelope < tree_envelope_[right]) {
       node = right;
     } else {
-      envelope -= tree_energy_[right];
+      target_envelope -= tree_energy_min_[right];
       node = left;
     }
   }
   return node;
 }
 
-int ThetaLambdaTree::GetOptionalLeafOfMaximalEnergy(int node) const {
+int ThetaLambdaTree::GetMaxLeafWithOptionalEnergyGreaterThan(
+    int node, IntegerValue node_available_energy,
+    IntegerValue* available_energy) const {
+  DCHECK_LT(node_available_energy, tree_energy_opt_[node]);
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
 
-    if (tree_energy_opt_[node] ==
-        tree_energy_[left] + tree_energy_opt_[right]) {
+    const IntegerValue available_energy_right =
+        node_available_energy - tree_energy_min_[left];
+    if (available_energy_right < tree_energy_opt_[right]) {
+      node_available_energy = available_energy_right;
       node = right;
-    } else {  // tree_energy_opt_[left] + tree_energy_[right]
+    } else {  // available_energy_left < tree_energy_opt_[left]
+      node_available_energy -= tree_energy_min_[right];
       node = left;
     }
   }
+  *available_energy = node_available_energy;
   return node;
 }
 
-template <bool initial_envelope_leaf_wanted>
-int ThetaLambdaTree::GetLeafRealizingOptionalEnvelope(int node) const {
+void ThetaLambdaTree::GetLeavesWithOptionalEnvelopeGreaterThan(
+    IntegerValue target_envelope, int* critical_leaf, int* optional_leaf,
+    IntegerValue* available_energy) const {
+  DCHECK_LT(target_envelope, tree_envelope_opt_[1]);
+  int node = 1;
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
 
-    if (tree_envelope_opt_[node] == tree_envelope_opt_[right]) {
+    if (target_envelope < tree_envelope_opt_[right]) {
       node = right;
-    } else if (tree_envelope_opt_[node] ==
+    } else if (target_envelope <
                tree_envelope_[left] + tree_energy_opt_[right]) {
-      return initial_envelope_leaf_wanted
-                 ? GetLeafRealizingEnvelope(left, tree_envelope_[left])
-                 : GetOptionalLeafOfMaximalEnergy(right);
-    } else {  // tree_envelope_opt_[left] + tree_energy_[right]
+      *critical_leaf =
+          GetMaxLeafWithEnvelopeGreaterThan(left, tree_envelope_[left] - 1);
+      *optional_leaf = GetMaxLeafWithOptionalEnergyGreaterThan(
+          right, target_envelope - tree_envelope_[left], available_energy);
+      return;
+    } else {  // < tree_envelope_opt_[left] + tree_energy_min_[right]
+      target_envelope -= tree_energy_min_[right];
       node = left;
     }
   }
-  return node;
+  *critical_leaf = node;
+  *optional_leaf = node;
+  *available_energy =
+      target_envelope - tree_envelope_[node] + tree_energy_min_[node];
 }
 
 }  // namespace sat

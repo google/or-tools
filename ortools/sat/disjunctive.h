@@ -136,7 +136,7 @@ class DisjunctiveOverloadChecker : public PropagatorInterface {
   std::vector<int> task_to_start_event_;
   std::vector<int> start_event_to_task_;
   std::vector<IntegerValue> start_event_time_;
-  std::vector<IntegerValue> start_event_duration_;
+  std::vector<bool> start_event_is_present_;
 };
 
 class DisjunctiveDetectablePrecedences : public PropagatorInterface {

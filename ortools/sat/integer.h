@@ -117,7 +117,7 @@ struct IntegerLiteral {
     return var == o.var && bound == o.bound;
   }
   bool operator!=(IntegerLiteral o) const {
-    return var != o.var || bound == o.bound;
+    return var != o.var || bound != o.bound;
   }
 
   IntegerVariable Var() const { return IntegerVariable(var); }
@@ -138,10 +138,6 @@ struct IntegerLiteral {
 
   // Our external API uses IntegerVariable but internally we only use an int for
   // simplicity. TODO(user): change this?
-  //
-  // TODO(user): We can't use const because we want to be able to copy a
-  // std::vector<IntegerLiteral>. So instead make them private and provide some
-  // getters.
   //
   // Note that bound is always in [kMinIntegerValue, kMaxIntegerValue + 1].
   /*const*/ int var;
@@ -432,6 +428,11 @@ class IntegerTrail : public SatPropagator {
   // Returns the current lower/upper bound of the given integer variable.
   IntegerValue LowerBound(IntegerVariable i) const;
   IntegerValue UpperBound(IntegerVariable i) const;
+
+  // Returns the value of the lower bound before the last Enqueue() that changed
+  // it. Note that PreviousLowerBound() == LowerBound() iff this is the level
+  // zero bound.
+  IntegerValue PreviousLowerBound(IntegerVariable i) const;
 
   // Returns the integer literal that represent the current lower/upper bound of
   // the given integer variable.
@@ -821,6 +822,12 @@ inline IntegerLiteral IntegerLiteral::Negated() const {
 
 inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {
   return vars_[i.value()].current_bound;
+}
+
+inline IntegerValue IntegerTrail::PreviousLowerBound(IntegerVariable i) const {
+  const int index = vars_[i.value()].current_trail_index;
+  if (index < vars_.size()) return LowerBound(i);
+  return integer_trail_[integer_trail_[index].prev_trail_index].bound;
 }
 
 inline IntegerValue IntegerTrail::UpperBound(IntegerVariable i) const {

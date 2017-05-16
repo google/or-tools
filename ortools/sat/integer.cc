@@ -1216,13 +1216,16 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     time_limit = model->Mutable<TimeLimit>();
   }
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
+  if (solver->IsModelUnsat()) return SatSolver::MODEL_UNSAT;
+  solver->Backtrack(0);
+  solver->SetAssumptionLevel(0);
+
   const SatParameters parameters = solver->parameters();
   if (parameters.use_fixed_search()) {
     CHECK(assumptions.empty()) << "Not supported yet";
     // Note that it is important to do the level-zero propagation if it wasn't
     // already done because EnqueueDecisionAndBackjumpOnConflict() assumes that
     // the solver is in a "propagated" state.
-    solver->Backtrack(0);
     if (!solver->Propagate()) return SatSolver::MODEL_UNSAT;
   }
   while (!time_limit->LimitReached()) {
@@ -1230,9 +1233,6 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     // instanciate all the already created Booleans.
     if (!parameters.use_fixed_search()) {
       if (assumptions.empty()) {
-        // TODO(user): This one doesn't do Backtrack(0), and doing it seems to
-        // trigger a bug in research/devtools/compote/scheduler
-        // :instruction_scheduler_test, investigate.
         const SatSolver::Status status = solver->SolveWithTimeLimit(time_limit);
         if (status != SatSolver::MODEL_SAT) return status;
       } else {
