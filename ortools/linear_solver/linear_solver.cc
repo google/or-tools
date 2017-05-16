@@ -312,11 +312,11 @@ void MPVariable::SetInteger(bool integer) {
   }
 }
 
-// ----- Version -----
+// ----- Interface shortcuts -----
+
+bool MPSolver::IsMIP() const { return interface_->IsMIP(); }
 
 std::string MPSolver::SolverVersion() const { return interface_->SolverVersion(); }
-
-// ---- Underlying solver ----
 
 void* MPSolver::underlying_solver() { return interface_->underlying_solver(); }
 
@@ -920,9 +920,9 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
 
   MPSolver::ResultStatus status = interface_->Solve(param);
   if (FLAGS_verify_solution) {
-    if (status != MPSolver::OPTIMAL) {
-      VLOG(1) << "--verify_solution enabled, but the solver did not find an"
-              << " optimal solution: skipping the verification.";
+    if (status != MPSolver::OPTIMAL && status != MPSolver::FEASIBLE) {
+      VLOG(1) << "--verify_solution enabled, but the solver did not find a"
+              << " solution: skipping the verification.";
     } else if (!VerifySolution(
                     param.GetDoubleParam(MPSolverParameters::PRIMAL_TOLERANCE),
                     FLAGS_log_verification_errors)) {

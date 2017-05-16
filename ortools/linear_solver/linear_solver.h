@@ -216,6 +216,8 @@ class MPSolver {
   // targets that you linked).
   static bool SupportsProblemType(OptimizationProblemType problem_type);
 
+  bool IsMIP() const;
+
   std::string Name() const {
     return name_;  // Set at construction.
   }

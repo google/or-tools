@@ -310,6 +310,11 @@ class SumWithOneMissing {
     ++num_infinities_;
   }
 
+  Fractional Sum() const {
+    if (num_infinities_ > 0) return Infinity();
+    return sum_.Value();
+  }
+
   Fractional SumWithout(Fractional x) const {
     if (IsFinite(x)) {
       if (num_infinities_ > 0) return Infinity();

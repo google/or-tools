@@ -13,6 +13,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "ortools/base/join.h"
 #if defined(_MSC_VER)
 #include <io.h>
 #define access _access
@@ -27,7 +28,6 @@
 
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/join.h"
 
 File::File(FILE* const f_des, const std::string& name) : f_(f_des), name_(name) {}
 

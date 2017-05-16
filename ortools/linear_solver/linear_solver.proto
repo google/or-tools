@@ -47,7 +47,6 @@ package operations_research;
 // MPVariableProto furthermore stores:
 //  - The coefficient of the variable in the objective.
 //  - Whether the variable is integer.
-//  - Whether the variable domain is {0} union [lower_bound, upper_bound].
 message MPVariableProto {
   // lower_bound must be <= upper_bound.
   optional double lower_bound = 1 [default = -inf];
@@ -97,7 +96,7 @@ message MPConstraintProto {
   optional bool is_lazy = 5 [default = false];
 }
 
-// This message encode a partial (or full) assignment of the variables of a
+// This message encodes a partial (or full) assignment of the variables of a
 // MPModelProto problem. The indices in var_index should be unique and valid
 // variable indices of the associated problem.
 message PartialVariableAssignment {
