@@ -1182,9 +1182,9 @@ class Solver {
   // expr ^ n (n > 0)
   IntExpr* MakePower(IntExpr* const expr, int64 n);
 
-  // vals[expr]
+  // vals[index]
   IntExpr* MakeElement(const std::vector<int64>& vals, IntVar* const index);
-  // vals[expr]
+  // vals[index]
   IntExpr* MakeElement(const std::vector<int>& vals, IntVar* const index);
 
   // Function-based element. The constraint takes ownership of
@@ -1199,11 +1199,11 @@ class Solver {
   // incorrect increasing parameter will result in undefined behavior.
   IntExpr* MakeMonotonicElement(IndexEvaluator1 values, bool increasing,
                                 IntVar* const index);
-  // 2D version of function-based element expression, values(expr1, expr2).
+  // 2D version of function-based element expression, values(index1, index2).
   IntExpr* MakeElement(IndexEvaluator2 values, IntVar* const index1,
                        IntVar* const index2);
 
-  // vars[expr]
+  // vars[index]
   IntExpr* MakeElement(const std::vector<IntVar*>& vars, IntVar* const index);
 
 #if !defined(SWIG)
