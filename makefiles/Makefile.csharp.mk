@@ -433,7 +433,7 @@ ifeq ($(SYSTEM),win)
 	if not exist temp $(MKDIR) temp
 	if exist $(ORTOOLS_NUGET_DIR) $(ATTRIB) -r /s temp
 	-$(RM_RECURSE_FORCED) $(ORTOOLS_NUGET_DIR)
-endif
+endif # ($(SYSTEM),win)
 
 csharp_nuget_stage: \
 	$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL)
@@ -462,7 +462,7 @@ ifeq ($(SYSTEM),win)
 	$(COPY) examples\data\rogo\* $(ORTOOLS_NUGET_DIR)\examples\data\rogo
 	$(COPY) examples\data\survo_puzzle\* $(ORTOOLS_NUGET_DIR)\examples\data\survo_puzzle
 	$(COPY) examples\data\quasigroup_completion\* $(ORTOOLS_NUGET_DIR)\examples\data\quasigroup_completion
-endif
+endif # ($(SYSTEM),win)
 
 tools\$(ORTOOLS_NUSPEC_NAME): csharp_nuget_stage
 ifeq ($(SYSTEM),win)
@@ -471,15 +471,16 @@ ifeq ($(SYSTEM),win)
 	$(SED) -i -e "s/MMMM/$(CLR_PROTOBUF_DLL_NAME)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
 	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
-endif
+endif # ($(SYSTEM),win)
 
 csharp_nuget_pack: \
 	tools\$(ORTOOLS_NUSPEC_NAME)
 ifeq ($(SYSTEM),win)
 	$(CD) $(ORTOOLS_NUGET_DIR) && $(NUGET_PACK) $(ORTOOLS_NUSPEC_NAME)
-endif
+endif # ($(SYSTEM),win)
 
-$(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: csharp_nuget_pack
+$(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: \
+	csharp_nuget_pack
 
 csharp_nuget_push: \
 	$(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg
@@ -525,7 +526,8 @@ ifeq ($(SYSTEM),win)
 	$(CD) $(FZ_NUGET_DIR) && $(NUGET_PACK) $(FZ_NUSPEC_NAME)
 endif # ($(SYSTEM),win)
 
-$(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: csharp_nuget_pack
+$(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: \
+	csharpfz_nuget_pack
 
 csharpfz_nuget_push: \
 	$(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg
