@@ -34,6 +34,8 @@ NAMESPACE_ORTOOLS_FZ:=$(BASE_CLR_ORTOOLS_DLL_NAME).Flatzinc
 # NuGet specification file name
 ORTOOLS_NUSPEC_NAME := or-tools.nuspec
 ORTOOLS_NUGET_DIR = temp\or-tools
+FZ_NUSPEC_NAME := fz.nuspec
+FZ_NUGET_DIR = temp\flatzinc
 # TODO: TBD: add FlatZinc variables...
 
 # Building to DLLs named per-platform
@@ -486,7 +488,52 @@ csharp_nuget_push: \
 # Target for backwards makefile compatibility.
 nuget_upload: csharp_nuget_push
 
-# TODO: TBD: add FlatZinc nuget targets
+
+clean_csharpfz_nuget:
+ifeq ($(SYSTEM),win)
+	if not exist temp $(MKDIR) temp
+	if exist $(FZ_NUGET_DIR) $(ATTRIB) -r /s temp
+	-$(RM_RECURSE_FORCED) $(FZ_NUGET_DIR)
+endif # ($(SYSTEM),win)
+
+csharpfz_nuget_stage: \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL)
+ifeq ($(SYSTEM),win)
+	$(MKDIR_P) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(MKDIR_P) $(FZ_NUGET_DIR)\examples
+	$(COPY) LICENSE-2.0.txt $(FZ_NUGET_DIR)
+	$(COPY) tools\README.dotnet $(FZ_NUGET_DIR)\README
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(PDB) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(L) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(EXP) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) examples\flatzinc\*.fzn $(FZ_NUGET_DIR)\examples
+endif # ($(SYSTEM),win)
+
+tools\$(FZ_NUSPEC_NAME): \
+	csharpfz_nuget_stage
+ifeq ($(SYSTEM),win)
+	$(COPY) tools\$(FZ_NUSPEC_NAME) $(FZ_NUGET_DIR)
+	$(SED) -i -e "s/NNNN/$(CLR_ORTOOLS_FZ_DLL_NAME)/" $(FZ_NUGET_DIR)\$(FZ_NUSPEC_NAME)
+	$(SED) -i -e "s/MMMM/$(CLR_ORTOOLS_DLL_NAME)/" $(FZ_NUGET_DIR)\$(FZ_NUSPEC_NAME)
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" $(FZ_NUGET_DIR)\$(FZ_NUSPEC_NAME)
+endif # ($(SYSTEM),win)
+
+csharpfz_nuget_pack: \
+	tools\$(FZ_NUSPEC_NAME)
+ifeq ($(SYSTEM),win)
+	$(CD) $(FZ_NUGET_DIR) && $(NUGET_PACK) $(FZ_NUSPEC_NAME)
+endif # ($(SYSTEM),win)
+
+$(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: csharp_nuget_pack
+
+csharpfz_nuget_push: \
+	$(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg
+	$(CD) $(FZ_NUGET_DIR) && $(NUGET_PUSH) $(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg -Source $(NUGET_SRC)
+
+# Mirror the same approach for the root Google.OrTools
+nuget_upload_fz: csharpfz_nuget_push
+
 
 # csharpsolution
 # create solution files for visual studio
