@@ -69,7 +69,6 @@ DEFINE_bool(use_fz_sat, false, "Use the SAT/CP solver.");
 DEFINE_string(fz_model_name, "stdin",
               "Define problem name when reading from stdin.");
 
-DECLARE_bool(log_prefix);
 DECLARE_bool(fz_use_sat);
 
 using operations_research::ThreadPool;

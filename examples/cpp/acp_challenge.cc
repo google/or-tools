@@ -70,8 +70,6 @@ DEFINE_double(tabu_factor, 0.6, "tabu factor");
 DEFINE_bool(use_sa, false, "Use simulated annealing");
 DEFINE_int32(sa_temperature, 20, "Simulated annealing temperature");
 
-DECLARE_bool(log_prefix);
-
 namespace operations_research {
 
 class AcpData {
@@ -916,7 +914,7 @@ static const char kUsage[] =
     "competition";
 
 int main(int argc, char** argv) {
-  FLAGS_log_prefix = false;
+  operations_research::FLAGS_log_prefix = false;
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {
