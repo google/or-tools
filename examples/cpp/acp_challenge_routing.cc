@@ -302,7 +302,7 @@ static const char kUsage[] =
     "competition";
 
 int main(int argc, char** argv) {
-  FLAGS_log_prefix = false;
+  operations_research::FLAGS_log_prefix = false;
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_input.empty()) {

@@ -64,7 +64,7 @@ void ParseFile(const std::string& filename, bool presolve) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  FLAGS_log_prefix = false;
+  operations_research::FLAGS_log_prefix = false;
   const char kUsage[] =
       "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
       "human-readable format";

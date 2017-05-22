@@ -74,7 +74,6 @@ DEFINE_int32(lns_seed, 1, "Seed of the LNS random search");
 DEFINE_int32(lns_limit, 30,
              "Limit the size of the search tree in a LNS fragment");
 DEFINE_bool(use_ls, false, "Use ls");
-DECLARE_bool(log_prefix);
 
 namespace operations_research {
 class TimePlacement : public DecisionBuilder {
@@ -414,7 +413,7 @@ static const char kUsage[] =
     "output besides the debug LOGs of the solver.";
 
 int main(int argc, char **argv) {
-  FLAGS_log_prefix = false;
+  operations_research::FLAGS_log_prefix = false;
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   operations_research::EtJobShopData data;

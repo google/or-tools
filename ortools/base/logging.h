@@ -21,8 +21,10 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"
 
+namespace operations_research {
 DECLARE_int32(log_level);
 DECLARE_bool(log_prefix);
+} //  namespace operations_research
 
 #if defined(_MSC_VER)
 #pragma warning(disable : 4722)
@@ -31,7 +33,7 @@ DECLARE_bool(log_prefix);
 // Always-on checking
 #define CHECK(x)                                           \
   if (!(x))                                                \
-  LogMessageFatal(__FILE__, __LINE__).stream() << "Check " \
+  ::operations_research::LogMessageFatal(__FILE__, __LINE__).stream() << "Check " \
                                                   "failed: " #x
 #define CHECK_LT(x, y) CHECK((x) < (y))
 #define CHECK_GT(x, y) CHECK((x) > (y))
@@ -66,30 +68,30 @@ DECLARE_bool(log_prefix);
 #define DCHECK_NE(x, y) CHECK((x) != (y))
 #endif  // NDEBUG
 
-#define LOG_INFO LogMessage(__FILE__, __LINE__)
+#define LOG_INFO ::operations_research::LogMessage(__FILE__, __LINE__)
 #define LOG_ERROR LOG_INFO
 #define LOG_WARNING LOG_INFO
-#define LOG_FATAL LogMessageFatal(__FILE__, __LINE__)
+#define LOG_FATAL ::operations_research::LogMessageFatal(__FILE__, __LINE__)
 #define LOG_QFATAL LOG_FATAL
 
 #define VLOG(x) \
-  if ((x) <= FLAGS_log_level) LOG_INFO.stream()
+  if ((x) <= ::operations_research::FLAGS_log_level) LOG_INFO.stream()
 
-#define VLOG_IS_ON(x) ((x) <= FLAGS_log_level)
+#define VLOG_IS_ON(x) ((x) <= ::operations_research::FLAGS_log_level)
 
 #define LOG(severity) LOG_##severity.stream()
 #define LG LOG_INFO.stream()
 #define LOG_IF(severity, condition) \
-  !(condition) ? (void)0 : LogMessageVoidify() & LOG(severity)
+  !(condition) ? (void)0 : ::operations_research::LogMessageVoidify() & LOG(severity)
 
 #ifdef NDEBUG
 #define LOG_DFATAL LOG_ERROR
 #define DFATAL ERROR
-#define DLOG(severity) true ? (void)0 : LogMessageVoidify() & LOG(severity)
+#define DLOG(severity) true ? (void)0 : ::operations_research::LogMessageVoidify() & LOG(severity)
 #define DLOG_IF(severity, condition) \
-  (true || !(condition)) ? (void)0 : LogMessageVoidify() & LOG(severity)
+  (true || !(condition)) ? (void)0 : ::operations_research::LogMessageVoidify() & LOG(severity)
 #define DVLOG(x) \
-  while (false && VLOG_IS_ON(x)) LogMessageVoidify() & LOG_INFO.stream()
+  while (false && VLOG_IS_ON(x)) ::operations_research::LogMessageVoidify() & LOG_INFO.stream()
 #else
 #define LOG_DFATAL LOG_FATAL
 #define DFATAL FATAL
@@ -111,7 +113,6 @@ class DateLogger {
  private:
   char buffer_[9];
 };
-}  // namespace operations_research
 
 class LogMessage {
  public:
@@ -167,6 +168,8 @@ T&& CheckNotNull(T&& t) {
   CHECK(t != nullptr);
   return std::forward<T>(t);
 }
-#define CHECK_NOTNULL(x) CheckNotNull((x))
+}  // namespace operations_research
+
+#define CHECK_NOTNULL(x) ::operations_research::CheckNotNull((x))
 
 #endif  // OR_TOOLS_BASE_LOGGING_H_
