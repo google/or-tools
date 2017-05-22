@@ -42,8 +42,6 @@ DEFINE_bool(simplex_stop_after_first_basis, false,
 DEFINE_bool(simplex_stop_after_feasibility, false,
             "Stop after first phase has been completed.");
 DEFINE_bool(simplex_display_stats, false, "Display algorithm statistics.");
-DEFINE_int32(v, 0, "Display algorithm progression.");
-
 
 namespace operations_research {
 namespace glop {
