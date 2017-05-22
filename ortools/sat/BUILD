@@ -475,6 +475,7 @@ cc_library(
         ":boolean_problem",
         ":encoding",
         ":integer",
+        ":integer_expr",
         ":model",
         ":sat_solver",
         ":util",
