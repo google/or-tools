@@ -29,6 +29,7 @@ create_dirs:
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbase
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sconstraint_solver
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgflags
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sglog
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbop
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sglop
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgoogle
@@ -92,6 +93,7 @@ ifeq "$(SYSTEM)" "win"
 	cd temp$S$(INSTALL_DIR) && ..$S..$Stools$Star.exe -C ..$S.. -c -v --exclude *svn* --exclude *roadef* examples$Sdata | ..$S..$Stools$Star.exe xvm
 
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | ..$S..$S..$Stools$Star.exe xvm
+	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v glog | ..$S..$S..$Stools$Star.exe xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v google | ..$S..$S..$Stools$Star.exe xvm
 else
 	$(COPY) -R examples$Sdata$Set_jobshop$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Set_jobshop
@@ -102,6 +104,7 @@ else
 	$(COPY) -R examples$Sdata$Spdptw$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Spdptw
 
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | tar xvm
+	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v glog | tar xvm
 	cd temp$S$(INSTALL_DIR)$Sinclude && tar -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v google | tar xvm
 endif
 
