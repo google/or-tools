@@ -2,9 +2,6 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "base",
-    srcs = [
-        "logging.cc",
-    ],
     hdrs = [
         "basictypes.h",
         "casts.h",
@@ -18,6 +15,7 @@ cc_library(
     ],
     deps = [
         "@com_github_gflags_gflags//:gflags",
+        "@com_github_glog_glog//:glog",
     ],
 )
 

@@ -5,6 +5,14 @@ git_repository(
     remote = "https://github.com/gflags/gflags.git",
 )
 
+#Import the glog files.
+new_git_repository(
+    name   = "com_github_glog_glog",
+    build_file = "//bazel:glog.BUILD",
+    remote = "https://github.com/google/glog.git",
+    tag = "v0.3.5",
+)
+
 # proto_library rules implicitly depend on @com_google_protobuf//:protoc,
 # which is the proto-compiler.
 # This statement defines the @com_google_protobuf repo.
