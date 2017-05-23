@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package >
+    <metadata>
+        <id>NNNN</id>
+        <version>VVVV</version>
+        <authors>Google</authors>
+        <licenseUrl>https://github.com/google/or-tools/blob/master/LICENSE-2.0.txt</licenseUrl>
+        <projectUrl>https://developers.google.com/optimization</projectUrl>
+        <description>.NET Assembly for the Operations Research Tools project</description>
+        <copyright>Copyright 2016 Google, Inc</copyright>
+        <tags>Flatzinc Operations Research Math Linear Constraint Programming C# .NET SWIG C++</tags>
+        <dependencies>
+            <dependency id="MMMM" version="VVVV" />
+        </dependencies>
+    </metadata>
+    <files>
+        <file src="bin\NNNN.dll" target="lib\net40"/>
+        <file src="examples\*.*" target="examples"/>
+        <file src="LICENSE-2.0.txt"/>
+    </files>
+</package>

@@ -1,4 +1,4 @@
-        // Copyright 2010-2014 Google
+// Copyright 2010-2014 Google
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,15 +13,15 @@
 
 // TODO(user): Refactor this file to adhere to the SWIG style guide.
 
-%include "base/base.swig"
+%include "ortools/base/base.i"
 
 // Include the file we want to wrap a first time.
 %{
-#include "flatzinc/model.h"
-#include "flatzinc/parser.h"
-#include "flatzinc/presolve.h"
-#include "flatzinc/solver.h"
-#include "flatzinc/reporting.h"
+#include "ortools/flatzinc/model.h"
+#include "ortools/flatzinc/parser.h"
+#include "ortools/flatzinc/presolve.h"
+#include "ortools/flatzinc/solver.h"
+#include "ortools/flatzinc/reporting.h"
 
 DECLARE_bool(fz_logging);
 %}
@@ -76,6 +76,6 @@ DECLARE_bool(fz_logging);
 
 %rename (ToString) *::DebugString;
 
-%include "flatzinc/model.h"
-%include "flatzinc/reporting.h"
-%include "flatzinc/solver.h"
+%include "ortools/flatzinc/model.h"
+%include "ortools/flatzinc/reporting.h"
+%include "ortools/flatzinc/solver.h"

@@ -26,11 +26,16 @@ endif
 CLR_PROTOBUF_DLL_NAME?=Google.Protobuf
 CLR_ORTOOLS_DLL_NAME?=Google.OrTools
 BASE_CLR_ORTOOLS_DLL_NAME:= $(CLR_ORTOOLS_DLL_NAME)
-# TODO: TBD: add FlatZinc variables...
+NAMESPACE_ORTOOLS:= $(BASE_CLR_ORTOOLS_DLL_NAME)
+CLR_ORTOOLS_FZ_DLL_NAME?=Google.OrTools.FlatZinc
+BASE_CLR_ORTOOLS_FZ_DLL_NAME:= $(CLR_ORTOOLS_FZ_DLL_NAME)
+NAMESPACE_ORTOOLS_FZ:=$(BASE_CLR_ORTOOLS_DLL_NAME).Flatzinc
 
 # NuGet specification file name
 ORTOOLS_NUSPEC_NAME := or-tools.nuspec
 ORTOOLS_NUGET_DIR = temp\or-tools
+FZ_NUSPEC_NAME := fz.nuspec
+FZ_NUGET_DIR = temp\flatzinc
 # TODO: TBD: add FlatZinc variables...
 
 # Building to DLLs named per-platform
@@ -48,9 +53,11 @@ ifeq ($(SYSTEM),win)
   ifdef CLR_PER_PLATFORM_ASSEMBLY_NAMING
     ifeq ($(NETPLATFORM),x64)
       CLR_ORTOOLS_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME).x64
+      CLR_ORTOOLS_FZ_DLL_NAME:=$(CLR_ORTOOLS_FZ_DLL_NAME).x64
       CLR_EXE_SUFFIX?=_x64
     else
       CLR_ORTOOLS_DLL_NAME:=$(CLR_ORTOOLS_DLL_NAME).x86
+      CLR_ORTOOLS_FZ_DLL_NAME:=$(CLR_ORTOOLS_FZ_DLL_NAME).x86
     endif
   endif
 endif
@@ -85,18 +92,18 @@ endif
 
 # Clean target.
 clean_csharp:
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*$(DLL)
 	-$(DEL) $(BIN_DIR)$S$(CLR_ORTOOLS_DLL_NAME)*.mdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.lib
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.pdb
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.exp
 	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME)*.netmodule
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc*.lib
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc*.pdb
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc*.exp
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc*.netmodule
-	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.$(SWIG_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.lib
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.pdb
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.exp
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME)*.netmodule
+	-$(DEL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)
 	-$(DEL) $(GEN_DIR)$Sortools$Slinear_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Sortools$Sconstraint_solver$S*csharp_wrap*
 	-$(DEL) $(GEN_DIR)$Sortools$Salgorithms$S*csharp_wrap*
@@ -107,6 +114,7 @@ clean_csharp:
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sconstraintsolver$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sknapsacksolver$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sgraph$S*.cs
+	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties$S*cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$S*.cs
 	-$(DEL) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sutil$S*.cs
 	-$(DEL) $(OBJ_DIR)$Sswig$S*csharp_wrap.$O
@@ -150,9 +158,10 @@ $(BIN_DIR)/$(CLR_PROTOBUF_DLL_NAME)$(DLL): tools/$(CLR_PROTOBUF_DLL_NAME)$(DLL)
 
 $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc: \
 	$(SRC_DIR)/ortools/linear_solver/csharp/linear_solver.i \
-	$(SRC_DIR)/ortools/base/base.i $(SRC_DIR)/ortools/util/csharp/proto.i \
+	$(SRC_DIR)/ortools/base/base.i \
+	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(LP_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research_linear_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).LinearSolver -dllimport "$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)/ortools/linear_solver$Scsharp$Slinear_solver.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -csharp -o $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_csharp_wrap.cc -module operations_research_linear_solver -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).LinearSolver -dllimport "$(CLR_ORTOOLS_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Slinearsolver $(SRC_DIR)$Sortools$Slinear_solver$Scsharp$Slinear_solver.i
 
 $(OBJ_DIR)/swig/linear_solver_csharp_wrap.$O: $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/linear_solver/linear_solver_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Slinear_solver_csharp_wrap.$O
@@ -362,32 +371,56 @@ endif # ifeq ($(EX),)
 
 # C# Fz support
 
+# Leverage the existing CommonAssemblyInfo from prior build targets.
+$(GEN_DIR)/com/google/ortools/flatzinc/properties/CommonAssemblyInfo.cs: \
+	$(GEN_DIR)/com/google/ortools/properties/CommonAssemblyInfo.cs
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties
+	$(COPY) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sproperties$SCommonAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties
+
+$(GEN_DIR)/com/google/ortools/flatzinc/properties/AssemblyInfo.cs: \
+	$(CLR_KEYFILE)
+	$(MKDIR_P) $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties
+	$(COPY) tools$Scsharp$SFlatZincAssemblyInfo.cs $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties$SAssemblyInfo.cs
+ifdef CLR_KEYFILE
+ifeq ($(SYSTEM),win)
+	@echo [assembly: AssemblyKeyFile("$(CLR_KEYFILE)")] >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties$SAssemblyInfo.cs
+else # ifeq ($(SYSTEM),win)
+	@echo "[assembly: AssemblyKeyFile(\"$(CLR_KEYFILE)\")]" >> $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc$Sproperties$SAssemblyInfo.cs
+endif # ifeq ($(SYSTEM),win)
+endif # ifdef CLR_KEYFILE
+
 csharpfz: \
-	$(BIN_DIR)/Google.OrTools.Flatzinc$(DLL) \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) \
 	$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe
 
 $(GEN_DIR)/ortools/flatzinc/flatzinc_csharp_wrap.cc: \
+	$(SRC_DIR)/ortools/base/base.i \
+	$(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(SRC_DIR)/ortools/flatzinc/csharp/flatzinc.i \
-	$(SRC_DIR)/ortools/base/base.i $(SRC_DIR)/ortools/util/csharp/proto.i \
 	$(FLATZINC_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -nodefaultctor -csharp -o $(GEN_DIR)$Sortools$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace $(BASE_CLR_ORTOOLS_DLL_NAME).Flatzinc -dllimport "Google.OrTools.Flatzinc.$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)/ortools/flatzinc$Scsharp$Sflatzinc.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -nodefaultctor -csharp -o $(GEN_DIR)$Sortools$Sflatzinc$Sflatzinc_csharp_wrap.cc -module operations_research_flatzinc -namespace $(CLR_ORTOOLS_FZ_DLL_NAME) -dllimport "$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX)" -outdir $(GEN_DIR)$Scom$Sgoogle$Sortools$Sflatzinc $(SRC_DIR)$Sortools$Sflatzinc$Scsharp$Sflatzinc.i
 
-$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: $(GEN_DIR)/ortools/flatzinc/flatzinc_csharp_wrap.cc
+$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O: \
+	$(GEN_DIR)/ortools/flatzinc/flatzinc_csharp_wrap.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/flatzinc/flatzinc_csharp_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O
 
-$(BIN_DIR)/Google.OrTools.Flatzinc$(DLL): assembly_info \
+$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL): \
+	$(GEN_DIR)/com/google/ortools/flatzinc/properties/CommonAssemblyInfo.cs \
+	$(GEN_DIR)/com/google/ortools/flatzinc/properties/AssemblyInfo.cs \
 	$(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O \
 	$(OR_TOOLS_LIBS) $(FLATZINC_LIBS)
 ifeq ($(SYSTEM),win)
-	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\*.cs $(GEN_DIR)\\com\\google\\ortools\\properties\\*cs
-	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$SGoogle.OrTools.Flatzinc$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
-else
-	$(CSC) /target:library /out:$(BIN_DIR)/Google.OrTools.Flatzinc$(DLL) /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/flatzinc/*.cs $(GEN_DIR)/com/google/ortools/properties/*cs
-	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)Google.OrTools.Flatzinc.$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
-endif
+	$(CSC) /target:module /out:$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).netmodule /warn:0 /nologo /debug $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\*.cs $(GEN_DIR)\\com\\google\\ortools\\flatzinc\\properties\\*cs
+	$(DYNAMIC_LD) $(SIGNING_FLAGS) $(LDOUT)$(BIN_DIR)$S$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).netmodule $(OBJ_DIR)$Sswig$Sflatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
+else # ifeq ($(SYSTEM),win)
+	$(CSC) /target:library /out:$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) /warn:0 /nologo /debug $(GEN_DIR)/com/google/ortools/flatzinc/*.cs $(GEN_DIR)/com/google/ortools/flatzinc/properties/*cs
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)$(CLR_ORTOOLS_FZ_DLL_NAME).$(SWIG_LIB_SUFFIX) $(OBJ_DIR)/swig/flatzinc_csharp_wrap.$O $(FLATZINC_LNK) $(OR_TOOLS_LD_FLAGS)
+endif # ifeq ($(SYSTEM),win)
 
-$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe: $(BIN_DIR)/Google.OrTools.Flatzinc$(DLL) $(EX_DIR)/csharp/csfz.cs
-	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:Google.OrTools.Flatzinc$(DLL) $(EX_DIR)$Scsharp$Scsfz.cs
+$(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe: \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) \
+	$(EX_DIR)/csharp/csfz.cs
+	$(CSC) $(SIGNING_FLAGS) /target:exe /out:$(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX).exe /platform:$(NETPLATFORM) /lib:$(BIN_DIR) /r:$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(EX_DIR)$Scsharp$Scsfz.cs
 
 rcsfz: $(BIN_DIR)/csfz$(CLR_EXE_SUFFIX).exe
 	$(MONO) $(BIN_DIR)$Scsfz$(CLR_EXE_SUFFIX).exe $(ARGS)
@@ -400,7 +433,7 @@ ifeq ($(SYSTEM),win)
 	if not exist temp $(MKDIR) temp
 	if exist $(ORTOOLS_NUGET_DIR) $(ATTRIB) -r /s temp
 	-$(RM_RECURSE_FORCED) $(ORTOOLS_NUGET_DIR)
-endif
+endif # ($(SYSTEM),win)
 
 csharp_nuget_stage: \
 	$(BIN_DIR)/$(CLR_ORTOOLS_DLL_NAME)$(DLL)
@@ -429,7 +462,7 @@ ifeq ($(SYSTEM),win)
 	$(COPY) examples\data\rogo\* $(ORTOOLS_NUGET_DIR)\examples\data\rogo
 	$(COPY) examples\data\survo_puzzle\* $(ORTOOLS_NUGET_DIR)\examples\data\survo_puzzle
 	$(COPY) examples\data\quasigroup_completion\* $(ORTOOLS_NUGET_DIR)\examples\data\quasigroup_completion
-endif
+endif # ($(SYSTEM),win)
 
 tools\$(ORTOOLS_NUSPEC_NAME): csharp_nuget_stage
 ifeq ($(SYSTEM),win)
@@ -438,15 +471,16 @@ ifeq ($(SYSTEM),win)
 	$(SED) -i -e "s/MMMM/$(CLR_PROTOBUF_DLL_NAME)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
 	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
 	$(SED) -i -e "s/PROTOBUF_TAG/$(PROTOBUF_TAG)/" $(ORTOOLS_NUGET_DIR)\$(ORTOOLS_NUSPEC_NAME)
-endif
+endif # ($(SYSTEM),win)
 
 csharp_nuget_pack: \
 	tools\$(ORTOOLS_NUSPEC_NAME)
 ifeq ($(SYSTEM),win)
 	$(CD) $(ORTOOLS_NUGET_DIR) && $(NUGET_PACK) $(ORTOOLS_NUSPEC_NAME)
-endif
+endif # ($(SYSTEM),win)
 
-$(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: csharp_nuget_pack
+$(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: \
+	csharp_nuget_pack
 
 csharp_nuget_push: \
 	$(CLR_ORTOOLS_DLL_NAME).$(OR_TOOLS_VERSION).nupkg
@@ -455,7 +489,53 @@ csharp_nuget_push: \
 # Target for backwards makefile compatibility.
 nuget_upload: csharp_nuget_push
 
-# TODO: TBD: add FlatZinc nuget targets
+
+clean_csharpfz_nuget:
+ifeq ($(SYSTEM),win)
+	if not exist temp $(MKDIR) temp
+	if exist $(FZ_NUGET_DIR) $(ATTRIB) -r /s temp
+	-$(RM_RECURSE_FORCED) $(FZ_NUGET_DIR)
+endif # ($(SYSTEM),win)
+
+csharpfz_nuget_stage: \
+	$(BIN_DIR)/$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL)
+ifeq ($(SYSTEM),win)
+	$(MKDIR_P) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(MKDIR_P) $(FZ_NUGET_DIR)\examples
+	$(COPY) LICENSE-2.0.txt $(FZ_NUGET_DIR)
+	$(COPY) tools\README.dotnet $(FZ_NUGET_DIR)\README
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(DLL) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(PDB) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(L) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) $(BIN_DIR)\$(CLR_ORTOOLS_FZ_DLL_NAME)$(EXP) $(FZ_NUGET_DIR)\$(BIN_DIR)
+	$(COPY) examples\flatzinc\*.fzn $(FZ_NUGET_DIR)\examples
+endif # ($(SYSTEM),win)
+
+tools\$(FZ_NUSPEC_NAME): \
+	csharpfz_nuget_stage
+ifeq ($(SYSTEM),win)
+	$(COPY) tools\$(FZ_NUSPEC_NAME) $(FZ_NUGET_DIR)
+	$(SED) -i -e "s/NNNN/$(CLR_ORTOOLS_FZ_DLL_NAME)/" $(FZ_NUGET_DIR)\$(FZ_NUSPEC_NAME)
+	$(SED) -i -e "s/MMMM/$(CLR_ORTOOLS_DLL_NAME)/" $(FZ_NUGET_DIR)\$(FZ_NUSPEC_NAME)
+	$(SED) -i -e "s/VVVV/$(OR_TOOLS_VERSION)/" $(FZ_NUGET_DIR)\$(FZ_NUSPEC_NAME)
+endif # ($(SYSTEM),win)
+
+csharpfz_nuget_pack: \
+	tools\$(FZ_NUSPEC_NAME)
+ifeq ($(SYSTEM),win)
+	$(CD) $(FZ_NUGET_DIR) && $(NUGET_PACK) $(FZ_NUSPEC_NAME)
+endif # ($(SYSTEM),win)
+
+$(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg: \
+	csharpfz_nuget_pack
+
+csharpfz_nuget_push: \
+	$(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg
+	$(CD) $(FZ_NUGET_DIR) && $(NUGET_PUSH) $(CLR_ORTOOLS_FZ_DLL_NAME).$(OR_TOOLS_VERSION).nupkg -Source $(NUGET_SRC)
+
+# Mirror the same approach for the root Google.OrTools
+nuget_upload_fz: csharpfz_nuget_push
+
 
 # csharpsolution
 # create solution files for visual studio
