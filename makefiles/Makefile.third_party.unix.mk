@@ -217,7 +217,7 @@ dependencies/sources/glog-$(GLOG_TAG)/Makefile: dependencies/sources/glog-$(GLOG
 	cd dependencies/sources/glog-$(GLOG_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --enable-static --enable-shared --with-pic ADD_CXXFLAGS="$(MAC_VERSION)" --with-gflags=$(OR_TOOLS_TOP)/dependencies/install
 
 dependencies/sources/glog-$(GLOG_TAG)/Makefile.in:
-	git clone -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(CBC_TAG)
+	git clone -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
