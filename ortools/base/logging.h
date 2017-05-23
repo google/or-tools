@@ -16,6 +16,10 @@
 
 #include <cassert>
 
+#if defined(_MSC_VER)
+#  define GLOG_NO_ABBREVIATED_SEVERITIES
+#endif
+
 #include "glog/logging.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/macros.h"

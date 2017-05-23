@@ -1,6 +1,7 @@
 # tags of dependencies to checkout.
 GFLAGS_TAG = 2.2.0
 PROTOBUF_TAG = 3.2.0
+GLOG_TAG = 0.3.5
 CBC_TAG = 2.9.8
 ZLIB_TAG = 1.2.11
 ZLIB_ARCHIVE_TAG = 1211
@@ -53,6 +54,7 @@ build_third_party: \
 	missing_directories \
 	install_zlib \
 	install_gflags \
+	install_glog \
 	install_protobuf \
 	install_swig \
 	install_coin_cbc
@@ -211,7 +213,6 @@ dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gfla
 
 dependencies/archives/gflags-$(GFLAGS_TAG).zip:
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/v$(GFLAGS_TAG).zip
-#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/gflags/gflags/archive/master.zip
 	cd dependencies/archives && rename v$(GFLAGS_TAG).zip gflags-$(GFLAGS_TAG).zip
 
 
@@ -242,6 +243,26 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 #	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
+
+install_glog: dependencies/install/include/glog/logging.h
+
+dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/INSTALL.md install_gflags
+	cd dependencies/sources/glog-$(GLOG_TAG) && \
+	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\install \
+	           -D CMAKE_BUILD_TYPE=Release \
+	           -D GFLAGS_ROOT_DIR=$(OR_TOOLS_TOP)\\dependencies\\install \
+	           -G "NMake Makefiles" \
+	           .
+	cd dependencies/sources/glog-$(GLOG_TAG) && nmake install
+	$(TOUCH) dependencies/install/lib/glog_static.lib
+
+dependencies/sources/glog-$(GLOG_TAG)/INSTALL.md: dependencies/archives/glog-$(GLOG_TAG).zip
+	tools\unzip -d dependencies/sources dependencies\archives\glog-$(GLOG_TAG).zip
+	-$(TOUCH) dependencies\sources\glog-$(GLOG_TAG)\INSTALL.md
+
+dependencies/archives/glog-$(GLOG_TAG).zip:
+	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/glog/archive/v$(GLOG_TAG).zip
+	cd dependencies/archives && rename v$(GLOG_TAG).zip glog-$(GLOG_TAG).zip
 
 # Install Coin CBC.
 install_coin_cbc: dependencies\install\bin\cbc.exe
@@ -341,10 +362,6 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo CLR_KEYFILE = bin\\or-tools.snk >> Makefile.local
 	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
 	@echo # >> Makefile.local
-	@echo WINDOWS_ZLIB_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_ZLIB_NAME=zlib.lib>> Makefile.local
-	@echo WINDOWS_GFLAGS_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_PROTOBUF_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_SWIG_BINARY = $(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe>> Makefile.local
-	@echo WINDOWS_CLP_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
-	@echo WINDOWS_CBC_DIR = $(OR_ROOT_FULL)\\dependencies\\install>> Makefile.local
+	@echo # Define WINDOWS_ZLIB_DIR, WINDOWS_ZLIB_NAME, WINDOWS_GFLAGS_DIR, >> Makefile.local
+	@echo # WINDOWS_PROTOBUF_DIR, WINDOWS_GLOG_DIR, WINDOWS_SWIG_BINARY, >> Makefile.local
+	@echo # WINDOWS_CLP_DIR, WINDOWS_CBC_DIR if you wish to use a custom version >> Makefile.local

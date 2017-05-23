@@ -4,30 +4,12 @@
 
 # Checks if the user has overwritten default libraries and binaries.
 
-ifndef UNIX_GFLAGS_DIR
-  UNIX_GFLAGS_DIR = $(OR_TOOLS_TOP)/dependencies/install
-endif
-
-ifndef UNIX_PROTOBUF_DIR
-  UNIX_PROTOBUF_DIR = $(OR_TOOLS_TOP)/dependencies/install
-endif
-
-ifndef UNIX_GLOG_DIR
-  UNIX_GLOG_DIR = $(OR_TOOLS_TOP)/dependencies/install
-endif
-
-ifndef UNIX_SWIG_BINARY
-  UNIX_SWIG_BINARY = $(OR_ROOT_FULL)/dependencies/install/bin/swig
-endif
-
-ifndef UNIX_CBC_DIR
-  UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install
-endif
-
-ifndef UNIX_CLP_DIR
-  UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install
-endif
-
+UNIX_GFLAGS_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
+UNIX_SWIG_BINARY ?= $(OR_ROOT_FULL)/dependencies/install/bin/swig
+UNIX_CBC_DIR ?= $(OR_ROOT_FULL)/dependencies/install
+UNIX_CLP_DIR ?= $(OR_ROOT_FULL)/dependencies/install
 
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
