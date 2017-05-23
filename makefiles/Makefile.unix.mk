@@ -2,6 +2,33 @@
 #  ----- configuration is not standard. In that case, please tell us -----
 #  ----- about it. -----
 
+# Checks if the user has overwritten default libraries and binaries.
+
+ifndef UNIX_GFLAGS_DIR
+  UNIX_GFLAGS_DIR = $(OR_TOOLS_TOP)/dependencies/install
+endif
+
+ifndef UNIX_PROTOBUF_DIR
+  UNIX_PROTOBUF_DIR = $(OR_TOOLS_TOP)/dependencies/install
+endif
+
+ifndef UNIX_GLOG_DIR
+  UNIX_GLOG_DIR = $(OR_TOOLS_TOP)/dependencies/install
+endif
+
+ifndef UNIX_SWIG_BINARY
+  UNIX_SWIG_BINARY = $(OR_ROOT_FULL)/dependencies/install/bin/swig
+endif
+
+ifndef UNIX_CBC_DIR
+  UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install
+endif
+
+ifndef UNIX_CLP_DIR
+  UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install
+endif
+
+
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
 SWIG_BINARY = $(UNIX_SWIG_BINARY)
@@ -61,7 +88,7 @@ GFLAGS_INC = -I$(UNIX_GFLAGS_DIR)/include
 # This is needed to find protocol buffers.
 PROTOBUF_INC = -I$(UNIX_PROTOBUF_DIR)/include
 # This is needed to find sparse hash containers.
-SPARSEHASH_INC = -I$(UNIX_SPARSEHASH_DIR)/include
+GLOG_INC = -I$(UNIX_GLOG_DIR)/include
 
 # Define UNIX_CLP_DIR if unset and if UNIX_CBC_DIR is set.
 ifdef UNIX_CBC_DIR
@@ -134,6 +161,9 @@ ifeq ($(PLATFORM),LINUX)
   ZLIB_LNK = -lz
   # This is needed to find libprotobuf.a
   PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
+  # This is needed to find libglog.a
+  GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
+
   ifdef UNIX_GLPK_DIR
   GLPK_LNK = $(UNIX_GLPK_DIR)/lib/libglpk.a
   endif
@@ -197,6 +227,8 @@ ifeq ($(PLATFORM),MACOSX)
   GFLAGS_LNK = $(UNIX_GFLAGS_DIR)/lib/libgflags.a
   ZLIB_LNK = -lz
   PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
+  GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
+
   ARCH = -DARCH_K8
   SYS_LNK =
 
@@ -235,9 +267,9 @@ endif  # MAC OS X
 
 CFLAGS = $(DEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
   -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) \
-        $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP $(SPARSEHASH_INC)
+        $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP $(GLOG_INC)
 
 JNIFLAGS = $(JNIDEBUG) -I$(INC_DIR) -I$(EX_DIR) -I$(GEN_DIR) $(GFLAGS_INC) $(ARCH) \
         -Wno-deprecated $(PROTOBUF_INC) $(CBC_INC) $(CLP_INC) $(GLPK_INC) $(SCIP_INC) $(GUROBI_INC) $(CPLEX_INC) -DUSE_GLOP -DUSE_BOP
-DEPENDENCIES_LNK = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK) $(LM_LNK) $(GUROBI_LNK) $(CPLEX_LNK) $(GFLAGS_LNK) $(PROTOBUF_LNK)
+DEPENDENCIES_LNK = $(GLPK_LNK) $(CBC_LNK) $(CLP_LNK) $(SCIP_LNK) $(LM_LNK) $(GUROBI_LNK) $(CPLEX_LNK) $(GFLAGS_LNK) $(PROTOBUF_LNK) $(GLOG_LNK)
 OR_TOOLS_LD_FLAGS = $(ZLIB_LNK) $(SYS_LNK)

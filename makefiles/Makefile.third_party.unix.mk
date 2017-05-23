@@ -2,6 +2,7 @@
 
 GFLAGS_TAG = 2.2.0
 PROTOBUF_TAG = 3.2.0
+GLOG_TAG = 0.3.5
 CBC_TAG = 2.9.8
 SWIG_TAG = 3.0.12
 PCRE_TAG = 8.37
@@ -70,6 +71,7 @@ install_third_party: \
 	missing_directories \
 	install_gflags \
 	install_protobuf \
+	install_glog \
 	install_swig \
 	install_cbc \
 	$(CSHARP_THIRD_PARTY)
@@ -204,6 +206,18 @@ dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/pr
 
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
 	git clone https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && git checkout 3d9d1a1
+
+# Install GLOG.
+install_glog: dependencies/install/include/glog/logging.h
+
+dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/Makefile $(ACLOCAL_TARGET)
+	cd dependencies/sources/glog-$(GLOG_TAG) && $(SET_PATH) $(SET_COMPILER) make install
+
+dependencies/sources/glog-$(GLOG_TAG)/Makefile: dependencies/sources/glog-$(GLOG_TAG)/Makefile.in $(ACLOCAL_TARGET) install_gflags
+	cd dependencies/sources/glog-$(GLOG_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --enable-static --enable-shared --with-pic ADD_CXXFLAGS="$(MAC_VERSION)" --with-gflags=$(OR_TOOLS_TOP)/dependencies/install
+
+dependencies/sources/glog-$(GLOG_TAG)/Makefile.in:
+	git clone -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(CBC_TAG)
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
@@ -365,8 +379,6 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo "# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi" >> Makefile.local
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo >> Makefile.local
-	@echo UNIX_GFLAGS_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
-	@echo UNIX_PROTOBUF_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
-	@echo UNIX_SWIG_BINARY = $(OR_ROOT_FULL)/dependencies/install/bin/swig>> Makefile.local
-	@echo UNIX_CLP_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
-	@echo UNIX_CBC_DIR = $(OR_ROOT_FULL)/dependencies/install>> Makefile.local
+	@echo "# Define UNIX_GFLAGS_DIR, UNIX_PROTOBUF_DIR, UNIX_GLOG_DIR," >> Makefile.local
+	@echo "# UNIX_SWIG_BINARY, UNIX_CLP_DIR, UNIX_CBC_DIR if you wish to use " >> Makefile.local
+	@echo "# a custom version" >> Makefile.local

@@ -681,9 +681,9 @@ bool RevisedSimplex::InitializeMatrixAndTestIfUnchanged(
     const LinearProgram& lp, bool* only_change_is_new_rows,
     bool* only_change_is_new_cols, ColIndex* num_new_cols) {
   SCOPED_TIME_STAT(&function_stats_);
-  DCHECK_NE(only_change_is_new_rows, nullptr);
-  DCHECK_NE(only_change_is_new_cols, nullptr);
-  DCHECK_NE(num_new_cols, nullptr);
+  DCHECK(only_change_is_new_rows != nullptr);
+  DCHECK(only_change_is_new_cols != nullptr);
+  DCHECK(num_new_cols != nullptr);
   DCHECK_NE(kInvalidCol, lp.GetFirstSlackVariable());
   DCHECK_EQ(num_cols_, compact_matrix_.num_cols());
   DCHECK_EQ(num_rows_, compact_matrix_.num_rows());

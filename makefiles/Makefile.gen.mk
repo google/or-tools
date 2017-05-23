@@ -21,7 +21,6 @@ BASE_LIB_OBJS = \
     $(OBJ_DIR)/base/file.$O \
     $(OBJ_DIR)/base/filelinereader.$O \
     $(OBJ_DIR)/base/join.$O \
-    $(OBJ_DIR)/base/logging.$O \
     $(OBJ_DIR)/base/mutex.$O \
     $(OBJ_DIR)/base/numbers.$O \
     $(OBJ_DIR)/base/random.$O \
@@ -3241,4 +3240,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/ortools/
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

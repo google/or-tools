@@ -618,10 +618,10 @@ void MPSolver::SolveWithProto(const MPModelRequest& model_request,
   std::string error_message;
   response->set_status(solver.LoadModelFromProto(model, &error_message));
   if (response->status() != MPSOLVER_MODEL_IS_VALID) {
-    LOG_EVERY_N_SEC(WARNING, 1.0)
-        << "Loading model from protocol buffer failed, load status = "
-        << MPSolverResponseStatus_Name(response->status()) << " ("
-        << response->status() << "); Error: " << error_message;
+    // LOG_EVERY_N_SEC(WARNING, 1.0)
+    //     << "Loading model from protocol buffer failed, load status = "
+    //     << MPSolverResponseStatus_Name(response->status()) << " ("
+    //     << response->status() << "); Error: " << error_message;
     return;
   }
   if (model_request.has_solver_time_limit_seconds()) {
@@ -1606,4 +1606,3 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
-
