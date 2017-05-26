@@ -149,7 +149,7 @@ FAP_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX)
 
 all: cc test
 
-cc: \
+EXE = \
 	$(BIN_DIR)/costas_array$E \
 	$(BIN_DIR)/cryptarithm$E \
 	$(BIN_DIR)/cvrp_disjoint_tw$E \
@@ -181,9 +181,12 @@ cc: \
 	$(BIN_DIR)/flow_api$E
 
 
+cc: $(EXE)
+
 clean:
-	$(DEL) $(BIN_DIR)$S*
-	$(DEL) $(OBJ_DIR)$S*$O
+	-$(DEL) $(EXE)
+	-$(DEL) $(BIN_DIR)$S$.exe
+	-$(DEL) $(OBJ_DIR)$S*$O
 
 ifeq ($(shell $(WHICH) $(CPP_COMPILER) $(TO_NULL)),)
 test_cc ccc rcc:
