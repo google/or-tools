@@ -1,6 +1,15 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
+    name = "affine_relation",
+    hdrs = ["affine_relation.h"],
+    deps = [
+        "//ortools/base",
+        "//ortools/base:iterator_adaptors",
+    ],
+)
+
+cc_library(
     name = "filelineiter",
     hdrs = ["filelineiter.h"],
     deps = [

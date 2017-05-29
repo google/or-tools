@@ -7,7 +7,6 @@ cc_library(
         "casts.h",
         "commandlineflags.h",
         "integral_types.h",
-        "iterator_adaptors.h",
         "logging.h",
         "macros.h",
         "port.h",
@@ -18,6 +17,17 @@ cc_library(
         "@com_github_glog_glog//:glog",
     ],
 )
+
+cc_library(
+    name = "iterator_adaptors",
+    hdrs = [
+        "iterator_adaptors.h",
+    ],
+    deps = [
+        ":base",
+    ],
+)
+
 
 cc_library(
     name = "status",

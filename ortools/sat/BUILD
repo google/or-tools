@@ -24,85 +24,92 @@ proto_library(
     srcs = ["boolean_problem.proto"],
 )
 
-#proto_library(
-#    name = "cp_model_proto",
-#    srcs = ["cp_model.proto"],
-#)
+cc_proto_library(
+    name = "cp_model_cc_proto",
+    deps = [":cp_model_proto"],
+)
 
-#cc_library(
-#    name = "cp_model_utils",
-#    srcs = ["cp_model_utils.cc"],
-#    hdrs = ["cp_model_utils.h"],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        ":cp_model_proto",
-#        "//ortools/base",
-#        "//ortools/util/gtl:stl_util",
-#        "//ortools/util/operations_research/util:sorted_interval_list",
-#    ],
-#)
+proto_library(
+    name = "cp_model_proto",
+    srcs = ["cp_model.proto"],
+)
 
-#cc_library(
-#    name = "cp_model_checker",
-#    srcs = ["cp_model_checker.cc"],
-#    hdrs = ["cp_model_checker.h"],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        ":cp_model_proto",
-#        ":cp_model_utils",
-#        "//ortools/base",
-#        "//ortools/strings",
-#        "//ortools/third_party/absl/strings",
-#        "//ortools/util/gtl:map_util",
-#        "//ortools/util/operations_research/util:saturated_arithmetic",
-#        "//ortools/util/operations_research/util:sorted_interval_list",
-#    ],
-#)
+cc_library(
+    name = "cp_model_utils",
+    srcs = ["cp_model_utils.cc"],
+    hdrs = ["cp_model_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_cc_proto",
+        "//ortools/base",
+        "//ortools/base:stl_util",
+        "//ortools/util:sorted_interval_list",
+    ],
+)
 
-#cc_library(
-#    name = "cp_model_solver",
-#    srcs = ["cp_model_solver.cc"],
-#    hdrs = ["cp_model_solver.h"],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        ":cp_model_checker",
-#        ":cp_model_presolve",
-#        ":cp_model_proto",
-#        ":cp_model_utils",
-#        ":cumulative",
-#        ":disjunctive",
-#        ":integer",
-#        ":intervals",
-#        ":linear_programming_constraint",
-#        ":model",
-#        ":optimization",
-#        ":sat_solver",
-#        ":table",
-#        "//ortools/base",
-#        "//ortools/strings",
-#        "//ortools/third_party/absl/strings",
-#        "//ortools/util/gtl:stl_util",
-#        "//ortools/util/operations_research/graph:connectivity",
-#    ],
-#)
+cc_library(
+    name = "cp_model_checker",
+    srcs = ["cp_model_checker.cc"],
+    hdrs = ["cp_model_checker.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:strings",
+        "//ortools/base:map_util",
+        "//ortools/util:saturated_arithmetic",
+        "//ortools/util:sorted_interval_list",
+    ],
+)
 
-#cc_library(
-#    name = "cp_model_presolve",
-#    srcs = ["cp_model_presolve.cc"],
-#    hdrs = ["cp_model_presolve.h"],
-#    visibility = ["//visibility:public"],
-#    deps = [
-#        ":cp_model_checker",
-#        ":cp_model_proto",
-#        ":cp_model_utils",
-#        "//ortools/base",
-#        "//ortools/strings",
-#        "//ortools/util/gtl:map_util",
-#        "//ortools/util/gtl:stl_util",
-#        "//ortools/util/operations_research/util:bitset",
-#        "//ortools/util/operations_research/util:sorted_interval_list",
-#    ],
-#)
+cc_library(
+    name = "cp_model_solver",
+    srcs = ["cp_model_solver.cc"],
+    hdrs = ["cp_model_solver.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_checker",
+        ":cp_model_presolve",
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        ":cumulative",
+        ":disjunctive",
+        ":integer",
+        ":intervals",
+        ":linear_programming_constraint",
+        ":model",
+        ":optimization",
+        ":sat_solver",
+        ":table",
+        "//ortools/base",
+        "//ortools/base:strings",
+        "//ortools/base:hash",
+        "//ortools/base:stl_util",
+        "//ortools/graph:connectivity",
+    ],
+)
+
+cc_library(
+    name = "cp_model_presolve",
+    srcs = ["cp_model_presolve.cc"],
+    hdrs = ["cp_model_presolve.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cp_model_checker",
+        ":cp_model_cc_proto",
+        ":cp_model_utils",
+        "//ortools/base",
+        "//ortools/base:hash",
+        "//ortools/base:strings",
+        "//ortools/base:map_util",
+        "//ortools/base:stl_util",
+        "//ortools/util:affine_relation",
+        "//ortools/util:bitset",
+        "//ortools/util:sorted_interval_list",
+    ],
+)
 
 cc_library(
     name = "model",
@@ -256,7 +263,7 @@ cc_library(
         "//ortools/base",
         #        "//ortools/base:inlined_vector",
         "//ortools/base:int_type",
-        #        "//ortools/base:iterator_adaptors",
+        "//ortools/base:iterator_adaptors",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
         "//ortools/base:strings",
@@ -337,7 +344,7 @@ cc_library(
         ":sat_base",
         ":sat_solver",
         ":theta_tree",
-        #        "//ortools/base:iterator_adaptors",
+        "//ortools/base:iterator_adaptors",
         "//ortools/util:stats",
     ],
 )
@@ -405,7 +412,7 @@ cc_library(
         ":sat_base",
         ":sat_solver",
         "//ortools/base",
-        #        "//ortools/base:iterator_adaptors",
+        "//ortools/base:iterator_adaptors",
         "//ortools/util:sort",
     ],
 )
@@ -455,7 +462,7 @@ cc_library(
     deps = [
         ":boolean_problem",
         ":boolean_problem_cc_proto",
-        #        ":cp_model_cc_proto",
+        ":cp_model_cc_proto",
         ":sat_solver",
         "//ortools/base:strings",
         "//ortools/glop",
