@@ -33,6 +33,14 @@ message RoutingSearchParameters {
   // modified unless you know what you are doing.
   // Use filtered version of first solution strategy if available.
   bool use_filtered_first_solution_strategy = 2;
+  // Parameters specific to the Savings first solution heuristic.
+  // Ratio (between 0 and 1) of neighbors to consider for each node when
+  // constructing the savings. If <= 0 or greater than 1, its value is
+  // considered to be 1.0.
+  double savings_neighbors_ratio = 14;
+  // Add savings related to reverse arcs when finding the nearest neighbors
+  // of the nodes.
+  bool savings_add_reverse_arcs = 15;
 
   // Local search neighborhood operators used to build a solutions neighborhood.
   message LocalSearchNeighborhoodOperators {

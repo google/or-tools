@@ -3,7 +3,6 @@ BASE_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -80,7 +79,6 @@ $(SRC_DIR)/ortools/base/join.h: \
     $(SRC_DIR)/ortools/base/stringpiece.h
 
 $(SRC_DIR)/ortools/base/logging.h: \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/macros.h
 
@@ -192,11 +190,6 @@ $(OBJ_DIR)/base/join.$O: \
     $(SRC_DIR)/ortools/base/stringprintf.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Sjoin.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sjoin.$O
 
-$(OBJ_DIR)/base/logging.$O: \
-    $(SRC_DIR)/ortools/base/logging.cc \
-    $(SRC_DIR)/ortools/base/logging.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Slogging.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Slogging.$O
-
 $(OBJ_DIR)/base/mutex.$O: \
     $(SRC_DIR)/ortools/base/mutex.cc \
     $(SRC_DIR)/ortools/base/mutex.h
@@ -264,7 +257,6 @@ UTIL_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -290,6 +282,11 @@ UTIL_LIB_OBJS = \
     $(OBJ_DIR)/util/stats.$O \
     $(OBJ_DIR)/util/time_limit.$O \
     $(OBJ_DIR)/util/xml_helper.$O
+
+$(SRC_DIR)/ortools/util/affine_relation.h: \
+    $(SRC_DIR)/ortools/base/iterator_adaptors.h \
+    $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/macros.h
 
 $(SRC_DIR)/ortools/util/bitset.h: \
     $(SRC_DIR)/ortools/base/basictypes.h \
@@ -514,7 +511,6 @@ LP_DATA_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -739,7 +735,6 @@ GLOP_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -1057,7 +1052,6 @@ GRAPH_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -1281,7 +1275,6 @@ ALGORITHMS_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -1375,15 +1368,6 @@ $(OBJ_DIR)/algorithms/hungarian.$O: \
     $(SRC_DIR)/ortools/algorithms/hungarian.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Shungarian.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Shungarian.$O
 
-$(OBJ_DIR)/algorithms/hungarian_test.$O: \
-    $(SRC_DIR)/ortools/algorithms/hungarian_test.cc \
-    $(SRC_DIR)/ortools/algorithms/hungarian.h \
-    $(SRC_DIR)/ortools/base/integral_types.h \
-    $(SRC_DIR)/ortools/base/macros.h \
-    $(SRC_DIR)/ortools/base/map_util.h \
-    $(SRC_DIR)/ortools/base/random.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Shungarian_test.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Shungarian_test.$O
-
 $(OBJ_DIR)/algorithms/knapsack_solver.$O: \
     $(SRC_DIR)/ortools/algorithms/knapsack_solver.cc \
     $(SRC_DIR)/ortools/algorithms/knapsack_solver.h \
@@ -1405,6 +1389,7 @@ SAT_DEPS = \
     $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
     $(SRC_DIR)/ortools/sat/clause.h \
     $(SRC_DIR)/ortools/sat/cp_constraints.h \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h \
     $(SRC_DIR)/ortools/sat/drat.h \
     $(SRC_DIR)/ortools/sat/integer_expr.h \
     $(SRC_DIR)/ortools/sat/integer.h \
@@ -1421,7 +1406,6 @@ SAT_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -1474,6 +1458,10 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/boolean_problem.$O \
     $(OBJ_DIR)/sat/clause.$O \
     $(OBJ_DIR)/sat/cp_constraints.$O \
+    $(OBJ_DIR)/sat/cp_model_checker.$O \
+    $(OBJ_DIR)/sat/cp_model_presolve.$O \
+    $(OBJ_DIR)/sat/cp_model_solver.$O \
+    $(OBJ_DIR)/sat/cp_model_utils.$O \
     $(OBJ_DIR)/sat/cumulative.$O \
     $(OBJ_DIR)/sat/disjunctive.$O \
     $(OBJ_DIR)/sat/drat.$O \
@@ -1498,6 +1486,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/timetable_edgefinding.$O \
     $(OBJ_DIR)/sat/util.$O \
     $(OBJ_DIR)/sat/boolean_problem.pb.$O \
+    $(OBJ_DIR)/sat/cp_model.pb.$O \
     $(OBJ_DIR)/sat/sat_parameters.pb.$O
 
 $(SRC_DIR)/ortools/sat/boolean_problem.h: \
@@ -1524,6 +1513,21 @@ $(SRC_DIR)/ortools/sat/clause.h: \
 $(SRC_DIR)/ortools/sat/cp_constraints.h: \
     $(SRC_DIR)/ortools/sat/integer.h \
     $(SRC_DIR)/ortools/sat/model.h \
+    $(SRC_DIR)/ortools/util/sorted_interval_list.h
+
+$(SRC_DIR)/ortools/sat/cp_model_checker.h: \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h
+
+$(SRC_DIR)/ortools/sat/cp_model_presolve.h: \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h
+
+$(SRC_DIR)/ortools/sat/cp_model_solver.h: \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+    $(SRC_DIR)/ortools/sat/integer.h \
+    $(SRC_DIR)/ortools/sat/model.h
+
+$(SRC_DIR)/ortools/sat/cp_model_utils.h: \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h \
     $(SRC_DIR)/ortools/util/sorted_interval_list.h
 
 $(SRC_DIR)/ortools/sat/cumulative.h: \
@@ -1595,6 +1599,7 @@ $(SRC_DIR)/ortools/sat/linear_programming_constraint.h: \
 
 $(SRC_DIR)/ortools/sat/lp_utils.h: \
     $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h \
     $(SRC_DIR)/ortools/sat/sat_solver.h \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
     $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h
@@ -1726,6 +1731,54 @@ $(OBJ_DIR)/sat/cp_constraints.$O: \
     $(SRC_DIR)/ortools/util/sort.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_constraints.$O
 
+$(OBJ_DIR)/sat/cp_model_checker.$O: \
+    $(SRC_DIR)/ortools/sat/cp_model_checker.cc \
+    $(SRC_DIR)/ortools/sat/cp_model_checker.h \
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
+    $(SRC_DIR)/ortools/base/join.h \
+    $(SRC_DIR)/ortools/base/map_util.h \
+    $(SRC_DIR)/ortools/util/saturated_arithmetic.h \
+    $(SRC_DIR)/ortools/util/sorted_interval_list.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_checker.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_checker.$O
+
+$(OBJ_DIR)/sat/cp_model_presolve.$O: \
+    $(SRC_DIR)/ortools/sat/cp_model_presolve.cc \
+    $(SRC_DIR)/ortools/sat/cp_model_checker.h \
+    $(SRC_DIR)/ortools/sat/cp_model_presolve.h \
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
+    $(SRC_DIR)/ortools/base/join.h \
+    $(SRC_DIR)/ortools/base/map_util.h \
+    $(SRC_DIR)/ortools/base/stl_util.h \
+    $(SRC_DIR)/ortools/util/affine_relation.h \
+    $(SRC_DIR)/ortools/util/bitset.h \
+    $(SRC_DIR)/ortools/util/sorted_interval_list.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_presolve.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_presolve.$O
+
+$(OBJ_DIR)/sat/cp_model_solver.$O: \
+    $(SRC_DIR)/ortools/sat/cp_model_solver.cc \
+    $(SRC_DIR)/ortools/sat/cp_model_checker.h \
+    $(SRC_DIR)/ortools/sat/cp_model_presolve.h \
+    $(SRC_DIR)/ortools/sat/cp_model_solver.h \
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
+    $(SRC_DIR)/ortools/sat/cumulative.h \
+    $(SRC_DIR)/ortools/sat/disjunctive.h \
+    $(SRC_DIR)/ortools/sat/intervals.h \
+    $(SRC_DIR)/ortools/sat/linear_programming_constraint.h \
+    $(SRC_DIR)/ortools/sat/optimization.h \
+    $(SRC_DIR)/ortools/sat/sat_solver.h \
+    $(SRC_DIR)/ortools/sat/table.h \
+    $(SRC_DIR)/ortools/base/join.h \
+    $(SRC_DIR)/ortools/base/stl_util.h \
+    $(SRC_DIR)/ortools/base/timer.h \
+    $(SRC_DIR)/ortools/graph/connectivity.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_solver.$O
+
+$(OBJ_DIR)/sat/cp_model_utils.$O: \
+    $(SRC_DIR)/ortools/sat/cp_model_utils.cc \
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
+    $(SRC_DIR)/ortools/base/stl_util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_utils.$O
+
 $(OBJ_DIR)/sat/cumulative.$O: \
     $(SRC_DIR)/ortools/sat/cumulative.cc \
     $(SRC_DIR)/ortools/sat/cumulative.h \
@@ -1803,6 +1856,7 @@ $(OBJ_DIR)/sat/no_cycle.$O: \
 $(OBJ_DIR)/sat/optimization.$O: \
     $(SRC_DIR)/ortools/sat/optimization.cc \
     $(SRC_DIR)/ortools/sat/encoding.h \
+    $(SRC_DIR)/ortools/sat/integer_expr.h \
     $(SRC_DIR)/ortools/sat/optimization.h \
     $(SRC_DIR)/ortools/sat/util.h \
     $(SRC_DIR)/ortools/base/stringprintf.h
@@ -1900,6 +1954,14 @@ $(GEN_DIR)/ortools/sat/boolean_problem.pb.h: $(GEN_DIR)/ortools/sat/boolean_prob
 $(OBJ_DIR)/sat/boolean_problem.pb.$O: $(GEN_DIR)/ortools/sat/boolean_problem.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/sat/boolean_problem.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sboolean_problem.pb.$O
 
+$(GEN_DIR)/ortools/sat/cp_model.pb.cc: $(SRC_DIR)/ortools/sat/cp_model.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/ortools/sat/cp_model.proto
+
+$(GEN_DIR)/ortools/sat/cp_model.pb.h: $(GEN_DIR)/ortools/sat/cp_model.pb.cc
+
+$(OBJ_DIR)/sat/cp_model.pb.$O: $(GEN_DIR)/ortools/sat/cp_model.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/sat/cp_model.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model.pb.$O
+
 $(GEN_DIR)/ortools/sat/sat_parameters.pb.cc: $(SRC_DIR)/ortools/sat/sat_parameters.proto
 	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/ortools/sat/sat_parameters.proto
 
@@ -1919,7 +1981,6 @@ BOP_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -1959,6 +2020,7 @@ BOP_DEPS = \
     $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
     $(SRC_DIR)/ortools/sat/clause.h \
     $(SRC_DIR)/ortools/sat/cp_constraints.h \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h \
     $(SRC_DIR)/ortools/sat/drat.h \
     $(SRC_DIR)/ortools/sat/integer_expr.h \
     $(SRC_DIR)/ortools/sat/integer.h \
@@ -2227,7 +2289,6 @@ LP_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -2473,7 +2534,6 @@ CP_DEPS = \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/casts.h \
-    $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/int_type.h \
@@ -2501,6 +2561,7 @@ CP_DEPS = \
     $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
     $(SRC_DIR)/ortools/sat/clause.h \
     $(SRC_DIR)/ortools/sat/cp_constraints.h \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h \
     $(SRC_DIR)/ortools/sat/drat.h \
     $(SRC_DIR)/ortools/sat/integer_expr.h \
     $(SRC_DIR)/ortools/sat/integer.h \
@@ -3240,3 +3301,4 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/ortools/
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
+

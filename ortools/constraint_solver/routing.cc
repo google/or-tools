@@ -658,6 +658,8 @@ RoutingSearchParameters RoutingModel::DefaultSearchParameters() {
   static const char* const kSearchParameters =
       "first_solution_strategy: AUTOMATIC "
       "use_filtered_first_solution_strategy: true "
+      "savings_neighbors_ratio: 0 "
+      "savings_add_reverse_arcs: false "
       "local_search_operators {"
       "  use_relocate: true"
       "  use_relocate_pair: true"
@@ -2457,8 +2459,13 @@ void GetVehicleClasses(const RoutingModel& model,
 // heuristic for Vehicle Routing Problem.
 class SavingsBuilder : public DecisionBuilder {
  public:
-  SavingsBuilder(RoutingModel* const model, bool check_assignment)
-      : model_(model), check_assignment_(check_assignment) {}
+  SavingsBuilder(RoutingModel* const model, double savings_neighbors_ratio,
+                 bool check_assignment)
+      : model_(model),
+        savings_neighbors_ratio_(savings_neighbors_ratio > 0
+                                     ? std::min(savings_neighbors_ratio, 1.0)
+                                     : 1),
+        check_assignment_(check_assignment) {}
   ~SavingsBuilder() override {}
 
   Decision* Next(Solver* const solver) override {
@@ -2488,10 +2495,10 @@ class SavingsBuilder : public DecisionBuilder {
     neighbors_.resize(nodes_number_);
     route_shape_parameter_ = FLAGS_savings_route_shape_parameter;
 
-    int64 savings_filter_neighbors = FLAGS_savings_filter_neighbors;
+    int64 savings_filter_neighbors =
+        std::max(1.0, model_->nodes() * savings_neighbors_ratio_);
     int64 savings_filter_radius = FLAGS_savings_filter_radius;
-    if (!savings_filter_neighbors && !savings_filter_radius) {
-      savings_filter_neighbors = model_->nodes();
+    if (!savings_filter_radius) {
       savings_filter_radius = -1;
     }
 
@@ -2550,6 +2557,7 @@ class SavingsBuilder : public DecisionBuilder {
   }
 
   RoutingModel* const model_;
+  const double savings_neighbors_ratio_;
   std::unique_ptr<RouteConstructor> route_constructor_;
   const bool check_assignment_;
   std::vector<std::string> dimensions_;
@@ -4197,20 +4205,25 @@ void RoutingModel::CreateFirstSolutionDecisionBuilders(
                        first_solution_decision_builders_
                            [FirstSolutionStrategy::BEST_INSERTION]);
   // Savings
+  const double savings_neighbors_ratio =
+      search_parameters.savings_neighbors_ratio();
   if (search_parameters.use_filtered_first_solution_strategy()) {
     first_solution_filtered_decision_builders_[FirstSolutionStrategy::SAVINGS] =
         solver_->RevAlloc(new SavingsFilteredDecisionBuilder(
-            this, FLAGS_savings_filter_neighbors,
+            this, savings_neighbors_ratio,
+            search_parameters.savings_add_reverse_arcs(),
             GetOrCreateFeasibilityFilters()));
     first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
         solver_->Try(first_solution_filtered_decision_builders_
                          [FirstSolutionStrategy::SAVINGS],
-                     solver_->RevAlloc(new SavingsBuilder(this, true)));
+                     solver_->RevAlloc(new SavingsBuilder(
+                         this, savings_neighbors_ratio, true)));
   } else {
     first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
-        solver_->RevAlloc(new SavingsBuilder(this, true));
-    DecisionBuilder* savings_builder =
-        solver_->RevAlloc(new SavingsBuilder(this, false));
+        solver_->RevAlloc(
+            new SavingsBuilder(this, savings_neighbors_ratio, true));
+    DecisionBuilder* savings_builder = solver_->RevAlloc(
+        new SavingsBuilder(this, savings_neighbors_ratio, false));
     first_solution_decision_builders_[FirstSolutionStrategy::SAVINGS] =
         solver_->Try(
             savings_builder,

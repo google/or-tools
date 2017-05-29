@@ -27,6 +27,20 @@ std::function<void(Model*)> TableConstraint(
     const std::vector<IntegerVariable>& vars,
     const std::vector<std::vector<int64>>& tuples);
 
+// Enforces that none of the given tuple appear. TODO(user): we could propagate
+// more than what we currently do which is simply adding one clause per tuples.
+std::function<void(Model*)> NegatedTableConstraint(
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples);
+
+// Same as NegatedTableConstraint() but uses a different literal encoding.
+// That is, instead of fully encoding the variables and having literal like
+// (x != 4) in the clause(s), we use instead two literals: (x < 4) V (x > 4).
+// This can be better for variable with large domains.
+std::function<void(Model*)> NegatedTableConstraintWithoutFullEncoding(
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples);
+
 // Enforces that exactly one literal in line_literals is true, and that
 // all literals in the corresponding line of the literal_tuples matrix are true.
 // This constraint assumes that exactly one literal per column of the

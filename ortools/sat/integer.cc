@@ -202,6 +202,15 @@ bool IntegerEncoder::LiteralIsAssociated(IntegerLiteral i) const {
   return encoding.find(i.bound) != encoding.end();
 }
 
+LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i) {
+  if (i.var >= encoding_by_var_.size()) return kNoLiteralIndex;
+  const std::map<IntegerValue, Literal>& encoding =
+      encoding_by_var_[IntegerVariable(i.var)];
+  const auto result = encoding.find(i.bound);
+  if (result == encoding.end()) return kNoLiteralIndex;
+  return result->second.Index();
+}
+
 Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i) {
   if (i.var < encoding_by_var_.size()) {
     const std::map<IntegerValue, Literal>& encoding =
@@ -829,67 +838,109 @@ void IntegerTrail::MergeReasonInto(const std::vector<IntegerLiteral>& literals,
   return MergeReasonIntoInternal(output);
 }
 
+// This will expand the reason of the IntegerLiteral already in tmp_queue_ until
+// everything is explained in term of Literal.
 void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
-  tmp_trail_indices_.clear();
-  tmp_var_to_highest_explained_trail_index_.resize(vars_.size(), 0);
-  DCHECK(std::all_of(tmp_var_to_highest_explained_trail_index_.begin(),
-                     tmp_var_to_highest_explained_trail_index_.end(),
+  // All relevant trail indices will be >= vars_.size(), so we can safely use
+  // zero to means that no literal refering to this variable is in the queue.
+  tmp_var_to_trail_index_in_queue_.resize(vars_.size(), 0);
+  DCHECK(std::all_of(tmp_var_to_trail_index_in_queue_.begin(),
+                     tmp_var_to_trail_index_in_queue_.end(),
                      [](int v) { return v == 0; }));
 
-  // This implement an iterative DFS on a DAG. Each time a node from the
-  // tmp_queue_ is expanded, we change its sign, so that when we go back
-  // (equivalent to the return of the recursive call), we can detect that this
-  // node was already expanded.
-  //
-  // To detect nodes from which we already performed the full DFS exploration,
-  // we use tmp_var_to_highest_explained_trail_index_.
-  //
-  // TODO(user): The order in which each trail_index is expanded will change
-  // how much of the reason is "minimized". Investigate if some order are better
-  // than other.
-  while (!tmp_queue_.empty()) {
-    const bool already_expored = tmp_queue_.back() < 0;
-    const int trail_index = std::abs(tmp_queue_.back());
+  // During the algorithm execution, all the queue entries that do not match the
+  // content of tmp_var_to_trail_index_in_queue_[] will be ignored.
+  for (const int trail_index : tmp_queue_) {
     const TrailEntry& entry = integer_trail_[trail_index];
+    tmp_var_to_trail_index_in_queue_[entry.var] =
+        std::max(tmp_var_to_trail_index_in_queue_[entry.var], trail_index);
+  }
 
-    // Since we already have an explanation for a larger bound (ex: x>=4) we
-    // don't need to add the explanation for a lower one (ex: x>=2).
-    if (trail_index <= tmp_var_to_highest_explained_trail_index_[entry.var]) {
-      tmp_queue_.pop_back();
+  // We manage our heap by hand so that we can range iterate over it above, and
+  // this initial heapify is faster.
+  std::make_heap(tmp_queue_.begin(), tmp_queue_.end());
+
+  // We process the entries by highest trail_index first. The content of the
+  // queue will always be a valid reason for the literals we already added to
+  // the output.
+  tmp_to_clear_.clear();
+  while (!tmp_queue_.empty()) {
+    const int trail_index = tmp_queue_.front();
+    const TrailEntry& entry = integer_trail_[trail_index];
+    std::pop_heap(tmp_queue_.begin(), tmp_queue_.end());
+    tmp_queue_.pop_back();
+
+    // Skip any stale queue entry. Amongst all the entry refering to a given
+    // variable, only the latest added to the queue is valid and we detect it
+    // using its trail index.
+    if (tmp_var_to_trail_index_in_queue_[entry.var] != trail_index) {
       continue;
     }
 
-    DCHECK_GT(trail_index, 0);
-    if (already_expored) {
-      // We are in the "return" of the DFS recursive call.
-      DCHECK_GT(trail_index,
-                tmp_var_to_highest_explained_trail_index_[entry.var]);
-      tmp_var_to_highest_explained_trail_index_[entry.var] = trail_index;
-      tmp_trail_indices_.push_back(trail_index);
-      tmp_queue_.pop_back();
-    } else {
-      // We make "recursive calls" from this node.
-      tmp_queue_.back() = -trail_index;
-      for (const IntegerLiteral lit : Dependencies(trail_index)) {
-        // Extract the next_trail_index from the returned literal, we can break
-        // as soon as we get a negative next_trail_index. See the encoding in
-        // Dependencies().
-        const int next_trail_index = -lit.var;
-        if (next_trail_index < 0) break;
-        const TrailEntry& next_entry = integer_trail_[next_trail_index];
-        if (next_trail_index >
-            tmp_var_to_highest_explained_trail_index_[next_entry.var]) {
-          tmp_queue_.push_back(next_trail_index);
-        }
+    // If this entry has an associated literal, then we use it as a reason
+    // instead of the stored reason. If later this literal needs to be
+    // explained, then the associated literal will be expanded with the stored
+    // reason.
+    {
+      const LiteralIndex associated_lit =
+          encoder_->GetAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+              IntegerVariable(entry.var), entry.bound));
+      if (associated_lit != kNoLiteralIndex) {
+        output->push_back(Literal(associated_lit).Negated());
+
+        // Ignore any entries of the queue refering to this variable and make
+        // sure no such entry are added later.
+        tmp_to_clear_.push_back(entry.var);
+        tmp_var_to_trail_index_in_queue_[entry.var] = kint32max;
+        continue;
       }
+    }
+
+    // Process this entry. Note that if any of the next expansion include the
+    // variable entry.var in their reason, we must process it again because we
+    // cannot easily detect if it was needed to infer the current entry.
+    //
+    // Important: the queue might already contains entries refering to the same
+    // variable. The code act like if we deleted all of them at this point, we
+    // just do that lazily. tmp_var_to_trail_index_in_queue_[var] will
+    // only refer to newly added entries.
+    AppendLiteralsReason(trail_index, output);
+    tmp_var_to_trail_index_in_queue_[entry.var] = 0;
+
+    // TODO(user): we could speed up Dependencies() by using the indices stored
+    // in tmp_var_to_trail_index_in_queue_ instead of redoing
+    // FindLowestTrailIndexThatExplainBound() from the latest trail index.
+    bool has_dependency = false;
+    for (const IntegerLiteral lit : Dependencies(trail_index)) {
+      // Extract the next_trail_index from the returned literal, we can break
+      // as soon as we get a negative next_trail_index. See the encoding in
+      // Dependencies().
+      const int next_trail_index = -lit.var;
+      if (next_trail_index < 0) break;
+      const TrailEntry& next_entry = integer_trail_[next_trail_index];
+      has_dependency = true;
+
+      // Only add literals that are not "implied" by the ones already present.
+      // For instance, do not add (x >= 4) if we already have (x >= 7). This
+      // translate into only adding a trail index if it is larger than the one
+      // in the queue refering to the same variable.
+      if (next_trail_index > tmp_var_to_trail_index_in_queue_[next_entry.var]) {
+        tmp_var_to_trail_index_in_queue_[next_entry.var] = next_trail_index;
+        tmp_queue_.push_back(next_trail_index);
+        std::push_heap(tmp_queue_.begin(), tmp_queue_.end());
+      }
+    }
+
+    // Special case for a "leaf", we will never need this variable again.
+    if (!has_dependency) {
+      tmp_to_clear_.push_back(entry.var);
+      tmp_var_to_trail_index_in_queue_[entry.var] = kint32max;
     }
   }
 
-  // Cleanup + output the reason.
-  for (const int trail_index : tmp_trail_indices_) {
-    const TrailEntry& entry = integer_trail_[trail_index];
-    tmp_var_to_highest_explained_trail_index_[entry.var] = 0;
-    AppendLiteralsReason(trail_index, output);
+  // clean-up.
+  for (const int var : tmp_to_clear_) {
+    tmp_var_to_trail_index_in_queue_[var] = 0;
   }
   STLSortAndRemoveDuplicates(output);
 }

@@ -75,6 +75,12 @@ DEFINE_string(routing_first_solution, "",
               "in the code to get a full list.");
 DEFINE_bool(routing_use_filtered_first_solutions, true,
             "Use filtered version of first solution heuristics if available.");
+DEFINE_double(savings_neighbors_ratio, 0,
+              "Ratio of neighbors to consider for each node when "
+              "constructing the savings.");
+DEFINE_bool(savings_add_reverse_arcs, false,
+            "Add savings related to reverse arcs when finding the nearest "
+            "neighbors of the nodes.");
 DEFINE_bool(routing_dfs, false, "Routing: use a complete depth-first search.");
 DEFINE_int64(routing_optimization_step, 1, "Optimization step.");
 
@@ -130,6 +136,8 @@ void SetFirstSolutionStrategyFromFlags(RoutingSearchParameters* parameters) {
   }
   parameters->set_use_filtered_first_solution_strategy(
       FLAGS_routing_use_filtered_first_solutions);
+  parameters->set_savings_neighbors_ratio(FLAGS_savings_neighbors_ratio);
+  parameters->set_savings_add_reverse_arcs(FLAGS_savings_add_reverse_arcs);
 }
 
 void SetLocalSearchMetaheuristicFromFlags(RoutingSearchParameters* parameters) {

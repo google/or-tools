@@ -1,0 +1,364 @@
+// Copyright 2010-2014 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Proto describing a general Constraint Programming (CP) problem.
+
+syntax = "proto3";
+
+package operations_research.sat;
+
+// An integer variable.
+//
+// It will be referred to by an int32 corresponding to its index in a
+// CpModelProto variables field.
+//
+// Depending on the context, a reference to a variable whose domain is in [0, 1]
+// can also be seen as a Boolean that will be true if the variable value is 1
+// and false if it is 0. When used in this context, the field name will always
+// contain the word "literal".
+//
+// Negative reference (advanced usage): to simplify the creation of a model and
+// for efficiency reasons, all the "literal" or "variable" fields can also
+// contain a negative index. A negative index i will refer to the negation of
+// the integer variable at index -i -1 or to NOT the literal at the same index.
+//
+// Ex: A variable index 4 will refer to the integer variable model.variables(4)
+// and an index of -5 will refer to the negation of the same variable. A literal
+// index 4 will refer to the logical fact that model.variable(4) == 1 and a
+// literal index of -5 will refer to the logical fact model.variable(4) == 0.
+message IntegerVariableProto {
+  // For debug/logging only. Can be empty.
+  string name = 1;
+
+  // The variable domain given as a sorted list of n disjoint intervals
+  // [min, max] and encoded as [min_0, max_0,  ..., min_{n-1}, max_{n-1}].
+  //
+  // The most common example being just [min, max].
+  // If min == max, then this is a constant variable.
+  //
+  // We have:
+  //  - domain_size() is always even.
+  //  - min == domain.front();
+  //  - max == domain.back();
+  //  - for all i < n   :      min_i <= max_i
+  //  - for all i < n-1 :  max_i + 1 < min_{i+1}.
+  repeated int64 domain = 2;
+}
+
+// Argument of the constraints of the form OP(literals).
+message BoolArgumentProto {
+  repeated int32 literals = 1;
+}
+
+// Argument of the constraints of the form target_var = OP(vars).
+message IntegerArgumentProto {
+  int32 target = 1;
+  repeated int32 vars = 2;
+}
+
+// All variables must take different values.
+message AllDifferentConstraintProto {
+  repeated int32 vars = 1;
+}
+
+// The linear sum vars[i] * coeffs[i] must fall in the given domain. The domain
+// has the same format as the one in IntegerVariableProto.
+//
+// Note that the validation code currently checks using the domain of the
+// involved variables that the sum can always be computed without integer
+// overflow and throws an error otherwise.
+message LinearConstraintProto {
+  repeated int32 vars = 1;
+  repeated int64 coeffs = 2;  // Same size as vars.
+  repeated int64 domain = 3;
+}
+
+// The constraint target = vars[index].
+// This enforces that index takes one of the value in [0, vars_size()).
+message ElementConstraintProto {
+  int32 index = 1;
+  int32 target = 2;
+  repeated int32 vars = 3;
+}
+
+// This "special" constraint not only enforces (start + size == end) but can
+// also be refered by other constraints using this "interval" concept.
+message IntervalConstraintProto {
+  int32 start = 1;
+  int32 end = 2;
+  int32 size = 3;
+}
+
+// All the intervals (index of IntervalConstraintProto) must be disjoint.
+// Note that interval are interpreted as [start, end). This is also known as
+// a disjunctive constraint in scheduling.
+message NoOverlapConstraintProto {
+  repeated int32 intervals = 1;
+}
+
+// The boxes defined by [start_x, end_x) * [start_y, end_y) cannot overlap.
+message NoOverlap2DConstraintProto {
+  repeated int32 x_intervals = 1;
+  repeated int32 y_intervals = 2;  // Same size as x_intervals.
+}
+
+// The sum of the demands * durations of the intervals at each interval point
+// cannot exceed a capacity. Note that intervals are interpreted as [start, end)
+// and as such intervals like [2,3) and [3,4) do not overlap for the point of
+// view of this constraint.
+//
+// Note: this enforce that all start <= end.
+message CumulativeConstraintProto {
+  int32 capacity = 1;
+  repeated int32 intervals = 2;
+  repeated int32 demands = 3;  // Same size as intervals.
+}
+
+// The "next" variable of a node i represents its successor in a graph. Any
+// value that fall outside [0, n = next_variables.size()) or is a self-loop
+// (next[i] == i) takes the special meaning of no-successor.
+//
+// The circuit constraint enforces that all nodes with a valid successor must
+// form a circuit, that is a single loop that goes through all of them. Note
+// that to enforce that a node has a valid successor, it is sufficient to
+// reduce its domain to only valid values.
+message CircuitConstraintProto {
+  repeated int32 nexts = 2;
+}
+
+// The values of the n-tuple formed by the given variables can only be one of
+// the listed n-tuples in values. The n-tuples are encoded in a flattened way:
+//     [tuple0_v0, tuple0_v1, ..., tuple0_v{n-1}, tuple1_v0, ...].
+message TableConstraintProto {
+  repeated int32 vars = 1;
+  repeated int64 values = 2;
+
+  // If true, the meaning is "negated", that is we forbid any of the given
+  // tuple from a feasible assignment.
+  bool negated = 3;
+}
+
+// This constraint forces a sequence of variables to be accepted by an automata.
+message AutomataConstraintProto {
+  // A state is identified by a non-negative number. It is preferable to keep
+  // all the states dense in says [0, num_states). The automata starts at
+  // starting_state and must finish in any of the final states.
+  int64 starting_state = 2;
+  repeated int64 final_states = 3;
+
+  // List of transitions (all 3 vectors have the same size). Both tail and head
+  // are states, label is any variable value. No two outgoing transitions from
+  // the same state can have the same label.
+  repeated int64 transition_tail = 4;
+  repeated int64 transition_head = 5;
+  repeated int64 transition_label = 6;
+
+  // The sequence of variables. The automata is ran for vars_size() "steps" and
+  // the value of vars[i] corresponds to the transition label at step i.
+  repeated int32 vars = 7;
+}
+
+message ConstraintProto {
+  // For debug/logging only. Can be empty.
+  string name = 1;
+
+  // This should contain at most one literal. If there is one, then the
+  // constraint must be true when this literal is true, if it is false, then it
+  // doesn't matter. This is also called half-reification. To have an
+  // equivalence between a literal and a constraint (full reification), one must
+  // add both a constraint (controled by a literal l) and its negation
+  // (controlled by the negation of l).
+  repeated int32 enforcement_literal = 2;
+
+  // The actual constraint with its arguments.
+  oneof constraint {
+    BoolArgumentProto bool_or = 3;   // OR(literals) is true.
+    BoolArgumentProto bool_and = 4;  // AND(literals) is true.
+    BoolArgumentProto bool_xor = 5;  // XOR(literals) is true.
+
+    IntegerArgumentProto int_div = 7;    // target = vars[0] / vars[1]
+    IntegerArgumentProto int_mod = 8;    // target = vars[0] % vars[1]
+    IntegerArgumentProto int_max = 9;    // target = MAX(vars)
+    IntegerArgumentProto int_min = 10;   // target = MIN(vars)
+    IntegerArgumentProto int_prod = 11;  // target = PROD(vars)
+
+    LinearConstraintProto linear = 12;
+    AllDifferentConstraintProto all_diff = 13;
+    ElementConstraintProto element = 14;
+    CircuitConstraintProto circuit = 15;
+    TableConstraintProto table = 16;
+    AutomataConstraintProto automata = 17;
+
+    // Constraints on intervals.
+    //
+    // The first constraint defines what an "interval" is and the other
+    // constraints use references to it. All the intervals that have an
+    // enforcement_literal set to false are ignored by these constraints.
+    //
+    // TODO(user): Explain what happen for intervals of size zero. Some
+    // constraints ignore them, other do take them into account.
+    IntervalConstraintProto interval = 18;
+    CumulativeConstraintProto cumulative = 19;
+    NoOverlapConstraintProto no_overlap = 20;
+    NoOverlap2DConstraintProto no_overlap_2d = 21;
+  }
+}
+
+// Optimization objective.
+//
+// This is in a message because decision problems don't have any objective.
+message CpObjectiveProto {
+  // Index of the variable to minimize.
+  //
+  // For a maximization problem, one can refer to the negation of the real
+  // objective and set a scaling_factor to -1.
+  int32 objective_var = 1;
+
+  // The displayed objective is always:
+  //   scaling_factor * (Value(objective_var) + offset).
+  // This is needed to have a consistent objective after presolve or when
+  // scaling a double problem to express it with integers.
+  //
+  // Note that if scaling_factor is zero, then it is assumed to be 1, so that by
+  // default these fields have no effect.
+  double offset = 2;
+  double scaling_factor = 3;
+}
+
+// Define the strategy to follow when the solver needs to take a new decision.
+// Note that this strategy is only defined on a subset of variables.
+message DecisionStrategyProto {
+  // The variables to be considered for the next decision. The order matter and
+  // is always used as a tie-breaker after the variable selection strategy
+  // criteria defined below.
+  repeated int32 variables = 1;
+
+  // The order in which the variables above should be considered. Note that only
+  // variables that are not already fixed are considered.
+  //
+  // TODO(user): extend as needed.
+  enum VariableSelectionStrategy {
+    CHOOSE_FIRST = 0;
+    CHOOSE_LOWEST_MIN = 1;
+    CHOOSE_HIGHEST_MAX = 2;
+    CHOOSE_MIN_DOMAIN_SIZE = 3;
+    CHOOSE_MAX_DOMAIN_SIZE = 4;
+  }
+  VariableSelectionStrategy variable_selection_strategy = 2;
+
+  // Once a variable has been choosen, this enum describe what decision is taken
+  // on its domain.
+  //
+  // TODO(user): extend as needed.
+  enum DomainReductionStrategy {
+    SELECT_MIN_VALUE = 0;
+    SELECT_MAX_VALUE = 1;
+    SELECT_LOWER_HALF = 2;
+    SELECT_UPPER_HALF = 3;
+  }
+  DomainReductionStrategy domain_reduction_strategy = 3;
+}
+
+// A constraint programming problem.
+message CpModelProto {
+  // For debug/logging only. Can be empty.
+  string name = 1;
+
+  // The associated Protos should be referred by their index in these fields.
+  repeated IntegerVariableProto variables = 2;
+  repeated ConstraintProto constraints = 3;
+
+  // The objective to minimize. Can be empty for pure decision problems.
+  // Note that we can have more than one objective for the cases where we want
+  // to optimize them in lexicographic order, or if we want to list the Pareto
+  // optimal solutions.
+  repeated CpObjectiveProto objectives = 4;
+
+  // Defines the strategy that the solver should follow when the "fixed_search"
+  // parameters is set to true. Note that this strategy is also used as an
+  // heuristic when we are not in fixed search.
+  //
+  // If empty, the solver will try to assign all variables to their min value in
+  // the order of their appearance in the variables field above. Otherwise, it
+  // will assign the variables in each DecisionStrategyProto according to the
+  // order defined there and only move to the next proto in this field once all
+  // variables from the previous one have been assigned.
+  //
+  // Advanced Usage: if not all variables appears, the solver will not try to
+  // assign the missing ones. Thus, at the end of the search, not all variables
+  // may be fixed and this is why the solution_lower_bounds and
+  // solution_upper_bounds fields in the CpSolverResponse are for.
+  repeated DecisionStrategyProto search_strategy = 5;
+}
+
+// The status returned by a solver trying to solve a CpModelProto.
+enum CpSolverStatus {
+  // The status of the model is still unknown. A search limit as been reached
+  // before any of the status below could be decided.
+  UNKNOWN = 0;
+
+  // The given CpModelProto didn't pass the validation step. You can get a
+  // detailed error by calling ValidateCpModel(model_proto).
+  MODEL_INVALID = 1;
+
+  // A feasible solution as been found. For an optimization problem, we still
+  // don't know if it is the optimal one though.
+  MODEL_SAT = 2;
+
+  // The problem as been proven to be UNSAT. No feasible solution exists.
+  MODEL_UNSAT = 3;
+
+  // An optimal feasible solution has been found.
+  OPTIMAL = 4;
+}
+
+// The response returned by a solver trying to solve a CpModelProto.
+message CpSolverResponse {
+  // The status of the solve.
+  CpSolverStatus status = 1;
+
+  // A feasible solution to the given problem. Depending on the returned status
+  // it may be optimal or just feasible. This is in one-to-one correspondance
+  // with a CpModelProto::variables repeated field and list the values of all
+  // the variables.
+  repeated int64 solution = 2;
+
+  // Advanced usage.
+  //
+  // If the problem has some variables that are not fixed at the end of the
+  // search (because of a particular search strategy in the CpModelProto) then
+  // this will be used instead of filling the solution above. The two fields
+  // will then contains the lower and upper bound of each variable as they where
+  // when the best "solution" was found.
+  repeated int64 solution_lower_bounds = 18;
+  repeated int64 solution_upper_bounds = 19;
+
+  // Only make sense for an optimization problem and if solution is non-empty.
+  // The objective value of the returned solution.
+  double objective_value = 3;
+
+  // Only make sense for an optimization problem. A proven lower-bound on the
+  // objective for a minimization problem, or a proven upper-bound for a
+  // maximization problem.
+  double best_objective_bound = 4;
+
+  // Some statistics about the solve.
+  int64 num_booleans = 10;
+  int64 num_conflicts = 11;
+  int64 num_branches = 12;
+  int64 num_binary_propagations = 13;
+  int64 num_integer_propagations = 14;
+  double wall_time = 15;
+  double user_time = 16;
+  double deterministic_time = 17;
+}

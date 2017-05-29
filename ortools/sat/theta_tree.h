@@ -52,30 +52,24 @@ namespace sat {
 // that can be present or absent, and present events come with an
 // initial_envelope, a minimal and a maximal energy.
 // All nodes maintain values on the set of present events under them:
-// _ energy_min(node) = sum_{leaf \in leaves(node)} energy_min(leaf)
+// _ sum_energy_min(node) = sum_{leaf \in leaves(node)} energy_min(leaf)
 // _ envelope(node) =
 //     max_{leaf \in leaves(node)}
 //       initial_envelope(leaf) +
 //       sum_{leaf' \in leaves(node), leaf' >= leaf} energy_min(leaf').
 //
 // Thus, the envelope of a leaf representing an event, when present, is
-// initial_envelope(event) + energy_min(event).
+//   initial_envelope(event) + sum_energy_min(event).
 //
-// envelope_opt and energy_opt are similar, but represent the maximum value
-// a node could have if one leaf took its maximum energy:
-// _ energy_opt(node) = sum_{leaf \in leaves(node)} energy_min(leaf)
-//                    + max_{leaf \in leaves(node)}
-//                        energy_max(leaf) - energy_min(leaf)
+// We also maintain envelope_opt with is the maximum envelope a node could take
+// if at most one of the event where at its maximum energy.
+// _ energy_delta(leaf) = energy_max(leaf) - energy_min(leaf)
+// _ max_energy_delta(node) = max_{leaf \in leaves(node)} energy_delta(leaf)
 // _ envelope_opt(node) =
 //     max_{leaf \in leaves(node)}
 //       initial_envelope(leaf) +
 //       sum_{leaf' \in leaves(node), leaf' >= leaf} energy_min(leaf') +
-//       max_{leaf_opt \in leaves(node)}
-// .       (energy_max(leaf_opt) - energy_min(leaf_opt))
-//     max_{leaf_opt \in leaves(node)}
-//       initial_envelope(leaf_opt) +
-//       energy_max(leaf_opt) - energy_min(leaf_opt) +
-//       sum_{leaf' \in leaves(node), leaf' >= leaf_opt} energy_min(leaf')
+//       max_{leaf' \in leaves(node), leaf' >= leaf} energy_delta(leaf');
 //
 // Most articles using theta-tree variants hack Vilim's original theta tree
 // for the disjunctive resource constraint by manipulating envelope and
@@ -134,43 +128,49 @@ class ThetaLambdaTree {
   // Computes a pair of events (critical_event, optional_event) such that
   // if optional_event was at its maximum energy, the envelope of critical_event
   // would be greater than target_envelope.
-  // This assumes that such a pair exists, i.e. GetOptionalEnvelope()
-  // should be greater than target_envelope.
-  // More formally, this finds events such that
-  // initial_envelope(critical_event) +
-  // sum_{event' >= critical_event} energy_min(event') +
-  // max_{optional_event >= critical_event}
-  //   (energy_max(optional_event) - energy_min(optional_event))
-  // > target envelope.
+  //
+  // This assumes that such a pair exists, i.e. GetOptionalEnvelope() should be
+  // greater than target_envelope. More formally, this finds events such that:
+  //   initial_envelope(critical_event) +
+  //   sum_{event' >= critical_event} energy_min(event') +
+  //   max_{optional_event >= critical_event} energy_delta(optional_event)
+  //     > target envelope.
+  //
   // For efficiency reasons, this also fills available_energy with the maximum
-  // value such that the optional envelope of the pair would be target_envelope,
-  // i.e. target_envelope - GetEnvelopeOf(event) + energy_min(optional_event).
+  // energy the optional task can take such that the optional envelope of the
+  // pair would be target_envelope, i.e.
+  //   target_envelope - GetEnvelopeOf(event) + energy_min(optional_event).
+  //
   // This operation is O(log n).
   void GetEventsWithOptionalEnvelopeGreaterThan(
       IntegerValue target_envelope, int* critical_event, int* optional_event,
       IntegerValue* available_energy) const;
 
+  // Getters.
+  IntegerValue EnergyMin(int event) const {
+    return tree_sum_of_energy_min_[GetLeaf(event)];
+  }
+
  private:
+  // Returns the index of the leaf associated with the given event.
+  int GetLeaf(int event) const {
+    DCHECK_LE(0, event);
+    DCHECK_LT(event, num_events_);
+    return num_leaves_ + event;
+  }
+
   // Propagates the change of leaf energies and envelopes towards the root.
   void RefreshNode(int leaf);
 
   // Finds the maximum leaf under node such that
   // initial_envelope(leaf) + sum_{leaf' >= leaf} energy_min(leaf')
-  // > target_envelope.
-  int GetMaxLeafWithEnvelopeGreaterThan(int node,
-                                        IntegerValue target_envelope) const;
+  //   > target_envelope.
+  // Fills extra with the difference.
+  int GetMaxLeafWithEnvelopeGreaterThan(int node, IntegerValue target_envelope,
+                                        IntegerValue* extra) const;
 
-  // Returns the maximum leaf under node whose optional energy would overload
-  // node.
-  // Finds the maximum leaf under node such that
-  // sum_{leaf' under node} energy_min(leaf') +
-  // energy_max(leaf) - energy_min(leaf) > node_available_energy.
-  // available_energy will be the energy available for this leaf,
-  // i.e. node_available_energy - sum_{leaf' under node} energy_min(leaf') +
-  // energy_min(leaf).
-  int GetMaxLeafWithOptionalEnergyGreaterThan(
-      int node, IntegerValue node_available_energy,
-      IntegerValue* available_energy) const;
+  // Returns the leaf with maximum energy delta under node.
+  int GetLeafWithMaxEnergyDelta(int node) const;
 
   // Finds the leaves and energy relevant for
   // GetEventsWithOptionalEnvelopeGreaterThan().
@@ -187,9 +187,9 @@ class ThetaLambdaTree {
 
   // Envelopes and energies of nodes.
   std::vector<IntegerValue> tree_envelope_;
-  std::vector<IntegerValue> tree_energy_min_;
   std::vector<IntegerValue> tree_envelope_opt_;
-  std::vector<IntegerValue> tree_energy_opt_;
+  std::vector<IntegerValue> tree_sum_of_energy_min_;
+  std::vector<IntegerValue> tree_max_of_energy_delta_;
 };
 
 }  // namespace sat

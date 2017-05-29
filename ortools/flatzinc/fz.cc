@@ -30,6 +30,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/base/threadpool.h"
 #include "ortools/base/commandlineflags.h"
+#include "ortools/flatzinc/cp_model_fz_solver.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/flatzinc/model.h"
 #include "ortools/flatzinc/parser.h"
@@ -66,9 +67,11 @@ DEFINE_bool(
     "Increase verbosity of the impact based search when used in free search.");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread.");
 DEFINE_bool(use_fz_sat, false, "Use the SAT/CP solver.");
+DEFINE_bool(use_cp_model, false, "Use the SAT/CP solver through CpModel.");
 DEFINE_string(fz_model_name, "stdin",
               "Define problem name when reading from stdin.");
 
+// TODO(user): Remove when using ABCL in open-source.
 DECLARE_bool(log_prefix);
 DECLARE_bool(fz_use_sat);
 
@@ -319,11 +322,17 @@ int main(int argc, char** argv) {
       operations_research::fz::ParseFlatzincModel(input,
                                                   !FLAGS_read_from_stdin);
 
-  if (FLAGS_use_fz_sat) {
+  if (FLAGS_use_fz_sat || FLAGS_use_cp_model) {
     bool interrupt_solve = false;
-    operations_research::sat::SolveWithSat(
-        model, operations_research::fz::SingleThreadParameters(),
-        &interrupt_solve);
+    if (FLAGS_use_fz_sat) {
+      operations_research::sat::SolveWithSat(
+          model, operations_research::fz::SingleThreadParameters(),
+          &interrupt_solve);
+    } else {
+      operations_research::sat::SolveFzWithCpModelProto(
+          model, operations_research::fz::SingleThreadParameters(),
+          &interrupt_solve);
+    }
   } else {
     operations_research::fz::Solve(model);
   }

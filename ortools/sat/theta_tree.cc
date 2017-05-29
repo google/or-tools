@@ -18,42 +18,40 @@ namespace sat {
 
 ThetaLambdaTree::ThetaLambdaTree() {}
 
-// Make a tree using the first num_events events of the vectors.
 void ThetaLambdaTree::Reset(int num_events) {
   // Use 2^k leaves in the tree, with 2^k >= std::max(num_events, 2).
   num_events_ = num_events;
   for (num_leaves_ = 2; num_leaves_ < num_events; num_leaves_ <<= 1) {
   }
-  const int num_nodes = 2 * num_leaves_;
-  tree_energy_min_.assign(num_nodes, IntegerValue(0));
-  tree_energy_opt_.assign(num_nodes, IntegerValue(0));
+
+  // We will never access any indices larger than this because we require the
+  // event to exist when we call any of the GetEvent*() functions.
+  const int num_nodes = num_leaves_ + num_events_ + (num_events_ & 1);
   tree_envelope_.assign(num_nodes, kMinIntegerValue);
   tree_envelope_opt_.assign(num_nodes, kMinIntegerValue);
+  tree_sum_of_energy_min_.assign(num_nodes, IntegerValue(0));
+  tree_max_of_energy_delta_.assign(num_nodes, IntegerValue(0));
 }
 
 void ThetaLambdaTree::AddOrUpdateEvent(int event, IntegerValue initial_envelope,
                                        IntegerValue energy_min,
                                        IntegerValue energy_max) {
-  DCHECK_LE(0, event);
-  DCHECK_LT(event, num_events_);
   DCHECK_LE(0, energy_min);
   DCHECK_LE(energy_min, energy_max);
-  const int node = num_leaves_ + event;
+  const int node = GetLeaf(event);
   tree_envelope_[node] = initial_envelope + energy_min;
-  tree_energy_min_[node] = energy_min;
   tree_envelope_opt_[node] = initial_envelope + energy_max;
-  tree_energy_opt_[node] = energy_max;
+  tree_sum_of_energy_min_[node] = energy_min;
+  tree_max_of_energy_delta_[node] = energy_max - energy_min;
   RefreshNode(node);
 }
 
 void ThetaLambdaTree::RemoveEvent(int event) {
-  DCHECK_LE(0, event);
-  DCHECK_LT(event, num_events_);
-  const int node = num_leaves_ + event;
+  const int node = GetLeaf(event);
   tree_envelope_[node] = kMinIntegerValue;
-  tree_energy_min_[node] = IntegerValue(0);
   tree_envelope_opt_[node] = kMinIntegerValue;
-  tree_energy_opt_[node] = IntegerValue(0);
+  tree_sum_of_energy_min_[node] = IntegerValue(0);
+  tree_max_of_energy_delta_[node] = IntegerValue(0);
   RefreshNode(node);
 }
 
@@ -65,7 +63,9 @@ IntegerValue ThetaLambdaTree::GetOptionalEnvelope() const {
 int ThetaLambdaTree::GetMaxEventWithEnvelopeGreaterThan(
     IntegerValue target_envelope) const {
   DCHECK_LT(target_envelope, tree_envelope_[1]);
-  return GetMaxLeafWithEnvelopeGreaterThan(1, target_envelope) - num_leaves_;
+  IntegerValue unused;
+  return GetMaxLeafWithEnvelopeGreaterThan(1, target_envelope, &unused) -
+         num_leaves_;
 }
 
 void ThetaLambdaTree::GetEventsWithOptionalEnvelopeGreaterThan(
@@ -80,12 +80,10 @@ void ThetaLambdaTree::GetEventsWithOptionalEnvelopeGreaterThan(
 }
 
 IntegerValue ThetaLambdaTree::GetEnvelopeOf(int event) const {
-  DCHECK_LE(0, event);
-  DCHECK_LT(event, num_events_);
-  IntegerValue env = tree_envelope_[event + num_leaves_];
+  IntegerValue env = tree_envelope_[GetLeaf(event)];
   for (int node = event + num_leaves_; node > 1; node >>= 1) {
     const int right = node | 1;
-    if (right != node) env += tree_energy_min_[right];
+    if (right != node) env += tree_sum_of_energy_min_[right];
   }
   return env;
 }
@@ -95,56 +93,53 @@ void ThetaLambdaTree::RefreshNode(int node) {
     const int right = node | 1;
     const int left = right ^ 1;
     node >>= 1;
-    tree_energy_min_[node] = tree_energy_min_[left] + tree_energy_min_[right];
-    tree_envelope_[node] = std::max(
-        tree_envelope_[right], tree_envelope_[left] + tree_energy_min_[right]);
-    tree_energy_opt_[node] =
-        std::max(tree_energy_min_[left] + tree_energy_opt_[right],
-                 tree_energy_min_[right] + tree_energy_opt_[left]);
-    tree_envelope_opt_[node] =
-        std::max(tree_envelope_opt_[left] + tree_energy_min_[right],
-                 tree_envelope_[left] + tree_energy_opt_[right]);
-    tree_envelope_opt_[node] =
-        std::max(tree_envelope_opt_[node], tree_envelope_opt_[right]);
+    const IntegerValue energy_right = tree_sum_of_energy_min_[right];
+    tree_sum_of_energy_min_[node] =
+        tree_sum_of_energy_min_[left] + energy_right;
+    tree_max_of_energy_delta_[node] = std::max(tree_max_of_energy_delta_[right],
+                                               tree_max_of_energy_delta_[left]);
+    tree_envelope_[node] =
+        std::max(tree_envelope_[right], tree_envelope_[left] + energy_right);
+    tree_envelope_opt_[node] = std::max(
+        tree_envelope_opt_[right],
+        energy_right +
+            std::max(tree_envelope_opt_[left],
+                     tree_envelope_[left] + tree_max_of_energy_delta_[right]));
   } while (node > 1);
 }
 
 int ThetaLambdaTree::GetMaxLeafWithEnvelopeGreaterThan(
-    int node, IntegerValue target_envelope) const {
+    int node, IntegerValue target_envelope, IntegerValue* extra) const {
   DCHECK_LT(target_envelope, tree_envelope_[node]);
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
+    DCHECK_LT(right, tree_envelope_.size());
 
     if (target_envelope < tree_envelope_[right]) {
       node = right;
     } else {
-      target_envelope -= tree_energy_min_[right];
+      target_envelope -= tree_sum_of_energy_min_[right];
       node = left;
     }
   }
+  *extra = tree_envelope_[node] - target_envelope;
   return node;
 }
 
-int ThetaLambdaTree::GetMaxLeafWithOptionalEnergyGreaterThan(
-    int node, IntegerValue node_available_energy,
-    IntegerValue* available_energy) const {
-  DCHECK_LT(node_available_energy, tree_energy_opt_[node]);
+int ThetaLambdaTree::GetLeafWithMaxEnergyDelta(int node) const {
+  const IntegerValue delta_node = tree_max_of_energy_delta_[node];
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
-
-    const IntegerValue available_energy_right =
-        node_available_energy - tree_energy_min_[left];
-    if (available_energy_right < tree_energy_opt_[right]) {
-      node_available_energy = available_energy_right;
+    DCHECK_LT(right, tree_envelope_.size());
+    if (tree_max_of_energy_delta_[right] == delta_node) {
       node = right;
-    } else {  // available_energy_left < tree_energy_opt_[left]
-      node_available_energy -= tree_energy_min_[right];
+    } else {
+      DCHECK_EQ(tree_max_of_energy_delta_[left], delta_node);
       node = left;
     }
   }
-  *available_energy = node_available_energy;
   return node;
 }
 
@@ -156,25 +151,31 @@ void ThetaLambdaTree::GetLeavesWithOptionalEnvelopeGreaterThan(
   while (node < num_leaves_) {
     const int left = node << 1;
     const int right = left | 1;
+    DCHECK_LT(right, tree_envelope_.size());
 
     if (target_envelope < tree_envelope_opt_[right]) {
       node = right;
-    } else if (target_envelope <
-               tree_envelope_[left] + tree_energy_opt_[right]) {
-      *critical_leaf =
-          GetMaxLeafWithEnvelopeGreaterThan(left, tree_envelope_[left] - 1);
-      *optional_leaf = GetMaxLeafWithOptionalEnergyGreaterThan(
-          right, target_envelope - tree_envelope_[left], available_energy);
-      return;
-    } else {  // < tree_envelope_opt_[left] + tree_energy_min_[right]
-      target_envelope -= tree_energy_min_[right];
-      node = left;
+    } else {
+      const IntegerValue opt_energy_right =
+          tree_sum_of_energy_min_[right] + tree_max_of_energy_delta_[right];
+      if (target_envelope < tree_envelope_[left] + opt_energy_right) {
+        *optional_leaf = GetLeafWithMaxEnergyDelta(right);
+        IntegerValue extra;
+        *critical_leaf = GetMaxLeafWithEnvelopeGreaterThan(
+            left, target_envelope - opt_energy_right, &extra);
+        *available_energy = tree_sum_of_energy_min_[*optional_leaf] +
+                            tree_max_of_energy_delta_[*optional_leaf] - extra;
+        return;
+      } else {  // < tree_envelope_opt_[left] + tree_sum_of_energy_min_[right]
+        target_envelope -= tree_sum_of_energy_min_[right];
+        node = left;
+      }
     }
   }
   *critical_leaf = node;
   *optional_leaf = node;
   *available_energy =
-      target_envelope - tree_envelope_[node] + tree_energy_min_[node];
+      target_envelope - tree_envelope_[node] + tree_sum_of_energy_min_[node];
 }
 
 }  // namespace sat

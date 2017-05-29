@@ -285,6 +285,9 @@ class IntegerEncoder {
   // Return true iff the given integer literal is associated.
   bool LiteralIsAssociated(IntegerLiteral i_lit) const;
 
+  // Returns the associated literal or kNoLiteralIndex.
+  LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit);
+
   // Same as CreateAssociatedLiteral() but safe to call if already created.
   Literal GetOrCreateAssociatedLiteral(IntegerLiteral i_lit);
 
@@ -618,8 +621,8 @@ class IntegerTrail : public SatPropagator {
 
   // Temporary data used by MergeReasonInto().
   mutable std::vector<int> tmp_queue_;
-  mutable std::vector<int> tmp_trail_indices_;
-  mutable std::vector<int> tmp_var_to_highest_explained_trail_index_;
+  mutable std::vector<int> tmp_to_clear_;
+  mutable std::vector<int> tmp_var_to_trail_index_in_queue_;
 
   // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
   // lazily. This vector indicates the correspondance between a literal that

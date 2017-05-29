@@ -19,10 +19,26 @@
 #include "ortools/linear_solver/linear_solver.pb.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {
 namespace sat {
+
+// Converts a MIP problem to a CpModel. Returns false if the coefficients
+// couldn't be converted to integers with a good enough precision.
+//
+// Caveats:
+//   - We do not support bound larger than or equal to 2^30.
+//   - We cap unbounded variable at 2^30.
+//   - Non-integer variable must have integer bounds.
+//   - We do not scale the variable bounds, so by assuming that a non-integer
+//     variable is integer, we may change the problem significantly if the
+//     domain is small (like [0.0, 1.0]).
+//
+// TODO(user): Try to remove some of the restrictions.
+bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
+                                       CpModelProto* cp_model);
 
 // Converts an integer program with only binary variables to a Boolean
 // optimization problem. Returns false if the problem didn't contains only

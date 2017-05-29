@@ -13,6 +13,7 @@
 
 #include "ortools/sat/table.h"
 
+#include <unordered_map>
 #include <unordered_set>
 
 #include "ortools/base/map_util.h"
@@ -181,6 +182,61 @@ std::function<void(Model*)> TableConstraint(
         encoding = GetEncoding(vars[i], model);
         ProcessOneColumn(tuple_literals, tr_tuples[i], encoding, model);
       }
+    }
+  };
+}
+
+std::function<void(Model*)> NegatedTableConstraint(
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples) {
+  return [=](Model* model) {
+    const int n = vars.size();
+    std::vector<std::unordered_map<int64, Literal>> mapping(n);
+    for (int i = 0; i < n; ++i) {
+      for (const auto pair : model->Add(FullyEncodeVariable(vars[i]))) {
+        mapping[i][pair.value.value()] = pair.literal;
+      }
+    }
+
+    // For each tuple, forbid the variables values to be this tuple.
+    std::vector<Literal> clause(n);
+    for (const std::vector<int64>& tuple : tuples) {
+      bool add_tuple = true;
+      for (int i = 0; i < n; ++i) {
+        if (ContainsKey(mapping[i], tuple[i])) {
+          clause[i] = FindOrDie(mapping[i], tuple[i]).Negated();
+        } else {
+          add_tuple = false;
+          break;
+        }
+      }
+      if (add_tuple) model->Add(ClauseConstraint(clause));
+    }
+  };
+}
+
+std::function<void(Model*)> NegatedTableConstraintWithoutFullEncoding(
+    const std::vector<IntegerVariable>& vars,
+    const std::vector<std::vector<int64>>& tuples) {
+  return [=](Model* model) {
+    const int n = vars.size();
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    std::vector<Literal> clause;
+    for (const std::vector<int64>& tuple : tuples) {
+      clause.clear();
+      for (int i = 0; i < n; ++i) {
+        const int64 value = tuple[i];
+        if (value > model->Get(LowerBound(vars[i]))) {
+          clause.push_back(encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::LowerOrEqual(vars[i], IntegerValue(value - 1))));
+        }
+        if (value < model->Get(UpperBound(vars[i]))) {
+          clause.push_back(encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::GreaterOrEqual(vars[i],
+                                             IntegerValue(value + 1))));
+        }
+      }
+      model->Add(ClauseConstraint(clause));
     }
   };
 }

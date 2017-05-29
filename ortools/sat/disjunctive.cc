@@ -217,7 +217,6 @@ bool DisjunctiveOverloadChecker::Propagate() {
     num_events_++;
   }
   const int num_events = num_events_;
-  start_event_is_present_.assign(num_events, false);
   theta_tree_.Reset(num_events);
 
   // Introduce events by nondecreasing end_max, check for overloads.
@@ -229,7 +228,6 @@ bool DisjunctiveOverloadChecker::Propagate() {
     {
       const int current_event = task_to_start_event_[current_task];
       const bool is_present = helper_->IsPresent(current_task);
-      start_event_is_present_[current_event] = is_present;
       // TODO(user): consider reducing max available duration.
       const IntegerValue energy_max = helper_->DurationMin(current_task);
       const IntegerValue energy_min = is_present ? energy_max : IntegerValue(0);
@@ -250,7 +248,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
           theta_tree_.GetEnvelopeOf(critical_event) - 1;
 
       for (int event = critical_event; event < num_events; event++) {
-        if (start_event_is_present_[event]) {
+        if (theta_tree_.EnergyMin(event) > 0) {
           const int task = start_event_to_task_[event];
           helper_->AddPresenceReason(task);
           helper_->AddDurationMinReason(task);
@@ -280,7 +278,7 @@ bool DisjunctiveOverloadChecker::Propagate() {
           helper_->DurationMin(optional_task) - 1;
 
       for (int event = critical_event; event < num_events; event++) {
-        if (start_event_is_present_[event]) {
+        if (theta_tree_.EnergyMin(event) > 0) {
           const int task = start_event_to_task_[event];
           helper_->AddPresenceReason(task);
           helper_->AddDurationMinReason(task);

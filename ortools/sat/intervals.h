@@ -347,6 +347,18 @@ inline std::function<IntegerVariable(const Model&)> SizeVar(
   };
 }
 
+inline std::function<int64(const Model&)> MinSize(IntervalVariable v) {
+  return [=](const Model& model) {
+    return model.Get<IntervalsRepository>()->MinSize(v).value();
+  };
+}
+
+inline std::function<int64(const Model&)> MaxSize(IntervalVariable v) {
+  return [=](const Model& model) {
+    return model.Get<IntervalsRepository>()->MaxSize(v).value();
+  };
+}
+
 inline std::function<bool(const Model&)> IsOptional(IntervalVariable v) {
   return [=](const Model& model) {
     return model.Get<IntervalsRepository>()->IsOptional(v);
@@ -406,6 +418,19 @@ inline std::function<IntervalVariable(Model*)> NewOptionalInterval(
   return [=](Model* model) {
     return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
         start, end, size, IntegerValue(0), is_present.Index());
+  };
+}
+
+inline std::function<IntervalVariable(Model*)>
+NewOptionalIntervalWithVariableSize(int64 min_start, int64 max_end,
+                                    int64 min_size, int64 max_size,
+                                    Literal is_present) {
+  return [=](Model* model) {
+    return model->GetOrCreate<IntervalsRepository>()->CreateInterval(
+        model->Add(NewIntegerVariable(min_start, max_end)),
+        model->Add(NewIntegerVariable(min_start, max_end)),
+        model->Add(NewIntegerVariable(min_size, max_size)), IntegerValue(0),
+        is_present.Index());
   };
 }
 

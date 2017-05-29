@@ -2472,10 +2472,13 @@ void ComparatorCheapestAdditionFilteredDecisionBuilder::SortPossibleNexts(
 // SavingsFilteredDecisionBuilder
 
 SavingsFilteredDecisionBuilder::SavingsFilteredDecisionBuilder(
-    RoutingModel* model, int64 saving_neighbors,
+    RoutingModel* model, double savings_neighbors_ratio, bool add_reverse_arcs,
     const std::vector<LocalSearchFilter*>& filters)
     : RoutingFilteredDecisionBuilder(model, filters),
-      saving_neighbors_(saving_neighbors),
+      savings_neighbors_ratio_(savings_neighbors_ratio > 0
+                                   ? std::min(savings_neighbors_ratio, 1.0)
+                                   : 1),
+      add_reverse_arcs_(add_reverse_arcs),
       size_squared_(0) {}
 
 bool SavingsFilteredDecisionBuilder::BuildSolution() {
@@ -2485,33 +2488,44 @@ bool SavingsFilteredDecisionBuilder::BuildSolution() {
   const int size = model()->Size();
   size_squared_ = size * size;
   std::vector<Saving> savings = ComputeSavings();
-  // Store savings for each incoming and outgoing node and by cost class. This
+  const int vehicle_types = vehicles_per_vehicle_type_.size();
+  DCHECK_GT(vehicle_types, 0);
+  // Store savings for each incoming and outgoing node and by vehicle type. This
   // is necessary to quickly extend partial chains without scanning all savings.
-  const int cost_classes = model()->GetCostClassesCount();
-  std::vector<std::vector<int>> in_savings(size * cost_classes);
-  std::vector<std::vector<int>> out_savings(size * cost_classes);
+  std::vector<std::vector<int>> in_savings_indices(size * vehicle_types);
+  std::vector<std::vector<int>> out_savings_indices(size * vehicle_types);
   for (int i = 0; i < savings.size(); ++i) {
     const Saving& saving = savings[i];
-    const int cost_class_offset = GetCostClassFromSaving(saving) * size;
+    const int vehicle_type_offset = GetVehicleTypeFromSaving(saving) * size;
     const int before_node = GetBeforeNodeFromSaving(saving);
-    in_savings[cost_class_offset + before_node].push_back(i);
+    in_savings_indices[vehicle_type_offset + before_node].push_back(i);
     const int after_node = GetAfterNodeFromSaving(saving);
-    out_savings[cost_class_offset + after_node].push_back(i);
+    out_savings_indices[vehicle_type_offset + after_node].push_back(i);
   }
+  // For each vehicle type, sort vehicles by decreasing vehicle fixed cost.
+  // Vehicles with the same fixed cost are sorted by decreasing vehicle index.
+  std::vector<int64> fixed_cost_of_vehicle(model()->vehicles());
+  for (int vehicle = 0; vehicle < model()->vehicles(); vehicle++) {
+    fixed_cost_of_vehicle[vehicle] = model()->GetFixedCostOfVehicle(vehicle);
+  }
+  for (int type = 0; type < vehicle_types; type++) {
+    std::vector<int>& sorted_vehicles = vehicles_per_vehicle_type_[type];
+    std::stable_sort(sorted_vehicles.begin(), sorted_vehicles.end(),
+                     [&fixed_cost_of_vehicle](int v1, int v2) {
+                       return fixed_cost_of_vehicle[v1] <
+                              fixed_cost_of_vehicle[v2];
+                     });
+    std::reverse(sorted_vehicles.begin(), sorted_vehicles.end());
+  }
+
   // Build routes from savings.
-  std::vector<bool> closed(model()->vehicles(), false);
   for (const Saving& saving : savings) {
     // First find the best saving to start a new route.
-    const int cost_class = GetCostClassFromSaving(saving);
-    int vehicle = -1;
-    for (int v = 0; v < model()->vehicles(); ++v) {
-      if (!closed[v] &&
-          model()->GetCostClassIndexOfVehicle(v).value() == cost_class) {
-        vehicle = v;
-        break;
-      }
-    }
-    if (vehicle == -1) continue;
+    const int type = GetVehicleTypeFromSaving(saving);
+    std::vector<int>& sorted_vehicles = vehicles_per_vehicle_type_[type];
+    if (sorted_vehicles.empty()) continue;
+    int vehicle = sorted_vehicles.back();
+
     int before_node = GetBeforeNodeFromSaving(saving);
     int after_node = GetAfterNodeFromSaving(saving);
     if (!Contains(before_node) && !Contains(after_node)) {
@@ -2522,19 +2536,49 @@ bool SavingsFilteredDecisionBuilder::BuildSolution() {
       SetValue(after_node, end);
       if (Commit()) {
         // Then extend the route from both ends of the partial route.
-        closed[vehicle] = true;
+        sorted_vehicles.pop_back();
         int in_index = 0;
         int out_index = 0;
-        const int saving_offset = cost_class * size;
-        while (in_index < in_savings[saving_offset + after_node].size() &&
-               out_index < out_savings[saving_offset + before_node].size()) {
-          const Saving& in_saving =
-              savings[in_savings[saving_offset + after_node][in_index]];
-          const Saving& out_saving =
-              savings[out_savings[saving_offset + before_node][out_index]];
-          if (GetSavingValue(in_saving) < GetSavingValue(out_saving)) {
+        const int saving_offset = type * size;
+
+        while (in_index <
+                   in_savings_indices[saving_offset + after_node].size() ||
+               out_index <
+                   out_savings_indices[saving_offset + before_node].size()) {
+          // First determine how to extend the route.
+          int before_before_node = -1;
+          int after_after_node = -1;
+          if (in_index <
+              in_savings_indices[saving_offset + after_node].size()) {
+            const Saving& in_saving =
+                savings[in_savings_indices[saving_offset + after_node]
+                                          [in_index]];
+            if (out_index <
+                out_savings_indices[saving_offset + before_node].size()) {
+              const Saving& out_saving =
+                  savings[out_savings_indices[saving_offset + before_node]
+                                             [out_index]];
+              if (GetSavingValue(in_saving) < GetSavingValue(out_saving)) {
+                // Should extend after after_node
+                after_after_node = GetAfterNodeFromSaving(in_saving);
+              } else {
+                // Should extend before before_node
+                before_before_node = GetBeforeNodeFromSaving(out_saving);
+              }
+            } else {
+              // Should extend after after_node
+              after_after_node = GetAfterNodeFromSaving(in_saving);
+            }
+          } else {
+            // Should extend before before_node
+            before_before_node = GetBeforeNodeFromSaving(
+                savings[out_savings_indices[saving_offset + before_node]
+                                           [out_index]]);
+          }
+          // Extend the route
+          if (after_after_node != -1) {
+            DCHECK_EQ(before_before_node, -1);
             // Extending after after_node
-            const int after_after_node = GetAfterNodeFromSaving(in_saving);
             if (!Contains(after_after_node)) {
               SetValue(after_node, after_after_node);
               SetValue(after_after_node, end);
@@ -2549,7 +2593,7 @@ bool SavingsFilteredDecisionBuilder::BuildSolution() {
             }
           } else {
             // Extending before before_node
-            const int before_before_node = GetBeforeNodeFromSaving(out_saving);
+            CHECK_GE(before_before_node, 0);
             if (!Contains(before_before_node)) {
               SetValue(start, before_before_node);
               SetValue(before_before_node, before_node);
@@ -2571,52 +2615,127 @@ bool SavingsFilteredDecisionBuilder::BuildSolution() {
   return Commit();
 }
 
+void SavingsFilteredDecisionBuilder::ComputeVehicleTypes() {
+  type_index_of_vehicle_.clear();
+  const int nodes = model()->nodes();
+  const int nodes_squared = nodes * nodes;
+  const int vehicles = model()->vehicles();
+  type_index_of_vehicle_.resize(vehicles);
+
+  vehicles_per_vehicle_type_.clear();
+  std::unordered_map<int64, int> type_to_type_index;
+
+  for (int v = 0; v < vehicles; v++) {
+    const int start = model()->IndexToNode(model()->Start(v)).value();
+    const int end = model()->IndexToNode(model()->End(v)).value();
+    const int cost_class = model()->GetCostClassIndexOfVehicle(v).value();
+    const int64 type = cost_class * nodes_squared + start * nodes + end;
+
+    const auto& vehicle_type_added = type_to_type_index.insert(
+        std::make_pair(type, type_to_type_index.size()));
+
+    const int index = vehicle_type_added.first->second;
+
+    if (vehicle_type_added.second) {
+      // Type was not indexed yet.
+      DCHECK_EQ(vehicles_per_vehicle_type_.size(), index);
+      vehicles_per_vehicle_type_.push_back({v});
+    } else {
+      // Type already indexed.
+      DCHECK_LT(index, vehicles_per_vehicle_type_.size());
+      vehicles_per_vehicle_type_[index].push_back(v);
+    }
+    type_index_of_vehicle_[v] = index;
+  }
+}
+
+// Computes and returns the savings related to each pair of non-start and
+// non-end nodes. The savings value for an arc a-->b for a vehicle starting at
+// node s and ending at node e is:
+// saving = cost(s-->a-->e) + cost(s-->b-->e) - cost(s-->a-->b-->e), i.e.
+// saving = cost(a-->e) + cost(s-->b) - cost(a-->b)
+// The higher this saving value, the better the arc.
+// Here, the value stored for the savings in the output vector is -saving, and
+// the vector is therefore sorted in increasing order (the lower -saving,
+// the better).
 std::vector<SavingsFilteredDecisionBuilder::Saving>
-SavingsFilteredDecisionBuilder::ComputeSavings() const {
+SavingsFilteredDecisionBuilder::ComputeSavings() {
+  ComputeVehicleTypes();
   const int size = model()->Size();
-  const int64 saving_neighbors =
-      saving_neighbors_ <= 0 ? size : saving_neighbors_;
-  const int num_cost_classes = model()->GetCostClassesCount();
+
+  const int64 saving_neighbors = std::max(1.0, size * savings_neighbors_ratio_);
+
+  const int num_vehicle_types = vehicles_per_vehicle_type_.size();
   std::vector<Saving> savings;
-  savings.reserve(num_cost_classes * size * saving_neighbors);
-  std::vector<bool> class_covered(num_cost_classes, false);
-  for (int vehicle = 0; vehicle < model()->vehicles(); ++vehicle) {
+  savings.reserve(num_vehicle_types * size * saving_neighbors);
+
+  for (int type = 0; type < num_vehicle_types; ++type) {
+    const std::vector<int>& vehicles = vehicles_per_vehicle_type_[type];
+    if (vehicles.empty()) {
+      continue;
+    }
+    const int vehicle = vehicles.front();
     const int64 cost_class =
         model()->GetCostClassIndexOfVehicle(vehicle).value();
-    if (!class_covered[cost_class]) {
-      class_covered[cost_class] = true;
-      const int64 start = model()->Start(vehicle);
-      const int64 end = model()->End(vehicle);
-      for (int before_node = 0; before_node < size; ++before_node) {
-        if (!Contains(before_node) && !model()->IsEnd(before_node) &&
-            !model()->IsStart(before_node)) {
-          const int64 in_saving =
-              model()->GetArcCostForClass(before_node, end, cost_class);
-          std::vector<std::pair</*cost*/ int64, /*node*/ int64>>
-              costed_after_nodes;
-          costed_after_nodes.reserve(size);
-          for (int after_node = 0; after_node < size; ++after_node) {
-            if (after_node != before_node && !Contains(after_node) &&
-                !model()->IsEnd(after_node) && !model()->IsStart(after_node)) {
-              costed_after_nodes.push_back(
-                  std::make_pair(model()->GetArcCostForClass(
-                                     before_node, after_node, cost_class),
-                                 after_node));
-            }
+    const int64 start = model()->Start(vehicle);
+    const int64 end = model()->End(vehicle);
+    const int64 fixed_cost = model()->GetFixedCostOfVehicle(vehicle);
+
+    // TODO(user): deal with the add_reverse_arcs_ flag more efficiently.
+    std::vector<bool> arc_added;
+    if (add_reverse_arcs_) {
+      arc_added.resize(size * size, false);
+    }
+    for (int before_node = 0; before_node < size; ++before_node) {
+      if (!Contains(before_node) && !model()->IsEnd(before_node) &&
+          !model()->IsStart(before_node)) {
+        const int64 in_saving =
+            model()->GetArcCostForClass(before_node, end, cost_class);
+        std::vector<std::pair</*cost*/ int64, /*node*/ int64>>
+            costed_after_nodes;
+        costed_after_nodes.reserve(size);
+        for (int after_node = 0; after_node < size; ++after_node) {
+          if (after_node != before_node && !Contains(after_node) &&
+              !model()->IsEnd(after_node) && !model()->IsStart(after_node)) {
+            costed_after_nodes.push_back(
+                std::make_pair(model()->GetArcCostForClass(
+                                   before_node, after_node, cost_class),
+                               after_node));
           }
-          if (saving_neighbors < size) {
-            std::nth_element(costed_after_nodes.begin(),
-                             costed_after_nodes.begin() + saving_neighbors,
-                             costed_after_nodes.end());
-            costed_after_nodes.resize(saving_neighbors);
+        }
+        if (saving_neighbors < size) {
+          std::nth_element(costed_after_nodes.begin(),
+                           costed_after_nodes.begin() + saving_neighbors,
+                           costed_after_nodes.end());
+          costed_after_nodes.resize(saving_neighbors);
+        }
+        for (const auto& costed_after_node : costed_after_nodes) {
+          const int64 after_node = costed_after_node.second;
+          if (add_reverse_arcs_ && arc_added[before_node * size + after_node]) {
+            DCHECK(arc_added[after_node * size + before_node]);
+            continue;
           }
-          for (const auto& after_node : costed_after_nodes) {
-            const int64 saving = CapSub(
-                CapAdd(in_saving, model()->GetArcCostForClass(
-                                      start, after_node.second, cost_class)),
-                after_node.first);
-            savings.push_back(BuildSaving(-saving, cost_class, before_node,
-                                          after_node.second));
+
+          const int64 saving =
+              CapSub(CapAdd(in_saving, model()->GetArcCostForClass(
+                                           start, after_node, cost_class)),
+                     CapAdd(costed_after_node.first, fixed_cost));
+          savings.push_back(
+              BuildSaving(-saving, type, before_node, after_node));
+
+          if (add_reverse_arcs_) {
+            // Also add after->before savings.
+            arc_added[before_node * size + after_node] = true;
+            arc_added[after_node * size + before_node] = true;
+            const int64 second_cost = model()->GetArcCostForClass(
+                after_node, before_node, cost_class);
+            const int64 second_saving = CapSub(
+                CapAdd(model()->GetArcCostForClass(after_node, end, cost_class),
+                       model()->GetArcCostForClass(start, before_node,
+                                                   cost_class)),
+                CapAdd(second_cost, fixed_cost));
+            savings.push_back(
+                BuildSaving(-second_saving, type, after_node, before_node));
           }
         }
       }

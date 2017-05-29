@@ -30,6 +30,232 @@ using operations_research::MPConstraintProto;
 using operations_research::MPModelProto;
 using operations_research::MPVariableProto;
 
+bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
+                                       CpModelProto* cp_model) {
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  CHECK(cp_model != nullptr);
+  cp_model->Clear();
+  cp_model->set_name(mp_model.name());
+
+  // To make sure we cannot have integer overflow, we use this bound for any
+  // unbounded variable.
+  //
+  // TODO(user): This could be made larger if needed, so be smarter if we have
+  // MIP problem that we cannot "convert" because of this. Note however than we
+  // cannot go that much further because we need to make sure we will not run
+  // into overflow if we add a big linear combination of such variables. It
+  // should always be possible for an user to scale its problem so that all
+  // relevant quantities are under a billion. A LP/MIP solver have a similar
+  // condition in disguise because problem with a difference of more than 6
+  // magnitude between the variable values will likely run into numeric trouble.
+  const int64 kMaxVariableBound = 1ll << 30;
+
+  // Add the variables.
+  const int num_variables = mp_model.variable_size();
+  for (int i = 0; i < num_variables; ++i) {
+    const MPVariableProto& mp_var = mp_model.variable(i);
+    IntegerVariableProto* cp_var = cp_model->add_variables();
+    cp_var->set_name(mp_var.name());
+
+    // Note that we must process the lower bound first.
+    for (const bool lower : {true, false}) {
+      const double bound = lower ? mp_var.lower_bound() : mp_var.upper_bound();
+      if (std::abs(bound) == kInfinity) {
+        cp_var->add_domain(lower ? -kMaxVariableBound : kMaxVariableBound);
+        continue;
+      }
+
+      // Reject larger bound than kMaxVariableBound. We also reject the equality
+      // so that after the solve, we can detect if one of our "artificial"
+      // bounds that we add on unbounded variable is restricting the objective.
+      if (std::floor(std::abs(bound)) >= kMaxVariableBound) {
+        LOG(ERROR) << "Large bound : " << bound;
+        return false;
+      }
+
+      if (mp_var.is_integer()) {
+        // Note that the cast is "perfect" because we forbid large values.
+        cp_var->add_domain(
+            static_cast<int64>(lower ? std::ceil(bound) : std::floor(bound)));
+      } else {
+        // Continuous variable. We reject non-integer bounds.
+        // We do nothing if the domain is really small though.
+        //
+        // TODO(user): scale the domain.
+        if (bound != std::round(bound)) {
+          LOG(ERROR) << "Non-integer bound not supported: " << bound;
+          return false;
+        }
+        cp_var->add_domain(static_cast<int64>(bound));
+      }
+    }
+  }
+
+  // Variables needed to scale the double coefficients into int64.
+  double max_relative_coeff_error = 0.0;
+  double max_scaled_sum_error = 0.0;
+  double max_scaling_factor = 0.0;
+  double relative_coeff_error = 0.0;
+  double scaled_sum_error = 0.0;
+  double scaling_factor = 0.0;
+  std::vector<double> coefficients;
+  std::vector<double> lower_bounds;
+  std::vector<double> upper_bounds;
+
+  // Add the constraints. We scale each of them individually.
+  for (const MPConstraintProto& mp_constraint : mp_model.constraint()) {
+    auto* constraint = cp_model->add_constraints();
+    constraint->set_name(mp_constraint.name());
+    auto* arg = constraint->mutable_linear();
+
+    // First scale the coefficients of the constraints so that the constraint
+    // sum can always be computed without integer overflow.
+    coefficients.clear();
+    lower_bounds.clear();
+    upper_bounds.clear();
+    const int num_coeffs = mp_constraint.coefficient_size();
+    for (int i = 0; i < num_coeffs; ++i) {
+      coefficients.push_back(mp_constraint.coefficient(i));
+      const auto& var_proto = cp_model->variables(mp_constraint.var_index(i));
+      lower_bounds.push_back(var_proto.domain(0));
+      upper_bounds.push_back(var_proto.domain(var_proto.domain_size() - 1));
+    }
+
+    // TODO(user): we could use kint64max directly here if our constraint
+    // propagation code was a bit more careful about integer overflow.
+    GetBestScalingOfDoublesToInt64(coefficients, lower_bounds, upper_bounds,
+                                   kint64max / 2, &scaling_factor,
+                                   &relative_coeff_error, &scaled_sum_error);
+    const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+    max_relative_coeff_error =
+        std::max(relative_coeff_error, max_relative_coeff_error);
+    max_scaling_factor = std::max(scaling_factor / gcd, max_scaling_factor);
+
+    for (int i = 0; i < num_coeffs; ++i) {
+      const double scaled_value = mp_constraint.coefficient(i) * scaling_factor;
+      const int64 value = static_cast<int64>(std::round(scaled_value)) / gcd;
+      if (value != 0) {
+        arg->add_vars(mp_constraint.var_index(i));
+        arg->add_coeffs(value);
+      }
+    }
+    max_scaled_sum_error =
+        std::max(max_scaled_sum_error, scaled_sum_error / scaling_factor);
+
+    // Add the constraint bounds. Because we are sure the scaled constraint fit
+    // on an int64, if the scaled bounds are too large, the constraint is either
+    // always true or always false.
+    const Fractional lb = mp_constraint.lower_bound();
+    const Fractional scaled_lb =
+        std::round(lb * scaling_factor - scaled_sum_error);
+    if (lb == -kInfinity || scaled_lb <= kint64min) {
+      arg->add_domain(kint64min);
+    } else {
+      arg->add_domain(static_cast<int64>(scaled_lb) / gcd);
+    }
+    const Fractional ub = mp_constraint.upper_bound();
+    const Fractional scaled_ub =
+        std::round(ub * scaling_factor + scaled_sum_error);
+    if (ub == kInfinity || scaled_ub >= kint64max) {
+      arg->add_domain(kint64max);
+    } else {
+      arg->add_domain(static_cast<int64>(scaled_ub) / gcd);
+    }
+
+    // TODO(user): checks feasibility (contains zero) or support that in the
+    // solver!
+    if (arg->vars_size() == 0) constraint->Clear();
+  }
+
+  // Display the error/scaling without taking into account the objective first.
+  LOG(INFO) << "Maximum constraint coefficient relative error: "
+            << max_relative_coeff_error;
+  LOG(INFO) << "Maximum constraint worst-case sum absolute error: "
+            << max_scaled_sum_error;
+  LOG(INFO) << "Maximum constraint scaling factor: " << max_scaling_factor;
+
+  // Add the objective. We use kint64max / 2 because the objective_var will
+  // also be added to the objective constraint.
+  const int64 kMaxObjective = kint64max / 2;
+  coefficients.clear();
+  lower_bounds.clear();
+  upper_bounds.clear();
+  for (int i = 0; i < num_variables; ++i) {
+    const MPVariableProto& mp_var = mp_model.variable(i);
+    if (mp_var.objective_coefficient() == 0.0) continue;
+    coefficients.push_back(mp_var.objective_coefficient());
+    const auto& var_proto = cp_model->variables(i);
+    lower_bounds.push_back(var_proto.domain(0));
+    upper_bounds.push_back(var_proto.domain(var_proto.domain_size() - 1));
+  }
+  if (!coefficients.empty()) {
+    GetBestScalingOfDoublesToInt64(coefficients, lower_bounds, upper_bounds,
+                                   kMaxObjective, &scaling_factor,
+                                   &relative_coeff_error, &scaled_sum_error);
+    const int64 gcd = ComputeGcdOfRoundedDoubles(coefficients, scaling_factor);
+    max_relative_coeff_error =
+        std::max(relative_coeff_error, max_relative_coeff_error);
+
+    // Display the objective error/scaling.
+    LOG(INFO) << "objective coefficient relative error: "
+              << relative_coeff_error;
+    LOG(INFO) << "objective worst-case absolute error: "
+              << scaled_sum_error / scaling_factor;
+    LOG(INFO) << "objective scaling factor: " << scaling_factor / gcd;
+
+    // Note that here we set the scaling factor for the inverse operation of
+    // getting the "true" objective value from the scaled one. Hence the
+    // inverse.
+    auto* objective = cp_model->add_objectives();
+    objective->set_offset(mp_model.objective_offset() * scaling_factor / gcd);
+    objective->set_scaling_factor(1.0 / scaling_factor * gcd);
+    objective->set_objective_var(cp_model->variables_size());
+    {
+      auto* objective_var = cp_model->add_variables();
+      objective_var->set_name("objective");
+      objective_var->add_domain(-kMaxObjective);
+      objective_var->add_domain(kMaxObjective);
+    }
+
+    // Link the objective variable with a linear constraint.
+    {
+      auto* objective_constraint = cp_model->add_constraints();
+      auto* objective_arg = objective_constraint->mutable_linear();
+      objective_constraint->set_name("objective");
+      objective_arg->add_domain(mp_model.maximize() ? 0 : kint64min);
+      objective_arg->add_domain(mp_model.maximize() ? kint64max : 0);
+      for (int i = 0; i < num_variables; ++i) {
+        const MPVariableProto& mp_var = mp_model.variable(i);
+        const int64 value =
+            static_cast<int64>(
+                std::round(mp_var.objective_coefficient() * scaling_factor)) /
+            gcd;
+        if (value != 0) {
+          objective_arg->add_vars(i);
+          objective_arg->add_coeffs(value);
+        }
+      }
+      objective_arg->add_vars(objective->objective_var());
+      objective_arg->add_coeffs(-1);
+    }
+
+    // If the problem was a maximization one, we need to modify the objective.
+    if (mp_model.maximize()) {
+      objective->set_objective_var(-objective->objective_var() - 1);
+      objective->set_scaling_factor(-objective->scaling_factor());
+    }
+  }
+
+  // Test the precision of the conversion.
+  const double kRelativeTolerance = 1e-4;
+  if (max_relative_coeff_error > kRelativeTolerance) {
+    LOG(WARNING) << "The relative error during double -> int64 conversion "
+                 << "is too high!";
+    return false;
+  }
+  return true;
+}
+
 bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
                                                LinearBooleanProblem* problem) {
   CHECK(problem != nullptr);

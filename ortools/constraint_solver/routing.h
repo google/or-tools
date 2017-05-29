@@ -2077,30 +2077,33 @@ class ComparatorCheapestAdditionFilteredDecisionBuilder
 // are taken into account.
 class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
  public:
-  // If savings_neighbors > 0 then for each node only its 'saving_neighbors'
+  // If savings_neighbors_ratio > 0 then for each node only this ratio of its
   // neighbors leading to the smallest arc costs are considered.
+  // Furthermore, if add_reverse_arcs is true, the neighborhood relationships
+  // are always considered symmetrically.
   SavingsFilteredDecisionBuilder(
-      RoutingModel* model, int64 saving_neighbors,
-      const std::vector<LocalSearchFilter*>& filters);
+      RoutingModel* model, double savings_neighbors_ratio,
+      bool add_reverse_arcs, const std::vector<LocalSearchFilter*>& filters);
   ~SavingsFilteredDecisionBuilder() override {}
   bool BuildSolution() override;
 
  private:
   typedef std::pair</*saving*/ int64, /*saving index*/ int64> Saving;
 
-  // Computes saving values for all node pairs and vehicle cost classes. The
-  // saving index attached to each saving value is an index used to
+  // Computes saving values for all node pairs and vehicle types (see
+  // ComputeVehicleTypes()).
+  // The saving index attached to each saving value is an index used to
   // store and recover the node pair to which the value is linked (cf. the
   // index conversion methods below).
-  std::vector<Saving> ComputeSavings() const;
+  std::vector<Saving> ComputeSavings();
   // Builds a saving from a saving value, a cost class and two nodes.
-  Saving BuildSaving(int64 saving, int cost_class, int before_node,
+  Saving BuildSaving(int64 saving, int vehicle_type, int before_node,
                      int after_node) const {
-    return std::make_pair(
-        saving, cost_class * size_squared_ + before_node * Size() + after_node);
+    return std::make_pair(saving, vehicle_type * size_squared_ +
+                                      before_node * Size() + after_node);
   }
   // Returns the cost class from a saving.
-  int64 GetCostClassFromSaving(const Saving& saving) const {
+  int64 GetVehicleTypeFromSaving(const Saving& saving) const {
     return saving.second / size_squared_;
   }
   // Returns the "before node" from a saving.
@@ -2114,8 +2117,21 @@ class SavingsFilteredDecisionBuilder : public RoutingFilteredDecisionBuilder {
   // Returns the saving value from a saving.
   int64 GetSavingValue(const Saving& saving) const { return saving.first; }
 
-  const int64 saving_neighbors_;
+  // Computes the vehicle type of every vehicle and stores it in
+  // type_index_of_vehicle_. A "vehicle type" consists of the set of vehicles
+  // having the same cost class and start/end nodes, therefore the same savings
+  // value for each arc.
+  // The vehicles corresponding to each vehicle type index are stored in
+  // vehicles_per_vehicle_type_.
+  void ComputeVehicleTypes();
+
+  const double savings_neighbors_ratio_;
+  const bool add_reverse_arcs_;
   int64 size_squared_;
+  std::vector<int> type_index_of_vehicle_;
+  // clang-format off
+  std::vector<std::vector<int> > vehicles_per_vehicle_type_;
+  // clang-format on
 };
 
 // Christofides addition heuristic. Initially created to solve TSPs, extended to
