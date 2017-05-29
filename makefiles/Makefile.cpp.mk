@@ -93,6 +93,7 @@ FLATZINC_LIBS = $(LIB_DIR)/$(LIB_PREFIX)fz.$(LIB_SUFFIX)
 FLATZINC_DEPS = \
 	$(SRC_DIR)/ortools/flatzinc/checker.h \
 	$(SRC_DIR)/ortools/flatzinc/constraints.h \
+	$(SRC_DIR)/ortools/flatzinc/cp_model_fz_solver.h \
 	$(SRC_DIR)/ortools/flatzinc/flatzinc_constraints.h \
 	$(SRC_DIR)/ortools/flatzinc/logging.h \
 	$(SRC_DIR)/ortools/flatzinc/model.h \
@@ -195,6 +196,7 @@ $(LIB_DIR)/$(LIB_PREFIX)fap.$(LIB_SUFFIX): $(FAP_OBJS)
 FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/checker.$O \
 	$(OBJ_DIR)/flatzinc/constraints.$O \
+	$(OBJ_DIR)/flatzinc/cp_model_fz_solver.$O \
 	$(OBJ_DIR)/flatzinc/flatzinc_constraints.$O \
 	$(OBJ_DIR)/flatzinc/logging.$O \
 	$(OBJ_DIR)/flatzinc/model.$O \
@@ -218,6 +220,9 @@ $(OBJ_DIR)/flatzinc/checker.$O: $(SRC_DIR)/ortools/flatzinc/checker.cc $(FLATZIN
 
 $(OBJ_DIR)/flatzinc/constraints.$O: $(SRC_DIR)/ortools/flatzinc/constraints.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sconstraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sconstraints.$O
+
+$(OBJ_DIR)/flatzinc/cp_model_fz_solver.$O: $(SRC_DIR)/ortools/flatzinc/cp_model_fz_solver.cc $(FLATZINC_DEPS)
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Scp_model_fz_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Scp_model_fz_solver.$O
 
 $(OBJ_DIR)/flatzinc/flatzinc_constraints.$O: $(SRC_DIR)/ortools/flatzinc/flatzinc_constraints.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Sflatzinc_constraints.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Sflatzinc_constraints.$O
