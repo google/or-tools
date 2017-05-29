@@ -20,8 +20,7 @@ or-tools*.zip
 *.ass
 
 bin/
-# Not sure why ./src/ was renamed to ./ortools/, but this means we need to ignore the ./gen/
-ortools/gen/
+src/gen/
 objs/
 temp/
 lib/
@@ -30,4 +29,39 @@ examples/csharp/*.sln
 
 src/bazel-*
 examples/bazel-*
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.app
+
+*build*/*
+.idea/*
+.idea/
+build/
 
