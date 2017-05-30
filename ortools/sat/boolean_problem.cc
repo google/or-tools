@@ -13,6 +13,7 @@
 
 #include "ortools/sat/boolean_problem.h"
 
+#include <cmath>
 #include <unordered_map>
 
 #include "ortools/base/commandlineflags.h"
