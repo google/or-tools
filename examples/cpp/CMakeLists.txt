@@ -4,6 +4,7 @@ ADD_LIBRARY(executable_libs STATIC
         fap_model_printer.cc
         fap_parser.cc
         fap_utilities.cc)
+ADD_DEPENDENCIES(executable_libs ${PROJECT_NAME}Proto)
 
 FOREACH(EXECUTABLE
         costas_array
@@ -43,11 +44,6 @@ FOREACH(EXECUTABLE
         tsp
         weighted_tardiness_sat)
     ADD_EXECUTABLE(${EXECUTABLE} ${EXECUTABLE}.cc)
-    TARGET_LINK_LIBRARIES(${EXECUTABLE}
-            executable_libs
-            ${PROJECT_NAME}
-            ${Protobuf_LIBRARIES}
-            ${gflags_LIBRARIES}
-            ${CBC_LIBRARIES})
+    TARGET_LINK_LIBRARIES(${EXECUTABLE} executable_libs ${PROJECT_NAME})
     INSTALL(TARGETS ${EXECUTABLE} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 ENDFOREACH()
