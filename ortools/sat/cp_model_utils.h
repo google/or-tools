@@ -14,6 +14,7 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_UTILS_H_
 #define OR_TOOLS_SAT_CP_MODEL_UTILS_H_
 
+#include <functional>
 #include <unordered_set>
 
 #include "ortools/base/logging.h"
