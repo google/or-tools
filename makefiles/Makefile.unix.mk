@@ -7,13 +7,12 @@
 UNIX_GFLAGS_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_PROTOBUF_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
 UNIX_GLOG_DIR ?= $(OR_TOOLS_TOP)/dependencies/install
-UNIX_SWIG_BINARY ?= $(OR_ROOT_FULL)/dependencies/install/bin/swig
 UNIX_CBC_DIR ?= $(OR_ROOT_FULL)/dependencies/install
 UNIX_CLP_DIR ?= $(OR_ROOT_FULL)/dependencies/install
 
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
-SWIG_BINARY = $(UNIX_SWIG_BINARY)
+SWIG_BINARY = swig
 MKDIR = mkdir
 MKDIR_P = mkdir -p
 COPY = cp

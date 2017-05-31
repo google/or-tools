@@ -4,8 +4,6 @@ GFLAGS_TAG = 2.2.0
 PROTOBUF_TAG = 3.2.0
 GLOG_TAG = 0.3.5
 CBC_TAG = 2.9.8
-SWIG_TAG = 3.0.12
-PCRE_TAG = 8.37
 
 HELP2MAN_TAG = 1.43.3
 # Autoconf support
@@ -18,12 +16,6 @@ ifeq ($(PLATFORM), LINUX)
     PATCHELF=dependencies/install/bin/patchelf
 endif
 
-ACLOCAL_TARGET = \
-	dependencies/install/bin/autoconf \
-	dependencies/install/bin/automake \
-	dependencies/install/bin/libtool
-
-SET_PATH = PATH=$(OR_ROOT_FULL)/dependencies/install/bin:$(PATH)
 ifeq ($(PLATFORM), MACOSX)
   SET_COMPILER = CXX="$(CCC)"
 endif
@@ -72,7 +64,6 @@ install_third_party: \
 	install_gflags \
 	install_protobuf \
 	install_glog \
-	install_swig \
 	install_cbc \
 	$(CSHARP_THIRD_PARTY)
 
@@ -164,100 +155,75 @@ ortools/gen/ortools/sat:
 	$(MKDIR_P) ortools$Sgen$Sortools$Ssat
 
 # Install gflags. This uses cmake.
-install_gflags: dependencies/install/bin/gflags_completions.sh
+install_gflags: dependencies/install/include/gflags/gflags.h
 
 CMAKE_MISSING = "cmake not found in /Applications, nor in the PATH. Install the official version, or from brew"
 
-check_cmake:
-ifeq ($(PLATFORM),MACOSX)
-	@$(CMAKE) --version >& /dev/null || echo $(CMAKE_MISSING)
-endif
+dependencies/install/include/gflags/gflags.h: dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake/Makefile
+	cd dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake && \
+	$(SET_COMPILER) make -j 4 && make install
+	touch $@
 
-dependencies/install/bin/gflags_completions.sh: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md check_cmake
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && $(SET_COMPILER) \
-	$(CMAKE) -D BUILD_SHARED_LIBS=ON \
+dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake/Makefile: dependencies/sources/gflags-$(GFLAGS_TAG)/CMakeLists.txt
+	-mkdir dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake
+	cd dependencies/sources/gflags-$(GFLAGS_TAG)/build_cmake && $(SET_COMPILER) \
+	$(CMAKE) -D BUILD_SHARED_LIBS=OFF \
 		 -D BUILD_STATIC_LIBS=ON \
-	         -D CMAKE_INSTALL_PREFIX=../../install \
+	         -D CMAKE_INSTALL_PREFIX=../../../install \
 		 -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
-	         .
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
-	$(SET_COMPILER) make -j 4 && \
-	make install
-	$(TOUCH) dependencies/install/bin/gflags_completions.sh
-ifeq ($(PLATFORM),MACOSX)
-	install_name_tool -id $(OR_TOOLS_TOP)/dependencies/install/lib/libgflags.dylib \
-                          dependencies/install/lib/libgflags.dylib
-endif
+	         ..
 
-dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md:
+dependencies/sources/gflags-$(GFLAGS_TAG)/CMakeLists.txt:
 	git clone -b v$(GFLAGS_TAG) https://github.com/gflags/gflags.git dependencies/sources/gflags-$(GFLAGS_TAG)
 
 # Install protocol buffers.
 install_protobuf: dependencies/install/bin/protoc
 
-dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) make install
+dependencies/install/bin/protoc: dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build/Makefile
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build && $(SET_COMPILER) make -j 4 && make install
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG)/Makefile: dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pic
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build/Makefile: dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/CMakeLists.txt
+	-$(MKDIR) dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/build && \
+	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=../../../../install \
+		   -D protobuf_BUILD_TESTS=OFF \
+                   -D BUILD_SHARED_LIBS=OFF \
+                   -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+	           ..
 
-dependencies/sources/protobuf-$(PROTOBUF_TAG)/configure: dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && $(SET_PATH) $(SET_COMPILER) ./autogen.sh
-
-dependencies/sources/protobuf-$(PROTOBUF_TAG)/autogen.sh:
+dependencies/sources/protobuf-$(PROTOBUF_TAG)/cmake/CMakeLists.txt:
 	git clone https://github.com/google/protobuf.git dependencies/sources/protobuf-$(PROTOBUF_TAG) && cd dependencies/sources/protobuf-$(PROTOBUF_TAG) && git checkout 3d9d1a1
 
 # Install GLOG.
 install_glog: dependencies/install/include/glog/logging.h
 
-dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/glog-$(GLOG_TAG) && $(SET_PATH) $(SET_COMPILER) make install
+dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/build_cmake/Makefile
+	cd dependencies/sources/glog-$(GLOG_TAG) && $(SET_COMPILER) make -j 4 && make install
 
-dependencies/sources/glog-$(GLOG_TAG)/Makefile: dependencies/sources/glog-$(GLOG_TAG)/Makefile.in $(ACLOCAL_TARGET) install_gflags
-	cd dependencies/sources/glog-$(GLOG_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --enable-static --enable-shared --with-pic ADD_CXXFLAGS="$(MAC_VERSION)" --with-gflags=$(OR_TOOLS_TOP)/dependencies/install
+dependencies/sources/glog-$(GLOG_TAG)/build_cmake/Makefile: dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt
+	-$(MKDIR) dependencies/sources/glog-$(GLOG_TAG)/build_cmake
+	cd dependencies/sources/glog-$(GLOG_TAG)/build_cmake && \
+	  $(CMAKE) -DCMAKE_INSTALL_PREFIX=../../../install \
+                   -DBUILD_SHARED_LIBS=OFF \
+                   -DBUILD_STATIC_LIBS=ON \
+	           -D GFLAGS_ROOT_DIR=$(OR_TOOLS_TOP)/dependencies/install \
+                   -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+	           ..
 
-dependencies/sources/glog-$(GLOG_TAG)/Makefile.in:
+dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt:
 	git clone -b v$(GLOG_TAG) https://github.com/google/glog.git dependencies/sources/glog-$(GLOG_TAG)
 
 # Install Coin CBC.
 install_cbc: dependencies/install/bin/cbc
 
-dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) $(SET_COMPILER) make install
+dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_COMPILER) make install
 
-dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in $(ACLOCAL_TARGET)
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_PATH) $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --enable-shared --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
+dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile.in:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
-
-# Install pcre (dependency of SWIG).
-dependencies/install/bin/pcretest: dependencies/sources/pcre-$(PCRE_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/pcre-$(PCRE_TAG) && $(SET_PATH) make && make install
-
-dependencies/sources/pcre-$(PCRE_TAG)/Makefile: dependencies/sources/pcre-$(PCRE_TAG)/configure $(ACLOCAL_TARGET)
-	cd dependencies/sources/pcre-$(PCRE_TAG) && $(SET_PATH) ./configure --disable-shared --prefix=$(OR_ROOT_FULL)/dependencies/install
-
-dependencies/sources/pcre-$(PCRE_TAG)/configure: dependencies/sources/pcre-$(PCRE_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/pcre-$(PCRE_TAG) && $(SET_PATH) ./autogen.sh
-
-dependencies/sources/pcre-$(PCRE_TAG)/autogen.sh:
-	git clone -b pcre-$(PCRE_TAG) https://github.com/Distrotech/pcre dependencies/sources/pcre-$(PCRE_TAG)
-
-# Install SWIG.
-install_swig: dependencies/install/bin/swig
-
-dependencies/install/bin/swig: dependencies/sources/swig-$(SWIG_TAG)/Makefile $(ACLOCAL_TARGET)
-	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) make && make install
-
-dependencies/sources/swig-$(SWIG_TAG)/Makefile: dependencies/sources/swig-$(SWIG_TAG)/configure dependencies/install/bin/pcretest $(ACLOCAL_TARGET)
-	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --with-pcre-prefix=$(OR_ROOT_FULL)/dependencies/install --disable-ccache --without-octave
-
-dependencies/sources/swig-$(SWIG_TAG)/configure: dependencies/sources/swig-$(SWIG_TAG)/autogen.sh $(ACLOCAL_TARGET)
-	cd dependencies/sources/swig-$(SWIG_TAG) && $(SET_PATH) ./autogen.sh
-
-dependencies/sources/swig-$(SWIG_TAG)/autogen.sh:
-	git clone -b rel-$(SWIG_TAG) https://github.com/swig/swig dependencies/sources/swig-$(SWIG_TAG)
 
 # Install patchelf on linux platforms.
 dependencies/install/bin/patchelf: dependencies/sources/patchelf-0.8/Makefile
@@ -269,62 +235,6 @@ dependencies/sources/patchelf-0.8/Makefile: dependencies/sources/patchelf-0.8/co
 dependencies/sources/patchelf-0.8/configure: dependencies/archives/patchelf-0.8.tar.gz
 	cd dependencies/sources && tar xzmf ../archives/patchelf-0.8.tar.gz
 
-
-# Install help2man
-dependencies/install/bin/help2man: dependencies/sources/help2man-$(HELP2MAN_TAG)/Makefile
-	cd dependencies/sources/help2man-$(HELP2MAN_TAG) && make install
-
-dependencies/sources/help2man-$(HELP2MAN_TAG)/Makefile: dependencies/sources/help2man-$(HELP2MAN_TAG)/configure
-	cd dependencies/sources/help2man-$(HELP2MAN_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
-
-dependencies/sources/help2man-$(HELP2MAN_TAG)/configure: dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/help2man-$(HELP2MAN_TAG).tar.gz
-
-dependencies/archives/help2man-$(HELP2MAN_TAG).tar.gz:
-	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/help2man/help2man-$(HELP2MAN_TAG).tar.gz
-
-# Install libtool
-dependencies/install/bin/libtool: dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile dependencies/install/bin/help2man
-	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && $(SET_PATH) make install
-
-dependencies/sources/libtool-$(LIBTOOL_TAG)/Makefile: dependencies/sources/libtool-$(LIBTOOL_TAG)/configure
-	cd dependencies/sources/libtool-$(LIBTOOL_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
-
-dependencies/sources/libtool-$(LIBTOOL_TAG)/configure: dependencies/archives/libtool-$(LIBTOOL_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/libtool-$(LIBTOOL_TAG).tar.gz
-
-dependencies/archives/libtool-$(LIBTOOL_TAG).tar.gz:
-	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/libtool/libtool-$(LIBTOOL_TAG).tar.gz
-
-# Install automake
-dependencies/install/bin/automake: dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile
-	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) ./bootstrap.sh
-	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) make
-	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) make install
-
-
-dependencies/sources/automake-$(AUTOMAKE_TAG)/Makefile: dependencies/sources/automake-$(AUTOMAKE_TAG)/configure dependencies/install/bin/autoconf
-	cd dependencies/sources/automake-$(AUTOMAKE_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
-
-dependencies/sources/automake-$(AUTOMAKE_TAG)/configure: dependencies/archives/automake-$(AUTOMAKE_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/automake-$(AUTOMAKE_TAG).tar.gz
-
-dependencies/archives/automake-$(AUTOMAKE_TAG).tar.gz:
-	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/automake/automake-$(AUTOMAKE_TAG).tar.gz
-
-# Install autoconf
-dependencies/install/bin/autoconf: dependencies/sources/autoconf-$(AUTOCONF_TAG)/Makefile
-	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && $(SET_PATH) make && make install
-
-dependencies/sources/autoconf-$(AUTOCONF_TAG)/Makefile: dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure
-	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && $(SET_PATH) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install
-
-dependencies/sources/autoconf-$(AUTOCONF_TAG)/configure: dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz
-	cd dependencies/sources && tar xvzmf ../archives/autoconf-$(AUTOCONF_TAG).tar.gz
-	cd dependencies/sources/autoconf-$(AUTOCONF_TAG) && patch -p 1 -i ../../archives/autoconf.patch
-
-dependencies/archives/autoconf-$(AUTOCONF_TAG).tar.gz:
-	cd dependencies/archives && curl -OL http://ftpmirror.gnu.org/autoconf/autoconf-$(AUTOCONF_TAG).tar.gz
 
 # Install Java protobuf
 
@@ -380,5 +290,4 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GFLAGS_DIR, UNIX_PROTOBUF_DIR, UNIX_GLOG_DIR," >> Makefile.local
-	@echo "# UNIX_SWIG_BINARY, UNIX_CLP_DIR, UNIX_CBC_DIR if you wish to use " >> Makefile.local
-	@echo "# a custom version" >> Makefile.local
+	@echo "# UNIX_CLP_DIR, UNIX_CBC_DIR if you wish to use a custom version. " >> Makefile.local
