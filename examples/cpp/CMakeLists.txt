@@ -1,10 +1,17 @@
-ADD_LIBRARY(executable_libs STATIC
+ADD_LIBRARY(${PROJECT_NAME}examples SHARED
         cvrptw_lib.cc
         parse_dimacs_assignment.cc
         fap_model_printer.cc
         fap_parser.cc
         fap_utilities.cc)
-ADD_DEPENDENCIES(executable_libs ${PROJECT_NAME}Proto)
+
+INSTALL(TARGETS ${PROJECT_NAME}examples
+            EXPORT ${PROJECT_NAME}_Exports
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+ADD_DEPENDENCIES(${PROJECT_NAME}examples ${PROJECT_NAME}Proto)
 
 FOREACH(EXECUTABLE
         costas_array
@@ -44,6 +51,6 @@ FOREACH(EXECUTABLE
         tsp
         weighted_tardiness_sat)
     ADD_EXECUTABLE(${EXECUTABLE} ${EXECUTABLE}.cc)
-    TARGET_LINK_LIBRARIES(${EXECUTABLE} executable_libs ${PROJECT_NAME})
+    TARGET_LINK_LIBRARIES(${EXECUTABLE} ${PROJECT_NAME}examples ${PROJECT_NAME})
     INSTALL(TARGETS ${EXECUTABLE} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 ENDFOREACH()
