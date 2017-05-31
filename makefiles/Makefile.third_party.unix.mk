@@ -218,7 +218,7 @@ dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt:
 install_cbc: dependencies/install/bin/cbc
 
 dependencies/install/bin/cbc: dependencies/sources/cbc-$(CBC_TAG)/Makefile
-	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_COMPILER) make install
+	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_COMPILER) make -j 4 && $(SET_COMPILER) make install
 
 dependencies/sources/cbc-$(CBC_TAG)/Makefile: dependencies/sources/cbc-$(CBC_TAG)/Makefile.in
 	cd dependencies/sources/cbc-$(CBC_TAG) && $(SET_COMPILER) ./configure --prefix=$(OR_ROOT_FULL)/dependencies/install --disable-bzlib --without-lapack --enable-static --with-pic ADD_CXXFLAGS="-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT $(MAC_VERSION)"
@@ -257,6 +257,7 @@ clean_third_party:
 	-$(DELREC) dependencies/sources/cbc*
 	-$(DELREC) dependencies/sources/coin-cbc*
 	-$(DELREC) dependencies/sources/gflags*
+	-$(DELREC) dependencies/sources/glog*
 	-$(DELREC) dependencies/sources/glpk*
 	-$(DELREC) dependencies/sources/google*
 	-$(DELREC) dependencies/sources/mono*
