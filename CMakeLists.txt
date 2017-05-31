@@ -16,7 +16,6 @@ IF(UNIX)
     ENDIF()
 ENDIF()
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG -DUSE_GLOP -DUSE_BOP")
 SET(BUILD_CXX ON)
 SET(DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads"
         CACHE PATH "Location where external projects will be downloaded.")
@@ -58,22 +57,23 @@ IF(BUILD_CXX)
     SET(GLOG_VERSION 0.3.5)
 
     IF(NOT GLOG_FOUND)
-        MESSAGE(STATUS "Did not find system glog. Building as an external project ${GLOG_VERSION}")
+        MESSAGE(STATUS "Did not find system glog. Building as an external project.")
         INCLUDE(cmake/external/glog.cmake)
     ENDIF()
     LIST(APPEND ${PROJECT_NAME}externalLibraries ${GLOG_LIBRARIES})
     INCLUDE_DIRECTORIES(${GLOG_INCLUDE_DIRS})
 
-    SET(CBC_VERSION 2.9.8)
-    PKG_CHECK_MODULES(CBC cbc)
-    IF(CBC_FOUND)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CBC_CFLAGS} -DUSE_CBC")
-    ENDIF(CBC_FOUND)
+    SET(Cbc_VERSION 2.9.8)
+    PKG_CHECK_MODULES(Cbc cbc)
+    SET(Cbc_VERSION 2.9.8)
+    IF(NOT Cbc_FOUND)
+        MESSAGE(STATUS "Did not find system coin-cbc. Building as an external Project.")
+        INCLUDE(cmake/external/cbc.cmake)
+    ENDIF()
+    LIST(APPEND ${PROJECT_NAME}externalLibraries ${Cbc_LIBRARIES})
+    INCLUDE_DIRECTORIES(${Cbc_INCLUDE_DIRS})
 
-    PKG_CHECK_MODULES(CLP clp)
-    IF(CLP_FOUND)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CLP_CFLAGS} -DUSE_CLP")
-    ENDIF(CLP_FOUND)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG -DUSE_GLOP -DUSE_BOP -DUSE_CBC")
 
     FILE(GLOB_RECURSE proto_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ortools/*.proto")
     SET(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
@@ -100,7 +100,6 @@ IF(BUILD_CXX)
     ADD_LIBRARY(${PROJECT_NAME} SHARED ${SUBTARGETS})
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}
             ${${PROJECT_NAME}externalLibraries}
-            ${CBC_LIBRARIES}
             ${CMAKE_THREAD_LIBS_INIT})
 
     ADD_DEPENDENCIES(${PROJECT_NAME} ${PROJECT_NAME}Proto)
