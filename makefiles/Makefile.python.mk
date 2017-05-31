@@ -60,6 +60,8 @@ dependencies/sources/protobuf-3.2.0/python/google/protobuf/descriptor_pb2.py: \
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/setup.py
 ifeq ("$(SYSTEM)", "win")
 	copy dependencies$Sinstall$Sbin$Sprotoc.exe dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Ssrc
+else
+	cp dependencies$Sinstall$Sbin$Sprotoc dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Ssrc
 endif
 	cd dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython && $(PYTHON_EXECUTABLE) setup.py build
 
