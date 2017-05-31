@@ -4,6 +4,7 @@ PROJECT(ortools LANGUAGES CXX)
 SET(CMAKE_CXX_STANDARD 11)
 
 INCLUDE(FindPkgConfig)
+INCLUDE(ExternalProject)
 
 SET(CMAKE_INSTALL_LIBDIR lib)
 SET(CMAKE_INSTALL_BINDIR bin)
@@ -14,19 +15,56 @@ IF(UNIX)
         INCLUDE(GNUInstallDirs)
     ENDIF()
 ENDIF()
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG")
 
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG -DUSE_GLOP -DUSE_BOP")
 SET(BUILD_CXX ON)
+SET(DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads"
+        CACHE PATH "Location where external projects will be downloaded.")
+
+MARK_AS_ADVANCED(BUILD_CXX)
+MARK_AS_ADVANCED(DOWNLOAD_LOCATION)
+
+SET(${PROJECT_NAME}externalLibraries "")
+SET(${PROJECT_NAME}externalTargets "")
 
 IF(BUILD_CXX)
-    SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DUSE_GLOP -DUSE_BOP")
+    FIND_PACKAGE(Threads REQUIRED)
 
-    FIND_PACKAGE(Protobuf REQUIRED)
+    SET(Protobuf_VERSION 3.0.2)
+    FIND_PACKAGE(Protobuf ${Protobuf_VERSION} QUIET)
 
-    FILE(GLOB_RECURSE proto_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ortools/*.proto")
-    SET(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
-    FIND_PACKAGE(Gflags REQUIRED)
+    IF(NOT Protobuf_FOUND)
+        MESSAGE(STATUS "Did not find system protobuff. Building as an external project")
+        INCLUDE(cmake/external/zlib.cmake)
+        INCLUDE(cmake/external/protobuf.cmake)
+        LIST(APPEND ${PROJECT_NAME}externalLibraries ${Protobuf_STATIC_LIBRARIES})
+    ENDIF()
+    LIST(APPEND ${PROJECT_NAME}externalLibraries ${Protobuf_LIBRARIES})
+    INCLUDE_DIRECTORIES(${Protobuf_INCLUDE_DIRS})
 
+    SET(Gflags_VERSION 2.2.0)
+    FIND_PACKAGE(Gflags ${Gflags_VERSION} QUIET)
+
+    IF(NOT Gflags_FOUND)
+        MESSAGE(STATUS "Did not find system gflags. Building as an external project")
+        INCLUDE(cmake/external/gflags.cmake)
+    ENDIF()
+    LIST(APPEND ${PROJECT_NAME}externalLibraries ${Gflags_LIBRARIES})
+    INCLUDE_DIRECTORIES(${Gflags_INCLUDE_DIRS})
+
+    SET(GLOG_VERSION 0.3.5)
+    PKG_CHECK_MODULES(GLOG libglog>=${GLOG_VERSION})
+    # Set again since pkg_check_module resets GLOG_VERSION
+    SET(GLOG_VERSION 0.3.5)
+
+    IF(NOT GLOG_FOUND)
+        MESSAGE(STATUS "Did not find system glog. Building as an external project ${GLOG_VERSION}")
+        INCLUDE(cmake/external/glog.cmake)
+    ENDIF()
+    LIST(APPEND ${PROJECT_NAME}externalLibraries ${GLOG_LIBRARIES})
+    INCLUDE_DIRECTORIES(${GLOG_INCLUDE_DIRS})
+
+    SET(CBC_VERSION 2.9.8)
     PKG_CHECK_MODULES(CBC cbc)
     IF(CBC_FOUND)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CBC_CFLAGS} -DUSE_CBC")
@@ -37,7 +75,8 @@ IF(BUILD_CXX)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CLP_CFLAGS} -DUSE_CLP")
     ENDIF(CLP_FOUND)
 
-    PKG_CHECK_MODULES(GLOG libglog)
+    FILE(GLOB_RECURSE proto_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ortools/*.proto")
+    SET(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
 
     INCLUDE_DIRECTORIES(.)
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
@@ -45,6 +84,7 @@ IF(BUILD_CXX)
 
     PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${proto_files})
     ADD_LIBRARY(${PROJECT_NAME}Proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
+    ADD_DEPENDENCIES(${PROJECT_NAME}Proto ${${PROJECT_NAME}externalTargets})
     SET_TARGET_PROPERTIES(${PROJECT_NAME}Proto PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
     SET(SUBTARGETS "")
@@ -56,12 +96,12 @@ IF(BUILD_CXX)
 
     LIST(APPEND SUBTARGETS "$<TARGET_OBJECTS:${PROJECT_NAME}Proto>")
 
+    MESSAGE(STATUS "Libraries : ${${PROJECT_NAME}externalLibraries}")
     ADD_LIBRARY(${PROJECT_NAME} SHARED ${SUBTARGETS})
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-            ${GLOG_LIBRARIES}
-            ${Protobuf_LIBRARIES}
-            ${gflags_LIBRARIES}
-            ${CBC_LIBRARIES})
+            ${${PROJECT_NAME}externalLibraries}
+            ${CBC_LIBRARIES}
+            ${CMAKE_THREAD_LIBS_INIT})
 
     ADD_DEPENDENCIES(${PROJECT_NAME} ${PROJECT_NAME}Proto)
     INSTALL(TARGETS ${PROJECT_NAME}
