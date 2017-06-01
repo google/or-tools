@@ -68,15 +68,18 @@ void DratWriter::AddOneVariable() {
   reverse_mapping_.push_back(BooleanVariable(variable_index_++));
 }
 
-void DratWriter::AddClause(ClauseRef clause) { WriteClause(clause); }
+void DratWriter::AddClause(gtl::Span<Literal> clause) {
+  WriteClause(clause);
+}
 
-void DratWriter::DeleteClause(ClauseRef clause, bool ignore_call) {
+void DratWriter::DeleteClause(gtl::Span<Literal> clause,
+                              bool ignore_call) {
   if (ignore_call) return;
   buffer_ += "d ";
   WriteClause(clause);
 }
 
-void DratWriter::WriteClause(ClauseRef clause) {
+void DratWriter::WriteClause(gtl::Span<Literal> clause) {
   values_.clear();
   for (const Literal l : clause) {
     CHECK_LT(l.Variable(), reverse_mapping_.size());

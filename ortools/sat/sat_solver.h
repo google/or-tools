@@ -265,7 +265,7 @@ class SatSolver {
   int EnqueueDecisionAndBacktrackOnConflict(Literal true_literal);
 
   // Tries to enqueue the given decision and performs the propagation.
-  // Returns true if no conflict occured. Otherwise, returns false and restores
+  // Returns true if no conflict occurred. Otherwise, returns false and restores
   // the solver to the state just before this was called.
   //
   // Note(user): With this function, the solver doesn't learn anything.
@@ -292,7 +292,7 @@ class SatSolver {
   // Extract the current problem clauses. The Output type must support the two
   // functions:
   //  - void AddBinaryClause(Literal a, Literal b);
-  //  - void AddClause(ClauseRef clause);
+  //  - void AddClause(gtl::Span<Literal> clause);
   //
   // TODO(user): also copy the learned clauses?
   template <typename Output>
@@ -313,7 +313,8 @@ class SatSolver {
     binary_implication_graph_.ExtractAllBinaryClauses(out);
     for (SatClause* clause : clauses_) {
       if (!clause->IsRedundant()) {
-        out->AddClause(ClauseRef(clause->begin(), clause->end()));
+        out->AddClause(
+            gtl::Span<Literal>(clause->begin(), clause->Size()));
       }
     }
   }
@@ -386,7 +387,7 @@ class SatSolver {
   bool Propagate();
 
  private:
-  // Calls Propagate() and returns true if no conflict occured. Otherwise,
+  // Calls Propagate() and returns true if no conflict occurred. Otherwise,
   // learns the conflict, backtracks, enqueues the consequence of the learned
   // conflict and returns false.
   bool PropagateAndStopAfterOneConflictResolution();
@@ -423,7 +424,7 @@ class SatSolver {
   // backjumps. In this case, we will simply keep reapplying decisions from the
   // last one backtracked over and so on.
   //
-  // Returns MODEL_STAT if no conflict occured, MODEL_UNSAT if the model was
+  // Returns MODEL_STAT if no conflict occurred, MODEL_UNSAT if the model was
   // proven unsat and ASSUMPTION_UNSAT otherwise. In the last case the first non
   // taken old decision will be propagated to false by the ones before.
   //
@@ -528,7 +529,7 @@ class SatSolver {
 
   // Returns the maximum trail_index of the literals in the given clause.
   // All the literals must be assigned. Returns -1 if the clause is empty.
-  int ComputeMaxTrailIndex(ClauseRef clause) const;
+  int ComputeMaxTrailIndex(gtl::Span<Literal> clause) const;
 
   // Computes what is known as the first UIP (Unique implication point) conflict
   // clause starting from the failing clause. For a definition of UIP and a

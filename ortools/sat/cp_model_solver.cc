@@ -518,8 +518,12 @@ std::string Summarize(const std::string& input) {
 
 std::string CpModelStats(const CpModelProto& model_proto) {
   std::map<ConstraintProto::ConstraintCase, int> num_constraints_by_type;
-  for (int c = 0; c < model_proto.constraints_size(); ++c) {
-    num_constraints_by_type[model_proto.constraints(c).constraint_case()]++;
+  std::map<ConstraintProto::ConstraintCase, int> num_reif_constraints_by_type;
+  for (const ConstraintProto& ct : model_proto.constraints()) {
+    num_constraints_by_type[ct.constraint_case()]++;
+    if (!ct.enforcement_literal().empty()) {
+      num_reif_constraints_by_type[ct.constraint_case()]++;
+    }
   }
   const VariableUsage usage = ComputeVariableUsage(model_proto);
 
@@ -583,7 +587,9 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   std::vector<std::string> constraints;
   for (const auto entry : num_constraints_by_type) {
     constraints.push_back(
-        StrCat("#", ConstraintCaseName(entry.first), ": ", entry.second));
+        StrCat("#", ConstraintCaseName(entry.first), ": ", entry.second,
+                     " (", num_reif_constraints_by_type[entry.first],
+                     " with enforcement literal)"));
   }
   std::sort(constraints.begin(), constraints.end());
   StrAppend(&result, strings::Join(constraints, "\n"));
@@ -869,15 +875,19 @@ struct Strategy {
   DecisionStrategyProto::DomainReductionStrategy domain_strategy;
 };
 const std::function<LiteralIndex()> ConstructSearchStrategy(
+    const std::unordered_map<int, std::pair<int64, int64>>&
+        var_to_coeff_offset_pair,
     const std::vector<Strategy>& strategies, Model* model) {
   IntegerEncoder* const integer_encoder = model->GetOrCreate<IntegerEncoder>();
   IntegerTrail* const integer_trail = model->GetOrCreate<IntegerTrail>();
 
   // Note that we copy strategies to keep the return function validity
   // independently of the life of the passed vector.
-  return [integer_encoder, integer_trail, strategies]() {
+  return [integer_encoder, integer_trail, strategies,
+          var_to_coeff_offset_pair]() {
     for (const Strategy& strategy : strategies) {
       IntegerVariable candidate = kNoIntegerVariable;
+      IntegerValue candidate_value = kMaxIntegerValue;
       IntegerValue candidate_lb;
       IntegerValue candidate_ub;
 
@@ -888,35 +898,42 @@ const std::function<LiteralIndex()> ConstructSearchStrategy(
         const IntegerValue lb = integer_trail->LowerBound(var);
         const IntegerValue ub = integer_trail->UpperBound(var);
         if (lb == ub) continue;
-        bool select = false;
-        if (candidate == kNoIntegerVariable) {
-          select = true;
-        } else {
-          switch (strategy.var_strategy) {
-            case DecisionStrategyProto::CHOOSE_FIRST:
-              break;
-            case DecisionStrategyProto::CHOOSE_LOWEST_MIN:
-              select = lb < candidate_lb;
-              break;
-            case DecisionStrategyProto::CHOOSE_HIGHEST_MAX:
-              select = ub > candidate_ub;
-              break;
-            case DecisionStrategyProto::CHOOSE_MIN_DOMAIN_SIZE:
-              select = (ub - lb) < (candidate_ub - candidate_lb);
-              break;
-            case DecisionStrategyProto::CHOOSE_MAX_DOMAIN_SIZE:
-              select = (ub - lb) > (candidate_ub - candidate_lb);
-              break;
-            default:
-              LOG(FATAL) << "Unknown VariableSelectionStrategy "
-                         << strategy.var_strategy;
-          }
+        IntegerValue value(0);
+        IntegerValue coeff(1);
+        IntegerValue offset(0);
+        if (ContainsKey(var_to_coeff_offset_pair, var.value())) {
+          const auto coeff_offset =
+              FindOrDie(var_to_coeff_offset_pair, var.value());
+          coeff = coeff_offset.first;
+          offset = coeff_offset.second;
         }
-        if (select) {
+        DCHECK_GT(coeff, 0);
+        switch (strategy.var_strategy) {
+          case DecisionStrategyProto::CHOOSE_FIRST:
+            break;
+          case DecisionStrategyProto::CHOOSE_LOWEST_MIN:
+            value = coeff * lb + offset;
+            break;
+          case DecisionStrategyProto::CHOOSE_HIGHEST_MAX:
+            value = -(coeff * ub + offset);
+            break;
+          case DecisionStrategyProto::CHOOSE_MIN_DOMAIN_SIZE:
+            value = coeff * (ub - lb);
+            break;
+          case DecisionStrategyProto::CHOOSE_MAX_DOMAIN_SIZE:
+            value = -coeff * (ub - lb);
+            break;
+          default:
+            LOG(FATAL) << "Unknown VariableSelectionStrategy "
+                       << strategy.var_strategy;
+        }
+        if (value < candidate_value) {
           candidate = var;
           candidate_lb = lb;
           candidate_ub = ub;
+          candidate_value = value;
         }
+        if (strategy.var_strategy == DecisionStrategyProto::CHOOSE_FIRST) break;
       }
       if (candidate == kNoIntegerVariable) continue;
 
@@ -1046,16 +1063,16 @@ CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
               << " Boolean variable(s): " << ct.DebugString();
     }
     if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
-      LOG(INFO) << "UNSAT during extraction (after adding '"
-                << ConstraintCaseName(ct.constraint_case()) << "'). "
-                << ct.DebugString();
+      VLOG(1) << "UNSAT during extraction (after adding '"
+              << ConstraintCaseName(ct.constraint_case()) << "'). "
+              << ct.DebugString();
       break;
     }
   }
   if (!unsupported_types.empty()) {
-    LOG(INFO) << "There is unsuported constraints types in this model: ";
+    VLOG(1) << "There is unsuported constraints types in this model: ";
     for (const std::string& type : unsupported_types) {
-      LOG(INFO) << " - " << type;
+      VLOG(1) << " - " << type;
     }
     return response;
   }
@@ -1077,6 +1094,7 @@ CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
     next_decision = FirstUnassignedVarAtItsMinHeuristic(decisions, model);
   } else {
     std::vector<Strategy> strategies;
+    std::unordered_map<int, std::pair<int64, int64>> var_to_coeff_offset_pair;
     for (const DecisionStrategyProto& proto : model_proto.search_strategy()) {
       strategies.push_back(Strategy());
       Strategy& strategy = strategies.back();
@@ -1085,8 +1103,16 @@ CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
       }
       strategy.var_strategy = proto.variable_selection_strategy();
       strategy.domain_strategy = proto.domain_reduction_strategy();
+      for (const auto& tranform : proto.transformations()) {
+        const IntegerVariable var = m.Integer(tranform.var());
+        if (!ContainsKey(var_to_coeff_offset_pair, var.value())) {
+          var_to_coeff_offset_pair[var.value()] = {tranform.positive_coeff(),
+                                                   tranform.offset()};
+        }
+      }
     }
-    next_decision = ConstructSearchStrategy(strategies, model);
+    next_decision =
+        ConstructSearchStrategy(var_to_coeff_offset_pair, strategies, model);
   }
 
   // Solve.
@@ -1110,9 +1136,9 @@ CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
           FillSolutionInResponse(model_proto, m, &response);
           response.set_objective_value(
               ScaleObjectiveValue(obj, sat_model.Get(Value(objective_var))));
-          LOG(INFO) << "Solution #" << num_solutions
-                    << " obj:" << response.objective_value() << " num_bool:"
-                    << sat_model.Get<SatSolver>()->NumVariables();
+          VLOG(1) << "Solution #" << num_solutions
+                  << " obj:" << response.objective_value()
+                  << " num_bool:" << sat_model.Get<SatSolver>()->NumVariables();
         };
 
     if (parameters.optimize_with_core()) {
@@ -1120,7 +1146,7 @@ CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
       std::vector<IntegerValue> linear_coeffs;
       ExtractLinearObjective(model_proto, &m, &linear_vars, &linear_coeffs);
       status = MinimizeWithCoreAndLazyEncoding(
-          /*log_info=*/true, objective_var, linear_vars, linear_coeffs,
+          VLOG_IS_ON(1), objective_var, linear_vars, linear_coeffs,
           next_decision, solution_observer, model);
     } else {
       status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
@@ -1184,7 +1210,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   {
     const std::string error = ValidateCpModel(model_proto);
     if (!error.empty()) {
-      LOG(INFO) << error;
+      VLOG(1) << error;
       CpSolverResponse response;
       response.set_status(CpSolverStatus::MODEL_INVALID);
       return response;
@@ -1197,7 +1223,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   PresolveCpModel(model_proto, &presolved_proto, &mapping_proto,
                   &postsolve_mapping);
 
-  LOG(INFO) << CpModelStats(presolved_proto);
+  VLOG(1) << CpModelStats(presolved_proto);
 
   CpSolverResponse response =
       SolveCpModelWithoutPresolve(presolved_proto, model);

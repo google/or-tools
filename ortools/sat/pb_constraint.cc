@@ -959,14 +959,15 @@ void PbConstraints::Untrail(const Trail& trail, int trail_index) {
   }
 }
 
-ClauseRef PbConstraints::Reason(const Trail& trail, int trail_index) const {
+gtl::Span<Literal> PbConstraints::Reason(const Trail& trail,
+                                                int trail_index) const {
   SCOPED_TIME_STAT(&stats_);
   const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];
   std::vector<Literal>* reason = trail.GetVectorToStoreReason(trail_index);
   reason_info.pb_constraint->FillReason(trail, reason_info.source_trail_index,
                                         trail[trail_index].Variable(), reason);
-  return ClauseRef(*reason);
+  return *reason;
 }
 
 UpperBoundedLinearConstraint* PbConstraints::ReasonPbConstraint(

@@ -196,7 +196,7 @@ void GraphSymmetryFinder::RecursivelyRefinePartitionByAdjacency(
   //
   // Thus, the following loop really does the full recursive refinement as
   // advertised.
-  std::vector<bool> adjacency_directions(1, /*outgoing=*/true);
+  std::vector<bool> adjacency_directions(1, /*outgoing*/ true);
   if (!reverse_adj_list_index_.empty()) {
     adjacency_directions.push_back(false);  // Also look at incoming arcs.
   }

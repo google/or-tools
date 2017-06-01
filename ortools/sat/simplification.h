@@ -130,7 +130,7 @@ class SatPresolver {
   // Adds new clause to the SatPresolver.
   void SetNumVariables(int num_variables);
   void AddBinaryClause(Literal a, Literal b);
-  void AddClause(ClauseRef clause);
+  void AddClause(gtl::Span<Literal> clause);
 
   // Presolves the problem currently loaded. Returns false if the model is
   // proven to be UNSAT during the presolving.
@@ -202,9 +202,9 @@ class SatPresolver {
 
   // Finds the literal from the clause that occur the less in the clause
   // database.
-  Literal FindLiteralWithShortestOccurenceList(
+  Literal FindLiteralWithShortestOccurrenceList(
       const std::vector<Literal>& clause);
-  LiteralIndex FindLiteralWithShortestOccurenceListExcluding(
+  LiteralIndex FindLiteralWithShortestOccurrenceListExcluding(
       const std::vector<Literal>& clause, Literal to_exclude);
 
   // Tests and maybe perform a Simple Bounded Variable addition starting from
@@ -214,7 +214,7 @@ class SatPresolver {
   // 2013.
   // https://www.research.ibm.com/haifa/conferences/hvc2012/papers/paper16.pdf
   //
-  // This seems to have a mostly postive effect, except on the crafted problem
+  // This seems to have a mostly positive effect, except on the crafted problem
   // familly mugrauer_balint--GI.crafted_nxx_d6_cx_numxx where the reduction
   // is big, but apparently the problem is harder to prove UNSAT for the solver.
   void SimpleBva(LiteralIndex l);
@@ -248,7 +248,7 @@ class SatPresolver {
   AdjustablePriorityQueue<PQElement> var_pq_;
 
   // Literal priority queue for BVA. The literals are ordered by descending
-  // number of occurences in clauses.
+  // number of occurrences in clauses.
   void InitializeBvaPriorityQueue();
   void UpdateBvaPriorityQueue(LiteralIndex var);
   void AddToBvaPriorityQueue(LiteralIndex var);
@@ -287,12 +287,12 @@ class SatPresolver {
   // An empty clause means that it has been removed.
   std::vector<std::vector<Literal>> clauses_;  // Indexed by ClauseIndex
 
-  // Occurence list. For each literal, contains the ClauseIndex of the clause
+  // Occurrence list. For each literal, contains the ClauseIndex of the clause
   // that contains it (ordered by clause index).
   ITIVector<LiteralIndex, std::vector<ClauseIndex>> literal_to_clauses_;
 
-  // Because we only lazily clean the occurence list after clause deletions,
-  // we keep the size of the occurence list (without the deleted clause) here.
+  // Because we only lazily clean the occurrence list after clause deletions,
+  // we keep the size of the occurrence list (without the deleted clause) here.
   ITIVector<LiteralIndex, int> literal_to_clause_sizes_;
 
   // Used for postsolve.

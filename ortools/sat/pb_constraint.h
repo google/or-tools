@@ -64,7 +64,7 @@ inline std::ostream& operator<<(std::ostream& os, LiteralWithCoeff term) {
 //      lhs + bound_shift < canonical_form < rhs + bound_shift
 //
 // Finally, this will return false, if some integer overflow or underflow
-// occured during the reduction to the canonical form.
+// occurred during the reduction to the canonical form.
 bool ComputeBooleanLinearExpressionCanonicalForm(
     std::vector<LiteralWithCoeff>* cst, Coefficient* bound_shift,
     Coefficient* max_value);
@@ -77,8 +77,8 @@ bool ComputeBooleanLinearExpressionCanonicalForm(
 // bound_shift and max_value like ComputeBooleanLinearExpressionCanonicalForm()
 // does.
 //
-// Finally, this will return false if some integer overflow or underflow occured
-// during the constraint simplification.
+// Finally, this will return false if some integer overflow or underflow
+// occurred during the constraint simplification.
 bool ApplyLiteralMapping(const ITIVector<LiteralIndex, LiteralIndex>& mapping,
                          std::vector<LiteralWithCoeff>* cst,
                          Coefficient* bound_shift, Coefficient* max_value);
@@ -518,7 +518,8 @@ class PbConstraints : public SatPropagator {
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
-  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+  gtl::Span<Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Changes the number of variables.
   void Resize(int num_variables) {

@@ -28,19 +28,20 @@ uint64 FprintOfInt32(int i) {
 }
 }  // namespace
 
-DynamicPartition::DynamicPartition(int n) {
-  DCHECK_GE(n, 0);
-  element_.assign(n, -1);
-  index_of_.assign(n, -1);
-  for (int i = 0; i < n; ++i) {
+DynamicPartition::DynamicPartition(int num_elements) {
+  DCHECK_GE(num_elements, 0);
+  element_.assign(num_elements, -1);
+  index_of_.assign(num_elements, -1);
+  for (int i = 0; i < num_elements; ++i) {
     element_[i] = i;
     index_of_[i] = i;
   }
-  part_of_.assign(n, 0);
+  part_of_.assign(num_elements, 0);
   uint64 fprint = 0;
-  for (int i = 0; i < n; ++i) fprint ^= FprintOfInt32(i);
-  part_.push_back(Part(/*start_index=*/0, /*end_index=*/n, /*parent_part=*/0,
-                       /*fprint=*/ fprint));
+  for (int i = 0; i < num_elements; ++i) fprint ^= FprintOfInt32(i);
+  part_.push_back(Part(/*start_index=*/0, /*end_index=*/num_elements,
+                       /*parent_part=*/0,
+                       /*fprint=*/fprint));
 }
 
 DynamicPartition::DynamicPartition(

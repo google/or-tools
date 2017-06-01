@@ -147,14 +147,9 @@ std::vector<bool> SatPostsolver::PostsolveSolution(
   return postsolved_solution;
 }
 
-void SatPresolver::AddBinaryClause(Literal a, Literal b) {
-  Literal c[2];
-  c[0] = a;
-  c[1] = b;
-  AddClause(ClauseRef(c, c + 2));
-}
+void SatPresolver::AddBinaryClause(Literal a, Literal b) { AddClause({a, b}); }
 
-void SatPresolver::AddClause(ClauseRef clause) {
+void SatPresolver::AddClause(gtl::Span<Literal> clause) {
   CHECK_GT(clause.size(), 0) << "Added an empty clause to the presolver";
   const ClauseIndex ci(clauses_.size());
   clauses_.push_back(std::vector<Literal>(clause.begin(), clause.end()));
@@ -185,7 +180,7 @@ void SatPresolver::AddClause(ClauseRef clause) {
   }
 
   if (drat_writer_ != nullptr && clause_ref.size() < old_size) {
-    drat_writer_->AddClause(ClauseRef(clause_ref));
+    drat_writer_->AddClause(clause_ref);
     drat_writer_->DeleteClause(clause);
   }
 
@@ -212,7 +207,7 @@ void SatPresolver::SetNumVariables(int num_variables) {
 }
 
 void SatPresolver::AddClauseInternal(std::vector<Literal>* clause) {
-  if (drat_writer_ != nullptr) drat_writer_->AddClause(ClauseRef(*clause));
+  if (drat_writer_ != nullptr) drat_writer_->AddClause(*clause);
 
   DCHECK(std::is_sorted(clause->begin(), clause->end()));
   CHECK_GT(clause->size(), 0) << "TODO(fdid): Unsat during presolve?";
@@ -340,7 +335,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
       // Find a literal different from l that occur in the less number of
       // clauses.
       const LiteralIndex l_min =
-          FindLiteralWithShortestOccurenceListExcluding(clause, Literal(l));
+          FindLiteralWithShortestOccurrenceListExcluding(clause, Literal(l));
       if (l_min == kNoLiteralIndex) continue;
 
       // Find all the clauses of the form "clause \ {l} + {l'}", for a literal
@@ -438,7 +433,7 @@ void SatPresolver::SimpleBva(LiteralIndex l) {
     const std::vector<Literal>& clause = clauses_[c];
     CHECK(!clause.empty());
     const LiteralIndex l_min =
-        FindLiteralWithShortestOccurenceListExcluding(clause, Literal(l));
+        FindLiteralWithShortestOccurrenceListExcluding(clause, Literal(l));
     for (const LiteralIndex lit : m_lit_) {
       if (lit == l) continue;
       for (const ClauseIndex d : literal_to_clauses_[l_min]) {
@@ -476,15 +471,15 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
   DCHECK(std::is_sorted(clause.begin(), clause.end()));
 
   LiteralIndex opposite_literal;
-  const Literal lit = FindLiteralWithShortestOccurenceList(clause);
+  const Literal lit = FindLiteralWithShortestOccurrenceList(clause);
 
   // Try to simplify the clauses containing 'lit'. We take advantage of this
   // loop to also remove the empty sets from the list.
   {
     int new_index = 0;
-    std::vector<ClauseIndex>& occurence_list_ref =
+    std::vector<ClauseIndex>& occurrence_list_ref =
         literal_to_clauses_[lit.Index()];
-    for (ClauseIndex ci : occurence_list_ref) {
+    for (ClauseIndex ci : occurrence_list_ref) {
       if (clauses_[ci].empty()) continue;
       if (ci != clause_index &&
           SimplifyClause(clause, &clauses_[ci], &opposite_literal)) {
@@ -496,10 +491,10 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
           if (clauses_[ci].empty()) return false;  // UNSAT.
           if (drat_writer_ != nullptr) {
             // TODO(user): remove the old clauses_[ci] afterwards.
-            drat_writer_->AddClause(ClauseRef(clauses_[ci]));
+            drat_writer_->AddClause(clauses_[ci]);
           }
 
-          // Remove ci from the occurence list. Note that the occurence list
+          // Remove ci from the occurrence list. Note that the occurrence list
           // can't be shortest_list or its negation.
           auto iter =
               std::find(literal_to_clauses_[opposite_literal].begin(),
@@ -516,10 +511,10 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
           }
         }
       }
-      occurence_list_ref[new_index] = ci;
+      occurrence_list_ref[new_index] = ci;
       ++new_index;
     }
-    occurence_list_ref.resize(new_index);
+    occurrence_list_ref.resize(new_index);
     CHECK_EQ(literal_to_clause_sizes_[lit.Index()], new_index);
     literal_to_clause_sizes_[lit.Index()] = new_index;
   }
@@ -529,9 +524,9 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
   {
     int new_index = 0;
     bool something_removed = false;
-    std::vector<ClauseIndex>& occurence_list_ref =
+    std::vector<ClauseIndex>& occurrence_list_ref =
         literal_to_clauses_[lit.NegatedIndex()];
-    for (ClauseIndex ci : occurence_list_ref) {
+    for (ClauseIndex ci : occurrence_list_ref) {
       if (clauses_[ci].empty()) continue;
 
       // TODO(user): not super optimal since we could abort earlier if
@@ -541,7 +536,7 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
         if (clauses_[ci].empty()) return false;  // UNSAT.
         if (drat_writer_ != nullptr) {
           // TODO(user): remove the old clauses_[ci] afterwards.
-          drat_writer_->AddClause(ClauseRef(clauses_[ci]));
+          drat_writer_->AddClause(clauses_[ci]);
         }
         if (!in_clause_to_process_[ci]) {
           in_clause_to_process_[ci] = true;
@@ -550,10 +545,10 @@ bool SatPresolver::ProcessClauseToSimplifyOthers(ClauseIndex clause_index) {
         something_removed = true;
         continue;
       }
-      occurence_list_ref[new_index] = ci;
+      occurrence_list_ref[new_index] = ci;
       ++new_index;
     }
-    occurence_list_ref.resize(new_index);
+    occurrence_list_ref.resize(new_index);
     literal_to_clause_sizes_[lit.NegatedIndex()] = new_index;
     if (something_removed) {
       UpdatePriorityQueue(Literal(lit.NegatedIndex()).Variable());
@@ -668,7 +663,7 @@ void SatPresolver::Remove(ClauseIndex ci) {
     UpdateBvaPriorityQueue(Literal(e.Variable(), false).Index());
   }
   if (drat_writer_ != nullptr) {
-    drat_writer_->DeleteClause(ClauseRef(clauses_[ci]));
+    drat_writer_->DeleteClause(clauses_[ci]);
   }
   STLClearObject(&clauses_[ci]);
 }
@@ -678,7 +673,7 @@ void SatPresolver::RemoveAndRegisterForPostsolve(ClauseIndex ci, Literal x) {
   Remove(ci);
 }
 
-Literal SatPresolver::FindLiteralWithShortestOccurenceList(
+Literal SatPresolver::FindLiteralWithShortestOccurrenceList(
     const std::vector<Literal>& clause) {
   CHECK(!clause.empty());
   Literal result = clause.front();
@@ -691,16 +686,16 @@ Literal SatPresolver::FindLiteralWithShortestOccurenceList(
   return result;
 }
 
-LiteralIndex SatPresolver::FindLiteralWithShortestOccurenceListExcluding(
+LiteralIndex SatPresolver::FindLiteralWithShortestOccurrenceListExcluding(
     const std::vector<Literal>& clause, Literal to_exclude) {
   CHECK(!clause.empty());
   LiteralIndex result = kNoLiteralIndex;
-  int num_occurences = std::numeric_limits<int>::max();
+  int num_occurrences = std::numeric_limits<int>::max();
   for (const Literal l : clause) {
     if (l == to_exclude) continue;
-    if (literal_to_clause_sizes_[l.Index()] < num_occurences) {
+    if (literal_to_clause_sizes_[l.Index()] < num_occurrences) {
       result = l.Index();
-      num_occurences = literal_to_clause_sizes_[l.Index()];
+      num_occurrences = literal_to_clause_sizes_[l.Index()];
     }
   }
   return result;
@@ -1054,7 +1049,7 @@ void ProbeAndFindEquivalentLiteral(
           temp.push_back(assignment.LiteralIsTrue(Literal(i))
                              ? Literal(rep)
                              : Literal(rep).Negated());
-          drat_writer->AddClause(ClauseRef(temp));
+          drat_writer->AddClause(temp);
         }
       }
     }
@@ -1072,7 +1067,7 @@ void ProbeAndFindEquivalentLiteral(
             temp.push_back(assignment.LiteralIsTrue(Literal(rep))
                                ? Literal(i)
                                : Literal(i).Negated());
-            drat_writer->AddClause(ClauseRef(temp));
+            drat_writer->AddClause(temp);
           }
         }
       } else if (rep != i) {
@@ -1083,7 +1078,7 @@ void ProbeAndFindEquivalentLiteral(
         temp.push_back(Literal(i));
         temp.push_back(Literal(rep).Negated());
         postsolver->Add(Literal(i), temp);
-        if (drat_writer != nullptr) drat_writer->AddClause(ClauseRef(temp));
+        if (drat_writer != nullptr) drat_writer->AddClause(temp);
       }
     }
   }

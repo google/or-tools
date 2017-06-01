@@ -16,12 +16,18 @@
 #ifndef OR_TOOLS_SAT_SAT_BASE_H_
 #define OR_TOOLS_SAT_SAT_BASE_H_
 
+#include <cstddef>
+#include <algorithm>
 #include <deque>
+#include <iterator>
 #include <memory>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/sat/model.h"
@@ -164,36 +170,6 @@ class VariablesAssignment {
   DISALLOW_COPY_AND_ASSIGN(VariablesAssignment);
 };
 
-// A simple wrapper used to pass a reference to a clause. This
-// abstraction is needed because not all clauses come from an underlying
-// SatClause or are encoded with a std::vector<Literal>.
-//
-// This class should be passed by value.
-class ClauseRef {
- public:
-  ClauseRef() : begin_(nullptr), end_(nullptr) {}
-  ClauseRef(Literal const* b, Literal const* e) : begin_(b), end_(e) {}
-  explicit ClauseRef(const std::vector<Literal>& literals)
-      : begin_(literals.empty() ? nullptr : &literals[0]),
-        end_(literals.empty() ? nullptr : &literals[0] + literals.size()) {}
-
-  // For testing so this can be used with EXPECT_THAT().
-  typedef Literal value_type;
-  typedef const Literal* const_iterator;
-
-  // Allows for range based iteration: for (Literal literal : clause_ref) {}.
-  Literal const* begin() const { return begin_; }
-  Literal const* end() const { return end_; }
-
-  // Returns true if this clause contains no literal.
-  bool IsEmpty() const { return begin_ == end_; }
-  int size() const { return end_ - begin_; }
-
- private:
-  Literal const* begin_;
-  Literal const* end_;
-};
-
 // Forward declaration.
 class SatClause;
 class SatPropagator;
@@ -298,7 +274,7 @@ class Trail {
   }
 
   // Returns the reason why this variable was assigned.
-  ClauseRef Reason(BooleanVariable var) const;
+  gtl::Span<Literal> Reason(BooleanVariable var) const;
 
   // Returns the "type" of an assignment (see AssignmentType). Note that this
   // function never returns kSameReasonAs or kCachedReason, it instead returns
@@ -324,9 +300,7 @@ class Trail {
   // Reason() function of the associated propagator.
   void NotifyThatReasonIsCached(BooleanVariable var) const {
     DCHECK(assignment_.VariableIsAssigned(var));
-    const std::vector<Literal>& reason =
-        reasons_repository_[info_[var].trail_index];
-    reasons_[var] = reason.empty() ? ClauseRef() : ClauseRef(reason);
+    reasons_[var] = reasons_repository_[info_[var].trail_index];
     old_type_[var] = info_[var].type;
     info_[var].type = AssignmentType::kCachedReason;
   }
@@ -353,9 +327,7 @@ class Trail {
   }
 
   // Returns the last conflict.
-  ClauseRef FailingClause() const {
-    return conflict_.empty() ? ClauseRef() : ClauseRef(conflict_);
-  }
+  gtl::Span<Literal> FailingClause() const { return conflict_; }
 
   // Specific SatClause interface so we can update the conflict clause activity.
   // Note that MutableConflict() automatically sets this to nullptr, so we can
@@ -426,7 +398,7 @@ class Trail {
   // variables, the memory address of the vectors (kept in reasons_) are still
   // valid.
   mutable std::deque<std::vector<Literal>> reasons_repository_;
-  mutable ITIVector<BooleanVariable, ClauseRef> reasons_;
+  mutable ITIVector<BooleanVariable, gtl::Span<Literal>> reasons_;
   mutable ITIVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().
@@ -470,21 +442,20 @@ class SatPropagator {
     propagation_trail_index_ = std::min(propagation_trail_index_, trail_index);
   }
 
-  // Explains why the literal at given trail_index was propagated by returning
-  // a reason ClauseRef for this propagation. This will only be called for
-  // literals that are on the trail and were propagated by this class.
+  // Explains why the literal at given trail_index was propagated by returning a
+  // reason for this propagation. This will only be called for literals that are
+  // on the trail and were propagated by this class.
   //
   // The interpretation is that because all the literals of a reason were
   // assigned to false, we could deduce the assignement of the given variable.
   //
-  // The returned ClauseRef has to be valid until the literal is untrailed.
-  // A client can use trail_.GetVectorToStoreReason() if it doesn't have a
-  // memory location that already contains the reason.
-  virtual ClauseRef Reason(const Trail& trail, int trail_index) const {
+  // The returned Span has to be valid until the literal is untrailed. A client
+  // can use trail_.GetVectorToStoreReason() if it doesn't have a memory
+  // location that already contains the reason.
+  virtual gtl::Span<Literal> Reason(const Trail& trail,
+                                           int trail_index) const {
     LOG(FATAL) << "Not implemented.";
-#if !defined(__linux__)  // for Mac OS and MSVC++.
-    return ClauseRef();
-#endif
+    return {};
   }
 
   // Returns true if all the preconditions for Propagate() are satisfied.
@@ -573,7 +544,7 @@ inline int Trail::AssignmentType(BooleanVariable var) const {
   return type != AssignmentType::kCachedReason ? type : old_type_[var];
 }
 
-inline ClauseRef Trail::Reason(BooleanVariable var) const {
+inline gtl::Span<Literal> Trail::Reason(BooleanVariable var) const {
   // Special case for AssignmentType::kSameReasonAs to avoid a recursive call.
   var = ReferenceVarWithSameReason(var);
 
@@ -583,7 +554,7 @@ inline ClauseRef Trail::Reason(BooleanVariable var) const {
   const AssignmentInfo& info = info_[var];
   if (info.type == AssignmentType::kUnitReason ||
       info.type == AssignmentType::kSearchDecision) {
-    reasons_[var] = ClauseRef();
+    reasons_[var] = {};
   } else {
     DCHECK_LT(info.type, propagators_.size());
     DCHECK(propagators_[info.type] != nullptr) << info.type;

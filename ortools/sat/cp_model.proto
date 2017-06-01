@@ -267,6 +267,17 @@ message DecisionStrategyProto {
     SELECT_UPPER_HALF = 3;
   }
   DomainReductionStrategy domain_reduction_strategy = 3;
+
+  // Advanced usage. Some of the variable listed above may have been transformed
+  // by the presolve so this is needed to properly follow the given selection
+  // strategy. Instead of using a value X from one of the variable listed here,
+  // we will use positive_coeff * X + offset instead.
+  message AffineTransformation {
+    int32 var = 1;
+    int64 offset = 2;
+    int64 positive_coeff = 3;
+  }
+  repeated AffineTransformation transformations = 4;
 }
 
 // A constraint programming problem.

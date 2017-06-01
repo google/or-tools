@@ -353,7 +353,7 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   // that where needed to infer the conflict may not be "reasons" anymore and
   // may be deleted.
   if (drat_writer_ != nullptr) {
-    drat_writer_->AddClause(ClauseRef(literals));
+    drat_writer_->AddClause(literals);
   }
 
   if (literals.size() == 1) {
@@ -1451,7 +1451,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
   // others.
   for (SatClause* clause : clauses_) {
     if (clause->IsAttached()) {
-      const int old_size = clause->Size();
+      const size_t old_size = clause->Size();
       if (clause->RemoveFixedLiteralsAndTestIfTrue(trail_->Assignment())) {
         // The clause is always true, detach it.
         clauses_propagator_.LazyDetach(clause);
@@ -1469,13 +1469,14 @@ void SatSolver::ProcessNewlyFixedVariables() {
         }
       }
 
-      if (clause->Size() != old_size && drat_writer_ != nullptr) {
+      const size_t new_size = clause->Size();
+      if (new_size != old_size && drat_writer_ != nullptr) {
         // TODO(user): Instead delete the original clause in
         // DeleteDetachedClause(). The problem is that we currently don't have
         // the initial size anywhere.
-        drat_writer_->AddClause(ClauseRef(clause->begin(), clause->end()));
+        drat_writer_->AddClause({clause->begin(), new_size});
         drat_writer_->DeleteClause(
-            ClauseRef(clause->begin(), clause->begin() + old_size),
+            {clause->begin(), old_size},
             /*ignore_call=*/clauses_info_.find(clause) == clauses_info_.end());
       }
     }
@@ -1922,7 +1923,7 @@ std::string SatSolver::DebugString(const SatClause& clause) const {
   return result;
 }
 
-int SatSolver::ComputeMaxTrailIndex(ClauseRef clause) const {
+int SatSolver::ComputeMaxTrailIndex(gtl::Span<Literal> clause) const {
   SCOPED_TIME_STAT(&stats_);
   int trail_index = -1;
   for (const Literal literal : clause) {
@@ -1973,9 +1974,9 @@ void SatSolver::ComputeFirstUIPConflict(
   //
   // This last literal will be the first UIP because by definition all the
   // propagation done at the current level will pass though it at some point.
-  ClauseRef clause_to_expand = trail_->FailingClause();
+  gtl::Span<Literal> clause_to_expand = trail_->FailingClause();
   SatClause* sat_clause = trail_->FailingSatClause();
-  DCHECK(!clause_to_expand.IsEmpty());
+  DCHECK(!clause_to_expand.empty());
   int num_literal_at_highest_level_that_needs_to_be_processed = 0;
   while (true) {
     int num_new_vars_at_positive_level = 0;
@@ -2047,7 +2048,7 @@ void SatSolver::ComputeFirstUIPConflict(
     // which is what setting clause_to_expand to the empty clause do.
     if (same_reason_identifier_.FirstVariableWithSameReason(
             literal.Variable()) != literal.Variable()) {
-      clause_to_expand = ClauseRef();
+      clause_to_expand = {};
     } else {
       clause_to_expand = trail_->Reason(literal.Variable());
     }
@@ -2280,8 +2281,8 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
     bool can_be_removed = false;
     if (DecisionLevel(var) != current_level) {
       // It is important not to call Reason(var) when it can be avoided.
-      const ClauseRef reason = trail_->Reason(var);
-      if (!reason.IsEmpty()) {
+      const gtl::Span<Literal> reason = trail_->Reason(var);
+      if (!reason.empty()) {
         can_be_removed = true;
         for (Literal literal : reason) {
           if (DecisionLevel(literal.Variable()) == 0) continue;
@@ -2400,7 +2401,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
   variable_to_process_.push_back(variable);
 
   // First we expand the reason for the given variable.
-  DCHECK(!trail_->Reason(variable).IsEmpty())
+  DCHECK(!trail_->Reason(variable).empty())
       << trail_->Info(variable).DebugString();
   for (Literal literal : trail_->Reason(variable)) {
     const BooleanVariable var = literal.Variable();
@@ -2462,7 +2463,7 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
     // Expand the variable. This can be seen as making a recursive call.
     dfs_stack_.push_back(current_var);
     bool abort_early = false;
-    DCHECK(!trail_->Reason(current_var).IsEmpty());
+    DCHECK(!trail_->Reason(current_var).empty());
     for (Literal literal : trail_->Reason(current_var)) {
       const BooleanVariable var = literal.Variable();
       DCHECK_NE(var, current_var);
@@ -2542,8 +2543,8 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
 
     // A nullptr reason means that this was a decision variable from the
     // previous levels.
-    const ClauseRef reason = trail_->Reason(var);
-    if (reason.IsEmpty()) continue;
+    const gtl::Span<Literal> reason = trail_->Reason(var);
+    if (reason.empty()) continue;
 
     // Compute how many and which literals from the current reason do not appear
     // in the current conflict. Level 0 literals are ignored.
@@ -2602,9 +2603,10 @@ void SatSolver::DeleteDetachedClauses() {
        ++it) {
     // We do not want to mark as deleted clause of size 2 because they are
     // still kept in the solver inside the BinaryImplicationGraph.
-    if (drat_writer_ != nullptr && (*it)->Size() > 2) {
+    const size_t size = (*it)->Size();
+    if (drat_writer_ != nullptr && size > 2) {
       drat_writer_->DeleteClause(
-          ClauseRef((*it)->begin(), (*it)->end()),
+          {(*it)->begin(), size},
           /*ignore_call=*/clauses_info_.find(*it) == clauses_info_.end());
     }
     clauses_info_.erase(*it);

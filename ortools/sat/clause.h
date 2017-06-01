@@ -28,9 +28,11 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/inlined_vector.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/hash.h"
+#include "ortools/base/span.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
@@ -94,9 +96,9 @@ class SatClause {
 
   // Returns the reason for the last unit propagation of this clause. The
   // preconditions are the same as for PropagatedLiteral().
-  ClauseRef PropagationReason() const {
+  gtl::Span<Literal> PropagationReason() const {
     // Note that we don't need to include the propagated literal.
-    return ClauseRef(&(literals_[1]), end());
+    return gtl::Span<Literal>(&(literals_[1]), size_ - 1);
   }
 
   // Removes literals that are fixed. This should only be called at level 0
@@ -164,7 +166,8 @@ class LiteralWatchers : public SatPropagator {
   ~LiteralWatchers() override;
 
   bool Propagate(Trail* trail) final;
-  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+  gtl::Span<Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Resizes the data structure.
   void Resize(int num_variables);
@@ -344,7 +347,8 @@ class BinaryImplicationGraph : public SatPropagator {
   }
 
   bool Propagate(Trail* trail) final;
-  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+  gtl::Span<Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Resizes the data structure.
   void Resize(int num_variables);
@@ -431,7 +435,15 @@ class BinaryImplicationGraph : public SatPropagator {
 
   // This is indexed by the Index() of a literal. Each list stores the
   // literals that are implied if the index literal becomes true.
-  ITIVector<LiteralIndex, std::vector<Literal>> implications_;
+  //
+  // Using InlinedVector helps quite a bit because on many problems, a literal
+  // only implies a few others. Note that on a 64 bits computer we get exactly
+  // 6 inlined int32 elements without extra space, and the size of the inlined
+  // vector is 4 times 64 bits.
+  //
+  // TODO(user): We could be even more efficient since a size of int32 is enough
+  // for us and we could store in common the inlined/not-inlined size.
+  ITIVector<LiteralIndex, gtl::InlinedVector<Literal, 6>> implications_;
   int64 num_implications_;
 
   // Some stats.

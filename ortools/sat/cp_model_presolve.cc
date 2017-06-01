@@ -1409,6 +1409,56 @@ void PresolveCpModel(const CpModelProto& initial_model,
     arg->add_domain(r.offset);
   }
 
+  // The strategy variable indices will be remapped in ApplyVariableMapping()
+  // but first we use the representative of the affine relations for the
+  // variables that are not present anymore.
+  //
+  // Note that we properly take into account the sign of the coefficient which
+  // will result in the same domain reduction strategy. Moreover, if the
+  // variable order is not CHOOSE_FIRST, then we also encode the associated
+  // affine transformation in order to preserve the order.
+  std::unordered_set<int> used_variables;
+  for (DecisionStrategyProto& strategy :
+       *presolved_model->mutable_search_strategy()) {
+    DecisionStrategyProto copy = strategy;
+    strategy.clear_variables();
+    for (const int ref : copy.variables()) {
+      const int var = PositiveRef(ref);
+
+      // Remove fixed variables.
+      if (context.domains[var].IsFixed()) continue;
+
+      // There is not point having a variable appear twice, so we only keep
+      // the first occurrence in the first strategy in which it occurs.
+      if (ContainsKey(used_variables, var)) continue;
+      used_variables.insert(var);
+
+      if (context.var_to_constraints[var].empty()) {
+        const AffineRelation::Relation r = context.GetAffineRelation(var);
+        if (!context.var_to_constraints[r.representative].empty()) {
+          const int rep = (r.coeff > 0) == RefIsPositive(ref)
+                              ? r.representative
+                              : NegatedRef(r.representative);
+          strategy.add_variables(rep);
+          if (strategy.variable_selection_strategy() !=
+              DecisionStrategyProto::CHOOSE_FIRST) {
+            DecisionStrategyProto::AffineTransformation* t =
+                strategy.add_transformations();
+            t->set_var(rep);
+            t->set_offset(r.offset);
+            t->set_positive_coeff(std::abs(r.coeff));
+          }
+        } else {
+          // TODO(user): this variable was removed entirely by the presolve (no
+          // equivalent variable present). We simply ignore it entirely which
+          // might result in a different search...
+        }
+      } else {
+        strategy.add_variables(ref);
+      }
+    }
+  }
+
   // Update the variables domain of the presolved_model.
   for (int i = 0; i < context.domains.size(); ++i) {
     context.domains[i].CopyToIntegerVariableProto(
@@ -1417,28 +1467,6 @@ void PresolveCpModel(const CpModelProto& initial_model,
 
   // Set the variables of the mapping_model.
   mapping_model->mutable_variables()->CopyFrom(presolved_model->variables());
-
-  // The strategy variable indices will be remapped in ApplyVariableMapping()
-  // but first we use the representative of the affine relations for the
-  // variables that are not present anymore.
-  for (DecisionStrategyProto& strategy :
-       *presolved_model->mutable_search_strategy()) {
-    DecisionStrategyProto copy = strategy;
-    strategy.clear_variables();
-    for (const int ref : copy.variables()) {
-      const int var = PositiveRef(ref);
-      if (context.var_to_constraints[var].empty()) {
-        const AffineRelation::Relation r = context.GetAffineRelation(var);
-        if (r.representative != var) {
-          strategy.add_variables((r.coeff == 1) == RefIsPositive(ref)
-                                     ? r.representative
-                                     : NegatedRef(r.representative));
-        }
-      } else {
-        strategy.add_variables(ref);
-      }
-    }
-  }
 
   // Remove all the unused variables from the presolved model.
   postsolve_mapping->clear();
@@ -1451,19 +1479,19 @@ void PresolveCpModel(const CpModelProto& initial_model,
   ApplyVariableMapping(mapping, presolved_model);
 
   // Stats and checks.
-  LOG(INFO) << "- " << context.affine_relations.NumRelations()
-            << " affine relations where detected. " << num_affine_relations
-            << " where kept.";
-  LOG(INFO) << "- " << context.var_equiv_relations.NumRelations()
-            << " variable equivalence relations where detected.";
+  VLOG(1) << "- " << context.affine_relations.NumRelations()
+          << " affine relations where detected. " << num_affine_relations
+          << " where kept.";
+  VLOG(1) << "- " << context.var_equiv_relations.NumRelations()
+          << " variable equivalence relations where detected.";
   std::map<std::string, int> sorted_rules(context.stats_by_rule_name.begin(),
                                      context.stats_by_rule_name.end());
   for (const auto& entry : sorted_rules) {
     if (entry.second == 1) {
-      LOG(INFO) << "- rule '" << entry.first << "' was applied 1 time.";
+      VLOG(1) << "- rule '" << entry.first << "' was applied 1 time.";
     } else {
-      LOG(INFO) << "- rule '" << entry.first << "' was applied " << entry.second
-                << " times.";
+      VLOG(1) << "- rule '" << entry.first << "' was applied " << entry.second
+              << " times.";
     }
   }
   CHECK_EQ("", ValidateCpModel(*presolved_model));
@@ -1500,6 +1528,16 @@ void ApplyVariableMapping(const std::vector<int>& mapping,
       const int image = mapping[PositiveRef(ref)];
       if (image >= 0) {
         strategy.add_variables(ref >= 0 ? image : NegatedRef(image));
+      }
+    }
+    strategy.clear_transformations();
+    for (const auto& transform : copy.transformations()) {
+      const int ref = transform.var();
+      const int image = mapping[PositiveRef(ref)];
+      if (image >= 0) {
+        auto* new_transform = strategy.add_transformations();
+        *new_transform = transform;
+        new_transform->set_var(ref >= 0 ? image : NegatedRef(image));
       }
     }
   }

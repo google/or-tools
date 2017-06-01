@@ -464,7 +464,7 @@ message SatParameters {
   // This always result in better propagation, but it is usually slow, so
   // depending on the problem, turning this off may lead to a faster solution.
   optional bool use_disjunctive_constraint_in_cumulative_constraint = 80
-      [default = false];
+      [default = true];
 
   // When this is true, then we extract all the linear constraints of the
   // CpModel and linearly encode some other constraints in an extra "linear

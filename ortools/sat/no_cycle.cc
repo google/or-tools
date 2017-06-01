@@ -154,7 +154,8 @@ void NoCyclePropagator::Untrail(const Trail& trail, int trail_index) {
 
 // TODO(user): If one literal propagate many arcs, and more than one is needed
 // to form a cycle, this will not work properly.
-ClauseRef NoCyclePropagator::Reason(const Trail& trail, int trail_index) const {
+gtl::Span<Literal> NoCyclePropagator::Reason(const Trail& trail,
+                                                    int trail_index) const {
   const int source = reason_arc_[trail_index].second;
   const int target = reason_arc_[trail_index].first;
   const int trail_limit = reason_trail_limit_[trail_index];
@@ -163,7 +164,7 @@ ClauseRef NoCyclePropagator::Reason(const Trail& trail, int trail_index) const {
 
   // Note that this modify node_is_reached_ and reached_nodes_.
   FindReasonForPath(trail, source, target, trail_limit, reason);
-  return ClauseRef(*reason);
+  return *reason;
 }
 
 namespace {

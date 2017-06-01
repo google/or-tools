@@ -48,7 +48,8 @@ class NoCyclePropagator : public SatPropagator {
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
-  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+  gtl::Span<Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Stops doing anything when the number of arcs in the graph becomes greater
   // that the given value. This allows to use this class to model a circuit

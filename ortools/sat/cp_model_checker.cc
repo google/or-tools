@@ -451,9 +451,9 @@ bool SolutionIsFeasible(const CpModelProto& model,
   // Check that all values fall in the variable domains.
   for (int i = 0; i < model.variables_size(); ++i) {
     if (!DomainInProtoContains(model.variables(i), variable_values[i])) {
-      LOG(ERROR) << "Variable #" << i << " has value " << variable_values[i]
-                 << " which do not fall in its domain: "
-                 << model.variables(i).ShortDebugString();
+      VLOG(1) << "Variable #" << i << " has value " << variable_values[i]
+              << " which do not fall in its domain: "
+              << model.variables(i).ShortDebugString();
       return false;
     }
   }
@@ -531,8 +531,8 @@ bool SolutionIsFeasible(const CpModelProto& model,
         LOG(FATAL) << "Unuspported constraint: " << ConstraintCaseName(type);
     }
     if (!is_feasible) {
-      LOG(ERROR) << "Failing constraint #" << c << " : "
-                 << model.constraints(c).ShortDebugString();
+      VLOG(1) << "Failing constraint #" << c << " : "
+              << model.constraints(c).ShortDebugString();
       return false;
     }
   }

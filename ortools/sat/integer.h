@@ -17,9 +17,11 @@
 #include <queue>
 #include <set>
 
-#include "ortools/base/port.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/port.h"
+#include "ortools/base/inlined_vector.h"
 #include "ortools/base/join.h"
+#include "ortools/base/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #include "ortools/sat/model.h"
@@ -149,7 +151,7 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
   return os;
 }
 
-using InlinedIntegerLiteralVector = std::vector<IntegerLiteral>;
+using InlinedIntegerLiteralVector = gtl::InlinedVector<IntegerLiteral, 2>;
 
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
@@ -362,7 +364,8 @@ class IntegerTrail : public SatPropagator {
   // correct state before calling any of its functions.
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int literal_trail_index) final;
-  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+  gtl::Span<Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Returns the number of created integer variables.
   //
@@ -457,15 +460,14 @@ class IntegerTrail : public SatPropagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
-  MUST_USE_RESULT bool Enqueue(
-      IntegerLiteral bound, const std::vector<Literal>& literal_reason,
-      const std::vector<IntegerLiteral>& integer_reason);
+  MUST_USE_RESULT bool Enqueue(IntegerLiteral bound,
+                               gtl::Span<Literal> literal_reason,
+                               gtl::Span<IntegerLiteral> integer_reason);
 
   // Enqueues the given literal on the trail.
   // See the comment of Enqueue() for the reason format.
-  void EnqueueLiteral(Literal literal,
-                      const std::vector<Literal>& literal_reason,
-                      const std::vector<IntegerLiteral>& integer_reason);
+  void EnqueueLiteral(Literal literal, gtl::Span<Literal> literal_reason,
+                      gtl::Span<IntegerLiteral> integer_reason);
 
   // Returns the reason (as set of Literal currently false) for a given integer
   // literal. Note that the bound must be less restrictive than the current
@@ -474,7 +476,7 @@ class IntegerTrail : public SatPropagator {
 
   // Appends the reason for the given integer literals to the output and call
   // STLSortAndRemoveDuplicates() on it.
-  void MergeReasonInto(const std::vector<IntegerLiteral>& bounds,
+  void MergeReasonInto(gtl::Span<IntegerLiteral> bounds,
                        std::vector<Literal>* output) const;
 
   // Returns the number of enqueues that changed a variable bounds. We don't
@@ -495,14 +497,14 @@ class IntegerTrail : public SatPropagator {
 
   // Helper functions to report a conflict. Always return false so a client can
   // simply do: return integer_trail_->ReportConflict(...);
-  bool ReportConflict(const std::vector<Literal>& literal_reason,
-                      const std::vector<IntegerLiteral>& integer_reason) {
+  bool ReportConflict(gtl::Span<Literal> literal_reason,
+                      gtl::Span<IntegerLiteral> integer_reason) {
     std::vector<Literal>* conflict = trail_->MutableConflict();
-    *conflict = literal_reason;
+    conflict->assign(literal_reason.begin(), literal_reason.end());
     MergeReasonInto(integer_reason, conflict);
     return false;
   }
-  bool ReportConflict(const std::vector<IntegerLiteral>& integer_reason) {
+  bool ReportConflict(gtl::Span<IntegerLiteral> integer_reason) {
     std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->clear();
     MergeReasonInto(integer_reason, conflict);
@@ -517,22 +519,21 @@ class IntegerTrail : public SatPropagator {
  private:
   // Tests that all the literals in the given reason are assigned to false.
   // This is used to DCHECK the given reasons to the Enqueue*() functions.
-  bool AllLiteralsAreFalse(const std::vector<Literal>& literals) const;
+  bool AllLiteralsAreFalse(gtl::Span<Literal> literals) const;
 
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;
 
   // Helper used by Enqueue() to propagate one of the literal associated to
   // the given i_lit and maintained by encoder_.
-  bool EnqueueAssociatedLiteral(
-      Literal literal, IntegerLiteral i_lit,
-      const std::vector<Literal>& literal_reason,
-      const std::vector<IntegerLiteral>& integer_reason,
-      BooleanVariable* variable_with_same_reason);
+  bool EnqueueAssociatedLiteral(Literal literal, IntegerLiteral i_lit,
+                                gtl::Span<Literal> literal_reason,
+                                gtl::Span<IntegerLiteral> integer_reason,
+                                BooleanVariable* variable_with_same_reason);
 
   // Returns a lower bound on the given var that will always be valid.
   IntegerValue LevelZeroBound(int var) const {
-    // The level zero bounds are stored at the begining of the trail and they
+    // The level zero bounds are stored at the beginning of the trail and they
     // also serves as sentinels. Their index match the variables index.
     return integer_trail_[var].bound;
   }

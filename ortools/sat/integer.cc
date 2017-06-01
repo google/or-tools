@@ -103,6 +103,7 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable i_var, IntegerValue lb,
   return FullyEncodeVariable(i_var, std::move(values));
 }
 
+// TODO(user): merge the common code with FullyEncodeVariable().
 void IntegerEncoder::FullyEncodeVariableUsingGivenLiterals(
     IntegerVariable i_var, const std::vector<Literal>& literals,
     const std::vector<IntegerValue>& values) {
@@ -118,6 +119,12 @@ void IntegerEncoder::FullyEncodeVariableUsingGivenLiterals(
     cst.push_back(LiteralWithCoeff(literal, Coefficient(1)));
   }
   std::sort(encoding.begin(), encoding.end());
+
+  // We need the <= 1 constraint, and the >= 1 part is cheap. Note that the
+  // solver will discard it if it is of size 2 and contains a literal and its
+  // negation.
+  CHECK(sat_solver_->AddLinearConstraint(true, sat::Coefficient(1), true,
+                                         sat::Coefficient(1), &cst));
 
   full_encoding_index_[i_var] = full_encoding_.size();
   full_encoding_.push_back(encoding);  // copy because we need it below.
@@ -252,7 +259,7 @@ bool IntegerTrail::Propagate(Trail* trail) {
   //  1/ See if new variables are fully encoded and initialize them.
   //  2/ In the loop below, each time a "min" variable was assigned to false,
   //     update the associated variable bounds, and change the watched "min".
-  //     This step is is O(num variables at false between the old and new min).
+  //     This step is in O(num variables at false between the old and new min).
   //
   // The data structure are reversible.
   watched_min_.SetLevel(trail->CurrentDecisionLevel());
@@ -493,8 +500,8 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
 
 bool IntegerTrail::EnqueueAssociatedLiteral(
     Literal literal, IntegerLiteral i_lit,
-    const std::vector<Literal>& literal_reason,
-    const std::vector<IntegerLiteral>& integer_reason,
+    gtl::Span<Literal> literal_reason,
+    gtl::Span<IntegerLiteral> integer_reason,
     BooleanVariable* variable_with_same_reason) {
   if (!trail_->Assignment().VariableIsAssigned(literal.Variable())) {
     if (integer_decision_levels_.empty()) {
@@ -521,7 +528,7 @@ bool IntegerTrail::EnqueueAssociatedLiteral(
   }
   if (trail_->Assignment().LiteralIsFalse(literal)) {
     std::vector<Literal>* conflict = trail_->MutableConflict();
-    *conflict = literal_reason;
+    conflict->assign(literal_reason.begin(), literal_reason.end());
 
     // This is tricky, in some corner cases, the same Enqueue() will call
     // EnqueueAssociatedLiteral() on a literal and its opposite. In this case,
@@ -542,8 +549,8 @@ bool IntegerTrail::EnqueueAssociatedLiteral(
 
 namespace {
 
-std::string ReasonDebugString(const std::vector<Literal>& literal_reason,
-                         const std::vector<IntegerLiteral>& integer_reason) {
+std::string ReasonDebugString(gtl::Span<Literal> literal_reason,
+                         gtl::Span<IntegerLiteral> integer_reason) {
   std::string result = "literals:{";
   for (const Literal l : literal_reason) {
     if (result.back() != '{') result += ",";
@@ -580,8 +587,8 @@ std::string IntegerTrail::DebugString() {
 }
 
 bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
-                           const std::vector<Literal>& literal_reason,
-                           const std::vector<IntegerLiteral>& integer_reason) {
+                           gtl::Span<Literal> literal_reason,
+                           gtl::Span<IntegerLiteral> integer_reason) {
   DCHECK(AllLiteralsAreFalse(literal_reason));
   CHECK(!IsCurrentlyIgnored(i_lit.Var()));
 
@@ -594,7 +601,7 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   // This may not indicate an incorectness, but just some propagators that
   // didn't reach a fixed-point at level zero.
   if (DEBUG_MODE && !integer_decision_levels_.empty()) {
-    std::vector<Literal> l = literal_reason;
+    std::vector<Literal> l(literal_reason.begin(), literal_reason.end());
     MergeReasonInto(integer_reason, &l);
     LOG_IF(WARNING, l.empty())
         << "Propagating a literal with no reason at a positive level!\n"
@@ -679,7 +686,7 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
     if (!IsOptional(var) || trail_->Assignment().LiteralIsFalse(
                                 Literal(is_ignored_literals_[var]))) {
       std::vector<Literal>* conflict = trail_->MutableConflict();
-      *conflict = literal_reason;
+      conflict->assign(literal_reason.begin(), literal_reason.end());
       if (IsOptional(var)) {
         conflict->push_back(Literal(is_ignored_literals_[var]));
       }
@@ -815,7 +822,7 @@ std::vector<Literal> IntegerTrail::ReasonFor(IntegerLiteral literal) const {
 }
 
 bool IntegerTrail::AllLiteralsAreFalse(
-    const std::vector<Literal>& literals) const {
+    gtl::Span<Literal> literals) const {
   for (const Literal lit : literals) {
     if (!trail_->Assignment().LiteralIsFalse(lit)) return false;
   }
@@ -824,7 +831,7 @@ bool IntegerTrail::AllLiteralsAreFalse(
 
 // TODO(user): If this is called many time on the same variables, it could be
 // made faster by using some caching mecanism.
-void IntegerTrail::MergeReasonInto(const std::vector<IntegerLiteral>& literals,
+void IntegerTrail::MergeReasonInto(gtl::Span<IntegerLiteral> literals,
                                    std::vector<Literal>* output) const {
   DCHECK(tmp_queue_.empty());
   const int size = vars_.size();
@@ -945,7 +952,8 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
   STLSortAndRemoveDuplicates(output);
 }
 
-ClauseRef IntegerTrail::Reason(const Trail& trail, int trail_index) const {
+gtl::Span<Literal> IntegerTrail::Reason(const Trail& trail,
+                                               int trail_index) const {
   std::vector<Literal>* reason = trail.GetVectorToStoreReason(trail_index);
   reason->clear();
 
@@ -958,12 +966,12 @@ ClauseRef IntegerTrail::Reason(const Trail& trail, int trail_index) const {
     tmp_queue_.push_back(next_trail_index);
   }
   MergeReasonIntoInternal(reason);
-  return ClauseRef(*reason);
+  return *reason;
 }
 
 void IntegerTrail::EnqueueLiteral(
-    Literal literal, const std::vector<Literal>& literal_reason,
-    const std::vector<IntegerLiteral>& integer_reason) {
+    Literal literal, gtl::Span<Literal> literal_reason,
+    gtl::Span<IntegerLiteral> integer_reason) {
   DCHECK(AllLiteralsAreFalse(literal_reason));
   if (integer_decision_levels_.empty()) {
     // Level zero. We don't keep any reason.
@@ -974,7 +982,7 @@ void IntegerTrail::EnqueueLiteral(
   // This may not indicate an incorectness, but just some propagators that
   // didn't reach a fixed-point at level zero.
   if (DEBUG_MODE && !integer_decision_levels_.empty()) {
-    std::vector<Literal> l = literal_reason;
+    std::vector<Literal> l(literal_reason.begin(), literal_reason.end());
     MergeReasonInto(integer_reason, &l);
     LOG_IF(WARNING, l.empty())
         << "Propagating a literal with no reason at a positive level!\n"

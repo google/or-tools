@@ -49,7 +49,7 @@ class DynamicPartition {
  public:
   // Creates a DynamicPartition on n elements, numbered 0..n-1. Start with
   // the trivial partition (only one subset containing all elements).
-  explicit DynamicPartition(int n);
+  explicit DynamicPartition(int num_elements);
 
   // Ditto, but specify the initial part of each elements. Part indices must
   // form a dense integer set starting at 0; eg. [2, 1, 0, 1, 1, 3, 0] is valid.
@@ -164,8 +164,11 @@ class DynamicPartition {
     uint64 fprint;
 
     Part() : start_index(0), end_index(0), parent_part(0), fprint(0) {}
-    Part(int s, int e, int p, uint64 fp)
-        : start_index(s), end_index(e), parent_part(p), fprint(fp) {}
+    Part(int start_index, int end_index, int parent_part, uint64 fprint)
+        : start_index(start_index),
+          end_index(end_index),
+          parent_part(parent_part),
+          fprint(fprint) {}
   };
   std::vector<Part> part_;  // The disjoint parts.
 

@@ -59,10 +59,11 @@ class SymmetryPropagator : public SatPropagator {
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
-  ClauseRef Reason(const Trail& trail, int trail_index) const final;
+  gtl::Span<Literal> Reason(const Trail& trail,
+                                   int trail_index) const final;
 
   // Adds a new permutation to this symmetry propagator. The ownership is
-  // transfered. This must be an integer permutation such that:
+  // transferred. This must be an integer permutation such that:
   // - Its domain is [0, 2 * num_variables) and corresponds to the index
   //   representation of the literals over num_variables variables.
   // - It must be compatible with the negation, for any literal l; not(p(l))
@@ -85,7 +86,8 @@ class SymmetryPropagator : public SatPropagator {
   // Permutes a list of literals from input into output using the permutation
   // with given index. This uses tmp_literal_mapping_ and has a complexity in
   // O(permutation_support + input_size).
-  void Permute(int index, ClauseRef input, std::vector<Literal>* output) const;
+  void Permute(int index, gtl::Span<Literal> input,
+               std::vector<Literal>* output) const;
 
  private:
   // Propagates the literal at propagation_trail_index_ from the trail.

@@ -172,7 +172,8 @@ bool LiteralWatchers::Propagate(Trail* trail) {
   return true;
 }
 
-ClauseRef LiteralWatchers::Reason(const Trail& trail, int trail_index) const {
+gtl::Span<Literal> LiteralWatchers::Reason(const Trail& trail,
+                                                  int trail_index) const {
   return reasons_[trail_index]->PropagationReason();
 }
 
@@ -311,10 +312,9 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
   return true;
 }
 
-ClauseRef BinaryImplicationGraph::Reason(const Trail& trail,
-                                         int trail_index) const {
-  const Literal* p = &reasons_[trail_index];
-  return ClauseRef(p, p + 1);
+gtl::Span<Literal> BinaryImplicationGraph::Reason(
+    const Trail& trail, int trail_index) const {
+  return {&reasons_[trail_index], 1};
 }
 
 // Here, we remove all the literal whose negation are implied by the negation of

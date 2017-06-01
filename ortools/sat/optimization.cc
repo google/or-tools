@@ -1135,7 +1135,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     }
 
     // TODO(user): Investigate if constraining the objective is better.
-    if (/* DISALBES CODE */ (false)) {
+    if (/* DISABLES CODE */ (false)) {
       sat_solver->Backtrack(0);
       sat_solver->SetAssumptionLevel(0);
       if (!integer_trail->Enqueue(
@@ -1328,7 +1328,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     // Re-express the objective with the new terms.
     // TODO(user): Do more experiments to decide if this is better.
     // TODO(user): Experiment with FixedWeightedSum().
-    if (/* DISALBES CODE */ (false)) {
+    if (/* DISABLES CODE */ (false)) {
       std::vector<IntegerVariable> constraint_vars;
       std::vector<int64> constraint_coeffs;
       for (const ObjectiveTerm node : terms) {
@@ -1347,7 +1347,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     // TODO(user): Do more experiments to decide if this is better. This
     // approach kind of mix the basic linear-scan one with the core based
     // approach.
-    if (/* DISALBES CODE */ (false)) {
+    if (/* DISABLES CODE */ (false)) {
       IntegerValue best = new_var_ub;
 
       // Simple linear scan algorithm to find the optimal of new_var.
