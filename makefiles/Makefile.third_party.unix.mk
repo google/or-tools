@@ -1,15 +1,9 @@
 # SVN tags of dependencies to checkout.
 
 GFLAGS_TAG = 2.2.0
-PROTOBUF_TAG = 3.2.0
+PROTOBUF_TAG = 3.3.0
 GLOG_TAG = 0.3.5
 CBC_TAG = 2.9.8
-
-HELP2MAN_TAG = 1.43.3
-# Autoconf support
-AUTOCONF_TAG = 2.69
-AUTOMAKE_TAG = 1.15
-LIBTOOL_TAG = 2.4.6
 
 # Detect if patchelf is needed
 ifeq ($(PLATFORM), LINUX)
@@ -204,11 +198,10 @@ dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TA
 dependencies/sources/glog-$(GLOG_TAG)/build_cmake/Makefile: dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt
 	-$(MKDIR) dependencies/sources/glog-$(GLOG_TAG)/build_cmake
 	cd dependencies/sources/glog-$(GLOG_TAG)/build_cmake && \
-	  $(CMAKE) -DCMAKE_INSTALL_PREFIX=../../../install \
-                   -DBUILD_SHARED_LIBS=OFF \
-                   -DBUILD_STATIC_LIBS=ON \
-	           -D GFLAGS_ROOT_DIR=$(OR_TOOLS_TOP)/dependencies/install \
+	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=../../../install \
+                   -D BUILD_SHARED_LIBS=OFF \
                    -D CMAKE_CXX_FLAGS="-fPIC $(MAC_VERSION)" \
+                   -D GFLAGS_DIR=../../gflags-$(GFLAGS_TAG) \
 	           ..
 
 dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt:
@@ -292,4 +285,5 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo >> Makefile.local
 	@echo "# Define UNIX_GFLAGS_DIR, UNIX_PROTOBUF_DIR, UNIX_GLOG_DIR," >> Makefile.local
-	@echo "# UNIX_CLP_DIR, UNIX_CBC_DIR if you wish to use a custom version. " >> Makefile.local
+	@echo "# UNIX_CLP_DIR, UNIX_CBC_DIR, UNIX_SWIG_BINARY if you wish to " >> Makefile.local
+	@echo "# use a custom version. " >> Makefile.local

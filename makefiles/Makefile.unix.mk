@@ -12,7 +12,11 @@ UNIX_CLP_DIR ?= $(OR_ROOT_FULL)/dependencies/install
 
 # Unix specific definitions
 PROTOBUF_DIR = $(UNIX_PROTOBUF_DIR)
-SWIG_BINARY = swig
+ifdef UNIX_SWIG_BINARY
+  SWIG_BINARY = $(UNIX_SWIG_BINARY)
+else
+  SWIG_BINARY = swig
+endif
 MKDIR = mkdir
 MKDIR_P = mkdir -p
 COPY = cp
