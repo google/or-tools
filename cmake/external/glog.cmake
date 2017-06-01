@@ -1,13 +1,7 @@
 SET(GLOG_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/glog/src/glog/)
 LIST(APPEND GLOG_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/glog/src/glog/src/)
 SET(GLOG_URL https://github.com/google/glog)
-
-IF(WIN32)
-    SET(GLOG_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/glog/src/glog/${CMAKE_BUILD_TYPE}/libglog.lib)
-ELSE()
-    SET(GLOG_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/glog/src/glog/libglog.a)
-ENDIF()
-MESSAGE("Glog: ${GLOG_VERSION}")
+SET(GLOG_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/glog/src/glog/libglog.a)
 
 ExternalProject_Add(Glog
         PREFIX Glog

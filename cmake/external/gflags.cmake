@@ -1,11 +1,6 @@
 SET(Gflags_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/gflags/src/gflags/include/)
 SET(Gflags_URL https://github.com/gflags/gflags)
-
-IF(WIN32)
-    SET(Gflags_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/gflags/src/gflags/${CMAKE_BUILD_TYPE}/libgflags.lib)
-ELSE()
-    SET(Gflags_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/gflags/src/gflags/lib/libgflags.a)
-ENDIF()
+SET(Gflags_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/gflags/src/gflags/lib/libgflags.a)
 
 ExternalProject_Add(Gflags
         PREFIX Gflags
@@ -15,6 +10,7 @@ ExternalProject_Add(Gflags
         BUILD_IN_SOURCE 1
         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/gflags/src/gflags
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -DBUILD_STATIC_LIBS=ON
         -DBUILD_TESTING=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON
         ${Gflags_ADDITIONAL_CMAKE_OPTIONS}
