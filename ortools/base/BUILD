@@ -374,3 +374,24 @@ cc_library(
         ":mutex",
     ],
 )
+
+cc_library(
+    name = "inlined_vector",
+    hdrs = [
+        "inlined_vector.h",
+    ],
+    deps = [
+        ":base",
+    ],
+)
+
+cc_library(
+    name = "span",
+    hdrs = [
+        "span.h",
+    ],
+    deps = [
+        ":base",
+        ":inlined_vector",
+    ],
+)
