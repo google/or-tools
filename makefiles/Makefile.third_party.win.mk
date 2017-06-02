@@ -199,12 +199,14 @@ dependencies\archives\zlib$(ZLIB_ARCHIVE_TAG).zip:
 install_gflags: dependencies/install/lib/gflags.lib
 
 dependencies/install/lib/gflags.lib: dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && \
-	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\install \
+	-mkdir dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake
+	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && \
+	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\..\install \
 	           -D CMAKE_BUILD_TYPE=Release \
 	           -G "NMake Makefiles" \
-	           .
-	cd dependencies/sources/gflags-$(GFLAGS_TAG) && nmake install
+	           ..
+	cd dependencies\sources\gflags-$(GFLAGS_TAG)\build_cmake && \
+	nmake install
 	$(TOUCH) dependencies/install/lib/gflags_static.lib
 
 dependencies/sources/gflags-$(GFLAGS_TAG)/INSTALL.md: dependencies/archives/gflags-$(GFLAGS_TAG).zip
@@ -240,20 +242,20 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build\protobuf.sln: dependen
 	cd dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\build && cmake -G $(CMAKE_PLATFORM) -Dprotobuf_BUILD_TESTS=OFF ..
 
 dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
-#	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/release/download/v$(PROTOBUF_TAG)/protobuf-$(PROTOBUF_TAG).zip
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/protobuf/archive/v$(PROTOBUF_TAG).zip
 	tools\unzip -d dependencies\sources dependencies\archives\v$(PROTOBUF_TAG).zip
 
 install_glog: dependencies/install/include/glog/logging.h
 
 dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/INSTALL.md install_gflags
-	cd dependencies/sources/glog-$(GLOG_TAG) && \
-	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\install \
+	-md dependencies\sources\glog-$(GLOG_TAG)\build_cmake
+	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && \
+	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\..\install \
 	           -D CMAKE_BUILD_TYPE=Release \
-	           -D GFLAGS_ROOT_DIR=$(OR_TOOLS_TOP)\\dependencies\\install \
+	           -D CMAKE_PREFIX_PATH=$(OR_TOOLS_TOP)\dependencies\install \
 	           -G "NMake Makefiles" \
-	           .
-	cd dependencies/sources/glog-$(GLOG_TAG) && nmake install
+	           ..
+	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && nmake install
 	$(TOUCH) dependencies/install/lib/glog_static.lib
 
 dependencies/sources/glog-$(GLOG_TAG)/INSTALL.md: dependencies/archives/glog-$(GLOG_TAG).zip
