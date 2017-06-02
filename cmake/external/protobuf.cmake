@@ -3,6 +3,7 @@ FIND_PACKAGE(ZLIB REQUIRED)
 SET(Protobuf_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/protobuf/src)
 SET(Protobuf_URL https://github.com/google/protobuf)
 SET(Protobuf_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/protobuf/libprotobuf.a)
+LIST(APPEND Protobuf_LIBRARIES ${ZLIB_LIBRARIES})
 SET(Protobuf_PROTOC_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/protobuf/protoc)
 
 ExternalProject_Add(Protobuf
