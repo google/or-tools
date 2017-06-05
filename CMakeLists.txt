@@ -17,13 +17,11 @@ IF(UNIX)
 ENDIF()
 
 SET(BUILD_CXX ON)
-SET(DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads"
-        CACHE PATH "Location where external projects will be downloaded.")
+SET(DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads" CACHE PATH "Location where external projects will be downloaded.")
 
 MARK_AS_ADVANCED(BUILD_CXX)
 MARK_AS_ADVANCED(DOWNLOAD_LOCATION)
 
-SET(${PROJECT_NAME}externalLibraries "")
 SET(${PROJECT_NAME}externalTargets "")
 
 FILE(READ ${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.txt _Dependency_file)
@@ -38,9 +36,7 @@ IF(BUILD_CXX)
     IF(NOT Protobuf_FOUND)
         MESSAGE(STATUS "Did not find system protobuff. Building as an external project")
         INCLUDE(cmake/external/protobuf.cmake)
-        LIST(APPEND ${PROJECT_NAME}externalLibraries ${Protobuf_STATIC_LIBRARIES})
     ENDIF()
-    LIST(APPEND ${PROJECT_NAME}externalLibraries ${Protobuf_LIBRARIES})
     INCLUDE_DIRECTORIES(${Protobuf_INCLUDE_DIRS})
 
     FIND_PACKAGE(Gflags ${Gflags_VERSION} QUIET)
@@ -48,7 +44,6 @@ IF(BUILD_CXX)
         MESSAGE(STATUS "Did not find system gflags. Building as an external project")
         INCLUDE(cmake/external/gflags.cmake)
     ENDIF()
-    LIST(APPEND ${PROJECT_NAME}externalLibraries ${Gflags_LIBRARIES})
     INCLUDE_DIRECTORIES(${Gflags_INCLUDE_DIRS})
 
     SET(GLOG_VERSION ${Glog_VERSION})
@@ -59,7 +54,6 @@ IF(BUILD_CXX)
         MESSAGE(STATUS "Did not find system glog. Building as an external project.")
         INCLUDE(cmake/external/glog.cmake)
     ENDIF()
-    LIST(APPEND ${PROJECT_NAME}externalLibraries ${GLOG_LIBRARIES})
     INCLUDE_DIRECTORIES(${GLOG_INCLUDE_DIRS})
 
     SET(Cbc_VERSION ${cbc_VERSION})
@@ -69,7 +63,6 @@ IF(BUILD_CXX)
         MESSAGE(STATUS "Did not find system coin-cbc. Building as an external Project.")
         INCLUDE(cmake/external/cbc.cmake)
     ENDIF()
-    LIST(APPEND ${PROJECT_NAME}externalLibraries ${Cbc_LIBRARIES})
     INCLUDE_DIRECTORIES(${Cbc_INCLUDE_DIRS})
 
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG -DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP")
@@ -95,10 +88,12 @@ IF(BUILD_CXX)
 
     LIST(APPEND SUBTARGETS "$<TARGET_OBJECTS:${PROJECT_NAME}Proto>")
 
-    MESSAGE(STATUS "Libraries : ${${PROJECT_NAME}externalLibraries}")
     ADD_LIBRARY(${PROJECT_NAME} SHARED ${SUBTARGETS})
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-            ${${PROJECT_NAME}externalLibraries}
+            ${Cbc_LIBRARIES}
+            ${Gflags_LIBRARIES}
+            ${Protobuf_LIBRARIES}
+            ${GLOG_LIBRARIES}
             ${CMAKE_THREAD_LIBS_INIT})
 
     ADD_DEPENDENCIES(${PROJECT_NAME} ${PROJECT_NAME}Proto)

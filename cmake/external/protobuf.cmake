@@ -1,18 +1,16 @@
 FIND_PACKAGE(ZLIB REQUIRED)
 
-SET(Protobuf_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/protobuf/src)
+SET(Protobuf_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/protobuf_project/src/protobuf/src)
 SET(Protobuf_URL https://github.com/google/protobuf)
-SET(Protobuf_LIBRARIES ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/protobuf/libprotobuf.a)
-LIST(APPEND Protobuf_LIBRARIES ${ZLIB_LIBRARIES})
-SET(Protobuf_PROTOC_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/protobuf/protoc)
 
-ExternalProject_Add(Protobuf
+ExternalProject_Add(Protobuf_project
         PREFIX Protobuf
         GIT_REPOSITORY ${Protobuf_URL}
         GIT_TAG "v${Protobuf_VERSION}"
         DOWNLOAD_DIR "${DOWNLOAD_LOCATION}"
+        UPDATE_COMMAND ""
         BUILD_IN_SOURCE 1
-        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf/src/protobuf
+        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf_project/src/protobuf
         CONFIGURE_COMMAND ${CMAKE_COMMAND} cmake/
         -Dprotobuf_BUILD_TESTS=OFF
         -DBUILD_STATIC_LIBS=ON
@@ -24,4 +22,9 @@ ExternalProject_Add(Protobuf
         -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON)
 
-LIST(APPEND ${PROJECT_NAME}externalTargets Protobuf)
+ADD_LIBRARY(Protobuf STATIC IMPORTED)
+SET_PROPERTY(TARGET Protobuf PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/protobuf_project/src/protobuf/libprotobuf.a)
+SET(Protobuf_LIBRARIES "")
+LIST(APPEND Protobuf_LIBRARIES Protobuf ${ZLIB_LIBRARIES})
+
+SET(Protobuf_PROTOC_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/protobuf_project/src/protobuf/protoc)
