@@ -4,6 +4,7 @@ ADD_LIBRARY(${PROJECT_NAME}examples SHARED
         fap_model_printer.cc
         fap_parser.cc
         fap_utilities.cc)
+TARGET_LINK_LIBRARIES(${PROJECT_NAME}examples ${PROJECT_NAME})
 
 INSTALL(TARGETS ${PROJECT_NAME}examples
             EXPORT ${PROJECT_NAME}_Exports
