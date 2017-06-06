@@ -12,7 +12,7 @@ FOREACH(COIN_PROJECT CoinUtils Osi Clp Cgl Cbc)
             UPDATE_COMMAND ""
             BUILD_IN_SOURCE 1
             CONFIGURE_COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${COIN_PROJECT}/src/${COIN_PROJECT}_project/configure
-            --disable-bzlib --without-lapack --with-pic --enable-static --prefix=${CMAKE_CURRENT_BINARY_DIR}/install
+            --enable-silent-rules --disable-bzlib --without-lapack --with-pic --enable-static --prefix=${CMAKE_CURRENT_BINARY_DIR}/install
             ADD_CXXFLAGS=${ADD_CXXFLAGS})
 
     ADD_LIBRARY(${COIN_PROJECT} STATIC IMPORTED)
