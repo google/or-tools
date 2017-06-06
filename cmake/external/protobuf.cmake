@@ -24,9 +24,11 @@ ExternalProject_Add(Protobuf_project
 
 ADD_LIBRARY(Protobuf STATIC IMPORTED)
 SET_PROPERTY(TARGET Protobuf PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/protobuf_project/src/protobuf/libprotobuf.a)
+ADD_DEPENDENCIES(Protobuf Protobuf_project)
 SET(Protobuf_LIBRARIES "")
 LIST(APPEND Protobuf_LIBRARIES Protobuf ${ZLIB_LIBRARIES})
 
 ADD_EXECUTABLE(Protobuf_PROTOC_EXECUTABLE IMPORTED)
 SET_PROPERTY(TARGET Protobuf_PROTOC_EXECUTABLE PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/protobuf_project/src/protobuf/protoc)
+ADD_DEPENDENCIES(Protobuf_PROTOC_EXECUTABLE Protobuf_project)
 SET(Protobuf_PROTOC_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/protobuf_project/src/protobuf/protoc)
