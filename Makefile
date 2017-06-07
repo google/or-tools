@@ -7,9 +7,6 @@ help:
 	@echo "  - .NET: csharp test_csharp clean_csharp "
 	@echo "  - all: all test clean"
 
-OR_TOOLS_MAJOR = 6
-OR_TOOLS_MINOR = 0
-
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
 # $(OR_TOOLS_TOP)/ or $(OR_TOOLS_TOP)\\ depending on the platform. It
@@ -35,7 +32,10 @@ all: third_party_check cc java python csharp
 	@echo Or-tools have been built for $(BUILT_LANGUAGES)
 clean: clean_cc clean_java clean_python clean_csharp clean_compat
 
-# First, we try to detect the platform.
+# Read version.
+include $(OR_ROOT)Version.txt
+
+# We try to detect the platform.
 include $(OR_ROOT)makefiles/Makefile.port
 OR_ROOT_FULL=$(OR_TOOLS_TOP)
 
