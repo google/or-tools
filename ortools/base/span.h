@@ -360,7 +360,7 @@ class Span {
       : impl_(a, N) {}
 
   template <int N>
-  Span(const gtl::InlinedVector<value_type, N>& v)  // NOLINT(runtime/explicit)
+  Span(const InlinedVector<value_type, N>& v)  // NOLINT(runtime/explicit)
       : impl_(v.data(), v.size()) {}
 
   // The constructor for any class supplying 'data() const' that returns either
@@ -469,7 +469,7 @@ class MutableSpan {
       : impl_(a, N) {}
 
   template <int N>
-  MutableSpan(gtl::InlinedVector<value_type, N>* v)  // NOLINT(runtime/explicit)
+  MutableSpan(InlinedVector<value_type, N>* v)  // NOLINT(runtime/explicit)
       : impl_(v->data(), v->size()) {}
 
   // The constructor for any class supplying 'T* data()' or 'T* mutable_data()'

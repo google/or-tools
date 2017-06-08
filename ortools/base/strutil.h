@@ -15,17 +15,17 @@
 #define OR_TOOLS_BASE_STRUTIL_H_
 
 #include <string>
-#include "ortools/base/stringpiece.h"
+#include "ortools/base/string_view.h"
 
 using std::string;
 
 namespace operations_research {
 
-inline bool HasSuffixString(const StringPiece& str, const StringPiece& suffix) {
+inline bool HasSuffixString(const string_view& str, const string_view& suffix) {
   return str.ends_with(suffix);
 }
 
-inline bool HasPrefixString(const StringPiece& str, const StringPiece& prefix) {
+inline bool HasPrefixString(const string_view& str, const string_view& prefix) {
   return str.starts_with(prefix);
 }
 

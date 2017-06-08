@@ -29,7 +29,7 @@
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 
-File::File(FILE* const f_des, const std::string& name) : f_(f_des), name_(name) {}
+File::File(FILE* const f_des, const operations_research::string_view& name) : f_(f_des), name_(name) {}
 
 bool File::Delete(const char* const name) { return remove(name) == 0; }
 
@@ -37,7 +37,7 @@ bool File::Exists(const char* const name) { return access(name, F_OK) == 0; }
 
 size_t File::Size() {
   struct stat f_stat;
-  stat(name_.c_str(), &f_stat);
+  stat(name_.data(), &f_stat);
   return f_stat.st_size;
 }
 
@@ -128,17 +128,17 @@ bool File::WriteLine(const std::string& line) {
   return Write("\n", 1) == 1;
 }
 
-std::string File::filename() const { return name_; }
+operations_research::string_view File::filename() const { return name_; }
 
 bool File::Open() const { return f_ != NULL; }
 
 void File::Init() {}
 
 namespace file {
-util::Status Open(const std::string& filename, const std::string& mode,
+util::Status Open(const operations_research::string_view& filename, const operations_research::string_view& mode,
                   File** f, int flags) {
   if (flags == Defaults()) {
-    *f = File::Open(filename, mode.c_str());
+    *f = File::Open(filename, mode.data());
     if (*f != nullptr) {
       return util::Status::OK;
     }
@@ -147,7 +147,7 @@ util::Status Open(const std::string& filename, const std::string& mode,
                       StrCat("Could not open '", filename, "'"));
 }
 
-util::Status GetContents(const std::string& filename, std::string* output, int flags) {
+util::Status GetContents(const operations_research::string_view& filename, std::string* output, int flags) {
   if (flags == Defaults()) {
     File* file = File::Open(filename, "r");
     if (file != NULL) {
@@ -169,16 +169,16 @@ util::Status WriteString(File* file, const std::string& contents, int flags) {
                       StrCat("Could not write ", contents.size(), " bytes"));
 }
 
-util::Status SetContents(const std::string& filename, const std::string& contents,
+util::Status SetContents(const operations_research::string_view& filename, const std::string& contents,
                          int flags) {
   return WriteString(File::Open(filename, "w"), contents, flags);
 }
 
-bool ReadFileToString(const std::string& file_name, std::string* output) {
+bool ReadFileToString(const operations_research::string_view& file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(const std::string& data, const std::string& file_name) {
+bool WriteStringToFile(const std::string& data, const operations_research::string_view& file_name) {
   return SetContents(file_name, data, file::Defaults()).ok();
 }
 
@@ -189,7 +189,7 @@ class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
 };
 }  // namespace
 
-bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto) {
+bool ReadFileToProto(const operations_research::string_view& file_name, google::protobuf::Message* proto) {
   std::string str;
   if (!ReadFileToString(file_name, &str)) {
     LOG(INFO) << "Could not read " << file_name;
@@ -217,34 +217,34 @@ bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* pr
   return false;
 }
 
-void ReadFileToProtoOrDie(const std::string& file_name, google::protobuf::Message* proto) {
+void ReadFileToProtoOrDie(const operations_research::string_view& file_name, google::protobuf::Message* proto) {
   CHECK(ReadFileToProto(file_name, proto)) << "file_name: " << file_name;
 }
 
 bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
-                           const std::string& file_name) {
+                           const operations_research::string_view& file_name) {
   std::string proto_string;
   return google::protobuf::TextFormat::PrintToString(proto, &proto_string) &&
          WriteStringToFile(proto_string, file_name);
 }
 
 void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
-                                const std::string& file_name) {
+                                const operations_research::string_view& file_name) {
   CHECK(WriteProtoToASCIIFile(proto, file_name)) << "file_name: " << file_name;
 }
 
-bool WriteProtoToFile(const google::protobuf::Message& proto, const std::string& file_name) {
+bool WriteProtoToFile(const google::protobuf::Message& proto, const operations_research::string_view& file_name) {
   std::string proto_string;
   return proto.AppendToString(&proto_string) &&
          WriteStringToFile(proto_string, file_name);
 }
 
 void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
-                           const std::string& file_name) {
+                           const operations_research::string_view& file_name) {
   CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
 }
 
-util::Status SetTextProto(const std::string& filename, const google::protobuf::Message& proto,
+util::Status SetTextProto(const operations_research::string_view& filename, const google::protobuf::Message& proto,
                           int flags) {
   if (flags == Defaults()) {
     if (WriteProtoToASCIIFile(proto, filename)) return util::Status::OK;
@@ -253,7 +253,7 @@ util::Status SetTextProto(const std::string& filename, const google::protobuf::M
                       StrCat("Could not write proto to '", filename, "'."));
 }
 
-util::Status SetBinaryProto(const std::string& filename,
+util::Status SetBinaryProto(const operations_research::string_view& filename,
                             const google::protobuf::Message& proto, int flags) {
   if (flags == Defaults()) {
     if (WriteProtoToFile(proto, filename)) return util::Status::OK;
@@ -262,9 +262,9 @@ util::Status SetBinaryProto(const std::string& filename,
                       StrCat("Could not write proto to '", filename, "'."));
 }
 
-util::Status Delete(const std::string& path, int flags) {
+util::Status Delete(const operations_research::string_view& path, int flags) {
   if (flags == Defaults()) {
-    if (remove(path.c_str())) return util::Status::OK;
+    if (remove(path.data())) return util::Status::OK;
   }
   return util::Status(util::error::INVALID_ARGUMENT,
                       StrCat("Could not delete '", path, "'."));

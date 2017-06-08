@@ -27,7 +27,7 @@ using ::google::protobuf::FieldDescriptor;
 using ::google::protobuf::Reflection;
 using ::google::protobuf::TextFormat;
 
-bool ReadFileToProto(const std::string& filename, google::protobuf::Message* proto) {
+bool ReadFileToProto(string_view filename, google::protobuf::Message* proto) {
   std::string data;
   CHECK_OK(file::GetContents(filename, &data, file::Defaults()));
   // Note that gzipped files are currently not supported.
@@ -38,7 +38,7 @@ bool ReadFileToProto(const std::string& filename, google::protobuf::Message* pro
   return false;
 }
 
-bool WriteProtoToFile(const std::string& filename, const google::protobuf::Message& proto,
+bool WriteProtoToFile(string_view filename, const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped) {
   // Note that gzipped files are currently not supported.
     gzipped = false;
