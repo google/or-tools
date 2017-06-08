@@ -11,34 +11,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #ifndef OR_TOOLS_BASE_INLINED_VECTOR_H_
 #define OR_TOOLS_BASE_INLINED_VECTOR_H_
 
-// An InlinedVector<T,N,A> is like a std::vector<T,A>, except that storage
+// An gtl::InlinedVector<T,N,A> is like a std::vector<T,A>, except that storage
 // for sequences of length <= N are provided inline without requiring
 // any heap allocation.  Typically N is very small (e.g., 4) so that
 // sequences that are expected to be short do not require allocations.
 //
 // Only some of the std::vector<> operations are currently implemented.
 // Other operations may be added as needed to facilitate migrating
-// code that uses std::vector<> to InlinedVector<>.
-//
-// NOTE: If you want an inlined version to replace use of a
-// std::vector<bool>, consider using util::bitmap::InlinedBitVector<NBITS>
-// in ortools/base/inlined_bitvector.h
-//
+// code that uses std::vector<> to gtl::InlinedVector<>.
 
 #include <sys/types.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
-#include <algorithm>
+#include <initializer_list>  // NOLINT(build/include_order)
 #include <iterator>
 #include <memory>
 #include <type_traits>
 #include <vector>
-#include <initializer_list>  // NOLINT(build/include_order)
 
 #include "ortools/base/logging.h"
 
@@ -129,7 +125,7 @@ class InlinedVector {
     }
   }
   const_pointer data() const {
-    return const_cast<InlinedVector<T, N>*>(this)->data();
+    return const_cast<gtl::InlinedVector<T, N>*>(this)->data();
   }
 
   // Remove all elements
@@ -386,7 +382,7 @@ class InlinedVector {
   };
   // 2) Construct a T with args at not-yet-initialized memory pointed by dst.
   struct Construct {
-    template<class... Args>
+    template <class... Args>
     void operator()(T* dst, Args&&... args) const {
       new (dst) T(std::forward<Args>(args)...);
     }
@@ -458,54 +454,54 @@ class InlinedVector {
 
 // Provide linkage for constants.
 template <typename T, int N>
-const size_t InlinedVector<T, N>::kSizeUnaligned;
+const size_t gtl::InlinedVector<T, N>::kSizeUnaligned;
 template <typename T, int N>
-const size_t InlinedVector<T, N>::kSize;
+const size_t gtl::InlinedVector<T, N>::kSize;
 template <typename T, int N>
-const unsigned int InlinedVector<T, N>::kSentinel;
+const unsigned int gtl::InlinedVector<T, N>::kSentinel;
 template <typename T, int N>
-const size_t InlinedVector<T, N>::kFit1;
+const size_t gtl::InlinedVector<T, N>::kFit1;
 template <typename T, int N>
-const size_t InlinedVector<T, N>::kFit;
+const size_t gtl::InlinedVector<T, N>::kFit;
 
 template <typename T, int N>
-inline void swap(InlinedVector<T, N>& a, InlinedVector<T, N>& b) {
+inline void swap(gtl::InlinedVector<T, N>& a, gtl::InlinedVector<T, N>& b) {
   a.swap(b);
 }
 
 template <typename T, int N>
-inline bool operator==(const InlinedVector<T, N>& a,
-                       const InlinedVector<T, N>& b) {
+inline bool operator==(const gtl::InlinedVector<T, N>& a,
+                       const gtl::InlinedVector<T, N>& b) {
   return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin());
 }
 
 template <typename T, int N>
-inline bool operator!=(const InlinedVector<T, N>& a,
-                       const InlinedVector<T, N>& b) {
+inline bool operator!=(const gtl::InlinedVector<T, N>& a,
+                       const gtl::InlinedVector<T, N>& b) {
   return !(a == b);
 }
 
 template <typename T, int N>
-inline bool operator<(const InlinedVector<T, N>& a,
-                      const InlinedVector<T, N>& b) {
+inline bool operator<(const gtl::InlinedVector<T, N>& a,
+                      const gtl::InlinedVector<T, N>& b) {
   return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
 }
 
 template <typename T, int N>
-inline bool operator>(const InlinedVector<T, N>& a,
-                      const InlinedVector<T, N>& b) {
+inline bool operator>(const gtl::InlinedVector<T, N>& a,
+                      const gtl::InlinedVector<T, N>& b) {
   return b < a;
 }
 
 template <typename T, int N>
-inline bool operator<=(const InlinedVector<T, N>& a,
-                       const InlinedVector<T, N>& b) {
+inline bool operator<=(const gtl::InlinedVector<T, N>& a,
+                       const gtl::InlinedVector<T, N>& b) {
   return !(b < a);
 }
 
 template <typename T, int N>
-inline bool operator>=(const InlinedVector<T, N>& a,
-                       const InlinedVector<T, N>& b) {
+inline bool operator>=(const gtl::InlinedVector<T, N>& a,
+                       const gtl::InlinedVector<T, N>& b) {
   return !(a < b);
 }
 
@@ -513,12 +509,12 @@ inline bool operator>=(const InlinedVector<T, N>& a,
 // Implementation
 
 template <typename T, int N>
-inline InlinedVector<T, N>::InlinedVector() {
+inline gtl::InlinedVector<T, N>::InlinedVector() {
   InitRep();
 }
 
 template <typename T, int N>
-inline InlinedVector<T, N>::InlinedVector(size_t n) {
+inline gtl::InlinedVector<T, N>::InlinedVector(size_t n) {
   InitRep();
   if (n > capacity()) {
     Grow<Nop>(n);  // Must use Nop in case T is not copyable
@@ -528,7 +524,7 @@ inline InlinedVector<T, N>::InlinedVector(size_t n) {
 }
 
 template <typename T, int N>
-inline InlinedVector<T, N>::InlinedVector(size_t n, const value_type& elem) {
+inline gtl::InlinedVector<T, N>::InlinedVector(size_t n, const value_type& elem) {
   InitRep();
   if (n > capacity()) {
     Grow<Nop>(n);  // Can use Nop since we know we have nothing to copy
@@ -538,13 +534,13 @@ inline InlinedVector<T, N>::InlinedVector(size_t n, const value_type& elem) {
 }
 
 template <typename T, int N>
-inline InlinedVector<T, N>::InlinedVector(const InlinedVector& v) {
+inline gtl::InlinedVector<T, N>::InlinedVector(const InlinedVector& v) {
   InitRep();
   *this = v;
 }
 
 template <typename T, int N>
-typename InlinedVector<T, N>::iterator InlinedVector<T, N>::insert(
+typename gtl::InlinedVector<T, N>::iterator gtl::InlinedVector<T, N>::insert(
     iterator pos, const value_type& v) {
   DCHECK_GE(pos, begin());
   DCHECK_LE(pos, end());
@@ -568,7 +564,7 @@ typename InlinedVector<T, N>::iterator InlinedVector<T, N>::insert(
 }
 
 template <typename T, int N>
-typename InlinedVector<T, N>::iterator InlinedVector<T, N>::erase(
+typename gtl::InlinedVector<T, N>::iterator gtl::InlinedVector<T, N>::erase(
     iterator first, iterator last) {
   DCHECK_LE(begin(), first);
   DCHECK_LE(first, last);
@@ -583,7 +579,7 @@ typename InlinedVector<T, N>::iterator InlinedVector<T, N>::erase(
 }
 
 template <typename T, int N>
-void InlinedVector<T, N>::swap(InlinedVector& other) {
+void gtl::InlinedVector<T, N>::swap(InlinedVector& other) {
   using std::swap;  // Augment ADL with std::swap.
   if (&other == this) {
     return;
@@ -636,14 +632,14 @@ void InlinedVector<T, N>::swap(InlinedVector& other) {
 
 template <typename T, int N>
 template <typename Iter>
-inline void InlinedVector<T, N>::AppendRange(Iter first, Iter last,
+inline void gtl::InlinedVector<T, N>::AppendRange(Iter first, Iter last,
                                              std::input_iterator_tag) {
   std::copy(first, last, std::back_inserter(*this));
 }
 
 template <typename T, int N>
 template <typename Iter>
-inline void InlinedVector<T, N>::AppendRange(Iter first, Iter last,
+inline void gtl::InlinedVector<T, N>::AppendRange(Iter first, Iter last,
                                              std::forward_iterator_tag) {
   typedef typename std::iterator_traits<Iter>::difference_type Length;
   Length length = std::distance(first, last);
@@ -655,7 +651,7 @@ inline void InlinedVector<T, N>::AppendRange(Iter first, Iter last,
 
 template <typename T, int N>
 template <typename Iter>
-inline void InlinedVector<T, N>::AppendRange(Iter first, Iter last) {
+inline void gtl::InlinedVector<T, N>::AppendRange(Iter first, Iter last) {
   typedef typename std::iterator_traits<Iter>::iterator_category IterTag;
   AppendRange(first, last, IterTag());
 }

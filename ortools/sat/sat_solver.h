@@ -39,10 +39,10 @@
 #include "ortools/sat/pb_constraint.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/running_stat.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
-#include "ortools/base/random.h"
 #include "ortools/base/adjustable_priority_queue.h"
 
 namespace operations_research {
@@ -893,7 +893,7 @@ class SatSolver {
   VariableWithSameReasonIdentifier same_reason_identifier_;
 
   // A random number generator.
-  mutable MTRandom random_;
+  mutable random_engine_t random_;
 
   // Temporary vector used by AddProblemClause().
   std::vector<LiteralWithCoeff> tmp_pb_constraint_;

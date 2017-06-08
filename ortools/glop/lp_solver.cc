@@ -33,7 +33,7 @@
 #include "ortools/util/fp_utils.h"
 
 #ifndef ANDROID_JNI
-#include "ortools/util/proto_tools.h"
+#include "ortools/util/file_util.h"
 #endif
 
 DEFINE_bool(lp_solver_enable_fp_exceptions, false,

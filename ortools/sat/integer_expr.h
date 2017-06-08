@@ -459,35 +459,9 @@ inline std::function<IntegerVariable(Model*)> NewMax(
 
 // Expresses the fact that an existing integer variable is equal to one of
 // the given values, each selected by a given literal.
-inline std::function<void(Model*)> IsOneOf(
-    IntegerVariable var, const std::vector<Literal>& selectors,
-    const std::vector<IntegerValue>& values) {
-  return [=](Model* model) {
-    CHECK(!values.empty());
-    CHECK_EQ(values.size(), selectors.size());
-    IntegerValue min_value = values[0];
-    IntegerValue max_value = values[1];
-    for (const IntegerValue v : values) {
-      min_value = std::min(min_value, v);
-      max_value = std::max(max_value, v);
-    }
-    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    CHECK(integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, min_value),
-                                 {}, {}));
-    CHECK(integer_trail->Enqueue(IntegerLiteral::LowerOrEqual(var, max_value),
-                                 {}, {}));
-
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    if (!encoder->VariableIsFullyEncoded(var)) {
-      encoder->FullyEncodeVariableUsingGivenLiterals(var, selectors, values);
-    } else {
-      // TODO(user): copy the sat_fz_solver code of the int element here.
-      // And use this function instead because the first branch will be more
-      // efficient).
-      LOG(FATAL) << "TODO(fdid): Not implemented.";
-    }
-  };
-}
+std::function<void(Model*)> IsOneOf(IntegerVariable var,
+                                    const std::vector<Literal>& selectors,
+                                    const std::vector<IntegerValue>& values);
 
 template <class T>
 void RegisterAndTransferOwnership(Model* model, T* ct) {

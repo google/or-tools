@@ -33,7 +33,7 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/mps_reader.h"
 #include "ortools/lp_data/proto_utils.h"
-#include "ortools/util/proto_tools.h"
+#include "ortools/util/file_util.h"
 
 DEFINE_string(input, "", "REQUIRED: Input file name.");
 DEFINE_string(solver, "glop",
@@ -164,8 +164,8 @@ void Run() {
       LinearProgramToMPModelProto(linear_program_fixed, &model_proto);
     }
   } else {
-    ReadFileToProto(FLAGS_input, &model_proto);
-    ReadFileToProto(FLAGS_input, &request_proto);
+    file::ReadFileToProto(FLAGS_input, &model_proto);
+    file::ReadFileToProto(FLAGS_input, &request_proto);
     // If the input proto is in binary format, both ReadFileToProto could return
     // true. Instead use the actual number of variables found to test the
     // correct format of the input.

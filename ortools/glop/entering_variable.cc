@@ -65,7 +65,7 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
         }
         if (*entering_col != kInvalidCol) {
           unused_columns_.Clear(*entering_col);
-          return Status::OK;
+          return Status::OK();
         }
         ResetUnusedColumns();
         if (parameters_.normalize_using_column_norm()) {
@@ -80,19 +80,19 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
           DantzigChooseEnteringColumn<!kNormalize, !kNested>(entering_col);
         }
       }
-      return Status::OK;
+      return Status::OK();
     case GlopParameters::STEEPEST_EDGE:
       NormalizedChooseEnteringColumn<kSteepest>(entering_col);
-      return Status::OK;
+      return Status::OK();
     case GlopParameters::DEVEX:
       NormalizedChooseEnteringColumn<!kSteepest>(entering_col);
-      return Status::OK;
+      return Status::OK();
   }
   LOG(DFATAL) << "Unknown pricing rule: "
               << GlopParameters_PricingRule_Name(rule_)
               << ". Using steepest edge.";
   NormalizedChooseEnteringColumn<kSteepest>(entering_col);
-  return Status::OK;
+  return Status::OK();
 }
 
 namespace {
@@ -273,7 +273,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }
 
-  if (*entering_col == kInvalidCol) return Status::OK;
+  if (*entering_col == kInvalidCol) return Status::OK();
   *pivot = update_coefficient[*entering_col];
 
   // If the step is 0.0, we make sure the reduced cost is 0.0 so
@@ -294,7 +294,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
     // the pertubed problem is solved to the optimal.
     reduced_costs_->ShiftCost(*entering_col);
   }
-  return Status::OK;
+  return Status::OK();
 }
 
 Status EnteringVariable::DualPhaseIChooseEnteringColumn(
@@ -400,7 +400,7 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   }
   *pivot =
       (*entering_col == kInvalidCol) ? 0.0 : update_coefficient[*entering_col];
-  return Status::OK;
+  return Status::OK();
 }
 
 void EnteringVariable::SetParameters(const GlopParameters& parameters) {

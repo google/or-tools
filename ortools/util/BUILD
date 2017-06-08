@@ -27,6 +27,12 @@ cc_library(
 )
 
 cc_library(
+    name = "random_engine",
+    hdrs = ["random_engine.h"],
+    deps = ["//ortools/base:map_util"],
+)
+
+cc_library(
     name = "bitset",
     srcs = ["bitset.cc"],
     hdrs = ["bitset.h"],

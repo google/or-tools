@@ -1126,7 +1126,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
   IntegerValue best_objective = integer_trail->UpperBound(objective_var);
   const auto process_solution = [&]() {
     const IntegerValue objective(model->Get(Value(objective_var)));
-    if (objective >= best_objective) return true;
+    if (objective >= best_objective && num_solutions > 0) return true;
 
     ++num_solutions;
     best_objective = objective;
