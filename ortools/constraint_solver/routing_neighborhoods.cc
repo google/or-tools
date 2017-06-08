@@ -53,7 +53,7 @@ bool MakeRelocateNeighborsOperator::MoveChainAndRepair(int64 before_chain,
       if (current == last) {  // chain was just before destination
         current = before_chain;
       }
-      while (last >= 0 && !IsPathStart(current)) {
+      while (last >= 0 && !IsPathStart(current) && current != last) {
         last = Reposition(current, last);
         current = Prev(current);
       }
