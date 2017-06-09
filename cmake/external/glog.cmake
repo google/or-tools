@@ -2,25 +2,37 @@ SET(GLOG_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/)
 LIST(APPEND GLOG_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/src/)
 SET(GLOG_URL https://github.com/google/glog)
 
-ExternalProject_Add(Glog_project
-        PREFIX Glog
+IF(NOT gflags_FOUND)
+    ExternalProject_Get_Property(gflags_project SOURCE_DIR)
+    SET(GLOG_EXTRA_ARGS "-DCMAKE_PREFIX_PATH=${SOURCE_DIR}")
+ENDIF()
+
+ExternalProject_Add(GLOG_project
+        PREFIX GLOG
         GIT_REPOSITORY ${GLOG_URL}
         GIT_TAG "v${GLOG_VERSION}"
         DOWNLOAD_DIR "${DOWNLOAD_LOCATION}"
         UPDATE_COMMAND ""
+        PATCH_COMMAND git am -3 ${CMAKE_SOURCE_DIR}/patches/glog_includedir_fix.patch
         BUILD_IN_SOURCE 1
         SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog
         CONFIGURE_COMMAND ${CMAKE_COMMAND}
+        -DWITH_GFLAGS=ON
         -DBUILD_TESTING=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-        ${Glogs_ADDITIONAL_CMAKE_OPTIONS}
+        ${GLOG_EXTRA_ARGS}
         INSTALL_COMMAND ""
         CMAKE_CACHE_ARGS
         -DCMAKE_BUILD_TYPE:STRING=Release
         -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON)
 
+IF(NOT gflags_FOUND)
+    ADD_DEPENDENCIES(GLOG_project gflags_project)
+ENDIF()
+
 ADD_LIBRARY(GLOG STATIC IMPORTED) 
 SET_PROPERTY(TARGET GLOG PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/libglog.a)
+ADD_DEPENDENCIES(GLOG GLOG_project)
 SET(GLOG_LIBRARIES "")
 LIST(APPEND GLOG_LIBRARIES GLOG)

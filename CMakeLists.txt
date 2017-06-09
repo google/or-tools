@@ -24,7 +24,7 @@ MARK_AS_ADVANCED(DOWNLOAD_LOCATION)
 
 MESSAGE("-- Reading dependency tags from  ${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.txt")
 FILE(READ ${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.txt _Dependency_file)
-FOREACH(DEPENDENCY Protobuf Gflags Glog cbc CoinUtils Osi Clp Cgl)
+FOREACH(DEPENDENCY Protobuf gflags Glog cbc CoinUtils Osi Clp Cgl)
     STRING(REGEX REPLACE ".*${DEPENDENCY} = ([0-9.]+).*" "\\1" ${DEPENDENCY}_VERSION ${_Dependency_file})
     MESSAGE("  -- ${DEPENDENCY}_VERSION = ${${DEPENDENCY}_VERSION}")
 ENDFOREACH()
@@ -39,12 +39,12 @@ IF(BUILD_CXX)
     ENDIF()
     INCLUDE_DIRECTORIES(${Protobuf_INCLUDE_DIRS})
 
-    FIND_PACKAGE(GFlags ${Gflags_VERSION})
-    IF(NOT GFLAGS_FOUND)
+    FIND_PACKAGE(gflags ${gflags_VERSION} QUIET)
+    IF(NOT gflags_FOUND)
         MESSAGE(STATUS "Did not find system gflags. Building as an external project")
         INCLUDE(cmake/external/gflags.cmake)
     ENDIF()
-    INCLUDE_DIRECTORIES(${Gflags_INCLUDE_DIRS})
+    INCLUDE_DIRECTORIES(${gflags_INCLUDE_DIRS})
 
     SET(GLOG_VERSION ${Glog_VERSION})
     PKG_CHECK_MODULES(GLOG libglog>=${GLOG_VERSION})
@@ -84,6 +84,10 @@ IF(BUILD_CXX)
         ADD_DEPENDENCIES(${PROJECT_NAME}Proto Cbc)
     ENDIF()
 
+    IF(NOT GLOG_FOUND)
+        ADD_DEPENDENCIES(${PROJECT_NAME}Proto GLOG)
+    ENDIF()
+
     SET_TARGET_PROPERTIES(${PROJECT_NAME}Proto PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
     SET(SUBTARGETS "")
@@ -98,7 +102,7 @@ IF(BUILD_CXX)
     ADD_LIBRARY(${PROJECT_NAME} SHARED ${SUBTARGETS})
     TARGET_LINK_LIBRARIES(${PROJECT_NAME}
             ${Cbc_LIBRARIES}
-            ${Gflags_LIBRARIES}
+            ${gflags_LIBRARIES}
             ${Protobuf_LIBRARIES}
             ${GLOG_LIBRARIES}
             ${CMAKE_THREAD_LIBS_INIT})
