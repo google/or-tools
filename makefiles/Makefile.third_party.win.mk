@@ -247,20 +247,20 @@ dependencies\sources\protobuf-$(PROTOBUF_TAG)\cmake\CMakeLists.txt:
 
 install_glog: dependencies/install/include/glog/logging.h
 
-dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/INSTALL.md install_gflags
+dependencies/install/include/glog/logging.h: dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt install_gflags
 	-md dependencies\sources\glog-$(GLOG_TAG)\build_cmake
 	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && \
 	  $(CMAKE) -D CMAKE_INSTALL_PREFIX=..\..\..\install \
 	           -D CMAKE_BUILD_TYPE=Release \
-	           -D CMAKE_PREFIX_PATH=$(OR_TOOLS_TOP)\dependencies\install \
+	           -D CMAKE_PREFIX_PATH="$(OR_TOOLS_TOP)\dependencies\install" \
 	           -G "NMake Makefiles" \
 	           ..
 	cd dependencies\sources\glog-$(GLOG_TAG)\build_cmake && nmake install
 	$(TOUCH) dependencies/install/lib/glog_static.lib
 
-dependencies/sources/glog-$(GLOG_TAG)/INSTALL.md: dependencies/archives/glog-$(GLOG_TAG).zip
+dependencies/sources/glog-$(GLOG_TAG)/CMakeLists.txt: dependencies/archives/glog-$(GLOG_TAG).zip
 	tools\unzip -d dependencies/sources dependencies\archives\glog-$(GLOG_TAG).zip
-	-$(TOUCH) dependencies\sources\glog-$(GLOG_TAG)\INSTALL.md
+	-$(TOUCH) dependencies\sources\glog-$(GLOG_TAG)\CMakeLists.txt
 
 dependencies/archives/glog-$(GLOG_TAG).zip:
 	tools\wget -P dependencies\archives --no-check-certificate https://github.com/google/glog/archive/v$(GLOG_TAG).zip
