@@ -88,14 +88,14 @@ endif
 endif
 # This is needed to find Coin LP include files and libraries.
 ifdef WINDOWS_CLP_DIR
-CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /DUSE_CLP
+CLP_INC = /I$(WINDOWS_CLP_DIR)\\include /I$(WINDOWS_CLP_DIR)\\include\\coin /DUSE_CLP
 CLP_SWIG = -DUSE_CLP
 DYNAMIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
 STATIC_CLP_LNK = $(WINDOWS_CLP_DIR)\\lib\\coin\\libClp.lib  $(WINDOWS_CLP_DIR)\\lib\\coin\\libCoinUtils.lib
 endif
 # This is needed to find Coin Branch and Cut include files and libraries.
 ifdef WINDOWS_CBC_DIR
-CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /DUSE_CBC
+CBC_INC = /I$(WINDOWS_CBC_DIR)\\include /I$(WINDOWS_CBC_DIR)\\include\\coin /DUSE_CBC
 CBC_SWIG = -DUSE_CBC
 DYNAMIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib
 STATIC_CBC_LNK = $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbcSolver.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCbc.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libCgl.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsi.lib $(WINDOWS_CBC_DIR)\\lib\\coin\\libOsiClp.lib

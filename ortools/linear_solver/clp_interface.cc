@@ -32,10 +32,10 @@
 
 #undef PACKAGE
 #undef VERSION
-#include "coin/ClpConfig.h"
-#include "coin/ClpMessage.hpp"
-#include "coin/ClpSimplex.hpp"
-#include "coin/CoinBuild.hpp"
+#include "ClpConfig.h"
+#include "ClpMessage.hpp"
+#include "ClpSimplex.hpp"
+#include "CoinBuild.hpp"
 
 namespace operations_research {
 
