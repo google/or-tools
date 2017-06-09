@@ -1325,7 +1325,6 @@ ALGORITHMS_LIB_OBJS = \
     $(OBJ_DIR)/algorithms/dynamic_permutation.$O \
     $(OBJ_DIR)/algorithms/find_graph_symmetries.$O \
     $(OBJ_DIR)/algorithms/hungarian.$O \
-    $(OBJ_DIR)/algorithms/hungarian_test.$O \
     $(OBJ_DIR)/algorithms/knapsack_solver.$O \
     $(OBJ_DIR)/algorithms/sparse_permutation.$O
 
@@ -1389,15 +1388,6 @@ $(OBJ_DIR)/algorithms/hungarian.$O: \
     $(SRC_DIR)/ortools/algorithms/hungarian.cc \
     $(SRC_DIR)/ortools/algorithms/hungarian.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Shungarian.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Shungarian.$O
-
-$(OBJ_DIR)/algorithms/hungarian_test.$O: \
-    $(SRC_DIR)/ortools/algorithms/hungarian_test.cc \
-    $(SRC_DIR)/ortools/algorithms/hungarian.h \
-    $(SRC_DIR)/ortools/base/integral_types.h \
-    $(SRC_DIR)/ortools/base/macros.h \
-    $(SRC_DIR)/ortools/base/map_util.h \
-    $(SRC_DIR)/ortools/base/random.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Shungarian_test.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Shungarian_test.$O
 
 $(OBJ_DIR)/algorithms/knapsack_solver.$O: \
     $(SRC_DIR)/ortools/algorithms/knapsack_solver.cc \
@@ -3359,4 +3349,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/ortools/
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-
