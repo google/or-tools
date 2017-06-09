@@ -27,6 +27,12 @@ cc_library(
 )
 
 cc_library(
+    name = "random_engine",
+    hdrs = ["random_engine.h"],
+    deps = ["//ortools/base:map_util"],
+)
+
+cc_library(
     name = "bitset",
     srcs = ["bitset.cc"],
     hdrs = ["bitset.h"],
@@ -207,6 +213,24 @@ cc_library(
     name = "running_stat",
     hdrs = ["running_stat.h"],
     deps = ["//ortools/base"],
+)
+
+cc_library(
+    name = "file_util",
+    srcs = ["file_util.cc"],
+    hdrs = ["file_util.h"],
+    deps = [
+        "//ortools/base:strings",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:hash",
+        "//ortools/base:recordio",
+        #        "//net/proto2/io/public",
+        #        "//net/proto2/io/public:io",
+        #        "//net/proto2/public",
+        #        "//net/proto2/util/public:json",
+        "@com_google_protobuf_cc//:protobuf",
+    ],
 )
 
 cc_library(

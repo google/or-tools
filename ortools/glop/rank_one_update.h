@@ -15,7 +15,6 @@
 #define OR_TOOLS_GLOP_RANK_ONE_UPDATE_H_
 
 #include "ortools/base/logging.h"
-#include "ortools/glop/status.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/sparse.h"

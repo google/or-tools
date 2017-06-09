@@ -25,7 +25,6 @@
 #include <cstdio>
 
 #include "ortools/base/sysinfo.h"
-#include "ortools/base/stringpiece.h"
 
 namespace operations_research {
 // GetProcessMemoryUsage

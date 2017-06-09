@@ -70,6 +70,7 @@ cc_library(
     hdrs = ["cp_model_solver.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":all_different",
         ":cp_model_checker",
         ":cp_model_presolve",
         ":cp_model_cc_proto",
@@ -187,6 +188,7 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/base:strings",
         "//ortools/util:bitset",
+        "//ortools/util:random_engine",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
         "//ortools/base:random",
@@ -321,6 +323,19 @@ cc_library(
         ":model",
         ":precedences",
         ":sat_base",
+    ],
+)
+
+cc_library(
+    name = "all_different",
+    srcs = ["all_different.cc"],
+    hdrs = ["all_different.h"],
+     deps = [
+        ":integer",
+        ":model",
+        ":sat_base",
+        ":sat_solver",
+        "//ortools/base:strongly_connected_components",
     ],
 )
 

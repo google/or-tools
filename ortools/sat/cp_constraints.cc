@@ -190,22 +190,20 @@ std::function<void(Model*)> AllDifferent(
     std::unordered_set<IntegerValue> fixed_values;
 
     // First, we fully encode all the given integer variables.
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     for (const IntegerVariable var : vars) {
-      if (!encoder->VariableIsFullyEncoded(var)) {
-        const IntegerValue lb(model->Get(LowerBound(var)));
-        const IntegerValue ub(model->Get(UpperBound(var)));
-        if (lb == ub) {
-          fixed_values.insert(lb);
-        } else {
-          encoder->FullyEncodeVariable(var, lb, ub);
-        }
+      const IntegerValue lb(model->Get(LowerBound(var)));
+      const IntegerValue ub(model->Get(UpperBound(var)));
+      if (lb == ub) {
+        fixed_values.insert(lb);
+      } else {
+        model->Add(FullyEncodeVariable(var));
       }
     }
 
     // Then we construct a mapping value -> List of literal each indicating
     // that a given variable takes this value.
     std::unordered_map<IntegerValue, std::vector<Literal>> value_to_literals;
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     for (const IntegerVariable var : vars) {
       if (!encoder->VariableIsFullyEncoded(var)) continue;
       for (const auto& entry : encoder->FullDomainEncoding(var)) {

@@ -11,19 +11,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_UTIL_PROTO_TOOLS_H_
-#define OR_TOOLS_UTIL_PROTO_TOOLS_H_
+// Defines the random engine type to use within operations_research code.
 
-#include <string>
+#ifndef OR_TOOLS_UTIL_RANDOM_ENGINE_H_
+#define OR_TOOLS_UTIL_RANDOM_ENGINE_H_
 
-#include "google/protobuf/message.h"
+#include <random>
 
 namespace operations_research {
-// Prints a proto2 message as a std::string, it behaves like TextFormat::Print()
-// but also prints the default values of unset fields which is useful for
-// printing parameters.
-std::string FullProtocolMessageAsString(const google::protobuf::Message& message,
-                                   int indent_level);
+
+using random_engine_t = std::default_random_engine;
 
 }  // namespace operations_research
-#endif  // OR_TOOLS_UTIL_PROTO_TOOLS_H_
+
+#endif  // OR_TOOLS_UTIL_RANDOM_ENGINE_H_

@@ -13,17 +13,17 @@
 
 // A std::string-like object that points to a sized piece of memory.
 //
-// Functions or methods may use const StringPiece& parameters to accept either
+// Functions or methods may use const string_view& parameters to accept either
 // a "const char*" or a "std::string" value that will be implicitly converted to
-// a StringPiece.  The implicit conversion means that it is often appropriate
+// a string_view.  The implicit conversion means that it is often appropriate
 // to include this .h file in other files rather than forward-declaring
-// StringPiece as would be appropriate for most other Google classes.
+// string_view as would be appropriate for most other Google classes.
 //
-// Systematic usage of StringPiece is encouraged as it will reduce unnecessary
+// Systematic usage of string_view is encouraged as it will reduce unnecessary
 // conversions from "const char*" to "std::string" and back again.
 
-#ifndef OR_TOOLS_BASE_STRINGPIECE_H_
-#define OR_TOOLS_BASE_STRINGPIECE_H_
+#ifndef OR_TOOLS_BASE_STRING_VIEW_H_
+#define OR_TOOLS_BASE_STRING_VIEW_H_
 
 #include <string.h>
 
@@ -32,23 +32,23 @@
 #include <iosfwd>
 #include <string>
 
-class StringPiece {
+namespace operations_research {
+
+class string_view {
  private:
   const char* ptr_;
   int length_;
 
  public:
   // We provide non-explicit singleton constructors so users can pass
-  // in a "const char*" or a "std::string" wherever a "StringPiece" is
+  // in a "const char*" or a "std::string" wherever a "string_view" is
   // expected.
-  StringPiece() : ptr_(NULL), length_(0) {}
-  StringPiece(const char* str)  // NOLINT
-      : ptr_(str),
-        length_((str == NULL) ? 0 : static_cast<int>(strlen(str))) {}
-  StringPiece(const std::string& str)  // NOLINT
-      : ptr_(str.data()),
-        length_(static_cast<int>(str.size())) {}
-  StringPiece(const char* offset, int len) : ptr_(offset), length_(len) {}
+  string_view() : ptr_(NULL), length_(0) {}
+  string_view(const char* str)  // NOLINT
+      : ptr_(str), length_((str == NULL) ? 0 : static_cast<int>(strlen(str))) {}
+  string_view(const std::string& str)  // NOLINT
+      : ptr_(str.data()), length_(static_cast<int>(str.size())) {}
+  string_view(const char* offset, int len) : ptr_(offset), length_(len) {}
 
   // data() may return a pointer to a buffer with embedded NULs, and the
   // returned buffer may or may not be null terminated.  Therefore it is
@@ -88,13 +88,13 @@ class StringPiece {
 
   void remove_suffix(int n) { length_ -= n; }
 
-  int compare(const StringPiece& x) const;
+  int compare(const string_view& x) const;
 
   std::string as_string() const { return std::string(data(), size()); }
   // We also define ToString() here, since many other std::string-like
   // interfaces name the routine that converts to a C++ std::string
   // "ToString", and it's confusing to have the method that does that
-  // for a StringPiece be called "as_string()".  We also leave the
+  // for a string_view be called "as_string()".  We also leave the
   // "as_string()" method defined here for existing code.
   std::string ToString() const { return std::string(data(), size()); }
 
@@ -102,12 +102,12 @@ class StringPiece {
   void AppendToString(std::string* target) const;
 
   // Does "this" start with "x"?
-  bool starts_with(const StringPiece& x) const {
+  bool starts_with(const string_view& x) const {
     return ((length_ >= x.length_) && (memcmp(ptr_, x.ptr_, x.length_) == 0));
   }
 
   // Does "this" end with "x"?
-  bool ends_with(const StringPiece& x) const {
+  bool ends_with(const string_view& x) const {
     return ((length_ >= x.length_) &&
             (memcmp(ptr_ + (length_ - x.length_), x.ptr_, x.length_) == 0));
   }
@@ -136,35 +136,37 @@ class StringPiece {
 
   int copy(char* buf, size_type n, size_type pos = 0) const;
 
-  int find(const StringPiece& s, size_type pos = 0) const;
+  int find(const string_view& s, size_type pos = 0) const;
   int find(char c, size_type pos = 0) const;
-  int rfind(const StringPiece& s, size_type pos = npos) const;
+  int rfind(const string_view& s, size_type pos = npos) const;
   int rfind(char c, size_type pos = npos) const;
 
-  StringPiece substr(size_type pos, size_type n = npos) const;
+  string_view substr(size_type pos, size_type n = npos) const;
 };
 
-bool operator==(const StringPiece& x, const StringPiece& y);
+bool operator==(const string_view& x, const string_view& y);
 
-inline bool operator!=(const StringPiece& x, const StringPiece& y) {
+inline bool operator!=(const string_view& x, const string_view& y) {
   return !(x == y);
 }
 
-bool operator<(const StringPiece& x, const StringPiece& y);
+bool operator<(const string_view& x, const string_view& y);
 
-inline bool operator>(const StringPiece& x, const StringPiece& y) {
+inline bool operator>(const string_view& x, const string_view& y) {
   return y < x;
 }
 
-inline bool operator<=(const StringPiece& x, const StringPiece& y) {
+inline bool operator<=(const string_view& x, const string_view& y) {
   return !(x > y);
 }
 
-inline bool operator>=(const StringPiece& x, const StringPiece& y) {
+inline bool operator>=(const string_view& x, const string_view& y) {
   return !(x < y);
 }
 
-// Allow StringPiece to be logged.
-extern std::ostream& operator<<(std::ostream& o, const StringPiece& piece);
+// Allow string_view to be logged.
+extern std::ostream& operator<<(std::ostream& o, const string_view& piece);
 
-#endif  // OR_TOOLS_BASE_STRINGPIECE_H_
+}  // namespace operations_research
+
+#endif  // OR_TOOLS_BASE_STRING_VIEW_H_

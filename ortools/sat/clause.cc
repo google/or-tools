@@ -428,7 +428,7 @@ void BinaryImplicationGraph::MinimizeConflictFirst(
 // first UIP conflict.
 void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
     const Trail& trail, std::vector<Literal>* conflict,
-    SparseBitset<BooleanVariable>* marked, RandomBase* random) {
+    SparseBitset<BooleanVariable>* marked, random_engine_t* random) {
   SCOPED_TIME_STAT(&stats_);
   const LiteralIndex root_literal_index = conflict->front().NegatedIndex();
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
@@ -441,8 +441,7 @@ void BinaryImplicationGraph::MinimizeConflictFirstWithTransitiveReduction(
   // a => b and remove b, a must be before b in direct_implications. Note that
   // a std::reverse() could work too. But randomization seems to work better.
   // Probably because it has other impact on the search tree.
-  std::random_shuffle(direct_implications.begin(), direct_implications.end(),
-                      *random);
+  std::shuffle(direct_implications.begin(), direct_implications.end(), *random);
   dfs_stack_.clear();
   for (const Literal l : direct_implications) {
     if (is_marked_[l.Index()]) {

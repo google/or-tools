@@ -20,6 +20,7 @@
 #include "ortools/base/join.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connectivity.h"
+#include "ortools/sat/all_different.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -348,7 +349,23 @@ void LoadLinearConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
 
 void LoadAllDiffConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   const std::vector<IntegerVariable> vars = m->Integers(ct.all_diff().vars());
-  m->Add(AllDifferentOnBounds(vars));
+  // TODO(user): Find out which alldifferent to use depending on model.
+  // If some domain is too large, use bounds reasoning.
+  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
+  int64 max_domain_size = 0;
+  for (const IntegerVariable var : vars) {
+    IntegerValue lb = integer_trail->LowerBound(var);
+    IntegerValue ub = integer_trail->UpperBound(var);
+    int64 domain_size = ub.value() - lb.value();
+    max_domain_size = std::max(max_domain_size, domain_size);
+  }
+
+  if (max_domain_size < 1024) {
+    m->Add(AllDifferent(vars));
+    m->Add(AllDifferentAC(vars));
+  } else {
+    m->Add(AllDifferentOnBounds(vars));
+  }
 }
 
 void LoadIntProdConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
@@ -1077,9 +1094,7 @@ CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
     return response;
   }
 
-  // Register the global LP constraint.
-  // TODO(user): Computes the connected components, and use one constraint per
-  // component. There is also no need for a constraint with just one equation.
+  // Linearize some part of the problem and register LP constraint(s).
   if (parameters.use_global_lp_constraint()) {
     AddLPConstraints(model_proto, &m);
   }
@@ -1248,6 +1263,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         var_proto);
   }
   Model postsolve_model;
+
+  // Postosolve parameters.
+  // TODO(user): this problem is usually trivial, but we may still want to
+  // impose a time limit or copy some of the parameters passed by the user.
+  {
+    SatParameters params;
+    params.set_use_global_lp_constraint(false);
+    postsolve_model.Add(operations_research::sat::NewSatParameters(params));
+  }
   const CpSolverResponse postsolve_response =
       SolveCpModelWithoutPresolve(mapping_proto, &postsolve_model);
   CHECK_EQ(postsolve_response.status(), CpSolverStatus::MODEL_SAT);

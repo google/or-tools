@@ -31,7 +31,7 @@ Status Markowitz::ComputeRowAndColumnPermutation(const MatrixView& basis_matrix,
   row_perm->assign(num_rows, kInvalidRow);
 
   // Get the empty matrix corner case out of the way.
-  if (basis_matrix.IsEmpty()) return Status::OK;
+  if (basis_matrix.IsEmpty()) return Status::OK();
   basis_matrix_ = &basis_matrix;
 
   // Initialize all the matrices.
@@ -132,7 +132,7 @@ Status Markowitz::ComputeRowAndColumnPermutation(const MatrixView& basis_matrix,
       1.0 * stats_num_pivots_without_fill_in / end_index);
   stats_.degree_two_pivot_columns.Add(1.0 * stats_degree_two_pivot_columns /
                                       end_index);
-  return Status::OK;
+  return Status::OK();
 }
 
 Status Markowitz::ComputeLU(const MatrixView& basis_matrix,
@@ -152,7 +152,7 @@ Status Markowitz::ComputeLU(const MatrixView& basis_matrix,
   upper_.Swap(upper);
   DCHECK(lower->IsLowerTriangular());
   DCHECK(upper->IsUpperTriangular());
-  return Status::OK;
+  return Status::OK();
 }
 
 void Markowitz::Clear() {

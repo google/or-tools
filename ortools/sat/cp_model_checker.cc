@@ -17,7 +17,6 @@
 #include <unordered_set>
 
 #include "ortools/base/join.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -368,7 +367,7 @@ class ConstraintChecker {
   bool ElementConstraintIsFeasible(const CpModelProto& model,
                                    const ConstraintProto& ct) {
     const int index = Value(ct.element().index());
-    return Value(ct.element().vars(index)) == Value(ct.element().target());
+    return Value(ct.element().vars().Get(index)) == Value(ct.element().target());
   }
 
   bool TableConstraintIsFeasible(const CpModelProto& model,
@@ -448,6 +447,11 @@ class ConstraintChecker {
 
 bool SolutionIsFeasible(const CpModelProto& model,
                         const std::vector<int64>& variable_values) {
+  if (variable_values.size() != model.variables_size()) {
+    VLOG(1) << "Wrong number of variables in the solution vector";
+    return false;
+  }
+
   // Check that all values fall in the variable domains.
   for (int i = 0; i < model.variables_size(); ++i) {
     if (!DomainInProtoContains(model.variables(i), variable_values[i])) {

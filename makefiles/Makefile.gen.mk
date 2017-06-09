@@ -10,7 +10,7 @@ BASE_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h
 
@@ -25,7 +25,7 @@ BASE_LIB_OBJS = \
     $(OBJ_DIR)/base/random.$O \
     $(OBJ_DIR)/base/recordio.$O \
     $(OBJ_DIR)/base/split.$O \
-    $(OBJ_DIR)/base/stringpiece.$O \
+    $(OBJ_DIR)/base/string_view.$O \
     $(OBJ_DIR)/base/stringprintf.$O \
     $(OBJ_DIR)/base/sysinfo.$O \
     $(OBJ_DIR)/base/threadpool.$O \
@@ -76,7 +76,7 @@ $(SRC_DIR)/ortools/base/jniutil.h: \
 $(SRC_DIR)/ortools/base/join.h: \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h
+    $(SRC_DIR)/ortools/base/string_view.h
 
 $(SRC_DIR)/ortools/base/logging.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
@@ -114,7 +114,7 @@ $(SRC_DIR)/ortools/base/sparsetable.h: \
 $(SRC_DIR)/ortools/base/split.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h
+    $(SRC_DIR)/ortools/base/string_view.h
 
 $(SRC_DIR)/ortools/base/status.h: \
     $(SRC_DIR)/ortools/base/join.h \
@@ -124,10 +124,10 @@ $(SRC_DIR)/ortools/base/statusor.h: \
     $(SRC_DIR)/ortools/base/status.h
 
 $(SRC_DIR)/ortools/base/stringpiece_utils.h: \
-    $(SRC_DIR)/ortools/base/stringpiece.h
+    $(SRC_DIR)/ortools/base/string_view.h
 
 $(SRC_DIR)/ortools/base/stringprintf.h: \
-    $(SRC_DIR)/ortools/base/stringpiece.h
+    $(SRC_DIR)/ortools/base/string_view.h
 
 $(SRC_DIR)/ortools/base/strongly_connected_components.h: \
     $(SRC_DIR)/ortools/base/logging.h \
@@ -137,7 +137,7 @@ $(SRC_DIR)/ortools/base/strtoint.h: \
     $(SRC_DIR)/ortools/base/basictypes.h
 
 $(SRC_DIR)/ortools/base/strutil.h: \
-    $(SRC_DIR)/ortools/base/stringpiece.h
+    $(SRC_DIR)/ortools/base/string_view.h
 
 $(SRC_DIR)/ortools/base/synchronization.h: \
     $(SRC_DIR)/ortools/base/logging.h
@@ -186,7 +186,7 @@ $(OBJ_DIR)/base/join.$O: \
     $(SRC_DIR)/ortools/base/join.cc \
     $(SRC_DIR)/ortools/base/basictypes.h \
     $(SRC_DIR)/ortools/base/join.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/stringprintf.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Sjoin.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sjoin.$O
 
@@ -218,10 +218,10 @@ $(OBJ_DIR)/base/split.$O: \
     $(SRC_DIR)/ortools/base/split.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Ssplit.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Ssplit.$O
 
-$(OBJ_DIR)/base/stringpiece.$O: \
-    $(SRC_DIR)/ortools/base/stringpiece.cc \
-    $(SRC_DIR)/ortools/base/stringpiece.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Sstringpiece.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sstringpiece.$O
+$(OBJ_DIR)/base/string_view.$O: \
+    $(SRC_DIR)/ortools/base/string_view.cc \
+    $(SRC_DIR)/ortools/base/string_view.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Sstring_view.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Sstring_view.$O
 
 $(OBJ_DIR)/base/stringprintf.$O: \
     $(SRC_DIR)/ortools/base/stringprintf.cc \
@@ -230,7 +230,7 @@ $(OBJ_DIR)/base/stringprintf.$O: \
 
 $(OBJ_DIR)/base/sysinfo.$O: \
     $(SRC_DIR)/ortools/base/sysinfo.cc \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/sysinfo.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sbase$Ssysinfo.cc $(OBJ_OUT)$(OBJ_DIR)$Sbase$Ssysinfo.$O
 
@@ -264,13 +264,14 @@ UTIL_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h
 
 UTIL_LIB_OBJS = \
     $(OBJ_DIR)/util/bitset.$O \
     $(OBJ_DIR)/util/cached_log.$O \
+    $(OBJ_DIR)/util/file_util.$O \
     $(OBJ_DIR)/util/fp_utils.$O \
     $(OBJ_DIR)/util/graph_export.$O \
     $(OBJ_DIR)/util/piecewise_linear_function.$O \
@@ -410,6 +411,11 @@ $(OBJ_DIR)/util/cached_log.$O: \
     $(SRC_DIR)/ortools/base/logging.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Scached_log.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Scached_log.$O
 
+$(OBJ_DIR)/util/file_util.$O: \
+    $(SRC_DIR)/ortools/util/file_util.cc
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Sfile_util.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sfile_util.$O
+
+
 $(OBJ_DIR)/util/fp_utils.$O: \
     $(SRC_DIR)/ortools/util/fp_utils.cc \
     $(SRC_DIR)/ortools/util/bitset.h \
@@ -518,7 +524,7 @@ LP_DATA_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/algorithms/dynamic_partition.h \
@@ -742,7 +748,7 @@ GLOP_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
@@ -1059,7 +1065,7 @@ GRAPH_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/util/bitset.h \
@@ -1282,7 +1288,7 @@ ALGORITHMS_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/util/bitset.h \
@@ -1385,6 +1391,7 @@ $(OBJ_DIR)/algorithms/sparse_permutation.$O: \
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Salgorithms$Ssparse_permutation.cc $(OBJ_OUT)$(OBJ_DIR)$Salgorithms$Ssparse_permutation.$O
 
 SAT_DEPS = \
+    $(SRC_DIR)/ortools/sat/all_different.h \
     $(SRC_DIR)/ortools/sat/boolean_problem.h \
     $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
     $(SRC_DIR)/ortools/sat/clause.h \
@@ -1413,7 +1420,7 @@ SAT_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/util/bitset.h \
@@ -1455,6 +1462,7 @@ SAT_DEPS = \
     $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h
 
 SAT_LIB_OBJS = \
+    $(OBJ_DIR)/sat/all_different.$O \
     $(OBJ_DIR)/sat/boolean_problem.$O \
     $(OBJ_DIR)/sat/clause.$O \
     $(OBJ_DIR)/sat/cp_constraints.$O \
@@ -1712,6 +1720,20 @@ $(OBJ_DIR)/sat/boolean_problem.$O: \
     $(SRC_DIR)/ortools/graph/io.h \
     $(SRC_DIR)/ortools/graph/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sboolean_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sboolean_problem.$O
+
+$(OBJ_DIR)/sat/all_different.$O: \
+    $(SRC_DIR)/ortools/sat/all_different.cc \
+    $(SRC_DIR)/ortools/sat/all_different.h \
+    $(SRC_DIR)/ortools/base/commandlineflags.h \
+    $(SRC_DIR)/ortools/base/hash.h \
+    $(SRC_DIR)/ortools/base/join.h \
+    $(SRC_DIR)/ortools/base/map_util.h \
+    $(SRC_DIR)/ortools/base/stringprintf.h \
+    $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h \
+    $(SRC_DIR)/ortools/graph/graph.h \
+    $(SRC_DIR)/ortools/graph/io.h \
+    $(SRC_DIR)/ortools/graph/util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sall_different.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sall_different.$O
 
 $(OBJ_DIR)/sat/clause.$O: \
     $(SRC_DIR)/ortools/sat/clause.cc \
@@ -1988,7 +2010,7 @@ BOP_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/util/bitset.h \
@@ -2296,7 +2318,7 @@ LP_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/util/bitset.h \
@@ -2541,7 +2563,7 @@ CP_DEPS = \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
     $(SRC_DIR)/ortools/base/status.h \
-    $(SRC_DIR)/ortools/base/stringpiece.h \
+    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/base/thorough_hash.h \
     $(SRC_DIR)/ortools/base/time_support.h \
     $(SRC_DIR)/ortools/util/bitset.h \
@@ -3301,4 +3323,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/ortools/
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

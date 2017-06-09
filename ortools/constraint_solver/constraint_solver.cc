@@ -30,6 +30,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/recordio.h"
 #include "zlib.h"
@@ -535,7 +536,7 @@ class NoCompressionTrailPacker : public TrailPacker<T> {
   void Pack(const addrval<T>* block, std::string* packed_block) override {
     DCHECK(block != nullptr);
     DCHECK(packed_block != nullptr);
-    StringPiece block_str;
+    string_view block_str;
     block_str.set(block, this->input_size());
     block_str.CopyToString(packed_block);
   }
@@ -566,7 +567,7 @@ class ZlibTrailPacker : public TrailPacker<T> {
         compress(reinterpret_cast<Bytef*>(tmp_block_.get()), &size,
                  reinterpret_cast<const Bytef*>(block), this->input_size());
     CHECK_EQ(Z_OK, result);
-    StringPiece block_str;
+    string_view block_str;
     block_str.set(tmp_block_.get(), size);
     block_str.CopyToString(packed_block);
   }

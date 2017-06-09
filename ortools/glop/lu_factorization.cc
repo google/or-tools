@@ -58,7 +58,7 @@ Status LuFactorization::ComputeFactorization(const MatrixView& matrix) {
     stats_.basis_num_entries.Add(matrix.num_entries().value());
   });
   DCHECK(CheckFactorization(matrix, Fractional(1e-6)));
-  return Status::OK;
+  return Status::OK();
 }
 
 void LuFactorization::RightSolve(DenseColumn* x) const {

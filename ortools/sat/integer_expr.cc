@@ -13,6 +13,10 @@
 
 #include "ortools/sat/integer_expr.h"
 
+#include <unordered_map>
+
+#include "ortools/base/stl_util.h"
+
 namespace operations_research {
 namespace sat {
 
@@ -440,6 +444,49 @@ void DivisionPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchIntegerVariable(a_, id);
   watcher->WatchIntegerVariable(b_, id);
   watcher->WatchIntegerVariable(c_, id);
+}
+
+std::function<void(Model*)> IsOneOf(IntegerVariable var,
+                                    const std::vector<Literal>& selectors,
+                                    const std::vector<IntegerValue>& values) {
+  return [=](Model* model) {
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    if (encoder->VariableIsFullyEncoded(var)) {
+      LOG(FATAL) << "TODO(fdid): Not implemented.";
+    }
+
+    CHECK(!values.empty());
+    CHECK_EQ(values.size(), selectors.size());
+    std::vector<int64> unique_values;
+    std::unordered_map<int64, std::vector<Literal>> value_to_selector;
+    for (int i = 0; i < values.size(); ++i) {
+      unique_values.push_back(values[i].value());
+      value_to_selector[values[i].value()].push_back(selectors[i]);
+    }
+    STLSortAndRemoveDuplicates(&unique_values);
+
+    integer_trail->UpdateInitialDomain(
+        var, SortedDisjointIntervalsFromValues(unique_values));
+    if (unique_values.size() == 1) {
+      model->Add(ClauseConstraint(selectors));
+      return;
+    }
+
+    std::vector<Literal> new_selectors;
+    for (const int64 v : unique_values) {
+      if (value_to_selector[v].size() == 1) {
+        new_selectors.push_back(value_to_selector[v][0]);
+      } else {
+        const Literal l(model->Add(NewBooleanVariable()), true);
+        model->Add(ReifiedBoolOr(value_to_selector[v], l));
+        new_selectors.push_back(l);
+      }
+    }
+    encoder->FullyEncodeVariableUsingGivenLiterals(
+        var, new_selectors,
+        std::vector<IntegerValue>(unique_values.begin(), unique_values.end()));
+  };
 }
 
 }  // namespace sat

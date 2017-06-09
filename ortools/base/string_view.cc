@@ -11,16 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/base/string_view.h"
 #include <iostream>  // NOLINT
 #include <utility>
-#include "ortools/base/stringpiece.h"
 
-std::ostream& operator<<(std::ostream& o, const StringPiece& piece) {
+namespace operations_research {
+
+std::ostream& operator<<(std::ostream& o, const string_view& piece) {
   o.write(piece.data(), piece.size());
   return o;
 }
 
-bool operator==(const StringPiece& x, const StringPiece& y) {
+bool operator==(const string_view& x, const string_view& y) {
   int len = x.size();
   if (len != y.size()) {
     return false;
@@ -36,22 +38,22 @@ bool operator==(const StringPiece& x, const StringPiece& y) {
   return true;
 }
 
-bool operator<(const StringPiece& x, const StringPiece& y) {
+bool operator<(const string_view& x, const string_view& y) {
   const int r = memcmp(x.data(), y.data(), std::min(x.size(), y.size()));
   return ((r < 0) || ((r == 0) && (x.size() < y.size())));
 }
 
-void StringPiece::CopyToString(std::string* target) const {
+void string_view::CopyToString(std::string* target) const {
   target->assign(ptr_, length_);
 }
 
-int StringPiece::copy(char* buf, size_type n, size_type pos) const {
+int string_view::copy(char* buf, size_type n, size_type pos) const {
   int ret = std::min(length_ - pos, n);
   memcpy(buf, ptr_ + pos, ret);
   return ret;
 }
 
-int StringPiece::find(const StringPiece& s, size_type pos) const {
+int string_view::find(const string_view& s, size_type pos) const {
   if (length_ < 0 || pos > static_cast<size_type>(length_)) return npos;
 
   const char* result =
@@ -60,7 +62,7 @@ int StringPiece::find(const StringPiece& s, size_type pos) const {
   return xpos + s.length_ <= length_ ? xpos : npos;
 }
 
-int StringPiece::compare(const StringPiece& x) const {
+int string_view::compare(const string_view& x) const {
   int r = memcmp(ptr_, x.ptr_, std::min(length_, x.length_));
   if (r == 0) {
     if (length_ < x.length_)
@@ -71,7 +73,7 @@ int StringPiece::compare(const StringPiece& x) const {
   return r;
 }
 
-int StringPiece::find(char c, size_type pos) const {
+int string_view::find(char c, size_type pos) const {
   if (length_ <= 0 || pos >= static_cast<size_type>(length_)) {
     return npos;
   }
@@ -79,7 +81,7 @@ int StringPiece::find(char c, size_type pos) const {
   return result != ptr_ + length_ ? result - ptr_ : npos;
 }
 
-int StringPiece::rfind(const StringPiece& s, size_type pos) const {
+int string_view::rfind(const string_view& s, size_type pos) const {
   if (length_ < s.length_) return npos;
   const size_t ulen = length_;
   if (s.length_ == 0) return std::min(ulen, pos);
@@ -89,7 +91,7 @@ int StringPiece::rfind(const StringPiece& s, size_type pos) const {
   return result != last ? result - ptr_ : npos;
 }
 
-int StringPiece::rfind(char c, size_type pos) const {
+int string_view::rfind(char c, size_type pos) const {
   if (length_ <= 0) return npos;
   for (int i = std::min(pos, static_cast<size_type>(length_ - 1)); i >= 0; --i) {
     if (ptr_[i] == c) {
@@ -99,10 +101,12 @@ int StringPiece::rfind(char c, size_type pos) const {
   return npos;
 }
 
-StringPiece StringPiece::substr(size_type pos, size_type n) const {
+string_view string_view::substr(size_type pos, size_type n) const {
   if (pos > length_) pos = length_;
   if (n > length_ - pos) n = length_ - pos;
-  return StringPiece(ptr_ + pos, n);
+  return string_view(ptr_ + pos, n);
 }
 
-const StringPiece::size_type StringPiece::npos = size_type(-1);
+const string_view::size_type string_view::npos = size_type(-1);
+
+}  // namespace operations_research

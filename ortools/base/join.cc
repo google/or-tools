@@ -14,7 +14,7 @@
 #include <string>
 #include "ortools/base/basictypes.h"
 #include "ortools/base/join.h"
-#include "ortools/base/stringpiece.h"
+#include "ortools/base/string_view.h"
 #include "ortools/base/stringprintf.h"
 
 void StrAppend(std::string* s, const AlphaNum& a) { s->append(a.data(), a.size()); }

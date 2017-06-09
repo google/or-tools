@@ -42,6 +42,7 @@ std::function<void(Model*)> Cumulative(
       if (intervals->MaxSize(vars[i]) == 0) continue;
 
       if (intervals->MinSize(vars[i]) > 0) {
+        if (demands[i] == capacity) continue;
         if (intervals->IsOptional(vars[i])) {
           model->Add(ConditionalLowerOrEqual(
               demands[i], capacity, intervals->IsPresentLiteral(vars[i])));

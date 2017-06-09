@@ -161,7 +161,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   }
   if (FLAGS_simplex_stop_after_first_basis) {
     DisplayAllStats();
-    return Status::OK;
+    return Status::OK();
   }
 
   const bool use_dual = parameters_.use_dual_simplex();
@@ -358,7 +358,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   num_optimization_iterations_ = num_iterations_ - num_feasibility_iterations_;
 
   DisplayAllStats();
-  return Status::OK;
+  return Status::OK();
 }
 
 ProblemStatus RevisedSimplex::GetProblemStatus() const {
@@ -1037,7 +1037,7 @@ Status RevisedSimplex::InitializeFirstBasis(const RowToColMapping& basis) {
   variable_values_.RecomputeBasicVariableValues();
   const Fractional tolerance = parameters_.primal_feasibility_tolerance();
   DCHECK_LE(variable_values_.ComputeMaximumPrimalResidual(), tolerance);
-  return Status::OK;
+  return Status::OK();
 }
 
 Status RevisedSimplex::Initialize(const LinearProgram& lp) {
@@ -1188,7 +1188,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
     VLOG(1) << "Incremental solve.";
   }
   DCHECK(BasisIsConsistent());
-  return Status::OK;
+  return Status::OK();
 }
 
 void RevisedSimplex::DisplayBasicVariableStatistics() {
@@ -1581,7 +1581,7 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
       // helps a lot on the Netlib problems.
       if (!basis_factorization_.IsRefactorized()) {
         *refactorize = true;
-        return Status::OK;
+        return Status::OK();
       }
 
       // Note(user): This reduces quite a bit the number of iterations.
@@ -1632,7 +1632,7 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
       ratio_test_stats_.abs_used_pivot.Add(std::abs(direction_[*leaving_row]));
     }
   });
-  return Status::OK;
+  return Status::OK();
 }
 
 template <typename Rows>
@@ -1842,7 +1842,7 @@ Status RevisedSimplex::DualChooseLeavingVariableRow(RowIndex* leaving_row,
 
   // Return right away if there is no leaving variable.
   // Fill cost_variation and target_bound otherwise.
-  if (*leaving_row == kInvalidRow) return Status::OK;
+  if (*leaving_row == kInvalidRow) return Status::OK();
   const ColIndex leaving_col = basis_[*leaving_row];
   const Fractional value = variable_values_.Get(leaving_col);
   if (value < lower_bound_[leaving_col]) {
@@ -1854,7 +1854,7 @@ Status RevisedSimplex::DualChooseLeavingVariableRow(RowIndex* leaving_row,
     *target_bound = upper_bound_[leaving_col];
     DCHECK_LT(*cost_variation, 0.0);
   }
-  return Status::OK;
+  return Status::OK();
 }
 
 namespace {
@@ -1994,7 +1994,7 @@ Status RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
 
   // If there is no dual-infeasible position, we are done.
   *leaving_row = kInvalidRow;
-  if (num_dual_infeasible_positions_ == 0) return Status::OK;
+  if (num_dual_infeasible_positions_ == 0) return Status::OK();
 
   // TODO(user): Reuse parameters_.optimization_rule() to decide if we use
   // steepest edge or the normal Dantzig pricing.
@@ -2028,7 +2028,7 @@ Status RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
 
   // Returns right away if there is no leaving variable or fill the other
   // return values otherwise.
-  if (*leaving_row == kInvalidRow) return Status::OK;
+  if (*leaving_row == kInvalidRow) return Status::OK();
   *cost_variation = dual_pricing_vector_[*leaving_row];
   const ColIndex leaving_col = basis_[*leaving_row];
   if (*cost_variation < 0.0) {
@@ -2037,7 +2037,7 @@ Status RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
     *target_bound = lower_bound_[leaving_col];
   }
   DCHECK(IsFinite(*target_bound));
-  return Status::OK;
+  return Status::OK();
 }
 
 template <typename BoxedVariableCols>
@@ -2169,7 +2169,7 @@ Status RevisedSimplex::UpdateAndPivot(ColIndex entering_col,
   if (basis_factorization_.IsRefactorized()) {
     PermuteBasis();
   }
-  return Status::OK;
+  return Status::OK();
 }
 
 bool RevisedSimplex::NeedsBasisRefactorization(bool refactorize) {
@@ -2199,7 +2199,7 @@ Status RevisedSimplex::RefactorizeBasisIfNeeded(bool* refactorize) {
     PermuteBasis();
   }
   *refactorize = false;
-  return Status::OK;
+  return Status::OK();
 }
 
 // Minimizes c.x subject to A.x = 0 where A is an mxn-matrix, c an n-vector, and
@@ -2256,7 +2256,7 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
                 << " has been reached.";
         problem_status_ = ProblemStatus::PRIMAL_FEASIBLE;
         objective_limit_reached_ = true;
-        return Status::OK;
+        return Status::OK();
       }
     } else if (feasibility_phase_) {
       // Note that direction_non_zero_ contains the positions of the basic
@@ -2466,7 +2466,7 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     iteration_stats_.degenerate_run_size.Add(
         num_consecutive_degenerate_iterations_);
   }
-  return Status::OK;
+  return Status::OK();
 }
 
 // TODO(user): Two other approaches for the phase I described in Koberstein's
@@ -2555,7 +2555,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
                   << " has been reached.";
           problem_status_ = ProblemStatus::DUAL_FEASIBLE;
           objective_limit_reached_ = true;
-          return Status::OK;
+          return Status::OK();
         }
       }
 
@@ -2604,7 +2604,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
       } else {
         problem_status_ = ProblemStatus::OPTIMAL;
       }
-      return Status::OK;
+      return Status::OK();
     }
 
     update_row_.ComputeUpdateRow(leaving_row);
@@ -2643,7 +2643,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
           ChangeSign(&solution_dual_ray_row_combination_);
         }
       }
-      return Status::OK;
+      return Status::OK();
     }
 
     // If the coefficient is too small, we recompute the reduced costs.
@@ -2675,7 +2675,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     AdvanceDeterministicTime(time_limit);
     if (num_iterations_ == parameters_.max_number_of_iterations() ||
         time_limit->LimitReached()) {
-      return Status::OK;
+      return Status::OK();
     }
 
     IF_STATS_ENABLED({
@@ -2730,7 +2730,7 @@ Status RevisedSimplex::DualMinimize(TimeLimit* time_limit) {
     }
     ++num_iterations_;
   }
-  return Status::OK;
+  return Status::OK();
 }
 
 ColIndex RevisedSimplex::SlackColIndex(RowIndex row) const {
