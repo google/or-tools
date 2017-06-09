@@ -51,7 +51,6 @@ DEFINE_string(params, "",
               "them (i.e. in case of conflicts, --params wins)");
 
 using operations_research::FullProtocolMessageAsString;
-using operations_research::ReadFileToProto;
 using operations_research::glop::GetProblemStatusString;
 using operations_research::glop::GlopParameters;
 using operations_research::glop::LinearProgram;
@@ -103,7 +102,7 @@ int main(int argc, char* argv[]) {
         continue;
       }
     } else {
-      ReadFileToProto(file_name, &model_proto);
+      file::ReadFileToProto(file_name, &model_proto);
       MPModelProtoToLinearProgram(model_proto, &linear_program);
     }
     if (FLAGS_mps_dump_problem) {

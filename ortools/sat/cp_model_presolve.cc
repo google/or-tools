@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "ortools/base/join.h"
-#include "ortools/base/hash.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/sat/cp_model_checker.h"
@@ -386,6 +385,14 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
     context->SetLiteralToTrue(new_literals.Get(0));
     return RemoveConstraint(ct, context);
   }
+  if (new_literals.size() == 2) {
+    // For consistency, we move all "implication" into half-reified bool_and.
+    // TODO(user): merge by enforcement literal and detect implication cycles.
+    context->UpdateRuleStats("bool_or: implications");
+    ct->add_enforcement_literal(NegatedRef(new_literals.Get(0)));
+    ct->mutable_bool_and()->add_literals(new_literals.Get(1));
+    return changed;
+  }
 
   ct->mutable_bool_or()->mutable_literals()->Swap(&new_literals);
   if (changed) context->UpdateRuleStats("bool_or: fixed literals");
@@ -421,9 +428,6 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
   }
 
   if (new_literals.empty()) return RemoveConstraint(ct, context);
-  if (new_literals.size() == 1) {
-    context->UpdateRuleStats("TODO bool_and: equality");
-  }
 
   ct->mutable_bool_and()->mutable_literals()->Swap(&new_literals);
   if (changed) context->UpdateRuleStats("bool_and: fixed literals");
@@ -897,6 +901,8 @@ bool PresolveLinearIntoClauses(ConstraintProto* ct, PresolveContext* context) {
   }
 
   // Detect clauses and reified ands.
+  // TODO(user): split an == 1 constraint or similar into a clause and a <= 1
+  // constraint?
   const std::vector<ClosedInterval> domain = ReadDomain(arg);
   DCHECK(!domain.empty());
   if (offset + min_coeff > domain.back().end) {
@@ -1140,6 +1146,31 @@ bool PresolveTable(ConstraintProto* ct, PresolveContext* context) {
   return false;
 }
 
+bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
+  if (HasEnforcementLiteral(*ct)) return false;
+  const int size = ct->all_diff().vars_size();
+  if (size == 0) {
+    context->UpdateRuleStats("all_diff: empty constraint");
+    return RemoveConstraint(ct, context);
+  }
+  if (size == 1) {
+    context->UpdateRuleStats("all_diff: only one variable");
+    return RemoveConstraint(ct, context);
+  }
+
+  bool contains_fixed_variable = false;
+  for (int i = 0; i < size; ++i) {
+    if (context->domains[PositiveRef(ct->all_diff().vars(i))].IsFixed()) {
+      contains_fixed_variable = true;
+      break;
+    }
+  }
+  if (contains_fixed_variable) {
+    context->UpdateRuleStats("TODO all_diff: fixed variables");
+  }
+  return false;
+}
+
 }  // namespace.
 
 // =============================================================================
@@ -1259,6 +1290,9 @@ void PresolveCpModel(const CpModelProto& initial_model,
           break;
         case ConstraintProto::ConstraintCase::kTable:
           changed |= PresolveTable(ct, &context);
+          break;
+        case ConstraintProto::ConstraintCase::kAllDiff:
+          changed |= PresolveAllDiff(ct, &context);
           break;
         default:
           break;

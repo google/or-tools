@@ -24,14 +24,13 @@ namespace sat {
 
 namespace {
 
-// Transpose the given "matrix" and transform the value to IntegerValue.
-std::vector<std::vector<IntegerValue>> Transpose(
+// Transposes the given "matrix".
+std::vector<std::vector<int64>> Transpose(
     const std::vector<std::vector<int64>>& tuples) {
   CHECK(!tuples.empty());
   const int n = tuples.size();
   const int m = tuples[0].size();
-  std::vector<std::vector<IntegerValue>> transpose(
-      m, std::vector<IntegerValue>(n));
+  std::vector<std::vector<int64>> transpose(m, std::vector<int64>(n));
   for (int i = 0; i < n; ++i) {
     CHECK_EQ(m, tuples[i].size());
     for (int j = 0; j < m; ++j) {
@@ -53,40 +52,21 @@ std::unordered_map<IntegerValue, Literal> GetEncoding(IntegerVariable var, Model
 
 void FilterValues(IntegerVariable var, Model* model,
                   std::unordered_set<int64>* values) {
-  const int64 lb = model->Get(LowerBound(var));
-  const int64 ub = model->Get(UpperBound(var));
-
-  IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-  const VariablesAssignment& assignment =
-      model->GetOrCreate<Trail>()->Assignment();
-  if (encoder->VariableIsFullyEncoded(var)) {
-    const auto encoding = GetEncoding(var, model);
-    for (auto it = values->begin(); it != values->end();) {
-      const int64 v = *it;
-      auto copy = it++;
-      if (v < lb || v > ub || !ContainsKey(encoding, IntegerValue(v))) {
-        values->erase(copy);
-      } else {
-        const Literal literal = FindOrDie(encoding, IntegerValue(v));
-        if (assignment.LiteralIsFalse(literal)) {
-          values->erase(copy);
-        }
-      }
-    }
-  } else {
-    for (auto it = values->begin(); it != values->end();) {
-      const int64 v = *it;
-      auto copy = it++;
-      if (v < lb || v > ub) {
-        values->erase(copy);
-      }
+  std::vector<ClosedInterval> domain =
+      model->Get<IntegerTrail>()->InitialVariableDomain(var);
+  for (auto it = values->begin(); it != values->end();) {
+    const int64 v = *it;
+    auto copy = it++;
+    // TODO(user): quadratic! improve.
+    if (!SortedDisjointIntervalsContain(domain, v)) {
+      values->erase(copy);
     }
   }
 }
 
 // Add the implications and clauses to link one column of a table to the Literal
 // controling if the lines are possible or not. The column has the given values,
-// and the Literal of the column variable can be retreived using the encoding
+// and the Literal of the column variable can be retrieved using the encoding
 // map.
 void ProcessOneColumn(const std::vector<Literal>& line_literals,
                       const std::vector<IntegerValue>& values,
@@ -168,19 +148,23 @@ std::function<void(Model*)> TableConstraint(
     }
 
     // Fully encode the variables using all the values appearing in the tuples.
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    IntegerTrail* interger_trail = model->GetOrCreate<IntegerTrail>();
     std::unordered_map<IntegerValue, Literal> encoding;
-    const std::vector<std::vector<IntegerValue>> tr_tuples =
-        Transpose(new_tuples);
+    const std::vector<std::vector<int64>> tr_tuples = Transpose(new_tuples);
     for (int i = 0; i < n; ++i) {
-      const IntegerValue first = tr_tuples[i].front();
+      const int64 first = tr_tuples[i].front();
       if (std::all_of(tr_tuples[i].begin(), tr_tuples[i].end(),
-                      [first](IntegerValue v) { return v == first; })) {
-        model->Add(Equality(vars[i], first.value()));
+                      [first](int64 v) { return v == first; })) {
+        model->Add(Equality(vars[i], first));
       } else {
-        encoder->FullyEncodeVariable(vars[i], tr_tuples[i]);
+        interger_trail->UpdateInitialDomain(
+            vars[i], SortedDisjointIntervalsFromValues(tr_tuples[i]));
+        model->Add(FullyEncodeVariable(vars[i]));
         encoding = GetEncoding(vars[i], model);
-        ProcessOneColumn(tuple_literals, tr_tuples[i], encoding, model);
+        ProcessOneColumn(
+            tuple_literals,
+            std::vector<IntegerValue>(tr_tuples[i].begin(), tr_tuples[i].end()),
+            encoding, model);
       }
     }
   };
@@ -292,7 +276,7 @@ std::function<void(Model*)> TransitionConstraint(
     const std::vector<std::vector<int64>>& automata, int64 initial_state,
     const std::vector<int64>& final_states) {
   return [=](Model* model) {
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
+    IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     const int n = vars.size();
     CHECK_GT(n, 0) << "No variables in TransitionConstraint().";
 
@@ -311,22 +295,12 @@ std::function<void(Model*)> TransitionConstraint(
 
     // Construct a table with the possible values of each vars.
     std::vector<std::unordered_set<int64>> possible_values(n);
-    const VariablesAssignment& assignment =
-        model->GetOrCreate<Trail>()->Assignment();
     for (int time = 0; time < n; ++time) {
-      if (encoder->VariableIsFullyEncoded(vars[time])) {
-        for (const auto& entry : encoder->FullDomainEncoding(vars[time])) {
-          if (!assignment.LiteralIsFalse(entry.literal)) {
-            possible_values[time].insert(entry.value.value());
-          }
-        }
-      } else {
-        const int64 lb = model->Get(LowerBound(vars[time]));
-        const int64 ub = model->Get(UpperBound(vars[time]));
-        for (const std::vector<int64>& transition : automata) {
-          if (lb <= transition[1] && transition[1] <= ub) {
-            possible_values[time].insert(transition[1]);
-          }
+      const auto domain = integer_trail->InitialVariableDomain(vars[time]);
+      for (const std::vector<int64>& transition : automata) {
+        // TODO(user): quadratic algo, improve!
+        if (SortedDisjointIntervalsContain(domain, transition[1])) {
+          possible_values[time].insert(transition[1]);
         }
       }
     }
@@ -399,8 +373,12 @@ std::function<void(Model*)> TransitionConstraint(
 
         encoding.clear();
         if (s.size() > 1) {
-          std::vector<IntegerValue> values(s.begin(), s.end());
-          encoder->FullyEncodeVariable(vars[time], values);
+          std::vector<int64> values;
+          values.reserve(s.size());
+          for (IntegerValue v : s) values.push_back(v.value());
+          integer_trail->UpdateInitialDomain(
+              vars[time], SortedDisjointIntervalsFromValues(values));
+          model->Add(FullyEncodeVariable(vars[time]));
           encoding = GetEncoding(vars[time], model);
         } else {
           // Fix vars[time] to its unique possible value.

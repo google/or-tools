@@ -19,7 +19,7 @@
 
 #include "ortools/base/basictypes.h"
 #include "ortools/base/integral_types.h"
-#include "ortools/base/stringpiece.h"
+#include "ortools/base/string_view.h"
 
 // A buffer size large enough for all FastToBuffer functions.
 const int kFastToBufferSize = 32;
@@ -37,7 +37,7 @@ char* NumToBuffer(T i, char* buffer) {
 }
 
 struct AlphaNum {
-  StringPiece piece;
+  operations_research::string_view piece;
   char digits[kFastToBufferSize];
 
   // No bool ctor -- bools convert to an integral type.
@@ -60,10 +60,13 @@ struct AlphaNum {
   AlphaNum(double f)  // NOLINT(runtime/explicit)
       : piece(digits, strlen(NumToBuffer(f, digits))) {}
   AlphaNum(const char* c_str) : piece(c_str) {}   // NOLINT(runtime/explicit)
-  AlphaNum(const StringPiece& pc) : piece(pc) {}  // NOLINT(runtime/explicit)
+  AlphaNum(const operations_research::string_view& pc)
+      : piece(pc) {}                              // NOLINT(runtime/explicit)
   AlphaNum(const std::string& s) : piece(s) {}         // NOLINT(runtime/explicit)
 
-  StringPiece::size_type size() const { return piece.size(); }
+  operations_research::string_view::size_type size() const {
+    return piece.size();
+  }
   const char* data() const { return piece.data(); }
 
  private:

@@ -187,46 +187,36 @@ class IntegerEncoder {
     return encoder;
   }
 
-  // This has 3 effects:
-  // 1/ It restricts the given variable to only take values amongst the given
-  //    ones.
-  // 2/ It creates one Boolean variable per value that convey the fact that the
-  //    var is equal to this value iff the Boolean is true. If there is only
-  //    2 values, then just one Boolean variable is created. For more than two
-  //    values, a constraint is also added to enforce that exactly one Boolean
-  //    variable is true.
-  // 3/ The encoding for NegationOf(var) is automatically created too. It reuses
-  //    the same Boolean variable as the encoding of var.
+  // Fully encode a variable. This can be called only once.
   //
-  // Calling this more than once will take the intersection of all the given
-  // values arguments. However, this is not optimal because the first calls may
-  // creates new Boolean variables that will later be fixed, so we log a warning
-  // when this happen. Ideally, the intersection should be done in a presolve
-  // step to be as efficient as possible here.
+  // Important: this should really only be called with
+  // integer_trail_->InitialVariableDomain() which can be updated with
+  // integer_trail_->UpdateInitialDomain().
   //
-  // Note(user): There is currently no relation here between
-  // FullyEncodeVariable() and CreateAssociatedLiteral(). However the
-  // IntegerTrail class will automatically link the two representations and do
-  // the right thing.
+  // TODO(user): clean this up by enforcing this programmatically.
   //
-  // Note(user): Calling this with just one value will cause a CHECK fail. One
-  // need to fix the IntegerVariable inside the IntegerTrail instead of calling
-  // this.
+  // This creates new Booleans variables as needed:
+  // 1) num_values for the literals X == value. Except when there is just
+  //    two value in which case only one variable is created.
+  // 2) num_values - 3 for the literals X >= value or X <= value (using their
+  //    negation). The -3 comes from the fact that we can reuse the equality
+  //    literals for the two extreme points.
+  //
+  // The encoding for NegationOf(var) is automatically created too. It reuses
+  // the same Boolean variable as the encoding of var.
+  //
+  // Note(user): Calling this with just one value will cause a CHECK fail.
+  // We don't really want to create a fixed Boolean.
   //
   // TODO(user): It is currently only possible to call that at the decision
-  // level zero. This is Checked.
+  // level zero because we cannot add ternary clause in the middle of the
+  // search (for now). This is Checked.
   void FullyEncodeVariable(IntegerVariable var,
-                           std::vector<IntegerValue> values);
-  void FullyEncodeVariable(IntegerVariable var, IntegerValue lb,
-                           IntegerValue ub);
+                           const std::vector<ClosedInterval>& domain);
 
   // Similar to FullyEncodeVariable() but use the given literal for each values.
   // This can only be called on variable that are not fully encoded yet, This is
-  // checked.
-  //
-  // Note that duplicate values are supported, but exactly one literal must be
-  // true at the same time. The "exactly one" constraint will implicitely be
-  // enforced by the code in IntegerTrail.
+  // checked. Duplicates values are not supported.
   void FullyEncodeVariableUsingGivenLiterals(
       IntegerVariable var, const std::vector<Literal>& literals,
       const std::vector<IntegerValue>& values);
@@ -284,14 +274,19 @@ class IntegerEncoder {
   Literal CreateAssociatedLiteral(IntegerLiteral i_lit);
   void AssociateGivenLiteral(IntegerLiteral i_lit, Literal wanted);
 
+  // Same as CreateAssociatedLiteral() but safe to call if already created.
+  Literal GetOrCreateAssociatedLiteral(IntegerLiteral i_lit);
+
+  // Only add the equivalence between i_lit and literal, if there is already an
+  // associated literal with i_lit, this make literal and this associated
+  // literal equivalent.
+  void HalfAssociateGivenLiteral(IntegerLiteral i_lit, Literal literal);
+
   // Return true iff the given integer literal is associated.
   bool LiteralIsAssociated(IntegerLiteral i_lit) const;
 
   // Returns the associated literal or kNoLiteralIndex.
   LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit);
-
-  // Same as CreateAssociatedLiteral() but safe to call if already created.
-  Literal GetOrCreateAssociatedLiteral(IntegerLiteral i_lit);
 
   // Returns the IntegerLiterals that were associated with the given Literal.
   const InlinedIntegerLiteralVector& GetIntegerLiterals(Literal lit) const {
@@ -391,6 +386,13 @@ class IntegerTrail : public SatPropagator {
   // whose domain is a single interval, this is updated with level zero
   // propagations, but not if the domain is more complex.
   std::vector<ClosedInterval> InitialVariableDomain(IntegerVariable var) const;
+
+  // Takes the intersection with the current initial variable domain.
+  // TODO(user): There is some memory inefficiency if this is called many time
+  // because of the underlying data structure we use. In practice, when used
+  // with a presolve, this is not often used, so that is fine though.
+  bool UpdateInitialDomain(IntegerVariable var,
+                           std::vector<ClosedInterval> domain);
 
   // Same as AddIntegerVariable(value, value), but this is a bit more efficient
   // because it reuses another constant with the same value if its exist.
@@ -597,14 +599,6 @@ class IntegerTrail : public SatPropagator {
 
   // The "is_ignored" literal of the optional variables or kNoLiteralIndex.
   ITIVector<IntegerVariable, LiteralIndex> is_ignored_literals_;
-
-  // Data used to support the propagation of fully encoded variable. We keep
-  // for each variable the index in encoder_.GetDomainEncoding() of the first
-  // literal that is not assigned to false, and call this the "min".
-  int64 num_encoded_variables_ = 0;
-  std::vector<Literal> tmp_literals_reason_;
-  RevGrowingMultiMap<LiteralIndex, IntegerVariable> watched_min_;
-  RevMap<std::unordered_map<IntegerVariable, int>> current_min_;
 
   // This is only filled for variables with a domain more complex than a single
   // interval of values. All intervals are stored in a vector, and we keep
@@ -1097,15 +1091,8 @@ FullyEncodeVariable(IntegerVariable var) {
   return [=](Model* model) {
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     if (!encoder->VariableIsFullyEncoded(var)) {
-      IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-      std::vector<IntegerValue> values;
-      for (const ClosedInterval interval :
-           integer_trail->InitialVariableDomain(var)) {
-        for (IntegerValue v(interval.start); v <= interval.end; ++v) {
-          values.push_back(v);
-        }
-      }
-      encoder->FullyEncodeVariable(var, values);
+      encoder->FullyEncodeVariable(
+          var, model->GetOrCreate<IntegerTrail>()->InitialVariableDomain(var));
     }
     return encoder->FullDomainEncoding(var);
   };

@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #ifndef OR_TOOLS_BASE_SPAN_H_
 #define OR_TOOLS_BASE_SPAN_H_
 
@@ -93,15 +94,13 @@
 //   MyMutatingRoutine(my_proto.mutable_value());
 
 #include <initializer_list>
-#include <memory>
 #include <type_traits>
 #include <vector>
 
 #include "ortools/base/inlined_vector.h"
 
 namespace gtl {
-
-namespace array_slice_internal {
+namespace internal {
 
 // Template logic for generic constructors.
 
@@ -285,9 +284,7 @@ class SpanImplBase {
     if (data() == other.data()) return true;
     return std::equal(data(), data() + size(), other.data());
   }
-  bool operator!=(const SpanImplBase& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const SpanImplBase& other) const { return !(*this == other); }
 
  private:
   pointer ptr_;
@@ -311,7 +308,7 @@ class SpanImpl : public SpanImplBase<const T> {
   template <typename C>
   explicit SpanImpl(const C& v)
       : SpanImplBase<const T>(ContainerData<T, C>::Get(std::addressof(v)),
-                                    ContainerSize<C>::Get(std::addressof(v))) {}
+                              ContainerSize<C>::Get(std::addressof(v))) {}
 };
 
 template <typename T>
@@ -327,16 +324,14 @@ class MutableSpanImpl : public SpanImplBase<T> {
   template <typename C>
   explicit MutableSpanImpl(C* v)
       : SpanImplBase<T>(ContainerMutableData<T, C>::Get(v),
-                              ContainerSize<C>::Get(v)) {}
+                        ContainerSize<C>::Get(v)) {}
 };
-
-}  // namespace array_slice_internal
-
+}  // namespace internal
 
 template <typename T>
 class Span {
  private:
-  typedef array_slice_internal::SpanImpl<T> Impl;
+  typedef internal::SpanImpl<T> Impl;
 
  public:
   typedef T value_type;
@@ -372,7 +367,7 @@ class Span {
   // const T* or a less const-qualified version of it, and 'some_integral_type
   // size() const'. google::protobuf::RepeatedField<T>, std::string and (since C++11)
   // std::vector<T,A> and std::array<T, N> are examples of this. See
-  // array_slice_internal.h for details.
+  // span_internal.h for details.
   template <typename V,
             typename = typename Impl::template EnableIfConvertibleFrom<V>>
   Span(const V& v)  // NOLINT(runtime/explicit)
@@ -445,7 +440,7 @@ class Span {
 template <typename T>
 class MutableSpan {
  private:
-  typedef array_slice_internal::MutableSpanImpl<T> Impl;
+  typedef internal::MutableSpanImpl<T> Impl;
 
  public:
   typedef T value_type;
@@ -474,15 +469,14 @@ class MutableSpan {
       : impl_(a, N) {}
 
   template <int N>
-  MutableSpan(
-      InlinedVector<value_type, N>* v)  // NOLINT(runtime/explicit)
+  MutableSpan(InlinedVector<value_type, N>* v)  // NOLINT(runtime/explicit)
       : impl_(v->data(), v->size()) {}
 
   // The constructor for any class supplying 'T* data()' or 'T* mutable_data()'
   // (the former is called if both exist), and 'some_integral_type size()
   // const'. google::protobuf::RepeatedField is an example of this. Also supports std::string
   // arguments, when T==char. The appropriate ctor is selected using SFINAE. See
-  // array_slice_internal.h for details.
+  // span_internal.h for details.
   template <typename V,
             typename = typename Impl::template EnableIfConvertibleFrom<V>>
   MutableSpan(V* v)  // NOLINT(runtime/explicit)
@@ -518,12 +512,8 @@ class MutableSpan {
   void pop_back() { remove_suffix(1); }
   void pop_front() { remove_prefix(1); }
 
-  bool operator==(Span<T> other) const {
-    return Span<T>(*this) == other;
-  }
-  bool operator!=(Span<T> other) const {
-    return Span<T>(*this) != other;
-  }
+  bool operator==(Span<T> other) const { return Span<T>(*this) == other; }
+  bool operator!=(Span<T> other) const { return Span<T>(*this) != other; }
 
   // DEPRECATED(jacobsa): Please use data() instead.
   pointer mutable_data() const { return impl_.data(); }

@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #ifndef OR_TOOLS_BASE_INLINED_VECTOR_H_
 #define OR_TOOLS_BASE_INLINED_VECTOR_H_
 
@@ -22,23 +23,18 @@
 // Only some of the std::vector<> operations are currently implemented.
 // Other operations may be added as needed to facilitate migrating
 // code that uses std::vector<> to InlinedVector<>.
-//
-// NOTE: If you want an inlined version to replace use of a
-// std::vector<bool>, consider using util::bitmap::InlinedBitVector<NBITS>
-// in ortools/base/inlined_bitvector.h
-//
 
 #include <sys/types.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
-#include <algorithm>
+#include <initializer_list>  // NOLINT(build/include_order)
 #include <iterator>
 #include <memory>
 #include <type_traits>
 #include <vector>
-#include <initializer_list>  // NOLINT(build/include_order)
 
 #include "ortools/base/logging.h"
 
@@ -386,7 +382,7 @@ class InlinedVector {
   };
   // 2) Construct a T with args at not-yet-initialized memory pointed by dst.
   struct Construct {
-    template<class... Args>
+    template <class... Args>
     void operator()(T* dst, Args&&... args) const {
       new (dst) T(std::forward<Args>(args)...);
     }

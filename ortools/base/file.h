@@ -20,6 +20,7 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/string_view.h"
 #include "google/protobuf/descriptor.h"
 #include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
@@ -35,8 +36,8 @@ class File {
   static File* Open(const char* const name, const char* const flag);
 
 #ifndef SWIG  // no overloading
-  inline static File* Open(const std::string& name, const char* const mode) {
-    return Open(name.c_str(), mode);
+  inline static File* Open(const operations_research::string_view& name, const char* const mode) {
+    return Open(name.data(), mode);
   }
 #endif  // SWIG
 
@@ -45,8 +46,8 @@ class File {
   static File* OpenOrDie(const char* const name, const char* const flag);
 
 #ifndef SWIG  // no overloading
-  inline static File* OpenOrDie(const std::string& name, const char* const flag) {
-    return OpenOrDie(name.c_str(), flag);
+  inline static File* OpenOrDie(const operations_research::string_view& name, const char* const flag) {
+    return OpenOrDie(name.data(), flag);
   }
 #endif  // SWIG
 
@@ -92,12 +93,12 @@ class File {
   static void Init();
 
   // Returns the file name.
-  std::string filename() const;
+  operations_research::string_view filename() const;
 
   // Deletes a file.
   static bool Delete(const char* const name);
-  static bool Delete(const std::string& name) {
-    return Delete(name.c_str());
+  static bool Delete(const operations_research::string_view& name) {
+    return Delete(name.data());
   }
 
   // Tests if a file exists.
@@ -106,40 +107,40 @@ class File {
   bool Open() const;
 
  private:
-  File(FILE* const descriptor, const std::string& name);
+  File(FILE* const descriptor, const operations_research::string_view& name);
 
   FILE* f_;
-  const std::string name_;
+  const operations_research::string_view name_;
 };
 
 namespace file {
 inline int Defaults() { return 0xBABA; }
 
 // As of 2016-01, these methods can only be used with flags = file::Defaults().
-util::Status Open(const std::string& filename, const std::string& mode,
+util::Status Open(const operations_research::string_view& filename, const operations_research::string_view& mode,
                   File** f, int flags);
-util::Status SetTextProto(const std::string& filename, const google::protobuf::Message& proto,
+util::Status SetTextProto(const operations_research::string_view& filename, const google::protobuf::Message& proto,
                           int flags);
-util::Status SetBinaryProto(const std::string& filename,
+util::Status SetBinaryProto(const operations_research::string_view& filename,
                             const google::protobuf::Message& proto, int flags);
-util::Status SetContents(const std::string& filename, const std::string& contents,
+util::Status SetContents(const operations_research::string_view& filename, const std::string& contents,
                          int flags);
-util::Status GetContents(const std::string& filename, std::string* output, int flags);
+util::Status GetContents(const operations_research::string_view& filename, std::string* output, int flags);
 util::Status WriteString(File* file, const std::string& contents, int flags);
 
-bool ReadFileToString(const std::string& file_name, std::string* output);
-bool WriteStringToFile(const std::string& data, const std::string& file_name);
-bool ReadFileToProto(const std::string& file_name, google::protobuf::Message* proto);
-void ReadFileToProtoOrDie(const std::string& file_name, google::protobuf::Message* proto);
+bool ReadFileToString(const operations_research::string_view& file_name, std::string* output);
+bool WriteStringToFile(const std::string& data, const operations_research::string_view& file_name);
+bool ReadFileToProto(const operations_research::string_view& file_name, google::protobuf::Message* proto);
+void ReadFileToProtoOrDie(const operations_research::string_view& file_name, google::protobuf::Message* proto);
 bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
-                           const std::string& file_name);
+                           const operations_research::string_view& file_name);
 void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
-                                const std::string& file_name);
-bool WriteProtoToFile(const google::protobuf::Message& proto, const std::string& file_name);
+                                const operations_research::string_view& file_name);
+bool WriteProtoToFile(const google::protobuf::Message& proto, const operations_research::string_view& file_name);
 void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
-                           const std::string& file_name);
+                           const operations_research::string_view& file_name);
 
-util::Status Delete(const std::string& path, int flags);
+util::Status Delete(const operations_research::string_view& path, int flags);
 
 }  // namespace file
 

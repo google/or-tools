@@ -16,8 +16,6 @@
 
 #include <string>
 
-#include "ortools/base/stringpiece.h"
-
 namespace operations_research {
 std::string StringPrintf(const char* const format, ...);
 void SStringPrintf(std::string* const dst, const char* const format, ...);

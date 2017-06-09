@@ -52,7 +52,7 @@ class Status {
   Status(ErrorCode error_code, std::string error_message);
 
   // Improves readability but identical to 0-arg constructor.
-  static const Status OK;
+  static const Status OK() { return Status(); }
 
   // Accessors.
   ErrorCode error_code() const { return error_code_; }

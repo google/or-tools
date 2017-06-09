@@ -32,12 +32,11 @@
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/hash.h"
-#include "ortools/base/span.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
-#include "ortools/base/random.h"
 
 namespace operations_research {
 namespace sat {
@@ -378,7 +377,7 @@ class BinaryImplicationGraph : public SatPropagator {
                              SparseBitset<BooleanVariable>* marked);
   void MinimizeConflictFirstWithTransitiveReduction(
       const Trail& trail, std::vector<Literal>* c,
-      SparseBitset<BooleanVariable>* marked, RandomBase* random);
+      SparseBitset<BooleanVariable>* marked, random_engine_t* random);
 
   // This must only be called at decision level 0 after all the possible
   // propagations. It:

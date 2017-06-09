@@ -21,21 +21,22 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/stringpiece.h"
+#include "ortools/base/string_view.h"
 
 namespace strings {
 std::vector<std::string> Split(const std::string& full, const char* delim, int flags);
 
 std::vector<std::string> Split(const std::string& full, char delim, int flags);
 
-// StringPiece version. Its advantages is that it avoids creating a lot of
+// string_view version. Its advantages is that it avoids creating a lot of
 // small strings. Note however that the full std::string must outlive the usage
 // of the result.
 //
 // Hack: the int64 allow the C++ compiler to distinguish the two functions. It
 // is possible to implement this more cleanly at the cost of more complexity.
-std::vector<StringPiece> Split(const std::string& full, const char* delim,
-                               int64 flags);
+std::vector<operations_research::string_view> Split(const std::string& full,
+                                                    const char* delim,
+                                                    int64 flags);
 
 namespace delimiter {
 inline const char* AnyOf(const char* x) { return x; }
@@ -53,7 +54,8 @@ inline int SkipEmpty() { return 0xDEADBEEF; }
 // all of them.  This function will correctly handle parsing
 // strings that have embedded \0s.
 template <class T>
-bool SplitStringAndParse(StringPiece source, const std::string& delim,
+bool SplitStringAndParse(operations_research::string_view source,
+                         const std::string& delim,
                          bool (*parse)(const std::string& str, T* value),
                          std::vector<T>* result);
 
@@ -76,11 +78,11 @@ bool SplitStringAndParse(const std::string& source, const std::string& delim,
   CHECK(nullptr != parse);
   CHECK(nullptr != result);
   CHECK_GT(delim.size(), 0);
-  const std::vector<StringPiece> pieces =
+  const std::vector<operations_research::string_view> pieces =
       ::strings::Split(source, strings::delimiter::AnyOf(delim.c_str()),
                        static_cast<int64>(strings::SkipEmpty()));
   T t;
-  for (StringPiece piece : pieces) {
+  for (operations_research::string_view piece : pieces) {
     if (!parse(piece.as_string(), &t)) return false;
     result->push_back(t);
   }

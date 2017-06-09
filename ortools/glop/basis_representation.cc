@@ -209,7 +209,7 @@ void BasisFactorization::Clear() {
 Status BasisFactorization::Initialize() {
   SCOPED_TIME_STAT(&stats_);
   Clear();
-  if (IsIdentityBasis()) return Status::OK;
+  if (IsIdentityBasis()) return Status::OK();
   MatrixView basis_matrix;
   basis_matrix.PopulateFromBasis(matrix_, basis_);
   return lu_factorization_.ComputeFactorization(basis_matrix);
@@ -218,7 +218,7 @@ Status BasisFactorization::Initialize() {
 bool BasisFactorization::IsRefactorized() const { return num_updates_ == 0; }
 
 Status BasisFactorization::Refactorize() {
-  if (IsRefactorized()) return Status::OK;
+  if (IsRefactorized()) return Status::OK();
   return ForceRefactorization();
 }
 
@@ -283,7 +283,7 @@ Status BasisFactorization::MiddleProductFormUpdate(
     GLOP_RETURN_AND_LOG_ERROR(Status::ERROR_LU, "Degenerate rank-one update.");
   }
   rank_one_factorization_.Update(elementary_update_matrix);
-  return Status::OK;
+  return Status::OK();
 }
 
 Status BasisFactorization::Update(ColIndex entering_col,
@@ -301,7 +301,7 @@ Status BasisFactorization::Update(ColIndex entering_col,
     }
     ++num_updates_;
     tau_computation_can_be_optimized_ = false;
-    return Status::OK;
+    return Status::OK();
   }
   return ForceRefactorization();
 }

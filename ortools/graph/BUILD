@@ -197,18 +197,6 @@ cc_library(
     ],
 )
 
-#cc_library(
-#    name = "strongly_connected_components",
-#    srcs = ["strongly_connected_components.cc"],
-#    hdrs = ["strongly_connected_components.h"],
-#    deps = [
-#        ":digraph",
-#        ":ebert_graph",
-#        "//ortools/base",
-#        "//ortools/base:int_type",
-#        "//ortools/base:int_type_indexed_vector",
-#    ],
-#)
 
 #cc_library(
 #    name = "shortest_paths",

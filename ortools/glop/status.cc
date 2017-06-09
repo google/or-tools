@@ -26,8 +26,6 @@ Status::Status(ErrorCode error_code, std::string error_message)
     : error_code_(error_code),
       error_message_(error_code == NO_ERROR ? "" : std::move(error_message)) {}
 
-const Status Status::OK;
-
 std::string GetErrorCodeString(Status::ErrorCode error_code) {
   switch (error_code) {
     case Status::NO_ERROR:

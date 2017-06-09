@@ -142,7 +142,7 @@ void SatSolver::SetParameters(const SatParameters& parameters) {
   parameters_ = parameters;
   clauses_propagator_.SetParameters(parameters);
   pb_constraints_.SetParameters(parameters);
-  random_.Reset(parameters_.random_seed());
+  random_.seed(parameters_.random_seed());
   InitRestart();
   time_limit_ = TimeLimit::FromParameters(parameters_);
   dl_running_average_.Reset(parameters_.restart_running_window_size());
@@ -256,7 +256,7 @@ bool SatSolver::AddLinearConstraintInternal(
   SCOPED_TIME_STAT(&stats_);
   DCHECK(BooleanLinearExpressionIsCanonical(cst));
   if (rhs < 0) return SetModelUnsat();  // Unsatisfiable constraint.
-  if (rhs >= max_value) return true;  // Always satisfied constraint.
+  if (rhs >= max_value) return true;    // Always satisfied constraint.
 
   // Update the weighted_sign_.
   // TODO(user): special case the rhs = 0 which just fix variables...
@@ -1644,14 +1644,18 @@ Literal SatSolver::NextBranch() {
   // Choose the variable.
   BooleanVariable var;
   const double ratio = parameters_.random_branches_ratio();
-  if (ratio != 0.0 && random_.RandDouble() < ratio) {
+  auto zero_to_one = [this]() {
+    return std::uniform_real_distribution<double>()(random_);
+  };
+  if (ratio != 0.0 && zero_to_one() < ratio) {
     ++counters_.num_random_branches;
     while (true) {
       // TODO(user): This may not be super efficient if almost all the
       // variables are assigned.
-      var = BooleanVariable(
-          (*var_ordering_.Raw())[random_.Uniform(var_ordering_.Raw()->size())] -
-          &queue_elements_.front());
+      std::uniform_int_distribution<int> index_dist(
+          0, var_ordering_.Raw()->size() - 1);
+      var = BooleanVariable((*var_ordering_.Raw())[index_dist(random_)] -
+                            &queue_elements_.front());
       if (!trail_->Assignment().VariableIsAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
       var_ordering_.Remove(&queue_elements_[var]);
@@ -1670,8 +1674,8 @@ Literal SatSolver::NextBranch() {
 
   // Choose its polarity (i.e. True of False).
   const double random_ratio = parameters_.random_polarity_ratio();
-  if (random_ratio != 0.0 && random_.RandDouble() < random_ratio) {
-    return Literal(var, random_.OneIn(2));
+  if (random_ratio != 0.0 && zero_to_one() < random_ratio) {
+    return Literal(var, std::uniform_int_distribution<int>(0, 1)(random_));
   }
   return Literal(var, var_use_phase_saving_[var]
                           ? trail_->Info(var).last_polarity
@@ -1693,7 +1697,7 @@ void SatSolver::ResetPolarity(BooleanVariable from) {
         initial_polarity = false;
         break;
       case SatParameters::POLARITY_RANDOM:
-        initial_polarity = random_.OneIn(2);
+        initial_polarity = std::uniform_int_distribution<int>(0, 1)(random_);
         break;
       case SatParameters::POLARITY_WEIGHTED_SIGN:
         initial_polarity = weighted_sign_[var] > 0;
@@ -1739,7 +1743,7 @@ void SatSolver::InitializeVariableOrdering() {
       std::reverse(variables.begin(), variables.end());
       break;
     case SatParameters::IN_RANDOM_ORDER:
-      std::random_shuffle(variables.begin(), variables.end(), random_);
+      std::shuffle(variables.begin(), variables.end(), random_);
       break;
   }
 
@@ -2186,7 +2190,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
   // The sum of the literal with level <= backjump_level must propagate.
   std::vector<Coefficient> sum_for_le_level(backjump_level + 2, Coefficient(0));
   std::vector<Coefficient> max_coeff_for_ge_level(backjump_level + 2,
-                                             Coefficient(0));
+                                                  Coefficient(0));
   int size = 0;
   Coefficient max_sum(0);
   for (BooleanVariable var : conflict->PossibleNonZeros()) {
