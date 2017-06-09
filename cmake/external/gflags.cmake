@@ -22,5 +22,6 @@ ExternalProject_Add(gflags_project
 
 ADD_LIBRARY(gflags STATIC IMPORTED) 
 SET_PROPERTY(TARGET gflags PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/gflags_project/src/gflags/lib/libgflags.a)
+ADD_DEPENDENCIES(gflags gflags_project)
 SET(gflags_LIBRARIES "")
 LIST(APPEND gflags_LIBRARIES gflags)
