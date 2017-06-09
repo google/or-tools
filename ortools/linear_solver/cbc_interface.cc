@@ -32,11 +32,11 @@
 
 #undef PACKAGE
 #undef VERSION
-#include "coin/CbcConfig.h"
-#include "coin/CbcMessage.hpp"
-#include "coin/CbcModel.hpp"
-#include "coin/CoinModel.hpp"
-#include "coin/OsiClpSolverInterface.hpp"
+#include "CbcConfig.h"
+#include "CbcMessage.hpp"
+#include "CbcModel.hpp"
+#include "CoinModel.hpp"
+#include "OsiClpSolverInterface.hpp"
 
 // Heuristics
 
