@@ -20,15 +20,8 @@ ExternalProject_Add(gflags_project
         -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON)
 
-<<<<<<< HEAD
 ADD_LIBRARY(gflags STATIC IMPORTED) 
 SET_PROPERTY(TARGET gflags PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/gflags_project/src/gflags/lib/libgflags.a)
 ADD_DEPENDENCIES(gflags gflags_project)
 SET(gflags_LIBRARIES "")
 LIST(APPEND gflags_LIBRARIES gflags)
-=======
-ADD_LIBRARY(Gflags STATIC IMPORTED)
-SET_PROPERTY(TARGET Gflags PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/gflags_project/src/gflags/lib/libgflags.a)
-SET(Gflags_LIBRARIES "")
-LIST(APPEND Gflags_LIBRARIES Gflags)
->>>>>>> a66edd4dc5a435483d5238db0b91e0a74aa51a71
