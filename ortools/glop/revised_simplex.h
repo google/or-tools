@@ -115,7 +115,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/lp_data/sparse_row.h"
-#include "ortools/base/random.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {
@@ -785,7 +785,7 @@ class RevisedSimplex {
   std::vector<RowIndex> equivalent_leaving_choices_;
 
   // A random number generator.
-  MTRandom random_;
+  random_engine_t random_;
 
   DISALLOW_COPY_AND_ASSIGN(RevisedSimplex);
 };

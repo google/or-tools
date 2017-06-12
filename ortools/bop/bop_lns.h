@@ -33,6 +33,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
+#include "ortools/base/random.h"
 
 namespace operations_research {
 namespace bop {

@@ -72,6 +72,8 @@ class Cleanup {
     DCHECK_GT(num_rows_, row); \
   }
 
+constexpr const uint64 kDeterministicSeed = 42;
+
 RevisedSimplex::RevisedSimplex()
     : problem_status_(ProblemStatus::INIT),
       num_rows_(0),
@@ -111,7 +113,7 @@ RevisedSimplex::RevisedSimplex()
       parameters_(),
       test_lu_(),
       feasibility_phase_(true),
-      random_("This is a deterministic seed.") {
+      random_(kDeterministicSeed) {
   SetParameters(parameters_);
 }
 
@@ -1301,8 +1303,9 @@ void RevisedSimplex::CorrectErrorsOnVariableValues() {
     VLOG(1) << "Perturbing the problem.";
     const Fractional tolerance = parameters_.harris_tolerance_ratio() *
                                  parameters_.primal_feasibility_tolerance();
+    std::uniform_real_distribution<double> dist(0, tolerance);
     for (ColIndex col(0); col < num_cols_; ++col) {
-      bound_perturbation_[col] += random_.UniformDouble(0, tolerance);
+      bound_perturbation_[col] += dist(random_);
     }
   }
 }
@@ -1525,8 +1528,9 @@ Status RevisedSimplex::ChooseLeavingVariableRow(
     // Break the ties randomly.
     if (!equivalent_leaving_choices_.empty()) {
       equivalent_leaving_choices_.push_back(*leaving_row);
-      *leaving_row = equivalent_leaving_choices_[random_.Uniform(
-          equivalent_leaving_choices_.size())];
+      *leaving_row =
+          equivalent_leaving_choices_[std::uniform_int_distribution<int>(
+              0, equivalent_leaving_choices_.size() - 1)(random_)];
     }
 
     // Since we took care of the bound-flip at the beginning, at this point
@@ -1836,8 +1840,9 @@ Status RevisedSimplex::DualChooseLeavingVariableRow(RowIndex* leaving_row,
   // Break the ties randomly.
   if (!equivalent_leaving_choices_.empty()) {
     equivalent_leaving_choices_.push_back(*leaving_row);
-    *leaving_row = equivalent_leaving_choices_[random_.Uniform(
-        equivalent_leaving_choices_.size())];
+    *leaving_row =
+        equivalent_leaving_choices_[std::uniform_int_distribution<int>(
+            0, equivalent_leaving_choices_.size() - 1)(random_)];
   }
 
   // Return right away if there is no leaving variable.
@@ -2022,8 +2027,9 @@ Status RevisedSimplex::DualPhaseIChooseLeavingVariableRow(
   // Break the ties randomly.
   if (!equivalent_leaving_choices_.empty()) {
     equivalent_leaving_choices_.push_back(*leaving_row);
-    *leaving_row = equivalent_leaving_choices_[random_.Uniform(
-        equivalent_leaving_choices_.size())];
+    *leaving_row =
+        equivalent_leaving_choices_[std::uniform_int_distribution<int>(
+            0, equivalent_leaving_choices_.size() - 1)(random_)];
   }
 
   // Returns right away if there is no leaving variable or fill the other
@@ -2776,7 +2782,7 @@ Fractional RevisedSimplex::ComputeInitialProblemObjectiveValue() const {
 
 void RevisedSimplex::SetParameters(const GlopParameters& parameters) {
   SCOPED_TIME_STAT(&function_stats_);
-  random_.Reset(parameters_.random_seed());
+  random_.seed(parameters_.random_seed());
   initial_parameters_ = parameters;
   parameters_ = parameters;
   PropagateParameters();

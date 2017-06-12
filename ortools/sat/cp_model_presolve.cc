@@ -1186,6 +1186,7 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
   int num_greater_half_capacity = 0;
 
   for (int i = 0; i < size; ++i) {
+    // TODO(user): adapt in the presence of optional intervals.
     const IntervalConstraintProto& interval =
         context->working_model->constraints(proto.intervals(i)).interval();
     start_indices[i] = interval.start();
@@ -1194,8 +1195,8 @@ bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
     if (context->domains[duration_index].IsFixedTo(1)) {
       num_duration_one++;
     }
-    const int demand_min = context->domains[demand_index].Min();
-    const int demand_max = context->domains[demand_index].Max();
+    const int64 demand_min = context->domains[demand_index].Min();
+    const int64 demand_max = context->domains[demand_index].Max();
     if (demand_min > capacity / 2) {
       num_greater_half_capacity++;
     }

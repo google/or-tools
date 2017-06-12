@@ -66,10 +66,10 @@ bool MainLpPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
       RUN_PREPROCESSOR(SingletonPreprocessor);
       RUN_PREPROCESSOR(ForcingAndImpliedFreeConstraintPreprocessor);
       RUN_PREPROCESSOR(FreeConstraintPreprocessor);
-      RUN_PREPROCESSOR(UnconstrainedVariablePreprocessor);
-      RUN_PREPROCESSOR(DoubletonEqualityRowPreprocessor);
       RUN_PREPROCESSOR(ImpliedFreePreprocessor);
+      RUN_PREPROCESSOR(UnconstrainedVariablePreprocessor);
       RUN_PREPROCESSOR(DoubletonFreeColumnPreprocessor);
+      RUN_PREPROCESSOR(DoubletonEqualityRowPreprocessor);
 
       // Abort early if none of the preprocessors did something. Technically
       // this is true if none of the preprocessors above needs postsolving,
@@ -1539,6 +1539,7 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp,
       std::swap(r.row[DELETED], r.row[MODIFIED]);
     }
 
+
     // Save the deleted row for postsolve. Note that we remove it from the
     // transpose at the same time. This last operation is not strictly needed,
     // but it is faster to do it this way (both here and later when we will take
@@ -1599,6 +1600,7 @@ bool DoubletonFreeColumnPreprocessor::Run(LinearProgram* lp,
   }
   return false;
 }
+
 
 void DoubletonFreeColumnPreprocessor::RecoverSolution(
     ProblemSolution* solution) const {
@@ -1728,67 +1730,201 @@ void UnconstrainedVariablePreprocessor::RemoveZeroCostUnconstrainedVariable(
 bool UnconstrainedVariablePreprocessor::Run(LinearProgram* lp,
                                             TimeLimit* time_limit) {
   RETURN_VALUE_IF_NULL(lp, false);
-  const ColIndex num_cols(lp->num_variables());
+  const Fractional tolerance = parameters_.preprocessor_zero_tolerance();
+
+  // We start by the dual variable bounds from the constraints.
+  const RowIndex num_rows = lp->num_constraints();
+  dual_lb_.assign(num_rows, -kInfinity);
+  dual_ub_.assign(num_rows, kInfinity);
+  for (RowIndex row(0); row < num_rows; ++row) {
+    if (lp->constraint_lower_bounds()[row] == -kInfinity) {
+      dual_ub_[row] = 0.0;
+    }
+    if (lp->constraint_upper_bounds()[row] == kInfinity) {
+      dual_lb_[row] = 0.0;
+    }
+  }
+
+  const ColIndex num_cols = lp->num_variables();
+  may_have_participated_lb_.assign(num_cols, false);
+  may_have_participated_ub_.assign(num_cols, false);
+
+  // We maintain a queue of columns to process.
+  std::deque<ColIndex> columns_to_process;
+  DenseBooleanRow in_columns_to_process(num_cols, true);
+  std::vector<RowIndex> changed_rows;
   for (ColIndex col(0); col < num_cols; ++col) {
+    columns_to_process.push_back(col);
+  }
+
+  // Arbitrary limit to avoid corner cases with long loops.
+  // TODO(user): expose this as a parameter? IMO it isn't really needed as we
+  // shouldn't reach this limit except in corner cases.
+  const int limit = 5 * num_cols.value();
+  for (int count = 0; !columns_to_process.empty() && count < limit; ++count) {
+    const ColIndex col = columns_to_process.front();
+    columns_to_process.pop_front();
+    in_columns_to_process[col] = false;
+    if (column_deletion_helper_.IsColumnMarked(col)) continue;
+
     const SparseColumn& column = lp->GetSparseColumn(col);
-    if (column.IsEmpty()) continue;
-    const Fractional cost =
+    const Fractional col_cost =
         lp->GetObjectiveCoefficientForMinimizationVersion(col);
+    const Fractional col_lb = lp->variable_lower_bounds()[col];
+    const Fractional col_ub = lp->variable_upper_bounds()[col];
 
-    bool can_be_removed = false;
-    Fractional target_bound;
-
-    // If the variable is not constrained toward +infinity and the cost moves in
-    // the correct direction we can fix the variable at its upper bound.
-    if (cost <= 0.0) {
-      can_be_removed = true;
-      target_bound = lp->variable_upper_bounds()[col];
-      for (const SparseColumn::Entry e : column) {
-        if (IsConstraintBlockingVariable(*lp, e.coefficient(), e.row())) {
-          can_be_removed = false;
-          break;
-        }
+    // Compute the bounds on the reduced costs of this column.
+    SumWithNegativeInfiniteAndOneMissing rc_lb;
+    SumWithPositiveInfiniteAndOneMissing rc_ub;
+    rc_lb.Add(col_cost);
+    rc_ub.Add(col_cost);
+    for (const SparseColumn::Entry e : column) {
+      if (row_deletion_helper_.IsRowMarked(e.row())) continue;
+      const Fractional coeff = e.coefficient();
+      if (coeff > 0.0) {
+        rc_lb.Add(-coeff * dual_ub_[e.row()]);
+        rc_ub.Add(-coeff * dual_lb_[e.row()]);
+      } else {
+        rc_lb.Add(-coeff * dual_lb_[e.row()]);
+        rc_ub.Add(-coeff * dual_ub_[e.row()]);
       }
     }
-    if (!can_be_removed && cost >= 0.0) {
+
+    // If the reduced cost domain do not contain zero (modulo the tolerance), we
+    // can move the variable to its corresponding bound. Note that we need to be
+    // careful that this variable didn't participate in creating the used
+    // reduced cost bound in the first place.
+    bool can_be_removed = false;
+    Fractional target_bound;
+    bool rc_is_away_from_zero;
+    if (rc_ub.Sum() <= tolerance) {
       can_be_removed = true;
-      target_bound = lp->variable_lower_bounds()[col];
-      for (const SparseColumn::Entry e : column) {
-        if (IsConstraintBlockingVariable(*lp, -e.coefficient(), e.row())) {
-          can_be_removed = false;
-          break;
-        }
+      target_bound = col_ub;
+      rc_is_away_from_zero = rc_ub.Sum() <= -tolerance;
+      can_be_removed = !may_have_participated_ub_[col];
+    }
+    if (rc_lb.Sum() >= -tolerance) {
+      // The second condition is here for the case we can choose one of the two
+      // directions.
+      if (!can_be_removed || !IsFinite(target_bound)) {
+        can_be_removed = true;
+        target_bound = col_lb;
+        rc_is_away_from_zero = rc_lb.Sum() >= tolerance;
+        can_be_removed = !may_have_participated_lb_[col];
       }
     }
 
     if (can_be_removed) {
-      // If can_be_removed is true but the target bound is infinite and the cost
-      // is non-zero, then the problem is
-      // ProblemStatus::INFEASIBLE_OR_UNBOUNDED.
-      if (!IsFinite(target_bound)) {
-        if (cost != 0.0) {
-          VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED, variable " << col
-                  << " can move to " << target_bound << " and its cost is "
-                  << cost << ".";
-          status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
-          return false;
-        } else {
-          // We can remove this column and all its constraints! We just need to
-          // choose a variable value during the call to RecoverSolution() that
-          // makes all the constraint satisfiable. Test this on bnl2.mps.
-          if (!in_mip_context_) {
-            // TODO(user): this also works if the variable is integer, but we
-            // must choose an integer value during the post-solve. Implement
-            // this.
-            RemoveZeroCostUnconstrainedVariable(col, target_bound, lp);
+      if (IsFinite(target_bound)) {
+        // Note that in MIP context, this assumes that the bounds of an integer
+        // variable are integer.
+        column_deletion_helper_.MarkColumnForDeletionWithState(
+            col, target_bound,
+            ComputeVariableStatus(target_bound, col_lb, col_ub));
+        continue;
+      }
+
+      // If the target bound is infinite and the reduced cost bound is non-zero,
+      // then the problem is ProblemStatus::INFEASIBLE_OR_UNBOUNDED.
+      if (rc_is_away_from_zero) {
+        VLOG(1) << "Problem INFEASIBLE_OR_UNBOUNDED, variable " << col
+                << " can move to " << target_bound
+                << " and its reduced cost is in [" << rc_lb.Sum() << ", "
+                << rc_ub.Sum() << "]";
+        status_ = ProblemStatus::INFEASIBLE_OR_UNBOUNDED;
+        return false;
+      } else {
+        // We can remove this column and all its constraints! We just need to
+        // choose proper variable values during the call to RecoverSolution()
+        // that make all the constraints satisfiable. Unfortunately, this is not
+        // so easy to do in the general case, so we only deal with a simpler
+        // case when the cost of the variable is zero, and the constraints do
+        // not block it in one direction.
+        //
+        // TODO(user): deal with the more generic case.
+        if (col_cost != 0.0) continue;
+        bool skip = false;
+        for (const SparseColumn::Entry e : column) {
+          // Note that it is important to check the rows that are already
+          // deleted here, otherwise the post-solve will not work.
+          if (IsConstraintBlockingVariable(*lp, e.coefficient(), e.row())) {
+            skip = true;
+            break;
           }
-          continue;
+        }
+        if (skip) continue;
+
+        // TODO(user): this also works if the variable is integer, but we must
+        // choose an integer value during the post-solve. Implement this.
+        if (in_mip_context_) continue;
+        RemoveZeroCostUnconstrainedVariable(col, target_bound, lp);
+        continue;
+      }
+    }
+
+    // The rest of the code will update the dual bounds. There is no need to do
+    // it if the column was removed or if it is not unconstrained in some
+    // direction.
+    DCHECK(!can_be_removed);
+    if (col_lb != -kInfinity && col_ub != kInfinity) continue;
+
+    // For MIP, we only exploit the constraints. TODO(user): It should probably
+    // work with only small modification, investigate.
+    if (in_mip_context_) continue;
+
+    changed_rows.clear();
+    for (const SparseColumn::Entry e : column) {
+      if (row_deletion_helper_.IsRowMarked(e.row())) continue;
+      const Fractional c = e.coefficient();
+      const RowIndex row = e.row();
+      if (col_ub == kInfinity) {
+        if (c > 0.0) {
+          const Fractional candidate = rc_ub.SumWithout(-c * dual_lb_[row]) / c;
+          if (candidate < dual_ub_[row]) {
+            dual_ub_[row] = candidate;
+            may_have_participated_lb_[col] = true;
+            changed_rows.push_back(row);
+          }
+        } else {
+          const Fractional candidate = rc_ub.SumWithout(-c * dual_ub_[row]) / c;
+          if (candidate > dual_lb_[row]) {
+            dual_lb_[row] = candidate;
+            may_have_participated_lb_[col] = true;
+            changed_rows.push_back(row);
+          }
         }
       }
-      column_deletion_helper_.MarkColumnForDeletionWithState(
-          col, target_bound,
-          ComputeVariableStatus(target_bound, lp->variable_lower_bounds()[col],
-                                lp->variable_upper_bounds()[col]));
+      if (col_lb == -kInfinity) {
+        if (c > 0.0) {
+          const Fractional candidate = rc_lb.SumWithout(-c * dual_ub_[row]) / c;
+          if (candidate > dual_lb_[row]) {
+            dual_lb_[row] = candidate;
+            may_have_participated_ub_[col] = true;
+            changed_rows.push_back(row);
+          }
+        } else {
+          const Fractional candidate = rc_lb.SumWithout(-c * dual_lb_[row]) / c;
+          if (candidate < dual_ub_[row]) {
+            dual_ub_[row] = candidate;
+            may_have_participated_ub_[col] = true;
+            changed_rows.push_back(row);
+          }
+        }
+      }
+    }
+
+    if (!changed_rows.empty()) {
+      const SparseMatrix& transpose = lp->GetTransposeSparseMatrix();
+      for (const RowIndex row : changed_rows) {
+        for (const SparseColumn::Entry entry :
+             transpose.column(RowToColIndex(row))) {
+          const ColIndex col = RowToColIndex(entry.row());
+          if (!in_columns_to_process[col]) {
+            columns_to_process.push_back(col);
+            in_columns_to_process[col] = true;
+          }
+        }
+      }
     }
   }
 
@@ -1992,10 +2128,21 @@ void SingletonPreprocessor::DeleteSingletonRow(MatrixEntry e,
   if (e.coeff < 0.0) {
     std::swap(implied_lower_bound, implied_upper_bound);
   }
+
+  const Fractional old_lower_bound = lp->variable_lower_bounds()[e.col];
+  const Fractional old_upper_bound = lp->variable_upper_bounds()[e.col];
+
+  const Fractional potential_error =
+      std::abs(parameters_.preprocessor_zero_tolerance() / e.coeff);
   Fractional new_lower_bound =
-      std::max(lp->variable_lower_bounds()[e.col], implied_lower_bound);
+      implied_lower_bound - potential_error > old_lower_bound
+          ? implied_lower_bound
+          : old_lower_bound;
   Fractional new_upper_bound =
-      std::min(lp->variable_upper_bounds()[e.col], implied_upper_bound);
+      implied_upper_bound + potential_error < old_upper_bound
+          ? implied_upper_bound
+          : old_upper_bound;
+
 
   if (new_upper_bound < new_lower_bound) {
     if (!IsSmallerWithinFeasibilityTolerance(new_lower_bound,
@@ -2639,7 +2786,7 @@ bool RemoveNearZeroEntriesPreprocessor::Run(LinearProgram* lp,
             << " near-zero objective coefficients.";
   }
 
-  // No postsolve is required.
+  // No post-solve is required.
   return false;
 }
 
@@ -2991,7 +3138,7 @@ bool DualizerPreprocessor::Run(LinearProgram* lp, TimeLimit* time_limit) {
 
   // Save the linear program bounds.
   // Also make sure that all the bounded variable have at least one bound set to
-  // zero. This will be needed to postsolve a dual-basic solution into a
+  // zero. This will be needed to post-solve a dual-basic solution into a
   // primal-basic one.
   const ColIndex num_cols = lp->num_variables();
   variable_lower_bounds_.assign(num_cols, 0.0);

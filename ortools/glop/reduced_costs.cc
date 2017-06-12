@@ -13,6 +13,8 @@
 
 #include "ortools/glop/reduced_costs.h"
 
+#include <random>
+
 #ifdef OMP
 #include <omp.h>
 #endif
@@ -27,7 +29,7 @@ ReducedCosts::ReducedCosts(const CompactSparseMatrix& matrix,
                            const RowToColMapping& basis,
                            const VariablesInfo& variables_info,
                            const BasisFactorization& basis_factorization,
-                           RandomBase* random)
+                           random_engine_t* random)
     : matrix_(matrix),
       objective_(objective),
       basis_(basis),
@@ -248,7 +250,7 @@ void ReducedCosts::PerturbCosts() {
   for (ColIndex col(0); col < structural_size; ++col) {
     const Fractional objective = objective_[col];
     const Fractional magnitude =
-        (1.0 + random_->UniformDouble(1.0)) *
+        (1.0 + std::uniform_real_distribution<double>()(*random_)) *
         (parameters_.relative_cost_perturbation() * std::abs(objective) +
          parameters_.relative_max_cost_perturbation() * max_cost_magnitude);
     DCHECK_GE(magnitude, 0.0);

@@ -50,66 +50,6 @@ class BooleanXorPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(BooleanXorPropagator);
 };
 
-// Implement the all different bound consistent propagator with explanation.
-// That is, given n variables that must be all different, this propagates the
-// bounds of each variables as much as possible. The key is to detect the so
-// called Hall interval which are interval of size k that contains the domain
-// of k variables. Because all the variables must take different values, we can
-// deduce that the domain of the other variables cannot contains such Hall
-// interval.
-//
-// We use a "simple" O(n log n) algorithm.
-//
-// TODO(user): implement the faster algorithm described in:
-// https://cs.uwaterloo.ca/~vanbeek/Publications/ijcai03_TR.pdf
-// Note that the algorithms are similar, the gain comes by replacing our
-// SortedDisjointIntervalList with a more customized class for our operations.
-// It is even possible to get an O(n) complexity if the values of the bounds are
-// in a range of size O(n).
-class AllDifferentBoundsPropagator : public PropagatorInterface {
- public:
-  AllDifferentBoundsPropagator(const std::vector<IntegerVariable>& vars,
-                               IntegerTrail* integer_trail);
-
-  bool Propagate() final;
-  void RegisterWith(GenericLiteralWatcher* watcher);
-
- private:
-  // Fills integer_reason_ with the reason why we have the given hall interval.
-  void FillHallReason(IntegerValue hall_lb, IntegerValue hall_ub);
-
-  // Do half the job of Propagate().
-  bool PropagateLowerBounds();
-
-  std::vector<IntegerVariable> vars_;
-  std::vector<IntegerVariable> negated_vars_;
-  IntegerTrail* integer_trail_;
-
-  // The sets of "critical" intervals. This has the same meaning as in the
-  // disjunctive constraint.
-  SortedDisjointIntervalList critical_intervals_;
-
-  // The list of Hall intervalls detected so far, sorted.
-  std::vector<IntegerValue> hall_starts_;
-  std::vector<IntegerValue> hall_ends_;
-
-  // Members needed for explaining the propagation.
-  //
-  // The IntegerVariable in an hall interval [lb, ub] are the variables with key
-  // in [lb, ub] in this map. Note(user): if the set of bounds is small, we
-  // could use a std::vector here. The O(ub - lb) to create the reason is fine
-  // since this is the size of the reason.
-  //
-  // Optimization: we only insert the entry in the map lazily when the reason
-  // is needed.
-  int64 num_calls_;
-  std::vector<std::pair<int64, IntegerVariable>> to_insert_;
-  std::unordered_map<int64, IntegerVariable> value_to_variable_;
-  std::vector<IntegerLiteral> integer_reason_;
-
-  DISALLOW_COPY_AND_ASSIGN(AllDifferentBoundsPropagator);
-};
-
 // Initial version of the circuit/sub-circuit constraint.
 // It mainly report conflicts and do not propagate much.
 class CircuitPropagator : PropagatorInterface, ReversibleInterface {
@@ -318,28 +258,6 @@ inline std::function<void(Model*)> LiteralXorIs(
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     BooleanXorPropagator* constraint =
         new BooleanXorPropagator(literals, value, trail, integer_trail);
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
-}
-
-// Enforces that the given tuple of variables takes different values.
-std::function<void(Model*)> AllDifferent(
-    const std::vector<IntegerVariable>& vars);
-
-// Enforces that the given tuple of variables takes different values.
-// Same as AllDifferent() but use a different propagator that only enforce
-// the so called "bound consistency" on the variable domains.
-//
-// Compared to AllDifferent() this doesn't require fully encoding the variables
-// and it is also quite fast. Note that the propagation is different, this will
-// not remove already taken values from inside a domain, but it will propagates
-// more the domain bounds.
-inline std::function<void(Model*)> AllDifferentOnBounds(
-    const std::vector<IntegerVariable>& vars) {
-  return [=](Model* model) {
-    AllDifferentBoundsPropagator* constraint = new AllDifferentBoundsPropagator(
-        vars, model->GetOrCreate<IntegerTrail>());
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

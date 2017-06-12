@@ -22,8 +22,8 @@
 #include "ortools/glop/variables_info.h"
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
+#include "ortools/util/random_engine.h"
 #include "ortools/util/stats.h"
-#include "ortools/base/random.h"
 
 namespace operations_research {
 namespace glop {
@@ -51,7 +51,7 @@ class ReducedCosts {
                const RowToColMapping& basis,
                const VariablesInfo& variables_info,
                const BasisFactorization& basis_factorization,
-               RandomBase* random);
+               random_engine_t* random);
 
   // If this is true, then the caller must re-factorize the basis before the
   // next call to GetReducedCosts().
@@ -234,7 +234,7 @@ class ReducedCosts {
   const RowToColMapping& basis_;
   const VariablesInfo& variables_info_;
   const BasisFactorization& basis_factorization_;
-  RandomBase* random_;
+  random_engine_t* random_;
 
   // Internal data.
   GlopParameters parameters_;

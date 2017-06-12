@@ -361,7 +361,7 @@ void LoadAllDiffConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   }
 
   if (max_domain_size < 1024) {
-    m->Add(AllDifferent(vars));
+    m->Add(AllDifferentBinary(vars));
     m->Add(AllDifferentAC(vars));
   } else {
     m->Add(AllDifferentOnBounds(vars));
