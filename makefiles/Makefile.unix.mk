@@ -83,7 +83,7 @@ ifdef UNIX_CBC_DIR
 endif
 # This is needed to find Coin LP include files.
 ifdef UNIX_CLP_DIR
-  CLP_INC = -I$(UNIX_CLP_DIR)/include/coin -DUSE_CLP
+  CLP_INC = -I$(UNIX_GLPK_DIR)/include -I$(UNIX_CLP_DIR)/include/coin -DUSE_CLP
   CLP_SWIG = $(CLP_INC)
 endif
 # This is needed to find Coin Branch and Cut include files.
@@ -93,7 +93,7 @@ ifdef UNIX_CBC_DIR
 endif
 # This is needed to find GLPK include files.
 ifdef UNIX_GLPK_DIR
-  GLPK_INC = -I$(UNIX_GLPK_DIR)/include -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
+  GLPK_INC = -I$(UNIX_GLPK_DIR)/include -DUSE_GLPK
   GLPK_SWIG = $(GLPK_INC)
 endif
 # This is needed to find scip include files.
