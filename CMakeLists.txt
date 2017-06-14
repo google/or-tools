@@ -92,7 +92,9 @@ IF(BUILD_CXX)
     ENDIF()
 
     IF(NOT Cbc_FOUND)
-        ADD_DEPENDENCIES(${PROJECT_NAME}Proto Cbc)
+        IF(NOT MSVC)
+            ADD_DEPENDENCIES(${PROJECT_NAME}Proto Cbc)
+        ENDIF()
     ENDIF()
 
     IF(NOT glog_FOUND)
