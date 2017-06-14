@@ -1,9 +1,10 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.5)
+
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 PROJECT(ortools LANGUAGES CXX)
 SET(CMAKE_CXX_STANDARD 11)
 
-INCLUDE(FindPkgConfig)
 INCLUDE(ExternalProject)
 
 SET(CMAKE_INSTALL_LIBDIR lib)
@@ -24,12 +25,19 @@ MARK_AS_ADVANCED(DOWNLOAD_LOCATION)
 
 MESSAGE("-- Reading dependency tags from  ${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.txt")
 FILE(READ ${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.txt _Dependency_file)
-FOREACH(DEPENDENCY Protobuf gflags Glog cbc CoinUtils Osi Clp Cgl)
+FOREACH(DEPENDENCY Protobuf gflags glog Cbc CoinUtils Osi Clp Cgl)
     STRING(REGEX REPLACE ".*${DEPENDENCY} = ([0-9.]+).*" "\\1" ${DEPENDENCY}_VERSION ${_Dependency_file})
     MESSAGE("  -- ${DEPENDENCY}_VERSION = ${${DEPENDENCY}_VERSION}")
 ENDFOREACH()
 
 IF(BUILD_CXX)
+
+    IF(MSVC)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /DNDEBUG /DUSE_GLOP /DUSE_BOP")
+    ELSE()
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG -DUSE_GLOP -DUSE_BOP")
+    ENDIF()
+
     FIND_PACKAGE(Threads REQUIRED)
 
     FIND_PACKAGE(Protobuf ${Protobuf_VERSION})
@@ -46,26 +54,29 @@ IF(BUILD_CXX)
     ENDIF()
     INCLUDE_DIRECTORIES(${gflags_INCLUDE_DIRS})
 
-    SET(GLOG_VERSION ${Glog_VERSION})
-    PKG_CHECK_MODULES(GLOG libglog>=${GLOG_VERSION})
-    # Set again since pkg_check_module resets GLOG_VERSION
-    SET(GLOG_VERSION ${Glog_VERSION})
-    IF(NOT GLOG_FOUND)
+    FIND_PACKAGE(glog ${glog_VERSION})
+    IF(NOT glog_FOUND)
         MESSAGE(STATUS "Did not find system glog. Building as an external project.")
         INCLUDE(cmake/external/glog.cmake)
     ENDIF()
-    INCLUDE_DIRECTORIES(${GLOG_INCLUDE_DIRS})
+    INCLUDE_DIRECTORIES(${glog_INCLUDE_DIRS})
 
-    SET(Cbc_VERSION ${cbc_VERSION})
-    PKG_CHECK_MODULES(Cbc cbc)
-    SET(Cbc_VERSION ${cbc_VERSION})
+    FIND_PACKAGE(Cbc ${Cbc_VERSION})
     IF(NOT Cbc_FOUND)
-        MESSAGE(STATUS "Did not find system coin-cbc. Building as an external Project.")
-        INCLUDE(cmake/external/cbc.cmake)
+        IF(NOT MSVC)
+            MESSAGE(STATUS "Did not find system coin-cbc. Building as an external project.")
+            INCLUDE(cmake/external/cbc.cmake)
+            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_CLP -DUSE_CBC")
+            INCLUDE_DIRECTORIES(${Cbc_INCLUDE_DIRS})
+        ENDIF()
+    ELSE()
+        INCLUDE_DIRECTORIES(${Cbc_INCLUDE_DIRS})
+        IF(MSVC)
+            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DUSE_CLP /DUSE_CBC")
+        ELSE()
+            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_CLP -DUSE_CBC")
+        ENDIF()
     ENDIF()
-    INCLUDE_DIRECTORIES(${Cbc_INCLUDE_DIRS})
-
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG -DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP")
 
     FILE(GLOB_RECURSE proto_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ortools/*.proto")
     SET(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
@@ -84,8 +95,8 @@ IF(BUILD_CXX)
         ADD_DEPENDENCIES(${PROJECT_NAME}Proto Cbc)
     ENDIF()
 
-    IF(NOT GLOG_FOUND)
-        ADD_DEPENDENCIES(${PROJECT_NAME}Proto GLOG)
+    IF(NOT glog_FOUND)
+        ADD_DEPENDENCIES(${PROJECT_NAME}Proto glog)
     ENDIF()
 
     SET_TARGET_PROPERTIES(${PROJECT_NAME}Proto PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -104,7 +115,7 @@ IF(BUILD_CXX)
             ${Cbc_LIBRARIES}
             ${gflags_LIBRARIES}
             ${Protobuf_LIBRARIES}
-            ${GLOG_LIBRARIES}
+            ${glog_LIBRARIES}
             ${CMAKE_THREAD_LIBS_INIT})
 
     ADD_DEPENDENCIES(${PROJECT_NAME} ${PROJECT_NAME}Proto)
