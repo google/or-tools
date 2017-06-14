@@ -74,6 +74,7 @@ DEFINE_string(fz_model_name, "stdin",
 // TODO(user): Remove when using ABCL in open-source.
 DECLARE_bool(log_prefix);
 DECLARE_bool(fz_use_sat);
+DECLARE_bool(vmodule);
 
 using operations_research::ThreadPool;
 
@@ -301,6 +302,11 @@ void Solve(const Model& model) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
+  // By default, we want to show how the solver progress. Note that this needs
+  // to be set before InitGoogle() which has the nice side-effect of allowing
+  // the user to override it.
+  //  FLAGS_vmodule = "*cp_model*=1";
+
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
   operations_research::fz::FixAndParseParameters(&argc, &argv);

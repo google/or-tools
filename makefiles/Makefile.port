@@ -122,12 +122,20 @@ ifeq ("$(SYSTEM)","win")
   ifeq ("$(VisualStudioVersion)", "12.0")
     VISUAL_STUDIO_YEAR = 2013
     VISUAL_STUDIO_MAJOR = 12
+    VS_RELEASE = v120
   else
     ifeq ("$(VisualStudioVersion)", "14.0")
       VISUAL_STUDIO_YEAR = 2015
       VISUAL_STUDIO_MAJOR = 14
+      VS_RELEASE = v140
     else
-      $(warning "Unrecognized visual studio version")
+      ifeq ("$(VisualStudioVersion)", "15.0")
+        VISUAL_STUDIO_YEAR = 2017
+        VISUAL_STUDIO_MAJOR = 15
+        VS_RELEASE = v141
+      else
+        $(warning "Unrecognized visual studio version")
+      endif
     endif
   endif
 
@@ -141,7 +149,6 @@ ifeq ("$(SYSTEM)","win")
 
   # Compiler specific
   PORT = VisualStudio$(VISUAL_STUDIO_YEAR)-$(PTRLENGTH)bit
-  VS_RELEASE = v$(VISUAL_STUDIO_MAJOR)0
   VS_COMTOOLS = $(VISUAL_STUDIO_MAJOR)0
 
   ifeq ("$(CMAKE_SUFFIX)","")

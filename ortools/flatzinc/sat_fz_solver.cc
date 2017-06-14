@@ -21,6 +21,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/logging.h"
+#include "ortools/sat/all_different.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/disjunctive.h"
@@ -345,7 +346,7 @@ void ExtractIntNe(const fz::Constraint& ct, SatModel* m) {
       !encoder->VariableIsFullyEncoded(b)) {
     m->model.Add(NotEqual(a, b));
   } else {
-    m->model.Add(AllDifferent({a, b}));
+    m->model.Add(AllDifferentBinary({a, b}));
   }
 }
 
@@ -960,7 +961,7 @@ void ExtractAllDifferentInt(const fz::Constraint& ct, SatModel* m) {
     }
   }
   if (all_variables_are_encoded) {
-    m->model.Add(AllDifferent(vars));
+    m->model.Add(AllDifferentBinary(vars));
   } else {
     m->model.Add(AllDifferentOnBounds(vars));
   }

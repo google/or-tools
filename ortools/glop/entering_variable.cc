@@ -32,7 +32,7 @@ std::string GlopParameters_PricingRule_Name(int rule) {
 #endif  // ANDROID_JNI
 
 EnteringVariable::EnteringVariable(const VariablesInfo& variables_info,
-                                   RandomBase* random,
+                                   random_engine_t* random,
                                    ReducedCosts* reduced_costs,
                                    PrimalEdgeNorms* primal_edge_norms)
     : variables_info_(variables_info),
@@ -267,8 +267,9 @@ Status EnteringVariable::DualChooseEnteringColumn(
   // Break the ties randomly.
   if (!equivalent_entering_choices_.empty()) {
     equivalent_entering_choices_.push_back(*entering_col);
-    *entering_col = equivalent_entering_choices_[random_->Uniform(
-        equivalent_entering_choices_.size())];
+    *entering_col =
+        equivalent_entering_choices_[std::uniform_int_distribution<int>(
+            0, equivalent_entering_choices_.size() - 1)(*random_)];
     IF_STATS_ENABLED(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }
@@ -504,8 +505,9 @@ void EnteringVariable::NormalizedChooseEnteringColumn(ColIndex* entering_col) {
   // Break the ties randomly.
   if (!equivalent_entering_choices_.empty()) {
     equivalent_entering_choices_.push_back(*entering_col);
-    *entering_col = equivalent_entering_choices_[random_->Uniform(
-        equivalent_entering_choices_.size())];
+    *entering_col =
+        equivalent_entering_choices_[std::uniform_int_distribution<int>(
+            0, equivalent_entering_choices_.size() - 1)(*random_)];
     IF_STATS_ENABLED(
         stats_.num_perfect_ties.Add(equivalent_entering_choices_.size()));
   }

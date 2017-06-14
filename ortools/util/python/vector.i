@@ -116,16 +116,9 @@ PY_LIST_OUTPUT_TYPEMAP(double, PyFloat_Check, PyFloat_FromDouble);
         SWIG_fail;
       }
       bool is_tuple = PyTuple_Check(tuple);
-      int local_arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
-      if (arity != -1 && arity != local_arity) {
-        PyErr_SetString(PyExc_TypeError, "Tuples should have the same arity");
-        SWIG_fail;
-      }
-      if (arity == -1) {
-        arity = local_arity;
-      }
+      int arity = is_tuple ? PyTuple_Size(tuple) : PyList_Size(tuple);
       temp[i].resize(arity);
-      for (size_t j = 0; j < local_arity; ++j) {
+      for (size_t j = 0; j < arity; ++j) {
         bool success = PyObjAs<type>(is_tuple ?
                                      PyTuple_GetItem(tuple, j) :
                                      PyList_GetItem(tuple, j), &temp[i][j]);

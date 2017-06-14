@@ -594,9 +594,6 @@ class DoubletonFreeColumnPreprocessor : public Preprocessor {
   ~DoubletonFreeColumnPreprocessor() final {}
   bool Run(LinearProgram* linear_program, TimeLimit* time_limit) final;
   void RecoverSolution(ProblemSolution* solution) const final;
-  void UseInMipContext() final {
-    LOG(FATAL) << "Not implemented.";
-  }
 
  private:
   enum RowChoice {
@@ -619,6 +616,8 @@ class DoubletonFreeColumnPreprocessor : public Preprocessor {
     // The deleted row as a column.
     SparseColumn deleted_row_as_column;
   };
+
+
   std::vector<RestoreInfo> restore_stack_;
   RowDeletionHelper row_deletion_helper_;
   DISALLOW_COPY_AND_ASSIGN(DoubletonFreeColumnPreprocessor);
@@ -632,9 +631,11 @@ class DoubletonFreeColumnPreprocessor : public Preprocessor {
 // its bound in this direction. If this bound is infinite and the variable cost
 // is non-zero, then the problem is unbounded.
 //
-// TODO(user): This is similar to a preprocessor infering bounds on the reduced
-// costs to fix a variable. It deals with less cases, however there are no
-// numerical errors here.
+// More generally, by using the constraints and the variables that are unbounded
+// on one side, one can derive bounds on the dual values. These can be
+// translated into bounds on the reduced costs or the columns, which may force
+// variables to their bounds. This is called forcing and dominated columns in
+// the Andersen & Andersen paper.
 class UnconstrainedVariablePreprocessor : public Preprocessor {
  public:
   UnconstrainedVariablePreprocessor() {}
@@ -657,6 +658,19 @@ class UnconstrainedVariablePreprocessor : public Preprocessor {
                                            LinearProgram* lp);
 
  private:
+  // Lower/upper bounds on the feasible dual value. We use constraints and
+  // variables unbounded in one direction to derive these bounds. We use these
+  // bounds to compute bounds on the reduced costs of the problem variables.
+  // Note that any finite bounds on a reduced cost means that the variable
+  // (ignoring its domain) can move freely in one direction.
+  DenseColumn dual_lb_;
+  DenseColumn dual_ub_;
+
+  // Indicates if a given column may have participated in the current lb/ub
+  // on the reduced cost of the same column.
+  DenseBooleanRow may_have_participated_ub_;
+  DenseBooleanRow may_have_participated_lb_;
+
   ColumnDeletionHelper column_deletion_helper_;
   RowDeletionHelper row_deletion_helper_;
   DenseColumn rhs_;

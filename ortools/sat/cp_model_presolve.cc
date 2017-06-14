@@ -1171,6 +1171,65 @@ bool PresolveAllDiff(ConstraintProto* ct, PresolveContext* context) {
   return false;
 }
 
+bool PresolveCumulative(ConstraintProto* ct, PresolveContext* context) {
+  if (HasEnforcementLiteral(*ct)) return false;
+  const CumulativeConstraintProto& proto = ct->cumulative();
+  if (!context->domains[PositiveRef(proto.capacity())].IsFixed()) {
+    return false;
+  }
+  const int64 capacity = context->domains[PositiveRef(proto.capacity())].Min();
+
+  const int size = proto.intervals_size();
+  std::vector<int> start_indices(size, -1);
+
+  int num_duration_one = 0;
+  int num_greater_half_capacity = 0;
+
+  for (int i = 0; i < size; ++i) {
+    // TODO(user): adapt in the presence of optional intervals.
+    const IntervalConstraintProto& interval =
+        context->working_model->constraints(proto.intervals(i)).interval();
+    start_indices[i] = interval.start();
+    const int duration_index = interval.size();
+    const int demand_index = proto.demands(i);
+    if (context->domains[duration_index].IsFixedTo(1)) {
+      num_duration_one++;
+    }
+    const int64 demand_min = context->domains[demand_index].Min();
+    const int64 demand_max = context->domains[demand_index].Max();
+    if (demand_min > capacity / 2) {
+      num_greater_half_capacity++;
+    }
+    if (demand_min > capacity) {
+      context->UpdateRuleStats("TODO cumulative: demand_min exceeds capacity");
+    } else if (demand_max > capacity) {
+      context->UpdateRuleStats("TODO cumulative: demand_max exceeds capacity");
+    }
+  }
+
+  if (num_greater_half_capacity == size) {
+    if (num_duration_one == size) {
+      context->UpdateRuleStats("cumulative: convert to all_different");
+      ConstraintProto* new_ct = context->working_model->add_constraints();
+      auto* arg = new_ct->mutable_all_diff();
+      for (const int var : start_indices) {
+        arg->add_vars(var);
+      }
+      return RemoveConstraint(ct, context);
+    } else {
+      context->UpdateRuleStats("cumulative: convert to no_overlap");
+      ConstraintProto* new_ct = context->working_model->add_constraints();
+      auto* arg = new_ct->mutable_no_overlap();
+      for (const int interval : proto.intervals()) {
+        arg->add_intervals(interval);
+      }
+      return RemoveConstraint(ct, context);
+    }
+  }
+
+  return false;
+}
+
 }  // namespace.
 
 // =============================================================================
@@ -1293,6 +1352,9 @@ void PresolveCpModel(const CpModelProto& initial_model,
           break;
         case ConstraintProto::ConstraintCase::kAllDiff:
           changed |= PresolveAllDiff(ct, &context);
+          break;
+        case ConstraintProto::ConstraintCase::kCumulative:
+          changed |= PresolveCumulative(ct, &context);
           break;
         default:
           break;

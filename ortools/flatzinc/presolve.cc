@@ -21,6 +21,7 @@
 #include "ortools/base/join.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/strutil.h"
+#include "ortools/base/string_view.h"
 #include "ortools/base/map_util.h"
 #include "ortools/flatzinc/logging.h"
 #include "ortools/graph/cliques.h"
