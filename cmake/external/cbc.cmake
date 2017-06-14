@@ -2,7 +2,7 @@ SET(ADD_CXXFLAGS "-DCBC_THREAD_SAFE -DCBC_NO_INTERRUPT")
 
 FOREACH(COIN_PROJECT CoinUtils Osi Clp Cgl Cbc)
     SET(${COIN_PROJECT}_URL https://github.com/coin-or/${COIN_PROJECT}.git)
-    SET(${COIN_PROJECT}_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/install/include)
+    SET(${COIN_PROJECT}_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/install/include/coin)
 
     ExternalProject_Add(${COIN_PROJECT}_project
             PREFIX ${COIN_PROJECT}

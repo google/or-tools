@@ -47,7 +47,7 @@ IF(BUILD_CXX)
     ENDIF()
     INCLUDE_DIRECTORIES(${Protobuf_INCLUDE_DIRS})
 
-    FIND_PACKAGE(gflags ${gflags_VERSION} QUIET)
+    FIND_PACKAGE(gflags ${gflags_VERSION})
     IF(NOT gflags_FOUND)
         MESSAGE(STATUS "Did not find system gflags. Building as an external project")
         INCLUDE(cmake/external/gflags.cmake)
