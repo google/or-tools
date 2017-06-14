@@ -3,6 +3,10 @@ FIND_PACKAGE(ZLIB REQUIRED)
 SET(Protobuf_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/protobuf_project/src/protobuf/src)
 SET(Protobuf_URL https://github.com/google/protobuf)
 
+IF(MSVC)
+    SET(Protobuf_ADDITIONAL_CMAKE_OPTIONS "${Protobuf_ADDITIONAL_CMAKE_OPTIONS} -G \"NMake MakeFiles\"")
+ENDIF()
+
 ExternalProject_Add(Protobuf_project
         PREFIX Protobuf
         GIT_REPOSITORY ${Protobuf_URL}

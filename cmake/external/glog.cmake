@@ -4,7 +4,11 @@ SET(glog_URL https://github.com/google/glog)
 
 IF(NOT gflags_FOUND)
     ExternalProject_Get_Property(gflags_project SOURCE_DIR)
-    SET(glog_EXTRA_ARGS "-DCMAKE_PREFIX_PATH=${SOURCE_DIR}")
+    SET(glog_ADDITIONAL_CMAKE_OPTIONS "-DCMAKE_PREFIX_PATH=${SOURCE_DIR}")
+ENDIF()
+
+IF(MSVC)
+    SET(gflags_ADDITIONAL_CMAKE_OPTIONS "${glog_ADDITIONAL_CMAKE_OPTIONS} -G \"NMake MakeFiles\"")
 ENDIF()
 
 ExternalProject_Add(glog_project
@@ -20,7 +24,7 @@ ExternalProject_Add(glog_project
         -DWITH_GFLAGS=ON
         -DBUILD_TESTING=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-        ${glog_EXTRA_ARGS}
+        ${glog_ADDITIONAL_CMAKE_OPTIONS}
         INSTALL_COMMAND ""
         CMAKE_CACHE_ARGS
         -DCMAKE_BUILD_TYPE:STRING=Release

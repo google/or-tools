@@ -1,6 +1,10 @@
 SET(gflags_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/gflags_project/src/gflags/include/)
 SET(gflags_URL https://github.com/gflags/gflags)
 
+IF(MSVC)
+    SET(gflags_ADDITIONAL_CMAKE_OPTIONS "-G \"NMake MakeFiles\"")
+ENDIF()
+
 ExternalProject_Add(gflags_project
         PREFIX gflags
         GIT_REPOSITORY ${gflags_URL}
