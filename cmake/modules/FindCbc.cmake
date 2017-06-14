@@ -2,9 +2,9 @@ INCLUDE(FindPackageHandleStandardArgs)
 
 SET(Cbc_ROOT_DIR "" CACHE PATH "Path to Coin-OR Cbc")
 IF(WIN32)
-    FIND_PATH(Cbc_INCLUDE_DIR CbcConfig.h PATHS ${Cbc_ROOT_DIR}/src/windows PATH_SUFFIXES coin)
+    FIND_PATH(Cbc_INCLUDE_DIR CbcConfig.h PATHS ${Cbc_ROOT_DIR}/src/windows PATH_SUFFIXES coin cbc/coin)
 ELSE()
-    FIND_PATH(Cbc_INCLUDE_DIR CbcConfig.h PATHS ${Cbc_ROOT_DIR} PATH_SUFFIXES coin)
+    FIND_PATH(Cbc_INCLUDE_DIR CbcConfig.h PATHS ${Cbc_ROOT_DIR} PATH_SUFFIXES coin cbc/coin)
 ENDIF()
 
 IF(Cbc_INCLUDE_DIR)
