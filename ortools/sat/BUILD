@@ -57,8 +57,8 @@ cc_library(
         ":cp_model_utils",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:strings",
         "//ortools/base:map_util",
+        "//ortools/base:strings",
         "//ortools/util:saturated_arithmetic",
         "//ortools/util:sorted_interval_list",
     ],
@@ -71,9 +71,9 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":all_different",
+        ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_presolve",
-        ":cp_model_cc_proto",
         ":cp_model_utils",
         ":cumulative",
         ":disjunctive",
@@ -85,9 +85,9 @@ cc_library(
         ":sat_solver",
         ":table",
         "//ortools/base",
-        "//ortools/base:strings",
         "//ortools/base:hash",
         "//ortools/base:stl_util",
+        "//ortools/base:strings",
         "//ortools/graph:connectivity",
     ],
 )
@@ -98,14 +98,14 @@ cc_library(
     hdrs = ["cp_model_presolve.h"],
     visibility = ["//visibility:public"],
     deps = [
-        ":cp_model_checker",
         ":cp_model_cc_proto",
+        ":cp_model_checker",
         ":cp_model_utils",
         "//ortools/base",
         "//ortools/base:hash",
-        "//ortools/base:strings",
         "//ortools/base:map_util",
         "//ortools/base:stl_util",
+        "//ortools/base:strings",
         "//ortools/util:affine_relation",
         "//ortools/util:bitset",
         "//ortools/util:sorted_interval_list",
@@ -184,6 +184,7 @@ cc_library(
         "//ortools/base:inlined_vector",
         "//ortools/base:int_type",
         "//ortools/base:int_type_indexed_vector",
+        "//ortools/base:random",
         "//ortools/base:span",
         "//ortools/base:stl_util",
         "//ortools/base:strings",
@@ -191,7 +192,6 @@ cc_library(
         "//ortools/util:random_engine",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
-        "//ortools/base:random",
     ],
 )
 
@@ -330,12 +330,13 @@ cc_library(
     name = "all_different",
     srcs = ["all_different.cc"],
     hdrs = ["all_different.h"],
-     deps = [
+    deps = [
         ":integer",
         ":model",
         ":sat_base",
         ":sat_solver",
         "//ortools/base:strongly_connected_components",
+        "//ortools/util:sort",
     ],
 )
 
@@ -354,6 +355,7 @@ cc_library(
     hdrs = ["disjunctive.h"],
     copts = [W_FLOAT_CONVERSION],
     deps = [
+        ":all_different",
         ":cp_constraints",
         ":integer",
         ":intervals",

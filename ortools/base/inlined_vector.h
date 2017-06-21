@@ -134,6 +134,15 @@ class InlinedVector {
     u_.data[kSize - 1] = 0;
   }
 
+  template <typename InputIterator>
+  void assign(
+      InputIterator range_start, InputIterator range_end,
+      typename std::enable_if<!std::is_integral<InputIterator>::value>::type* =
+          NULL) {
+    clear();
+    AppendRange(range_start, range_end);
+  }
+
   // Return the ith element
   // REQUIRES: 0 <= i < size()
   const value_type& at(size_t i) const {

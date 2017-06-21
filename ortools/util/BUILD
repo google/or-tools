@@ -135,6 +135,7 @@ cc_library(
     deps = [
         ":saturated_arithmetic",
         "//ortools/base",
+        "//ortools/base:span",
         "//ortools/base:strings",
     ],
 )

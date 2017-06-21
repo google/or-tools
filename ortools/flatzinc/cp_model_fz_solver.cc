@@ -423,6 +423,50 @@ void CpModelProtoWithMapping::FillConstraint(const fz::Constraint& fz_ct,
       }
       ++index;
     }
+  } else if (fz_ct.type == "inverse") {
+    auto* arg = ct->mutable_inverse();
+
+    const auto direct_variables = LookupVars(fz_ct.arguments[0]);
+    const auto inverse_variables = LookupVars(fz_ct.arguments[1]);
+
+    const int num_variables =
+        std::min(direct_variables.size(), inverse_variables.size());
+
+    // Try to auto-detect if it is zero or one based.
+    bool found_zero = false;
+    bool found_size = false;
+    for (fz::IntegerVariable* const var : fz_ct.arguments[0].variables) {
+      if (var->domain.Min() == 0) found_zero = true;
+      if (var->domain.Max() == num_variables) found_size = true;
+    }
+    for (fz::IntegerVariable* const var : fz_ct.arguments[1].variables) {
+      if (var->domain.Min() == 0) found_zero = true;
+      if (var->domain.Max() == num_variables) found_size = true;
+    }
+
+    // Add a dummy constant variable at zero if the indexing is one based.
+    const bool is_one_based = !found_zero || found_size;
+    const int offset = is_one_based ? 1 : 0;
+
+    if (is_one_based) arg->add_f_direct(LookupConstant(0));
+    for (const int var : direct_variables) {
+      arg->add_f_direct(var);
+      // Intersect domains with offset + [0, num_variables).
+      FillDomain(IntersectionOfSortedDisjointIntervals(
+                     ReadDomain(proto.variables(var)),
+                     {{offset, num_variables - 1 + offset}}),
+                 proto.mutable_variables(var));
+    }
+
+    if (is_one_based) arg->add_f_inverse(LookupConstant(0));
+    for (const int var : inverse_variables) {
+      arg->add_f_inverse(var);
+      // Intersect domains with offset + [0, num_variables).
+      FillDomain(IntersectionOfSortedDisjointIntervals(
+                     ReadDomain(proto.variables(var)),
+                     {{offset, num_variables - 1 + offset}}),
+                 proto.mutable_variables(var));
+    }
   } else if (fz_ct.type == "cumulative") {
     const std::vector<int> starts = LookupVars(fz_ct.arguments[0]);
     const std::vector<int> durations = LookupVars(fz_ct.arguments[1]);

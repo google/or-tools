@@ -246,8 +246,7 @@ ConstraintStatus VariableToConstraintStatus(VariableStatus status);
 // to use the index type for the size.
 //
 // TODO(user): This should probably move into ITIVector, but note that this
-// version is more strict and does not allow any other size types nor a resize()
-// or creation with a default value.
+// version is more strict and does not allow any other size types.
 template <typename IntType, typename T>
 class StrictITIVector : public ITIVector<IntType, T> {
  public:
@@ -260,13 +259,20 @@ class StrictITIVector : public ITIVector<IntType, T> {
       : ParentType(init_list.begin(), init_list.end()) {}
 #endif
   StrictITIVector() : ParentType() {}
+  explicit StrictITIVector(IntType size) : ParentType(size.value()) {}
   StrictITIVector(IntType size, const T& v) : ParentType(size.value(), v) {}
   template <typename InputIteratorType>
   StrictITIVector(InputIteratorType first, InputIteratorType last)
       : ParentType(first, last) {}
+
+  void resize(IntType size) { ParentType::resize(size.value()); }
   void resize(IntType size, const T& v) { ParentType::resize(size.value(), v); }
+
   void assign(IntType size, const T& v) { ParentType::assign(size.value(), v); }
+
   IntType size() const { return IntType(ParentType::size()); }
+
+  IntType capacity() const { return IntType(ParentType::capacity()); }
 
   // Since calls to resize() must use a default value, we introduce a new
   // function for convenience to reduce the size of a vector.

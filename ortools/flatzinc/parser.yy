@@ -36,7 +36,7 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 // Code in the implementation file.
 %code {
 // MOE:begin_strip
-#include "absl/ortools/base/string_view_utils.h"
+#include "ortools/base/string_view_utils.h"
 // MOE:end_strip
 #include "ortools/flatzinc/parser_util.cc"
 

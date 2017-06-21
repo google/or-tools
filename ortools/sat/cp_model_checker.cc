@@ -368,7 +368,7 @@ class ConstraintChecker {
                                    const ConstraintProto& ct) {
     const int index = Value(ct.element().index());
     return Value(ct.element().vars().Get(index)) ==
-        Value(ct.element().target());
+           Value(ct.element().target());
   }
 
   bool TableConstraintIsFeasible(const CpModelProto& model,
@@ -438,6 +438,19 @@ class ConstraintChecker {
       current = Value(ct.circuit().nexts(current));
     }
     return num_visited + num_inactive == num_nodes;
+  }
+
+  bool InverseConstraintIsFeasible(const CpModelProto& model,
+                                   const ConstraintProto& ct) {
+    const int num_variables = ct.inverse().f_direct_size();
+    if (num_variables != ct.inverse().f_inverse_size()) return false;
+    // Check that f_inverse(f_direct(i)) == i; this is sufficient.
+    for (int i = 0; i < num_variables; i++) {
+      const int fi = Value(ct.inverse().f_direct(i));
+      if (fi < 0 || num_variables <= fi) return false;
+      if (i != Value(ct.inverse().f_inverse(fi))) return false;
+    }
+    return true;
   }
 
  private:
@@ -528,6 +541,9 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         is_feasible = checker.CircuitConstraintIsFeasible(model, ct);
+        break;
+      case ConstraintProto::ConstraintCase::kInverse:
+        is_feasible = checker.InverseConstraintIsFeasible(model, ct);
         break;
       case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
         // Empty constraint is always feasible.

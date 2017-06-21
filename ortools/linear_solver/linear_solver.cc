@@ -265,7 +265,11 @@ double MPObjective::BestBound() const {
 
 double MPVariable::solution_value() const {
   if (!interface_->CheckSolutionIsSynchronizedAndExists()) return 0.0;
-  return integer_ ? round(solution_value_) : solution_value_;
+  // If the underlying solver supports integer variables, and this is an integer
+  // variable, we round the solution value (i.e., clients usually expect precise
+  // integer values for integer variables).
+  return (integer_ && interface_->IsMIP()) ? round(solution_value_)
+                                           : solution_value_;
 }
 
 double MPVariable::unrounded_solution_value() const {
@@ -901,6 +905,13 @@ bool MPSolver::HasInfeasibleConstraints() const {
   return hasInfeasibleConstraints;
 }
 
+bool MPSolver::HasIntegerVariables() const {
+  for (const MPVariable* const variable : variables_) {
+    if (variable->integer()) return true;
+  }
+  return false;
+}
+
 MPSolver::ResultStatus MPSolver::Solve() {
   MPSolverParameters default_param;
   return Solve(default_param);
@@ -1055,7 +1066,7 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
       }
     }
     // Check integrality.
-    if (var.integer()) {
+    if (IsMIP() && var.integer()) {
       if (fabs(value - round(value)) > tolerance) {
         ++num_errors;
         max_observed_error =
@@ -1064,6 +1075,12 @@ bool MPSolver::VerifySolution(double tolerance, bool log_errors) const {
                                   << PrettyPrintVar(var);
       }
     }
+  }
+  if (!IsMIP() && HasIntegerVariables()) {
+    LOG_IF(INFO, log_errors) << "Skipped variable integrality check, because "
+                             << "a continuous relaxation of the model was "
+                             << "solved (i.e., the selected solver does not "
+                             << "support integer variables).";
   }
 
   // Verify constraints.

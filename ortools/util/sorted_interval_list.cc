@@ -75,8 +75,8 @@ bool IntervalsAreSortedAndDisjoint(
   return true;
 }
 
-bool SortedDisjointIntervalsContain(
-    const std::vector<ClosedInterval>& intervals, int64 value) {
+bool SortedDisjointIntervalsContain(gtl::Span<ClosedInterval> intervals,
+                                    int64 value) {
   for (const ClosedInterval& interval : intervals) {
     if (interval.start <= value && interval.end >= value) return true;
   }

@@ -168,11 +168,11 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   }
 
   // Display the error/scaling without taking into account the objective first.
-  LOG(INFO) << "Maximum constraint coefficient relative error: "
-            << max_relative_coeff_error;
-  LOG(INFO) << "Maximum constraint worst-case sum absolute error: "
-            << max_scaled_sum_error;
-  LOG(INFO) << "Maximum constraint scaling factor: " << max_scaling_factor;
+  VLOG(1) << "Maximum constraint coefficient relative error: "
+          << max_relative_coeff_error;
+  VLOG(1) << "Maximum constraint worst-case sum absolute error: "
+          << max_scaled_sum_error;
+  VLOG(1) << "Maximum constraint scaling factor: " << max_scaling_factor;
 
   // Add the objective. We use kint64max / 2 because the objective_var will
   // also be added to the objective constraint.
@@ -188,7 +188,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     lower_bounds.push_back(var_proto.domain(0));
     upper_bounds.push_back(var_proto.domain(var_proto.domain_size() - 1));
   }
-  if (!coefficients.empty()) {
+  if (!coefficients.empty() || mp_model.objective_offset() != 0.0) {
     GetBestScalingOfDoublesToInt64(coefficients, lower_bounds, upper_bounds,
                                    kMaxObjective, &scaling_factor,
                                    &relative_coeff_error, &scaled_sum_error);
@@ -197,11 +197,10 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
         std::max(relative_coeff_error, max_relative_coeff_error);
 
     // Display the objective error/scaling.
-    LOG(INFO) << "objective coefficient relative error: "
-              << relative_coeff_error;
-    LOG(INFO) << "objective worst-case absolute error: "
-              << scaled_sum_error / scaling_factor;
-    LOG(INFO) << "objective scaling factor: " << scaling_factor / gcd;
+    VLOG(1) << "objective coefficient relative error: " << relative_coeff_error;
+    VLOG(1) << "objective worst-case absolute error: "
+            << scaled_sum_error / scaling_factor;
+    VLOG(1) << "objective scaling factor: " << scaling_factor / gcd;
 
     // Note that here we set the scaling factor for the inverse operation of
     // getting the "true" objective value from the scaled one. Hence the
@@ -222,8 +221,8 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
       auto* objective_constraint = cp_model->add_constraints();
       auto* objective_arg = objective_constraint->mutable_linear();
       objective_constraint->set_name("objective");
-      objective_arg->add_domain(mp_model.maximize() ? 0 : kint64min);
-      objective_arg->add_domain(mp_model.maximize() ? kint64max : 0);
+      objective_arg->add_domain(0);
+      objective_arg->add_domain(0);
       for (int i = 0; i < num_variables; ++i) {
         const MPVariableProto& mp_var = mp_model.variable(i);
         const int64 value =
@@ -243,6 +242,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     if (mp_model.maximize()) {
       objective->set_objective_var(-objective->objective_var() - 1);
       objective->set_scaling_factor(-objective->scaling_factor());
+      objective->set_offset(-objective->offset());
     }
   }
 

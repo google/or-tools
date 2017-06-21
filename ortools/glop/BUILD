@@ -77,6 +77,7 @@ cc_library(
         "//ortools/util:file_util",
         "//ortools/util:fp_utils",
         "//ortools/util:iterators",
+        "//ortools/util:random_engine",
         "//ortools/util:stats",
         "//ortools/util:time_limit",
     ],

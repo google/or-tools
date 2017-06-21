@@ -153,6 +153,17 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
 
 using InlinedIntegerLiteralVector = gtl::InlinedVector<IntegerLiteral, 2>;
 
+// A singleton that holds the INITIAL integer variable domains.
+struct IntegerDomains
+    : public ITIVector<IntegerVariable,
+                       gtl::InlinedVector<ClosedInterval, 1>> {
+  static IntegerDomains* CreateInModel(Model* model) {
+    IntegerDomains* domains = new IntegerDomains();
+    model->TakeOwnership(domains);
+    return domains;
+  }
+};
+
 // Each integer variable x will be associated with a set of literals encoding
 // (x >= v) for some values of v. This class maintains the relationship between
 // the integer variables and such literals which can be created by a call to
@@ -173,27 +184,22 @@ using InlinedIntegerLiteralVector = gtl::InlinedVector<IntegerLiteral, 2>;
 // though.
 class IntegerEncoder {
  public:
-  explicit IntegerEncoder(SatSolver* sat_solver)
-      : sat_solver_(sat_solver), num_created_variables_(0) {}
+  IntegerEncoder(SatSolver* sat_solver, IntegerDomains* domains)
+      : sat_solver_(sat_solver), domains_(domains), num_created_variables_(0) {}
 
   ~IntegerEncoder() {
     VLOG(1) << "#variables created = " << num_created_variables_;
   }
 
   static IntegerEncoder* CreateInModel(Model* model) {
-    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-    IntegerEncoder* encoder = new IntegerEncoder(sat_solver);
+    IntegerEncoder* encoder = new IntegerEncoder(
+        model->GetOrCreate<SatSolver>(), model->GetOrCreate<IntegerDomains>());
     model->TakeOwnership(encoder);
     return encoder;
   }
 
-  // Fully encode a variable. This can be called only once.
-  //
-  // Important: this should really only be called with
-  // integer_trail_->InitialVariableDomain() which can be updated with
-  // integer_trail_->UpdateInitialDomain().
-  //
-  // TODO(user): clean this up by enforcing this programmatically.
+  // Fully encode a variable using its current initial domain.
+  // This can be called only once.
   //
   // This creates new Booleans variables as needed:
   // 1) num_values for the literals X == value. Except when there is just
@@ -205,14 +211,13 @@ class IntegerEncoder {
   // The encoding for NegationOf(var) is automatically created too. It reuses
   // the same Boolean variable as the encoding of var.
   //
-  // Note(user): Calling this with just one value will cause a CHECK fail.
-  // We don't really want to create a fixed Boolean.
+  // Note(user): Calling this on fixed variables will cause a CHECK fail. We
+  // don't really want to create a fixed Boolean.
   //
   // TODO(user): It is currently only possible to call that at the decision
   // level zero because we cannot add ternary clause in the middle of the
   // search (for now). This is Checked.
-  void FullyEncodeVariable(IntegerVariable var,
-                           const std::vector<ClosedInterval>& domain);
+  void FullyEncodeVariable(IntegerVariable var);
 
   // Similar to FullyEncodeVariable() but use the given literal for each values.
   // This can only be called on variable that are not fully encoded yet, This is
@@ -249,44 +254,55 @@ class IntegerEncoder {
     return ContainsKey(full_encoding_index_, var);
   }
 
-  // Returns the set of variable encoded as the keys in a map. The map values
-  // only have an internal meaning. The set of encoded variables is returned
-  // with this "weird" api for efficiency.
-  const std::unordered_map<IntegerVariable, int>& GetFullyEncodedVariables() const {
-    return full_encoding_index_;
-  }
+  // Returns the "canonical" (i_lit, negation of i_lit) pair. This mainly
+  // deal with domain with initial hole like [1,2][5,6] so that if one ask
+  // for x <= 3, this get canonicalized in the pair (x <= 2, x >= 5).
+  //
+  // Note that it is an error to call this with a literal that is trivially true
+  // or trivially false according to the initial variable domain. This is
+  // CHECKed to make sure we don't create wasteful literal.
+  //
+  // TODO(user): This is linear in the domain "complexity", we can do better if
+  // needed.
+  std::pair<IntegerLiteral, IntegerLiteral> Canonicalize(
+      IntegerLiteral i_lit) const;
 
-  // Creates a new Boolean variable 'var' such that
+  // Returns, after creating it if needed, a Boolean literal such that:
   // - if true, then the IntegerLiteral is true.
   // - if false, then the negated IntegerLiteral is true.
   //
-  // Returns Literal(var, true).
+  // Note that this "canonicalize" the given literal first.
   //
   // This add the proper implications with the two "neighbor" literals of this
   // one if they exist. This is the "list encoding" in: Thibaut Feydy, Peter J.
   // Stuckey, "Lazy Clause Generation Reengineered", CP 2009.
-  //
-  // It is an error to call this with an already created literal. This is
-  // Checked.
-  //
-  // The second version use the given literal instead of creating a new
-  // variable.
-  Literal CreateAssociatedLiteral(IntegerLiteral i_lit);
-  void AssociateGivenLiteral(IntegerLiteral i_lit, Literal wanted);
-
-  // Same as CreateAssociatedLiteral() but safe to call if already created.
   Literal GetOrCreateAssociatedLiteral(IntegerLiteral i_lit);
 
-  // Only add the equivalence between i_lit and literal, if there is already an
-  // associated literal with i_lit, this make literal and this associated
-  // literal equivalent.
-  void HalfAssociateGivenLiteral(IntegerLiteral i_lit, Literal literal);
+  // Associates the Boolean literal to (X >= bound) or (X == value). If a
+  // literal was already associated to this fact, this will add an equality
+  // constraints between both literals. If the fact is trivially true or false,
+  // this will fix the given literal.
+  void AssociateToIntegerLiteral(Literal literal, IntegerLiteral i_lit);
+  void AssociateToIntegerEqualValue(Literal literal, IntegerVariable var,
+                                    IntegerValue value);
 
-  // Return true iff the given integer literal is associated.
+  // Returns true iff the given integer literal is associated. The second
+  // version returns the associated literal or kNoLiteralIndex. Note that none
+  // of these function call Canonicalize() first for speed, so it is possible
+  // that this returns false even though GetOrCreateAssociatedLiteral() would
+  // not create a new literal.
   bool LiteralIsAssociated(IntegerLiteral i_lit) const;
-
-  // Returns the associated literal or kNoLiteralIndex.
   LiteralIndex GetAssociatedLiteral(IntegerLiteral i_lit);
+
+  // Advanced usage. It is more efficient to create the associated literals in
+  // order, but it might be anoying to do so. Instead, you can first call
+  // DisableImplicationBetweenLiteral() and when you are done creating all the
+  // associated literals, you can call (only at level zero)
+  // AddAllImplicationsBetweenAssociatedLiterals() which will also turn back on
+  // the implications between literals for the one that will be added
+  // afterwards.
+  void DisableImplicationBetweenLiteral() { add_implications_ = false; }
+  void AddAllImplicationsBetweenAssociatedLiterals();
 
   // Returns the IntegerLiterals that were associated with the given Literal.
   const InlinedIntegerLiteralVector& GetIntegerLiterals(Literal lit) const {
@@ -307,12 +323,20 @@ class IntegerEncoder {
   LiteralIndex SearchForLiteralAtOrBefore(IntegerLiteral i) const;
 
  private:
+  // Only add the equivalence between i_lit and literal, if there is already an
+  // associated literal with i_lit, this make literal and this associated
+  // literal equivalent.
+  void HalfAssociateGivenLiteral(IntegerLiteral i_lit, Literal literal);
+
   // Adds the new associated_lit to encoding_by_var_.
   // Adds the implications: Literal(before) <= associated_lit <= Literal(after).
   void AddImplications(IntegerLiteral i, Literal associated_lit);
 
   SatSolver* sat_solver_;
-  int64 num_created_variables_;
+  IntegerDomains* domains_;
+
+  bool add_implications_ = true;
+  int64 num_created_variables_ = 0;
 
   // We keep all the literals associated to an Integer variable in a map ordered
   // by bound (so we can properly add implications between the literals
@@ -322,6 +346,12 @@ class IntegerEncoder {
   // Store for a given LiteralIndex the list of its associated IntegerLiterals.
   const InlinedIntegerLiteralVector empty_integer_literal_vector_;
   ITIVector<LiteralIndex, InlinedIntegerLiteralVector> reverse_encoding_;
+
+  // Mapping (variable == value) -> associated literal. Note that even if
+  // there is more than one literal associated to the same fact, we just keep
+  // the first one that was added.
+  std::unordered_map<std::pair<IntegerVariable, IntegerValue>, Literal>
+      equality_to_associated_literal_;
 
   // Full domain encoding. The map contains the index in full_encoding_ of
   // the fully encoded variable. Each entry in full_encoding_ is sorted by
@@ -337,17 +367,19 @@ class IntegerEncoder {
 // to maintain the reason for each propagation.
 class IntegerTrail : public SatPropagator {
  public:
-  IntegerTrail(IntegerEncoder* encoder, Trail* trail)
+  IntegerTrail(IntegerDomains* domains, IntegerEncoder* encoder, Trail* trail)
       : SatPropagator("IntegerTrail"),
         num_enqueues_(0),
+        domains_(domains),
         encoder_(encoder),
         trail_(trail) {}
   ~IntegerTrail() final {}
 
   static IntegerTrail* CreateInModel(Model* model) {
+    IntegerDomains* domains = model->GetOrCreate<IntegerDomains>();
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = new IntegerTrail(encoder, trail);
+    IntegerTrail* integer_trail = new IntegerTrail(domains, encoder, trail);
     model->GetOrCreate<SatSolver>()->AddPropagator(
         std::unique_ptr<IntegerTrail>(integer_trail));
     return integer_trail;
@@ -629,6 +661,7 @@ class IntegerTrail : public SatPropagator {
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
 
+  IntegerDomains* domains_;
   IntegerEncoder* encoder_;
   Trail* trail_;
 
@@ -1024,13 +1057,7 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64 value) {
 // Associate the given literal to the given integer inequality.
 inline std::function<void(Model*)> Equality(IntegerLiteral i, Literal l) {
   return [=](Model* model) {
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    if (encoder->LiteralIsAssociated(i)) {
-      const Literal current = encoder->GetOrCreateAssociatedLiteral(i);
-      model->Add(Equality(current, l));
-    } else {
-      encoder->AssociateGivenLiteral(i, l);
-    }
+    model->GetOrCreate<IntegerEncoder>()->AssociateToIntegerLiteral(l, i);
   };
 }
 
@@ -1091,8 +1118,7 @@ FullyEncodeVariable(IntegerVariable var) {
   return [=](Model* model) {
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     if (!encoder->VariableIsFullyEncoded(var)) {
-      encoder->FullyEncodeVariable(
-          var, model->GetOrCreate<IntegerTrail>()->InitialVariableDomain(var));
+      encoder->FullyEncodeVariable(var);
     }
     return encoder->FullDomainEncoding(var);
   };

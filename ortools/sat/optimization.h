@@ -136,7 +136,7 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
 // sum of the given variables using the given coefficients.
 //
 // TODO(user): It is not needed to have objective_var and the linear objective
-// constraint encoded in the model. Remove this preconditions in order to
+// constraint encoded in the model. Remove this precondition in order to
 // improve the solving time.
 SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     bool log_info, IntegerVariable objective_var,
@@ -145,6 +145,30 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     const std::function<LiteralIndex()>& next_decision,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
+
+#if defined(USE_CBC) || defined(USE_SCIP)
+// Generalization of the max-HS algorithm (HS stands for Hitting Set). This is
+// similar to MinimizeWithCoreAndLazyEncoding() but it uses an hybrid approach
+// with a MIP solver to handle the discovered infeasibility cores.
+//
+// See, Jessica Davies and Fahiem Bacchus, "Solving MAXSAT by Solving a
+// Sequence of Simpler SAT Instances",
+// http://www.cs.toronto.edu/~jdavies/daviesCP11.pdf"
+//
+// Note that an implementation of this approach won the 2016 max-SAT competition
+// on the industrial category, see
+// http://maxsat.ia.udl.cat/results/#wpms-industrial
+//
+// TODO(user): This function brings dependency to the SCIP MIP solver which is
+// quite big, maybe we should find a way not to do that.
+SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
+    bool log_info, IntegerVariable objective_var,
+    std::vector<IntegerVariable> variables,
+    std::vector<IntegerValue> coefficients,
+    const std::function<LiteralIndex()>& next_decision,
+    const std::function<void(const Model&)>& feasible_solution_observer,
+    Model* model);
+#endif  // defined(USE_CBC) || defined(USE_SCIP)
 
 // Similar to MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
 // a core based approach. Note that this require the objective to be given as

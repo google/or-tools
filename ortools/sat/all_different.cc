@@ -117,8 +117,7 @@ AllDifferentConstraint::AllDifferentConstraint(
 
     // Force full encoding if not already done.
     if (!encoder->VariableIsFullyEncoded(variables_[x])) {
-      encoder->FullyEncodeVariable(
-          variables_[x], integer_trail_->InitialVariableDomain(variables_[x]));
+      encoder->FullyEncodeVariable(variables_[x]);
     }
 
     // Fill cache with literals, default value is kFalseLiteralIndex.

@@ -161,6 +161,26 @@ const typename Collection::value_type::second_type& FindOrDie(
   return it->second;
 }
 
+// Same as FindOrDie above, but doesn't log the key on failure.
+template <class Collection>
+const typename Collection::value_type::second_type& FindOrDieNoPrint(
+    const Collection& collection,
+    const typename Collection::value_type::first_type& key) {
+  typename Collection::const_iterator it = collection.find(key);
+  CHECK(it != collection.end()) << "Map key not found";
+  return it->second;
+}
+
+// Same as above, but returns a non-const reference.
+template <class Collection>
+typename Collection::value_type::second_type& FindOrDieNoPrint(
+    Collection& collection,  // NOLINT
+    const typename Collection::value_type::first_type& key) {
+  typename Collection::iterator it = collection.find(key);
+  CHECK(it != collection.end()) << "Map key not found";
+  return it->second;
+}
+
 // Lookup a key in a map or std::unordered_map, insert it if it is not present.
 // Returns a reference to the value associated with the key.
 template <class Collection>

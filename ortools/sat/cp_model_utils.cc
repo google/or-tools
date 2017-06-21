@@ -73,6 +73,10 @@ void AddReferencesUsedByConstraint(const ConstraintProto& ct,
     case ConstraintProto::ConstraintCase::kCircuit:
       AddIndices(ct.circuit().nexts(), &output->variables);
       break;
+    case ConstraintProto::ConstraintCase::kInverse:
+      AddIndices(ct.inverse().f_direct(), &output->variables);
+      AddIndices(ct.inverse().f_inverse(), &output->variables);
+      break;
     case ConstraintProto::ConstraintCase::kTable:
       AddIndices(ct.table().vars(), &output->variables);
       break;
@@ -145,6 +149,8 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
       break;
+    case ConstraintProto::ConstraintCase::kInverse:
+      break;
     case ConstraintProto::ConstraintCase::kTable:
       break;
     case ConstraintProto::ConstraintCase::kAutomata:
@@ -205,6 +211,10 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kCircuit:
       APPLY_TO_REPEATED_FIELD(circuit, nexts);
       break;
+    case ConstraintProto::ConstraintCase::kInverse:
+      APPLY_TO_REPEATED_FIELD(inverse, f_direct);
+      APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
+      break;
     case ConstraintProto::ConstraintCase::kTable:
       APPLY_TO_REPEATED_FIELD(table, vars);
       break;
@@ -256,6 +266,8 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kCircuit:
       break;
+    case ConstraintProto::ConstraintCase::kInverse:
+      break;
     case ConstraintProto::ConstraintCase::kTable:
       break;
     case ConstraintProto::ConstraintCase::kAutomata:
@@ -306,6 +318,8 @@ std::string ConstraintCaseName(ConstraintProto::ConstraintCase constraint_case) 
       return "kElement";
     case ConstraintProto::ConstraintCase::kCircuit:
       return "kCircuit";
+    case ConstraintProto::ConstraintCase::kInverse:
+      return "kInverse";
     case ConstraintProto::ConstraintCase::kTable:
       return "kTable";
     case ConstraintProto::ConstraintCase::kAutomata:

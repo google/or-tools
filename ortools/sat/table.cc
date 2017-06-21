@@ -208,19 +208,29 @@ std::function<void(Model*)> NegatedTableConstraintWithoutFullEncoding(
     std::vector<Literal> clause;
     for (const std::vector<int64>& tuple : tuples) {
       clause.clear();
+      bool add = true;
       for (int i = 0; i < n; ++i) {
         const int64 value = tuple[i];
-        if (value > model->Get(LowerBound(vars[i]))) {
+        const int64 lb = model->Get(LowerBound(vars[i]));
+        const int64 ub = model->Get(UpperBound(vars[i]));
+        CHECK_LT(lb, ub);
+        // TODO(user): test the full initial domain instead of just checking
+        // the bounds.
+        if (value < lb || value > ub) {
+          add = false;
+          break;
+        }
+        if (value > lb) {
           clause.push_back(encoder->GetOrCreateAssociatedLiteral(
               IntegerLiteral::LowerOrEqual(vars[i], IntegerValue(value - 1))));
         }
-        if (value < model->Get(UpperBound(vars[i]))) {
+        if (value < ub) {
           clause.push_back(encoder->GetOrCreateAssociatedLiteral(
               IntegerLiteral::GreaterOrEqual(vars[i],
                                              IntegerValue(value + 1))));
         }
       }
-      model->Add(ClauseConstraint(clause));
+      if (add) model->Add(ClauseConstraint(clause));
     }
   };
 }

@@ -279,7 +279,7 @@ void SparseMatrix::DeleteColumns(const DenseBooleanRow& columns_to_delete) {
       ++new_index;
     }
   }
-  columns_.resize_down(new_index);
+  columns_.resize(new_index);
 }
 
 void SparseMatrix::DeleteRows(RowIndex new_num_rows,

@@ -16,8 +16,8 @@
 #ifndef OR_TOOLS_SAT_SAT_BASE_H_
 #define OR_TOOLS_SAT_SAT_BASE_H_
 
-#include <cstddef>
 #include <algorithm>
+#include <cstddef>
 #include <deque>
 #include <iterator>
 #include <memory>

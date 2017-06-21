@@ -18,7 +18,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 84
+// NEXT TAG: 86
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -387,6 +387,10 @@ message SatParameters {
   // Whether we use a simple heuristic to try to minimize an UNSAT core.
   optional bool minimize_core = 50 [default = true];
 
+  // Wheter we try to find more independent cores for a given set of assumptions
+  // in the core based max-SAT algorithms.
+  optional bool find_multiple_cores = 84 [default = true];
+
   // In what order do we add the assumptions in a core-based max-sat algorithm
   enum MaxSatAssumptionOrder {
     DEFAULT_ASSUMPTION_ORDER = 0;
@@ -485,4 +489,12 @@ message SatParameters {
   // use a core-based approach (like in max-SAT) when we try to increase the
   // lower bound instead.
   optional bool optimize_with_core = 83 [default = false];
+
+  // This has no effect if optimize_with_core is false. If true, use a different
+  // core-based algorithm similar to the max-HS algo for max-SAT. This is a
+  // hybrid MIP/CP approach and it uses a MIP solver in addition to the CP/SAT
+  // one. This is also related to the PhD work of tobyodavies@
+  // "Automatic Logic-Based Benders Decomposition with MiniZinc"
+  // http://aaai.org/ocs/index.php/AAAI/AAAI17/paper/view/14489
+  optional bool optimize_with_max_hs = 85 [default = false];
 }
