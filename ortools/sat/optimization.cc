@@ -21,7 +21,7 @@
 #if defined(USE_CBC) || defined(USE_SCIP)
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#endif  //  defined(USE_CBC) || defined(USE_SCIP)
+#endif  // defined(USE_CBC) || defined(USE_SCIP)
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/util.h"

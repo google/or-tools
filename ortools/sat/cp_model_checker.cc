@@ -367,8 +367,7 @@ class ConstraintChecker {
   bool ElementConstraintIsFeasible(const CpModelProto& model,
                                    const ConstraintProto& ct) {
     const int index = Value(ct.element().index());
-    return Value(ct.element().vars().Get(index)) ==
-           Value(ct.element().target());
+    return Value(ct.element().vars(index)) == Value(ct.element().target());
   }
 
   bool TableConstraintIsFeasible(const CpModelProto& model,
