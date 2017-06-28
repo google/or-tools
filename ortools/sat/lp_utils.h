@@ -60,7 +60,7 @@ int FixVariablesFromSat(const SatSolver& solver, glop::LinearProgram* lp);
 // polarity choices. The variable must have the same index in the solved lp
 // problem and in SAT for this to make sense.
 //
-// Returns false if a problem occured while trying to solve the lp.
+// Returns false if a problem occurred while trying to solve the lp.
 bool SolveLpAndUseSolutionForSatAssignmentPreference(
     const glop::LinearProgram& lp, SatSolver* sat_solver,
     double max_time_in_seconds);

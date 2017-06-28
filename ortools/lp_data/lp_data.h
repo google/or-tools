@@ -107,14 +107,6 @@ class LinearProgram {
   // Set the type of the variable.
   void SetVariableType(ColIndex col, VariableType type);
 
-  // Records the fact that the variable at column col must only take integer
-  // values.
-  // Note(user): For the time being, this is not handled. The continuous
-  // relaxation of the problem (with integrality constraints removed) is solved
-  // instead.
-  // TODO(user): Improve the support of integer variables.
-  void SetVariableIntegrality(ColIndex col, bool is_integer);
-
   // Returns whether the variable at column col is constrained to be integer.
   bool IsVariableInteger(ColIndex col) const;
 
@@ -413,6 +405,13 @@ class LinearProgram {
   // Populates the calling object with the given LinearProgram.
   void PopulateFromLinearProgram(const LinearProgram& linear_program);
 
+  // Populates the calling object with the given LinearProgram while permuting
+  // variables and constraints. This is useful mainly for testing to generate
+  // a model with the same optimal objective value.
+  void PopulateFromPermutedLinearProgram(
+      const LinearProgram& lp, const RowPermutation& row_permutation,
+      const ColumnPermutation& col_permutation);
+
   // Populates the calling object with the variables of the given LinearProgram.
   // The function preserves the bounds, the integrality, the names of the
   // variables and their objective coefficients. No constraints are copied (the
@@ -483,6 +482,14 @@ class LinearProgram {
   // variables have been added. This is also called "computational form" in some
   // of the literature.
   bool IsInEquationForm() const;
+
+  // Returns true if all integer variables in the linear program have strictly
+  // integer bounds.
+  bool BoundsOfIntegerVariablesAreInteger(Fractional tolerance) const;
+
+  // Returns true if all integer constraints in the linear program have strictly
+  // integer bounds.
+  bool BoundsOfIntegerConstraintsAreInteger(Fractional tolerance) const;
 
  private:
   // A helper function that updates the vectors integer_variables_list_,

@@ -11,9 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "ortools/base/join.h"
 #include <string>
 #include "ortools/base/basictypes.h"
-#include "ortools/base/join.h"
 #include "ortools/base/string_view.h"
 #include "ortools/base/stringprintf.h"
 

@@ -27,6 +27,7 @@
 #include "ortools/lp_data/lp_print_utils.h"
 #include "ortools/lp_data/lp_utils.h"
 #include "ortools/lp_data/matrix_utils.h"
+#include "ortools/lp_data/permutation.h"
 
 namespace operations_research {
 namespace glop {
@@ -817,6 +818,58 @@ void LinearProgram::PopulateFromLinearProgram(
   first_slack_variable_ = linear_program.first_slack_variable_;
 }
 
+void LinearProgram::PopulateFromPermutedLinearProgram(
+    const LinearProgram& lp, const RowPermutation& row_permutation,
+    const ColumnPermutation& col_permutation) {
+  DCHECK(lp.IsCleanedUp());
+  DCHECK_EQ(row_permutation.size(), lp.num_constraints());
+  DCHECK_EQ(col_permutation.size(), lp.num_variables());
+  DCHECK_EQ(lp.GetFirstSlackVariable(), kInvalidCol);
+  Clear();
+
+  // Populate matrix coefficients.
+  ColumnPermutation inverse_col_permutation;
+  inverse_col_permutation.PopulateFromInverse(col_permutation);
+  matrix_.PopulateFromPermutedMatrix(lp.matrix_, row_permutation,
+                                     inverse_col_permutation);
+  ClearTransposeMatrix();
+
+  // Populate constraints.
+  ApplyPermutation(row_permutation, lp.constraint_lower_bounds(),
+                   &constraint_lower_bounds_);
+  ApplyPermutation(row_permutation, lp.constraint_upper_bounds(),
+                   &constraint_upper_bounds_);
+
+  // Populate variables.
+  ApplyPermutation(col_permutation, lp.objective_coefficients(),
+                   &objective_coefficients_);
+  ApplyPermutation(col_permutation, lp.variable_lower_bounds(),
+                   &variable_lower_bounds_);
+  ApplyPermutation(col_permutation, lp.variable_upper_bounds(),
+                   &variable_upper_bounds_);
+  ApplyPermutation(col_permutation, lp.variable_types(), &variable_types_);
+  integer_variables_list_is_consistent_ = false;
+
+  // There is no vector based accessor to names, because they may be created
+  // on the fly.
+  constraint_names_.resize(lp.num_constraints());
+  for (RowIndex old_row(0); old_row < lp.num_constraints(); ++old_row) {
+    const RowIndex new_row = row_permutation[old_row];
+    constraint_names_[new_row] = lp.constraint_names_[old_row];
+  }
+  variable_names_.resize(lp.num_variables());
+  for (ColIndex old_col(0); old_col < lp.num_variables(); ++old_col) {
+    const ColIndex new_col = col_permutation[old_col];
+    variable_names_[new_col] = lp.variable_names_[old_col];
+  }
+
+  // Populate singular fields.
+  maximize_ = lp.maximize_;
+  objective_offset_ = lp.objective_offset_;
+  objective_scaling_factor_ = lp.objective_scaling_factor_;
+  name_ = lp.name_;
+}
+
 void LinearProgram::PopulateFromLinearProgramVariables(
     const LinearProgram& linear_program) {
   matrix_.PopulateFromZero(RowIndex(0), linear_program.num_variables());
@@ -1266,6 +1319,57 @@ bool LinearProgram::IsInEquationForm() const {
       num_variables() - GetFirstSlackVariable();
   return num_constraints().value() == num_slack_variables.value() &&
          IsRightMostSquareMatrixIdentity(matrix_);
+}
+
+bool LinearProgram::BoundsOfIntegerVariablesAreInteger(
+    Fractional tolerance) const {
+  for (const ColIndex col : IntegerVariablesList()) {
+    if ((IsFinite(variable_lower_bounds_[col]) &&
+         !IsIntegerWithinTolerance(variable_lower_bounds_[col], tolerance)) ||
+        (IsFinite(variable_upper_bounds_[col]) &&
+         !IsIntegerWithinTolerance(variable_upper_bounds_[col], tolerance))) {
+      VLOG(1) << "Bounds of variable " << col.value() << " are non-integer ("
+              << variable_lower_bounds_[col] << ", "
+              << variable_upper_bounds_[col] << ").";
+      return false;
+    }
+  }
+  return true;
+}
+
+bool LinearProgram::BoundsOfIntegerConstraintsAreInteger(
+    Fractional tolerance) const {
+  // Using transpose for this is faster (complexity = O(number of non zeros in
+  // matrix)) than directly iterating through entries (complexity = O(number of
+  // constraints * number of variables)).
+  const SparseMatrix& transpose = GetTransposeSparseMatrix();
+  for (RowIndex row = RowIndex(0); row < num_constraints(); ++row) {
+    bool integer_constraint = true;
+    for (const SparseColumn::Entry var : transpose.column(RowToColIndex(row))) {
+      if (!IsVariableInteger(RowToColIndex(var.row()))) {
+        integer_constraint = false;
+        break;
+      }
+      if (!IsIntegerWithinTolerance(var.coefficient(), tolerance)) {
+        integer_constraint = false;
+        break;
+      }
+    }
+    if (integer_constraint) {
+      if ((IsFinite(constraint_lower_bounds_[row]) &&
+           !IsIntegerWithinTolerance(constraint_lower_bounds_[row],
+                                     tolerance)) ||
+          (IsFinite(constraint_upper_bounds_[row]) &&
+           !IsIntegerWithinTolerance(constraint_upper_bounds_[row],
+                                     tolerance))) {
+        VLOG(1) << "Bounds of constraint " << row.value()
+                << " are non-integer (" << constraint_lower_bounds_[row] << ", "
+                << constraint_upper_bounds_[row] << ").";
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 // --------------------------------------------------------

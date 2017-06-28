@@ -148,6 +148,13 @@ message TableConstraintProto {
   bool negated = 3;
 }
 
+// The two arrays of variable each represent a function, the second is the
+// inverse of the first: f_direct[i] == j <=> f_inverse[j] == i.
+message InverseConstraintProto {
+  repeated int32 f_direct = 1;
+  repeated int32 f_inverse = 2;
+}
+
 // This constraint forces a sequence of variables to be accepted by an automata.
 message AutomataConstraintProto {
   // A state is identified by a non-negative number. It is preferable to keep
@@ -198,6 +205,7 @@ message ConstraintProto {
     CircuitConstraintProto circuit = 15;
     TableConstraintProto table = 16;
     AutomataConstraintProto automata = 17;
+    InverseConstraintProto inverse = 18;
 
     // Constraints on intervals.
     //
@@ -207,10 +215,10 @@ message ConstraintProto {
     //
     // TODO(user): Explain what happen for intervals of size zero. Some
     // constraints ignore them, other do take them into account.
-    IntervalConstraintProto interval = 18;
-    CumulativeConstraintProto cumulative = 19;
+    IntervalConstraintProto interval = 19;
     NoOverlapConstraintProto no_overlap = 20;
     NoOverlap2DConstraintProto no_overlap_2d = 21;
+    CumulativeConstraintProto cumulative = 22;
   }
 }
 

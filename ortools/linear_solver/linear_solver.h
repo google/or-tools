@@ -565,6 +565,7 @@ class MPSolver {
   friend class MPSolverInterface;
   friend class GLOPInterface;
   friend class BopInterface;
+  friend class SatInterface;
   friend class KnapsackInterface;
 
   // Debugging: verify that the given MPVariable* belongs to this solver.
@@ -579,6 +580,9 @@ class MPSolver {
 
   // Returns true if the model has constraints with lower bound > upper bound.
   bool HasInfeasibleConstraints() const;
+
+  // Returns true if the model has at least 1 integer variable.
+  bool HasIntegerVariables() const;
 
   // The name of the linear programming problem.
   const std::string name_;
@@ -726,6 +730,7 @@ class MPObjective {
   friend class CplexInterface;
   friend class GLOPInterface;
   friend class BopInterface;
+  friend class SatInterface;
   friend class KnapsackInterface;
 
   // Constructor. An objective points to a single MPSolverInterface
@@ -801,6 +806,7 @@ class MPVariable {
   friend class GLOPInterface;
   friend class MPVariableSolutionValueTest;
   friend class BopInterface;
+  friend class SatInterface;
   friend class KnapsackInterface;
 
   // Constructor. A variable points to a single MPSolverInterface that
@@ -901,6 +907,7 @@ class MPConstraint {
   friend class CplexInterface;
   friend class GLOPInterface;
   friend class BopInterface;
+  friend class SatInterface;
   friend class KnapsackInterface;
 
   // Constructor. A constraint points to a single MPSolverInterface

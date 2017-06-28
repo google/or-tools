@@ -28,56 +28,55 @@ std::vector<IntegerVariable> NegationOf(
   return result;
 }
 
-void IntegerEncoder::FullyEncodeVariable(
-    IntegerVariable i_var, const std::vector<ClosedInterval>& domain) {
-  CHECK(!VariableIsFullyEncoded(i_var));
+void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
+  CHECK(!VariableIsFullyEncoded(var));
   CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
-  CHECK(!domain.empty());  // UNSAT problem. We don't deal with that here.
+  CHECK(!(*domains_)[var].empty());  // UNSAT. We don't deal with that here.
 
   std::vector<IntegerValue> values;
-  for (const ClosedInterval interval : domain) {
+  for (const ClosedInterval interval : (*domains_)[var]) {
     for (IntegerValue v(interval.start); v <= interval.end; ++v) {
       values.push_back(v);
       CHECK_LT(values.size(), 100000) << "Domain too large for full encoding.";
     }
   }
 
-  // TODO(user): This case is annoying, not sure yet how to best fix the
-  // variable. There is certainly no need to create a Boolean variable, but
-  // one needs to talk to IntegerTrail to fix the variable and we don't want
-  // the encoder to depend on this. So for now we fail here and it is up to
-  // the caller to deal with this case.
+  // TODO(user): This case is annoying, so for now we want the caller to deal
+  // with it, hence the CHECK. We do not want to create a fixed Boolean
+  // variable, but we also do not want to complexify the API of
+  // FullDomainEncoding().
   CHECK_NE(values.size(), 1);
 
   std::vector<Literal> literals;
   if (values.size() == 2) {
-    const BooleanVariable var = sat_solver_->NewBooleanVariable();
-    literals.push_back(Literal(var, true));
-    literals.push_back(Literal(var, false));
+    literals.push_back(GetOrCreateAssociatedLiteral(
+        IntegerLiteral::LowerOrEqual(var, values[0])));
+    literals.push_back(literals.back().Negated());
   } else {
     for (int i = 0; i < values.size(); ++i) {
-      const BooleanVariable var = sat_solver_->NewBooleanVariable();
-      literals.push_back(Literal(var, true));
+      const std::pair<IntegerVariable, IntegerValue> key{var, values[i]};
+      if (ContainsKey(equality_to_associated_literal_, key)) {
+        literals.push_back(equality_to_associated_literal_[key]);
+      } else {
+        literals.push_back(Literal(sat_solver_->NewBooleanVariable(), true));
+      }
     }
   }
-  return FullyEncodeVariableUsingGivenLiterals(i_var, literals, values);
+  return FullyEncodeVariableUsingGivenLiterals(var, literals, values);
 }
 
 void IntegerEncoder::FullyEncodeVariableUsingGivenLiterals(
-    IntegerVariable i_var, const std::vector<Literal>& literals,
+    IntegerVariable var, const std::vector<Literal>& literals,
     const std::vector<IntegerValue>& values) {
-  CHECK(!VariableIsFullyEncoded(i_var));
+  CHECK(!VariableIsFullyEncoded(var));
   CHECK(!literals.empty());
   CHECK_NE(literals.size(), 1);
 
   // Sort the literals by values.
   std::vector<ValueLiteralPair> encoding;
-  std::vector<sat::LiteralWithCoeff> cst;
+  encoding.reserve(values.size());
   for (int i = 0; i < values.size(); ++i) {
-    const Literal literal = literals[i];
-    const IntegerValue value = values[i];
-    encoding.push_back({value, literal});
-    cst.push_back(LiteralWithCoeff(literal, Coefficient(1)));
+    encoding.push_back({values[i], literals[i]});
   }
   std::sort(encoding.begin(), encoding.end());
 
@@ -87,9 +86,9 @@ void IntegerEncoder::FullyEncodeVariableUsingGivenLiterals(
   // literal pushed by Enqueue() (we look at the domain there).
   for (int i = 0; i + 1 < encoding.size(); ++i) {
     const IntegerLiteral i_lit =
-        IntegerLiteral::LowerOrEqual(i_var, encoding[i].value);
+        IntegerLiteral::LowerOrEqual(var, encoding[i].value);
     const IntegerLiteral i_lit_negated =
-        IntegerLiteral::GreaterOrEqual(i_var, encoding[i + 1].value);
+        IntegerLiteral::GreaterOrEqual(var, encoding[i + 1].value);
     if (i == 0) {
       // Special case for the start.
       HalfAssociateGivenLiteral(i_lit, encoding[0].literal);
@@ -101,31 +100,26 @@ void IntegerEncoder::FullyEncodeVariableUsingGivenLiterals(
     } else {
       // Normal case.
       if (!LiteralIsAssociated(i_lit) || !LiteralIsAssociated(i_lit_negated)) {
-        const BooleanVariable new_var = sat_solver_->NewBooleanVariable();
-        const Literal literal(new_var, true);
-        HalfAssociateGivenLiteral(i_lit, literal);
-        HalfAssociateGivenLiteral(i_lit_negated, literal.Negated());
+        const BooleanVariable b = sat_solver_->NewBooleanVariable();
+        HalfAssociateGivenLiteral(i_lit, Literal(b, true));
+        HalfAssociateGivenLiteral(i_lit_negated, Literal(b, false));
       }
     }
   }
 
   // Now that all literals are created, wire them together using
   //    (X == v)  <=>  (X >= v) and (X <= v).
+  //
+  // TODO(user): this is currently in O(n^2) which is potentially bad even if
+  // we do it only once per variable.
   for (int i = 1; i + 1 < encoding.size(); ++i) {
-    const ValueLiteralPair pair = encoding[i];
-    const Literal a(GetAssociatedLiteral(
-        IntegerLiteral::GreaterOrEqual(i_var, pair.value)));
-    const Literal b(
-        GetAssociatedLiteral(IntegerLiteral::LowerOrEqual(i_var, pair.value)));
-    sat_solver_->AddBinaryClause(a, pair.literal.Negated());
-    sat_solver_->AddBinaryClause(b, pair.literal.Negated());
-    sat_solver_->AddProblemClause({a.Negated(), b.Negated(), pair.literal});
+    AssociateToIntegerEqualValue(encoding[i].literal, var, encoding[i].value);
   }
 
-  full_encoding_index_[i_var] = full_encoding_.size();
+  full_encoding_index_[var] = full_encoding_.size();
   full_encoding_.push_back(encoding);  // copy because we need it below.
 
-  // Deal with NegationOf(i_var).
+  // Deal with NegationOf(var).
   //
   // TODO(user): This seems a bit wasted, but it does simplify the code at a
   // somehow small cost.
@@ -133,7 +127,7 @@ void IntegerEncoder::FullyEncodeVariableUsingGivenLiterals(
   for (auto& entry : encoding) {
     entry.value = -entry.value;  // Reverse the value.
   }
-  full_encoding_index_[NegationOf(i_var)] = full_encoding_.size();
+  full_encoding_index_[NegationOf(var)] = full_encoding_.size();
   full_encoding_.push_back(std::move(encoding));
 }
 
@@ -149,23 +143,25 @@ void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
       encoding_by_var_[IntegerVariable(i_lit.var)];
   CHECK(!ContainsKey(map_ref, i_lit.bound));
 
-  auto after_it = map_ref.lower_bound(i_lit.bound);
-  if (after_it != map_ref.end()) {
-    // Literal(after) => literal
-    if (sat_solver_->CurrentDecisionLevel() == 0) {
-      sat_solver_->AddBinaryClause(after_it->second.Negated(), literal);
-    } else {
-      sat_solver_->AddBinaryClauseDuringSearch(after_it->second.Negated(),
-                                               literal);
+  if (add_implications_) {
+    auto after_it = map_ref.lower_bound(i_lit.bound);
+    if (after_it != map_ref.end()) {
+      // Literal(after) => literal
+      if (sat_solver_->CurrentDecisionLevel() == 0) {
+        sat_solver_->AddBinaryClause(after_it->second.Negated(), literal);
+      } else {
+        sat_solver_->AddBinaryClauseDuringSearch(after_it->second.Negated(),
+                                                 literal);
+      }
     }
-  }
-  if (after_it != map_ref.begin()) {
-    // literal => Literal(before)
-    if (sat_solver_->CurrentDecisionLevel() == 0) {
-      sat_solver_->AddBinaryClause(literal.Negated(), (--after_it)->second);
-    } else {
-      sat_solver_->AddBinaryClauseDuringSearch(literal.Negated(),
-                                               (--after_it)->second);
+    if (after_it != map_ref.begin()) {
+      // literal => Literal(before)
+      if (sat_solver_->CurrentDecisionLevel() == 0) {
+        sat_solver_->AddBinaryClause(literal.Negated(), (--after_it)->second);
+      } else {
+        sat_solver_->AddBinaryClauseDuringSearch(literal.Negated(),
+                                                 (--after_it)->second);
+      }
     }
   }
 
@@ -173,22 +169,112 @@ void IntegerEncoder::AddImplications(IntegerLiteral i_lit, Literal literal) {
   map_ref[i_lit.bound] = literal;
 }
 
+void IntegerEncoder::AddAllImplicationsBetweenAssociatedLiterals() {
+  CHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
+  add_implications_ = true;
+  for (const std::map<IntegerValue, Literal>& encoding : encoding_by_var_) {
+    LiteralIndex previous = kNoLiteralIndex;
+    for (const auto value_literal : encoding) {
+      const Literal lit = value_literal.second;
+      if (previous != kNoLiteralIndex) {
+        // lit => previous.
+        sat_solver_->AddBinaryClause(lit.Negated(), Literal(previous));
+      }
+      previous = lit.Index();
+    }
+  }
+}
 
-Literal IntegerEncoder::CreateAssociatedLiteral(IntegerLiteral i_lit) {
-  CHECK(!LiteralIsAssociated(i_lit));
+std::pair<IntegerLiteral, IntegerLiteral> IntegerEncoder::Canonicalize(
+    IntegerLiteral i_lit) const {
+  const IntegerVariable var(i_lit.var);
+  IntegerValue after(i_lit.bound);
+  IntegerValue before(i_lit.bound - 1);
+  CHECK_GE(before, (*domains_)[var].front().start);
+  CHECK_LE(after, (*domains_)[var].back().end);
+  int64 previous = kint64min;
+  for (const ClosedInterval& interval : (*domains_)[var]) {
+    if (before > previous && before < interval.start) before = previous;
+    if (after > previous && after < interval.start) after = interval.start;
+    if (after <= interval.end) break;
+    previous = interval.end;
+  }
+  return {IntegerLiteral::GreaterOrEqual(var, after),
+          IntegerLiteral::LowerOrEqual(var, before)};
+}
+
+Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
+  const IntegerLiteral new_lit = Canonicalize(i_lit).first;
+  if (new_lit.var < encoding_by_var_.size()) {
+    const std::map<IntegerValue, Literal>& encoding =
+        encoding_by_var_[IntegerVariable(new_lit.var)];
+    const auto it = encoding.find(new_lit.bound);
+    if (it != encoding.end()) return it->second;
+  }
+
   ++num_created_variables_;
   const BooleanVariable new_var = sat_solver_->NewBooleanVariable();
   const Literal literal(new_var, true);
-  AssociateGivenLiteral(i_lit, literal);
+  AssociateToIntegerLiteral(literal, new_lit);
   return literal;
 }
 
-void IntegerEncoder::AssociateGivenLiteral(IntegerLiteral i_lit,
-                                           Literal literal) {
-  // TODO(user): convert it to a "domain compatible one".
-  CHECK(!LiteralIsAssociated(i_lit));
-  HalfAssociateGivenLiteral(i_lit, literal);
-  HalfAssociateGivenLiteral(i_lit.Negated(), literal.Negated());
+void IntegerEncoder::AssociateToIntegerLiteral(Literal literal,
+                                               IntegerLiteral i_lit) {
+  const auto& domain = (*domains_)[i_lit.Var()];
+  if (i_lit.Bound() <= domain.front().start) {
+    sat_solver_->AddUnitClause(literal);
+  } else if (i_lit.Bound() > domain.back().end) {
+    sat_solver_->AddUnitClause(literal.Negated());
+  } else {
+    const auto pair = Canonicalize(i_lit);
+    HalfAssociateGivenLiteral(pair.first, literal);
+    HalfAssociateGivenLiteral(pair.second, literal.Negated());
+  }
+}
+
+void IntegerEncoder::AssociateToIntegerEqualValue(Literal literal,
+                                                  IntegerVariable var,
+                                                  IntegerValue value) {
+  const auto& domain = (*domains_)[var];
+  const std::pair<IntegerVariable, IntegerValue> key{var, value};
+  if (!SortedDisjointIntervalsContain(domain, value.value())) {
+    sat_solver_->AddUnitClause(literal.Negated());
+  } else if (value == domain.front().start && value == domain.back().end) {
+    sat_solver_->AddUnitClause(literal);  // fixed variable.
+  } else if (value == domain.front().start) {
+    AssociateToIntegerLiteral(literal,
+                              IntegerLiteral::LowerOrEqual(var, value));
+    if (!ContainsKey(equality_to_associated_literal_, key)) {
+      equality_to_associated_literal_[key] = literal;
+    }
+  } else if (value == domain.back().end) {
+    AssociateToIntegerLiteral(literal,
+                              IntegerLiteral::GreaterOrEqual(var, value));
+    if (!ContainsKey(equality_to_associated_literal_, key)) {
+      equality_to_associated_literal_[key] = literal;
+    }
+  } else {
+    // If this key is already associated, make the two literals equal.
+    if (ContainsKey(equality_to_associated_literal_, key)) {
+      const Literal representative = equality_to_associated_literal_[key];
+      if (representative != literal) {
+        sat_solver_->AddBinaryClause(literal, representative.Negated());
+        sat_solver_->AddBinaryClause(literal.Negated(), representative);
+      }
+      return;
+    }
+    equality_to_associated_literal_[key] = literal;
+
+    //  (var == value)  <=>  (var >= value) and (var <= value).
+    const Literal a(GetOrCreateAssociatedLiteral(
+        IntegerLiteral::GreaterOrEqual(var, value)));
+    const Literal b(
+        GetOrCreateAssociatedLiteral(IntegerLiteral::LowerOrEqual(var, value)));
+    sat_solver_->AddBinaryClause(a, literal.Negated());
+    sat_solver_->AddBinaryClause(b, literal.Negated());
+    sat_solver_->AddProblemClause({a.Negated(), b.Negated(), literal});
+  }
 }
 
 // TODO(user): The hard constraints we add between associated literals seems to
@@ -228,16 +314,6 @@ LiteralIndex IntegerEncoder::GetAssociatedLiteral(IntegerLiteral i) {
   const auto result = encoding.find(i.bound);
   if (result == encoding.end()) return kNoLiteralIndex;
   return result->second.Index();
-}
-
-Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
-  if (i_lit.var < encoding_by_var_.size()) {
-    const std::map<IntegerValue, Literal>& encoding =
-        encoding_by_var_[IntegerVariable(i_lit.var)];
-    const auto it = encoding.find(i_lit.bound);
-    if (it != encoding.end()) return it->second;
-  }
-  return CreateAssociatedLiteral(i_lit);
 }
 
 LiteralIndex IntegerEncoder::SearchForLiteralAtOrBefore(
@@ -325,6 +401,7 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   is_ignored_literals_.push_back(kNoLiteralIndex);
   vars_.push_back({lower_bound, static_cast<int>(integer_trail_.size())});
   integer_trail_.push_back({lower_bound, i.value()});
+  domains_->push_back({{lower_bound.value(), upper_bound.value()}});
 
   // TODO(user): the is_ignored_literals_ Booleans are currently always the same
   // for a variable and its negation. So it may be better not to store it twice
@@ -333,6 +410,7 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   is_ignored_literals_.push_back(kNoLiteralIndex);
   vars_.push_back({-upper_bound, static_cast<int>(integer_trail_.size())});
   integer_trail_.push_back({-upper_bound, NegationOf(i).value()});
+  domains_->push_back({{-upper_bound.value(), -lower_bound.value()}});
 
   for (SparseBitset<IntegerVariable>* w : watchers_) {
     w->Resize(NumIntegerVariables());
@@ -346,25 +424,7 @@ IntegerVariable IntegerTrail::AddIntegerVariable(
   CHECK(IntervalsAreSortedAndDisjoint(domain));
   const IntegerVariable var = AddIntegerVariable(
       IntegerValue(domain.front().start), IntegerValue(domain.back().end));
-
-  // We only stores the vector of closed intervals for "complex" domain.
-  if (domain.size() > 1) {
-    var_to_current_lb_interval_index_.Set(var, all_intervals_.size());
-    for (const ClosedInterval interval : domain) {
-      all_intervals_.push_back(interval);
-    }
-    InsertOrDie(&var_to_end_interval_index_, var, all_intervals_.size());
-
-    // Copy for the negated variable.
-    var_to_current_lb_interval_index_.Set(NegationOf(var),
-                                          all_intervals_.size());
-    for (const ClosedInterval interval : ::gtl::reversed_view(domain)) {
-      all_intervals_.push_back({-interval.end, -interval.start});
-    }
-    InsertOrDie(&var_to_end_interval_index_, NegationOf(var),
-                all_intervals_.size());
-  }
-
+  CHECK(UpdateInitialDomain(var, domain));
   return var;
 }
 
@@ -388,12 +448,21 @@ std::vector<ClosedInterval> IntegerTrail::InitialVariableDomain(
 
 bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
                                        std::vector<ClosedInterval> domain) {
-  domain =
-      IntersectionOfSortedDisjointIntervals(domain, InitialVariableDomain(var));
+  // TODO(user): A bit inefficient as this recreate a vector for no reason.
+  const std::vector<ClosedInterval> old_domain = InitialVariableDomain(var);
+  if (old_domain == domain) return true;
+
+  domain = IntersectionOfSortedDisjointIntervals(domain, old_domain);
   if (domain.empty()) return false;
 
-  // TODO(user): A bit inefficient as this recreate a vector for no reason.
-  if (domain == InitialVariableDomain(var)) return true;
+  // TODO(user): we currently keep the domain in domains_ but also in
+  // all_intervals_ for domains with holes. Try to consolidate both structures.
+  (*domains_)[var].assign(domain.begin(), domain.end());
+  {
+    std::vector<ClosedInterval> temp =
+        NegationOfSortedDisjointIntervals(domain);
+    (*domains_)[NegationOf(var)].assign(temp.begin(), temp.end());
+  }
 
   CHECK(Enqueue(
       IntegerLiteral::GreaterOrEqual(var, IntegerValue(domain.front().start)),
@@ -432,7 +501,7 @@ bool IntegerTrail::UpdateInitialDomain(IntegerVariable var,
     int num_fixed = 0;
     const auto encoding = encoder_->FullDomainEncoding(var);
     for (const auto pair : encoding) {
-      while (pair.value > domain[i].end && i < domain.size()) ++i;
+      while (i < domain.size() && pair.value > domain[i].end) ++i;
       if (i == domain.size() || pair.value < domain[i].start) {
         // Set the literal to false;
         ++num_fixed;
@@ -597,7 +666,11 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   const IntegerVariable var(i_lit.var);
 
   // If the domain of var is not a single intervals and i_lit.bound fall into a
-  // "hole", we increase it to the next possible value.
+  // "hole", we increase it to the next possible value. This ensure that we
+  // never Enqueue() non-canonical literals. See also Canonicalize().
+  //
+  // Note: The literals in the reason are not necessarily canonical, but then
+  // we always map these to enqueued literals during conflict resolution.
   {
     int interval_index =
         FindWithDefault(var_to_current_lb_interval_index_, var, -1);
@@ -672,6 +745,13 @@ bool IntegerTrail::Enqueue(IntegerLiteral i_lit,
   }
 
   // Enqueue the strongest associated Boolean literal implied by this one.
+  // Because we linked all such literal with implications, all the one before
+  // will be propagated by the SAT solver.
+  //
+  // TODO(user): It might be simply better and more efficient to simply enqueue
+  // all of them here. We have also more liberty to choose the explanation we
+  // want. A drawback might be that the implications might not be used in the
+  // binary conflict minimization algo.
   const LiteralIndex literal_index =
       encoder_->SearchForLiteralAtOrBefore(i_lit);
   if (literal_index != kNoLiteralIndex) {

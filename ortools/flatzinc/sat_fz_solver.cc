@@ -89,10 +89,9 @@ IntegerVariable SatModel::LookupVar(fz::IntegerVariable* var) {
   // Otherwise, this must be a Boolean and we must construct the IntegerVariable
   // associated with it.
   const Literal lit = FindOrDie(bool_map, var);
-  const IntegerVariable int_var = model.Add(NewIntegerVariable(0, 1));
+  const IntegerVariable int_var =
+      model.GetOrCreate<LiteralViews>()->GetIntegerView(lit);
   InsertOrDie(&var_map, var, int_var);
-  model.GetOrCreate<IntegerEncoder>()->FullyEncodeVariableUsingGivenLiterals(
-      int_var, {lit.Negated(), lit}, {IntegerValue(0), IntegerValue(1)});
   return int_var;
 }
 

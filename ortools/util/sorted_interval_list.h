@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "ortools/base/integral_types.h"
+#include "ortools/base/span.h"
 
 namespace operations_research {
 
@@ -70,8 +71,8 @@ bool IntervalsAreSortedAndDisjoint(
 //
 // TODO(user): This works in O(n), but could be made to work in O(log n) for
 // long list of intervals.
-bool SortedDisjointIntervalsContain(
-    const std::vector<ClosedInterval>& intervals, int64 value);
+bool SortedDisjointIntervalsContain(gtl::Span<ClosedInterval> intervals,
+                                    int64 value);
 
 // Returns the intersection of two lists of sorted disjoint intervals in a
 // sorted disjoint interval form.

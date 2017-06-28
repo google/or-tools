@@ -54,7 +54,7 @@ std::function<void(Model*)> Cumulative(
 
       // At this point, we know that the duration variable is not fixed.
       const Literal size_condition =
-          encoder->CreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
+          encoder->GetOrCreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
               intervals->SizeVar(vars[i]), IntegerValue(1)));
 
       if (intervals->IsOptional(vars[i])) {
@@ -203,11 +203,11 @@ std::function<void(Model*)> CumulativeTimeDecomposition(
         }
 
         // Task t overlaps time.
-        consume_condition.push_back(encoder->CreateAssociatedLiteral(
+        consume_condition.push_back(encoder->GetOrCreateAssociatedLiteral(
             IntegerLiteral::LowerOrEqual(start_vars[t], IntegerValue(time))));
-        consume_condition.push_back(
-            encoder->CreateAssociatedLiteral(IntegerLiteral::GreaterOrEqual(
-                end_vars[t], IntegerValue(time + 1))));
+        consume_condition.push_back(encoder->GetOrCreateAssociatedLiteral(
+            IntegerLiteral::GreaterOrEqual(end_vars[t],
+                                           IntegerValue(time + 1))));
 
         model->Add(ReifiedBoolAnd(consume_condition, consume));
 

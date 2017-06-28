@@ -617,36 +617,32 @@ void IntegralProblemConverter::ConvertAllConstraints(
         linear_problem.constraint_lower_bounds()[row];
     if (lower_bound != -kInfinity) {
       const Fractional offset_lower_bound = lower_bound - offset;
-      if (offset_lower_bound * scaling_factor >
-          static_cast<double>(kint64max)) {
+      const double offset_scaled_lower_bound =
+          round(offset_lower_bound * scaling_factor - bound_error);
+      if (offset_scaled_lower_bound >= static_cast<double>(kint64max)) {
         LOG(WARNING) << "A constraint is trivially unsatisfiable.";
         return;
       }
-      if (offset_lower_bound * scaling_factor >
-          -static_cast<double>(kint64max)) {
+      if (offset_scaled_lower_bound > -static_cast<double>(kint64max)) {
         // Otherwise, the constraint is not needed.
         constraint->set_lower_bound(
-            static_cast<int64>(
-                round(offset_lower_bound * scaling_factor - bound_error)) /
-            gcd);
+            static_cast<int64>(offset_scaled_lower_bound) / gcd);
       }
     }
     const Fractional upper_bound =
         linear_problem.constraint_upper_bounds()[row];
     if (upper_bound != kInfinity) {
       const Fractional offset_upper_bound = upper_bound - offset;
-      if (offset_upper_bound * scaling_factor <
-          -static_cast<double>(kint64max)) {
+      const double offset_scaled_upper_bound =
+          round(offset_upper_bound * scaling_factor + bound_error);
+      if (offset_scaled_upper_bound <= -static_cast<double>(kint64max)) {
         LOG(WARNING) << "A constraint is trivially unsatisfiable.";
         return;
       }
-      if (offset_upper_bound * scaling_factor <
-          static_cast<double>(kint64max)) {
+      if (offset_scaled_upper_bound < static_cast<double>(kint64max)) {
         // Otherwise, the constraint is not needed.
         constraint->set_upper_bound(
-            static_cast<int64>(
-                round(offset_upper_bound * scaling_factor + bound_error)) /
-            gcd);
+            static_cast<int64>(offset_scaled_upper_bound) / gcd);
       }
     }
   }
