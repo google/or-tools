@@ -1,16 +1,20 @@
-SET(GLOG_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/)
-LIST(APPEND GLOG_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/src/)
-SET(GLOG_URL https://github.com/google/glog)
+SET(glog_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/)
+LIST(APPEND glog_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/src/)
+SET(glog_URL https://github.com/google/glog)
 
 IF(NOT gflags_FOUND)
     ExternalProject_Get_Property(gflags_project SOURCE_DIR)
-    SET(GLOG_EXTRA_ARGS "-DCMAKE_PREFIX_PATH=${SOURCE_DIR}")
+    SET(glog_ADDITIONAL_CMAKE_OPTIONS "-DCMAKE_PREFIX_PATH=${SOURCE_DIR}")
 ENDIF()
 
-ExternalProject_Add(GLOG_project
-        PREFIX GLOG
-        GIT_REPOSITORY ${GLOG_URL}
-        GIT_TAG "v${GLOG_VERSION}"
+IF(MSVC)
+    SET(gflags_ADDITIONAL_CMAKE_OPTIONS "${glog_ADDITIONAL_CMAKE_OPTIONS} -G \"NMake MakeFiles\"")
+ENDIF()
+
+ExternalProject_Add(glog_project
+        PREFIX glog
+        GIT_REPOSITORY ${glog_URL}
+        GIT_TAG "v${glog_VERSION}"
         DOWNLOAD_DIR "${DOWNLOAD_LOCATION}"
         UPDATE_COMMAND ""
         PATCH_COMMAND git am -3 ${CMAKE_SOURCE_DIR}/patches/glog_includedir_fix.patch
@@ -20,7 +24,7 @@ ExternalProject_Add(GLOG_project
         -DWITH_GFLAGS=ON
         -DBUILD_TESTING=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-        ${GLOG_EXTRA_ARGS}
+        ${glog_ADDITIONAL_CMAKE_OPTIONS}
         INSTALL_COMMAND ""
         CMAKE_CACHE_ARGS
         -DCMAKE_BUILD_TYPE:STRING=Release
@@ -28,11 +32,11 @@ ExternalProject_Add(GLOG_project
         -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON)
 
 IF(NOT gflags_FOUND)
-    ADD_DEPENDENCIES(GLOG_project gflags_project)
+    ADD_DEPENDENCIES(glog_project gflags_project)
 ENDIF()
 
-ADD_LIBRARY(GLOG STATIC IMPORTED) 
-SET_PROPERTY(TARGET GLOG PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/libglog.a)
-ADD_DEPENDENCIES(GLOG GLOG_project)
-SET(GLOG_LIBRARIES "")
-LIST(APPEND GLOG_LIBRARIES GLOG)
+ADD_LIBRARY(glog STATIC IMPORTED) 
+SET_PROPERTY(TARGET glog PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/glog_project/src/glog/libglog.a)
+ADD_DEPENDENCIES(glog glog_project)
+SET(glog_LIBRARIES "")
+LIST(APPEND glog_LIBRARIES glog)

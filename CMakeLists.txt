@@ -1,125 +1,75 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.8)
 
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+
 PROJECT(ortools LANGUAGES CXX)
-SET(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_STANDARD 17)
 
-INCLUDE(FindPkgConfig)
 INCLUDE(ExternalProject)
-
-SET(CMAKE_INSTALL_LIBDIR lib)
-SET(CMAKE_INSTALL_BINDIR bin)
-SET(CMAKE_INSTALL_INCLUDEDIR include)
 
 IF(UNIX)
     IF(NOT APPLE)
         INCLUDE(GNUInstallDirs)
+    ELSE()
+        SET(CMAKE_INSTALL_LIBDIR lib)
+        SET(CMAKE_INSTALL_BINDIR bin)
+        SET(CMAKE_INSTALL_INCLUDEDIR include)
+    ENDIF()
+ELSE()
+    SET(CMAKE_INSTALL_LIBDIR lib)
+    SET(CMAKE_INSTALL_BINDIR bin)
+    SET(CMAKE_INSTALL_INCLUDEDIR include)
+ENDIF()
+
+SET(BUILD_CXX OFF CACHE BOOL "Build C++ library")
+SET(BUILD_PY OFF CACHE BOOL "Build Python library")
+
+SET(DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads" CACHE PATH "Location where external projects will be downloaded.")
+MARK_AS_ADVANCED(DOWNLOAD_LOCATION)
+
+FILE(READ ${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.txt _Dependency_file)
+FOREACH(DEPENDENCY Protobuf gflags glog Cbc CoinUtils Osi Clp Cgl)
+    STRING(REGEX REPLACE ".*${DEPENDENCY} = ([0-9.]+).*" "\\1" ${DEPENDENCY}_VERSION ${_Dependency_file})
+ENDFOREACH()
+
+IF(BUILD_PY)
+    FIND_PACKAGE(${PROJECT_NAME})
+
+    IF(NOT ${PROJECT_NAME}_FOUND)
+        SET(BUILD_CXX ON)
+    ELSE()
+        IF(NOT BUILD_CXX)
+            INCLUDE_DIRECTORIES(${${PROJECT_NAME}_INCLUDE_DIRS})
+        ENDIF()
     ENDIF()
 ENDIF()
 
-SET(BUILD_CXX ON)
-SET(DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads" CACHE PATH "Location where external projects will be downloaded.")
+FIND_PACKAGE(Threads REQUIRED)
 
-MARK_AS_ADVANCED(BUILD_CXX)
-MARK_AS_ADVANCED(DOWNLOAD_LOCATION)
+FIND_PACKAGE(Protobuf ${Protobuf_VERSION})
+IF(NOT Protobuf_FOUND)
+    MESSAGE(STATUS "Did not find system protobuf. Building as an external project")
+    INCLUDE(cmake/external/protobuf.cmake)
+ENDIF()
+INCLUDE_DIRECTORIES(${Protobuf_INCLUDE_DIRS})
+SET(PROTOBUF_IMPORT_DIRS ${PROJECT_SOURCE_DIR})
+SET(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
 
-MESSAGE("-- Reading dependency tags from  ${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.txt")
-FILE(READ ${CMAKE_CURRENT_SOURCE_DIR}/Dependencies.txt _Dependency_file)
-FOREACH(DEPENDENCY Protobuf gflags Glog cbc CoinUtils Osi Clp Cgl)
-    STRING(REGEX REPLACE ".*${DEPENDENCY} = ([0-9.]+).*" "\\1" ${DEPENDENCY}_VERSION ${_Dependency_file})
-    MESSAGE("  -- ${DEPENDENCY}_VERSION = ${${DEPENDENCY}_VERSION}")
-ENDFOREACH()
+IF(MSVC)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj /DNDEBUG /DUSE_GLOP /DUSE_BOP")
+ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG -DUSE_GLOP -DUSE_BOP")
+ENDIF()
+
+INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
+
+MESSAGE(STATUS "Builds cxx library: ${BUILD_CXX}")
+MESSAGE(STATUS "Builds python library: ${BUILD_PY}")
 
 IF(BUILD_CXX)
-    FIND_PACKAGE(Threads REQUIRED)
+    INCLUDE(cmake/cpp.cmake)
+ENDIF()
 
-    FIND_PACKAGE(Protobuf ${Protobuf_VERSION})
-    IF(NOT Protobuf_FOUND)
-        MESSAGE(STATUS "Did not find system protobuf. Building as an external project")
-        INCLUDE(cmake/external/protobuf.cmake)
-    ENDIF()
-    INCLUDE_DIRECTORIES(${Protobuf_INCLUDE_DIRS})
-
-    FIND_PACKAGE(gflags ${gflags_VERSION} QUIET)
-    IF(NOT gflags_FOUND)
-        MESSAGE(STATUS "Did not find system gflags. Building as an external project")
-        INCLUDE(cmake/external/gflags.cmake)
-    ENDIF()
-    INCLUDE_DIRECTORIES(${gflags_INCLUDE_DIRS})
-
-    SET(GLOG_VERSION ${Glog_VERSION})
-    PKG_CHECK_MODULES(GLOG libglog>=${GLOG_VERSION})
-    # Set again since pkg_check_module resets GLOG_VERSION
-    SET(GLOG_VERSION ${Glog_VERSION})
-    IF(NOT GLOG_FOUND)
-        MESSAGE(STATUS "Did not find system glog. Building as an external project.")
-        INCLUDE(cmake/external/glog.cmake)
-    ENDIF()
-    INCLUDE_DIRECTORIES(${GLOG_INCLUDE_DIRS})
-
-    SET(Cbc_VERSION ${cbc_VERSION})
-    PKG_CHECK_MODULES(Cbc cbc)
-    SET(Cbc_VERSION ${cbc_VERSION})
-    IF(NOT Cbc_FOUND)
-        MESSAGE(STATUS "Did not find system coin-cbc. Building as an external Project.")
-        INCLUDE(cmake/external/cbc.cmake)
-    ENDIF()
-    INCLUDE_DIRECTORIES(${Cbc_INCLUDE_DIRS})
-
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv -DNDEBUG -DUSE_GLOP -DUSE_BOP -DUSE_CBC -DUSE_CLP")
-
-    FILE(GLOB_RECURSE proto_files RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "ortools/*.proto")
-    SET(PROTOBUF_GENERATE_CPP_APPEND_PATH OFF)
-
-    INCLUDE_DIRECTORIES(.)
-    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
-    INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIRS})
-
-    PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${proto_files})
-    ADD_LIBRARY(${PROJECT_NAME}Proto OBJECT ${PROTO_SRCS} ${PROTO_HDRS})
-    IF(NOT Protobuf_FOUND)
-        ADD_DEPENDENCIES(${PROJECT_NAME}Proto Protobuf_PROTOC_EXECUTABLE)
-    ENDIF()
-
-    IF(NOT Cbc_FOUND)
-        ADD_DEPENDENCIES(${PROJECT_NAME}Proto Cbc)
-    ENDIF()
-
-    IF(NOT GLOG_FOUND)
-        ADD_DEPENDENCIES(${PROJECT_NAME}Proto GLOG)
-    ENDIF()
-
-    SET_TARGET_PROPERTIES(${PROJECT_NAME}Proto PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-    SET(SUBTARGETS "")
-
-    FOREACH(SUBPROJECT base util lp_data glop graph algorithms sat bop linear_solver constraint_solver)
-        ADD_SUBDIRECTORY(ortools/${SUBPROJECT})
-        LIST(APPEND SUBTARGETS "$<TARGET_OBJECTS:${PROJECT_NAME}_${SUBPROJECT}>")
-    ENDFOREACH()
-
-    LIST(APPEND SUBTARGETS "$<TARGET_OBJECTS:${PROJECT_NAME}Proto>")
-
-    ADD_LIBRARY(${PROJECT_NAME} SHARED ${SUBTARGETS})
-    TARGET_LINK_LIBRARIES(${PROJECT_NAME}
-            ${Cbc_LIBRARIES}
-            ${gflags_LIBRARIES}
-            ${Protobuf_LIBRARIES}
-            ${GLOG_LIBRARIES}
-            ${CMAKE_THREAD_LIBS_INIT})
-
-    ADD_DEPENDENCIES(${PROJECT_NAME} ${PROJECT_NAME}Proto)
-    INSTALL(TARGETS ${PROJECT_NAME}
-            EXPORT ${PROJECT_NAME}_Exports
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    ADD_SUBDIRECTORY(examples/cpp)
-ENDIF(BUILD_CXX)
-
-INSTALL(DIRECTORY ortools
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        FILES_MATCHING PATTERN "*.h")
-INSTALL(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ortools
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        FILES_MATCHING PATTERN "*.pb.h"
-        PATTERN CMakeFiles EXCLUDE)
+IF(BUILD_PY)
+    INCLUDE(cmake/python.cmake)
+ENDIF()
