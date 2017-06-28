@@ -1,0 +1,77 @@
+from setuptools import setup, find_packages, Extension
+
+
+SWIG_CXX_OPTS = "${CMAKE_SWIG_FLAGS}"
+PROJ_INC_DIRS = "${CMAKE_INCLUDE_DIRS}"
+MODULE_MAP = {
+    'pywrapcp': 'ortools/constraint_solver/python/routing.i',
+    'pywrapknapsack_solver': 'ortools/algorithms/python/knapsack_solver.i',
+    'pywrapgraph': 'ortools/graph/python/graph.i',
+    'pywraplp': 'ortools/linear_solver/python/linear_solver.i'
+}
+
+
+def split_cmake_list(lst, prefix=None):
+    lst_ = lst.strip().split(';')
+
+    if prefix is None:
+        return lst_
+
+    _lst = []
+    for item in lst_:
+        _lst.append('{}{}'.format(prefix, item))
+    return _lst
+
+
+def get_outdir(_file):
+    return _file.split('python')[0]
+
+extensions = []
+for module, _file in MODULE_MAP.items():
+    ext = Extension(
+        '_{}'.format(module),
+        [_file],
+        swig_opts=split_cmake_list(SWIG_CXX_OPTS) + [
+            '-c++', '-I.', '-module', module] + split_cmake_list(
+            PROJ_INC_DIRS, '-I') + [
+            '-outdir', get_outdir(_file)],
+        include_dirs=split_cmake_list(PROJ_INC_DIRS),
+        libraries=['${PROJECT_NAME}'],
+        extra_compile_args="${CMAKE_CXX_FLAGS}".strip().split(' ')
+    )
+    extensions.append(ext)
+
+with open('${README_FILE}') as f:
+    long_description = f.read()
+
+setup(
+    name="${PROJECT_NAME}",
+    version="${PROJECT_VERSION}",
+    description="Google OR-Tools python libraries and modules",
+    long_description=long_description,
+    url='https://developers.google.com/optimization/',
+    author='${AUTHORS}',
+    author_email='${AUTHOR_EMAIL}',
+    license='${LICENSE}',
+    keywords = (
+        'operations research, constraint programming, linear programming, '
+        'flow algorithms, python'),
+    classifiers = [
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Topic :: Office/Business :: Scheduling',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Mathematics',
+        'Topic :: Software Development :: Libraries :: Python Modules'],
+    packages=find_packages(),
+    ext_modules=extensions
+)
