@@ -17,6 +17,26 @@ FILE(COPY
     ${CMAKE_CURRENT_BINARY_DIR}/ortools/)
 
 FILE(COPY
+    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
+    DESTINATION
+    ${CMAKE_CURRENT_BINARY_DIR}/ortools/constraint_solver/)
+
+FILE(COPY
+    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
+    DESTINATION
+    ${CMAKE_CURRENT_BINARY_DIR}/ortools/linear_solver/)
+
+FILE(COPY
+    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
+    DESTINATION
+    ${CMAKE_CURRENT_BINARY_DIR}/ortools/graph/)
+
+FILE(COPY
+    ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py
+    DESTINATION
+    ${CMAKE_CURRENT_BINARY_DIR}/ortools/algorithms/)
+
+FILE(COPY
     ${CMAKE_CURRENT_SOURCE_DIR}/ortools
     DESTINATION
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -46,4 +66,4 @@ ADD_CUSTOM_COMMAND(
     COMMAND ${CMAKE_COMMAND} -E touch ${PY_OUTPUT}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ortools/__init__.py)
 ADD_CUSTOM_TARGET(py${PROJECT_NAME} ALL DEPENDS ${PY_OUTPUT})
-# INSTALL(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/setup.py install)")
+INSTALL(CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/setup.py install)")
