@@ -226,14 +226,14 @@ message ConstraintProto {
 //
 // This is in a message because decision problems don't have any objective.
 message CpObjectiveProto {
-  // Index of the variable to minimize.
-  //
-  // For a maximization problem, one can refer to the negation of the real
+  // The linear terms of the objective to minimize.
+  // For a maximization problem, one can negate all coefficients in the
   // objective and set a scaling_factor to -1.
-  int32 objective_var = 1;
+  repeated int32 vars = 1;
+  repeated int64 coeffs = 4;
 
   // The displayed objective is always:
-  //   scaling_factor * (Value(objective_var) + offset).
+  //   scaling_factor * (sum(coefficients[i] * objective_vars[i]) + offset).
   // This is needed to have a consistent objective after presolve or when
   // scaling a double problem to express it with integers.
   //
@@ -264,7 +264,7 @@ message DecisionStrategyProto {
   }
   VariableSelectionStrategy variable_selection_strategy = 2;
 
-  // Once a variable has been choosen, this enum describe what decision is taken
+  // Once a variable has been chosen, this enum describe what decision is taken
   // on its domain.
   //
   // TODO(user): extend as needed.
@@ -298,10 +298,7 @@ message CpModelProto {
   repeated ConstraintProto constraints = 3;
 
   // The objective to minimize. Can be empty for pure decision problems.
-  // Note that we can have more than one objective for the cases where we want
-  // to optimize them in lexicographic order, or if we want to list the Pareto
-  // optimal solutions.
-  repeated CpObjectiveProto objectives = 4;
+  CpObjectiveProto objective = 4;
 
   // Defines the strategy that the solver should follow when the "fixed_search"
   // parameters is set to true. Note that this strategy is also used as an
@@ -347,7 +344,7 @@ message CpSolverResponse {
   CpSolverStatus status = 1;
 
   // A feasible solution to the given problem. Depending on the returned status
-  // it may be optimal or just feasible. This is in one-to-one correspondance
+  // it may be optimal or just feasible. This is in one-to-one correspondence
   // with a CpModelProto::variables repeated field and list the values of all
   // the variables.
   repeated int64 solution = 2;

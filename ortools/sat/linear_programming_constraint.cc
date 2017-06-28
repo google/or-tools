@@ -27,9 +27,16 @@ namespace sat {
 
 const double LinearProgrammingConstraint::kEpsilon = 1e-6;
 
-LinearProgrammingConstraint::LinearProgrammingConstraint(
-    IntegerTrail* integer_trail)
-    : integer_trail_(integer_trail) {
+LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
+    : integer_trail_(model->GetOrCreate<IntegerTrail>()) {
+  // TODO(user): Find a way to make GetOrCreate<TimeLimit>() construct it by
+  // default.
+  time_limit_ = model->Mutable<TimeLimit>();
+  if (time_limit_ == nullptr) {
+    model->SetSingleton(TimeLimit::Infinite());
+    time_limit_ = model->Mutable<TimeLimit>();
+  }
+
   if (!FLAGS_lp_constraint_use_dual_ray) {
     // The violation_sum_ variable will be the sum of constraints' violation.
     violation_sum_constraint_ = lp_data_.CreateNewConstraint();
@@ -74,27 +81,27 @@ void LinearProgrammingConstraint::SetCoefficient(ConstraintIndex ct,
   lp_data_.SetCoefficient(ct, cvar, coefficient);
 }
 
-void LinearProgrammingConstraint::SetObjective(IntegerVariable ivar,
-                                               bool is_minimization) {
+void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
+                                                          double coeff) {
   CHECK(!lp_constraint_is_registered_);
-  CHECK(!objective_is_defined_) << "Objective was set more than once.";
   objective_is_defined_ = true;
-  objective_cp_ = ivar;
-  objective_lp_ = GetOrCreateMirrorVariable(ivar);
-  objective_is_minimization_ = is_minimization;
+  objective_lp_.push_back(
+      std::make_pair(GetOrCreateMirrorVariable(ivar), coeff));
 }
 
 void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   DCHECK(!lp_constraint_is_registered_);
   lp_constraint_is_registered_ = true;
 
-  lp_data_.Scale(&scaler_);
-
-  // Note that we set the objective AFTER the scaling.
+  // Note that the order is important so that the lp objective is exactly
+  // lp_to_cp_objective_scale_ times the cp one.
   if (objective_is_defined_) {
-    lp_data_.SetObjectiveCoefficient(objective_lp_, 1.0);
-    lp_data_.SetMaximizationProblem(!objective_is_minimization_);
+    for (const auto& var_coeff : objective_lp_) {
+      lp_data_.SetObjectiveCoefficient(var_coeff.first, var_coeff.second);
+    }
   }
+  lp_data_.Scale(&scaler_);
+  lp_to_cp_objective_scale_ = lp_data_.ScaleObjective();
 
   if (!FLAGS_lp_constraint_use_dual_ray) {
     // Add all the individual violation variables. Note that it is important
@@ -175,15 +182,17 @@ bool LinearProgrammingConstraint::Propagate() {
 
   if (!FLAGS_lp_constraint_use_dual_ray) {
     if (objective_is_defined_) {
-      lp_data_.SetObjectiveCoefficient(objective_lp_, 0.0);
+      for (auto& var_coeff : objective_lp_) {
+        lp_data_.SetObjectiveCoefficient(var_coeff.first, 0.0);
+      }
     }
     lp_data_.SetObjectiveCoefficient(violation_sum_, 1.0);
+    lp_data_.SetObjectiveScalingFactor(1.0);
     lp_data_.SetVariableBounds(violation_sum_, 0.0,
                                std::numeric_limits<double>::infinity());
-    lp_data_.SetMaximizationProblem(false);
 
     // Feasibility deductions.
-    const auto status = simplex_.Solve(lp_data_, TimeLimit::Infinite().get());
+    const auto status = simplex_.Solve(lp_data_, time_limit_);
     CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "
                        << status.error_message();
     CHECK_EQ(simplex_.GetProblemStatus(), glop::ProblemStatus::OPTIMAL)
@@ -191,14 +200,14 @@ bool LinearProgrammingConstraint::Propagate() {
         << simplex_.GetProblemStatus();
 
     if (simplex_.GetVariableValue(violation_sum_) > kEpsilon) {  // infeasible.
-      FillIntegerReason(1.0);
+      FillReducedCostsReason();
       return integer_trail_->ReportConflict(integer_reason_);
     }
 
     // Reduced cost strengthening for feasibility.
-    ReducedCostStrengtheningDeductions(1.0, 0.0);
+    ReducedCostStrengtheningDeductions(0.0);
     if (!deductions_.empty()) {
-      FillIntegerReason(1.0);
+      FillReducedCostsReason();
       for (const IntegerLiteral deduction : deductions_) {
         if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
           return false;
@@ -210,8 +219,12 @@ bool LinearProgrammingConstraint::Propagate() {
     lp_data_.SetVariableBounds(violation_sum_, 0.0, 0.0);
     lp_data_.SetObjectiveCoefficient(violation_sum_, 0.0);
     if (objective_is_defined_) {
-      lp_data_.SetObjectiveCoefficient(objective_lp_, 1.0);
-      lp_data_.SetMaximizationProblem(!objective_is_minimization_);
+      for (auto& var_coeff : objective_lp_) {
+        const glop::ColIndex col = var_coeff.first;
+        lp_data_.SetObjectiveCoefficient(
+            col, var_coeff.second * scaler_.col_scale(col));
+      }
+      lp_to_cp_objective_scale_ = lp_data_.ScaleObjective();
     }
     for (int i = 0; i < num_vars; i++) {
       lp_solution_[i] = GetVariableValueAtCpScale(mirror_lp_variables_[i]);
@@ -222,7 +235,7 @@ bool LinearProgrammingConstraint::Propagate() {
     return true;
   }
 
-  const auto status = simplex_.Solve(lp_data_, TimeLimit::Infinite().get());
+  const auto status = simplex_.Solve(lp_data_, time_limit_);
   CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "
                      << status.error_message();
 
@@ -235,56 +248,31 @@ bool LinearProgrammingConstraint::Propagate() {
   // Optimality deductions if problem has an objective.
   if (objective_is_defined_ &&
       simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
-    const double objective_cp_lb =
-        static_cast<double>(integer_trail_->LowerBound(objective_cp_).value());
-    const double objective_cp_ub =
-        static_cast<double>(integer_trail_->UpperBound(objective_cp_).value());
-
-    // Try to filter optimal objective value.
-    const double objective_value = GetVariableValueAtCpScale(objective_lp_);
-    if (objective_is_minimization_) {
-      const double new_lb = std::ceil(objective_value - kEpsilon);
-      if (objective_cp_lb < new_lb) {
-        const IntegerValue new_int_lb(static_cast<IntegerValue>(new_lb));
-        FillIntegerReason(1.0);
-        const IntegerLiteral deduction =
-            IntegerLiteral::GreaterOrEqual(objective_cp_, new_int_lb);
-        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
-          return false;
-        }
-      }
-    } else {
-      const double new_ub = std::floor(objective_value + kEpsilon);
-      if (objective_cp_ub > new_ub) {
-        const IntegerValue new_int_ub(static_cast<IntegerValue>(new_ub));
-        FillIntegerReason(-1.0);
-        const IntegerLiteral deduction =
-            IntegerLiteral::LowerOrEqual(objective_cp_, new_int_ub);
-        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
-          return false;
-        }
+    // Try to filter optimal objective value. Note that GetObjectiveValue()
+    // already take care of the scaling so that it returns an objective in the
+    // CP world.
+    const double relaxed_optimal_objective = simplex_.GetObjectiveValue();
+    const IntegerValue old_lb = integer_trail_->LowerBound(objective_cp_);
+    const IntegerValue new_lb(
+        static_cast<int64>(std::ceil(relaxed_optimal_objective - kEpsilon)));
+    if (old_lb < new_lb) {
+      FillReducedCostsReason();
+      const IntegerLiteral deduction =
+          IntegerLiteral::GreaterOrEqual(objective_cp_, new_lb);
+      if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
+        return false;
       }
     }
 
     // Reduced cost strengthening.
-    const double objective_slack = objective_is_minimization_
-                                       ? objective_cp_ub - objective_value
-                                       : objective_value - objective_cp_lb;
-    const double objective_direction = objective_is_minimization_ ? 1.0 : -1.0;
-    ReducedCostStrengtheningDeductions(
-        objective_direction,
-        objective_slack * scaler_.col_scale(objective_lp_));
-
+    const double objective_cp_ub =
+        static_cast<double>(integer_trail_->UpperBound(objective_cp_).value());
+    ReducedCostStrengtheningDeductions(objective_cp_ub -
+                                       relaxed_optimal_objective);
     if (!deductions_.empty()) {
-      FillIntegerReason(objective_direction);
-
-      // Add the opposite bound of the variable used for strengthening.
-      const IntegerLiteral opposite_bound =
-          objective_is_minimization_
-              ? integer_trail_->UpperBoundAsLiteral(objective_cp_)
-              : integer_trail_->LowerBoundAsLiteral(objective_cp_);
-      integer_reason_.push_back(opposite_bound);
-
+      FillReducedCostsReason();
+      integer_reason_.push_back(
+          integer_trail_->UpperBoundAsLiteral(objective_cp_));
       for (const IntegerLiteral deduction : deductions_) {
         if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
           return false;
@@ -301,9 +289,8 @@ bool LinearProgrammingConstraint::Propagate() {
   return true;
 }
 
-void LinearProgrammingConstraint::FillIntegerReason(double direction) {
+void LinearProgrammingConstraint::FillReducedCostsReason() {
   integer_reason_.clear();
-
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
     // TODO(user): try to extend the bounds that are put in the
@@ -312,8 +299,7 @@ void LinearProgrammingConstraint::FillIntegerReason(double direction) {
     // feasible? If the violation minimum is 10 and a variable has rc 1,
     // then decreasing it by 9 would still leave the problem infeasible.
     // Using this could allow to generalize some explanations.
-    const double rc =
-        simplex_.GetReducedCost(mirror_lp_variables_[i]) * direction;
+    const double rc = simplex_.GetReducedCost(mirror_lp_variables_[i]);
     if (rc > kEpsilon) {
       integer_reason_.push_back(
           integer_trail_->LowerBoundAsLiteral(integer_variables_[i]));
@@ -326,10 +312,9 @@ void LinearProgrammingConstraint::FillIntegerReason(double direction) {
 
 void LinearProgrammingConstraint::FillDualRayReason() {
   integer_reason_.clear();
-
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
-    // TODO(user): Like for FillIntegerReason(), the bounds could be
+    // TODO(user): Like for FillReducedCostsReason(), the bounds could be
     // extended here. Actually, the "dual ray cost updates" is the reduced cost
     // of an optimal solution if we were optimizing one direction of one basic
     // variable. The simplex_ interface would need to be slightly extended to
@@ -347,14 +332,19 @@ void LinearProgrammingConstraint::FillDualRayReason() {
 }
 
 void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
-    double direction, double lp_objective_delta) {
+    double cp_objective_delta) {
   deductions_.clear();
 
+  // TRICKY: while simplex_.GetObjectiveValue() use the objective scaling factor
+  // stored in the lp_data_, all the other functions like GetReducedCost() or
+  // GetVariableValue() do not.
+  const double lp_objective_delta =
+      cp_objective_delta / lp_to_cp_objective_scale_;
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];
     const glop::ColIndex lp_var = mirror_lp_variables_[i];
-    const double rc = simplex_.GetReducedCost(lp_var) * direction;
+    const double rc = simplex_.GetReducedCost(lp_var);
     const double value = simplex_.GetVariableValue(lp_var);
     const double lp_other_bound = value + lp_objective_delta / rc;
     const double cp_other_bound = lp_other_bound / scaler_.col_scale(lp_var);

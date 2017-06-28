@@ -57,15 +57,8 @@ const int kUnsatTrailIndex = -1;
 class SatSolver {
  public:
   SatSolver();
-  explicit SatSolver(Trail* trail);
+  explicit SatSolver(Model* model);
   ~SatSolver();
-
-  static SatSolver* CreateInModel(Model* model) {
-    Trail* trail = model->GetOrCreate<Trail>();
-    SatSolver* solver = new SatSolver(trail);
-    model->TakeOwnership(solver);
-    return solver;
-  }
 
   // Parameters management. Note that calling SetParameters() will reset the
   // value of many heuristics. For instance:
@@ -136,8 +129,11 @@ class SatSolver {
 
   // Adds and registers the given propagator with the sat solver. Note that
   // during propagation, they will be called in the order they where added.
-  void AddPropagator(std::unique_ptr<SatPropagator> propagator);
-  void AddLastPropagator(std::unique_ptr<SatPropagator> propagator);
+  void AddPropagator(SatPropagator* propagator);
+  void AddLastPropagator(SatPropagator* propagator);
+  void TakePropagatorOwnership(std::unique_ptr<SatPropagator> propagator) {
+    owned_propagators_.push_back(std::move(propagator));
+  }
 
   // Gives a hint so the solver tries to find a solution with the given literal
   // set to true. Currently this take precedence over the phase saving heuristic
@@ -655,6 +651,10 @@ class SatSolver {
   std::string StatusString(Status status) const;
   std::string RunningStatisticsString() const;
 
+  // This is used by the old non-model constructor.
+  Model* model_;
+  std::unique_ptr<Model> owned_model_;
+
   BooleanVariable num_variables_;
 
   // All the clauses managed by the solver (initial and learned). This vector
@@ -686,8 +686,11 @@ class SatSolver {
   std::vector<SatPropagator*> propagators_;
 
   // Ordered list of propagators added with AddPropagator().
-  std::vector<std::unique_ptr<SatPropagator>> external_propagators_;
-  std::unique_ptr<SatPropagator> last_propagator_;
+  std::vector<SatPropagator*> external_propagators_;
+  SatPropagator* last_propagator_ = nullptr;
+
+  // For the old, non-model interface.
+  std::vector<std::unique_ptr<SatPropagator>> owned_propagators_;
 
   // Keep track of all binary clauses so they can be exported.
   bool track_binary_clauses_;
@@ -695,9 +698,6 @@ class SatSolver {
 
   // The solver trail.
   Trail* trail_;
-
-  // This is used by the non-model constructor to properly cleanup trail_.
-  std::unique_ptr<Trail> owned_trail_;
 
   // Used for debugging only. See SaveDebugAssignment().
   VariablesAssignment debug_assignment_;

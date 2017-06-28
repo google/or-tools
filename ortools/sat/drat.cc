@@ -13,12 +13,7 @@
 
 #include "ortools/sat/drat.h"
 
-#include "ortools/base/commandlineflags.h"
 #include "ortools/base/stringprintf.h"
-
-DEFINE_string(
-    drat_output, "",
-    "If non-empty, a proof in DRAT format will be written to this file.");
 
 namespace operations_research {
 namespace sat {
@@ -28,16 +23,6 @@ DratWriter::~DratWriter() {
     CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
     CHECK_OK(output_->Close(file::Defaults()));
   }
-}
-
-// static
-DratWriter* DratWriter::CreateInModel(Model* model) {
-  if (FLAGS_drat_output.empty()) return nullptr;
-  File* output;
-  CHECK_OK(file::Open(FLAGS_drat_output, "w", &output, file::Defaults()));
-  DratWriter* drat_writer = new DratWriter(/*in_binary_format=*/false, output);
-  model->TakeOwnership(drat_writer);
-  return drat_writer;
 }
 
 void DratWriter::ApplyMapping(

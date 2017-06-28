@@ -455,8 +455,9 @@ class LinearProgram {
   // Scales the problem using the given scaler.
   void Scale(SparseMatrixScaler* scaler);
 
-  // Scales the costs to always have a maximum cost magnitude of 1.0 and returns
-  // the used cost scaling factor.
+  // Scales the costs to always have a maximum cost magnitude of 1.0. The old
+  // cost of each variable can be retrieved by multiplying the new one with the
+  // returned factor. This also updates objective_scaling_factor().
   Fractional ScaleObjective();
 
   // Removes the given row indices from the LinearProgram.

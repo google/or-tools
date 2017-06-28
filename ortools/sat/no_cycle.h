@@ -16,7 +16,6 @@
 
 #include <vector>
 
-#include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 
@@ -38,13 +37,6 @@ class NoCyclePropagator : public SatPropagator {
         num_arcs_threshold_(std::numeric_limits<int64>::max()),
         include_propagated_arcs_in_graph_(true) {}
   ~NoCyclePropagator() final {}
-
-  static NoCyclePropagator* CreateInModel(Model* model) {
-    NoCyclePropagator* no_cycle = new NoCyclePropagator();
-    model->GetOrCreate<SatSolver>()->AddPropagator(
-        std::unique_ptr<NoCyclePropagator>(no_cycle));
-    return no_cycle;
-  }
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;

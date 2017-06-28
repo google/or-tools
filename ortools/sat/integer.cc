@@ -41,14 +41,10 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
     }
   }
 
-  // TODO(user): This case is annoying, so for now we want the caller to deal
-  // with it, hence the CHECK. We do not want to create a fixed Boolean
-  // variable, but we also do not want to complexify the API of
-  // FullDomainEncoding().
-  CHECK_NE(values.size(), 1);
-
   std::vector<Literal> literals;
-  if (values.size() == 2) {
+  if (values.size() == 1) {
+    literals.push_back(GetLiteralTrue());
+  } else if (values.size() == 2) {
     literals.push_back(GetOrCreateAssociatedLiteral(
         IntegerLiteral::LowerOrEqual(var, values[0])));
     literals.push_back(literals.back().Negated());
@@ -70,7 +66,12 @@ void IntegerEncoder::FullyEncodeVariableUsingGivenLiterals(
     const std::vector<IntegerValue>& values) {
   CHECK(!VariableIsFullyEncoded(var));
   CHECK(!literals.empty());
-  CHECK_NE(literals.size(), 1);
+
+  if (literals.size() == 1) {
+    full_encoding_index_[var] = full_encoding_.size();
+    full_encoding_.push_back({ValueLiteralPair(values[0], literals[0])});
+    return;
+  }
 
   // Sort the literals by values.
   std::vector<ValueLiteralPair> encoding;
@@ -1031,11 +1032,22 @@ void IntegerTrail::EnqueueLiteral(
   trail_->Enqueue(literal, propagator_id_);
 }
 
-GenericLiteralWatcher::GenericLiteralWatcher(
-    IntegerTrail* integer_trail, RevRepository<int>* rev_int_repository)
+GenericLiteralWatcher::GenericLiteralWatcher(Model* model)
     : SatPropagator("GenericLiteralWatcher"),
-      integer_trail_(integer_trail),
-      rev_int_repository_(rev_int_repository) {
+      integer_trail_(model->GetOrCreate<IntegerTrail>()) {
+  // TODO(user): Have a general mecanism to register "global" reversible
+  // classes and keep them synchronized with the search.
+  std::unique_ptr<RevRepository<int>> rev_int_repository(
+      new RevRepository<int>());
+  rev_int_repository_ = rev_int_repository.get();
+  model->SetSingleton(std::move(rev_int_repository));
+
+  // TODO(user): This propagator currently needs to be last because it is the
+  // only one enforcing that a fix-point is reached on the integer variables.
+  // Figure out a better interaction between the sat propagation loop and
+  // this one.
+  model->GetOrCreate<SatSolver>()->AddLastPropagator(this);
+
   integer_trail_->RegisterWatcher(&modified_vars_);
   queue_by_priority_.resize(2);  // Because default priority is 1.
 }

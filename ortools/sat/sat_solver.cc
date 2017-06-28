@@ -31,13 +31,14 @@
 namespace operations_research {
 namespace sat {
 
-SatSolver::SatSolver() : SatSolver(new Trail()) { owned_trail_.reset(trail_); }
+SatSolver::SatSolver() : SatSolver(new Model()) { owned_model_.reset(model_); }
 
-SatSolver::SatSolver(Trail* trail)
-    : num_variables_(0),
+SatSolver::SatSolver(Model* model)
+    : model_(model),
+      num_variables_(0),
       pb_constraints_(),
       track_binary_clauses_(false),
-      trail_(trail),
+      trail_(model->GetOrCreate<Trail>()),
       current_decision_level_(0),
       last_decision_or_backtrack_trail_index_(0),
       assumption_level_(0),
@@ -397,20 +398,20 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   }
 }
 
-void SatSolver::AddPropagator(std::unique_ptr<SatPropagator> propagator) {
+void SatSolver::AddPropagator(SatPropagator* propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   problem_is_pure_sat_ = false;
-  trail_->RegisterPropagator(propagator.get());
-  external_propagators_.push_back(std::move(propagator));
+  trail_->RegisterPropagator(propagator);
+  external_propagators_.push_back(propagator);
   InitializePropagators();
 }
 
-void SatSolver::AddLastPropagator(std::unique_ptr<SatPropagator> propagator) {
+void SatSolver::AddLastPropagator(SatPropagator* propagator) {
   CHECK_EQ(CurrentDecisionLevel(), 0);
   CHECK(last_propagator_ == nullptr);
   problem_is_pure_sat_ = false;
-  trail_->RegisterPropagator(propagator.get());
-  last_propagator_ = std::move(propagator);
+  trail_->RegisterPropagator(propagator);
+  last_propagator_ = propagator;
   InitializePropagators();
 }
 
@@ -1538,10 +1539,10 @@ void SatSolver::InitializePropagators() {
     propagators_.push_back(&pb_constraints_);
   }
   for (int i = 0; i < external_propagators_.size(); ++i) {
-    propagators_.push_back(external_propagators_[i].get());
+    propagators_.push_back(external_propagators_[i]);
   }
   if (last_propagator_ != nullptr) {
-    propagators_.push_back(last_propagator_.get());
+    propagators_.push_back(last_propagator_);
   }
 }
 

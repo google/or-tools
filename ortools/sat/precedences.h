@@ -39,27 +39,15 @@ namespace sat {
 // Another word is "separation logic".
 class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
  public:
-  PrecedencesPropagator(Trail* trail, IntegerTrail* integer_trail,
-                        GenericLiteralWatcher* watcher)
+  explicit PrecedencesPropagator(Model* model)
       : SatPropagator("PrecedencesPropagator"),
-        trail_(trail),
-        integer_trail_(integer_trail),
-        watcher_(watcher),
-        watcher_id_(watcher->Register(this)) {
+        trail_(model->GetOrCreate<Trail>()),
+        integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        watcher_(model->GetOrCreate<GenericLiteralWatcher>()),
+        watcher_id_(watcher_->Register(this)) {
+    model->GetOrCreate<SatSolver>()->AddPropagator(this);
     integer_trail_->RegisterWatcher(&modified_vars_);
-    watcher->SetPropagatorPriority(watcher_id_, 0);
-  }
-
-  static PrecedencesPropagator* CreateInModel(Model* model) {
-    PrecedencesPropagator* precedences = new PrecedencesPropagator(
-        model->GetOrCreate<Trail>(), model->GetOrCreate<IntegerTrail>(),
-        model->GetOrCreate<GenericLiteralWatcher>());
-
-    // TODO(user): Find a way to have more control on the order in which
-    // the propagators are added.
-    model->GetOrCreate<SatSolver>()->AddPropagator(
-        std::unique_ptr<PrecedencesPropagator>(precedences));
-    return precedences;
+    watcher_->SetPropagatorPriority(watcher_id_, 0);
   }
 
   bool Propagate() final;

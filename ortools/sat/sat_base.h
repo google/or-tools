@@ -224,15 +224,11 @@ struct AssignmentType {
 // and the information of each assignment.
 class Trail {
  public:
+  explicit Trail(Model* model) : Trail() {}
+
   Trail() : num_enqueues_(0) {
     current_info_.trail_index = 0;
     current_info_.level = 0;
-  }
-
-  static Trail* CreateInModel(Model* model) {
-    Trail* trail = new Trail();
-    model->TakeOwnership(trail);
-    return trail;
   }
 
   void Resize(int num_variables);

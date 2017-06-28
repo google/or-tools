@@ -105,7 +105,8 @@ BopOptimizerBase::Status GuidedSatFirstSolutionGenerator::SynchronizeIfNeeded(
       for (int i = 0; i < generators.size(); ++i) {
         propagator->AddSymmetry(std::move(generators[i]));
       }
-      sat_solver_->AddPropagator(std::move(propagator));
+      sat_solver_->AddPropagator(propagator.get());
+      sat_solver_->TakePropagatorOwnership(std::move(propagator));
     }
   }
 
