@@ -103,11 +103,11 @@ class SatCnfReader {
     return problem_name;
   }
 
-  int64 StringViewAtoi(const string_view& input) {
+  int64 StringPieceAtoi(string_view input) {
     // Hack: data() is not null terminated, but we do know that it points
     // inside a std::string where numbers are separated by " " and since atoi64 will
     // stop at the first invalid char, this works.
-    return atoi64(input.data());
+    return atoi64(input.data());  // NOLINT
   }
 
   void ProcessNewLine(const std::string& line, LinearBooleanProblem* problem) {
@@ -123,11 +123,11 @@ class SatCnfReader {
 
     if (words_[0] == "p") {
       if (words_[1] == "cnf" || words_[1] == "wcnf") {
-        num_variables_ = StringViewAtoi(words_[2]);
-        num_clauses_ = StringViewAtoi(words_[3]);
+        num_variables_ = StringPieceAtoi(words_[2]);
+        num_clauses_ = StringPieceAtoi(words_[3]);
         if (words_[1] == "wcnf") {
           is_wcnf_ = true;
-          hard_weight_ = (words_.size() > 4) ? StringViewAtoi(words_[4]) : 0;
+          hard_weight_ = (words_.size() > 4) ? StringPieceAtoi(words_[4]) : 0;
         }
       } else {
         // TODO(user): The ToString() is only required for the open source. Fix.
@@ -148,7 +148,7 @@ class SatCnfReader {
       int64 weight =
           (!is_wcnf_ && interpret_cnf_as_max_sat_) ? 1 : hard_weight_;
       for (int i = 0; i < size; ++i) {
-        const int64 signed_value = StringViewAtoi(words_[i]);
+        const int64 signed_value = StringPieceAtoi(words_[i]);
         if (i == 0 && is_wcnf_) {
           // Mathematically, a soft clause of weight 0 can be removed.
           if (signed_value == 0) {

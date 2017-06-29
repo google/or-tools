@@ -12,9 +12,9 @@ cc_binary(
     name = "cryptarithm",
     srcs = ["cryptarithm.cc"],
     deps = [
-        "@com_google_protobuf_cc//:protobuf",
         "//ortools/base",
         "//ortools/constraint_solver:cp",
+        "@com_google_protobuf_cc//:protobuf",
     ],
 )
 
@@ -230,7 +230,7 @@ cc_binary(
     srcs = ["integer_programming.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver:linear_solver",
+        "//ortools/linear_solver",
     ],
 )
 
@@ -309,7 +309,7 @@ cc_binary(
     copts = ["-DUSE_GLOP"],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver:linear_solver",
+        "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
     ],
 )
@@ -319,7 +319,7 @@ cc_binary(
     srcs = ["linear_solver_protocol_buffers.cc"],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver:linear_solver",
+        "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
     ],
 )
@@ -415,28 +415,28 @@ cc_binary(
         "sat_runner.cc",
     ],
     deps = [
-        "@com_google_protobuf_cc//:protobuf",
+        "//ortools/algorithms:sparse_permutation",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/base:random",
+        "//ortools/base:status",
+        "//ortools/base:strings",
+        "//ortools/base:threadpool",
+        "//ortools/lp_data:mps_reader",
+        "//ortools/lp_data:proto_utils",
         "//ortools/sat:boolean_problem",
         "//ortools/sat:boolean_problem_cc_proto",
-        #        "//ortools/sat:cp_model_proto",
-        #        "//ortools/sat:cp_model_solver",
+        "//ortools/sat:cp_model_cc_proto",
+        "//ortools/sat:cp_model_solver",
         "//ortools/sat:drat",
         "//ortools/sat:lp_utils",
         "//ortools/sat:optimization",
         "//ortools/sat:sat_solver",
         "//ortools/sat:simplification",
         "//ortools/sat:symmetry",
-        "//ortools/base",
-        "//ortools/base:file",
-        "//ortools/base:strings",
-        "//ortools/base:status",
-        "//ortools/base:random",
-        "//ortools/base:threadpool",
-        "//ortools/algorithms:sparse_permutation",
-        "//ortools/lp_data:mps_reader",
-        "//ortools/lp_data:proto_utils",
         "//ortools/util:filelineiter",
         "//ortools/util:time_limit",
+        "@com_google_protobuf_cc//:protobuf",
     ],
 )
 
@@ -470,7 +470,7 @@ cc_binary(
     ],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver:linear_solver",
+        "//ortools/linear_solver",
         "//ortools/linear_solver:linear_solver_cc_proto",
         "//ortools/lp_data:mps_reader",
     ],
@@ -491,7 +491,7 @@ cc_binary(
     copts = ["-DUSE_GLOP"],
     deps = [
         "//ortools/base",
-        "//ortools/linear_solver:linear_solver",
+        "//ortools/linear_solver",
     ],
 )
 
@@ -499,11 +499,11 @@ cc_binary(
     name = "tsp",
     srcs = ["tsp.cc"],
     deps = [
-        "@com_google_protobuf_cc//:protobuf",
         "//ortools/base",
         "//ortools/constraint_solver:cp",
         "//ortools/constraint_solver:routing",
         "//ortools/constraint_solver:routing_flags",
+        "@com_google_protobuf_cc//:protobuf",
     ],
 )
 
@@ -513,7 +513,6 @@ cc_binary(
         "weighted_tardiness_sat.cc",
     ],
     deps = [
-        "@com_google_protobuf_cc//:protobuf",
         "//ortools/base",
         "//ortools/base:file",
         "//ortools/base:strings",
@@ -526,5 +525,6 @@ cc_binary(
         "//ortools/sat:precedences",
         "//ortools/sat:sat_solver",
         "//ortools/util:filelineiter",
+        "@com_google_protobuf_cc//:protobuf",
     ],
 )
