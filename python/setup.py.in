@@ -1,4 +1,13 @@
+import os
 from setuptools import setup, find_packages, Extension
+from distutils.command.build import build as _build
+
+class build(_build):
+    sub_commands = [
+        ('build_ext', _build.has_ext_modules),
+        ('build_py', _build.has_pure_modules),
+        ('build_clib', _build.has_c_libraries),
+        ('build_scripts', _build.has_scripts)]
 
 
 SWIG_CXX_OPTS = "${CMAKE_SWIG_FLAGS}"
@@ -43,11 +52,26 @@ for module, _file in MODULE_MAP.items():
     )
     extensions.append(ext)
 
+modules = []
+for module, _file in MODULE_MAP.items():
+    _path = os.path.dirname(_file)
+    _path = _path.split('python')[0]
+    _path = _path.split('/')
+
+    lst = []
+    for __path in _path:
+        if __path:
+            lst.append(__path)
+    lst.append(module)
+    modules.append('.'.join(lst))
+
+
 with open('${README_FILE}') as f:
     long_description = f.read()
 
 setup(
     name="${PROJECT_NAME}",
+    cmdclass={'build': build},
     version="${PROJECT_VERSION}",
     description="Google OR-Tools python libraries and modules",
     long_description=long_description,
@@ -75,5 +99,6 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Software Development :: Libraries :: Python Modules'],
     packages=find_packages(),
-    ext_modules=extensions
+    ext_modules=extensions,
+    py_modules=modules,
 )
