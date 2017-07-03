@@ -45,8 +45,8 @@ DEFINE_string(params_file, "",
               "If this flag is set, the --params flag is ignored.");
 DEFINE_string(params, "", "Solver specific parameters");
 DEFINE_int64(time_limit_ms, 0,
-             "If stricitly positive, specifies a limit in ms on the solving"
-             " time.");
+             "If strictly positive, specifies a limit in ms on the solving "
+             "time. Otherwise, no time limit will be imposed.");
 DEFINE_string(forced_mps_format, "",
               "Set to force the mps format to use: free, fixed");
 

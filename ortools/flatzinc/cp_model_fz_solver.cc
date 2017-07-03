@@ -34,7 +34,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/table.h"
 
-DEFINE_string(cp_model_solver_params, "", "SatParameters as a text proto.");
+DEFINE_string(cp_sat_params, "", "SatParameters as a text proto.");
 
 namespace operations_research {
 namespace sat {
@@ -748,13 +748,14 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
 
   // Fill the objective.
   if (fz_model.objective() != nullptr) {
-    CpObjectiveProto* objective = m.proto.add_objectives();
+    CpObjectiveProto* objective = m.proto.mutable_objective();
+    objective->add_coeffs(1);
     if (fz_model.maximize()) {
-      objective->set_objective_var(
-          NegatedCpModelVariable(m.fz_var_to_index[fz_model.objective()]));
       objective->set_scaling_factor(-1);
+      objective->add_vars(
+          NegatedCpModelVariable(m.fz_var_to_index[fz_model.objective()]));
     } else {
-      objective->set_objective_var(m.fz_var_to_index[fz_model.objective()]);
+      objective->add_vars(m.fz_var_to_index[fz_model.objective()]);
     }
   }
 
@@ -766,9 +767,9 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // The order is important, we want the flag parameters to overwrite anything
   // set in m.parameters.
   sat::SatParameters flag_parameters;
-  CHECK(google::protobuf::TextFormat::ParseFromString(FLAGS_cp_model_solver_params,
+  CHECK(google::protobuf::TextFormat::ParseFromString(FLAGS_cp_sat_params,
                                             &flag_parameters))
-      << FLAGS_cp_model_solver_params;
+      << FLAGS_cp_sat_params;
   m.parameters.MergeFrom(flag_parameters);
   sat_model.GetOrCreate<SatSolver>()->SetParameters(m.parameters);
 

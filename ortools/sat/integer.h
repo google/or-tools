@@ -157,11 +157,7 @@ using InlinedIntegerLiteralVector = gtl::InlinedVector<IntegerLiteral, 2>;
 struct IntegerDomains
     : public ITIVector<IntegerVariable,
                        gtl::InlinedVector<ClosedInterval, 1>> {
-  static IntegerDomains* CreateInModel(Model* model) {
-    IntegerDomains* domains = new IntegerDomains();
-    model->TakeOwnership(domains);
-    return domains;
-  }
+  explicit IntegerDomains(Model* model) {}
 };
 
 // Each integer variable x will be associated with a set of literals encoding
@@ -184,18 +180,13 @@ struct IntegerDomains
 // though.
 class IntegerEncoder {
  public:
-  IntegerEncoder(SatSolver* sat_solver, IntegerDomains* domains)
-      : sat_solver_(sat_solver), domains_(domains), num_created_variables_(0) {}
+  explicit IntegerEncoder(Model* model)
+      : sat_solver_(model->GetOrCreate<SatSolver>()),
+        domains_(model->GetOrCreate<IntegerDomains>()),
+        num_created_variables_(0) {}
 
   ~IntegerEncoder() {
     VLOG(1) << "#variables created = " << num_created_variables_;
-  }
-
-  static IntegerEncoder* CreateInModel(Model* model) {
-    IntegerEncoder* encoder = new IntegerEncoder(
-        model->GetOrCreate<SatSolver>(), model->GetOrCreate<IntegerDomains>());
-    model->TakeOwnership(encoder);
-    return encoder;
   }
 
   // Fully encode a variable using its current initial domain.
@@ -332,6 +323,18 @@ class IntegerEncoder {
   // Adds the implications: Literal(before) <= associated_lit <= Literal(after).
   void AddImplications(IntegerLiteral i, Literal associated_lit);
 
+  // Get the literal always set to true, make it if it does not exist.
+  Literal GetLiteralTrue() {
+    DCHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
+    if (literal_index_true_ == kNoLiteralIndex) {
+      const Literal literal_true =
+          Literal(sat_solver_->NewBooleanVariable(), true);
+      literal_index_true_ = literal_true.Index();
+      sat_solver_->AddUnitClause(literal_true);
+    }
+    return Literal(literal_index_true_);
+  }
+
   SatSolver* sat_solver_;
   IntegerDomains* domains_;
 
@@ -359,6 +362,10 @@ class IntegerEncoder {
   std::unordered_map<IntegerVariable, int> full_encoding_index_;
   std::vector<std::vector<ValueLiteralPair>> full_encoding_;
 
+  // A literal that is always true, convenient to encode trivial domains.
+  // This will be lazily created when needed.
+  LiteralIndex literal_index_true_ = kNoLiteralIndex;
+
   DISALLOW_COPY_AND_ASSIGN(IntegerEncoder);
 };
 
@@ -367,23 +374,15 @@ class IntegerEncoder {
 // to maintain the reason for each propagation.
 class IntegerTrail : public SatPropagator {
  public:
-  IntegerTrail(IntegerDomains* domains, IntegerEncoder* encoder, Trail* trail)
+  explicit IntegerTrail(Model* model)
       : SatPropagator("IntegerTrail"),
         num_enqueues_(0),
-        domains_(domains),
-        encoder_(encoder),
-        trail_(trail) {}
-  ~IntegerTrail() final {}
-
-  static IntegerTrail* CreateInModel(Model* model) {
-    IntegerDomains* domains = model->GetOrCreate<IntegerDomains>();
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    Trail* trail = model->GetOrCreate<Trail>();
-    IntegerTrail* integer_trail = new IntegerTrail(domains, encoder, trail);
-    model->GetOrCreate<SatSolver>()->AddPropagator(
-        std::unique_ptr<IntegerTrail>(integer_trail));
-    return integer_trail;
+        domains_(model->GetOrCreate<IntegerDomains>()),
+        encoder_(model->GetOrCreate<IntegerEncoder>()),
+        trail_(model->GetOrCreate<Trail>()) {
+    model->GetOrCreate<SatSolver>()->AddPropagator(this);
   }
+  ~IntegerTrail() final {}
 
   // SatPropagator interface. These functions make sure the current bounds
   // information is in sync with the current solver literal trail. Any
@@ -709,27 +708,8 @@ class PropagatorInterface {
 // TODO(user): Move this to its own file. Add unit tests!
 class GenericLiteralWatcher : public SatPropagator {
  public:
-  explicit GenericLiteralWatcher(IntegerTrail* trail,
-                                 RevRepository<int>* rev_int_repository);
+  explicit GenericLiteralWatcher(Model* model);
   ~GenericLiteralWatcher() final {}
-
-  static GenericLiteralWatcher* CreateInModel(Model* model) {
-    // TODO(user): Have a general mecanism to register "global" reversible
-    // classes and keep them synchronized with the search.
-    std::unique_ptr<RevRepository<int>> rev_int_repository(
-        new RevRepository<int>());
-    GenericLiteralWatcher* watcher = new GenericLiteralWatcher(
-        model->GetOrCreate<IntegerTrail>(), rev_int_repository.get());
-    model->SetSingleton(std::move(rev_int_repository));
-
-    // TODO(user): This propagator currently needs to be last because it is the
-    // only one enforcing that a fix-point is reached on the integer variables.
-    // Figure out a better interaction between the sat propagation loop and
-    // this one.
-    model->GetOrCreate<SatSolver>()->AddLastPropagator(
-        std::unique_ptr<GenericLiteralWatcher>(watcher));
-    return watcher;
-  }
 
   // On propagate, the registered propagators will be called if they need to
   // until a fixed point is reached. Propagators with low ids will tend to be
@@ -955,12 +935,6 @@ class LiteralViews {
  public:
   explicit LiteralViews(Model* model) : model_(model) {}
 
-  static LiteralViews* CreateInModel(Model* model) {
-    LiteralViews* const views = new LiteralViews(model);
-    model->TakeOwnership(views);
-    return views;
-  }
-
   IntegerVariable GetIntegerView(const Literal lit) {
     const LiteralIndex index = lit.Index();
 
@@ -1054,13 +1028,6 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64 value) {
   };
 }
 
-// Associate the given literal to the given integer inequality.
-inline std::function<void(Model*)> Equality(IntegerLiteral i, Literal l) {
-  return [=](Model* model) {
-    model->GetOrCreate<IntegerEncoder>()->AssociateToIntegerLiteral(l, i);
-  };
-}
-
 // TODO(user): This is one of the rare case where it is better to use Equality()
 // rather than two Implications(). Maybe we should modify our internal
 // implementation to use half-reified encoding? that is do not propagate the
@@ -1077,7 +1044,7 @@ inline std::function<void(Model*)> Implication(Literal l, IntegerLiteral i) {
       model->Add(ClauseConstraint({l.Negated()}));
     } else {
       // TODO(user): Double check what happen when we associate a trivially
-      // true or false literal. This applies to Equality() too.
+      // true or false literal.
       IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
       const Literal current = encoder->GetOrCreateAssociatedLiteral(i);
       model->Add(Implication(l, current));
@@ -1085,27 +1052,15 @@ inline std::function<void(Model*)> Implication(Literal l, IntegerLiteral i) {
   };
 }
 
-// in_interval <=> v in [lb, ub].
-inline std::function<void(Model*)> ReifiedInInterval(IntegerVariable v,
-                                                     int64 lb, int64 ub,
-                                                     Literal in_interval) {
+// in_interval => v in [lb, ub].
+inline std::function<void(Model*)> ImpliesInInterval(Literal in_interval,
+                                                     IntegerVariable v,
+                                                     int64 lb, int64 ub) {
   return [=](Model* model) {
-    IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    const auto lb_lit = IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb));
-    const auto ub_lit = IntegerLiteral::LowerOrEqual(v, IntegerValue(ub));
-    if (lb <= model->Get(LowerBound(v))) {
-      if (ub >= model->Get(UpperBound(v))) {
-        model->GetOrCreate<SatSolver>()->AddUnitClause(in_interval);
-      } else {
-        model->Add(Equality(ub_lit, in_interval));
-      }
-    } else if (ub >= model->Get(UpperBound(v))) {
-      model->Add(Equality(lb_lit, in_interval));
-    } else {
-      const Literal is_ge_lb = encoder->GetOrCreateAssociatedLiteral(lb_lit);
-      const Literal is_le_ub = encoder->GetOrCreateAssociatedLiteral(ub_lit);
-      model->Add(ReifiedBoolAnd({is_ge_lb, is_le_ub}, in_interval));
-    }
+    model->Add(Implication(
+        in_interval, IntegerLiteral::GreaterOrEqual(v, IntegerValue(lb))));
+    model->Add(Implication(in_interval,
+                           IntegerLiteral::LowerOrEqual(v, IntegerValue(ub))));
   };
 }
 

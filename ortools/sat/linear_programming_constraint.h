@@ -22,6 +22,7 @@
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -62,34 +63,25 @@ class LinearProgrammingConstraint : public PropagatorInterface {
  public:
   typedef glop::RowIndex ConstraintIndex;
 
-  explicit LinearProgrammingConstraint(IntegerTrail* integer_trail);
-
-  // Creates a LinearProgrammingConstraint for templated GetOrCreate idiom.
-  static LinearProgrammingConstraint* CreateInModel(Model* model) {
-    IntegerTrail* trail = model->GetOrCreate<IntegerTrail>();
-    LinearProgrammingConstraint* constraint =
-        new LinearProgrammingConstraint(trail);
-    model->TakeOwnership(constraint);
-    return constraint;
-  }
+  explicit LinearProgrammingConstraint(Model* model);
 
   // User API, see header description.
   ConstraintIndex CreateNewConstraint(double lb, double ub);
-
-  void SetCoefficient(ConstraintIndex ct, IntegerVariable ivar,
-                      double coefficient);
 
   // TODO(user): Allow Literals to appear in linear constraints.
   // TODO(user): Calling SetCoefficient() twice on the same
   // (constraint, variable) pair will overwrite coefficients where accumulating
   // them might be desired, this is a common mistake, change API.
+  void SetCoefficient(ConstraintIndex ct, IntegerVariable ivar,
+                      double coefficient);
 
-  // Objective may or may not be defined. It can be defined only once,
-  // must be exactly one IntegerVariable, and can be either
-  // minimized (is_minimization = true) or maximized (is_minimization = false).
-  // TODO(user): change API for always minimization, so that
-  // maximization(var) = minimization(Negation(var)).
-  void SetObjective(IntegerVariable ivar, bool is_minimization);
+  // Set the coefficient of the variable in the objective. Calling it twice will
+  // overwrite the previous value.
+  void SetObjectiveCoefficient(IntegerVariable ivar, double coeff);
+
+  // The main objective variable should be equal to the linear sum of
+  // the arguments passed to SetObjectiveCoefficient().
+  void SetMainObjectiveVariable(IntegerVariable ivar) { objective_cp_ = ivar; }
 
   // PropagatorInterface API.
   bool Propagate() override;
@@ -101,22 +93,18 @@ class LinearProgrammingConstraint : public PropagatorInterface {
  private:
   // Generates a set of IntegerLiterals explaining why the best solution can not
   // be improved using reduced costs. This is used to generate explanations for
-  // both infeasibility and bounds deductions. The direction variable should be
-  // 1.0 if the last Solve() was a minimization, -1.0 if it was a maximization.
-  void FillIntegerReason(double direction);
+  // both infeasibility and bounds deductions.
+  void FillReducedCostsReason();
 
-  // Same as FillIntegerReason() but for the case of a DUAL_UNBOUNDED problem.
-  // This exploit the dual ray as a reason for the primal infeasiblity.
+  // Same as FillReducedCostReason() but for the case of a DUAL_UNBOUNDED
+  // problem. This exploit the dual ray as a reason for the primal infeasiblity.
   void FillDualRayReason();
 
   // Fills the deductions vector with reduced cost deductions that can be made
-  // from the current state of the LP solver. This should be called after
-  // Solve(): if the optimization was a minimization, the direction variable
-  // should be 1.0 and lp_objective_delta the objective's upper bound minus the
-  // optimal; if the optimization was a maximization, direction should be -1.0
-  // and lp_objective_delta the optimal minus the objective's lower bound.
-  void ReducedCostStrengtheningDeductions(double direction,
-                                          double lp_objective_delta);
+  // from the current state of the LP solver. The given delta should be the
+  // difference between the cp objective upper bound and lower bound given by
+  // the lp.
+  void ReducedCostStrengtheningDeductions(double cp_objective_delta);
 
   // Gets or creates an LP variable that mirrors a CP variable.
   // TODO(user): only accept positive variables to prevent having different
@@ -135,6 +123,7 @@ class LinearProgrammingConstraint : public PropagatorInterface {
 
   // For the scaling.
   glop::SparseMatrixScaler scaler_;
+  glop::Fractional lp_to_cp_objective_scale_;
 
   // violation_sum_ is used to simulate phase I of the simplex and be able to
   // do reduced cost strengthening on problem feasibility by using the sum of
@@ -155,8 +144,7 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   // then we will switch the objective between feasibility and optimization.
   bool objective_is_defined_ = false;
   IntegerVariable objective_cp_;
-  glop::ColIndex objective_lp_;
-  bool objective_is_minimization_;
+  std::vector<std::pair<glop::ColIndex, double>> objective_lp_;
 
   // Structures for propagators.
   IntegerTrail* integer_trail_;
@@ -170,6 +158,9 @@ class LinearProgrammingConstraint : public PropagatorInterface {
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;
+
+  // Time limit (shared with, owned by the sat solver).
+  TimeLimit* time_limit_;
 };
 
 }  // namespace sat

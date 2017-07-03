@@ -260,33 +260,6 @@ cc_library(
 )
 
 cc_library(
-    name = "sat_fz_solver",
-    srcs = ["sat_fz_solver.cc"],
-    hdrs = ["sat_fz_solver.h"],
-    deps = [
-        ":checker",
-        ":logging",
-        ":model",
-        ":solver",
-        "//ortools/base",
-        "//ortools/base:map_util",
-        "//ortools/sat:cp_constraints",
-        "//ortools/sat:cumulative",
-        "//ortools/sat:disjunctive",
-        "//ortools/sat:flow_costs",
-        "//ortools/sat:integer",
-        "//ortools/sat:integer_expr",
-        "//ortools/sat:intervals",
-        "//ortools/sat:linear_programming_constraint",
-        "//ortools/sat:model",
-        "//ortools/sat:optimization",
-        "//ortools/sat:sat_solver",
-        "//ortools/sat:table",
-        "//ortools/util:sorted_interval_list",
-    ],
-)
-
-cc_library(
     name = "cp_model_fz_solver",
     srcs = ["cp_model_fz_solver.cc"],
     hdrs = ["cp_model_fz_solver.h"],
@@ -323,7 +296,6 @@ cc_binary(
         ":parser_lib",
         ":presolve",
         ":reporting",
-        ":sat_fz_solver",
         ":solver",
         ":solver_util",
         "//ortools/base",

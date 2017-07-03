@@ -34,17 +34,9 @@ const IntervalVariable kNoIntervalVariable(-1);
 // provides many helper functions to add precedences relation between intervals.
 class IntervalsRepository {
  public:
-  IntervalsRepository(IntegerTrail* integer_trail,
-                      PrecedencesPropagator* precedences)
-      : integer_trail_(integer_trail), precedences_(precedences) {}
-
-  static IntervalsRepository* CreateInModel(Model* model) {
-    IntervalsRepository* intervals =
-        new IntervalsRepository(model->GetOrCreate<IntegerTrail>(),
-                                model->GetOrCreate<PrecedencesPropagator>());
-    model->TakeOwnership(intervals);
-    return intervals;
-  }
+  explicit IntervalsRepository(Model* model)
+      : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+        precedences_(model->GetOrCreate<PrecedencesPropagator>()) {}
 
   // Returns the current number of intervals in the repository.
   // The interval will always be identified by an integer in [0, num_intervals).

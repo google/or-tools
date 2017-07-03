@@ -30,6 +30,8 @@
 #include "ortools/base/threadpool.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/drat.h"
 #include "examples/cpp/opb_reader.h"
 #include "ortools/sat/optimization.h"
@@ -38,6 +40,7 @@
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/symmetry.h"
+#include "ortools/util/file_util.h"
 #include "ortools/util/time_limit.h"
 #include "ortools/base/random.h"
 #include "ortools/base/status.h"
@@ -106,10 +109,18 @@ DEFINE_bool(presolve, true,
 DEFINE_bool(probing, false, "If true, presolve the problem using probing.");
 
 
+DEFINE_bool(use_cp_model, true,
+            "Whether to interpret a linear program input as a CpModelProto or "
+            "to read by default a CpModelProto.");
+
 DEFINE_bool(reduce_memory_usage, false,
             "If true, do not keep a copy of the original problem in memory."
             "This reduce the memory usage, but disable the solution cheking at "
             "the end.");
+
+DEFINE_string(
+    drat_output, "",
+    "If non-empty, a proof in DRAT format will be written to this file.");
 
 namespace operations_research {
 namespace sat {
@@ -126,7 +137,8 @@ double GetScaledTrivialBestBound(const LinearBooleanProblem& problem) {
   return AddOffsetAndScaleObjectiveValue(problem, best_bound);
 }
 
-void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
+void LoadBooleanProblem(const std::string& filename, LinearBooleanProblem* problem,
+                        CpModelProto* cp_model) {
   if (strings::EndsWith(filename, ".opb") ||
       strings::EndsWith(filename, ".opb.bz2")) {
     OpbReader reader;
@@ -145,8 +157,12 @@ void LoadBooleanProblem(std::string filename, LinearBooleanProblem* problem) {
     if (!reader.Load(filename, problem)) {
       LOG(FATAL) << "Cannot load file '" << filename << "'.";
     }
+  } else if (FLAGS_use_cp_model) {
+    LOG(INFO) << "Reading a CpModelProto.";
+    *cp_model = ReadFileToProtoOrDie<CpModelProto>(filename);
   } else {
-    file::ReadFileToProtoOrDie(filename, problem);
+    LOG(INFO) << "Reading a LinearBooleanProblem.";
+    *problem = ReadFileToProtoOrDie<LinearBooleanProblem>(filename);
   }
 }
 
@@ -178,13 +194,19 @@ int Run() {
         << FLAGS_params;
   }
 
-  Model model;
-  DratWriter* drat_writer = model.GetOrCreate<DratWriter>();
 
   // Initialize the solver.
   std::unique_ptr<SatSolver> solver(new SatSolver());
-  solver->SetDratWriter(drat_writer);
   solver->SetParameters(parameters);
+
+  // Create a DratWriter?
+  std::unique_ptr<DratWriter> drat_writer;
+  if (!FLAGS_drat_output.empty()) {
+    File* output;
+    CHECK_OK(file::Open(FLAGS_drat_output, "w", &output, file::Defaults()));
+    drat_writer.reset(new DratWriter(/*in_binary_format=*/false, output));
+    solver->SetDratWriter(drat_writer.get());
+  }
 
   // The global time limit.
   std::unique_ptr<TimeLimit> time_limit(TimeLimit::FromParameters(parameters));
@@ -195,7 +217,21 @@ int Run() {
 
   // Read the problem.
   LinearBooleanProblem problem;
-  LoadBooleanProblem(FLAGS_input, &problem);
+  CpModelProto cp_model;
+  LoadBooleanProblem(FLAGS_input, &problem, &cp_model);
+
+  // TODO(user): clean this hack. Ideally LinearBooleanProblem should be
+  // completely replaced by the more general CpModelProto.
+  if (cp_model.variables_size() != 0) {
+    Model model;
+    model.GetOrCreate<SatSolver>()->SetParameters(parameters);
+    model.SetSingleton(std::move(time_limit));
+    LOG(INFO) << CpModelStats(cp_model);
+    const CpSolverResponse response = SolveCpModel(cp_model, &model);
+    LOG(INFO) << CpSolverResponseStats(response);
+    exit(EXIT_SUCCESS);
+  }
+
   if (FLAGS_strict_validity) {
     const util::Status status = ValidateBooleanProblem(problem);
     if (!status.ok()) {
@@ -255,7 +291,8 @@ int Run() {
     for (int i = 0; i < generators.size(); ++i) {
       propagator->AddSymmetry(std::move(generators[i]));
     }
-    solver->AddPropagator(std::move(propagator));
+    solver->AddPropagator(propagator.get());
+    solver->TakePropagatorOwnership(std::move(propagator));
   }
 
   // Optimize?
@@ -292,7 +329,7 @@ int Run() {
     parameters.set_log_search_progress(true);
     solver->SetParameters(parameters);
     if (FLAGS_presolve) {
-      result = SolveWithPresolve(&solver, &solution, drat_writer);
+      result = SolveWithPresolve(&solver, &solution, drat_writer.get());
       if (result == SatSolver::MODEL_SAT) {
         CHECK(IsAssignmentValid(problem, solution));
       }

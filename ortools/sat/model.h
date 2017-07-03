@@ -64,8 +64,7 @@ class Model {
 
   // Returns an object of type T that is unique to this model (this is a bit
   // like a "local" singleton). This returns an already created instance or
-  // create a new one if needed using the T::CreateInModel(Model* model)
-  // function of the class T.
+  // create a new one if needed using the T(Model* model) constructor.
   //
   // This works a bit like in a dependency injection framework and allows to
   // really easily wire all the classes that make up a solver together. For
@@ -73,23 +72,29 @@ class Model {
   // or both, it can depend on a Watcher class to register itself in order to
   // be called when needed and so on.
   //
-  // IMPORTANT: the CreateInModel() functiond shouldn't form a cycle between
+  // IMPORTANT: the Model* constructors function shouldn't form a cycle between
   // each other, otherwise this will crash the program.
+  //
+  // TODO(user): Rename to GetOrCreateSingleton().
   template <typename T>
   T* GetOrCreate() {
     const size_t type_id = FastTypeId<T>();
     if (!ContainsKey(singletons_, type_id)) {
-      // Note that it is up to CreateInModel() to call model->TakeOwnership()
-      // of the returned pointer.
-      //
-      // TODO(user): Always take ownership of the pointer instead. That would
-      // requires some cleanup, but it is probably a safer solution and would
-      // allow SetSingleton() to change an instance dynamically.
-      T* new_t = T::CreateInModel(this);
+      // TODO(user): directly store std::unique_ptr<> in singletons_?
+      T* new_t = new T(this);
       singletons_[type_id] = new_t;
+      TakeOwnership(new_t);
       return new_t;
     }
     return static_cast<T*>(FindOrDie(singletons_, type_id));
+  }
+
+  // This returns a non-singleton object owned by the model.
+  template <typename T>
+  T* Create() {
+    T* new_t = new T(this);
+    TakeOwnership(new_t);
+    return new_t;
   }
 
   // Registers a given instance of type T as a "local singleton" for this type.

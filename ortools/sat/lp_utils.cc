@@ -205,44 +205,21 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     // Note that here we set the scaling factor for the inverse operation of
     // getting the "true" objective value from the scaled one. Hence the
     // inverse.
-    auto* objective = cp_model->add_objectives();
-    objective->set_offset(mp_model.objective_offset() * scaling_factor / gcd);
-    objective->set_scaling_factor(1.0 / scaling_factor * gcd);
-    objective->set_objective_var(cp_model->variables_size());
-    {
-      auto* objective_var = cp_model->add_variables();
-      objective_var->set_name("objective");
-      objective_var->add_domain(-kMaxObjective);
-      objective_var->add_domain(kMaxObjective);
-    }
-
-    // Link the objective variable with a linear constraint.
-    {
-      auto* objective_constraint = cp_model->add_constraints();
-      auto* objective_arg = objective_constraint->mutable_linear();
-      objective_constraint->set_name("objective");
-      objective_arg->add_domain(0);
-      objective_arg->add_domain(0);
-      for (int i = 0; i < num_variables; ++i) {
-        const MPVariableProto& mp_var = mp_model.variable(i);
-        const int64 value =
-            static_cast<int64>(
-                std::round(mp_var.objective_coefficient() * scaling_factor)) /
-            gcd;
-        if (value != 0) {
-          objective_arg->add_vars(i);
-          objective_arg->add_coeffs(value);
-        }
+    auto* objective = cp_model->mutable_objective();
+    const int mult = mp_model.maximize() ? -1 : 1;
+    objective->set_offset(mp_model.objective_offset() * scaling_factor / gcd *
+                          mult);
+    objective->set_scaling_factor(1.0 / scaling_factor * gcd * mult);
+    for (int i = 0; i < num_variables; ++i) {
+      const MPVariableProto& mp_var = mp_model.variable(i);
+      const int64 value =
+          static_cast<int64>(
+              std::round(mp_var.objective_coefficient() * scaling_factor)) /
+          gcd;
+      if (value != 0) {
+        objective->add_vars(i);
+        objective->add_coeffs(value * mult);
       }
-      objective_arg->add_vars(objective->objective_var());
-      objective_arg->add_coeffs(-1);
-    }
-
-    // If the problem was a maximization one, we need to modify the objective.
-    if (mp_model.maximize()) {
-      objective->set_objective_var(-objective->objective_var() - 1);
-      objective->set_scaling_factor(-objective->scaling_factor());
-      objective->set_offset(-objective->offset());
     }
   }
 

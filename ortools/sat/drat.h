@@ -35,10 +35,6 @@ class DratWriter {
         output_(output) {}
   ~DratWriter();
 
-  // This tries to open the FLAGS_drat_file file and if it succeed it will
-  // return a non-nullptr DratWriter class.
-  static DratWriter* CreateInModel(Model* model);
-
   // During the presolve step, variable get deleted and the set of non-deleted
   // variable is remaped in a dense set. This allows to keep track of that and
   // always output the DRAT clauses in term of the original variables.

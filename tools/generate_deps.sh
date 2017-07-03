@@ -1,7 +1,7 @@
 main_dir=$2
 
 # List all files on ortools/$main_dir
-all_cc=`ls ortools/$main_dir/*.cc`
+all_cc=`ls ortools/$main_dir/*.cc | grep -v test.cc`
 all_h=`ls ortools/$main_dir/*.h`
 if ls ortools/$main_dir/*proto 1> /dev/null 2>&1; then
     all_proto=`ls ortools/$main_dir/*.proto`

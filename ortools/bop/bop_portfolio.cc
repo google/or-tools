@@ -307,7 +307,8 @@ void PortfolioOptimizer::CreateOptimizers(
     for (int i = 0; i < generators.size(); ++i) {
       propagator->AddSymmetry(std::move(generators[i]));
     }
-    sat_propagator_.AddPropagator(std::move(propagator));
+    sat_propagator_.AddPropagator(propagator.get());
+    sat_propagator_.TakePropagatorOwnership(std::move(propagator));
   }
 
   const int max_num_optimizers =

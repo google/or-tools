@@ -149,6 +149,38 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateObjective(const CpModelProto& model,
+                         const CpObjectiveProto& obj) {
+  // TODO(user): share the code with ValidateLinearConstraint().
+  if (obj.vars_size() == 1 && obj.coeffs(0) == 1) return "";
+  int64 sum_min = 0;
+  int64 sum_max = 0;
+  for (int i = 0; i < obj.vars_size(); ++i) {
+    const int ref = obj.vars(i);
+    const auto& var_proto = model.variables(PositiveRef(ref));
+    const int64 min_domain = var_proto.domain(0);
+    const int64 max_domain = var_proto.domain(var_proto.domain_size() - 1);
+    const int64 coeff = RefIsPositive(ref) ? obj.coeffs(i) : -obj.coeffs(i);
+    const int64 prod1 = CapProd(min_domain, coeff);
+    const int64 prod2 = CapProd(max_domain, coeff);
+
+    // Note that we use min/max with zero to disallow "alternative" terms and
+    // be sure that we cannot have an overflow if we do the computation in a
+    // different order.
+    sum_min = CapAdd(sum_min, std::min(0ll, std::min(prod1, prod2)));
+    sum_max = CapAdd(sum_max, std::max(0ll, std::max(prod1, prod2)));
+    for (const int64 v : {prod1, prod2, sum_min, sum_max}) {
+      // When introducing the objective variable, we use a [...] domain so we
+      // need to be more defensive here to make sure no overflow can happen in
+      // linear constraint propagator.
+      if (v == kint64max / 2 || v == kint64min / 2) {
+        return "Possible integer overflow in objective: " + obj.DebugString();
+      }
+    }
+  }
+  return "";
+}
+
 }  // namespace
 
 std::string ValidateCpModel(const CpModelProto& model) {
@@ -186,12 +218,14 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
     }
   }
-  for (const CpObjectiveProto& objective : model.objectives()) {
-    const int v = objective.objective_var();
-    if (!VariableReferenceIsValid(model, v)) {
-      return StrCat("Out of bound objective variable ", v, " : ",
-                    objective.ShortDebugString());
+  if (model.has_objective()) {
+    for (const int v : model.objective().vars()) {
+      if (!VariableReferenceIsValid(model, v)) {
+        return StrCat("Out of bound objective variable ", v, " : ",
+                      model.objective().ShortDebugString());
+      }
     }
+    RETURN_IF_NOT_EMPTY(ValidateObjective(model, model.objective()));
   }
 
   return "";

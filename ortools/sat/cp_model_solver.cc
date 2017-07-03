@@ -70,8 +70,10 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto) {
 
   // Add the objectives and search heuristics variables that needs to be
   // referenceable as integer even if they are only used as Booleans.
-  for (const CpObjectiveProto& objective : model_proto.objectives()) {
-    references.variables.insert(objective.objective_var());
+  if (model_proto.has_objective()) {
+    for (const int obj_var : model_proto.objective().vars()) {
+      references.variables.insert(obj_var);
+    }
   }
   for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
     for (const int var : strategy.variables()) {
@@ -124,6 +126,16 @@ class ModelWithMapping {
     return integers_[PositiveRef(i)] != kNoIntegerVariable;
   }
 
+  // TODO(user): This does not returns true for [0,1] Integer variable that
+  // never appear as a literal elsewhere. This is not ideal because in
+  // LoadLinearConstraint() we probably still want to create the associated
+  // Boolean and maybe not even create the [0,1] integer variable if it is not
+  // used.
+  bool IsBoolean(int i) const {
+    CHECK_LT(PositiveRef(i), booleans_.size());
+    return booleans_[PositiveRef(i)] != kNoBooleanVariable;
+  }
+
   IntegerVariable Integer(int i) const {
     CHECK_LT(PositiveRef(i), integers_.size());
     const IntegerVariable var = integers_[PositiveRef(i)];
@@ -146,7 +158,7 @@ class ModelWithMapping {
   }
 
   sat::Literal Literal(int i) const {
-    CHECK_LT(PositiveRef(i), integers_.size());
+    CHECK_LT(PositiveRef(i), booleans_.size());
     return sat::Literal(booleans_[PositiveRef(i)], RefIsPositive(i));
   }
 
@@ -214,6 +226,8 @@ class ModelWithMapping {
   bool IgnoreConstraint(const ConstraintProto* ct) const {
     return ContainsKey(ct_to_ignore_, ct);
   }
+
+  Model* model() const { return model_; }
 
  private:
   void ExtractEncoding(const CpModelProto& model_proto);
@@ -741,8 +755,29 @@ void LoadLinearConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
     const int64 lb = ct.linear().domain(0);
     const int64 ub = ct.linear().domain(1);
     if (!HasEnforcementLiteral(ct)) {
-      if (lb != kint64min) m->Add(WeightedSumGreaterOrEqual(vars, coeffs, lb));
-      if (ub != kint64max) m->Add(WeightedSumLowerOrEqual(vars, coeffs, ub));
+      // Detect if there is only Booleans in order to use a more efficient
+      // propagator. TODO(user): we should probably also implement an
+      // half-reified version of this constraint.
+      bool all_booleans = true;
+      std::vector<LiteralWithCoeff> cst;
+      for (int i = 0; i < vars.size(); ++i) {
+        const int ref = ct.linear().vars(i);
+        if (!m->IsBoolean(ref)) {
+          all_booleans = false;
+          continue;
+        }
+        cst.push_back({m->Literal(ref), coeffs[i]});
+      }
+      if (all_booleans) {
+        m->Add(BooleanLinearConstraint(lb, ub, &cst));
+      } else {
+        if (lb != kint64min) {
+          m->Add(WeightedSumGreaterOrEqual(vars, coeffs, lb));
+        }
+        if (ub != kint64max) {
+          m->Add(WeightedSumLowerOrEqual(vars, coeffs, ub));
+        }
+      }
     } else {
       const Literal is_true = m->Literal(ct.enforcement_literal(0));
       if (lb != kint64min) {
@@ -859,8 +894,59 @@ void LoadCumulativeConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   m->Add(Cumulative(intervals, demands, capacity));
 }
 
+// If a variable is constant and its value appear in no other variable domains,
+// then the literal encoding the index and the one encoding the target at this
+// value are equivalent.
+void DetectEquivalencesInElementConstraint(const ConstraintProto& ct,
+                                           ModelWithMapping* m) {
+  IntegerEncoder* encoder = m->GetOrCreate<IntegerEncoder>();
+  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
+
+  const IntegerVariable index = m->Integer(ct.element().index());
+  const IntegerVariable target = m->Integer(ct.element().target());
+  const std::vector<IntegerVariable> vars = m->Integers(ct.element().vars());
+
+  if (m->Get(IsFixed(index))) return;
+
+  std::vector<ClosedInterval> union_of_non_constant_domains;
+  std::map<IntegerValue, int> constant_to_num;
+  for (const auto literal_value : m->Add(FullyEncodeVariable(index))) {
+    const int i = literal_value.value.value();
+    if (m->Get(IsFixed(vars[i]))) {
+      const IntegerValue value(m->Get(Value(vars[i])));
+      constant_to_num[value]++;
+    } else {
+      union_of_non_constant_domains = UnionOfSortedDisjointIntervals(
+          union_of_non_constant_domains,
+          integer_trail->InitialVariableDomain(vars[i]));
+    }
+  }
+
+  // Bump the number if the constant appear in union_of_non_constant_domains.
+  for (const auto entry : constant_to_num) {
+    if (SortedDisjointIntervalsContain(union_of_non_constant_domains,
+                                       entry.first.value())) {
+      constant_to_num[entry.first]++;
+    }
+  }
+
+  // Use the literal from the index encoding to encode the target at the
+  // "unique" values.
+  for (const auto literal_value : m->Add(FullyEncodeVariable(index))) {
+    const int i = literal_value.value.value();
+    if (!m->Get(IsFixed(vars[i]))) continue;
+
+    const IntegerValue value(m->Get(Value(vars[i])));
+    if (constant_to_num[value] == 1) {
+      const Literal r = literal_value.literal;
+      encoder->AssociateToIntegerEqualValue(r, target, value);
+    }
+  }
+}
+
 // TODO(user): Be more efficient when the element().vars() are constants.
-// Ideally we should avoid creating them as integer variable...
+// Ideally we should avoid creating them as integer variable since we don't
+// use them.
 void LoadElementConstraintBounds(const ConstraintProto& ct,
                                  ModelWithMapping* m) {
   const IntegerVariable index = m->Integer(ct.element().index());
@@ -886,11 +972,17 @@ void LoadElementConstraintBounds(const ConstraintProto& ct,
     selectors.push_back(literal_value.literal);
     const Literal r = literal_value.literal;
 
-    // TODO(user): Be more efficient if one of the two is a constant. Or handle
-    // that directly in the model function.
     if (vars[i] == target) continue;
-    m->Add(ConditionalLowerOrEqualWithOffset(vars[i], target, 0, r));
-    m->Add(ConditionalLowerOrEqualWithOffset(target, vars[i], 0, r));
+    if (m->Get(IsFixed(target))) {
+      const int64 value = m->Get(Value(target));
+      m->Add(ImpliesInInterval(r, vars[i], value, value));
+    } else if (m->Get(IsFixed(vars[i]))) {
+      const int64 value = m->Get(Value(vars[i]));
+      m->Add(ImpliesInInterval(r, target, value, value));
+    } else {
+      m->Add(ConditionalLowerOrEqualWithOffset(vars[i], target, 0, r));
+      m->Add(ConditionalLowerOrEqualWithOffset(target, vars[i], 0, r));
+    }
   }
   m->Add(PartialIsOneOfVar(target, possible_vars, selectors));
 }
@@ -997,6 +1089,8 @@ void LoadElementConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
         m->Get(IsFixed(variable)) || encoder->VariableIsFullyEncoded(variable);
     if (is_full) num_AC_variables++;
   }
+
+  DetectEquivalencesInElementConstraint(ct, m);
   if (target_is_AC || num_AC_variables >= num_vars - 1) {
     LoadElementConstraintAC(ct, m);
   } else {
@@ -1403,8 +1497,49 @@ void FillSolutionInResponse(const CpModelProto& model_proto,
   }
 }
 
+namespace {
+IntegerVariable GetOrCreateVariableEqualToSumOf(
+    Model* model, const std::vector<std::pair<IntegerVariable, int64>>& terms) {
+  if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
+  if (terms.size() == 1 && terms.front().second == 1) {
+    return terms.front().first;
+  }
+  if (terms.size() == 1 && terms.front().second == -1) {
+    return NegationOf(terms.front().first);
+  }
+
+  // Create a new variable equal to the sum, with a tight domain.
+  int64 sum_min = 0;
+  int64 sum_max = 0;
+
+  for (const std::pair<IntegerVariable, int64> var_coeff : terms) {
+    const int64 min_domain = model->Get(LowerBound(var_coeff.first));
+    const int64 max_domain = model->Get(UpperBound(var_coeff.first));
+    const int64 coeff = var_coeff.second;
+    const int64 prod1 = min_domain * coeff;
+    const int64 prod2 = max_domain * coeff;
+    sum_min += std::min(prod1, prod2);
+    sum_max += std::max(prod1, prod2);
+  }
+  IntegerVariable new_var = model->Add(NewIntegerVariable(sum_min, sum_max));
+
+  // Link new variables with the linear terms.
+  std::vector<IntegerVariable> vars;
+  std::vector<int64> coeffs;
+  for (const auto& term : terms) {
+    vars.push_back(term.first);
+    coeffs.push_back(term.second);
+  }
+  vars.push_back(new_var);
+  coeffs.push_back(-1);
+  model->Add(FixedWeightedSum(vars, coeffs, 0));
+  return new_var;
+}
+}  // namespace
+
 // Adds one LinearProgrammingConstraint per connected component of the model.
-void AddLPConstraints(const CpModelProto& model_proto, ModelWithMapping* m) {
+IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
+                                 ModelWithMapping* m) {
   const int num_constraints = model_proto.constraints().size();
   const int num_variables = model_proto.variables().size();
 
@@ -1457,15 +1592,17 @@ void AddLPConstraints(const CpModelProto& model_proto, ModelWithMapping* m) {
 
   // Dispatch every constraint to its LinearProgrammingConstraint.
   std::unordered_map<int, LinearProgrammingConstraint*> representative_to_lp_constraint;
+  std::unordered_map<int, std::vector<std::pair<IntegerVariable, int64>>>
+      representative_to_cp_terms;
+  std::vector<std::pair<IntegerVariable, int64>> top_level_cp_terms;
   std::vector<LinearProgrammingConstraint*> lp_constraints;
-  IntegerTrail* integer_trail = m->GetOrCreate<IntegerTrail>();
   for (int i = 0; i < num_constraints; i++) {
     if (constraint_has_lp_representation[i]) {
       const auto& ct = model_proto.constraints(i);
       const int id = components.GetClassRepresentative(i);
       if (components_to_size[id] <= 1) continue;
       if (!ContainsKey(representative_to_lp_constraint, id)) {
-        auto* lp = new LinearProgrammingConstraint(integer_trail);
+        auto* lp = m->model()->Create<LinearProgrammingConstraint>();
         representative_to_lp_constraint[id] = lp;
         lp_constraints.push_back(lp);
       }
@@ -1474,25 +1611,56 @@ void AddLPConstraints(const CpModelProto& model_proto, ModelWithMapping* m) {
   }
 
   // Add the objective.
-  if (model_proto.objectives_size() != 0) {
-    const int var = model_proto.objectives(0).objective_var();
-    const int id = components.GetClassRepresentative(get_var_index(var));
-    if (ContainsKey(representative_to_lp_constraint, id)) {
-      representative_to_lp_constraint[id]->SetObjective(m->Integer(var), true);
+  int num_components_containing_objective = 0;
+  if (model_proto.has_objective()) {
+    // First pass: set objective coefficients on the lp constraints, and store
+    // the cp terms in one vector per component.
+    for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+      const int var = model_proto.objective().vars(i);
+      const IntegerVariable cp_var = m->Integer(var);
+      const int64 coeff = model_proto.objective().coeffs(i);
+      const int id = components.GetClassRepresentative(get_var_index(var));
+      if (ContainsKey(representative_to_lp_constraint, id)) {
+        representative_to_lp_constraint[id]->SetObjectiveCoefficient(cp_var,
+                                                                     coeff);
+        representative_to_cp_terms[id].push_back(std::make_pair(cp_var, coeff));
+      } else {
+        // Component is too small. We still need to store the objective term.
+        top_level_cp_terms.push_back(std::make_pair(cp_var, coeff));
+      }
+    }
+    // Second pass: Build the cp sub-objectives per component.
+    for (const auto& it : representative_to_cp_terms) {
+      const int id = it.first;
+      LinearProgrammingConstraint* lp =
+          FindOrDie(representative_to_lp_constraint, id);
+      const std::vector<std::pair<IntegerVariable, int64>>& terms = it.second;
+      const IntegerVariable sub_obj_var =
+          GetOrCreateVariableEqualToSumOf(m->model(), terms);
+      top_level_cp_terms.push_back(std::make_pair(sub_obj_var, 1));
+      lp->SetMainObjectiveVariable(sub_obj_var);
+      num_components_containing_objective++;
     }
   }
 
-  // Register LP constraints and transfer their ownership to the CP model.
+  const IntegerVariable main_objective_var =
+      GetOrCreateVariableEqualToSumOf(m->model(), top_level_cp_terms);
+
+  // Register LP constraints. Note that this needs to be done after all the
+  // constraints have been added.
   for (auto* lp_constraint : lp_constraints) {
-    m->TakeOwnership(lp_constraint);
     lp_constraint->RegisterWith(m->GetOrCreate<GenericLiteralWatcher>());
   }
 
   VLOG_IF(1, !lp_constraints.empty())
       << "Added " << lp_constraints.size() << " LP constraints.";
+  VLOG_IF(1, num_components_containing_objective > 1)
+      << "Objective split into " << num_components_containing_objective
+      << " components";
+  return main_objective_var;
 }
 
-// The function responsible for implementing the choosen search strategy.
+// The function responsible for implementing the chosen search strategy.
 //
 // TODO(user): expose and unit-test, it seems easy to get the order wrong, and
 // that would not change the correctness.
@@ -1590,69 +1758,22 @@ const std::function<LiteralIndex()> ConstructSearchStrategy(
   };
 }
 
-// TODO(user): Also consider linear inequality where the objective is minimized
-// in the good direction.
 void ExtractLinearObjective(const CpModelProto& model_proto,
                             ModelWithMapping* m,
                             std::vector<IntegerVariable>* linear_vars,
                             std::vector<IntegerValue>* linear_coeffs) {
-  CHECK(!model_proto.objectives().empty());
-  const CpObjectiveProto obj = model_proto.objectives(0);
-  const IntegerVariable objective_var = m->Integer(obj.objective_var());
-
-  // Default linear objective if we don't find any linear equality defining it.
-  *linear_vars = {objective_var};
-  *linear_coeffs = {IntegerValue(1)};
-
-  // TODO(user): Expand the linear equation recursively in order to have
-  // as much term as possible?
-  for (const ConstraintProto& ct : model_proto.constraints()) {
-    // Skip everything that is not a linear equality constraint.
-    if (!ct.enforcement_literal().empty()) continue;
-    if (ct.constraint_case() != ConstraintProto::ConstraintCase::kLinear) {
-      continue;
-    }
-    if (ct.linear().domain().size() != 2) continue;
-    if (ct.linear().domain(0) != ct.linear().domain(1)) continue;
-
-    // Find out if objective_var appear in this constraint.
-    bool present = false;
-    int64 objective_coeff;
-    const int num_terms = ct.linear().vars_size();
-    for (int i = 0; i < num_terms; ++i) {
-      const int ref = ct.linear().vars(i);
-      const int64 coeff = ct.linear().coeffs(i);
-      if (PositiveRef(ref) == PositiveRef(obj.objective_var())) {
-        CHECK(!present) << "Duplicate variables not supported";
-        present = true;
-        objective_coeff = (ref == obj.objective_var()) ? coeff : -coeff;
-      }
-    }
-
-    // We use the longest equality we can find.
-    // TODO(user): Deal with objective_coeff with a magnitude greater than 1?
-    if (present && std::abs(objective_coeff) == 1 &&
-        num_terms > linear_vars->size() + 1) {
-      linear_vars->clear();
-      linear_coeffs->clear();
-      const int64 rhs = ct.linear().domain(0);
-      if (rhs != 0) {
-        linear_vars->push_back(m->Add(NewIntegerVariable(rhs, rhs)));
-        linear_coeffs->push_back(IntegerValue(objective_coeff == 1 ? 1 : -1));
-      }
-      for (int i = 0; i < num_terms; ++i) {
-        const int ref = ct.linear().vars(i);
-        if (PositiveRef(ref) != PositiveRef(obj.objective_var())) {
-          linear_vars->push_back(m->Integer(ref));
-          const IntegerValue coeff(ct.linear().coeffs(i));
-          linear_coeffs->push_back(objective_coeff == 1 ? -coeff : coeff);
-        }
-      }
-    }
+  CHECK(model_proto.has_objective());
+  const CpObjectiveProto& obj = model_proto.objective();
+  linear_vars->reserve(obj.vars_size());
+  linear_coeffs->reserve(obj.vars_size());
+  for (int i = 0; i < obj.vars_size(); ++i) {
+    linear_vars->push_back(m->Integer(obj.vars(i)));
+    linear_coeffs->push_back(IntegerValue(obj.coeffs(i)));
   }
 }
 
 CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
+                                      bool display_fixing_constraints,
                                       Model* model) {
   // Timing.
   WallTimer wall_timer;
@@ -1667,7 +1788,7 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
   // We will add them all at once after model_proto is loaded.
   model->GetOrCreate<IntegerEncoder>()->DisableImplicationBetweenLiteral();
 
-  // Instanciate all the needed variables.
+  // Instantiate all the needed variables.
   const VariableUsage usage = ComputeVariableUsage(model_proto);
   ModelWithMapping m(model_proto, usage, model);
 
@@ -1698,10 +1819,10 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
     }
 
     // We propagate after each new Boolean constraint but not the integer
-    // ones. So we call Propagate() manually here. TODO(user): Do that
-    // automatically?
+    // ones. So we call Propagate() manually here.
+    // TODO(user): Do that automatically?
     model->GetOrCreate<SatSolver>()->Propagate();
-    if (trail->Index() > old_num_fixed) {
+    if (display_fixing_constraints && trail->Index() > old_num_fixed) {
       VLOG(1) << "Constraint fixed " << trail->Index() - old_num_fixed
               << " Boolean variable(s): " << ct.DebugString();
     }
@@ -1723,9 +1844,21 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
     return response;
   }
 
-  // Linearize some part of the problem and register LP constraint(s).
+  // Create an objective variable and its associated linear constraint if
+  // needed.
+  IntegerVariable objective_var = kNoIntegerVariable;
+
   if (parameters.use_global_lp_constraint()) {
-    AddLPConstraints(model_proto, &m);
+    // Linearize some part of the problem and register LP constraint(s).
+    objective_var = AddLPConstraints(model_proto, &m);
+  } else if (model_proto.has_objective()) {
+    const CpObjectiveProto& obj = model_proto.objective();
+    std::vector<std::pair<IntegerVariable, int64>> terms;
+    terms.reserve(obj.vars_size());
+    for (int i = 0; i < obj.vars_size(); ++i) {
+      terms.push_back(std::make_pair(m.Integer(obj.vars(i)), obj.coeffs(i)));
+    }
+    objective_var = GetOrCreateVariableEqualToSumOf(m.model(), terms);
   }
 
   model->GetOrCreate<IntegerEncoder>()
@@ -1736,11 +1869,10 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
   if (model_proto.search_strategy().empty()) {
     std::vector<IntegerVariable> decisions;
     for (const int i : usage.integers) {
-      if (!model_proto.objectives().empty()) {
+      if (model_proto.has_objective()) {
         // Make sure we try to fix the objective to its lowest value first.
-        const int obj = model_proto.objectives(0).objective_var();
-        if (PositiveRef(i) == PositiveRef(obj)) {
-          decisions.push_back(m.Integer(obj));
+        if (m.Integer(i) == NegationOf(objective_var)) {
+          decisions.push_back(objective_var);
           continue;
         }
       }
@@ -1773,7 +1905,7 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
   // Solve.
   int num_solutions = 0;
   SatSolver::Status status;
-  if (model_proto.objectives_size() == 0) {
+  if (!model_proto.has_objective()) {
     status = SolveIntegerProblemWithLazyEncoding(
         /*assumptions=*/{}, next_decision, model);
     if (status == SatSolver::MODEL_SAT) {
@@ -1781,9 +1913,7 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
     }
   } else {
     // Optimization problem.
-    CHECK_EQ(model_proto.objectives_size(), 1);
-    const CpObjectiveProto obj = model_proto.objectives(0);
-    const IntegerVariable objective_var = m.Integer(obj.objective_var());
+    const CpObjectiveProto& obj = model_proto.objective();
     const auto solution_observer =
         [&model_proto, &response, &num_solutions, &obj, &m,
          objective_var](const Model& sat_model) {
@@ -1800,15 +1930,19 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
       std::vector<IntegerVariable> linear_vars;
       std::vector<IntegerValue> linear_coeffs;
       ExtractLinearObjective(model_proto, &m, &linear_vars, &linear_coeffs);
+#if defined(USE_CBC) || defined(USE_SCIPe)
       if (parameters.optimize_with_max_hs()) {
         status = MinimizeWithHittingSetAndLazyEncoding(
             VLOG_IS_ON(1), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
       } else {
+#endif  //  defined(USE_CBC) || defined(USE_SCIPe)
         status = MinimizeWithCoreAndLazyEncoding(
             VLOG_IS_ON(1), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
+#if defined(USE_CBC) || defined(USE_SCIPe)
       }
+#endif  //  defined(USE_CBC) || defined(USE_SCIPe)
     } else {
       status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           /*log_info=*/false, objective_var, next_decision, solution_observer,
@@ -1837,7 +1971,7 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
       break;
     }
     case SatSolver::MODEL_SAT: {
-      response.set_status(model_proto.objectives_size() != 0
+      response.set_status(model_proto.has_objective()
                               ? CpSolverStatus::OPTIMAL
                               : CpSolverStatus::MODEL_SAT);
       break;
@@ -1880,7 +2014,7 @@ CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
       return response;
     }
   }
-  return SolveCpModelInternal(model_proto, model);
+  return SolveCpModelInternal(model_proto, true, model);
 }
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -1905,7 +2039,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   VLOG(1) << CpModelStats(presolved_proto);
 
   CpSolverResponse response =
-      SolveCpModelWithoutPresolve(presolved_proto, model);
+      SolveCpModelInternal(presolved_proto, true, model);
   if (response.status() != CpSolverStatus::MODEL_SAT &&
       response.status() != CpSolverStatus::OPTIMAL) {
     return response;
@@ -1937,7 +2071,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     postsolve_model.Add(operations_research::sat::NewSatParameters(params));
   }
   const CpSolverResponse postsolve_response =
-      SolveCpModelInternal(mapping_proto, &postsolve_model);
+      SolveCpModelInternal(mapping_proto, false, &postsolve_model);
   CHECK_EQ(postsolve_response.status(), CpSolverStatus::MODEL_SAT);
   response.clear_solution();
   response.clear_solution_lower_bounds();
