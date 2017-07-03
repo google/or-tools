@@ -307,6 +307,7 @@ int main(int argc, char** argv) {
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
   operations_research::fz::FixAndParseParameters(&argc, &argv);
+  google::InitGoogleLogging(argv[0]);
   // We allow piping model through stdin.
   std::string input;
   if (FLAGS_read_from_stdin) {
