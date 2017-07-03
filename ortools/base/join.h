@@ -32,7 +32,7 @@ char* NumToBuffer(T i, char* buffer) {
   std::stringstream ss;
   ss << i;
   const std::string s = ss.str();
-  strcpy(buffer, s.c_str());  // NOLINT
+  strncpy(buffer, s.c_str(), s.size());  // NOLINT
   return buffer + s.size();
 }
 
@@ -57,8 +57,10 @@ struct AlphaNum {
       : piece(digits, NumToBuffer(u64, digits) - &digits[0]) {}
   AlphaNum(float f)  // NOLINT(runtime/explicit)
       : piece(digits, strlen(NumToBuffer(f, digits))) {}
-  AlphaNum(double f)  // NOLINT(runtime/explicit)
-      : piece(digits, strlen(NumToBuffer(f, digits))) {}
+  AlphaNum(double f)  {  // NOLINT(runtime/explicit)
+    sprintf(digits, "%lf\n", f);
+    piece.set(digits);
+  }
   AlphaNum(const char* c_str) : piece(c_str) {}   // NOLINT(runtime/explicit)
   AlphaNum(const operations_research::string_view& pc)
       : piece(pc) {}                              // NOLINT(runtime/explicit)
