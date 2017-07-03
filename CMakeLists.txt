@@ -40,7 +40,6 @@ ENDFOREACH()
 
 IF(BUILD_PY)
     FIND_PACKAGE(${PROJECT_NAME} QUIET)
-
     IF(NOT ${PROJECT_NAME}_FOUND)
         SET(BUILD_CXX ON)
     ELSE()
@@ -50,17 +49,15 @@ IF(BUILD_PY)
     ENDIF()
 ENDIF()
 
-FIND_PACKAGE(Threads REQUIRED)
+FIND_PACKAGE(Threads REQUIRED QUIET)
 
-FIND_PACKAGE(Protobuf ${Protobuf_VERSION})
+FIND_PACKAGE(Protobuf ${Protobuf_VERSION} QUIET)
 IF(BUILD_DEPS)
     SET(Protobuf_FOUND False)
 ENDIF()
 IF(NOT Protobuf_FOUND)
     MESSAGE(STATUS "Did not find system protobuf or forced build. Building as an external project")
     INCLUDE(cmake/external/protobuf.cmake)
-ELSE()
-    MESSAGE("Protobuf_FOUND: ${Protobuf_FOUND}")
 ENDIF()
 INCLUDE_DIRECTORIES(${Protobuf_INCLUDE_DIRS})
 SET(PROTOBUF_IMPORT_DIRS ${PROJECT_SOURCE_DIR})
@@ -74,8 +71,8 @@ ENDIF()
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 
-MESSAGE(STATUS "Builds cxx library: ${BUILD_CXX}")
-MESSAGE(STATUS "Builds python library: ${BUILD_PY}")
+MESSAGE(STATUS "Build cxx library: ${BUILD_CXX}")
+MESSAGE(STATUS "Build python library: ${BUILD_PY}")
 
 IF(BUILD_CXX)
     INCLUDE(cmake/cpp.cmake)
