@@ -2,7 +2,7 @@ from setuptools import setup, find_packages, Extension
 
 
 SWIG_CXX_OPTS = "${CMAKE_SWIG_FLAGS}"
-PROJ_INC_DIRS = "${CMAKE_INCLUDE_DIRS}"
+PROJ_INC_DIRS = ".;/usr/include;/usr/local/include"
 MODULE_MAP = {
     'pywrapcp': 'ortools/constraint_solver/python/routing.i',
     'pywrapknapsack_solver': 'ortools/algorithms/python/knapsack_solver.i',
