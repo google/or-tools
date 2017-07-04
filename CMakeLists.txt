@@ -2,10 +2,15 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.8)
 
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
-PROJECT(ortools LANGUAGES CXX)
-SET(CMAKE_CXX_STANDARD 17)
-
+INCLUDE(cmake/utils.cmake)
+INCLUDE(GenerateExportHeader)
 INCLUDE(ExternalProject)
+INCLUDE(CMakePackageConfigHelpers)
+
+SET_VERSION(VERSION)
+
+PROJECT(ortools LANGUAGES CXX VERSION ${VERSION})
+SET(CMAKE_CXX_STANDARD 17)
 
 IF(UNIX)
     IF(NOT APPLE)
@@ -23,6 +28,7 @@ ENDIF()
 
 SET(BUILD_CXX OFF CACHE BOOL "Build C++ library")
 SET(BUILD_PY OFF CACHE BOOL "Build Python library")
+SET(BUILD_DEPS OFF CACHE BOOL "Force re-build of all dependencies")
 
 SET(DOWNLOAD_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/downloads" CACHE PATH "Location where external projects will be downloaded.")
 MARK_AS_ADVANCED(DOWNLOAD_LOCATION)
@@ -33,8 +39,7 @@ FOREACH(DEPENDENCY Protobuf gflags glog Cbc CoinUtils Osi Clp Cgl)
 ENDFOREACH()
 
 IF(BUILD_PY)
-    FIND_PACKAGE(${PROJECT_NAME})
-
+    FIND_PACKAGE(${PROJECT_NAME} QUIET)
     IF(NOT ${PROJECT_NAME}_FOUND)
         SET(BUILD_CXX ON)
     ELSE()
@@ -44,11 +49,14 @@ IF(BUILD_PY)
     ENDIF()
 ENDIF()
 
-FIND_PACKAGE(Threads REQUIRED)
+FIND_PACKAGE(Threads REQUIRED QUIET)
 
-FIND_PACKAGE(Protobuf ${Protobuf_VERSION})
+FIND_PACKAGE(Protobuf ${Protobuf_VERSION} QUIET)
+IF(BUILD_DEPS)
+    SET(Protobuf_FOUND False)
+ENDIF()
 IF(NOT Protobuf_FOUND)
-    MESSAGE(STATUS "Did not find system protobuf. Building as an external project")
+    MESSAGE(STATUS "Did not find system protobuf or forced build. Building as an external project")
     INCLUDE(cmake/external/protobuf.cmake)
 ENDIF()
 INCLUDE_DIRECTORIES(${Protobuf_INCLUDE_DIRS})
@@ -63,8 +71,8 @@ ENDIF()
 
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 
-MESSAGE(STATUS "Builds cxx library: ${BUILD_CXX}")
-MESSAGE(STATUS "Builds python library: ${BUILD_PY}")
+MESSAGE(STATUS "Build cxx library: ${BUILD_CXX}")
+MESSAGE(STATUS "Build python library: ${BUILD_PY}")
 
 IF(BUILD_CXX)
     INCLUDE(cmake/cpp.cmake)
