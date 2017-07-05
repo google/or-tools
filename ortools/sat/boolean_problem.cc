@@ -234,12 +234,12 @@ void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
   const LinearObjective& objective = problem.objective();
   double max_weight = 0;
   for (int i = 0; i < objective.literals_size(); ++i) {
-    max_weight = std::max(max_weight,
-                          fabs(static_cast<double>(objective.coefficients(i))));
+    double weight = std::fabs(static_cast<double>(objective.coefficients(i)));
+    max_weight = std::max(max_weight, weight);
   }
   for (int i = 0; i < objective.literals_size(); ++i) {
     const double weight =
-        fabs(static_cast<double>(objective.coefficients(i))) / max_weight;
+        std::fabs(static_cast<double>(objective.coefficients(i))) / max_weight;
     if (objective.coefficients(i) > 0) {
       solver->SetAssignmentPreference(Literal(objective.literals(i)).Negated(),
                                       weight);
