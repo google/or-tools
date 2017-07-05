@@ -1175,7 +1175,14 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
   int num_solutions = 0;
   IntegerValue best_objective = integer_trail->UpperBound(objective_var);
   const auto process_solution = [&]() {
-    const IntegerValue objective(model->Get(Value(objective_var)));
+    // We don't assume that objective_var is linked with its linear term, so
+    // we recompute the objective here.
+    IntegerValue objective(0);
+    for (int i = 0; i < variables.size(); ++i) {
+      objective +=
+          coefficients[i] * IntegerValue(model->Get(Value(variables[i])));
+    }
+
     if (objective >= best_objective && num_solutions > 0) return true;
 
     ++num_solutions;
@@ -1290,6 +1297,12 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
           iter, objective_lb.value(), implied_objective_lb.value(),
           (best_objective - objective_lb).value(), assumptions.size(),
           stratified_threshold.value(), max_depth);
+    }
+
+    // Abort if we have a solution and a gap of zero.
+    if (implied_objective_lb == best_objective && num_solutions > 0) {
+      result = SatSolver::MODEL_SAT;
+      break;
     }
 
     // Solve under the assumptions.
@@ -1451,7 +1464,13 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   int num_solutions = 0;
   IntegerValue best_objective = integer_trail->UpperBound(objective_var);
   const auto process_solution = [&]() {
-    const IntegerValue objective(model->Get(Value(objective_var)));
+    // We don't assume that objective_var is linked with its linear term, so
+    // we recompute the objective here.
+    IntegerValue objective(0);
+    for (int i = 0; i < variables.size(); ++i) {
+      objective +=
+          coefficients[i] * IntegerValue(model->Get(Value(variables[i])));
+    }
     if (objective >= best_objective) return;
     ++num_solutions;
     best_objective = objective;
@@ -1645,142 +1664,6 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
              : result;
 }
 #endif  // defined(USE_CBC) || defined(USE_SCIP)
-
-SatSolver::Status MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
-    bool log_info, const std::vector<Literal>& literals,
-    const std::vector<int64>& int64_coeffs,
-    const std::function<LiteralIndex()>& next_decision,
-    const std::function<void(const Model&)>& feasible_solution_observer,
-    Model* model) {
-  // Timing.
-  WallTimer wall_timer;
-  UserTimer user_timer;
-  wall_timer.Start();
-  user_timer.Start();
-
-  // TODO(user): Rename Coefficient into IntegerValue everywhere.
-  std::vector<Coefficient> coeffs(int64_coeffs.begin(), int64_coeffs.end());
-
-  // Create one initial nodes per variables with cost.
-  Coefficient lower_bound(0);
-  Coefficient upper_bound(kint64max);
-  Coefficient offset(0);
-  std::deque<EncodingNode> repository;
-  std::vector<EncodingNode*> nodes =
-      CreateInitialEncodingNodes(literals, coeffs, &offset, &repository);
-
-  // Print the number of variables with a non-zero cost.
-  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-  if (log_info) {
-    LOG(INFO) << StringPrintf("c #weights:%zu #vars:%d", nodes.size(),
-                              sat_solver->NumVariables());
-  }
-
-  // This is used by the "stratified" approach.
-  Coefficient stratified_lower_bound(0);
-  if (sat_solver->parameters().max_sat_stratification() ==
-      SatParameters::STRATIFICATION_DESCENT) {
-    // In this case, we initialize it to the maximum assumption weights.
-    for (EncodingNode* n : nodes) {
-      stratified_lower_bound = std::max(stratified_lower_bound, n->weight());
-    }
-  }
-
-  // Start the algorithm.
-  int max_depth = 0;
-  std::string previous_core_info = "";
-  SatSolver::Status result = SatSolver::MODEL_SAT;  // Not important.
-  for (int iter = 0;; ++iter) {
-    const std::vector<Literal> assumptions = ReduceNodesAndExtractAssumptions(
-        upper_bound, stratified_lower_bound, &lower_bound, &nodes, sat_solver);
-
-    // No assumptions with the current stratified_lower_bound, lower it if
-    // possible.
-    if (assumptions.empty()) {
-      stratified_lower_bound =
-          MaxNodeWeightSmallerThan(nodes, stratified_lower_bound);
-      if (stratified_lower_bound > 0) {
-        --iter;
-        continue;
-      }
-    }
-
-    // Display the progress.
-    const std::string gap_string =
-        (upper_bound == kCoefficientMax)
-            ? ""
-            : StringPrintf(" gap:%lld", (upper_bound - lower_bound).value());
-    if (log_info) {
-      LOG(INFO) << StringPrintf(
-          "c iter:%d [%s] lb:%lld%s assumptions:%zu depth:%d", iter,
-          previous_core_info.c_str(), lower_bound.value() - offset.value(),
-          gap_string.c_str(), nodes.size(), max_depth);
-    }
-
-    // No assumptions means that there is no solution with cost < upper_bound.
-    if (assumptions.empty()) {
-      if (log_info) LOG(INFO) << "c no assumptions.";
-      result = (lower_bound == upper_bound) ? SatSolver::MODEL_SAT
-                                            : SatSolver::MODEL_UNSAT;
-      break;
-    }
-
-    // Solve under the assumptions.
-    result =
-        SolveIntegerProblemWithLazyEncoding(assumptions, next_decision, model);
-    if (result == SatSolver::MODEL_SAT) {
-      // Extract the new solution and save it if it is the best found so far.
-      Coefficient obj(0);
-      for (int i = 0; i < literals.size(); ++i) {
-        if (sat_solver->Assignment().LiteralIsTrue(literals[i])) {
-          obj += coeffs[i];
-        }
-      }
-      if (obj + offset < upper_bound) {
-        if (feasible_solution_observer != nullptr) {
-          feasible_solution_observer(*model);
-        }
-        upper_bound = obj + offset;
-        if (log_info) LOG(INFO) << "c ub:" << upper_bound;
-      }
-
-      // If not all assumptions where taken, continue with a lower stratified
-      // bound. Otherwise we have an optimal solution.
-      stratified_lower_bound =
-          MaxNodeWeightSmallerThan(nodes, stratified_lower_bound);
-      if (stratified_lower_bound == 0) break;
-    }
-    if (result != SatSolver::ASSUMPTIONS_UNSAT) break;
-
-    // We have a new core.
-    std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
-    if (sat_solver->parameters().minimize_core()) {
-      MinimizeCore(sat_solver, &core);
-    }
-
-    // Compute the min weight of all the nodes in the core.
-    // The lower bound will be increased by that much.
-    const Coefficient min_weight = ComputeCoreMinWeight(nodes, core);
-    previous_core_info =
-        StringPrintf("core:%zu mw:%lld", core.size(), min_weight.value());
-
-    // Increase stratified_lower_bound according to the parameters.
-    if (stratified_lower_bound < min_weight &&
-        sat_solver->parameters().max_sat_stratification() ==
-            SatParameters::STRATIFICATION_ASCENT) {
-      stratified_lower_bound = min_weight;
-    }
-
-    ProcessCore(core, min_weight, &repository, &nodes, sat_solver);
-    max_depth = std::max(max_depth, nodes.back()->depth());
-  }
-
-  if (log_info) {
-    LogSolveInfo(result, *sat_solver, wall_timer, user_timer,
-                 upper_bound.value(), lower_bound.value() - offset.value());
-  }
-  return result;
-}
 
 }  // namespace sat
 }  // namespace operations_research

@@ -232,20 +232,21 @@ bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
 void UseObjectiveForSatAssignmentPreference(const LinearBooleanProblem& problem,
                                             SatSolver* solver) {
   const LinearObjective& objective = problem.objective();
-  double max_weight = 0;
-  for (int i = 0; i < objective.literals_size(); ++i) {
-    max_weight = std::max(max_weight,
-                          fabs(static_cast<double>(objective.coefficients(i))));
+  CHECK_EQ(objective.literals_size(), objective.coefficients_size());
+  int64 max_abs_weight = 0;
+  for (const int64 coefficient : objective.coefficients()) {
+    max_abs_weight = std::max(max_abs_weight, std::abs(coefficient));
   }
+  const double max_abs_weight_double = max_abs_weight;
   for (int i = 0; i < objective.literals_size(); ++i) {
-    const double weight =
-        fabs(static_cast<double>(objective.coefficients(i))) / max_weight;
-    if (objective.coefficients(i) > 0) {
-      solver->SetAssignmentPreference(Literal(objective.literals(i)).Negated(),
-                                      weight);
-    } else {
-      solver->SetAssignmentPreference(Literal(objective.literals(i)), weight);
-    }
+    const Literal literal(objective.literals(i));
+    const int64 coefficient = objective.coefficients(i);
+    const double abs_weight = std::abs(coefficient) / max_abs_weight_double;
+    // Because this is a minimization problem, we prefer to assign a Boolean
+    // variable to its "low" objective value. So if a literal has a positive
+    // weight when true, we want to set it to false.
+    solver->SetAssignmentPreference(
+        coefficient > 0 ? literal.Negated() : literal, abs_weight);
   }
 }
 

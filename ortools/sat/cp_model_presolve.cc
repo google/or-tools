@@ -1474,15 +1474,14 @@ void PresolveCpModel(const CpModelProto& initial_model,
   // TODO(user): Insert in main loop.
   if (context.working_model->has_objective() &&
       context.working_model->objective().vars_size() == 1) {
-    CpObjectiveProto* const mutable_objective =
-        context.working_model->mutable_objective();
-    const int initial_obj_var = mutable_objective->vars(0);
-    const int64 initial_coeff = mutable_objective->coeffs(0);
-    const double initial_offset = mutable_objective->offset();
+    const int initial_obj_ref = context.working_model->objective().vars(0);
+
     // TODO(user): Expand the linear equation recursively in order to have
     // as much term as possible? This would also enable expanding an objective
     // with multiple terms.
     int expanded_linear_index = -1;
+    int64 objective_coeff_in_expanded_constraint;
+    int64 size_of_expanded_constraint = 0;
     for (int ct_index = 0; ct_index < context.working_model->constraints_size();
          ++ct_index) {
       const ConstraintProto& ct = context.working_model->constraints(ct_index);
@@ -1494,59 +1493,72 @@ void PresolveCpModel(const CpModelProto& initial_model,
       if (ct.linear().domain().size() != 2) continue;
       if (ct.linear().domain(0) != ct.linear().domain(1)) continue;
 
-      // Find out if initial_obj_var appear in this constraint.
+      // Find out if initial_obj_ref appear in this constraint.
       bool present = false;
       int64 objective_coeff;
       const int num_terms = ct.linear().vars_size();
       for (int i = 0; i < num_terms; ++i) {
         const int ref = ct.linear().vars(i);
         const int64 coeff = ct.linear().coeffs(i);
-        if (PositiveRef(ref) == PositiveRef(initial_obj_var)) {
+        if (PositiveRef(ref) == PositiveRef(initial_obj_ref)) {
           CHECK(!present) << "Duplicate variables not supported";
           present = true;
-          objective_coeff = ref == initial_obj_var ? coeff : -coeff;
+          objective_coeff = (ref == initial_obj_ref) ? coeff : -coeff;
         }
       }
 
       // We use the longest equality we can find.
       // TODO(user): Deal with objective_coeff with a magnitude greater than 1?
-      //             Accept when initial_coeff divides objective_coeff.
       if (present && std::abs(objective_coeff) == 1 &&
-          num_terms > mutable_objective->vars_size() + 1) {
+          num_terms > size_of_expanded_constraint) {
         expanded_linear_index = ct_index;
-        mutable_objective->clear_coeffs();
-        mutable_objective->clear_vars();
-        const int64 rhs = ct.linear().domain(0);
-        if (rhs != 0) {
-          mutable_objective->set_offset(rhs * initial_coeff * objective_coeff +
-                                        initial_offset);
-        }
-        for (int i = 0; i < num_terms; ++i) {
-          const int ref = ct.linear().vars(i);
-          if (PositiveRef(ref) != PositiveRef(initial_obj_var)) {
-            mutable_objective->add_vars(ref);
-            mutable_objective->add_coeffs(
-                -1 * initial_coeff * ct.linear().coeffs(i) * objective_coeff);
-          }
-        }
+        size_of_expanded_constraint = num_terms;
+        objective_coeff_in_expanded_constraint = objective_coeff;
       }
     }
 
     if (expanded_linear_index != -1) {
       context.UpdateRuleStats("objective: expanded single objective");
-      ConstraintProto* const ct =
-          context.working_model->mutable_constraints(expanded_linear_index);
-      // Remove the objective variable special case and make sure the new
-      // objective variables cannot be removed:
-      for (int ref : ct->linear().vars()) {
-        context.var_to_constraints[PositiveRef(ref)].insert(-1);
-      }
-      context.var_to_constraints[PositiveRef(initial_obj_var)].erase(-1);
 
-      // This function will detect that the old objective is not used
-      // elsewhere and remove it from the equation.
-      PresolveLinear(ct, &context);
-      context.UpdateConstraintVariableUsage(expanded_linear_index);
+      // Rewrite the objective.
+      const int64 multiplier = context.working_model->objective().coeffs(0) /
+                               objective_coeff_in_expanded_constraint;
+      const ConstraintProto& ct =
+          context.working_model->constraints(expanded_linear_index);
+      CpObjectiveProto* const mutable_objective =
+          context.working_model->mutable_objective();
+      mutable_objective->set_offset(mutable_objective->offset() +
+                                    ct.linear().domain(0) * multiplier);
+      mutable_objective->clear_coeffs();
+      mutable_objective->clear_vars();
+      const int num_terms = ct.linear().vars_size();
+      for (int i = 0; i < num_terms; ++i) {
+        const int ref = ct.linear().vars(i);
+        if (PositiveRef(ref) != PositiveRef(initial_obj_ref)) {
+          mutable_objective->add_vars(ref);
+          mutable_objective->add_coeffs(-ct.linear().coeffs(i) * multiplier);
+        }
+      }
+
+      // TODO(user): for now this seems to lower our perf on the minzinc
+      // benchmark. The likely explanation is a different search heuristic, not
+      // taking into account the objective. In any case, we need to investigate
+      // more.
+      if (/*DISABLES CODE*/ false) {
+        ConstraintProto* const ct =
+            context.working_model->mutable_constraints(expanded_linear_index);
+        // Remove the objective variable special case and make sure the new
+        // objective variables cannot be removed:
+        for (int ref : ct->linear().vars()) {
+          context.var_to_constraints[PositiveRef(ref)].insert(-1);
+        }
+        context.var_to_constraints[PositiveRef(initial_obj_ref)].erase(-1);
+
+        // This function will detect that the old objective is not used
+        // elsewhere and remove it from the equation.
+        PresolveLinear(ct, &context);
+        context.UpdateConstraintVariableUsage(expanded_linear_index);
+      }
     }
   }
 

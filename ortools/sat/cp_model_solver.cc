@@ -81,6 +81,14 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto) {
     }
   }
 
+  // Make sure a Booleans is created for each [0,1] Boolean variables.
+  for (int i = 0; i < model_proto.variables_size(); ++i) {
+    if (model_proto.variables(i).domain_size() != 2) continue;
+    if (model_proto.variables(i).domain(0) != 0) continue;
+    if (model_proto.variables(i).domain(1) != 1) continue;
+    references.literals.insert(i);
+  }
+
   std::vector<int> used_integers;
   for (const int var : references.variables) {
     used_integers.push_back(PositiveRef(var));
@@ -1498,20 +1506,11 @@ void FillSolutionInResponse(const CpModelProto& model_proto,
 }
 
 namespace {
-IntegerVariable GetOrCreateVariableEqualToSumOf(
-    Model* model, const std::vector<std::pair<IntegerVariable, int64>>& terms) {
-  if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
-  if (terms.size() == 1 && terms.front().second == 1) {
-    return terms.front().first;
-  }
-  if (terms.size() == 1 && terms.front().second == -1) {
-    return NegationOf(terms.front().first);
-  }
 
-  // Create a new variable equal to the sum, with a tight domain.
+IntegerVariable CreateVariableWithTightBound(
+    Model* model, const std::vector<std::pair<IntegerVariable, int64>>& terms) {
   int64 sum_min = 0;
   int64 sum_max = 0;
-
   for (const std::pair<IntegerVariable, int64> var_coeff : terms) {
     const int64 min_domain = model->Get(LowerBound(var_coeff.first));
     const int64 max_domain = model->Get(UpperBound(var_coeff.first));
@@ -1521,9 +1520,21 @@ IntegerVariable GetOrCreateVariableEqualToSumOf(
     sum_min += std::min(prod1, prod2);
     sum_max += std::max(prod1, prod2);
   }
-  IntegerVariable new_var = model->Add(NewIntegerVariable(sum_min, sum_max));
+  return model->Add(NewIntegerVariable(sum_min, sum_max));
+}
 
-  // Link new variables with the linear terms.
+IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
+    Model* model, const std::vector<std::pair<IntegerVariable, int64>>& terms) {
+  if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
+  if (terms.size() == 1 && terms.front().second == 1) {
+    return terms.front().first;
+  }
+  if (terms.size() == 1 && terms.front().second == -1) {
+    return NegationOf(terms.front().first);
+  }
+
+  // Create a new variable and link it with the linear terms.
+  const IntegerVariable new_var = CreateVariableWithTightBound(model, terms);
   std::vector<IntegerVariable> vars;
   std::vector<int64> coeffs;
   for (const auto& term : terms) {
@@ -1532,7 +1543,7 @@ IntegerVariable GetOrCreateVariableEqualToSumOf(
   }
   vars.push_back(new_var);
   coeffs.push_back(-1);
-  model->Add(FixedWeightedSum(vars, coeffs, 0));
+  model->Add(WeightedSumLowerOrEqual(vars, coeffs, 0));
   return new_var;
 }
 }  // namespace
@@ -1636,15 +1647,21 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
           FindOrDie(representative_to_lp_constraint, id);
       const std::vector<std::pair<IntegerVariable, int64>>& terms = it.second;
       const IntegerVariable sub_obj_var =
-          GetOrCreateVariableEqualToSumOf(m->model(), terms);
+          GetOrCreateVariableGreaterOrEqualToSumOf(m->model(), terms);
       top_level_cp_terms.push_back(std::make_pair(sub_obj_var, 1));
       lp->SetMainObjectiveVariable(sub_obj_var);
       num_components_containing_objective++;
     }
   }
 
-  const IntegerVariable main_objective_var =
-      GetOrCreateVariableEqualToSumOf(m->model(), top_level_cp_terms);
+  IntegerVariable main_objective_var;
+  if (m->GetOrCreate<SatSolver>()->parameters().optimize_with_core()) {
+    main_objective_var =
+        CreateVariableWithTightBound(m->model(), top_level_cp_terms);
+  } else {
+    main_objective_var = GetOrCreateVariableGreaterOrEqualToSumOf(
+        m->model(), top_level_cp_terms);
+  }
 
   // Register LP constraints. Note that this needs to be done after all the
   // constraints have been added.
@@ -1652,11 +1669,11 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     lp_constraint->RegisterWith(m->GetOrCreate<GenericLiteralWatcher>());
   }
 
+  VLOG(1) << top_level_cp_terms.size()
+          << " terms in the main objective linear equation ("
+          << num_components_containing_objective << " from LP constraints).";
   VLOG_IF(1, !lp_constraints.empty())
       << "Added " << lp_constraints.size() << " LP constraints.";
-  VLOG_IF(1, num_components_containing_objective > 1)
-      << "Objective split into " << num_components_containing_objective
-      << " components";
   return main_objective_var;
 }
 
@@ -1847,7 +1864,6 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
   // Create an objective variable and its associated linear constraint if
   // needed.
   IntegerVariable objective_var = kNoIntegerVariable;
-
   if (parameters.use_global_lp_constraint()) {
     // Linearize some part of the problem and register LP constraint(s).
     objective_var = AddLPConstraints(model_proto, &m);
@@ -1858,7 +1874,12 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
     for (int i = 0; i < obj.vars_size(); ++i) {
       terms.push_back(std::make_pair(m.Integer(obj.vars(i)), obj.coeffs(i)));
     }
-    objective_var = GetOrCreateVariableEqualToSumOf(m.model(), terms);
+    if (parameters.optimize_with_core()) {
+      objective_var = CreateVariableWithTightBound(m.model(), terms);
+    } else {
+      objective_var =
+          GetOrCreateVariableGreaterOrEqualToSumOf(m.model(), terms);
+    }
   }
 
   model->GetOrCreate<IntegerEncoder>()
@@ -1914,13 +1935,20 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
   } else {
     // Optimization problem.
     const CpObjectiveProto& obj = model_proto.objective();
+    VLOG(1) << obj.vars_size() << " terms in the proto objective.";
     const auto solution_observer =
         [&model_proto, &response, &num_solutions, &obj, &m,
          objective_var](const Model& sat_model) {
           num_solutions++;
           FillSolutionInResponse(model_proto, m, &response);
+          int64 objective_value = 0;
+          for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
+            objective_value += model_proto.objective().coeffs(i) *
+                               sat_model.Get(Value(
+                                   m.Integer(model_proto.objective().vars(i))));
+          }
           response.set_objective_value(
-              ScaleObjectiveValue(obj, sat_model.Get(Value(objective_var))));
+              ScaleObjectiveValue(obj, objective_value));
           VLOG(1) << "Solution #" << num_solutions
                   << " obj:" << response.objective_value()
                   << " num_bool:" << sat_model.Get<SatSolver>()->NumVariables();

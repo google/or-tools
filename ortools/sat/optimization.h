@@ -132,12 +132,9 @@ SatSolver::Status MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
     Model* model);
 
 // Same as MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
-// a core-based approach instead. The given objective_var must be equal to the
-// sum of the given variables using the given coefficients.
-//
-// TODO(user): It is not needed to have objective_var and the linear objective
-// constraint encoded in the model. Remove this precondition in order to
-// improve the solving time.
+// a core-based approach instead. Note that the given objective_var is just used
+// for reporting the lower-bound and do not need to be linked with its linear
+// representation.
 SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     bool log_info, IntegerVariable objective_var,
     const std::vector<IntegerVariable>& variables,
@@ -169,19 +166,6 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
 #endif  // defined(USE_CBC) || defined(USE_SCIP)
-
-// Similar to MinimizeIntegerVariableWithLinearScanAndLazyEncoding() but use
-// a core based approach. Note that this require the objective to be given as
-// a weighted sum of literals
-//
-// TODO(user): The function above is more general, remove this one after
-// checking that the performances are similar.
-SatSolver::Status MinimizeWeightedLiteralSumWithCoreAndLazyEncoding(
-    bool log_info, const std::vector<Literal>& literals,
-    const std::vector<int64>& coeffs,
-    const std::function<LiteralIndex()>& next_decision,
-    const std::function<void(const Model&)>& feasible_solution_observer,
-    Model* model);
 
 }  // namespace sat
 }  // namespace operations_research
