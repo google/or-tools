@@ -80,8 +80,8 @@ static int64 PyFunctionInt64ToInt64(PyObject* pyfunc, int64 i) {
 
 %{
 static int64 PyFunctionInt64Int64ToInt64(PyObject* pyfunc, int64 i, int64 j) {
-  PyObject* pyresult = PyEval_CallFunction(pyfunc, "ll", static_cast<long>(i),
-                                           static_cast<long>(j));
+  PyObject* pyresult = PyObject_CallFunction(pyfunc, "ll", static_cast<long>(i),
+                                             static_cast<long>(j));
   int64 result = 0;
   if (!pyresult) {
     PyErr_SetString(PyExc_RuntimeError,
