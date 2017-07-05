@@ -25,14 +25,14 @@
 const int kFastToBufferSize = 32;
 
 // Writes output to the beginning of the given buffer. Returns a pointer to the
-// end of the std::string (i.e. to the NUL char). Buffer must be at least 12 bytes.
-// Not actually fast, but maybe someday!
+// end of the std::string (i.e. to the NUL char). Buffer must be at least 12
+// bytes. Not actually fast, but maybe someday!
 template <class T>
 char* NumToBuffer(T i, char* buffer) {
   std::stringstream ss;
   ss << i;
   const std::string s = ss.str();
-  strncpy(buffer, s.c_str(), s.size());  // NOLINT
+  strncpy(buffer, s.c_str(), kFastToBufferSize);  // NOLINT
   return buffer + s.size();
 }
 
@@ -58,13 +58,13 @@ struct AlphaNum {
   AlphaNum(float f)  // NOLINT(runtime/explicit)
       : piece(digits, strlen(NumToBuffer(f, digits))) {}
   AlphaNum(double f)  {  // NOLINT(runtime/explicit)
-    sprintf(digits, "%lf\n", f);
+    snprintf(digits, kFastToBufferSize, "%lf", f);
     piece.set(digits);
   }
   AlphaNum(const char* c_str) : piece(c_str) {}   // NOLINT(runtime/explicit)
   AlphaNum(const operations_research::string_view& pc)
       : piece(pc) {}                              // NOLINT(runtime/explicit)
-  AlphaNum(const std::string& s) : piece(s) {}         // NOLINT(runtime/explicit)
+  AlphaNum(const std::string& s) : piece(s) {}    // NOLINT(runtime/explicit)
 
   operations_research::string_view::size_type size() const {
     return piece.size();
