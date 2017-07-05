@@ -595,18 +595,19 @@ void SparseVector<IndexType, IteratorType>::CleanUp() {
       entries.begin(), entries.end(),
       [](const std::pair<Index, Fractional>& a,
          const std::pair<Index, Fractional>& b) { return a.first < b.first; });
-  EntryIndex current_entry(0);
-  Index prev_index(-1);
-  for (const auto& entry : entries) {
-    if (prev_index == entry.first) --current_entry;
-    prev_index = entry.first;
-    if (entry.second != 0.0) {
-      MutableIndex(current_entry) = entry.first;
-      MutableCoefficient(current_entry) = entry.second;
-      ++current_entry;
+
+  EntryIndex new_size(0);
+  for (int i = 0; i < num_entries_; ++i) {
+    const std::pair<Index, Fractional> entry = entries[i];
+    if (entry.second == 0.0) continue;
+    if (i + 1 == num_entries_ ||
+        entry.first != entries[i + 1].first) {
+      MutableIndex(new_size) = entry.first;
+      MutableCoefficient(new_size) = entry.second;
+      ++new_size;
     }
   }
-  ResizeDown(current_entry);
+  ResizeDown(new_size);
   may_contain_duplicates_ = false;
 }
 
