@@ -18,6 +18,7 @@
 #include "ortools/base/timer.h"
 #include "ortools/base/split.h"
 #include "ortools/base/stringpiece_utils.h"
+#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/flatzinc/checker.h"
 #include "ortools/flatzinc/logging.h"
@@ -36,6 +37,7 @@
 #include "ortools/sat/table.h"
 
 DEFINE_string(cp_sat_params, "", "SatParameters as a text proto.");
+DEFINE_bool(use_flatzinc_format, true, "Output uses the flatzinc format");
 
 namespace operations_research {
 namespace sat {
@@ -689,29 +691,25 @@ void CpModelProtoWithMapping::TranslateSearchAnnotations(
   }
 }
 
-
 // The format is fixed in the flatzinc specification.
 std::string SolutionString(
     const fz::SolutionOutputSpecs& output,
-    std::function<int64(fz::IntegerVariable*)> value_func) {
+    const std::function<int64(fz::IntegerVariable*)>& value_func) {
   if (output.variable != nullptr) {
     const int64 value = value_func(output.variable);
     if (output.display_as_boolean) {
-      return StringPrintf("%s = %s;", output.name.c_str(),
-                          value == 1 ? "true" : "false");
+      return StrCat(output.name, " = ", value == 1 ? "true" : "false",
+                          ";");
     } else {
-      return StringPrintf("%s = %" GG_LL_FORMAT "d;", output.name.c_str(),
-                          value);
+      return StrCat(output.name, " = ", value, ";");
     }
   } else {
     const int bound_size = output.bounds.size();
-    std::string result =
-        StringPrintf("%s = array%dd(", output.name.c_str(), bound_size);
+    std::string result = StrCat(output.name, " = array", bound_size, "d(");
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
-        result.append(StringPrintf("%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d, ",
-                                   output.bounds[i].min_value,
-                                   output.bounds[i].max_value));
+        StrAppend(&result, output.bounds[i].min_value, "..",
+                        output.bounds[i].max_value);
       } else {
         result.append("{},");
       }
@@ -720,7 +718,7 @@ std::string SolutionString(
     for (int i = 0; i < output.flat_variables.size(); ++i) {
       const int64 value = value_func(output.flat_variables[i]);
       if (output.display_as_boolean) {
-        result.append(StringPrintf(value ? "true" : "false"));
+        result.append(value ? "true" : "false");
       } else {
         StrAppend(&result, value);
       }
@@ -736,7 +734,7 @@ std::string SolutionString(
 
 std::string SolutionString(
     const fz::Model& model,
-    std::function<int64(fz::IntegerVariable*)> value_func)  {
+    const std::function<int64(fz::IntegerVariable*)>& value_func) {
   std::string solution_string;
   for (const auto& output_spec : model.output()) {
     solution_string.append(SolutionString(output_spec, value_func));
@@ -746,17 +744,16 @@ std::string SolutionString(
   return solution_string;
 }
 
-void LogAll(const std::string& multi_line_input) {
+void LogInFlatzincFormat(const std::string& multi_line_input) {
   std::vector<std::string> lines =
       strings::Split(multi_line_input, '\n', strings::SkipEmpty());
-  for (const std::string& line: lines) {
+  for (const std::string& line : lines) {
     FZLOG << line << FZENDL;
   }
 }
 
 }  // namespace
 
-// TODO(user): respect the flatzinc output specs.
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
                              const fz::FlatzincParameters& p,
                              bool* interrupt_solve) {
@@ -849,8 +846,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   time_limit->RegisterExternalBooleanAsLimit(interrupt_solve);
   sat_model.SetSingleton(std::move(time_limit));
 
-  if (p.logging) {
-    LogAll(CpModelStats(m.proto));
+  if (!FLAGS_use_flatzinc_format) {
+    LOG(INFO) << CpModelStats(m.proto);
+  } else if (p.logging) {
+    LogInFlatzincFormat(CpModelStats(m.proto));
   }
   const CpSolverResponse response = SolveCpModel(m.proto, &sat_model);
 
@@ -860,20 +859,30 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     CHECK(CheckSolution(fz_model, [&response, &m](fz::IntegerVariable* v) {
       return response.solution(m.fz_var_to_index[v]);
     }));
-    std::cout << SolutionString(
-        fz_model, [&response, &m](fz::IntegerVariable* v) {
-          return response.solution(m.fz_var_to_index[v]); }) << std::endl;
-    if (response.status() == CpSolverStatus::OPTIMAL) {
-      std::cout << "==========" << std::endl;
-    }
-  } else if (response.status() == CpSolverStatus::MODEL_UNSAT) {
-    std::cout << "=====UNSATISFIABLE=====" << std::endl;
-  } else {
-    std::cout << "%% TIMEOUT" << std::endl;
   }
 
-  if (p.statistics) {
-    LogAll(CpSolverResponseStats(response));
+  // Output the solution if the flatzinc official format.
+  if (FLAGS_use_flatzinc_format) {
+    if (response.status() == CpSolverStatus::MODEL_SAT ||
+        response.status() == CpSolverStatus::OPTIMAL) {
+      const std::string solution_string =
+          SolutionString(fz_model, [&response, &m](fz::IntegerVariable* v) {
+            return response.solution(m.fz_var_to_index[v]);
+          });
+      std::cout << solution_string << std::endl;
+      if (response.status() == CpSolverStatus::OPTIMAL) {
+        std::cout << "==========" << std::endl;
+      }
+    } else if (response.status() == CpSolverStatus::MODEL_UNSAT) {
+      std::cout << "=====UNSATISFIABLE=====" << std::endl;
+    } else {
+      std::cout << "%% TIMEOUT" << std::endl;
+    }
+    if (p.statistics) {
+      LogInFlatzincFormat(CpSolverResponseStats(response));
+    }
+  } else {
+    LOG(INFO) << CpSolverResponseStats(response);
   }
 }
 

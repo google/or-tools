@@ -69,9 +69,8 @@ DEFINE_bool(use_cp_sat, false, "Use the CP/SAT solver.");
 DEFINE_string(fz_model_name, "stdin",
               "Define problem name when reading from stdin.");
 
-// TODO(user): Remove when using ABCL in open-source.
-DECLARE_bool(log_prefix);
 DECLARE_bool(fz_use_sat);
+DECLARE_bool(log_prefix);
 
 using operations_research::ThreadPool;
 
@@ -216,6 +215,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
 
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(argc, argv, true);
+  google::InitGoogleLogging(argv[0]);
 }
 
 Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {
@@ -302,12 +302,10 @@ int main(int argc, char** argv) {
   // By default, we want to show how the solver progress. Note that this needs
   // to be set before InitGoogle() which has the nice side-effect of allowing
   // the user to override it.
-  //  FLAGS_vmodule = "*cp_model*=1";
 
   // Flatzinc specifications require single dash parameters (-a, -f, -p).
   // We need to fix parameters before parsing them.
   operations_research::fz::FixAndParseParameters(&argc, &argv);
-  google::InitGoogleLogging(argv[0]);
   // We allow piping model through stdin.
   std::string input;
   if (FLAGS_read_from_stdin) {
