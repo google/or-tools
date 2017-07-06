@@ -23,12 +23,13 @@ namespace sat {
 IntegerSumLE::IntegerSumLE(LiteralIndex reified_literal,
                            const std::vector<IntegerVariable>& vars,
                            const std::vector<IntegerValue>& coeffs,
-                           IntegerValue upper, Trail* trail,
-                           IntegerTrail* integer_trail)
+                           IntegerValue upper, Model* model)
     : reified_literal_(reified_literal),
       upper_bound_(upper),
-      trail_(trail),
-      integer_trail_(integer_trail),
+      trail_(model->GetOrCreate<Trail>()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      rev_integer_value_repository_(
+          model->GetOrCreate<RevIntegerValueRepository>()),
       vars_(vars),
       coeffs_(coeffs) {
   // TODO(user): deal with this corner case.
@@ -76,7 +77,7 @@ bool IntegerSumLE::Propagate() {
   }
 
   // Save the current number of fixed variables.
-  rev_repository_integer_value_.SaveState(&rev_lb_fixed_vars_);
+  rev_integer_value_repository_->SaveState(&rev_lb_fixed_vars_);
 
   // Compute the new lower bound and update the reversible structures.
   IntegerValue lb_unfixed_vars = IntegerValue(0);
@@ -192,7 +193,6 @@ void IntegerSumLE::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchLiteral(Literal(reified_literal_), id);
   }
   watcher->RegisterReversibleInt(id, &rev_num_fixed_vars_);
-  watcher->RegisterReversibleClass(id, &rev_repository_integer_value_);
 }
 
 MinPropagator::MinPropagator(const std::vector<IntegerVariable>& vars,

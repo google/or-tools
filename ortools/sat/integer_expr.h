@@ -44,8 +44,7 @@ class IntegerSumLE : public PropagatorInterface {
   IntegerSumLE(LiteralIndex reified_literal,
                const std::vector<IntegerVariable>& vars,
                const std::vector<IntegerValue>& coefficients,
-               IntegerValue upper_bound, Trail* trail,
-               IntegerTrail* integer_trail);
+               IntegerValue upper_bound, Model* model);
 
   // We propagate:
   // - If the sum of the individual lower-bound is > upper_bound, we fail.
@@ -66,8 +65,7 @@ class IntegerSumLE : public PropagatorInterface {
 
   Trail* trail_;
   IntegerTrail* integer_trail_;
-
-  RevRepository<IntegerValue> rev_repository_integer_value_;
+  RevIntegerValueRepository* rev_integer_value_repository_;
 
   // Reversible sum of the lower bound of the fixed variables.
   IntegerValue rev_lb_fixed_vars_;
@@ -213,8 +211,7 @@ inline std::function<void(Model*)> WeightedSumLowerOrEqual(
     IntegerSumLE* constraint = new IntegerSumLE(
         kNoLiteralIndex, vars,
         std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
-        IntegerValue(upper_bound), model->GetOrCreate<Trail>(),
-        model->GetOrCreate<IntegerTrail>());
+        IntegerValue(upper_bound), model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };
@@ -281,8 +278,7 @@ inline std::function<void(Model*)> ConditionalWeightedSumLowerOrEqual(
     IntegerSumLE* constraint = new IntegerSumLE(
         is_le.Index(), vars,
         std::vector<IntegerValue>(coefficients.begin(), coefficients.end()),
-        IntegerValue(upper_bound), model->GetOrCreate<Trail>(),
-        model->GetOrCreate<IntegerTrail>());
+        IntegerValue(upper_bound), model);
     constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
     model->TakeOwnership(constraint);
   };

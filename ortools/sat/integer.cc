@@ -331,17 +331,20 @@ LiteralIndex IntegerEncoder::SearchForLiteralAtOrBefore(
 }
 
 bool IntegerTrail::Propagate(Trail* trail) {
+  const int level = trail->CurrentDecisionLevel();
+  for (ReversibleInterface* rev : reversible_classes_) rev->SetLevel(level);
+
   // Make sure that our internal "integer_decision_levels_" size matches the
   // sat decision levels. At the level zero, integer_decision_levels_ should
   // be empty.
-  if (trail->CurrentDecisionLevel() > integer_decision_levels_.size()) {
+  if (level > integer_decision_levels_.size()) {
     integer_decision_levels_.push_back(integer_trail_.size());
     CHECK_EQ(trail->CurrentDecisionLevel(), integer_decision_levels_.size());
   }
 
   // This is used to map any integer literal out of the initial variable domain
   // into one that use one of the domain value.
-  var_to_current_lb_interval_index_.SetLevel(trail->CurrentDecisionLevel());
+  var_to_current_lb_interval_index_.SetLevel(level);
 
   // Process all the "associated" literals and Enqueue() the corresponding
   // bounds.
@@ -359,16 +362,17 @@ bool IntegerTrail::Propagate(Trail* trail) {
 }
 
 void IntegerTrail::Untrail(const Trail& trail, int literal_trail_index) {
-  var_to_current_lb_interval_index_.SetLevel(trail.CurrentDecisionLevel());
+  const int level = trail.CurrentDecisionLevel();
+  for (ReversibleInterface* rev : reversible_classes_) rev->SetLevel(level);
+  var_to_current_lb_interval_index_.SetLevel(level);
   propagation_trail_index_ =
       std::min(propagation_trail_index_, literal_trail_index);
 
   // Note that if a conflict was detected before Propagate() of this class was
   // even called, it is possible that there is nothing to backtrack.
-  const int decision_level = trail.CurrentDecisionLevel();
-  if (decision_level >= integer_decision_levels_.size()) return;
-  const int target = integer_decision_levels_[decision_level];
-  integer_decision_levels_.resize(decision_level);
+  if (level >= integer_decision_levels_.size()) return;
+  const int target = integer_decision_levels_[level];
+  integer_decision_levels_.resize(level);
   CHECK_GE(target, vars_.size());
 
   // This is needed for the code below to work.
@@ -1034,14 +1038,8 @@ void IntegerTrail::EnqueueLiteral(
 
 GenericLiteralWatcher::GenericLiteralWatcher(Model* model)
     : SatPropagator("GenericLiteralWatcher"),
-      integer_trail_(model->GetOrCreate<IntegerTrail>()) {
-  // TODO(user): Have a general mecanism to register "global" reversible
-  // classes and keep them synchronized with the search.
-  std::unique_ptr<RevRepository<int>> rev_int_repository(
-      new RevRepository<int>());
-  rev_int_repository_ = rev_int_repository.get();
-  model->SetSingleton(std::move(rev_int_repository));
-
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      rev_int_repository_(model->GetOrCreate<RevIntRepository>()) {
   // TODO(user): This propagator currently needs to be last because it is the
   // only one enforcing that a fix-point is reached on the integer variables.
   // Figure out a better interaction between the sat propagation loop and
@@ -1086,7 +1084,6 @@ void GenericLiteralWatcher::UpdateCallingNeeds(Trail* trail) {
 
 bool GenericLiteralWatcher::Propagate(Trail* trail) {
   const int level = trail->CurrentDecisionLevel();
-  rev_int_repository_->SetLevel(level);
   UpdateCallingNeeds(trail);
 
   // Note that the priority may be set to -1 inside the loop in order to restart
@@ -1201,7 +1198,6 @@ void GenericLiteralWatcher::Untrail(const Trail& trail, int trail_index) {
   in_queue_.assign(watchers_.size(), false);
 
   const int level = trail.CurrentDecisionLevel();
-  rev_int_repository_->SetLevel(level);
   for (int& ref : id_to_greatest_common_level_since_last_call_) {
     ref = std::min(ref, level);
   }

@@ -549,6 +549,12 @@ class IntegerTrail : public SatPropagator {
     return vars_[var.value()].current_trail_index < vars_.size();
   }
 
+  // Registers a reversible class. This class will always be synced with the
+  // correct decision level.
+  void RegisterReversibleClass(ReversibleInterface* rev) {
+    reversible_classes_.push_back(rev);
+  }
+
  private:
   // Tests that all the literals in the given reason are assigned to false.
   // This is used to DCHECK the given reasons to the Enqueue*() functions.
@@ -659,6 +665,7 @@ class IntegerTrail : public SatPropagator {
   int64 num_enqueues_;
 
   std::vector<SparseBitset<IntegerVariable>*> watchers_;
+  std::vector<ReversibleInterface*> reversible_classes_;
 
   IntegerDomains* domains_;
   IntegerEncoder* encoder_;
@@ -699,6 +706,21 @@ class PropagatorInterface {
   virtual bool IncrementalPropagate(const std::vector<int>& watch_indices) {
     LOG(FATAL) << "Not implemented.";
     return false;  // Remove warning in Windows
+  }
+};
+
+// Singleton for basic reversible types. We need the wrapper so that they can be
+// accessed with model->GetOrCreate<>() and properly registered at creation.
+class RevIntRepository : public RevRepository<int> {
+ public:
+  explicit RevIntRepository(Model* model) {
+    model->GetOrCreate<IntegerTrail>()->RegisterReversibleClass(this);
+  }
+};
+class RevIntegerValueRepository : public RevRepository<IntegerValue> {
+ public:
+  explicit RevIntegerValueRepository(Model* model) {
+    model->GetOrCreate<IntegerTrail>()->RegisterReversibleClass(this);
   }
 };
 
@@ -779,7 +801,7 @@ class GenericLiteralWatcher : public SatPropagator {
   void UpdateCallingNeeds(Trail* trail);
 
   IntegerTrail* integer_trail_;
-  RevRepository<int>* rev_int_repository_;
+  RevIntRepository* rev_int_repository_;
 
   struct WatchData {
     int id;
