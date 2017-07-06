@@ -1107,10 +1107,10 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
       // TODO(user): If the basis is incomplete, we could complete it with
       // better slack variables than is done by InitializeFirstBasis() by
       // using a partial LU decomposition (see markowitz.h).
+      dual_edge_norms_.Clear();
+      dual_pricing_vector_.clear();
       if (InitializeFirstBasis(basis_).ok()) {
         primal_edge_norms_.Clear();
-        dual_edge_norms_.Clear();
-        dual_pricing_vector_.clear();
         reduced_costs_.ClearAndRemoveCostShifts();
         solve_from_scratch = false;
       } else {
