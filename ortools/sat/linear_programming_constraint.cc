@@ -143,6 +143,9 @@ void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   for (int i = 0; i < num_vars; i++) {
     watcher->WatchIntegerVariable(integer_variables_[i], watcher_id, i);
   }
+  if (objective_is_defined_) {
+    watcher->WatchUpperBound(objective_cp_, watcher_id);
+  }
   watcher->SetPropagatorPriority(watcher_id, 2);
 }
 
