@@ -215,7 +215,7 @@ void FixAndParseParameters(int* argc, char*** argv) {
 
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(argc, argv, true);
-  google::InitGoogleLogging(argv[0]);
+  google::InitGoogleLogging((*argv)[0]);
 }
 
 Model ParseFlatzincModel(const std::string& input, bool input_is_filename) {

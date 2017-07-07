@@ -64,12 +64,13 @@ void ParseFile(const std::string& filename, bool presolve) {
 }  // namespace operations_research
 
 int main(int argc, char** argv) {
-  FLAGS_log_prefix = false;
   const char kUsage[] =
       "Parses a flatzinc .fzn file, optionally presolve it, and prints it in "
       "human-readable format";
+  FLAGS_log_prefix = false;
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  google::InitGoogleLogging(argv[0]);
   operations_research::fz::ParseFile(FLAGS_file, FLAGS_presolve);
   return 0;
 }
