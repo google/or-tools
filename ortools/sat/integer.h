@@ -87,6 +87,10 @@ inline IntegerVariable NegationOf(IntegerVariable i) {
   return IntegerVariable(i.value() ^ 1);
 }
 
+inline bool VariableIsPositive(IntegerVariable i) {
+  return (i.value() & 1) == 0;
+}
+
 // Returns the vector of the negated variables.
 std::vector<IntegerVariable> NegationOf(
     const std::vector<IntegerVariable>& vars);

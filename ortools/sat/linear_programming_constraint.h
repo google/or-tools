@@ -107,9 +107,8 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   void ReducedCostStrengtheningDeductions(double cp_objective_delta);
 
   // Gets or creates an LP variable that mirrors a CP variable.
-  // TODO(user): only accept positive variables to prevent having different
-  // LP variables for the same CP variable.
-  glop::ColIndex GetOrCreateMirrorVariable(IntegerVariable ivar);
+  // The variable should be a positive reference.
+  glop::ColIndex GetOrCreateMirrorVariable(IntegerVariable positive_variable);
 
   // Returns the variable value on the same scale as the CP variable value.
   glop::Fractional GetVariableValueAtCpScale(glop::ColIndex var);

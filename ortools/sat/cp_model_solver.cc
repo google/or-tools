@@ -1507,8 +1507,16 @@ void FillSolutionInResponse(const CpModelProto& model_proto,
 
 namespace {
 
-IntegerVariable CreateVariableWithTightBound(
+IntegerVariable GetOrCreateVariableWithTightBound(
     Model* model, const std::vector<std::pair<IntegerVariable, int64>>& terms) {
+  if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
+  if (terms.size() == 1 && terms.front().second == 1) {
+    return terms.front().first;
+  }
+  if (terms.size() == 1 && terms.front().second == -1) {
+    return NegationOf(terms.front().first);
+  }
+
   int64 sum_min = 0;
   int64 sum_max = 0;
   for (const std::pair<IntegerVariable, int64> var_coeff : terms) {
@@ -1534,7 +1542,8 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
   }
 
   // Create a new variable and link it with the linear terms.
-  const IntegerVariable new_var = CreateVariableWithTightBound(model, terms);
+  const IntegerVariable new_var =
+      GetOrCreateVariableWithTightBound(model, terms);
   std::vector<IntegerVariable> vars;
   std::vector<int64> coeffs;
   for (const auto& term : terms) {
@@ -1657,7 +1666,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   IntegerVariable main_objective_var;
   if (m->GetOrCreate<SatSolver>()->parameters().optimize_with_core()) {
     main_objective_var =
-        CreateVariableWithTightBound(m->model(), top_level_cp_terms);
+        GetOrCreateVariableWithTightBound(m->model(), top_level_cp_terms);
   } else {
     main_objective_var = GetOrCreateVariableGreaterOrEqualToSumOf(
         m->model(), top_level_cp_terms);
@@ -1875,15 +1884,18 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
       terms.push_back(std::make_pair(m.Integer(obj.vars(i)), obj.coeffs(i)));
     }
     if (parameters.optimize_with_core()) {
-      objective_var = CreateVariableWithTightBound(m.model(), terms);
+      objective_var = GetOrCreateVariableWithTightBound(m.model(), terms);
     } else {
       objective_var =
           GetOrCreateVariableGreaterOrEqualToSumOf(m.model(), terms);
     }
   }
 
+  // Note that we do one last propagation at level zero once all the constraints
+  // where added.
   model->GetOrCreate<IntegerEncoder>()
       ->AddAllImplicationsBetweenAssociatedLiterals();
+  model->GetOrCreate<SatSolver>()->Propagate();
 
   // Initialize the search strategy function.
   std::function<LiteralIndex()> next_decision;

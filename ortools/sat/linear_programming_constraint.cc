@@ -62,22 +62,24 @@ LinearProgrammingConstraint::CreateNewConstraint(double lb, double ub) {
 }
 
 glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
-    IntegerVariable ivar) {
-  const auto it = integer_variable_to_index_.find(ivar);
-  if (it == integer_variable_to_index_.end()) {
-    integer_variable_to_index_[ivar] = integer_variables_.size();
-    integer_variables_.push_back(ivar);
+    IntegerVariable positive_variable) {
+  DCHECK(VariableIsPositive(positive_variable));
+  if (!ContainsKey(integer_variable_to_index_, positive_variable)) {
+    integer_variable_to_index_[positive_variable] = integer_variables_.size();
+    integer_variables_.push_back(positive_variable);
     mirror_lp_variables_.push_back(lp_data_.CreateNewVariable());
     lp_solution_.push_back(std::numeric_limits<double>::infinity());
   }
-  return mirror_lp_variables_[integer_variable_to_index_[ivar]];
+  return mirror_lp_variables_[integer_variable_to_index_[positive_variable]];
 }
 
 void LinearProgrammingConstraint::SetCoefficient(ConstraintIndex ct,
                                                  IntegerVariable ivar,
                                                  double coefficient) {
   CHECK(!lp_constraint_is_registered_);
-  glop::ColIndex cvar = GetOrCreateMirrorVariable(ivar);
+  IntegerVariable pos_var = VariableIsPositive(ivar) ? ivar : NegationOf(ivar);
+  if (ivar != pos_var) coefficient *= -1.0;
+  glop::ColIndex cvar = GetOrCreateMirrorVariable(pos_var);
   lp_data_.SetCoefficient(ct, cvar, coefficient);
 }
 
@@ -85,8 +87,10 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
                                                           double coeff) {
   CHECK(!lp_constraint_is_registered_);
   objective_is_defined_ = true;
+  IntegerVariable pos_var = VariableIsPositive(ivar) ? ivar : NegationOf(ivar);
+  if (ivar != pos_var) coeff *= -1.0;
   objective_lp_.push_back(
-      std::make_pair(GetOrCreateMirrorVariable(ivar), coeff));
+      std::make_pair(GetOrCreateMirrorVariable(pos_var), coeff));
 }
 
 void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
