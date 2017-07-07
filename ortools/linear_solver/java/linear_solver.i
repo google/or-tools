@@ -209,6 +209,7 @@ import java.lang.reflect.*;
 %rename (name) operations_research::MPVariable::name;  // no test
 %rename (basisStatus) operations_research::MPVariable::basis_status;
 %rename (reducedCost) operations_research::MPVariable::reduced_cost;  // For experts only.
+%rename (index) operations_research::MPVariable::index;  // no test
 
 // MPConstraint: writer API.
 %rename (setCoefficient) operations_research::MPConstraint::SetCoefficient;
