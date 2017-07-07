@@ -26,235 +26,176 @@
 %{
 #include <functional>
 
-// Wrap std::function<std::string()>
+// A copyable, ref-counted python pointer.
+// TODO(user): Make it movable-only when we support generalized lambda
+// capture.
+class SharedPyPtr {
+ public:
+  explicit SharedPyPtr(PyObject* obj) : obj_(obj) { Py_INCREF(obj_); }
+  SharedPyPtr(const SharedPyPtr& other) : obj_(other.obj_) { Py_INCREF(obj_); }
 
-static std::string PyFunctionVoidToString(PyObject* pyfunc) {
-  PyObject* pyresult = PyObject_CallFunctionObjArgs(pyfunc, nullptr);
-  std::string result;
+  ~SharedPyPtr() { Py_DECREF(obj_); }
+
+  PyObject* get() const { return obj_; }
+
+ private:
+  // We do not follow the rule of three as we only want to copy construct.
+  SharedPyPtr& operator=(const SharedPyPtr&);
+
+  PyObject* const obj_;
+};
+
+template <typename ReturnT>
+static ReturnT HandleResult(PyObject* pyresult) {
+  // This zero-initializes builting types.
+  ReturnT result = ReturnT();
   if (!pyresult) {
     PyErr_SetString(PyExc_RuntimeError,
-                    "std::function<std::string()> invocation failed.");
+                    "SWIG std::function invocation failed.");
+    return result;
   } else {
-    result = PyString_AsString(pyresult);
+    if (!PyObjAs<ReturnT>(pyresult, &result)) {
+      PyErr_SetString(PyExc_RuntimeError,
+                      "SWIG std::function invocation failed.");
+    }
     Py_DECREF(pyresult);
   }
   return result;
 }
+
+template <>
+void HandleResult<void>(PyObject* pyresult) {
+  if (!pyresult) {
+    PyErr_SetString(PyExc_RuntimeError,
+                    "SWIG std::function invocation failed.");
+  } else {
+    Py_DECREF(pyresult);
+  }
+}
+
+template <typename ReturnT, typename... Args>
+static ReturnT InvokePythonCallableReturning(PyObject* pyfunc,
+                                             const char* format, Args... args) {
+  // The const_cast is safe (it's here only because the python API is not
+  // const-correct).
+  return HandleResult<ReturnT>(
+      PyObject_CallFunction(pyfunc, const_cast<char*>(format), args...));
+}
+
+template <typename ReturnT>
+static ReturnT InvokePythonCallableReturning(PyObject* pyfunc) {
+  return HandleResult<ReturnT>(PyObject_CallFunctionObjArgs(pyfunc, nullptr));
+}
+
 %}
+
+// Wrap std::function<std::string()>
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<std::string()> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<std::string()> {
-  $1 = [$input]() { return PyFunctionVoidToString($input); };
+  SharedPyPtr input($input);
+  $1 = [input]() { return InvokePythonCallableReturning<std::string>(input.get()); };
 }
 
 // Wrap std::function<int64(int64)>
-
-%{
-static int64 PyFunctionInt64ToInt64(PyObject* pyfunc, int64 i) {
-  // () needed to force creation of one-element tuple
-  PyObject* pyresult = PyEval_CallFunction(pyfunc, "(l)", static_cast<long>(i));
-  int64 result = 0;
-  if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "std::function<int64(int64)> invocation failed.");
-  } else {
-    result = PyInt_AsLong(pyresult);
-    Py_DECREF(pyresult);
-  }
-  return result;
-}
-%}
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int64)> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<int64(int64)> {
-  $1 = [$input](int64 index) { return PyFunctionInt64ToInt64($input, index); };
+  SharedPyPtr input($input);
+  $1 = [input](int64 index) {
+    return InvokePythonCallableReturning<int64>(input.get(), "(l)", index);
+  };
 }
 
 // Wrap std::function<int64(int64, int64)>
-
-%{
-static int64 PyFunctionInt64Int64ToInt64(PyObject* pyfunc, int64 i, int64 j) {
-  PyObject* pyresult = PyObject_CallFunction(pyfunc, "ll", static_cast<long>(i),
-                                             static_cast<long>(j));
-  int64 result = 0;
-  if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "std::function<int64(int64, int64)> invocation failed.");
-  } else {
-    result = PyInt_AsLong(pyresult);
-    Py_DECREF(pyresult);
-  }
-  return result;
-}
-%}
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int64, int64)> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<int64(int64, int64)> {
-  $1 = [$input](int64 i, int64 j) {
-    return PyFunctionInt64Int64ToInt64($input, i, j);
+  SharedPyPtr input($input);
+  $1 = [input](int64 i, int64 j) {
+    return InvokePythonCallableReturning<int64>(input.get(), "ll", i, j);
   };
 }
 
 // Wrap std::function<int64(int64, int64, int64)>
-
-%{
-static int64 PyFunctionInt64Int64Int64ToInt64(PyObject* pyfunc,
-                                              int64 i, int64 j, int64 k) {
-  PyObject* pyresult = PyEval_CallFunction(pyfunc, "lll", static_cast<long>(i),
-                                           static_cast<long>(j),
-                                           static_cast<long>(k));
-  int64 result = 0;
-  if (!pyresult) {
-    PyErr_SetString(
-        PyExc_RuntimeError,
-        "std::function<int64(int64, int64, int64)> invocation failed.");
-  } else {
-    result = PyInt_AsLong(pyresult);
-    Py_DECREF(pyresult);
-  }
-  return result;
-}
-%}
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int64, int64, int64)> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<int64(int64, int64, int64)> {
-  $1 = [$input](int64 i, int64 j, int64 k) {
-    return PyFunctionInt64Int64Int64ToInt64($input, i, j, k);
+  SharedPyPtr input($input);
+  $1 = [input](int64 i, int64 j, int64 k) {
+    return InvokePythonCallableReturning<int64>(input.get(), "lll", i, j, k);
   };
 }
 
 // Wrap std::function<int64(int)>
-
-%{
-static int64 PyFunctionIntToInt64(PyObject* pyfunc, int i) {
-  // () needed to force creation of one-element tuple
-  PyObject* pyresult = PyEval_CallFunction(pyfunc, "(i)", i);
-  int64 result = 0;
-  if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "std::function<int64(int)> invocation failed.");
-  } else {
-    result = PyInt_AsLong(pyresult);
-    Py_DECREF(pyresult);
-  }
-  return result;
-}
-%}
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int)> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<int64(int)> {
-  $1 = [$input](int index) { return PyFunctionIntToInt64($input, index); };
+  SharedPyPtr input($input);
+  $1 = [input](int index) {
+    return InvokePythonCallableReturning<int64>(input.get(), "(i)", index);
+  };
 }
 
 // Wrap std::function<int64(int, int)>
-
-%{
-static int64 PyFunctionIntIntToInt64(PyObject* pyfunc, int i, int j) {
-  PyObject* pyresult = PyEval_CallFunction(pyfunc, "ii", i, j);
-  int64 result = 0;
-  if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "std::function<int64(int, int)> invocation failed.");
-  } else {
-    result = PyInt_AsLong(pyresult);
-    Py_DECREF(pyresult);
-  }
-  return result;
-}
-%}
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<int64(int, int)> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<int64(int, int)> {
-  $1 = [$input](int i, int j) {
-    return PyFunctionIntIntToInt64($input, i, j);
+  SharedPyPtr input($input);
+  $1 = [input](int i, int j) {
+    return InvokePythonCallableReturning<int64>(input.get(), "ii", i, j);
   };
 }
 
 // Wrap std::function<bool(int64)>
-
-%{
-static bool PyFunctionInt64ToBool(PyObject* pyfunc, int64 i) {
-  // () needed to force creation of one-element tuple
-  PyObject* pyresult = PyEval_CallFunction(pyfunc, "(l)", static_cast<long>(i));
-  bool result = 0;
-  if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "std::function<bool(int64)> invocation failed.");
-  } else {
-    result = PyObject_IsTrue(pyresult);
-    Py_DECREF(pyresult);
-  }
-  return result;
-}
-%}
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<bool(int64)> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<bool(int64)> {
-  $1 = [$input](int64 index) { return PyFunctionInt64ToBool($input, index); };
+  SharedPyPtr input($input);
+  $1 = [input](int64 index) {
+    return InvokePythonCallableReturning<bool>(input.get(), "(l)", index);
+  };
 }
 
 // Wrap std::function<bool()>
-
-%{
-static bool PyFunctionVoidToBool(PyObject* pyfunc) {
-  PyObject* pyresult = PyObject_CallFunctionObjArgs(pyfunc, nullptr);
-  bool result = false;
-  if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "std::function<bool()> invocation failed.");
-  } else {
-    result = PyObject_IsTrue(pyresult);
-    Py_DECREF(pyresult);
-  }
-  return result;
-}
-%}
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<bool()> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<bool()> {
-  $1 = [$input]() { return PyFunctionVoidToBool($input); };
+  SharedPyPtr input($input);
+  $1 = [input]() { return InvokePythonCallableReturning<bool>(input.get()); };
 }
 
-%{
-static void PyFunctionVoidToVoid(PyObject* pyfunc) {
-  PyObject* pyresult = PyObject_CallFunctionObjArgs(pyfunc, nullptr);
-  if (!pyresult) {
-    PyErr_SetString(PyExc_RuntimeError,
-                    "std::function<void()> invocation failed.");
-  } else {
-    Py_DECREF(pyresult);
-  }
-}
-%}
+// Wrap std::function<void()>
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::function<void()> {
   $1 = PyCallable_Check($input);
 }
 
 %typemap(in) std::function<void()> {
-  $1 = [$input]() { return PyFunctionVoidToVoid($input); };
+  SharedPyPtr input($input);
+  $1 = [input]() { return InvokePythonCallableReturning<void>(input.get()); };
 }
