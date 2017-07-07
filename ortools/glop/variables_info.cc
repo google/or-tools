@@ -24,29 +24,33 @@ VariablesInfo::VariablesInfo(const CompactSparseMatrix& matrix,
       upper_bound_(upper_bound),
       boxed_variables_are_relevant_(true) {}
 
-void VariablesInfo::Initialize() {
-  boxed_variables_are_relevant_ = true;
+void VariablesInfo::InitializeAndComputeType() {
   const ColIndex num_cols = matrix_.num_cols();
-  num_entries_in_relevant_columns_ = 0;
-  variable_type_.resize(num_cols, VariableType::UNCONSTRAINED);
-  variable_status_.resize(num_cols, VariableStatus::FREE);
   can_increase_.ClearAndResize(num_cols);
   can_decrease_.ClearAndResize(num_cols);
-  relevance_.ClearAndResize(num_cols);
   is_basic_.ClearAndResize(num_cols);
   not_basic_.ClearAndResize(num_cols);
   non_basic_boxed_variables_.ClearAndResize(num_cols);
+
+  num_entries_in_relevant_columns_ = 0;
+  boxed_variables_are_relevant_ = true;
+  relevance_.ClearAndResize(num_cols);
+
+  variable_status_.resize(num_cols, VariableStatus::FREE);
+  variable_type_.resize(num_cols, VariableType::UNCONSTRAINED);
+  for (ColIndex col(0); col < num_cols; ++col) {
+    variable_type_[col] = ComputeVariableType(col);
+  }
 }
 
 void VariablesInfo::MakeBoxedVariableRelevant(bool value) {
   if (value == boxed_variables_are_relevant_) return;
+  boxed_variables_are_relevant_ = value;
   if (value) {
-    boxed_variables_are_relevant_ = true;
     for (const ColIndex col : non_basic_boxed_variables_) {
-      SetRelevance(col, variable_status_[col] != VariableStatus::FIXED_VALUE);
+      SetRelevance(col, variable_type_[col] != VariableType::FIXED_VARIABLE);
     }
   } else {
-    boxed_variables_are_relevant_ = false;
     for (const ColIndex col : non_basic_boxed_variables_) {
       SetRelevance(col, false);
     }
@@ -62,7 +66,6 @@ void VariablesInfo::Update(ColIndex col, VariableStatus status) {
 }
 
 void VariablesInfo::UpdateToBasicStatus(ColIndex col) {
-  variable_type_[col] = ComputeVariableType(col);
   variable_status_[col] = VariableStatus::BASIC;
   is_basic_.Set(col, true);
   not_basic_.Set(col, false);
@@ -75,8 +78,6 @@ void VariablesInfo::UpdateToBasicStatus(ColIndex col) {
 void VariablesInfo::UpdateToNonBasicStatus(ColIndex col,
                                            VariableStatus status) {
   DCHECK_NE(status, VariableStatus::BASIC);
-  const VariableType type = ComputeVariableType(col);
-  variable_type_[col] = type;
   variable_status_[col] = status;
   is_basic_.Set(col, false);
   not_basic_.Set(col, true);
@@ -84,11 +85,12 @@ void VariablesInfo::UpdateToNonBasicStatus(ColIndex col,
                              status == VariableStatus::FREE);
   can_decrease_.Set(col, status == VariableStatus::AT_UPPER_BOUND ||
                              status == VariableStatus::FREE);
-  non_basic_boxed_variables_.Set(col,
-                                 type == VariableType::UPPER_AND_LOWER_BOUNDED);
+
+  const bool boxed =
+      variable_type_[col] == VariableType::UPPER_AND_LOWER_BOUNDED;
+  non_basic_boxed_variables_.Set(col, boxed);
   const bool relevance = status != VariableStatus::FIXED_VALUE &&
-                         (boxed_variables_are_relevant_ ||
-                          type != VariableType::UPPER_AND_LOWER_BOUNDED);
+                         (boxed_variables_are_relevant_ || !boxed);
   SetRelevance(col, relevance);
 }
 
@@ -128,9 +130,10 @@ EntryIndex VariablesInfo::GetNumEntriesInRelevantColumns() const {
 
 VariableType VariablesInfo::ComputeVariableType(ColIndex col) const {
   DCHECK_LE(lower_bound_[col], upper_bound_[col]);
-  if (lower_bound_[col] == -kInfinity && upper_bound_[col] == kInfinity) {
-    return VariableType::UNCONSTRAINED;
-  } else if (lower_bound_[col] == -kInfinity) {
+  if (lower_bound_[col] == -kInfinity) {
+    if (upper_bound_[col] == kInfinity) {
+      return VariableType::UNCONSTRAINED;
+    }
     return VariableType::UPPER_BOUNDED;
   } else if (upper_bound_[col] == kInfinity) {
     return VariableType::LOWER_BOUNDED;

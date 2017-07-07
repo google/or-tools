@@ -79,7 +79,6 @@ RevisedSimplex::RevisedSimplex()
       num_rows_(0),
       num_cols_(0),
       first_slack_col_(kInvalidCol),
-      current_objective_(),
       objective_(),
       lower_bound_(),
       upper_bound_(),
@@ -96,8 +95,8 @@ RevisedSimplex::RevisedSimplex()
                          basis_factorization_),
       update_row_(compact_matrix_, transposed_matrix_, variables_info_, basis_,
                   basis_factorization_),
-      reduced_costs_(compact_matrix_, current_objective_, basis_,
-                     variables_info_, basis_factorization_, &random_),
+      reduced_costs_(compact_matrix_, objective_, basis_, variables_info_,
+                     basis_factorization_, &random_),
       entering_variable_(variables_info_, &random_, &reduced_costs_,
                          &primal_edge_norms_),
       num_iterations_(0),
@@ -172,8 +171,6 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
           << matrix_with_slack_.num_cols() << " columns, "
           << matrix_with_slack_.num_entries() << " entries.";
 
-  current_objective_ = objective_;
-
   // TODO(user): Avoid doing the first phase checks when we know from the
   // incremental solve that the solution is already dual or primal feasible.
   VLOG(1) << "------ First phase: feasibility.";
@@ -200,7 +197,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
     DisplayIterationInfo();
 
     // After the primal phase I, we need to restore the objective.
-    current_objective_ = objective_;
+    InitializeObjectiveAndTestIfUnchanged(lp);
     reduced_costs_.ResetForNewObjective();
   }
 
@@ -800,7 +797,6 @@ bool RevisedSimplex::InitializeObjectiveAndTestIfUnchanged(
     const LinearProgram& lp) {
   DCHECK_EQ(num_cols_, lp.num_variables());
   SCOPED_TIME_STAT(&function_stats_);
-  current_objective_.assign(num_cols_, 0.0);
 
   // Note that we use the minimization version of the objective.
   bool objective_is_unchanged = true;
@@ -871,7 +867,7 @@ void RevisedSimplex::InitializeObjectiveLimit(const LinearProgram& lp) {
 
 void RevisedSimplex::InitializeVariableStatusesForWarmStart(
     const BasisState& state, ColIndex num_new_cols) {
-  variables_info_.Initialize();
+  variables_info_.InitializeAndComputeType();
   RowIndex num_basic_variables(0);
   DCHECK_LE(num_new_cols, first_slack_col_);
   const ColIndex first_new_col(first_slack_col_ - num_new_cols);
@@ -931,7 +927,7 @@ Status RevisedSimplex::CreateInitialBasis() {
   // dual-feasible later by MakeBoxedVariableDualFeasible(), so it doesn't
   // really matter at which of their two finite bounds they start.
   int num_free_variables = 0;
-  variables_info_.Initialize();
+  variables_info_.InitializeAndComputeType();
   for (ColIndex col(0); col < num_cols_; ++col) {
     const VariableStatus status = ComputeDefaultVariableStatus(col);
     SetNonBasicVariableStatusAndDeriveValue(col, status);
@@ -1656,10 +1652,10 @@ void RevisedSimplex::UpdatePrimalPhaseICosts(const Rows& rows) {
     } else if (value < lower_bound_[col] - tolerance) {
       cost = -1.0;
     }
-    if (current_objective_[col] != cost) {
+    if (objective_[col] != cost) {
       objective_changed = true;
     }
-    current_objective_[col] = cost;
+    objective_[col] = cost;
   }
   // If the objective changed, the reduced costs need to be recomputed.
   if (objective_changed) {
@@ -2233,7 +2229,8 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
 
   if (feasibility_phase_) {
     // Initialize the primal phase-I objective.
-    current_objective_.assign(num_cols_, 0.0);
+    // Note that this temporarily erases the problem objective.
+    objective_.assign(num_cols_, 0.0);
     UpdatePrimalPhaseICosts(IntegerRange<RowIndex>(RowIndex(0), num_rows_));
   }
 
@@ -2452,8 +2449,8 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     if (feasibility_phase_ && leaving_row != kInvalidRow) {
       // Set the leaving variable to its exact bound.
       variable_values_.SetNonBasicVariableValueFromStatus(leaving_col);
-      reduced_costs_.SetNonBasicVariableCostToZero(
-          leaving_col, &current_objective_[leaving_col]);
+      reduced_costs_.SetNonBasicVariableCostToZero(leaving_col,
+                                                   &objective_[leaving_col]);
     }
 
     // Stats about consecutive degenerate iterations.
@@ -2769,7 +2766,7 @@ void RevisedSimplex::DisplayAllStats() {
 
 Fractional RevisedSimplex::ComputeObjectiveValue() const {
   SCOPED_TIME_STAT(&function_stats_);
-  return PreciseScalarProduct(current_objective_,
+  return PreciseScalarProduct(objective_,
                               Transpose(variable_values_.GetDenseRow()));
 }
 
@@ -2866,7 +2863,7 @@ void RevisedSimplex::DisplayInfoOnVariables() const {
   if (VLOG_IS_ON(3)) {
     for (ColIndex col(0); col < num_cols_; ++col) {
       const Fractional variable_value = variable_values_.Get(col);
-      const Fractional objective_coefficient = current_objective_[col];
+      const Fractional objective_coefficient = objective_[col];
       const Fractional objective_contribution =
           objective_coefficient * variable_value;
       VLOG(3) << SimpleVariableInfo(col) << ". " << variable_name_[col] << " = "
@@ -2965,7 +2962,7 @@ void RevisedSimplex::DisplayProblem() const {
     std::string output = "min: ";
     bool has_objective = false;
     for (ColIndex col(0); col < num_cols_; ++col) {
-      const Fractional coeff = current_objective_[col];
+      const Fractional coeff = objective_[col];
       has_objective |= (coeff != 0.0);
       StrAppend(&output,
                       StringifyMonomialWithFlags(coeff, variable_name_[col]));

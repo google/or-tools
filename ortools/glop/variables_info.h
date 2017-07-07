@@ -32,10 +32,12 @@ class VariablesInfo {
   VariablesInfo(const CompactSparseMatrix& matrix, const DenseRow& lower_bound,
                 const DenseRow& upper_bound);
 
-  // Resets all the quantities to a default value. Note that nothing can be
-  // assumed on the return values of the getters until Update() has been called
-  // at least once on all the columns.
-  void Initialize();
+  // Recomputes the variable types from the bounds (this is the only function
+  // that changes them). This also resets all the non-type quantities to a
+  // default value. Note however that nothing should be assumed on the return
+  // values of the getters until Update() has been called at least once on all
+  // the columns.
+  void InitializeAndComputeType();
 
   // Updates the information of the given variable. Note that it is not needed
   // to call this if the status or the bound of a variable didn't change.
@@ -101,7 +103,8 @@ class VariablesInfo {
   DenseBitRow can_decrease_;
 
   // Indicates if we should consider this variable for entering the basis during
-  // the simplex algorithm. Only non-fixed and non-basic columns are relevant.
+  // the simplex algorithm. We never consider fixed variables and in the dual
+  // feasibility phase, we don't consider boxed variable.
   DenseBitRow relevance_;
 
   // Indicates if a variable is BASIC or not. There are currently two members
