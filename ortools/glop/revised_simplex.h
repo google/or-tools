@@ -806,10 +806,11 @@ class RevisedSimplexDictionary {
   ConstIterator begin() const { return dictionary_.begin(); }
   ConstIterator end() const { return dictionary_.end(); }
 
-  size_t size() const { return dictionary_.size(); }
+  size_t NumRows() const { return dictionary_.size(); }
 
-  // TODO(user): this function is a better fit for the future custom iterator.
-  ColIndex GetVariableIndex(RowIndex r) const { return basis_vars_[r]; }
+  // TODO(user): This function is a better fit for the future custom iterator.
+  ColIndex GetBasicColumnForRow(RowIndex r) const { return basis_vars_[r]; }
+  SparseRow GetRow(RowIndex r) const { return dictionary_[r]; }
 
  private:
   const RowMajorSparseMatrix dictionary_;
