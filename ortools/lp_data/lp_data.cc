@@ -595,6 +595,7 @@ std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
   return output;
 }
 
+
 std::string LinearProgram::GetProblemStats() const {
   return ProblemStatFormatter(
       "%d,%d,%lld,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"

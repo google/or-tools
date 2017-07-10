@@ -291,6 +291,7 @@ class LinearProgram {
   // format var1 = X, var2 = Y, var3 = Z, ...
   std::string DumpSolution(const DenseRow& variable_values) const;
 
+
   // Returns a comma-separated std::string of integers containing (in that order)
   // num_constraints_, num_variables_in_file_, num_entries_,
   // num_objective_non_zeros_, num_rhs_non_zeros_, num_less_than_constraints_,

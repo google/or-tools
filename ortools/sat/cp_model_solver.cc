@@ -1798,6 +1798,23 @@ void ExtractLinearObjective(const CpModelProto& model_proto,
   }
 }
 
+}  // namespace
+
+// Used by NewFeasibleSolutionObserver to register observers.
+struct SolutionObservers {
+  explicit SolutionObservers(Model* model) {}
+  std::vector<std::function<void(const std::vector<int64>& values)>> observers;
+};
+
+std::function<void(Model*)> NewFeasibleSolutionObserver(
+    const std::function<void(const std::vector<int64>& values)>& observer) {
+  return [=](Model* model) {
+    model->GetOrCreate<SolutionObservers>()->observers.push_back(observer);
+  };
+}
+
+namespace {
+
 CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
                                       bool display_fixing_constraints,
                                       Model* model) {
@@ -1939,10 +1956,28 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
   int num_solutions = 0;
   SatSolver::Status status;
   if (!model_proto.has_objective()) {
-    status = SolveIntegerProblemWithLazyEncoding(
-        /*assumptions=*/{}, next_decision, model);
-    if (status == SatSolver::MODEL_SAT) {
-      FillSolutionInResponse(model_proto, m, &response);
+    int num_solutions = 0;
+    while (true) {
+      status = SolveIntegerProblemWithLazyEncoding(
+          /*assumptions=*/{}, next_decision, model);
+      if (status != SatSolver::Status::MODEL_SAT) break;
+
+      // TODO(user): add all solutions to the response? or their count?
+      if (num_solutions == 0) {
+        FillSolutionInResponse(model_proto, m, &response);
+      }
+
+      ++num_solutions;
+      for (const auto& observer :
+           m.GetOrCreate<SolutionObservers>()->observers) {
+        observer(m.ExtractFullAssignment());
+      }
+
+      if (!parameters.enumerate_all_solutions()) break;
+      model->Add(ExcludeCurrentSolutionAndBacktrack());
+    }
+    if (num_solutions > 0) {
+      status = SatSolver::Status::MODEL_SAT;
     }
   } else {
     // Optimization problem.
@@ -1952,6 +1987,10 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
         [&model_proto, &response, &num_solutions, &obj, &m,
          objective_var](const Model& sat_model) {
           num_solutions++;
+          for (const auto observer :
+               m.GetOrCreate<SolutionObservers>()->observers) {
+            observer(m.ExtractFullAssignment());
+          }
           FillSolutionInResponse(model_proto, m, &response);
           int64 objective_value = 0;
           for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
@@ -2041,22 +2080,6 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
 
 }  // namespace
 
-CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
-                                             Model* model) {
-  // Validate model_proto.
-  // TODO(user): provide an option to skip this step for speed?
-  {
-    const std::string error = ValidateCpModel(model_proto);
-    if (!error.empty()) {
-      VLOG(1) << error;
-      CpSolverResponse response;
-      response.set_status(CpSolverStatus::MODEL_INVALID);
-      return response;
-    }
-  }
-  return SolveCpModelInternal(model_proto, true, model);
-}
-
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   // Validate model_proto.
   // TODO(user): provide an option to skip this step for speed?
@@ -2068,6 +2091,12 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       response.set_status(CpSolverStatus::MODEL_INVALID);
       return response;
     }
+  }
+
+  const SatParameters& parameters =
+      model->GetOrCreate<SatSolver>()->parameters();
+  if (!parameters.cp_model_presolve()) {
+    return SolveCpModelInternal(model_proto, true, model);
   }
 
   CpModelProto presolved_proto;

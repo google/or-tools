@@ -263,6 +263,7 @@ message MPModelRequest {
   // rejected and yield an RPC Application error with code
   // MPSOLVER_MODEL_INVALID_SOLVER_PARAMETERS.
   optional string solver_specific_parameters = 5;
+
 }
 
 // Status returned by the solver. They follow a hierarchical nomenclature, to

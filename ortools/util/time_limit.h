@@ -212,7 +212,7 @@ return 1e-9 * (base::GetCurrentTimeNanos() - start_ns_);
   const int64 safety_buffer_ns_;
   RunningMax<int64> running_max_;
 
-// Only used when FLAGS_time_limit_use_usertime is true.
+  // Only used when FLAGS_time_limit_use_usertime is true.
   UserTimer user_timer_;
   double limit_in_seconds_;
 

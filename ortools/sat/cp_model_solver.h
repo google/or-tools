@@ -33,15 +33,16 @@ std::string CpSolverResponseStats(const CpSolverResponse& response);
 // representation of the given CpModelProto. It is done this way so that it is
 // easy to set custom parameters or time limit on the model with calls like:
 //  - model->SetSingleton<TimeLimit>(std::move(time_limit));
-//  - model->Add(NewSatParameters(parameters_as_string));
+//  - model->Add(NewSatParameters(parameters_as_string_or_proto));
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
-// Same as above, but do not run the CpModelProto presolver. This is exposed for
-// internal usage, all client should use the version above.
-//
-// TODO(user): add a parameters to enable/disable the presolve.
-CpSolverResponse SolveCpModelWithoutPresolve(const CpModelProto& model_proto,
-                                             Model* model);
+// Allows to register a solution "observer" with the model with
+//   model.Add(NewFeasibleSolutionObserver([](values){...}));
+// The given function will be called on each feasible solution found during the
+// search. The values will be in one to one correspondence with the variables
+// in the model_proto.
+std::function<void(Model*)> NewFeasibleSolutionObserver(
+    const std::function<void(const std::vector<int64>& values)>& observer);
 
 }  // namespace sat
 }  // namespace operations_research
