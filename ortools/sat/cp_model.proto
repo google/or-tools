@@ -339,6 +339,9 @@ enum CpSolverStatus {
 }
 
 // The response returned by a solver trying to solve a CpModelProto.
+//
+// TODO(user): support returning multiple solutions. Look at the Stubby
+// streaming API as we probably wants to get them as they are found.
 message CpSolverResponse {
   // The status of the solve.
   CpSolverStatus status = 1;
@@ -367,6 +370,11 @@ message CpSolverResponse {
   // objective for a minimization problem, or a proven upper-bound for a
   // maximization problem.
   double best_objective_bound = 4;
+
+  // This will be true iff the solver was asked to find all solutions to a
+  // satisfiability problem (or all optimal solutions to an optimization
+  // problem), and he was succesfull in doing so.
+  bool all_solutions_were_found = 5;
 
   // Some statistics about the solve.
   int64 num_booleans = 10;

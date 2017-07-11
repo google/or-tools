@@ -834,6 +834,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
                                             &flag_parameters))
       << FLAGS_cp_sat_params;
   m.parameters.MergeFrom(flag_parameters);
+  if (p.all_solutions && !m.proto.has_objective()) {
+    // Enumerate all sat solutions.
+    m.parameters.set_enumerate_all_solutions(true);
+  }
   sat_model.GetOrCreate<SatSolver>()->SetParameters(m.parameters);
 
   std::unique_ptr<TimeLimit> time_limit;
@@ -846,25 +850,29 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   time_limit->RegisterExternalBooleanAsLimit(interrupt_solve);
   sat_model.SetSingleton(std::move(time_limit));
 
+  // Print model statistics.
   if (!FLAGS_use_flatzinc_format) {
     LOG(INFO) << CpModelStats(m.proto);
   } else if (p.logging) {
     LogInFlatzincFormat(CpModelStats(m.proto));
   }
 
+  // Add solution observer.
   if (FLAGS_use_flatzinc_format && p.all_solutions) {
-    int solution_count = 0;
-    auto printer = [&fz_model, &solution_count, &m](
-        const std::vector<int64>& values) {
+    int solution_count = 1;  // Start at 1 as in the sat solver output.
+    auto printer = [&fz_model, &solution_count,
+                    &m](const std::vector<int64>& values) {
       const std::string solution_string =
-      SolutionString(fz_model, [&values, &m](fz::IntegerVariable* v) {
-          return values[m.fz_var_to_index[v]];
-        });
+          SolutionString(fz_model, [&values, &m](fz::IntegerVariable* v) {
+            return values[m.fz_var_to_index[v]];
+          });
       std::cout << "%% solution #" << solution_count++ << std::endl;
       std::cout << solution_string << std::endl;
     };
     sat_model.Add(NewFeasibleSolutionObserver(printer));
   }
+
+  // Solve.
   const CpSolverResponse response = SolveCpModel(m.proto, &sat_model);
 
   // Check the returned solution with the fz model checker.
@@ -879,14 +887,15 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   if (FLAGS_use_flatzinc_format) {
     if (response.status() == CpSolverStatus::MODEL_SAT ||
         response.status() == CpSolverStatus::OPTIMAL) {
-      if (!p.all_solutions) {
+      if (!p.all_solutions) {  // Already printed in the other case.
         const std::string solution_string =
             SolutionString(fz_model, [&response, &m](fz::IntegerVariable* v) {
-                return response.solution(m.fz_var_to_index[v]);
-              });
+              return response.solution(m.fz_var_to_index[v]);
+            });
         std::cout << solution_string << std::endl;
       }
-      if (response.status() == CpSolverStatus::OPTIMAL) {
+      if (response.status() == CpSolverStatus::OPTIMAL ||
+          response.all_solutions_were_found()) {
         std::cout << "==========" << std::endl;
       }
     } else if (response.status() == CpSolverStatus::MODEL_UNSAT) {

@@ -1483,15 +1483,16 @@ void FillSolutionInResponse(const CpModelProto& model_proto,
                             const ModelWithMapping& m,
                             CpSolverResponse* response) {
   const std::vector<int64> solution = m.ExtractFullAssignment();
+  response->set_status(CpSolverStatus::MODEL_SAT);
+  response->clear_solution();
+  response->clear_solution_lower_bounds();
+  response->clear_solution_upper_bounds();
   if (!solution.empty()) {
     CHECK(SolutionIsFeasible(model_proto, solution));
-    response->clear_solution();
     for (const int64 value : solution) response->add_solution(value);
   } else {
     // Not all variables are fixed.
     // We fill instead the lb/ub of each variables.
-    response->clear_solution_lower_bounds();
-    response->clear_solution_upper_bounds();
     for (int i = 0; i < model_proto.variables_size(); ++i) {
       if (m.IsInteger(i)) {
         response->add_solution_lower_bounds(m.Get(LowerBound(m.Integer(i))));
@@ -1815,9 +1816,11 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 
 namespace {
 
-CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
-                                      bool display_fixing_constraints,
-                                      Model* model) {
+CpSolverResponse SolveCpModelInternal(
+    const CpModelProto& model_proto, bool display_fixing_constraints,
+    const std::function<void(const CpSolverResponse&)>&
+        external_solution_observer,
+    Model* model) {
   // Timing.
   WallTimer wall_timer;
   UserTimer user_timer;
@@ -1956,27 +1959,23 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
   int num_solutions = 0;
   SatSolver::Status status;
   if (!model_proto.has_objective()) {
-    int num_solutions = 0;
     while (true) {
       status = SolveIntegerProblemWithLazyEncoding(
           /*assumptions=*/{}, next_decision, model);
       if (status != SatSolver::Status::MODEL_SAT) break;
 
       // TODO(user): add all solutions to the response? or their count?
-      if (num_solutions == 0) {
-        FillSolutionInResponse(model_proto, m, &response);
-      }
-
       ++num_solutions;
-      for (const auto& observer :
-           m.GetOrCreate<SolutionObservers>()->observers) {
-        observer(m.ExtractFullAssignment());
-      }
+      FillSolutionInResponse(model_proto, m, &response);
+      external_solution_observer(response);
 
       if (!parameters.enumerate_all_solutions()) break;
       model->Add(ExcludeCurrentSolutionAndBacktrack());
     }
     if (num_solutions > 0) {
+      if (status == SatSolver::Status::MODEL_UNSAT) {
+        response.set_all_solutions_were_found(true);
+      }
       status = SatSolver::Status::MODEL_SAT;
     }
   } else {
@@ -1985,13 +1984,10 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
     VLOG(1) << obj.vars_size() << " terms in the proto objective.";
     const auto solution_observer =
         [&model_proto, &response, &num_solutions, &obj, &m,
-         objective_var](const Model& sat_model) {
+         &external_solution_observer, objective_var](const Model& sat_model) {
           num_solutions++;
-          for (const auto observer :
-               m.GetOrCreate<SolutionObservers>()->observers) {
-            observer(m.ExtractFullAssignment());
-          }
           FillSolutionInResponse(model_proto, m, &response);
+          external_solution_observer(response);
           int64 objective_value = 0;
           for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
             objective_value += model_proto.objective().coeffs(i) *
@@ -2078,6 +2074,65 @@ CpSolverResponse SolveCpModelInternal(const CpModelProto& model_proto,
   return response;
 }
 
+// TODO(user): If this ever shows up in the profile, we could avoid copying
+// the mapping_proto if we are careful about how we modify the variable domain
+// before postsolving it.
+void PostsolveResponse(const CpModelProto& model_proto,
+                       CpModelProto mapping_proto,
+                       const std::vector<int>& postsolve_mapping,
+                       CpSolverResponse* response) {
+  if (response->status() != CpSolverStatus::MODEL_SAT &&
+      response->status() != CpSolverStatus::OPTIMAL) {
+    return;
+  }
+  // Postsolve.
+  for (int i = 0; i < response->solution_size(); ++i) {
+    auto* var_proto = mapping_proto.mutable_variables(postsolve_mapping[i]);
+    var_proto->clear_domain();
+    var_proto->add_domain(response->solution(i));
+    var_proto->add_domain(response->solution(i));
+  }
+  for (int i = 0; i < response->solution_lower_bounds_size(); ++i) {
+    auto* var_proto = mapping_proto.mutable_variables(postsolve_mapping[i]);
+    FillDomain(
+        IntersectionOfSortedDisjointIntervals(
+            ReadDomain(*var_proto), {{response->solution_lower_bounds(i),
+                                      response->solution_upper_bounds(i)}}),
+        var_proto);
+  }
+  Model postsolve_model;
+
+  // Postosolve parameters.
+  // TODO(user): this problem is usually trivial, but we may still want to
+  // impose a time limit or copy some of the parameters passed by the user.
+  {
+    SatParameters params;
+    params.set_use_global_lp_constraint(false);
+    postsolve_model.Add(operations_research::sat::NewSatParameters(params));
+  }
+  const CpSolverResponse postsolve_response = SolveCpModelInternal(
+      mapping_proto, false, [](const CpSolverResponse&) {}, &postsolve_model);
+  CHECK_EQ(postsolve_response.status(), CpSolverStatus::MODEL_SAT);
+  response->clear_solution();
+  response->clear_solution_lower_bounds();
+  response->clear_solution_upper_bounds();
+  if (!postsolve_response.solution().empty()) {
+    for (int i = 0; i < model_proto.variables_size(); ++i) {
+      response->add_solution(postsolve_response.solution(i));
+    }
+    CHECK(SolutionIsFeasible(model_proto,
+                             std::vector<int64>(response->solution().begin(),
+                                                response->solution().end())));
+  } else {
+    for (int i = 0; i < model_proto.variables_size(); ++i) {
+      response->add_solution_lower_bounds(
+          postsolve_response.solution_lower_bounds(i));
+      response->add_solution_upper_bounds(
+          postsolve_response.solution_upper_bounds(i));
+    }
+  }
+}
+
 }  // namespace
 
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
@@ -2093,10 +2148,19 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     }
   }
 
+  const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
   const SatParameters& parameters =
       model->GetOrCreate<SatSolver>()->parameters();
   if (!parameters.cp_model_presolve()) {
-    return SolveCpModelInternal(model_proto, true, model);
+    return SolveCpModelInternal(
+        model_proto, true,
+        [&](const CpSolverResponse& response) {
+          for (const auto& observer : observers) {
+            observer(std::vector<int64>(response.solution().begin(),
+                                        response.solution().end()));
+          }
+        },
+        model);
   }
 
   CpModelProto presolved_proto;
@@ -2104,62 +2168,21 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
   std::vector<int> postsolve_mapping;
   PresolveCpModel(model_proto, &presolved_proto, &mapping_proto,
                   &postsolve_mapping);
-
   VLOG(1) << CpModelStats(presolved_proto);
 
-  CpSolverResponse response =
-      SolveCpModelInternal(presolved_proto, true, model);
-  if (response.status() != CpSolverStatus::MODEL_SAT &&
-      response.status() != CpSolverStatus::OPTIMAL) {
-    return response;
-  }
-
-  // Postsolve.
-  for (int i = 0; i < response.solution_size(); ++i) {
-    auto* var_proto = mapping_proto.mutable_variables(postsolve_mapping[i]);
-    var_proto->clear_domain();
-    var_proto->add_domain(response.solution(i));
-    var_proto->add_domain(response.solution(i));
-  }
-  for (int i = 0; i < response.solution_lower_bounds_size(); ++i) {
-    auto* var_proto = mapping_proto.mutable_variables(postsolve_mapping[i]);
-    FillDomain(
-        IntersectionOfSortedDisjointIntervals(
-            ReadDomain(*var_proto), {{response.solution_lower_bounds(i),
-                                      response.solution_upper_bounds(i)}}),
-        var_proto);
-  }
-  Model postsolve_model;
-
-  // Postosolve parameters.
-  // TODO(user): this problem is usually trivial, but we may still want to
-  // impose a time limit or copy some of the parameters passed by the user.
-  {
-    SatParameters params;
-    params.set_use_global_lp_constraint(false);
-    postsolve_model.Add(operations_research::sat::NewSatParameters(params));
-  }
-  const CpSolverResponse postsolve_response =
-      SolveCpModelInternal(mapping_proto, false, &postsolve_model);
-  CHECK_EQ(postsolve_response.status(), CpSolverStatus::MODEL_SAT);
-  response.clear_solution();
-  response.clear_solution_lower_bounds();
-  response.clear_solution_upper_bounds();
-  if (!postsolve_response.solution().empty()) {
-    for (int i = 0; i < model_proto.variables_size(); ++i) {
-      response.add_solution(postsolve_response.solution(i));
-    }
-    CHECK(SolutionIsFeasible(model_proto,
-                             std::vector<int64>(response.solution().begin(),
-                                                response.solution().end())));
-  } else {
-    for (int i = 0; i < model_proto.variables_size(); ++i) {
-      response.add_solution_lower_bounds(
-          postsolve_response.solution_lower_bounds(i));
-      response.add_solution_upper_bounds(
-          postsolve_response.solution_upper_bounds(i));
-    }
-  }
+  CpSolverResponse response = SolveCpModelInternal(
+      presolved_proto, true,
+      [&](const CpSolverResponse& response) {
+        if (observers.empty()) return;
+        CpSolverResponse copy = response;
+        PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &copy);
+        for (const auto& observer : observers) {
+          observer(std::vector<int64>(copy.solution().begin(),
+                                      copy.solution().end()));
+        }
+      },
+      model);
+  PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &response);
   return response;
 }
 

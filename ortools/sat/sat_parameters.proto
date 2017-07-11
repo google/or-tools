@@ -502,5 +502,10 @@ message SatParameters {
   optional bool cp_model_presolve = 86 [default = true];
 
   // Wheter we enumerate all solutions of a SAT problem.
+  //
+  // TODO(user): When used with cp_model_presolve, it is possible that not all
+  // solutions are enumerated. This is because our presolver currently do not
+  // look at this parameter and only guarantee the existence of one feasible
+  // solution to the presolved problem.
   optional bool enumerate_all_solutions = 87 [default = false];
 }

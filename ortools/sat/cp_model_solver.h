@@ -41,6 +41,9 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 // The given function will be called on each feasible solution found during the
 // search. The values will be in one to one correspondence with the variables
 // in the model_proto.
+//
+// TODO(user): Change the API to take the full CpSolverResponse() so we have
+// solve statistics and the current objective value.
 std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const std::vector<int64>& values)>& observer);
 
