@@ -54,9 +54,9 @@ clean_python:
 	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
 
-install_python_modules: dependencies/sources/protobuf-3.2.0/python/google/protobuf/descriptor_pb2.py
+install_python_modules: dependencies/sources/protobuf-3.3.0/python/google/protobuf/descriptor_pb2.py
 
-dependencies/sources/protobuf-3.2.0/python/google/protobuf/descriptor_pb2.py: \
+dependencies/sources/protobuf-3.3.0/python/google/protobuf/descriptor_pb2.py: \
 dependencies/sources/protobuf-$(PROTOBUF_TAG)/python/setup.py
 ifeq ("$(SYSTEM)", "win")
 	copy dependencies$Sinstall$Sbin$Sprotoc.exe dependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Ssrc
