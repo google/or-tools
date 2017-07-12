@@ -100,7 +100,11 @@ class LinearProgram {
   ColIndex FindOrCreateVariable(const std::string& variable_id);
   RowIndex FindOrCreateConstraint(const std::string& constraint_id);
 
-  // Functions to set the name of a variable or constraint.
+  // Functions to set the name of a variable or constraint. Note that you
+  // won't be able to find those named variables/constraints with
+  // FindOrCreate{Variable|Constraint}().
+  // TODO(user): Add PopulateIdsFromNames() so names added via
+  // Set{Variable|Constraint}Name() can be found.
   void SetVariableName(ColIndex col, const std::string& name);
   void SetConstraintName(RowIndex row, const std::string& name);
 

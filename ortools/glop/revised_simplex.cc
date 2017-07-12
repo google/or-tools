@@ -231,6 +231,7 @@ Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
        // *equal* to the corresponding limits (to return a meaningful status
        // when the limits are set to 0).
        num_optims <= parameters_.max_number_of_reoptimizations() &&
+       !objective_limit_reached_ &&
        (num_iterations_ == 0 ||
         num_iterations_ < parameters_.max_number_of_iterations()) &&
        !time_limit->LimitReached() && !FLAGS_simplex_stop_after_feasibility &&

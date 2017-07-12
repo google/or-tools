@@ -97,15 +97,15 @@ void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   DCHECK(!lp_constraint_is_registered_);
   lp_constraint_is_registered_ = true;
 
-  // Note that the order is important so that the lp objective is exactly
-  // lp_to_cp_objective_scale_ times the cp one.
+  // Note that the order is important so that the lp objective is exactly the
+  // same as the cp objective after scaling by the factor stored in lp_data_.
   if (objective_is_defined_) {
     for (const auto& var_coeff : objective_lp_) {
       lp_data_.SetObjectiveCoefficient(var_coeff.first, var_coeff.second);
     }
   }
   lp_data_.Scale(&scaler_);
-  lp_to_cp_objective_scale_ = lp_data_.ScaleObjective();
+  lp_data_.ScaleObjective();
 
   if (!FLAGS_lp_constraint_use_dual_ray) {
     // Add all the individual violation variables. Note that it is important
@@ -231,7 +231,7 @@ bool LinearProgrammingConstraint::Propagate() {
         lp_data_.SetObjectiveCoefficient(
             col, var_coeff.second * scaler_.col_scale(col));
       }
-      lp_to_cp_objective_scale_ = lp_data_.ScaleObjective();
+      lp_data_.ScaleObjective();
     }
     for (int i = 0; i < num_vars; i++) {
       lp_solution_[i] = GetVariableValueAtCpScale(mirror_lp_variables_[i]);
@@ -242,6 +242,25 @@ bool LinearProgrammingConstraint::Propagate() {
     return true;
   }
 
+  glop::GlopParameters parameters = simplex_.GetParameters();
+
+  if (objective_is_defined_) {
+    // We put a limit on the dual objective since there is no point increasing
+    // it past our current objective upper-bound (we will already fail as soon
+    // as we pass it). Note that this limit is properly transformed using the
+    // objective scaling factor and offset stored in lp_data_.
+    parameters.set_objective_upper_limit(static_cast<double>(
+        integer_trail_->UpperBound(objective_cp_).value() + kEpsilon));
+  }
+
+  // Put an iteration limit on the work we do in the simplex for this call. Note
+  // that because we are "incremental", even if we don't solve it this time we
+  // will make progress towards a solve in the lower node of the tree search.
+  //
+  // TODO(user): Put more at the root, and less afterwards?
+  parameters.set_max_number_of_iterations(500);
+
+  simplex_.SetParameters(parameters);
   const auto status = simplex_.Solve(lp_data_, time_limit_);
   CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "
                      << status.error_message();
@@ -254,7 +273,8 @@ bool LinearProgrammingConstraint::Propagate() {
 
   // Optimality deductions if problem has an objective.
   if (objective_is_defined_ &&
-      simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+      (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
+       simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE)) {
     // Try to filter optimal objective value. Note that GetObjectiveValue()
     // already take care of the scaling so that it returns an objective in the
     // CP world.
@@ -289,10 +309,11 @@ bool LinearProgrammingConstraint::Propagate() {
   }
 
   // Copy current LP solution.
-  for (int i = 0; i < num_vars; i++) {
-    lp_solution_[i] = GetVariableValueAtCpScale(mirror_lp_variables_[i]);
+  if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    for (int i = 0; i < num_vars; i++) {
+      lp_solution_[i] = GetVariableValueAtCpScale(mirror_lp_variables_[i]);
+    }
   }
-
   return true;
 }
 
@@ -346,7 +367,7 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
   // stored in the lp_data_, all the other functions like GetReducedCost() or
   // GetVariableValue() do not.
   const double lp_objective_delta =
-      cp_objective_delta / lp_to_cp_objective_scale_;
+      cp_objective_delta / lp_data_.objective_scaling_factor();
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
     const IntegerVariable cp_var = integer_variables_[i];

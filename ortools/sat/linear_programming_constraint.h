@@ -122,7 +122,6 @@ class LinearProgrammingConstraint : public PropagatorInterface {
 
   // For the scaling.
   glop::SparseMatrixScaler scaler_;
-  glop::Fractional lp_to_cp_objective_scale_;
 
   // violation_sum_ is used to simulate phase I of the simplex and be able to
   // do reduced cost strengthening on problem feasibility by using the sum of
