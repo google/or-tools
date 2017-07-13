@@ -10,7 +10,7 @@ RUN echo "deb http://download.mono-project.com/repo/debian wheezy main" | sudo t
 
 RUN apt-get update
 
-RUN apt-get -y install git autoconf libtool zlib1g-dev gawk g++ curl subversion make mono-complete lsb-release python-dev default-jdk python-setuptools python-six python3-setuptools python3-dev libpcre3-dev
+RUN apt-get -y install git autoconf libtool zlib1g-dev gawk g++ curl subversion make mono-complete lsb-release python-dev default-jdk python-setuptools python-six python3-setuptools python3-dev libpcre3-dev python-wheel python3-wheel
 
 WORKDIR /root
 
