@@ -13,7 +13,14 @@ clean_all_images:
 clean_all_containers:
 	docker rm `docker ps -a -q`
 
-delivery: ubuntu-16.04-archive ubuntu-16.04-pypi ubuntu-16.04-pypi3
+delivery: \
+	ubuntu-14.04-archive \
+	ubuntu-14.04-pypi    \
+	ubuntu-14.04-pypi3   \
+	ubuntu-16.04-archive \
+	ubuntu-16.04-pypi    \
+	ubuntu-16.04-pypi3   \
+	ubuntu-17.04-archive
 
 # Ubuntu 14.04 images
 
