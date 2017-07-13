@@ -1,11 +1,14 @@
-# General commandes
+# General commands
 
 export:
 	mkdir export
 
-images: ubuntu-16.04-image ubuntu-17.04-image
+images: ubuntu-14.04-image ubuntu-16.04-image ubuntu-17.04-image
 
-images-no-cache: ubuntu-16.04-image-no-cache ubuntu-17.04-image-no-cache
+images-no-cache: \
+	ubuntu-14.04-image-no-cache \
+	ubuntu-16.04-image-no-cache \
+	ubuntu-17.04-image-no-cache
 
 clean_all_images:
 	docker rmi `docker images -q -a`
@@ -27,7 +30,10 @@ delivery: \
 ubuntu-14.04-image:
 	docker build -f ubuntu-14.04.Dockerfile -t or-tools-ubuntu-14.04-image .
 
-ubuntu-14.04-archive: export
+ubuntu-14.04-image-no-cache:
+	docker build --no-cache -f ubuntu-14.04.Dockerfile -t or-tools-ubuntu-14.04-image .
+
+ubuntu-14.04-archive: export ubuntu-14.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-14.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive python_examples_archive; cp *.tar.gz /export"
 
 ubuntu-14.04-pypi: export ubuntu-14.04-image
