@@ -329,7 +329,7 @@ else
   ifeq ($(PLATFORM),MACOSX)
 	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel
   else
-	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg
+	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel
   endif
 endif
 	$(COPY) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/dist/* /export

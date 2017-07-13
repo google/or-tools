@@ -23,6 +23,12 @@ ubuntu-14.04-image:
 ubuntu-14.04-archive: export
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-14.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive python_examples_archive; cp *.tar.gz /export"
 
+ubuntu-14.04-pypi: export ubuntu-14.04-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-14.04-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; make pypi_export"
+
+ubuntu-14.04-pypi3: export ubuntu-14.04-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-14.04-image:latest /bin/bash -c "git pull; sed -i -e 's/2.7/3.4/g' Makefile.local; make clean; make python -j 5; make test_python; make pypi_export"
+
 # Ubuntu 16.06 images
 
 ubuntu-16.04-image:
