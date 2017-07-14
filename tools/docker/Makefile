@@ -16,6 +16,13 @@ clean_all_images:
 clean_all_containers:
 	docker rm `docker ps -a -q`
 
+archives: \
+	centos-7-archive \
+	debian-9-archive \
+	ubuntu-14.04-archive \
+	ubuntu-16.04-archive \
+	ubuntu-17.04-archive
+
 delivery: \
 	ubuntu-14.04-archive \
 	ubuntu-14.04-pypi    \
