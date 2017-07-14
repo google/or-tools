@@ -229,6 +229,7 @@ python_examples_archive:
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
 	$(COPY) tools$Ssetup_data.py temp$Sortools_examples$Ssetup.py
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sortools_examples$Ssetup.py
+	$(SED) -i -e 's/XXXX/$(PYPI_OS)/' temp$Sortools_examples$Ssetup.py
 	$(COPY) tools$Scheck_python_deps.py temp$Sortools_examples
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sortools_examples$Scheck_python_deps.py
 	$(SED) -i -e 's/PROTOBUF_TAG/$(PROTOBUF_TAG)/' temp$Sortools_examples$Scheck_python_deps.py
@@ -274,9 +275,9 @@ $(PYPI_ARCHIVE_TEMP_DIR) : $(OR_TOOLS_PYTHON_GEN_SCRIPTS) $(PATCHELF)
 	$(COPY) LICENSE-2.0.txt $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
 	$(COPY) tools$Ssetup.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
 ifeq ($(PYTHON3),true)
-	$(SED) -i -e 's/ORTOOLS_PYTHON_VERSION/py3-ortools/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
+	$(SED) -i -e 's/ORTOOLS_PYTHON_VERSION/py3-ortools$(PYPI_OS)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 else
-	$(SED) -i -e 's/ORTOOLS_PYTHON_VERSION/ortools/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
+	$(SED) -i -e 's/ORTOOLS_PYTHON_VERSION/ortools$(PYPI_OS)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 endif
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
 	$(SED) -i -e 's/PROTOBUF_TAG/$(PROTOBUF_TAG)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Ssetup.py
