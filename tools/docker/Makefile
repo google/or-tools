@@ -34,7 +34,7 @@ pypi3: \
 	debian-9-pypi3 \
 	ubuntu-14.04-pypi3 \
 	ubuntu-16.04-pypi3 \
-	ubuntu-17.04-pyp3i
+	ubuntu-17.04-pypi3
 
 delivery:  archive pypi pypy3
 
