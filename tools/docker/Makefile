@@ -78,3 +78,23 @@ ubuntu-17.04-pypi: export ubuntu-17.04-image
 
 ubuntu-17.04-pypi3: export ubuntu-17.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.04-image:latest /bin/bash -c "git pull; sed -i -e 's/2.7/3.5/g' Makefile.local; make clean; make python -j 5; make test_python; make pypi_export"
+
+# Centos 7 images
+
+centos-7-image:
+	docker build -f centos-7.Dockerfile -t or-tools-centos-7-image .
+
+centos-7-image-no-cache:
+	docker build --no-cache -f centos-7.Dockerfile -t or-tools-centos-7-image .
+
+centos-7-archive: export centos-7-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive python_examples_archive; cp *.tar.gz /export"
+
+centos-7-pypi: export centos-7-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; make pypi_export"
+
+centos-7-pypi3: export centos-7-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; sed -i -e 's/2.7/3.4/g' Makefile.local; make clean; make python -j 5; make test_python; make pypi_export"
+
+centos-7-bash: centos-7-image
+	docker run -w /root/or-tools -v `pwd`/export:/export -it or-tools-centos-7-image:latest /bin/bash

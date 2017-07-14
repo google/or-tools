@@ -145,7 +145,11 @@ ifeq ($(PLATFORM),LINUX)
   # This is needed to find libz.a
   ZLIB_LNK = -lz
   # This is needed to find libprotobuf.a
-  PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
+  ifeq ($(DISTRIBUTION_ID),CentOS)
+    PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib64/libprotobuf.a
+  else
+    PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a
+  endif
   # This is needed to find libglog.a
   GLOG_LNK = $(UNIX_GLOG_DIR)/lib/libglog.a
 
