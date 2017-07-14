@@ -79,6 +79,23 @@ ubuntu-17.04-pypi: export ubuntu-17.04-image
 ubuntu-17.04-pypi3: export ubuntu-17.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.04-image:latest /bin/bash -c "git pull; sed -i -e 's/2.7/3.5/g' Makefile.local; make clean; make python -j 5; make test_python; make pypi_export"
 
+# Debian 9 images
+
+debian-9-image:
+	docker build -f debian-9.Dockerfile -t or-tools-debian-9-image .
+
+debian-9-image-no-cache:
+	docker build --no-cache -f debian-9.Dockerfile -t or-tools-debian-9-image .
+
+debian-9-archive: export debian-9-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-debian-9-image:latest /bin/bash -c "git pull; pwd; make clean; make all -j 5; make test; make archive; cp *.tar.gz /export"
+
+debian-9-pypi: export debian-9-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-debian-9-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; make pypi_export"
+
+debian-9-pypi3: export debian-9-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-debian-9-image:latest /bin/bash -c "git pull; sed -i -e 's/2.7/3.5/g' Makefile.local; make clean; make python -j 5; make test_python; make pypi_export"
+
 # Centos 7 images
 
 centos-7-image:
