@@ -8,7 +8,27 @@ RUN rpm --import "http://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3FA7E03
 
 RUN yum-config-manager --add-repo http://download.mono-project.com/repo/centos7/
 
-RUN yum -y install wget git autoconf libtool zlib-devel gawk gcc-c++ curl cmake subversion make mono-devel redhat-lsb-code python-devel java-1.8.0-openjdk twine python-setuptools python-six python-wheel python3-wheel pcre-devel
+RUN yum -y \
+    install \
+    wget \
+    git \
+    autoconf \
+    libtool \
+    zlib-devel \
+    gawk \
+    gcc-c++ \
+    curl \
+    subversion \
+    make \
+    mono-devel \
+    redhat-lsb-core \
+    python-devel \
+    java-1.8.0-openjdk \
+    java-1.8.0-openjdk-devel \
+    python-setuptools \
+    python-six \
+    python-wheel \
+    pcre-devel which
 
 ENV TZ=America/Los_Angeles
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
