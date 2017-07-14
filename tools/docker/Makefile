@@ -93,8 +93,5 @@ centos-7-archive: export centos-7-image
 centos-7-pypi: export centos-7-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; make pypi_export"
 
-centos-7-pypi3: export centos-7-image
-	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; sed -i -e 's/2.7/3.4/g' Makefile.local; make clean; make python -j 5; make test_python; make pypi_export"
-
 centos-7-bash: centos-7-image
 	docker run -w /root/or-tools -v `pwd`/export:/export -it or-tools-centos-7-image:latest /bin/bash

@@ -60,3 +60,5 @@ RUN git clone https://github.com/google/or-tools
 WORKDIR /root/or-tools
 
 RUN make third_party
+
+RUN easy_install wheel
