@@ -239,7 +239,7 @@ ifeq ($(SYSTEM),win)
 	cd temp && ..\tools\zip.exe -r ..\or-tools_python_examples_v$(OR_TOOLS_VERSION).zip ortools_examples
 else
 	cd temp/ortools_examples && tar -C ../.. -c -v --exclude *svn* --exclude *roadef* examples/data | tar xvm
-	cd temp && tar -c -v -z --no-same-owner -f ../or-tools_python_examples_v$(OR_TOOLS_VERSION).tar.gz ortools_examples
+	cd temp && tar -c -v -z --no-same-owner -f ../or-tools_python_examples$(PYPI_OS)_v$(OR_TOOLS_VERSION).tar.gz ortools_examples
 endif
 
 PYPI_ARCHIVE_TEMP_DIR = temp-python$(PYTHON_VERSION)
