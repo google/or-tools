@@ -709,7 +709,7 @@ std::string SolutionString(
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
         StrAppend(&result, output.bounds[i].min_value, "..",
-                        output.bounds[i].max_value);
+                  output.bounds[i].max_value, ", ");
       } else {
         result.append("{},");
       }
