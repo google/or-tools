@@ -838,6 +838,7 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     // Enumerate all sat solutions.
     m.parameters.set_enumerate_all_solutions(true);
   }
+  m.parameters.set_use_fixed_search(!p.free_search);
   sat_model.GetOrCreate<SatSolver>()->SetParameters(m.parameters);
 
   std::unique_ptr<TimeLimit> time_limit;
