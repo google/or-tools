@@ -1011,13 +1011,26 @@ bool PresolveElement(ConstraintProto* ct, PresolveContext* context) {
 
   bool all_included_in_target_domain = true;
   bool reduced_index_domain = false;
+  const std::vector<ClosedInterval> index_domain =
+      context->GetRefDomain(index_ref);
+  if (index_domain.front().start < 0 ||
+      index_domain.back().end >= ct->element().vars_size()) {
+    reduced_index_domain = true;
+    if (RefIsPositive(index_ref)) {
+      context->domains[PositiveRef(index_ref)].IntersectWith(
+          {{0, ct->element().vars_size() - 1}});
+    } else {
+      context->domains[PositiveRef(index_ref)].IntersectWith(
+          {{-ct->element().vars_size() + 1, 0}});
+    }
+  }
   std::vector<ClosedInterval> infered_domain;
   const std::vector<ClosedInterval> target_dom =
       context->GetRefDomain(target_ref);
   for (const ClosedInterval interval : context->GetRefDomain(index_ref)) {
     for (int i = interval.start; i <= interval.end; ++i) {
       CHECK_GE(i, 0);
-      CHECK_LE(i, ct->element().vars_size());
+      CHECK_LT(i, ct->element().vars_size());
       const int ref = ct->element().vars(i);
       const auto& domain = context->GetRefDomain(ref);
       if (IntersectionOfSortedDisjointIntervals(target_dom, domain).empty()) {
