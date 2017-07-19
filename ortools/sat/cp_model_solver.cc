@@ -242,7 +242,7 @@ class ModelWithMapping {
 
   Model* model_;
 
-  // Note that only the variables used by at leat one constraint will be
+  // Note that only the variables used by at least one constraint will be
   // created, the other will have a kNo[Integer,Interval,Boolean]VariableValue.
   std::vector<IntegerVariable> integers_;
   std::vector<IntervalVariable> intervals_;
@@ -463,14 +463,6 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
     integers_[i] = Add(NewIntegerVariable(ReadDomain(var_proto)));
   }
 
-  for (const int i : usage.intervals) {
-    const ConstraintProto& ct = model_proto.constraints(i);
-    CHECK(!HasEnforcementLiteral(ct)) << "Optional interval not yet supported.";
-    intervals_[i] = Add(NewInterval(Integer(ct.interval().start()),
-                                    Integer(ct.interval().end()),
-                                    Integer(ct.interval().size())));
-  }
-
   for (const int i : usage.booleans) {
     booleans_[i] = Add(NewBooleanVariable());
     const auto domain = ReadDomain(model_proto.variables(i));
@@ -487,6 +479,24 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
       GetOrCreate<IntegerEncoder>()->FullyEncodeVariableUsingGivenLiterals(
           integers_[i], {lit.Negated(), lit},
           {IntegerValue(0), IntegerValue(1)});
+    }
+  }
+
+  for (const int i : usage.intervals) {
+    const ConstraintProto& ct = model_proto.constraints(i);
+    if (HasEnforcementLiteral(ct)) {
+      const sat::Literal enforcement_literal =
+          Literal(ct.enforcement_literal(0));
+      // TODO(user): Fix the constant variable situation. An optional interval
+      // with constant start/end or size cannot share the same constant
+      // variable if it is used in non-optional situation.
+      intervals_[i] = Add(NewOptionalInterval(
+          Integer(ct.interval().start()), Integer(ct.interval().end()),
+          Integer(ct.interval().size()), enforcement_literal));
+    } else {
+      intervals_[i] = Add(NewInterval(Integer(ct.interval().start()),
+                                      Integer(ct.interval().end()),
+                                      Integer(ct.interval().size())));
     }
   }
 
@@ -1870,7 +1880,7 @@ CpSolverResponse SolveCpModelInternal(
     model->GetOrCreate<SatSolver>()->Propagate();
     if (display_fixing_constraints && trail->Index() > old_num_fixed) {
       VLOG(1) << "Constraint fixed " << trail->Index() - old_num_fixed
-              << " Boolean variable(s): " << ct.DebugString();
+              << " Boolean variable(s): " << ct.ShortDebugString();
     }
     if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
       VLOG(1) << "UNSAT during extraction (after adding '"
@@ -1982,6 +1992,7 @@ CpSolverResponse SolveCpModelInternal(
     // Optimization problem.
     const CpObjectiveProto& obj = model_proto.objective();
     VLOG(1) << obj.vars_size() << " terms in the proto objective.";
+    VLOG(1) << "Initial num_bool: " << model->Get<SatSolver>()->NumVariables();
     const auto solution_observer =
         [&model_proto, &response, &num_solutions, &obj, &m,
          &external_solution_observer, objective_var](const Model& sat_model) {

@@ -599,6 +599,31 @@ bool PresolveIntProd(ConstraintProto* ct, PresolveContext* context) {
   return RemoveConstraint(ct, context);
 }
 
+bool PresolveIntDiv(ConstraintProto* ct, PresolveContext* context) {
+  // For now, we only presolve the case where the divisor is constant.
+  const int target = ct->int_div().target();
+  const int ref_x = ct->int_div().vars(0);
+  const int ref_div = ct->int_div().vars(1);
+  if (!RefIsPositive(target) || !RefIsPositive(ref_x) ||
+      !RefIsPositive(ref_div) || !context->domains[ref_div].IsFixed()) {
+    return false;
+  }
+
+  const int64 divisor = context->domains[ref_div].Min();
+  if (divisor == 1) {
+    context->UpdateRuleStats("TODO int_div: rewrite to equality");
+  }
+  if (context->domains[target].IntersectWith(DivisionOfSortedDisjointIntervals(
+          context->GetRefDomain(ref_x), divisor))) {
+    context->UpdateRuleStats(
+        "int_div: updated domain of target in target = X / cte");
+  }
+
+  // TODO(user): reduce the domain of X by introducing an
+  // InverseDivisionOfSortedDisjointIntervals().
+  return false;
+}
+
 bool ExploitEquivalenceRelations(ConstraintProto* ct,
                                  PresolveContext* context) {
   if (ContainsKey(context->affine_constraints, ct)) return false;
@@ -1393,6 +1418,9 @@ void PresolveCpModel(const CpModelProto& initial_model,
           break;
         case ConstraintProto::ConstraintCase::kIntProd:
           changed |= PresolveIntProd(ct, &context);
+          break;
+        case ConstraintProto::ConstraintCase::kIntDiv:
+          changed |= PresolveIntDiv(ct, &context);
           break;
         case ConstraintProto::ConstraintCase::kLinear:
           changed |= PresolveLinear(ct, &context);

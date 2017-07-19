@@ -335,13 +335,22 @@ class ConstraintChecker {
     return Value(ct.interval().start()) + size == Value(ct.interval().end());
   }
 
+  bool ConstraintIsEnforced(const ConstraintProto& ct) {
+    return !HasEnforcementLiteral(ct) ||
+           LiteralIsTrue(ct.enforcement_literal(0));
+  }
+
   bool NoOverlapConstraintIsFeasible(const CpModelProto& model,
                                      const ConstraintProto& ct) {
     std::vector<std::pair<int64, int64>> start_durations_pairs;
     for (const int i : ct.no_overlap().intervals()) {
-      const IntervalConstraintProto& interval = model.constraints(i).interval();
-      start_durations_pairs.push_back(
-          {Value(interval.start()), Value(interval.size())});
+      const ConstraintProto& interval_constraint = model.constraints(i);
+      if (ConstraintIsEnforced(interval_constraint)) {
+        const IntervalConstraintProto& interval =
+            interval_constraint.interval();
+        start_durations_pairs.push_back(
+            {Value(interval.start()), Value(interval.size())});
+      }
     }
     std::sort(start_durations_pairs.begin(), start_durations_pairs.end());
     int64 previous_end = kint64min;
@@ -362,15 +371,31 @@ class ConstraintChecker {
   bool NoOverlap2DConstraintIsFeasible(const CpModelProto& model,
                                        const ConstraintProto& ct) {
     const auto& arg = ct.no_overlap_2d();
-    const int num_intervals = arg.x_intervals_size();
-    for (int i = 0; i < num_intervals; ++i) {
-      for (int j = i + 1; j < num_intervals; ++j) {
-        if (!IntervalsAreDisjoint(
-                model, model.constraints(arg.x_intervals(i)).interval(),
-                model.constraints(arg.x_intervals(j)).interval()) &&
-            !IntervalsAreDisjoint(
-                model, model.constraints(arg.y_intervals(i)).interval(),
-                model.constraints(arg.y_intervals(j)).interval())) {
+    // Those intervals from arg.x_intervals and arg.y_intervals where both
+    // the x and y intervals are enforced.
+    std::vector<std::pair<const IntervalConstraintProto* const,
+                          const IntervalConstraintProto* const>>
+        enforced_intervals_xy;
+    {
+      const int num_intervals = arg.x_intervals_size();
+      CHECK_EQ(arg.y_intervals_size(), num_intervals);
+      for (int i = 0; i < num_intervals; ++i) {
+        const ConstraintProto& x = model.constraints(arg.x_intervals(i));
+        const ConstraintProto& y = model.constraints(arg.y_intervals(i));
+        if (ConstraintIsEnforced(x) && ConstraintIsEnforced(y)) {
+          enforced_intervals_xy.push_back({&x.interval(), &y.interval()});
+        }
+      }
+    }
+    const int num_enforced_intervals = enforced_intervals_xy.size();
+    for (int i = 0; i < num_enforced_intervals; ++i) {
+      for (int j = i + 1; j < num_enforced_intervals; ++j) {
+        const auto& xi = *enforced_intervals_xy[i].first;
+        const auto& yi = *enforced_intervals_xy[i].second;
+        const auto& xj = *enforced_intervals_xy[j].first;
+        const auto& yj = *enforced_intervals_xy[j].second;
+        if (!IntervalsAreDisjoint(model, xi, xj) &&
+            !IntervalsAreDisjoint(model, yi, yj)) {
           return false;
         }
       }
@@ -385,14 +410,18 @@ class ConstraintChecker {
     const int num_intervals = ct.cumulative().intervals_size();
     std::unordered_map<int64, int64> usage;
     for (int i = 0; i < num_intervals; ++i) {
-      const IntervalConstraintProto& interval =
-          model.constraints(ct.cumulative().intervals(i)).interval();
-      const int64 start = Value(interval.start());
-      const int64 duration = Value(interval.size());
-      const int64 demand = Value(ct.cumulative().demands(i));
-      for (int64 t = start; t < start + duration; ++t) {
-        usage[t] += demand;
-        if (usage[t] > capacity) return false;
+      const ConstraintProto interval_constraint =
+          model.constraints(ct.cumulative().intervals(i));
+      if (ConstraintIsEnforced(interval_constraint)) {
+        const IntervalConstraintProto& interval =
+            interval_constraint.interval();
+        const int64 start = Value(interval.start());
+        const int64 duration = Value(interval.size());
+        const int64 demand = Value(ct.cumulative().demands(i));
+        for (int64 t = start; t < start + duration; ++t) {
+          usage[t] += demand;
+          if (usage[t] > capacity) return false;
+        }
       }
     }
     return true;

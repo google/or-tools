@@ -92,7 +92,7 @@ message ElementConstraintProto {
 }
 
 // This "special" constraint not only enforces (start + size == end) but can
-// also be refered by other constraints using this "interval" concept.
+// also be referred by other constraints using this "interval" concept.
 message IntervalConstraintProto {
   int32 start = 1;
   int32 end = 2;

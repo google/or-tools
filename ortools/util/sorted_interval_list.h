@@ -117,6 +117,10 @@ std::vector<ClosedInterval> PreciseMultiplicationOfSortedDisjointIntervals(
 std::vector<ClosedInterval> InverseMultiplicationOfSortedDisjointIntervals(
     std::vector<ClosedInterval> intervals, int64 coeff);
 
+// Given the domain of x, this returns the domain of x / coeff.
+std::vector<ClosedInterval> DivisionOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals, int64 coeff);
+
 // This class represents a sorted list of disjoint, closed intervals.  When an
 // interval is inserted, all intervals that overlap it or that are even adjacent
 // to it are merged into one. I.e. [0,14] and [15,30] will be merged to [0,30].

@@ -264,6 +264,19 @@ std::vector<ClosedInterval> InverseMultiplicationOfSortedDisjointIntervals(
   return coeff > 0 ? intervals : NegationOfSortedDisjointIntervals(intervals);
 }
 
+std::vector<ClosedInterval> DivisionOfSortedDisjointIntervals(
+    std::vector<ClosedInterval> intervals, int64 coeff) {
+  CHECK_NE(coeff, 0);
+  DCHECK(IntervalsAreSortedAndDisjoint(intervals));
+  const int64 abs_coeff = std::abs(coeff);
+  for (ClosedInterval& i : intervals) {
+    i.start = i.start / abs_coeff;
+    i.end = i.end / abs_coeff;
+  }
+  UnionOfSortedIntervals(&intervals);
+  return coeff > 0 ? intervals : NegationOfSortedDisjointIntervals(intervals);
+}
+
 SortedDisjointIntervalList::SortedDisjointIntervalList() {}
 
 SortedDisjointIntervalList::SortedDisjointIntervalList(
