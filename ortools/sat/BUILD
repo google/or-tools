@@ -101,6 +101,7 @@ cc_library(
         ":cp_model_cc_proto",
         ":cp_model_checker",
         ":cp_model_utils",
+        ":simplification",
         "//ortools/base",
         "//ortools/base:hash",
         "//ortools/base:map_util",
@@ -444,6 +445,7 @@ cc_library(
     copts = [W_FLOAT_CONVERSION],
     deps = [
         ":boolean_problem_cc_proto",
+        ":cp_model_cc_proto",
         ":sat_solver",
         ":simplification",
         "//ortools/algorithms:find_graph_symmetries",
