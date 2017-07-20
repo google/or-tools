@@ -71,6 +71,8 @@ DEFINE_string(dump_model, "", "If non-empty, dumps MPModelProto there.");
 DEFINE_string(dump_request, "", "If non-empty, dumps MPModelRequest there.");
 DEFINE_string(dump_response, "", "If non-empty, dumps MPModelResponse there.");
 
+DECLARE_bool(verify_solution);  // Defined in ./linear_solver.cc
+
 static const char kUsageStr[] =
     "Run MPSolver on the given input file. Many formats are supported: \n"
     "  - a .mps or .mps.gz file,\n"
@@ -126,6 +128,10 @@ void Run() {
 #if defined(USE_BOP)
   } else if (FLAGS_solver == "bop") {
     type = MPSolver::BOP_INTEGER_PROGRAMMING;
+#endif
+#if defined(USE_GLOP)
+  } else if (FLAGS_solver == "sat") {
+    type = MPSolver::SAT_INTEGER_PROGRAMMING;
 #endif
   } else {
     LOG(FATAL) << "Unsupported --solver: " << FLAGS_solver;
@@ -237,6 +243,7 @@ void Run() {
     solver.set_time_limit(
         static_cast<int64>(1000.0 * request_proto.solver_time_limit_seconds()));
   }
+  // Note, the underlying MPSolver treats time limit equal to 0 as no limit.
   if (FLAGS_time_limit_ms >= 0) {
     solver.set_time_limit(FLAGS_time_limit_ms);
   }
@@ -289,6 +296,14 @@ void Run() {
     }
     CHECK_OK(file::SetContents(FLAGS_output_csv, csv_file, file::Defaults()));
   }
+  // If --verify_solution is true, we already verified it. If not, we add
+  // a verification step here.
+  if (has_solution && !FLAGS_verify_solution) {
+    LOG(INFO) << "Verifying the solution";
+    solver.VerifySolution(/*tolerance=*/param.GetDoubleParam(
+                              MPSolverParameters::PRIMAL_TOLERANCE),
+                          /*log_errors=*/true);
+  }
 
   printf("%-12s: %s\n", "Status",
          MPSolverResponseStatus_Name(
@@ -297,6 +312,10 @@ void Run() {
   printf("%-12s: %15.15e\n", "Objective",
          has_solution ? solver.Objective().Value() : 0.0);
   printf("%-12s: %lld\n", "Iterations", solver.iterations());
+  // NOTE(user): nodes() for non-MIP solvers crashes in debug mode by design.
+  if (solver.IsMIP()) {
+    printf("%-12s: %lld\n", "Nodes", solver.nodes());
+  }
   printf("%-12s: %-6.4g\n", "Time", solving_time_in_sec);
 }
 }  // namespace

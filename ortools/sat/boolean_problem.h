@@ -16,12 +16,17 @@
 
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/boolean_problem.pb.h"
+#include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/base/status.h"
 
 namespace operations_research {
 namespace sat {
+
+// Converts a LinearBooleanProblem to a CpModelProto which should eventually
+// replace completely the LinearBooleanProblem proto.
+CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem& problem);
 
 // Adds the offset and returns the scaled version of the given objective value.
 inline double AddOffsetAndScaleObjectiveValue(

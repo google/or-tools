@@ -110,7 +110,7 @@ DEFINE_bool(probing, false, "If true, presolve the problem using probing.");
 
 
 DEFINE_bool(use_cp_model, true,
-            "Whether to interpret a linear program input as a CpModelProto or "
+            "Whether to interpret everything as a CpModelProto or "
             "to read by default a CpModelProto.");
 
 DEFINE_bool(reduce_memory_usage, false,
@@ -219,6 +219,10 @@ int Run() {
   LinearBooleanProblem problem;
   CpModelProto cp_model;
   LoadBooleanProblem(FLAGS_input, &problem, &cp_model);
+  if (FLAGS_use_cp_model && cp_model.variables_size() == 0) {
+    LOG(INFO) << "Converting to CpModelProto ...";
+    cp_model = BooleanProblemToCpModelproto(problem);
+  }
 
   // TODO(user): clean this hack. Ideally LinearBooleanProblem should be
   // completely replaced by the more general CpModelProto.
@@ -229,7 +233,12 @@ int Run() {
     LOG(INFO) << CpModelStats(cp_model);
     const CpSolverResponse response = SolveCpModel(cp_model, &model);
     LOG(INFO) << CpSolverResponseStats(response);
-    exit(EXIT_SUCCESS);
+
+    // The SAT competition requires a particular exit code and since we don't
+    // really use it for any other purpose, we comply.
+    if (response.status() == CpSolverStatus::MODEL_SAT) return 10;
+    if (response.status() == CpSolverStatus::MODEL_UNSAT) return 20;
+    return 0;
   }
 
   if (FLAGS_strict_validity) {

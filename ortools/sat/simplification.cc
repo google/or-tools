@@ -34,7 +34,7 @@ SatPostsolver::SatPostsolver(int num_variables)
   assignment_.Resize(num_variables);
 }
 
-void SatPostsolver::Add(Literal x, const std::vector<Literal>& clause) {
+void SatPostsolver::Add(Literal x, gtl::Span<Literal> clause) {
   CHECK(!clause.empty());
   DCHECK(std::find(clause.begin(), clause.end(), x) != clause.end());
   associated_literal_.push_back(ApplyReverseMapping(x));
@@ -279,6 +279,13 @@ bool SatPresolver::ProcessAllClauses() {
 }
 
 bool SatPresolver::Presolve() {
+  // This is slighlty inefficient, but the presolve algorithm is
+  // a lot more costly anyway.
+  std::vector<bool> can_be_removed(NumVariables(), true);
+  return Presolve(can_be_removed);
+}
+
+bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   WallTimer timer;
   timer.Start();
   LOG(INFO) << "num trivial clauses: " << num_trivial_clauses_;
@@ -291,8 +298,9 @@ bool SatPresolver::Presolve() {
 
   InitializePriorityQueue();
   while (var_pq_.Size() > 0) {
-    BooleanVariable var = var_pq_.Top()->variable;
+    const BooleanVariable var = var_pq_.Top()->variable;
     var_pq_.Pop();
+    if (!can_be_removed[var.value()]) continue;
     if (CrossProduct(Literal(var, true))) {
       if (!ProcessAllClauses()) return false;
     }
@@ -612,7 +620,7 @@ bool SatPresolver::CrossProduct(Literal x) {
         if (size > threshold) return false;
       }
     }
-    if (no_resolvant) {
+    if (no_resolvant && parameters_.presolve_blocked_clause()) {
       // This is an incomplete heuristic for blocked clause detection. Here,
       // the clause i is "blocked", so we can remove it. Note that the code
       // below already do that if we decide to eliminate x.

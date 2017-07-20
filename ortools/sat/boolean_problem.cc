@@ -132,6 +132,63 @@ util::Status ValidateBooleanProblem(const LinearBooleanProblem& problem) {
   return util::Status::OK;
 }
 
+CpModelProto BooleanProblemToCpModelproto(const LinearBooleanProblem& problem) {
+  CpModelProto result;
+  for (int i = 0; i < problem.num_variables(); ++i) {
+    IntegerVariableProto* var = result.add_variables();
+    if (problem.var_names_size() > i) {
+      var->set_name(problem.var_names(i));
+    }
+    var->add_domain(0);
+    var->add_domain(1);
+  }
+  for (const LinearBooleanConstraint& constraint : problem.constraints()) {
+    ConstraintProto* ct = result.add_constraints();
+    ct->set_name(constraint.name());
+    LinearConstraintProto* linear = ct->mutable_linear();
+    int64 offset = 0;
+    for (int i = 0; i < constraint.literals_size(); ++i) {
+      // Note that the new format is slightly different.
+      const int lit = constraint.literals(i);
+      const int64 coeff = constraint.coefficients(i);
+      if (lit > 0) {
+        linear->add_vars(lit - 1);
+        linear->add_coeffs(coeff);
+      } else {
+        // The term was coeff * (1 - var).
+        linear->add_vars(-lit - 1);
+        linear->add_coeffs(-coeff);
+        offset -= coeff;
+      }
+    }
+    linear->add_domain(constraint.has_lower_bound()
+                           ? constraint.lower_bound() + offset
+                           : kint32min + offset);
+    linear->add_domain(constraint.has_upper_bound()
+                           ? constraint.upper_bound() + offset
+                           : kint32max + offset);
+  }
+  if (problem.has_objective()) {
+    CpObjectiveProto* objective = result.mutable_objective();
+    int64 offset = 0;
+    for (int i = 0; i < problem.objective().literals_size(); ++i) {
+      const int lit = problem.objective().literals(i);
+      const int64 coeff = problem.objective().coefficients(i);
+      if (lit > 0) {
+        objective->add_vars(lit - 1);
+        objective->add_coeffs(coeff);
+      } else {
+        objective->add_vars(-lit - 1);
+        objective->add_coeffs(-coeff);
+        offset -= coeff;
+      }
+    }
+    objective->set_offset(offset + problem.objective().offset());
+    objective->set_scaling_factor(problem.objective().scaling_factor());
+  }
+  return result;
+}
+
 void ChangeOptimizationDirection(LinearBooleanProblem* problem) {
   LinearObjective* objective = problem->mutable_objective();
   objective->set_scaling_factor(-objective->scaling_factor());

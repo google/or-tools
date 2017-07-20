@@ -44,10 +44,13 @@ class SatPostsolver {
   // The postsolver will process the Add() calls in reverse order. If the given
   // clause has all its literals at false, it simply sets the literal x to true.
   // Note that x must be a literal of the given clause.
-  void Add(Literal x, const std::vector<Literal>& clause);
+  void Add(Literal x, const gtl::Span<Literal> clause);
 
   // Tells the postsolver that the given literal must be true in any solution.
   // We currently check that the variable is not already fixed.
+  //
+  // TODO(user): this as almost the same effect as adding an unit clause, and we
+  // should probably remove this to simplify the code.
   void FixVariable(Literal x);
 
   // This assumes that the given variable mapping has been applied to the
@@ -66,6 +69,19 @@ class SatPostsolver {
   // change since only some CHECK will fail).
   std::vector<bool> ExtractAndPostsolveSolution(const SatSolver& solver);
   std::vector<bool> PostsolveSolution(const std::vector<bool>& solution);
+
+  // Getters to the clauses managed by this class.
+  int NumClauses() const { return clauses_start_.size(); }
+  std::vector<Literal> Clause(int i) const {
+    // TODO(user): we could avoid the copy here, but because clauses_literals_
+    // is a deque, we do need a special return class and cannot juste use
+    // gtl::Span<Literal> for instance.
+    const int begin = clauses_start_[i];
+    const int end = i + 1 < clauses_start_.size() ? clauses_start_[i + 1]
+                                                  : clauses_literals_.size();
+    return std::vector<Literal>(clauses_literals_.begin() + begin,
+                                clauses_literals_.begin() + end);
+  }
 
  private:
   Literal ApplyReverseMapping(Literal l);
@@ -138,6 +154,10 @@ class SatPresolver {
   // TODO(user): Add support for a time limit and some kind of iterations limit
   // so that this can never take too much time.
   bool Presolve();
+
+  // Same as Presolve() but only allow to remove BooleanVariable whose index
+  // is set to true in the given vector.
+  bool Presolve(const std::vector<bool>& var_that_can_be_removed);
 
   // All the clauses managed by this class.
   // Note that deleted clauses keep their indices (they are just empty).
