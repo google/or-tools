@@ -129,10 +129,6 @@ void Run() {
   } else if (FLAGS_solver == "bop") {
     type = MPSolver::BOP_INTEGER_PROGRAMMING;
 #endif
-#if defined(USE_GLOP)
-  } else if (FLAGS_solver == "sat") {
-    type = MPSolver::SAT_INTEGER_PROGRAMMING;
-#endif
   } else {
     LOG(FATAL) << "Unsupported --solver: " << FLAGS_solver;
   }
