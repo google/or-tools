@@ -2,6 +2,7 @@ install: cc_install $(PATCHELF)
 ifeq ($(PLATFORM),LINUX)
 	dependencies/install/bin/patchelf --set-rpath '$ORIGIN' $(TARGET_DIR)/lib/libcvrptw_lib.so
 	dependencies/install/bin/patchelf --set-rpath '$ORIGIN' $(TARGET_DIR)/lib/libdimacs.so
+	dependencies/install/bin/patchelf --set-rpath '$ORIGIN' $(TARGET_DIR)/lib/libfap.so
 else
 ifeq ($(PLATFORM),MACOSX)
 	$(COPY) tools/install_libortools_mac.sh $(TARGET_DIR)
