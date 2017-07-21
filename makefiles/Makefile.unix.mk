@@ -247,7 +247,7 @@ ifeq ($(PLATFORM),MACOSX)
     SCIP_LNK = -force_load $(UNIX_SCIP_DIR)/lib/static/libscip.$(SCIP_ARCH).a $(UNIX_SCIP_DIR)/lib/static/libnlpi.cppad.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/liblpispx2.$(SCIP_ARCH).a -force_load $(UNIX_SCIP_DIR)/lib/static/libsoplex.$(SCIP_ARCH).a
   endif
   ifdef UNIX_GUROBI_DIR
-    GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/bin/ -m64 -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
+    GUROBI_LNK = -L$(UNIX_GUROBI_DIR)/mac64/bin/ -lc -ldl -lm -lpthread -lgurobi$(GUROBI_LIB_VERSION)
   endif
   ifdef UNIX_CPLEX_DIR
     CPLEX_LNK = -force_load $(UNIX_CPLEX_DIR)/cplex/lib/x86-64_osx/static_pic/libcplex.a -lm -lpthread -framework CoreFoundation -framework IOKit
