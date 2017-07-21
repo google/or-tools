@@ -174,6 +174,24 @@ class DivisionPropagator : public PropagatorInterface {
   DISALLOW_COPY_AND_ASSIGN(DivisionPropagator);
 };
 
+// Propagates x * x = s.
+// TODO(user): Only works for x nonnegative.
+class SquarePropagator : public PropagatorInterface {
+ public:
+  SquarePropagator(IntegerVariable x, IntegerVariable s,
+                   IntegerTrail* integer_trail);
+
+  bool Propagate() final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  const IntegerVariable x_;
+  const IntegerVariable s_;
+  IntegerTrail* integer_trail_;
+
+  DISALLOW_COPY_AND_ASSIGN(SquarePropagator);
+};
+
 // =============================================================================
 // Model based functions.
 // =============================================================================
@@ -470,7 +488,18 @@ inline std::function<void(Model*)> ProductConstraint(IntegerVariable a,
                                                      IntegerVariable p) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    if (model->Get(LowerBound(a)) >= 0 && model->Get(LowerBound(b)) >= 0) {
+    if (a == b) {
+      if (model->Get(LowerBound(a)) >= 0) {
+        RegisterAndTransferOwnership(model,
+                                     new SquarePropagator(a, p, integer_trail));
+      } else if (model->Get(UpperBound(a)) <= 0) {
+        RegisterAndTransferOwnership(
+            model, new SquarePropagator(NegationOf(a), p, integer_trail));
+      } else {
+        LOG(FATAL) << "Not supported";
+      }
+    } else if (model->Get(LowerBound(a)) >= 0 &&
+               model->Get(LowerBound(b)) >= 0) {
       RegisterAndTransferOwnership(
           model, new PositiveProductPropagator(a, b, p, integer_trail));
     } else if (model->Get(LowerBound(a)) >= 0 &&

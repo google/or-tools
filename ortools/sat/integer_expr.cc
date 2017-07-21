@@ -392,6 +392,74 @@ void PositiveProductPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
   watcher->WatchIntegerVariable(p_, id);
 }
 
+SquarePropagator::SquarePropagator(IntegerVariable x, IntegerVariable s,
+                                   IntegerTrail* integer_trail)
+    : x_(x), s_(s), integer_trail_(integer_trail) {}
+
+bool SquarePropagator::Propagate() {
+  bool may_propagate = true;
+  while (may_propagate) {
+    may_propagate = false;
+    IntegerValue min_x = integer_trail_->LowerBound(x_);
+    IntegerValue max_x = integer_trail_->UpperBound(x_);
+    IntegerValue min_s = integer_trail_->LowerBound(s_);
+    IntegerValue max_s = integer_trail_->UpperBound(s_);
+
+    // TODO(user): support this case.
+    CHECK_GE(min_x, 0);
+
+    // Propagation from x to s: s in [min_x*min_x, max_x*max_x].
+    if (min_x * min_x > min_s) {
+      may_propagate = true;
+      min_s = min_x * min_x;
+      if (!integer_trail_->Enqueue(
+              IntegerLiteral::GreaterOrEqual(s_, min_s), {},
+              {IntegerLiteral::GreaterOrEqual(x_, min_x)})) {
+        return false;
+      }
+    }
+    if (max_x * max_x < max_s) {
+      may_propagate = true;
+      max_s = max_x * max_x;
+      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(s_, max_s), {},
+                                   {IntegerLiteral::LowerOrEqual(x_, max_x)})) {
+        return false;
+      }
+    }
+
+    // Propagation from s to x: x in [ceil(sqrt(min_s)), floor(sqrt(max_s))].
+    if (max_x * max_x > max_s) {
+      may_propagate = true;
+      // TODO(user): O(log(max_x)) version or someone will be unhappy.
+      while (max_x * max_x > max_s) max_x--;
+      if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(x_, max_x), {},
+                                   {IntegerLiteral::LowerOrEqual(
+                                       s_, (max_x + 1) * (max_x + 1) - 1)})) {
+        return false;
+      }
+    }
+    if (min_x * min_x < min_s) {
+      may_propagate = true;
+      // TODO(user): O(log(min_x)) version or someone will be unhappy.
+      while (min_x * min_x < min_s) min_x++;
+      if (!integer_trail_->Enqueue(IntegerLiteral::GreaterOrEqual(x_, min_x),
+                                   {},
+                                   {IntegerLiteral::GreaterOrEqual(
+                                       s_, (min_x - 1) * (min_x - 1) + 1)})) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+void SquarePropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  watcher->WatchIntegerVariable(x_, id);
+  watcher->WatchIntegerVariable(s_, id);
+}
+
 DivisionPropagator::DivisionPropagator(IntegerVariable a, IntegerVariable b,
                                        IntegerVariable c,
                                        IntegerTrail* integer_trail)

@@ -966,10 +966,8 @@ class LiteralViews {
 
     if (!ContainsKey(literal_index_to_integer_, index)) {
       const IntegerVariable int_var = model_->Add(NewIntegerVariable(0, 1));
-      model_->GetOrCreate<IntegerEncoder>()
-          ->FullyEncodeVariableUsingGivenLiterals(
-              int_var, {lit.Negated(), lit},
-              {IntegerValue(0), IntegerValue(1)});
+      model_->GetOrCreate<IntegerEncoder>()->AssociateToIntegerEqualValue(
+          lit, int_var, IntegerValue(1));
       literal_index_to_integer_[index] = int_var;
     }
 
@@ -986,7 +984,14 @@ class LiteralViews {
 inline std::function<IntegerVariable(Model*)> NewIntegerVariableFromLiteral(
     Literal lit) {
   return [=](Model* model) {
-    return model->GetOrCreate<LiteralViews>()->GetIntegerView(lit);
+    const auto& assignment = model->GetOrCreate<SatSolver>()->Assignment();
+    if (assignment.LiteralIsTrue(lit)) {
+      return model->Add(ConstantIntegerVariable(1));
+    } else if (assignment.LiteralIsFalse(lit)) {
+      return model->Add(ConstantIntegerVariable(0));
+    } else {
+      return model->GetOrCreate<LiteralViews>()->GetIntegerView(lit);
+    }
   };
 }
 
