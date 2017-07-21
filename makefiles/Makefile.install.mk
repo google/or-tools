@@ -12,14 +12,15 @@ endif
 endif
 
 create_install_dirs:
-	$(MKDIR) $(TARGET_DIR)
-	$(MKDIR) $(TARGET_DIR)$Slib
-	$(MKDIR) $(TARGET_DIR)$Sobjs
-	$(MKDIR) $(TARGET_DIR)$Sbin
-	$(MKDIR) $(TARGET_DIR)$Sinclude
-	$(MKDIR) $(TARGET_DIR)$Sinclude$Sgflags
-	$(MKDIR) $(TARGET_DIR)$Sinclude$Sglog
-	$(MKDIR) $(TARGET_DIR)$Sinclude$Sgoogle
+	-$(MKDIR) $(TARGET_DIR)
+	-$(MKDIR) $(TARGET_DIR)$Slib
+	-$(MKDIR) $(TARGET_DIR)$Sobjs
+	-$(MKDIR) $(TARGET_DIR)$Sbin
+	-$(MKDIR) $(TARGET_DIR)$Sinclude
+	-$(MKDIR) $(TARGET_DIR)$Sinclude$Sgflags
+	-$(MKDIR) $(TARGET_DIR)$Sinclude$Sglog
+	-$(MKDIR) $(TARGET_DIR)$Sinclude$Sgoogle
+	-$(DELREC) $(TARGET_DIR)$Sinclude$Sortools
 	$(MKDIR) $(TARGET_DIR)$Sinclude$Sortools
 	$(MKDIR) $(TARGET_DIR)$Sinclude$Sortools$Salgorithms
 	$(MKDIR) $(TARGET_DIR)$Sinclude$Sortools$Sbase
@@ -31,21 +32,21 @@ create_install_dirs:
 	$(MKDIR) $(TARGET_DIR)$Sinclude$Sortools$Slp_data
 	$(MKDIR) $(TARGET_DIR)$Sinclude$Sortools$Ssat
 	$(MKDIR) $(TARGET_DIR)$Sinclude$Sortools$Sutil
-	$(MKDIR) $(TARGET_DIR)$Sexamples
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Scpp
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Set_jobshop
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sflexible_jobshop
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sjobshop
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Smultidim_knapsack
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Scvrptw
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Spdptw
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sfill_a_pix
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sminesweeper
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Srogo
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Ssurvo_puzzle
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Squasigroup_completion
-	$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sdiscrete_tomography
+	-$(MKDIR) $(TARGET_DIR)$Sexamples
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Scpp
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Set_jobshop
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sflexible_jobshop
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sjobshop
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Smultidim_knapsack
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Scvrptw
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Spdptw
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sfill_a_pix
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sminesweeper
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Srogo
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Ssurvo_puzzle
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Squasigroup_completion
+	-$(MKDIR) $(TARGET_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 
 cc_install: create_install_dirs cc
 	$(COPY) $(LIB_DIR)$S$(LIB_PREFIX)cvrptw_lib.$(LIB_SUFFIX) $(TARGET_DIR)$Slib
