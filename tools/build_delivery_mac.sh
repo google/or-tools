@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo Cleaning or-tools
+make clean
+echo Builing all libraries
+make all fz -j 5
+echo Running tests
+make test
+echo Creating standard artifacts.
+make python_examples_archive archive fz_archive pypi_upload
+echo Rebuilding for python 3.5
+make clean_python
+make python UNIX_PYTHON_VER=3.5 -j 5
+make test_python UNIX_PYTHON_VER=3.5
+make pypi_upload UNIX_PYTHON_VER=3.5
+echo Rebuilding for python 3.6
+make clean_python
+make python UNIX_PYTHON_VER=3.6 -j 5
+make test_python UNIX_PYTHON_VER=3.6
+make pypi_upload UNIX_PYTHON_VER=3.6
