@@ -265,7 +265,11 @@ $(PYPI_ARCHIVE_TEMP_DIR) : $(OR_TOOLS_PYTHON_GEN_SCRIPTS) $(PATCHELF)
 	$(COPY) ortools$Sgen$Sortools$Sgraph$Spywrapgraph.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
 	$(COPY) ortools$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(COPY) $(GEN_DIR)$Sortools$S__init__.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
+ifeq ($(SYSTEM),win)
+	echo __version__ = "(OR_TOOLS_VERSION)" >> $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
+else
 	echo "__version__ = \"$(OR_TOOLS_VERSION)\"" >> $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
+endif
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver$S__init__.py
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver$S__init__.py
