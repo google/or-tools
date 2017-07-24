@@ -362,7 +362,8 @@ message SatParameters {
   // clauses plus the number of clause literals is not increased.
   optional int32 presolve_bve_clause_weight = 55 [default = 3];
 
-  // The "deterministic" time limit to spend in probing.
+  // The maximum "deterministic" time limit to spend in probing. A value of
+  // zero will disable the probing.
   optional double presolve_probing_deterministic_time_limit = 57 [default = 30];
 
   // Whether we use an heuristic to detect some basic case of blocked clause

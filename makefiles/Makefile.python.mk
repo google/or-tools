@@ -53,6 +53,7 @@ clean_python:
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pyc
 	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
+	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
 
 install_python_modules: dependencies/sources/protobuf-3.3.0/python/google/protobuf/descriptor_pb2.py
 

@@ -30,6 +30,7 @@
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/sat_solver.h"
+#include "ortools/sat/simplification.h"
 #include "ortools/sat/table.h"
 #include "ortools/util/saturated_arithmetic.h"
 
@@ -220,8 +221,11 @@ class ModelWithMapping {
         result.push_back(model_->Get(Value(booleans_[i])));
       } else {
         // This variable is not used anywhere, fix it to its lower_bound.
+        //
         // TODO(user): maybe it is better to fix it to its lowest possible
-        // magnitude.
+        // magnitude? Also in the postsolve, this will fix non-decision
+        // variables to their lower bound instead of simply leaving their domain
+        // unchanged!
         result.push_back(lower_bounds_[i]);
       }
     }
@@ -307,7 +311,7 @@ void ModelWithMapping::ExtractEncoding(const CpModelProto& model_proto) {
 
     bool operator<(const InequalityDetectionHelper& o) const {
       if (literal.Variable() == o.literal.Variable()) {
-        return i_lit.Var() < o.i_lit.Var();
+        return i_lit.var < o.i_lit.var;
       }
       return literal.Variable() < o.literal.Variable();
     }
@@ -475,10 +479,11 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
       Add(ClauseConstraint({sat::Literal(booleans_[i], true)}));
     } else if (integers_[i] != kNoIntegerVariable) {
       // Associate with corresponding integer variable.
-      const sat::Literal lit(booleans_[i], true);
-      GetOrCreate<IntegerEncoder>()->FullyEncodeVariableUsingGivenLiterals(
-          integers_[i], {lit.Negated(), lit},
-          {IntegerValue(0), IntegerValue(1)});
+      model_->GetOrCreate<IntegerEncoder>()->AssociateToIntegerEqualValue(
+          sat::Literal(booleans_[i], true), integers_[i], IntegerValue(1));
+
+      // This is needed so that IsFullyEncoded() returns true.
+      model_->GetOrCreate<IntegerEncoder>()->FullyEncodeVariable(integers_[i]);
     }
   }
 
@@ -709,7 +714,9 @@ bool FullEncodingFixedPointComputer::PropagateLinear(
   if (HasEnforcementLiteral(*ct)) {
     // Fully encode x in half-reified equality b => x == constant.
     const auto& vars = ct->linear().vars();
-    if (vars.size() == 1) FullyEncode(vars.Get(0));
+    if (vars.size() == 1) {
+      FullyEncode(vars.Get(0));
+    }
     return true;
   } else {
     // If all variables but one are fully encoded,
@@ -717,10 +724,11 @@ bool FullEncodingFixedPointComputer::PropagateLinear(
     int variable_not_fully_encoded;
     int num_fully_encoded = 0;
     for (const int var : ct->linear().vars()) {
-      if (IsFullyEncoded(var))
+      if (IsFullyEncoded(var)) {
         num_fully_encoded++;
-      else
+      } else {
         variable_not_fully_encoded = var;
+      }
     }
     const int num_vars = ct->linear().vars_size();
     if (num_fully_encoded == num_vars - 1) {
@@ -1826,8 +1834,10 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 
 namespace {
 
+// Because we also use this function for postsolve, we call it with
+// is_real_solve set to true and avoid doing non-useful work in this case.
 CpSolverResponse SolveCpModelInternal(
-    const CpModelProto& model_proto, bool display_fixing_constraints,
+    const CpModelProto& model_proto, bool is_real_solve,
     const std::function<void(const CpSolverResponse&)>&
         external_solution_observer,
     Model* model) {
@@ -1878,7 +1888,7 @@ CpSolverResponse SolveCpModelInternal(
     // ones. So we call Propagate() manually here.
     // TODO(user): Do that automatically?
     model->GetOrCreate<SatSolver>()->Propagate();
-    if (display_fixing_constraints && trail->Index() > old_num_fixed) {
+    if (is_real_solve && trail->Index() > old_num_fixed) {
       VLOG(1) << "Constraint fixed " << trail->Index() - old_num_fixed
               << " Boolean variable(s): " << ct.ShortDebugString();
     }
@@ -1903,7 +1913,7 @@ CpSolverResponse SolveCpModelInternal(
   // Create an objective variable and its associated linear constraint if
   // needed.
   IntegerVariable objective_var = kNoIntegerVariable;
-  if (parameters.use_global_lp_constraint()) {
+  if (is_real_solve && parameters.use_global_lp_constraint()) {
     // Linearize some part of the problem and register LP constraint(s).
     objective_var = AddLPConstraints(model_proto, &m);
   } else if (model_proto.has_objective()) {
@@ -1926,6 +1936,18 @@ CpSolverResponse SolveCpModelInternal(
   model->GetOrCreate<IntegerEncoder>()
       ->AddAllImplicationsBetweenAssociatedLiterals();
   model->GetOrCreate<SatSolver>()->Propagate();
+
+  // Probing Boolean variables. Because we don't have a good deterministic time
+  // yet in the non-Boolean part of the problem, we disable it by default.
+  //
+  // TODO(user): move this inside the presolve somehow, and exploit the variable
+  // detected to be equivalent to each other!
+  if (/* DISABLES CODE */ false && is_real_solve) {
+    SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+    SatPostsolver postsolver(sat_solver->NumVariables());
+    ITIVector<LiteralIndex, LiteralIndex> equiv_map;
+    ProbeAndFindEquivalentLiteral(sat_solver, &postsolver, nullptr, &equiv_map);
+  }
 
   // Initialize the search strategy function.
   std::function<LiteralIndex()> next_decision;
@@ -2002,7 +2024,7 @@ CpSolverResponse SolveCpModelInternal(
           int64 objective_value = 0;
           for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
             objective_value += model_proto.objective().coeffs(i) *
-                               sat_model.Get(Value(
+                               sat_model.Get(LowerBound(
                                    m.Integer(model_proto.objective().vars(i))));
           }
           response.set_objective_value(
@@ -2111,11 +2133,11 @@ void PostsolveResponse(const CpModelProto& model_proto,
                                       response->solution_upper_bounds(i)}}),
         var_proto);
   }
-  Model postsolve_model;
 
   // Postosolve parameters.
   // TODO(user): this problem is usually trivial, but we may still want to
   // impose a time limit or copy some of the parameters passed by the user.
+  Model postsolve_model;
   {
     SatParameters params;
     params.set_use_global_lp_constraint(false);
@@ -2124,6 +2146,8 @@ void PostsolveResponse(const CpModelProto& model_proto,
   const CpSolverResponse postsolve_response = SolveCpModelInternal(
       mapping_proto, false, [](const CpSolverResponse&) {}, &postsolve_model);
   CHECK_EQ(postsolve_response.status(), CpSolverStatus::MODEL_SAT);
+
+  // We only copy the solution from the postsolve_response to the response.
   response->clear_solution();
   response->clear_solution_lower_bounds();
   response->clear_solution_upper_bounds();
@@ -2167,8 +2191,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         model_proto, true,
         [&](const CpSolverResponse& response) {
           for (const auto& observer : observers) {
-            observer(std::vector<int64>(response.solution().begin(),
-                                        response.solution().end()));
+            if (response.solution().empty()) {
+              observer(
+                  std::vector<int64>(response.solution_lower_bounds().begin(),
+                                     response.solution_lower_bounds().end()));
+            } else {
+              observer(std::vector<int64>(response.solution().begin(),
+                                          response.solution().end()));
+            }
           }
         },
         model);
@@ -2188,8 +2218,13 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         CpSolverResponse copy = response;
         PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &copy);
         for (const auto& observer : observers) {
-          observer(std::vector<int64>(copy.solution().begin(),
-                                      copy.solution().end()));
+          if (copy.solution().empty()) {
+            observer(std::vector<int64>(copy.solution_lower_bounds().begin(),
+                                        copy.solution_lower_bounds().end()));
+          } else {
+            observer(std::vector<int64>(copy.solution().begin(),
+                                        copy.solution().end()));
+          }
         }
       },
       model);

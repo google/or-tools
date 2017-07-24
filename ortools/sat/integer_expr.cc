@@ -520,9 +520,6 @@ std::function<void(Model*)> IsOneOf(IntegerVariable var,
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
-    if (encoder->VariableIsFullyEncoded(var)) {
-      LOG(FATAL) << "TODO(fdid): Not implemented.";
-    }
 
     CHECK(!values.empty());
     CHECK_EQ(values.size(), selectors.size());
@@ -541,19 +538,19 @@ std::function<void(Model*)> IsOneOf(IntegerVariable var,
       return;
     }
 
-    std::vector<Literal> new_selectors;
+    // Note that it is more efficient to call AssociateToIntegerEqualValue()
+    // with the values ordered, like we do here.
     for (const int64 v : unique_values) {
-      if (value_to_selector[v].size() == 1) {
-        new_selectors.push_back(value_to_selector[v][0]);
+      const std::vector<Literal>& selectors = value_to_selector[v];
+      if (selectors.size() == 1) {
+        encoder->AssociateToIntegerEqualValue(selectors[0], var,
+                                              IntegerValue(v));
       } else {
         const Literal l(model->Add(NewBooleanVariable()), true);
-        model->Add(ReifiedBoolOr(value_to_selector[v], l));
-        new_selectors.push_back(l);
+        model->Add(ReifiedBoolOr(selectors, l));
+        encoder->AssociateToIntegerEqualValue(l, var, IntegerValue(v));
       }
     }
-    encoder->FullyEncodeVariableUsingGivenLiterals(
-        var, new_selectors,
-        std::vector<IntegerValue>(unique_values.begin(), unique_values.end()));
   };
 }
 

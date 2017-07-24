@@ -1041,52 +1041,54 @@ void ProbeAndFindEquivalentLiteral(
 
   solver->Backtrack(0);
   int num_equiv = 0;
-  std::vector<Literal> temp;
   if (!mapping->empty()) {
     // If a variable in a cycle is fixed. We want to fix all of them.
+    //
+    // We first fix all representative if one variable of the cycle is fixed. In
+    // a second pass we fix all the variable of a cycle whose representative is
+    // fixed.
+    //
+    // TODO(user): Fixing a variable might fix more of them by propagation, so
+    // we might not fix everything possible with these loops.
     const VariablesAssignment& assignment = solver->Assignment();
     for (LiteralIndex i(0); i < size; ++i) {
       const LiteralIndex rep(partition.GetRootAndCompressPath(i.value()));
       if (assignment.IsLiteralAssigned(Literal(i)) &&
           !assignment.IsLiteralAssigned(Literal(rep))) {
-        solver->AddUnitClause(assignment.LiteralIsTrue(Literal(i))
-                                  ? Literal(rep)
-                                  : Literal(rep).Negated());
-        if (drat_writer != nullptr) {
-          temp.clear();
-          temp.push_back(assignment.LiteralIsTrue(Literal(i))
-                             ? Literal(rep)
-                             : Literal(rep).Negated());
-          drat_writer->AddClause(temp);
-        }
+        const Literal true_lit = assignment.LiteralIsTrue(Literal(i))
+                                     ? Literal(rep)
+                                     : Literal(rep).Negated();
+        solver->AddUnitClause(true_lit);
+        if (drat_writer != nullptr) drat_writer->AddClause({true_lit});
       }
     }
-
     for (LiteralIndex i(0); i < size; ++i) {
       const LiteralIndex rep(partition.GetRootAndCompressPath(i.value()));
       (*mapping)[i] = rep;
       if (assignment.IsLiteralAssigned(Literal(rep))) {
         if (!assignment.IsLiteralAssigned(Literal(i))) {
-          solver->AddUnitClause(assignment.LiteralIsTrue(Literal(rep))
-                                    ? Literal(i)
-                                    : Literal(i).Negated());
+          const Literal true_lit = assignment.LiteralIsTrue(Literal(rep))
+                                       ? Literal(i)
+                                       : Literal(i).Negated();
+          solver->AddUnitClause(true_lit);
+          if (drat_writer != nullptr) drat_writer->AddClause({true_lit});
+        }
+      } else if (assignment.IsLiteralAssigned(Literal(i))) {
+        if (!assignment.IsLiteralAssigned(Literal(rep))) {
+          const Literal true_lit = assignment.LiteralIsTrue(Literal(i))
+                                       ? Literal(rep)
+                                       : Literal(rep).Negated();
+          solver->AddUnitClause(true_lit);
           if (drat_writer != nullptr) {
-            temp.clear();
-            temp.push_back(assignment.LiteralIsTrue(Literal(rep))
-                               ? Literal(i)
-                               : Literal(i).Negated());
-            drat_writer->AddClause(temp);
+            drat_writer->AddClause({true_lit});
           }
         }
       } else if (rep != i) {
-        CHECK(!solver->Assignment().IsLiteralAssigned(Literal(i)));
-        CHECK(!solver->Assignment().IsLiteralAssigned(Literal(rep)));
         ++num_equiv;
-        temp.clear();
-        temp.push_back(Literal(i));
-        temp.push_back(Literal(rep).Negated());
-        postsolver->Add(Literal(i), temp);
-        if (drat_writer != nullptr) drat_writer->AddClause(temp);
+        postsolver->Add(Literal(i), {Literal(i), Literal(rep).Negated()});
+        if (drat_writer != nullptr) {
+          drat_writer->AddClause({Literal(i), Literal(rep).Negated()});
+        }
       }
     }
   }

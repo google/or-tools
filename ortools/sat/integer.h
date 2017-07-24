@@ -95,18 +95,12 @@ inline bool VariableIsPositive(IntegerVariable i) {
 std::vector<IntegerVariable> NegationOf(
     const std::vector<IntegerVariable>& vars);
 
-class IntegerEncoder;
-class IntegerTrail;
-
 // The integer equivalent of a literal.
 // It represents an IntegerVariable and an upper/lower bound on it.
 //
 // Overflow: all the bounds below kMinIntegerValue and kMaxIntegerValue are
 // treated as kMinIntegerValue - 1 and kMaxIntegerValue + 1.
 struct IntegerLiteral {
-  // This default constructor is needed for std::vector<IntegerLiteral>.
-  IntegerLiteral() : var(-1), bound(0) {}
-
   // Because IntegerLiteral should never be created at a bound less constrained
   // than an existing IntegerVariable bound, we don't allow GreaterOrEqual() to
   // have a bound lower than kMinIntegerValue, and LowerOrEqual() to have a
@@ -115,6 +109,13 @@ struct IntegerLiteral {
   // domain and the empty domain can always be represented.
   static IntegerLiteral GreaterOrEqual(IntegerVariable i, IntegerValue bound);
   static IntegerLiteral LowerOrEqual(IntegerVariable i, IntegerValue bound);
+
+  // Clients should prefer the static construction methods above.
+  IntegerLiteral() : var(-1), bound(0) {}
+  IntegerLiteral(IntegerVariable v, IntegerValue b) : var(v), bound(b) {
+    DCHECK_GE(bound, kMinIntegerValue);
+    DCHECK_LE(bound, kMaxIntegerValue + 1);
+  }
 
   // The negation of x >= bound is x <= bound - 1.
   IntegerLiteral Negated() const;
@@ -126,28 +127,15 @@ struct IntegerLiteral {
     return var != o.var || bound != o.bound;
   }
 
-  IntegerVariable Var() const { return IntegerVariable(var); }
-  IntegerValue Bound() const { return bound; }
-
   std::string DebugString() const {
-    return StrCat("I", var, ">=", bound.value());
+    return VariableIsPositive(var)
+               ? StrCat("I", var.value() / 2, ">=", bound.value())
+               : StrCat("I", var.value() / 2, "<=", bound.value());
   }
 
- private:
-  friend class IntegerEncoder;
-  friend class IntegerTrail;
-
-  IntegerLiteral(IntegerVariable v, IntegerValue b) : var(v.value()), bound(b) {
-    DCHECK_GE(bound, kMinIntegerValue);
-    DCHECK_LE(bound, kMaxIntegerValue + 1);
-  }
-
-  // Our external API uses IntegerVariable but internally we only use an int for
-  // simplicity. TODO(user): change this?
-  //
-  // Note that bound is always in [kMinIntegerValue, kMaxIntegerValue + 1].
-  /*const*/ int var;
-  /*const*/ IntegerValue bound;
+  // Note that bound should be in [kMinIntegerValue, kMaxIntegerValue + 1].
+  IntegerVariable var;
+  IntegerValue bound;
 };
 
 inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
@@ -213,13 +201,6 @@ class IntegerEncoder {
   // level zero because we cannot add ternary clause in the middle of the
   // search (for now). This is Checked.
   void FullyEncodeVariable(IntegerVariable var);
-
-  // Similar to FullyEncodeVariable() but use the given literal for each values.
-  // This can only be called on variable that are not fully encoded yet, This is
-  // checked. Duplicates values are not supported.
-  void FullyEncodeVariableUsingGivenLiterals(
-      IntegerVariable var, const std::vector<Literal>& literals,
-      const std::vector<IntegerValue>& values);
 
   // Gets the full encoding of a variable on which FullyEncodeVariable() has
   // been called. The returned elements are always sorted by increasing
@@ -550,7 +531,7 @@ class IntegerTrail : public SatPropagator {
 
   // Returns true if the variable lower bound is still the one from level zero.
   bool VariableLowerBoundIsFromLevelZero(IntegerVariable var) const {
-    return vars_[var.value()].current_trail_index < vars_.size();
+    return vars_[var].current_trail_index < vars_.size();
   }
 
   // Registers a reversible class. This class will always be synced with the
@@ -575,10 +556,10 @@ class IntegerTrail : public SatPropagator {
                                 BooleanVariable* variable_with_same_reason);
 
   // Returns a lower bound on the given var that will always be valid.
-  IntegerValue LevelZeroBound(int var) const {
+  IntegerValue LevelZeroBound(IntegerVariable var) const {
     // The level zero bounds are stored at the beginning of the trail and they
     // also serves as sentinels. Their index match the variables index.
-    return integer_trail_[var].bound;
+    return integer_trail_[var.value()].bound;
   }
 
   // Returns the lowest trail index of a TrailEntry that can be used to explain
@@ -608,17 +589,17 @@ class IntegerTrail : public SatPropagator {
     // Trail index of the last TrailEntry in the trail refering to this var.
     int current_trail_index;
   };
-  std::vector<VarInfo> vars_;
+  ITIVector<IntegerVariable, VarInfo> vars_;
 
   // Used by GetOrCreateConstantIntegerVariable() to return already created
   // constant variables that share the same value.
   std::unordered_map<IntegerValue, IntegerVariable> constant_map_;
 
   // The integer trail. It always start by num_vars sentinel values with the
-  // level 0 bounds (in one to one correspondance with vars_).
+  // level 0 bounds (in one to one correspondence with vars_).
   struct TrailEntry {
     IntegerValue bound;
-    int32 var;
+    IntegerVariable var;
     int32 prev_trail_index;
 
     // Start index in the respective *_buffer_ vectors below.
@@ -657,11 +638,11 @@ class IntegerTrail : public SatPropagator {
 
   // Temporary data used by MergeReasonInto().
   mutable std::vector<int> tmp_queue_;
-  mutable std::vector<int> tmp_to_clear_;
-  mutable std::vector<int> tmp_var_to_trail_index_in_queue_;
+  mutable std::vector<IntegerVariable> tmp_to_clear_;
+  mutable ITIVector<IntegerVariable, int> tmp_var_to_trail_index_in_queue_;
 
   // For EnqueueLiteral(), we store a special TrailEntry to recover the reason
-  // lazily. This vector indicates the correspondance between a literal that
+  // lazily. This vector indicates the correspondence between a literal that
   // was pushed by this class at a given trail index, and the index of its
   // TrailEntry in integer_trail_.
   std::vector<int> boolean_trail_index_to_integer_one_;
@@ -858,17 +839,17 @@ inline IntegerLiteral IntegerLiteral::Negated() const {
 }
 
 inline IntegerValue IntegerTrail::LowerBound(IntegerVariable i) const {
-  return vars_[i.value()].current_bound;
+  return vars_[i].current_bound;
 }
 
 inline IntegerValue IntegerTrail::PreviousLowerBound(IntegerVariable i) const {
-  const int index = vars_[i.value()].current_trail_index;
+  const int index = vars_[i].current_trail_index;
   if (index < vars_.size()) return LowerBound(i);
   return integer_trail_[integer_trail_[index].prev_trail_index].bound;
 }
 
 inline IntegerValue IntegerTrail::UpperBound(IntegerVariable i) const {
-  return -vars_[NegationOf(i).value()].current_bound;
+  return -vars_[NegationOf(i)].current_bound;
 }
 
 inline IntegerLiteral IntegerTrail::LowerBoundAsLiteral(
@@ -1068,9 +1049,9 @@ inline std::function<void(Model*)> Equality(IntegerVariable v, int64 value) {
 inline std::function<void(Model*)> Implication(Literal l, IntegerLiteral i) {
   return [=](Model* model) {
     IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-    if (i.Bound() <= integer_trail->LowerBound(i.Var())) {
+    if (i.bound <= integer_trail->LowerBound(i.var)) {
       // Always true! nothing to do.
-    } else if (i.Bound() > integer_trail->UpperBound(i.Var())) {
+    } else if (i.bound > integer_trail->UpperBound(i.var)) {
       // Always false.
       model->Add(ClauseConstraint({l.Negated()}));
     } else {
