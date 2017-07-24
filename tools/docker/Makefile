@@ -36,6 +36,13 @@ pypi3: \
 	ubuntu-16.04-pypi3 \
 	ubuntu-17.04-pypi3
 
+test: \
+	centos-7-test \
+	debian-9-test \
+	ubuntu-14.04-test \
+	ubuntu-16.04-test \
+	ubuntu-17.04-test
+
 delivery:  archive pypi pypy3
 
 # Ubuntu 14.04 images
@@ -48,6 +55,9 @@ ubuntu-14.04-image-no-cache:
 
 ubuntu-14.04-archive: export ubuntu-14.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-14.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive fz_archive; cp *.tar.gz /export"
+
+ubuntu-14.04-test: export ubuntu-14.04-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-14.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test"
 
 ubuntu-14.04-pypi: export ubuntu-14.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-14.04-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; PYPI_OS=-ubuntu-14.04 make pypi_export python_examples_archive; cp *.tar.gz /export"
@@ -66,6 +76,9 @@ ubuntu-16.04-image-no-cache:
 ubuntu-16.04-archive: export ubuntu-16.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-16.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive fz_archive; cp *.tar.gz /export"
 
+ubuntu-16.04-test: export ubuntu-16.04-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-16.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test"
+
 ubuntu-16.04-pypi: export ubuntu-16.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-16.04-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; PYPI_OS=-ubuntu-16.04 make pypi_export python_examples_archive; cp *.tar.gz /export"
 
@@ -81,7 +94,10 @@ ubuntu-17.04-image-no-cache:
 	docker build --no-cache -f ubuntu-17.04.Dockerfile -t or-tools-ubuntu-17.04-image .
 
 ubuntu-17.04-archive: export ubuntu-17.04-image
-	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.04-image:latest /bin/bash -c "git pull; pwd; make clean; make all -j 5; make test; make archive fz_archive; cp *.tar.gz /export"
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive fz_archive; cp *.tar.gz /export"
+
+ubuntu-17.04-test: export ubuntu-17.04-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test"
 
 ubuntu-17.04-pypi: export ubuntu-17.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-17.04-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; PYPI_OS=-ubuntu-17.04 make pypi_export python_examples_archive; cp *.tar.gz /export"
@@ -98,7 +114,10 @@ debian-9-image-no-cache:
 	docker build --no-cache -f debian-9.Dockerfile -t or-tools-debian-9-image .
 
 debian-9-archive: export debian-9-image
-	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-debian-9-image:latest /bin/bash -c "git pull; pwd; make clean; make all -j 5; make test; make archive fz_archive; cp *.tar.gz /export"
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-debian-9-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive fz_archive; cp *.tar.gz /export"
+
+debian-9-test: export debian-9-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-debian-9-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test"
 
 debian-9-pypi: export debian-9-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-debian-9-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; PYPI_OS=-debian-9 make pypi_export python_examples_archive; cp *.tar.gz /export"
@@ -116,6 +135,9 @@ centos-7-image-no-cache:
 
 centos-7-archive: export centos-7-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test; make archive fz_archive; cp *.tar.gz /export"
+
+centos-7-test: export centos-7-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test"
 
 centos-7-pypi: export centos-7-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; PYPI_OS=-centos-7 make pypi_export python_examples_archive; cp *.tar.gz /export"
