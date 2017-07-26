@@ -39,6 +39,7 @@
 #include "ortools/util/filelineiter.h"
 #include "ortools/base/split.h"
 #include "ortools/sat/cp_constraints.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/integer_expr.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/optimization.h"

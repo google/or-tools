@@ -15,8 +15,8 @@
 #define OR_TOOLS_SAT_CP_MODEL_SOLVER_H_
 
 #include "ortools/sat/cp_model.pb.h"
-#include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {
@@ -42,10 +42,20 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 // search. The values will be in one to one correspondence with the variables
 // in the model_proto.
 //
+// Hack: For the non-fully instantiated variables, the value will be the
+// propagated lower bound. Note that this will be fixed with the TODO below.
+//
 // TODO(user): Change the API to take the full CpSolverResponse() so we have
 // solve statistics and the current objective value.
 std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const std::vector<int64>& values)>& observer);
+
+// Allows to change the default parameters with
+//   model->Add(NewSatParameters(parameters_as_string_or_proto))
+// before calling SolveCpModel().
+std::function<SatParameters(Model*)> NewSatParameters(const std::string& params);
+std::function<SatParameters(Model*)> NewSatParameters(
+    const SatParameters& parameters);
 
 }  // namespace sat
 }  // namespace operations_research

@@ -431,7 +431,7 @@ SatSolver::Status SolveWithWPM1(LogBehavior log,
   Logger logger(log);
   FuMalikSymmetryBreaker symmetry;
 
-  // The curent lower_bound on the cost.
+  // The current lower_bound on the cost.
   // It will be correct after the initialization.
   Coefficient lower_bound(static_cast<int64>(problem.objective().offset()));
   Coefficient upper_bound(kint64max);
@@ -1180,7 +1180,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     IntegerValue objective(0);
     for (int i = 0; i < variables.size(); ++i) {
       objective +=
-          coefficients[i] * IntegerValue(model->Get(Value(variables[i])));
+          coefficients[i] * IntegerValue(model->Get(LowerBound(variables[i])));
     }
 
     if (objective >= best_objective && num_solutions > 0) return true;
@@ -1226,7 +1226,11 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
   // This is used by the "stratified" approach. We will only consider terms with
   // a weight not lower than this threshold. The threshold will decrease as the
   // algorithm progress.
-  IntegerValue stratified_threshold = kMaxIntegerValue;
+  IntegerValue stratified_threshold =
+      sat_solver->parameters().max_sat_stratification() ==
+              SatParameters::STRATIFICATION_NONE
+          ? IntegerValue(0)
+          : kMaxIntegerValue;
 
   // TODO(user): The core is returned in the same order as the assumptions,
   // so we don't really need this map, we could just do a linear scan to

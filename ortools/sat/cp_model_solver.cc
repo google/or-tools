@@ -26,6 +26,7 @@
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/disjunctive.h"
+#include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/optimization.h"
@@ -1829,6 +1830,27 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
     const std::function<void(const std::vector<int64>& values)>& observer) {
   return [=](Model* model) {
     model->GetOrCreate<SolutionObservers>()->observers.push_back(observer);
+  };
+}
+
+std::function<SatParameters(Model*)> NewSatParameters(const std::string& params) {
+  return [=](Model* model) {
+    sat::SatParameters parameters;
+    if (!params.empty()) {
+      CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters)) << params;
+      model->GetOrCreate<SatSolver>()->SetParameters(parameters);
+      model->SetSingleton(TimeLimit::FromParameters(parameters));
+    }
+    return parameters;
+  };
+}
+
+std::function<SatParameters(Model*)> NewSatParameters(
+    const sat::SatParameters& parameters) {
+  return [=](Model* model) {
+    model->GetOrCreate<SatSolver>()->SetParameters(parameters);
+    model->SetSingleton(TimeLimit::FromParameters(parameters));
+    return parameters;
   };
 }
 

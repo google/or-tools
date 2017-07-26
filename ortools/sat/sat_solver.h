@@ -1115,28 +1115,6 @@ inline std::function<void(Model*)> ExcludeCurrentSolutionAndBacktrack() {
   };
 }
 
-inline std::function<SatParameters(Model*)> NewSatParameters(
-    const std::string& params) {
-  return [=](Model* model) {
-    sat::SatParameters parameters;
-    if (!params.empty()) {
-      CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters)) << params;
-      model->GetOrCreate<SatSolver>()->SetParameters(parameters);
-      model->SetSingleton(TimeLimit::FromParameters(parameters));
-    }
-    return parameters;
-  };
-}
-
-inline std::function<SatParameters(Model*)> NewSatParameters(
-    const sat::SatParameters& parameters) {
-  return [=](Model* model) {
-    model->GetOrCreate<SatSolver>()->SetParameters(parameters);
-    model->SetSingleton(TimeLimit::FromParameters(parameters));
-    return parameters;
-  };
-}
-
 // Returns a std::string representation of a SatSolver::Status.
 std::string SatStatusString(SatSolver::Status status);
 inline std::ostream& operator<<(std::ostream& os, SatSolver::Status status) {

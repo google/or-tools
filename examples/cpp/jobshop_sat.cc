@@ -24,6 +24,7 @@
 #include "ortools/base/strutil.h"
 #include "examples/cpp/flexible_jobshop.h"
 #include "examples/cpp/jobshop.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"

@@ -17,6 +17,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer_expr.h"
