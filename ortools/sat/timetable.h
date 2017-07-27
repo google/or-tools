@@ -14,10 +14,12 @@
 #ifndef OR_TOOLS_SAT_TIMETABLE_H_
 #define OR_TOOLS_SAT_TIMETABLE_H_
 
+#include <vector>
+
+#include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
-#include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
+#include "ortools/util/rev.h"
 
 namespace operations_research {
 namespace sat {

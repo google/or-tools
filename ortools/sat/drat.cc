@@ -13,7 +13,14 @@
 
 #include "ortools/sat/drat.h"
 
+#include <algorithm>
+#include <cstdlib>
+#include <memory>
+
+#include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/status.h"
 
 namespace operations_research {
 namespace sat {

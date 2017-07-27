@@ -13,8 +13,14 @@
 
 #include "ortools/sat/integer.h"
 
+#include <algorithm>
+#include <queue>
+#include <type_traits>
+
 #include "ortools/base/iterator_adaptors.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {

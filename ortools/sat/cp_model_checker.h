@@ -14,7 +14,9 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_CHECKER_H_
 #define OR_TOOLS_SAT_CP_MODEL_CHECKER_H_
 
-#include "ortools/base/hash.h"
+#include <string>
+#include <vector>
+
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
 

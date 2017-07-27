@@ -13,6 +13,8 @@
 
 #include "ortools/sat/intervals.h"
 
+#include <memory>
+
 #include "ortools/util/sort.h"
 
 namespace operations_research {

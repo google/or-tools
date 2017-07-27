@@ -17,15 +17,14 @@
 #define OR_TOOLS_SAT_SAT_BASE_H_
 
 #include <algorithm>
-#include <cstddef>
 #include <deque>
-#include <iterator>
 #include <memory>
 #include <string>
-#include <type_traits>
-#include <utility>
 #include <vector>
 
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/span.h"
 #include "ortools/base/int_type.h"

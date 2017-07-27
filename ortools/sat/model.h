@@ -14,11 +14,14 @@
 #ifndef OR_TOOLS_SAT_MODEL_H_
 #define OR_TOOLS_SAT_MODEL_H_
 
+#include <cstddef>
 #include <functional>
 #include <map>
 #include <memory>
 #include <vector>
 
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/typeid.h"
 

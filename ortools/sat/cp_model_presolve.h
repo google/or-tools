@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 #define OR_TOOLS_SAT_CP_MODEL_PRESOLVE_H_
 
+#include <vector>
+
 #include "ortools/sat/cp_model.pb.h"
 
 namespace operations_research {

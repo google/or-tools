@@ -14,10 +14,16 @@
 #ifndef OR_TOOLS_SAT_NO_CYCLE_H_
 #define OR_TOOLS_SAT_NO_CYCLE_H_
 
+#include <limits>
+#include <utility>
 #include <vector>
 
+#include "ortools/base/integral_types.h"
+#include "ortools/base/macros.h"
+#include "ortools/base/span.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/sat_solver.h"
 
 namespace operations_research {
 namespace sat {

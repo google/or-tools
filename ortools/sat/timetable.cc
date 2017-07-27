@@ -14,10 +14,11 @@
 #include "ortools/sat/timetable.h"
 
 #include <algorithm>
+#include <functional>
+#include <memory>
 
-#include "ortools/sat/overload_checker.h"
-#include "ortools/sat/precedences.h"
-#include "ortools/sat/sat_solver.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/int_type.h"
 #include "ortools/util/sort.h"
 
 namespace operations_research {

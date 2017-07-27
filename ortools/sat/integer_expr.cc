@@ -13,9 +13,12 @@
 
 #include "ortools/sat/integer_expr.h"
 
+#include <algorithm>
+#include <memory>
 #include <unordered_map>
 
 #include "ortools/base/stl_util.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

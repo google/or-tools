@@ -14,10 +14,12 @@
 #ifndef OR_TOOLS_SAT_CUMULATIVE_H_
 #define OR_TOOLS_SAT_CUMULATIVE_H_
 
+#include <functional>
+#include <vector>
+
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {

@@ -14,13 +14,18 @@
 #ifndef OR_TOOLS_SAT_DISJUNCTIVE_H_
 #define OR_TOOLS_SAT_DISJUNCTIVE_H_
 
+#include <algorithm>
+#include <functional>
+#include <vector>
+
+#include "ortools/base/macros.h"
+#include "ortools/base/int_type.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/theta_tree.h"
-#include "ortools/util/stats.h"
 
 namespace operations_research {
 namespace sat {

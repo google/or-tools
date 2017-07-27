@@ -13,18 +13,29 @@
 
 #include "ortools/sat/cp_model_presolve.h"
 
+#include <algorithm>
+#include <cstdlib>
 #include <deque>
-#include <functional>
+#include <unordered_set>
+#include <map>
+#include <memory>
 #include <numeric>
+#include <set>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include "ortools/base/join.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/base/hash.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/util/affine_relation.h"
 #include "ortools/util/bitset.h"

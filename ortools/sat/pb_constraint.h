@@ -14,10 +14,23 @@
 #ifndef OR_TOOLS_SAT_PB_CONSTRAINT_H_
 #define OR_TOOLS_SAT_PB_CONSTRAINT_H_
 
-#include <deque>
+#include <algorithm>
+#include <unordered_map>
 #include <limits>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
+#include "ortools/base/span.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/hash.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
+#include "ortools/util/bitset.h"
 #include "ortools/util/stats.h"
 
 namespace operations_research {
@@ -320,6 +333,7 @@ class MutableUpperBoundedLinearConstraint {
 // A simple "helper" class to enqueue a propagated literal on the trail and
 // keep the information needed to explain it when requested.
 class UpperBoundedLinearConstraint;
+
 struct PbConstraintsEnqueueHelper {
   void Enqueue(Literal l, int source_trail_index,
                UpperBoundedLinearConstraint* ct, Trail* trail) {

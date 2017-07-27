@@ -14,9 +14,16 @@
 #include "ortools/sat/cumulative.h"
 
 #include <algorithm>
+#include <memory>
 
+#include "ortools/base/logging.h"
+#include "ortools/base/int_type.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/overload_checker.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/timetable.h"
 #include "ortools/sat/timetable_edgefinding.h"

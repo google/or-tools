@@ -13,27 +13,48 @@
 
 #include "ortools/sat/cp_model_solver.h"
 
+#include <algorithm>
 #include <functional>
+#include <unordered_map>
+#include <limits>
+#include <map>
+#include <memory>
+#include <set>
+#include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
+#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/join.h"
-#include "ortools/base/join.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connectivity.h"
 #include "ortools/sat/all_different.h"
+#include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/disjunctive.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_expr.h"
 #include "ortools/sat/intervals.h"
 #include "ortools/sat/linear_programming_constraint.h"
 #include "ortools/sat/optimization.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/precedences.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/table.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/util/sorted_interval_list.h"
+#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
@@ -1306,13 +1327,14 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       StrAppend(&result, Summarize(temp));
     }
   } else {
-    size_t max_complexity = 0;
+    int64 max_complexity = 0;
     int64 min = kint64max;
     int64 max = kint64min;
     for (const auto& entry : num_vars_per_domains) {
       min = std::min(min, entry.first.front().start);
       max = std::max(max, entry.first.back().end);
-      max_complexity = std::max(max_complexity, entry.first.size());
+      max_complexity =
+          std::max(max_complexity, static_cast<int64>(entry.first.size()));
     }
     StrAppend(&result, " - ", num_vars_per_domains.size(),
                     " different domains in [", min, ",", max,

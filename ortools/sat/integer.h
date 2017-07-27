@@ -14,16 +14,26 @@
 #ifndef OR_TOOLS_SAT_INTEGER_H_
 #define OR_TOOLS_SAT_INTEGER_H_
 
-#include <queue>
-#include <set>
+#include <deque>
+#include <functional>
+#include <unordered_map>
+#include <limits>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/port.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/inlined_vector.h"
 #include "ortools/base/join.h"
 #include "ortools/base/span.h"
 #include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/hash.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"

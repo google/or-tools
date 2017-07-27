@@ -14,6 +14,12 @@
 #ifndef OR_TOOLS_SAT_SYMMETRY_H_
 #define OR_TOOLS_SAT_SYMMETRY_H_
 
+#include <memory>
+#include <vector>
+
+#include "ortools/base/macros.h"
+#include "ortools/base/span.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/util/stats.h"

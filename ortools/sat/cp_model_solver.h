@@ -14,6 +14,11 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_SOLVER_H_
 #define OR_TOOLS_SAT_CP_MODEL_SOLVER_H_
 
+#include <functional>
+#include <string>
+#include <vector>
+
+#include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_parameters.pb.h"

@@ -13,7 +13,17 @@
 
 #include "ortools/sat/linear_programming_constraint.h"
 
+#include <cmath>
+#include <limits>
+#include <string>
+
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/map_util.h"
+#include "ortools/glop/parameters.pb.h"
+#include "ortools/glop/status.h"
 #include "ortools/util/time_limit.h"
 
 // TODO(user): remove the option once we know which algo work best.

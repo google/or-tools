@@ -13,9 +13,10 @@
 
 #include "ortools/sat/no_cycle.h"
 
-#include <numeric>
+#include <algorithm>
+#include <memory>
 
-#include "ortools/base/stl_util.h"
+#include "ortools/base/logging.h"
 
 namespace operations_research {
 namespace sat {

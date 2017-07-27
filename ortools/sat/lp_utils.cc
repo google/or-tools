@@ -13,9 +13,22 @@
 
 #include "ortools/sat/lp_utils.h"
 
+#include <stdlib.h>
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <string>
+#include <vector>
+
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/glop/lp_solver.h"
-#include "ortools/lp_data/lp_print_utils.h"
+#include "ortools/glop/parameters.pb.h"
+#include "ortools/lp_data/lp_types.h"
 #include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/util/fp_utils.h"
 
 namespace operations_research {
@@ -318,7 +331,7 @@ bool ConvertBinaryMPModelProtoToBooleanProblem(const MPModelProto& mp_model,
     double bound_error = 0.0;
     for (int i = 0; i < num_coeffs; ++i) {
       const double scaled_value = mp_constraint.coefficient(i) * scaling_factor;
-      bound_error += fabs(round(scaled_value) - scaled_value);
+      bound_error += std::abs(round(scaled_value) - scaled_value);
       const int64 value = static_cast<int64>(round(scaled_value)) / gcd;
       if (value != 0) {
         constraint->add_literals(mp_constraint.var_index(i) + 1);
@@ -503,7 +516,7 @@ bool SolveLpAndUseSolutionForSatAssignmentPreference(
     const Fractional& value = solver.variable_values()[col];
     sat_solver->SetAssignmentPreference(
         Literal(BooleanVariable(col.value()), round(value) == 1),
-        1 - fabs(value - round(value)));
+        1 - std::abs(value - round(value)));
   }
   return true;
 }

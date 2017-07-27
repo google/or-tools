@@ -13,8 +13,12 @@
 
 #include "ortools/sat/encoding.h"
 
+#include <algorithm>
 #include <deque>
+#include <memory>
 #include <queue>
+
+#include "ortools/sat/sat_parameters.pb.h"
 
 namespace operations_research {
 namespace sat {

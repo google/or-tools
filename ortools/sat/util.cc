@@ -13,6 +13,8 @@
 
 #include "ortools/sat/util.h"
 
+#include "google/protobuf/descriptor.h"
+
 namespace operations_research {
 namespace sat {
 

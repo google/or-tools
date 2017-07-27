@@ -13,11 +13,17 @@
 
 #include "ortools/sat/cp_model_checker.h"
 
+#include <algorithm>
+#include <unordered_map>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
+#include "ortools/base/logging.h"
 #include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
+#include "ortools/base/hash.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"

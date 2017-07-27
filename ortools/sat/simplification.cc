@@ -13,13 +13,19 @@
 
 #include "ortools/sat/simplification.h"
 
+#include <algorithm>
+#include <limits>
 #include <set>
+#include <utility>
 
+#include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/strongly_connected_components.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/time_limit.h"
+#include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/random.h"
 
 namespace operations_research {

@@ -14,14 +14,17 @@
 #ifndef OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 #define OR_TOOLS_SAT_LINEAR_PROGRAMMING_CONSTRAINT_H_
 
-#include <limits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "ortools/base/int_type.h"
 #include "ortools/glop/revised_simplex.h"
 #include "ortools/lp_data/lp_data.h"
+#include "ortools/lp_data/lp_types.h"
+#include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 #include "ortools/util/time_limit.h"
 
 namespace operations_research {

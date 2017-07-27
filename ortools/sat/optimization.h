@@ -19,9 +19,13 @@
 #ifndef OR_TOOLS_SAT_OPTIMIZATION_H_
 #define OR_TOOLS_SAT_OPTIMIZATION_H_
 
-#include "ortools/sat/boolean_problem.h"
+#include <functional>
+#include <vector>
+
+#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 
 namespace operations_research {

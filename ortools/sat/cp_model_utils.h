@@ -14,9 +14,13 @@
 #ifndef OR_TOOLS_SAT_CP_MODEL_UTILS_H_
 #define OR_TOOLS_SAT_CP_MODEL_UTILS_H_
 
+#include <algorithm>
 #include <functional>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
+#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/util/sorted_interval_list.h"

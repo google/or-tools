@@ -13,18 +13,25 @@
 
 #include "ortools/sat/boolean_problem.h"
 
-#include <cmath>
+#include <algorithm>
+#include <cstdlib>
 #include <unordered_map>
+#include <limits>
+#include <numeric>
+#include <utility>
 
 #include "ortools/base/commandlineflags.h"
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/join.h"
+#include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
 #include "ortools/graph/graph.h"
 #include "ortools/graph/io.h"
 #include "ortools/graph/util.h"
+#include "ortools/sat/sat_parameters.pb.h"
 
 DEFINE_string(debug_dump_symmetry_graph_to_file, "",
               "If this flag is non-empty, an undirected graph whose"

@@ -14,19 +14,22 @@
 #include "ortools/sat/sat_solver.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
+#include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/sysinfo.h"
-#include "google/protobuf/text_format.h"
 #include "ortools/base/split.h"
-#include "ortools/base/join.h"
+#include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/util/saturated_arithmetic.h"
+#include "ortools/base/adjustable_priority_queue-inl.h"
 
 namespace operations_research {
 namespace sat {

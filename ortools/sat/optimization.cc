@@ -13,18 +13,36 @@
 
 #include "ortools/sat/optimization.h"
 
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 #include <deque>
-#include <queue>
+#include <limits>
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
 
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
+#include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
-#include "google/protobuf/descriptor.h"
+#include "ortools/base/timer.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/map_util.h"
 #if defined(USE_CBC) || defined(USE_SCIP)
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 #endif  // defined(USE_CBC) || defined(USE_SCIP)
+#include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/integer_expr.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/util.h"
+#include "ortools/util/time_limit.h"
+#include "ortools/base/random.h"
 
 namespace operations_research {
 namespace sat {

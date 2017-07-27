@@ -13,8 +13,11 @@
 
 #include "ortools/sat/flow_costs.h"
 
-#include <algorithm>
 #include <cmath>
+#include <memory>
+
+#include "ortools/base/logging.h"
+#include "ortools/base/int_type.h"
 
 namespace operations_research {
 namespace sat {

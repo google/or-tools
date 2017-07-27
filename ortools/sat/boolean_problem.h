@@ -14,9 +14,16 @@
 #ifndef OR_TOOLS_SAT_BOOLEAN_PROBLEM_H_
 #define OR_TOOLS_SAT_BOOLEAN_PROBLEM_H_
 
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/base/status.h"

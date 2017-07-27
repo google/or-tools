@@ -14,8 +14,12 @@
 #include "ortools/sat/timetable_edgefinding.h"
 
 #include <algorithm>
+#include <functional>
+#include <memory>
 #include <vector>
 
+#include "ortools/base/integral_types.h"
+#include "ortools/base/logging.h"
 #include "ortools/base/int_type.h"
 #include "ortools/util/sort.h"
 

@@ -14,8 +14,12 @@
 #ifndef OR_TOOLS_SAT_DRAT_H_
 #define OR_TOOLS_SAT_DRAT_H_
 
+#include <string>
+#include <vector>
+
 #include "ortools/base/file.h"
-#include "ortools/sat/model.h"
+#include "ortools/base/span.h"
+#include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/sat/sat_base.h"
 
 namespace operations_research {

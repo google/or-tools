@@ -12,7 +12,12 @@
 // limitations under the License.
 
 #include "ortools/sat/overload_checker.h"
-#include "ortools/sat/sat_solver.h"
+
+#include <algorithm>
+#include <functional>
+#include <memory>
+
+#include "ortools/base/logging.h"
 #include "ortools/util/sort.h"
 
 namespace operations_research {

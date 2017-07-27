@@ -14,13 +14,17 @@
 #ifndef OR_TOOLS_SAT_ALL_DIFFERENT_H_
 #define OR_TOOLS_SAT_ALL_DIFFERENT_H_
 
+#include <functional>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "ortools/base/integral_types.h"
+#include "ortools/base/macros.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
-#include "ortools/sat/sat_solver.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

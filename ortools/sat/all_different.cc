@@ -13,7 +13,17 @@
 
 #include "ortools/sat/all_different.h"
 
+#include <algorithm>
+#include <unordered_map>
+#include <unordered_set>
+#include <map>
+#include <memory>
+
+#include "ortools/base/logging.h"
 #include "ortools/base/strongly_connected_components.h"
+#include "ortools/base/int_type.h"
+#include "ortools/base/map_util.h"
+#include "ortools/sat/sat_solver.h"
 #include "ortools/util/sort.h"
 
 namespace operations_research {

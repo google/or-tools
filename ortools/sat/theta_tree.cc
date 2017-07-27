@@ -13,6 +13,11 @@
 
 #include "ortools/sat/theta_tree.h"
 
+#include <algorithm>
+#include <memory>
+
+#include "ortools/base/int_type.h"
+
 namespace operations_research {
 namespace sat {
 

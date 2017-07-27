@@ -13,11 +13,21 @@
 
 #include "ortools/sat/table.h"
 
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
+#include <memory>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
+#include "ortools/base/logging.h"
+#include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/sorted_interval_list.h"
 
 namespace operations_research {
 namespace sat {

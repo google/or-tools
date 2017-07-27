@@ -14,10 +14,9 @@
 #ifndef OR_TOOLS_SAT_THETA_TREE_H_
 #define OR_TOOLS_SAT_THETA_TREE_H_
 
-#include <algorithm>
-#include <limits>
 #include <vector>
 
+#include "ortools/base/logging.h"
 #include "ortools/sat/integer.h"
 
 namespace operations_research {

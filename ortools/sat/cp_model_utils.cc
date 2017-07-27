@@ -13,8 +13,6 @@
 
 #include "ortools/sat/cp_model_utils.h"
 
-#include "ortools/base/stl_util.h"
-
 namespace operations_research {
 namespace sat {
 

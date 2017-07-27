@@ -19,12 +19,8 @@
 #include <string>
 #include <vector>
 
-#include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
-#include "ortools/base/sysinfo.h"
-#include "ortools/base/join.h"
 #include "ortools/base/stl_util.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {

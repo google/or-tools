@@ -12,9 +12,13 @@
 // limitations under the License.
 
 #include "ortools/sat/cp_constraints.h"
-#include "ortools/util/sort.h"
+
+#include <algorithm>
+#include <unordered_map>
 
 #include "ortools/base/map_util.h"
+#include "ortools/sat/sat_solver.h"
+#include "ortools/util/sort.h"
 
 namespace operations_research {
 namespace sat {

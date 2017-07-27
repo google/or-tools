@@ -13,6 +13,10 @@
 
 #include "ortools/sat/precedences.h"
 
+#include <algorithm>
+#include <memory>
+
+#include "ortools/base/logging.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/stl_util.h"
 

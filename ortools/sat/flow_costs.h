@@ -14,12 +14,12 @@
 #ifndef OR_TOOLS_SAT_FLOW_COSTS_H_
 #define OR_TOOLS_SAT_FLOW_COSTS_H_
 
+#include <functional>
 #include <vector>
 
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/sat/integer.h"
 #include "ortools/sat/model.h"
-#include "ortools/sat/sat_base.h"
 
 namespace operations_research {
 namespace sat {
