@@ -29,6 +29,7 @@
 #include "ortools/base/timer.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/map_util.h"
@@ -2082,19 +2083,19 @@ CpSolverResponse SolveCpModelInternal(
       std::vector<IntegerVariable> linear_vars;
       std::vector<IntegerValue> linear_coeffs;
       ExtractLinearObjective(model_proto, &m, &linear_vars, &linear_coeffs);
-#if defined(USE_CBC) || defined(USE_SCIPe)
+      #if defined(USE_CBC) || defined(USE_SCIP)
       if (parameters.optimize_with_max_hs()) {
         status = MinimizeWithHittingSetAndLazyEncoding(
             VLOG_IS_ON(1), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
       } else {
-#endif  //  defined(USE_CBC) || defined(USE_SCIPe)
+        #endif  // defined(USE_CBC) || defined(USE_SCIP)
         status = MinimizeWithCoreAndLazyEncoding(
             VLOG_IS_ON(1), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
-#if defined(USE_CBC) || defined(USE_SCIPe)
+        #if defined(USE_CBC) || defined(USE_SCIP)
       }
-#endif  //  defined(USE_CBC) || defined(USE_SCIPe)
+      #endif  // defined(USE_CBC) || defined(USE_SCIP)
     } else {
       status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           /*log_info=*/false, objective_var, next_decision, solution_observer,
