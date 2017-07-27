@@ -14,6 +14,8 @@
 #ifndef OR_TOOLS_BASE_MACROS_H_
 #define OR_TOOLS_BASE_MACROS_H_
 
+#include <cstdlib>
+
 #if (defined(COMPILER_GCC3) || defined(OS_MACOSX)) && !defined(SWIG)
 #define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
 #else  // GCC
