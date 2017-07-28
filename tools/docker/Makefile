@@ -3,12 +3,19 @@
 export:
 	mkdir export
 
-images: ubuntu-14.04-image ubuntu-16.04-image ubuntu-17.04-image
+images: \
+	ubuntu-14.04-image \
+	ubuntu-16.04-image \
+	ubuntu-17.04-image \
+	centos-7-image \
+	debian-9-image
 
 images-no-cache: \
 	ubuntu-14.04-image-no-cache \
 	ubuntu-16.04-image-no-cache \
-	ubuntu-17.04-image-no-cache
+	ubuntu-17.04-image-no-cache \
+	centos-7-image-no-cache \
+	debian-9-image-no-cache
 
 clean_all_images:
 	docker rmi `docker images -q -a`
