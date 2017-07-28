@@ -666,7 +666,7 @@ std::string SCIPInterface::ValidFileExtensionForParameterFile() const {
   return ".set";
 }
 
-MPSolverInterface* BuildSCIPInterface(MPSolver* solver) {
+MPSolverInterface* BuildSCIPInterface(MPSolver* const solver) {
   return new SCIPInterface(solver);
 }
 
