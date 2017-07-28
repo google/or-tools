@@ -280,7 +280,10 @@ Makefile.local: makefiles/Makefile.third_party.unix.mk
 	@echo "# Define UNIX_GLPK_DIR to point to a compiled version of GLPK to use it" >> Makefile.local
 	@echo "# Define UNIX_SCIP_DIR to point to a compiled version of SCIP to use it ">> Makefile.local
 	@echo "#   i.e.: <path>/scipoptsuite-4.0.0/scip-4.0.0" >> Makefile.local
-	@echo "#   compile scip with GMP=false READLINE=false" >> Makefile.local
+	@echo "#   On Mac OS X, compile scip with: " >> makefile.local
+	@echo "#     make GMP=false READLINE=false TPI=tny" >> Makefile.local
+	@echo "#   On Linux, compile scip with: " >> makefile.local
+	@echo "#     make GMP=false READLINE=false TPI=tny USRCFLAGS=-fPIC USRCXXFLAGS=-fPIC USRCPPFLAGS=-fPIC" >> Makefile.local
 	@echo "# Define UNIX_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi" >> Makefile.local
 	@echo "# Define UNIX_CPLEX_DIR to use CPLEX" >> Makefile.local
 	@echo >> Makefile.local
