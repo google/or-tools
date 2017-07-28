@@ -361,7 +361,8 @@ Makefile.local: makefiles/Makefile.third_party.$(SYSTEM).mk
 	@echo # >> Makefile.local
 	@echo # Define WINDOWS_SCIP_DIR to point to a compiled version of SCIP to use it >> Makefile.local
 	@echo #   i.e.: path\\scip-4.0.0 >> Makefile.local
-	@echo # See instructions here: http://or-tools.blogspot.com/2017/03/changing-way-we-link-with-scip.html >> Makefile.local
+	@echo # See instructions here: >> Makefile.local
+	@echo #   http://or-tools.blogspot.com/2017/03/changing-way-we-link-with-scip.html >> Makefile.local
 	@echo CLR_KEYFILE = bin\\or-tools.snk >> Makefile.local
 	@echo # Define WINDOWS_GUROBI_DIR and GUROBI_LIB_VERSION to use Gurobi >> Makefile.local
 	@echo # >> Makefile.local
