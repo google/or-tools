@@ -3,7 +3,7 @@
 GFLAGS_TAG = 2.2.0
 PROTOBUF_TAG = 3.3.0
 GLOG_TAG = 0.3.5
-CBC_TAG = 2.9.8
+CBC_TAG = 2.9.9
 
 # Detect if patchelf is needed
 ifeq ($(PLATFORM), LINUX)
