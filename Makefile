@@ -58,7 +58,7 @@ include $(OR_ROOT)makefiles/Makefile.archive.mk
 include $(OR_ROOT)makefiles/Makefile.install.mk
 
 # Include test
-include $(OR_ROOT)makefiles/Makefile.test
+include $(OR_ROOT)makefiles/Makefile.test.mk
 
 # Finally include user makefile if it exists
 -include $(OR_ROOT)Makefile.user
