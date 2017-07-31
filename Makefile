@@ -36,7 +36,7 @@ clean: clean_cc clean_java clean_python clean_csharp clean_compat
 include $(OR_ROOT)Version.txt
 
 # We try to detect the platform.
-include $(OR_ROOT)makefiles/Makefile.port
+include $(OR_ROOT)makefiles/Makefile.port.mk
 OR_ROOT_FULL=$(OR_TOOLS_TOP)
 
 # Load local variables
