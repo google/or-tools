@@ -50,7 +50,7 @@ test: \
 	ubuntu-16.04-test \
 	ubuntu-17.04-test
 
-delivery:  archive pypi pypy3
+delivery:  archives pypi pypi3
 
 # Ubuntu 14.04 images
 
