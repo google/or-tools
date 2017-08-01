@@ -104,6 +104,15 @@ std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
               const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
               const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
               const AlphaNum& j, const AlphaNum& k);
+std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
+              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l);
+std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
+              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l,
+              const AlphaNum& m);
 
 void StrAppend(std::string* s, const AlphaNum& a);
 void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b);
