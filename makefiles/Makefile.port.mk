@@ -96,7 +96,6 @@ ifeq ("$(SYSTEM)","win")
     PLATFORM = WIN64
     PTRLENGTH = 64
     CMAKE_SUFFIX = Win64
-    ARCH= /DARCH_K8
     CBC_PLATFORM_PREFIX = x64
     GLPK_PLATFORM = w64
     NETPLATFORM = x64
@@ -105,7 +104,6 @@ ifeq ("$(SYSTEM)","win")
       PLATFORM = WIN64
       PTRLENGTH = 64
       CMAKE_SUFFIX = Win64
-      ARCH= /DARCH_K8
       CBC_PLATFORM_PREFIX = x64
       GLPK_PLATFORM = w64
       NETPLATFORM = x64
@@ -113,7 +111,6 @@ ifeq ("$(SYSTEM)","win")
       PLATFORM = Win32
       PTRLENGTH = 32
       CMAKE_SUFFIX =
-      ARCH =
       CBC_PLATFORM_PREFIX = Win32
       GLPK_PLATFORM = w32
       NETPLATFORM = x86
