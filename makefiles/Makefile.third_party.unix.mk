@@ -40,6 +40,7 @@ MISSING_DIRECTORIES = \
 	ortools/gen/com/google/ortools/constraintsolver \
 	ortools/gen/com/google/ortools/flatzinc \
 	ortools/gen/com/google/ortools/graph \
+	ortools/gen/com/google/ortools/sat \
 	ortools/gen/com/google/ortools/linearsolver \
 	ortools/gen/com/google/ortools/properties \
 	ortools/gen/ortools/algorithms \
@@ -120,6 +121,9 @@ ortools/gen/com/google/ortools/linearsolver:
 
 ortools/gen/com/google/ortools/flatzinc:
 	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sflatzinc
+
+ortools/gen/com/google/ortools/sat:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Ssat
 
 ortools/gen/com/google/ortools/properties:
 	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sproperties

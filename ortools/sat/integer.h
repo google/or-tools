@@ -140,7 +140,7 @@ struct IntegerLiteral {
   std::string DebugString() const {
     return VariableIsPositive(var)
                ? StrCat("I", var.value() / 2, ">=", bound.value())
-               : StrCat("I", var.value() / 2, "<=", bound.value());
+               : StrCat("I", var.value() / 2, "<=", -bound.value());
   }
 
   // Note that bound should be in [kMinIntegerValue, kMaxIntegerValue + 1].

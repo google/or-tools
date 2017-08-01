@@ -29,6 +29,7 @@
 #include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/timer.h"
+#include "ortools/base/join.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #if defined(USE_CBC) || defined(USE_SCIP)
@@ -1209,15 +1210,14 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       feasible_solution_observer(*model);
     }
 
-    // TODO(user): Investigate if constraining the objective is better.
-    if (/* DISABLES CODE */ (false)) {
-      sat_solver->Backtrack(0);
-      sat_solver->SetAssumptionLevel(0);
-      if (!integer_trail->Enqueue(
-              IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {},
-              {})) {
-        return false;
-      }
+    // Constrain objective_var. This has a better result when objective_var is
+    // used in an LP relaxation for instance.
+    sat_solver->Backtrack(0);
+    sat_solver->SetAssumptionLevel(0);
+    if (!integer_trail->Enqueue(
+            IntegerLiteral::LowerOrEqual(objective_var, objective - 1), {},
+            {})) {
+      return false;
     }
     return true;
   };
@@ -1263,10 +1263,11 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     sat_solver->SetAssumptionLevel(0);
 
     // We assumes all terms at their lower-bound.
-    std::vector<Literal> assumptions;
-    assumption_to_term_index.clear();
+    std::vector<int> term_indices;
+    std::vector<IntegerLiteral> integer_assumptions;
     IntegerValue next_stratified_threshold(0);
-    IntegerValue implied_objective_lb;
+    IntegerValue implied_objective_lb(0);
+    IntegerValue objective_offset(0);
     for (int i = 0; i < terms.size(); ++i) {
       const ObjectiveTerm term = terms[i];
       const IntegerValue var_lb = integer_trail->LowerBound(term.var);
@@ -1279,16 +1280,19 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       // Skip fixed terms.
       // We still keep them around for a proper lower-bound computation.
       // TODO(user): we could keep an objective offset instead.
-      if (var_lb == integer_trail->UpperBound(term.var)) continue;
+      if (var_lb == integer_trail->UpperBound(term.var)) {
+        objective_offset += term.weight * var_lb.value();
+        continue;
+      }
 
       // Only consider the terms above the threshold.
       if (term.weight < stratified_threshold) {
         next_stratified_threshold =
             std::max(next_stratified_threshold, term.weight);
       } else {
-        assumptions.push_back(integer_encoder->GetOrCreateAssociatedLiteral(
-            IntegerLiteral::LowerOrEqual(term.var, var_lb)));
-        InsertOrDie(&assumption_to_term_index, assumptions.back().Index(), i);
+        integer_assumptions.push_back(
+            IntegerLiteral::LowerOrEqual(term.var, var_lb));
+        term_indices.push_back(i);
       }
     }
 
@@ -1304,27 +1308,53 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     }
 
     // No assumptions with the current stratified_threshold? use the new one.
-    if (assumptions.empty() && next_stratified_threshold > 0) {
+    if (term_indices.empty() && next_stratified_threshold > 0) {
       stratified_threshold = next_stratified_threshold;
       --iter;  // "false" iteration, the lower bound does not increase.
       continue;
     }
 
+    // If there is only one assumptions left, we switch the algorithm.
+    if (term_indices.size() == 1 && next_stratified_threshold == 0) {
+      if (log_info) LOG(INFO) << "Switching to linear scan...";
+      model->Add(LowerOrEqualWithOffset(
+          terms[term_indices[0]].var, objective_var, objective_offset.value()));
+      result = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
+          false, objective_var, next_decision, feasible_solution_observer,
+          model);
+      break;
+    }
+
     // Display the progress.
     const IntegerValue objective_lb = integer_trail->LowerBound(objective_var);
     if (log_info) {
-      LOG(INFO) << StringPrintf(
-          "  iter:%d lb:%lld (%lld) gap:%lld assumptions:%zu strat:%lld "
-          "depth:%d",
-          iter, objective_lb.value(), implied_objective_lb.value(),
-          (best_objective - objective_lb).value(), assumptions.size(),
-          stratified_threshold.value(), max_depth);
+      const int64 lb = objective_lb.value();
+      const int64 ub = best_objective.value();
+      const int gap = lb == ub ? 0
+                               : static_cast<int>(std::ceil(100.0 * (ub - lb) /
+                                                            std::max(ub, lb)));
+      LOG(INFO) << StrCat("unscaled_objective:[", lb, ",", ub,
+                                "]"
+                                " gap:",
+                                gap, "%", " assumptions:", term_indices.size(),
+                                " strat:", stratified_threshold.value(),
+                                " depth:", max_depth);
     }
 
     // Abort if we have a solution and a gap of zero.
     if (implied_objective_lb == best_objective && num_solutions > 0) {
       result = SatSolver::MODEL_SAT;
       break;
+    }
+
+    // Convert integer_assumptions to Literals.
+    std::vector<Literal> assumptions;
+    assumption_to_term_index.clear();
+    for (int i = 0; i < integer_assumptions.size(); ++i) {
+      assumptions.push_back(integer_encoder->GetOrCreateAssociatedLiteral(
+          integer_assumptions[i]));
+      InsertOrDie(&assumption_to_term_index, assumptions.back().Index(),
+                  term_indices[i]);
     }
 
     // Solve under the assumptions.
