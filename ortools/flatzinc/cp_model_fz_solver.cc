@@ -16,6 +16,7 @@
 #include <unordered_map>
 
 #include "ortools/base/timer.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/split.h"
 #include "ortools/base/stringpiece_utils.h"
 #include "ortools/base/join.h"

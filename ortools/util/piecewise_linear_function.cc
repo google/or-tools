@@ -118,7 +118,7 @@ int64 PiecewiseSegment::Value(int64 x) const {
 
 int64 PiecewiseSegment::SafeValuePostReference(int64 x) const {
   DCHECK_GE(x, reference_x_);
-  const uint64 span_x = x - reference_x_;
+  const uint64 span_x = static_cast<uint64>(x) - reference_x_;
   if (span_x == 0) {
     return reference_y_;
   }
@@ -173,7 +173,7 @@ int64 PiecewiseSegment::SafeValuePostReference(int64 x) const {
 
 int64 PiecewiseSegment::SafeValuePreReference(int64 x) const {
   DCHECK_LE(x, reference_x_);
-  const uint64 span_x = reference_x_ - x;
+  const uint64 span_x = static_cast<uint64>(reference_x_) - x;
   if (slope_ == 0) {
     // Zero slope segment.
     return reference_y_;
@@ -190,14 +190,14 @@ int64 PiecewiseSegment::SafeValuePreReference(int64 x) const {
       } else {
         return span_y - reference_y_ > static_cast<uint64>(kint64max) + 1
                    ? kint64min
-                   : -static_cast<int64>(span_y - reference_y_);
+                   : -static_cast<uint64>(span_y - reference_y_);
       }
     } else {
       const uint64 opp_reference_y = static_cast<uint64>(-reference_y_);
       const uint64 opp_unsigned_sum = UnsignedCapAdd(opp_reference_y, span_y);
       return opp_unsigned_sum > kint64max
                  ? kint64min
-                 : -static_cast<int64>(opp_unsigned_sum);
+                 : -static_cast<uint64>(opp_unsigned_sum);
     }
   } else {
     // Negative slope segment.
@@ -213,7 +213,7 @@ int64 PiecewiseSegment::SafeValuePreReference(int64 x) const {
       } else {
         return opp_reference_y - span_y > static_cast<uint64>(kint64max) + 1
                    ? kint64min
-                   : -static_cast<int64>(opp_reference_y - span_y);
+                   : -static_cast<uint64>(opp_reference_y - span_y);
       }
     } else {
       const uint64 unsigned_sum = UnsignedCapAdd(reference_y_, span_y);

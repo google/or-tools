@@ -78,6 +78,11 @@ struct AlphaNum {
 
 extern AlphaNum gEmptyAlphaNum;
 
+template <typename T>
+const T& LegacyPrecision(const T& t) {
+  return t;
+}
+
 std::string StrCat(const AlphaNum& a);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b);
 std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c);
@@ -143,6 +148,16 @@ void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
                const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
                const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
                const AlphaNum& i, const AlphaNum& j, const AlphaNum& k);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+               const AlphaNum& i, const AlphaNum& j, const AlphaNum& k,
+               const AlphaNum& l);
+void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
+               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+               const AlphaNum& i, const AlphaNum& j, const AlphaNum& k,
+               const AlphaNum& l, const AlphaNum& m);
 
 namespace strings {
 template <class Iterable>

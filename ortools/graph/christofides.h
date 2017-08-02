@@ -37,9 +37,9 @@ template <typename CostType, typename ArcIndex = int64,
 class ChristofidesPathSolver {
  public:
   enum class MatchingAlgorithm {
-#if defined(USE_CBC) || defined(USE_SCIP)
+    #if defined(USE_CBC) || defined(USE_SCIP)
     MINIMUM_WEIGHT_MATCHING,
-#endif  // defined(USE_CBC) || defined(USE_SCIP)
+    #endif  // defined(USE_CBC) || defined(USE_SCIP)
     MINIMAL_WEIGHT_MATCHING,
   };
   ChristofidesPathSolver(NodeIndex num_nodes, CostFunction costs);
@@ -135,20 +135,18 @@ std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
     }
   }
 #if defined(USE_SCIP)
-  MPSolver scip_solver("MatchingWithSCIP",
-                       MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
+  MPSolver mp_solver("MatchingWithSCIP",
+                     MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
 #elif defined(USE_CBC)
-  MPSolver scip_solver("MatchingWithCBC",
-                       MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  MPSolver mp_solver("MatchingWithCBC",
+                     MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
 #endif
-  // TODO(user): Glip performs significantly faster on very small problems;
-  // investigate the necessity of switching solvers depending on model size.
   std::string error;
-  scip_solver.LoadModelFromProto(model, &error);
-  MPSolver::ResultStatus status = scip_solver.Solve();
+  mp_solver.LoadModelFromProto(model, &error);
+  MPSolver::ResultStatus status = mp_solver.Solve();
   CHECK_EQ(status, MPSolver::OPTIMAL);
   MPSolutionResponse response;
-  scip_solver.FillSolutionResponseProto(&response);
+  mp_solver.FillSolutionResponseProto(&response);
   std::vector<ArcIndex> matching;
   for (auto arc : variable_indices) {
     if (response.variable_value(arc.second) > .9) {
@@ -227,7 +225,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
   std::vector<ArcIndex> closure_arcs;
   switch (matching_) {
-#if defined(USE_CBC) || defined(USE_SCIP)
+    #if defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
       closure_arcs = ComputeMinimumWeightMatchingWithMIP(
           reduced_graph, [this, &reduced_graph,
@@ -237,7 +235,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
           });
       break;
     }
-#endif  // defined(USE_CBC) || defined(USE_SCIP)
+    #endif  // defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMAL_WEIGHT_MATCHING: {
       // TODO(user): Cost caching was added and can gain up to 20% but
       // increases memory usage; see if we can avoid caching.

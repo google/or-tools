@@ -85,6 +85,7 @@ void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
   StrAppend(s, a, b, c, d);
   StrAppend(s, e, f, g, h, i, j, k);
 }
+
 void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
                const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
                const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
@@ -169,3 +170,22 @@ std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
   StrAppend(&out, a, b, c, d, e, f, g, h, i, j, k);
   return out;
 }
+
+std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
+              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l) {
+  std::string out;
+  StrAppend(&out, a, b, c, d, e, f, g, h, i, j, k, l);
+  return out;
+}
+std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
+              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l,
+              const AlphaNum& m) {
+  std::string out;
+  StrAppend(&out, a, b, c, d, e, f, g, h, i, j, k, l, m);
+  return out;
+}
+

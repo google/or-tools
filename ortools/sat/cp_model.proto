@@ -14,8 +14,8 @@
 // Proto describing a general Constraint Programming (CP) problem.
 
 syntax = "proto3";
-option csharp_namespace = "Google.OrTools.Sat";
 
+option csharp_namespace = "Google.OrTools.Sat";
 
 package operations_research.sat;
 

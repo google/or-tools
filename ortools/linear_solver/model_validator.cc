@@ -41,18 +41,20 @@ std::string FindErrorInMPVariable(const MPVariableProto& variable) {
       variable.lower_bound() == kInfinity ||
       variable.upper_bound() == -kInfinity ||
       variable.lower_bound() > variable.upper_bound()) {
-    return StrCat("Infeasible bounds: [", variable.lower_bound(), ", ",
-                  variable.upper_bound(), "]");
+    return StrCat("Infeasible bounds: [",
+                  LegacyPrecision(variable.lower_bound()), ", ",
+                  LegacyPrecision(variable.upper_bound()), "]");
   }
   if (variable.is_integer() &&
       ceil(variable.lower_bound()) > floor(variable.upper_bound())) {
     return StrCat("Infeasible bounds for integer variable: [",
-                  variable.lower_bound(), ", ", variable.upper_bound(), "]",
+                  LegacyPrecision(variable.lower_bound()), ", ",
+                  LegacyPrecision(variable.upper_bound()), "]",
                   " translate to the empty set");
   }
   if (!std::isfinite(variable.objective_coefficient())) {
     return StrCat("Invalid objective_coefficient: ",
-                  variable.objective_coefficient());
+                  LegacyPrecision(variable.objective_coefficient()));
   }
   return std::string();
 }
@@ -67,8 +69,9 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
       constraint.lower_bound() == kInfinity ||
       constraint.upper_bound() == -kInfinity ||
       constraint.lower_bound() > constraint.upper_bound()) {
-    return StrCat("Infeasible bounds: [", constraint.lower_bound(), ", ",
-                  constraint.upper_bound(), "]");
+    return StrCat("Infeasible bounds: [",
+                  LegacyPrecision(constraint.lower_bound()), ", ",
+                  LegacyPrecision(constraint.upper_bound()), "]");
   }
 
   // TODO(user): clarify explicitly, at least in a comment, whether we want
@@ -88,7 +91,8 @@ std::string FindErrorInMPConstraint(const MPConstraintProto& constraint,
     }
     const double coeff = constraint.coefficient(i);
     if (!std::isfinite(coeff)) {
-      return StrCat("coefficient(", i, ")=", coeff, " is invalid");
+      return StrCat("coefficient(", i, ")=", LegacyPrecision(coeff),
+                    " is invalid");
     }
   }
 
@@ -129,7 +133,8 @@ std::string FindErrorInSolutionHint(const PartialVariableAssignment& solution_hi
     }
     var_in_hint[var_index] = true;
     if (!std::isfinite(solution_hint.var_value(i))) {
-      return StrCat("var_value(", i, ")=", solution_hint.var_value(i),
+      return StrCat("var_value(", i,
+                    ")=", LegacyPrecision(solution_hint.var_value(i)),
                     " is not a finite number");
     }
   }
@@ -146,7 +151,8 @@ std::string FindErrorInMPModelProto(const MPModelProto& model) {
   // accept models without variables and/or constraints.
 
   if (!std::isfinite(model.objective_offset())) {
-    return StrCat("Invalid objective_offset: ", model.objective_offset());
+    return StrCat("Invalid objective_offset: ",
+                  LegacyPrecision(model.objective_offset()));
   }
   const int num_vars = model.variable_size();
   const int num_cts = model.constraint_size();
@@ -230,9 +236,11 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
     if (!IsSmallerWithinTolerance(value, ub, tolerance) ||
         !IsSmallerWithinTolerance(lb, value, tolerance)) {
       return StrCat("Variable '", model.variable(var_index).name(),
-                    "' is set to ", value,
-                    " which is not in the variable bounds [", lb, ", ", ub,
-                    "] modulo a tolerance of ", tolerance, ".");
+                    "' is set to ", LegacyPrecision(value),
+                    " which is not in the variable bounds [",
+                    LegacyPrecision(lb), ", ", LegacyPrecision(ub),
+                    "] modulo a tolerance of ",
+                    LegacyPrecision(tolerance), ".");
     }
   }
 
@@ -249,9 +257,11 @@ std::string FindFeasibilityErrorInSolutionHint(const MPModelProto& model,
     if (!IsSmallerWithinTolerance(activity.Value(), ub, tolerance) ||
         !IsSmallerWithinTolerance(lb, activity.Value(), tolerance)) {
       return StrCat("Constraint '", model.constraint(cst_index).name(),
-                    "' has activity ", activity.Value(),
-                    " which is not in the constraint bounds [", lb, ", ", ub,
-                    "] modulo a tolerance of ", tolerance, ".");
+                    "' has activity ", LegacyPrecision(activity.Value()),
+                    " which is not in the constraint bounds [",
+                    LegacyPrecision(lb), ", ", LegacyPrecision(ub),
+                    "] modulo a tolerance of ",
+                    LegacyPrecision(tolerance), ".");
     }
   }
 

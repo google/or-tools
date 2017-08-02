@@ -590,7 +590,8 @@ std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
   std::string output;
   for (ColIndex col(0); col < variable_values.size(); ++col) {
     if (!output.empty()) StrAppend(&output, ", ");
-    StrAppend(&output, GetVariableName(col), " = ", variable_values[col]);
+    StrAppend(&output, GetVariableName(col), " = ",
+                    LegacyPrecision(variable_values[col]));
   }
   return output;
 }
