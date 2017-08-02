@@ -134,13 +134,13 @@ std::vector<typename GraphType::ArcIndex> ComputeMinimumWeightMatchingWithMIP(
       }
     }
   }
-#if defined(USE_SCIP)
+  #if defined(USE_SCIP)
   MPSolver mp_solver("MatchingWithSCIP",
                      MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING);
-#elif defined(USE_CBC)
-  MPSolver mp_solver("MatchingWithCBC",
-                     MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
-#endif
+  #elif defined(USE_CBC)
+    MPSolver mp_solver("MatchingWithCBC",
+                       MPSolver::CBC_MIXED_INTEGER_PROGRAMMING);
+  #endif
   std::string error;
   mp_solver.LoadModelFromProto(model, &error);
   MPSolver::ResultStatus status = mp_solver.Solve();

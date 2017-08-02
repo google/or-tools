@@ -34,6 +34,7 @@ MISSING_DIRECTORIES = \
 	objs/linear_solver \
 	objs/lp_data \
 	objs/sat \
+	objs/port \
 	objs/swig \
 	objs/util \
 	ortools/gen/com/google/ortools/algorithms \
@@ -97,6 +98,9 @@ objs/linear_solver:
 
 objs/lp_data:
 	$(MKDIR_P) objs$Slp_data
+
+objs/port:
+	$(MKDIR_P) objs$Sport
 
 objs/sat:
 	$(MKDIR_P) objs$Ssat

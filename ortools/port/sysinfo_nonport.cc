@@ -11,18 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_SYSINFO_H_
-#define OR_TOOLS_BASE_SYSINFO_H_
+#include "ortools/port/sysinfo.h"
 
-#include "ortools/base/basictypes.h"
+#include "ortools/base/sysinfo.h"
 
 namespace operations_research {
-// Returns the memory usage of the process.
-int64 GetProcessMemoryUsage();
-}  // namespace operations_research
+namespace sysinfo {
 
-inline int64 MemoryUsage(int unused) {
-  return operations_research::GetProcessMemoryUsage();
-}
+int64 MemoryUsageProcess() { return ::MemoryUsage(0); }
 
-#endif  // OR_TOOLS_BASE_SYSINFO_H_
+}  // sysinfo
+}  // operations_research

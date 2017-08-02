@@ -19,11 +19,11 @@
 // Detect 64 bit.
 #undef ARCH_K8
 #if defined(_MSC_VER) && defined(_WIN64)
-#  define ARCH_K8
+#define ARCH_K8
 #elif defined(__APPLE__) && defined(__GNUC__)
-#  define ARCH_K8  // We only support 64 bit on Mac OS X.
+#define ARCH_K8  // We only support 64 bit on Mac OS X.
 #elif defined(__GNUC__) && defined(__LP64__)  // Linux
-#  define ARCH_K8
+#define ARCH_K8
 #endif
 
 #ifndef SWIG

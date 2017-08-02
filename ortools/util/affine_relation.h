@@ -18,7 +18,6 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
-#include "ortools/base/port.h"
 #include "ortools/base/iterator_adaptors.h"
 
 namespace operations_research {
@@ -76,8 +75,6 @@ class AffineRelation {
     int representative;
     int64 coeff;
     int64 offset;
-    // TUPLE_DEFINE_STRUCT(Relation, (ctor, ostream, eq), (int, representative),
-    //                     (int64, coeff), (int64, offset));
   };
   Relation Get(int x);
 

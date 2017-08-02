@@ -11,18 +11,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_SYSINFO_H_
-#define OR_TOOLS_BASE_SYSINFO_H_
+#ifndef OR_TOOLS_PORT_SYSINFO_H_
+#define OR_TOOLS_PORT_SYSINFO_H_
 
-#include "ortools/base/basictypes.h"
+#include "ortools/base/integral_types.h"
 
 namespace operations_research {
-// Returns the memory usage of the process.
-int64 GetProcessMemoryUsage();
+namespace sysinfo {
+
+// Return the memory usage in bytes of the process.
+// Will return -1 if MemoryUsage is not supported on platform (e.g. Android).
+//
+// Note: fixing this on Android isn't really feasible, memory usage is only
+// available from Java.  So any code depending on this needs to deal with
+// the case where memory info is not available.
+//
+// See base/sysinfo.h MemoryUsage
+int64 MemoryUsageProcess();
+
+}  // namespace sysinfo
 }  // namespace operations_research
 
-inline int64 MemoryUsage(int unused) {
-  return operations_research::GetProcessMemoryUsage();
-}
-
-#endif  // OR_TOOLS_BASE_SYSINFO_H_
+#endif  // OR_TOOLS_PORT_SYSINFO_H_

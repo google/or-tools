@@ -11,18 +11,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_SYSINFO_H_
-#define OR_TOOLS_BASE_SYSINFO_H_
+#ifndef OR_TOOLS_PORT_UTF8_H_
+#define OR_TOOLS_PORT_UTF8_H_
 
-#include "ortools/base/basictypes.h"
+#include <string>
+
+#ifndef __PORTABLE_PLATFORM__
+#include "ortools/base/encodingutils.h"
+#endif
 
 namespace operations_research {
-// Returns the memory usage of the process.
-int64 GetProcessMemoryUsage();
-}  // namespace operations_research
+namespace utf8 {
 
-inline int64 MemoryUsage(int unused) {
-  return operations_research::GetProcessMemoryUsage();
+// str_type should be std::string/StringPiece/Cord
+template <typename StrType>
+int UTF8StrLen(StrType str_type) {
+#if defined(__PORTABLE_PLATFORM__)
+  return str_type.size();
+#else
+  return ::EncodingUtils::UTF8StrLen(str_type);
+#endif
 }
 
-#endif  // OR_TOOLS_BASE_SYSINFO_H_
+}  // namespace utf8
+}  // namespace operations_research
+
+#endif  // OR_TOOLS_PORT_UTF8_H_

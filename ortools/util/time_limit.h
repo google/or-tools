@@ -29,7 +29,6 @@
 #include "ortools/base/port.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/time_support.h"
-#include "ortools/base/sysinfo.h"
 #include "ortools/util/running_stat.h"
 
 // Enables to change the behavior of the TimeLimit class to use "usertime"
@@ -178,7 +177,7 @@ class TimeLimit {
 
   // Returns the time elapsed in seconds since the construction of this object.
   double GetElapsedTime() const {
-return 1e-9 * (base::GetCurrentTimeNanos() - start_ns_);
+    return 1e-9 * (base::GetCurrentTimeNanos() - start_ns_);
   }
 
   // Returns the elapsed deterministic time since the construction of this

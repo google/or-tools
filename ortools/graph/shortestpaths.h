@@ -67,4 +67,5 @@ bool AStarShortestPath(int node_count, int start_node, int end_node,
                        int64 disconnected_distance, std::vector<int>* nodes);
 
 }  // namespace operations_research
+
 #endif  // OR_TOOLS_GRAPH_SHORTESTPATHS_H_

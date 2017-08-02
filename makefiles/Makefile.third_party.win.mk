@@ -29,6 +29,7 @@ MISSING_DIRECTORIES = \
 	objs/graph \
 	objs/linear_solver \
 	objs/lp_data \
+	objs/port \
 	objs/sat \
 	objs/swig \
 	objs/util \
@@ -37,6 +38,7 @@ MISSING_DIRECTORIES = \
 	ortools/gen/com/google/ortools/flatzinc \
 	ortools/gen/com/google/ortools/graph \
 	ortools/gen/com/google/ortools/linearsolver \
+	ortools/gen/com/google/ortools/sat \
 	ortools/gen/com/google/ortools/properties \
 	ortools/gen/ortools/algorithms \
 	ortools/gen/ortools/bop \
@@ -95,6 +97,9 @@ objs/linear_solver:
 objs/lp_data:
 	$(MKDIR_P) objs$Slp_data
 
+objs/port:
+	$(MKDIR_P) objs$Sport
+
 objs/sat:
 	$(MKDIR_P) objs$Ssat
 
@@ -118,6 +123,9 @@ ortools/gen/com/google/ortools/linearsolver:
 
 ortools/gen/com/google/ortools/flatzinc:
 	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sflatzinc
+
+ortools/gen/com/google/ortools/sat:
+	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Ssat
 
 ortools/gen/com/google/ortools/properties:
 	$(MKDIR_P) ortools$Sgen$Scom$Sgoogle$Sortools$Sproperties

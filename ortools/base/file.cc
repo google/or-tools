@@ -29,7 +29,8 @@
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 
-File::File(FILE* const f_des, const operations_research::string_view& name) : f_(f_des), name_(name) {}
+File::File(FILE* const f_des, const operations_research::string_view& name)
+    : f_(f_des), name_(name) {}
 
 bool File::Delete(const char* const name) { return remove(name) == 0; }
 
@@ -135,8 +136,9 @@ bool File::Open() const { return f_ != NULL; }
 void File::Init() {}
 
 namespace file {
-util::Status Open(const operations_research::string_view& filename, const operations_research::string_view& mode,
-                  File** f, int flags) {
+util::Status Open(const operations_research::string_view& filename,
+                  const operations_research::string_view& mode, File** f,
+                  int flags) {
   if (flags == Defaults()) {
     *f = File::Open(filename, mode.data());
     if (*f != nullptr) {
@@ -147,7 +149,17 @@ util::Status Open(const operations_research::string_view& filename, const operat
                       StrCat("Could not open '", filename, "'"));
 }
 
-util::Status GetContents(const operations_research::string_view& filename, std::string* output, int flags) {
+File* OpenOrDie(const operations_research::string_view& filename,
+                const operations_research::string_view& mode, int flags) {
+  File* f;
+  CHECK_EQ(flags, Defaults());
+  f = File::Open(filename, mode.data());
+  CHECK(f != nullptr) << StrCat("Could not open '", filename, "'");
+  return f;
+}
+
+util::Status GetContents(const operations_research::string_view& filename,
+                         std::string* output, int flags) {
   if (flags == Defaults()) {
     File* file = File::Open(filename, "r");
     if (file != NULL) {
@@ -169,16 +181,18 @@ util::Status WriteString(File* file, const std::string& contents, int flags) {
                       StrCat("Could not write ", contents.size(), " bytes"));
 }
 
-util::Status SetContents(const operations_research::string_view& filename, const std::string& contents,
-                         int flags) {
+util::Status SetContents(const operations_research::string_view& filename,
+                         const std::string& contents, int flags) {
   return WriteString(File::Open(filename, "w"), contents, flags);
 }
 
-bool ReadFileToString(const operations_research::string_view& file_name, std::string* output) {
+bool ReadFileToString(const operations_research::string_view& file_name,
+                      std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(const std::string& data, const operations_research::string_view& file_name) {
+bool WriteStringToFile(const std::string& data,
+                       const operations_research::string_view& file_name) {
   return SetContents(file_name, data, file::Defaults()).ok();
 }
 
@@ -189,7 +203,8 @@ class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
 };
 }  // namespace
 
-bool ReadFileToProto(const operations_research::string_view& file_name, google::protobuf::Message* proto) {
+bool ReadFileToProto(const operations_research::string_view& file_name,
+                     google::protobuf::Message* proto) {
   std::string str;
   if (!ReadFileToString(file_name, &str)) {
     LOG(INFO) << "Could not read " << file_name;
@@ -217,7 +232,8 @@ bool ReadFileToProto(const operations_research::string_view& file_name, google::
   return false;
 }
 
-void ReadFileToProtoOrDie(const operations_research::string_view& file_name, google::protobuf::Message* proto) {
+void ReadFileToProtoOrDie(const operations_research::string_view& file_name,
+                          google::protobuf::Message* proto) {
   CHECK(ReadFileToProto(file_name, proto)) << "file_name: " << file_name;
 }
 
@@ -228,12 +244,14 @@ bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
          WriteStringToFile(proto_string, file_name);
 }
 
-void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
-                                const operations_research::string_view& file_name) {
+void WriteProtoToASCIIFileOrDie(
+    const google::protobuf::Message& proto,
+    const operations_research::string_view& file_name) {
   CHECK(WriteProtoToASCIIFile(proto, file_name)) << "file_name: " << file_name;
 }
 
-bool WriteProtoToFile(const google::protobuf::Message& proto, const operations_research::string_view& file_name) {
+bool WriteProtoToFile(const google::protobuf::Message& proto,
+                      const operations_research::string_view& file_name) {
   std::string proto_string;
   return proto.AppendToString(&proto_string) &&
          WriteStringToFile(proto_string, file_name);
@@ -244,8 +262,8 @@ void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
   CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
 }
 
-util::Status SetTextProto(const operations_research::string_view& filename, const google::protobuf::Message& proto,
-                          int flags) {
+util::Status SetTextProto(const operations_research::string_view& filename,
+                          const google::protobuf::Message& proto, int flags) {
   if (flags == Defaults()) {
     if (WriteProtoToASCIIFile(proto, filename)) return util::Status::OK;
   }

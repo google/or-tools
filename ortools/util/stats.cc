@@ -15,33 +15,32 @@
 #include "ortools/util/stats.h"
 
 #include <cmath>
-#include "ortools/base/encodingutils.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/sysinfo.h"
-
 
 
 #include "ortools/base/stl_util.h"
+#include "ortools/port/sysinfo.h"
+#include "ortools/port/utf8.h"
 
 namespace operations_research {
 
 std::string MemoryUsage() {
+  const int64 mem = operations_research::sysinfo::MemoryUsageProcess();
   static const int64 kDisplayThreshold = 2;
     static const int64 kKiloByte = 1024;
     static const int64 kMegaByte = kKiloByte * kKiloByte;
     static const int64 kGigaByte = kMegaByte * kKiloByte;
-    const int64 memory_usage = GetProcessMemoryUsage();
-    if (memory_usage > kDisplayThreshold * kGigaByte) {
+    if (mem > kDisplayThreshold * kGigaByte) {
       return StringPrintf("%.2lf GB",
-                          memory_usage * 1.0 / kGigaByte);
-    } else if (memory_usage > kDisplayThreshold * kMegaByte) {
+                          mem * 1.0 / kGigaByte);
+    } else if (mem > kDisplayThreshold * kMegaByte) {
       return StringPrintf("%.2lf MB",
-                          memory_usage * 1.0 / kMegaByte);
-    } else if (memory_usage > kDisplayThreshold * kKiloByte) {
+                          mem * 1.0 / kMegaByte);
+    } else if (mem > kDisplayThreshold * kKiloByte) {
       return StringPrintf("%2lf KB",
-                          memory_usage * 1.0 / kKiloByte);
+                          mem * 1.0 / kKiloByte);
     } else {
-      return StringPrintf("%" GG_LL_FORMAT "d", memory_usage);
+      return StringPrintf("%" GG_LL_FORMAT "d", mem);
     }
 }
 
@@ -84,7 +83,7 @@ std::string StatsGroup::StatString() const {
   for (int i = 0; i < stats_.size(); ++i) {
     if (!stats_[i]->WorthPrinting()) continue;
     // We support UTF8 characters in the stat names.
-    const int size = EncodingUtils::UTF8StrLen(stats_[i]->Name());
+    const int size = operations_research::utf8::UTF8StrLen(stats_[i]->Name());
     longest_name_size = std::max(longest_name_size, size);
     sorted_stats.push_back(stats_[i]);
   }
@@ -98,9 +97,9 @@ std::string StatsGroup::StatString() const {
   for (int i = 0; i < sorted_stats.size(); ++i) {
     result += "  ";
     result += sorted_stats[i]->Name();
-    result.append(
-        longest_name_size - EncodingUtils::UTF8StrLen(sorted_stats[i]->Name()),
-        ' ');
+    result.append(longest_name_size - operations_research::utf8::UTF8StrLen(
+                                          sorted_stats[i]->Name()),
+                  ' ');
     result += " : " + sorted_stats[i]->ValueAsString();
   }
   result += "}\n";

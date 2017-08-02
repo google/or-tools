@@ -61,10 +61,6 @@ std::vector<Proto> ReadNumRecords(File* file, int expected_num_records) {
     ++num_read;
   }
 
-  /* CHECK(reader.AtEOF(false) && reader.Close()) */
-  /*     << "File '" << file->filename() */
-  /*     << "'was not fully read, or something went wrong when closing " */
-  /*        "it. Is it the right format? (RecordIO of Protocol Buffers)."; */
 
   if (expected_num_records >= 0) {
     CHECK_EQ(num_read, expected_num_records)
@@ -79,9 +75,8 @@ std::vector<Proto> ReadNumRecords(File* file, int expected_num_records) {
 template <typename Proto>
 std::vector<Proto> ReadNumRecords(string_view filename,
                                   int expected_num_records) {
-  // return ReadNumRecords<Proto>(file::OpenOrDie(filename, "r", file::Defaults()),
-  //                              expected_num_records);
-  return ReadNumRecords<Proto>(File::OpenOrDie(filename, "r"));
+  return ReadNumRecords<Proto>(file::OpenOrDie(filename, "r", file::Defaults()),
+                               expected_num_records);
 }
 }  // namespace internal
 
@@ -112,7 +107,8 @@ Proto ReadOneRecordOrDie(string_view filename) {
 template <typename Proto>
 void WriteRecordsOrDie(string_view filename,
                        const std::vector<Proto>& protos) {
-  recordio::RecordWriter writer(File::OpenOrDie(filename, "w"));
+  recordio::RecordWriter writer(
+      file::OpenOrDie(filename, "w", file::Defaults()));
   for (const Proto& proto : protos) {
     CHECK(writer.WriteProtocolMessage(proto));
   }

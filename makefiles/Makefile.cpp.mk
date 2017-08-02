@@ -611,6 +611,7 @@ $(BIN_DIR)/sat_runner$E: $(OR_TOOLS_LIBS) $(OBJ_DIR)/sat/sat_runner.$O
 
 $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
     $(BASE_LIB_OBJS) \
+    $(PORT_LIB_OBJS) \
     $(UTIL_LIB_OBJS) \
     $(LP_DATA_LIB_OBJS) \
     $(GLOP_LIB_OBJS) \
@@ -623,6 +624,7 @@ $(LIB_DIR)/$(LIB_PREFIX)ortools.$(LIB_SUFFIX): \
 	$(LINK_CMD) \
 	  $(LDOUT)$(LIB_DIR)$S$(LIB_PREFIX)ortools.$(LIB_SUFFIX) \
 	  $(BASE_LIB_OBJS) \
+	  $(PORT_LIB_OBJS) \
 	  $(UTIL_LIB_OBJS) \
 	  $(LP_DATA_LIB_OBJS) \
 	  $(GLOP_LIB_OBJS) \

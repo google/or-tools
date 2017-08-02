@@ -117,7 +117,8 @@ class FileLineIterator {
 class FileLines {
  public:
   FileLines(const std::string& filename, int options) : options_(options) {
-    file_ = File::Open(filename, "r");
+    if (!file::Open(filename, "r", &file_, file::Defaults()).ok()) return;
+
   }
   explicit FileLines(const std::string& filename)
       : FileLines(filename, FileLineIterator::DEFAULT) {}
