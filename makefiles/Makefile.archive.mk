@@ -36,6 +36,7 @@ create_dirs:
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgraph
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Slinear_solver
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Slp_data
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sport
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples
@@ -87,6 +88,7 @@ cc_archive: cc
 	$(COPY) ortools$Slinear_solver$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Slinear_solver
 	$(COPY) ortools$Slp_data$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Slp_data
 	$(COPY) ortools$Sgen$Sortools$Slinear_solver$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Slinear_solver
+	$(COPY) ortools$Sport$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sport
 	$(COPY) ortools$Ssat$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sgen$Sortools$Ssat$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Ssat
 	$(COPY) ortools$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
