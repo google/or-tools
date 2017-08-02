@@ -23,6 +23,7 @@ clean_cc:
 	-$(DEL) $(OBJ_DIR)$Sglop$S*.$O
 	-$(DEL) $(OBJ_DIR)$Slp_data$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sgraph$S*.$O
+	-$(DEL) $(OBJ_DIR)$Sport$S*.$O
 	-$(DEL) $(OBJ_DIR)$Ssat$S*.$O
 	-$(DEL) $(OBJ_DIR)$Sconstraint_solver$S*.$O
 	-$(DEL) $(OBJ_DIR)$Slinear_solver$S*.$O
