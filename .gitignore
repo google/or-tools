@@ -20,7 +20,7 @@ or-tools*.zip
 *.ass
 
 bin/
-src/gen/
+ortools/gen/
 objs/
 temp/
 lib/
@@ -29,6 +29,8 @@ examples/csharp/*.sln
 
 src/bazel-*
 examples/bazel-*
+
+tools/docker/export
 
 # Prerequisites
 *.d
@@ -64,4 +66,3 @@ examples/bazel-*
 .idea/*
 .idea/
 build/
-
