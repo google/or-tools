@@ -229,12 +229,12 @@ namespace operations_research {
 
       mEnv = CPXXopenCPLEX(&status);
       CHECK_STATUS(status);
-      DCHECK_NE(0, mEnv); // should not be NULL if status=0
+      DCHECK(mEnv != nullptr); // should not be NULL if status=0
 
       char const *name = solver_->name_.c_str();
       mLp = CPXXcreateprob(mEnv, &status, name);
       CHECK_STATUS(status);
-      DCHECK_NE(0, mLp); // should not be NULL if status=0
+      DCHECK(mLp != nullptr); // should not be NULL if status=0
 
       CHECK_STATUS(CPXXchgobjsen(mEnv, mLp, maximize_ ? CPX_MAX : CPX_MIN));
       if ( mMip )
@@ -274,7 +274,7 @@ namespace operations_research {
       const char* const name = solver_->name_.c_str();
       mLp = CPXXcreateprob(mEnv, &status, name);
       CHECK_STATUS(status);
-      DCHECK_NE(0, mLp); // should not be NULL if status=0
+      DCHECK(mLp != nullptr); // should not be NULL if status=0
 
       CHECK_STATUS(CPXXchgobjsen(mEnv, mLp, maximize_ ? CPX_MAX : CPX_MIN));
       if ( mMip )
