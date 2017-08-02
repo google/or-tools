@@ -164,9 +164,9 @@ cc_library(
         "//ortools/base:stl_util",
         "//ortools/base:strings",
         #        "//ortools/base:strings:human_readable",
-        "//ortools/base:sysinfo",
+        "//ortools/port:sysinfo",
         "//ortools/base:timer",
-        "//ortools/base:encodingutils",  # To replace by port when we export them.
+        "//ortools/port:utf8",
     ],
 )
 
