@@ -846,7 +846,7 @@ class ForwardStaticGraph
 
   // To be used in a DCHECK().
   bool TailArrayComplete() const {
-    CHECK_NOTNULL(tail_.get());
+    CHECK(tail_);
     for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
       CHECK(CheckTailIndexValidity(arc));
       CHECK(IsNodeValid((*tail_)[arc]));
@@ -1684,7 +1684,7 @@ class ForwardEbertGraph
 
   // To be used in a DCHECK().
   bool TailArrayComplete() const {
-    CHECK_NOTNULL(tail_.get());
+    CHECK(tail_);
     for (ArcIndexType arc = kFirstArc; arc < num_arcs_; ++arc) {
       CHECK(CheckTailIndexValidity(arc));
       CHECK(IsNodeValid((*tail_)[arc]));
@@ -1778,7 +1778,7 @@ class ForwardEbertGraph
   // used.
   void SetTail(const ArcIndexType arc, const NodeIndexType tail) {
     DCHECK(CheckTailIndexValidity(arc));
-    CHECK_NOTNULL(tail_.get());
+    CHECK(tail_);
     representation_clean_ = false;
     tail_->Set(arc, tail);
   }

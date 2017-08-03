@@ -70,7 +70,10 @@
 
 #include <map>
 #include <string>
-
+#ifdef HAS_PERF_SUBSYSTEM
+#include "absl/ortools/base/str_replace.h"
+#include "exegesis/exegesis/itineraries/perf_subsystem.h"
+#endif  // HAS_PERF_SUBSYSTEM
 #include "ortools/base/timer.h"
 
 namespace operations_research {
@@ -94,7 +97,8 @@ class Stat {
   // Only used for display purposes.
   std::string Name() const { return name_; }
 
-  // Returns a human-readable formated line of the form "name: ValueAsString()".
+  // Returns a human-readable formatted line of the form "name:
+  // ValueAsString()".
   std::string StatString() const;
 
   // At display, stats are displayed by decreasing priority, then decreasing
@@ -323,9 +327,56 @@ class DisabledScopedTimeDistributionUpdater {
   DISALLOW_COPY_AND_ASSIGN(DisabledScopedTimeDistributionUpdater);
 };
 
+#ifdef HAS_PERF_SUBSYSTEM
+// Helper classes to count instructions during execution of a block of code and
+// add print the results to logs.
+// Creates new perf subsystem and start collecting 'inst_retired:any_p' event on
+// creation and stops collecting on destruction.
+class EnabledScopedInstructionCounter {
+ public:
+  explicit EnabledScopedInstructionCounter(const std::string& name) : name_(name) {
+    perf_subsystem_.CleanUp();
+    perf_subsystem_.AddEvent("inst_retired:any_p:u,p");
+    perf_subsystem_.AddEvent("cycles:u,p");
+    perf_subsystem_.StartCollecting();
+  }
+  EnabledScopedInstructionCounter(const EnabledScopedInstructionCounter&) =
+      delete;
+  EnabledScopedInstructionCounter& operator=(
+      const EnabledScopedInstructionCounter&) = delete;
+  ~EnabledScopedInstructionCounter() {
+    exegesis::PerfResult perf_result = perf_subsystem_.StopAndReadCounters();
+    LOG(INFO) << name_ << ": " << perf_result.ToString();
+  }
+
+  // Used only for testing.
+  exegesis::PerfResult GetPerfResult() {
+    return perf_subsystem_.ReadCounters();
+  }
+
+ private:
+  exegesis::PerfSubsystem perf_subsystem_;
+  std::string name_;
+};
+#endif  // HAS_PERF_SUBSYSTEM
+
+class DisabledScopedInstructionCounter {
+ public:
+  explicit DisabledScopedInstructionCounter(const std::string& name) {}
+  DisabledScopedInstructionCounter(const DisabledScopedInstructionCounter&) =
+      delete;
+  DisabledScopedInstructionCounter& operator=(
+      const DisabledScopedInstructionCounter&) = delete;
+};
+
 #ifdef OR_STATS
 
 using ScopedTimeDistributionUpdater = EnabledScopedTimeDistributionUpdater;
+#ifdef HAS_PERF_SUBSYSTEM
+using ScopedInstructionCounter = EnabledScopedInstructionCounter;
+#else   // HAS_PERF_SUBSYSTEM
+using ScopedInstructionCounter = DisabledScopedInstructionCounter;
+#endif  // HAS_PERF_SUBSYSTEM
 
 // Simple macro to be used by a client that want to execute costly operations
 // only if OR_STATS is defined.
@@ -342,14 +393,28 @@ using ScopedTimeDistributionUpdater = EnabledScopedTimeDistributionUpdater;
   operations_research::ScopedTimeDistributionUpdater scoped_time_stat( \
       (stats)->LookupOrCreateTimeDistribution(__FUNCTION__))
 
+#ifdef HAS_PERF_SUBSYSTEM
+
+inline std::string RemoveOperationsResearchAndGlop(const std::string& pretty_function) {
+  return strings::GlobalReplaceSubstrings(
+      pretty_function, {{"operations_research::", ""}, {"glop::", ""}});
+}
+
+#define SCOPED_INSTRUCTION_COUNT                                          \
+  operations_research::ScopedInstructionCounter scoped_instruction_count( \
+      RemoveOperationsResearchAndGlop(__PRETTY_FUNCTION__))
+#endif  // HAS_PERF_SUBSYSTEM
+
 #else  // OR_STATS
 // If OR_STATS is not defined, we remove some instructions that may be time
 // consuming.
 
 using ScopedTimeDistributionUpdater = DisabledScopedTimeDistributionUpdater;
+using ScopedInstructionCounter = DisabledScopedInstructionCounter;
 
 #define IF_STATS_ENABLED(instructions)
 #define SCOPED_TIME_STAT(stats)
+#define SCOPED_INSTRUCTION_COUNT
 
 #endif  // OR_STATS
 

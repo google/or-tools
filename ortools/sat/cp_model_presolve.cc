@@ -1854,8 +1854,9 @@ void PresolveCpModel(const CpModelProto& initial_model,
       if (context.domains[r.representative].IntersectWith(implied)) {
         LOG(WARNING) << "Domain of " << r.representative
                      << " was not fully propagated using the affine relation "
-                     << "(representative =" << r.representative << ", coeff = "
-                     << r.coeff << ", offset = " << r.offset << ")";
+                     << "(representative =" << r.representative
+                     << ", coeff = " << r.coeff << ", offset = " << r.offset
+                     << ")";
       }
       proto = context.mapping_model;
     } else {

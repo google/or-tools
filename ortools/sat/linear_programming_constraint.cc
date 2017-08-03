@@ -38,7 +38,8 @@ namespace sat {
 const double LinearProgrammingConstraint::kEpsilon = 1e-6;
 
 LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
-    : integer_trail_(model->GetOrCreate<IntegerTrail>()) {
+    : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()) {
   // TODO(user): Find a way to make GetOrCreate<TimeLimit>() construct it by
   // default.
   time_limit_ = model->Mutable<TimeLimit>();
@@ -79,6 +80,8 @@ glop::ColIndex LinearProgrammingConstraint::GetOrCreateMirrorVariable(
     integer_variables_.push_back(positive_variable);
     mirror_lp_variables_.push_back(lp_data_.CreateNewVariable());
     lp_solution_.push_back(std::numeric_limits<double>::infinity());
+    lp_reduced_cost_.push_back(0.0);
+    (*dispatcher_)[positive_variable] = this;
   }
   return mirror_lp_variables_[integer_variable_to_index_[positive_variable]];
 }
@@ -183,6 +186,16 @@ glop::Fractional LinearProgrammingConstraint::GetVariableValueAtCpScale(
   return simplex_.GetVariableValue(var) / scaler_.col_scale(var);
 }
 
+double LinearProgrammingConstraint::GetSolutionValue(
+    IntegerVariable variable) const {
+  return lp_solution_[FindOrDie(integer_variable_to_index_, variable)];
+}
+
+double LinearProgrammingConstraint::GetSolutionReducedCost(
+    IntegerVariable variable) const {
+  return lp_reduced_cost_[FindOrDie(integer_variable_to_index_, variable)];
+}
+
 bool LinearProgrammingConstraint::Propagate() {
   // Copy CP state into LP state.
   const int num_vars = integer_variables_.size();
@@ -243,8 +256,12 @@ bool LinearProgrammingConstraint::Propagate() {
       }
       lp_data_.ScaleObjective();
     }
+    const double objective_scale = lp_data_.objective_scaling_factor();
     for (int i = 0; i < num_vars; i++) {
       lp_solution_[i] = GetVariableValueAtCpScale(mirror_lp_variables_[i]);
+      lp_reduced_cost_[i] = simplex_.GetReducedCost(mirror_lp_variables_[i]) *
+                            scaler_.col_scale(mirror_lp_variables_[i]) *
+                            objective_scale;
     }
 
     // We currently ignore the objective and return right away when we don't
@@ -320,8 +337,12 @@ bool LinearProgrammingConstraint::Propagate() {
 
   // Copy current LP solution.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL) {
+    const double objective_scale = lp_data_.objective_scaling_factor();
     for (int i = 0; i < num_vars; i++) {
       lp_solution_[i] = GetVariableValueAtCpScale(mirror_lp_variables_[i]);
+      lp_reduced_cost_[i] = simplex_.GetReducedCost(mirror_lp_variables_[i]) *
+                            scaler_.col_scale(mirror_lp_variables_[i]) *
+                            objective_scale;
     }
   }
   return true;
@@ -406,6 +427,148 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
       }
     }
   }
+}
+
+std::function<LiteralIndex()> HeuristicLPMostInfeasibleBinary(Model* model) {
+  // Gather all 0-1 variables that appear in some LP.
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  LinearProgrammingDispatcher* dispatcher =
+      model->GetOrCreate<LinearProgrammingDispatcher>();
+  std::vector<IntegerVariable> variables;
+  for (const auto entry : *dispatcher) {
+    IntegerVariable var = entry.first;
+    if (integer_trail->LowerBound(var) == 0 &&
+        integer_trail->UpperBound(var) == 1) {
+      variables.push_back(var);
+    }
+  }
+  std::sort(variables.begin(), variables.end());
+
+  LOG(INFO) << "HeuristicLPMostInfeasibleBinary has " << variables.size()
+            << " variables.";
+
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
+  return [variables, dispatcher, integer_trail, integer_encoder, sat_solver]() {
+    const double kEpsilon = 1e-6;
+    // Find most fractional value.
+    IntegerVariable fractional_var = kNoIntegerVariable;
+    double fractional_distance_best = -1.0;
+    for (const IntegerVariable var : variables) {
+      // Check variable is not ignored and unfixed.
+      if (integer_trail->IsCurrentlyIgnored(var)) continue;
+      const IntegerValue lb = integer_trail->LowerBound(var);
+      const IntegerValue ub = integer_trail->UpperBound(var);
+      if (lb == ub) continue;
+
+      // Check variable's support is fractional.
+      LinearProgrammingConstraint* lp = (*dispatcher)[var];
+      const double lp_value = lp->GetSolutionValue(var);
+      const double fractional_distance =
+          std::min(std::ceil(lp_value - kEpsilon) - lp_value,
+                   lp_value - std::floor(lp_value + kEpsilon));
+      if (fractional_distance < kEpsilon) continue;
+
+      // Keep variable if it is farther from integrality than the previous.
+      if (fractional_distance > fractional_distance_best) {
+        fractional_var = var;
+        fractional_distance_best = fractional_distance;
+      }
+    }
+
+    if (fractional_var != kNoIntegerVariable) {
+      return integer_encoder
+          ->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::GreaterOrEqual(fractional_var, IntegerValue(1)))
+          .Index();
+    }
+    return kNoLiteralIndex;
+  };
+}
+
+std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model) {
+  // Gather all 0-1 variables that appear in some LP.
+  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
+  LinearProgrammingDispatcher* dispatcher =
+      model->GetOrCreate<LinearProgrammingDispatcher>();
+  std::vector<IntegerVariable> variables;
+  for (const auto entry : *dispatcher) {
+    IntegerVariable var = entry.first;
+    if (integer_trail->LowerBound(var) == 0 &&
+        integer_trail->UpperBound(var) == 1) {
+      variables.push_back(var);
+    }
+  }
+  std::sort(variables.begin(), variables.end());
+
+  LOG(INFO) << "HeuristicLPPseudoCostBinary has " << variables.size()
+            << " variables.";
+
+  // Store average of reduced cost from 1 to 0. The best heuristic only sets
+  // variables to one and cares about cost to zero, even though classic
+  // pseudocost will use max_var std::min(cost_to_one[var], cost_to_zero[var]).
+  const int num_vars = variables.size();
+  std::vector<double> cost_to_zero(num_vars, 0.0);
+  std::vector<int> num_cost_to_zero(num_vars);
+  int num_calls = 0;
+
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
+  return [=]() mutable {
+    const double kEpsilon = 1e-6;
+
+    // Every 10000 calls, decay pseudocosts.
+    num_calls++;
+    if (num_calls == 10000) {
+      for (int i = 0; i < num_vars; i++) {
+        cost_to_zero[i] /= 2;
+        num_cost_to_zero[i] /= 2;
+      }
+      num_calls = 0;
+    }
+
+    // Accumulate pseudo-costs of all unassigned variables.
+    for (int i = 0; i < num_vars; i++) {
+      const IntegerVariable var = variables[i];
+      if (integer_trail->LowerBound(var) == integer_trail->UpperBound(var))
+        continue;
+
+      LinearProgrammingConstraint* lp = (*dispatcher)[var];
+      const double rc = lp->GetSolutionReducedCost(var);
+      // Skip reduced costs that are nonzero because of numerical issues.
+      if (std::abs(rc) < kEpsilon) continue;
+
+      const double value = std::round(lp->GetSolutionValue(var));
+      if (value == 1.0 && rc < 0.0) {
+        cost_to_zero[i] -= rc;
+        num_cost_to_zero[i]++;
+      }
+    }
+
+    // Select noninstantiated variable with highest pseudo-cost.
+    int selected_index = -1;
+    double best_cost = 0.0;
+    for (int i = 0; i < num_vars; i++) {
+      const IntegerVariable var = variables[i];
+      if (integer_trail->LowerBound(var) == integer_trail->UpperBound(var)) {
+        continue;
+      }
+
+      if (num_cost_to_zero[i] > 0 &&
+          best_cost < cost_to_zero[i] / num_cost_to_zero[i]) {
+        best_cost = cost_to_zero[i] / num_cost_to_zero[i];
+        selected_index = i;
+      }
+    }
+
+    if (selected_index >= 0) {
+      const Literal decision = integer_encoder->GetOrCreateAssociatedLiteral(
+          IntegerLiteral::GreaterOrEqual(variables[selected_index],
+                                         IntegerValue(1)));
+      return decision.Index();
+    }
+
+    return kNoLiteralIndex;
+  };
 }
 
 }  // namespace sat

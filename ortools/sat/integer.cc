@@ -1284,6 +1284,17 @@ std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
   };
 }
 
+std::function<LiteralIndex()> SequentialSearch(
+    std::vector<std::function<LiteralIndex()>> heuristics) {
+  return [heuristics]() {
+    for (const auto& h : heuristics) {
+      const LiteralIndex li = h();
+      if (li != kNoLiteralIndex) return li;
+    }
+    return kNoLiteralIndex;
+  };
+}
+
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     const std::vector<Literal>& assumptions,
     const std::function<LiteralIndex()>& next_decision, Model* model) {

@@ -1135,6 +1135,12 @@ std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
 std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
     const std::vector<IntegerVariable>& vars, Model* model);
 
+// Combines search heuristics in order: if the i-th one returns kNoLiteralIndex,
+// ask the (i+1)-th. If every heuristic returned kNoLiteralIndex,
+// returns kNoLiteralIndex.
+std::function<LiteralIndex()> SequentialSearch(
+    std::vector<std::function<LiteralIndex()>> heuristics);
+
 // Same as ExcludeCurrentSolutionAndBacktrack() but this version works for an
 // integer problem with optional variables. The issue is that an optional
 // variable that is ignored can basically take any value, and we don't really

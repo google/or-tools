@@ -140,6 +140,7 @@
 
 %include "ortools/graph/assignment.h"
 
+
 %unignore operations_research::DijkstraShortestPath;
 %unignore operations_research::BellmanFordShortestPath;
 %unignore operations_research::AStarShortestPath;

@@ -62,6 +62,7 @@ namespace sat {
 //
 // TODO(user): Work with scaled version of the model, maybe by using
 // LPSolver instead of RevisedSimplex.
+class LinearProgrammingDispatcher;
 class LinearProgrammingConstraint : public PropagatorInterface {
  public:
   typedef glop::RowIndex ConstraintIndex;
@@ -85,6 +86,11 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   // The main objective variable should be equal to the linear sum of
   // the arguments passed to SetObjectiveCoefficient().
   void SetMainObjectiveVariable(IntegerVariable ivar) { objective_cp_ = ivar; }
+
+  // Returns the LP value and reduced cost of a variable in the current
+  // solution.
+  double GetSolutionValue(IntegerVariable variable) const;
+  double GetSolutionReducedCost(IntegerVariable variable) const;
 
   // PropagatorInterface API.
   bool Propagate() override;
@@ -156,13 +162,54 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   // On IncrementalPropagate(), if the bound updates do not invalidate this
   // solution, Propagate() will not find domain reductions, no need to call it.
   std::vector<double> lp_solution_;
+  std::vector<double> lp_reduced_cost_;
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;
 
   // Time limit (shared with, owned by the sat solver).
   TimeLimit* time_limit_;
+
+  // The dispatcher for all LP propagators of the model, allows to find which
+  // LinearProgrammingConstraint has a given IntegerVariable.
+  LinearProgrammingDispatcher* dispatcher_;
 };
+
+// A class that stores which LP propagator is associated to each variable.
+// We need to give the hash_map a name so it can be used as a singleton
+// in our model.
+class LinearProgrammingDispatcher
+    : public std::unordered_map<IntegerVariable, LinearProgrammingConstraint*> {
+ public:
+  explicit LinearProgrammingDispatcher(Model* model) {}
+};
+
+// Returns a LiteralIndex guided by the underlying LP constraints.
+// This looks at all unassigned 0-1 variables, takes the one with
+// a support value closest to 0.5, and tries to assign it to 1.
+// If all 0-1 variables have an integer support, returns kNoLiteralIndex.
+// Tie-breaking is done using the variable natural order.
+//
+// TODO(user): This fixes to 1, but for some problems fixing to 0
+// or to the std::round(support value) might work better. When this is the
+// case, change behaviour automatically?
+std::function<LiteralIndex()> HeuristicLPMostInfeasibleBinary(Model* model);
+
+// Returns a LiteralIndex guided by the underlying LP constraints.
+// This computes the mean of reduced costs over successive calls,
+// and tries to fix the variable which has the highest reduced cost.
+// Tie-breaking is done using the variable natural order.
+//
+// TODO(user): Try to get better pseudocosts than averaging every time the
+// heuristic is called. MIP solvers initialize this with strong branching, then
+// keep track of the pseudocosts when doing tree search. Also, this version only
+// branches on var >= 1 and keeps track of reduced costs from var = 1 to var =
+// 0. This works better than the conventional MIP where the chosen variable will
+// be argmax_var std::min(pseudocost_var(0->1), pseudocost_var(1->0)), probably
+// because we are doing DFS search where MIP does BFS. This might depend on the
+// model, more trials are necessary. We could also do exponential smoothing
+// instead of decaying every N calls, i.e. pseudo = a * pseudo + (1-a) reduced.
+std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model);
 
 }  // namespace sat
 }  // namespace operations_research
