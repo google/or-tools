@@ -244,6 +244,22 @@ cc_library(
 )
 
 cc_library(
+    name = "model_reader",
+    srcs = ["model_reader.cc"],
+    hdrs = ["model_reader.h"],
+    deps = [
+        ":lp_data",
+        ":mps_reader",
+        ":proto_utils",
+        #        "//net/proto2/util/public:differencer",
+        "//ortools/base",
+        "//ortools/base:file",
+        "//ortools/linear_solver:linear_solver_proto",
+        "//ortools_research/util:file_util",
+    ],
+)
+
+cc_library(
     name = "lp_decomposer",
     srcs = ["lp_decomposer.cc"],
     hdrs = ["lp_decomposer.h"],

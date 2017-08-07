@@ -585,6 +585,7 @@ LP_DATA_LIB_OBJS = \
     $(OBJ_DIR)/lp_data/lp_utils.$O \
     $(OBJ_DIR)/lp_data/matrix_scaler.$O \
     $(OBJ_DIR)/lp_data/matrix_utils.$O \
+    $(OBJ_DIR)/lp_data/model_reader.$O \
     $(OBJ_DIR)/lp_data/mps_reader.$O \
     $(OBJ_DIR)/lp_data/proto_utils.$O \
     $(OBJ_DIR)/lp_data/sparse.$O \
@@ -631,6 +632,10 @@ $(SRC_DIR)/ortools/lp_data/matrix_scaler.h: \
 $(SRC_DIR)/ortools/lp_data/matrix_utils.h: \
     $(SRC_DIR)/ortools/lp_data/lp_types.h \
     $(SRC_DIR)/ortools/lp_data/sparse.h
+
+$(SRC_DIR)/ortools/lp_data/model_reader.h: \
+    $(SRC_DIR)/ortools/lp_data/lp_data.h \
+    $(GEN_DIR)/ortools/linear_solver/linear_solver.pb.h
 
 $(SRC_DIR)/ortools/lp_data/mps_reader.h: \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
@@ -726,6 +731,15 @@ $(OBJ_DIR)/lp_data/matrix_utils.$O: \
     $(SRC_DIR)/ortools/lp_data/matrix_utils.h \
     $(SRC_DIR)/ortools/base/hash.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Smatrix_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smatrix_utils.$O
+
+$(OBJ_DIR)/lp_data/model_reader.$O: \
+    $(SRC_DIR)/ortools/lp_data/model_reader.cc \
+    $(SRC_DIR)/ortools/lp_data/model_reader.h \
+    $(SRC_DIR)/ortools/lp_data/mps_reader.h \
+    $(SRC_DIR)/ortools/lp_data/proto_utils.h \
+    $(SRC_DIR)/ortools/util/file_util.h \
+    $(SRC_DIR)/ortools/base/file.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slp_data$Smodel_reader.cc $(OBJ_OUT)$(OBJ_DIR)$Slp_data$Smodel_reader.$O
 
 $(OBJ_DIR)/lp_data/mps_reader.$O: \
     $(SRC_DIR)/ortools/lp_data/mps_reader.cc \
