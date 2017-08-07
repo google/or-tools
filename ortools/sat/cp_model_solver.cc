@@ -1381,8 +1381,10 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
     StrAppend(&result, "\nobjective: NA");
     StrAppend(&result, "\nbest_bound: NA");
   } else {
-    StrAppend(&result, "\nobjective: ", response.objective_value());
-    StrAppend(&result, "\nbest_bound: ", response.best_objective_bound());
+    StrAppend(&result, "\nobjective: ",
+                    LegacyPrecision(response.objective_value()));
+    StrAppend(&result, "\nbest_bound: ",
+                    LegacyPrecision(response.best_objective_bound()));
   }
 
   StrAppend(&result, "\nbooleans: ", response.num_booleans());
@@ -1395,10 +1397,12 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
                   "\npropagations: ", response.num_binary_propagations());
   StrAppend(
       &result, "\ninteger_propagations: ", response.num_integer_propagations());
-  StrAppend(&result, "\nwalltime: ", response.wall_time());
-  StrAppend(&result, "\nusertime: ", response.user_time());
   StrAppend(&result,
-                  "\ndeterministic_time: ", response.deterministic_time());
+                  "\nwalltime: ", LegacyPrecision(response.wall_time()));
+  StrAppend(&result,
+                  "\nusertime: ", LegacyPrecision(response.user_time()));
+  StrAppend(&result, "\ndeterministic_time: ",
+                  LegacyPrecision(response.deterministic_time()));
   StrAppend(&result, "\n");
   return result;
 }

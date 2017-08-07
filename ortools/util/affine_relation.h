@@ -75,6 +75,12 @@ class AffineRelation {
     int representative;
     int64 coeff;
     int64 offset;
+    Relation(int r, int64 c, int64 o)
+        : representative(r), coeff(c), offset(o) {}
+    const bool operator==(const Relation& other) const {
+      return representative == other.representative && coeff == other.coeff &&
+             offset == other.offset;
+    }
   };
   Relation Get(int x);
 
