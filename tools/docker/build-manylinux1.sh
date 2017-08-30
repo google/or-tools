@@ -58,6 +58,7 @@ function build_pypi_archives {
     ### cp -prv dependencies/install/lib64/* dependencies/install/lib/
     make install_python_modules
     make python
+    make test_python
     make pypi_archive
     # Build and repair wheels
     cd temp-python*/ortools
