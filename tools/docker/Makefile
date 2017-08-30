@@ -8,7 +8,8 @@ images: \
 	ubuntu-16.04-image \
 	ubuntu-17.04-image \
 	centos-7-image \
-	debian-9-image
+	debian-9-image \
+	manylinux1-image
 
 images-no-cache: \
 	ubuntu-14.04-image-no-cache \
@@ -148,3 +149,11 @@ centos-7-test: export centos-7-image
 
 centos-7-pypi: export centos-7-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-centos-7-image:latest /bin/bash -c "git pull; make clean; make python -j 5; make test_python; PYPI_OS=-centos-7 make pypi_export python_examples_archive; cp *.tar.gz /export"
+
+# manylinux1 images
+
+manylinux1-image:
+	docker build -f manylinux1.Dockerfile -t or-tools-manylinux1-image .
+
+manylinux1-pypi3: export manylinux1-image
+	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-manylinux1-image:latest /bin/bash -c "/root/build-manylinux1.sh /root /export"
