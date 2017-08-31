@@ -13,11 +13,6 @@
 #      default location will be used.
 set -e
 
-# Platforms to be ignored.
-# The build of Python 2.6.x bindings is known to be broken
-# (and 2.6 itself is deprecated).
-SKIP_PLATFORMS=( cp26-cp26m  cp26-cp26mu )
-
 if [ -n "$1" ]; then BUILD_ROOT="$1"; fi
 if [ -n "$2" ]; then EXPORT_ROOT="$2"; fi
 
@@ -35,13 +30,32 @@ fi
 
 SRC_ROOT="${BUILD_ROOT}/or-tools"
 
-mkdir -p ${BUILD_ROOT}
-mkdir -p ${EXPORT_ROOT}
+# Platforms to be ignored.
+# The build of Python 2.6.x bindings is known to be broken
+# (and 2.6 itself is deprecated).
+SKIP_PLATFORMS=(
+    cp26-cp26m
+    cp26-cp26mu
+)
+
+# Python scripts to be used as tests for the installed wheel.
+# This list of files has been taken from 'test_python' make target.
+TESTS=(
+    "${SRC_ROOT}/examples/python/hidato_table.py"
+    "${SRC_ROOT}/examples/python/tsp.py"
+    "${SRC_ROOT}/examples/python/pyflow_example.py"
+    "${SRC_ROOT}/examples/python/knapsack.py"
+    "${SRC_ROOT}/examples/python/linear_programming.py"
+    "${SRC_ROOT}/examples/python/integer_programming.py"
+    "${SRC_ROOT}/examples/tests/test_cp_api.py"
+    "${SRC_ROOT}/examples/tests/test_lp_api.py"
+)
 
 echo "BUILD_ROOT=${BUILD_ROOT}"
 echo "SRC_ROOT=${SRC_ROOT}"
 echo "EXPORT_ROOT=${EXPORT_ROOT}"
 echo "SKIP_PLATFORMS=${SKIP_PLATFORMS[@]}"
+echo "TESTS=${TESTS[@]}"
 
 ################################################################################
 
@@ -74,6 +88,8 @@ function export_manylinux_wheel {
     # Build
     cd "$_SRC_ROOT"
     # We need to force this target, otherwise the protobuf stub will be missing
+    # (for the makefile, it exists even if previously generated for another
+    # platform)
     make -B install_python_modules  # regenerates Makefile.local
     make python
     make test_python
@@ -85,7 +101,18 @@ function export_manylinux_wheel {
     auditwheel repair *.whl -w "$_EXPORT_ROOT"
 }
 
+function test_installed {
+    cd $(mktemp -d) # ensure we are not importing something from $PWD
+    for testfile in "${TESTS[@]}"
+    do
+        python "$testfile"
+    done
+}
+
 ###############################################################################
+
+mkdir -p "${BUILD_ROOT}"
+mkdir -p "${EXPORT_ROOT}"
 
 # Retrieve or-tools if needed
 if [ ! -d "$SRC_ROOT" ]
@@ -112,28 +139,31 @@ sed -i -e 's=-rm $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py-e==g' makefiles/Makef
 # Patch makefile, remove manual libortools.so grafting
 # and RPATH setting. All of this stuff will be carried
 # out by auditwheel, otherwise we would end up with a
-# broken manylinux wheel
+# broken manylinux wheel file
 cd "$SRC_ROOT"
 sed -i -e 's=cp lib/libortools=#=g' makefiles/Makefile.python.mk
 sed -i -e 's=tools/fix_python_libraries_on_linux.sh=#=g' makefiles/Makefile.python.mk
 
 # For each python platform provided by manylinux,
-# build and export artifacts using a virtualenv
+# build, export and test artifacts.
 for PYROOT in /opt/python/*
 do
     PYTAG=$(basename "$PYROOT")
     # Check for platforms to be skipped
-    skip=$(contains_element $PYTAG "${SKIP_PLATFORMS[@]}")
-    if [ $skip -eq '0' ]
+    SKIP=$(contains_element "$PYTAG" "${SKIP_PLATFORMS[@]}")
+    if [ $SKIP -eq '0' ]
     then
         echo "skipping deprecated platform $PYTAG"
         continue
     fi
+    ###
+    ### Wheel build
+    ###
     # Create and activate virtualenv
     PYBIN="${PYROOT}/bin"
     "${PYBIN}/pip" install virtualenv
-    "${PYBIN}/virtualenv" -p "${PYBIN}/python" ${BUILD_ROOT}/${PYTAG}
-    source ${BUILD_ROOT}/${PYTAG}/bin/activate
+    "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}"
+    source "${BUILD_ROOT}/${PYTAG}/bin/activate"
     pip install -U pip setuptools wheel six  # six is needed by make test_python
     # Build artifact
     export_manylinux_wheel "$SRC_ROOT" "$EXPORT_ROOT"
@@ -141,6 +171,19 @@ do
     # it has been built once)
     cd "$SRC_ROOT"
     make clean_python
+    # Restore environment
+    deactivate
+    ###
+    ### Wheel test
+    ###
+    WHEEL_FILE=$(echo "${EXPORT_ROOT}"/*ortools-*-"${PYTAG}"-manylinux1-*.whl)
+    # Create and activate a new virtualenv
+    "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}-test"
+    source "${BUILD_ROOT}/${PYTAG}-test/bin/activate"
+    pip install -U pip setuptools wheel six
+    # Install wheel and run tests
+    pip install --no-cache-dir $WHEEL_FILE
+    test_installed
     # Restore environment
     deactivate
 done
