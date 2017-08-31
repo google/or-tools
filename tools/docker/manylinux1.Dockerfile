@@ -32,6 +32,10 @@ RUN ./configure --prefix=/usr
 RUN make
 RUN make install
 
+RUN git clone https://github.com/google/or-tools /root/or-tools
+WORKDIR /root/or-tools
+RUN make third_party
+
 ADD build-manylinux1.sh /root
 
 WORKDIR /root
