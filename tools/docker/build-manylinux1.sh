@@ -126,7 +126,7 @@ do
     "${PYBIN}/pip" install virtualenv
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" ${BUILD_ROOT}/${PYTAG}
     source ${BUILD_ROOT}/${PYTAG}/bin/activate
-    pip install -U pip setuptools wheel
+    pip install -U pip setuptools wheel six  # six is needed by make test_python
     # Build artifact
     export_manylinux_wheel "$SRC_ROOT" "$EXPORT_ROOT"
     # Ensure everything is clean (don't clean third_party anyway,
