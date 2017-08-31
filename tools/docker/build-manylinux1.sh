@@ -45,8 +45,8 @@ echo "SKIP_PLATFORMS=${SKIP_PLATFORMS[@]}"
 contains_element () {
   local e match="$1"
   shift
-  for e; do [[ "$e" == "$match" ]] && return 0; done
-  return 1
+  for e; do [[ "$e" == "$match" ]] && echo '0' && return; done
+  echo '1' && return
 }
 
 function export_manylinux_wheel {
@@ -115,8 +115,8 @@ for PYROOT in /opt/python/*
 do
     PYTAG=$(basename "$PYROOT")
     # Check for platforms to be skipped
-    contains_element $PYTAG "${SKIP_PLATFORMS[@]}"
-    if [ $? == 0 ]
+    skip=$(contains_element $PYTAG "${SKIP_PLATFORMS[@]}")
+    if [ $skip -eq '0' ]
     then
         echo "skipping deprecated platform $PYTAG"
         continue
