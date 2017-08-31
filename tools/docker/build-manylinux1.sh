@@ -13,6 +13,8 @@
 #      default location will be used.
 set -e
 
+SKIP_PLATFORMS=( cp26-cp26m  cp26-cp26mu )
+
 if [ -n "$1" ]; then BUILD_ROOT="$1"; fi
 if [ -n "$2" ]; then EXPORT_ROOT="$2"; fi
 
@@ -28,15 +30,26 @@ then
     EXPORT_ROOT="${HOME}/export"
 fi
 
+SRC_ROOT="${BUILD_ROOT}/or-tools"
+
 mkdir -p ${BUILD_ROOT}
 mkdir -p ${EXPORT_ROOT}
 
 echo "BUILD_ROOT=${BUILD_ROOT}"
+echo "SRC_ROOT=${SRC_ROOT}"
 echo "EXPORT_ROOT=${EXPORT_ROOT}"
+echo "SKIP_PLATFORMS=${SKIP_PLATFORMS[@]}"
 
 ################################################################################
 
-function build_pypi_archives {
+contains_element () {
+  local e match="$1"
+  shift
+  for e; do [[ "$e" == "$match" ]] && return 0; done
+  return 1
+}
+
+function export_manylinux_wheel {
     # Build all the wheel artifacts assuming that the current 'python'
     # command is the target interpreter. Please note that in order to
     # have or-tools correctly detect the target python version, this
@@ -52,11 +65,8 @@ function build_pypi_archives {
     _EXPORT_ROOT="$2"
     # Build
     cd "$_SRC_ROOT"
-    make third_party
-    ### Fix issue with or-tools makefile not looking for libraries where
-    ### protobuffer has been installed.
-    ### cp -prv dependencies/install/lib64/* dependencies/install/lib/
-    make install_python_modules
+    # We need to force this target, otherwise the protobuf stub will be missing
+    make -B install_python_modules  # regenerates Makefile.local
     make python
     make test_python
     make pypi_archive
@@ -65,44 +75,68 @@ function build_pypi_archives {
     python setup.py bdist_wheel
     cd dist
     auditwheel repair *.whl -w "$_EXPORT_ROOT"
-    # Ensure everything is clean
-    cd "$_SRC_ROOT"
-    make clean
-    make clean_third_party
 }
 
 ###############################################################################
 
-# Retrieve or-tools, we are building the master
-cd "$BUILD_ROOT"
-git clone https://github.com/google/or-tools
+# Retrieve or-tools if needed
+if [ ! -d "$SRC_ROOT" ]
+then
+  echo "SRC_ROOT doesn't exist, retrieving source from: https://github.com/google/or-tools"
+  git clone https://github.com/google/or-tools "$SRC_ROOT"
+fi
+
+# Make third_party if needed
+if [ ! -f "${SRC_ROOT}/Makefile.local" ]
+then
+  echo "\${SRC_ROOT}/Makefile.local doesn't exist, building third_party"
+  cd "$SRC_ROOT"
+  make third_party
+fi
 
 # TODO remove all patching, write Makefile targets for manylinux
 
 # Patch makefile, remove offending command
 # (the setup.py-e file doesn't exist)
-cd "$BUILD_ROOT/or-tools"
+cd "$SRC_ROOT"
 sed -i -e 's=-rm $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py-e==g' makefiles/Makefile.python.mk
 
 # Patch makefile, remove manual libortools.so grafting
 # and RPATH setting. All of this stuff will be carried
 # out by auditwheel, otherwise we would end up with a
 # broken manylinux wheel
-cd "$BUILD_ROOT/or-tools"
+cd "$SRC_ROOT"
 sed -i -e 's=cp lib/libortools=#=g' makefiles/Makefile.python.mk
 sed -i -e 's=tools/fix_python_libraries_on_linux.sh=#=g' makefiles/Makefile.python.mk
 
 # For each python platform provided by manylinux,
-# build and export artifact using a virtualenv
-cd "$BUILD_ROOT"
+# build and export artifacts using a virtualenv
 for PYROOT in /opt/python/*
 do
     PYTAG=$(basename "$PYROOT")
+    # Check for platforms to be skipped
+    contains_element $PYTAG "${SKIP_PLATFORMS[@]}"
+    if [ $? == 0 ]
+    then
+        echo "skipping deprecated platform $PYTAG"
+        continue
+    fi
+    # Create and activate virtualenv
     PYBIN="${PYROOT}/bin"
     "${PYBIN}/pip" install virtualenv
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" ${BUILD_ROOT}/${PYTAG}
     source ${BUILD_ROOT}/${PYTAG}/bin/activate
-    pip install -U pip setuptools
-    build_pypi_archives "$BUILD_ROOT/or-tools" "$EXPORT_ROOT"
+    pip install -U pip setuptools wheel
+    # Regen Makefile.local to detect python version
+    # cd "$SRC_ROOT"
+    # rm -f Makefile.local
+    # make Makefile.local
+    # Build artifact
+    export_manylinux_wheel "$SRC_ROOT" "$EXPORT_ROOT"
+    # Ensure everything is clean (don't clean third_party anyway,
+    # it has been built once)
+    cd "$SRC_ROOT"
+    make clean_python
+    # Restore environment
     deactivate
 done
