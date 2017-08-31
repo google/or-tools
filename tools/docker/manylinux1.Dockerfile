@@ -17,7 +17,7 @@ RUN yum -y update && yum -y install \
     curl
 
 # WARNING
-# We cannot use wget to download the following packages due to a bug that leads
+# We cannot use wget to download the needed packages due to a bug that leads
 # to an incorrect checking of Server Alternate Name (SAN) property in the SSL
 # certificate and makes wget to fail with something like:
 #
@@ -26,6 +26,7 @@ RUN yum -y update && yum -y install \
 # Note: 'wget --no-check-certificate' is not an option since we are building
 #       distribution binaries.
 
+# Update cmake, the system shipped version is too old for or-tools.
 WORKDIR /root
 RUN curl --location-trusted --remote-name https://cmake.org/files/v3.8/cmake-3.8.2.tar.gz
 RUN tar xzf cmake-3.8.2.tar.gz
@@ -34,6 +35,7 @@ RUN ./bootstrap --prefix=/usr
 RUN make
 RUN make install
 
+# Update swig, the system shipped version doesn't support PY3.
 WORKDIR /root
 RUN curl --location-trusted --remote-name https://downloads.sourceforge.net/project/swig/swig/swig-3.0.12/swig-3.0.12.tar.gz
 RUN tar xzf swig-3.0.12.tar.gz
