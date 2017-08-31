@@ -176,7 +176,7 @@ do
     ###
     ### Wheel test
     ###
-    WHEEL_FILE=$(echo "${EXPORT_ROOT}"/*ortools-*-"${PYTAG}"-manylinux1-*.whl)
+    WHEEL_FILE=$(echo "${EXPORT_ROOT}"/*-"${PYTAG}"-*.whl)
     # Create and activate a new virtualenv
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}-test"
     source "${BUILD_ROOT}/${PYTAG}-test/bin/activate"
