@@ -13,6 +13,9 @@
 #      default location will be used.
 set -e
 
+# Platforms to be ignored.
+# The build of Python 2.6.x bindings is known to be broken
+# (and 2.6 itself is deprecated).
 SKIP_PLATFORMS=( cp26-cp26m  cp26-cp26mu )
 
 if [ -n "$1" ]; then BUILD_ROOT="$1"; fi
@@ -43,10 +46,15 @@ echo "SKIP_PLATFORMS=${SKIP_PLATFORMS[@]}"
 ################################################################################
 
 contains_element () {
-  local e match="$1"
-  shift
-  for e; do [[ "$e" == "$match" ]] && echo '0' && return; done
-  echo '1' && return
+    # Look for the presence of an element in an array. Echoes '0' if found,
+    # '1' otherwise.
+    # Arguments:
+    #   $1 the element to be searched
+    #   $2 the array to search into
+    local e match="$1"
+    shift
+    for e; do [[ "$e" == "$match" ]] && echo '0' && return; done
+    echo '1' && return
 }
 
 function export_manylinux_wheel {
