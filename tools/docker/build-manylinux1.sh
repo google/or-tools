@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build all the wheel artifacts for the platforms supported by manylinux1
-# and export them to the export location.
+# and export them to the specified location.
 #
 # Arguments:
 #
@@ -59,7 +59,7 @@ echo "TESTS=${TESTS[@]}"
 
 ################################################################################
 
-contains_element () {
+function contains_element () {
     # Look for the presence of an element in an array. Echoes '0' if found,
     # '1' otherwise.
     # Arguments:
