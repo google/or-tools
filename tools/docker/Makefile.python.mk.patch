@@ -1,0 +1,55 @@
+diff --git a/makefiles/Makefile.python.mk b/makefiles/Makefile.python.mk
+index 61d0be945..979479a54 100755
+--- a/makefiles/Makefile.python.mk
++++ b/makefiles/Makefile.python.mk
+@@ -1,4 +1,4 @@
+-.PHONY : python install_python_modules pypi_archive pyinit pycp pyalgorithms pygraph pylp
++.PHONY : python install_python_modules pypi_archive pypi_archive_dir pyinit pycp pyalgorithms pygraph pylp
+ 
+ # Python support using SWIG
+ 
+@@ -247,9 +247,23 @@ PYPI_ARCHIVE_TEMP_DIR = temp-python$(PYTHON_VERSION)
+ 
+ OR_TOOLS_PYTHON_GEN_SCRIPTS = $(wildcard src/gen/ortools/*/*.py) $(wildcard src/gen/ortools/*/*.cc)
+ 
+-pypi_archive: python $(PYPI_ARCHIVE_TEMP_DIR)
++# Stages all the files needed to build the python package.
++pypi_archive_dir: python $(PYPI_ARCHIVE_TEMP_DIR)
+ 
+-$(PYPI_ARCHIVE_TEMP_DIR) : $(OR_TOOLS_PYTHON_GEN_SCRIPTS) $(PATCHELF)
++# Patches the archive files to be able to build a pypi package.
++# Graft libortools if needed and set RPATHs.
++pypi_archive: pypi_archive_dir $(PATCHELF)
++ifneq ($(PLATFORM),win)
++	cp lib/libortools.$(LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
++ifeq ($(PLATFORM),MACOSX)
++	tools/fix_python_libraries_on_mac.sh $(PYPI_ARCHIVE_TEMP_DIR)
++endif
++ifeq ($(PLATFORM),LINUX)
++	tools/fix_python_libraries_on_linux.sh $(PYPI_ARCHIVE_TEMP_DIR)
++endif
++endif
++
++$(PYPI_ARCHIVE_TEMP_DIR) : $(OR_TOOLS_PYTHON_GEN_SCRIPTS)
+ 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
+ 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)
+ 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools
+@@ -300,18 +314,10 @@ else
+ 	cp lib/_pywraplp.$(SWIG_LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/linear_solver
+ 	cp lib/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/graph
+ 	cp lib/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/algorithms
+-	cp lib/libortools.$(LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
+ 	$(SED) -i -e 's/\.dll/\.so/' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
+ 	$(SED) -i -e 's/DELETEWIN //g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
+ 	$(SED) -i -e '/DELETEUNIX/d' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
+ 	$(SED) -i -e 's/DLL/$(LIB_SUFFIX)/g' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
+-	-rm $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py-e
+-ifeq ($(PLATFORM),MACOSX)
+-	tools/fix_python_libraries_on_mac.sh $(PYPI_ARCHIVE_TEMP_DIR)
+-endif
+-ifeq ($(PLATFORM),LINUX)
+-	tools/fix_python_libraries_on_linux.sh $(PYPI_ARCHIVE_TEMP_DIR)
+-endif
+ endif
+ 
+ pypi_upload: pypi_archive
