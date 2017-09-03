@@ -157,4 +157,4 @@ manylinux1-image:
 	docker build -f manylinux1.Dockerfile -t or-tools-manylinux1-image .
 
 manylinux1-pypi3: export manylinux1-image
-	docker run -v `pwd`/export:/export or-tools-manylinux1-image:latest /bin/bash -c "/root/build-manylinux1.sh /root /export"
+	docker run -v `pwd`/export:/export or-tools-manylinux1-image:latest /bin/bash -c "/root/build/build-manylinux1.sh /root/src /root/build /export"

@@ -3,16 +3,26 @@
 # export them to the specified location.
 #
 # Arguments:
+#   $1 the path of the or-tools sources.
+#   $2 the build process root directory. If not specified, a default location is
+#      used.
+#   $3 the artifacts export directory. If not specified, a default location is
+#      used.
 #
-#   $1 the build process root directory. If not specified as argument, the
-#      env var BUILD_ROOT will be used. If not specified at all, a default
-#      location will be used.
-#
-#   $2 the artifacts export directory. If not specified as argument, the env
-#      var EXPORT_ROOT will be used. If not specified at all, a default location
-#      will be used.
+# Environment variables:
+#   SKIP_PLATFORMS manylinux1 platforms (e.g.: cp26-cp26m) to be skipped.
+#   EXPORT_ROOT    if not specified at command line, this value is used as the
+#                  destination path for the wheels export.
+#   BUILD_ROOT     if not specified at command line, this value is used as the
+#                  root path for the build process.
 set -e
 
+DEFAULT_BUILD_ROOT="$HOME"
+DEFAULT_EXPORT_ROOT="${HOME}/export"
+
+function usage() {
+  echo "Usage: build-manylinux1.sh SRC_ROOT <BUILD_ROOT> <EXPORT_ROOT>"
+}
 
 function contains_element () {
     # Look for the presence of an element in an array. Echoes '0' if found,
@@ -25,7 +35,6 @@ function contains_element () {
     for e; do [[ "$e" == "$match" ]] && echo '0' && return; done
     echo '1' && return
 }
-
 
 function export_manylinux_wheel {
     # Build all the wheel artifacts assuming that the current 'python' command
@@ -49,14 +58,13 @@ function export_manylinux_wheel {
     make -B install_python_modules  # regenerates Makefile.local
     make python
     make test_python
-    make pypi_archive
+    make pypi_archive_dir
     # Build and repair wheels
     cd temp-python*/ortools
     python setup.py bdist_wheel
     cd dist
     auditwheel repair ./*.whl -w "$export_root"
 }
-
 
 function test_installed {
     # Run all the specified test scripts using the current environment.
@@ -70,34 +78,35 @@ function test_installed {
     done
 }
 
-
 ###############################################################################
 # Setup
 
-if [ -n "$1" ]; then BUILD_ROOT="$1"; fi
-if [ -n "$2" ]; then EXPORT_ROOT="$2"; fi
-
-if [ -z "$BUILD_ROOT" ]
-then
-    echo "\$BUILD_ROOT is not set, using default location: $HOME"
-    BUILD_ROOT="$HOME"
+if [ -z "$1" ]; then
+  (>&2 usage)
+  exit 1
 fi
 
-if [ -z "$EXPORT_ROOT" ]
-then
-    echo "\$EXPORT_ROOT is not set, using default location: ${HOME}/export"
-    EXPORT_ROOT="${HOME}/export"
+SRC_ROOT="$1";
+if [ -n "$2" ]; then BUILD_ROOT="$2"; fi
+if [ -n "$3" ]; then EXPORT_ROOT="$3"; fi
+
+if [ ! -d "$SRC_ROOT" ]; then
+    (>&2 echo "Can't find or-tools sources at the specified location: $SRC_ROOT")
+    exit 1
 fi
 
-SRC_ROOT="${BUILD_ROOT}/or-tools"
+if [ -z "$BUILD_ROOT" ]; then
+    (>&2 echo "\$BUILD_ROOT is not set, using default location: $DEFAULT_BUILD_ROOT")
+    BUILD_ROOT="$DEFAULT_BUILD_ROOT"
+fi
 
-# Platforms to be ignored.
-# The build of Python 2.6.x bindings is known to be broken (and 2.6 itself is
-# deprecated).
-SKIP_PLATFORMS=(
-    cp26-cp26m
-    cp26-cp26mu
-)
+if [ -z "$EXPORT_ROOT" ]; then
+    (>&2 echo "\$EXPORT_ROOT is not set, using default location: $DEFAULT_EXPORT_ROOT")
+    EXPORT_ROOT="$DEFAULT_EXPORT_ROOT"
+fi
+
+# Split SKIP_PLATFORMS string and put values into an array
+read -r -a SKIP <<< "$SKIP_PLATFORMS"
 
 # Python scripts to be used as tests for the installed wheel. This list of files
 # has been taken from the 'test_python' make target.
@@ -112,12 +121,13 @@ TESTS=(
     "${SRC_ROOT}/examples/tests/test_lp_api.py"
 )
 
-echo "BUILD_ROOT=${BUILD_ROOT}"
-echo "SRC_ROOT=${SRC_ROOT}"
-echo "EXPORT_ROOT=${EXPORT_ROOT}"
-echo "SKIP_PLATFORMS=(${SKIP_PLATFORMS[*]})"
-echo "TESTS=(${TESTS[*]})"
-
+(
+    >&2 echo "BUILD_ROOT=${BUILD_ROOT}"
+    >&2 echo "SRC_ROOT=${SRC_ROOT}"
+    >&2 echo "EXPORT_ROOT=${EXPORT_ROOT}"
+    >&2 echo "SKIP_PLATFORMS=( ${SKIP[*]} )"
+    >&2 echo "TESTS=( ${TESTS[*]} )"
+)
 
 ###############################################################################
 # Main
@@ -125,33 +135,12 @@ echo "TESTS=(${TESTS[*]})"
 mkdir -p "${BUILD_ROOT}"
 mkdir -p "${EXPORT_ROOT}"
 
-# Retrieve or-tools if needed
-if [ ! -d "$SRC_ROOT" ]
-then
-  echo "SRC_ROOT doesn't exist, retrieving source from: https://github.com/google/or-tools"
-  git clone https://github.com/google/or-tools "$SRC_ROOT"
-fi
-
 # Make third_party if needed
-if [ ! -f "${SRC_ROOT}/Makefile.local" ]
-then
-  echo "\${SRC_ROOT}/Makefile.local doesn't exist, building third_party"
+if [ ! -f "${SRC_ROOT}/Makefile.local" ]; then
+  (>&2 echo "\${SRC_ROOT}/Makefile.local doesn't exist, building third_party")
   cd "$SRC_ROOT"
   make third_party
 fi
-
-# TODO remove all patching, write Makefile targets for manylinux
-
-# Patch makefile, remove offending command (the setup.py-e file doesn't exist)
-cd "$SRC_ROOT"
-sed -i -e "s=-rm \$(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py-e==g" makefiles/Makefile.python.mk
-
-# Patch makefile, remove manual libortools.so grafting and RPATH setting. All of
-# this stuff will be carried out by auditwheel, otherwise we would end up with a
-# broken manylinux wheel file
-cd "$SRC_ROOT"
-sed -i -e "s=cp lib/libortools=#=g" makefiles/Makefile.python.mk
-sed -i -e "s=tools/fix_python_libraries_on_linux.sh=#=g" makefiles/Makefile.python.mk
 
 # For each python platform provided by manylinux, build, export and test
 # artifacts.
@@ -159,10 +148,9 @@ for PYROOT in /opt/python/*
 do
     PYTAG=$(basename "$PYROOT")
     # Check for platforms to be skipped
-    SKIP=$(contains_element "$PYTAG" "${SKIP_PLATFORMS[@]}")
-    if [ "$SKIP" -eq '0' ]
-    then
-        echo "skipping deprecated platform $PYTAG"
+    _skip=$(contains_element "$PYTAG" "${SKIP[@]}")
+    if [ "$_skip" -eq '0' ]; then
+        (>&2 echo "skipping deprecated platform $PYTAG")
         continue
     fi
     ###
@@ -172,6 +160,7 @@ do
     PYBIN="${PYROOT}/bin"
     "${PYBIN}/pip" install virtualenv
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}"
+    # shellcheck source=/dev/null
     source "${BUILD_ROOT}/${PYTAG}/bin/activate"
     pip install -U pip setuptools wheel six  # six is needed by make test_python
     # Build artifact
@@ -188,6 +177,7 @@ do
     WHEEL_FILE=$(echo "${EXPORT_ROOT}"/*-"${PYTAG}"-*.whl)
     # Create and activate a new virtualenv
     "${PYBIN}/virtualenv" -p "${PYBIN}/python" "${BUILD_ROOT}/${PYTAG}-test"
+    # shellcheck source=/dev/null
     source "${BUILD_ROOT}/${PYTAG}-test/bin/activate"
     pip install -U pip setuptools wheel six
     # Install wheel and run tests
