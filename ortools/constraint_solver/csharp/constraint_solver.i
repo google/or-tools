@@ -69,6 +69,10 @@ class LocalSearchPhaseParameters {
 };
 }  // namespace operations_research
 
+namespace swig_util {
+	class NodeEvaluator2;
+}
+
 struct FailureProtect {
   jmp_buf exception_buffer;
   void JumpBack() {
@@ -139,6 +143,9 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %template(CpInt64Vector) std::vector<int64>;
 %template(CpIntVectorVector) std::vector<std::vector<int> >;
 %template(CpInt64VectorVector) std::vector<std::vector<int64> >;
+
+// This needs to be declared here as the camel case rename rule will cause collisions in the C# NodeEvaluator2Vector class.
+%template(NodeEvaluator2Vector) std::vector<::swig_util::NodeEvaluator2*>;
 
 %define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
 SWIG_STD_VECTOR_ENHANCED(operations_research::CTYPE*);
