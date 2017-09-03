@@ -59,10 +59,3 @@ RUN make third_party
 
 COPY build-manylinux1.sh "$BUILD_ROOT"
 RUN chmod ugo+x "${BUILD_ROOT}/build-manylinux1.sh"
-
-# TEMPORARY HACK
-# Patch Makefile.python.mk to add manylinux1 targets,
-# to be removed when changes are integrated into mainstream.
-COPY Makefile.python.mk.patch "$BUILD_ROOT"
-WORKDIR "$SRC_ROOT"
-RUN patch --force -p1 < "${BUILD_ROOT}/Makefile.python.mk.patch"
