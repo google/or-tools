@@ -1323,7 +1323,6 @@ void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes,
 
 void RoutingModel::AddDisjunction(const std::vector<NodeIndex>& nodes,
                                   int64 penalty, int64 max_cardinality) {
-  CHECK_GE(penalty, 0) << "Penalty must be positive";
   CHECK_GE(max_cardinality, 1);
   AddDisjunctionInternal(nodes, penalty, max_cardinality);
 }
