@@ -121,6 +121,7 @@ cc_library(
     hdrs = [
         "recordio.h",
     ],
+    linkopts = ["-lz"],
     deps = [
         ":base",
         ":file",
