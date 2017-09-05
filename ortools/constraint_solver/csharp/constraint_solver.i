@@ -146,12 +146,12 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 
 // This needs to be declared here as the camel case rename rule will cause collisions in the C# NodeEvaluator2Vector class.
 %typemap(cscode) std::vector<::swig_util::NodeEvaluator2*> %{
-	public NodeEvaluator2Vector(NodeEvaluator2[] values) 
-		:this()
-	{
+    public NodeEvaluator2Vector(NodeEvaluator2[] values) 
+        :this()
+    {
         foreach (NodeEvaluator2 value in values) 
-		{
-			value.DisownAndGetPermanentCallback();
+        {
+            value.DisownAndGetPermanentCallback();
             this.Add(value);
         }
     }
