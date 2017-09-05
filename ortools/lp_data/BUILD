@@ -254,8 +254,8 @@ cc_library(
         #        "//net/proto2/util/public:differencer",
         "//ortools/base",
         "//ortools/base:file",
-        "//ortools/linear_solver:linear_solver_proto",
-        "//ortools_research/util:file_util",
+        "//ortools/linear_solver:linear_solver_cc_proto",
+        "//ortools/util:file_util",
     ],
 )
 
