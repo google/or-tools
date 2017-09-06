@@ -14,8 +14,8 @@
 
 #include "ortools/lp_data/mps_reader.h"
 
-#include <math.h>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <utility>
 #include <fstream>

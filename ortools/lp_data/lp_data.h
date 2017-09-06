@@ -460,10 +460,34 @@ class LinearProgram {
   // Scales the problem using the given scaler.
   void Scale(SparseMatrixScaler* scaler);
 
-  // Scales the costs to always have a maximum cost magnitude of 1.0. The old
-  // cost of each variable can be retrieved by multiplying the new one with the
-  // returned factor. This also updates objective_scaling_factor().
+  // While Scale() makes sure the coefficients inside the linear program matrix
+  // are in [-1, 1], the objective coefficients, variable bounds and constraint
+  // bounds can still take large values (originally or due to the matrix
+  // scaling).
+  //
+  // It makes a lot of sense to also scale them given that internally we use
+  // absolute tolerances, and that it is nice to have the same behavior if users
+  // scale their problems. For instance one could change the unit of ALL the
+  // variables from Bytes to MBytes if they denote memory quantities. Or express
+  // a cost in dollars instead of thousands of dollars.
+  //
+  // Here, we are quite prudent and just make sure that the range of the
+  // non-zeros magnitudes contains one. So for instance if all non-zeros costs
+  // are in [1e4, 1e6], we will divide them by 1e4 so that the new range is
+  // [1, 1e2].
+  //
+  // TODO(user): Another more aggressive idea is to set the median/mean/geomean
+  // of the magnitudes to one. Investigate if this leads to better results. It
+  // does look more robust.
+  //
+  // Both functions update objective_scaling_factor()/objective_offset() and
+  // return the scaling coefficient so that:
+  // - For ScaleObjective(), the old coefficients can be retrieved by
+  //   multiplying the new ones by the returned factor.
+  // - For ScaleBounds(), the old variable and constraint bounds can be
+  //   retrieved by multiplying the new ones by the returned factor.
   Fractional ScaleObjective();
+  Fractional ScaleBounds();
 
   // Removes the given row indices from the LinearProgram.
   // This needs to allocate O(num_variables) memory.

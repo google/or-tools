@@ -17,7 +17,7 @@
 #ifndef OR_TOOLS_LP_DATA_LP_TYPES_H_
 #define OR_TOOLS_LP_DATA_LP_TYPES_H_
 
-#include <math.h>
+#include <cmath>
 #include <limits>
 #include "ortools/base/basictypes.h"
 #include "ortools/base/int_type.h"

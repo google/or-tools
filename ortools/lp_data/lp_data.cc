@@ -1084,18 +1084,42 @@ void LinearProgram::Scale(SparseMatrixScaler* scaler) {
   transpose_matrix_is_consistent_ = false;
 }
 
-Fractional LinearProgram::ScaleObjective() {
-  Fractional cost_scaling_factor = 0.0;
-  for (ColIndex col(0); col < num_variables(); ++col) {
-    cost_scaling_factor =
-        std::max(cost_scaling_factor, std::abs(objective_coefficients()[col]));
+namespace {
+
+// Note that we ignore zeros and infinities because they do not matter from a
+// scaling perspective where this function is used.
+template <typename FractionalRange>
+void UpdateMinAndMaxMagnitude(const FractionalRange& range,
+                              Fractional* min_magnitude,
+                              Fractional* max_magnitude) {
+  for (const Fractional value : range) {
+    const Fractional magnitude = std::abs(value);
+    if (magnitude == 0 || magnitude == kInfinity) continue;
+    *min_magnitude = std::min(*min_magnitude, magnitude);
+    *max_magnitude = std::max(*max_magnitude, magnitude);
   }
-  VLOG(1) << "Objective stats (before objective scaling): "
-          << GetObjectiveStatsString();
-  if (cost_scaling_factor == 0.0) {
-    // This is needed for pure feasibility problems.
-    cost_scaling_factor = 1.0;
-  } else {
+}
+
+Fractional ComputeDivisorSoThatRangeContainsOne(Fractional min_magnitude,
+                                                Fractional max_magnitude) {
+  if (min_magnitude > 1.0 && min_magnitude < kInfinity) {
+    return min_magnitude;
+  } else if (max_magnitude > 0.0 && max_magnitude < 1.0) {
+    return max_magnitude;
+  }
+  return 1.0;
+}
+
+}  // namespace
+
+Fractional LinearProgram::ScaleObjective() {
+  Fractional min_magnitude = kInfinity;
+  Fractional max_magnitude = 0.0;
+  UpdateMinAndMaxMagnitude(objective_coefficients(), &min_magnitude,
+                           &max_magnitude);
+  const Fractional cost_scaling_factor =
+      ComputeDivisorSoThatRangeContainsOne(min_magnitude, max_magnitude);
+  if (cost_scaling_factor != 1.0) {
     for (ColIndex col(0); col < num_variables(); ++col) {
       SetObjectiveCoefficient(
           col, objective_coefficients()[col] / cost_scaling_factor);
@@ -1103,8 +1127,45 @@ Fractional LinearProgram::ScaleObjective() {
     SetObjectiveScalingFactor(objective_scaling_factor() * cost_scaling_factor);
     SetObjectiveOffset(objective_offset() / cost_scaling_factor);
   }
-  VLOG(1) << "Objective stats: " << GetObjectiveStatsString();
+
+  VLOG(1) << "Objective magnitude range is [" << min_magnitude << ", "
+          << max_magnitude << "] (dividing by " << cost_scaling_factor << ").";
   return cost_scaling_factor;
+}
+
+Fractional LinearProgram::ScaleBounds() {
+  Fractional min_magnitude = kInfinity;
+  Fractional max_magnitude = 0.0;
+  UpdateMinAndMaxMagnitude(variable_lower_bounds(), &min_magnitude,
+                           &max_magnitude);
+  UpdateMinAndMaxMagnitude(variable_upper_bounds(), &min_magnitude,
+                           &max_magnitude);
+  UpdateMinAndMaxMagnitude(constraint_lower_bounds(), &min_magnitude,
+                           &max_magnitude);
+  UpdateMinAndMaxMagnitude(constraint_lower_bounds(), &min_magnitude,
+                           &max_magnitude);
+  const Fractional bound_scaling_factor =
+      ComputeDivisorSoThatRangeContainsOne(min_magnitude, max_magnitude);
+  if (bound_scaling_factor != 1.0) {
+    SetObjectiveScalingFactor(objective_scaling_factor() *
+                              bound_scaling_factor);
+    SetObjectiveOffset(objective_offset() / bound_scaling_factor);
+    for (ColIndex col(0); col < num_variables(); ++col) {
+      SetVariableBounds(col,
+                        variable_lower_bounds()[col] / bound_scaling_factor,
+                        variable_upper_bounds()[col] / bound_scaling_factor);
+    }
+    for (RowIndex row(0); row < num_constraints(); ++row) {
+      SetConstraintBounds(
+          row, constraint_lower_bounds()[row] / bound_scaling_factor,
+          constraint_upper_bounds()[row] / bound_scaling_factor);
+    }
+  }
+
+  VLOG(1) << "Bounds magnitude range is [" << min_magnitude << ", "
+          << max_magnitude << "] (dividing bounds by " << bound_scaling_factor
+          << ").";
+  return bound_scaling_factor;
 }
 
 void LinearProgram::DeleteRows(const DenseBooleanColumn& row_to_delete) {

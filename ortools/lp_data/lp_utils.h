@@ -35,6 +35,12 @@ typedef AccurateSum<Fractional> KahanSum;
 // Useful to shorten the code when f is an expression or a long name.
 inline Fractional Square(Fractional f) { return f * f; }
 
+// Returns distance from a given fractional number to the closest integer. It
+// means that the result is always contained in range of [0.0, 0.5].
+static inline Fractional Fractionality(Fractional f) {
+  return std::abs(f - std::round(f));
+}
+
 // Returns the scalar product between u and v.
 // The precise versions use KahanSum and are about two times slower.
 template <class DenseRowOrColumn, class DenseRowOrColumn2>

@@ -53,6 +53,17 @@ bool LoadLinearProgramFromMps(const std::string& input_file_path,
   } else {
     VLOG(1) << "Read file in fixed format.";
     linear_program->PopulateFromLinearProgram(linear_program_fixed);
+    if (free_read) {
+      // TODO(user): Dump() take ages on large program, so we need an efficient
+      // comparison function between two linear programs. Using
+      // GetProblemStats() for now.
+      if (linear_program_free.GetProblemStats() !=
+          linear_program_fixed.GetProblemStats()) {
+        LOG(ERROR) << "Could not decide if '" << input_file_path
+                   << "' is in fixed or free format.";
+        return false;
+      }
+    }
   }
   return true;
 }
