@@ -133,6 +133,7 @@ void GetBestScalingOfDoublesToInt64(const std::vector<double>& input,
   for (int i = 0; i < size; ++i) {
     const double x = input[i];
     if (x == 0.0) continue;
+    if (use_bounds && lb[i] == 0 && ub[i] == 0) continue;
     const double scaled = std::abs(ldexp(x, factor_exponent));
     *max_relative_coeff_error = std::max(
         *max_relative_coeff_error, std::abs(std::round(scaled) / scaled - 1));
