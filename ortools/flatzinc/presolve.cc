@@ -156,32 +156,74 @@ bool OverlapsAt(const Argument& array, int pos, const Argument& other) {
 
 // ----- Rule helpers -----
 
-bool Presolver::ApplyRule(
+void Presolver::ApplyRule(
     Constraint* ct, const std::string& rule_name,
-    const std::function<bool(Constraint* ct, std::string*)>& rule) {
+    const std::function<Presolver::RuleStatus(Constraint* ct, std::string*)>& rule) {
   const std::string before = HASVLOG ? ct->DebugString() : "";
   std::string log;
-  const bool modified = rule(ct, &log);
-  if (modified) {
-    // TODO(user): log running time.
+
+  const RuleStatus status = rule(ct, &log);
+  if (status != NOT_CHANGED) {
     successful_rules_[rule_name]++;
     if (HASVLOG) {
       FZVLOG << "Apply rule " << rule_name << " on " << before << FZENDL;
       if (!log.empty()) {
         FZVLOG << "  - log: " << log << FZENDL;
       }
-      if (!ct->active) {
-        FZVLOG << "  - constraint is now inactive" << FZENDL;
-      } else {
+    }
+  }
+
+  switch (status) {
+    case NOT_CHANGED: {
+      break;
+    }
+    case CONTEXT_CHANGED: {
+      break;
+    }
+    case CONSTRAINT_REWRITTEN: {
+      AddConstraintToMapping(ct);
+      changed_constraints_.insert(ct);
+      if (HASVLOG) {
         const std::string after = ct->DebugString();
         if (after != before) {
           FZVLOG << "  - constraint is modified to " << after << FZENDL;
         }
       }
+      break;
     }
-    return true;
+    case CONSTRAINT_ALWAYS_FALSE: {
+      FZVLOG << "  - constraint is set to false";
+      RemoveConstraintFromMapping(ct);
+      ct->SetAsFalse();
+      break;
+    }
+    case CONSTRAINT_ALWAYS_TRUE: {
+      FZVLOG << "  - constraint is set to true";
+      RemoveConstraintFromMapping(ct);
+      ct->MarkAsInactive();
+      break;
+    }
   }
-  return false;
+}
+
+void Presolver::MarkChangedVariable(IntegerVariable* var) {
+  changed_variables_.insert(var);
+}
+
+void Presolver::AddConstraintToMapping(Constraint* ct) {
+  for (const Argument& arg : ct->arguments) {
+    for (IntegerVariable* const var : arg.variables) {
+      var_to_constraints_[var].insert(ct);
+    }
+  }
+}
+
+void Presolver::RemoveConstraintFromMapping(Constraint* ct) {
+  for (const Argument& arg : ct->arguments) {
+    for (IntegerVariable* const var : arg.variables) {
+      var_to_constraints_[var].erase(ct);
+    }
+  }
 }
 
 // ----- Presolve rules -----
@@ -206,19 +248,20 @@ bool Presolver::ApplyRule(
 // Input: bool2int(b, x)
 // Action: Replace all instances of x by b.
 // Output: inactive constraint
-bool Presolver::PresolveBool2Int(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveBool2Int(Constraint* ct, std::string* log) {
   DCHECK_EQ(ct->type, "bool2int");
   if (ct->arguments[0].HasOneValue() || ct->arguments[1].HasOneValue()) {
     // Rule 1.
     log->append(
         "simplifying bool2int with one variable assigned to a single value");
     ct->type = "int_eq";
+    return CONSTRAINT_REWRITTEN;
   } else {
     // Rule 2.
-    ct->MarkAsInactive();
     AddVariableSubstition(ct->arguments[1].Var(), ct->arguments[0].Var());
+    return CONSTRAINT_ALWAYS_TRUE;
   }
-  return true;
+  return NOT_CHANGED;
 }
 
 // Presolve equality constraint: int_eq
@@ -234,10 +277,10 @@ bool Presolver::PresolveBool2Int(Constraint* ct, std::string* log) {
 //
 // Rule 3:
 // Input : int_eq(x1, x2)
-// Action: Pick x1 or x2, and replace all occurrences by the other. The prefered
-//         direction is replace x2 by x1, unless x2 is already the target
-//         variable of another constraint, because a variable cannot be the
-//         target of 2 constraints.
+// Action: Pick x1 or x2, and replace all occurrences by the other. The
+//         preferred direction is replace x2 by x1, unless x2 is already the
+//         target variable of another constraint, because a variable cannot be
+//         the target of 2 constraints.
 // Output: inactive constraint.
 //
 // Rule 4:
@@ -249,52 +292,48 @@ bool Presolver::PresolveBool2Int(Constraint* ct, std::string* log) {
 // Input : int_eq(c1, c2)
 // Output: inactive constraint if c1 == c2, and do nothing if c1 != c2.
 // TODO(user): reorder rules?
-bool Presolver::PresolveIntEq(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntEq(Constraint* ct, std::string* log) {
   // Rule 1
   if (ct->arguments[0].IsVariable() && ct->arguments[1].HasOneValue() &&
       ct->arguments[1].Value() == 0 &&
       ContainsKey(difference_map_, ct->arguments[0].Var())) {
     log->append("propagate equality");
-    ct->arguments[0].Var()->domain.IntersectWithSingleton(0);
+    IntersectVarWithSingleton(ct->arguments[0].Var(), 0);
 
     log->append(", transform null differences");
     const std::pair<IntegerVariable*, IntegerVariable*>& diff =
         FindOrDie(difference_map_, ct->arguments[0].Var());
     ct->arguments[0] = Argument::IntVarRef(diff.first);
     ct->arguments[1] = Argument::IntVarRef(diff.second);
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   if (ct->arguments[0].IsVariable()) {
     if (ct->arguments[1].HasOneValue()) {
       // Rule 2.
       const int64 value = ct->arguments[1].Value();
       log->append("propagate equality");
-      ct->arguments[0].Var()->domain.IntersectWithSingleton(value);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[0].Var(), value);
+      return CONSTRAINT_ALWAYS_TRUE;
     } else if (ct->arguments[1].IsVariable()) {
       // Rule 3.
-      ct->MarkAsInactive();
       AddVariableSubstition(ct->arguments[0].Var(), ct->arguments[1].Var());
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     }
   } else if (ct->arguments[0].HasOneValue()) {  // Arg0 is an integer value.
     const int64 value = ct->arguments[0].Value();
     if (ct->arguments[1].IsVariable()) {
       // Rule 4.
       log->append("propagate equality");
-      ct->arguments[1].Var()->domain.IntersectWithSingleton(value);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[1].Var(), value);
+      return CONSTRAINT_ALWAYS_TRUE;
     } else if (ct->arguments[1].HasOneValue() &&
                value == ct->arguments[1].Value()) {
       // Rule 5.
       // No-op, removing.
-      ct->MarkAsInactive();
-      return false;
+      return CONSTRAINT_ALWAYS_TRUE;
     }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Propagates inequality constraint.
@@ -308,7 +347,7 @@ bool Presolver::PresolveIntEq(Constraint* ct, std::string* log) {
 // Action: remove c from the domain of x.
 // Output: inactive constraint if the removal was successful
 //         (domain is not too large to remove a value).
-bool Presolver::PresolveIntNe(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntNe(Constraint* ct, std::string* log) {
   // Rule 1.
   if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable()) {
     IntegerVariable* const left = ct->arguments[0].Var();
@@ -316,28 +355,36 @@ bool Presolver::PresolveIntNe(Constraint* ct, std::string* log) {
     if (left->domain.Min() > right->domain.Max() ||
         left->domain.Max() < right->domain.Min()) {
       log->append("variable domains are not overlapping");
-      ct->MarkAsInactive();
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     }
   }
 
   // Rule 2.
   if (ct->presolve_propagation_done) {
-    return false;
+    return NOT_CHANGED;
   }
   Argument& a = ct->arguments[0];
   Argument& b = ct->arguments[1];
-  if ((a.IsVariable() && b.HasOneValue() &&
-       (!a.Var()->domain.Contains(b.Value()) ||
-        a.Var()->domain.RemoveValue(b.Value()))) ||
-      (b.IsVariable() && a.HasOneValue() &&
-       (!b.Var()->domain.Contains(a.Value()) ||
-        b.Var()->domain.RemoveValue(a.Value())))) {
-    log->append("remove value from variable domain");
-    ct->MarkAsInactive();
-    return true;
+  if (a.IsVariable() && b.HasOneValue()) {
+    if (!a.Var()->domain.Contains(b.Value())) {
+      log->append("value is not in domain");
+      return CONSTRAINT_ALWAYS_TRUE;
+    }
+    if (RemoveValue(a.Var(), b.Value())) {
+      log->append("remove value from variable domain");
+      return CONSTRAINT_ALWAYS_TRUE;
+    }
+  } else if (b.IsVariable() && a.HasOneValue()) {
+    if (!b.Var()->domain.Contains(a.Value())) {
+      log->append("value is not in domain");
+      return CONSTRAINT_ALWAYS_TRUE;
+    }
+    if (RemoveValue(b.Var(), a.Value())) {
+      log->append("remove value from variable domain");
+      return CONSTRAINT_ALWAYS_TRUE;
+    }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Bound propagation on comparisons: int_le, bool_le, int_lt, bool_lt,
@@ -356,7 +403,8 @@ bool Presolver::PresolveIntNe(Constraint* ct, std::string* log) {
 // Input : int_xx(x, y) or bool_xx(x, y) with xx == lt, le, gt, ge.
 // Action: Reduce domain of x and y.
 // Output: constraint is still active.
-bool Presolver::PresolveInequalities(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveInequalities(Constraint* ct,
+                                                      std::string* log) {
   const std::string& id = ct->type;
   if (ct->arguments[0].HasOneValue() && ct->arguments[1].HasOneValue()) {
     // Rule 1
@@ -373,44 +421,50 @@ bool Presolver::PresolveInequalities(Constraint* ct, std::string* log) {
       result = left > right;
     }
     if (result) {
-      log->append("propagate bounds");
-      ct->MarkAsInactive();
+      log->append("constraint trivially true");
+      return CONSTRAINT_ALWAYS_TRUE;
     } else {
-      ct->SetAsFalse();
+      log->append("constraint trivially false");
+      return CONSTRAINT_ALWAYS_FALSE;
     }
-    return true;
   }
 
   if (ct->arguments[0].IsVariable() && ct->arguments[1].HasOneValue()) {
     // Rule 2 where the 'var' is the left operand, eg. var <= 5
     IntegerVariable* const var = ct->arguments[0].Var();
     const int64 value = ct->arguments[1].Value();
+    bool changed = false;
     if (id == "int_le" || id == "bool_le") {
-      var->domain.IntersectWithInterval(kint64min, value);
+      changed = IntersectVarWithInterval(var, kint64min, value);
     } else if (id == "int_lt" || id == "bool_lt") {
-      var->domain.IntersectWithInterval(kint64min, value - 1);
+      changed = IntersectVarWithInterval(var, kint64min, value - 1);
     } else if (id == "int_ge" || id == "bool_ge") {
-      var->domain.IntersectWithInterval(value, kint64max);
+      changed = IntersectVarWithInterval(var, value, kint64max);
     } else if (id == "int_gt" || id == "bool_gt") {
-      var->domain.IntersectWithInterval(value + 1, kint64max);
+      changed = IntersectVarWithInterval(var, value + 1, kint64max);
     }
-    ct->MarkAsInactive();
-    return true;
+    if (changed) {
+      log->append("propagate bounds");
+    }
+    return CONSTRAINT_ALWAYS_TRUE;
   } else if (ct->arguments[0].HasOneValue() && ct->arguments[1].IsVariable()) {
     // Rule 2 where the 'var' is the right operand, eg 5 <= var
     IntegerVariable* const var = ct->arguments[1].Var();
     const int64 value = ct->arguments[0].Value();
+    bool changed = false;
     if (id == "int_le" || id == "bool_le") {
-      var->domain.IntersectWithInterval(value, kint64max);
+      changed = IntersectVarWithInterval(var, value, kint64max);
     } else if (id == "int_lt" || id == "bool_lt") {
-      var->domain.IntersectWithInterval(value + 1, kint64max);
+      changed = IntersectVarWithInterval(var, value + 1, kint64max);
     } else if (id == "int_ge" || id == "bool_ge") {
-      var->domain.IntersectWithInterval(kint64min, value);
+      changed = IntersectVarWithInterval(var, kint64min, value);
     } else if (id == "int_gt" || id == "bool_gt") {
-      var->domain.IntersectWithInterval(kint64min, value - 1);
+      changed = IntersectVarWithInterval(var, kint64min, value - 1);
     }
-    ct->MarkAsInactive();
-    return true;
+    if (changed) {
+      log->append("propagate bounds");
+    }
+    return CONSTRAINT_ALWAYS_TRUE;
   }
 
   // Rule 3.
@@ -420,25 +474,20 @@ bool Presolver::PresolveInequalities(Constraint* ct, std::string* log) {
   IntegerVariable* const right = ct->arguments[1].Var();
   const int64 right_min = right->domain.Min();
   const int64 right_max = right->domain.Max();
-  bool modified = false;
   if (id == "int_le" || id == "bool_le") {
-    left->domain.IntersectWithInterval(kint64min, right_max);
-    right->domain.IntersectWithInterval(left_min, kint64max);
-    modified = left_max > right_max || right_min < left_min;
+    IntersectVarWithInterval(left, kint64min, right_max);
+    IntersectVarWithInterval(right, left_min, kint64max);
   } else if (id == "int_lt" || id == "bool_lt") {
-    left->domain.IntersectWithInterval(kint64min, right_max - 1);
-    right->domain.IntersectWithInterval(left_min + 1, kint64max);
-    modified = left_max >= right_max || right_min <= left_min;
+    IntersectVarWithInterval(left, kint64min, right_max - 1);
+    IntersectVarWithInterval(right, left_min + 1, kint64max);
   } else if (id == "int_ge" || id == "bool_ge") {
-    left->domain.IntersectWithInterval(right_min, kint64max);
-    right->domain.IntersectWithInterval(kint64min, left_max);
-    modified = right_max > left_max || left_min < right_min;
+    IntersectVarWithInterval(left, right_min, kint64max);
+    IntersectVarWithInterval(right, kint64min, left_max);
   } else if (id == "int_gt" || id == "bool_gt") {
-    left->domain.IntersectWithInterval(right_min + 1, kint64max);
-    right->domain.IntersectWithInterval(kint64min, left_max - 1);
-    modified = right_max >= left_max || left_min <= right_min;
+    IntersectVarWithInterval(left, right_min + 1, kint64max);
+    IntersectVarWithInterval(right, kint64min, left_max - 1);
   }
-  return modified;
+  return NOT_CHANGED;
 }
 
 // A reified constraint is a constraint that has been casted into a boolean
@@ -457,10 +506,10 @@ bool Presolver::PresolveInequalities(Constraint* ct, std::string* log) {
 //         with xx = eq, ne, le, lt, ge, gt
 // Output: int_yy(arg1, arg2) or int_lin_yy(arg1, arg2, c)
 //         with yy = opposite(xx). i.e. eq -> ne, le -> gt...
-bool Presolver::Unreify(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::Unreify(Constraint* ct, std::string* log) {
   const Argument& last_argument = ct->arguments.back();
   if (!last_argument.HasOneValue()) {
-    return false;
+    return NOT_CHANGED;
   }
   DCHECK(strings::EndsWith(ct->type, "_reif")) << ct->DebugString();
   ct->type.resize(ct->type.size() - 5);
@@ -504,7 +553,7 @@ bool Presolver::Unreify(Constraint* ct, std::string* log) {
     else if (op == "gt")
       ct->type += "le";
   }
-  return true;
+  return CONSTRAINT_REWRITTEN;
 }
 
 // Propagates the values of set_in
@@ -512,33 +561,30 @@ bool Presolver::Unreify(Constraint* ct, std::string* log) {
 // Action: Intersect the domain of x with the set of values.
 // Output: inactive constraint.
 // note: set_in(x1, {x2, ...}) is plain illegal so we don't bother with it.
-bool Presolver::PresolveSetIn(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveSetIn(Constraint* ct, std::string* log) {
   if (ct->arguments[0].IsVariable()) {
     // IntersectDomainWith() will DCHECK that the second argument is a set
     // of constant values.
     log->append("propagate set on variable domain");
-    IntersectDomainWith(ct->arguments[1], &ct->arguments[0].Var()->domain);
-    ct->MarkAsInactive();
-    // TODO(user): Returns true iff the intersection yielded some domain
-    // reduction.
-    return true;
+    IntersectVarWithArg(ct->arguments[0].Var(), ct->arguments[1]);
+    return CONSTRAINT_ALWAYS_TRUE;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Propagates the values of set_not_in
 // Input : set_not_in(x, [c1..c2]) or set_not_in(x, {c1, .., cn})
 // Action: Remove the values from the domain of x.
-bool Presolver::PresolveSetNotIn(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveSetNotIn(Constraint* ct, std::string* log) {
   if (ct->arguments[0].IsVariable()) {
     const Argument& arg = ct->arguments[1];
     IntegerVariable* const var = ct->arguments[0].Var();
     if (arg.HasOneValue()) {
       const int64 value = arg.Value();
-      if ((var->domain.Contains(value) && var->domain.RemoveValue(value)) ||
-          !var->domain.Contains(value)) {
-        ct->MarkAsInactive();
-        return true;
+      if (!var->domain.Contains(value)) {
+        return CONSTRAINT_ALWAYS_TRUE;
+      } else if (RemoveValue(var, value)) {
+        return CONSTRAINT_ALWAYS_TRUE;
       }
     } else {
       bool changed = false;
@@ -567,15 +613,13 @@ bool Presolver::PresolveSetNotIn(Constraint* ct, std::string* log) {
           }
         }
       }
-      if (succeed) {
-        ct->MarkAsInactive();
-        // TODO(user): return changed; even if we do not need to loop over
-        // model again if nothing has changed.
-        return true;
+      if (changed) {
+        MarkChangedVariable(var);
       }
+      return succeed ? CONSTRAINT_ALWAYS_TRUE : NOT_CHANGED;
     }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Propagates the values of set_in_reif
@@ -584,7 +628,8 @@ bool Presolver::PresolveSetNotIn(Constraint* ct, std::string* log) {
 // Rule 1: decide b if it can be decided.
 // Rule 2: replace by int_eq_reif or int_ne_reif if there is just one
 //         alternative.
-bool Presolver::PresolveSetInReif(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveSetInReif(Constraint* ct,
+                                                   std::string* log) {
   if (ct->arguments[0].IsVariable() || ct->arguments[0].HasOneValue()) {
     int in = 0;
     int64 first_in_value;
@@ -609,30 +654,30 @@ bool Presolver::PresolveSetInReif(Constraint* ct, std::string* log) {
       ct->RemoveArg(1);
       ct->type = "bool_eq";
       ct->arguments[0] = Argument::IntegerValue(0);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (out == 0) {
       ct->RemoveArg(1);
       ct->type = "bool_eq";
       ct->arguments[0] = Argument::IntegerValue(1);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (in == 1) {
       ct->type = "int_eq_reif";
       ct->arguments[1] = Argument::IntegerValue(first_in_value);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (out == 1) {
       ct->type = "int_ne_reif";
       ct->arguments[1] = Argument::IntegerValue(first_out_value);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Propagates bound product.
 // Input : int_times(c1, c2, x)
 // Action: reduce domain of x to {c1 * c2}
 // Output: inactive constraint.
-bool Presolver::PresolveIntTimes(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntTimes(Constraint* ct, std::string* log) {
   if (ct->arguments[0].HasOneValue() && ct->arguments[1].HasOneValue() &&
       ct->arguments[2].IsVariable() && !ct->presolve_propagation_done) {
     log->append("propagate constants");
@@ -642,9 +687,8 @@ bool Presolver::PresolveIntTimes(Constraint* ct, std::string* log) {
     if (value == safe_value) {
       ct->presolve_propagation_done = true;
       if (ct->arguments[2].Var()->domain.Contains(value)) {
-        ct->arguments[2].Var()->domain.IntersectWithSingleton(value);
-        ct->MarkAsInactive();
-        return true;
+        IntersectVarWithSingleton(ct->arguments[2].Var(), value);
+        return CONSTRAINT_ALWAYS_TRUE;
       } else {
         log->append(
             "  - product is not compatible with variable domain, "
@@ -664,17 +708,17 @@ bool Presolver::PresolveIntTimes(Constraint* ct, std::string* log) {
     ct->arguments[0] = ct->arguments[2];
     ct->arguments.resize(1);
     ct->arguments.push_back(Argument::IntegerValue(0));
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
-  return false;
+  return NOT_CHANGED;
 }
 
 // Propagates bound division.
 // Input : int_div(c1, c2, x) (c2 != 0)
 // Action: reduce domain of x to {c1 / c2}
 // Output: inactive constraint.
-bool Presolver::PresolveIntDiv(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntDiv(Constraint* ct, std::string* log) {
   if (ct->arguments[0].HasOneValue() && ct->arguments[1].HasOneValue() &&
       ct->arguments[2].IsVariable() && !ct->presolve_propagation_done &&
       ct->arguments[1].Value() != 0) {
@@ -682,9 +726,8 @@ bool Presolver::PresolveIntDiv(Constraint* ct, std::string* log) {
     const int64 value = ct->arguments[0].Value() / ct->arguments[1].Value();
     ct->presolve_propagation_done = true;
     if (ct->arguments[2].Var()->domain.Contains(value)) {
-      ct->arguments[2].Var()->domain.IntersectWithSingleton(value);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[2].Var(), value);
+      return CONSTRAINT_ALWAYS_TRUE;
     } else {
       log->append(
           "  - division is not compatible with variable domain, "
@@ -693,7 +736,7 @@ bool Presolver::PresolveIntDiv(Constraint* ct, std::string* log) {
     }
   }
   // TODO(user): Catch c2 = 0 case and set the model to invalid.
-  return false;
+  return NOT_CHANGED;
 }
 
 // Simplifies and reduces array_bool_or
@@ -723,12 +766,13 @@ bool Presolver::PresolveIntDiv(Constraint* ct, std::string* log) {
 //         array_bool_or([b1, .., bi, .., bn], b0) with bi assigned to false
 // Action: Remove variables assigned to false values, or false constants.
 // Output: array_bool_or([b1, .., bi-1, bi+1, .., bn], b0)
-bool Presolver::PresolveArrayBoolOr(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveArrayBoolOr(Constraint* ct,
+                                                     std::string* log) {
   if (ct->arguments[0].variables.size() == 1) {
     // Rule 1.
     ct->type = "bool_eq";
     ct->arguments[0].type = Argument::INT_VAR_REF;
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   if (!ct->presolve_propagation_done && ct->arguments[1].HasOneValue() &&
       ct->arguments[1].Value() == 0) {
@@ -736,15 +780,14 @@ bool Presolver::PresolveArrayBoolOr(Constraint* ct, std::string* log) {
     // TODO(user): Support empty domains correctly, and remove this test.
     for (const IntegerVariable* const var : ct->arguments[0].variables) {
       if (!var->domain.Contains(0)) {
-        return false;
+        return NOT_CHANGED;
       }
     }
     log->append("propagate constants");
     for (IntegerVariable* const var : ct->arguments[0].variables) {
-      var->domain.IntersectWithSingleton(0);
+      IntersectVarWithSingleton(var, 0);
     }
-    ct->MarkAsInactive();
-    return true;
+    return CONSTRAINT_ALWAYS_TRUE;
   }
   bool has_bound_true_value = false;
   std::vector<IntegerVariable*> unbound;
@@ -759,15 +802,13 @@ bool Presolver::PresolveArrayBoolOr(Constraint* ct, std::string* log) {
     // Rule 3.
     if (!ct->arguments[1].HasOneValue()) {
       log->append("propagate target variable to true");
-      ct->arguments[1].variables[0]->domain.IntersectWithSingleton(1);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[1].variables[0], 1);
+      return CONSTRAINT_ALWAYS_TRUE;
     } else if (ct->arguments[1].HasOneValue() &&
                ct->arguments[1].Value() == 1) {
-      ct->MarkAsInactive();
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     }
-    return false;
+    return NOT_CHANGED;
     // TODO(user): Simplify code once we support empty domains.
   }
   if (unbound.empty()) {
@@ -775,19 +816,18 @@ bool Presolver::PresolveArrayBoolOr(Constraint* ct, std::string* log) {
     if (!ct->arguments[1].HasOneValue()) {
       // TODO(user): Simplify code once we support empty domains.
       log->append("propagate target variable to false");
-      ct->arguments[1].variables[0]->domain.IntersectWithSingleton(0);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[1].variables[0], 0);
+      return CONSTRAINT_ALWAYS_TRUE;
     }
-    return false;
+    return NOT_CHANGED;
   }
   if (unbound.size() < ct->arguments[0].variables.size()) {
     // Rule 5.
     log->append("Reduce array");
     ct->arguments[0].variables.swap(unbound);
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Simplifies and reduces array_bool_and
@@ -815,12 +855,13 @@ bool Presolver::PresolveArrayBoolOr(Constraint* ct, std::string* log) {
 // Input : array_bool_and([b1, .., true, bn], b0)
 // Action: Remove all the true values.
 // Output: array_bool_and([b1, .., bi-1, bi+1, .., bn], b0)
-bool Presolver::PresolveArrayBoolAnd(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveArrayBoolAnd(Constraint* ct,
+                                                      std::string* log) {
   if (ct->arguments[0].variables.size() == 1) {
     // Rule 1.
     ct->type = "bool_eq";
     ct->arguments[0].type = Argument::INT_VAR_REF;
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   if (!ct->presolve_propagation_done && ct->arguments[1].HasOneValue() &&
       ct->arguments[1].Value() == 1) {
@@ -828,16 +869,15 @@ bool Presolver::PresolveArrayBoolAnd(Constraint* ct, std::string* log) {
     // TODO(user): Simplify the code once we support empty domains.
     for (const IntegerVariable* const var : ct->arguments[0].variables) {
       if (!var->domain.Contains(1)) {
-        return false;
+        return NOT_CHANGED;
       }
     }
     log->append("propagate constants");
     for (IntegerVariable* const var : ct->arguments[0].variables) {
-      var->domain.IntersectWithSingleton(1);
+      IntersectVarWithSingleton(var, 1);
     }
     ct->presolve_propagation_done = true;
-    ct->MarkAsInactive();
-    return true;
+    return CONSTRAINT_ALWAYS_TRUE;
   }
   int has_bound_false_value = 0;
   std::vector<IntegerVariable*> unbound;
@@ -853,39 +893,37 @@ bool Presolver::PresolveArrayBoolAnd(Constraint* ct, std::string* log) {
     if (!ct->arguments[1].HasOneValue()) {
       // Rule 3.
       log->append("propagate target variable to false");
-      ct->arguments[1].variables[0]->domain.IntersectWithSingleton(0);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[1].variables[0], 0);
+      return CONSTRAINT_ALWAYS_TRUE;
     }
     if (ct->arguments[1].HasOneValue() && ct->arguments[1].Value() == 0) {
-      ct->MarkAsInactive();
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     }
-    return false;
+    return NOT_CHANGED;
   }
   if (unbound.empty()) {
     // Rule 4.
     if (!ct->arguments[1].HasOneValue()) {
       log->append("propagate target variable to true");
-      ct->arguments[1].variables[0]->domain.IntersectWithSingleton(1);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[1].variables[0], 1);
+      return CONSTRAINT_ALWAYS_TRUE;
     }
-    return false;
+    return NOT_CHANGED;
   }
   if (unbound.size() < ct->arguments[0].variables.size()) {
     log->append("reduce array");
     ct->arguments[0].variables.swap(unbound);
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Simplifies bool_XX_reif(b1, b2, b3)  (which means b3 = (b1 XX b2)) when the
 // middle value is bound.
 // Input: bool_XX_reif(b1, t, b2), where XX is "eq" or "ne".
 // Output: bool_YY(b1, b2) where YY is "eq" or "not" depending on XX and t.
-bool Presolver::PresolveBoolEqNeReif(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveBoolEqNeReif(Constraint* ct,
+                                                      std::string* log) {
   DCHECK(ct->type == "bool_eq_reif" || ct->type == "bool_ne_reif");
   if (ct->arguments[1].HasOneValue()) {
     log->append("simplify constraint");
@@ -897,7 +935,7 @@ bool Presolver::PresolveBoolEqNeReif(Constraint* ct, std::string* log) {
                 (ct->type == "bool_ne_reif" && value == 0))
                    ? "bool_eq"
                    : "bool_not";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   if (ct->arguments[0].HasOneValue()) {
     log->append("simplify constraint");
@@ -909,52 +947,53 @@ bool Presolver::PresolveBoolEqNeReif(Constraint* ct, std::string* log) {
                 (ct->type == "bool_ne_reif" && value == 0))
                    ? "bool_eq"
                    : "bool_not";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Transform int_lin_gt (which means ScalProd(arg1[], arg2[]) > c) into
 // int_lin_ge.
 // Input : int_lin_gt(arg1, arg2, c)
 // Output: int_lin_ge(arg1, arg2, c + 1)
-bool Presolver::PresolveIntLinGt(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntLinGt(Constraint* ct, std::string* log) {
   CHECK_EQ(Argument::INT_VALUE, ct->arguments[2].type);
   if (ct->arguments[2].Value() != kint64max) {
     ct->arguments[2].values[0]++;
     ct->type = "int_lin_ge";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   // TODO(user): fail (the model is impossible: a * b > kint64max can be
   // considered as impossible; because it would imply an overflow; which we
   // reject.
-  return false;
+  return NOT_CHANGED;
 }
 
 // Transform int_lin_lt into int_lin_le.
 // Input : int_lin_lt(arg1, arg2, c)
 // Output: int_lin_le(arg1, arg2, c - 1)
-bool Presolver::PresolveIntLinLt(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntLinLt(Constraint* ct, std::string* log) {
   CHECK_EQ(Argument::INT_VALUE, ct->arguments[2].type);
   if (ct->arguments[2].Value() != kint64min) {
     ct->arguments[2].values[0]--;
     ct->type = "int_lin_le";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   // TODO(user): fail (the model is impossible: a * b < kint64min can be
   // considered as impossible; because it would imply an overflow; which we
   // reject.
-  return false;
+  return NOT_CHANGED;
 }
 
 // Simplifies linear equations of size 1, i.e. c1 * x = c2.
 // Input : int_lin_xx([c1], [x], c2) and int_lin_xx_reif([c1], [x], c2, b)
 //         with (c1 == 1 or c2 % c1 == 0) and xx = eq, ne, lt, le, gt, ge
 // Output: int_xx(x, c2 / c1) and int_xx_reif(x, c2 / c1, b)
-bool Presolver::SimplifyUnaryLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::SimplifyUnaryLinear(Constraint* ct,
+                                                     std::string* log) {
   if (!ct->arguments[0].HasOneValue() ||
       ct->arguments[1].variables.size() != 1) {
-    return false;
+    return NOT_CHANGED;
   }
   const int64 coeff = ct->arguments[0].values.front();
   const int64 rhs = ct->arguments[2].Value();
@@ -967,7 +1006,7 @@ bool Presolver::SimplifyUnaryLinear(Constraint* ct, std::string* log) {
     ct->arguments[0].values.clear();
     ct->arguments[1].variables.clear();
     // Will be process by PresolveLinear.
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
   if (op == "eq") {
@@ -977,10 +1016,10 @@ bool Presolver::SimplifyUnaryLinear(Constraint* ct, std::string* log) {
     } else {                            // Equality always false.
       if (ct->arguments.size() == 4) {  // reified version.
         SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
+        return CONSTRAINT_REWRITTEN;
       } else {
-        ct->SetAsFalse();
+        return CONSTRAINT_ALWAYS_FALSE;
       }
-      return true;
     }
   } else if (op == "ne") {
     if (rhs % coeff == 0) {
@@ -989,10 +1028,10 @@ bool Presolver::SimplifyUnaryLinear(Constraint* ct, std::string* log) {
     } else {                            // Equality always true.
       if (ct->arguments.size() == 4) {  // reified version.
         SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
+        return CONSTRAINT_REWRITTEN;
       } else {
-        ct->MarkAsInactive();
+        return CONSTRAINT_ALWAYS_TRUE;
       }
-      return true;
     }
   } else if (coeff >= 0 && rhs % coeff == 0) {
     // TODO(user): Support coefficient < 0 (and reverse the inequalities).
@@ -1010,9 +1049,9 @@ bool Presolver::SimplifyUnaryLinear(Constraint* ct, std::string* log) {
     // Change type (remove "_lin" part).
     DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
     ct->type.erase(3, 4);
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Simplifies linear equations of size 2, i.e. x - y = 0.
@@ -1020,11 +1059,12 @@ bool Presolver::SimplifyUnaryLinear(Constraint* ct, std::string* log) {
 //         int_lin_xx_reif([1, -1], [x1, x2], 0, b)
 //         xx = eq, ne, lt, le, gt, ge
 // Output: int_xx(x1, x2) and int_xx_reif(x, x2, b)
-bool Presolver::SimplifyBinaryLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::SimplifyBinaryLinear(Constraint* ct,
+                                                      std::string* log) {
   const int64 rhs = ct->arguments[2].Value();
   if (ct->arguments[0].values.size() != 2 || rhs != 0 ||
       ct->arguments[1].variables.empty()) {
-    return false;
+    return NOT_CHANGED;
   }
 
   IntegerVariable* first = nullptr;
@@ -1037,7 +1077,7 @@ bool Presolver::SimplifyBinaryLinear(Constraint* ct, std::string* log) {
     first = ct->arguments[1].variables[1];
     second = ct->arguments[1].variables[0];
   } else {
-    return false;
+    return NOT_CHANGED;
   }
 
   log->append("remove linear part");
@@ -1047,10 +1087,10 @@ bool Presolver::SimplifyBinaryLinear(Constraint* ct, std::string* log) {
   // Change type (remove "_lin" part).
   DCHECK(ct->type.size() >= 8 && ct->type.substr(3, 4) == "_lin");
   ct->type.erase(3, 4);
-  return true;
+  return CONSTRAINT_REWRITTEN;
 }
 
-// Returns false if an overflow occured.
+// Returns false if an overflow occurred.
 // Used by CheckIntLinReifBounds() below: compute the bounds of the scalar
 // product. If an integer overflow occurs the method returns false.
 namespace {
@@ -1091,28 +1131,27 @@ bool ComputeLinBounds(const std::vector<int64>& coefficients,
 //         assign true to b is min == max == c0, or
 //         assign false to b if min > c0 or max < c0,
 //         or do nothing and keep the constraint active.
-bool Presolver::CheckIntLinReifBounds(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::CheckIntLinReifBounds(Constraint* ct,
+                                                       std::string* log) {
   DCHECK_EQ(ct->type, "int_lin_eq_reif");
   int64 lb = 0;
   int64 ub = 0;
   if (!ComputeLinBounds(ct->arguments[0].values, ct->arguments[1].variables,
                         &lb, &ub)) {
     log->append("overflow found when presolving");
-    return false;
+    return NOT_CHANGED;
   }
   const int64 value = ct->arguments[2].Value();
   if (value < lb || value > ub) {
     log->append("assign boolean to false");
-    ct->arguments[3].Var()->domain.IntersectWithSingleton(0);
-    ct->MarkAsInactive();
-    return true;
+    IntersectVarWithSingleton(ct->arguments[3].Var(), 0);
+    return CONSTRAINT_ALWAYS_TRUE;
   } else if (value == lb && value == ub) {
     log->append("assign boolean to true");
-    ct->arguments[3].Var()->domain.IntersectWithSingleton(1);
-    ct->MarkAsInactive();
-    return true;
+    IntersectVarWithSingleton(ct->arguments[3].Var(), 1);
+    return CONSTRAINT_ALWAYS_TRUE;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Marks target variable: int_lin_eq
@@ -1128,8 +1167,9 @@ bool Presolver::CheckIntLinReifBounds(Constraint* ct, std::string* log) {
 // Rule 2:
 // Input : int_lin_eq([c1, -1], [x1, x2], c0)
 // Output: int_lin_eq([c1, -1], [x1, x2], c0) => x2, mark x2.
-bool Presolver::CreateLinearTarget(Constraint* ct, std::string* log) {
-  if (ct->target_variable != nullptr) return false;
+Presolver::RuleStatus Presolver::CreateLinearTarget(Constraint* ct,
+                                                    std::string* log) {
+  if (ct->target_variable != nullptr) return NOT_CHANGED;
 
   for (const int var_index : {0, 1}) {
     if (ct->arguments[0].values.size() == 2 &&
@@ -1141,10 +1181,11 @@ bool Presolver::CreateLinearTarget(Constraint* ct, std::string* log) {
       IntegerVariable* const var = ct->arguments[1].variables[var_index];
       var->defining_constraint = ct;
       ct->target_variable = var;
-      return true;
+      MarkChangedVariable(var);  // To force a rescan of users of this var.
+      return CONSTRAINT_REWRITTEN;
     }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Propagates: array_int_element
@@ -1161,16 +1202,15 @@ bool Presolver::CreateLinearTarget(Constraint* ct, std::string* log) {
 // Rule 3:
 // Input : array_int_element(x, [c1, .., cn], y)
 // Action: Intersect the domain of y with the set of values.
-bool Presolver::PresolveArrayIntElement(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveArrayIntElement(Constraint* ct,
+                                                         std::string* log) {
   const int array_size = ct->arguments[1].values.size();
-  bool changed = false;
   if (ct->arguments[0].variables.size() == 1) {
     // Rule 1.
     if (ct->arguments[0].IsVariable() &&
         (ct->arguments[0].Var()->domain.Min() < 1 ||
          ct->arguments[0].Var()->domain.Max() > array_size)) {
-      ct->arguments[0].Var()->domain.IntersectWithInterval(1, array_size);
-      changed = true;
+      IntersectVarWithInterval(ct->arguments[0].Var(), 1, array_size);
     }
 
     // Rule 2.
@@ -1210,10 +1250,10 @@ bool Presolver::PresolveArrayIntElement(Constraint* ct, std::string* log) {
         StringAppendF(log, "filter index to [%" GG_LL_FORMAT "d..%" GG_LL_FORMAT
                            "d] and reduce array to size %" GG_LL_FORMAT "d",
                       first_index, last_index, last_index);
-        ct->arguments[0].Var()->domain.IntersectWithInterval(first_index,
-                                                             last_index);
+        IntersectVarWithInterval(ct->arguments[0].Var(), first_index,
+                                 last_index);
         ct->arguments[1].values.resize(last_index);
-        return true;
+        return CONSTRAINT_REWRITTEN;
       }
     }
   }
@@ -1231,17 +1271,20 @@ bool Presolver::PresolveArrayIntElement(Constraint* ct, std::string* log) {
 
     std::vector<int64> sorted_values(visited.begin(), visited.end());
     const std::string before = ct->arguments[2].Var()->DebugString();
-    ct->arguments[2].Var()->domain.IntersectWithListOfIntegers(sorted_values);
+    if (ct->arguments[2].Var()->domain.IntersectWithListOfIntegers(
+            sorted_values)) {
+      MarkChangedVariable(ct->arguments[2].Var());
+    }
     const std::string after = ct->arguments[2].Var()->DebugString();
     if (before != after) {
       log->append(StringPrintf(", reduce target variable from %s to %s",
                                before.c_str(), after.c_str()));
       ct->presolve_propagation_done = true;
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
 
-  return changed;
+  return NOT_CHANGED;
 }
 
 // Reverses a linear constraint: with negative coefficients.
@@ -1272,7 +1315,7 @@ bool Presolver::PresolveArrayIntElement(Constraint* ct, std::string* log) {
 //                     c0 - ck * xk.Value())
 //
 // TODO(user): The code is broken in case of integer-overflow.
-bool Presolver::PresolveLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveLinear(Constraint* ct, std::string* log) {
   // Rule 2a and 2b.
   if (ct->arguments[0].values.empty() || ct->arguments[1].IsArrayOfValues()) {
     log->append("rewrite constant linear equation");
@@ -1283,27 +1326,27 @@ bool Presolver::PresolveLinear(Constraint* ct, std::string* log) {
     const int64 rhs = ct->arguments[2].Value();
     if (ct->type == "int_lin_eq") {
       if (scalprod == rhs) {
-        ct->MarkAsInactive();
+        return CONSTRAINT_ALWAYS_TRUE;
       } else {
-        ct->SetAsFalse();
+        return CONSTRAINT_ALWAYS_FALSE;
       }
     } else if (ct->type == "int_lin_le") {
       if (scalprod <= rhs) {
-        ct->MarkAsInactive();
+        return CONSTRAINT_ALWAYS_TRUE;
       } else {
-        ct->SetAsFalse();
+        return CONSTRAINT_ALWAYS_FALSE;
       }
     } else if (ct->type == "int_lin_ge") {
       if (scalprod >= rhs) {
-        ct->MarkAsInactive();
+        return CONSTRAINT_ALWAYS_TRUE;
       } else {
-        ct->SetAsFalse();
+        return CONSTRAINT_ALWAYS_FALSE;
       }
     } else if (ct->type == "int_lin_ne") {
       if (scalprod != rhs) {
-        ct->MarkAsInactive();
+        return CONSTRAINT_ALWAYS_TRUE;
       } else {
-        ct->SetAsFalse();
+        return CONSTRAINT_ALWAYS_FALSE;
       }
       // Rule 3
     } else if (ct->type == "int_lin_eq_reif") {
@@ -1311,39 +1354,42 @@ bool Presolver::PresolveLinear(Constraint* ct, std::string* log) {
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(Argument::IntegerValue(scalprod == rhs));
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ge") {
       if (scalprod >= rhs) {
-        ct->MarkAsInactive();
+        return CONSTRAINT_ALWAYS_TRUE;
       } else {
-        ct->SetAsFalse();
+        return CONSTRAINT_ALWAYS_FALSE;
       }
     } else if (ct->type == "int_lin_ge_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(Argument::IntegerValue(scalprod >= rhs));
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_le") {
       if (scalprod <= rhs) {
-        ct->MarkAsInactive();
+        return CONSTRAINT_ALWAYS_TRUE;
       } else {
-        ct->SetAsFalse();
+        return CONSTRAINT_ALWAYS_FALSE;
       }
     } else if (ct->type == "int_lin_le_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(Argument::IntegerValue(scalprod <= rhs));
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne_reif") {
       ct->type = "bool_eq";
       ct->arguments[0] = ct->arguments[3];
       ct->arguments.resize(1);
       ct->arguments.push_back(Argument::IntegerValue(scalprod != rhs));
+      return CONSTRAINT_REWRITTEN;
     }
-    return true;
   }
 
   if (ct->arguments[0].values.empty()) {
-    return false;
+    return NOT_CHANGED;
   }
   // From now on, we assume the linear part is not empty.
 
@@ -1373,20 +1419,20 @@ bool Presolver::PresolveLinear(Constraint* ct, std::string* log) {
       vars.resize(new_size);
       coeffs.resize(new_size);
       ct->arguments[2] = Argument::IntegerValue(new_rhs);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
 
   // Rule 1.
   for (const int64 coef : ct->arguments[0].values) {
     if (coef > 0) {
-      return false;
+      return NOT_CHANGED;
     }
   }
   if (ct->target_variable != nullptr) {
     for (IntegerVariable* const var : ct->arguments[1].variables) {
       if (var == ct->target_variable) {
-        return false;
+        return NOT_CHANGED;
       }
     }
   }
@@ -1408,16 +1454,16 @@ bool Presolver::PresolveLinear(Constraint* ct, std::string* log) {
   } else if (ct->type == "int_lin_ge_reif") {
     ct->type = "int_lin_le_reif";
   }
-  return true;
+  return CONSTRAINT_REWRITTEN;
 }
 
 // Regroup linear term with the same variable.
 // Input : int_lin_xxx([c1, .., cn], [x1, .., xn], c0) with xi = xj
 // Output: int_lin_xxx([c1, .., ci + cj, .., cn], [x1, .., xi, .., xn], c0)
-bool Presolver::RegroupLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::RegroupLinear(Constraint* ct, std::string* log) {
   if (ct->arguments[1].variables.empty()) {
     // Only constants, or size == 0.
-    return false;
+    return NOT_CHANGED;
   }
   std::unordered_map<const IntegerVariable*, int64> coefficients;
   const int original_size = ct->arguments[0].values.size();
@@ -1446,9 +1492,9 @@ bool Presolver::RegroupLinear(Constraint* ct, std::string* log) {
     CHECK_EQ(index + zero, coefficients.size());
     ct->arguments[0].values.resize(index);
     ct->arguments[1].variables.resize(index);
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Bound propagation: int_lin_eq, int_lin_le, int_lin_ge
@@ -1461,23 +1507,23 @@ bool Presolver::RegroupLinear(Constraint* ct, std::string* log) {
 // Rule 2:
 // Input : int_lin_xx([c1], [x1], c0) with c1 >= 0, and xx = eq, ge.
 // Action: intersect the domain of x1 with [c0/c1, kint64max]
-bool Presolver::PropagatePositiveLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PropagatePositiveLinear(Constraint* ct,
+                                                         std::string* log) {
   const int64 rhs = ct->arguments[2].Value();
   if (ct->presolve_propagation_done || rhs < 0 ||
       ct->arguments[1].variables.empty()) {
-    return false;
+    return NOT_CHANGED;
   }
   for (const int64 coef : ct->arguments[0].values) {
     if (coef < 0) {
-      return false;
+      return NOT_CHANGED;
     }
   }
   for (IntegerVariable* const var : ct->arguments[1].variables) {
     if (var->domain.Min() < 0) {
-      return false;
+      return NOT_CHANGED;
     }
   }
-  bool modified = false;
   if (ct->type != "int_lin_ge") {
     // Rule 1.
     log->append("propagate constants");
@@ -1489,8 +1535,7 @@ bool Presolver::PropagatePositiveLinear(Constraint* ct, std::string* log) {
         if (bound < var->domain.Max()) {
           StringAppendF(log, ", intersect %s with [0..%" GG_LL_FORMAT "d]",
                         var->DebugString().c_str(), bound);
-          var->domain.IntersectWithInterval(0, bound);
-          modified = true;
+          IntersectVarWithInterval(var, 0, bound);
         }
       }
     }
@@ -1503,13 +1548,12 @@ bool Presolver::PropagatePositiveLinear(Constraint* ct, std::string* log) {
     if (bound > var->domain.Min()) {
       StringAppendF(log, ", intersect %s with [%" GG_LL_FORMAT "d .. INT_MAX]",
                     var->DebugString().c_str(), bound);
-      var->domain.IntersectWithInterval(bound, kint64max);
-      ct->MarkAsInactive();
-      modified = true;
+      IntersectVarWithInterval(var, bound, kint64max);
+      return CONSTRAINT_ALWAYS_TRUE;
     }
   }
   ct->presolve_propagation_done = true;
-  return modified;
+  return NOT_CHANGED;
 }
 
 // Input: int_lin_xx([c1, .., cn], [x1, .., xn],  rhs)
@@ -1517,9 +1561,9 @@ bool Presolver::PropagatePositiveLinear(Constraint* ct, std::string* log) {
 // Computes the bounds on the rhs.
 // Rule1: remove always true/false constraint or fix the reif Boolean.
 // Rule2: transform ne/eq to gt/ge/lt/le if rhs is at one bound of its domain.
-bool Presolver::SimplifyLinear(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::SimplifyLinear(Constraint* ct, std::string* log) {
   const int64 rhs = ct->arguments[2].Value();
-  if (ct->arguments[1].variables.empty()) return false;
+  if (ct->arguments[1].variables.empty()) return NOT_CHANGED;
 
   int64 rhs_min = 0;
   int64 rhs_max = 0;
@@ -1544,92 +1588,82 @@ bool Presolver::SimplifyLinear(Constraint* ct, std::string* log) {
   }
   if (ct->type == "int_lin_ge") {
     if (rhs_min >= rhs) {
-      ct->MarkAsInactive();
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     } else if (rhs_max < rhs) {
-      ct->SetAsFalse();
-      return true;
+      return CONSTRAINT_ALWAYS_FALSE;
     }
-    return false;
   }
   if (ct->type == "int_lin_ge_reif") {
     if (rhs_min >= rhs) {
       SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (rhs_max < rhs) {
       SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
-    return false;
   }
   if (ct->type == "int_lin_le") {
     if (rhs_min > rhs) {
-      ct->SetAsFalse();
-      return true;
+      return CONSTRAINT_ALWAYS_FALSE;
     } else if (rhs_max <= rhs) {
-      ct->MarkAsInactive();
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     }
-    return false;
   }
   if (ct->type == "int_lin_le_reif") {
     if (rhs_min > rhs) {
       SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (rhs_max <= rhs) {
       SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
-    return false;
   }
   if (rhs < rhs_min || rhs > rhs_max) {
     if (ct->type == "int_lin_eq") {
-      ct->SetAsFalse();
-      return true;
+      return CONSTRAINT_ALWAYS_FALSE;
     } else if (ct->type == "int_lin_eq_reif") {
       SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 0);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne") {
-      ct->MarkAsInactive();
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     } else if (ct->type == "int_lin_ne_reif") {
       SetConstraintAsIntEq(ct, ct->arguments[3].Var(), 1);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   } else if (rhs == rhs_min) {
     if (ct->type == "int_lin_eq") {
       ct->type = "int_lin_le";
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_eq_reif") {
       ct->type = "int_lin_le_reif";
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne") {
       ct->type = "int_lin_ge";
       ct->arguments[2] = Argument::IntegerValue(rhs + 1);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne_reif") {
       ct->type = "int_lin_ge_reif";
       ct->arguments[2] = Argument::IntegerValue(rhs + 1);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   } else if (rhs == rhs_max) {
     if (ct->type == "int_lin_eq") {
       ct->type = "int_lin_ge";
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_eq_reif") {
       ct->type = "int_lin_ge_reif";
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne") {
       ct->type = "int_lin_le";
       ct->arguments[2] = Argument::IntegerValue(rhs - 1);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else if (ct->type == "int_lin_ne_reif") {
       ct->type = "int_lin_le_reif";
       ct->arguments[2] = Argument::IntegerValue(rhs - 1);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Minizinc flattens 2d element constraints (x = A[y][z]) into 1d element
@@ -1637,10 +1671,10 @@ bool Presolver::SimplifyLinear(Constraint* ct, std::string* log) {
 // This rule stores the mapping to reconstruct the 2d element constraint.
 // This mapping can involve 1 or 2 variables dependening if y or z in A[y][z]
 // is a constant in the model).
-bool Presolver::PresolveStoreMapping(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveStoreMapping(Constraint* ct,
+                                                      std::string* log) {
   if (ct->arguments[1].variables.empty()) {
     // Constant linear constraint (no variables).
-    return false;
   }
   if (ct->arguments[0].values.size() == 2 &&
       ct->arguments[1].variables[0] == ct->target_variable &&
@@ -1650,8 +1684,9 @@ bool Presolver::PresolveStoreMapping(Constraint* ct, std::string* log) {
     affine_map_[ct->target_variable] =
         AffineMapping(ct->arguments[1].variables[1], ct->arguments[0].values[1],
                       -ct->arguments[2].Value(), ct);
+    MarkChangedVariable(ct->target_variable);
     log->append("store affine mapping");
-    return true;
+    return CONTEXT_CHANGED;
   }
   if (ct->arguments[0].values.size() == 2 &&
       ct->arguments[1].variables[1] == ct->target_variable &&
@@ -1661,7 +1696,8 @@ bool Presolver::PresolveStoreMapping(Constraint* ct, std::string* log) {
         AffineMapping(ct->arguments[1].variables[0], ct->arguments[0].values[0],
                       -ct->arguments[2].Value(), ct);
     log->append("store affine mapping");
-    return true;
+    MarkChangedVariable(ct->target_variable);
+    return CONTEXT_CHANGED;
   }
   if (ct->arguments[0].values.size() == 3 &&
       ct->arguments[1].variables[0] == ct->target_variable &&
@@ -1672,7 +1708,8 @@ bool Presolver::PresolveStoreMapping(Constraint* ct, std::string* log) {
         ct->arguments[1].variables[1], ct->arguments[0].values[1],
         ct->arguments[1].variables[2], -ct->arguments[2].Value(), ct);
     log->append("store affine mapping");
-    return true;
+    MarkChangedVariable(ct->target_variable);
+    return CONTEXT_CHANGED;
   }
   if (ct->arguments[0].values.size() == 3 &&
       ct->arguments[1].variables[0] == ct->target_variable &&
@@ -1683,7 +1720,8 @@ bool Presolver::PresolveStoreMapping(Constraint* ct, std::string* log) {
         ct->arguments[1].variables[2], ct->arguments[0].values[2],
         ct->arguments[1].variables[1], -ct->arguments[2].Value(), ct);
     log->append("store affine mapping");
-    return true;
+    MarkChangedVariable(ct->target_variable);
+    return CONTEXT_CHANGED;
   }
   if (ct->arguments[0].values.size() == 3 &&
       ct->arguments[1].variables[2] == ct->target_variable &&
@@ -1693,7 +1731,8 @@ bool Presolver::PresolveStoreMapping(Constraint* ct, std::string* log) {
         ct->arguments[1].variables[0], ct->arguments[0].values[0],
         ct->arguments[1].variables[1], -ct->arguments[2].Value(), ct);
     log->append("store affine mapping");
-    return true;
+    MarkChangedVariable(ct->target_variable);
+    return CONTEXT_CHANGED;
   }
   if (ct->arguments[0].values.size() == 3 &&
       ct->arguments[1].variables[2] == ct->target_variable &&
@@ -1703,9 +1742,10 @@ bool Presolver::PresolveStoreMapping(Constraint* ct, std::string* log) {
         ct->arguments[1].variables[1], ct->arguments[0].values[1],
         ct->arguments[1].variables[0], -ct->arguments[2].Value(), ct);
     log->append("store affine mapping");
-    return true;
+    MarkChangedVariable(ct->target_variable);
+    return CONTEXT_CHANGED;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 namespace {
@@ -1749,9 +1789,10 @@ bool IsIncreasingAndContiguous(const std::vector<int64>& values) {
 // Rule 6:
 // Input : array_int_element(x, [c1, .., cn], y)
 // Output: Remove unreachable values from x.
-bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveSimplifyElement(Constraint* ct,
+                                                         std::string* log) {
   if (ct->arguments[0].variables.size() > 1) {
-    return false;
+    return NOT_CHANGED;
   }
 
   // Rule 1a.
@@ -1763,14 +1804,15 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
     if (ct->arguments[2].HasOneValue()) {
       const int64 target = ct->arguments[2].Value();
       if (value == target) {
-        ct->MarkAsInactive();
+        return CONSTRAINT_ALWAYS_TRUE;
       } else {
-        ct->SetAsFalse();
+        return CONSTRAINT_ALWAYS_FALSE;
       }
     } else {
       SetConstraintAsIntEq(ct, ct->arguments[2].Var(), value);
+      return CONSTRAINT_REWRITTEN;
     }
-    return true;
+    return NOT_CHANGED;
   }
 
   // Rule 1b.
@@ -1791,7 +1833,7 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
     ct->arguments[1] = Argument::IntegerList(indices);
     ct->RemoveArg(2);
     FZVLOG << "  -> " << ct->DebugString() << FZENDL;
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
   IntegerVariable* const index_var = ct->arguments[0].Var();
@@ -1802,7 +1844,7 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
     const Domain& domain = mapping.variable->domain;
     if (domain.is_interval && domain.values.empty()) {
       // Invalid case. Ignore it.
-      return false;
+      return NOT_CHANGED;
     }
     if (domain.values[0] == 0 && mapping.coefficient == 1 &&
         mapping.offset > 1 && index_var->domain.is_interval) {
@@ -1818,7 +1860,8 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
       affine_map_[index_var].offset = 1;
       index_var->domain.values[0] -= offset;
       index_var->domain.values[1] -= offset;
-      return true;
+      MarkChangedVariable(index_var);
+      return CONSTRAINT_REWRITTEN;
     } else if (mapping.offset + mapping.coefficient > 0 &&
                domain.values[0] > 0) {
       const std::vector<int64>& values = ct->arguments[1].values;
@@ -1826,7 +1869,7 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
       for (int64 i = 1; i <= domain.values.back(); ++i) {
         const int64 index = i * mapping.coefficient + mapping.offset - 1;
         if (index < 0) {
-          return false;
+          return NOT_CHANGED;
         }
         if (index > values.size()) {
           break;
@@ -1836,8 +1879,8 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
       // Rewrite constraint.
       log->append("simplify constraint");
       ct->arguments[0].variables[0] = mapping.variable;
-      ct->arguments[0].variables[0]->domain.IntersectWithInterval(
-          1, new_values.size());
+      IntersectVarWithInterval(ct->arguments[0].variables[0], 1,
+                               new_values.size());
       // TODO(user): Encapsulate argument setters.
       ct->arguments[1].values.swap(new_values);
       if (ct->arguments[1].values.size() == 1) {
@@ -1848,7 +1891,7 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
       // Mark old index var and affine constraint as presolved out.
       mapping.constraint->MarkAsInactive();
       index_var->active = false;
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
 
@@ -1869,8 +1912,7 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
     }
     index_var->active = false;
     mapping.constraint->MarkAsInactive();
-    // TODO(user): Check if presolve is valid.
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
   // Rule 4.
@@ -1879,7 +1921,7 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
     ct->arguments[1].values.resize(index_var->domain.Max());
     ct->presolve_propagation_done = false;
     log->append("reduce array");
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
   // Rule 5.
@@ -1899,7 +1941,7 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
       ct->arguments[1] = Argument::IntVarRefArray({target, index});
       ct->arguments[2] = Argument::IntegerValue(1 - start);
     }
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
   // Rule 6.
@@ -1939,16 +1981,18 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
         }
       }
       if (remove_some) {
-        ct->arguments[0].Var()->domain.IntersectWithListOfIntegers(to_keep);
+        if (ct->arguments[0].Var()->domain.IntersectWithListOfIntegers(
+                to_keep)) {
+          MarkChangedVariable(ct->arguments[0].Var());
+        }
         log->append(
             StringPrintf("reduce index domain to %s",
                          ct->arguments[0].Var()->DebugString().c_str()));
-        return true;
       }
     }
   }
 
-  return false;
+  return NOT_CHANGED;
 }
 
 // Simplifies array_var_int_element
@@ -1969,7 +2013,8 @@ bool Presolver::PresolveSimplifyElement(Constraint* ct, std::string* log) {
 // Rule4:
 // Input : array_var_int_element(x0, [x1, .., xn], y)
 // Output: remove from the domain of x0 the value for which whe know xi != y
-bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveSimplifyExprElement(Constraint* ct,
+                                                             std::string* log) {
   // Rule 1.
   bool all_fixed = true;
   for (IntegerVariable* const var : ct->arguments[1].variables) {
@@ -1987,7 +2032,7 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
           ct->arguments[1].variables[i]->domain.Min());
     }
     ct->arguments[1].variables.clear();
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
   // Rule 2.
@@ -1998,7 +2043,7 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
     ct->type = "int_eq";
     ct->arguments[0] = Argument::IntVarRef(ct->arguments[1].variables[index]);
     ct->RemoveArg(1);
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
   // Rule 3.
@@ -2009,14 +2054,14 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
     if ((domain.is_interval && domain.values.empty()) ||
         domain.values[0] != 1 || mapping.offset + mapping.coefficient <= 0) {
       // Invalid case. Ignore it.
-      return false;
+      return NOT_CHANGED;
     }
     const std::vector<IntegerVariable*>& vars = ct->arguments[1].variables;
     std::vector<IntegerVariable*> new_vars;
     for (int64 i = domain.values.front(); i <= domain.values.back(); ++i) {
       const int64 index = i * mapping.coefficient + mapping.offset - 1;
       if (index < 0) {
-        return false;
+        return NOT_CHANGED;
       }
       if (index >= vars.size()) {
         break;
@@ -2033,7 +2078,7 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
     // Mark old index var and affine constraint as presolved out.
     mapping.constraint->MarkAsInactive();
     index_var->active = false;
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   if (index_var->domain.is_interval && index_var->domain.values.size() == 2 &&
       index_var->domain.Max() < ct->arguments[1].variables.size()) {
@@ -2041,7 +2086,7 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
     ct->arguments[1].variables.resize(index_var->domain.Max());
     ct->presolve_propagation_done = false;
     log->append("reduce array");
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
 
   // Rule 4.
@@ -2073,14 +2118,15 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
       }
     }
     if (remove_some) {
-      ct->arguments[0].Var()->domain.IntersectWithListOfIntegers(to_keep);
+      if (ct->arguments[0].Var()->domain.IntersectWithListOfIntegers(to_keep)) {
+        MarkChangedVariable(ct->arguments[0].Var());
+      }
       log->append(StringPrintf("reduce index domain to %s",
                                ct->arguments[0].Var()->DebugString().c_str()));
-      return true;
     }
   }
 
-  return false;
+  return NOT_CHANGED;
 }
 
 // Propagate reified comparison: int_eq_reif, int_ge_reif, int_le_reif:
@@ -2107,7 +2153,8 @@ bool Presolver::PresolveSimplifyExprElement(Constraint* ct, std::string* log) {
 // Action: Assign b to true or false if this can be decided from the domain of
 //         x and y.
 // Output: inactive constraint if b was assigned a value.
-bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PropagateReifiedComparisons(Constraint* ct,
+                                                             std::string* log) {
   const std::string& id = ct->type;
   if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable() &&
       ct->arguments[0].variables[0] == ct->arguments[1].variables[0]) {
@@ -2119,9 +2166,8 @@ bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
          ct->arguments[2].Value() == static_cast<int64>(value)) ||
         !ct->arguments[2].HasOneValue()) {
       log->append("propagate boolvar to value");
-      ct->arguments[2].Var()->domain.IntersectWithSingleton(value);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[2].Var(), value);
+      return CONSTRAINT_ALWAYS_TRUE;
     }
   }
 
@@ -2145,9 +2191,8 @@ bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
     }
     if (state != 2) {
       StringAppendF(log, "assign boolvar to %s", state == 0 ? "false" : "true");
-      ct->arguments[2].Var()->domain.IntersectWithSingleton(state);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[2].Var(), state);
+      return CONSTRAINT_ALWAYS_TRUE;
     }
   }
 
@@ -2177,7 +2222,7 @@ bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
       ct->arguments.push_back(Argument::IntVarRef(var));
       ct->arguments.push_back(target);
       ct->type = parity ? "bool_eq" : "bool_not";
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else {
       // Rule 3.
       int state = 2;  // 0 force_false, 1 force true, 2 unknown.
@@ -2235,9 +2280,8 @@ bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
       if (state != 2) {
         StringAppendF(log, "assign boolvar to %s",
                       state == 0 ? "false" : "true");
-        ct->arguments[2].Var()->domain.IntersectWithSingleton(state);
-        ct->MarkAsInactive();
-        return true;
+        IntersectVarWithSingleton(ct->arguments[2].Var(), state);
+        return CONSTRAINT_ALWAYS_TRUE;
       }
     }
   }
@@ -2283,16 +2327,15 @@ bool Presolver::PropagateReifiedComparisons(Constraint* ct, std::string* log) {
     }
     if (state != 2) {
       StringAppendF(log, "assign boolvar to %s", state == 0 ? "false" : "true");
-      ct->arguments[2].Var()->domain.IntersectWithSingleton(state);
-      ct->MarkAsInactive();
-      return true;
+      IntersectVarWithSingleton(ct->arguments[2].Var(), state);
+      return CONSTRAINT_ALWAYS_TRUE;
     }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Stores the existence of int_eq_reif(x, y, b)
-bool Presolver::StoreIntEqReif(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::StoreIntEqReif(Constraint* ct, std::string* log) {
   if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable() &&
       ct->arguments[2].IsVariable()) {
     IntegerVariable* const first = ct->arguments[0].Var();
@@ -2300,20 +2343,23 @@ bool Presolver::StoreIntEqReif(Constraint* ct, std::string* log) {
     IntegerVariable* const boolvar = ct->arguments[2].Var();
     if (ContainsKey(int_eq_reif_map_, first) &&
         ContainsKey(int_eq_reif_map_[first], second)) {
-      return false;
+      return NOT_CHANGED;
     }
     log->append("store eq_var info");
     int_eq_reif_map_[first][second] = boolvar;
     int_eq_reif_map_[second][first] = boolvar;
-    return true;
+    MarkChangedVariable(first);
+    MarkChangedVariable(second);
+    return CONTEXT_CHANGED;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Merge symmetrical int_eq_reif and int_ne_reif
 // Input: int_eq_reif(x, y, b1) && int_ne_reif(x, y, b2)
 // Output: int_eq_reif(x, y, b1) && bool_not(b1, b2)
-bool Presolver::SimplifyIntNeReif(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::SimplifyIntNeReif(Constraint* ct,
+                                                   std::string* log) {
   if (ct->arguments[0].IsVariable() && ct->arguments[1].IsVariable() &&
       ct->arguments[2].IsVariable() &&
       ContainsKey(int_eq_reif_map_, ct->arguments[0].Var()) &&
@@ -2326,15 +2372,28 @@ bool Presolver::SimplifyIntNeReif(Constraint* ct, std::string* log) {
     ct->arguments[1] = Argument::IntVarRef(ct->arguments[2].Var());
     ct->RemoveArg(2);
     ct->type = "bool_not";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
+}
+
+// Store the mapping x = abs(y) for future use.
+Presolver::RuleStatus Presolver::StoreAbs(Constraint* ct, std::string* log) {
+  if (!ContainsKey(abs_map_, ct->arguments[1].Var())) {
+    // Stores abs() map.
+    log->append("Store abs map");
+    abs_map_[ct->arguments[1].Var()] = ct->arguments[0].Var();
+    MarkChangedVariable(ct->arguments[1].Var());
+    return CONTEXT_CHANGED;
+  }
+  return NOT_CHANGED;
 }
 
 // Remove abs from int_le_reif.
 // Input : int_le_reif(x, 0, b) or int_le_reif(x,c, b) with x == abs(y)
 // Output: int_eq_reif(y, 0, b) or set_in_reif(y, [-c, c], b)
-bool Presolver::RemoveAbsFromIntLeReif(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::RemoveAbsFromIntLeReif(Constraint* ct,
+                                                        std::string* log) {
   if (ct->arguments[1].HasOneValue() &&
       ContainsKey(abs_map_, ct->arguments[0].Var())) {
     log->append("remove abs from constraint");
@@ -2342,16 +2401,30 @@ bool Presolver::RemoveAbsFromIntLeReif(Constraint* ct, std::string* log) {
     const int64 value = ct->arguments[1].Value();
     if (value == 0) {
       ct->type = "int_eq_reif";
-      return true;
+      return CONSTRAINT_REWRITTEN;
     } else {
       ct->type = "set_in_reif";
       ct->arguments[1] = Argument::Interval(-value, value);
       // set_in_reif does not implement reification.
       ct->RemoveTargetVariable();
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
-  return false;
+  return NOT_CHANGED;
+}
+
+// Simplifies int_eq and int_ne[_reif] with abs
+// Input : int_eq(x, 0) or int_ne(x, 0) with x == abs(y)
+// Output: int_eq(y, 0) or int_ne(y, 0)
+Presolver::RuleStatus Presolver::RemoveAbsFromIntEqNeReif(Constraint* ct,
+                                                          std::string* log) {
+  if (ct->arguments[1].HasOneValue() && ct->arguments[1].Value() == 0 &&
+      ContainsKey(abs_map_, ct->arguments[0].Var())) {
+    log->append("remove abs from constraint");
+    ct->arguments[0].variables[0] = abs_map_[ct->arguments[0].Var()];
+    return CONSTRAINT_REWRITTEN;
+  }
+  return NOT_CHANGED;
 }
 
 // Propagate bool_xor
@@ -2366,14 +2439,14 @@ bool Presolver::RemoveAbsFromIntLeReif(Constraint* ct, std::string* log) {
 // Rule 3:
 // Input : bool_xor(b1, b2, t)
 // Action: bool_not(b1, b2) if t = true, bool_eq(b1, b2) if t = false.
-bool Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
   if (ct->arguments[0].HasOneValue()) {
     // Rule 1.
     const int64 value = ct->arguments[0].Value();
     log->append("simplify constraint");
     ct->RemoveArg(0);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   if (ct->arguments[1].HasOneValue()) {
     // Rule 2.
@@ -2381,7 +2454,7 @@ bool Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
     log->append("simplify constraint");
     ct->RemoveArg(1);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   if (ct->arguments[2].HasOneValue()) {
     // Rule 3.
@@ -2389,9 +2462,9 @@ bool Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
     log->append("simplify constraint");
     ct->RemoveArg(2);
     ct->type = value == 1 ? "bool_not" : "bool_eq";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Propagates bool_not
@@ -2413,19 +2486,17 @@ bool Presolver::PresolveBoolXor(Constraint* ct, std::string* log) {
 // Rule 4:
 // Input : bool_not(b1, b2)
 // Output: bool_not(b1, b2) => b2 if b2 is not already a target variable.
-bool Presolver::PresolveBoolNot(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveBoolNot(Constraint* ct, std::string* log) {
   if (ct->arguments[0].HasOneValue() && ct->arguments[1].IsVariable()) {
     const int64 value = ct->arguments[0].Value() == 0;
     log->append("propagate constants");
-    ct->arguments[1].Var()->domain.IntersectWithSingleton(value);
-    ct->MarkAsInactive();
-    return true;
+    IntersectVarWithSingleton(ct->arguments[1].Var(), value);
+    return CONSTRAINT_ALWAYS_TRUE;
   } else if (ct->arguments[1].HasOneValue() && ct->arguments[0].IsVariable()) {
     const int64 value = ct->arguments[1].Value() == 0;
     log->append("propagate constants");
-    ct->arguments[0].Var()->domain.IntersectWithSingleton(value);
-    ct->MarkAsInactive();
-    return true;
+    IntersectVarWithSingleton(ct->arguments[0].Var(), value);
+    return CONSTRAINT_ALWAYS_TRUE;
   } else if (ct->target_variable == nullptr &&
              ct->arguments[0].Var()->defining_constraint == nullptr &&
              !ct->arguments[0].Var()->domain.HasOneValue()) {
@@ -2433,7 +2504,8 @@ bool Presolver::PresolveBoolNot(Constraint* ct, std::string* log) {
     IntegerVariable* const var = ct->arguments[0].Var();
     ct->target_variable = var;
     var->defining_constraint = ct;
-    return true;
+    MarkChangedVariable(var);
+    return CONSTRAINT_REWRITTEN;
   } else if (ct->target_variable == nullptr &&
              ct->arguments[1].Var()->defining_constraint == nullptr &&
              !ct->arguments[1].Var()->domain.HasOneValue()) {
@@ -2441,9 +2513,10 @@ bool Presolver::PresolveBoolNot(Constraint* ct, std::string* log) {
     IntegerVariable* const var = ct->arguments[1].Var();
     ct->target_variable = var;
     var->defining_constraint = ct;
-    return true;
+    MarkChangedVariable(var);
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Simplify bool_clause
@@ -2468,7 +2541,8 @@ bool Presolver::PresolveBoolNot(Constraint* ct, std::string* log) {
 //         - if one of the bi is true, mark as inactive.
 //         - remove all the Bi fixed to true.
 //         - if one of the Bi is false, mark as inactive.
-bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveBoolClause(Constraint* ct,
+                                                    std::string* log) {
   // Rule 1.
   if (ct->arguments[0].variables.size() == 1 &&
       ct->arguments[1].variables.size() == 1) {
@@ -2477,7 +2551,7 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     ct->arguments[0].type = Argument::INT_VAR_REF;
     ct->arguments[1].type = Argument::INT_VAR_REF;
     ct->type = "bool_le";
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
   // Rule 2.
   if (ct->arguments[0].variables.empty() &&
@@ -2486,13 +2560,12 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     log->append("simplify constraint");
     const int64 value = ct->arguments[0].values.front();
     if (value) {
-      ct->MarkAsInactive();
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     } else {
       ct->arguments[0] = Argument::IntVarRef(ct->arguments[1].Var());
       ct->arguments[1] = Argument::IntegerValue(0);
       ct->type = "bool_eq";
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
   // Rule 3.
@@ -2501,16 +2574,15 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     if (ct->arguments[1].Value()) {
       if (ct->arguments[0].variables.size() > 1) {
         ct->type = "array_bool_or";
-        return true;
+        return CONSTRAINT_REWRITTEN;
       } else if (ct->arguments[0].variables.size() == 1) {
         ct->arguments[0].type = Argument::INT_VAR_REF;
         ct->arguments[1].type = Argument::INT_VALUE;
         ct->type = "bool_eq";
-        return true;
+        return CONSTRAINT_REWRITTEN;
       }
     } else {
-      ct->MarkAsInactive();
-      return true;
+      return CONSTRAINT_ALWAYS_TRUE;
     }
   }
 
@@ -2520,8 +2592,7 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     for (IntegerVariable* var : ct->arguments[0].variables) {
       if (var->domain.HasOneValue()) {
         if (var->domain.Value() == 1) {
-          ct->MarkAsInactive();
-          return true;
+          return CONSTRAINT_ALWAYS_TRUE;
         }
       } else {
         new_vars.push_back(var);
@@ -2529,7 +2600,7 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     }
     if (new_vars.size() < ct->arguments[0].variables.size()) {
       ct->arguments[0].variables.swap(new_vars);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
 
@@ -2539,8 +2610,7 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     for (IntegerVariable* var : ct->arguments[1].variables) {
       if (var->domain.HasOneValue()) {
         if (var->domain.Value() == 0) {
-          ct->MarkAsInactive();
-          return true;
+          return CONSTRAINT_ALWAYS_TRUE;
         }
       } else {
         new_vars.push_back(var);
@@ -2548,10 +2618,10 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
     }
     if (new_vars.size() < ct->arguments[1].variables.size()) {
       ct->arguments[1].variables.swap(new_vars);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Simplify boolean formula: int_lin_eq
@@ -2575,7 +2645,8 @@ bool Presolver::PresolveBoolClause(Constraint* ct, std::string* log) {
 // Rule 5:
 // Input : int_lin_eq_reif([1, 1], [b1, true], 1, b0)
 // Output: bool_not(b1, b0)
-bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::SimplifyIntLinEqReif(Constraint* ct,
+                                                      std::string* log) {
   if (ct->arguments[0].values.size() == 2 && ct->arguments[0].values[0] == 1 &&
       ct->arguments[0].values[1] == 1 && ct->arguments[2].Value() == 1) {
     IntegerVariable* const left = ct->arguments[1].variables[0];
@@ -2590,7 +2661,7 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
       ct->arguments[1] = Argument::IntVarRef(right);
       ct->arguments[2] = Argument::IntVarRef(target);
       ct->RemoveArg(3);
-      return true;
+      return CONSTRAINT_REWRITTEN;
     }
     if (Has01Values(right) && left->domain.HasOneValue() &&
         Is0Or1(left->domain.Min())) {
@@ -2602,7 +2673,7 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
         ct->arguments[1] = Argument::IntVarRef(target);
         ct->RemoveArg(3);
         ct->RemoveArg(2);
-        return true;
+        return CONSTRAINT_REWRITTEN;
       } else {
         // Rule 3.
         log->append("rewrite constraint to bool_not");
@@ -2611,7 +2682,7 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
         ct->arguments[1] = Argument::IntVarRef(target);
         ct->RemoveArg(3);
         ct->RemoveArg(2);
-        return true;
+        return CONSTRAINT_REWRITTEN;
       }
     } else if (Has01Values(left) && right->domain.HasOneValue() &&
                Is0Or1(right->domain.Min())) {
@@ -2623,7 +2694,7 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
         ct->arguments[1] = Argument::IntVarRef(target);
         ct->RemoveArg(3);
         ct->RemoveArg(2);
-        return true;
+        return CONSTRAINT_REWRITTEN;
       } else {
         // Rule 5.
         log->append("rewrite constraint to bool_not");
@@ -2632,33 +2703,34 @@ bool Presolver::SimplifyIntLinEqReif(Constraint* ct, std::string* log) {
         ct->arguments[1] = Argument::IntVarRef(target);
         ct->RemoveArg(3);
         ct->RemoveArg(2);
-        return true;
+        return CONSTRAINT_REWRITTEN;
       }
     }
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Remove target variable from int_mod if bound.
 //
 // Input : int_mod(x1, x2, x3)  => x3
 // Output: int_mod(x1, x2, x3) if x3 has only one value.
-bool Presolver::PresolveIntMod(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveIntMod(Constraint* ct, std::string* log) {
   if (ct->target_variable != nullptr &&
       ct->arguments[2].Var() == ct->target_variable &&
       ct->arguments[2].HasOneValue()) {
+    MarkChangedVariable(ct->target_variable);
     ct->target_variable->defining_constraint = nullptr;
     ct->target_variable = nullptr;
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
 // Remove invalid tuples, remove unreached values from domain variables.
 //
-bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
   if (ct->arguments[0].variables.empty()) {
-    return false;
+    return NOT_CHANGED;
   }
   const int num_vars = ct->arguments[0].variables.size();
   CHECK_EQ(0, ct->arguments[1].values.size() % num_vars);
@@ -2686,38 +2758,31 @@ bool Presolver::PresolveTableInt(Constraint* ct, std::string* log) {
       ignored_tuples++;
     }
   }
+  // Reduce variables domains.
+  for (int var_index = 0; var_index < num_vars; ++var_index) {
+    IntegerVariable* const var = ct->arguments[0].variables[var_index];
+    // Store domain info to detect change.
+    std::vector<int64> values(next_values[var_index].begin(),
+                              next_values[var_index].end());
+    if (var->domain.IntersectWithListOfIntegers(values)) {
+      MarkChangedVariable(var);
+    }
+  }
   // Removed invalid tuples.
   if (ignored_tuples > 0) {
     log->append(StringPrintf("removed %i tuples", ignored_tuples));
     ct->arguments[1].values.swap(new_tuples);
+    return CONSTRAINT_REWRITTEN;
   }
-  // Reduce variables domains.
-  bool variable_changed = false;
-  for (int var_index = 0; var_index < num_vars; ++var_index) {
-    IntegerVariable* const var = ct->arguments[0].variables[var_index];
-    // Store domain info to detect change.
-    const bool is_interval = var->domain.is_interval;
-    const int vsize = var->domain.values.size();
-    const int vmin =
-        var->domain.values.empty() ? 0 : var->domain.values.front();
-    const int vmax = var->domain.values.empty() ? 0 : var->domain.values.back();
-    std::vector<int64> values(next_values[var_index].begin(),
-                              next_values[var_index].end());
-    // TODO(user): Add return value that indicates change to IntersectXXX().
-    var->domain.IntersectWithListOfIntegers(values);
-    variable_changed |= is_interval != var->domain.is_interval ||
-                        vsize != var->domain.values.size() ||
-                        vmin != var->domain.values.front() ||
-                        vmax != var->domain.values.back();
-  }
-  return variable_changed || ignored_tuples > 0;
+
+  return NOT_CHANGED;
 }
 
-bool Presolver::PresolveRegular(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveRegular(Constraint* ct, std::string* log) {
   const std::vector<IntegerVariable*> vars = ct->arguments[0].variables;
   if (vars.empty()) {
     // TODO(user): presolve when all variables are instantiated.
-    return false;
+    return NOT_CHANGED;
   }
   const int num_vars = vars.size();
 
@@ -2787,7 +2852,6 @@ bool Presolver::PresolveRegular(Constraint* ct, std::string* log) {
   }
 
   // Prune the variables.
-  bool changed = false;
   for (int time = 0; time < num_vars; ++time) {
     Domain& domain = vars[time]->domain;
     // Collect valid values.
@@ -2821,69 +2885,68 @@ bool Presolver::PresolveRegular(Constraint* ct, std::string* log) {
     if (remove_some) {
       const std::string& before = HASVLOG ? vars[time]->DebugString() : "";
       domain.IntersectWithListOfIntegers(to_keep);
+      MarkChangedVariable(vars[time]);
       if (HASVLOG) {
         StringAppendF(log, "reduce domain of variable %d from %s to %s; ", time,
                       before.c_str(), vars[time]->DebugString().c_str());
       }
-      changed = true;
     }
   }
-  return changed;
+  return NOT_CHANGED;
 }
 
 // Tranforms diffn into all_different_int when sizes and y positions are all 1.
 //
 // Input : diffn([x1, .. xn], [1, .., 1], [1, .., 1], [1, .., 1])
 // Output: all_different_int([x1, .. xn])
-bool Presolver::PresolveDiffN(Constraint* ct, std::string* log) {
+Presolver::RuleStatus Presolver::PresolveDiffN(Constraint* ct, std::string* log) {
   const int size = ct->arguments[0].variables.size();
   if (size > 0 && ct->arguments[1].IsArrayOfValues() &&
       ct->arguments[2].IsArrayOfValues() &&
       ct->arguments[3].IsArrayOfValues()) {
     for (int i = 0; i < size; ++i) {
       if (ct->arguments[1].ValueAt(i) != 1) {
-        return false;
+        return NOT_CHANGED;
       }
     }
     for (int i = 0; i < size; ++i) {
       if (ct->arguments[2].ValueAt(i) != 1) {
-        return false;
+        return NOT_CHANGED;
       }
     }
     for (int i = 0; i < size; ++i) {
       if (ct->arguments[3].ValueAt(i) != 1) {
-        return false;
+        return NOT_CHANGED;
       }
     }
     ct->type = "all_different_int";
     ct->arguments.resize(1);
-    return true;
+    return CONSTRAINT_REWRITTEN;
   }
-  return false;
+  return NOT_CHANGED;
 }
 
-#define CALL_TYPE(ct, t, method)                                            \
-  if (ct->active && ct->type == t) {                                        \
-    changed |= ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                               \
-    });                                                                     \
+#define CALL_TYPE(ct, t, method)                                 \
+  if (ct->active && ct->type == t) {                             \
+    ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
+      return method(ct, log);                                    \
+    });                                                          \
   }
-#define CALL_PREFIX(ct, t, method)                                          \
-  if (ct->active && strings::StartsWith(ct->type, t)) {                     \
-    changed |= ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                               \
-    });                                                                     \
+#define CALL_PREFIX(ct, t, method)                               \
+  if (ct->active && strings::StartsWith(ct->type, t)) {          \
+    ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
+      return method(ct, log);                                    \
+    });                                                          \
   }
-#define CALL_SUFFIX(ct, t, method)                                          \
-  if (ct->active && strings::EndsWith(ct->type, t)) {                       \
-    changed |= ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
-      return method(ct, log);                                               \
-    });                                                                     \
+#define CALL_SUFFIX(ct, t, method)                               \
+  if (ct->active && strings::EndsWith(ct->type, t)) {            \
+    ApplyRule(ct, #method, [this](Constraint* ct, std::string* log) { \
+      return method(ct, log);                                    \
+    });                                                          \
   }
 
 // Main presolve rule caller.
-bool Presolver::PresolveOneConstraint(Constraint* ct) {
-  bool changed = false;
+void Presolver::PresolveOneConstraint(Constraint* ct) {
   CALL_SUFFIX(ct, "_reif", Unreify);
   CALL_TYPE(ct, "bool2int", PresolveBool2Int);
   if (strings::StartsWith(ct->type, "int_")) {
@@ -2899,27 +2962,12 @@ bool Presolver::PresolveOneConstraint(Constraint* ct) {
     CALL_TYPE(ct, "bool_gt", PresolveInequalities);
   }
 
-  // TODO(user): use CALL_TYPE macro.
-  if (ct->type == "int_abs" && !ContainsKey(abs_map_, ct->arguments[1].Var())) {
-    // Stores abs() map.
-    FZVLOG << "Stores abs map for " << ct->DebugString() << FZENDL;
-    abs_map_[ct->arguments[1].Var()] = ct->arguments[0].Var();
-    changed = true;
-  }
+  CALL_TYPE(ct, "int_abs", StoreAbs);
   CALL_TYPE(ct, "int_eq_reif", StoreIntEqReif);
   CALL_TYPE(ct, "int_ne_reif", SimplifyIntNeReif);
-  // TODO(user): use CALL_TYPE macro.
-  if ((ct->type == "int_eq_reif" || ct->type == "int_ne_reif" ||
-       ct->type == "int_ne") &&
-      ct->arguments[1].HasOneValue() && ct->arguments[1].Value() == 0 &&
-      ContainsKey(abs_map_, ct->arguments[0].Var())) {
-    // Simplifies int_eq and int_ne with abs
-    // Input : int_eq(x, 0) or int_ne(x, 0) with x == abs(y)
-    // Output: int_eq(y, 0) or int_ne(y, 0)
-    FZVLOG << "Remove abs() from " << ct->DebugString() << FZENDL;
-    ct->arguments[0].variables[0] = abs_map_[ct->arguments[0].Var()];
-    changed = true;
-  }
+  CALL_TYPE(ct, "int_eq_reif", RemoveAbsFromIntEqNeReif);
+  CALL_TYPE(ct, "int_ne", RemoveAbsFromIntEqNeReif);
+  CALL_TYPE(ct, "int_ne_reif", RemoveAbsFromIntEqNeReif);
   CALL_TYPE(ct, "set_in", PresolveSetIn);
   CALL_TYPE(ct, "set_not_in", PresolveSetNotIn);
   CALL_TYPE(ct, "set_in_reif", PresolveSetInReif);
@@ -2993,11 +3041,10 @@ bool Presolver::PresolveOneConstraint(Constraint* ct) {
       ct->target_variable->domain.HasOneValue()) {
     FZVLOG << "Remove the target variable from " << ct->DebugString()
            << " as it is fixed to a single value" << FZENDL;
+    MarkChangedVariable(ct->target_variable);
     ct->target_variable->defining_constraint = nullptr;
     ct->target_variable = nullptr;
-    changed = true;
   }
-  return changed;
 }
 
 #undef CALL_TYPE
@@ -3258,11 +3305,7 @@ bool Presolver::Run(Model* model) {
   // Rebuild var_constraint map if empty.
   if (var_to_constraints_.empty()) {
     for (Constraint* const ct : model->constraints()) {
-      for (const Argument& arg : ct->arguments) {
-        for (IntegerVariable* const var : arg.variables) {
-          var_to_constraints_[var].insert(ct);
-        }
-      }
+      AddConstraintToMapping(ct);
     }
   }
 
@@ -3280,10 +3323,9 @@ bool Presolver::Run(Model* model) {
   for (Constraint* const ct : model->constraints()) {
     if (ct->active && ct->type == "bool2int") {
       std::string log;
-      if (PresolveBool2Int(ct, &log)) {
-        changed_since_start = true;
-        successful_rules_["PresolveBool2Int"]++;
-      }
+      ApplyRule(ct, "PresolveBool2Int", [this](Constraint* ct, std::string* log) {
+        return PresolveBool2Int(ct, log);
+      });
     }
   }
   if (!var_representative_map_.empty()) {
@@ -3292,33 +3334,66 @@ bool Presolver::Run(Model* model) {
     var_representative_map_.clear();
   }
 
-  int loops = 0;
-  // Apply the rest of the presolve rules.
-  for (;;) {
-    loops++;
-    bool changed = false;
-    var_representative_map_.clear();
+  {
+    FZVLOG << "  - processing initial model with "
+           << model->constraints().size() << " constraints." << FZENDL;
     for (Constraint* const ct : model->constraints()) {
       if (ct->active) {
-        changed |= PresolveOneConstraint(ct);
+        changed_constraints_.erase(ct);  // Optim: remove from postponed queue.
+        PresolveOneConstraint(ct);
+        if (!ct->active || ct->type == "false_constraint") {
+          changed_since_start = true;
+        }
       }
       if (!var_representative_map_.empty()) {
-        break;
+        SubstituteEverywhere(model);
+        var_representative_map_.clear();
+      }
+    }
+    FZVLOG << "  - done" << FZENDL;
+  }
+
+  // Incremental part.
+  int loops = 1;
+  while (!changed_variables_.empty() || !changed_constraints_.empty()) {
+    loops++;
+    FZVLOG << "--- loop " << loops << FZENDL;
+    changed_since_start = true;
+    std::unordered_set<Constraint*> to_scan;
+
+    for (IntegerVariable* var : changed_variables_) {
+      for (Constraint* ct : var_to_constraints_[var]) {
+        if (ct->active) {
+          to_scan.insert(ct);
+        }
+      }
+    }
+    for (Constraint* ct : changed_constraints_) {
+      if (ct->active) {
+        to_scan.insert(ct);
+      }
+    }
+
+    changed_variables_.clear();
+    changed_constraints_.clear();
+    var_representative_map_.clear();
+    FZVLOG << "  - processing " << to_scan.size() << " constraints" << FZENDL;
+    for (Constraint* const ct : to_scan) {
+      if (!var_representative_map_.empty()) {
+        changed_constraints_.insert(ct);  // Carry over to next round.
+      } else if (ct->active) {
+        PresolveOneConstraint(ct);
       }
     }
     if (!var_representative_map_.empty()) {
       // Some new substitutions were introduced. Let's process them.
-      DCHECK(changed);
-      changed = true;  // To be safe in opt mode.
       SubstituteEverywhere(model);
       var_representative_map_.clear();
     }
-    changed_since_start |= changed;
-    if (!changed) break;
   }
 
   // Report presolve rules statistics.
-  if (changed_since_start) {
+  if (!successful_rules_.empty()) {
     FZLOG << "  - presolve looped " << loops << " times over the model"
           << FZENDL;
     for (const auto& rule : successful_rules_) {
@@ -3399,15 +3474,15 @@ void Presolver::SubstituteEverywhere(Model* model) {
   for (Constraint* const ct : impacted) {
     if (ct != nullptr && ct->active) {
       for (int i = 0; i < ct->arguments.size(); ++i) {
-        Argument* argument = &ct->arguments[i];
-        switch (argument->type) {
+        Argument& argument = ct->arguments[i];
+        switch (argument.type) {
           case Argument::INT_VAR_REF:
           case Argument::INT_VAR_REF_ARRAY: {
-            for (int i = 0; i < argument->variables.size(); ++i) {
-              IntegerVariable* const old_var = argument->variables[i];
+            for (int i = 0; i < argument.variables.size(); ++i) {
+              IntegerVariable* const old_var = argument.variables[i];
               IntegerVariable* const new_var = FindRepresentativeOfVar(old_var);
               if (new_var != old_var) {
-                argument->variables[i] = new_var;
+                argument.variables[i] = new_var;
                 var_to_constraints_[new_var].insert(ct);
               }
             }
@@ -3420,6 +3495,10 @@ void Presolver::SubstituteEverywhere(Model* model) {
       // in the arguments of the constraints.
       ct->target_variable = FindRepresentativeOfVar(ct->target_variable);
     }
+  }
+  // Cleanup the outdated var_to_constraints sets.
+  for (const auto& p : var_representative_map_) {
+    var_to_constraints_[p.first].clear();
   }
   // Rewrite the search.
   for (Annotation* const ann : model->mutable_search_annotations()) {
@@ -3437,6 +3516,11 @@ void Presolver::SubstituteEverywhere(Model* model) {
   // during presolve.
   for (const auto& iter : var_representative_map_) {
     iter.second->domain.IntersectWithDomain(iter.first->domain);
+  }
+
+  // Mark new variables for revisit.
+  for (const auto& iter : var_representative_map_) {
+    MarkChangedVariable(iter.second);
   }
 
   // Change the objective variable.
@@ -3472,23 +3556,58 @@ void Presolver::SubstituteAnnotation(Annotation* ann) {
 
 // ----- Helpers -----
 
-void Presolver::IntersectDomainWith(const Argument& arg, Domain* domain) {
+bool Presolver::IntersectVarWithArg(IntegerVariable* var, const Argument& arg) {
   switch (arg.type) {
     case Argument::INT_VALUE: {
       const int64 value = arg.Value();
-      domain->IntersectWithSingleton(value);
+      if (var->domain.IntersectWithSingleton(value)) {
+        MarkChangedVariable(var);
+        return true;
+      }
       break;
     }
     case Argument::INT_INTERVAL: {
-      domain->IntersectWithInterval(arg.values[0], arg.values[1]);
+      if (var->domain.IntersectWithInterval(arg.values[0], arg.values[1])) {
+        MarkChangedVariable(var);
+        return true;
+      }
       break;
     }
     case Argument::INT_LIST: {
-      domain->IntersectWithListOfIntegers(arg.values);
+      if (var->domain.IntersectWithListOfIntegers(arg.values)) {
+        MarkChangedVariable(var);
+        return true;
+      }
       break;
     }
     default: { LOG(FATAL) << "Wrong domain type" << arg.DebugString(); }
   }
+  return false;
+}
+
+bool Presolver::IntersectVarWithSingleton(IntegerVariable* var, int64 value) {
+  if (var->domain.IntersectWithSingleton(value)) {
+    MarkChangedVariable(var);
+    return true;
+  }
+  return false;
+}
+
+bool Presolver::IntersectVarWithInterval(IntegerVariable* var, int64 imin,
+                                         int64 imax) {
+  if (var->domain.IntersectWithInterval(imin, imax)) {
+    MarkChangedVariable(var);
+    return true;
+  }
+  return false;
+}
+
+bool Presolver::RemoveValue(IntegerVariable* var, int64 value) {
+  if (var->domain.RemoveValue(value)) {
+    MarkChangedVariable(var);
+    return true;
+  }
+  return false;
 }
 
 // ----- Clean up model -----

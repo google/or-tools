@@ -54,11 +54,19 @@ class Presolver {
   // (defining_constraint, target_variable) for Boolean constraints.
   void CleanUpModelForTheCpSolver(Model* model, bool use_sat);
 
-  // Returns true iff the model was modified.
   // This method is public for tests.
-  bool PresolveOneConstraint(Constraint* ct);
+  void PresolveOneConstraint(Constraint* ct);
 
  private:
+  enum RuleStatus {
+    NOT_CHANGED = 0,       // Constraint has not changed.
+    CONTEXT_CHANGED,       // The constraint has not changed, but some mapping,
+                           // or some variables have been updated.
+    CONSTRAINT_REWRITTEN,  // The constraint has been rewritten.
+    CONSTRAINT_ALWAYS_FALSE,  // The constraint is always false.
+    CONSTRAINT_ALWAYS_TRUE,  // The constraint is always true, and now inactive.
+  };
+
   // This struct stores the affine mapping of one variable:
   // it represents new_var = var * coefficient + offset. It also stores the
   // constraint that defines this mapping.
@@ -123,52 +131,63 @@ class Presolver {
 
   // Presolve rules. They returns true iff some presolve has been
   // performed. These methods are called by the PresolveOneConstraint() method.
-  bool PresolveBool2Int(Constraint* ct, std::string* log);
-  bool PresolveIntEq(Constraint* ct, std::string* log);
-  bool Unreify(Constraint* ct, std::string* log);
-  bool PresolveInequalities(Constraint* ct, std::string* log);
-  bool PresolveIntNe(Constraint* ct, std::string* log);
-  bool PresolveSetNotIn(Constraint* ct, std::string* log);
-  bool PresolveSetIn(Constraint* ct, std::string* log);
-  bool PresolveSetInReif(Constraint* ct, std::string* log);
-  bool PresolveArrayBoolAnd(Constraint* ct, std::string* log);
-  bool PresolveArrayBoolOr(Constraint* ct, std::string* log);
-  bool PresolveBoolEqNeReif(Constraint* ct, std::string* log);
-  bool PresolveArrayIntElement(Constraint* ct, std::string* log);
-  bool PresolveIntDiv(Constraint* ct, std::string* log);
-  bool PresolveIntTimes(Constraint* ct, std::string* log);
-  bool PresolveIntLinGt(Constraint* ct, std::string* log);
-  bool PresolveIntLinLt(Constraint* ct, std::string* log);
-  bool PresolveLinear(Constraint* ct, std::string* log);
-  bool RegroupLinear(Constraint* ct, std::string* log);
-  bool SimplifyLinear(Constraint* ct, std::string* log);
-  bool PropagatePositiveLinear(Constraint* ct, std::string* log);
-  bool PresolveStoreMapping(Constraint* ct, std::string* log);
-  bool PresolveSimplifyElement(Constraint* ct, std::string* log);
-  bool PresolveSimplifyExprElement(Constraint* ct, std::string* log);
-  bool PropagateReifiedComparisons(Constraint* ct, std::string* log);
-  bool RemoveAbsFromIntLeReif(Constraint* ct, std::string* log);
-  bool SimplifyUnaryLinear(Constraint* ct, std::string* log);
-  bool SimplifyBinaryLinear(Constraint* ct, std::string* log);
-  bool CheckIntLinReifBounds(Constraint* ct, std::string* log);
-  bool CreateLinearTarget(Constraint* ct, std::string* log);
-  bool PresolveBoolNot(Constraint* ct, std::string* log);
-  bool PresolveBoolXor(Constraint* ct, std::string* log);
-  bool SimplifyIntLinEqReif(Constraint* ct, std::string* log);
-  bool PresolveIntMod(Constraint* ct, std::string* log);
-  bool PresolveBoolClause(Constraint* ct, std::string* log);
-  bool StoreIntEqReif(Constraint* ct, std::string* log);
-  bool SimplifyIntNeReif(Constraint* ct, std::string* log);
-  bool PresolveTableInt(Constraint* ct, std::string* log);
-  bool PresolveRegular(Constraint* ct, std::string* log);
-  bool PresolveDiffN(Constraint* ct, std::string* log);
+  RuleStatus PresolveBool2Int(Constraint* ct, std::string* log);
+  RuleStatus PresolveIntEq(Constraint* ct, std::string* log);
+  RuleStatus Unreify(Constraint* ct, std::string* log);
+  RuleStatus PresolveInequalities(Constraint* ct, std::string* log);
+  RuleStatus PresolveIntNe(Constraint* ct, std::string* log);
+  RuleStatus PresolveSetNotIn(Constraint* ct, std::string* log);
+  RuleStatus PresolveSetIn(Constraint* ct, std::string* log);
+  RuleStatus PresolveSetInReif(Constraint* ct, std::string* log);
+  RuleStatus PresolveArrayBoolAnd(Constraint* ct, std::string* log);
+  RuleStatus PresolveArrayBoolOr(Constraint* ct, std::string* log);
+  RuleStatus PresolveBoolEqNeReif(Constraint* ct, std::string* log);
+  RuleStatus PresolveArrayIntElement(Constraint* ct, std::string* log);
+  RuleStatus PresolveIntDiv(Constraint* ct, std::string* log);
+  RuleStatus PresolveIntTimes(Constraint* ct, std::string* log);
+  RuleStatus PresolveIntLinGt(Constraint* ct, std::string* log);
+  RuleStatus PresolveIntLinLt(Constraint* ct, std::string* log);
+  RuleStatus PresolveLinear(Constraint* ct, std::string* log);
+  RuleStatus RegroupLinear(Constraint* ct, std::string* log);
+  RuleStatus SimplifyLinear(Constraint* ct, std::string* log);
+  RuleStatus PropagatePositiveLinear(Constraint* ct, std::string* log);
+  RuleStatus PresolveStoreMapping(Constraint* ct, std::string* log);
+  RuleStatus PresolveSimplifyElement(Constraint* ct, std::string* log);
+  RuleStatus PresolveSimplifyExprElement(Constraint* ct, std::string* log);
+  RuleStatus PropagateReifiedComparisons(Constraint* ct, std::string* log);
+  RuleStatus StoreAbs(Constraint* ct, std::string* log);
+  RuleStatus RemoveAbsFromIntLeReif(Constraint* ct, std::string* log);
+  RuleStatus RemoveAbsFromIntEqNeReif(Constraint* ct, std::string* log);
+  RuleStatus SimplifyUnaryLinear(Constraint* ct, std::string* log);
+  RuleStatus SimplifyBinaryLinear(Constraint* ct, std::string* log);
+  RuleStatus CheckIntLinReifBounds(Constraint* ct, std::string* log);
+  RuleStatus CreateLinearTarget(Constraint* ct, std::string* log);
+  RuleStatus PresolveBoolNot(Constraint* ct, std::string* log);
+  RuleStatus PresolveBoolXor(Constraint* ct, std::string* log);
+  RuleStatus SimplifyIntLinEqReif(Constraint* ct, std::string* log);
+  RuleStatus PresolveIntMod(Constraint* ct, std::string* log);
+  RuleStatus PresolveBoolClause(Constraint* ct, std::string* log);
+  RuleStatus StoreIntEqReif(Constraint* ct, std::string* log);
+  RuleStatus SimplifyIntNeReif(Constraint* ct, std::string* log);
+  RuleStatus PresolveTableInt(Constraint* ct, std::string* log);
+  RuleStatus PresolveRegular(Constraint* ct, std::string* log);
+  RuleStatus PresolveDiffN(Constraint* ct, std::string* log);
 
   // Helpers.
-  void IntersectDomainWith(const Argument& arg, Domain* domain);
+  bool IntersectVarWithArg(IntegerVariable* var, const Argument& arg);
+  bool IntersectVarWithSingleton(IntegerVariable* var, int64 value);
+  bool IntersectVarWithInterval(IntegerVariable* var, int64 imin, int64 imax);
+  bool RemoveValue(IntegerVariable* var, int64 value);
+  void AddConstraintToMapping(Constraint* ct);
+  void RemoveConstraintFromMapping(Constraint* ct);
+
+  // Mark changed variables.
+  void MarkChangedVariable(IntegerVariable* var);
 
   // This method wraps each rule, calls it and log its effect.
-  bool ApplyRule(Constraint* ct, const std::string& rule_name,
-                 const std::function<bool(Constraint* ct, std::string*)>& rule);
+  void ApplyRule(
+      Constraint* ct, const std::string& rule_name,
+      const std::function<RuleStatus(Constraint* ct, std::string*)>& rule);
 
   // The presolver will discover some equivalence classes of variables [two
   // variable are equivalent when replacing one by the other leads to the same
@@ -211,6 +230,10 @@ class Presolver {
   // Count applications of presolve rules. Use a sorted map for reporting
   // purposes.
   std::map<std::string, int> successful_rules_;
+
+  // Store changed objects.
+  std::unordered_set<IntegerVariable*> changed_variables_;
+  std::unordered_set<Constraint*> changed_constraints_;
 };
 }  // namespace fz
 }  // namespace operations_research

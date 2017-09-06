@@ -75,10 +75,10 @@ struct Domain {
 
   // All the following modifiers change the internal representation
   //   list to interval or interval to list.
-  void IntersectWithSingleton(int64 value);
-  void IntersectWithDomain(const Domain& domain);
-  void IntersectWithInterval(int64 interval_min, int64 interval_max);
-  void IntersectWithListOfIntegers(const std::vector<int64>& values);
+  bool IntersectWithSingleton(int64 value);
+  bool IntersectWithDomain(const Domain& domain);
+  bool IntersectWithInterval(int64 interval_min, int64 interval_max);
+  bool IntersectWithListOfIntegers(const std::vector<int64>& integers);
 
   // Returns true iff the value did belong to the domain, and was removed.
   // Try to remove the value. It returns true if it was actually removed.
