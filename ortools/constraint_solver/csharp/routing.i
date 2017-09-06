@@ -150,6 +150,7 @@ class NodeEvaluator2 : private operations_research::RoutingModel::NodeEvaluator2
 %typemap(cscode) swig_util::NodeEvaluator2 %{
   public $descriptor(operations_research::RoutingModel::NodeEvaluator2*) DisownAndGetPermanentCallback() {
     swigCMemOwn = false;
+    GC.SuppressFinalize(this);
     return GetPermanentCallback();
   }
 %}
@@ -171,18 +172,36 @@ class NodeEvaluator2 : private ::operations_research::RoutingModel::NodeEvaluato
 }  // namespace swig_util
 
 
+%typemap(cscode) operations_research::RoutingModel %{
+      private System.Collections.Generic.List<NodeEvaluator2> pinned =
+          new System.Collections.Generic.List<NodeEvaluator2>();
+    
+    private HandleRef TakeOwnershipAndAddReference(NodeEvaluator2 value)
+    {
+        var handle = $descriptor(ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*).getCPtr(value.DisownAndGetPermanentCallback());
+        this.pinned.Add(value);
+        return handle;
+    }
+    
+    private HandleRef TakeOwnershipAndAddReference(NodeEvaluator2[] values)
+    {
+        foreach (NodeEvaluator2 value in values)
+        {
+            this.pinned.Add(value);
+        }
+        
+        return NodeEvaluator2Vector.getCPtr(new NodeEvaluator2Vector(values));
+    }
+%}
+
 // Typemaps for NodeEvaluator2 callbacks in csharp.
 %typemap(cstype) operations_research::RoutingModel::NodeEvaluator2* "NodeEvaluator2";
-%typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "$descriptor(ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*).getCPtr($csinput.DisownAndGetPermanentCallback())";
+%typemap(csin) operations_research::RoutingModel::NodeEvaluator2* "this.TakeOwnershipAndAddReference($csinput)";
 
 // Typemaps for NodeEvaluator2 arrays in csharp.
 %typemap(cstype) std::vector<ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*>& "NodeEvaluator2[]";
-%typemap(csin) std::vector<ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*>& %{ NodeEvaluator2Vector.getCPtr(new NodeEvaluator2Vector($csinput)) %}
+%typemap(csin) std::vector<ResultCallback2<int64, RoutingNodeIndex, RoutingNodeIndex>*>& %{  this.TakeOwnershipAndAddReference($csinput) %}
 
-%rename (AddDimensionAux) operations_research::RoutingModel::AddDimension;
-%rename (AddDimensionWithVehicleCapacityAux) operations_research::RoutingModel::AddDimensionWithVehicleCapacity;
-%rename (SetArcCostEvaluatorOfAllVehiclesAux) operations_research::RoutingModel::SetArcCostEvaluatorOfAllVehicles;
-%rename (SetArcCostEvaluatorOfVehicleAux) operations_research::RoutingModel::SetArcCostEvaluatorOfVehicle;
 %rename (RoutingModelStatus) operations_research::RoutingModel::Status;
 
 %ignore operations_research::RoutingModel::AddVectorDimension(
