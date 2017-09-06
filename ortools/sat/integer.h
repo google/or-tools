@@ -263,6 +263,8 @@ class IntegerEncoder {
   // one if they exist. This is the "list encoding" in: Thibaut Feydy, Peter J.
   // Stuckey, "Lazy Clause Generation Reengineered", CP 2009.
   Literal GetOrCreateAssociatedLiteral(IntegerLiteral i_lit);
+  Literal GetOrCreateLiteralAssociatedToEquality(IntegerVariable var,
+                                                 IntegerValue value);
 
   // Associates the Boolean literal to (X >= bound) or (X == value). If a
   // literal was already associated to this fact, this will add an equality
@@ -600,6 +602,12 @@ class IntegerTrail : public SatPropagator {
     int current_trail_index;
   };
   ITIVector<IntegerVariable, VarInfo> vars_;
+
+  // This is used by FindLowestTrailIndexThatExplainBound() to speed up
+  // the lookup. It keeps a trail index for each variable that may or may not
+  // point to a TrailEntry regarding this variable. The validity of the index is
+  // verified before beeing used.
+  mutable ITIVector<IntegerVariable, int> var_trail_index_cache_;
 
   // Used by GetOrCreateConstantIntegerVariable() to return already created
   // constant variables that share the same value.

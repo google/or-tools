@@ -304,6 +304,13 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
     //
     // TODO(user): Adding arcs and then calling Untrail() before Propagate()
     // will cause this mecanism to break. Find a more robust implementation.
+    //
+    // TODO(user): In some rare corner case, rescanning the whole list of arc
+    // leaving tail_var can make AddVar() have a quadratic complexity where it
+    // shouldn't. A better solution would be to see if this new arc currently
+    // propagate something, and if it does, just update the lower bound of
+    // a.head_var and let the normal "is modified" mecanism handle any eventual
+    // follow up propagations.
     modified_vars_.Set(a.tail_var);
     const int arc_index = arcs_.size();
     if (l == kNoLiteralIndex) {

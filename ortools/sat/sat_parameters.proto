@@ -18,7 +18,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 89
+// NEXT TAG: 90
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -395,6 +395,10 @@ message SatParameters {
   // Wheter we try to find more independent cores for a given set of assumptions
   // in the core based max-SAT algorithms.
   optional bool find_multiple_cores = 84 [default = true];
+
+  // If true, when the max-sat algo find a core, we compute the minimal number
+  // of literals in the core that needs to be true to have a feasible solution.
+  optional bool cover_optimization = 89 [default = true];
 
   // In what order do we add the assumptions in a core-based max-sat algorithm
   enum MaxSatAssumptionOrder {

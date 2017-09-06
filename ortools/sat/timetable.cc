@@ -316,7 +316,7 @@ void TimeTablingPerTask::ReverseProfile() {
 
 bool TimeTablingPerTask::SweepAllTasks() {
   // Tasks with a lower or equal demand will not be pushed.
-  const IntegerValue min_demand = CapacityMax() - profile_max_height_;
+  const IntegerValue min_demand = CapSub(CapacityMax(), profile_max_height_);
 
   for (int i = num_tasks_to_sweep_ - 1; i >= 0; --i) {
     const int t = tasks_to_sweep_[i];

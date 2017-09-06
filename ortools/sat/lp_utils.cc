@@ -58,10 +58,15 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   // cannot go that much further because we need to make sure we will not run
   // into overflow if we add a big linear combination of such variables. It
   // should always be possible for an user to scale its problem so that all
-  // relevant quantities are under a billion. A LP/MIP solver have a similar
-  // condition in disguise because problem with a difference of more than 6
-  // magnitude between the variable values will likely run into numeric trouble.
-  const int64 kMaxVariableBound = 1ll << 30;
+  // relevant quantities are a couple of millions. A LP/MIP solver have a
+  // similar condition in disguise because problem with a difference of more
+  // than 6 magnitudes between the variable values will likely run into numeric
+  // trouble.
+  const int64 kMaxVariableBound = static_cast<int64>(1e7);
+
+  int num_truncated_bounds = 0;
+  int num_small_domains = 0;
+  const int64 kSmallDomainSize = 1000;
 
   // Add the variables.
   const int num_variables = mp_model.variable_size();
@@ -73,36 +78,31 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
     // Note that we must process the lower bound first.
     for (const bool lower : {true, false}) {
       const double bound = lower ? mp_var.lower_bound() : mp_var.upper_bound();
-      if (std::abs(bound) == kInfinity) {
+      if (std::abs(bound) >= kMaxVariableBound) {
+        if (std::abs(bound) != kInfinity) ++num_truncated_bounds;
         cp_var->add_domain(lower ? -kMaxVariableBound : kMaxVariableBound);
         continue;
       }
 
-      // Reject larger bound than kMaxVariableBound. We also reject the equality
-      // so that after the solve, we can detect if one of our "artificial"
-      // bounds that we add on unbounded variable is restricting the objective.
-      if (std::floor(std::abs(bound)) >= kMaxVariableBound) {
-        LOG(ERROR) << "Large bound : " << bound;
-        return false;
-      }
+      // Note that the cast is "perfect" because we forbid large values.
+      cp_var->add_domain(
+          static_cast<int64>(lower ? std::ceil(bound) : std::floor(bound)));
+    }
 
-      if (mp_var.is_integer()) {
-        // Note that the cast is "perfect" because we forbid large values.
-        cp_var->add_domain(
-            static_cast<int64>(lower ? std::ceil(bound) : std::floor(bound)));
-      } else {
-        // Continuous variable. We reject non-integer bounds.
-        // We do nothing if the domain is really small though.
-        //
-        // TODO(user): scale the domain.
-        if (bound != std::round(bound)) {
-          LOG(ERROR) << "Non-integer bound not supported: " << bound;
-          return false;
-        }
-        cp_var->add_domain(static_cast<int64>(bound));
-      }
+    // Notify if a continuous variable has a small domain as this is likely to
+    // make an all integer solution far from a continuous one.
+    if (!mp_var.is_integer() &&
+        cp_var->domain(1) - cp_var->domain(0) < kSmallDomainSize) {
+      ++num_small_domains;
     }
   }
+
+  LOG_IF(WARNING, num_truncated_bounds > 0)
+      << num_truncated_bounds << " bounds where truncated to "
+      << kMaxVariableBound << ".";
+  LOG_IF(WARNING, num_small_domains > 0)
+      << num_small_domains << " continuous variable domain with less than "
+      << kSmallDomainSize << " values.";
 
   // Variables needed to scale the double coefficients into int64.
   double max_relative_coeff_error = 0.0;
@@ -237,7 +237,7 @@ bool ConvertMPModelProtoToCpModelProto(const MPModelProto& mp_model,
   }
 
   // Test the precision of the conversion.
-  const double kRelativeTolerance = 1e-4;
+  const double kRelativeTolerance = 1e-2;
   if (max_relative_coeff_error > kRelativeTolerance) {
     LOG(WARNING) << "The relative error during double -> int64 conversion "
                  << "is too high!";

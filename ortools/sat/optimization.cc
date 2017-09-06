@@ -216,6 +216,7 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
   std::vector<Literal> temp = *core;
   std::reverse(temp.begin(), temp.end());
   solver->Backtrack(0);
+  solver->SetAssumptionLevel(0);
 
   // Note that this Solve() is really fast, since the solver should detect that
   // the assumptions are unsat with unit propagation only. This is just a
@@ -225,6 +226,7 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
       solver->ResetAndSolveWithGivenAssumptions(temp);
   if (status != SatSolver::ASSUMPTIONS_UNSAT) {
     if (status != SatSolver::LIMIT_REACHED) {
+      CHECK_NE(status, SatSolver::MODEL_SAT);
       // This should almost never happen, but it is not impossible. The reason
       // is that the solver may delete some learned clauses required by the unit
       // propagation to show that the core is unsat.
@@ -235,9 +237,61 @@ void MinimizeCore(SatSolver* solver, std::vector<Literal>* core) {
   }
   temp = solver->GetLastIncompatibleDecisions();
   if (temp.size() < core->size()) {
-    VLOG(1) << "old core size " << core->size();
+    VLOG(1) << "minimization " << core->size() << " -> " << temp.size();
     std::reverse(temp.begin(), temp.end());
     *core = temp;
+  }
+}
+
+void MinimizeCoreWithPropagation(SatSolver* solver,
+                                 std::vector<Literal>* core) {
+  std::set<LiteralIndex> moved_last;
+  std::deque<Literal> candidate(core->begin(), core->end());
+  while (true) {
+    {
+      // Cyclic shift. We stop as soon as we are back in the original core
+      // order. Because we always preserve the order in the candidate reduction
+      // below, we can abort the first time we see someone we moved back.
+      CHECK(!candidate.empty());
+      const Literal temp = candidate[0];
+      if (ContainsKey(moved_last, temp.Index())) break;
+      moved_last.insert(temp.Index());
+      candidate.erase(candidate.begin());
+      candidate.push_back(temp);
+    }
+
+    solver->Backtrack(0);
+    solver->SetAssumptionLevel(0);
+    while (solver->CurrentDecisionLevel() < candidate.size()) {
+      const Literal decision = candidate[solver->CurrentDecisionLevel()];
+      if (solver->Assignment().LiteralIsTrue(decision)) {
+        candidate.erase(candidate.begin() + solver->CurrentDecisionLevel());
+        continue;
+      } else if (solver->Assignment().LiteralIsFalse(decision)) {
+        const int level =
+            solver->LiteralTrail().Info(decision.Variable()).level;
+        if (level + 1 != candidate.size()) {
+          candidate.resize(level);
+          candidate.push_back(decision);
+        }
+        break;
+      } else {
+        solver->EnqueueDecisionAndBackjumpOnConflict(decision);
+      }
+    }
+  }
+
+  if (candidate.size() < core->size()) {
+    VLOG(1) << "minimization " << core->size() << " -> " << candidate.size();
+
+    // Check that the order is indeed preserved.
+    int index = 0;
+    for (const Literal l : *core) {
+      if (index < candidate.size() && l == candidate[index]) ++index;
+    }
+    CHECK_EQ(index, candidate.size());
+
+    core->assign(candidate.begin(), candidate.end());
   }
 }
 
@@ -1156,7 +1210,7 @@ SatSolver::Status FindCores(std::vector<Literal> assumptions,
     if (result != SatSolver::ASSUMPTIONS_UNSAT) return result;
     std::vector<Literal> core = sat_solver->GetLastIncompatibleDecisions();
     if (sat_solver->parameters().minimize_core()) {
-      MinimizeCore(sat_solver, &core);
+      MinimizeCoreWithPropagation(sat_solver, &core);
     }
     CHECK(!core.empty());
     cores->push_back(core);
@@ -1297,9 +1351,6 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     }
 
     // Update the objective lower bound with our current bound.
-    //
-    // Note(user): This is not needed for correctness, but it might cause
-    // more propagation and is nice to have for reporting/logging purpose.
     if (!integer_trail->Enqueue(
             IntegerLiteral::GreaterOrEqual(objective_var, implied_objective_lb),
             {}, {})) {
@@ -1314,11 +1365,21 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       continue;
     }
 
-    // If there is only one assumptions left, we switch the algorithm.
-    if (term_indices.size() == 1 && next_stratified_threshold == 0) {
+    // If there is only one or two assumptions left, we switch the algorithm.
+    if (term_indices.size() <= 2 && next_stratified_threshold == 0) {
       if (log_info) LOG(INFO) << "Switching to linear scan...";
-      model->Add(LowerOrEqualWithOffset(
-          terms[term_indices[0]].var, objective_var, objective_offset.value()));
+
+      std::vector<IntegerVariable> constraint_vars;
+      std::vector<int64> constraint_coeffs;
+      for (const int index : term_indices) {
+        constraint_vars.push_back(terms[index].var);
+        constraint_coeffs.push_back(terms[index].weight.value());
+      }
+      constraint_vars.push_back(objective_var);
+      constraint_coeffs.push_back(-1);
+      model->Add(WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs,
+                                         -objective_offset.value()));
+
       result = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           false, objective_var, next_decision, feasible_solution_observer,
           model);
@@ -1330,9 +1391,11 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     if (log_info) {
       const int64 lb = objective_lb.value();
       const int64 ub = best_objective.value();
-      const int gap = lb == ub ? 0
-                               : static_cast<int>(std::ceil(100.0 * (ub - lb) /
-                                                            std::max(ub, lb)));
+      const int gap =
+          lb == ub
+              ? 0
+              : static_cast<int>(std::ceil(
+                    100.0 * (ub - lb) / std::max(std::abs(ub), std::abs(lb))));
       LOG(INFO) << StrCat("unscaled_objective:[", lb, ",", ub,
                                 "]"
                                 " gap:",
@@ -1342,7 +1405,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     }
 
     // Abort if we have a solution and a gap of zero.
-    if (implied_objective_lb == best_objective && num_solutions > 0) {
+    if (objective_lb == best_objective && num_solutions > 0) {
       result = SatSolver::MODEL_SAT;
       break;
     }
@@ -1411,7 +1474,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       max_depth = std::max(max_depth, new_depth);
       if (log_info) {
         LOG(INFO) << StringPrintf(
-            "    core:%zu weight:[%lld,%lld] domain:[%lld,%lld] depth:%d",
+            "core:%zu weight:[%lld,%lld] domain:[%lld,%lld] depth:%d",
             core.size(), min_weight.value(), max_weight.value(),
             new_var_lb.value(), new_var_ub.value(), new_depth);
       }
@@ -1423,7 +1486,6 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       terms.push_back({new_var, min_weight, new_depth});
 
       // Sum variables in the core <= new_var.
-      // TODO(user): Experiment with FixedWeightedSum() instead.
       {
         std::vector<IntegerVariable> constraint_vars;
         std::vector<int64> constraint_coeffs;
@@ -1440,12 +1502,12 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       }
 
       // Find out the true lower bound of new_var. This is called "cover
-      // optimization" in the max-SAT literature.
+      // optimization" in some of the max-SAT literature. It can helps on some
+      // problem families and hurt on others.
       //
-      // TODO(user): Do more experiments to decide if this is better. This
-      // approach kind of mix the basic linear-scan one with the core based
-      // approach.
-      if (/* DISABLES CODE */ (false)) {
+      // TODO(user): Add some conflict limit? and/or come up with an algo that
+      // dynamically turn this on or not depending on the situation?
+      if (sat_solver->parameters().cover_optimization()) {
         IntegerValue best = new_var_ub;
 
         // Simple linear scan algorithm to find the optimal of new_var.
@@ -1456,14 +1518,17 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
               SolveIntegerProblemWithLazyEncoding({a}, next_decision, model);
           if (result != SatSolver::MODEL_SAT) break;
           best = integer_trail->LowerBound(new_var);
+          if (log_info) {
+            LOG(INFO) << "cover_opt:[" << new_var_lb << "," << best << "]";
+          }
           if (!process_solution()) {
             result = SatSolver::MODEL_UNSAT;
             break;
           }
         }
+        sat_solver->Backtrack(0);
+        sat_solver->SetAssumptionLevel(0);
         if (result == SatSolver::ASSUMPTIONS_UNSAT) {
-          sat_solver->Backtrack(0);
-          sat_solver->SetAssumptionLevel(0);
           if (!integer_trail->Enqueue(
                   IntegerLiteral::GreaterOrEqual(new_var, best), {}, {})) {
             result = SatSolver::MODEL_UNSAT;
@@ -1535,6 +1600,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   // we find a core, a new constraint will be added to this problem.
   MPModelRequest request;
   #if defined(USE_SCIP)
+  request.set_solver_specific_parameters("limits/gap = 0");
   request.set_solver_type(MPModelRequest::SCIP_MIXED_INTEGER_PROGRAMMING);
   #else  // USE_CBC
     request.set_solver_type(MPModelRequest::CBC_MIXED_INTEGER_PROGRAMMING);
@@ -1680,11 +1746,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
           ct->add_coefficient(1.0);
           ct->set_lower_bound(ct->lower_bound() + lb);
         } else {
-          // TODO(user): if we have just one variable whose hs_value is not at
-          // its lower bound, then we can add a cut that remove the current
-          // solution (on the core) without the need to introduce this extra
-          // variable.
-          std::pair<int, double> key = {index, hs_value};
+          const std::pair<int, double> key = {index, hs_value};
           if (!ContainsKey(created_var, key)) {
             const int new_var_index = hs_model.variable_size();
             created_var[key] = new_var_index;

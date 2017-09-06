@@ -204,9 +204,24 @@ Literal IntegerEncoder::GetOrCreateAssociatedLiteral(IntegerLiteral i_lit) {
   }
 
   ++num_created_variables_;
-  const BooleanVariable new_var = sat_solver_->NewBooleanVariable();
-  const Literal literal(new_var, true);
+  const Literal literal(sat_solver_->NewBooleanVariable(), true);
   AssociateToIntegerLiteral(literal, new_lit);
+  return literal;
+}
+
+Literal IntegerEncoder::GetOrCreateLiteralAssociatedToEquality(
+    IntegerVariable var, IntegerValue value) {
+  {
+    const std::pair<IntegerVariable, IntegerValue> key{var, value};
+    const auto it = equality_to_associated_literal_.find(key);
+    if (it != equality_to_associated_literal_.end()) {
+      return it->second;
+    }
+  }
+
+  ++num_created_variables_;
+  const Literal literal(sat_solver_->NewBooleanVariable(), true);
+  AssociateToIntegerEqualValue(literal, var, value);
   return literal;
 }
 
@@ -392,6 +407,7 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   const IntegerVariable i(vars_.size());
   is_ignored_literals_.push_back(kNoLiteralIndex);
   vars_.push_back({lower_bound, static_cast<int>(integer_trail_.size())});
+  var_trail_index_cache_.push_back(integer_trail_.size());
   integer_trail_.push_back({lower_bound, i});
   domains_->push_back({{lower_bound.value(), upper_bound.value()}});
 
@@ -401,6 +417,7 @@ IntegerVariable IntegerTrail::AddIntegerVariable(IntegerValue lower_bound,
   CHECK_EQ(NegationOf(i).value(), vars_.size());
   is_ignored_literals_.push_back(kNoLiteralIndex);
   vars_.push_back({-upper_bound, static_cast<int>(integer_trail_.size())});
+  var_trail_index_cache_.push_back(integer_trail_.size());
   integer_trail_.push_back({-upper_bound, NegationOf(i)});
   domains_->push_back({{-upper_bound.value(), -lower_bound.value()}});
 
@@ -533,11 +550,33 @@ int IntegerTrail::FindLowestTrailIndexThatExplainBound(
   DCHECK_LE(i_lit.bound, vars_[i_lit.var].current_bound);
   if (i_lit.bound <= LevelZeroBound(i_lit.var)) return -1;
   int trail_index = vars_[i_lit.var].current_trail_index;
+
+  // Check the validity of the cached index and use it if possible. This caching
+  // mechanism is important in case of long chain of propagation on the same
+  // variable. Because during conflict resolution, we call
+  // FindLowestTrailIndexThatExplainBound() with lowest and lowest bound, this
+  // cache can transform a quadratic complexity into a linear one.
+  {
+    const int cached_index = var_trail_index_cache_[i_lit.var];
+    if (cached_index < trail_index) {
+      const TrailEntry& entry = integer_trail_[cached_index];
+      if (entry.var == i_lit.var && entry.bound >= i_lit.bound) {
+        trail_index = cached_index;
+      }
+    }
+  }
+
   int prev_trail_index = trail_index;
   while (true) {
     const TrailEntry& entry = integer_trail_[trail_index];
-    if (entry.bound == i_lit.bound) return trail_index;
-    if (entry.bound < i_lit.bound) return prev_trail_index;
+    if (entry.bound == i_lit.bound) {
+      var_trail_index_cache_[i_lit.var] = trail_index;
+      return trail_index;
+    }
+    if (entry.bound < i_lit.bound) {
+      var_trail_index_cache_[i_lit.var] = prev_trail_index;
+      return prev_trail_index;
+    }
     prev_trail_index = trail_index;
     trail_index = entry.prev_trail_index;
   }

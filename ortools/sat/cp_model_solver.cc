@@ -1861,15 +1861,11 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 }
 
 std::function<SatParameters(Model*)> NewSatParameters(const std::string& params) {
-  return [=](Model* model) {
-    sat::SatParameters parameters;
-    if (!params.empty()) {
-      CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters)) << params;
-      model->GetOrCreate<SatSolver>()->SetParameters(parameters);
-      model->SetSingleton(TimeLimit::FromParameters(parameters));
-    }
-    return parameters;
-  };
+  sat::SatParameters parameters;
+  if (!params.empty()) {
+    CHECK(google::protobuf::TextFormat::ParseFromString(params, &parameters)) << params;
+  }
+  return NewSatParameters(parameters);
 }
 
 std::function<SatParameters(Model*)> NewSatParameters(
@@ -1934,12 +1930,15 @@ CpSolverResponse SolveCpModelInternal(
     }
 
     // We propagate after each new Boolean constraint but not the integer
-    // ones. So we call Propagate() manually here.
-    // TODO(user): Do that automatically?
-    model->GetOrCreate<SatSolver>()->Propagate();
-    if (is_real_solve && trail->Index() > old_num_fixed) {
-      VLOG(1) << "Constraint fixed " << trail->Index() - old_num_fixed
-              << " Boolean variable(s): " << ct.ShortDebugString();
+    // ones. So we call Propagate() manually here. Note that we do not do
+    // that in the postsolve as there is some corner case where propagating
+    // after each new constraint can have a quadratic behavior.
+    if (is_real_solve) {
+      model->GetOrCreate<SatSolver>()->Propagate();
+      if (trail->Index() > old_num_fixed) {
+        VLOG(1) << "Constraint fixed " << trail->Index() - old_num_fixed
+                << " Boolean variable(s): " << ct.ShortDebugString();
+      }
     }
     if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
       VLOG(1) << "UNSAT during extraction (after adding '"

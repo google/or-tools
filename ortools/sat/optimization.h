@@ -40,6 +40,13 @@ namespace sat {
 // core.
 void MinimizeCore(SatSolver* solver, std::vector<Literal>* core);
 
+// Like MinimizeCore() with a slower but strictly better heuristic. This
+// algorithm should produce a minimal core with respect to propagation. We put
+// each literal of the initial core "last" at least once, so if such literal can
+// be infered by propagation by any subset of the other literal, it will be
+// removed.
+void MinimizeCoreWithPropagation(SatSolver* solver, std::vector<Literal>* core);
+
 // Because the Solve*() functions below are also used in scripts that requires a
 // special output format, we use this to tell them whether or not to use the
 // default logging framework or simply stdout. Most users should just use
