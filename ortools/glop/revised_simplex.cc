@@ -2909,12 +2909,17 @@ void RevisedSimplex::DisplayVariableBounds() {
   }
 }
 
-ITIVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary() {
+ITIVector<RowIndex, SparseRow> RevisedSimplex::ComputeDictionary(
+    const SparseMatrixScaler* scaler) {
   ITIVector<RowIndex, SparseRow> dictionary(num_rows_.value());
   for (ColIndex col(0); col < num_cols_; ++col) {
     ComputeDirection(col);
     for (const RowIndex row : direction_non_zero_) {
-      dictionary[row].SetCoefficient(col, direction_[row]);
+      const Fractional scale_coefficient =
+          scaler == nullptr
+              ? 1.0
+              : scaler->col_scale(col) / scaler->col_scale(GetBasis(row));
+      dictionary[row].SetCoefficient(col, direction_[row] * scale_coefficient);
     }
   }
   return dictionary;
@@ -2933,7 +2938,7 @@ void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
     }
     VLOG(3) << output << ";";
 
-    const RevisedSimplexDictionary dictionary(this);
+    const RevisedSimplexDictionary dictionary(nullptr, this);
     RowIndex r(0);
     for (const SparseRow& row : dictionary) {
       output.clear();

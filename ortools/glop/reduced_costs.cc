@@ -237,7 +237,6 @@ void ReducedCosts::PerturbCosts() {
   SCOPED_TIME_STAT(&stats_);
   VLOG(1) << "Perturbing the costs ... ";
 
-  // Note(user): The max_cost_magnitude should be 1.0 when cost scaling is on.
   Fractional max_cost_magnitude = 0.0;
   const ColIndex structural_size =
       matrix_.num_cols() - RowToColIndex(matrix_.num_rows());

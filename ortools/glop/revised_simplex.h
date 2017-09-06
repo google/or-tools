@@ -228,7 +228,7 @@ class RevisedSimplex {
   // Computes the dictionary B^-1*N on-the-fly row by row. Returns the resulting
   // matrix as a vector of sparse rows so that it is easy to use it on the left
   // side in the matrix multiplication. Runs in O(num_non_zeros_in_matrix).
-  RowMajorSparseMatrix ComputeDictionary();
+  RowMajorSparseMatrix ComputeDictionary(const SparseMatrixScaler* scaler);
 
  private:
   // Propagates parameters_ to all the other classes that need it.
@@ -799,8 +799,9 @@ class RevisedSimplexDictionary {
 
   // RevisedSimplex cannot be passed const because we have to call a non-const
   // method ComputeDictionary.
-  explicit RevisedSimplexDictionary(RevisedSimplex* revised_simplex)
-      : dictionary_(CHECK_NOTNULL(revised_simplex)->ComputeDictionary()),
+  RevisedSimplexDictionary(const SparseMatrixScaler* scaler,
+                           RevisedSimplex* revised_simplex)
+      : dictionary_(CHECK_NOTNULL(revised_simplex)->ComputeDictionary(scaler)),
         basis_vars_(CHECK_NOTNULL(revised_simplex)->GetBasisVector()) {}
 
   ConstIterator begin() const { return dictionary_.begin(); }
