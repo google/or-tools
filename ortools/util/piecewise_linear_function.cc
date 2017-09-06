@@ -135,7 +135,7 @@ int64 PiecewiseSegment::SafeValuePostReference(int64 x) const {
       return unsigned_sum > kint64max ? kint64max
                                       : static_cast<int64>(unsigned_sum);
     } else {
-      const uint64 opp_reference_y = static_cast<uint64>(-reference_y_);
+      const uint64 opp_reference_y = -static_cast<uint64>(reference_y_);
       if (span_y >= opp_reference_y) {
         return span_y - opp_reference_y > kint64max
                    ? kint64max
@@ -152,7 +152,7 @@ int64 PiecewiseSegment::SafeValuePostReference(int64 x) const {
     if (reference_y_ == 0) {
       return span_y > kint64max ? kint64min : -static_cast<int64>(span_y);
     } else if (reference_y_ < 0) {
-      const uint64 opp_reference_y = static_cast<uint64>(-reference_y_);
+      const uint64 opp_reference_y = -static_cast<uint64>(reference_y_);
       const uint64 opp_unsigned_sum = UnsignedCapAdd(opp_reference_y, span_y);
       return opp_unsigned_sum > kint64max
                  ? kint64min
@@ -193,7 +193,7 @@ int64 PiecewiseSegment::SafeValuePreReference(int64 x) const {
                    : -static_cast<uint64>(span_y - reference_y_);
       }
     } else {
-      const uint64 opp_reference_y = static_cast<uint64>(-reference_y_);
+      const uint64 opp_reference_y = -static_cast<uint64>(reference_y_);
       const uint64 opp_unsigned_sum = UnsignedCapAdd(opp_reference_y, span_y);
       return opp_unsigned_sum > kint64max
                  ? kint64min
@@ -205,7 +205,7 @@ int64 PiecewiseSegment::SafeValuePreReference(int64 x) const {
     if (reference_y_ == 0) {
       return span_y > kint64max ? kint64max : span_y;
     } else if (reference_y_ < 0) {
-      const uint64 opp_reference_y = static_cast<uint64>(-reference_y_);
+      const uint64 opp_reference_y = -static_cast<uint64>(reference_y_);
       if (span_y >= opp_reference_y) {
         return span_y - opp_reference_y > kint64max
                    ? kint64max

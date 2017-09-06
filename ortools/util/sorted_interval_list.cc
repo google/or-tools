@@ -385,7 +385,10 @@ SortedDisjointIntervalList::Iterator SortedDisjointIntervalList::GrowRightByOne(
   auto it_prev = it;
 
   // No interval containing or adjacent to "value" on the left (i.e. below).
-  if (it == begin() || ((--it_prev)->end < value - 1 && value != kint64min)) {
+  if (it != begin()) {
+    --it_prev;
+  }
+  if (it == begin() || ((value != kint64min) && it_prev->end < value - 1)) {
     *newly_covered = value;
     if (it == end() || it->start != value + 1) {
       // No interval adjacent to "value" on the right: insert a singleton.
