@@ -145,17 +145,6 @@ PROTECT_FROM_FAILURE(Solver::Fail(), arg1);
 %template(CpInt64VectorVector) std::vector<std::vector<int64> >;
 
 // This needs to be declared here as the camel case rename rule will cause collisions in the C# NodeEvaluator2Vector class.
-%typemap(cscode) std::vector<::swig_util::NodeEvaluator2*> %{
-    public NodeEvaluator2Vector(NodeEvaluator2[] values) 
-        :this()
-    {
-        foreach (NodeEvaluator2 value in values) 
-        {
-            value.DisownAndGetPermanentCallback();
-            this.Add(value);
-        }
-    }
-%}
 %template(NodeEvaluator2Vector) std::vector<::swig_util::NodeEvaluator2*>;
 
 %define CS_TYPEMAP_STDVECTOR_OBJECT(CTYPE, TYPE)
