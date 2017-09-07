@@ -185,12 +185,14 @@ class NodeEvaluator2 : private ::operations_research::RoutingModel::NodeEvaluato
     
     private HandleRef TakeOwnershipAndAddReference(NodeEvaluator2[] values)
     {
+        NodeEvaluator2Vector vector = new NodeEvaluator2Vector(values);
         foreach (NodeEvaluator2 value in values)
         {
+            value.DisownAndGetPermanentCallback();
             this.pinned.Add(value);
         }
         
-        return NodeEvaluator2Vector.getCPtr(new NodeEvaluator2Vector(values));
+        return NodeEvaluator2Vector.getCPtr(vector);
     }
 %}
 
