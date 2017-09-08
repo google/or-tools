@@ -31,6 +31,8 @@ archives: \
 	ubuntu-16.04-archive \
 	ubuntu-17.04-archive
 
+python: manylinux1-pypi3
+
 pypi: \
 	centos-7-pypi \
 	debian-9-pypi \
