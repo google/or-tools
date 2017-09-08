@@ -227,6 +227,11 @@ message MPModelRequest {
     GUROBI_MIXED_INTEGER_PROGRAMMING = 7;  // Commercial, needs a valid license.
     CPLEX_MIXED_INTEGER_PROGRAMMING = 11;  // Commercial, needs a valid license.
     BOP_INTEGER_PROGRAMMING = 12;
+
+    // WARNING: This solver will currently interpret all variables as integer,
+    // so any solution you get will be valid, but the optimal might be far away
+    // for the real one (when you authorise non-integer value for continuous
+    // variables).
     SAT_INTEGER_PROGRAMMING = 14;
 
     KNAPSACK_MIXED_INTEGER_PROGRAMMING = 13;

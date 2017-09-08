@@ -783,6 +783,7 @@ bool HamiltonianPathSolver<CostType, CostFunction>::PathIsValid(
 
 template <typename CostType, typename CostFunction>
 bool HamiltonianPathSolver<CostType, CostFunction>::IsRobust() {
+  if (std::numeric_limits<CostType>::is_integer) return true;
   if (robustness_checked_) return robust_;
   CostType min_cost = std::numeric_limits<CostType>::max();
   CostType max_cost = std::numeric_limits<CostType>::min();

@@ -685,14 +685,15 @@ bool GenericMaxFlow<Graph>::SaturateOutgoingArcsFromSource() {
     if (flow == 0 || node_potential_[Head(arc)] >= num_nodes) continue;
 
     // We are careful in case the sum of the flow out of the source is greater
-    // than kMaxFlowQuantity to avoid overflow. Since we sum two positive
-    // integers, we detect an integer overflow when their sum is negative.
+    // than kMaxFlowQuantity to avoid overflow.
     const FlowQuantity current_flow_out_of_source = -node_excess_[source_];
-    if (flow + current_flow_out_of_source < 0) {
+    DCHECK_GE(flow, 0) << flow;
+    DCHECK_GE(current_flow_out_of_source, 0) << current_flow_out_of_source;
+    const FlowQuantity capped_flow =
+        kMaxFlowQuantity - current_flow_out_of_source;
+    if (capped_flow < flow) {
       // We push as much flow as we can so the current flow on the network will
       // be kMaxFlowQuantity.
-      const FlowQuantity capped_flow =
-          kMaxFlowQuantity - current_flow_out_of_source;
 
       // Since at the beginning of the function, current_flow_out_of_source
       // was different from kMaxFlowQuantity, we are sure to have pushed some
