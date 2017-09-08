@@ -1,6 +1,6 @@
-#line 2 "ortools/flatzinc/parser.yy.cc"
+#line 2 "./ortools/flatzinc/parser.yy.cc"
 
-#line 4 "ortools/flatzinc/parser.yy.cc"
+#line 4 "./ortools/flatzinc/parser.yy.cc"
 
 #define  YY_INT_ALIGNED short int
 
@@ -8,8 +8,8 @@
 
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
-#define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 39
+#define YY_FLEX_MINOR_VERSION 6
+#define YY_FLEX_SUBMINOR_VERSION 1
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -34,7 +34,7 @@
 #if defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 
 /* C99 says to define __STDC_LIMIT_MACROS before including stdint.h,
- * if you want the limit (max/min) macros for int types.
+ * if you want the limit (max/min) macros for int types. 
  */
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1
@@ -51,7 +51,7 @@ typedef uint32_t flex_uint32_t;
 typedef signed char flex_int8_t;
 typedef short int flex_int16_t;
 typedef int flex_int32_t;
-typedef unsigned char flex_uint8_t;
+typedef unsigned char flex_uint8_t; 
 typedef unsigned short int flex_uint16_t;
 typedef unsigned int flex_uint32_t;
 
@@ -88,25 +88,13 @@ typedef unsigned int flex_uint32_t;
 
 #endif /* ! FLEXINT_H */
 
-#ifdef __cplusplus
-
-/* The "const" storage-class-modifier is valid. */
-#define YY_USE_CONST
-
-#else	/* ! __cplusplus */
-
-/* C99 requires __STDC__ to be defined as 1. */
-#if defined (__STDC__)
-
-#define YY_USE_CONST
-
-#endif	/* defined (__STDC__) */
-#endif	/* ! __cplusplus */
-
-#ifdef YY_USE_CONST
+/* TODO: this is always defined, so inline it */
 #define yyconst const
+
+#if defined(__GNUC__) && __GNUC__ >= 3
+#define yynoreturn __attribute__((__noreturn__))
 #else
-#define yyconst
+#define yynoreturn
 #endif
 
 /* Returned upon end-of-file. */
@@ -209,7 +197,7 @@ typedef size_t yy_size_t;
                     if ( *p == '\n' )\
                         --yylineno;\
             }while(0)
-
+    
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
 	do \
@@ -238,12 +226,12 @@ struct yy_buffer_state
 	/* Size of input buffer in bytes, not including room for EOB
 	 * characters.
 	 */
-	yy_size_t yy_buf_size;
+	int yy_buf_size;
 
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	yy_size_t yy_n_chars;
+	int yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -322,7 +310,7 @@ static void orfz__init_buffer (YY_BUFFER_STATE b,FILE *file ,yyscan_t yyscanner 
 
 YY_BUFFER_STATE orfz__scan_buffer (char *base,yy_size_t size ,yyscan_t yyscanner );
 YY_BUFFER_STATE orfz__scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
-YY_BUFFER_STATE orfz__scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
+YY_BUFFER_STATE orfz__scan_bytes (yyconst char *bytes,int len ,yyscan_t yyscanner );
 
 void *orfz_alloc (yy_size_t ,yyscan_t yyscanner );
 void *orfz_realloc (void *,yy_size_t ,yyscan_t yyscanner );
@@ -354,7 +342,7 @@ void orfz_free (void * ,yyscan_t yyscanner );
 
 /* Begin user sect3 */
 
-#define orfz_wrap(yyscanner) 1
+#define orfz_wrap(yyscanner) (/*CONSTCOND*/1)
 #define YY_SKIP_YYWRAP
 
 typedef unsigned char YY_CHAR;
@@ -366,14 +354,14 @@ typedef int yy_state_type;
 static yy_state_type yy_get_previous_state (yyscan_t yyscanner );
 static yy_state_type yy_try_NUL_trans (yy_state_type current_state  ,yyscan_t yyscanner);
 static int yy_get_next_buffer (yyscan_t yyscanner );
-static void yy_fatal_error (yyconst char msg[] ,yyscan_t yyscanner );
+static void yynoreturn yy_fatal_error (yyconst char* msg ,yyscan_t yyscanner );
 
 /* Done after the current pattern has been matched and before the
  * corresponding action - sets up yytext.
  */
 #define YY_DO_BEFORE_ACTION \
 	yyg->yytext_ptr = yy_bp; \
-	yyleng = (size_t) (yy_cp - yy_bp); \
+	yyleng = (int) (yy_cp - yy_bp); \
 	yyg->yy_hold_char = *yy_cp; \
 	*yy_cp = '\0'; \
 	yyg->yy_c_buf_p = yy_cp;
@@ -404,7 +392,7 @@ static yyconst flex_int16_t yy_accept[117] =
         7,   24,   24,    9,    3,    0
     } ;
 
-static yyconst flex_int32_t yy_ec[256] =
+static yyconst YY_CHAR yy_ec[256] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
@@ -436,7 +424,7 @@ static yyconst flex_int32_t yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static yyconst flex_int32_t yy_meta[37] =
+static yyconst YY_CHAR yy_meta[37] =
     {   0,
         1,    1,    2,    1,    1,    1,    1,    1,    3,    3,
         3,    1,    4,    4,    5,    5,    4,    4,    4,    4,
@@ -444,7 +432,7 @@ static yyconst flex_int32_t yy_meta[37] =
         5,    5,    5,    5,    5,    5
     } ;
 
-static yyconst flex_int16_t yy_base[123] =
+static yyconst flex_uint16_t yy_base[123] =
     {   0,
         0,    0,  174,  175,  175,  175,  169,    0,   28,  164,
        32,   17,  159,    0,  154,  140,  141,  140,   28,  140,
@@ -480,7 +468,7 @@ static yyconst flex_int16_t yy_def[123] =
       116,  116
     } ;
 
-static yyconst flex_int16_t yy_nxt[212] =
+static yyconst flex_uint16_t yy_nxt[212] =
     {   0,
         4,    5,    6,    7,    8,    4,    9,   10,   11,   12,
        12,   13,   14,   14,   14,   15,   16,   17,   18,   14,
@@ -539,7 +527,7 @@ static yyconst flex_int16_t yy_chk[212] =
 /* Table of booleans, true if rule could match eol. */
 static yyconst flex_int32_t yy_rule_can_match_eol[32] =
     {   0,
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
     0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,     };
 
 /* The intent behind this definition is that it'll catch
@@ -549,11 +537,11 @@ static yyconst flex_int32_t yy_rule_can_match_eol[32] =
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
-#line 1 "ortools/flatzinc/parser.lex"
+#line 1 "./ortools/flatzinc/parser.lex"
 /* Create a reentrant parser. */
 /* Allow parameter passing to and from the bison parser. */
 /* Rename yy to orfz_ in public functions. */
-#line 11 "ortools/flatzinc/parser.lex"
+#line 11 "./ortools/flatzinc/parser.lex"
 #include <string>
 #include "ortools/base/integral_types.h"
 #include "ortools/base/strtoint.h"
@@ -567,7 +555,7 @@ using operations_research::atoi64;
 /* Rules that parse the bottom-line std::string tokens of a .fz file and
    convert them into YACC tokens, which may carry a value. See the
    LexerInfo struct and the %token declarations in ./parser.yy. */
-#line 571 "ortools/flatzinc/parser.yy.cc"
+#line 559 "./ortools/flatzinc/parser.yy.cc"
 
 #define INITIAL 0
 
@@ -596,8 +584,8 @@ struct yyguts_t
     size_t yy_buffer_stack_max; /**< capacity of stack. */
     YY_BUFFER_STATE * yy_buffer_stack; /**< Stack as an array. */
     char yy_hold_char;
-    yy_size_t yy_n_chars;
-    yy_size_t yyleng_r;
+    int yy_n_chars;
+    int yyleng_r;
     char *yy_c_buf_p;
     int yy_init;
     int yy_start;
@@ -624,7 +612,7 @@ static int yy_init_globals (yyscan_t yyscanner );
     /* This must go here because YYSTYPE and YYLTYPE are included
      * from bison output in section 1.*/
     #    define yylval yyg->yylval_r
-
+    
 int orfz_lex_init (yyscan_t* scanner);
 
 int orfz_lex_init_extra (YY_EXTRA_TYPE user_defined,yyscan_t* scanner);
@@ -644,23 +632,23 @@ void orfz_set_extra (YY_EXTRA_TYPE user_defined ,yyscan_t yyscanner );
 
 FILE *orfz_get_in (yyscan_t yyscanner );
 
-void orfz_set_in  (FILE * in_str ,yyscan_t yyscanner );
+void orfz_set_in  (FILE * _in_str ,yyscan_t yyscanner );
 
 FILE *orfz_get_out (yyscan_t yyscanner );
 
-void orfz_set_out  (FILE * out_str ,yyscan_t yyscanner );
+void orfz_set_out  (FILE * _out_str ,yyscan_t yyscanner );
 
-yy_size_t orfz_get_leng (yyscan_t yyscanner );
+			int orfz_get_leng (yyscan_t yyscanner );
 
 char *orfz_get_text (yyscan_t yyscanner );
 
 int orfz_get_lineno (yyscan_t yyscanner );
 
-void orfz_set_lineno (int line_number ,yyscan_t yyscanner );
+void orfz_set_lineno (int _line_number ,yyscan_t yyscanner );
 
 int orfz_get_column  (yyscan_t yyscanner );
 
-void orfz_set_column (int column_no ,yyscan_t yyscanner );
+void orfz_set_column (int _column_no ,yyscan_t yyscanner );
 
 YYSTYPE * orfz_get_lval (yyscan_t yyscanner );
 
@@ -678,7 +666,11 @@ extern int orfz_wrap (yyscan_t yyscanner );
 #endif
 #endif
 
+#ifndef YY_NO_UNPUT
+    
     static void yyunput (int c,char *buf_ptr  ,yyscan_t yyscanner);
+    
+#endif
 
 #ifndef yytext_ptr
 static void yy_flex_strncpy (char *,yyconst char *,int ,yyscan_t yyscanner);
@@ -713,7 +705,7 @@ static int input (yyscan_t yyscanner );
 /* This used to be an fputs(), but since the string might contain NUL's,
  * we now use fwrite().
  */
-#define ECHO do { if (fwrite( yytext, yyleng, 1, yyout )) {} } while (0)
+#define ECHO do { if (fwrite( yytext, (size_t) yyleng, 1, yyout )) {} } while (0)
 #endif
 
 /* Gets input and stuffs it into "buf".  number of characters read, or YY_NULL,
@@ -737,7 +729,7 @@ static int input (yyscan_t yyscanner );
 	else \
 		{ \
 		errno=0; \
-		while ( (result = fread(buf, 1, max_size, yyin))==0 && ferror(yyin)) \
+		while ( (result = (int) fread(buf, 1, max_size, yyin))==0 && ferror(yyin)) \
 			{ \
 			if( errno != EINTR) \
 				{ \
@@ -794,7 +786,7 @@ extern int orfz_lex \
 
 /* Code executed at the end of each rule. */
 #ifndef YY_BREAK
-#define YY_BREAK break;
+#define YY_BREAK /*LINTED*/break;
 #endif
 
 #define YY_RULE_SETUP \
@@ -804,9 +796,9 @@ extern int orfz_lex \
  */
 YY_DECL
 {
-	register yy_state_type yy_current_state;
-	register char *yy_cp, *yy_bp;
-	register int yy_act;
+	yy_state_type yy_current_state;
+	char *yy_cp, *yy_bp;
+	int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
     yylval = yylval_param;
@@ -838,11 +830,11 @@ YY_DECL
 		}
 
 	{
-#line 27 "ortools/flatzinc/parser.lex"
+#line 27 "./ortools/flatzinc/parser.lex"
 
-#line 844 "ortools/flatzinc/parser.yy.cc"
+#line 836 "./ortools/flatzinc/parser.yy.cc"
 
-	while ( 1 )		/* loops until end-of-file is reached */
+	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
 		yy_cp = yyg->yy_c_buf_p;
 
@@ -858,7 +850,7 @@ YY_DECL
 yy_match:
 		do
 			{
-			register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)] ;
+			YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)] ;
 			if ( yy_accept[yy_current_state] )
 				{
 				yyg->yy_last_accepting_state = yy_current_state;
@@ -870,7 +862,7 @@ yy_match:
 				if ( yy_current_state >= 117 )
 					yy_c = yy_meta[(unsigned int) yy_c];
 				}
-			yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
+			yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
 			++yy_cp;
 			}
 		while ( yy_base[yy_current_state] != 175 );
@@ -888,10 +880,10 @@ yy_find_action:
 
 		if ( yy_act != YY_END_OF_BUFFER && yy_rule_can_match_eol[yy_act] )
 			{
-			yy_size_t yyl;
+			int yyl;
 			for ( yyl = 0; yyl < yyleng; ++yyl )
 				if ( yytext[yyl] == '\n' )
-
+					
     do{ yylineno++;
         yycolumn=0;
     }while(0)
@@ -911,82 +903,82 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 28 "ortools/flatzinc/parser.lex"
+#line 28 "./ortools/flatzinc/parser.lex"
 { return ARRAY;     }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 29 "ortools/flatzinc/parser.lex"
+#line 29 "./ortools/flatzinc/parser.lex"
 { return BOOL;      }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 30 "ortools/flatzinc/parser.lex"
+#line 30 "./ortools/flatzinc/parser.lex"
 { return CONSTRAINT;}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 31 "ortools/flatzinc/parser.lex"
+#line 31 "./ortools/flatzinc/parser.lex"
 { return FLOAT;     }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 32 "ortools/flatzinc/parser.lex"
+#line 32 "./ortools/flatzinc/parser.lex"
 { return INT;       }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 33 "ortools/flatzinc/parser.lex"
+#line 33 "./ortools/flatzinc/parser.lex"
 { return MAXIMIZE;  }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 34 "ortools/flatzinc/parser.lex"
+#line 34 "./ortools/flatzinc/parser.lex"
 { return MINIMIZE;  }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 35 "ortools/flatzinc/parser.lex"
+#line 35 "./ortools/flatzinc/parser.lex"
 { return OF;        }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 36 "ortools/flatzinc/parser.lex"
+#line 36 "./ortools/flatzinc/parser.lex"
 { return PREDICATE; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 37 "ortools/flatzinc/parser.lex"
+#line 37 "./ortools/flatzinc/parser.lex"
 { return SATISFY;   }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 38 "ortools/flatzinc/parser.lex"
+#line 38 "./ortools/flatzinc/parser.lex"
 { return SET;       }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 39 "ortools/flatzinc/parser.lex"
+#line 39 "./ortools/flatzinc/parser.lex"
 { return SOLVE;     }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 40 "ortools/flatzinc/parser.lex"
+#line 40 "./ortools/flatzinc/parser.lex"
 { return VAR;       }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 41 "ortools/flatzinc/parser.lex"
+#line 41 "./ortools/flatzinc/parser.lex"
 { return DOTDOT;    }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 42 "ortools/flatzinc/parser.lex"
+#line 42 "./ortools/flatzinc/parser.lex"
 { return COLONCOLON;}
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 44 "ortools/flatzinc/parser.lex"
+#line 44 "./ortools/flatzinc/parser.lex"
 {
   yylval->integer_value = 1;
   return IVALUE;
@@ -994,7 +986,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 48 "ortools/flatzinc/parser.lex"
+#line 48 "./ortools/flatzinc/parser.lex"
 {
   yylval->integer_value = 0;
   return IVALUE;
@@ -1002,7 +994,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 52 "ortools/flatzinc/parser.lex"
+#line 52 "./ortools/flatzinc/parser.lex"
 {
   yylval->integer_value = atoi64(yytext);
   return IVALUE;
@@ -1010,7 +1002,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 56 "ortools/flatzinc/parser.lex"
+#line 56 "./ortools/flatzinc/parser.lex"
 {
   yylval->integer_value = atoi64(yytext);
   return IVALUE;
@@ -1018,7 +1010,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 60 "ortools/flatzinc/parser.lex"
+#line 60 "./ortools/flatzinc/parser.lex"
 {
   yylval->integer_value = atoi64(yytext);
   return IVALUE;
@@ -1026,7 +1018,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 64 "ortools/flatzinc/parser.lex"
+#line 64 "./ortools/flatzinc/parser.lex"
 {
   yylval->double_value = strtod(yytext,nullptr);
   return DVALUE;
@@ -1034,7 +1026,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 68 "ortools/flatzinc/parser.lex"
+#line 68 "./ortools/flatzinc/parser.lex"
 {
   yylval->double_value = strtod(yytext,nullptr);
   return DVALUE;
@@ -1042,7 +1034,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 72 "ortools/flatzinc/parser.lex"
+#line 72 "./ortools/flatzinc/parser.lex"
 {
   yylval->double_value = strtod(yytext,nullptr);
   return DVALUE;
@@ -1051,7 +1043,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 77 "ortools/flatzinc/parser.lex"
+#line 77 "./ortools/flatzinc/parser.lex"
 {
   yylval->string_value = yytext;
   return IDENTIFIER;
@@ -1059,7 +1051,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 81 "ortools/flatzinc/parser.lex"
+#line 81 "./ortools/flatzinc/parser.lex"
 {
   yylval->string_value = yytext;
   return IDENTIFIER;
@@ -1067,36 +1059,36 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 85 "ortools/flatzinc/parser.lex"
+#line 85 "./ortools/flatzinc/parser.lex"
 { yylval->string_value = yytext; return SVALUE; }
 	YY_BREAK
 case 27:
 /* rule 27 can match eol */
 YY_RULE_SETUP
-#line 86 "ortools/flatzinc/parser.lex"
+#line 86 "./ortools/flatzinc/parser.lex"
 ;
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 87 "ortools/flatzinc/parser.lex"
+#line 87 "./ortools/flatzinc/parser.lex"
 ;
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 88 "ortools/flatzinc/parser.lex"
+#line 88 "./ortools/flatzinc/parser.lex"
 ;
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 89 "ortools/flatzinc/parser.lex"
+#line 89 "./ortools/flatzinc/parser.lex"
 { return yytext[0]; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 90 "ortools/flatzinc/parser.lex"
+#line 90 "./ortools/flatzinc/parser.lex"
 ECHO;
 	YY_BREAK
-#line 1100 "ortools/flatzinc/parser.yy.cc"
+#line 1092 "./ortools/flatzinc/parser.yy.cc"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1240,9 +1232,9 @@ case YY_STATE_EOF(INITIAL):
 static int yy_get_next_buffer (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
-	register char *dest = YY_CURRENT_BUFFER_LVALUE->yy_ch_buf;
-	register char *source = yyg->yytext_ptr;
-	register int number_to_move, i;
+	char *dest = YY_CURRENT_BUFFER_LVALUE->yy_ch_buf;
+	char *source = yyg->yytext_ptr;
+	int number_to_move, i;
 	int ret_val;
 
 	if ( yyg->yy_c_buf_p > &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[yyg->yy_n_chars + 1] )
@@ -1271,7 +1263,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	/* Try to read more data. */
 
 	/* First move last chars to start of buffer. */
-	number_to_move = (int) (yyg->yy_c_buf_p - yyg->yytext_ptr) - 1;
+	number_to_move = (int) (yyg->yy_c_buf_p - yyg->yytext_ptr - 1);
 
 	for ( i = 0; i < number_to_move; ++i )
 		*(dest++) = *(source++);
@@ -1284,7 +1276,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 	else
 		{
-			yy_size_t num_to_read =
+			int num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
@@ -1298,7 +1290,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 			if ( b->yy_is_our_buffer )
 				{
-				yy_size_t new_size = b->yy_buf_size * 2;
+				int new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1311,7 +1303,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 				}
 			else
 				/* Can't grow it, we don't own it. */
-				b->yy_ch_buf = 0;
+				b->yy_ch_buf = NULL;
 
 			if ( ! b->yy_ch_buf )
 				YY_FATAL_ERROR(
@@ -1353,9 +1345,9 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	else
 		ret_val = EOB_ACT_CONTINUE_SCAN;
 
-	if ((yy_size_t) (yyg->yy_n_chars + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size) {
+	if ((yyg->yy_n_chars + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size) {
 		/* Extend the array by 50%, plus the number we really need. */
-		yy_size_t new_size = yyg->yy_n_chars + number_to_move + (yyg->yy_n_chars >> 1);
+		int new_size = yyg->yy_n_chars + number_to_move + (yyg->yy_n_chars >> 1);
 		YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) orfz_realloc((void *) YY_CURRENT_BUFFER_LVALUE->yy_ch_buf,new_size ,yyscanner );
 		if ( ! YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
 			YY_FATAL_ERROR( "out of dynamic memory in yy_get_next_buffer()" );
@@ -1374,15 +1366,15 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
     static yy_state_type yy_get_previous_state (yyscan_t yyscanner)
 {
-	register yy_state_type yy_current_state;
-	register char *yy_cp;
+	yy_state_type yy_current_state;
+	char *yy_cp;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
 	yy_current_state = yyg->yy_start;
 
 	for ( yy_cp = yyg->yytext_ptr + YY_MORE_ADJ; yy_cp < yyg->yy_c_buf_p; ++yy_cp )
 		{
-		register YY_CHAR yy_c = (*yy_cp ? yy_ec[YY_SC_TO_UI(*yy_cp)] : 1);
+		YY_CHAR yy_c = (*yy_cp ? yy_ec[YY_SC_TO_UI(*yy_cp)] : 1);
 		if ( yy_accept[yy_current_state] )
 			{
 			yyg->yy_last_accepting_state = yy_current_state;
@@ -1394,7 +1386,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 			if ( yy_current_state >= 117 )
 				yy_c = yy_meta[(unsigned int) yy_c];
 			}
-		yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
+		yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
 		}
 
 	return yy_current_state;
@@ -1407,11 +1399,11 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
  */
     static yy_state_type yy_try_NUL_trans  (yy_state_type yy_current_state , yyscan_t yyscanner)
 {
-	register int yy_is_jam;
+	int yy_is_jam;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner; /* This var may be unused depending upon options. */
-	register char *yy_cp = yyg->yy_c_buf_p;
+	char *yy_cp = yyg->yy_c_buf_p;
 
-	register YY_CHAR yy_c = 1;
+	YY_CHAR yy_c = 1;
 	if ( yy_accept[yy_current_state] )
 		{
 		yyg->yy_last_accepting_state = yy_current_state;
@@ -1423,16 +1415,18 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 		if ( yy_current_state >= 117 )
 			yy_c = yy_meta[(unsigned int) yy_c];
 		}
-	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
+	yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
 	yy_is_jam = (yy_current_state == 116);
 
 	(void)yyg;
 	return yy_is_jam ? 0 : yy_current_state;
 }
 
-    static void yyunput (int c, register char * yy_bp , yyscan_t yyscanner)
+#ifndef YY_NO_UNPUT
+
+    static void yyunput (int c, char * yy_bp , yyscan_t yyscanner)
 {
-	register char *yy_cp;
+	char *yy_cp;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
     yy_cp = yyg->yy_c_buf_p;
@@ -1443,10 +1437,10 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 		{ /* need to shift things up to make room */
 		/* +2 for EOB chars. */
-		register yy_size_t number_to_move = yyg->yy_n_chars + 2;
-		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
+		int number_to_move = yyg->yy_n_chars + 2;
+		char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
-		register char *source =
+		char *source =
 				&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move];
 
 		while ( source > YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
@@ -1455,7 +1449,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 		yy_cp += (int) (dest - source);
 		yy_bp += (int) (dest - source);
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars =
-			yyg->yy_n_chars = YY_CURRENT_BUFFER_LVALUE->yy_buf_size;
+			yyg->yy_n_chars = (int) YY_CURRENT_BUFFER_LVALUE->yy_buf_size;
 
 		if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 			YY_FATAL_ERROR( "flex scanner push-back overflow" );
@@ -1471,6 +1465,8 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	yyg->yy_hold_char = *yy_cp;
 	yyg->yy_c_buf_p = yy_cp;
 }
+
+#endif
 
 #ifndef YY_NO_INPUT
 #ifdef __cplusplus
@@ -1497,7 +1493,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 		else
 			{ /* need more input */
-			yy_size_t offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
+			int offset = yyg->yy_c_buf_p - yyg->yytext_ptr;
 			++yyg->yy_c_buf_p;
 
 			switch ( yy_get_next_buffer( yyscanner ) )
@@ -1521,7 +1517,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 				case EOB_ACT_END_OF_FILE:
 					{
 					if ( orfz_wrap(yyscanner ) )
-						return EOF;
+						return 0;
 
 					if ( ! yyg->yy_did_buffer_switch_on_eof )
 						YY_NEW_FILE;
@@ -1544,7 +1540,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	yyg->yy_hold_char = *++yyg->yy_c_buf_p;
 
 	if ( c == '\n' )
-
+		
     do{ yylineno++;
         yycolumn=0;
     }while(0)
@@ -1627,12 +1623,12 @@ static void orfz__load_buffer_state  (yyscan_t yyscanner)
     YY_BUFFER_STATE orfz__create_buffer  (FILE * file, int  size , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
-
+    
 	b = (YY_BUFFER_STATE) orfz_alloc(sizeof( struct yy_buffer_state ) ,yyscanner );
 	if ( ! b )
 		YY_FATAL_ERROR( "out of dynamic memory in orfz__create_buffer()" );
 
-	b->yy_buf_size = size;
+	b->yy_buf_size = (yy_size_t)size;
 
 	/* yy_ch_buf has to be 2 characters longer than the size given because
 	 * we need to put in 2 end-of-buffer characters.
@@ -1693,7 +1689,7 @@ static void orfz__load_buffer_state  (yyscan_t yyscanner)
     }
 
         b->yy_is_interactive = file ? (isatty( fileno(file) ) > 0) : 0;
-
+    
 	errno = oerrno;
 }
 
@@ -1784,7 +1780,7 @@ void orfz_pop_buffer_state (yyscan_t yyscanner)
  */
 static void orfz_ensure_buffer_stack (yyscan_t yyscanner)
 {
-	yy_size_t num_to_alloc;
+	int num_to_alloc;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
 	if (!yyg->yy_buffer_stack) {
@@ -1793,7 +1789,7 @@ static void orfz_ensure_buffer_stack (yyscan_t yyscanner)
 		 * scanner will even need a stack. We use 2 instead of 1 to avoid an
 		 * immediate realloc on the next call.
          */
-		num_to_alloc = 1;
+      num_to_alloc = 1; /* After all that talk, this was set to 1 anyways... */
 		yyg->yy_buffer_stack = (struct yy_buffer_state**)orfz_alloc
 								(num_to_alloc * sizeof(struct yy_buffer_state*)
 								, yyscanner);
@@ -1810,7 +1806,7 @@ static void orfz_ensure_buffer_stack (yyscan_t yyscanner)
 	if (yyg->yy_buffer_stack_top >= (yyg->yy_buffer_stack_max) - 1){
 
 		/* Increase the buffer to prepare for a possible push. */
-		int grow_size = 8 /* arbitrary grow size */;
+		yy_size_t grow_size = 8 /* arbitrary grow size */;
 
 		num_to_alloc = yyg->yy_buffer_stack_max + grow_size;
 		yyg->yy_buffer_stack = (struct yy_buffer_state**)orfz_realloc
@@ -1835,12 +1831,12 @@ static void orfz_ensure_buffer_stack (yyscan_t yyscanner)
 YY_BUFFER_STATE orfz__scan_buffer  (char * base, yy_size_t  size , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
-
+    
 	if ( size < 2 ||
 	     base[size-2] != YY_END_OF_BUFFER_CHAR ||
 	     base[size-1] != YY_END_OF_BUFFER_CHAR )
 		/* They forgot to leave room for the EOB's. */
-		return 0;
+		return NULL;
 
 	b = (YY_BUFFER_STATE) orfz_alloc(sizeof( struct yy_buffer_state ) ,yyscanner );
 	if ( ! b )
@@ -1849,7 +1845,7 @@ YY_BUFFER_STATE orfz__scan_buffer  (char * base, yy_size_t  size , yyscan_t yysc
 	b->yy_buf_size = size - 2;	/* "- 2" to take care of EOB's */
 	b->yy_buf_pos = b->yy_ch_buf = base;
 	b->yy_is_our_buffer = 0;
-	b->yy_input_file = 0;
+	b->yy_input_file = NULL;
 	b->yy_n_chars = b->yy_buf_size;
 	b->yy_is_interactive = 0;
 	b->yy_at_bol = 1;
@@ -1871,8 +1867,8 @@ YY_BUFFER_STATE orfz__scan_buffer  (char * base, yy_size_t  size , yyscan_t yysc
  */
 YY_BUFFER_STATE orfz__scan_string (yyconst char * yystr , yyscan_t yyscanner)
 {
-
-	return orfz__scan_bytes(yystr,strlen(yystr) ,yyscanner);
+    
+	return orfz__scan_bytes(yystr,(int) strlen(yystr) ,yyscanner);
 }
 
 /** Setup the input buffer state to scan the given bytes. The next call to orfz_lex() will
@@ -1882,15 +1878,15 @@ YY_BUFFER_STATE orfz__scan_string (yyconst char * yystr , yyscan_t yyscanner)
  * @param yyscanner The scanner object.
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE orfz__scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len , yyscan_t yyscanner)
+YY_BUFFER_STATE orfz__scan_bytes  (yyconst char * yybytes, int  _yybytes_len , yyscan_t yyscanner)
 {
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	yy_size_t i;
-
+	int i;
+    
 	/* Get memory for full buffer, including space for trailing EOB's. */
-	n = _yybytes_len + 2;
+	n = (yy_size_t) (_yybytes_len + 2);
 	buf = (char *) orfz_alloc(n ,yyscanner );
 	if ( ! buf )
 		YY_FATAL_ERROR( "out of dynamic memory in orfz__scan_bytes()" );
@@ -1916,9 +1912,11 @@ YY_BUFFER_STATE orfz__scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_l
 #define YY_EXIT_FAILURE 2
 #endif
 
-static void yy_fatal_error (yyconst char* msg , yyscan_t yyscanner)
+static void yynoreturn yy_fatal_error (yyconst char* msg , yyscan_t yyscanner)
 {
-    	(void) fprintf( stderr, "%s\n", msg );
+	struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+	(void)yyg;
+	(void) fprintf( stderr, "%s\n", msg );
 	exit( YY_EXIT_FAILURE );
 }
 
@@ -1959,7 +1957,7 @@ int orfz_get_lineno  (yyscan_t yyscanner)
 
         if (! YY_CURRENT_BUFFER)
             return 0;
-
+    
     return yylineno;
 }
 
@@ -1972,7 +1970,7 @@ int orfz_get_column  (yyscan_t yyscanner)
 
         if (! YY_CURRENT_BUFFER)
             return 0;
-
+    
     return yycolumn;
 }
 
@@ -1997,7 +1995,7 @@ FILE *orfz_get_out  (yyscan_t yyscanner)
 /** Get the length of the current token.
  * @param yyscanner The scanner object.
  */
-yy_size_t orfz_get_leng  (yyscan_t yyscanner)
+int orfz_get_leng  (yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
     return yyleng;
@@ -2024,51 +2022,51 @@ void orfz_set_extra (YY_EXTRA_TYPE  user_defined , yyscan_t yyscanner)
 }
 
 /** Set the current line number.
- * @param line_number
+ * @param _line_number line number
  * @param yyscanner The scanner object.
  */
-void orfz_set_lineno (int  line_number , yyscan_t yyscanner)
+void orfz_set_lineno (int  _line_number , yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
         /* lineno is only valid if an input buffer exists. */
         if (! YY_CURRENT_BUFFER )
            YY_FATAL_ERROR( "orfz_set_lineno called with no buffer" );
-
-    yylineno = line_number;
+    
+    yylineno = _line_number;
 }
 
 /** Set the current column.
- * @param line_number
+ * @param _column_no column number
  * @param yyscanner The scanner object.
  */
-void orfz_set_column (int  column_no , yyscan_t yyscanner)
+void orfz_set_column (int  _column_no , yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
         /* column is only valid if an input buffer exists. */
         if (! YY_CURRENT_BUFFER )
            YY_FATAL_ERROR( "orfz_set_column called with no buffer" );
-
-    yycolumn = column_no;
+    
+    yycolumn = _column_no;
 }
 
 /** Set the input stream. This does not discard the current
  * input buffer.
- * @param in_str A readable stream.
+ * @param _in_str A readable stream.
  * @param yyscanner The scanner object.
  * @see orfz__switch_to_buffer
  */
-void orfz_set_in (FILE *  in_str , yyscan_t yyscanner)
+void orfz_set_in (FILE *  _in_str , yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
-    yyin = in_str ;
+    yyin = _in_str ;
 }
 
-void orfz_set_out (FILE *  out_str , yyscan_t yyscanner)
+void orfz_set_out (FILE *  _out_str , yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
-    yyout = out_str ;
+    yyout = _out_str ;
 }
 
 int orfz_get_debug  (yyscan_t yyscanner)
@@ -2077,10 +2075,10 @@ int orfz_get_debug  (yyscan_t yyscanner)
     return yy_flex_debug;
 }
 
-void orfz_set_debug (int  bdebug , yyscan_t yyscanner)
+void orfz_set_debug (int  _bdebug , yyscan_t yyscanner)
 {
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
-    yy_flex_debug = bdebug ;
+    yy_flex_debug = _bdebug ;
 }
 
 /* Accessor methods for yylval and yylloc */
@@ -2168,10 +2166,10 @@ static int yy_init_globals (yyscan_t yyscanner)
      * This function is called from orfz_lex_destroy(), so don't allocate here.
      */
 
-    yyg->yy_buffer_stack = 0;
+    yyg->yy_buffer_stack = NULL;
     yyg->yy_buffer_stack_top = 0;
     yyg->yy_buffer_stack_max = 0;
-    yyg->yy_c_buf_p = (char *) 0;
+    yyg->yy_c_buf_p = NULL;
     yyg->yy_init = 0;
     yyg->yy_start = 0;
 
@@ -2184,8 +2182,8 @@ static int yy_init_globals (yyscan_t yyscanner)
     yyin = stdin;
     yyout = stdout;
 #else
-    yyin = (FILE *) 0;
-    yyout = (FILE *) 0;
+    yyin = NULL;
+    yyout = NULL;
 #endif
 
     /* For future reference: Set errno on error, since we are called by
@@ -2231,7 +2229,10 @@ int orfz_lex_destroy  (yyscan_t yyscanner)
 #ifndef yytext_ptr
 static void yy_flex_strncpy (char* s1, yyconst char * s2, int n , yyscan_t yyscanner)
 {
-	register int i;
+	struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+	(void)yyg;
+
+	int i;
 	for ( i = 0; i < n; ++i )
 		s1[i] = s2[i];
 }
@@ -2240,7 +2241,7 @@ static void yy_flex_strncpy (char* s1, yyconst char * s2, int n , yyscan_t yysca
 #ifdef YY_NEED_STRLEN
 static int yy_flex_strlen (yyconst char * s , yyscan_t yyscanner)
 {
-	register int n;
+	int n;
 	for ( n = 0; s[n]; ++n )
 		;
 
@@ -2250,11 +2251,16 @@ static int yy_flex_strlen (yyconst char * s , yyscan_t yyscanner)
 
 void *orfz_alloc (yy_size_t  size , yyscan_t yyscanner)
 {
-	return (void *) malloc( size );
+	struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+	(void)yyg;
+	return malloc(size);
 }
 
 void *orfz_realloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
 {
+	struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+	(void)yyg;
+
 	/* The cast to (char *) in the following accommodates both
 	 * implementations that use char* generic pointers, and those
 	 * that use void* generic pointers.  It works with the latter
@@ -2262,14 +2268,19 @@ void *orfz_realloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
 	 * any pointer type to void*, and deal with argument conversions
 	 * as though doing an assignment.
 	 */
-	return (void *) realloc( (char *) ptr, size );
+	return realloc(ptr, size);
 }
 
 void orfz_free (void * ptr , yyscan_t yyscanner)
 {
+	struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+	(void)yyg;
 	free( (char *) ptr );	/* see orfz_realloc() for (char *) cast */
 }
 
 #define YYTABLES_NAME "yytables"
 
-#line 89 "ortools/flatzinc/parser.lex"
+#line 90 "./ortools/flatzinc/parser.lex"
+
+
+

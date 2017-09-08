@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,8 +30,8 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_ORFZ_SRC_FLATZINC_PARSER_TAB_HH_INCLUDED
-# define YY_ORFZ_SRC_FLATZINC_PARSER_TAB_HH_INCLUDED
+#ifndef YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED
+# define YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 1
@@ -40,12 +40,11 @@
 extern int orfz_debug;
 #endif
 /* "%code requires" blocks.  */
-#line 21 "ortools/flatzinc/parser.yy" /* yacc.c:1909  */
+#line 21 "./ortools/flatzinc/parser.yy" /* yacc.c:1909  */
 
 #if !defined(OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_)
 #define OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
 #include "ortools/base/strutil.h"
-#include "ortools/base/stringpiece_utils.h"
 #include "ortools/flatzinc/parser_util.h"
 
 // Tells flex to use the LexerInfo class to communicate with the bison parser.
@@ -56,7 +55,7 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 #endif  // OR_TOOLS_FLATZINC_FLATZINC_TAB_HH_
 
-#line 60 "ortools/flatzinc/parser.tab.hh" /* yacc.c:1909  */
+#line 59 "./ortools/flatzinc/parser.tab.hh" /* yacc.c:1909  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -91,4 +90,4 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 
 int orfz_parse (operations_research::fz::ParserContext* context, operations_research::fz::Model* model, bool* ok, void* scanner);
 
-#endif /* !YY_ORFZ_SRC_FLATZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_ORFZ_ORTOOLS_FLATZINC_PARSER_TAB_HH_INCLUDED  */

@@ -210,9 +210,9 @@ FLATZINC_OBJS=\
 	$(OBJ_DIR)/flatzinc/solver_data.$O \
 	$(OBJ_DIR)/flatzinc/solver_util.$O
 
-fz_parser: $(SRC_DIR)/ortools/flatzinc/parser.lex $(SRC_DIR)/ortools/flatzinc/parser.yy
+fz_parser: #$(SRC_DIR)/ortools/flatzinc/parser.lex $(SRC_DIR)/ortools/flatzinc/parser.yy
 	flex -o$(SRC_DIR)/ortools/flatzinc/parser.yy.cc $(SRC_DIR)/ortools/flatzinc/parser.lex
-	bison -t -o $(SRC_DIR)/ortools/flatzinc/parser.tab.cc -d $<
+	bison -t -o $(SRC_DIR)/ortools/flatzinc/parser.tab.cc -d $(SRC_DIR)/ortools/flatzinc/parser.yy
 
 $(OBJ_DIR)/flatzinc/checker.$O: $(SRC_DIR)/ortools/flatzinc/checker.cc $(FLATZINC_DEPS)
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sflatzinc$Schecker.cc $(OBJ_OUT)$(OBJ_DIR)$Sflatzinc$Schecker.$O
