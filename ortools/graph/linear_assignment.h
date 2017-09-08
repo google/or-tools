@@ -730,42 +730,36 @@ class LinearSumAssignment {
   // while we have only relabelings that take place as part of the
   // double-push operation at nodes without excess.
   //
-  // Lemma 2: When a right-side node v is relabeled by our
-  // implementation, either the problem is infeasible or there exists
-  // a node w such that
-  // A. w is reachable from v along some simple residual path P where
-  //    reverse(P) was residual at the beginning of the current
-  //    iteration; and
-  // B. at least one of the following holds:
-  //    1. when w was last relabeled, there existed a path P' from w
-  //       to a node with deficit in the residual graph where
-  //       reverse(P') was residual at the beginning of the current
-  //       iteration; or
-  //    2. when w was last relabeled, it was a slack relabeling;
-  //    and
-  // C. at least one of the following holds:
-  //    1. w will not be relabeled again in this iteration; or
-  //    2. v == w.
+  // Lemma 2: If the problem is feasible, for any node v with excess,
+  // there exists a path P from v to a node w with deficit such that P
+  // is residual with respect to the current pseudoflow, and
+  // reverse(P) is residual with respect to the flow at the beginning
+  // of the current iteration. (Note that such a path exactly
+  // satisfies the conditions of Lemma 1.)
   //
-  // The proof of Lemma 2 is somewhat messy and is omitted for
-  // expedience.
-  //
-  // Lemma 1 bounds the price change during an iteration for any node
-  // relabeled when a deficit is residually reachable from that node,
-  // since a node w with deficit is not relabeled, hence p(w) = 0 in
-  // the Lemma 1 bound. Let the bound from Lemma 1 with p(w) = 0 be
-  // called B(e_0, e_1), and let us say that when a slack relabeling
-  // of a node v occurs, we will set the price of v to B(e_0, e_1)
-  // such that v tightly satisfies the bound of Lemma 1. Explicitly,
-  // we define
+  // Let the bound from Lemma 1 with p(w) = 0 be called B(e_0, e_1),
+  // and let us say that when a slack relabeling of a node v occurs,
+  // we will change the price of v by B(e_0, e_1) such that v tightly
+  // satisfies the bound of Lemma 1. Explicitly, we define
   //   B(e_0, e_1) = -(e_0 + e_1) * (n-2)/2.
+  //
+  // Lemma 1 and Lemma 2 combine to bound the price change during an
+  // iteration for any node with excess. Viewed a different way, Lemma
+  // 1 and Lemma 2 tell us that if epsilon-optimality can be preserved
+  // by changing the price of a node by B(e_0, e_1), that node will
+  // never have excess again during the current iteration unless the
+  // problem is infeasible. This insight gives us an approach to
+  // detect infeasibility (by observing prices on nodes with excess
+  // that violate this bound) and to relabel nodes aggressively enough
+  // to avoid unnecessary future work while we also avoid falsely
+  // concluding the problem is infeasible.
   //
   // From Lemma 1 and Lemma 2, and taking into account our knowledge
   // of the slack relabeling amount, we have Lemma 3.
   //
   // Lemma 3: During any iteration, if the given problem is feasible
   // the price of any node is reduced by less than
-  //   2 * B(e_0, e_1) = -(e_0 + e_1) * (n-2).
+  //   -2 * B(e_0, e_1) = (e_0 + e_1) * (n-2).
   //
   // Proof: Straightforward, omitted for expedience.
   //
@@ -1237,6 +1231,15 @@ bool LinearSumAssignment<GraphType>::Refine() {
     const NodeIndex node = active_nodes_->Get();
     if (!DoublePush(node)) {
       // Infeasibility detected.
+      //
+      // If infeasibility is detected after the first iteration, we
+      // have a bug. We don't crash production code in this case but
+      // we know we're returning a wrong answer so we we leave a
+      // message in the logs to increase our hope of chasing down the
+      // problem.
+      LOG_IF(DFATAL, total_stats_.refinements_ > 0)
+          << "Infeasibility detection triggered after first iteration found "
+          << "a feasible assignment!";
       return false;
     }
   }
@@ -1273,8 +1276,9 @@ LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
   // with only a single incident residual arc), the corresponding
   // right-side node will be relabeled by an amount that exactly
   // matches slack_relabeling_price_.
+  const CostValue max_gap = slack_relabeling_price_ - epsilon_;
   CostValue second_min_partial_reduced_cost =
-      min_partial_reduced_cost + slack_relabeling_price_ - epsilon_;
+      min_partial_reduced_cost + max_gap;
   for (arc_it.Next(); arc_it.Ok(); arc_it.Next()) {
     const ArcIndex arc = arc_it.Index();
     const CostValue partial_reduced_cost = PartialReducedCost(arc);
@@ -1288,8 +1292,8 @@ LinearSumAssignment<GraphType>::BestArcAndGap(NodeIndex left_node) const {
       }
     }
   }
-  const CostValue gap =
-      second_min_partial_reduced_cost - min_partial_reduced_cost;
+  const CostValue gap = std::min<CostValue>(
+      second_min_partial_reduced_cost - min_partial_reduced_cost, max_gap);
   DCHECK_GE(gap, 0);
   return std::make_pair(best_arc, gap);
 }
