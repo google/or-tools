@@ -1,15 +1,27 @@
+// Copyright 2010-2017 Google
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#I "../../bin"
+#r "Google.OrTools.dll"
+
+#load "Google.OrTools.FSharp.fsx"
 
 open System
 open Google.OrTools.LinearSolver
-
-
-let Glop = "GLOP_LINEAR_PROGRAMMING"
-let Glpk = "GLPK_LINEAR_PROGRAMMING"
-let Clp = "CLP_LINEAR_PROGRAMMING"
-
+open Google.OrTools.FSharp
 
 let solver solverType = 
-  let svr = Solver.CreateSolver("IntegerProgramming", solverType)
+  let svr = Solver.CreateSolver("IntegerProgramming", solverType.ToString())
 
   // x1, x2 and x3 are continuous non-negative variables.
   let x1 = svr.MakeNumVar(0.0, Double.PositiveInfinity, "x1")
@@ -77,11 +89,11 @@ let solver solverType =
   printfn "    activity = %f" (activities.[c2.Index()])
 
 
-printfn "---- Linear programming example with %s ----" Glop
-solver Glop
+printfn "---- Linear programming example with %A  ----" LinearProgramming.GLOP
+solver LinearProgramming.GLOP
 
 // printfn "---- Linear programming example with %s ----" Glpk
 // solver Glpk
 
-printfn "---- Linear programming example with %s ----" Clp
-solver Clp
+printfn "---- Linear programming example with %A ----" LinearProgramming.CLP
+solver LinearProgramming.CLP
