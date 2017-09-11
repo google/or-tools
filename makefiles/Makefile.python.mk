@@ -253,7 +253,7 @@ pypi_archive_dir: python $(PYPI_ARCHIVE_TEMP_DIR)
 # Patches the archive files to be able to build a pypi package.
 # Graft libortools if needed and set RPATHs.
 pypi_archive: pypi_archive_dir $(PATCHELF)
-ifneq ($(PLATFORM),win)
+ifneq ($(SYSTEM),win)
 	cp lib/libortools.$(LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools
 ifeq ($(PLATFORM),MACOSX)
 	tools/fix_python_libraries_on_mac.sh $(PYPI_ARCHIVE_TEMP_DIR)
