@@ -387,6 +387,7 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
     // used in any other constraint (note that we artifically bump the
     // objective var usage by 1).
     if (context->var_to_constraints[PositiveRef(literal)].size() == 1) {
+      context->UpdateRuleStats("bool_or: singleton");
       context->SetLiteralToTrue(literal);
       return RemoveConstraint(ct, context);
     }
@@ -1612,6 +1613,9 @@ void PresolveCpModel(const CpModelProto& initial_model,
           changed |= PresolveLinear(ct, &context);
           if (ct->constraint_case() ==
               ConstraintProto::ConstraintCase::kLinear) {
+            // Tricky: This is needed in case the variables have been mapped to
+            // their representative by PresolveLinear() above.
+            if (changed) context.UpdateConstraintVariableUsage(c);
             changed |= PresolveLinearIntoClauses(ct, &context);
           }
           break;

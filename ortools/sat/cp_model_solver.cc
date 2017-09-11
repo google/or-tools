@@ -1478,53 +1478,6 @@ bool LoadConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   }
 }
 
-// TODO(user): In full generality, we could encode all the constraint as an LP.
-void LoadConstraintInGlobalLp(const ConstraintProto& ct, ModelWithMapping* m,
-                              LinearProgrammingConstraint* lp) {
-  const double kInfinity = std::numeric_limits<double>::infinity();
-  if (HasEnforcementLiteral(ct)) return;
-  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
-    // TODO(user): Support this when the LinearProgrammingConstraint support
-    // SetCoefficient() with literals.
-  } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
-    const int target = ct.int_max().target();
-    for (const int var : ct.int_max().vars()) {
-      // This deal with the corner case X = std::max(X, Y, Z, ..) !
-      // Note that this can be presolved into X >= Y, X >= Z, ...
-      if (target == var) continue;
-      const auto lp_constraint = lp->CreateNewConstraint(-kInfinity, 0.0);
-      lp->SetCoefficient(lp_constraint, m->Integer(var), 1.0);
-      lp->SetCoefficient(lp_constraint, m->Integer(target), -1.0);
-    }
-  } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMin) {
-    const int target = ct.int_min().target();
-    for (const int var : ct.int_min().vars()) {
-      if (target == var) continue;
-      const auto lp_constraint = lp->CreateNewConstraint(-kInfinity, 0.0);
-      lp->SetCoefficient(lp_constraint, m->Integer(target), 1.0);
-      lp->SetCoefficient(lp_constraint, m->Integer(var), -1.0);
-    }
-  } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
-    // Note that we ignore the holes in the domain...
-    const int64 min = ct.linear().domain(0);
-    const int64 max = ct.linear().domain(ct.linear().domain_size() - 1);
-    if (min == kint64min && max == kint64max) return;
-
-    // This is needed in case of duplicate variables in the linear constraint.
-    std::unordered_map<IntegerVariable, double> terms;
-    for (int i = 0; i < ct.linear().vars_size(); i++) {
-      terms[m->Integer(ct.linear().vars(i))] += ct.linear().coeffs(i);
-    }
-
-    const double lb = (min == kint64min) ? -kInfinity : min;
-    const double ub = (max == kint64max) ? kInfinity : max;
-    const auto lp_constraint = lp->CreateNewConstraint(lb, ub);
-    for (const auto entry : terms) {
-      lp->SetCoefficient(lp_constraint, entry.first, entry.second);
-    }
-  }
-}
-
 void FillSolutionInResponse(const CpModelProto& model_proto,
                             const ModelWithMapping& m,
                             CpSolverResponse* response) {
@@ -1602,82 +1555,127 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
   model->Add(WeightedSumLowerOrEqual(vars, coeffs, 0));
   return new_var;
 }
+
+// Basic container for a linear constraint: sum_i terms[i] \in [lb, ub].
+struct LpConstraint {
+  LpConstraint(double l, double u) : lb(l), ub(u) {}
+  double lb;
+  double ub;
+  std::vector<std::pair<IntegerVariable, double>> terms;
+};
+
+// Add a linear relaxation of the CP constraint to set of linear constraints.
+//
+// TODO(user): In full generality, we could encode all the constraint as an LP.
+void TryToLinearizeConstraint(const ConstraintProto& ct, ModelWithMapping* m,
+                              std::vector<LpConstraint>* linear_constraints) {
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  if (HasEnforcementLiteral(ct)) return;
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kBoolOr) {
+    // TODO(user): Support this when the LinearProgrammingConstraint support
+    // SetCoefficient() with literals.
+  } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
+    const int target = ct.int_max().target();
+    for (const int var : ct.int_max().vars()) {
+      // This deal with the corner case X = std::max(X, Y, Z, ..) !
+      // Note that this can be presolved into X >= Y, X >= Z, ...
+      if (target == var) continue;
+      LpConstraint lc(-kInfinity, 0.0);
+      lc.terms.push_back({m->Integer(var), 1.0});
+      lc.terms.push_back({m->Integer(target), -1.0});
+      linear_constraints->push_back(lc);
+    }
+  } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMin) {
+    const int target = ct.int_min().target();
+    for (const int var : ct.int_min().vars()) {
+      if (target == var) continue;
+      LpConstraint lc(-kInfinity, 0.0);
+      lc.terms.push_back({m->Integer(target), 1.0});
+      lc.terms.push_back({m->Integer(var), -1.0});
+      linear_constraints->push_back(lc);
+    }
+  } else if (ct.constraint_case() == ConstraintProto::ConstraintCase::kLinear) {
+    // Note that we ignore the holes in the domain...
+    const int64 min = ct.linear().domain(0);
+    const int64 max = ct.linear().domain(ct.linear().domain_size() - 1);
+    if (min == kint64min && max == kint64max) return;
+
+    // This is needed in case of duplicate variables in the linear constraint.
+    std::unordered_map<IntegerVariable, double> terms;
+    for (int i = 0; i < ct.linear().vars_size(); i++) {
+      terms[m->Integer(ct.linear().vars(i))] += ct.linear().coeffs(i);
+    }
+
+    LpConstraint lc((min == kint64min) ? -kInfinity : min,
+                    (max == kint64max) ? kInfinity : max);
+    lc.terms.assign(terms.begin(), terms.end());
+    linear_constraints->push_back(lc);
+  }
+}
+
 }  // namespace
 
 // Adds one LinearProgrammingConstraint per connected component of the model.
 IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
                                  ModelWithMapping* m) {
-  const int num_constraints = model_proto.constraints().size();
-  const int num_variables = model_proto.variables().size();
+  // Linearize the constraints.
+  std::vector<LpConstraint> linear_constraints;
+  for (const auto& ct : model_proto.constraints()) {
+    TryToLinearizeConstraint(ct, m, &linear_constraints);
+  }
 
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
-  // Constraint nodes are indexed by [0..num_constraints),
-  // variable nodes by [num_constraints..num_constraints+num_variables).
+  // Constraint nodes are indexed by [0..num_lp_constraints),
+  // variable nodes by [num_lp_constraints..num_lp_constraints+num_variables).
   // TODO(user): look into biconnected components.
+  const int num_lp_constraints = linear_constraints.size();
   ConnectedComponents<int, int> components;
-  components.Init(num_constraints + num_variables);
-  std::vector<bool> constraint_has_lp_representation(num_constraints);
-  auto get_var_index = [num_constraints](int proto_var_index) {
-    return num_constraints + PositiveRef(proto_var_index);
+  components.Init(
+      num_lp_constraints +
+      m->GetOrCreate<IntegerTrail>()->NumIntegerVariables().value() / 2);
+  auto get_var_index = [num_lp_constraints](IntegerVariable var) {
+    // TODO(user): this code relies on how an IntegerVariable and its negation
+    // are encoded, hence the / 2. This is not super clean.
+    return num_lp_constraints + var.value() / 2;
   };
-
-  for (int i = 0; i < num_constraints; i++) {
-    const auto& ct = model_proto.constraints(i);
-    // Skip reified constraints.
-    if (HasEnforcementLiteral(ct)) continue;
-
-    constraint_has_lp_representation[i] = true;
-    if (ct.constraint_case() == ConstraintProto::ConstraintCase::kIntMax) {
-      components.AddArc(i, get_var_index(ct.int_max().target()));
-      for (const int var : ct.int_max().vars()) {
-        components.AddArc(i, get_var_index(var));
-      }
-    } else if (ct.constraint_case() ==
-               ConstraintProto::ConstraintCase::kIntMin) {
-      components.AddArc(i, get_var_index(ct.int_min().target()));
-      for (const int var : ct.int_min().vars()) {
-        components.AddArc(i, get_var_index(var));
-      }
-    } else if (ct.constraint_case() ==
-               ConstraintProto::ConstraintCase::kLinear) {
-      for (const int var : ct.linear().vars()) {
-        components.AddArc(i, get_var_index(var));
-      }
-    } else {
-      constraint_has_lp_representation[i] = false;
+  for (int i = 0; i < num_lp_constraints; i++) {
+    for (const auto term : linear_constraints[i].terms) {
+      components.AddArc(i, get_var_index(term.first));
     }
   }
 
   std::unordered_map<int, int> components_to_size;
-  for (int i = 0; i < num_constraints; i++) {
-    if (constraint_has_lp_representation[i]) {
-      const int id = components.GetClassRepresentative(i);
-      components_to_size[id] += 1;
-    }
+  for (int i = 0; i < num_lp_constraints; i++) {
+    const int id = components.GetClassRepresentative(i);
+    components_to_size[id] += 1;
   }
 
   // Dispatch every constraint to its LinearProgrammingConstraint.
   std::unordered_map<int, LinearProgrammingConstraint*> representative_to_lp_constraint;
-  std::unordered_map<int, std::vector<std::pair<IntegerVariable, int64>>>
-      representative_to_cp_terms;
-  std::vector<std::pair<IntegerVariable, int64>> top_level_cp_terms;
   std::vector<LinearProgrammingConstraint*> lp_constraints;
-  for (int i = 0; i < num_constraints; i++) {
-    if (constraint_has_lp_representation[i]) {
-      const auto& ct = model_proto.constraints(i);
-      const int id = components.GetClassRepresentative(i);
-      if (components_to_size[id] <= 1) continue;
-      if (!ContainsKey(representative_to_lp_constraint, id)) {
-        auto* lp = m->model()->Create<LinearProgrammingConstraint>();
-        representative_to_lp_constraint[id] = lp;
-        lp_constraints.push_back(lp);
-      }
-      LoadConstraintInGlobalLp(ct, m, representative_to_lp_constraint[id]);
+  for (int i = 0; i < num_lp_constraints; i++) {
+    const int id = components.GetClassRepresentative(i);
+    if (components_to_size[id] <= 1) continue;
+    if (!ContainsKey(representative_to_lp_constraint, id)) {
+      auto* lp = m->model()->Create<LinearProgrammingConstraint>();
+      representative_to_lp_constraint[id] = lp;
+      lp_constraints.push_back(lp);
+    }
+
+    // Load the constraint.
+    LinearProgrammingConstraint* lp = representative_to_lp_constraint[id];
+    const auto lp_constraint = lp->CreateNewConstraint(
+        linear_constraints[i].lb, linear_constraints[i].ub);
+    for (const auto& term : linear_constraints[i].terms) {
+      lp->SetCoefficient(lp_constraint, term.first, term.second);
     }
   }
 
   // Add the objective.
+  std::unordered_map<int, std::vector<std::pair<IntegerVariable, int64>>>
+      representative_to_cp_terms;
+  std::vector<std::pair<IntegerVariable, int64>> top_level_cp_terms;
   int num_components_containing_objective = 0;
   if (model_proto.has_objective()) {
     // First pass: set objective coefficients on the lp constraints, and store
@@ -1686,7 +1684,8 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
       const int var = model_proto.objective().vars(i);
       const IntegerVariable cp_var = m->Integer(var);
       const int64 coeff = model_proto.objective().coeffs(i);
-      const int id = components.GetClassRepresentative(get_var_index(var));
+      const int id =
+          components.GetClassRepresentative(get_var_index(m->Integer(var)));
       if (ContainsKey(representative_to_lp_constraint, id)) {
         representative_to_lp_constraint[id]->SetObjectiveCoefficient(cp_var,
                                                                      coeff);
