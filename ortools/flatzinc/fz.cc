@@ -65,7 +65,7 @@ DEFINE_bool(
     verbose_impact, false,
     "Increase verbosity of the impact based search when used in free search.");
 DEFINE_bool(verbose_mt, false, "Verbose Multi-Thread.");
-DEFINE_bool(use_cp_sat, false, "Use the CP/SAT solver.");
+DEFINE_bool(use_cp_sat, true, "Use the CP/SAT solver.");
 DEFINE_string(fz_model_name, "stdin",
               "Define problem name when reading from stdin.");
 
