@@ -323,10 +323,10 @@ endif
 pypi_upload: pypi_archive
 	@echo Uploading Pypi module for $(PYTHON_EXECUTABLE).
 ifeq ($(SYSTEM),win)
-	cd $(PYPI_ARCHIVE_TEMP_DIR)\ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel bdist_wininst
+	cd $(PYPI_ARCHIVE_TEMP_DIR)\ortools && $(PYTHON_EXECUTABLE) setup.py bdist_wheel bdist_wininst
 else
   ifeq ($(PLATFORM),MACOSX)
-	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel
+	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_wheel
   else
 	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg
   endif
