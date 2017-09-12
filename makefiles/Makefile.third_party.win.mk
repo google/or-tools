@@ -322,13 +322,12 @@ dependencies\archives\swigwin-$(SWIG_TAG).zip:
 
 # Install Java protobuf
 
-install_java_protobuf: dependencies/install/lib/protobuf.jar
-
 dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc.exe
 	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java && \
 	  ..\\..\\..\\install\\bin\\protoc --java_out=core/src/main/java -I../src \
 	  ../src/google/protobuf/descriptor.proto
-	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && jar cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*java
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && $(JAVAC_BIN) com\\google\\protobuf\\*java
+	cd dependencies\\sources\\protobuf-$(PROTOBUF_TAG)\\java\\core\\src\\main\\java && jar cvf ..\\..\\..\\..\\..\\..\\..\\install\\lib\\protobuf.jar com\\google\\protobuf\\*class
 
 # TODO: TBD: Don't know if this is a ubiquitous issue across platforms...
 # Handle a couple of extraneous circumstances involving TortoiseSVN caching and .svn readonly attributes.

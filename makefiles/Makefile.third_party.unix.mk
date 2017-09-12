@@ -15,7 +15,7 @@ ifeq ($(PLATFORM), MACOSX)
 endif
 
 # Main target.
-.PHONY: makefile_third_party missing_directories install_java_protobuf
+.PHONY: makefile_third_party missing_directories
 third_party: makefile_third_party install_third_party
 
 # Create missing directories
@@ -240,13 +240,12 @@ dependencies/sources/patchelf-0.8/configure: dependencies/archives/patchelf-0.8.
 
 # Install Java protobuf
 
-install_java_protobuf: dependencies/install/lib/protobuf.jar
-
 dependencies/install/lib/protobuf.jar: dependencies/install/bin/protoc
 	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java && \
 	  ../../../install/bin/protoc --java_out=core/src/main/java -I../src \
 	  ../src/google/protobuf/descriptor.proto
-	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/core/src/main/java && jar cvf ../../../../../../../install/lib/protobuf.jar com/google/protobuf/*java
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/core/src/main/java && $(JAVAC_BIN) com/google/protobuf/*java
+	cd dependencies/sources/protobuf-$(PROTOBUF_TAG)/java/core/src/main/java && jar cvf ../../../../../../../install/lib/protobuf.jar com/google/protobuf/*class
 
 # Install C# protobuf
 
