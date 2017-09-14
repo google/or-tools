@@ -21,7 +21,7 @@
    The variant which is tackled by this model includes a capacity dimension,
    time windows and optional orders, with a penalty cost if orders are not
    performed.
-   Too help explore the problem, two classes are provided Customers() and
+   To help explore the problem, two classes are provided Customers() and
    Vehicles(): used to randomly locate orders and depots, and to randomly
    generate demands, time-window constraints and vehicles.
    Distances are computed using the Great Circle distances. Distances are in km
