@@ -18,6 +18,7 @@ or-tools/
   examples/csharp/       <- C# examples
   examples/data/         <- Data files for examples
   examples/flatzinc/     <- Flatzinc examples
+  examples/fsharp/       <- F# examples
   examples/python/       <- Python examples
   examples/tests/        <- C# unit tests and bug reports
   lib/                   <- Libraries and jar files
