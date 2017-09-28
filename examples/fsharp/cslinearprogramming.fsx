@@ -14,13 +14,14 @@
 #I "../../bin"
 #r "Google.OrTools.dll"
 
+#I "./lib"
 #load "Google.OrTools.FSharp.fsx"
 
 open System
 open Google.OrTools.LinearSolver
 open Google.OrTools.FSharp
 
-let solver solverType = 
+let solver solverType =
   let svr = Solver.CreateSolver("IntegerProgramming", solverType.ToString())
 
   // x1, x2 and x3 are continuous non-negative variables.
@@ -52,7 +53,7 @@ let solver solverType =
   c2.SetCoefficient(x1, 2.0)
   c2.SetCoefficient(x2, 2.0)
   c2.SetCoefficient(x3, 6.0)
-  
+
   printfn "Number of variables = %i" (svr.NumVariables())
   printfn "Number of constraints = %i" (svr.NumConstraints())
 
@@ -92,8 +93,8 @@ let solver solverType =
 printfn "---- Linear programming example with %A  ----" LinearProgramming.GLOP
 solver LinearProgramming.GLOP
 
-// printfn "---- Linear programming example with %s ----" Glpk
-// solver Glpk
+// printfn "---- Linear programming example with %A ----" LinearProgramming.GLPK
+// solver LinearProgramming.GLPK
 
 printfn "---- Linear programming example with %A ----" LinearProgramming.CLP
 solver LinearProgramming.CLP

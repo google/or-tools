@@ -10,16 +10,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #I "../../bin"
 #r "Google.OrTools.dll"
+
+#I "./lib"
 #load "Google.OrTools.FSharp.fsx"
 
 open System
 open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
-open Google.OrTools.ConstraintSolver
 
-let solver solverType = 
+let solver solverType =
   let svr = Solver.CreateSolver("IntegerProgramming", solverType.ToString())
 
   // x1 and x2 are integer non-negative variables.
