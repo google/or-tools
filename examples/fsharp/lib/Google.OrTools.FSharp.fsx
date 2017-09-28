@@ -67,8 +67,8 @@ module FSharp =
   type SolverOpts = {
     SolverName: string;                               // Name of the solver
     ObjectiveFunction: list<float>;                   // Linear objective function vector
-    ConstraintMatrixIneq: list<list<float>>;          // Matrix for linear inequality constraints
-    ConstraintVectorIneq: list<float>;                // Vector for linear inequality constraints
+    ConstraintMatrixIneq: list<list<float>> option;   // Matrix for linear inequality constraints
+    ConstraintVectorIneq: list<float> option;         // Vector for linear inequality constraints
     UpperBound: list<float>;                          // Vector of variable upper bounds
     LowerBound: list<float> ;                         // Vector of variable lower bounds
     ConstraintMatrixEq: list<list<float>> option;     // Matrix for linear equality constraints
@@ -81,9 +81,9 @@ module FSharp =
     member this.Objective(objVector:list<float>) =
       {this with ObjectiveFunction = objVector}
     member this.MatrixIneq(mat:list<list<float>>) =
-      {this with ConstraintMatrixIneq = mat}
+      {this with ConstraintMatrixIneq = Some(mat)}
     member this.VectorIneq(vec:list<float>) =
-      {this with ConstraintVectorIneq = vec}
+      {this with ConstraintVectorIneq = Some(vec)}
     member this.MatrixEq(mat:list<list<float>>) =
       {this with ConstraintMatrixEq = Some(mat)}
     member this.VectorEq(vec:list<float>) =
@@ -100,8 +100,8 @@ module FSharp =
   let defaultSolverOpts = {
     SolverName = "Solver";
     ObjectiveFunction = [];
-    ConstraintMatrixIneq = [[]];
-    ConstraintVectorIneq = [];
+    ConstraintMatrixIneq = None;
+    ConstraintVectorIneq = None;
     UpperBound = [];
     LowerBound = [];
     ConstraintMatrixEq = None;
@@ -120,14 +120,11 @@ module FSharp =
     let solver = new Solver(solverOptions.SolverName, algorithm)
 
     // Detect errors on required parameters
+    if (solverOptions.ConstraintMatrixIneq.IsNone && solverOptions.ConstraintVectorIneq.IsNone) && (solverOptions.ConstraintMatrixEq.IsNone && solverOptions.ConstraintVectorEq.IsNone) then
+      failwith "Must provide at least one Matrix/Vector pair for inequality/equality contraints"
+
     if solverOptions.ObjectiveFunction.IsEmpty then
       failwith "Objective function cannot be empty"
-
-    if solverOptions.ConstraintMatrixIneq.IsEmpty || solverOptions.ConstraintMatrixIneq.[0].IsEmpty then
-      failwith "Matrix of inequality contraints cannot be empty"
-
-    if solverOptions.ConstraintVectorIneq.IsEmpty then
-      failwith "Vector inequality contraints cannot be empty"
 
     if solverOptions.UpperBound.IsEmpty then
       failwith "Variable upper bound values cannot be empty"
@@ -135,8 +132,14 @@ module FSharp =
     if solverOptions.LowerBound.IsEmpty then
       failwith "Variable lower bound values cannot be empty"
 
-    if solverOptions.LowerBound.Length <> solverOptions.UpperBound.Length then
-      failwithf "Variable bounds' dimensions should be equal.\nLower Bound Length: %i\nUpper Bound Length: %i" solverOptions.LowerBound.Length solverOptions.UpperBound.Length
+    match (solverOptions.ObjectiveFunction.Length, solverOptions.LowerBound.Length, solverOptions.UpperBound.Length) with
+    | _ , lb, ub when lb <> ub ->
+      failwithf "Variable vector dimensions should be equal.\nLower Bound Length: %i\nUpper Bound Length: %i" lb ub
+    | obj, _ , ub when obj <> ub ->
+      failwithf "Variable vector dimensions should be equal.\nUpper Bound Length: %i\nObjective Function Length: %i" ub obj
+    | obj, lb, _ when obj <> lb ->
+      failwithf "Variable vector dimensions should be equal.\nLower Bound Length: %i\nObjective Function Length: %i" lb obj
+    | _ -> ()
 
     // Variables
     let vars = [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> solver.MakeNumVar(solverOptions.LowerBound.[i], solverOptions.UpperBound.[i], (sprintf "var[%i]" i ) ) ]
@@ -145,19 +148,31 @@ module FSharp =
     let cols = [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> i ]   // generate column index selectors
 
     // Inequality Constraints
-    for row = 0 to (solverOptions.ConstraintMatrixIneq.Length-1) do
-        // generate constraint operands based on indices
-        let constraintOperands = List.map (fun c ->  vars.[c] * solverOptions.ConstraintMatrixIneq.[c].[row]) cols
-        let linearExp = List.reduce (+) constraintOperands
-
-        // create the constraint
-        let rangeConstraint = RangeConstraint(linearExp, Double.NegativeInfinity, solverOptions.ConstraintVectorIneq.[row])
-        solver.Add(rangeConstraint) |> ignore
-
-    // Equality Constraints (if they exist)
-    match (solverOptions.ConstraintMatrixEq, solverOptions.ConstraintVectorEq) with
+    match (solverOptions.ConstraintMatrixIneq, solverOptions.ConstraintVectorIneq) with
+    | (None, Some vec) ->
+        failwithf "Matrix for Equality Constraints undefined."
+    | (Some mat, None) ->
+        failwithf "Vector for Equality Constraints undefined."
     | (Some mat, Some vec) ->
-        for row = 0 to (mat.Length-1) do
+        for row = 0 to (vec.Length-1) do
+            // generate constraint operands based on indices
+            let constraintOperands = List.map (fun c ->  vars.[c] * mat.[c].[row]) cols
+            let linearExp = List.reduce (+) constraintOperands
+
+            // create the constraint
+            let rangeConstraint = RangeConstraint(linearExp, Double.NegativeInfinity, vec.[row])
+            solver.Add(rangeConstraint) |> ignore
+    | _ -> ()
+
+
+    // Equality Constraints
+    match (solverOptions.ConstraintMatrixEq, solverOptions.ConstraintVectorEq) with
+    | (None, Some vec) ->
+        failwithf "Matrix for Equality Constraints undefined."
+    | (Some mat, None) ->
+        failwithf "Vector for Equality Constraints undefined."
+    | (Some mat, Some vec) ->
+        for row = 0 to (vec.Length-1) do
             // generate constraint operands based on indices
             let constraintOperands = List.map (fun c ->  vars.[c] * mat.[c].[row]) cols
             let linearExp = List.reduce (+) constraintOperands
@@ -165,12 +180,7 @@ module FSharp =
             // create the constraint
             let equalityConstraint = RangeConstraint(linearExp, vec.[row], vec.[row])
             solver.Add(equalityConstraint) |> ignore
-    | (None, Some vec) ->
-        failwithf "Matrix for Equality Constraints undefined."
-    | (Some mat, None) ->
-        failwithf "Vector for Equality Constraints undefined."
-    | (None, None) ->
-        printfn "No Equality Constraints present in formulation" |> ignore
+    | _ -> ()
 
     // Objective
     let objectiveOperands = List.map (fun c ->  solverOptions.ObjectiveFunction.[c] * vars.[c]) cols
