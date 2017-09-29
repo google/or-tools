@@ -142,7 +142,12 @@ module FSharp =
     | _ -> ()
 
     // Variables
-    let vars = [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> solver.MakeNumVar(solverOptions.LowerBound.[i], solverOptions.UpperBound.[i], (sprintf "var[%i]" i ) ) ]
+    let vars =
+      match solverOptions.SolverAlgorithm with
+        | LP lp ->
+            [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> solver.MakeNumVar(solverOptions.LowerBound.[i], solverOptions.UpperBound.[i], (sprintf "var[%i]" i ) ) ]
+        | IP ip ->
+            [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> solver.MakeIntVar(solverOptions.LowerBound.[i], solverOptions.UpperBound.[i], (sprintf "var[%i]" i ) ) ]
 
     // Constraints
     let cols = [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> i ]   // generate column index selectors

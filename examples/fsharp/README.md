@@ -2,8 +2,13 @@
 
 Examples from the or-tools library utilizing F#
 
+## SolverOptions and lpSolve
+This function and parameter object are a wrapper around the standard or-tools functions. It is designed
+to enter the Linear/Integer program as matrices & vectors. Two input formats are allowed: Canonical Form; Standard Form.
 
-# Execution
+*__ALL Matrices & Vectors are entered as columns__*
+
+## Execution
 Be sure to compile the or-tools before executing following
 ```shell
 fsharpc --target:exe --out:bin/<example_file>.exe --platform:anycpu --lib:bin -r:Google.OrTools.dll examples/fsharp/<example_file>.fsx
