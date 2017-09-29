@@ -21,7 +21,7 @@ open System
 open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
 
-let opts = defaultSolverOpts
+let opts = SolverOpts.Default
             .Name("Volsay3")
             .Goal(Maximize)
             .Objective([30.0;40.0])
@@ -31,18 +31,4 @@ let opts = defaultSolverOpts
             .Upper([10000.0; 10000.0])
             .Algorithm(LP CLP)
 
-let slvr = lpSolve <| opts
-let resultStatus = slvr.Solve();
-
-match resultStatus with
-| status when status <> Solver.OPTIMAL ->
-    printfn "The problem does not have an optimal solution!"
-    exit 0
-| _ ->
-    printfn "\nProblem solved in %d milliseconds" (slvr.WallTime())
-    printfn "Iterations: %i\n" (slvr.Iterations())
-
-
-printfn "Objective: %f" (slvr.Objective().Value())
-[for i in 0 .. (slvr.NumVariables()-1) -> printfn "%-10s: %f " (sprintf "var[%i]" i) ((slvr.LookupVariableOrNull(sprintf "var[%i]" i)).SolutionValue()) ]
-
+let slvr = opts |> lpSolve |> SolverSummary
