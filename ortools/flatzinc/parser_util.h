@@ -17,6 +17,7 @@
 #ifndef OR_TOOLS_FLATZINC_PARSER_UTIL_H_
 #define OR_TOOLS_FLATZINC_PARSER_UTIL_H_
 
+#include <cmath>
 #include <unordered_map>
 
 #include "ortools/base/map_util.h"
@@ -25,8 +26,6 @@
 using operations_research::HasPrefixString;
 using operations_research::HasSuffixString;
 using operations_research::StringPrintf;
-using operations_research::ContainsKey;
-using operations_research::FindOrDie;
 
 namespace operations_research {
 namespace fz {
@@ -34,6 +33,8 @@ namespace fz {
 struct ParserContext {
   std::unordered_map<std::string, int64> integer_map;
   std::unordered_map<std::string, std::vector<int64>> integer_array_map;
+  std::unordered_map<std::string, double> float_map;
+  std::unordered_map<std::string, std::vector<double>> float_array_map;
   std::unordered_map<std::string, IntegerVariable*> variable_map;
   std::unordered_map<std::string, std::vector<IntegerVariable*>> variable_array_map;
   std::unordered_map<std::string, Domain> domain_map;
@@ -93,6 +94,7 @@ struct LexerInfo {
   Domain domain;
   std::vector<Domain>* domains;
   std::vector<int64>* integers;
+  std::vector<double>* doubles;
   Argument arg;
   std::vector<Argument>* args;
   Annotation annotation;
@@ -100,6 +102,9 @@ struct LexerInfo {
   VariableRefOrValue var_or_value;
   VariableRefOrValueArray* var_or_value_array;
 };
+
+// If the argument is an integer, return it as int64. Otherwise, die.
+int64 ConvertAsIntegerOrDie(double d);
 }  // namespace fz
 }  // namespace operations_research
 #endif  // OR_TOOLS_FLATZINC_PARSER_UTIL_H_

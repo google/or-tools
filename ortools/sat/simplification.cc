@@ -88,7 +88,7 @@ Literal SatPostsolver::ApplyReverseMapping(Literal l) {
   }
   DCHECK_NE(reverse_mapping_[l.Variable()], kNoBooleanVariable);
   const Literal result(reverse_mapping_[l.Variable()], l.IsPositive());
-  CHECK(!assignment_.IsLiteralAssigned(result));
+  CHECK(!assignment_.LiteralIsAssigned(result));
   return result;
 }
 
@@ -294,7 +294,7 @@ bool SatPresolver::Presolve() {
 bool SatPresolver::Presolve(const std::vector<bool>& can_be_removed) {
   WallTimer timer;
   timer.Start();
-  LOG(INFO) << "num trivial clauses: " << num_trivial_clauses_;
+  VLOG(1) << "num trivial clauses: " << num_trivial_clauses_;
   DisplayStats(0);
 
   // TODO(user): When a clause is strengthened, add it to a queue so it can
@@ -799,11 +799,11 @@ void SatPresolver::DisplayStats(double elapsed_seconds) {
       num_simple_definition++;
     }
   }
-  LOG(INFO) << " [" << elapsed_seconds << "s]"
-            << " clauses:" << num_clauses << " literals:" << num_literals
-            << " vars:" << num_vars << " one_side_vars:" << num_one_side
-            << " simple_definition:" << num_simple_definition
-            << " singleton_clauses:" << num_singleton_clauses;
+  VLOG(1) << " [" << elapsed_seconds << "s]"
+          << " clauses:" << num_clauses << " literals:" << num_literals
+          << " vars:" << num_vars << " one_side_vars:" << num_one_side
+          << " simple_definition:" << num_simple_definition
+          << " singleton_clauses:" << num_singleton_clauses;
 }
 
 bool SimplifyClause(const std::vector<Literal>& a, std::vector<Literal>* b,
@@ -977,7 +977,7 @@ class PropagationGraph {
     }
 
     const Literal l = Literal(LiteralIndex(index));
-    if (!solver_->Assignment().IsLiteralAssigned(l)) {
+    if (!solver_->Assignment().LiteralIsAssigned(l)) {
       const int trail_index = solver_->LiteralTrail().Index();
       solver_->EnqueueDecisionAndBackjumpOnConflict(l);
       if (solver_->CurrentDecisionLevel() > 0) {
@@ -1059,8 +1059,8 @@ void ProbeAndFindEquivalentLiteral(
     const VariablesAssignment& assignment = solver->Assignment();
     for (LiteralIndex i(0); i < size; ++i) {
       const LiteralIndex rep(partition.GetRootAndCompressPath(i.value()));
-      if (assignment.IsLiteralAssigned(Literal(i)) &&
-          !assignment.IsLiteralAssigned(Literal(rep))) {
+      if (assignment.LiteralIsAssigned(Literal(i)) &&
+          !assignment.LiteralIsAssigned(Literal(rep))) {
         const Literal true_lit = assignment.LiteralIsTrue(Literal(i))
                                      ? Literal(rep)
                                      : Literal(rep).Negated();
@@ -1071,16 +1071,16 @@ void ProbeAndFindEquivalentLiteral(
     for (LiteralIndex i(0); i < size; ++i) {
       const LiteralIndex rep(partition.GetRootAndCompressPath(i.value()));
       (*mapping)[i] = rep;
-      if (assignment.IsLiteralAssigned(Literal(rep))) {
-        if (!assignment.IsLiteralAssigned(Literal(i))) {
+      if (assignment.LiteralIsAssigned(Literal(rep))) {
+        if (!assignment.LiteralIsAssigned(Literal(i))) {
           const Literal true_lit = assignment.LiteralIsTrue(Literal(rep))
                                        ? Literal(i)
                                        : Literal(i).Negated();
           solver->AddUnitClause(true_lit);
           if (drat_writer != nullptr) drat_writer->AddClause({true_lit});
         }
-      } else if (assignment.IsLiteralAssigned(Literal(i))) {
-        if (!assignment.IsLiteralAssigned(Literal(rep))) {
+      } else if (assignment.LiteralIsAssigned(Literal(i))) {
+        if (!assignment.LiteralIsAssigned(Literal(rep))) {
           const Literal true_lit = assignment.LiteralIsTrue(Literal(i))
                                        ? Literal(rep)
                                        : Literal(rep).Negated();
@@ -1099,10 +1099,9 @@ void ProbeAndFindEquivalentLiteral(
     }
   }
 
-  LOG(INFO) << "Probing. fixed " << num_already_fixed_vars << " + "
-            << solver->LiteralTrail().Index() - num_already_fixed_vars
-            << " equiv " << num_equiv / 2 << " total "
-            << solver->NumVariables();
+  VLOG(1) << "Probing. fixed " << num_already_fixed_vars << " + "
+          << solver->LiteralTrail().Index() - num_already_fixed_vars
+          << " equiv " << num_equiv / 2 << " total " << solver->NumVariables();
 }
 
 SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
@@ -1129,7 +1128,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
           (*solver)->SolveWithTimeLimit(time_limit.get());
       if (result != SatSolver::LIMIT_REACHED) {
         if (result == SatSolver::MODEL_SAT) {
-          LOG(INFO) << "Problem solved by trivial heuristic!";
+          VLOG(1) << "Problem solved by trivial heuristic!";
           solution->clear();
           for (int i = 0; i < (*solver)->NumVariables(); ++i) {
             solution->push_back((*solver)->Assignment().LiteralIsTrue(
@@ -1143,7 +1142,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
       // at least once.
       (*solver)->RestoreSolverToAssumptionLevel();
       if ((*solver)->IsModelUnsat()) {
-        LOG(INFO) << "UNSAT during random decision heuritics.";
+        VLOG(1) << "UNSAT during random decision heuritics.";
         return SatSolver::MODEL_UNSAT;
       }
 
@@ -1170,14 +1169,14 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     ProbeAndFindEquivalentLiteral((*solver).get(), &postsolver, drat_writer,
                                   &equiv_map);
     if ((*solver)->IsModelUnsat()) {
-      LOG(INFO) << "UNSAT during probing.";
+      VLOG(1) << "UNSAT during probing.";
       return SatSolver::MODEL_UNSAT;
     }
 
     // The rest of the presolve only work on pure SAT problem.
     if (!(*solver)->ProblemIsPureSat()) {
-      LOG(INFO) << "The problem is not a pure SAT problem, skipping the SAT "
-                   "specific presolve.";
+      VLOG(1) << "The problem is not a pure SAT problem, skipping the SAT "
+                 "specific presolve.";
       break;
     }
 
@@ -1196,7 +1195,7 @@ SatSolver::Status SolveWithPresolve(std::unique_ptr<SatSolver>* solver,
     (*solver)->ExtractClauses(&presolver);
     (*solver).release();
     if (!presolver.Presolve()) {
-      LOG(INFO) << "UNSAT during presolve.";
+      VLOG(1) << "UNSAT during presolve.";
 
       // This is just here to reset the SatSolver::Solve() satistics.
       (*solver).reset(new SatSolver());

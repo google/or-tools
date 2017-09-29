@@ -30,6 +30,7 @@
 #include "ortools/base/inlined_vector.h"
 #include "ortools/base/join.h"
 #include "ortools/base/span.h"
+#include "ortools/base/iterators.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/map_util.h"
@@ -38,7 +39,6 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/util/bitset.h"
-#include "ortools/util/iterators.h"
 #include "ortools/util/rev.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/sorted_interval_list.h"
@@ -204,40 +204,28 @@ class IntegerEncoder {
   // The encoding for NegationOf(var) is automatically created too. It reuses
   // the same Boolean variable as the encoding of var.
   //
-  // Note(user): Calling this on fixed variables will cause a CHECK fail. We
-  // don't really want to create a fixed Boolean.
-  //
   // TODO(user): It is currently only possible to call that at the decision
   // level zero because we cannot add ternary clause in the middle of the
   // search (for now). This is Checked.
   void FullyEncodeVariable(IntegerVariable var);
 
-  // Gets the full encoding of a variable on which FullyEncodeVariable() has
+  // Computes the full encoding of a variable on which FullyEncodeVariable() has
   // been called. The returned elements are always sorted by increasing
-  // IntegerValue. Once created, the encoding never changes, but some Boolean
-  // variables may become fixed.
-  //
-  // IMPORTANT: the returned vector will be sorted by value, but may contain
-  // duplicates values! IntegerTrail is doing the correct thing in this case.
-  // This allows us to direcly support the "int element" constraint and its
-  // variant at the core level.
+  // IntegerValue and we filter values associated to false literals.
   struct ValueLiteralPair {
     ValueLiteralPair(IntegerValue v, Literal l) : value(v), literal(l) {}
     bool operator==(const ValueLiteralPair& o) const {
       return value == o.value && literal == o.literal;
     }
-    bool operator<(const ValueLiteralPair& o) const { return value < o.value; }
     IntegerValue value;
     Literal literal;
   };
-  const std::vector<ValueLiteralPair>& FullDomainEncoding(
-      IntegerVariable var) const {
-    return full_encoding_[FindOrDie(full_encoding_index_, var)];
-  }
+  std::vector<ValueLiteralPair> FullDomainEncoding(IntegerVariable var) const;
 
   // Returns true if a variable is fully encoded.
   bool VariableIsFullyEncoded(IntegerVariable var) const {
-    return ContainsKey(full_encoding_index_, var);
+    if (var >= is_fully_encoded_.size()) return false;
+    return is_fully_encoded_[var];
   }
 
   // Returns the "canonical" (i_lit, negation of i_lit) pair. This mainly
@@ -353,11 +341,8 @@ class IntegerEncoder {
   std::unordered_map<std::pair<IntegerVariable, IntegerValue>, Literal>
       equality_to_associated_literal_;
 
-  // Full domain encoding. The map contains the index in full_encoding_ of
-  // the fully encoded variable. Each entry in full_encoding_ is sorted by
-  // IntegerValue and contains the encoding of one IntegerVariable.
-  std::unordered_map<IntegerVariable, int> full_encoding_index_;
-  std::vector<std::vector<ValueLiteralPair>> full_encoding_;
+  // Variables that are fully encoded.
+  ITIVector<IntegerVariable, bool> is_fully_encoded_;
 
   // A literal that is always true, convenient to encode trivial domains.
   // This will be lazily created when needed.
@@ -440,10 +425,11 @@ class IntegerTrail : public SatPropagator {
     return AddIntegerVariable(kMinIntegerValue, kMaxIntegerValue);
   }
 
-  // The domain [lb, ub] of an "optional" variable is allowed to be empty (i.e.
-  // ub < lb) if the given is_ignored literal is true. Moreover, if is_ignored
-  // is true, then the bound of such variable should NOT impact any non-ignored
-  // variable in any way (but the reverse is not true).
+  // For an optional variable, both its lb and ub must be valid bound assuming
+  // the fact that the variable is "present". However, the domain [lb, ub] is
+  // allowed to be empty (i.e. ub < lb) if the given is_ignored literal is true.
+  // Moreover, if is_ignored is true, then the bound of such variable should NOT
+  // impact any non-ignored variable in any way (but the reverse is not true).
   bool IsOptional(IntegerVariable i) const {
     return is_ignored_literals_[i] != kNoLiteralIndex;
   }
@@ -490,9 +476,18 @@ class IntegerTrail : public SatPropagator {
   // TODO(user): If the given bound is equal to the current bound, maybe the new
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
-  MUST_USE_RESULT bool Enqueue(IntegerLiteral bound,
+  MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
                                gtl::Span<Literal> literal_reason,
                                gtl::Span<IntegerLiteral> integer_reason);
+
+  // Same as Enqueue(), but takes an extra argument which if smaller than
+  // integer_trail_.size() is interpreted as the trail index of an old Enqueue()
+  // that had the same reason as this one. Note that the given Span must still
+  // be valid as they are used in case of conflict.
+  MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
+                               gtl::Span<Literal> literal_reason,
+                               gtl::Span<IntegerLiteral> integer_reason,
+                               int trail_index_with_same_reason);
 
   // Enqueues the given literal on the trail.
   // See the comment of Enqueue() for the reason format.
@@ -552,6 +547,8 @@ class IntegerTrail : public SatPropagator {
     reversible_classes_.push_back(rev);
   }
 
+  int Index() const { return integer_trail_.size(); }
+
  private:
   // Tests that all the literals in the given reason are assigned to false.
   // This is used to DCHECK the given reasons to the Enqueue*() functions.
@@ -561,8 +558,9 @@ class IntegerTrail : public SatPropagator {
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;
 
   // Helper used by Enqueue() to propagate one of the literal associated to
-  // the given i_lit and maintained by encoder_.
-  bool EnqueueAssociatedLiteral(Literal literal, IntegerLiteral i_lit,
+  // an integer literal and maintained by encoder_.
+  bool EnqueueAssociatedLiteral(Literal literal,
+                                int trail_index_with_same_reason,
                                 gtl::Span<Literal> literal_reason,
                                 gtl::Span<IntegerLiteral> integer_reason,
                                 BooleanVariable* variable_with_same_reason);
@@ -582,8 +580,8 @@ class IntegerTrail : public SatPropagator {
   // Helper function to return the "dependencies" of a bound assignment.
   // All the TrailEntry at these indices are part of the reason for this
   // assignment.
-  BeginEndWrapper<std::vector<IntegerLiteral>::const_iterator> Dependencies(
-      int trail_index) const;
+  util::BeginEndWrapper<std::vector<IntegerLiteral>::const_iterator>
+  Dependencies(int trail_index) const;
 
   // Helper function to append the Literal part of the reason for this bound
   // assignment.
@@ -620,13 +618,13 @@ class IntegerTrail : public SatPropagator {
     IntegerVariable var;
     int32 prev_trail_index;
 
-    // Start index in the respective *_buffer_ vectors below.
-    int32 literals_reason_start_index;
-    int32 dependencies_start_index;
+    // Index in literals_reason_start_/bounds_reason_starts_
+    int32 reason_index;
   };
   std::vector<TrailEntry> integer_trail_;
 
   // Start of each decision levels in integer_trail_.
+  // TODO(user): use more general reversible mechanism?
   std::vector<int> integer_decision_levels_;
 
   // Buffer to store the reason of each trail entry.
@@ -634,6 +632,9 @@ class IntegerTrail : public SatPropagator {
   // IntegerLiteral, and is lazily replaced by the result of
   // FindLowestTrailIndexThatExplainBound() applied to these literals. The
   // encoding is a bit hacky, see Dependencies().
+  std::vector<int> reason_decision_levels_;
+  std::vector<int> literals_reason_starts_;
+  std::vector<int> bounds_reason_starts_;
   std::vector<Literal> literals_reason_buffer_;
   mutable std::vector<IntegerLiteral> bounds_reason_buffer_;
 

@@ -1283,6 +1283,10 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     IntegerValue weight;
     int depth;  // only for logging/debugging.
     IntegerValue old_var_lb;
+
+    // An upper bound on the optimal solution if we were to optimize only this
+    // term. This is used by the cover optimization code.
+    IntegerValue cover_ub;
   };
   std::vector<ObjectiveTerm> terms;
   CHECK_EQ(variables.size(), coefficients.size());
@@ -1291,6 +1295,8 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       terms.push_back({variables[i], coefficients[i]});
     } else if (coefficients[i] < 0) {
       terms.push_back({NegationOf(variables[i]), -coefficients[i]});
+    } else {
+      continue;  // coefficients[i] == 0
     }
     terms.back().depth = 0;
   }
@@ -1311,8 +1317,10 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
 
   // Start the algorithm.
   int max_depth = 0;
-  SatSolver::Status result;
-  for (int iter = 0;; ++iter) {
+  SatSolver::Status result = SatSolver::MODEL_SAT;
+  for (int iter = 0;
+       result != SatSolver::MODEL_UNSAT && result != SatSolver::LIMIT_REACHED;
+       ++iter) {
     sat_solver->Backtrack(0);
     sat_solver->SetAssumptionLevel(0);
 
@@ -1410,6 +1418,78 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       break;
     }
 
+    // Bulk cover optimization.
+    bool some_cover_opt = false;
+    if (sat_solver->parameters().cover_optimization()) {
+      for (const int index : term_indices) {
+        // We currently skip the initial objective terms as there could be many
+        // of them. TODO(user): provide an option to cover-optimize them? I
+        // fear that this will slow down the solver too much though.
+        if (terms[index].depth == 0) continue;
+
+        // Find out the true lower bound of var. This is called "cover
+        // optimization" in some of the max-SAT literature. It can helps on some
+        // problem families and hurt on others, but the overall impact is
+        // positive.
+        //
+        // TODO(user): Add some conflict limit? and/or come up with an algo that
+        // dynamically turn this on or not depending on the situation?
+        const IntegerVariable var = terms[index].var;
+        const IntegerValue lb = integer_trail->LowerBound(var);
+        IntegerValue best = terms[index].cover_ub;
+
+        // Note(user): this can happen in some corner case because each time we
+        // find a solution, we constrain the objective to be smaller than it, so
+        // it is possible that a previous best is now infeasible.
+        if (best <= lb) continue;
+
+        // Simple linear scan algorithm to find the optimal of var.
+        some_cover_opt = true;
+        while (best > lb) {
+          const Literal a = integer_encoder->GetOrCreateAssociatedLiteral(
+              IntegerLiteral::LowerOrEqual(var, best - 1));
+          result =
+              SolveIntegerProblemWithLazyEncoding({a}, next_decision, model);
+          if (result != SatSolver::MODEL_SAT) break;
+
+          best = integer_trail->LowerBound(var);
+
+          // Update all cover_ub using the current solution.
+          for (const int i : term_indices) {
+            if (terms[i].depth == 0) continue;
+            terms[i].cover_ub = std::min(
+                terms[i].cover_ub, integer_trail->LowerBound(terms[i].var));
+          }
+
+          if (log_info) {
+            LOG(INFO) << "cover_opt var:" << var << " domain:[" << lb << ","
+                      << best << "]";
+          }
+          if (!process_solution()) {
+            result = SatSolver::MODEL_UNSAT;
+            break;
+          }
+        }
+        sat_solver->Backtrack(0);
+        sat_solver->SetAssumptionLevel(0);
+        if (result == SatSolver::ASSUMPTIONS_UNSAT) {
+          // TODO(user): If we improve the lower bound of var, we should check
+          // if our global lower bound reached our current best solution in
+          // order to abort early if the optimal is proved.
+          if (!integer_trail->Enqueue(IntegerLiteral::GreaterOrEqual(var, best),
+                                      {}, {})) {
+            result = SatSolver::MODEL_UNSAT;
+            break;
+          }
+        } else if (result != SatSolver::MODEL_SAT) {
+          break;
+        }
+      }
+    }
+
+    // Re compute the new bound after the cover optimization.
+    if (some_cover_opt) continue;
+
     // Convert integer_assumptions to Literals.
     std::vector<Literal> assumptions;
     assumption_to_term_index.clear();
@@ -1484,6 +1564,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
       const IntegerVariable new_var = model->Add(
           NewIntegerVariable(new_var_lb.value(), new_var_ub.value()));
       terms.push_back({new_var, min_weight, new_depth});
+      terms.back().cover_ub = new_var_ub;
 
       // Sum variables in the core <= new_var.
       {
@@ -1499,42 +1580,6 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
         constraint_coeffs.push_back(-1);
         model->Add(
             WeightedSumLowerOrEqual(constraint_vars, constraint_coeffs, 0));
-      }
-
-      // Find out the true lower bound of new_var. This is called "cover
-      // optimization" in some of the max-SAT literature. It can helps on some
-      // problem families and hurt on others.
-      //
-      // TODO(user): Add some conflict limit? and/or come up with an algo that
-      // dynamically turn this on or not depending on the situation?
-      if (sat_solver->parameters().cover_optimization()) {
-        IntegerValue best = new_var_ub;
-
-        // Simple linear scan algorithm to find the optimal of new_var.
-        while (best > new_var_lb) {
-          const Literal a = integer_encoder->GetOrCreateAssociatedLiteral(
-              IntegerLiteral::LowerOrEqual(new_var, best - 1));
-          result =
-              SolveIntegerProblemWithLazyEncoding({a}, next_decision, model);
-          if (result != SatSolver::MODEL_SAT) break;
-          best = integer_trail->LowerBound(new_var);
-          if (log_info) {
-            LOG(INFO) << "cover_opt:[" << new_var_lb << "," << best << "]";
-          }
-          if (!process_solution()) {
-            result = SatSolver::MODEL_UNSAT;
-            break;
-          }
-        }
-        sat_solver->Backtrack(0);
-        sat_solver->SetAssumptionLevel(0);
-        if (result == SatSolver::ASSUMPTIONS_UNSAT) {
-          if (!integer_trail->Enqueue(
-                  IntegerLiteral::GreaterOrEqual(new_var, best), {}, {})) {
-            result = SatSolver::MODEL_UNSAT;
-            break;
-          }
-        }
       }
     }
 

@@ -23,6 +23,8 @@
 namespace operations_research {
 namespace glop {
 
+using ::util::Reverse;
+
 namespace {
 // Returns an interval as an human readable std::string for debugging.
 std::string IntervalString(Fractional lb, Fractional ub) {

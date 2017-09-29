@@ -21,7 +21,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/util/iterators.h"
+#include "ortools/base/iterators.h"
 #include "ortools/util/string_array.h"
 
 namespace operations_research {
@@ -43,6 +43,9 @@ class Model;
 //  - a Boolean domain({ 0, 1 } with Boolean display tag).
 // TODO(user): Rework domains, all int64 should be kintmin..kint64max.
 //                It is a bit tricky though as we must take care of overflows.
+// If is_a_set is true, then this domain has a set semantics. For a set
+// variable, any subset of the initial set of values is a valid assignment,
+// instead of exactly one value.
 struct Domain {
   // The values will be sorted and duplicate values will be removed.
   static Domain IntegerList(std::vector<int64> values);
@@ -50,6 +53,11 @@ struct Domain {
   static Domain IntegerValue(int64 value);
   static Domain Interval(int64 included_min, int64 included_max);
   static Domain Boolean();
+  static Domain SetOfIntegerList(std::vector<int64> values);
+  static Domain SetOfAllInt64();
+  static Domain SetOfIntegerValue(int64 value);
+  static Domain SetOfInterval(int64 included_min, int64 included_max);
+  static Domain SetOfBoolean();
   static Domain EmptyDomain();
 
   bool HasOneValue() const;
@@ -90,6 +98,8 @@ struct Domain {
   std::vector<int64> values;
   bool is_interval;
   bool display_as_boolean;
+  // Indicates if the domain was created as a set domain.
+  bool is_a_set;
 };
 
 // An int var is a name with a domain of possible values, along with
@@ -356,14 +366,14 @@ class Model {
     return search_annotations_;
   }
 #if !defined(SWIG)
-  MutableVectorIteration<Annotation> mutable_search_annotations() {
-    return MutableVectorIteration<Annotation>(&search_annotations_);
+  util::MutableVectorIteration<Annotation> mutable_search_annotations() {
+    return util::MutableVectorIteration<Annotation>(&search_annotations_);
   }
 #endif
   const std::vector<SolutionOutputSpecs>& output() const { return output_; }
 #if !defined(SWIG)
-  MutableVectorIteration<SolutionOutputSpecs> mutable_output() {
-    return MutableVectorIteration<SolutionOutputSpecs>(&output_);
+  util::MutableVectorIteration<SolutionOutputSpecs> mutable_output() {
+    return util::MutableVectorIteration<SolutionOutputSpecs>(&output_);
   }
 #endif
   bool maximize() const { return maximize_; }

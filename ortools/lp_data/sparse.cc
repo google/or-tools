@@ -23,6 +23,8 @@ namespace glop {
 
 namespace {
 
+using ::util::Reverse;
+
 template <typename Matrix>
 EntryIndex ComputeNumEntries(const Matrix& matrix) {
   EntryIndex num_entries(0);

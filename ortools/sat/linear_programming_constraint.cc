@@ -238,6 +238,7 @@ bool LinearProgrammingConstraint::Propagate() {
     ReducedCostStrengtheningDeductions(0.0);
     if (!deductions_.empty()) {
       FillReducedCostsReason();
+      if (!deductions_.empty()) VLOG(0) << deductions_.size();
       for (const IntegerLiteral deduction : deductions_) {
         if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
           return false;
@@ -327,8 +328,10 @@ bool LinearProgrammingConstraint::Propagate() {
       FillReducedCostsReason();
       integer_reason_.push_back(
           integer_trail_->UpperBoundAsLiteral(objective_cp_));
+      const int trail_index_with_same_reason = integer_trail_->Index();
       for (const IntegerLiteral deduction : deductions_) {
-        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
+        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_,
+                                     trail_index_with_same_reason)) {
           return false;
         }
       }

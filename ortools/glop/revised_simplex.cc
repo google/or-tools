@@ -2232,7 +2232,8 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
     // Initialize the primal phase-I objective.
     // Note that this temporarily erases the problem objective.
     objective_.assign(num_cols_, 0.0);
-    UpdatePrimalPhaseICosts(IntegerRange<RowIndex>(RowIndex(0), num_rows_));
+    UpdatePrimalPhaseICosts(
+        util::IntegerRange<RowIndex>(RowIndex(0), num_rows_));
   }
 
   while (true) {
@@ -2248,7 +2249,8 @@ Status RevisedSimplex::Minimize(TimeLimit* time_limit) {
       if (feasibility_phase_) {
         // Since the variable values may have been recomputed, we need to
         // recompute the primal infeasible variables and update their costs.
-        UpdatePrimalPhaseICosts(IntegerRange<RowIndex>(RowIndex(0), num_rows_));
+        UpdatePrimalPhaseICosts(
+            util::IntegerRange<RowIndex>(RowIndex(0), num_rows_));
       }
 
       // Computing the objective at each iteration takes time, so we just

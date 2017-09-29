@@ -41,6 +41,7 @@ typedef operations_research::fz::LexerInfo YYSTYPE;
 using operations_research::fz::Annotation;
 using operations_research::fz::Argument;
 using operations_research::fz::Constraint;
+using operations_research::fz::ConvertAsIntegerOrDie;
 using operations_research::fz::Domain;
 using operations_research::fz::IntegerVariable;
 using operations_research::fz::Lookup;
@@ -85,6 +86,8 @@ using operations_research::fz::VariableRefOrValueArray;
 %type <domain> domain const_literal int_domain float_domain set_domain
 %type <domains> const_literals
 %type <integers> integers
+%type <double_value> float
+%type <doubles> floats
 %type <args> arguments
 %type <arg> argument
 %type <var_or_value> optional_var_or_value var_or_value
@@ -187,7 +190,34 @@ variable_or_constant_declaration:
   const std::string& identifier = $10;
   context->integer_array_map[identifier] = std::vector<int64>();
   delete annotations;
-}| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF set_domain ':' IDENTIFIER
+}
+| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF float_domain ':' IDENTIFIER
+    annotations '=' '[' floats ']' {
+  std::vector<Annotation>* const annotations = $11;
+  // Declaration of a (named) constant array. See rule right above.
+  CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
+  const int64 num_constants = $5;
+  const std::string& identifier = $10;
+  const std::vector<double>* const assignments = $14;
+  CHECK(assignments != nullptr);
+  CHECK_EQ(num_constants, assignments->size());
+  // TODO(lperron): CHECK all values within domain.
+  context->float_array_map[identifier] = *assignments;
+  delete assignments;
+  delete annotations;
+}
+| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF float_domain ':' IDENTIFIER
+    annotations '=' '[' ']' {
+  std::vector<Annotation>* const annotations = $11;
+  // Declaration of a (named) constant array. See rule right above.
+  CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
+  const int64 num_constants = $5;
+  CHECK_EQ(num_constants, 0) << "Empty arrays should have a size of 0";
+  const std::string& identifier = $10;
+  context->float_array_map[identifier] = std::vector<double>();
+  delete annotations;
+}
+| ARRAY '[' IVALUE DOTDOT IVALUE ']' OF set_domain ':' IDENTIFIER
     annotations '=' '[' const_literals ']' {
   // Declaration of a (named) constant array: See rule above.
   CHECK_EQ($3, 1) << "Only [1..n] array are supported here.";
@@ -377,19 +407,22 @@ int_domain:
 }
 
 set_domain:
-  SET OF BOOL { $$ = Domain::Boolean(); }
-| SET OF INT { $$ = Domain::AllInt64(); }
-| SET OF IVALUE DOTDOT IVALUE { $$ = Domain::Interval($3, $5); }
+  SET OF BOOL { $$ = Domain::SetOfBoolean(); }
+| SET OF INT { $$ = Domain::SetOfAllInt64(); }
+| SET OF IVALUE DOTDOT IVALUE { $$ = Domain::SetOfInterval($3, $5); }
 | SET OF '{' integers '}' {
   CHECK($4 != nullptr);
-  $$ = Domain::IntegerList(std::move(*$4));
+  $$ = Domain::SetOfIntegerList(std::move(*$4));
   delete $4;
 }
 
 float_domain:
   FLOAT { $$ = Domain::AllInt64(); }  // TODO(lperron): implement floats.
-| DVALUE DOTDOT DVALUE { $$ = Domain::AllInt64(); }  // TODO(lperron): floats.
-
+| DVALUE DOTDOT DVALUE {
+  const int64 lb = ConvertAsIntegerOrDie($1);
+  const int64 ub = ConvertAsIntegerOrDie($3);
+  $$ = Domain::Interval(lb, ub);
+}  // TODO(lperron): floats.
 
 domain:
   int_domain { $$ = $1; }
@@ -407,6 +440,17 @@ integer:
   $$ = Lookup(FindOrDie(context->integer_array_map, $1), $3);
 }
 
+floats:
+  floats ',' float { $$ = $1; $$->emplace_back($3); }
+| float { $$ = new std::vector<double>(); $$->emplace_back($1); }
+
+float:
+  DVALUE { $$ = $1; }
+| IDENTIFIER { $$ = FindOrDie(context->float_map, $1); }
+| IDENTIFIER '[' IVALUE ']' {
+  $$ = Lookup(FindOrDie(context->float_array_map, $1), $3);
+}
+
 const_literal:
   IVALUE { $$ = Domain::IntegerValue($1); }
 | IVALUE DOTDOT IVALUE { $$ = Domain::Interval($1, $3); }
@@ -416,7 +460,10 @@ const_literal:
   delete $2;
 }
 | '{' '}' { $$ = Domain::EmptyDomain(); }
-| DVALUE { $$ = Domain::AllInt64(); }  // TODO(lperron): floats.
+| DVALUE {
+  CHECK_EQ(std::round($1), $1);
+  $$ = Domain::IntegerValue(static_cast<int64>($1));
+}  // TODO(lperron): floats.
 | IDENTIFIER { $$ = Domain::IntegerValue(FindOrDie(context->integer_map, $1)); }
 | IDENTIFIER '[' IVALUE ']' {
   $$ = Domain::IntegerValue(
@@ -444,7 +491,7 @@ constraint :
   const std::vector<Argument>& arguments = *$4;
   std::vector<Annotation>* const annotations = $6;
 
-  // Does the constraint has a defines_var annotation?
+  // Does the constraint have a defines_var annotation?
   IntegerVariable* defines_var = nullptr;
   if (annotations != nullptr) {
     for (int i = 0; i < annotations->size(); ++i) {
@@ -470,7 +517,7 @@ arguments:
 
 argument:
   IVALUE { $$ = Argument::IntegerValue($1); }
-| DVALUE { $$ = Argument::VoidArgument(); }
+| DVALUE { $$ = Argument::IntegerValue(ConvertAsIntegerOrDie($1)); }
 | SVALUE { $$ = Argument::VoidArgument(); }
 | IVALUE DOTDOT IVALUE { $$ = Argument::Interval($1, $3); }
 | '{' integers '}' {
@@ -484,6 +531,17 @@ argument:
     $$ = Argument::IntegerValue(FindOrDie(context->integer_map, id));
   } else if (ContainsKey(context->integer_array_map, id)) {
     $$ = Argument::IntegerList(FindOrDie(context->integer_array_map, id));
+  } else if (ContainsKey(context->float_map, id)) {
+    const double d = FindOrDie(context->float_map, id);
+    $$ = Argument::IntegerValue(ConvertAsIntegerOrDie(d));
+  } else if (ContainsKey(context->float_array_map, id)) {
+    const auto& double_values = FindOrDie(context->float_array_map, id);
+    std::vector<int64> integer_values;
+    for (const double d : double_values) {
+      const int64 i = ConvertAsIntegerOrDie(d);
+      integer_values.push_back(i);
+    }
+    $$ = Argument::IntegerList(std::move(integer_values));
   } else if (ContainsKey(context->variable_map, id)) {
     $$ = Argument::IntVarRef(FindOrDie(context->variable_map, id));
   } else if (ContainsKey(context->variable_array_map, id)) {

@@ -49,14 +49,6 @@ IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
     integer_trail_->MarkIntegerVariableAsOptional(StartVar(i), literal);
     precedences_->MarkIntegerVariableAsOptional(EndVar(i), literal);
     integer_trail_->MarkIntegerVariableAsOptional(EndVar(i), literal);
-    if (SizeVar(i) != kNoIntegerVariable) {
-      // TODO(user): This is not currently fully supported in precedences_
-      // if the size is not a constant variable.
-      CHECK_EQ(integer_trail_->LowerBound(SizeVar(i)),
-               integer_trail_->UpperBound(SizeVar(i)));
-      precedences_->MarkIntegerVariableAsOptional(SizeVar(i), literal);
-      integer_trail_->MarkIntegerVariableAsOptional(SizeVar(i), literal);
-    }
   }
   return i;
 }

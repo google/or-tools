@@ -38,9 +38,9 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"  // for CHECK*
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/iterators.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/permutation.h"
-#include "ortools/util/iterators.h"
 #include "ortools/util/return_macros.h"
 
 namespace operations_research {
@@ -302,8 +302,8 @@ class SparseVector {
   //   for (const EntryIndex i : sparse_vector.AllEntryIndices()) { ... }
   // TODO(user): consider removing this, in favor of the natural range
   // iteration.
-  IntegerRange<EntryIndex> AllEntryIndices() const {
-    return IntegerRange<EntryIndex>(EntryIndex(0), num_entries_);
+  util::IntegerRange<EntryIndex> AllEntryIndices() const {
+    return util::IntegerRange<EntryIndex>(EntryIndex(0), num_entries_);
   }
 
   // Returns true if this vector is exactly equal to the given one, i.e. all its

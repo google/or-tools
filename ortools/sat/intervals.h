@@ -52,9 +52,13 @@ class IntervalsRepository {
   int NumIntervals() const { return start_vars_.size(); }
 
   // Functions to add a new interval to the repository.
-  // - If size == kNoIntegerVariable, then the size is assumed to be fixed
-  //   to fixed_size.
+  // - If size == kNoIntegerVariable, then the size is fixed to fixed_size.
   // - If is_present != kNoLiteralIndex, then this is an optional interval.
+  //
+  // TRICKY: for optional interval, the start and end variables are
+  // automatically marked as "ignorable" and the relation start + size <= end
+  // will still be propagated even if the interval is not present. Note that we
+  // never mark the size as "ignorable" here.
   IntervalVariable CreateInterval(IntegerVariable start, IntegerVariable end,
                                   IntegerVariable size, IntegerValue fixed_size,
                                   LiteralIndex is_present);

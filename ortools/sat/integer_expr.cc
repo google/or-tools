@@ -147,6 +147,7 @@ bool IntegerSumLE::Propagate() {
 
   // The lower bound of all the variables minus one can be used to update the
   // upper bound of the last one.
+  int trail_index_with_same_reason = -1;
   for (int i = rev_num_fixed_vars_; i < vars_.size(); ++i) {
     const IntegerVariable var = vars_[i];
     const IntegerValue coeff = coeffs_[i];
@@ -165,12 +166,19 @@ bool IntegerSumLE::Propagate() {
         saved = integer_reason_[index];
         integer_reason_[index] = integer_reason_.back();
         integer_reason_.pop_back();
+      } else if (trail_index_with_same_reason == -1) {
+        // All the push for which index < 0 share the same reason, so we save
+        // the index of the first push so that we do not need to copy the reason
+        // of the next ones.
+        trail_index_with_same_reason = integer_trail_->Index();
       }
 
       const IntegerValue new_ub =
           integer_trail_->LowerBound(var) + slack / coeff;
       if (!integer_trail_->Enqueue(IntegerLiteral::LowerOrEqual(var, new_ub),
-                                   literal_reason_, integer_reason_)) {
+                                   literal_reason_, integer_reason_,
+                                   index >= 0 ? integer_trail_->Index()
+                                              : trail_index_with_same_reason)) {
         return false;
       }
 

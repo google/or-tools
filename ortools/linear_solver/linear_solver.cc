@@ -471,6 +471,49 @@ bool MPSolver::SupportsProblemType(OptimizationProblemType problem_type) {
     return false;
 }
 
+// static
+bool MPSolver::ParseSolverType(const std::string& solver,
+                               MPSolver::OptimizationProblemType* type) {
+  if (solver == "glop") {
+    *type = MPSolver::GLOP_LINEAR_PROGRAMMING;
+#if defined(USE_GLPK)
+  } else if (solver == "glpk_lp") {
+    *type = MPSolver::GLPK_LINEAR_PROGRAMMING;
+#endif
+#if defined(USE_CLP)
+  } else if (solver == "clp") {
+    *type = MPSolver::CLP_LINEAR_PROGRAMMING;
+#endif
+#if defined(USE_GUROBI)
+  } else if (solver == "gurobi_lp") {
+    *type = MPSolver::GUROBI_LINEAR_PROGRAMMING;
+#endif
+#if defined(USE_SCIP)
+  } else if (solver == "scip") {
+    *type = MPSolver::SCIP_MIXED_INTEGER_PROGRAMMING;
+#endif
+#if defined(USE_GUROBI)
+  } else if (solver == "cbc") {
+    *type = MPSolver::CBC_MIXED_INTEGER_PROGRAMMING;
+#endif
+#if defined(USE_GLPK)
+  } else if (solver == "glpk_mip") {
+    *type = MPSolver::GLPK_MIXED_INTEGER_PROGRAMMING;
+#endif
+#if defined(USE_GUROBI)
+  } else if (solver == "gurobi_mip") {
+    *type = MPSolver::GUROBI_MIXED_INTEGER_PROGRAMMING;
+#endif
+#if defined(USE_BOP)
+  } else if (solver == "bop") {
+    *type = MPSolver::BOP_INTEGER_PROGRAMMING;
+#endif
+  } else {
+    return false;
+  }
+  return true;
+}
+
 MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
   std::unordered_map<std::string, int>::const_iterator it =
       variable_name_to_index_.find(var_name);

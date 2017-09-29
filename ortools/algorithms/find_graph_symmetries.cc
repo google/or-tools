@@ -20,12 +20,12 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/iterators.h"
 #include "ortools/algorithms/dense_doubly_linked_list.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/graph/util.h"
-#include "ortools/util/iterators.h"
 
 DEFINE_bool(minimize_permutation_support_size, false,
             "Tweak the algorithm to try and minimize the support size"
@@ -34,6 +34,7 @@ DEFINE_bool(minimize_permutation_support_size, false,
             " to reduce the support size.");
 
 namespace operations_research {
+
 
 namespace {
 // Some routines used below.
@@ -838,9 +839,9 @@ GraphSymmetryFinder::FindOneSuitablePermutation(
   return nullptr;
 }
 
-BeginEndWrapper<std::vector<int>::const_iterator>
+util::BeginEndWrapper<std::vector<int>::const_iterator>
 GraphSymmetryFinder::TailsOfIncomingArcsTo(int node) const {
-  return BeginEndWrapper<std::vector<int>::const_iterator>(
+  return util::BeginEndWrapper<std::vector<int>::const_iterator>(
       flattened_reverse_adj_lists_.begin() + reverse_adj_list_index_[node],
       flattened_reverse_adj_lists_.begin() + reverse_adj_list_index_[node + 1]);
 }

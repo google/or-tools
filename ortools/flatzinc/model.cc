@@ -34,13 +34,7 @@ Domain Domain::IntegerList(std::vector<int64> values) {
   result.values = std::move(values);
   STLSortAndRemoveDuplicates(&result.values);
   result.display_as_boolean = false;
-  return result;
-}
-
-Domain Domain::EmptyDomain() {
-  Domain result;
-  result.is_interval = false;
-  result.display_as_boolean = false;
+  result.is_a_set = false;
   return result;
 }
 
@@ -48,6 +42,7 @@ Domain Domain::AllInt64() {
   Domain result;
   result.is_interval = true;
   result.display_as_boolean = false;
+  result.is_a_set = false;
   return result;
 }
 
@@ -56,6 +51,7 @@ Domain Domain::IntegerValue(int64 value) {
   result.is_interval = false;
   result.values.push_back(value);
   result.display_as_boolean = false;
+  result.is_a_set = false;
   return result;
 }
 
@@ -65,6 +61,7 @@ Domain Domain::Interval(int64 included_min, int64 included_max) {
   result.display_as_boolean = false;
   result.values.push_back(included_min);
   result.values.push_back(included_max);
+  result.is_a_set = false;
   return result;
 }
 
@@ -74,6 +71,45 @@ Domain Domain::Boolean() {
   result.display_as_boolean = true;
   result.values.push_back(0);
   result.values.push_back(1);
+  result.is_a_set = false;
+  return result;
+}
+
+Domain Domain::SetOfIntegerList(std::vector<int64> values) {
+  Domain result = IntegerList(std::move(values));
+  result.is_a_set = true;
+  return result;
+}
+
+Domain Domain::SetOfAllInt64() {
+  Domain result = AllInt64();
+  result.is_a_set = true;
+  return result;
+}
+
+Domain Domain::SetOfIntegerValue(int64 value) {
+  Domain result = IntegerValue(value);
+  result.is_a_set = true;
+  return result;
+}
+
+Domain Domain::SetOfInterval(int64 included_min, int64 included_max) {
+  Domain result = Interval(included_min, included_max);
+  result.is_a_set = true;
+  return result;
+}
+
+Domain Domain::SetOfBoolean() {
+  Domain result = Boolean();
+  result.is_a_set = true;
+  return result;
+}
+
+Domain Domain::EmptyDomain() {
+  Domain result;
+  result.is_interval = false;
+  result.display_as_boolean = false;
+  result.is_a_set = false;
   return result;
 }
 
@@ -506,7 +542,7 @@ bool Argument::Contains(int64 value) const {
       return value == values.front();
     }
     default: {
-      LOG(FATAL) << "Cannot call Constains() on " << DebugString();
+      LOG(FATAL) << "Cannot call Contains() on " << DebugString();
       return 0;
     }
   }

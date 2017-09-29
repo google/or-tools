@@ -28,6 +28,9 @@
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/vector_map.h"
 
+DEFINE_bool(fz_floats_are_ints, true,
+            "Interpret floats as integers in all variables and constraints.");
+
 namespace operations_research {
 namespace fz {
 namespace {
@@ -3715,6 +3718,17 @@ bool IsStrictPrefix(const std::vector<T>& v1, const std::vector<T>& v2) {
 void Presolver::CleanUpModelForTheCpSolver(Model* model, bool use_sat) {
   // First pass.
   for (Constraint* const ct : model->constraints()) {
+    // Treat float variables as int variables, convert constraints to int.
+    if (FLAGS_fz_floats_are_ints) {
+      const std::string& id = ct->type;
+      if (id == "int2float") {
+        ct->type = "int_eq";
+      } else if (id == "float_lin_le") {
+        ct->type = "int_lin_le";
+      } else if (id == "float_lin_eq") {
+        ct->type = "int_lin_eq";
+      }
+    }
     const std::string& id = ct->type;
     // Remove ignored annotations on int_lin_eq.
     if (id == "int_lin_eq" && ct->strong_propagation) {

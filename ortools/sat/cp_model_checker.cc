@@ -262,6 +262,25 @@ class ConstraintChecker {
     return -variable_values_[-var - 1];
   }
 
+  // Note that this does not check the variables like
+  // ConstraintHasNonEnforcedVariables() does.
+  bool ConstraintIsEnforced(const ConstraintProto& ct) {
+    return !HasEnforcementLiteral(ct) ||
+           LiteralIsTrue(ct.enforcement_literal(0));
+  }
+
+  bool ConstraintHasNonEnforcedVariables(const CpModelProto& model,
+                                         const ConstraintProto& ct) {
+    IndexReferences references;
+    AddReferencesUsedByConstraint(ct, &references);
+    for (const int ref : references.variables) {
+      const auto& var_proto = model.variables(PositiveRef(ref));
+      if (var_proto.enforcement_literal().empty()) continue;
+      if (LiteralIsFalse(var_proto.enforcement_literal(0))) return true;
+    }
+    return false;
+  }
+
   bool BoolOrConstraintIsFeasible(const ConstraintProto& ct) {
     for (const int lit : ct.bool_or().literals()) {
       if (LiteralIsTrue(lit)) return true;
@@ -339,11 +358,6 @@ class ConstraintChecker {
     const int64 size = Value(ct.interval().size());
     if (size < 0) return false;
     return Value(ct.interval().start()) + size == Value(ct.interval().end());
-  }
-
-  bool ConstraintIsEnforced(const ConstraintProto& ct) {
-    return !HasEnforcementLiteral(ct) ||
-           LiteralIsTrue(ct.enforcement_literal(0));
   }
 
   bool NoOverlapConstraintIsFeasible(const CpModelProto& model,
@@ -550,11 +564,8 @@ bool SolutionIsFeasible(const CpModelProto& model,
   for (int c = 0; c < model.constraints_size(); ++c) {
     const ConstraintProto& ct = model.constraints(c);
 
-    // We skip optional constraints that are not present.
-    if (ct.enforcement_literal_size() > 0 &&
-        checker.LiteralIsFalse(ct.enforcement_literal(0))) {
-      continue;
-    }
+    if (!checker.ConstraintIsEnforced(ct)) continue;
+    if (checker.ConstraintHasNonEnforcedVariables(model, ct)) continue;
 
     bool is_feasible = true;
     const ConstraintProto::ConstraintCase type = ct.constraint_case();

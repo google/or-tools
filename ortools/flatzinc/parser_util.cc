@@ -61,6 +61,13 @@ bool AllDomainsHaveOneValue(const std::vector<Domain>& domains) {
   return true;
 }
 
+int64 ConvertAsIntegerOrDie(double d) {
+  const double rounded = std::round(d);
+  const int64 i = static_cast<int64>(rounded);
+  CHECK_NEAR(d, i, 1e-9);
+  return i;
+}
+
 // Array in flatzinc are 1 based. We use this trivial wrapper for all flatzinc
 // arrays.
 template <class T>

@@ -11,9 +11,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/graph/util.h"
+#include "ortools/base/util.h"
 
-namespace operations_research {
+namespace util {
 
 bool IsSubsetOf0N(const std::vector<int>& v, int n) {
   std::vector<bool> mask(n, false);
@@ -24,4 +24,4 @@ bool IsSubsetOf0N(const std::vector<int>& v, int n) {
   return true;
 }
 
-}  // namespace operations_research
+}  // namespace util

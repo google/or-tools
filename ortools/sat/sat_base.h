@@ -140,7 +140,7 @@ class VariablesAssignment {
   bool LiteralIsTrue(Literal literal) const {
     return assignment_.IsSet(literal.Index());
   }
-  bool IsLiteralAssigned(Literal literal) const {
+  bool LiteralIsAssigned(Literal literal) const {
     return assignment_.AreOneOfTwoBitsSet(literal.Index());
   }
 

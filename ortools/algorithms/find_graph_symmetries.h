@@ -27,10 +27,10 @@
 #include <memory>
 #include <vector>
 
+#include "ortools/base/iterators.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/graph/graph.h"
-#include "ortools/util/iterators.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
 #include "ortools/base/status.h"
@@ -104,8 +104,6 @@ class GraphSymmetryFinder {
       std::vector<std::unique_ptr<SparsePermutation>>* generators,
       std::vector<int>* factorized_automorphism_group_size);
 
-  // **** Methods below are public FOR TESTING ONLY. ****
-
   // Fully refine the partition of nodes, using the graph as symmetry breaker.
   // This means applying the following steps on each part P of the partition:
   // - Compute the aggregated in-degree of all nodes of the graph, only looking
@@ -119,6 +117,8 @@ class GraphSymmetryFinder {
   // "first_unrefined_part_index" to K+1.
   void RecursivelyRefinePartitionByAdjacency(
       int first_unrefined_part_index, DynamicPartition* partition);
+
+  // **** Methods below are public FOR TESTING ONLY. ****
 
   // Special wrapper of the above method: assuming that partition is already
   // fully refined, further refine it by {node}, and propagate by adjacency.
@@ -144,7 +144,7 @@ class GraphSymmetryFinder {
   // vectors are empty, and TailsOfIncomingArcsTo() crashes.
   std::vector<int> flattened_reverse_adj_lists_;
   std::vector<int> reverse_adj_list_index_;
-  BeginEndWrapper<std::vector<int>::const_iterator> TailsOfIncomingArcsTo(
+  util::BeginEndWrapper<std::vector<int>::const_iterator> TailsOfIncomingArcsTo(
       int node) const;
 
   // Deadline management. Populated upon FindSymmetries().

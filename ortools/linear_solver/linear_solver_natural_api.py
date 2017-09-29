@@ -18,6 +18,7 @@ For examples leveraging the code defined here, see ./pywraplp_test.py and
 ../../../python/linear_programming.py.
 """
 
+import collections
 import numbers
 from six import iteritems
 
@@ -74,12 +75,30 @@ class LinearExpr(object):
     coeffs = self.GetCoeffs()
     return sum(var.solution_value() * coeff for var, coeff in coeffs.items())
 
-  def AddSelfToCoeffMap(self, coeffs, multiplier):
+  def AddSelfToCoeffMapOrStack(self, coeffs, multiplier, stack):
+    """Private function used by GetCoeffs() to delegate processing.
+
+    Implementation must either update coeffs or push to the stack a
+    sub-expression and the accumulated multiplier that applies to it.
+
+    Args:
+      coeffs: A dictionary of variables' coefficients. It is a defaultdict that
+          initializes the new values to 0 by default.
+      multiplier: The current accumulated multiplier to apply to this
+          expression.
+      stack: A list to append to if the current expression is composed of
+          sub-expressions. The elements of the stack are pair tuples
+          (multiplier, linear_expression).
+    """
     raise NotImplementedError
 
   def GetCoeffs(self):
-    coeffs = {}
-    self.AddSelfToCoeffMap(coeffs, 1.0)
+    coeffs = collections.defaultdict(float)
+    stack = [(1.0, self)]
+    while stack:
+      current_multiplier, current_expression = stack.pop()
+      current_expression.AddSelfToCoeffMapOrStack(coeffs, current_multiplier,
+                                                  stack)
     return coeffs
 
   def __add__(self, expr):
@@ -145,8 +164,8 @@ class VariableExpr(LinearExpr):
   def __init__(self, mpvar):
     self.__var = mpvar
 
-  def AddSelfToCoeffMap(self, coeffs, multiplier):
-    coeffs[self.__var] = coeffs.get(self.__var, 0.0) + multiplier
+  def AddSelfToCoeffMapOrStack(self, coeffs, multiplier, stack):
+    coeffs[self.__var] += multiplier
 
 
 class ProductCst(LinearExpr):
@@ -165,10 +184,10 @@ class ProductCst(LinearExpr):
     else:
       return '(' + str(self.__coef) + ' * ' + str(self.__expr) + ')'
 
-  def AddSelfToCoeffMap(self, coeffs, multiplier):
+  def AddSelfToCoeffMapOrStack(self, coeffs, multiplier, stack):
     current_multiplier = multiplier * self.__coef
     if current_multiplier:
-      self.__expr.AddSelfToCoeffMap(coeffs, current_multiplier)
+      stack.append((current_multiplier, self.__expr))
 
 
 class Constant(LinearExpr):
@@ -179,8 +198,8 @@ class Constant(LinearExpr):
   def __str__(self):
     return str(self.__val)
 
-  def AddSelfToCoeffMap(self, coeffs, multiplier):
-    coeffs[OFFSET_KEY] = coeffs.get(OFFSET_KEY, 0.0) + self.__val * multiplier
+  def AddSelfToCoeffMapOrStack(self, coeffs, multiplier, stack):
+    coeffs[OFFSET_KEY] += self.__val * multiplier
 
 
 class SumArray(LinearExpr):
@@ -192,9 +211,13 @@ class SumArray(LinearExpr):
   def __str__(self):
     return '({})'.format(' + '.join(map(str, self.__array)))
 
-  def AddSelfToCoeffMap(self, coeffs, multiplier):
-    for arg in self.__array:
-      arg.AddSelfToCoeffMap(coeffs, multiplier)
+  def AddSelfToCoeffMapOrStack(self, coeffs, multiplier, stack):
+    # Append elements in reversed order so that the first popped from the stack
+    # in the next iteration of the evaluation loop will be the first item of the
+    # array. This keeps the end result of the floating point computation
+    # predictable from user perspective.
+    for arg in reversed(self.__array):
+      stack.append((multiplier, arg))
 
 
 def Sum(*args):

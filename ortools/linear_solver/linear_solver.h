@@ -216,6 +216,11 @@ class MPSolver {
   // targets that you linked).
   static bool SupportsProblemType(OptimizationProblemType problem_type);
 
+  // Parses the name of the solver. Returns true if the solver type is
+  // successfully parsed as one of the OptimizationProblemType.
+  static bool ParseSolverType(const std::string& solver,
+                              OptimizationProblemType* type);
+
   bool IsMIP() const;
 
   std::string Name() const {

@@ -1457,7 +1457,7 @@ void PresolvePureSatPart(PresolveContext* context) {
   // Run the presolve for a small number of passes.
   // TODO(user): Add probing like we do in the pure sat solver presolve loop?
   // TODO(user): Add a time limit, this can be slow on big SAT problem.
-  LOG(INFO) << "num removable Booleans: " << num_removable;
+  VLOG(1) << "num removable Booleans: " << num_removable;
   const int num_passes = params.presolve_use_bva() ? 4 : 1;
   for (int i = 0; i < num_passes; ++i) {
     const int old_num_clause = postsolver.NumClauses();
@@ -1576,11 +1576,11 @@ void PresolveCpModel(const CpModelProto& initial_model,
       const int old_num_constraint = context.working_model->constraints_size();
       ConstraintProto* ct = context.working_model->mutable_constraints(c);
 
-      // Special generic presolve for reified constraint.
-      bool changed = PresolveEnforcementLiteral(ct, &context);
-
       // Generic presolve to exploit variable/literal equivalence.
-      changed |= ExploitEquivalenceRelations(ct, &context);
+      bool changed = ExploitEquivalenceRelations(ct, &context);
+
+      // Generic presolve for reified constraint.
+      changed |= PresolveEnforcementLiteral(ct, &context);
 
       // Because the functions below relies on proper usage stats, we need
       // to update it now.
