@@ -96,19 +96,19 @@ module FSharp =
       {this with SolverAlgorithm = algo}
     member this.Goal(goal:Goal) =
       {this with SolverGoal = goal}
-
-  let defaultSolverOpts = {
-    SolverName = "Solver";
-    ObjectiveFunction = [];
-    ConstraintMatrixIneq = None;
-    ConstraintVectorIneq = None;
-    UpperBound = [];
-    LowerBound = [];
-    ConstraintMatrixEq = None;
-    ConstraintVectorEq = None;
-    SolverAlgorithm = LP CLP
-    SolverGoal = Maximize
-  }
+    static member Default =
+      {
+        SolverName = "Solver";
+        ObjectiveFunction = [];
+        ConstraintMatrixIneq = None;
+        ConstraintVectorIneq = None;
+        UpperBound = [];
+        LowerBound = [];
+        ConstraintMatrixEq = None;
+        ConstraintVectorEq = None;
+        SolverAlgorithm = LP CLP
+        SolverGoal = Maximize
+      }
 
   let lpSolve (solverOptions:SolverOpts) =
     // extract the specific algorithm so its Id can be used to create solver
@@ -142,7 +142,12 @@ module FSharp =
     | _ -> ()
 
     // Variables
-    let vars = [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> solver.MakeNumVar(solverOptions.LowerBound.[i], solverOptions.UpperBound.[i], (sprintf "var[%i]" i ) ) ]
+    let vars =
+      match solverOptions.SolverAlgorithm with
+        | LP lp ->
+            [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> solver.MakeNumVar(solverOptions.LowerBound.[i], solverOptions.UpperBound.[i], (sprintf "var[%i]" i ) ) ]
+        | IP ip ->
+            [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> solver.MakeIntVar(solverOptions.LowerBound.[i], solverOptions.UpperBound.[i], (sprintf "var[%i]" i ) ) ]
 
     // Constraints
     let cols = [ for i in 0 .. (solverOptions.LowerBound.Length-1) -> i ]   // generate column index selectors
@@ -191,6 +196,23 @@ module FSharp =
         solver.Minimize(objectiveExp)
     | Maximize ->
         solver.Maximize(objectiveExp)
+
+    solver
+
+  let SolverSummary (solver:Solver) =
+    let resultStatus = solver.Solve();
+
+    match resultStatus with
+    | status when status <> Solver.OPTIMAL ->
+        printfn "The problem does not have an optimal solution!"
+        exit 0
+    | _ ->
+        printfn "\nProblem solved in %d milliseconds" (solver.WallTime())
+        printfn "Iterations: %i\n" (solver.Iterations())
+
+    printfn "Objective: %f" (solver.Objective().Value())
+    for i in 0 .. (solver.NumVariables()-1) do
+      printfn "%-10s: %f " (sprintf "var[%i]" i) ((solver.LookupVariableOrNull(sprintf "var[%i]" i)).SolutionValue())
 
     solver
 
