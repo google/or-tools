@@ -1,4 +1,4 @@
-.PHONY : python install_python_modules pypi_archive pypi_archive_dir pyinit pycp pyalgorithms pygraph pylp
+.PHONY : python install_python_modules pypi_archive pypi_archive_dir pyinit pycp pyalgorithms pygraph pylp pysat
 
 # Python support using SWIG
 
@@ -27,7 +27,7 @@ python:
 test_python: python
 
 else
-python: install_python_modules pyinit pycp pyalgorithms pygraph pylp
+python: install_python_modules pyinit pycp pyalgorithms pygraph pylp pysat
 test_python: test_python_examples
 BUILT_LANGUAGES +=, python
 endif
@@ -38,19 +38,23 @@ clean_python:
 	-$(DELREC) $(GEN_DIR)$Sortools$Sconstraint_solver$S*
 	-$(DELREC) $(GEN_DIR)$Sortools$Sgraph$S*
 	-$(DELREC) $(GEN_DIR)$Sortools$Slinear_solver$S*
+	-$(DELREC) $(GEN_DIR)$Sortools$Ssat$S*
 	-$(DEL) $(GEN_DIR)$Sortools$S__init__.py
 	-$(DEL) $(GEN_DIR)$Salgorithms$S*python_wrap*
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*python_wrap*
 	-$(DEL) $(GEN_DIR)$Sgraph$S*python_wrap*
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*python_wrap*
+	-$(DEL) $(GEN_DIR)$Ssat$S*python_wrap*
 	-$(DEL) $(GEN_DIR)$Salgorithms$S*.py
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.py
 	-$(DEL) $(GEN_DIR)$Sgraph$S*.py
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.py
+	-$(DEL) $(GEN_DIR)$Ssat$S*.py
 	-$(DEL) $(GEN_DIR)$Salgorithms$S*.pyc
 	-$(DEL) $(GEN_DIR)$Sconstraint_solver$S*.pyc
 	-$(DEL) $(GEN_DIR)$Sgraph$S*.pyc
 	-$(DEL) $(GEN_DIR)$Slinear_solver$S*.pyc
+	-$(DEL) $(GEN_DIR)$Ssat$S*.pyc
 	-$(DEL) $(LIB_DIR)$S_pywrap*.$(SWIG_LIB_SUFFIX)
 	-$(DEL) $(OBJ_DIR)$Sswig$S*python_wrap.$O
 	-$(DELREC) $(PYPI_ARCHIVE_TEMP_DIR)
@@ -209,9 +213,43 @@ else
 	cp $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/linear_solver
 endif
 
+# pywrapsat
+
+pysat: $(LIB_DIR)/_pywrapsat.$(SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/sat/pywrapsat.py
+
+$(GEN_DIR)/ortools/sat/cp_model_pb2.py: $(SRC_DIR)/ortools/sat/cp_model.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)/ortools/sat/cp_model.proto
+
+$(GEN_DIR)/ortools/sat/sat_parameters_pb2.py: $(SRC_DIR)/ortools/sat/sat_parameters.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --python_out=$(GEN_DIR) $(SRC_DIR)/ortools/sat/sat_parameters.proto
+
+$(GEN_DIR)/ortools/sat/pywrapsat.py: \
+		$(SRC_DIR)/ortools/base/base.i \
+		$(SRC_DIR)/ortools/util/python/vector.i \
+		$(SRC_DIR)/ortools/sat/python/sat.i \
+		$(GEN_DIR)/ortools/sat/cp_model_pb2.py \
+		$(GEN_DIR)/ortools/sat/sat_parameters_pb2.py \
+		$(SAT_DEPS)
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Ssat$Ssat_python_wrap.cc -module ortools.sat $(SRC_DIR)/ortools/sat$Spython$Ssat.i
+
+$(GEN_DIR)/ortools/sat/sat_python_wrap.cc: $(GEN_DIR)/ortools/sat/pywrapsat.py
+
+$(OBJ_DIR)/swig/sat_python_wrap.$O: $(GEN_DIR)/ortools/sat/sat_python_wrap.cc $(SAT_DEPS)
+	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Ssat$Ssat_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_python_wrap.$O
+
+$(LIB_DIR)/_pywrapsat.$(SWIG_LIB_SUFFIX): \
+		$(OBJ_DIR)/swig/sat_python_wrap.$O \
+			$(OR_TOOLS_LIBS)
+	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapsat.$(SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sswig$Ssat_python_wrap.$O $(OR_TOOLS_LNK) $(SYS_LNK) $(PYTHON_LNK)
+ifeq "$(SYSTEM)" "win"
+	copy $(LIB_DIR)\\_pywrapsat.dll $(GEN_DIR)\\ortools\\sat\\_pywrapsat.pyd
+else
+	cp $(LIB_DIR)/_pywrapsat.$(SWIG_LIB_SUFFIX) $(GEN_DIR)/ortools/sat
+endif
+
 # Run a single example
 
-rpy: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(EX)
+rpy: $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(LIB_DIR)/_pywrapsat.$(SWIG_LIB_SUFFIX)  $(EX)
 	@echo Running $(EX)
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) $(EX) $(ARGS)
 
@@ -270,12 +308,15 @@ $(PYPI_ARCHIVE_TEMP_DIR) : $(OR_TOOLS_PYTHON_GEN_SCRIPTS)
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
+	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(MKDIR) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sdummy
 	$(COPY) ortools$Sgen$Sortools$Sconstraint_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
 	$(COPY) ortools$Slinear_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
 	$(COPY) ortools$Sgen$Sortools$Slinear_solver$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
+	$(COPY) ortools$Ssat$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
+	$(COPY) ortools$Sgen$Sortools$Ssat$S*.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	$(COPY) ortools$Sgen$Sortools$Sgraph$Spywrapgraph.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
 	$(COPY) ortools$Sgen$Sortools$Salgorithms$Spywrapknapsack_solver.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(COPY) $(GEN_DIR)$Sortools$S__init__.py $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
@@ -287,6 +328,7 @@ endif
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$S__init__.py
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver$S__init__.py
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver$S__init__.py
+	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat$S__init__.py
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph$S__init__.py
 	$(TOUCH) $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms$S__init__.py
 	$(COPY) tools$Sdummy_ortools_dependency.cc $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sdummy
@@ -303,6 +345,7 @@ endif
 ifeq ($(SYSTEM),win)
 	copy ortools\gen\ortools\constraint_solver\_pywrapcp.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sconstraint_solver
 	copy ortools\gen\ortools\linear_solver\_pywraplp.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Slinear_solver
+	copy ortools\gen\ortools\sat\_pywrapsat.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Ssat
 	copy ortools\gen\ortools\graph\_pywrapgraph.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Sgraph
 	copy ortools\gen\ortools\algorithms\_pywrapknapsack_solver.pyd $(PYPI_ARCHIVE_TEMP_DIR)$Sortools$Sortools$Salgorithms
 	$(SED) -i -e 's/\.dll/\.pyd/' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
@@ -312,6 +355,7 @@ ifeq ($(SYSTEM),win)
 else
 	cp lib/_pywrapcp.$(SWIG_LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/constraint_solver
 	cp lib/_pywraplp.$(SWIG_LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/linear_solver
+	cp lib/_pywrapsat.$(SWIG_LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/sat
 	cp lib/_pywrapgraph.$(SWIG_LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/graph
 	cp lib/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/ortools/algorithms
 	$(SED) -i -e 's/\.dll/\.so/' $(PYPI_ARCHIVE_TEMP_DIR)/ortools/setup.py
