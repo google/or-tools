@@ -230,7 +230,7 @@ $(GEN_DIR)/ortools/sat/pywrapsat.py: \
 		$(GEN_DIR)/ortools/sat/cp_model_pb2.py \
 		$(GEN_DIR)/ortools/sat/sat_parameters_pb2.py \
 		$(SAT_DEPS)
-	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Ssat$Ssat_python_wrap.cc -module ortools.sat $(SRC_DIR)/ortools/sat$Spython$Ssat.i
+	$(SWIG_BINARY) $(SWIG_INC) -I$(INC_DIR) -c++ -python $(SWIG_PYTHON3_FLAG) -o $(GEN_DIR)$Sortools$Ssat$Ssat_python_wrap.cc -module pywrapsat $(SRC_DIR)/ortools/sat$Spython$Ssat.i
 
 $(GEN_DIR)/ortools/sat/sat_python_wrap.cc: $(GEN_DIR)/ortools/sat/pywrapsat.py
 
