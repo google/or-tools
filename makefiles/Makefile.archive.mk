@@ -62,6 +62,7 @@ create_dirs:
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Squasigroup_completion
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sexamples$Sfsharp$Slib
 
 
 #credits
@@ -119,7 +120,9 @@ dotnet_archive: csharp
 	$(COPY) bin$SGoogle.Protobuf.dll temp$S$(INSTALL_DIR)$Sbin
 	$(COPY) bin$S$(CLR_ORTOOLS_DLL_NAME).dll temp$S$(INSTALL_DIR)$Sbin
 	$(COPY) examples$Scsharp$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp
-	$(COPY) examples$Sfsharp$S* temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
+	$(COPY) examples$Sfsharp$S*fsx temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
+	$(COPY) examples$Sfsharp$SREADME.md temp$S$(INSTALL_DIR)$Sexamples$Sfsharp
+	$(COPY) examples$Sfsharp$Slib$S* temp$S$(INSTALL_DIR)$Sexamples$Sfsharp$Slib
 	$(COPY) examples$Scsharp$Ssolution$SProperties$S*.cs temp$S$(INSTALL_DIR)$Sexamples$Scsharp$Ssolution$SProperties
 	$(COPY) examples$Sdata$Sdiscrete_tomography$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sdiscrete_tomography
 	$(COPY) examples$Sdata$Sfill_a_pix$S* temp$S$(INSTALL_DIR)$Sexamples$Sdata$Sfill_a_pix
