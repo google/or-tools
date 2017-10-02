@@ -373,20 +373,6 @@ else
 endif
 	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && twine upload dist/*
 
-pypi_export: pypi_archive  # to be used in docker (linux only).
-	@echo Exporting Pypi module for $(PYTHON_EXECUTABLE).
-ifeq ($(SYSTEM),win)
-	cd $(PYPI_ARCHIVE_TEMP_DIR)\ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel bdist_wininst
-else
-  ifeq ($(PLATFORM),MACOSX)
-	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel
-  else
-	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && $(PYTHON_EXECUTABLE) setup.py bdist_egg bdist_wheel
-  endif
-endif
-	$(COPY) $(PYPI_ARCHIVE_TEMP_DIR)/ortools/dist/* /export
-
-
 detect_python:
 	@echo PYTHON3 = $(PYTHON3)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
