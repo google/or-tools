@@ -43,7 +43,7 @@ if __name__ == '__main__':
 	parser = OptionParser('Log level')
 	parser.add_option('-l','--log',type='string',help='Available levels are CRITICAL (3), ERROR (2), WARNING (1), INFO (0), DEBUG (-1)',default='INFO')
 	options,args = parser.parse_args()
- 
+
 	#Create the logger
 	try:
 		loglevel = getattr(logging,options.log.upper())
@@ -54,7 +54,7 @@ if __name__ == '__main__':
 					0:logging.INFO,
 					-1:logging.DEBUG,
 					}[int(options.log)]
-	
+
 	logging.basicConfig(format='[%(levelname)s] %(message)s', stream=sys.stdout, level=loglevel)
 
 	#Display Python Version and path
@@ -62,10 +62,7 @@ if __name__ == '__main__':
 	logging.info("Python version : " + sys.version)
 
 	#Choose the pypi package
-	if sys.version_info[0] >= 3:
-		ortools_name = "py3-ortools"
-	else:
-		ortools_name = "ortools"
+        ortools_name = "ortools"
 
 	#try to import ortools
 	try:
