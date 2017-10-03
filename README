@@ -1,7 +1,7 @@
 These modules have been tested under:
-  - Ubuntu 14.04 and 16.04 up (64-bit).
+  - Ubuntu 16.04 up (64-bit).
   - Mac OS X El Capitan with Xcode 7.x (64 bit).
-  - Microsoft Windows with Visual Studio 2013 and 2015 (64-bit)
+  - Microsoft Windows with Visual Studio 2015 and 2017 (64-bit)
 
 Upon checking out the repository, you will get the following structure:
 
@@ -24,21 +24,21 @@ or-tools/
   lib/                   <- Libraries and jar files
   makefiles/             <- Subsidiary makefiles
   objs/                  <- C++ object files
-  src/                   <- Source code
-  src/algorithms/        <- Basic algorithms
-  src/base/              <- Basic utilities
-  src/bop/               <- Boolean solver based on SAT
-  src/com/               <- C# and Java source files
-  src/constraint_solver/ <- Constraint solver
-  src/flatzinc/          <- Flatzinc interpreter
-  src/gen/               <- Generated files
-  src/glop/              <- Linear solver
-  src/graph/             <- Graph algorithms
-  src/linear_solver/     <- Linear solver wrapper
-  src/lp_data/           <- Data structures for linear model
-  src/ortools            <- Python source code
-  src/sat/               <- Sat solver
-  src/util/              <- Utilities needed by the constraint solver
+  ortools/               <- Source code
+  ortools/algorithms/    <- Basic algorithms
+  ortools/base/          <- Basic utilities
+  ortools/bop/           <- Boolean solver based on SAT
+  ortools/com/           <- C# and Java source files
+  ortools/constraint_solver/ <- Constraint solver
+  ortools/flatzinc/      <- Flatzinc interpreter
+  ortools/gen/           <- Generated files
+  ortools/glop/          <- Linear solver
+  ortools/graph/         <- Graph algorithms
+  ortools/linear_solver/ <- Linear solver wrapper
+  ortools/lp_data/       <- Data structures for linear model
+  ortools/ortools        <- Python source code
+  ortools/sat/           <- Sat solver
+  ortools/util/          <- Utilities needed by the constraint solver
   tools/                 <- Windows binaries
 
 For installation instructions (both source and binary), visit
