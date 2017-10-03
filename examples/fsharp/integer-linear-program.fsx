@@ -45,8 +45,8 @@ open Google.OrTools.LinearSolver
 let opts = SolverOpts.Default
             .Goal(Maximize)
             .Objective([6.;3.;1.;2.])
-            .MatrixIneq([[1.;2.;0.]; [1.;1.;5.]; [1.;3.;1.]; [1.;0.;3.]])
-            .VectorIneq([8.; 12.; 6.])
+            .Matrix([[1.;2.;0.]; [1.;1.;5.]; [1.;3.;1.]; [1.;0.;3.]])
+            .VectorUpper([8.; 12.; 6.])
             .Lower([0.; 0.; 0.; 0.])
             .Upper([1.; 1.; 4.; 2.])
 
