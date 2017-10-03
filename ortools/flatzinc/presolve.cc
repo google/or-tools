@@ -2489,10 +2489,15 @@ Presolver::RuleStatus Presolver::PresolveBoolXor(Constraint* ct, std::string* lo
 // Rule 4:
 // Input : bool_not(b1, b2)
 // Output: bool_not(b1, b2) => b2 if b2 is not already a target variable.
+//
+// Rule 5:
+// Input : bool_not(c1, c2) (2 boolean constants)
+// Output: inactive constraint or false constraint.
 Presolver::RuleStatus Presolver::PresolveBoolNot(Constraint* ct, std::string* log) {
   if (ct->arguments[0].variables.empty() &&
       ct->arguments[1].variables.empty()) {
-    return NOT_CHANGED;
+    return  (ct->arguments[0].Value() != ct->arguments[1].Value()) ?
+        CONSTRAINT_ALWAYS_TRUE : CONSTRAINT_ALWAYS_FALSE;
   }
   if (ct->arguments[0].HasOneValue() && ct->arguments[1].IsVariable()) {
     const int64 value = ct->arguments[0].Value() == 0;
