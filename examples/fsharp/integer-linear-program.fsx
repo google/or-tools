@@ -46,9 +46,9 @@ let opts = SolverOpts.Default
             .Goal(Maximize)
             .Objective([6.;3.;1.;2.])
             .Matrix([[1.;2.;0.]; [1.;1.;5.]; [1.;3.;1.]; [1.;0.;3.]])
-            .VectorUpper([8.; 12.; 6.])
-            .Lower([0.; 0.; 0.; 0.])
-            .Upper([1.; 1.; 4.; 2.])
+            .VectorUpperBound([8.; 12.; 6.])
+            .VarLowerBound([0.; 0.; 0.; 0.])
+            .VarUpperBound([1.; 1.; 4.; 2.])
 
 
 printfn "\n\nInteger Program Solution"
