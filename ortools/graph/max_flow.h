@@ -235,7 +235,7 @@ class SimpleMaxFlow {
 
   // Note that we cannot free the graph before we stop using the max-flow
   // instance that uses it.
-  typedef ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
+  typedef ::util::ReverseArcStaticGraph<NodeIndex, ArcIndex> Graph;
   std::unique_ptr<Graph> underlying_graph_;
   std::unique_ptr<GenericMaxFlow<Graph> > underlying_max_flow_;
 

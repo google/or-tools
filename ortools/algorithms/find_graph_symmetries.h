@@ -27,7 +27,7 @@
 #include <memory>
 #include <vector>
 
-#include "ortools/base/iterators.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/algorithms/dynamic_permutation.h"
 #include "ortools/graph/graph.h"
@@ -41,7 +41,7 @@ class SparsePermutation;
 
 class GraphSymmetryFinder {
  public:
-  typedef StaticGraph<> Graph;
+  typedef ::util::StaticGraph<> Graph;
 
   // If the Graph passed to the GraphSymmetryFinder is undirected, i.e.
   // for every arc a->b, b->a is also present, then you should set

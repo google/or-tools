@@ -1553,7 +1553,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto,
 namespace {
 
 IntegerVariable GetOrCreateVariableWithTightBound(
-    Model* model, const std::vector<std::pair<IntegerVariable, int64>>& terms) {
+    const std::vector<std::pair<IntegerVariable, int64>>& terms, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -1577,7 +1577,7 @@ IntegerVariable GetOrCreateVariableWithTightBound(
 }
 
 IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
-    Model* model, const std::vector<std::pair<IntegerVariable, int64>>& terms) {
+    const std::vector<std::pair<IntegerVariable, int64>>& terms, Model* model) {
   if (terms.empty()) return model->Add(ConstantIntegerVariable(0));
   if (terms.size() == 1 && terms.front().second == 1) {
     return terms.front().first;
@@ -1588,7 +1588,7 @@ IntegerVariable GetOrCreateVariableGreaterOrEqualToSumOf(
 
   // Create a new variable and link it with the linear terms.
   const IntegerVariable new_var =
-      GetOrCreateVariableWithTightBound(model, terms);
+      GetOrCreateVariableWithTightBound(terms, model);
   std::vector<IntegerVariable> vars;
   std::vector<int64> coeffs;
   for (const auto& term : terms) {
@@ -1849,6 +1849,17 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     components_to_size[id] += 1;
   }
 
+  // Make sure any constraint that touch the objective is not discarded even
+  // if it is the only one in its component. This is important to propagate
+  // as much as possible the objective bound by using any bounds the LP give
+  // us on one of its components. This is critical on the zephyrus problems for
+  // instance.
+  for (int i = 0; i < model_proto.objective().coeffs_size(); ++i) {
+    const int var = model_proto.objective().vars(i);
+    const int id = components.GetClassRepresentative(get_var_index(var));
+    components_to_size[id] += 1;
+  }
+
   // Dispatch every constraint to its LinearProgrammingConstraint.
   std::unordered_map<int, LinearProgrammingConstraint*> representative_to_lp_constraint;
   std::vector<LinearProgrammingConstraint*> lp_constraints;
@@ -1899,7 +1910,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
           FindOrDie(representative_to_lp_constraint, id);
       const std::vector<std::pair<IntegerVariable, int64>>& terms = it.second;
       const IntegerVariable sub_obj_var =
-          GetOrCreateVariableGreaterOrEqualToSumOf(m->model(), terms);
+          GetOrCreateVariableGreaterOrEqualToSumOf(terms, m->model());
       top_level_cp_terms.push_back(std::make_pair(sub_obj_var, 1));
       lp->SetMainObjectiveVariable(sub_obj_var);
       num_components_containing_objective++;
@@ -1909,10 +1920,10 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   IntegerVariable main_objective_var;
   if (m->GetOrCreate<SatSolver>()->parameters().optimize_with_core()) {
     main_objective_var =
-        GetOrCreateVariableWithTightBound(m->model(), top_level_cp_terms);
+        GetOrCreateVariableWithTightBound(top_level_cp_terms, m->model());
   } else {
     main_objective_var = GetOrCreateVariableGreaterOrEqualToSumOf(
-        m->model(), top_level_cp_terms);
+        top_level_cp_terms, m->model());
   }
 
   // Register LP constraints. Note that this needs to be done after all the
@@ -2075,10 +2086,44 @@ CpSolverResponse SolveCpModelInternal(
       terms.push_back(std::make_pair(m.Integer(obj.vars(i)), obj.coeffs(i)));
     }
     if (parameters.optimize_with_core()) {
-      objective_var = GetOrCreateVariableWithTightBound(m.model(), terms);
+      objective_var = GetOrCreateVariableWithTightBound(terms, m.model());
     } else {
       objective_var =
-          GetOrCreateVariableGreaterOrEqualToSumOf(m.model(), terms);
+          GetOrCreateVariableGreaterOrEqualToSumOf(terms, m.model());
+    }
+  }
+
+  // Intersect the objective domain with the given one if any.
+  if (!model_proto.objective().domain().empty()) {
+    const auto user_domain = ReadDomain(model_proto.objective());
+    const auto automatic_domain =
+        model->GetOrCreate<IntegerTrail>()->InitialVariableDomain(
+            objective_var);
+    VLOG(1) << "Automatic internal objective domain: " << automatic_domain;
+    VLOG(1) << "User specified internal objective domain: " << user_domain;
+    CHECK_NE(objective_var, kNoIntegerVariable);
+    const bool ok = model->GetOrCreate<IntegerTrail>()->UpdateInitialDomain(
+        objective_var, user_domain);
+    if (!ok) {
+      VLOG(1) << "UNSAT due to the objective domain.";
+      model->GetOrCreate<SatSolver>()->NotifyThatModelIsUnsat();
+    }
+
+    // Make sure the sum take a value inside the objective domain by adding
+    // the other side: objective <= sum terms.
+    //
+    // TODO(user): Use a better condidtion to detect when this is not usefull.
+    if (user_domain != automatic_domain) {
+      std::vector<IntegerVariable> vars;
+      std::vector<int64> coeffs;
+      const CpObjectiveProto& obj = model_proto.objective();
+      for (int i = 0; i < obj.vars_size(); ++i) {
+        vars.push_back(m.Integer(obj.vars(i)));
+        coeffs.push_back(obj.coeffs(i));
+      }
+      vars.push_back(objective_var);
+      coeffs.push_back(-1);
+      model->Add(WeightedSumGreaterOrEqual(vars, coeffs, 0));
     }
   }
 

@@ -1608,7 +1608,7 @@ class RoutingDimension {
 
   // Accessors.
 #ifndef SWIG
-  const ReverseArcListGraph<int, int>& GetPrecedenceGraph() const {
+  const ::util::ReverseArcListGraph<int, int>& GetPrecedenceGraph() const {
     return precedence_graph_;
   }
 #endif
@@ -1690,7 +1690,7 @@ class RoutingDimension {
   std::vector<RoutingModel::TransitEvaluator2> class_evaluators_;
   std::vector<int64> vehicle_to_class_;
 #ifndef SWIG
-  ReverseArcListGraph<int, int> precedence_graph_;
+  ::util::ReverseArcListGraph<int, int> precedence_graph_;
 #endif
 
   // The transits of a dimension may depend on its cumuls or the cumuls of

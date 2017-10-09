@@ -2496,8 +2496,9 @@ Presolver::RuleStatus Presolver::PresolveBoolXor(Constraint* ct, std::string* lo
 Presolver::RuleStatus Presolver::PresolveBoolNot(Constraint* ct, std::string* log) {
   if (ct->arguments[0].variables.empty() &&
       ct->arguments[1].variables.empty()) {
-    return  (ct->arguments[0].Value() != ct->arguments[1].Value()) ?
-        CONSTRAINT_ALWAYS_TRUE : CONSTRAINT_ALWAYS_FALSE;
+    return (ct->arguments[0].Value() != ct->arguments[1].Value())
+               ? CONSTRAINT_ALWAYS_TRUE
+               : CONSTRAINT_ALWAYS_FALSE;
   }
   if (ct->arguments[0].HasOneValue() && ct->arguments[1].IsVariable()) {
     const int64 value = ct->arguments[0].Value() == 0;

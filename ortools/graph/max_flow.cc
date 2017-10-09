@@ -981,8 +981,8 @@ FlowModel GenericMaxFlow<Graph>::CreateFlowModel() {
 // TODO(user): moves this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation ?
 template class GenericMaxFlow<StarGraph>;
-template class GenericMaxFlow<ReverseArcListGraph<> >;
-template class GenericMaxFlow<ReverseArcStaticGraph<> >;
-template class GenericMaxFlow<ReverseArcMixedGraph<> >;
+template class GenericMaxFlow<::util::ReverseArcListGraph<> >;
+template class GenericMaxFlow<::util::ReverseArcStaticGraph<> >;
+template class GenericMaxFlow<::util::ReverseArcMixedGraph<> >;
 
 }  // namespace operations_research

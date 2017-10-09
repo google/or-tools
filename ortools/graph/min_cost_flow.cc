@@ -978,13 +978,13 @@ bool GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::IsArcDirect(
 // TODO(user): Move this code out of a .cc file and include it at the end of
 // the header so it can work with any graph implementation?
 template class GenericMinCostFlow<StarGraph>;
-template class GenericMinCostFlow<ReverseArcListGraph<> >;
-template class GenericMinCostFlow<ReverseArcStaticGraph<> >;
-template class GenericMinCostFlow<ReverseArcMixedGraph<> >;
-template class GenericMinCostFlow<ReverseArcStaticGraph<uint16, int32> >;
+template class GenericMinCostFlow<::util::ReverseArcListGraph<> >;
+template class GenericMinCostFlow<::util::ReverseArcStaticGraph<> >;
+template class GenericMinCostFlow<::util::ReverseArcMixedGraph<> >;
+template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32> >;
 
 // A more memory-efficient version for large graphs.
-template class GenericMinCostFlow<ReverseArcStaticGraph<uint16, int32>,
+template class GenericMinCostFlow<::util::ReverseArcStaticGraph<uint16, int32>,
                                   /*ArcFlowType=*/int16,
                                   /*ArcScaledCostType=*/int32>;
 

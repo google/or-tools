@@ -1882,7 +1882,7 @@ void RoutingModel::CloseModelWithParameters(
   // Dimension precedences, discovered by model inspection (which must be
   // performed before adding path transit precedences.
   for (const RoutingDimension* const dimension : dimensions_) {
-    const ReverseArcListGraph<int, int>& graph =
+    const ::util::ReverseArcListGraph<int, int>& graph =
         dimension->GetPrecedenceGraph();
     std::vector<std::pair<int, int>> precedences;
     for (const auto tail : graph.AllNodes()) {

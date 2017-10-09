@@ -11,8 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_BASE_EXPORT_H_
-#define OR_TOOLS_BASE_EXPORT_H_
+#ifndef OR_TOOLS_BASE_BASE_EXPORT_H_
+#define OR_TOOLS_BASE_BASE_EXPORT_H_
 
 #if defined(COMPONENT_BUILD)
 #if defined(_MSC_VER)
@@ -39,4 +39,4 @@
 #define BASE_EXPORT_PRIVATE
 #endif
 
-#endif  // OR_TOOLS_BASE_EXPORT_H_
+#endif  // OR_TOOLS_BASE_BASE_EXPORT_H_

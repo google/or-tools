@@ -30,7 +30,7 @@
 #include "ortools/base/inlined_vector.h"
 #include "ortools/base/join.h"
 #include "ortools/base/span.h"
-#include "ortools/base/iterators.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/map_util.h"

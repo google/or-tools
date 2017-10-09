@@ -25,7 +25,7 @@
 #include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/util/iterators.h"
+#include "ortools/graph/iterators.h"
 #include "ortools/util/range_minimum_query.h"
 #include "ortools/util/string_array.h"
 

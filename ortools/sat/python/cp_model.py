@@ -22,7 +22,6 @@ from __future__ import print_function
 
 import collections
 import numbers
-import sys
 from six import iteritems
 
 from ortools.sat import cp_model_pb2
@@ -32,7 +31,7 @@ from ortools.sat import pywrapsat
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See cp_model_test.py for examples.
 
-INT_MIN = -9223372036854775808
+INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
 
 
@@ -92,6 +91,18 @@ def DisplayBounds(bounds):
   return out
 
 
+def ShortName(model, i):
+  if i < 0:
+    return 'Not(%s)' % ShortName(model, -i-1)
+  v = model.variables[i]
+  if v.name:
+    return v.name
+  elif len(v.domain) == 2 and v.domain[0] == v.domain[1]:
+    return str(v.domain[0])
+  else:
+    return '[%s]' % DisplayBounds(v.domain)
+
+
 class IntegerExpression(object):
   """Holds an integer expression."""
 
@@ -108,7 +119,7 @@ class IntegerExpression(object):
         for e in expr.Array():
           to_process.append((e, coef))
         constant += expr.Constant() * coef
-      elif isinstance(expr, CpIntegerVariable):
+      elif isinstance(expr, IntVar):
         coeffs[expr] += coef
       elif isinstance(expr, NotBooleanVariable):
         raise TypeError('Cannot interpret literals in a integer expression.')
@@ -274,7 +285,7 @@ class SumArray(IntegerExpression):
     return self.__constant
 
 
-class CpIntegerVariable(IntegerExpression):
+class IntVar(IntegerExpression):
   """Represents a IntegerExpression containing only a single variable."""
 
   def __init__(self, model, lb, ub, name):
@@ -382,25 +393,67 @@ class Constraint(object):
     return self.__constraint
 
 
+class IntervalVar(object):
+  """Represents a Interval variable."""
+
+  def __init__(self, model, start_index, size_index, end_index,
+               is_present_index, name):
+    self.__model = model
+    self.__index = len(model.constraints)
+    self.__ct = self.__model.constraints.add()
+    self.__ct.interval.start = start_index
+    self.__ct.interval.size = size_index
+    self.__ct.interval.end = end_index
+    if is_present_index is not None:
+      self.__ct.enforcement_literal.append(is_present_index)
+    if name:
+      self.__ct.name = name
+
+  def Index(self):
+    return self.__index
+
+  def __str__(self):
+    return self.__ct.name
+
+  def __repr__(self):
+    interval = self.__ct.interval
+    if self.__ct.enforcement_literal:
+      return '%s(start = %s, size = %s, end = %s, is_present = %s)' % (
+          self.__ct.name, ShortName(self.__model, interval.start),
+          ShortName(self.__model, interval.size),
+          ShortName(self.__model, interval.end),
+          ShortName(self.__model, self.__ct.enforcement_literal[0]))
+    else:
+      return '%s(start = %s, size = %s, end = %s)' % (
+          self.__ct.name, ShortName(self.__model, interval.start),
+          ShortName(self.__model, interval.size),
+          ShortName(self.__model, interval.end))
+
+
 class CpModel(object):
   """Wrapper class around the cp_model proto."""
 
   def __init__(self):
     self.__model = cp_model_pb2.CpModelProto()
     self.__constant_map = {}
+    self.__optional_constant_map = {}
+
+  # Integer variable.
 
   def NewIntVar(self, lb, ub, name):
-    return CpIntegerVariable(self.__model, lb, ub, name)
+    return IntVar(self.__model, lb, ub, name)
 
   def NewBoolVar(self, name):
-    return CpIntegerVariable(self.__model, 0, 1, name)
+    return IntVar(self.__model, 0, 1, name)
+
+  # Integer constraints.
 
   def AddLinearConstraint(self, terms, lb, ub):
     """Adds the constraints lb <= sum(terms) <= ub, where term = (var, coef)."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     for t in terms:
-      if not isinstance(t[0], CpIntegerVariable):
+      if not isinstance(t[0], IntVar):
         raise TypeError('Wrong argument' + str(t))
       AssertIsInt64(t[1])
       model_ct.linear.vars.append(t[0].Index())
@@ -413,7 +466,7 @@ class CpModel(object):
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     for t in terms:
-      if not isinstance(t[0], CpIntegerVariable):
+      if not isinstance(t[0], IntVar):
         raise TypeError('Wrong argument' + str(t))
       AssertIsInt64(t[1])
       model_ct.linear.vars.append(t[0].Index())
@@ -435,6 +488,112 @@ class CpModel(object):
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.all_diff.vars.extend([self.GetOrMakeIndex(x) for x in variables])
+    return ct
+
+  def AddElement(self, index, variables, target):
+    """Adds the element constraint: variables[index] == target."""
+
+    if not variables:
+      raise ValueError('AddElement expects a non empty variables array')
+
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.element.index = self.GetOrMakeIndex(index)
+    model_ct.element.vars.extend([self.GetOrMakeIndex(x) for x in variables])
+    model_ct.element.target = self.GetOrMakeIndex(target)
+    return ct
+
+  def AddCircuit(self, nexts):
+    """Adds Circuit(nexts)."""
+    if not nexts:
+      raise ValueError('AddCircuit expects a non empty nexts array')
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.circuit.nexts.extend([self.GetOrMakeIndex(x) for x in nexts])
+    return ct
+
+  def AddAllowedAssignment(self, variables, tuples):
+    """Adds AllowedAssignment(variables, [tuples])."""
+    if not variables:
+      raise ValueError('AddAllowedAssignment expects a non empty variables '
+                       'array')
+
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.table.vars.extend([self.GetOrMakeIndex(x) for x in variables])
+    arity = len(variables)
+    for t in tuples:
+      if len(t) != arity:
+        raise TypeError('Tuple ' + str(t) + ' has the wrong arity')
+      for v in t:
+        AssertIsInt64(v)
+        model_ct.table.values.append(v)
+
+  def AddForbiddenAssignment(self, variables, tuples):
+    """Adds AddForbiddenAssignment(variables, [tuples])."""
+
+    if not variables:
+      raise ValueError('AddForbiddenAssignment expects a non empty variables '
+                       'array')
+
+    index = len(self.__model.constraints)
+    self.AddAllowedAssignment(variables, tuples)
+    self.__model.constraints[index].table.negated = True
+
+  def AddAutomata(self, transition_variables, starting_state, final_states,
+                  transition_triples):
+    """Adds an automata constraint.
+
+    Args:
+      transition_variables: A non empty list of variables whose values
+        correspond to the labels of the arcs traversed by the automata.
+      starting_state: The initial state of the automata.
+      final_states: a non empty list of admissible final states.
+      transition_triples: A list of transition for the automata, in the
+        following format (current_state, variable_value, next_state).
+
+
+    Raises:
+      ValueError: if transition_variables, final_states, or transition_triples
+      are empty.
+    """
+
+    if not transition_variables:
+      raise ValueError('AddAutomata expects a non empty transition_variables '
+                       'array')
+    if not final_states:
+      raise ValueError('AddAutomata expects some final states')
+
+    if not transition_triples:
+      raise ValueError('AddAutomata expects some transtion triples')
+
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.automata.vars.extend(
+        [self.GetOrMakeIndex(x) for x in transition_variables])
+    AssertIsInt64(starting_state)
+    model_ct.automata.starting_state = starting_state
+    for v in final_states:
+      AssertIsInt64(v)
+      model_ct.automata.final_states.append(v)
+    for t in transition_triples:
+      if len(t) != 3:
+        raise TypeError('Tuple ' + str(t) + ' has the wrong arity (!= 3)')
+      AssertIsInt64(t[0])
+      AssertIsInt64(t[1])
+      AssertIsInt64(t[2])
+      model_ct.automata.transition_head.append(t[0])
+      model_ct.automata.transition_label.append(t[0])
+      model_ct.automata.transition_tail.append(t[0])
+
+  def AddInverse(self, variables, inverse_variables):
+    """Adds AddInverse(variables, inverse_variables)."""
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.inverse.f_direct.extend(
+        [self.GetOrMakeIndex(x) for x in variables])
+    model_ct.inverse.f_inverse.extend(
+        [self.GetOrMakeIndex(x) for x in inverse_variables])
     return ct
 
   def AddBoolOr(self, literals):
@@ -505,6 +664,54 @@ class CpModel(object):
     model_ct.int_prod.target = target.Index()
     return ct
 
+  # Scheduling support
+
+  def NewIntervalVar(self, start, size, end, name):
+    start_index = self.GetOrMakeIndex(start)
+    size_index = self.GetOrMakeIndex(size)
+    end_index = self.GetOrMakeIndex(end)
+    return IntervalVar(self.__model, start_index, size_index, end_index, None,
+                       name)
+
+  def NewOptionalIntervalVar(self, start, size, end, is_present, name):
+    is_present_index = self.GetOrMakeBooleanIndex(is_present)
+    start_index = self.GetOrMakeOptionalIndex(start, is_present)
+    size_index = self.GetOrMakeOptionalIndex(size, is_present)
+    end_index = self.GetOrMakeOptionalIndex(end, is_present)
+    return IntervalVar(self.__model, start_index, size_index, end_index,
+                       is_present_index, name)
+
+  def AddNoOverlap(self, interval_vars):
+    """Adds NoOverlap(interval_vars)."""
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.no_overlap.intervals.extend(
+        [self.GetIntervalIndex(x) for x in interval_vars])
+    return ct
+
+  def AddNoOverlap2D(self, x_transition_triples, y_transition_triples):
+    """Adds NoOverlap2D(x_transition_triples, y_transition_triples)."""
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.no_overlap_2d.x_intervals.extend(
+        [self.GetIntervalIndex(x) for x in x_transition_triples])
+    model_ct.no_overlap_2d.y_intervals.extend(
+        [self.GetIntervalIndex(x) for x in y_transition_triples])
+    return ct
+
+  def AddCumulative(self, transition_triples, demands, capacity):
+    """Adds Cumulative(transition_triples, demands, capacity)."""
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.cumulative.intervals.extend(
+        [self.GetIntervalIndex(x) for x in transition_triples])
+    model_ct.cumulative.demands.extend(
+        [self.GetOrMakeIndex(x) for x in demands])
+    model_ct.cumulative.capacity = self.GetOrMakeIndex(capacity)
+    return ct
+
+  # Helpers.
+
   def __str__(self):
     return str(self.__model)
 
@@ -515,11 +722,10 @@ class CpModel(object):
     return -index - 1
 
   def GetOrMakeIndex(self, arg):
-    if isinstance(arg, CpIntegerVariable):
+    if isinstance(arg, IntVar):
       return arg.Index()
     elif (isinstance(arg, ProductCst) and
-          isinstance(arg.Expression(), CpIntegerVariable) and
-          arg.Coefficient() == -1):
+          isinstance(arg.Expression(), IntVar) and arg.Coefficient() == -1):
       return -arg.Expression().Index() - 1
     elif isinstance(arg, numbers.Integral):
       AssertIsInt64(arg)
@@ -527,8 +733,21 @@ class CpModel(object):
     else:
       raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
 
+  def GetOrMakeOptionalIndex(self, arg, is_present):
+    if isinstance(arg, IntVar):
+      return arg.Index()
+    elif (isinstance(arg, ProductCst) and
+          isinstance(arg.Expression(), IntVar) and arg.Coefficient() == -1):
+      return -arg.Expression().Index() - 1
+    elif isinstance(arg, numbers.Integral):
+      AssertIsInt64(arg)
+      return self.GetOrMakeOptionalIndexFromConstant(arg, is_present)
+    else:
+      raise TypeError('NotSupported: model.GetOrMakeOptionalIndex(' + str(arg) +
+                      ')')
+
   def GetOrMakeBooleanIndex(self, arg):
-    if isinstance(arg, CpIntegerVariable):
+    if isinstance(arg, IntVar):
       self._AssertIsBooleanVariable(arg)
       return arg.Index()
     elif isinstance(arg, NotBooleanVariable):
@@ -541,6 +760,11 @@ class CpModel(object):
       raise TypeError('NotSupported: model.GetOrMakeBooleanIndex(' + str(arg) +
                       ')')
 
+  def GetIntervalIndex(self, arg):
+    if not isinstance(arg, IntervalVar):
+      raise TypeError('NotSupported: model.GetIntervalIndex(%s)' % arg)
+    return arg.Index()
+
   def GetOrMakeIndexFromConstant(self, value):
     if value in self.__constant_map:
       return self.__constant_map[value]
@@ -550,9 +774,19 @@ class CpModel(object):
     self.__constant_map[value] = index
     return index
 
+  def GetOrMakeOptionalIndexFromConstant(self, value, is_present):
+    self._AssertIsBooleanVariable(is_present)
+    if (is_present, value) in self.__optional_constant_map:
+      return self.__optional_constant_map[(is_present, value)]
+    index = len(self.__model.variables)
+    var = self.__model.variables.add()
+    var.domain.extend([value, value])
+    self.__optional_constant_map[(is_present, value)] = index
+    return index
+
   def _SetObjective(self, obj, minimize):
     """Sets the objective of the model."""
-    if isinstance(obj, CpIntegerVariable):
+    if isinstance(obj, IntVar):
       self.__model.ClearField('objective')
       self.__model.objective.coeffs.append(1)
       self.__model.objective.offset = 0
@@ -589,10 +823,12 @@ class CpModel(object):
     self._SetObjective(obj, minimize=False)
 
   def _AssertIsBooleanVariable(self, x):
-    if isinstance(x, CpIntegerVariable):
+    if isinstance(x, IntVar):
       var = self.__model.variables[x.Index()]
       if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
         raise TypeError('TypeError: ' + str(x) + ' is not a boolean variable')
+    elif not isinstance(x, NotBooleanVariable):
+      raise TypeError('TypeError: ' + str(x) + ' is not a boolean variable')
 
 
 class CpSolver(object):
@@ -621,7 +857,7 @@ class CpSolver(object):
         for e in expr.Array():
           to_process.append((e, coef))
         value += expr.Constant() * coef
-      elif isinstance(expr, CpIntegerVariable):
+      elif isinstance(expr, IntVar):
         value += coef * self.__solution.solution[expr.Index()]
       elif isinstance(expr, NotBooleanVariable):
         raise TypeError('Cannot interpret literals in a integer expression.')

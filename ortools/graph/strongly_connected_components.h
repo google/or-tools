@@ -11,8 +11,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-
 // This code computes the strongly connected components of a directed graph,
 // and presents them sorted by reverse topological order.
 //
@@ -25,8 +23,7 @@
 //
 // SIMPLE EXAMPLE:
 //
-// Fill a std::vector<std::vector<int>> graph; representing your graph adjacency
-// lists.
+// Fill a std::vector<std::vector<int>> graph; representing your graph adjacency lists.
 // That is, graph[i] contains the nodes adjacent to node #i. The nodes must be
 // integers in [0, num_nodes). Then just do:
 //
@@ -42,8 +39,8 @@
 // is the type used internally by the algorithm. It is why it is better to
 // convert it to int or even int32 rather than using size_t which takes 64 bits.
 
-#ifndef OR_TOOLS_BASE_STRONGLY_CONNECTED_COMPONENTS_H_
-#define OR_TOOLS_BASE_STRONGLY_CONNECTED_COMPONENTS_H_
+#ifndef UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
+#define UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_
 
 #include <limits>
 #include <vector>
@@ -77,11 +74,9 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
                                      SccOutput* components);
 
 // A simple custom output class that just counts the number of SCC. Not
-// allocating many std::vectors can save both space and speed if your graph is
-// large.
+// allocating many vectors can save both space and speed if your graph is large.
 //
-// Note: If this matters, you probably don't want to use
-// std::vector<std::vector<int>> as
+// Note: If this matters, you probably don't want to use std::vector<std::vector<int>> as
 // an input either. See StaticGraph in ortools/graph/graph.h
 // for an efficient graph data structure compatible with this algorithm.
 template<typename NodeIndex>
@@ -100,7 +95,7 @@ struct SccCounterOutput {
 // still an iterative DFS.
 //
 // TODO(user): Possible optimizations:
-// - Try to reserve the std::vectors which sizes are bounded by num_nodes.
+// - Try to reserve the vectors which sizes are bounded by num_nodes.
 // - Use an index rather than doing push_back(), pop_back() on them.
 // - For a client needing many Scc computations one after another, it could be
 //   better to wrap this in a class so we don't need to allocate the stacks at
@@ -131,7 +126,7 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
   // - Once they have been processed and outputted to components, they are said
   //   to be settled, and their index become kSettledIndex.
   std::vector<NodeIndex> node_index(num_nodes, 0);
-  const NodeIndex kSettledIndex = std::numeric_limits<NodeIndex>::max();
+  constexpr NodeIndex kSettledIndex = std::numeric_limits<NodeIndex>::max();
 
   // This is a well known way to do an efficient iterative DFS. Each time a node
   // is explored, all its adjacent nodes are pushed on this stack. The iterative
@@ -191,4 +186,4 @@ void FindStronglyConnectedComponents(const NodeIndex num_nodes,
   }
 }
 
-#endif  // OR_TOOLS_BASE_STRONGLY_CONNECTED_COMPONENTS_H_
+#endif  // UTIL_GRAPH_STRONGLY_CONNECTED_COMPONENTS_H_

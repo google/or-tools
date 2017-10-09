@@ -20,7 +20,7 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
-#include "ortools/base/strongly_connected_components.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/algorithms/dynamic_partition.h"
 #include "ortools/sat/util.h"

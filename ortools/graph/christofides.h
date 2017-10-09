@@ -70,7 +70,7 @@ class ChristofidesPathSolver {
   MatchingAlgorithm matching_;
 
   // The complete graph on the nodes of the problem.
-  CompleteGraph<NodeIndex, ArcIndex> graph_;
+  ::util::CompleteGraph<NodeIndex, ArcIndex> graph_;
 
   // Function returning the cost between nodes of the problem.
   const CostFunction costs_;
@@ -222,14 +222,14 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   // TODO(user): Make this code available as an independent algorithm.
   const NodeIndex reduced_size = odd_degree_nodes.size();
   DCHECK_NE(0, reduced_size);
-  CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
+  ::util::CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
   std::vector<ArcIndex> closure_arcs;
   switch (matching_) {
     #if defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
       closure_arcs = ComputeMinimumWeightMatchingWithMIP(
           reduced_graph, [this, &reduced_graph,
-                          &odd_degree_nodes](CompleteGraph<>::ArcIndex arc) {
+                          &odd_degree_nodes](::util::CompleteGraph<>::ArcIndex arc) {
             return costs_(odd_degree_nodes[reduced_graph.Tail(arc)],
                           odd_degree_nodes[reduced_graph.Head(arc)]);
           });
@@ -269,7 +269,7 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   // Build Eulerian path on minimum spanning tree + closing edges from matching
   // and extract a solution to the Traveling Salesman from the path by skipping
   // duplicate nodes.
-  ReverseArcListGraph<NodeIndex, ArcIndex> egraph(
+  ::util::ReverseArcListGraph<NodeIndex, ArcIndex> egraph(
       num_nodes, closure_arcs.size() + mst.size());
   for (ArcIndex arc : mst) {
     const NodeIndex tail = graph_.Tail(arc);

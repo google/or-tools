@@ -20,7 +20,7 @@
 #include <memory>
 
 #include "ortools/base/logging.h"
-#include "ortools/base/strongly_connected_components.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #include "ortools/sat/sat_solver.h"

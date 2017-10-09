@@ -920,6 +920,7 @@ class ScalingPreprocessor : public Preprocessor {
   DenseRow variable_lower_bounds_;
   DenseRow variable_upper_bounds_;
   Fractional cost_scaling_factor_;
+  Fractional bound_scaling_factor_;
   SparseMatrixScaler scaler_;
 
   DISALLOW_COPY_AND_ASSIGN(ScalingPreprocessor);

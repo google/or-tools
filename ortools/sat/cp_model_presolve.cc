@@ -1710,6 +1710,28 @@ void PresolveCpModel(const CpModelProto& initial_model,
   // TODO(user): Insert in main loop.
   if (context.working_model->has_objective() &&
       context.working_model->objective().vars_size() == 1) {
+    // Canonicalize the objective to make it easier on us by always making the
+    // coefficient equal to 1.0.
+    {
+      const int old_ref = context.working_model->objective().vars(0);
+      const int64 old_coeff = context.working_model->objective().coeffs(0);
+      const double muliplier = static_cast<double>(std::abs(old_coeff));
+      if (old_coeff < 0) {
+        context.working_model->mutable_objective()->set_vars(
+            0, NegatedRef(old_ref));
+      }
+      if (muliplier != 1.0) {
+        double old_factor = context.working_model->objective().scaling_factor();
+        if (old_factor == 0.0) old_factor = 1.0;
+        const double old_offset = context.working_model->objective().offset();
+        context.working_model->mutable_objective()->set_scaling_factor(
+            old_factor * muliplier);
+        context.working_model->mutable_objective()->set_offset(old_offset /
+                                                               muliplier);
+      }
+      context.working_model->mutable_objective()->set_coeffs(0, 1.0);
+    }
+
     const int initial_obj_ref = context.working_model->objective().vars(0);
 
     // TODO(user): Expand the linear equation recursively in order to have
@@ -1756,15 +1778,18 @@ void PresolveCpModel(const CpModelProto& initial_model,
     if (expanded_linear_index != -1) {
       context.UpdateRuleStats("objective: expanded single objective");
 
-      // Rewrite the objective.
-      const int64 multiplier = context.working_model->objective().coeffs(0) /
-                               objective_coeff_in_expanded_constraint;
+      // Rewrite the objective. Note that we can do that because the objective
+      // variable coefficient magnitude was one and so we can take its inverse.
+      CHECK_EQ(std::abs(objective_coeff_in_expanded_constraint), 1);
+      const int64 inverse = 1 / objective_coeff_in_expanded_constraint;
+
       const ConstraintProto& ct =
           context.working_model->constraints(expanded_linear_index);
       CpObjectiveProto* const mutable_objective =
           context.working_model->mutable_objective();
+      const int64 offset_diff = ct.linear().domain(0) * inverse;
       mutable_objective->set_offset(mutable_objective->offset() +
-                                    ct.linear().domain(0) * multiplier);
+                                    static_cast<double>(offset_diff));
       mutable_objective->clear_coeffs();
       mutable_objective->clear_vars();
       const int num_terms = ct.linear().vars_size();
@@ -1772,27 +1797,29 @@ void PresolveCpModel(const CpModelProto& initial_model,
         const int ref = ct.linear().vars(i);
         if (PositiveRef(ref) != PositiveRef(initial_obj_ref)) {
           mutable_objective->add_vars(ref);
-          mutable_objective->add_coeffs(-ct.linear().coeffs(i) * multiplier);
+          mutable_objective->add_coeffs(-ct.linear().coeffs(i) * inverse);
         }
       }
+      FillDomain(AdditionOfSortedDisjointIntervals(
+                     context.GetRefDomain(initial_obj_ref),
+                     {{-offset_diff, -offset_diff}}),
+                 mutable_objective);
 
-      // TODO(user): for now this seems to lower our perf on the minzinc
-      // benchmark. The likely explanation is a different search heuristic, not
-      // taking into account the objective. In any case, we need to investigate
-      // more.
-      if (/*DISABLES CODE*/ false) {
-        ConstraintProto* const ct =
-            context.working_model->mutable_constraints(expanded_linear_index);
-        // Remove the objective variable special case and make sure the new
-        // objective variables cannot be removed:
-        for (int ref : ct->linear().vars()) {
-          context.var_to_constraints[PositiveRef(ref)].insert(-1);
-        }
-        context.var_to_constraints[PositiveRef(initial_obj_ref)].erase(-1);
+      // Remove the objective variable special case and make sure the new
+      // objective variables cannot be removed.
+      for (int ref : ct.linear().vars()) {
+        context.var_to_constraints[PositiveRef(ref)].insert(-1);
+      }
+      context.var_to_constraints[PositiveRef(initial_obj_ref)].erase(-1);
 
-        // This function will detect that the old objective is not used
-        // elsewhere and remove it from the equation.
-        PresolveLinear(ct, &context);
+      // If the objective variable wasn't used in other constraint, we can
+      // remove the linear equation.
+      if (context.var_to_constraints[PositiveRef(initial_obj_ref)].size() ==
+          1) {
+        context.UpdateRuleStats("objective: removed old objective definition.");
+        *(context.mapping_model->add_constraints()) = ct;
+        context.working_model->mutable_constraints(expanded_linear_index)
+            ->Clear();
         context.UpdateConstraintVariableUsage(expanded_linear_index);
       }
     }

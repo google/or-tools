@@ -105,8 +105,12 @@ CircuitPropagator::CircuitPropagator(
         if (!allow_subcircuit) {
           CHECK_NE(tail, head) << "Trivially UNSAT.";
         }
-        CHECK_EQ(next_[tail], -1) << "Trivially UNSAT or duplicate arcs.";
-        CHECK_EQ(prev_[head], -1) << "Trivially UNSAT or duplicate arcs.";
+        CHECK_EQ(next_[tail], -1)
+            << "Trivially UNSAT or duplicate arcs while adding " << tail
+            << " -> " << head;
+        CHECK_EQ(prev_[head], -1)
+            << "Trivially UNSAT or duplicate arcs while adding " << tail
+            << " -> " << head;
         next_[tail] = head;
         prev_[head] = tail;
         next_literal_[tail] = kNoLiteralIndex;
