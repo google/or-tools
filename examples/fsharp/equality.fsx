@@ -31,8 +31,8 @@ let opts = SolverOpts.Default
             .Objective([2.0;1.0;0.0;0.0;0.0])
             .MatrixEq([[3.0;4.0;1.0]; [1.0;3.0;2.0]; [-1.0;0.0;0.0]; [0.0;-1.0;0.0]; [0.0;0.0;-1.0]])
             .VectorEq([3.0; 6.0; 2.0])
-            .Lower([0.0; 0.0; 0.0; 0.0; 0.0])
-            .Upper([Double.PositiveInfinity; Double.PositiveInfinity; Double.PositiveInfinity; Double.PositiveInfinity; Double.PositiveInfinity])
+            .VarLowerBound([0.0; 0.0; 0.0; 0.0; 0.0])
+            .VarUpperBound([Double.PositiveInfinity; Double.PositiveInfinity; Double.PositiveInfinity; Double.PositiveInfinity; Double.PositiveInfinity])
             .Algorithm(LP CLP)
 
 let slvr = opts |> lpSolve |> SolverSummary

@@ -23,9 +23,9 @@ open System
 open Google.OrTools.FSharp
 open Google.OrTools.LinearSolver
 
-let solver (solverType:LinearProgramming) = 
+let solver (solverType:LinearProgramming) =
   let svr = new Solver("Volsay", solverType.Id);
-  
+
   let gas = svr.MakeNumVar(0.0, 100000.0, "Gas")
   let chloride = svr.MakeNumVar(0.0, 100000.0, "Cloride")
 

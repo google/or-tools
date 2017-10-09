@@ -25,10 +25,10 @@ let opts = SolverOpts.Default
             .Name("Volsay3")
             .Goal(Maximize)
             .Objective([30.0;40.0])
-            .MatrixIneq([[1.0;3.0;0.0]; [1.0;4.0;1.0]])
-            .VectorIneq([50.0; 180.0; 40.0])
-            .Lower([0.0; 0.0])
-            .Upper([10000.0; 10000.0])
+            .Matrix([[1.0;3.0;0.0]; [1.0;4.0;1.0]])
+            .VectorUpperBound([50.0; 180.0; 40.0])
+            .VarLowerBound([0.0; 0.0])
+            .VarUpperBound([10000.0; 10000.0])
             .Algorithm(LP CLP)
 
 let slvr = opts |> lpSolve |> SolverSummary
