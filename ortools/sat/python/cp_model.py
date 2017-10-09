@@ -32,8 +32,8 @@ from ortools.sat import pywrapsat
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
 # python API very intuitive. See cp_model_test.py for examples.
 
-INT_MIN = -sys.maxint - 1
-INT_MAX = sys.maxint
+INT_MIN = -9223372036854775808
+INT_MAX = 9223372036854775807
 
 
 def AssertIsInt64(x):
