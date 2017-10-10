@@ -512,10 +512,10 @@ class CpModel(object):
     model_ct.circuit.nexts.extend([self.GetOrMakeIndex(x) for x in nexts])
     return ct
 
-  def AddAllowedAssignment(self, variables, tuples):
-    """Adds AllowedAssignment(variables, [tuples])."""
+  def AddAllowedAssignments(self, variables, tuples):
+    """Adds AllowedAssignments(variables, [tuples])."""
     if not variables:
-      raise ValueError('AddAllowedAssignment expects a non empty variables '
+      raise ValueError('AddAllowedAssignments expects a non empty variables '
                        'array')
 
     ct = Constraint(self.__model.constraints)
@@ -529,15 +529,15 @@ class CpModel(object):
         AssertIsInt64(v)
         model_ct.table.values.append(v)
 
-  def AddForbiddenAssignment(self, variables, tuples):
-    """Adds AddForbiddenAssignment(variables, [tuples])."""
+  def AddForbiddenAssignments(self, variables, tuples):
+    """Adds AddForbiddenAssignments(variables, [tuples])."""
 
     if not variables:
-      raise ValueError('AddForbiddenAssignment expects a non empty variables '
+      raise ValueError('AddForbiddenAssignments expects a non empty variables '
                        'array')
 
     index = len(self.__model.constraints)
-    self.AddAllowedAssignment(variables, tuples)
+    self.AddAllowedAssignments(variables, tuples)
     self.__model.constraints[index].table.negated = True
 
   def AddAutomata(self, transition_variables, starting_state, final_states,

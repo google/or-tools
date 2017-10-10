@@ -24,13 +24,12 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/graph/io.h"
+#include "ortools/graph/util.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
-#include "ortools/graph/graph.h"
-#include "ortools/graph/io.h"
-#include "ortools/graph/util.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 DEFINE_string(debug_dump_symmetry_graph_to_file, "",
@@ -41,6 +40,8 @@ DEFINE_string(debug_dump_symmetry_graph_to_file, "",
 
 namespace operations_research {
 namespace sat {
+
+using util::RemapGraph;
 
 void ExtractAssignment(const LinearBooleanProblem& problem,
                        const SatSolver& solver, std::vector<bool>* assignemnt) {
@@ -679,7 +680,7 @@ void FindLinearBooleanProblemSymmetries(
       new_node_index[node] = next_index_by_class[equivalence_classes[node]]++;
     }
     std::unique_ptr<Graph> remapped_graph = RemapGraph(*graph, new_node_index);
-    const util::Status status = WriteGraphToFile(
+    const util::Status status = util::WriteGraphToFile(
         *remapped_graph, FLAGS_debug_dump_symmetry_graph_to_file,
         /*directed=*/false, class_size);
     if (!status.ok()) {
