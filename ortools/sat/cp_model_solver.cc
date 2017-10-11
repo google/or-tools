@@ -1917,14 +1917,8 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     }
   }
 
-  IntegerVariable main_objective_var;
-  if (m->GetOrCreate<SatSolver>()->parameters().optimize_with_core()) {
-    main_objective_var =
-        GetOrCreateVariableWithTightBound(top_level_cp_terms, m->model());
-  } else {
-    main_objective_var = GetOrCreateVariableGreaterOrEqualToSumOf(
-        top_level_cp_terms, m->model());
-  }
+  const IntegerVariable main_objective_var =
+      GetOrCreateVariableGreaterOrEqualToSumOf(top_level_cp_terms, m->model());
 
   // Register LP constraints. Note that this needs to be done after all the
   // constraints have been added.
@@ -2085,12 +2079,7 @@ CpSolverResponse SolveCpModelInternal(
     for (int i = 0; i < obj.vars_size(); ++i) {
       terms.push_back(std::make_pair(m.Integer(obj.vars(i)), obj.coeffs(i)));
     }
-    if (parameters.optimize_with_core()) {
-      objective_var = GetOrCreateVariableWithTightBound(terms, m.model());
-    } else {
-      objective_var =
-          GetOrCreateVariableGreaterOrEqualToSumOf(terms, m.model());
-    }
+    objective_var = GetOrCreateVariableGreaterOrEqualToSumOf(terms, m.model());
   }
 
   // Intersect the objective domain with the given one if any.
@@ -2112,7 +2101,7 @@ CpSolverResponse SolveCpModelInternal(
     // Make sure the sum take a value inside the objective domain by adding
     // the other side: objective <= sum terms.
     //
-    // TODO(user): Use a better condidtion to detect when this is not usefull.
+    // TODO(user): Use a better condition to detect when this is not usefull.
     if (user_domain != automatic_domain) {
       std::vector<IntegerVariable> vars;
       std::vector<int64> coeffs;

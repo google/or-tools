@@ -34,6 +34,13 @@ from ortools.sat import pywrapsat
 INT_MIN = -9223372036854775808  # hardcoded to be platform independent.
 INT_MAX = 9223372036854775807
 
+# Cp Solver status (exported to avoid importing cp_model_cp2).
+UNKNOWN = cp_model_pb2.UNKNOWN
+MODEL_INVALID = cp_model_pb2.MODEL_INVALID
+MODEL_SAT = cp_model_pb2.MODEL_SAT
+MODEL_UNSAT = cp_model_pb2.MODEL_UNSAT
+OPTIMAL = cp_model_pb2.OPTIMAL
+
 
 def AssertIsInt64(x):
   if not isinstance(x, numbers.Integral):
@@ -868,3 +875,15 @@ class CpSolver(object):
 
   def StatusName(self, status):
     return cp_model_pb2.CpSolverStatus.Name(status)
+
+  def NumBooleans(self):
+    return self.__solution.num_booleans
+
+  def NumConflicts(self):
+    return self.__solution.num_conflicts
+
+  def NumBranches(self):
+    return self.__solution.num_branches
+
+  def WallTime(self):
+    return self.__solution.wall_time

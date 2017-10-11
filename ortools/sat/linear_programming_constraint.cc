@@ -277,8 +277,11 @@ bool LinearProgrammingConstraint::Propagate() {
     // it past our current objective upper-bound (we will already fail as soon
     // as we pass it). Note that this limit is properly transformed using the
     // objective scaling factor and offset stored in lp_data_.
+    //
+    // Note that we use a bigger epsilon here to be sure that if we abort
+    // because of this, we will report a conflict.
     parameters.set_objective_upper_limit(static_cast<double>(
-        integer_trail_->UpperBound(objective_cp_).value() + kEpsilon));
+        integer_trail_->UpperBound(objective_cp_).value() + 100.0 * kEpsilon));
   }
 
   // Put an iteration limit on the work we do in the simplex for this call. Note

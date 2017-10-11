@@ -56,6 +56,9 @@ ubuntu-14.04-archive: export ubuntu-14.04-image
 ubuntu-14.04-test: export ubuntu-14.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-14.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test"
 
+ubuntu-14.04-bash: export ubuntu-14.04-image
+	docker run -it or-tools-ubuntu-14.04-image:latest /bin/bash
+
 # Ubuntu 16.06 images
 
 ubuntu-16.04-image:
@@ -69,6 +72,9 @@ ubuntu-16.04-archive: export ubuntu-16.04-image
 
 ubuntu-16.04-test: export ubuntu-16.04-image
 	docker run -w /root/or-tools -v `pwd`/export:/export or-tools-ubuntu-16.04-image:latest /bin/bash -c "git pull; make clean; make all -j 5; make test"
+
+ubuntu-16.04-bash: export ubuntu-16.04-image
+	docker run -it or-tools-ubuntu-16.04-image:latest /bin/bash
 
 # Ubuntu 17.04 images
 

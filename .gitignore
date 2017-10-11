@@ -27,8 +27,9 @@ lib/
 examples/csharp/solution/*.csproj
 examples/csharp/*.sln
 
-src/bazel-*
+ortools/bazel-*
 examples/bazel-*
+bazel-*
 
 tools/docker/export
 

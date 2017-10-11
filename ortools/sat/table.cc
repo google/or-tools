@@ -89,9 +89,13 @@ void ProcessOneColumn(const std::vector<Literal>& line_literals,
   // is false too (i.e not possible).
   for (int i = 0; i < values.size(); ++i) {
     const IntegerValue v = values[i];
-    value_to_list_of_line_literals[v].push_back(line_literals[i]);
-    model->Add(Implication(FindOrDie(encoding, v).Negated(),
-                           line_literals[i].Negated()));
+    if (!ContainsKey(encoding, v)) {
+      model->Add(ClauseConstraint({line_literals[i].Negated()}));
+    } else {
+      value_to_list_of_line_literals[v].push_back(line_literals[i]);
+      model->Add(Implication(FindOrDie(encoding, v).Negated(),
+                             line_literals[i].Negated()));
+    }
   }
 
   // If all the tuples containing a value are false, then this value must be
@@ -159,7 +163,6 @@ std::function<void(Model*)> TableConstraint(
 
     // Fully encode the variables using all the values appearing in the tuples.
     IntegerTrail* interger_trail = model->GetOrCreate<IntegerTrail>();
-    std::unordered_map<IntegerValue, Literal> encoding;
     const std::vector<std::vector<int64>> tr_tuples = Transpose(new_tuples);
     for (int i = 0; i < n; ++i) {
       const int64 first = tr_tuples[i].front();
@@ -170,11 +173,10 @@ std::function<void(Model*)> TableConstraint(
         interger_trail->UpdateInitialDomain(
             vars[i], SortedDisjointIntervalsFromValues(tr_tuples[i]));
         model->Add(FullyEncodeVariable(vars[i]));
-        encoding = GetEncoding(vars[i], model);
         ProcessOneColumn(
             tuple_literals,
             std::vector<IntegerValue>(tr_tuples[i].begin(), tr_tuples[i].end()),
-            encoding, model);
+            GetEncoding(vars[i], model), model);
       }
     }
   };
@@ -223,7 +225,6 @@ std::function<void(Model*)> NegatedTableConstraintWithoutFullEncoding(
         const int64 value = tuple[i];
         const int64 lb = model->Get(LowerBound(vars[i]));
         const int64 ub = model->Get(UpperBound(vars[i]));
-        CHECK_LT(lb, ub);
         // TODO(user): test the full initial domain instead of just checking
         // the bounds.
         if (value < lb || value > ub) {
