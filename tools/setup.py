@@ -36,7 +36,9 @@ setup(
         'ortools.linear_solver',],
     ext_modules = [dummy_module],
     install_requires = [
-        'protobuf == PROTOBUF_TAG'],
+        'protobuf == PROTOBUF_TAG',
+        'six >= 1.10',
+    ],
     package_data = {
         'ortools.constraint_solver' : ['_pywrapcp.dll'],
         'ortools.linear_solver' : ['_pywraplp.dll'],
