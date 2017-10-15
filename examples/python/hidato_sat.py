@@ -50,11 +50,7 @@ def PrintMatrix(game):
     print(line)
 
 
-def SolveHidato(problem):
-  """Solve the given hidato table."""
-  # Create the model.
-  model = cp_model.CpModel()
-
+def BuildPuzzle(problem):
   #
   # models, a 0 indicates an open cell which number is not yet known.
   #
@@ -111,6 +107,13 @@ def SolveHidato(problem):
               [9, 0, 0, 32, 23, 0, 0, 41],
               [27, 0, 0, 0, 36, 0, 46, 0],
               [28, 30, 0, 35, 0, 0, 0, 0]]
+  return puzzle
+
+
+def SolveHidato(puzzle):
+  """Solve the given hidato table."""
+  # Create the model.
+  model = cp_model.CpModel()
 
   r = len(puzzle)
   c = len(puzzle[0])
@@ -159,13 +162,12 @@ def SolveHidato(problem):
   print('  - wall time : %f ms' % solver.WallTime())
 
 
-
 def main():
-  for table in range(1, 7):
+  for i in range(1, 7):
     print('')
-    print('----- Solving problem %i -----' % table)
+    print('----- Solving problem %i -----' % i)
     print('')
-    SolveHidato(table)
+    SolveHidato(BuildPuzzle(i))
 
 
 if __name__ == '__main__':
