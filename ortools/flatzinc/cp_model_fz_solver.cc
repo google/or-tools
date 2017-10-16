@@ -863,10 +863,10 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   if (FLAGS_use_flatzinc_format && p.all_solutions) {
     int solution_count = 1;  // Start at 1 as in the sat solver output.
     auto printer = [&fz_model, &solution_count,
-                    &m](const std::vector<int64>& values) {
+                    &m](const sat::CpSolverResponse& response) {
       const std::string solution_string =
-          SolutionString(fz_model, [&values, &m](fz::IntegerVariable* v) {
-            return values[m.fz_var_to_index[v]];
+          SolutionString(fz_model, [&response, &m](fz::IntegerVariable* v) {
+            return response.solution(m.fz_var_to_index[v]);
           });
       std::cout << "%% solution #" << solution_count++ << std::endl;
       std::cout << solution_string << std::endl;

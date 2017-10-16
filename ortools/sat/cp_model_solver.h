@@ -49,11 +49,8 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 //
 // Hack: For the non-fully instantiated variables, the value will be the
 // propagated lower bound. Note that this will be fixed with the TODO below.
-//
-// TODO(user): Change the API to take the full CpSolverResponse() so we have
-// solve statistics and the current objective value.
 std::function<void(Model*)> NewFeasibleSolutionObserver(
-    const std::function<void(const std::vector<int64>& values)>& observer);
+    const std::function<void(const CpSolverResponse& response)>& observer);
 
 // Allows to change the default parameters with
 //   model->Add(NewSatParameters(parameters_as_string_or_proto))

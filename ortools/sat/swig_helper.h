@@ -43,6 +43,18 @@ class SatHelper {
     model.Add(NewSatParameters(parameters));
     return SolveCpModel(model_proto, &model);
   }
+
+  static operations_research::sat::CpSolverResponse
+  SolveWithParametersAndSolutionObserver(
+      const operations_research::sat::CpModelProto& model_proto,
+      const operations_research::sat::SatParameters& parameters,
+      const std::function<void(const operations_research::sat::CpSolverResponse&
+                                   response)>& observer) {
+    Model model;
+    model.Add(NewSatParameters(parameters));
+    model.Add(NewFeasibleSolutionObserver(observer));
+    return SolveCpModel(model_proto, &model);
+  }
 };
 
 }  // namespace sat

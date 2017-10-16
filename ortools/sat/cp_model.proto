@@ -65,7 +65,7 @@ message IntegerVariableProto {
   // value in its domain. As of 2017/09/18, only linear constraints with two
   // terms support this (i.e. precedence constraints).
   //
-  // This can be a powerfull concept because it allows the solver to propagate
+  // This can be a powerful concept because it allows the solver to propagate
   // the variable regardless of the enforcement literal, and if its domain
   // become empty, it can propagate this literal to false.
   repeated int32 enforcement_literal = 3;
@@ -220,7 +220,7 @@ message ConstraintProto {
   // constraint must be true when this literal is true, if it is false, then it
   // doesn't matter. This is also called half-reification. To have an
   // equivalence between a literal and a constraint (full reification), one must
-  // add both a constraint (controled by a literal l) and its negation
+  // add both a constraint (controlled by a literal l) and its negation
   // (controlled by the negation of l).
   repeated int32 enforcement_literal = 2;
 

@@ -43,6 +43,7 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %unignore operations_research::sat::SatHelper;
 %unignore operations_research::sat::SatHelper::Solve;
 %unignore operations_research::sat::SatHelper::SolveWithParameters;
+%unignore operations_research::sat::SatHelper::SolveWithParametersAndSolutionObserver;
 
 %include "ortools/sat/swig_helper.h"
 

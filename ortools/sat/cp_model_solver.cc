@@ -1977,11 +1977,11 @@ void ExtractLinearObjective(const CpModelProto& model_proto,
 // Used by NewFeasibleSolutionObserver to register observers.
 struct SolutionObservers {
   explicit SolutionObservers(Model* model) {}
-  std::vector<std::function<void(const std::vector<int64>& values)>> observers;
+  std::vector<std::function<void(const CpSolverResponse& response)>> observers;
 };
 
 std::function<void(Model*)> NewFeasibleSolutionObserver(
-    const std::function<void(const std::vector<int64>& values)>& observer) {
+    const std::function<void(const CpSolverResponse& response)>& observer) {
   return [=](Model* model) {
     model->GetOrCreate<SolutionObservers>()->observers.push_back(observer);
   };
@@ -2378,14 +2378,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         model_proto, true,
         [&](const CpSolverResponse& response) {
           for (const auto& observer : observers) {
-            if (response.solution().empty()) {
-              observer(
-                  std::vector<int64>(response.solution_lower_bounds().begin(),
-                                     response.solution_lower_bounds().end()));
-            } else {
-              observer(std::vector<int64>(response.solution().begin(),
-                                          response.solution().end()));
-            }
+            observer(response);
           }
         },
         model);
@@ -2405,13 +2398,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
         CpSolverResponse copy = response;
         PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &copy);
         for (const auto& observer : observers) {
-          if (copy.solution().empty()) {
-            observer(std::vector<int64>(copy.solution_lower_bounds().begin(),
-                                        copy.solution_lower_bounds().end()));
-          } else {
-            observer(std::vector<int64>(copy.solution().begin(),
-                                        copy.solution().end()));
-          }
+          observer(copy);
         }
       },
       model);

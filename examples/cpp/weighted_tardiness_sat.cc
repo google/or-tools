@@ -173,7 +173,7 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   // Optional preprocessing: add precedences that don't change the optimal
   // solution value.
   //
-  // Proof: in any schedule, if such precendece between task A and B is not
+  // Proof: in any schedule, if such precedence between task A and B is not
   // satisfied, then it is always better (or the same) to swap A and B. This is
   // because the tasks between A and B will be completed earlier (because the
   // duration of A is smaller), and the cost of the swap itself is also smaller.
@@ -211,15 +211,15 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   // lower bound for the objective and the tardiness variables.
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
-  model.Add(NewFeasibleSolutionObserver([&](const std::vector<int64>& values) {
+  model.Add(NewFeasibleSolutionObserver([&](const CpSolverResponse& r) {
     // Note that we conpute the "real" cost here and do not use the tardiness
-    // variables. This is because in the core based appraoch, the tardiness
+    // variables. This is because in the core based approach, the tardiness
     // variable might be fixed before the end date, and we just have a >=
     // relation.
     int64 objective = 0;
     for (int i = 0; i < num_tasks; ++i) {
       objective +=
-          weights[i] * std::max(0ll, values[tasks_end[i]] - due_dates[i]);
+          weights[i] * std::max<int64>(0ll, r.solution(tasks_end[i]) - due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
 
@@ -227,21 +227,21 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
     std::vector<int> sorted_tasks(num_tasks);
     std::iota(sorted_tasks.begin(), sorted_tasks.end(), 0);
     std::sort(sorted_tasks.begin(), sorted_tasks.end(), [&](int v1, int v2) {
-      return values[tasks_start[v1]] < values[tasks_start[v2]];
+      return r.solution(tasks_start[v1]) < r.solution(tasks_start[v2]);
     });
     std::string solution = "0";
     int end = 0;
     for (const int i : sorted_tasks) {
-      const int64 cost = weights[i] * values[tardiness_vars[i]];
+      const int64 cost = weights[i] * r.solution(tardiness_vars[i]);
       StrAppend(&solution, "| #", i, " ");
       if (cost > 0) {
         // Display the cost in red.
         StrAppend(&solution, "\033[1;31m(+", cost, ") \033[0m");
       }
-      StrAppend(&solution, "|", values[tasks_end[i]]);
-      CHECK_EQ(end, values[tasks_start[i]]);
+      StrAppend(&solution, "|", r.solution(tasks_end[i]));
+      CHECK_EQ(end, r.solution(tasks_start[i]));
       end += durations[i];
-      CHECK_EQ(end, values[tasks_end[i]]);
+      CHECK_EQ(end, r.solution(tasks_end[i]));
     }
     LOG(INFO) << "solution: " << solution;
   }));
