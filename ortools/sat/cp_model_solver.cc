@@ -37,6 +37,7 @@
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connectivity.h"
 #include "ortools/sat/all_different.h"
+#include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model_checker.h"
 #include "ortools/sat/cp_model_presolve.h"
@@ -1239,6 +1240,26 @@ void LoadCircuitConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   m->Add(SubcircuitConstraint(graph));
 }
 
+// TODO(user): provide a sparse API.
+void LoadRoutesConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
+  int num_nodes = 0;
+  const RoutesConstraintProto& arg = ct.routes();
+  for (const int32 tail : arg.tails()) {
+    num_nodes = std::max(num_nodes, tail + 1);
+  }
+  for (const int32 head : arg.heads()) {
+    num_nodes = std::max(num_nodes, head + 1);
+  }
+  std::vector<std::vector<LiteralIndex>> graph(
+      num_nodes, std::vector<LiteralIndex>(num_nodes, kFalseLiteralIndex));
+
+  const int num_arcs = arg.tails_size();
+  for (int i = 0; i < num_arcs; ++i) {
+    graph[arg.tails(i)][arg.heads(i)] = m->Literal(arg.literals(i)).Index();
+  }
+  m->Add(MultipleSubcircuitThroughZeroConstraint(graph));
+}
+
 void LoadInverseConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   // Fully encode both arrays of variables, encode the constraint using Boolean
   // equalities: f_direct[i] == j <=> f_inverse[j] == i.
@@ -1503,6 +1524,9 @@ bool LoadConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
       return true;
     case ConstraintProto::ConstraintProto::kCircuit:
       LoadCircuitConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kRoutes:
+      LoadRoutesConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kInverse:
       LoadInverseConstraint(ct, m);

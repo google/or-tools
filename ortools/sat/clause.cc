@@ -536,7 +536,7 @@ void BinaryImplicationGraph::MinimizeConflictExperimental(
 
 void BinaryImplicationGraph::RemoveFixedVariables(
     int first_unprocessed_trail_index, const Trail& trail) {
-  const VariablesAssignment& assigment = trail.Assignment();
+  const VariablesAssignment& assignment = trail.Assignment();
   SCOPED_TIME_STAT(&stats_);
   is_marked_.ClearAndResize(LiteralIndex(implications_.size()));
   for (int i = first_unprocessed_trail_index; i < trail.Index(); ++i) {
@@ -553,9 +553,9 @@ void BinaryImplicationGraph::RemoveFixedVariables(
     STLClearObject(&(implications_[true_literal.NegatedIndex()]));
   }
   for (const LiteralIndex i : is_marked_.PositionsSetAtLeastOnce()) {
-    RemoveIf(&implications_[i],
-             std::bind1st(std::mem_fun(&VariablesAssignment::LiteralIsTrue),
-                          &assigment));
+    RemoveIf(&implications_[i], [&assignment](const Literal& lit) {
+      return assignment.LiteralIsTrue(lit);
+    });
   }
 }
 

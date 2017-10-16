@@ -522,6 +522,64 @@ class ConstraintChecker {
     return num_visited + num_inactive == num_nodes;
   }
 
+  bool RoutesConstraintIsFeasible(const CpModelProto& model,
+                                  const ConstraintProto& ct) {
+    const int num_arcs = ct.routes().tails_size();
+    int num_used_arcs = 0;
+    int num_self_arcs = 0;
+    int num_nodes = 0;
+    std::vector<int> tail_to_head;
+    std::vector<int> depot_nexts;
+    for (int i = 0; i < num_arcs; ++i) {
+      const int tail = ct.routes().tails(i);
+      const int head = ct.routes().heads(i);
+      num_nodes = std::max(num_nodes, 1 + tail);
+      num_nodes = std::max(num_nodes, 1 + head);
+      tail_to_head.resize(num_nodes, -1);
+      if (LiteralIsTrue(ct.routes().literals(i))) {
+        if (tail == head) {
+          if (tail == 0) return false;
+          ++num_self_arcs;
+          continue;
+        }
+        ++num_used_arcs;
+        if (tail == 0) {
+          depot_nexts.push_back(head);
+        } else {
+          if (tail_to_head[tail] != -1) return false;
+          tail_to_head[tail] = head;
+        }
+      }
+    }
+
+    // Make sure each routes from the depot go back to it, and count such arcs.
+    int count = 0;
+    for (int start : depot_nexts) {
+      ++count;
+      while (start != 0) {
+        if (tail_to_head[start] == -1) return false;
+        start = tail_to_head[start];
+        ++count;
+      }
+    }
+
+    if (count != num_used_arcs) {
+      VLOG(1) << "count: " << count << " != num_used_arcs:" << num_used_arcs;
+      return false;
+    }
+
+    // Each routes cover as many node as there is arcs, but this way we count
+    // multiple times the depot. So the number of nodes covered are:
+    //     count - depot_nexts.size() + 1.
+    // And this number + the self arcs should be num_nodes.
+    if (count - depot_nexts.size() + 1 + num_self_arcs != num_nodes) {
+      VLOG(1) << "Not all nodes are covered!";
+      return false;
+    }
+
+    return true;
+  }
+
   bool InverseConstraintIsFeasible(const CpModelProto& model,
                                    const ConstraintProto& ct) {
     const int num_variables = ct.inverse().f_direct_size();
@@ -620,6 +678,9 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
         is_feasible = checker.CircuitConstraintIsFeasible(model, ct);
+        break;
+      case ConstraintProto::ConstraintCase::kRoutes:
+        is_feasible = checker.RoutesConstraintIsFeasible(model, ct);
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         is_feasible = checker.InverseConstraintIsFeasible(model, ct);

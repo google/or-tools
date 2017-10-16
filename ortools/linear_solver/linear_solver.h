@@ -332,10 +332,6 @@ class MPSolver {
   // Solves the problem using the specified parameter values.
   ResultStatus Solve(const MPSolverParameters& param);
 
-  // Call only after calling MPSolver::Solve. Evaluates "linear_expr" for the
-  // variable values at the solution found by solving.
-  double SolutionValue(const LinearExpr& linear_expr) const;
-
   // Writes the model using the solver internal write function.  Currently only
   // available for Gurobi.
   void Write(const std::string& file_name);

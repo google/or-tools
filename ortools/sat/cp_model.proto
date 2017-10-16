@@ -152,6 +152,27 @@ message CircuitConstraintProto {
   repeated int32 nexts = 2;
 }
 
+// The "VRP" constraint.
+//
+// The direct graph where arc #i (from tails[i] to head[i]) is present iff
+// literals[i] is true must satisfy this set of properties:
+// - #incoming arcs == 1 except for node 0.
+// - #outgoing arcs == 1 except for node 0.
+// - for node zero, #incoming arcs == #outgoing arcs.
+// - There is no duplicate arcs.
+// - Self-arc are allowed except for node 0.
+// - There is no cycle in this graph, except through node 0.
+//
+// TODO(user): It is probably possible to generalize this constraint to a
+// no-cycle in a general graph, or a no-cycle with sum incoming <= 1 and sum
+// outgoing <= 1 (more efficient implementation). On the other hand, having this
+// specific constraint allow us to add specific "cuts" to a VRP problem.
+message RoutesConstraintProto {
+  repeated int32 tails = 1;
+  repeated int32 heads = 2;
+  repeated int32 literals = 3;
+}
+
 // The values of the n-tuple formed by the given variables can only be one of
 // the listed n-tuples in values. The n-tuples are encoded in a flattened way:
 //     [tuple0_v0, tuple0_v1, ..., tuple0_v{n-1}, tuple1_v0, ...].
@@ -219,6 +240,7 @@ message ConstraintProto {
     AllDifferentConstraintProto all_diff = 13;
     ElementConstraintProto element = 14;
     CircuitConstraintProto circuit = 15;
+    RoutesConstraintProto routes = 23;
     TableConstraintProto table = 16;
     AutomataConstraintProto automata = 17;
     InverseConstraintProto inverse = 18;

@@ -1526,6 +1526,7 @@ SAT_DEPS = \
 SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/all_different.$O \
     $(OBJ_DIR)/sat/boolean_problem.$O \
+    $(OBJ_DIR)/sat/circuit.$O \
     $(OBJ_DIR)/sat/clause.$O \
     $(OBJ_DIR)/sat/cp_constraints.$O \
     $(OBJ_DIR)/sat/cp_model_checker.$O \
@@ -1543,7 +1544,6 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/intervals.$O \
     $(OBJ_DIR)/sat/linear_programming_constraint.$O \
     $(OBJ_DIR)/sat/lp_utils.$O \
-    $(OBJ_DIR)/sat/no_cycle.$O \
     $(OBJ_DIR)/sat/optimization.$O \
     $(OBJ_DIR)/sat/overload_checker.$O \
     $(OBJ_DIR)/sat/pb_constraint.$O \
@@ -1578,6 +1578,16 @@ $(SRC_DIR)/ortools/sat/boolean_problem.h: \
     $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
     $(SRC_DIR)/ortools/base/status.h \
     $(SRC_DIR)/ortools/algorithms/sparse_permutation.h
+
+$(SRC_DIR)/ortools/sat/circuit.h: \
+    $(SRC_DIR)/ortools/sat/integer.h \
+    $(SRC_DIR)/ortools/sat/model.h \
+    $(SRC_DIR)/ortools/sat/sat_base.h \
+    $(SRC_DIR)/ortools/base/integral_types.h \
+    $(SRC_DIR)/ortools/base/int_type.h \
+    $(SRC_DIR)/ortools/base/logging.h \
+    $(SRC_DIR)/ortools/base/macros.h \
+    $(SRC_DIR)/ortools/util/rev.h
 
 $(SRC_DIR)/ortools/sat/clause.h: \
     $(SRC_DIR)/ortools/sat/sat_base.h \
@@ -1733,14 +1743,6 @@ $(SRC_DIR)/ortools/sat/model.h: \
     $(SRC_DIR)/ortools/base/map_util.h \
     $(SRC_DIR)/ortools/base/typeid.h
 
-$(SRC_DIR)/ortools/sat/no_cycle.h: \
-    $(SRC_DIR)/ortools/sat/sat_base.h \
-    $(SRC_DIR)/ortools/base/integral_types.h \
-    $(SRC_DIR)/ortools/base/int_type.h \
-    $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
-    $(SRC_DIR)/ortools/base/macros.h \
-    $(SRC_DIR)/ortools/base/span.h
-
 $(SRC_DIR)/ortools/sat/optimization.h: \
     $(GEN_DIR)/ortools/sat/boolean_problem.pb.h \
     $(SRC_DIR)/ortools/sat/integer.h \
@@ -1888,10 +1890,16 @@ $(OBJ_DIR)/sat/boolean_problem.$O: \
     $(SRC_DIR)/ortools/base/map_util.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/algorithms/find_graph_symmetries.h \
-    $(SRC_DIR)/ortools/graph/graph.h \
     $(SRC_DIR)/ortools/graph/io.h \
     $(SRC_DIR)/ortools/graph/util.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sboolean_problem.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sboolean_problem.$O
+
+$(OBJ_DIR)/sat/circuit.$O: \
+    $(SRC_DIR)/ortools/sat/circuit.cc \
+    $(SRC_DIR)/ortools/sat/circuit.h \
+    $(SRC_DIR)/ortools/sat/sat_solver.h \
+    $(SRC_DIR)/ortools/base/map_util.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scircuit.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scircuit.$O
 
 $(OBJ_DIR)/sat/clause.$O: \
     $(SRC_DIR)/ortools/sat/clause.cc \
@@ -1947,6 +1955,7 @@ $(OBJ_DIR)/sat/cp_model_search.$O: \
 $(OBJ_DIR)/sat/cp_model_solver.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_solver.cc \
     $(SRC_DIR)/ortools/sat/all_different.h \
+    $(SRC_DIR)/ortools/sat/circuit.h \
     $(SRC_DIR)/ortools/sat/cp_constraints.h \
     $(SRC_DIR)/ortools/sat/cp_model_checker.h \
     $(SRC_DIR)/ortools/sat/cp_model_presolve.h \
@@ -2082,12 +2091,6 @@ $(OBJ_DIR)/sat/lp_utils.$O: \
     $(SRC_DIR)/ortools/glop/lp_solver.h \
     $(GEN_DIR)/ortools/glop/parameters.pb.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Slp_utils.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Slp_utils.$O
-
-$(OBJ_DIR)/sat/no_cycle.$O: \
-    $(SRC_DIR)/ortools/sat/no_cycle.cc \
-    $(SRC_DIR)/ortools/sat/no_cycle.h \
-    $(SRC_DIR)/ortools/base/logging.h
-	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Sno_cycle.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Sno_cycle.$O
 
 $(OBJ_DIR)/sat/optimization.$O: \
     $(SRC_DIR)/ortools/sat/optimization.cc \
@@ -2725,6 +2728,7 @@ $(OBJ_DIR)/linear_solver/gurobi_interface.$O: \
 $(OBJ_DIR)/linear_solver/linear_expr.$O: \
     $(SRC_DIR)/ortools/linear_solver/linear_expr.cc \
     $(SRC_DIR)/ortools/linear_solver/linear_expr.h \
+    $(SRC_DIR)/ortools/linear_solver/linear_solver.h \
     $(SRC_DIR)/ortools/base/logging.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Slinear_solver$Slinear_expr.cc $(OBJ_OUT)$(OBJ_DIR)$Slinear_solver$Slinear_expr.$O
 

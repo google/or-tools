@@ -989,14 +989,6 @@ MPSolver::ResultStatus MPSolver::Solve(const MPSolverParameters& param) {
   return status;
 }
 
-double MPSolver::SolutionValue(const LinearExpr& linear_expr) const {
-  double ans = linear_expr.offset();
-  for (const auto& kv : linear_expr.terms()) {
-    ans += (kv.second * kv.first->solution_value());
-  }
-  return ans;
-}
-
 void MPSolver::Write(const std::string& file_name) { interface_->Write(file_name); }
 
 namespace {
@@ -1323,7 +1315,7 @@ bool MPSolverInterface::CheckSolutionIsSynchronized() const {
 }
 
 // Default version that can be overwritten by a solver-specific
-// version to accomodate for the quirks of each solver.
+// version to accommodate for the quirks of each solver.
 bool MPSolverInterface::CheckSolutionExists() const {
   if (result_status_ != MPSolver::OPTIMAL &&
       result_status_ != MPSolver::FEASIBLE) {
@@ -1335,7 +1327,7 @@ bool MPSolverInterface::CheckSolutionExists() const {
 }
 
 // Default version that can be overwritten by a solver-specific
-// version to accomodate for the quirks of each solver.
+// version to accommodate for the quirks of each solver.
 bool MPSolverInterface::CheckBestObjectiveBoundExists() const {
   if (result_status_ != MPSolver::OPTIMAL &&
       result_status_ != MPSolver::FEASIBLE) {

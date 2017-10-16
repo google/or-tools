@@ -92,7 +92,7 @@ class MPVariable;
 //   * Get the value of the quantity after solving, e.g.
 //
 //     solver.Solve();
-//     solver.SolutionValue(linear_expr);
+//     linear_expr.SolutionValue();
 //
 // LinearExpr is allowed to delete variables with coefficient zero from the map,
 // but is not obligated to do so.
@@ -121,6 +121,10 @@ class LinearExpr {
   const std::unordered_map<const MPVariable*, double>& terms() const {
     return terms_;
   }
+
+  // Call only after calling MPSolver::Solve. Evaluates the value of this
+  // expression at the solution found.
+  double SolutionValue() const;
 
  private:
   double offset_;

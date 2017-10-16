@@ -636,7 +636,7 @@ class SatSolver {
   // as decaying all the variable activities, but it is a lot more efficient.
   void UpdateVariableActivityIncrement();
 
-  // Activity managment for clauses. This work the same way at the ones for
+  // Activity management for clauses. This work the same way at the ones for
   // variables, but with different parameters.
   void BumpReasonActivities(const std::vector<Literal>& literals);
   void BumpClauseActivity(SatClause* clause);

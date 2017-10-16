@@ -16,6 +16,7 @@
 #include <limits>
 
 #include "ortools/base/logging.h"
+#include "ortools/linear_solver/linear_solver.h"
 
 namespace operations_research {
 
@@ -68,6 +69,14 @@ LinearExpr LinearExpr::NotVar(LinearExpr var) {
   var *= -1;
   var += 1;
   return var;
+}
+
+double LinearExpr::SolutionValue() const {
+  double solution = offset_;
+  for (const auto& pair : terms_) {
+    solution += pair.first->solution_value() * pair.second;
+  }
+  return solution;
 }
 
 LinearExpr operator+(LinearExpr lhs, const LinearExpr& rhs) {
