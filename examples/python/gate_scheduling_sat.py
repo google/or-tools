@@ -98,6 +98,9 @@ def main():
   model.AddMaxEquality(makespan, ends)
   model.Minimize(makespan)
 
+  # Symmetry breaking.
+  model.Add(performed[0] == 0)
+
   # Solve model.
   solver = cp_model.CpSolver()
   solver.Solve(model)
