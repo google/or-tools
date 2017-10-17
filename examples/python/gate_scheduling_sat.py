@@ -11,6 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Gate Scheduling problem.
+
+We have a set of jobs to perform (duration, width).
+We have two parallel machines that can perform this job.
+One machine can only perform one job at a time.
+At any point in time, the sum of the width of the two active jobs does not
+exceed a max_width.
+
+The objective is to minimize the max end time of all jobs.
+"""
+
 from ortools.sat.python import cp_model
 
 
@@ -90,11 +101,17 @@ def main():
   # Solve model.
   solver = cp_model.CpSolver()
   solver.Solve(model)
-  print('Makespan = %i' % solver.ObjectiveValue())
+  print('Solution')
+  print('  - makespan = %i' % solver.ObjectiveValue())
   for i in all_jobs:
     performed_machine = 1 - solver.Value(performed[i])
     start = solver.Value(starts[i])
-    print('Job %i starts at %i on machine %i' % (i, start, performed_machine))
+    print('  - Job %i starts at %i on machine %i' %
+          (i, start, performed_machine))
+  print('Statistics')
+  print('  - conflicts : %i' % solver.NumConflicts())
+  print('  - branches  : %i' % solver.NumBranches())
+  print('  - wall time : %f ms' % solver.WallTime())
 
 
 if __name__ == '__main__':
