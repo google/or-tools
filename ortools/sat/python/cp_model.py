@@ -296,13 +296,16 @@ class SumArray(IntegerExpression):
 class IntVar(IntegerExpression):
   """Represents a IntegerExpression containing only a single variable."""
 
-  def __init__(self, model, lb, ub, name):
+  def __init__(self, model, lb, ub, is_present_index, name):
     self.__model = model
     self.__index = len(model.variables)
     self.__var = model.variables.add()
     self.__var.domain.extend([lb, ub])
     self.__var.name = name
     self.__negation = None
+    if is_present_index is not None:
+      self.__var.enforcement_literal.append(is_present_index)
+
 
   def Index(self):
     return self.__index
@@ -449,10 +452,14 @@ class CpModel(object):
   # Integer variable.
 
   def NewIntVar(self, lb, ub, name):
-    return IntVar(self.__model, lb, ub, name)
+    return IntVar(self.__model, lb, ub, None, name)
+
+  def NewOptionalIntVar(self, lb, ub, is_present, name):
+    is_present_index = self.GetOrMakeBooleanIndex(is_present)
+    return IntVar(self.__model, lb, ub, is_present_index, name)
 
   def NewBoolVar(self, name):
-    return IntVar(self.__model, 0, 1, name)
+    return IntVar(self.__model, 0, 1, None, name)
 
   # Integer constraints.
 

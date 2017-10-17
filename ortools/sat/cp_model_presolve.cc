@@ -338,12 +338,25 @@ MUST_USE_RESULT bool MarkConstraintAsFalse(ConstraintProto* ct,
 
 bool PresolveEnforcementLiteral(ConstraintProto* ct, PresolveContext* context) {
   if (!HasEnforcementLiteral(*ct)) return false;
+
   const int literal = ct->enforcement_literal(0);
   if (context->LiteralIsTrue(literal)) {
     context->UpdateRuleStats("true enforcement literal");
     ct->clear_enforcement_literal();
     return true;
   }
+
+  // TODO(user): because the cumulative and disjunctive constraint refer to this
+  // interval, we cannot simply remove the constraint even if we know that this
+  // optional interval will not be present. We could fix that by removing this
+  // interval from these constraints, but it is difficult to do that in a
+  // general code, so we will need the presolve for these constraint to take
+  // care of that, and then we would be able to remove this interval if it is
+  // not longer used.
+  if (ct->constraint_case() == ConstraintProto::ConstraintCase::kInterval) {
+    return false;
+  }
+
   if (context->LiteralIsFalse(literal)) {
     context->UpdateRuleStats("false enforcement literal");
     return RemoveConstraint(ct, context);
