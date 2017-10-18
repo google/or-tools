@@ -127,6 +127,10 @@ void RevisedSimplex::LoadStateForNextSolve(const BasisState& state) {
   solution_state_has_been_set_externally_ = true;
 }
 
+void RevisedSimplex::NotifyThatMatrixIsUnchangedForNextSolve() {
+  notify_that_matrix_is_unchanged_ = true;
+}
+
 Status RevisedSimplex::Solve(const LinearProgram& lp, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&function_stats_);
   DCHECK(lp.IsCleanedUp());
@@ -1048,21 +1052,29 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
   //
   // Note that these functions can't depend on use_dual_simplex() since we may
   // change it below.
+  ColIndex num_new_cols(0);
   bool only_change_is_new_rows = false;
   bool only_change_is_new_cols = false;
-  ColIndex num_new_cols(0);
-  const bool is_matrix_unchanged = InitializeMatrixAndTestIfUnchanged(
-      lp, &only_change_is_new_rows, &only_change_is_new_cols, &num_new_cols);
-  const bool only_new_bounds =
-      only_change_is_new_cols && num_new_cols > 0 &&
-      OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(lp, num_new_cols);
+  bool matrix_is_unchanged = true;
+  bool only_new_bounds = false;
+  if (solution_state_.IsEmpty() || !notify_that_matrix_is_unchanged_) {
+    matrix_is_unchanged = InitializeMatrixAndTestIfUnchanged(
+        lp, &only_change_is_new_rows, &only_change_is_new_cols, &num_new_cols);
+    only_new_bounds = only_change_is_new_cols && num_new_cols > 0 &&
+                      OldBoundsAreUnchangedAndNewVariablesHaveOneBoundAtZero(
+                          lp, num_new_cols);
+  } else if (DEBUG_MODE) {
+    CHECK(InitializeMatrixAndTestIfUnchanged(
+        lp, &only_change_is_new_rows, &only_change_is_new_cols, &num_new_cols));
+  }
+  notify_that_matrix_is_unchanged_ = false;
   const bool objective_is_unchanged = InitializeObjectiveAndTestIfUnchanged(lp);
   const bool bounds_are_unchanged = InitializeBoundsAndTestIfUnchanged(lp);
 
   // If parameters_.allow_simplex_algorithm_change() is true and we already have
   // a primal (resp. dual) feasible solution, then we use the primal (resp.
   // dual) algorithm since there is a good chance that it will be faster.
-  if (is_matrix_unchanged && parameters_.allow_simplex_algorithm_change()) {
+  if (matrix_is_unchanged && parameters_.allow_simplex_algorithm_change()) {
     if (objective_is_unchanged && !bounds_are_unchanged) {
       parameters_.set_use_dual_simplex(true);
       PropagateParameters();
@@ -1121,7 +1133,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
       // new columns have a bound equal to zero.
       dual_edge_norms_.Clear();
       dual_pricing_vector_.clear();
-      if (is_matrix_unchanged && bounds_are_unchanged) {
+      if (matrix_is_unchanged && bounds_are_unchanged) {
         // TODO(user): Do not do that if objective_is_unchanged. Currently
         // this seems to break something. Investigate.
         reduced_costs_.ClearAndRemoveCostShifts();
@@ -1147,7 +1159,7 @@ Status RevisedSimplex::Initialize(const LinearProgram& lp) {
       // contain new rows and the bounds may change).
       primal_edge_norms_.Clear();
       if (objective_is_unchanged) {
-        if (is_matrix_unchanged) {
+        if (matrix_is_unchanged) {
           if (!bounds_are_unchanged) {
             InitializeVariableStatusesForWarmStart(solution_state_,
                                                    ColIndex(0));

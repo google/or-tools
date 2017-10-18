@@ -1774,6 +1774,72 @@ void TryToLinearizeConstraint(const CpModelProto& model_proto,
   }
 }
 
+struct LpCutGenerators {
+  std::vector<int> refs;  // Used for the LP connected components.
+  CutGenerator cut_generator;
+};
+
+// TODO(user): it is annoying that we need the mapping here as it make stuff
+// harder to test. It should be possible to remove it if the circuit was
+// directly expressed in term of graph...
+void TryToAddCutGenerators(const CpModelProto& model_proto,
+                           const ConstraintProto& ct, ModelWithMapping* m,
+                           std::vector<LpCutGenerators>* cut_generators) {
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kCircuit) {
+    // This cut generator is valid only if the circuit must pass by all the
+    // points. That is if there is no possible self-arc.
+    //
+    // For flatzinc problems, we often have nexts[0] fixed to zero, and we need
+    // to find a circuit on the rest of the nodes, it is why we have this
+    // ignore_zero_offset "hack". TODO(user): be even more generic.
+    int ignore_zero_offset = 0;
+    for (int i = 0; i < ct.circuit().nexts_size(); ++i) {
+      const auto domain =
+          ReadDomain(model_proto.variables(ct.circuit().nexts(i)));
+      if (i == 0 && domain.size() == 1 && domain[0].start == 0 &&
+          domain[0].end == 0) {
+        ignore_zero_offset = 1;
+        continue;
+      }
+      if (SortedDisjointIntervalsContain(domain, i)) {
+        VLOG(1) << "Subcircuit constraint, no cuts.";
+        return;
+      }
+    }
+
+    // TODO(user): A bit duplicated with LoadCircuitConstraint() except we
+    // need to convert Literal to IntegerVariable here.
+    const std::vector<IntegerVariable> nexts =
+        m->Integers(ct.circuit().nexts());
+
+    LpCutGenerators generator;
+    std::vector<int> tails;
+    std::vector<int> heads;
+    std::vector<IntegerVariable> vars;
+    const int num_nodes = nexts.size();
+    for (int i = ignore_zero_offset; i < num_nodes; ++i) {
+      const auto encoding = m->Add(FullyEncodeVariable(nexts[i]));
+      for (const auto& entry : encoding) {
+        const Literal l = entry.literal;
+
+        // For now we need this Literal to appear as a variable in the cp_model
+        // proto.
+        int ref = m->GetProtoVariableFromBooleanVariable(l.Variable());
+        if (ref < 0 || !m->IsInteger(ref)) return;
+
+        if (l.IsNegative()) ref = NegatedRef(ref);
+        generator.refs.push_back(ref);
+        tails.push_back(i - ignore_zero_offset);
+        heads.push_back(entry.value.value() - ignore_zero_offset);
+        vars.push_back(m->Integer(ref));
+      }
+    }
+    generator.cut_generator = CreateStronglyConnectedGraphCutGenerator(
+        num_nodes - ignore_zero_offset, tails, heads, vars);
+    cut_generators->push_back(std::move(generator));
+  }
+}
+
 }  // namespace
 
 // Adds one LinearProgrammingConstraint per connected component of the model.
@@ -1782,6 +1848,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   // Linearize the constraints.
   IndexReferences refs;
   std::vector<LpConstraint> linear_constraints;
+  std::vector<LpCutGenerators> cut_generators;
   for (const auto& ct : model_proto.constraints()) {
     // We linearize fully encoded variable differently.
     // TODO(user): Also deal with (bool => x >= value) contraints.
@@ -1804,6 +1871,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     if (!ok) continue;
     TryToLinearizeConstraint(model_proto, ct, linearization_level,
                              &linear_constraints);
+    TryToAddCutGenerators(model_proto, ct, m, &cut_generators);
   }
 
   // Linearize the encoding of variable that are fully encoded in the proto.
@@ -1849,6 +1917,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   VLOG(1) << "num_full_encoding_relaxations : "
           << num_full_encoding_relaxations;
   VLOG(1) << linear_constraints.size() << " constraints in the LP relaxation.";
+  VLOG(1) << cut_generators.size() << " cuts generators.";
 
   // The bipartite graph of LP constraints might be disconnected:
   // make a partition of the variables into connected components.
@@ -1856,20 +1925,36 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   // variable nodes by [num_lp_constraints..num_lp_constraints+num_variables).
   // TODO(user): look into biconnected components.
   const int num_lp_constraints = linear_constraints.size();
+  const int num_lp_cut_generators = cut_generators.size();
   ConnectedComponents<int, int> components;
-  components.Init(num_lp_constraints + model_proto.variables_size());
-  auto get_var_index = [num_lp_constraints](int var_ref) {
-    return num_lp_constraints + PositiveRef(var_ref);
+  components.Init(num_lp_constraints + num_lp_cut_generators +
+                  model_proto.variables_size());
+  auto get_constraint_index = [](int ct_index) { return ct_index; };
+  auto get_cut_generator_index = [num_lp_constraints](int cut_index) {
+    return num_lp_constraints + cut_index;
+  };
+  auto get_var_index = [num_lp_constraints, num_lp_cut_generators](int ref) {
+    return num_lp_constraints + num_lp_cut_generators + PositiveRef(ref);
   };
   for (int i = 0; i < num_lp_constraints; i++) {
     for (const auto term : linear_constraints[i].terms) {
-      components.AddArc(i, get_var_index(term.first));
+      components.AddArc(get_constraint_index(i), get_var_index(term.first));
+    }
+  }
+  for (int i = 0; i < num_lp_cut_generators; ++i) {
+    for (const int ref : cut_generators[i].refs) {
+      components.AddArc(get_cut_generator_index(i), get_var_index(ref));
     }
   }
 
   std::unordered_map<int, int> components_to_size;
   for (int i = 0; i < num_lp_constraints; i++) {
-    const int id = components.GetClassRepresentative(i);
+    const int id = components.GetClassRepresentative(get_constraint_index(i));
+    components_to_size[id] += 1;
+  }
+  for (int i = 0; i < num_lp_cut_generators; i++) {
+    const int id =
+        components.GetClassRepresentative(get_cut_generator_index(i));
     components_to_size[id] += 1;
   }
 
@@ -1888,7 +1973,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   std::unordered_map<int, LinearProgrammingConstraint*> representative_to_lp_constraint;
   std::vector<LinearProgrammingConstraint*> lp_constraints;
   for (int i = 0; i < num_lp_constraints; i++) {
-    const int id = components.GetClassRepresentative(i);
+    const int id = components.GetClassRepresentative(get_constraint_index(i));
     if (components_to_size[id] <= 1) continue;
     if (!ContainsKey(representative_to_lp_constraint, id)) {
       auto* lp = m->model()->Create<LinearProgrammingConstraint>();
@@ -1903,6 +1988,19 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
     for (const auto& term : linear_constraints[i].terms) {
       lp->SetCoefficient(lp_constraint, m->Integer(term.first), term.second);
     }
+  }
+
+  // Dispatch every cut generator to its LinearProgrammingConstraint.
+  for (int i = 0; i < num_lp_cut_generators; i++) {
+    const int id =
+        components.GetClassRepresentative(get_cut_generator_index(i));
+    if (!ContainsKey(representative_to_lp_constraint, id)) {
+      auto* lp = m->model()->Create<LinearProgrammingConstraint>();
+      representative_to_lp_constraint[id] = lp;
+      lp_constraints.push_back(lp);
+    }
+    LinearProgrammingConstraint* lp = representative_to_lp_constraint[id];
+    lp->AddCutGenerator(std::move(cut_generators[i].cut_generator));
   }
 
   // Add the objective.

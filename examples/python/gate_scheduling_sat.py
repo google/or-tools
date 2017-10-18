@@ -59,6 +59,7 @@ def main():
   demands = []
 
   for i in all_jobs:
+    # Create main interval.
     start = model.NewIntVar(0, horizon, 'start_%i' % i)
     duration = jobs[i][0]
     end = model.NewIntVar(0, horizon, 'end_%i' % i)
@@ -69,8 +70,9 @@ def main():
     demands.append(jobs[i][1])
 
     performed_on_m0 = model.NewBoolVar('perform_%i_on_m0' % i)
-
     performed.append(performed_on_m0)
+
+    # Create an optional copy of interval to be executed on machine 0.
     start0 = model.NewOptionalIntVar(
         0, horizon, performed_on_m0, 'start_%i_on_m0' % i)
     end0 = model.NewOptionalIntVar(
@@ -79,6 +81,7 @@ def main():
         start0, duration, end0, performed_on_m0, 'interval_%i_on_m0' % i)
     intervals0.append(interval0)
 
+    # Create an optional copy of interval to be executed on machine 1.
     start1 = model.NewOptionalIntVar(
         0, horizon, performed_on_m0.Not(), 'start_%i_on_m1' % i)
     end1 = model.NewOptionalIntVar(

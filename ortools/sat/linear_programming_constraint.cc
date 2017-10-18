@@ -20,17 +20,12 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/graph/strongly_connected_components.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/base/map_util.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
 #include "ortools/util/time_limit.h"
-
-// TODO(user): remove the option once we know which algo work best.
-DEFINE_bool(lp_constraint_use_dual_ray, true,
-            "If true, use the dual simplex and exploit the dual ray when the "
-            "problem is DUAL_UNBOUNDED as a reason rather than "
-            "solving a custom feasibility LP first.");
 
 namespace operations_research {
 namespace sat {
@@ -43,19 +38,10 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
   // TODO(user): Find a way to make GetOrCreate<TimeLimit>() construct it by
   // default.
   time_limit_ = model->Mutable<TimeLimit>();
+  max_num_cuts_ = model->GetOrCreate<SatSolver>()->parameters().max_num_cuts();
   if (time_limit_ == nullptr) {
     model->SetSingleton(TimeLimit::Infinite());
     time_limit_ = model->Mutable<TimeLimit>();
-  }
-
-  if (!FLAGS_lp_constraint_use_dual_ray) {
-    // The violation_sum_ variable will be the sum of constraints' violation.
-    violation_sum_constraint_ = lp_data_.CreateNewConstraint();
-    lp_data_.SetConstraintBounds(violation_sum_constraint_, 0.0, 0.0);
-    violation_sum_ = lp_data_.CreateNewVariable();
-    lp_data_.SetVariableBounds(violation_sum_, 0.0,
-                               std::numeric_limits<double>::infinity());
-    lp_data_.SetCoefficient(violation_sum_constraint_, violation_sum_, -1.0);
   }
 
   // Tweak the default parameters to make the solve incremental.
@@ -119,40 +105,6 @@ void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   }
   lp_data_.Scale(&scaler_);
   lp_data_.ScaleObjective();
-
-  if (!FLAGS_lp_constraint_use_dual_ray) {
-    // Add all the individual violation variables. Note that it is important
-    // to do that AFTER the scaling so that each constraint is considered on the
-    // same footing regarding a violation.
-    //
-    // Note that scaler_.col_scale() will returns a value of 1.0 for these new
-    // variables.
-    //
-    // TODO(user): See if it is possible to reuse the feasibility code of the
-    // simplex that do not need to create these extra variables.
-    //
-    // TODO(user): It might be better (smaller reasons) to to check the maximum
-    // of the individual constraint violation rather than the sum.
-    const double infinity = std::numeric_limits<double>::infinity();
-    for (glop::RowIndex row(0); row < lp_data_.num_constraints(); ++row) {
-      if (row == violation_sum_constraint_) continue;
-      const glop::Fractional lb = lp_data_.constraint_lower_bounds()[row];
-      const glop::Fractional ub = lp_data_.constraint_upper_bounds()[row];
-      if (lb != -infinity) {
-        const glop::ColIndex violation_lb = lp_data_.CreateNewVariable();
-        lp_data_.SetVariableBounds(violation_lb, 0.0, infinity);
-        lp_data_.SetCoefficient(violation_sum_constraint_, violation_lb, 1.0);
-        lp_data_.SetCoefficient(row, violation_lb, 1.0);
-      }
-      if (ub != infinity) {
-        const glop::ColIndex violation_ub = lp_data_.CreateNewVariable();
-        lp_data_.SetVariableBounds(violation_ub, 0.0, infinity);
-        lp_data_.SetCoefficient(violation_sum_constraint_, violation_ub, 1.0);
-        lp_data_.SetCoefficient(row, violation_ub, -1.0);
-      }
-    }
-  }
-
   lp_data_.AddSlackVariablesWhereNecessary(false);
 
   const int watcher_id = watcher->Register(this);
@@ -164,6 +116,13 @@ void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchUpperBound(objective_cp_, watcher_id);
   }
   watcher->SetPropagatorPriority(watcher_id, 2);
+}
+
+void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
+  for (const IntegerVariable var : generator.vars) {
+    GetOrCreateMirrorVariable(VariableIsPositive(var) ? var : NegationOf(var));
+  }
+  cut_generators_.push_back(std::move(generator));
 }
 
 // Check whether the change breaks the current LP solution.
@@ -210,66 +169,6 @@ bool LinearProgrammingConstraint::Propagate() {
                                ub * factor);
   }
 
-  if (!FLAGS_lp_constraint_use_dual_ray) {
-    if (objective_is_defined_) {
-      for (auto& var_coeff : objective_lp_) {
-        lp_data_.SetObjectiveCoefficient(var_coeff.first, 0.0);
-      }
-    }
-    lp_data_.SetObjectiveCoefficient(violation_sum_, 1.0);
-    lp_data_.SetObjectiveScalingFactor(1.0);
-    lp_data_.SetVariableBounds(violation_sum_, 0.0,
-                               std::numeric_limits<double>::infinity());
-
-    // Feasibility deductions.
-    const auto status = simplex_.Solve(lp_data_, time_limit_);
-    CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "
-                       << status.error_message();
-    CHECK_EQ(simplex_.GetProblemStatus(), glop::ProblemStatus::OPTIMAL)
-        << "simplex Solve() should return optimal, but it returned "
-        << simplex_.GetProblemStatus();
-
-    if (simplex_.GetVariableValue(violation_sum_) > kEpsilon) {  // infeasible.
-      FillReducedCostsReason();
-      return integer_trail_->ReportConflict(integer_reason_);
-    }
-
-    // Reduced cost strengthening for feasibility.
-    ReducedCostStrengtheningDeductions(0.0);
-    if (!deductions_.empty()) {
-      FillReducedCostsReason();
-      if (!deductions_.empty()) VLOG(0) << deductions_.size();
-      for (const IntegerLiteral deduction : deductions_) {
-        if (!integer_trail_->Enqueue(deduction, {}, integer_reason_)) {
-          return false;
-        }
-      }
-    }
-
-    // Revert to the real problem objective and save current solution.
-    lp_data_.SetVariableBounds(violation_sum_, 0.0, 0.0);
-    lp_data_.SetObjectiveCoefficient(violation_sum_, 0.0);
-    if (objective_is_defined_) {
-      for (auto& var_coeff : objective_lp_) {
-        const glop::ColIndex col = var_coeff.first;
-        lp_data_.SetObjectiveCoefficient(
-            col, var_coeff.second * scaler_.col_scale(col));
-      }
-      lp_data_.ScaleObjective();
-    }
-    const double objective_scale = lp_data_.objective_scaling_factor();
-    for (int i = 0; i < num_vars; i++) {
-      lp_solution_[i] = GetVariableValueAtCpScale(mirror_lp_variables_[i]);
-      lp_reduced_cost_[i] = simplex_.GetReducedCost(mirror_lp_variables_[i]) *
-                            scaler_.col_scale(mirror_lp_variables_[i]) *
-                            objective_scale;
-    }
-
-    // We currently ignore the objective and return right away when we don't
-    // use the dual ray as an infeasibility reason.
-    return true;
-  }
-
   glop::GlopParameters parameters = simplex_.GetParameters();
 
   if (objective_is_defined_) {
@@ -292,9 +191,58 @@ bool LinearProgrammingConstraint::Propagate() {
   parameters.set_max_number_of_iterations(500);
 
   simplex_.SetParameters(parameters);
+  simplex_.NotifyThatMatrixIsUnchangedForNextSolve();
   const auto status = simplex_.Solve(lp_data_, time_limit_);
   CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "
                      << status.error_message();
+
+  // Add cuts and resolve.
+  if (!cut_generators_.empty() &&
+      (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
+       simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) &&
+      num_cuts_ < max_num_cuts_) {
+    int num_new_cuts = 0;
+    for (const CutGenerator& generator : cut_generators_) {
+      std::vector<double> local_solution;
+      for (const IntegerVariable var : generator.vars) {
+        if (VariableIsPositive(var)) {
+          const int index = integer_variable_to_index_[var];
+          local_solution.push_back(
+              GetVariableValueAtCpScale(mirror_lp_variables_[index]));
+        } else {
+          const int index = integer_variable_to_index_[NegationOf(var)];
+          local_solution.push_back(
+              -GetVariableValueAtCpScale(mirror_lp_variables_[index]));
+        }
+      }
+      std::vector<LinearConstraint> cuts =
+          generator.generate_cuts(local_solution);
+      if (cuts.empty()) continue;
+
+      // Add the cuts to the LP!
+      lp_data_.DeleteSlackVariables();
+      for (const LinearConstraint& cut : cuts) {
+        ++num_new_cuts;
+        const glop::RowIndex row = lp_data_.CreateNewConstraint();
+        lp_data_.SetConstraintBounds(row, cut.lb, cut.ub);
+        for (int i = 0; i < cut.vars.size(); ++i) {
+          const glop::ColIndex col = GetOrCreateMirrorVariable(cut.vars[i]);
+          lp_data_.SetCoefficient(row, col,
+                                  cut.coeffs[i] / scaler_.col_scale(col));
+        }
+      }
+    }
+
+    // Resolve if we added some cuts.
+    if (num_new_cuts > 0) {
+      num_cuts_ += num_new_cuts;
+      VLOG(1) << "#cuts " << num_cuts_;
+      lp_data_.AddSlackVariablesWhereNecessary(false);
+      const auto status = simplex_.Solve(lp_data_, time_limit_);
+      CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "
+                         << status.error_message();
+    }
+  }
 
   // A dual-unbounded problem is infeasible. We use the dual ray reason.
   if (simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_UNBOUNDED) {
@@ -433,6 +381,69 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
       }
     }
   }
+}
+
+// We use a basic algorithm to detect components that are not connected to the
+// rest of the graph in the LP solution, and add cuts to force some arcs to
+// enter and leave this component from outside.
+CutGenerator CreateStronglyConnectedGraphCutGenerator(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<IntegerVariable>& vars) {
+  CutGenerator result;
+  result.vars = vars;
+  result.generate_cuts = [num_nodes, tails, heads,
+                          vars](const std::vector<double>& lp_solution) {
+    int num_arcs_in_lp_solution = 0;
+    std::vector<std::vector<int>> graph(num_nodes);
+    for (int i = 0; i < lp_solution.size(); ++i) {
+      if (lp_solution[i] > 1e-6) {
+        ++num_arcs_in_lp_solution;
+        graph[tails[i]].push_back(heads[i]);
+      }
+    }
+    std::vector<LinearConstraint> cuts;
+    std::vector<std::vector<int>> components;
+    FindStronglyConnectedComponents(num_nodes, graph, &components);
+    if (components.size() == 1) return cuts;
+
+    VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
+            << " sccs:" << components.size();
+    for (const std::vector<int>& component : components) {
+      if (component.size() == 1) continue;
+
+      // TODO(user): we could use a sparser algorithm, even if this do not
+      // seems to matter for now.
+      LinearConstraint incoming;
+      LinearConstraint outgoing;
+      double sum_incoming = 0.0;
+      double sum_outgoing = 0.0;
+      incoming.lb = outgoing.lb = 1.0;
+      incoming.ub = outgoing.ub = std::numeric_limits<double>::infinity();
+      const std::set<int> component_as_set(component.begin(), component.end());
+      for (int i = 0; i < tails.size(); ++i) {
+        const bool out = ContainsKey(component_as_set, tails[i]);
+        const bool in = ContainsKey(component_as_set, heads[i]);
+        if (out && in) continue;
+        if (out) {
+          sum_outgoing += lp_solution[i];
+          outgoing.vars.push_back(vars[i]);
+          outgoing.coeffs.push_back(1.0);
+        }
+        if (in) {
+          sum_incoming += lp_solution[i];
+          incoming.vars.push_back(vars[i]);
+          incoming.coeffs.push_back(1.0);
+        }
+      }
+      if (sum_incoming < 1.0) cuts.push_back(std::move(incoming));
+      if (sum_outgoing < 1.0) cuts.push_back(std::move(outgoing));
+
+      // In this case, the cuts for each component are the same.
+      if (components.size() == 2) break;
+    }
+    return cuts;
+  };
+  return result;
 }
 
 std::function<LiteralIndex()> HeuristicLPMostInfeasibleBinary(Model* model) {

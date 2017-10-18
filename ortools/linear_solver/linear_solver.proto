@@ -316,7 +316,7 @@ enum MPSolverResponseStatus {
   // (resp. maximization) problem.
   MPSOLVER_UNBOUNDED = 0x3;
 
-  // An error (most probably numerical) occured.
+  // An error (most probably numerical) occurred.
   // One likely cause for such errors is a large numerical range among variable
   // coefficients (eg. 1e-16, 1e20), in which case one should try to shrink it.
   MPSOLVER_ABNORMAL = 0x4;

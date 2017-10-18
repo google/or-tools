@@ -179,6 +179,13 @@ class RevisedSimplex {
   // Uses the given state as a warm-start for the next Solve() call.
   void LoadStateForNextSolve(const BasisState& state);
 
+  // Advanced usage. Tells the next Solve() that the matrix inside the linear
+  // program will not change compared to the one used the last time Solve() was
+  // called. This allows to bypass the somewhat costly check of comparing both
+  // matrices. Note that this call will be ignored if Solve() was never called
+  // or if ClearStateForNextSolve() was called.
+  void NotifyThatMatrixIsUnchangedForNextSolve();
+
   // Getters to retrieve all the information computed by the last Solve().
   RowIndex GetProblemNumRows() const;
   ColIndex GetProblemNumCols() const;
@@ -654,6 +661,10 @@ class RevisedSimplex {
   DenseRow solution_dual_ray_row_combination_;
   BasisState solution_state_;
   bool solution_state_has_been_set_externally_;
+
+  // Flag used by NotifyThatMatrixIsUnchangedForNextSolve() and changing
+  // the behavior of Initialize().
+  bool notify_that_matrix_is_unchanged_ = false;
 
   // This is known as 'd' in the literature and is set during each pivot to the
   // right inverse of the basic entering column of A by ComputeDirection().

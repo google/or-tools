@@ -30,6 +30,26 @@
 namespace operations_research {
 namespace sat {
 
+// One linear constraint on a set of Integer variables.
+// There should be no duplicate variables.
+struct LinearConstraint {
+  double lb;
+  double ub;
+  std::vector<IntegerVariable> vars;
+  std::vector<double> coeffs;
+};
+
+// A "cut" generator on a set of IntegerVariable. The generate_cuts() function
+// will be called with the value of these variables in the current LP optimal
+// solution and can return a list of extra constraints to add to the relaxation
+// in terms of the same variables.
+struct CutGenerator {
+  std::vector<IntegerVariable> vars;
+  std::function<std::vector<LinearConstraint>(
+      const std::vector<double>& lp_solution)>
+      generate_cuts;
+};
+
 // A SAT constraint that enforces a set of linear inequality constraints on
 // integer variables using an LP solver.
 //
@@ -38,8 +58,7 @@ namespace sat {
 // programming, for instance see the thesis of Tobias Achterberg,
 // "Constraint Integer Programming", sections 7.7 and 8.8, algorithm 7.11.
 // http://nbn-resolving.de/urn:nbn:de:0297-zib-11129
-// Feasibility propagation is done with this technique by setting total
-// constraint violation as an objective, i.e. by dualizing all constraints.
+//
 // Per-constraint bounds propagation is NOT done by this constraint,
 // it should be done by redundant constraints, as reduced cost propagation
 // may miss some filtering.
@@ -59,9 +78,6 @@ namespace sat {
 // However, the underlying LP solver reports infeasibility only if the problem
 // is still infeasible by relaxing the bounds by some small relative value.
 // Thus the constraint will tend to filter less than it could, not the opposite.
-//
-// TODO(user): Work with scaled version of the model, maybe by using
-// LPSolver instead of RevisedSimplex.
 class LinearProgrammingDispatcher;
 class LinearProgrammingConstraint : public PropagatorInterface {
  public:
@@ -87,6 +103,9 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   // the arguments passed to SetObjectiveCoefficient().
   void SetMainObjectiveVariable(IntegerVariable ivar) { objective_cp_ = ivar; }
 
+  // Register a new cut generator with this constraint.
+  void AddCutGenerator(CutGenerator generator);
+
   // Returns the LP value and reduced cost of a variable in the current
   // solution.
   double GetSolutionValue(IntegerVariable variable) const;
@@ -94,9 +113,7 @@ class LinearProgrammingConstraint : public PropagatorInterface {
 
   // PropagatorInterface API.
   bool Propagate() override;
-
   bool IncrementalPropagate(const std::vector<int>& watch_indices) override;
-
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
@@ -131,12 +148,6 @@ class LinearProgrammingConstraint : public PropagatorInterface {
 
   // For the scaling.
   glop::SparseMatrixScaler scaler_;
-
-  // violation_sum_ is used to simulate phase I of the simplex and be able to
-  // do reduced cost strengthening on problem feasibility by using the sum of
-  // constraint violations as an optimization objective.
-  glop::ColIndex violation_sum_;
-  ConstraintIndex violation_sum_constraint_;
 
   // Structures used for mirroring IntegerVariables inside the underlying LP
   // solver: integer_variables_[i] is mirrored by mirror_lp_variables_[i],
@@ -173,6 +184,10 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   // The dispatcher for all LP propagators of the model, allows to find which
   // LinearProgrammingConstraint has a given IntegerVariable.
   LinearProgrammingDispatcher* dispatcher_;
+
+  int num_cuts_ = 0;
+  int max_num_cuts_;  // const after construction.
+  std::vector<CutGenerator> cut_generators_;
 };
 
 // A class that stores which LP propagator is associated to each variable.
@@ -183,6 +198,17 @@ class LinearProgrammingDispatcher
  public:
   explicit LinearProgrammingDispatcher(Model* model) {}
 };
+
+// Cut generator for the circuit constraint, where in any feasible solution, the
+// arcs that are present (variable at 1) must form a circuit through all the
+// nodes of the graph. Self arc are forbidden in this case.
+//
+// In more generality, this currently enforce the resulting graph to be strongly
+// connected. Note that we already assume basic constraint to be in the lp, so
+// we do not add any cuts for components of size 1.
+CutGenerator CreateStronglyConnectedGraphCutGenerator(
+    int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
+    const std::vector<IntegerVariable>& vars);
 
 // Returns a LiteralIndex guided by the underlying LP constraints.
 // This looks at all unassigned 0-1 variables, takes the one with

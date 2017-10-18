@@ -1841,7 +1841,7 @@ void PresolveCpModel(const CpModelProto& initial_model,
   // Remove all empty or affine constraints (they will be re-added later if
   // needed) in the presolved model. Note that we need to remap the interval
   // references.
-  std::vector<int> interval_mapping(presolved_model->constraints_size());
+  std::vector<int> interval_mapping(presolved_model->constraints_size(), -1);
   int new_num_constraints = 0;
   const int old_num_constraints = presolved_model->constraints_size();
   for (int i = 0; i < old_num_constraints; ++i) {
