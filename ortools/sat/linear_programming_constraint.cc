@@ -33,12 +33,13 @@ namespace sat {
 const double LinearProgrammingConstraint::kEpsilon = 1e-6;
 
 LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
-    : integer_trail_(model->GetOrCreate<IntegerTrail>()),
+    : sat_parameters_(model->GetOrCreate<SatSolver>()->parameters()),
+      integer_trail_(model->GetOrCreate<IntegerTrail>()),
+      trail_(model->GetOrCreate<Trail>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()) {
   // TODO(user): Find a way to make GetOrCreate<TimeLimit>() construct it by
   // default.
   time_limit_ = model->Mutable<TimeLimit>();
-  max_num_cuts_ = model->GetOrCreate<SatSolver>()->parameters().max_num_cuts();
   if (time_limit_ == nullptr) {
     model->SetSingleton(TimeLimit::Infinite());
     time_limit_ = model->Mutable<TimeLimit>();
@@ -197,10 +198,11 @@ bool LinearProgrammingConstraint::Propagate() {
                      << status.error_message();
 
   // Add cuts and resolve.
-  if (!cut_generators_.empty() &&
+  if (!cut_generators_.empty() && num_cuts_ < sat_parameters_.max_num_cuts() &&
+      (trail_->CurrentDecisionLevel() == 0 ||
+       !sat_parameters_.only_add_cuts_at_level_zero()) &&
       (simplex_.GetProblemStatus() == glop::ProblemStatus::OPTIMAL ||
-       simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE) &&
-      num_cuts_ < max_num_cuts_) {
+       simplex_.GetProblemStatus() == glop::ProblemStatus::DUAL_FEASIBLE)) {
     int num_new_cuts = 0;
     for (const CutGenerator& generator : cut_generators_) {
       std::vector<double> local_solution;
@@ -396,6 +398,11 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     int num_arcs_in_lp_solution = 0;
     std::vector<std::vector<int>> graph(num_nodes);
     for (int i = 0; i < lp_solution.size(); ++i) {
+      // TODO(user): a more advanced algorithm consist of adding the arcs
+      // in the decreasing order of their lp_solution, and for each strongly
+      // connected components S along the way, try to add the corresponding
+      // cuts. We can stop as soon as there is only two components left, after
+      // adding the corresponding cut.
       if (lp_solution[i] > 1e-6) {
         ++num_arcs_in_lp_solution;
         graph[tails[i]].push_back(heads[i]);
@@ -435,8 +442,8 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
           incoming.coeffs.push_back(1.0);
         }
       }
-      if (sum_incoming < 1.0) cuts.push_back(std::move(incoming));
-      if (sum_outgoing < 1.0) cuts.push_back(std::move(outgoing));
+      if (sum_incoming < 1.0 - 1e-6) cuts.push_back(std::move(incoming));
+      if (sum_outgoing < 1.0 - 1e-6) cuts.push_back(std::move(outgoing));
 
       // In this case, the cuts for each component are the same.
       if (components.size() == 2) break;

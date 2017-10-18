@@ -928,7 +928,6 @@ SatSolver::Status SatSolver::StatusWithLog(Status status) {
 }
 
 void SatSolver::SetAssumptionLevel(int assumption_level) {
-  DCHECK(!is_model_unsat_);
   CHECK_GE(assumption_level, 0);
   CHECK_LE(assumption_level, CurrentDecisionLevel());
   assumption_level_ = assumption_level;

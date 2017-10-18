@@ -1838,6 +1838,26 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
         num_nodes - ignore_zero_offset, tails, heads, vars);
     cut_generators->push_back(std::move(generator));
   }
+  if (ct.constraint_case() == ConstraintProto::ConstraintCase::kRoutes) {
+    LpCutGenerators generator;
+    std::vector<int> tails;
+    std::vector<int> heads;
+    std::vector<IntegerVariable> vars;
+    int num_nodes = 0;
+    for (int i = 0; i < ct.routes().tails_size(); ++i) {
+      const int ref = ct.routes().literals(i);
+      if (!m->IsInteger(ref)) return;
+      generator.refs.push_back(ref);
+      tails.push_back(ct.routes().tails(i));
+      heads.push_back(ct.routes().heads(i));
+      vars.push_back(m->Integer(ref));
+      num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
+      num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
+    }
+    generator.cut_generator =
+        CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads, vars);
+    cut_generators->push_back(std::move(generator));
+  }
 }
 
 }  // namespace

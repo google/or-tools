@@ -165,7 +165,9 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   std::vector<std::pair<glop::ColIndex, double>> objective_lp_;
 
   // Structures for propagators.
+  const SatParameters sat_parameters_;
   IntegerTrail* integer_trail_;
+  Trail* trail_;
   std::vector<IntegerLiteral> integer_reason_;
   std::vector<IntegerLiteral> deductions_;
 
@@ -186,7 +188,6 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   LinearProgrammingDispatcher* dispatcher_;
 
   int num_cuts_ = 0;
-  int max_num_cuts_;  // const after construction.
   std::vector<CutGenerator> cut_generators_;
 };
 
