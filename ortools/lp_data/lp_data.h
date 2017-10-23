@@ -521,6 +521,16 @@ class LinearProgram {
   // integer bounds.
   bool BoundsOfIntegerConstraintsAreInteger(Fractional tolerance) const;
 
+  // Advanced usage. Bypass the costly call to CleanUp() when we known that the
+  // change we made kept the matrix columns "clean" (see the comment of
+  // CleanUp()). This is unsafe but can save a big chunk of the running time
+  // when one does a small amount of incremental changes to the problem (like
+  // adding a new row with no duplicates or zero entries).
+  void NotifyThatColumnsAreClean() {
+    DCHECK(matrix_.IsCleanedUp());
+    columns_are_known_to_be_clean_ = true;
+  }
+
  private:
   // A helper function that updates the vectors integer_variables_list_,
   // binary_variables_list_, and non_binary_variables_list_.

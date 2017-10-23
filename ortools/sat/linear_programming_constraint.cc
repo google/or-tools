@@ -239,6 +239,7 @@ bool LinearProgrammingConstraint::Propagate() {
     if (num_new_cuts > 0) {
       num_cuts_ += num_new_cuts;
       VLOG(1) << "#cuts " << num_cuts_;
+      lp_data_.NotifyThatColumnsAreClean();
       lp_data_.AddSlackVariablesWhereNecessary(false);
       const auto status = simplex_.Solve(lp_data_, time_limit_);
       CHECK(status.ok()) << "LinearProgrammingConstraint encountered an error: "

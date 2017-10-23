@@ -50,9 +50,6 @@
 //  s1 is an m1-vector (m1 being the height of A1),
 //  s2 is an m2-vector (m2 being the height of A2).
 //
-// See Design Document at
-// or search for "Google Linear Programming" in Docs
-//
 // The following are very good references for terminology, data structures,
 // and algorithms. They all contain a wealth of references.
 //

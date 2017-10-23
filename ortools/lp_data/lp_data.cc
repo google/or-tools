@@ -641,7 +641,7 @@ void LinearProgram::AddSlackVariablesWhereNecessary(
   // Clean up the matrix. We're going to add entries, but we'll only be adding
   // them to new columns, and only one entry per column, which does not
   // invalidate the "cleanness" of the matrix.
-  matrix_.CleanUp();
+  CleanUp();
 
   // Detect which constraints produce an integer slack variable. A constraint
   // has an integer slack variable, if it contains only integer variables with
@@ -682,6 +682,8 @@ void LinearProgram::AddSlackVariablesWhereNecessary(
     SetCoefficient(row, slack_col, 1.0);
     SetConstraintBounds(row, 0.0, 0.0);
   }
+
+  columns_are_known_to_be_clean_ = true;
   transpose_matrix_is_consistent_ = false;
   if (first_slack_variable_ == kInvalidCol) {
     first_slack_variable_ = original_num_variables;
