@@ -614,6 +614,14 @@ class CpModel(object):
         [self.GetOrMakeIndex(x) for x in inverse_variables])
     return ct
 
+  def AddImplication(self, a, b):
+    """Adds a => b."""
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.bool_or.literals.append(self.GetOrMakeBooleanIndex(b))
+    model_ct.enforcement_literal.append(self.GetOrMakeBooleanIndex(a))
+    return ct
+
   def AddBoolOr(self, literals):
     """Adds Or(literals) == true."""
     ct = Constraint(self.__model.constraints)
