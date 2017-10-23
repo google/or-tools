@@ -142,7 +142,7 @@ ifeq ($(PLATFORM),LINUX)
   # This is needed to find libprotobuf.a
   ifeq ($(DISTRIBUTION_ID),Fedora)
     PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib64/libprotobuf.a
-  ifeq ($(DISTRIBUTION_ID),CentOS)
+  elif ($(DISTRIBUTION_ID),CentOS)
     PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib64/libprotobuf.a
   else
     PROTOBUF_LNK = $(UNIX_PROTOBUF_DIR)/lib/libprotobuf.a

@@ -622,6 +622,8 @@ class CpModel(object):
     model_ct.enforcement_literal.append(self.GetOrMakeBooleanIndex(a))
     return ct
 
+
+
   def AddBoolOr(self, literals):
     """Adds Or(literals) == true."""
     ct = Constraint(self.__model.constraints)
@@ -643,6 +645,22 @@ class CpModel(object):
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.bool_xor.literals.extend(
+
+  def AddMapDomain(self, var, bool_var_array):
+    """Creates var == i <=> bool_var_array[i] == true for all i."""
+
+    nb = len(bool_var_array)
+    for i in range(nb):
+      b = bool_var_array[i]
+      terms = [(var, 1)]
+      self.AddLinearConstraint(terms, i, i).OnlyEnforceIf(b)
+      bounds = []
+      if i != 0:
+        bounds.extend([0, i - 1])
+      if i != nb - 1:
+        bounds.extend([i + 1, nb - 1])
+      self.AddLinearConstraintWithBounds(terms, bounds).OnlyEnforceIf(b.Not())
+
         [self.GetOrMakeBooleanIndex(x) for x in literals])
     return ct
 
