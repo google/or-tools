@@ -416,7 +416,7 @@ class AllSolutionsCollector(cp_model.CpSolverSolutionCallback):
 
   def NewSolution(self):
     solution = [self.Value(v) for v in self.__variables]
-    self.__solutions.append(solution)
+    self.__solutions.append(tuple(solution))
 
   def AllSolutions(self):
     return self.__solutions
@@ -490,17 +490,25 @@ def SteelMillSlabWithColumns(problem, break_symmetries):
   loads = [model.NewIntVar(0, max_capacity, 'load_%i' % s) for s in all_slabs]
   losses = [model.NewIntVar(0, max_loss, 'loss_%i' % s) for s in all_slabs]
 
-  valid_slabs = CollectValidSlabs(capacities, colors, widths, loss_array,
-                                  all_colors)
-  print('  - %i valid slab combinations' % len(valid_slabs))
+  unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
+                                           loss_array, all_colors)
+  # Sort slab by descending load/loss. Remove duplicates.
+  valid_slabs = sorted(list(set(unsorted_valid_slabs)),
+                       key = lambda c : 1000 * c[-1] + c[-2])
+  num_valid_slabs = len(valid_slabs)
+  print('  - %i valid slab combinations' % num_valid_slabs)
+
   for s in all_slabs:
-    model.AddAllowedAssignments([assign[o][s]
-                                 for o in all_orders] + [losses[s], loads[s]],
-                                valid_slabs)
+    model.AddAllowedAssignments(
+        [assign[o][s] for o in all_orders] + [losses[s], loads[s]],
+        valid_slabs)
 
   # Orders are assigned to one slab.
   for o in all_orders:
     model.Add(sum(assign[o]) == 1)
+
+  # Redundant constraint (sum of loads == sum of widths).
+  model.Add(sum(loads) == sum(widths))
 
   # Symmetry breaking.
   for s in range(num_slabs - 1):
