@@ -48,8 +48,8 @@ class SatHelper {
   SolveWithParametersAndSolutionObserver(
       const operations_research::sat::CpModelProto& model_proto,
       const operations_research::sat::SatParameters& parameters,
-      const std::function<void(const operations_research::sat::CpSolverResponse&
-                                   response)>& observer) {
+      std::function<void(const operations_research::sat::CpSolverResponse&
+                         response)> observer) {
     Model model;
     model.Add(NewSatParameters(parameters));
     model.Add(NewFeasibleSolutionObserver(observer));

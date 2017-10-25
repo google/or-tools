@@ -26,6 +26,7 @@ from six import iteritems
 
 from ortools.sat import cp_model_pb2
 from ortools.sat import pywrapsat
+from ortools.sat import sat_parameters_pb2
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
@@ -614,6 +615,28 @@ class CpModel(object):
         [self.GetOrMakeIndex(x) for x in inverse_variables])
     return ct
 
+  def AddMapDomain(self, var, bool_var_array):
+    """Creates var == i <=> bool_var_array[i] == true for all i."""
+
+    nb = len(bool_var_array)
+    for i in range(nb):
+      b_index = bool_var_array[i].Index()
+      var_index = var.Index()
+      model_ct = self.__model.constraints.add()
+      model_ct.linear.vars.append(var_index)
+      model_ct.linear.coeffs.append(1)
+      model_ct.linear.domain.extend([i, i])
+      model_ct.enforcement_literal.append(b_index)
+
+      model_ct = self.__model.constraints.add()
+      model_ct.linear.vars.append(var_index)
+      model_ct.linear.coeffs.append(1)
+      model_ct.enforcement_literal.append(-b_index - 1)
+      if i != 0:
+        model_ct.linear.domain.extend([0, i - 1])
+      if i != nb - 1:
+        model_ct.linear.domain.extend([i + 1, nb - 1])
+
   def AddImplication(self, a, b):
     """Adds a => b."""
     ct = Constraint(self.__model.constraints)
@@ -621,8 +644,6 @@ class CpModel(object):
     model_ct.bool_or.literals.append(self.GetOrMakeBooleanIndex(b))
     model_ct.enforcement_literal.append(self.GetOrMakeBooleanIndex(a))
     return ct
-
-
 
   def AddBoolOr(self, literals):
     """Adds Or(literals) == true."""
@@ -645,22 +666,6 @@ class CpModel(object):
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.bool_xor.literals.extend(
-
-  def AddMapDomain(self, var, bool_var_array):
-    """Creates var == i <=> bool_var_array[i] == true for all i."""
-
-    nb = len(bool_var_array)
-    for i in range(nb):
-      b = bool_var_array[i]
-      terms = [(var, 1)]
-      self.AddLinearConstraint(terms, i, i).OnlyEnforceIf(b)
-      bounds = []
-      if i != 0:
-        bounds.extend([0, i - 1])
-      if i != nb - 1:
-        bounds.extend([i + 1, nb - 1])
-      self.AddLinearConstraintWithBounds(terms, bounds).OnlyEnforceIf(b.Not())
-
         [self.GetOrMakeBooleanIndex(x) for x in literals])
     return ct
 
@@ -901,6 +906,43 @@ class CpModel(object):
       raise TypeError('TypeError: ' + str(x) + ' is not a boolean variable')
 
 
+class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
+  """Nicer solution callback that uses the CpSolver class."""
+
+  def __init__(self, solver):
+    self.__current_solution = None
+
+  def Wrap(self, solution_proto):
+    self.__current_solution = solution_proto
+    self.NewSolution()
+
+  def Value(self, expression):
+    """Returns the value of an integer expression."""
+    if not self.__current_solution:
+      raise RuntimeError('Solve() has not be called.')
+    value = 0
+    to_process = [(expression, 1)]
+    while to_process:
+      expr, coef = to_process.pop()
+      if isinstance(expr, ProductCst):
+        to_process.append((expr.Expression(), coef * expr.Coefficient()))
+      elif isinstance(expr, SumArray):
+        for e in expr.Array():
+          to_process.append((e, coef))
+        value += expr.Constant() * coef
+      elif isinstance(expr, IntVar):
+        value += coef * self.__current_solution.solution[expr.Index()]
+      elif isinstance(expr, NotBooleanVariable):
+        raise TypeError('Cannot interpret literals in a integer expression.')
+    return value
+
+  def ObjectiveValue(self):
+    return self.__current_solution.objective_value
+
+  def NewSolution(self):
+    pass
+
+
 class CpSolver(object):
   """Main solver class."""
 
@@ -909,8 +951,16 @@ class CpSolver(object):
     self.__solution = None
 
   def Solve(self, model):
-    self.__model = model
-    self.__solution = pywrapsat.SatHelper.Solve(self.__model.ModelProto())
+    self.__solution = pywrapsat.SatHelper.Solve(model.ModelProto())
+    return self.__solution.status
+
+  def SolveWithSolutionObserver(self, model, callback):
+    parameters = sat_parameters_pb2.SatParameters()
+    parameters.enumerate_all_solutions = True
+    parameters.cp_model_presolve = False
+    self.__solution = (
+        pywrapsat.SatHelper.SolveWithParametersAndSolutionObserver(
+            model.ModelProto(), parameters, callback))
     return self.__solution.status
 
   def Value(self, expression):

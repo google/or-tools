@@ -21,7 +21,44 @@
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
+
+// A copyable, ref-counted python pointer.
+// capture.
+class SharedPyPtr {
+ public:
+  explicit SharedPyPtr(PyObject* obj) : obj_(obj) { Py_INCREF(obj_); }
+  SharedPyPtr(const SharedPyPtr& other) : obj_(other.obj_) { Py_INCREF(obj_); }
+
+  ~SharedPyPtr() { Py_DECREF(obj_); }
+
+  PyObject* get() const { return obj_; }
+
+ private:
+  // We do not follow the rule of three as we only want to copy construct.
+  SharedPyPtr& operator=(const SharedPyPtr&);
+
+  PyObject* const obj_;
+};
+
+
 %}
+
+%pythoncode {
+from ortools.sat import cp_model_pb2
+
+class PySolutionCallback(object):
+
+  def WrapAux(self, proto_str):
+    try:
+      response = cp_model_pb2.CpSolverResponse()
+      status = response.MergeFromString(proto_str)
+      self.Wrap(response)
+    except Exception, e:
+      print(e)
+
+  def Wrap(self, proto):
+    pass
+}  // %pythoncode
 
 PY_PROTO_TYPEMAP(ortools.sat.cp_model_pb2,
                  CpModelProto,
@@ -36,6 +73,42 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
                  operations_research::sat::SatParameters);
 
 
+// Wrap std::function<void(const operations_research::sat::CpSolverResponse&)>
+
+%{
+void CallSolutionCallback(PyObject* cb,
+                          const operations_research::sat::CpSolverResponse& r) {
+  std::string encoded_protobuf;
+  r.SerializeToString(&encoded_protobuf);
+#if defined(PY3)
+  PyObject* const python_encoded_protobuf =
+      PyBytes_FromStringAndSize(encoded_protobuf.c_str(),
+                                encoded_protobuf.size());
+#else  // PY3
+  PyObject* const python_encoded_protobuf =
+      PyString_FromStringAndSize(encoded_protobuf.c_str(),
+                                 encoded_protobuf.size());
+#endif  // PY3
+  PyObject* result =
+      PyObject_CallMethod(cb, "WrapAux", "(O)", python_encoded_protobuf);
+  Py_XDECREF(python_encoded_protobuf);
+  Py_XDECREF(result);
+}
+%}
+
+%typecheck(SWIG_TYPECHECK_POINTER) std::function<void(
+    const operations_research::sat::CpSolverResponse& response)> {
+  $1 = true;
+}
+
+%typemap(in) std::function<void(
+    const operations_research::sat::CpSolverResponse& response)> {
+  SharedPyPtr input($input);
+  $1 = [input](const operations_research::sat::CpSolverResponse& r) {
+    return CallSolutionCallback(input.get(), r);
+  };
+}
+
 %ignoreall
 
 %unignore operations_research;
@@ -48,4 +121,3 @@ PY_PROTO_TYPEMAP(ortools.sat.sat_parameters_pb2,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
-
