@@ -458,7 +458,7 @@ def CollectValidSlabs(capacities, colors, widths, loss_array, all_colors):
   return collector.AllSolutions()
 
 
-def SteelMillSlabWithColumns(problem, break_symmetries):
+def SteelMillSlabWithValidSlabs(problem, break_symmetries):
   """Solves the Steel Mill Slab Problem."""
   ### Load problem.
   (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
@@ -515,58 +515,66 @@ def SteelMillSlabWithColumns(problem, break_symmetries):
     model.Add(loads[s] >= loads[s + 1])
 
   # Collect equivalent orders.
-  width_to_unique_color_order = {}
-  ordered_equivalent_orders = []
-  orders_per_color = [[o for o in all_orders if colors[o] == c + 1]
+  if break_symmetries:
+    print('Breaking symmetries')
+    width_to_unique_color_order = {}
+    ordered_equivalent_orders = []
+    orders_per_color = [[o for o in all_orders if colors[o] == c + 1]
                       for c in all_colors]
-  for c in all_colors:
-    colored_orders = orders_per_color[c]
-    if not colored_orders:
-      continue
-    if len(colored_orders) == 1:
-      o = colored_orders[0]
-      w = widths[o]
-      if w not in width_to_unique_color_order:
-        width_to_unique_color_order[w] = [o]
-      else:
-        width_to_unique_color_order[w].append(o)
-    else:
-      local_width_to_order = {}
-      for o in colored_orders:
+    for c in all_colors:
+      colored_orders = orders_per_color[c]
+      if not colored_orders:
+        continue
+      if len(colored_orders) == 1:
+        o = colored_orders[0]
         w = widths[o]
-        if w not in local_width_to_order:
-          local_width_to_order[w] = []
-        local_width_to_order[w].append(o)
-      for w, os in local_width_to_order.items():
-        if len(os) > 1:
-          for p in range(len(os) - 1):
-            ordered_equivalent_orders.append((os[p], os[p + 1]))
-  for w, os in width_to_unique_color_order.items():
-    if len(os) > 1:
-      for p in range(len(os) - 1):
-        ordered_equivalent_orders.append((os[p], os[p + 1]))
+        if w not in width_to_unique_color_order:
+          width_to_unique_color_order[w] = [o]
+        else:
+          width_to_unique_color_order[w].append(o)
+      else:
+        local_width_to_order = {}
+        for o in colored_orders:
+          w = widths[o]
+          if w not in local_width_to_order:
+            local_width_to_order[w] = []
+            local_width_to_order[w].append(o)
+        for w, os in local_width_to_order.items():
+          if len(os) > 1:
+            for p in range(len(os) - 1):
+              ordered_equivalent_orders.append((os[p], os[p + 1]))
+    for w, os in width_to_unique_color_order.items():
+      if len(os) > 1:
+        for p in range(len(os) - 1):
+          ordered_equivalent_orders.append((os[p], os[p + 1]))
 
-  # Create position variables if there are symmetries to be broken.
-  if break_symmetries and ordered_equivalent_orders:
-    print('  - creating %i symmetry breaking constraints' %
-          len(ordered_equivalent_orders))
-    positions = {}
-    for p in ordered_equivalent_orders:
-      if p[0] not in positions:
-        positions[p[0]] = model.NewIntVar(0, num_slabs - 1,
-                                          'position_of_slab_%i' % p[0])
-        model.AddMapDomain(positions[p[0]], assign[p[0]])
-      if p[1] not in positions:
-        positions[p[1]] = model.NewIntVar(0, num_slabs - 1,
-                                          'position_of_slab_%i' % p[1])
-        model.AddMapDomain(positions[p[1]], assign[p[1]])
-      # Finally add the symmetry breaking constraint.
-      model.Add(positions[p[0]] <= positions[p[1]])
+    # Create position variables if there are symmetries to be broken.
+    if ordered_equivalent_orders:
+      print('  - creating %i symmetry breaking constraints' %
+            len(ordered_equivalent_orders))
+      positions = {}
+      for p in ordered_equivalent_orders:
+        if p[0] not in positions:
+          positions[p[0]] = model.NewIntVar(0, num_slabs - 1,
+                                            'position_of_slab_%i' % p[0])
+          model.AddMapDomain(positions[p[0]], assign[p[0]])
+        if p[1] not in positions:
+          positions[p[1]] = model.NewIntVar(0, num_slabs - 1,
+                                            'position_of_slab_%i' % p[1])
+          model.AddMapDomain(positions[p[1]], assign[p[1]])
+          # Finally add the symmetry breaking constraint.
+        model.Add(positions[p[0]] <= positions[p[1]])
 
   # Objective.
   obj = model.NewIntVar(0, num_slabs * max_loss, 'obj')
   model.Add(obj == sum(losses))
   model.Minimize(obj)
+
+  print('Model created')
+
+  f = open('/tmp/steel.pbtxt', 'w')
+  f.write(str(model.ModelProto()))
+  f.close()
 
   ### Solve model.
   solver = cp_model.CpSolver()
@@ -583,7 +591,7 @@ def SteelMillSlabWithColumns(problem, break_symmetries):
 
 def main(args):
   if args.precompute_valid_slabs:
-    SteelMillSlabWithColumns(args.problem, args.break_symmetries)
+    SteelMillSlabWithValidSlabs(args.problem, args.break_symmetries)
   else:
     SteelMillSlab(args.problem, args.break_symmetries)
 

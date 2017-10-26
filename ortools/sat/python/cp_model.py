@@ -546,7 +546,7 @@ class CpModel(object):
         raise TypeError('Tuple ' + str(t) + ' has the wrong arity')
       for v in t:
         AssertIsInt64(v)
-        model_ct.table.values.append(v)
+      model_ct.table.values.extend(t)
 
   def AddForbiddenAssignments(self, variables, tuples):
     """Adds AddForbiddenAssignments(variables, [tuples])."""
