@@ -307,7 +307,6 @@ dependencies\sources\cbc-$(CBC_TAG)\Cbc\MSVisualStudio\v10\$(CBC_PLATFORM)\cbc.e
 
 dependencies\sources\cbc-$(CBC_TAG)\configure:
 	svn co https://projects.coin-or.org/svn/Cbc/releases/$(CBC_TAG) dependencies/sources/cbc-$(CBC_TAG)
-	tools\sed -i -e "s/#  include <direct.h>/#  include <direct.h>\n#  include <cctype>/g" dependencies\sources\cbc-$(CBC_TAG)\CoinUtils\src\CoinHelperFunctions.hpp
 
 
 # Install SWIG.
