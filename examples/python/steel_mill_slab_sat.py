@@ -464,6 +464,8 @@ def CollectValidSlabs(capacities, colors, widths, loss_array, all_colors):
     for o in orders_per_color[c]:
       model.AddImplication(assign[o], color_in_slab[c])
       model.AddImplication(color_in_slab[c].Not(), assign[o].Not())
+    model.AddBoolOr([color_in_slab[c].Not()] +
+                    [assign[o] for o in orders_per_color[c]])
 
   # At most two colors per slab.
   model.Add(sum(color_in_slab) <= 2)
@@ -514,7 +516,7 @@ def SteelMillSlabWithValidSlabs(problem, break_symmetries):
   unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
                                            loss_array, all_colors)
   # Sort slab by descending load/loss. Remove duplicates.
-  valid_slabs = sorted(list(set(unsorted_valid_slabs)),
+  valid_slabs = sorted(unsorted_valid_slabs,
                        key = lambda c : 1000 * c[-1] + c[-2])
   num_valid_slabs = len(valid_slabs)
   print('  - %i valid slab combinations' % num_valid_slabs)
@@ -637,7 +639,7 @@ def SteelMillSlabWithColumnGeneration(problem):
   unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
                                            loss_array, all_colors)
   # Sort slab by descending load/loss. Remove duplicates.
-  valid_slabs = sorted(list(set(unsorted_valid_slabs)),
+  valid_slabs = sorted(unsorted_valid_slabs,
                        key = lambda c : 1000 * c[-1] + c[-2])
   num_valid_slabs = len(valid_slabs)
   all_valid_slabs = range(num_valid_slabs)
@@ -707,7 +709,7 @@ def SteelMillSlabWithMipColumnGeneration(problem):
   unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
                                            loss_array, all_colors)
   # Sort slab by descending load/loss. Remove duplicates.
-  valid_slabs = sorted(list(set(unsorted_valid_slabs)),
+  valid_slabs = sorted(unsorted_valid_slabs,
                        key = lambda c : 1000 * c[-1] + c[-2])
   num_valid_slabs = len(valid_slabs)
   all_valid_slabs = range(num_valid_slabs)
