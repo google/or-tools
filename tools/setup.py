@@ -36,7 +36,7 @@ setup(
         'ortools.linear_solver',],
     ext_modules = [dummy_module],
     install_requires = [
-        'protobuf == PROTOBUF_TAG',
+        'protobuf >= PROTOBUF_TAG',
         'six >= 1.10',
     ],
     package_data = {
