@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import argparse
 from ortools.sat.python import cp_model
+from ortools.linear_solver import pywraplp
 import time
 
 parser = argparse.ArgumentParser()
@@ -247,7 +248,6 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
     self.__all_orders = range(len(orders))
     self.__all_slabs = range(len(assign[0]))
     self.__start_time = time.time()
-    print('%i slabs, %i orders' % (len(assign[0]), len(orders)))
 
   def NewSolution(self):
     current_time = time.time()
@@ -267,6 +267,27 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
               o, self.__orders[o][0], self.__orders[o][1])
         line += ']'
         print(line)
+
+
+class SteelMillSlabColumnSolutionPrinter(cp_model.CpSolverSolutionCallback):
+  """Print intermediate solutions."""
+
+  def __init__(self, orders, valid_slabs, selected):
+    self.__orders = orders
+    self.__valid_slabs = valid_slabs
+    self.__selected = selected
+    self.__solution_count = 0
+    self.__all_valid_slabs = range(len(selected))
+    self.__start_time = time.time()
+
+  def NewSolution(self):
+    current_time = time.time()
+    objective = sum(self.Value(self.__selected[i]) * self.__valid_slabs[i][-2]
+                    for i in self.__all_valid_slabs)
+    print('Solution %i, time = %f s, objective = %i' %
+          (self.__solution_count, current_time - self.__start_time, objective))
+    self.__solution_count += 1
+    self.__solution_count += 1
 
 
 def SteelMillSlab(problem, break_symmetries):
@@ -589,11 +610,145 @@ def SteelMillSlabWithValidSlabs(problem, break_symmetries):
     print('No solution')
 
 
-def main(args):
-  if args.precompute_valid_slabs:
-    SteelMillSlabWithValidSlabs(args.problem, args.break_symmetries)
+def SteelMillSlabWithColumnGeneration(problem):
+  """Solves the Steel Mill Slab Problem."""
+  ### Load problem.
+  (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
+
+  num_orders = len(orders)
+  num_capacities = len(capacities)
+  all_slabs = range(num_slabs)
+  all_colors = range(num_colors)
+  all_orders = range(len(orders))
+  print('Solving steel mill with %i orders, %i slabs, and %i capacities' %
+        (num_orders, num_slabs, num_capacities - 1))
+
+  # Compute auxilliary data.
+  widths = [x[0] for x in orders]
+  colors = [x[1] for x in orders]
+  max_capacity = max(capacities)
+  loss_array = [
+      min(x for x in capacities if x >= c) - c for c in range(max_capacity + 1)
+  ]
+
+  ### Model problem.
+
+  # Generate all valid slabs (columns)
+  unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
+                                           loss_array, all_colors)
+  # Sort slab by descending load/loss. Remove duplicates.
+  valid_slabs = sorted(list(set(unsorted_valid_slabs)),
+                       key = lambda c : 1000 * c[-1] + c[-2])
+  num_valid_slabs = len(valid_slabs)
+  all_valid_slabs = range(num_valid_slabs)
+  print('  - %i valid slab combinations' % num_valid_slabs)
+
+  # create model and decision variables.
+  model = cp_model.CpModel()
+  selected = [model.NewBoolVar('selected_%i' % i) for i in all_valid_slabs]
+
+  for o in all_orders:
+    model.Add(sum(selected[i] for i in all_valid_slabs
+                  if valid_slabs[i][o]) == 1)
+
+
+  # Redundant constraint (sum of loads == sum of widths).
+  model.Add(sum(selected[i] * valid_slabs[i][-1] for i in all_valid_slabs) ==
+            sum(widths))
+
+  # Objective.
+  max_loss = max(valid_slabs[i][-2] for i in all_valid_slabs)
+  obj = model.NewIntVar(0, num_slabs * max_loss, 'obj')
+  model.Add(obj == sum(selected[i] * valid_slabs[i][-2]
+                       for i in all_valid_slabs))
+  model.Minimize(obj)
+
+  print('Model created')
+
+  ### Solve model.
+  solver = cp_model.CpSolver()
+  solution_printer = SteelMillSlabColumnSolutionPrinter(
+    orders, valid_slabs, selected)
+  status = solver.SolveWithSolutionObserver(model, solution_printer)
+
+  ### Output the solution.
+  if status == cp_model.OPTIMAL:
+    print('Loss = %i, time = %f s, %i conflicts' %
+          (solver.ObjectiveValue(), solver.WallTime(), solver.NumConflicts()))
   else:
-    SteelMillSlab(args.problem, args.break_symmetries)
+    print('No solution')
+
+
+def SteelMillSlabWithMipColumnGeneration(problem):
+  """Solves the Steel Mill Slab Problem."""
+  ### Load problem.
+  (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
+
+  num_orders = len(orders)
+  num_capacities = len(capacities)
+  all_slabs = range(num_slabs)
+  all_colors = range(num_colors)
+  all_orders = range(len(orders))
+  print('Solving steel mill with %i orders, %i slabs, and %i capacities' %
+        (num_orders, num_slabs, num_capacities - 1))
+
+  # Compute auxilliary data.
+  widths = [x[0] for x in orders]
+  colors = [x[1] for x in orders]
+  max_capacity = max(capacities)
+  loss_array = [
+      min(x for x in capacities if x >= c) - c for c in range(max_capacity + 1)
+  ]
+
+  ### Model problem.
+
+  # Generate all valid slabs (columns)
+  start = time.time()
+  unsorted_valid_slabs = CollectValidSlabs(capacities, colors, widths,
+                                           loss_array, all_colors)
+  # Sort slab by descending load/loss. Remove duplicates.
+  valid_slabs = sorted(list(set(unsorted_valid_slabs)),
+                       key = lambda c : 1000 * c[-1] + c[-2])
+  num_valid_slabs = len(valid_slabs)
+  all_valid_slabs = range(num_valid_slabs)
+  generate = time.time()
+  print('  - %i valid slab combinations generated in %f s' % (
+    num_valid_slabs, generate - start))
+
+  # create model and decision variables.
+  solver = pywraplp.Solver('Steel',
+                           pywraplp.Solver.BOP_INTEGER_PROGRAMMING)
+  selected = [solver.IntVar(0.0, 1.0, 'selected_%i' % i)
+                            for i in all_valid_slabs]
+
+  for o in all_orders:
+    solver.Add(sum(selected[i] for i in all_valid_slabs
+                   if valid_slabs[i][o]) == 1)
+
+
+  # Redundant constraint (sum of loads == sum of widths).
+  solver.Add(sum(selected[i] * valid_slabs[i][-1] for i in all_valid_slabs) ==
+             sum(widths))
+
+  # Objective.
+  solver.Minimize(sum(selected[i] * valid_slabs[i][-2]
+                      for i in all_valid_slabs))
+
+  status = solver.Solve()
+
+  ### Output the solution.
+  if status == pywraplp.Solver.OPTIMAL:
+    print('Objective value = %f found in %f s' % (
+      solver.Objective().Value(), time.time() - generate))
+  else:
+    print('No solution')
+
+
+def main(args):
+#  if args.precompute_valid_slabs:
+#    SteelMillSlabWithValidSlabs(args.problem, args.break_symmetries)
+#  else:
+  SteelMillSlabWithMipColumnGeneration(args.problem)
 
 
 if __name__ == '__main__':
