@@ -11,9 +11,9 @@ parser.add_argument('--problem', default = 2, type = int,
                     help = 'Problem id to solve.')
 parser.add_argument('--break_symmetries', default = True, type = bool,
                     help = 'Break symmetries between equivalent orders.')
-parser.add_argument('--precompute_valid_slabs', default = True, type = bool,
-                    help =  'Use a column generation like model with valid '
-                    'slabs.')
+parser.add_argument(
+  '--solver', default = "mip_column",
+  help =  'Method used to solve: sat, sat_table, sat_column, mip_column.')
 
 
 def BuildProblem(problem_id):
@@ -747,10 +747,14 @@ def SteelMillSlabWithMipColumnGeneration(problem):
 
 
 def main(args):
-#  if args.precompute_valid_slabs:
-#    SteelMillSlabWithValidSlabs(args.problem, args.break_symmetries)
-#  else:
-  SteelMillSlabWithMipColumnGeneration(args.problem)
+  if args.solver == 'sat':
+    SteelMillSlab(args.problem, args.break_symmetries)
+  elif args.solver == 'sat_table':
+    SteelMillSlabWithValidSlabs(args.problem, args.break_symmetries)
+  elif args.solver == 'sat_column':
+    SteelMillSlabWithColumnGeneration(args.problem)
+  else:  # 'mip_column'
+    SteelMillSlabWithMipColumnGeneration(args.problem)
 
 
 if __name__ == '__main__':
