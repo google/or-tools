@@ -47,10 +47,6 @@ endif
 
 endif #ifeq ($(SYSTEM),win)
 
-install:
-	@echo Please run pip install ortools
-	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=ERROR
-
 check:
 	$(SET_PYTHONPATH) $(PYTHON_EXECUTABLE) check_python_deps.py --log=INFO
 

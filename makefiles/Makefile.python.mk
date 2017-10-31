@@ -264,14 +264,10 @@ python_examples_archive:
 	$(MKDIR) temp$Sortools_examples$Sexamples$Sdata
 	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples$Spython
 	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
-	$(COPY) tools$SMakefile.python temp$Sortools_examples$SMakefile
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
 	$(COPY) tools$Ssetup_data.py temp$Sortools_examples$Ssetup.py
 	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sortools_examples$Ssetup.py
 	$(SED) -i -e 's/XXXX/$(PYPI_OS)/' temp$Sortools_examples$Ssetup.py
-	$(COPY) tools$Scheck_python_deps.py temp$Sortools_examples
-	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sortools_examples$Scheck_python_deps.py
-	$(SED) -i -e 's/PROTOBUF_TAG/$(PROTOBUF_TAG)/' temp$Sortools_examples$Scheck_python_deps.py
 	-$(DEL) temp$Sortools_examples$Ssetup.py-e
 ifeq ($(SYSTEM),win)
 	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
