@@ -97,6 +97,7 @@ cc_archive: cc
 	$(COPY) ortools$Sutil$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sutil
 
 ifeq "$(SYSTEM)" "win"
+	$(COPY) tools$Smake.exe temp$S$(INSTALL_DIR)
 	cd temp$S$(INSTALL_DIR) && ..$S..$Stools$Star.exe -C ..$S.. -c -v --exclude *svn* --exclude *roadef* examples$Sdata | ..$S..$Stools$Star.exe xvm
 
 	cd temp$S$(INSTALL_DIR)$Sinclude && ..$S..$S..$Stools$Star.exe -C ..$S..$S..$Sdependencies$Sinstall$Sinclude -c -v gflags | ..$S..$S..$Stools$Star.exe xvm
