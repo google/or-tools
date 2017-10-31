@@ -265,10 +265,6 @@ python_examples_archive:
 	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples$Spython
 	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
-	$(COPY) tools$Ssetup_data.py temp$Sortools_examples$Ssetup.py
-	$(SED) -i -e 's/VVVV/$(OR_TOOLS_VERSION)/' temp$Sortools_examples$Ssetup.py
-	$(SED) -i -e 's/XXXX/$(PYPI_OS)/' temp$Sortools_examples$Ssetup.py
-	-$(DEL) temp$Sortools_examples$Ssetup.py-e
 ifeq ($(SYSTEM),win)
 	cd temp\ortools_examples && ..\..\tools\tar.exe -C ..\.. -c -v --exclude *svn* --exclude *roadef* examples\data | ..\..\tools\tar.exe xvm
 	cd temp && ..\tools\zip.exe -r ..\or-tools_python_examples_v$(OR_TOOLS_VERSION).zip ortools_examples
