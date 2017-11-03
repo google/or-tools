@@ -78,7 +78,7 @@ class RcpspParser {
  public:
   RcpspParser();
 
-  util::RcpspProblem problem() const { return rcpsp_; }
+  util::rcpsp::RcpspProblem problem() const { return rcpsp_; }
 
   bool LoadFile(const std::string& file_name);
 
@@ -109,7 +109,7 @@ class RcpspParser {
   std::vector<std::vector<int>> temp_delays_;
   std::vector<int> recipe_sizes_;
   int unreads_;
-  util::RcpspProblem rcpsp_;
+  util::rcpsp::RcpspProblem rcpsp_;
 };
 
 }  // namespace operations_research
