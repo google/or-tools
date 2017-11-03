@@ -52,7 +52,7 @@ int64 VectorSum(const std::vector<int64>& v) {
 }
 
 void LoadAndSolve(const std::string& file_name) {
-  RcpspParser parser;
+  util::rcpsp::RcpspParser parser;
   CHECK(parser.LoadFile(file_name));
   LOG(INFO) << "Successfully read '" << file_name << "'.";
   util::rcpsp::RcpspProblem problem = parser.problem();

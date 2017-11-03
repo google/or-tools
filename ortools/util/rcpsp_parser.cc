@@ -20,6 +20,8 @@
 #include "ortools/util/filelineiter.h"
 
 namespace operations_research {
+namespace util {
+namespace rcpsp {
 
 using ::strings::delimiter::AnyOf;
 
@@ -109,7 +111,6 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
         for (int i = 0; i < atoi32(words[2]); ++i) {
           util::rcpsp::Resource* const res = rcpsp_.add_resources();
           res->set_max_capacity(-1);
-          res->set_min_capacity(-1);
           res->set_renewable(true);
           res->set_unit_cost(0);
         }
@@ -289,7 +290,6 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         for (int i = 0; i < num_renewable_resources; ++i) {
           util::rcpsp::Resource* const res = rcpsp_.add_resources();
           res->set_max_capacity(-1);
-          res->set_min_capacity(-1);
           res->set_renewable(true);
           res->set_unit_cost(0);
         }
@@ -588,4 +588,6 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
   }
 }
 
+}  // namespace rcpsp
+}  // namespace util
 }  // namespace operations_research

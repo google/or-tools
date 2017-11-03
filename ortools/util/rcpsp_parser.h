@@ -24,6 +24,8 @@
 #include "ortools/util/rcpsp.pb.h"
 
 namespace operations_research {
+namespace util {
+namespace rcpsp {
 
 // RCPSP parser.
 //
@@ -78,7 +80,9 @@ class RcpspParser {
  public:
   RcpspParser();
 
-  util::rcpsp::RcpspProblem problem() const { return rcpsp_; }
+  ::operations_research::util::rcpsp::RcpspProblem problem() const {
+    return rcpsp_;
+  }
 
   bool LoadFile(const std::string& file_name);
 
@@ -109,9 +113,11 @@ class RcpspParser {
   std::vector<std::vector<int>> temp_delays_;
   std::vector<int> recipe_sizes_;
   int unreads_;
-  util::rcpsp::RcpspProblem rcpsp_;
+  RcpspProblem rcpsp_;
 };
 
+}  // namespace rcpsp
+}  // namespace util
 }  // namespace operations_research
 
 #endif  // OR_TOOLS_UTIL_RCPSP_PARSER_H_
