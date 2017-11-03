@@ -26,18 +26,19 @@
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/precedences.h"
 #include "ortools/util/rcpsp_parser.h"
+#include "ortools/util/rcpsp.pb.h"
 
 DEFINE_string(input, "", "Input file.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");
 
 namespace operations_research {
 namespace sat {
-int ComputeNaiveHorizon(const RcpspParser& parser) {
+int ComputeNaiveHorizon(const util::RcpspProblem& problem) {
   int horizon = 0;
-  for (const RcpspParser::Task& task : parser.tasks()) {
+  for (const util::Task& task : problem.tasks()) {
     int max_duration = 0;
-    for (const RcpspParser::Recipe& recipe : task.recipes) {
-      max_duration = std::max(max_duration, recipe.duration);
+    for (const util::Recipe& recipe : task.recipes()) {
+      max_duration = std::max(max_duration, recipe.duration());
     }
     horizon += max_duration;
   }
@@ -54,24 +55,27 @@ void LoadAndSolve(const std::string& file_name) {
   RcpspParser parser;
   CHECK(parser.LoadFile(file_name));
   LOG(INFO) << "Successfully read '" << file_name << "'.";
+  util::RcpspProblem problem = parser.problem();
+  LOG(INFO) << problem.DebugString();
   const std::string problem_type =
-      parser.is_rcpsp_max()
-          ? (parser.is_resource_investment() ? "Resource investment/Max"
-                                             : "RCPSP/Max")
-          : (parser.is_resource_investment() ? "Resource investment" : "RCPSP");
-  LOG(INFO) << problem_type << " problem with " << parser.resources().size()
-            << " resources, and " << parser.tasks().size() << " tasks.";
+      problem.is_rcpsp_max()
+          ? (problem.is_resource_investment() ? "Resource investment/Max"
+                                              : "RCPSP/Max")
+          : (problem.is_resource_investment() ? "Resource investment"
+                                              : "RCPSP");
+  LOG(INFO) << problem_type << " problem with " << problem.resources_size()
+            << " resources, and " << problem.tasks_size() << " tasks.";
 
   Model model;
   model.Add(NewSatParameters(FLAGS_params));
 
-  const int num_tasks = parser.tasks().size();
-  const int num_resources = parser.resources().size();
+  const int num_tasks = problem.tasks().size();
+  const int num_resources = problem.resources().size();
   const int horizon =
-      parser.deadline() == -1
-          ? (parser.horizon() == -1 ? ComputeNaiveHorizon(parser)
-                                    : parser.horizon())
-          : parser.deadline();
+      problem.deadline() == -1
+          ? (problem.horizon() == -1 ? ComputeNaiveHorizon(problem)
+                                    : problem.horizon())
+          : problem.deadline();
   LOG(INFO) << "Horizon = " << horizon;
 
   std::vector<std::vector<IntervalVariable>> intervals_per_resources(
@@ -86,39 +90,37 @@ void LoadAndSolve(const std::string& file_name) {
   std::vector<std::vector<IntervalVariable>> alternatives_per_task(num_tasks);
 
   for (int t = 1; t < num_tasks - 1; ++t) {  // Ignore both sentinels.
-    const RcpspParser::Task& task = parser.tasks()[t];
+    const util::Task& task = problem.tasks(t);
 
-    if (task.recipes.size() == 1) {
+    if (task.recipes_size() == 1) {
       // Create the master interval.
-      const RcpspParser::Recipe& recipe = task.recipes.front();
-      CHECK_EQ(num_resources, recipe.demands_per_resource.size());
+      const util::Recipe& recipe = task.recipes(0);
       const IntervalVariable interval =
-          model.Add(NewInterval(0, horizon, recipe.duration));
+          model.Add(NewInterval(0, horizon, recipe.duration()));
       task_starts[t] = model.Get(StartVar(interval));
       task_ends[t] = model.Get(EndVar(interval));
       alternatives_per_task[t].push_back(interval);
 
       // Add intervals to the resources.
-      for (int r = 0; r < num_resources; ++r) {
-        const int demand = recipe.demands_per_resource[r];
-        if (demand == 0) continue;
+      for (int i = 0; i < recipe.demands_size(); ++i) {
+        const int demand = recipe.demands(i);
+        const int res = recipe.resources(i);
 
-        consumptions_per_resources[r].push_back(demand);
-        if (parser.resources()[r].renewable) {
-          intervals_per_resources[r].push_back(interval);
-          demands_per_resources[r].push_back(
+        consumptions_per_resources[res].push_back(demand);
+        if (problem.resources(res).renewable()) {
+          intervals_per_resources[res].push_back(interval);
+          demands_per_resources[res].push_back(
               model.Add(ConstantIntegerVariable(demand)));
         } else {
-          presences_per_resources[r].push_back(
+          presences_per_resources[res].push_back(
               model.Add(ConstantIntegerVariable(1)));
         }
       }
     } else {
       int min_size = kint32max;
       int max_size = 0;
-      for (const RcpspParser::Recipe& recipe : task.recipes) {
-        CHECK_EQ(num_resources, recipe.demands_per_resource.size());
-        const int duration = recipe.duration;
+      for (const util::Recipe& recipe : task.recipes()) {
+        const int duration = recipe.duration();
         min_size = std::min(min_size, duration);
         max_size = std::max(max_size, duration);
         const Literal is_present =
@@ -129,17 +131,17 @@ void LoadAndSolve(const std::string& file_name) {
         const IntegerVariable presence_var =
             model.Add(NewIntegerVariableFromLiteral(is_present));
 
-        for (int r = 0; r < num_resources; ++r) {
-          const int demand = recipe.demands_per_resource[r];
-          if (demand == 0) continue;
+        for (int i = 0; i < recipe.demands_size(); ++i) {
+          const int demand = recipe.demands(i);
+          const int res = recipe.resources(i);
 
-          consumptions_per_resources[r].push_back(demand);
-          if (parser.resources()[r].renewable) {
-            intervals_per_resources[r].push_back(interval);
-            demands_per_resources[r].push_back(
+          consumptions_per_resources[res].push_back(demand);
+          if (problem.resources(res).renewable()) {
+            intervals_per_resources[res].push_back(interval);
+            demands_per_resources[res].push_back(
                 model.Add(ConstantIntegerVariable(demand)));
           } else {
-            presences_per_resources[r].push_back(presence_var);
+            presences_per_resources[res].push_back(presence_var);
           }
         }
       }
@@ -158,29 +160,31 @@ void LoadAndSolve(const std::string& file_name) {
   const IntegerVariable makespan = model.Add(NewIntegerVariable(0, horizon));
 
   // Add precedences.
-  if (parser.is_rcpsp_max()) {
+  if (problem.is_rcpsp_max()) {
     for (int t = 1; t < num_tasks - 1; ++t) {
-      const RcpspParser::Task& task = parser.tasks()[t];
-      const int num_modes = task.recipes.size();
+      const util::Task& task = problem.tasks(t);
+      const int num_modes = task.recipes_size();
 
-      for (int s = 0; s < task.successors.size(); ++s) {
-        const int n = task.successors[s];
-        const std::vector<std::vector<int>>& delay_matrix = task.delays[s];
-        CHECK_EQ(delay_matrix.size(), num_modes);
-        const int num_other_modes = parser.tasks()[n].recipes.size();
+      for (int s = 0; s < task.successors_size(); ++s) {
+        const int n = task.successors(s);
+        const auto& delay_matrix = task.successor_delays(s);
+        CHECK_EQ(delay_matrix.recipe_delays_size(), num_modes);
+        const int num_other_modes = problem.tasks(n).recipes_size();
 
         for (int m1 = 0; m1 < num_modes; ++m1) {
           const IntegerVariable s1 =
               model.Get(StartVar(alternatives_per_task[t][m1]));
-          CHECK_EQ(num_other_modes, delay_matrix[m1].size());
+          CHECK_EQ(num_other_modes,
+                   delay_matrix.recipe_delays(m1).min_delays_size());
 
           if (n == num_tasks - 1) {
             CHECK_EQ(1, num_other_modes);
-            const int delay = delay_matrix[m1][0];
+            const int delay = delay_matrix.recipe_delays(m1).min_delays(0);
             model.Add(LowerOrEqualWithOffset(s1, makespan, delay));
           } else {
             for (int m2 = 0; m2 < num_other_modes; ++m2) {
-              const int delay = delay_matrix[m1][m2];
+              const int delay =
+                  delay_matrix.recipe_delays(m1).min_delays(m2);
               const IntegerVariable s2 =
                   model.Get(StartVar(alternatives_per_task[n][m2]));
               model.Add(LowerOrEqualWithOffset(s1, s2, delay));
@@ -191,7 +195,7 @@ void LoadAndSolve(const std::string& file_name) {
     }
   } else {
     for (int t = 1; t < num_tasks - 1; ++t) {
-      for (int n : parser.tasks()[t].successors) {
+      for (int n : problem.tasks(t).successors()) {
         if (n == num_tasks - 1) {
           // By construction, we do not need to add the precedence
           // constraint between all tasks and the makespan, just the one
@@ -209,21 +213,21 @@ void LoadAndSolve(const std::string& file_name) {
 
   // Create resources.
   for (int r = 0; r < num_resources; ++r) {
-    const RcpspParser::Resource& res = parser.resources()[r];
-    const int64 c = res.max_capacity == -1
+    const util::Resource& res = problem.resources(r);
+    const int64 c = res.max_capacity() == -1
                         ? VectorSum(consumptions_per_resources[r])
-                        : res.max_capacity;
+                        : res.max_capacity();
 
     const IntegerVariable capacity = model.Add(ConstantIntegerVariable(c));
     model.Add(Cumulative(intervals_per_resources[r], demands_per_resources[r],
                          capacity));
-    if (parser.is_resource_investment()) {
+    if (problem.is_resource_investment()) {
       const IntegerVariable capacity = model.Add(NewIntegerVariable(0, c));
       model.Add(Cumulative(intervals_per_resources[r], demands_per_resources[r],
                            capacity));
       capacities.push_back(capacity);
-      weights.push_back(res.unit_cost);
-    } else if (res.renewable) {
+      weights.push_back(res.unit_cost());
+    } else if (res.renewable()) {
       if (intervals_per_resources[r].empty()) continue;
       const IntegerVariable capacity = model.Add(ConstantIntegerVariable(c));
       model.Add(Cumulative(intervals_per_resources[r], demands_per_resources[r],
@@ -237,7 +241,7 @@ void LoadAndSolve(const std::string& file_name) {
 
   // Create objective var.
   IntegerVariable objective_var;
-  if (parser.is_resource_investment()) {
+  if (problem.is_resource_investment()) {
     objective_var = model.Add(NewWeightedSum(weights, capacities));
   } else {
     objective_var = makespan;

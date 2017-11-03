@@ -315,7 +315,8 @@ UTIL_LIB_OBJS = \
     $(OBJ_DIR)/util/sorted_interval_list.$O \
     $(OBJ_DIR)/util/stats.$O \
     $(OBJ_DIR)/util/time_limit.$O \
-    $(OBJ_DIR)/util/xml_helper.$O
+    $(OBJ_DIR)/util/xml_helper.$O \
+    $(OBJ_DIR)/util/rcpsp.pb.$O
 
 $(SRC_DIR)/ortools/util/affine_relation.h: \
     $(SRC_DIR)/ortools/base/iterator_adaptors.h \
@@ -504,6 +505,7 @@ $(OBJ_DIR)/util/rcpsp_parser.$O: \
     $(SRC_DIR)/ortools/util/rcpsp_parser.cc \
     $(SRC_DIR)/ortools/util/filelineiter.h \
     $(SRC_DIR)/ortools/util/rcpsp_parser.h \
+    $(GEN_DIR)/ortools/util/rcpsp.pb.h \
     $(SRC_DIR)/ortools/base/numbers.h \
     $(SRC_DIR)/ortools/base/split.h \
     $(SRC_DIR)/ortools/base/stringpiece_utils.h \
@@ -540,6 +542,14 @@ $(OBJ_DIR)/util/xml_helper.$O: \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/base/strutil.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sutil$Sxml_helper.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Sxml_helper.$O
+
+$(GEN_DIR)/ortools/util/rcpsp.pb.cc: $(SRC_DIR)/ortools/util/rcpsp.proto
+	$(PROTOBUF_DIR)/bin/protoc --proto_path=$(INC_DIR) --cpp_out=$(GEN_DIR) $(SRC_DIR)/ortools/util/rcpsp.proto
+
+$(GEN_DIR)/ortools/util/rcpsp.pb.h: $(GEN_DIR)/ortools/util/rcpsp.pb.cc
+
+$(OBJ_DIR)/util/rcpsp.pb.$O: $(GEN_DIR)/ortools/util/rcpsp.pb.cc
+	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/util/rcpsp.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sutil$Srcpsp.pb.$O
 
 LP_DATA_DEPS = \
     $(SRC_DIR)/ortools/lp_data/lp_data.h \
@@ -3575,4 +3585,3 @@ $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.h: $(GEN_DIR)/ortools/
 
 $(OBJ_DIR)/constraint_solver/solver_parameters.pb.$O: $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc
 	$(CCC) $(CFLAGS) -c $(GEN_DIR)/ortools/constraint_solver/solver_parameters.pb.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Ssolver_parameters.pb.$O
-

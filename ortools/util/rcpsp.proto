@@ -11,21 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// A Project Scheduling Library parser.
-// See: http://www.om-db.wi.tum.de/psplib/  # PSP-Lib homepage.
-
-#ifndef OR_TOOLS_UTIL_RCPSP_PARSER_H_
-#define OR_TOOLS_UTIL_RCPSP_PARSER_H_
-
-#include <string>
-#include <vector>
-
-#include "ortools/base/integral_types.h"
-#include "ortools/util/rcpsp.pb.h"
-
-namespace operations_research {
-
-// RCPSP parser.
+// RCPSP problem.
 //
 // The problem description is as follows:
 //
@@ -74,44 +60,84 @@ namespace operations_research {
 //   - resource investment problem with max delay (.sch):
 //     https://www.wiwi.tu-clausthal.de/de/abteilungen/produktion/forschung/
 //           schwerpunkte/project-generator/ripmax/
-class RcpspParser {
- public:
-  RcpspParser();
 
-  util::RcpspProblem problem() const { return rcpsp_; }
+syntax = "proto3";
 
-  bool LoadFile(const std::string& file_name);
+option java_package = "com.google.ortools.util";
+option java_multiple_files = true;
+option csharp_namespace = "Google.OrTools.Util";
 
- private:
-  enum LoadStatus {
-    NOT_STARTED,
-    HEADER_SECTION,
-    PROJECT_SECTION,
-    INFO_SECTION,
-    PRECEDENCE_SECTION,
-    REQUEST_SECTION,
-    RESOURCE_SECTION,
-    RESOURCE_MIN_SECTION,
-    PARSING_FINISHED,
-    ERROR_FOUND
-  };
+package operations_research.util;
 
-  void ProcessRcpspLine(const std::string& line);
-  void ProcessPattersonLine(const std::string& line);
-  void ProcessRcpspMaxLine(const std::string& line);
-  void ReportError(const std::string& line);
+message Resource {
+  // The max capacity of the cumulative.
+  int32 max_capacity = 1;
 
-  std::string basedata_;
-  int64 seed_;
-  LoadStatus load_status_;
-  int declared_tasks_;
-  int current_task_;
-  std::vector<std::vector<int>> temp_delays_;
-  std::vector<int> recipe_sizes_;
-  int unreads_;
-  util::RcpspProblem rcpsp_;
-};
+  // This field is used only in the consumer/producer case. It states the
+  // minimum capacity that must be valid at each time point.
+  int32 min_capacity = 2;
 
-}  // namespace operations_research
+  // Indicates if the resource is renewable, that is if a task demands
+  // d from this resource, then the available capacity decreases by d at the
+  // start of the task and increases by d at the end of the task.
+  bool renewable = 3;
 
-#endif  // OR_TOOLS_UTIL_RCPSP_PARSER_H_
+  // If non zero, then each unit of capacity will incur a cost of unit_cost.
+  int32 unit_cost = 4;
+}
+
+message Recipe {
+  // The duration of the task when this recipe is selected.
+  int32 duration = 1;
+
+  // In the general case, demand must be >= 0. In the consumer/producer case,
+  // it can be < 0. Note that in this case, the tasks always have a duration
+  // of zero. Thus the effect of the demand (increase or decrease of the
+  // current usage) happens at the start of the task.
+  repeated int32 demands = 2;
+
+  // This parallel list indicates which resource index (in the main problem)
+  // the above demand corresponds to.
+  repeated int32 resources = 3;
+}
+
+message PerRecipeDelays {
+  repeated int32 min_delays = 1;
+}
+
+message PerSuccessorDelays {
+  repeated PerRecipeDelays recipe_delays = 1;
+}
+
+message Task {
+  // The indices of the successors in the main problem.
+  repeated int32 successors = 1;
+
+  // The list of possible ways to execute the task.
+  repeated Recipe recipes = 2;
+
+  // If the current task has n successors and m modes then this is
+  // an n x m matrix where each entry at line i is a vector with the
+  // same length as the number of recipes for the task successor[i]. If
+  // mode m1 is chosen for the current task, and mode m2 is chosen
+  // for its successor i, we have:
+  //    start(current_task) + delay[i][m1][m2] <= start(successor_task).
+  repeated PerSuccessorDelays successor_delays = 3;
+}
+
+message RcpspProblem {
+  repeated Resource resources = 1;
+  repeated Task tasks = 2;
+  bool is_consumer_producer = 3;
+  bool is_resource_investment = 4;
+  bool is_rcpsp_max = 5;
+  int32 deadline = 6;
+  int32 horizon = 7;
+  int32 release_date = 8;
+  int32 tardiness_cost = 9;
+  int32 mpm_time = 10;
+  int64 seed = 11;
+  string basedata = 12;
+  int32 due_date = 13;
+  string name = 14;
+}
