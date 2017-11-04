@@ -269,23 +269,18 @@ class SteelMillSlabSolutionPrinter(cp_model.CpSolverSolutionCallback):
         print(line)
 
 
-class SteelMillSlabColumnSolutionPrinter(cp_model.CpSolverSolutionCallback):
+class SolutionPrinterWithObjective(cp_model.CpSolverSolutionCallback):
   """Print intermediate solutions."""
 
-  def __init__(self, orders, valid_slabs, selected):
-    self.__orders = orders
-    self.__valid_slabs = valid_slabs
-    self.__selected = selected
+  def __init__(self):
     self.__solution_count = 0
-    self.__all_valid_slabs = range(len(selected))
     self.__start_time = time.time()
 
   def NewSolution(self):
     current_time = time.time()
-    objective = sum(self.Value(self.__selected[i]) * self.__valid_slabs[i][-2]
-                    for i in self.__all_valid_slabs)
     print('Solution %i, time = %f s, objective = %i' %
-          (self.__solution_count, current_time - self.__start_time, objective))
+          (self.__solution_count, current_time - self.__start_time,
+           self.ObjectiveValue()))
     self.__solution_count += 1
 
 
@@ -668,8 +663,7 @@ def SteelMillSlabWithColumnGeneration(problem):
 
   ### Solve model.
   solver = cp_model.CpSolver()
-  solution_printer = SteelMillSlabColumnSolutionPrinter(
-    orders, valid_slabs, selected)
+  solution_printer = SolutionPrinterWithObjective()
   status = solver.SolveWithSolutionObserver(model, solution_printer)
 
   ### Output the solution.
