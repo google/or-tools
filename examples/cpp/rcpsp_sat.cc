@@ -56,7 +56,7 @@ void LoadAndSolve(const std::string& file_name) {
   CHECK(parser.LoadFile(file_name));
   LOG(INFO) << "Successfully read '" << file_name << "'.";
   util::rcpsp::RcpspProblem problem = parser.problem();
-  LOG(INFO) << problem.DebugString();
+
   const std::string problem_type =
       problem.is_rcpsp_max()
           ? (problem.is_resource_investment() ? "Resource investment/Max"

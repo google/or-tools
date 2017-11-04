@@ -287,7 +287,6 @@ class SteelMillSlabColumnSolutionPrinter(cp_model.CpSolverSolutionCallback):
     print('Solution %i, time = %f s, objective = %i' %
           (self.__solution_count, current_time - self.__start_time, objective))
     self.__solution_count += 1
-    self.__solution_count += 1
 
 
 def SteelMillSlab(problem, break_symmetries):
