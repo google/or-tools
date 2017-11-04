@@ -237,7 +237,6 @@ def SolveRcpsp(problem, proto_file):
   print('  - wall time : %f s' % solver.WallTime())
 
 
-
 def main(args):
   parser = pywraputil.RcpspParser()
   parser.LoadFile(args.input)

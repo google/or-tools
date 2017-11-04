@@ -2317,7 +2317,6 @@ CpSolverResponse SolveCpModelInternal(
          &external_solution_observer, objective_var](const Model& sat_model) {
           num_solutions++;
           FillSolutionInResponse(model_proto, m, &response);
-          external_solution_observer(response);
           int64 objective_value = 0;
           for (int i = 0; i < model_proto.objective().vars_size(); ++i) {
             objective_value += model_proto.objective().coeffs(i) *
@@ -2326,6 +2325,7 @@ CpSolverResponse SolveCpModelInternal(
           }
           response.set_objective_value(
               ScaleObjectiveValue(obj, objective_value));
+          external_solution_observer(response);
           VLOG(1) << "Solution #" << num_solutions
                   << " obj:" << response.objective_value()
                   << " num_bool:" << sat_model.Get<SatSolver>()->NumVariables();
