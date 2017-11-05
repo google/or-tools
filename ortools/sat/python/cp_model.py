@@ -965,7 +965,7 @@ class CpSolver(object):
     return self.__solution.status
 
   def SearchForAllSolutions(self, model, callback):
-    if not model.HasObjective():
+    if model.HasObjective():
       raise TypeError('Search for all solutions is only defined on '
                       'satisfiability problems')
     parameters = sat_parameters_pb2.SatParameters()
