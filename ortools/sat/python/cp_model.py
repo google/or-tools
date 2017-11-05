@@ -897,6 +897,9 @@ class CpModel(object):
     """Sets the objective of the model to maximize(obj)."""
     self._SetObjective(obj, minimize=False)
 
+  def HasObjective(self):
+    return self.__model.objective != None
+
   def _AssertIsBooleanVariable(self, x):
     if isinstance(x, IntVar):
       var = self.__model.variables[x.Index()]
@@ -961,7 +964,10 @@ class CpSolver(object):
             model.ModelProto(), parameters, callback))
     return self.__solution.status
 
-  def SearchForAllSolutions(self, model, callback):
+  def SearchForAllSatSolutions(self, model, callback):
+    if not model.HasObjective():
+      raise TypeError('Search for all solutions is only defined on '
+                      'satisfiability problems')
     parameters = sat_parameters_pb2.SatParameters()
     parameters.enumerate_all_solutions = True
     parameters.cp_model_presolve = False
