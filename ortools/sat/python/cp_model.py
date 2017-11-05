@@ -956,6 +956,13 @@ class CpSolver(object):
 
   def SolveWithSolutionObserver(self, model, callback):
     parameters = sat_parameters_pb2.SatParameters()
+    self.__solution = (
+        pywrapsat.SatHelper.SolveWithParametersAndSolutionObserver(
+            model.ModelProto(), parameters, callback))
+    return self.__solution.status
+
+  def SearchForAllSolutions(self, model, callback):
+    parameters = sat_parameters_pb2.SatParameters()
     parameters.enumerate_all_solutions = True
     parameters.cp_model_presolve = False
     self.__solution = (

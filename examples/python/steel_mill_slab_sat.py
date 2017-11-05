@@ -14,6 +14,9 @@ parser.add_argument('--break_symmetries', default = True, type = bool,
 parser.add_argument(
   '--solver', default = "mip_column",
   help =  'Method used to solve: sat, sat_table, sat_column, mip_column.')
+parser.add_argument('--output_proto', default = "",
+                    help = 'Output file to write the cp_model proto to.')
+
 
 
 def BuildProblem(problem_id):
@@ -284,7 +287,7 @@ class SolutionPrinterWithObjective(cp_model.CpSolverSolutionCallback):
     self.__solution_count += 1
 
 
-def SteelMillSlab(problem, break_symmetries):
+def SteelMillSlab(problem, break_symmetries, output_proto):
   """Solves the Steel Mill Slab Problem."""
   ### Load problem.
   (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
@@ -468,14 +471,22 @@ def CollectValidSlabs(capacities, colors, widths, loss_array, all_colors):
   loss = model.NewIntVar(0, max(loss_array), 'loss')
   model.AddElement(load, loss_array, loss)
 
+  print('Model created')
+
+  # Output model proto to file.
+  if output_proto:
+    f = open(output_proto, 'w')
+    f.write(str(model.ModelProto()))
+    f.close()
+
   ### Solve model and collect columns.
   solver = cp_model.CpSolver()
   collector = AllSolutionsCollector(assign + [loss, load])
-  solver.SolveWithSolutionObserver(model, collector)
+  solver.SearchForAllSolutions(model, collector)
   return collector.AllSolutions()
 
 
-def SteelMillSlabWithValidSlabs(problem, break_symmetries):
+def SteelMillSlabWithValidSlabs(problem, break_symmetries, output_proto):
   """Solves the Steel Mill Slab Problem."""
   ### Load problem.
   (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
@@ -589,9 +600,11 @@ def SteelMillSlabWithValidSlabs(problem, break_symmetries):
 
   print('Model created')
 
-  f = open('/tmp/steel.pbtxt', 'w')
-  f.write(str(model.ModelProto()))
-  f.close()
+  # Output model proto to file.
+  if output_proto:
+    f = open(output_proto, 'w')
+    f.write(str(model.ModelProto()))
+    f.close()
 
   ### Solve model.
   solver = cp_model.CpSolver()
@@ -606,7 +619,7 @@ def SteelMillSlabWithValidSlabs(problem, break_symmetries):
     print('No solution')
 
 
-def SteelMillSlabWithColumnGeneration(problem):
+def SteelMillSlabWithColumnGeneration(problem, output_proto):
   """Solves the Steel Mill Slab Problem."""
   ### Load problem.
   (num_slabs, capacities, num_colors, orders) = BuildProblem(problem)
@@ -660,6 +673,12 @@ def SteelMillSlabWithColumnGeneration(problem):
   model.Minimize(obj)
 
   print('Model created')
+
+  # Output model proto to file.
+  if output_proto:
+    f = open(output_proto, 'w')
+    f.write(str(model.ModelProto()))
+    f.close()
 
   ### Solve model.
   solver = cp_model.CpSolver()
@@ -741,11 +760,12 @@ def SteelMillSlabWithMipColumnGeneration(problem):
 
 def main(args):
   if args.solver == 'sat':
-    SteelMillSlab(args.problem, args.break_symmetries)
+    SteelMillSlab(args.problem, args.break_symmetries, args.output_proto)
   elif args.solver == 'sat_table':
-    SteelMillSlabWithValidSlabs(args.problem, args.break_symmetries)
+    SteelMillSlabWithValidSlabs(args.problem, args.break_symmetries,
+                                args.output_proto)
   elif args.solver == 'sat_column':
-    SteelMillSlabWithColumnGeneration(args.problem)
+    SteelMillSlabWithColumnGeneration(args.problem, args.output_proto)
   else:  # 'mip_column'
     SteelMillSlabWithMipColumnGeneration(args.problem)
 
