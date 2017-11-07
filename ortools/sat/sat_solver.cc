@@ -2408,8 +2408,6 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
   variable_to_process_.push_back(variable);
 
   // First we expand the reason for the given variable.
-  DCHECK(!trail_->Reason(variable).empty())
-      << trail_->Info(variable).DebugString();
   for (Literal literal : trail_->Reason(variable)) {
     const BooleanVariable var = literal.Variable();
     DCHECK_NE(var, variable);

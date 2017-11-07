@@ -24,12 +24,15 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/eulerian_path.h"
 #include "ortools/graph/minimum_spanning_tree.h"
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
 
 namespace operations_research {
+
+using ::util::CompleteGraph;
 
 template <typename CostType, typename ArcIndex = int64,
           typename NodeIndex = int32,
@@ -70,7 +73,7 @@ class ChristofidesPathSolver {
   MatchingAlgorithm matching_;
 
   // The complete graph on the nodes of the problem.
-  ::util::CompleteGraph<NodeIndex, ArcIndex> graph_;
+  CompleteGraph<NodeIndex, ArcIndex> graph_;
 
   // Function returning the cost between nodes of the problem.
   const CostFunction costs_;
@@ -222,14 +225,14 @@ void ChristofidesPathSolver<CostType, ArcIndex, NodeIndex,
   // TODO(user): Make this code available as an independent algorithm.
   const NodeIndex reduced_size = odd_degree_nodes.size();
   DCHECK_NE(0, reduced_size);
-  ::util::CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
+  CompleteGraph<NodeIndex, ArcIndex> reduced_graph(reduced_size);
   std::vector<ArcIndex> closure_arcs;
   switch (matching_) {
     #if defined(USE_CBC) || defined(USE_SCIP)
     case MatchingAlgorithm::MINIMUM_WEIGHT_MATCHING: {
       closure_arcs = ComputeMinimumWeightMatchingWithMIP(
           reduced_graph, [this, &reduced_graph,
-                          &odd_degree_nodes](::util::CompleteGraph<>::ArcIndex arc) {
+                          &odd_degree_nodes](CompleteGraph<>::ArcIndex arc) {
             return costs_(odd_degree_nodes[reduced_graph.Tail(arc)],
                           odd_degree_nodes[reduced_graph.Head(arc)]);
           });

@@ -82,7 +82,8 @@ struct VariableUsage {
   const std::vector<int> booleans;
 };
 
-VariableUsage ComputeVariableUsage(const CpModelProto& model_proto) {
+VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
+                                   bool view_all_booleans_as_integers = false) {
   // Since an interval is a constraint by itself, this will just list all
   // the interval constraint in order.
   std::vector<int> used_intervals;
@@ -126,14 +127,18 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto) {
   for (const int var : references.variables) {
     used_integers.push_back(PositiveRef(var));
   }
-  STLSortAndRemoveDuplicates(&used_integers);
 
   std::vector<int> used_booleans;
   for (const int lit : references.literals) {
     used_booleans.push_back(PositiveRef(lit));
+    if (view_all_booleans_as_integers) {
+      used_integers.push_back(PositiveRef(lit));
+    }
   }
-  STLSortAndRemoveDuplicates(&used_booleans);
 
+  STLSortAndRemoveDuplicates(&used_intervals);
+  STLSortAndRemoveDuplicates(&used_integers);
+  STLSortAndRemoveDuplicates(&used_booleans);
   return VariableUsage{used_integers, used_intervals, used_booleans};
 }
 
@@ -1206,6 +1211,7 @@ void LoadAutomataConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
 
   const int num_transitions = ct.automata().transition_tail_size();
   std::vector<std::vector<int64>> transitions;
+  transitions.reserve(num_transitions);
   for (int i = 0; i < num_transitions; ++i) {
     transitions.push_back({ct.automata().transition_tail(i),
                            ct.automata().transition_label(i),
@@ -1408,6 +1414,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   StrAppend(&result, "#Integers: ", usage.integers.size(), "\n");
 
   std::vector<std::string> constraints;
+  constraints.reserve(num_constraints_by_type.size());
   for (const auto entry : num_constraints_by_type) {
     constraints.push_back(
         StrCat("#", ConstraintCaseName(entry.first), ": ", entry.second,
@@ -1854,8 +1861,15 @@ void TryToAddCutGenerators(const CpModelProto& model_proto,
       num_nodes = std::max(num_nodes, 1 + ct.routes().tails(i));
       num_nodes = std::max(num_nodes, 1 + ct.routes().heads(i));
     }
-    generator.cut_generator =
-        CreateStronglyConnectedGraphCutGenerator(num_nodes, tails, heads, vars);
+    if (ct.routes().demands().empty() || ct.routes().capacity() == 0) {
+      generator.cut_generator = CreateStronglyConnectedGraphCutGenerator(
+          num_nodes, tails, heads, vars);
+    } else {
+      const std::vector<int64> demands(ct.routes().demands().begin(),
+                                       ct.routes().demands().end());
+      generator.cut_generator = CreateCVRPCutGenerator(
+          num_nodes, tails, heads, vars, demands, ct.routes().capacity());
+    }
     cut_generators->push_back(std::move(generator));
   }
 }
@@ -2144,12 +2158,16 @@ CpSolverResponse SolveCpModelInternal(
   // We will add them all at once after model_proto is loaded.
   model->GetOrCreate<IntegerEncoder>()->DisableImplicationBetweenLiteral();
 
-  // Instantiate all the needed variables.
-  const VariableUsage usage = ComputeVariableUsage(model_proto);
-  ModelWithMapping m(model_proto, usage, model);
-
   const SatParameters& parameters =
       model->GetOrCreate<SatSolver>()->parameters();
+
+  // Instantiate all the needed variables. Note that if we have a fixed search
+  // with no search strategy, then we instantiate all the Booleans as integers.
+  const VariableUsage usage = ComputeVariableUsage(
+      model_proto,
+      /*view_all_booleans_as_integers=*/parameters.use_fixed_search() &&
+          model_proto.search_strategy().empty());
+  ModelWithMapping m(model_proto, usage, model);
 
   // Force some variables to be fully encoded.
   FullEncodingFixedPointComputer fixpoint(&m);

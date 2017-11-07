@@ -211,6 +211,17 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
     int num_nodes, const std::vector<int>& tails, const std::vector<int>& heads,
     const std::vector<IntegerVariable>& vars);
 
+// Almost the same as CreateStronglyConnectedGraphCutGenerator() but for each
+// components, computes the demand needed to serves it, and depending on whether
+// it contains the depot (node zero) or not, compute the minimum number of
+// vehicle that needs to cross the component border.
+CutGenerator CreateCVRPCutGenerator(int num_nodes,
+                                    const std::vector<int>& tails,
+                                    const std::vector<int>& heads,
+                                    const std::vector<IntegerVariable>& vars,
+                                    const std::vector<int64>& demands,
+                                    int64 capacity);
+
 // Returns a LiteralIndex guided by the underlying LP constraints.
 // This looks at all unassigned 0-1 variables, takes the one with
 // a support value closest to 0.5, and tries to assign it to 1.

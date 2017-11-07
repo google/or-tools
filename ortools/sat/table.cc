@@ -157,8 +157,9 @@ std::function<void(Model*)> TableConstraint(
     // new BooleanVariable corresponding to this line since we can use the one
     // corresponding to this value in that column.
     std::vector<Literal> tuple_literals;
+    tuple_literals.reserve(new_tuples.size());
     for (int i = 0; i < new_tuples.size(); ++i) {
-      tuple_literals.push_back(Literal(model->Add(NewBooleanVariable()), true));
+      tuple_literals.emplace_back(model->Add(NewBooleanVariable()), true);
     }
 
     // Fully encode the variables using all the values appearing in the tuples.

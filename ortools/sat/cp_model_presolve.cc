@@ -1708,6 +1708,9 @@ void PresolveCpModel(const CpModelProto& initial_model,
   // Run SAT specific presolve on the pure-SAT part of the problem.
   // Note that because this can only remove/fix variable not used in the other
   // part of the problem, there is no need to redo more presolve afterwards.
+  //
+  // TODO(user): expose the parameters here so we can use
+  // cp_model_use_sat_presolve().
   PresolvePureSatPart(&context);
 
   if (context.is_unsat) {

@@ -14,33 +14,15 @@
 // This .i file exposes the sat cp_model API.
 
 %include "ortools/base/base.i"
-//%include "net/proto/swig/protofunc.i"
 %include "ortools/util/python/proto.i"
+
+// std::function utilities.
+%include "ortools/util/python/functions.i"
 
 %{
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/swig_helper.h"
-
-// A copyable, ref-counted python pointer.
-// capture.
-class SharedPyPtr {
- public:
-  explicit SharedPyPtr(PyObject* obj) : obj_(obj) { Py_INCREF(obj_); }
-  SharedPyPtr(const SharedPyPtr& other) : obj_(other.obj_) { Py_INCREF(obj_); }
-
-  ~SharedPyPtr() { Py_DECREF(obj_); }
-
-  PyObject* get() const { return obj_; }
-
- private:
-  // We do not follow the rule of three as we only want to copy construct.
-  SharedPyPtr& operator=(const SharedPyPtr&);
-
-  PyObject* const obj_;
-};
-
-
 %}
 
 %pythoncode {
@@ -121,3 +103,4 @@ void CallSolutionCallback(PyObject* cb,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
+

@@ -292,7 +292,7 @@ template <typename CostFunction>
 void AddArcsFromMinimumSpanningTree(int number_of_nodes,
                                     const CostFunction& cost,
                                     std::set<std::pair<int, int>>* arcs) {
-  CompleteGraph<int, int> graph(number_of_nodes);
+  util::CompleteGraph<int, int> graph(number_of_nodes);
   const std::vector<int> mst =
       BuildPrimMinimumSpanningTree(graph, [&cost, &graph](int arc) {
         return cost(graph.Tail(arc), graph.Head(arc));
@@ -386,7 +386,7 @@ double ComputeOneTreeLowerBoundWithAlgorithm(int number_of_nodes,
   // minimum spanning tree; this will add arcs which are likely to be "good"
   // 1-tree arcs.
   AddArcsFromMinimumSpanningTree(number_of_nodes - 1, cost, &nearest);
-  ListGraph<int, int> graph(number_of_nodes - 1, nearest.size());
+  util::ListGraph<int, int> graph(number_of_nodes - 1, nearest.size());
   for (const auto& arc : nearest) {
     graph.AddArc(arc.first, arc.second);
   }
@@ -417,7 +417,7 @@ double ComputeOneTreeLowerBoundWithAlgorithm(int number_of_nodes,
   // Compute lower bound using the complete graph on the best weights. This is
   // necessary as the MSTs computed on nearest neighbors is not guaranteed to
   // lead to a lower bound.
-  CompleteGraph<int, int> complete_graph(number_of_nodes - 1);
+  util::CompleteGraph<int, int> complete_graph(number_of_nodes - 1);
   CostType one_tree_cost = 0;
   // TODO(user): We are not caching here since this would take O(n^2) memory;
   // however the Kruskal algorithm will expand all arcs also consuming O(n^2)

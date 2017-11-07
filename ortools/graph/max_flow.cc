@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "ortools/base/stringprintf.h"
+#include "ortools/graph/graph.h"
 #include "ortools/graph/graphs.h"
 
 namespace operations_research {

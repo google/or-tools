@@ -281,7 +281,12 @@ class MPSolver {
   // Returns the array of constraints handled by the MPSolver.
   // (They are listed in the order in which they were created.)
   const std::vector<MPConstraint*>& constraints() const { return constraints_; }
-  // Look up a constraint by name, and return NULL if it does not exist.
+
+  // Sets whether constraints should be indexed. Setting to false makes adding
+  // constraints faster and uses less memory.
+  void SetIndexConstraints(bool enabled);
+  // Look up a constraint by name, and return nullptr if it does not exist or if
+  // constraints are not indexed.
   MPConstraint* LookupConstraintOrNull(const std::string& constraint_name) const;
 
   // Creates a linear constraint with given bounds. Bounds can be
@@ -604,7 +609,7 @@ class MPSolver {
   // The vector of constraints in the problem.
   std::vector<MPConstraint*> constraints_;
   // A map from a constraint's name to its index in constraints_.
-  std::unordered_map<std::string, int> constraint_name_to_index_;
+  std::unique_ptr<std::unordered_map<std::string, int> > constraint_name_to_index_;
   // Whether constraints have been extracted to the underlying interface.
   std::vector<bool> constraint_is_extracted_;
 

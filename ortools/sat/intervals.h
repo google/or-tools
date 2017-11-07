@@ -487,6 +487,7 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
     // Propagate from the candidate bounds to the master interval ones.
     {
       std::vector<IntegerVariable> starts;
+      starts.reserve(members.size());
       for (const IntervalVariable member : members) {
         starts.push_back(intervals->StartVar(member));
       }
@@ -495,6 +496,7 @@ inline std::function<void(Model*)> IntervalWithAlternatives(
     }
     {
       std::vector<IntegerVariable> ends;
+      ends.reserve(members.size());
       for (const IntervalVariable member : members) {
         ends.push_back(intervals->EndVar(member));
       }

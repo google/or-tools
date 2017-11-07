@@ -22,9 +22,6 @@
 
 namespace operations_research {
 
-using ::google::protobuf::Descriptor;
-using ::google::protobuf::FieldDescriptor;
-using ::google::protobuf::Reflection;
 using ::google::protobuf::TextFormat;
 
 bool ReadFileToProto(string_view filename, google::protobuf::Message* proto) {

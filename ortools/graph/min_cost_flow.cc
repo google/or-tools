@@ -20,6 +20,7 @@
 
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/graph/graph.h"
 #include "ortools/base/mathutil.h"
 #include "ortools/graph/graphs.h"
 #include "ortools/graph/max_flow.h"
@@ -951,7 +952,6 @@ void GenericMinCostFlow<Graph, ArcFlowType, ArcScaledCostType>::Relabel(
     first_admissible_arc_.Set(node,
                               GetFirstOutgoingOrOppositeIncomingArc(node));
   }
-  return;
 }
 
 template <typename Graph, typename ArcFlowType, typename ArcScaledCostType>

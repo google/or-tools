@@ -11,30 +11,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This .i file exposes the data readers.
-
 %include "ortools/base/base.i"
 %include "ortools/util/python/proto.i"
 
 %{
-#include "ortools/util/rcpsp_parser.h"
-#include "ortools/util/rcpsp.pb.h"
+#include "ortools/data/rcpsp_parser.h"
+#include "ortools/data/rcpsp.pb.h"
 %}
 
-PY_PROTO_TYPEMAP(ortools.util.rcpsp_pb2,
+PY_PROTO_TYPEMAP(ortools.data.rcpsp_pb2,
                  RcpspProblem,
-                 ::operations_research::util::rcpsp::RcpspProblem);
+                 ::operations_research::data::rcpsp::RcpspProblem);
 
 %ignoreall
 
 %unignore operations_research;
-%unignore operations_research::util;
-%unignore operations_research::util::rcpsp;
-%unignore operations_research::util::rcpsp::RcpspParser;
-%unignore operations_research::util::rcpsp::RcpspParser::RcpspParser;
-%rename (Problem) operations_research::util::rcpsp::RcpspParser::problem;
-%unignore operations_research::util::rcpsp::RcpspParser::LoadFile;
+%unignore operations_research::data;
+%unignore operations_research::data::rcpsp;
+%unignore operations_research::data::rcpsp::RcpspParser;
+%unignore operations_research::data::rcpsp::RcpspParser::RcpspParser;
+%rename (Problem) operations_research::data::rcpsp::RcpspParser::problem;
+%unignore operations_research::data::rcpsp::RcpspParser::ParseFile;
 
-%include "ortools/util/rcpsp_parser.h"
+%include "ortools/data/rcpsp_parser.h"
 
 %unignoreall

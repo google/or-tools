@@ -362,6 +362,8 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
     const glop::ColIndex lp_var = mirror_lp_variables_[i];
     const double rc = simplex_.GetReducedCost(lp_var);
     const double value = simplex_.GetVariableValue(lp_var);
+
+    if (rc == 0.0) continue;
     const double lp_other_bound = value + lp_objective_delta / rc;
     const double cp_other_bound = lp_other_bound / scaler_.col_scale(lp_var);
 
@@ -385,6 +387,47 @@ void LinearProgrammingConstraint::ReducedCostStrengtheningDeductions(
     }
   }
 }
+
+namespace {
+
+// TODO(user): we could use a sparser algorithm, even if this do not seems to
+// matter for now.
+void AddIncomingAndOutgoingCutsIfNeeded(
+    const std::vector<int>& s, const std::vector<int>& tails,
+    const std::vector<int>& heads, const std::vector<IntegerVariable>& vars,
+    const std::vector<double>& lp_solution, int64 rhs_lower_bound,
+    std::vector<LinearConstraint>* cuts) {
+  LinearConstraint incoming;
+  LinearConstraint outgoing;
+  double sum_incoming = 0.0;
+  double sum_outgoing = 0.0;
+  incoming.lb = outgoing.lb = rhs_lower_bound;
+  incoming.ub = outgoing.ub = std::numeric_limits<double>::infinity();
+  const std::set<int> subset(s.begin(), s.end());
+  for (int i = 0; i < tails.size(); ++i) {
+    const bool out = ContainsKey(subset, tails[i]);
+    const bool in = ContainsKey(subset, heads[i]);
+    if (out && in) continue;
+    if (out) {
+      sum_outgoing += lp_solution[i];
+      outgoing.vars.push_back(vars[i]);
+      outgoing.coeffs.push_back(1.0);
+    }
+    if (in) {
+      sum_incoming += lp_solution[i];
+      incoming.vars.push_back(vars[i]);
+      incoming.coeffs.push_back(1.0);
+    }
+  }
+  if (sum_incoming < rhs_lower_bound - 1e-6) {
+    cuts->push_back(std::move(incoming));
+  }
+  if (sum_outgoing < rhs_lower_bound - 1e-6) {
+    cuts->push_back(std::move(outgoing));
+  }
+}
+
+}  // namespace
 
 // We use a basic algorithm to detect components that are not connected to the
 // rest of the graph in the LP solution, and add cuts to force some arcs to
@@ -418,33 +461,66 @@ CutGenerator CreateStronglyConnectedGraphCutGenerator(
             << " sccs:" << components.size();
     for (const std::vector<int>& component : components) {
       if (component.size() == 1) continue;
+      AddIncomingAndOutgoingCutsIfNeeded(component, tails, heads, vars,
+                                         lp_solution, /*rhs_lower_bound=*/1,
+                                         &cuts);
 
-      // TODO(user): we could use a sparser algorithm, even if this do not
-      // seems to matter for now.
-      LinearConstraint incoming;
-      LinearConstraint outgoing;
-      double sum_incoming = 0.0;
-      double sum_outgoing = 0.0;
-      incoming.lb = outgoing.lb = 1.0;
-      incoming.ub = outgoing.ub = std::numeric_limits<double>::infinity();
-      const std::set<int> component_as_set(component.begin(), component.end());
-      for (int i = 0; i < tails.size(); ++i) {
-        const bool out = ContainsKey(component_as_set, tails[i]);
-        const bool in = ContainsKey(component_as_set, heads[i]);
-        if (out && in) continue;
-        if (out) {
-          sum_outgoing += lp_solution[i];
-          outgoing.vars.push_back(vars[i]);
-          outgoing.coeffs.push_back(1.0);
-        }
-        if (in) {
-          sum_incoming += lp_solution[i];
-          incoming.vars.push_back(vars[i]);
-          incoming.coeffs.push_back(1.0);
-        }
+      // In this case, the cuts for each component are the same.
+      if (components.size() == 2) break;
+    }
+    return cuts;
+  };
+  return result;
+}
+
+CutGenerator CreateCVRPCutGenerator(int num_nodes,
+                                    const std::vector<int>& tails,
+                                    const std::vector<int>& heads,
+                                    const std::vector<IntegerVariable>& vars,
+                                    const std::vector<int64>& demands,
+                                    int64 capacity) {
+  CHECK_GT(capacity, 0);
+  int64 total_demands = 0;
+  for (const int64 demand : demands) total_demands += demand;
+
+  CutGenerator result;
+  result.vars = vars;
+  result.generate_cuts = [num_nodes, tails, heads, total_demands, demands,
+                          capacity,
+                          vars](const std::vector<double>& lp_solution) {
+    int num_arcs_in_lp_solution = 0;
+    std::vector<std::vector<int>> graph(num_nodes);
+    for (int i = 0; i < lp_solution.size(); ++i) {
+      if (lp_solution[i] > 1e-6) {
+        ++num_arcs_in_lp_solution;
+        graph[tails[i]].push_back(heads[i]);
       }
-      if (sum_incoming < 1.0 - 1e-6) cuts.push_back(std::move(incoming));
-      if (sum_outgoing < 1.0 - 1e-6) cuts.push_back(std::move(outgoing));
+    }
+    std::vector<LinearConstraint> cuts;
+    std::vector<std::vector<int>> components;
+    FindStronglyConnectedComponents(num_nodes, graph, &components);
+    if (components.size() == 1) return cuts;
+
+    VLOG(1) << "num_arcs_in_lp_solution:" << num_arcs_in_lp_solution
+            << " sccs:" << components.size();
+    for (const std::vector<int>& component : components) {
+      if (component.size() == 1) continue;
+
+      bool contain_depot = false;
+      int64 component_demand = 0;
+      for (const int node : component) {
+        if (node == 0) contain_depot = true;
+        component_demand += demands[node];
+      }
+      const int min_num_vehicles =
+          contain_depot
+              ? (total_demands - component_demand + capacity - 1) / capacity
+              : (component_demand + capacity - 1) / capacity;
+      CHECK_GE(min_num_vehicles, 1);
+
+      AddIncomingAndOutgoingCutsIfNeeded(
+          component, tails, heads, vars, lp_solution,
+          /*rhs_lower_bound=*/min_num_vehicles, &cuts);
 
       // In this case, the cuts for each component are the same.
       if (components.size() == 2) break;

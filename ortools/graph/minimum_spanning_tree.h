@@ -19,7 +19,6 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/graph/connectivity.h"
-#include "ortools/graph/graph.h"
 #include "ortools/util/vector_or_function.h"
 #include "ortools/base/adjustable_priority_queue-inl.h"
 #include "ortools/base/adjustable_priority_queue.h"

@@ -970,9 +970,10 @@ inline std::function<void(Model*)> CardinalityConstraint(
     int64 lower_bound, int64 upper_bound,
     const std::vector<Literal>& literals) {
   return [=](Model* model) {
-    std::vector<LiteralWithCoeff> cst(literals.size());
+    std::vector<LiteralWithCoeff> cst;
+    cst.reserve(literals.size());
     for (int i = 0; i < literals.size(); ++i) {
-      cst[i] = LiteralWithCoeff(literals[i], 1);
+      cst.emplace_back(literals[i], 1);
     }
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
         /*use_lower_bound=*/true, Coefficient(lower_bound),
@@ -984,8 +985,9 @@ inline std::function<void(Model*)> ExactlyOneConstraint(
     const std::vector<Literal>& literals) {
   return [=](Model* model) {
     std::vector<LiteralWithCoeff> cst;
+    cst.reserve(literals.size());
     for (const Literal l : literals) {
-      cst.push_back(LiteralWithCoeff(l, Coefficient(1)));
+      cst.emplace_back(l, Coefficient(1));
     }
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
         /*use_lower_bound=*/true, Coefficient(1),
@@ -997,8 +999,9 @@ inline std::function<void(Model*)> AtMostOneConstraint(
     const std::vector<Literal>& literals) {
   return [=](Model* model) {
     std::vector<LiteralWithCoeff> cst;
+    cst.reserve(literals.size());
     for (const Literal l : literals) {
-      cst.push_back(LiteralWithCoeff(l, Coefficient(1)));
+      cst.emplace_back(l, Coefficient(1));
     }
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
         /*use_lower_bound=*/false, Coefficient(0),
@@ -1010,8 +1013,9 @@ inline std::function<void(Model*)> ClauseConstraint(
     const std::vector<Literal>& literals) {
   return [=](Model* model) {
     std::vector<LiteralWithCoeff> cst;
+    cst.reserve(literals.size());
     for (const Literal l : literals) {
-      cst.push_back(LiteralWithCoeff(l, Coefficient(1)));
+      cst.emplace_back(l, Coefficient(1));
     }
     model->GetOrCreate<SatSolver>()->AddLinearConstraint(
         /*use_lower_bound=*/true, Coefficient(1),

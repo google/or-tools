@@ -25,8 +25,8 @@ import numbers
 from six import iteritems
 
 from ortools.sat import cp_model_pb2
-from ortools.sat import pywrapsat
 from ortools.sat import sat_parameters_pb2
+from ortools.sat import pywrapsat
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
@@ -297,12 +297,12 @@ class SumArray(IntegerExpression):
 class IntVar(IntegerExpression):
   """Represents a IntegerExpression containing only a single variable."""
 
-  def __init__(self, model, lb, ub, name, is_present_index=None):
+  def __init__(self, model, bounds, name, is_present_index=None):
     """See CpModel.NewIntVar and .NewOptionalIntVar below."""
     self.__model = model
     self.__index = len(model.variables)
     self.__var = model.variables.add()
-    self.__var.domain.extend([lb, ub])
+    self.__var.domain.extend(bounds)
     self.__var.name = name
     self.__negation = None
     if is_present_index is not None:
@@ -315,8 +315,7 @@ class IntVar(IntegerExpression):
     return self.__var.name
 
   def __repr__(self):
-    return '%s(%i..%i)' % (self.__var.name, self.__var.domain[0],
-                           self.__var.domain[1])
+    return '%s(%s)' % (self.__var.name, DisplayBounds(self.__var.domain))
 
   def Not(self):
     for bound in self.__var.domain:
@@ -456,14 +455,37 @@ class CpModel(object):
   # Integer variable.
 
   def NewIntVar(self, lb, ub, name):
-    return IntVar(self.__model, lb, ub, name)
+    """Creates an integer variable with domain [lb, ub]."""
+    return IntVar(self.__model, [lb, ub], name)
+
+  def NewEnumeratedIntVar(self, bounds, name):
+    """Creates an integer variable with an enumerated domain.
+
+    Args:
+        bounds: A flattened list of disjoint intervals.
+        name: The name of the variable.
+
+    Returns:
+        a variable whose domain is union[bounds[2*i]..bounds[2*i + 1]].
+
+    To create a variable with domain [1, 2, 3, 5, 7, 8], pass in the
+    array [1, 3, 5, 5, 7, 8].
+    """
+    return IntVar(self.__model, bounds, name)
 
   def NewOptionalIntVar(self, lb, ub, is_present, name):
+    """Creates an optional integer variable."""
     is_present_index = self.GetOrMakeBooleanIndex(is_present)
-    return IntVar(self.__model, lb, ub, name, is_present_index)
+    return IntVar(self.__model, [lb, ub], name, is_present_index)
+
+  def NewOptionalEnumeratedIntVar(self, bounds, is_present, name):
+    """Creates an optional enumerated integer variable."""
+    is_present_index = self.GetOrMakeBooleanIndex(is_present)
+    return IntVar(self.__model, bounds, name, is_present_index)
 
   def NewBoolVar(self, name):
-    return IntVar(self.__model, 0, 1, name)
+    """Creates a 0-1 variable with the given name."""
+    return IntVar(self.__model, [0, 1], name)
 
   # Integer constraints.
 
@@ -615,27 +637,26 @@ class CpModel(object):
         [self.GetOrMakeIndex(x) for x in inverse_variables])
     return ct
 
-  def AddMapDomain(self, var, bool_var_array):
-    """Creates var == i <=> bool_var_array[i] == true for all i."""
+  def AddMapDomain(self, var, bool_var_array, offset=0):
+    """Creates var == i + offset <=> bool_var_array[i] == true for all i."""
 
-    nb = len(bool_var_array)
-    for i in range(nb):
-      b_index = bool_var_array[i].Index()
+    for i, bool_var in enumerate(bool_var_array):
+      b_index = bool_var.Index()
       var_index = var.Index()
       model_ct = self.__model.constraints.add()
       model_ct.linear.vars.append(var_index)
       model_ct.linear.coeffs.append(1)
-      model_ct.linear.domain.extend([i, i])
+      model_ct.linear.domain.extend([offset + i, offset + i])
       model_ct.enforcement_literal.append(b_index)
 
       model_ct = self.__model.constraints.add()
       model_ct.linear.vars.append(var_index)
       model_ct.linear.coeffs.append(1)
       model_ct.enforcement_literal.append(-b_index - 1)
-      if i != 0:
-        model_ct.linear.domain.extend([0, i - 1])
-      if i != nb - 1:
-        model_ct.linear.domain.extend([i + 1, nb - 1])
+      if offset + i - 1 >= INT_MIN:
+        model_ct.linear.domain.extend([INT_MIN, offset + i - 1])
+      if offset + i + 1 <= INT_MAX:
+        model_ct.linear.domain.extend([offset + i + 1, INT_MAX])
 
   def AddImplication(self, a, b):
     """Adds a => b."""
@@ -898,7 +919,7 @@ class CpModel(object):
     self._SetObjective(obj, minimize=False)
 
   def HasObjective(self):
-    return self.__model.objective != None
+    return self.__model.HasField('objective')
 
   def _AssertIsBooleanVariable(self, x):
     if isinstance(x, IntVar):
@@ -909,10 +930,29 @@ class CpModel(object):
       raise TypeError('TypeError: ' + str(x) + ' is not a boolean variable')
 
 
+def EvaluateExpression(expression, solution):
+  """Evaluate an integer expression against a solution."""
+  value = 0
+  to_process = [(expression, 1)]
+  while to_process:
+    expr, coef = to_process.pop()
+    if isinstance(expr, ProductCst):
+      to_process.append((expr.Expression(), coef * expr.Coefficient()))
+    elif isinstance(expr, SumArray):
+      for e in expr.Array():
+        to_process.append((e, coef))
+      value += expr.Constant() * coef
+    elif isinstance(expr, IntVar):
+      value += coef * solution.solution[expr.Index()]
+    elif isinstance(expr, NotBooleanVariable):
+      raise TypeError('Cannot interpret literals in a integer expression.')
+  return value
+
+
 class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
   """Nicer solution callback that uses the CpSolver class."""
 
-  def __init__(self, solver):
+  def __init__(self):
     self.__current_solution = None
 
   def Wrap(self, solution_proto):
@@ -923,23 +963,10 @@ class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
     """Returns the value of an integer expression."""
     if not self.__current_solution:
       raise RuntimeError('Solve() has not be called.')
-    value = 0
-    to_process = [(expression, 1)]
-    while to_process:
-      expr, coef = to_process.pop()
-      if isinstance(expr, ProductCst):
-        to_process.append((expr.Expression(), coef * expr.Coefficient()))
-      elif isinstance(expr, SumArray):
-        for e in expr.Array():
-          to_process.append((e, coef))
-        value += expr.Constant() * coef
-      elif isinstance(expr, IntVar):
-        value += coef * self.__current_solution.solution[expr.Index()]
-      elif isinstance(expr, NotBooleanVariable):
-        raise TypeError('Cannot interpret literals in a integer expression.')
-    return value
+    return EvaluateExpression(expression, self.__current_solution)
 
   def ObjectiveValue(self):
+    """Returns the value of the objective."""
     return self.__current_solution.objective_value
 
   def NewSolution(self):
@@ -954,10 +981,12 @@ class CpSolver(object):
     self.__solution = None
 
   def Solve(self, model):
+    """Solves the given model and returns the solve status."""
     self.__solution = pywrapsat.SatHelper.Solve(model.ModelProto())
     return self.__solution.status
 
   def SolveWithSolutionObserver(self, model, callback):
+    """Solves a problem and pass each solution found to the callback."""
     parameters = sat_parameters_pb2.SatParameters()
     self.__solution = (
         pywrapsat.SatHelper.SolveWithParametersAndSolutionObserver(
@@ -965,6 +994,7 @@ class CpSolver(object):
     return self.__solution.status
 
   def SearchForAllSolutions(self, model, callback):
+    """Search for all solutions of a satisfiability problem."""
     if model.HasObjective():
       raise TypeError('Search for all solutions is only defined on '
                       'satisfiability problems')
@@ -980,23 +1010,10 @@ class CpSolver(object):
     """Returns the value of an integer expression."""
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
-    value = 0
-    to_process = [(expression, 1)]
-    while to_process:
-      expr, coef = to_process.pop()
-      if isinstance(expr, ProductCst):
-        to_process.append((expr.Expression(), coef * expr.Coefficient()))
-      elif isinstance(expr, SumArray):
-        for e in expr.Array():
-          to_process.append((e, coef))
-        value += expr.Constant() * coef
-      elif isinstance(expr, IntVar):
-        value += coef * self.__solution.solution[expr.Index()]
-      elif isinstance(expr, NotBooleanVariable):
-        raise TypeError('Cannot interpret literals in a integer expression.')
-    return value
+    return EvaluateExpression(expression, self.__solution)
 
   def ObjectiveValue(self):
+    """Returns the objective value found after solve."""
     return self.__solution.objective_value
 
   def StatusName(self, status):

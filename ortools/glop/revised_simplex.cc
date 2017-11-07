@@ -78,7 +78,7 @@ RevisedSimplex::RevisedSimplex()
     : problem_status_(ProblemStatus::INIT),
       num_rows_(0),
       num_cols_(0),
-      first_slack_col_(kInvalidCol),
+      first_slack_col_(0),
       objective_(),
       lower_bound_(),
       upper_bound_(),

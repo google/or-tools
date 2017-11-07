@@ -26,9 +26,9 @@
 // Both source and end tasks have a zero duration, and no resource consumption.
 //
 // In case the problem is of type RCPSP/Max. The data contains an additional
-// array of delays per task. This flattened array contains the following
-// information for task i with mode mi and successor j with mode mj, then
-// start(i) + delay[i, mi, j, mj] <= start(j). This subsumes the normal
+// 3D array of delays per task. This structure contains the following
+// information for task i with recipe ri and successor j with recipe rj, then
+// start(i) + delay(i, ri, j, rj) <= start(j). This subsumes the normal
 // successor predecence of the non RCPSP/Max variation, i.e.:
 //   start(i) + duration(i, mi) <= start(j).
 //
@@ -63,11 +63,11 @@
 
 syntax = "proto3";
 
-option java_package = "com.google.ortools.util";
+option java_package = "com.google.ortools.data.rcpsp";
 option java_multiple_files = true;
-option csharp_namespace = "Google.OrTools.Util";
+option csharp_namespace = "Google.OrTools.Data.Rcpsp";
 
-package operations_research.util.rcpsp;
+package operations_research.data.rcpsp;
 
 message Resource {
   // The max capacity of the cumulative.
@@ -110,34 +110,45 @@ message PerSuccessorDelays {
 }
 
 message Task {
-  // The indices of the successors in the main problem.
+  // The indices of the successors tasks in the main problem.
   repeated int32 successors = 1;
 
   // The list of possible ways to execute the task.
   repeated Recipe recipes = 2;
 
-  // If the current task has n successors and m modes then this is
+  // If the current task has n successors and m recipes then this is
   // an n x m matrix where each entry at line i is a vector with the
   // same length as the number of recipes for the task successor[i]. If
-  // mode m1 is chosen for the current task, and mode m2 is chosen
+  // recipe m1 is chosen for the current task, and recipe m2 is chosen
   // for its successor i, we have:
   //    start(current_task) + delay[i][m1][m2] <= start(successor_task).
   repeated PerSuccessorDelays successor_delays = 3;
 }
 
 message RcpspProblem {
+  // Problem data.
   repeated Resource resources = 1;
   repeated Task tasks = 2;
+  // Problem type.
   bool is_consumer_producer = 3;
   bool is_resource_investment = 4;
   bool is_rcpsp_max = 5;
+  // If set, it defines a strict date, and each task must finish before this.
   int32 deadline = 6;
+  // Additional info stored in the source file.
+  // The horizon is a date where we are sure that all tasks can fit before it.
   int32 horizon = 7;
+  // The release date is defined in the rcpsp base format, but is not used.
   int32 release_date = 8;
+  // The tardiness cost is defined in the rcpsp base format, but is not used.
   int32 tardiness_cost = 9;
+  // The mpm_time is defined in the rcpsp base format, but is not used.
+  // It is defined as the minimum makespan in case of interruptible tasks.
   int32 mpm_time = 10;
+  // Data used by the problem generator.
   int64 seed = 11;
   string basedata = 12;
+  // The due date is defined in the rcpsp base format, but is not used.
   int32 due_date = 13;
   string name = 14;
 }

@@ -11,31 +11,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ortools/util/rcpsp_parser.h"
+#include "ortools/data/rcpsp_parser.h"
 
 #include "ortools/base/strtoint.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
 #include "ortools/base/stringpiece_utils.h"
+#include "ortools/data/rcpsp.pb.h"
 #include "ortools/util/filelineiter.h"
 
-namespace operations_research {
-namespace util {
-namespace rcpsp {
-
 using ::strings::delimiter::AnyOf;
+
+namespace operations_research {
+namespace data {
+namespace rcpsp {
 
 RcpspParser::RcpspParser()
     : seed_(-1),
       load_status_(NOT_STARTED),
-      declared_tasks_(-1),
+      num_declared_tasks_(-1),
       current_task_(-1),
       unreads_(0) {
   rcpsp_.set_deadline(-1);
   rcpsp_.set_horizon(-1);
 }
 
-bool RcpspParser::LoadFile(const std::string& file_name) {
+bool RcpspParser::ParseFile(const std::string& file_name) {
   if (load_status_ != NOT_STARTED) {
     return false;
   }
@@ -59,13 +60,18 @@ bool RcpspParser::LoadFile(const std::string& file_name) {
     }
   }
   // Count the extra start and end tasks.
-  return declared_tasks_ + 2 == rcpsp_.tasks_size() &&
+  return num_declared_tasks_ + 2 == rcpsp_.tasks_size() &&
          load_status_ == PARSING_FINISHED;
 }
 
 void RcpspParser::ReportError(const std::string& line) {
   LOG(ERROR) << "Error: status = " << load_status_ << ", line = " << line;
   load_status_ = ERROR_FOUND;
+}
+
+void RcpspParser::SetNumDeclaredTasks(int t) {
+  num_declared_tasks_ = t;
+  recipe_sizes_.resize(t + 2, 0);  // The data format adds 2 sentinels.
 }
 
 void RcpspParser::ProcessRcpspLine(const std::string& line) {
@@ -90,7 +96,7 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
         load_status_ = PROJECT_SECTION;
       } else if (words[0] == "jobs") {
         // Workaround for the mmlib files which has less headers.
-        declared_tasks_ = atoi32(words[4]) - 2;
+        SetNumDeclaredTasks(atoi32(words[4]) - 2);
         load_status_ = PROJECT_SECTION;
       } else {
         ReportError(line);
@@ -102,21 +108,21 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
         // Nothing to do.
       } else if (words[0] == "jobs") {
         // This declaration counts the 2 sentinels.
-        declared_tasks_ = atoi32(words[4]) - 2;
+        SetNumDeclaredTasks(atoi32(words[4]) - 2);
       } else if (words[0] == "horizon") {
         rcpsp_.set_horizon(atoi32(words[1]));
       } else if (words[0] == "RESOURCES") {
         // Nothing to do.
       } else if (words.size() > 1 && words[1] == "renewable") {
         for (int i = 0; i < atoi32(words[2]); ++i) {
-          util::rcpsp::Resource* const res = rcpsp_.add_resources();
+          Resource* const res = rcpsp_.add_resources();
           res->set_max_capacity(-1);
           res->set_renewable(true);
           res->set_unit_cost(0);
         }
       } else if (words.size() > 1 && words[1] == "nonrenewable") {
         for (int i = 0; i < atoi32(words[2]); ++i) {
-          util::rcpsp::Resource* const res = rcpsp_.add_resources();
+          Resource* const res = rcpsp_.add_resources();
           res->set_max_capacity(-1);
           res->set_min_capacity(-1);
           res->set_renewable(false);
@@ -138,7 +144,7 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
       if (words[0] == "pronr.") {
         // Nothing to do.
       } else if (words.size() == 6) {
-        declared_tasks_ = atoi32(words[1]);
+        SetNumDeclaredTasks(atoi32(words[1]));
         rcpsp_.set_release_date(atoi32(words[2]));
         rcpsp_.set_due_date(atoi32(words[3]));
         rcpsp_.set_tardiness_cost(atoi32(words[4]));
@@ -154,18 +160,15 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
       if (words[0] == "jobnr.") {
         // Nothing to do.
       } else if (words.size() >= 3) {
-        const int task_index = atoi32(words[0]);
-        CHECK_EQ(task_index, rcpsp_.tasks_size() + 1);
-        util::rcpsp::Task* const task = rcpsp_.add_tasks();
-        const int num_recipes = atoi32(words[1]);
-        for (int i = 0; i < num_recipes; ++i) {
-          task->add_recipes();
-        }
+        const int task_index = atoi32(words[0]) - 1;
+        CHECK_EQ(task_index, rcpsp_.tasks_size());
+        recipe_sizes_[task_index] = atoi32(words[1]);
         const int num_successors = atoi32(words[2]);
         if (words.size() != 3 + num_successors) {
           ReportError(line);
           break;
         }
+        Task* const task = rcpsp_.add_tasks();
         for (int i = 0; i < num_successors; ++i) {
           // The array of tasks is 0-based for us.
           task->add_successors(atoi32(words[3 + i]) - 1);
@@ -183,14 +186,14 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
       } else if (words.size() == 3 + rcpsp_.resources_size()) {
         // Start of a new task (index is 0-based for us).
         current_task_ = atoi32(words[0]) - 1;
-        const int current_mode = atoi32(words[1]) - 1;
-        CHECK_LT(current_mode, rcpsp_.tasks(current_task_).recipes_size());
-        if (current_mode != 0) {
+        const int current_recipe = atoi32(words[1]) - 1;
+        CHECK_EQ(current_recipe, rcpsp_.tasks(current_task_).recipes_size());
+        if (current_recipe != 0) {
           ReportError(line);
           break;
         }
-        util::rcpsp::Recipe* const recipe =
-            rcpsp_.mutable_tasks(current_task_)->mutable_recipes(current_mode);
+        Recipe* const recipe =
+            rcpsp_.mutable_tasks(current_task_)->add_recipes();
         recipe->set_duration(atoi32(words[2]));
         for (int i = 0; i < rcpsp_.resources_size(); ++i) {
           const int demand = atoi32(words[3 + i]);
@@ -200,11 +203,11 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
           }
         }
       } else if (words.size() == 2 + rcpsp_.resources_size()) {
-        // New mode for a current task.
-        const int current_mode = atoi32(words[0]) - 1;
-        CHECK_LT(current_mode, rcpsp_.tasks(current_task_).recipes_size());
-        util::rcpsp::Recipe* const recipe =
-            rcpsp_.mutable_tasks(current_task_)->mutable_recipes(current_mode);
+        // New recipe for a current task.
+        const int current_recipe = atoi32(words[0]) - 1;
+        CHECK_EQ(current_recipe, rcpsp_.tasks(current_task_).recipes_size());
+        Recipe* const recipe =
+            rcpsp_.mutable_tasks(current_task_)->add_recipes();
         recipe->set_duration(atoi32(words[1]));
         for (int i = 0; i < rcpsp_.resources_size(); ++i) {
           const int demand = atoi32(words[2 + i]);
@@ -270,15 +273,14 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         rcpsp_.set_is_resource_investment(true);
       }
 
-      declared_tasks_ = atoi32(words[0]);
-      temp_delays_.resize(declared_tasks_ + 2);
-      recipe_sizes_.resize(declared_tasks_ + 2, 0);
+      SetNumDeclaredTasks(atoi32(words[0]));
+      temp_delays_.resize(num_declared_tasks_ + 2);
 
       // Creates resources.
       if (rcpsp_.is_consumer_producer()) {
         const int num_nonrenewable_resources = atoi32(words[1]);
         for (int i = 0; i < num_nonrenewable_resources; ++i) {
-          util::rcpsp::Resource* const res = rcpsp_.add_resources();
+          Resource* const res = rcpsp_.add_resources();
           res->set_max_capacity(-1);
           res->set_min_capacity(-1);
           res->set_renewable(false);
@@ -288,13 +290,13 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         const int num_renewable_resources = atoi32(words[1]);
         const int num_nonrenewable_resources = atoi32(words[2]);
         for (int i = 0; i < num_renewable_resources; ++i) {
-          util::rcpsp::Resource* const res = rcpsp_.add_resources();
+          Resource* const res = rcpsp_.add_resources();
           res->set_max_capacity(-1);
           res->set_renewable(true);
           res->set_unit_cost(0);
         }
         for (int i = 0; i < num_nonrenewable_resources; ++i) {
-          util::rcpsp::Resource* const res = rcpsp_.add_resources();
+          Resource* const res = rcpsp_.add_resources();
           res->set_max_capacity(-1);
           res->set_min_capacity(-1);
           res->set_renewable(false);
@@ -329,11 +331,11 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         current_task_++;
       }
 
-      const int num_modes = atoi32(words[1]);
-      recipe_sizes_[task_id] = num_modes;
+      const int num_recipes = atoi32(words[1]);
+      recipe_sizes_[task_id] = num_recipes;
       const int num_successors = atoi32(words[2]);
 
-      util::rcpsp::Task* const task = rcpsp_.add_tasks();
+      Task* const task = rcpsp_.add_tasks();
 
       // Read successors.
       for (int i = 0; i < num_successors; ++i) {
@@ -345,22 +347,22 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         temp_delays_[task_id].push_back(atoi32(words[i]));
       }
 
-      if (task_id == declared_tasks_ + 1) {
+      if (task_id == num_declared_tasks_ + 1) {
         // Convert the flattened delays into structured delays (1 vector per
         // successor) in the task_size.
-        for (int t = 1; t <= declared_tasks_; ++t) {
-          const int num_modes = recipe_sizes_[t];
+        for (int t = 1; t <= num_declared_tasks_; ++t) {
+          const int num_recipes = recipe_sizes_[t];
           const int num_successors = rcpsp_.tasks(t).successors_size();
           int count = 0;
           for (int s = 0; s < num_successors; ++s) {
-            util::rcpsp::PerSuccessorDelays* const succ_delays =
+            PerSuccessorDelays* const succ_delays =
                 rcpsp_.mutable_tasks(t)->add_successor_delays();
-            for (int m1 = 0; m1 < num_modes; ++m1) {
-              util::rcpsp::PerRecipeDelays* const recipe_delays =
+            for (int r1 = 0; r1 < num_recipes; ++r1) {
+              PerRecipeDelays* const recipe_delays =
                   succ_delays->add_recipe_delays();
               const int other = rcpsp_.tasks(t).successors(s);
-              const int num_other_modes = recipe_sizes_[other];
-              for (int m2 = 0; m2 < num_other_modes; ++m2) {
+              const int num_other_recipes = recipe_sizes_[other];
+              for (int r2 = 0; r2 < num_other_recipes; ++r2) {
                 recipe_delays->add_min_delays(temp_delays_[t][count++]);
               }
             }
@@ -379,13 +381,14 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         // Start of a new task.
         current_task_ = atoi32(words[0]);
 
-        // 0 based indices for the mode.
-        const int current_mode = atoi32(words[1]) - 1;
-        if (current_mode != 0) {
+        // 0 based indices for the recipe.
+        const int current_recipe = atoi32(words[1]) - 1;
+        CHECK_EQ(current_recipe, rcpsp_.tasks(current_task_).recipes_size());
+        if (current_recipe != 0) {
           ReportError(line);
           break;
         }
-        util::rcpsp::Recipe* const recipe =
+        Recipe* const recipe =
             rcpsp_.mutable_tasks(current_task_)->add_recipes();
         recipe->set_duration(atoi32(words[2]));
         for (int i = 0; i < rcpsp_.resources_size(); ++i) {
@@ -400,13 +403,14 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         // Start of a new task.
         current_task_ = atoi32(words[0]);
 
-        // 0 based indices for the mode.
-        const int current_mode = atoi32(words[1]) - 1;
-        if (current_mode != 0) {
+        // 0 based indices for the recipe.
+        const int current_recipe = atoi32(words[1]) - 1;
+        CHECK_EQ(current_recipe, rcpsp_.tasks(current_task_).recipes_size());
+        if (current_recipe != 0) {
           ReportError(line);
           break;
         }
-        util::rcpsp::Recipe* const recipe =
+        Recipe* const recipe =
             rcpsp_.mutable_tasks(current_task_)->add_recipes();
         recipe->set_duration(0);
         for (int i = 0; i < rcpsp_.resources_size(); ++i) {
@@ -417,9 +421,10 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
           }
         }
       } else if (words.size() == 2 + rcpsp_.resources_size()) {
-        // New mode for a current task.
-        const int current_mode = atoi32(words[0]) - 1;
-        util::rcpsp::Recipe* const recipe =
+        // New recipe for a current task.
+        const int current_recipe = atoi32(words[0]) - 1;
+        CHECK_EQ(current_recipe, rcpsp_.tasks(current_task_).recipes_size());
+        Recipe* const recipe =
             rcpsp_.mutable_tasks(current_task_)->add_recipes();
         recipe->set_duration(atoi32(words[1]));
         for (int i = 0; i < rcpsp_.resources_size(); ++i) {
@@ -430,7 +435,7 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
           }
         }
       }
-      if (current_task_ == declared_tasks_ + 1) {
+      if (current_task_ == num_declared_tasks_ + 1) {
         load_status_ = RESOURCE_SECTION;
       }
       break;
@@ -490,15 +495,12 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
         ReportError(line);
         break;
       }
-      declared_tasks_ = atoi32(words[0]) - 2;  // Remove the 2 sentinels.
-      for (int i = 0; i < declared_tasks_ + 2; ++i) {  // Add back 2 sentinels.
-        rcpsp_.add_tasks();
-      }
+      SetNumDeclaredTasks(atoi32(words[0]) - 2);  // Remove the 2 sentinels.
 
       // Creates resources.
       const int num_renewable_resources = atoi32(words[1]);
       for (int i = 0; i < num_renewable_resources; ++i) {
-        util::rcpsp::Resource* const res = rcpsp_.add_resources();
+        Resource* const res = rcpsp_.add_resources();
         res->set_max_capacity(-1);
         res->set_min_capacity(-1);
         res->set_renewable(true);
@@ -520,8 +522,8 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
     case PRECEDENCE_SECTION: {
       if (unreads_ > 0) {
         for (int i = 0; i < words.size(); ++i) {
-          rcpsp_.mutable_tasks(current_task_)->add_successors(
-              atoi32(words[i]) - 1);
+          rcpsp_.mutable_tasks(current_task_)
+              ->add_successors(atoi32(words[i]) - 1);
           unreads_--;
           CHECK_GE(unreads_, 0);
         }
@@ -530,13 +532,12 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
           ReportError(line);
           break;
         }
-
-        util::rcpsp::Task* const task = rcpsp_.mutable_tasks(current_task_);
-        util::rcpsp::Recipe* const recipe = task->add_recipes();
+        CHECK_EQ(current_task_, rcpsp_.tasks_size());
+        Task* const task = rcpsp_.add_tasks();
+        Recipe* const recipe = task->add_recipes();
+        recipe->set_duration(atoi32(words[0]));
 
         const int num_resources = rcpsp_.resources_size();
-
-        recipe->set_duration(atoi32(words[0]));
         for (int i = 1; i <= num_resources; ++i) {
           const int demand = atoi32(words[i]);
           if (demand != 0) {
@@ -554,7 +555,7 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
         }
       }
 
-      if (unreads_ == 0 && ++current_task_ == declared_tasks_ + 2) {
+      if (unreads_ == 0 && ++current_task_ == num_declared_tasks_ + 2) {
         load_status_ = PARSING_FINISHED;
       }
       break;
@@ -589,5 +590,5 @@ void RcpspParser::ProcessPattersonLine(const std::string& line) {
 }
 
 }  // namespace rcpsp
-}  // namespace util
+}  // namespace data
 }  // namespace operations_research

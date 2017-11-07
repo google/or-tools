@@ -171,6 +171,12 @@ message RoutesConstraintProto {
   repeated int32 tails = 1;
   repeated int32 heads = 2;
   repeated int32 literals = 3;
+
+  // Experimental. The demands for each node, and the maximum capacity for each
+  // route. Note that this is currently only used for the LP relaxation and one
+  // need to add the corresponding constraint to enforce this outside of the LP.
+  repeated int32 demands = 4;
+  int64 capacity = 5;
 }
 
 // The values of the n-tuple formed by the given variables can only be one of

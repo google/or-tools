@@ -38,6 +38,7 @@ std::function<void(Model*)> Disjunctive(
     }
     if (is_all_different) {
       std::vector<IntegerVariable> starts;
+      starts.reserve(vars.size());
       for (const IntervalVariable var : vars) {
         starts.push_back(model->Get(StartVar(var)));
       }

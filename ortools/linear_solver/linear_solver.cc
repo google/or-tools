@@ -430,9 +430,9 @@ MPSolver::MPSolver(const std::string& name, OptimizationProblemType problem_type
       problem_type_(problem_type),
 #if !defined(_MSC_VER)
       variable_name_to_index_(1),
-      constraint_name_to_index_(1),
 #endif
       time_limit_(0.0) {
+  SetIndexConstraints(true);
   timer_.Restart();
   interface_.reset(BuildSolverInterface(this));
   if (FLAGS_linear_solver_enable_verbose_output) {
@@ -521,11 +521,25 @@ MPVariable* MPSolver::LookupVariableOrNull(const std::string& var_name) const {
   return variables_[it->second];
 }
 
+void MPSolver::SetIndexConstraints(bool enabled) {
+  auto* const new_map = enabled ?
+#ifdef _MSC_VER
+
+                                new std::unordered_map<std::string, int>()
+                                :
+#else   // _MSC_VER
+                                new std::unordered_map<std::string, int>(1)
+                                :
+#endif  // _MSC_VER
+                                nullptr;
+  constraint_name_to_index_.reset(new_map);
+}
+
 MPConstraint* MPSolver::LookupConstraintOrNull(const std::string& constraint_name)
     const {
   std::unordered_map<std::string, int>::const_iterator it =
-      constraint_name_to_index_.find(constraint_name);
-  if (it == constraint_name_to_index_.end()) return nullptr;
+      constraint_name_to_index_->find(constraint_name);
+  if (it == constraint_name_to_index_->end()) return nullptr;
   return constraints_[it->second];
 }
 
@@ -807,7 +821,9 @@ void MPSolver::Clear() {
   variable_name_to_index_.clear();
   variable_is_extracted_.clear();
   constraints_.clear();
-  constraint_name_to_index_.clear();
+  if (constraint_name_to_index_) {
+    constraint_name_to_index_->clear();
+  }
   constraint_is_extracted_.clear();
   interface_->Reset();
   solution_hint_.clear();
@@ -893,7 +909,9 @@ MPConstraint* MPSolver::MakeRowConstraint(double lb, double ub,
   const int constraint_index = NumConstraints();
   const std::string fixed_name =
       name.empty() ? StringPrintf("auto_c_%09d", constraint_index) : name;
-  InsertOrDie(&constraint_name_to_index_, fixed_name, constraint_index);
+  if (constraint_name_to_index_) {
+    InsertOrDie(constraint_name_to_index_.get(), fixed_name, constraint_index);
+  }
   MPConstraint* const constraint =
       new MPConstraint(constraint_index, lb, ub, fixed_name, interface_.get());
   constraints_.push_back(constraint);
@@ -1659,4 +1677,3 @@ int MPSolverParameters::GetIntegerParam(MPSolverParameters::IntegerParam param)
 
 
 }  // namespace operations_research
-

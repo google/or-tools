@@ -3,8 +3,8 @@ from __future__ import print_function
 import argparse
 from collections import defaultdict
 from ortools.sat.python import cp_model
-from ortools.util import rcpsp_pb2
-from ortools.util import pywraputil
+from ortools.data import rcpsp_pb2
+from ortools.data import pywraprcpsp
 import time
 
 parser = argparse.ArgumentParser()
@@ -238,8 +238,8 @@ def SolveRcpsp(problem, proto_file):
 
 
 def main(args):
-  parser = pywraputil.RcpspParser()
-  parser.LoadFile(args.input)
+  parser = pywraprcpsp.RcpspParser()
+  parser.ParseFile(args.input)
   problem = parser.Problem()
   SolveRcpsp(problem, args.output_proto)
 

@@ -28,6 +28,7 @@ MISSING_DIRECTORIES = \
 	objs/bop \
 	objs/com/google/ortools \
 	objs/constraint_solver \
+	objs/data \
 	objs/flatzinc \
 	objs/glop \
 	objs/graph \
@@ -47,6 +48,7 @@ MISSING_DIRECTORIES = \
 	ortools/gen/ortools/algorithms \
 	ortools/gen/ortools/bop \
 	ortools/gen/ortools/constraint_solver \
+	ortools/gen/ortools/data \
 	ortools/gen/ortools/flatzinc \
 	ortools/gen/ortools/glop \
 	ortools/gen/ortools/graph \
@@ -83,6 +85,9 @@ objs/com/google/ortools:
 
 objs/constraint_solver:
 	$(MKDIR_P) objs$Sconstraint_solver
+
+objs/data:
+	$(MKDIR_P) objs$Sdata
 
 objs/flatzinc:
 	$(MKDIR_P) objs$Sflatzinc
@@ -140,6 +145,9 @@ ortools/gen/ortools/bop:
 
 ortools/gen/ortools/constraint_solver:
 	$(MKDIR_P) ortools$Sgen$Sortools$Sconstraint_solver
+
+ortools/gen/ortools/data:
+	$(MKDIR_P) ortools$Sgen$Sortools$Sdata
 
 ortools/gen/ortools/flatzinc:
 	$(MKDIR_P) ortools$Sgen$Sortools$Sflatzinc

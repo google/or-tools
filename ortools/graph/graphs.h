@@ -18,12 +18,11 @@
 #define OR_TOOLS_GRAPH_GRAPHS_H_
 
 #include "ortools/graph/ebert_graph.h"
-#include "ortools/graph/graph.h"
 
 namespace operations_research {
 
 // Since StarGraph does not have exactly the same interface as the other
-// graphs, we define a correspondance there.
+// graphs, we define a correspondence there.
 template <typename Graph>
 struct Graphs {
   typedef typename Graph::ArcIndex ArcIndex;

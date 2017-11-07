@@ -146,6 +146,7 @@ std::vector<bool> SatPostsolver::PostsolveSolution(
   }
   Postsolve(&assignment_);
   std::vector<bool> postsolved_solution;
+  postsolved_solution.reserve(initial_num_variables_);
   for (int i = 0; i < initial_num_variables_; ++i) {
     postsolved_solution.push_back(
         assignment_.LiteralIsTrue(Literal(BooleanVariable(i), true)));

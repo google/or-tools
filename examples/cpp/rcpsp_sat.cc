@@ -25,19 +25,25 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/precedences.h"
-#include "ortools/util/rcpsp_parser.h"
-#include "ortools/util/rcpsp.pb.h"
+#include "ortools/data/rcpsp_parser.h"
+#include "ortools/data/rcpsp.pb.h"
 
 DEFINE_string(input, "", "Input file.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");
 
+using operations_research::data::rcpsp::RcpspParser;
+using operations_research::data::rcpsp::RcpspProblem;
+using operations_research::data::rcpsp::Task;
+using operations_research::data::rcpsp::Resource;
+using operations_research::data::rcpsp::Recipe;
+
 namespace operations_research {
 namespace sat {
-int ComputeNaiveHorizon(const util::rcpsp::RcpspProblem& problem) {
+int ComputeNaiveHorizon(const RcpspProblem& problem) {
   int horizon = 0;
-  for (const util::rcpsp::Task& task : problem.tasks()) {
+  for (const Task& task : problem.tasks()) {
     int max_duration = 0;
-    for (const util::rcpsp::Recipe& recipe : task.recipes()) {
+    for (const Recipe& recipe : task.recipes()) {
       max_duration = std::max(max_duration, recipe.duration());
     }
     horizon += max_duration;
@@ -52,10 +58,10 @@ int64 VectorSum(const std::vector<int64>& v) {
 }
 
 void LoadAndSolve(const std::string& file_name) {
-  util::rcpsp::RcpspParser parser;
-  CHECK(parser.LoadFile(file_name));
+  RcpspParser parser;
+  CHECK(parser.ParseFile(file_name));
   LOG(INFO) << "Successfully read '" << file_name << "'.";
-  util::rcpsp::RcpspProblem problem = parser.problem();
+  RcpspProblem problem = parser.problem();
 
   const std::string problem_type =
       problem.is_rcpsp_max()
@@ -90,11 +96,11 @@ void LoadAndSolve(const std::string& file_name) {
   std::vector<std::vector<IntervalVariable>> alternatives_per_task(num_tasks);
 
   for (int t = 1; t < num_tasks - 1; ++t) {  // Ignore both sentinels.
-    const util::rcpsp::Task& task = problem.tasks(t);
+    const Task& task = problem.tasks(t);
 
     if (task.recipes_size() == 1) {
       // Create the master interval.
-      const util::rcpsp::Recipe& recipe = task.recipes(0);
+      const Recipe& recipe = task.recipes(0);
       const IntervalVariable interval =
           model.Add(NewInterval(0, horizon, recipe.duration()));
       task_starts[t] = model.Get(StartVar(interval));
@@ -119,7 +125,7 @@ void LoadAndSolve(const std::string& file_name) {
     } else {
       int min_size = kint32max;
       int max_size = 0;
-      for (const util::rcpsp::Recipe& recipe : task.recipes()) {
+      for (const Recipe& recipe : task.recipes()) {
         const int duration = recipe.duration();
         min_size = std::min(min_size, duration);
         max_size = std::max(max_size, duration);
@@ -162,7 +168,7 @@ void LoadAndSolve(const std::string& file_name) {
   // Add precedences.
   if (problem.is_rcpsp_max()) {
     for (int t = 1; t < num_tasks - 1; ++t) {
-      const util::rcpsp::Task& task = problem.tasks(t);
+      const Task& task = problem.tasks(t);
       const int num_modes = task.recipes_size();
 
       for (int s = 0; s < task.successors_size(); ++s) {
@@ -213,7 +219,7 @@ void LoadAndSolve(const std::string& file_name) {
 
   // Create resources.
   for (int r = 0; r < num_resources; ++r) {
-    const util::rcpsp::Resource& res = problem.resources(r);
+    const Resource& res = problem.resources(r);
     const int64 c = res.max_capacity() == -1
                         ? VectorSum(consumptions_per_resources[r])
                         : res.max_capacity();
