@@ -31,7 +31,7 @@ namespace sat {
 std::string ValidateCpModel(const CpModelProto& model);
 
 // Verifies that the given variable assignment is a feasible solution of the
-// given model. The values vector should be in one to one correspondance with
+// given model. The values vector should be in one to one correspondence with
 // the model.variables() list of variables.
 bool SolutionIsFeasible(const CpModelProto& model,
                         const std::vector<int64>& variable_values);

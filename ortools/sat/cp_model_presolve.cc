@@ -23,12 +23,12 @@
 #include <set>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include <unordered_set>
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/hash.h"
@@ -1673,8 +1673,7 @@ void PresolveCpModel(const CpModelProto& initial_model,
     // not enter an infinite loop, we call each (var, constraint) pair at most
     // once.
     for (int v = 0; v < context.var_to_constraints.size(); ++v) {
-      const std::unordered_set<int>& constraints =
-          context.var_to_constraints[v];
+      const auto& constraints = context.var_to_constraints[v];
       if (constraints.size() != 1) continue;
       const int c = *constraints.begin();
       if (c < 0) continue;

@@ -140,6 +140,23 @@ message CumulativeConstraintProto {
   repeated int32 demands = 3;  // Same size as intervals.
 }
 
+// Maintain a reservoir level within bounds. The water level starts at 0, and at
+// any time >= 0, it must be within min_level, and max_level. Furthermore, this
+// constraints expect all times variables to be >= 0.
+// If the variable times[i] is assigned a value t, then the current level
+// changes by demands[i] (which is constant) at the time t.
+//
+// Note that level min can be > 0, or level max can be < 0. It just forces
+// some demands to be executed at time 0 to make sure that we are within those
+// bounds with the executed demands. Therefore, at any time t >= 0:
+//      sum(demands[i] if times[i] <= t) in [min_level, max_level]
+message ReservoirConstraintProto {
+  int64 min_level = 1;
+  int64 max_level = 2;
+  repeated int32 times = 3;
+  repeated int64 demands = 4;
+}
+
 // The "next" variable of a node i represents its successor in a graph. Any
 // value that fall outside [0, n = next_variables.size()) or is a self-loop
 // (next[i] == i) takes the special meaning of no-successor.
@@ -250,6 +267,7 @@ message ConstraintProto {
     TableConstraintProto table = 16;
     AutomataConstraintProto automata = 17;
     InverseConstraintProto inverse = 18;
+    ReservoirConstraintProto reservoir = 24;
 
     // Constraints on intervals.
     //

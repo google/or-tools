@@ -116,6 +116,8 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   bool IncrementalPropagate(const std::vector<int>& watch_indices) override;
   void RegisterWith(GenericLiteralWatcher* watcher);
 
+  std::string DimensionString() const { return lp_data_.GetDimensionString(); }
+
  private:
   // Generates a set of IntegerLiterals explaining why the best solution can not
   // be improved using reduced costs. This is used to generate explanations for

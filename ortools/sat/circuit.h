@@ -51,7 +51,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // being present when the given literal is true. The special values
   // kTrueLiteralIndex and kFalseLiteralIndex can be used for arcs that are
   // either always there or never there.
-  CircuitPropagator(const std::vector<std::vector<LiteralIndex>>& graph,
+  CircuitPropagator(std::vector<std::vector<LiteralIndex>> graph,
                     Options options, Trail* trail);
 
   void SetLevel(int level) final;
@@ -60,29 +60,42 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
+  // Helper to deal with kTrueLiteralIndex and kFalseLiteralIndex.
+  bool LiteralIndexIsTrue(LiteralIndex index) {
+    if (index == kTrueLiteralIndex) return true;
+    if (index == kFalseLiteralIndex) return false;
+    return assignment_.LiteralIsTrue(Literal(index));
+  }
+  bool LiteralIndexIsFalse(LiteralIndex index) {
+    if (index == kTrueLiteralIndex) return false;
+    if (index == kFalseLiteralIndex) return true;
+    return assignment_.LiteralIsFalse(Literal(index));
+  }
+
   // Updates the structures when the given arc is added to the paths.
   void AddArc(int tail, int head, LiteralIndex literal_index);
 
-  // Clears and fills trail_->MutableConflict() with the literals of the arcs
-  // that form a cycle containing the given node.
-  void FillConflictFromCircuitAt(int start);
+  // Clears and fills reason with the literals of the arcs that form a path from
+  // the given node. The path can be a cycle, but in this case it must end at
+  // start (not like a rho shape).
+  void FillReasonForPath(int start_node, std::vector<Literal>* reason) const;
 
   const int num_nodes_;
+  const std::vector<std::vector<LiteralIndex>> graph_;
   const Options options_;
   Trail* trail_;
+  const VariablesAssignment& assignment_;
 
-  // Internal representation of the graph given at construction. Const.
+  // Data used to interpret the watch indices passed to IncrementalPropagate().
   struct Arc {
     int tail;
     int head;
   };
-  std::vector<LiteralIndex> self_arcs_;
-
   std::vector<Literal> watch_index_to_literal_;
   std::vector<std::vector<Arc>> watch_index_to_arcs_;
 
   // Index in trail_ up to which we propagated all the assigned Literals.
-  int propagation_trail_index_;
+  int propagation_trail_index_ = 0;
 
   // Current partial chains of arc that are present.
   std::vector<int> next_;  // -1 if not assigned yet.
@@ -94,8 +107,14 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   std::vector<int> level_ends_;
   std::vector<Arc> added_arcs_;
 
-  // Temporary vector.
-  std::vector<bool> in_circuit_;
+  // Reversible list of node that must be in a cycle. A node must be in a cycle
+  // iff graph_[node][node] is false. This graph entry can be used as a reason.
+  int rev_must_be_in_cycle_size_ = 0;
+  std::vector<int> must_be_in_cycle_;
+
+  // Temporary vectors.
+  std::vector<bool> processed_;
+  std::vector<bool> in_current_path_;
 
   DISALLOW_COPY_AND_ASSIGN(CircuitPropagator);
 };

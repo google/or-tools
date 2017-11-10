@@ -20,7 +20,7 @@ namespace {
 
 template <typename IntList>
 void AddIndices(const IntList& indices, std::unordered_set<int>* output) {
-  for (const int index : indices) output->insert(index);
+  output->insert(indices.begin(), indices.end());
 }
 
 }  // namespace
@@ -77,6 +77,9 @@ void AddReferencesUsedByConstraint(const ConstraintProto& ct,
     case ConstraintProto::ConstraintCase::kInverse:
       AddIndices(ct.inverse().f_direct(), &output->variables);
       AddIndices(ct.inverse().f_inverse(), &output->variables);
+      break;
+    case ConstraintProto::ConstraintCase::kReservoir:
+      AddIndices(ct.reservoir().times(), &output->variables);
       break;
     case ConstraintProto::ConstraintCase::kTable:
       AddIndices(ct.table().vars(), &output->variables);
@@ -155,6 +158,8 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kInverse:
       break;
+    case ConstraintProto::ConstraintCase::kReservoir:
+      break;
     case ConstraintProto::ConstraintCase::kTable:
       break;
     case ConstraintProto::ConstraintCase::kAutomata:
@@ -221,6 +226,9 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       APPLY_TO_REPEATED_FIELD(inverse, f_direct);
       APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
       break;
+    case ConstraintProto::ConstraintCase::kReservoir:
+      APPLY_TO_REPEATED_FIELD(reservoir, times);
+      break;
     case ConstraintProto::ConstraintCase::kTable:
       APPLY_TO_REPEATED_FIELD(table, vars);
       break;
@@ -276,6 +284,8 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kInverse:
       break;
+    case ConstraintProto::ConstraintCase::kReservoir:
+      break;
     case ConstraintProto::ConstraintCase::kTable:
       break;
     case ConstraintProto::ConstraintCase::kAutomata:
@@ -330,6 +340,8 @@ std::string ConstraintCaseName(ConstraintProto::ConstraintCase constraint_case) 
       return "kRoutes";
     case ConstraintProto::ConstraintCase::kInverse:
       return "kInverse";
+    case ConstraintProto::ConstraintCase::kReservoir:
+      return "kReservoir";
     case ConstraintProto::ConstraintCase::kTable:
       return "kTable";
     case ConstraintProto::ConstraintCase::kAutomata:

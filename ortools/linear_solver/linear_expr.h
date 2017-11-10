@@ -152,7 +152,7 @@ LinearExpr operator*(double lhs, LinearExpr rhs);
 // MPSolver::AddRowConstraint(const LinearRange& range[, const std::string& name]);
 class LinearRange {
  public:
-  LinearRange();
+  LinearRange() : lower_bound_(0), upper_bound_(0) {}
   // The bounds of the linear range are updated so that they include the offset
   // from "linear_expr", i.e., we form the range:
   // lower_bound - offset <= linear_expr - offset <= upper_bound - offset.

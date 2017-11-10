@@ -415,16 +415,13 @@ bool AllDifferentConstraint::Propagate() {
           }
         }
 
-        const int index = trail_->Index();
         LiteralIndex li =
             VariableLiteralIndexOf(x, offset_value + min_all_values_);
         DCHECK_NE(li, kTrueLiteralIndex);
         DCHECK_NE(li, kFalseLiteralIndex);
 
-        const Literal deduction = Literal(li).Negated();
-        trail_->Enqueue(deduction, AssignmentType::kCachedReason);
-        *trail_->GetVectorToStoreReason(index) = *reason;
-        trail_->NotifyThatReasonIsCached(deduction.Variable());
+        *trail_->GetVectorToStoreReason() = *reason;
+        trail_->EnqueueWithStoredReason(Literal(li).Negated());
         return true;
       }
     }

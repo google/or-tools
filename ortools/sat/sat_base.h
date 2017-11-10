@@ -268,6 +268,15 @@ class Trail {
     Enqueue(true_literal, AssignmentType::kSameReasonAs);
   }
 
+  // Stores first the reason in GetVectorToStoreReason() before calling this.
+  void EnqueueWithStoredReason(Literal true_literal) {
+    Enqueue(true_literal, AssignmentType::kCachedReason);
+    const BooleanVariable var = true_literal.Variable();
+    reasons_[var] = reasons_repository_[info_[var].trail_index];
+    old_type_[var] = info_[var].type;
+    info_[var].type = AssignmentType::kCachedReason;
+  }
+
   // Returns the reason why this variable was assigned.
   gtl::Span<Literal> Reason(BooleanVariable var) const;
 
@@ -290,14 +299,10 @@ class Trail {
     return &reasons_repository_[trail_index];
   }
 
-  // After this is called, Reason(var) will return the content of the
-  // GetVectorToStoreReason(trail_index_of_var) and will not call the virtual
-  // Reason() function of the associated propagator.
-  void NotifyThatReasonIsCached(BooleanVariable var) const {
-    DCHECK(assignment_.VariableIsAssigned(var));
-    reasons_[var] = reasons_repository_[info_[var].trail_index];
-    old_type_[var] = info_[var].type;
-    info_[var].type = AssignmentType::kCachedReason;
+  // TODO(user): GetVectorToStoreReason() is always called with Index(), only
+  // keep this function instead.
+  std::vector<Literal>* GetVectorToStoreReason() const {
+    return GetVectorToStoreReason(Index());
   }
 
   // Dequeues the last assigned literal and returns it.

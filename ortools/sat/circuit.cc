@@ -14,8 +14,8 @@
 #include "ortools/sat/circuit.h"
 
 #include <algorithm>
-#include <unordered_map>
 
+#include <unordered_map>
 #include "ortools/base/map_util.h"
 #include "ortools/sat/sat_solver.h"
 
@@ -23,12 +23,12 @@ namespace operations_research {
 namespace sat {
 
 CircuitPropagator::CircuitPropagator(
-    const std::vector<std::vector<LiteralIndex>>& graph, Options options,
-    Trail* trail)
+    std::vector<std::vector<LiteralIndex>> graph, Options options, Trail* trail)
     : num_nodes_(graph.size()),
+      graph_(std::move(graph)),
       options_(options),
       trail_(trail),
-      propagation_trail_index_(0) {
+      assignment_(trail->Assignment()) {
   // TODO(user): add a way to properly handle trivially UNSAT cases.
   // For now we just check that they don't occur at construction.
   CHECK_GT(num_nodes_, 1)
@@ -36,18 +36,20 @@ CircuitPropagator::CircuitPropagator(
   next_.resize(num_nodes_, -1);
   prev_.resize(num_nodes_, -1);
   next_literal_.resize(num_nodes_);
-  self_arcs_.resize(num_nodes_);
+  must_be_in_cycle_.resize(num_nodes_);
   std::unordered_map<LiteralIndex, int> literal_to_watch_index;
-  const VariablesAssignment& assignment = trail->Assignment();
   for (int tail = 0; tail < num_nodes_; ++tail) {
-    self_arcs_[tail] = graph[tail][tail];
+    if (LiteralIndexIsFalse(graph_[tail][tail])) {
+      // For the multiple_subcircuit_through_zero case, must_be_in_cycle_ will
+      // be const and only contains zero.
+      if (tail == 0 || !options_.multiple_subcircuit_through_zero) {
+        must_be_in_cycle_[rev_must_be_in_cycle_size_++] = tail;
+      }
+    }
     for (int head = 0; head < num_nodes_; ++head) {
-      const LiteralIndex index = graph[tail][head];
-      // Note that we need to test for both "special" cases before we can
-      // call assignment.LiteralIsTrue() or LiteralIsFalse().
-      if (index == kFalseLiteralIndex) continue;
-      if (index == kTrueLiteralIndex ||
-          assignment.LiteralIsTrue(Literal(index))) {
+      LiteralIndex index = graph_[tail][head];
+      if (LiteralIndexIsFalse(index)) continue;
+      if (LiteralIndexIsTrue(index)) {
         CHECK_EQ(next_[tail], -1)
             << "Trivially UNSAT or duplicate arcs while adding " << tail
             << " -> " << head;
@@ -57,18 +59,30 @@ CircuitPropagator::CircuitPropagator(
         AddArc(tail, head, kNoLiteralIndex);
         continue;
       }
-      if (assignment.LiteralIsFalse(Literal(index))) continue;
 
-      int watch_index_ = FindWithDefault(literal_to_watch_index, index, -1);
-      if (watch_index_ == -1) {
-        watch_index_ = watch_index_to_literal_.size();
-        literal_to_watch_index[index] = watch_index_;
+      // Tricky: For self-arc, we watch instead when the arc become false.
+      if (tail == head) index = Literal(index).NegatedIndex();
+
+      int watch_index = FindWithDefault(literal_to_watch_index, index, -1);
+      if (watch_index == -1) {
+        watch_index = watch_index_to_literal_.size();
+        literal_to_watch_index[index] = watch_index;
         watch_index_to_literal_.push_back(Literal(index));
         watch_index_to_arcs_.push_back(std::vector<Arc>());
       }
-      watch_index_to_arcs_[watch_index_].push_back({tail, head});
+      watch_index_to_arcs_[watch_index].push_back({tail, head});
     }
   }
+}
+
+void CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
+  const int id = watcher->Register(this);
+  for (int w = 0; w < watch_index_to_literal_.size(); ++w) {
+    watcher->WatchLiteral(watch_index_to_literal_[w], id, w);
+  }
+  watcher->RegisterReversibleClass(id, this);
+  watcher->RegisterReversibleInt(id, &propagation_trail_index_);
+  watcher->RegisterReversibleInt(id, &rev_must_be_in_cycle_size_);
 }
 
 void CircuitPropagator::SetLevel(int level) {
@@ -90,20 +104,19 @@ void CircuitPropagator::SetLevel(int level) {
   level_ends_.resize(level);
 }
 
-void CircuitPropagator::FillConflictFromCircuitAt(int start) {
-  std::vector<Literal>* conflict = trail_->MutableConflict();
-  conflict->clear();
-  int node = start;
-  do {
-    CHECK_NE(node, -1);
+void CircuitPropagator::FillReasonForPath(int start_node,
+                                          std::vector<Literal>* reason) const {
+  CHECK_NE(start_node, -1);
+  reason->clear();
+  int node = start_node;
+  while (next_[node] != -1) {
     if (next_literal_[node] != kNoLiteralIndex) {
-      conflict->push_back(Literal(next_literal_[node]).Negated());
+      reason->push_back(Literal(next_literal_[node]).Negated());
     }
     node = next_[node];
-  } while (node != start);
+    if (node == start_node) break;
+  }
 }
-
-bool CircuitPropagator::Propagate() { return true; }
 
 // If multiple_subcircuit_through_zero is true, we never fill next_[0] and
 // prev_[0].
@@ -122,8 +135,14 @@ bool CircuitPropagator::IncrementalPropagate(
   for (const int w : watch_indices) {
     const Literal literal = watch_index_to_literal_[w];
     for (const Arc arc : watch_index_to_arcs_[w]) {
-      // Get rid of the trivial conflicts:
-      // - At most one incoming and one ougtoing arc for each nodes.
+      // Special case for self-arc.
+      if (arc.tail == arc.head) {
+        must_be_in_cycle_[rev_must_be_in_cycle_size_++] = arc.tail;
+        continue;
+      }
+
+      // Get rid of the trivial conflicts: At most one incoming and one outgoing
+      // arc for each nodes.
       if (next_[arc.tail] != -1) {
         std::vector<Literal>* conflict = trail_->MutableConflict();
         if (next_literal_[arc.tail] != kNoLiteralIndex) {
@@ -148,89 +167,133 @@ bool CircuitPropagator::IncrementalPropagate(
       // Add the arc.
       AddArc(arc.tail, arc.head, literal.Index());
       added_arcs_.push_back(arc);
+    }
+  }
+  return Propagate();
+}
 
-      // Circuit?
-      in_circuit_.assign(num_nodes_, false);
-      in_circuit_[arc.tail] = true;
-      int size = 1;
-      int node = arc.head;
-      while (node != arc.tail && node != -1) {
-        in_circuit_[node] = true;
-        node = next_[node];
-        size++;
+// This function assumes that next_, prev_, next_literal_ and must_be_in_cycle_
+// are all up to date.
+bool CircuitPropagator::Propagate() {
+  processed_.assign(num_nodes_, false);
+  for (int n = 0; n < num_nodes_; ++n) {
+    if (processed_[n]) continue;
+    if (next_[n] == n) continue;
+    if (next_[n] == -1 && prev_[n] == -1) continue;
+
+    // TODO(user): both this and the loop on must_be_in_cycle_ might take some
+    // time on large graph. Optimize if this become an issue.
+    in_current_path_.assign(num_nodes_, false);
+
+    // Find the start and end of the path containing node n. If this is a
+    // circuit, we will have start_node == end_node.
+    int start_node = n;
+    int end_node = n;
+    in_current_path_[n] = true;
+    processed_[n] = true;
+    while (next_[end_node] != -1) {
+      end_node = next_[end_node];
+      in_current_path_[end_node] = true;
+      processed_[end_node] = true;
+      if (end_node == n) break;
+    }
+    while (prev_[start_node] != -1) {
+      start_node = prev_[start_node];
+      in_current_path_[start_node] = true;
+      processed_[start_node] = true;
+      if (start_node == n) break;
+    }
+
+    // Check if we miss any node that must be in the circuit. Note that the ones
+    // for which graph_[i][i] is kFalseLiteralIndex are first. This is good as
+    // it will produce shorter reason. Otherwise we prefer the first that was
+    // assigned in the trail.
+    bool miss_some_nodes = false;
+    LiteralIndex extra_reason = kFalseLiteralIndex;
+    for (int i = 0; i < rev_must_be_in_cycle_size_; ++i) {
+      const int node = must_be_in_cycle_[i];
+      if (!in_current_path_[node]) {
+        miss_some_nodes = true;
+        extra_reason = graph_[node][node];
+        break;
       }
+    }
 
-      if (options_.multiple_subcircuit_through_zero) {
-        // If we reached zero, this is a valid path provided that we can
-        // reach the beginning of the path from zero. Note that we only check
-        // the basic case that the beginning of the path must have "open" arcs
-        // thanks to ExactlyOnePerRowAndPerColumn().
-        if (node == 0 || node != arc.tail) continue;
-
-        // We have a cycle not touching zero, this is a conflict.
-        FillConflictFromCircuitAt(arc.tail);
+    if (miss_some_nodes) {
+      // A circuit that miss a mandatory node is a conflict.
+      if (start_node == end_node) {
+        FillReasonForPath(start_node, trail_->MutableConflict());
+        if (extra_reason != kFalseLiteralIndex) {
+          trail_->MutableConflict()->push_back(Literal(extra_reason));
+        }
         return false;
       }
 
-      if (node != arc.tail) continue;
+      // We have an unclosed path. Propagate the fact that it cannot
+      // be closed into a cycle, i.e. not(end_node -> start_node).
+      if (start_node != end_node) {
+        const LiteralIndex literal_index = graph_[end_node][start_node];
+        if (LiteralIndexIsFalse(literal_index)) continue;
 
-      // We have one circuit.
-      if (size == num_nodes_) return true;
-      if (size == 1) continue;  // self-arc.
+        // We would have detected a cycle otherwise.
+        // TODO(user): This may actually fail in corner cases where the same
+        // literal is used for more than one arc and we propagate it here. Fix
+        // if this happen.
+        CHECK(!LiteralIndexIsTrue(literal_index));
 
-      // HACK: we can reuse the conflict vector even though we don't have a
-      // conflict.
-      FillConflictFromCircuitAt(arc.tail);
-      BooleanVariable variable_with_same_reason = kNoBooleanVariable;
-
-      // We can propagate all the other nodes to point to themselves.
-      // If this is not already the case, we have a conflict.
-      for (int node = 0; node < num_nodes_; ++node) {
-        if (in_circuit_[node] || next_[node] == node) continue;
-        if (next_[node] != -1) {
-          std::vector<Literal>* conflict = trail_->MutableConflict();
-          if (next_literal_[node] != kNoLiteralIndex) {
-            conflict->push_back(Literal(next_literal_[node]).Negated());
-          }
-          return false;
-        } else if (self_arcs_[node] == kFalseLiteralIndex) {
-          return false;
-        } else {
-          DCHECK_NE(self_arcs_[node], kTrueLiteralIndex);
-          const Literal literal(self_arcs_[node]);
-
-          // We may not have processed this literal yet.
-          if (trail_->Assignment().LiteralIsTrue(literal)) continue;
-          if (trail_->Assignment().LiteralIsFalse(literal)) {
-            std::vector<Literal>* conflict = trail_->MutableConflict();
-            conflict->push_back(literal);
-            return false;
-          }
-
-          // Propagate.
-          if (variable_with_same_reason == kNoBooleanVariable) {
-            variable_with_same_reason = literal.Variable();
-            const int index = trail_->Index();
-            trail_->Enqueue(literal, AssignmentType::kCachedReason);
-            *trail_->GetVectorToStoreReason(index) = *trail_->MutableConflict();
-            trail_->NotifyThatReasonIsCached(literal.Variable());
-          } else {
-            trail_->EnqueueWithSameReasonAs(literal, variable_with_same_reason);
-          }
+        // Propagate.
+        std::vector<Literal>* reason = trail_->GetVectorToStoreReason();
+        FillReasonForPath(start_node, reason);
+        if (extra_reason != kFalseLiteralIndex) {
+          reason->push_back(Literal(extra_reason));
         }
+        trail_->EnqueueWithStoredReason(Literal(literal_index).Negated());
+      }
+    }
+
+    // If we have a cycle, we can propagate all the other nodes to point to
+    // themselves. Otherwise there is nothing else to do.
+    if (start_node != end_node) continue;
+    if (options_.multiple_subcircuit_through_zero) continue;
+    BooleanVariable variable_with_same_reason = kNoBooleanVariable;
+    for (int node = 0; node < num_nodes_; ++node) {
+      if (in_current_path_[node]) continue;
+      if (LiteralIndexIsTrue(graph_[node][node])) continue;
+
+      // We should have detected that above (miss_some_nodes == true). But we
+      // still need this for corner cases where the same literal is used for
+      // many arcs, and we just propagated it here.
+      if (LiteralIndexIsFalse(graph_[node][node])) {
+        CHECK_NE(graph_[node][node], kFalseLiteralIndex);
+        FillReasonForPath(start_node, trail_->MutableConflict());
+        trail_->MutableConflict()->push_back(Literal(graph_[node][node]));
+        return false;
+      }
+
+      // This shouldn't happen because ExactlyOnePerRowAndPerColumn() should
+      // have executed first and propagated graph_[node][node] to false. We
+      // still keep the code for safety though.
+      if (next_[node] != -1) {
+        FillReasonForPath(start_node, trail_->MutableConflict());
+        if (next_literal_[node] != kNoLiteralIndex) {
+          trail_->MutableConflict()->push_back(
+              Literal(next_literal_[node]).Negated());
+        }
+        return false;
+      }
+
+      // Propagate.
+      const Literal literal(graph_[node][node]);
+      if (variable_with_same_reason == kNoBooleanVariable) {
+        variable_with_same_reason = literal.Variable();
+        FillReasonForPath(start_node, trail_->GetVectorToStoreReason());
+        trail_->EnqueueWithStoredReason(literal);
+      } else {
+        trail_->EnqueueWithSameReasonAs(literal, variable_with_same_reason);
       }
     }
   }
   return true;
-}
-
-void CircuitPropagator::RegisterWith(GenericLiteralWatcher* watcher) {
-  const int id = watcher->Register(this);
-  for (int w = 0; w < watch_index_to_literal_.size(); ++w) {
-    watcher->WatchLiteral(watch_index_to_literal_[w], id, w);
-  }
-  watcher->RegisterReversibleClass(id, this);
-  watcher->RegisterReversibleInt(id, &propagation_trail_index_);
 }
 
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(

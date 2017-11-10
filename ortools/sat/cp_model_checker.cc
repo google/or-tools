@@ -593,6 +593,33 @@ class ConstraintChecker {
     return true;
   }
 
+  bool ReservoirConstraintIsFeasible(const CpModelProto& model,
+                                     const ConstraintProto& ct) {
+    const int num_variables = ct.reservoir().times_size();
+    const int64 min_level = ct.reservoir().min_level();
+    const int64 max_level = ct.reservoir().min_level();
+    std::map<int64, int64> deltas;
+    deltas[0] = 0;
+    for (int i = 0; i < num_variables; i++) {
+      const int t = Value(ct.reservoir().times(i));
+      if (t < 0) {
+        VLOG(1) << "reservoir times(" << i << ") is negative.";
+        return false;
+      }
+      deltas[t] += ct.reservoir().demands(i);
+    }
+    int64 current_level = 0;
+    for (const auto& delta : deltas) {
+      current_level += delta.second;
+      if (current_level < min_level || current_level > max_level) {
+        VLOG(1) << "Reservoir level " << current_level
+                << " is out of bounds at time" << delta.first;
+        return false;
+      }
+    }
+    return true;
+  }
+
  private:
   std::vector<int64> variable_values_;
 };
@@ -607,7 +634,11 @@ bool SolutionIsFeasible(const CpModelProto& model,
   }
 
   // Check that all values fall in the variable domains.
+  int num_optional_vars = 0;
   for (int i = 0; i < model.variables_size(); ++i) {
+    if (!model.variables(i).enforcement_literal().empty()) {
+      ++num_optional_vars;
+    }
     if (!DomainInProtoContains(model.variables(i), variable_values[i])) {
       VLOG(1) << "Variable #" << i << " has value " << variable_values[i]
               << " which do not fall in its domain: "
@@ -623,7 +654,11 @@ bool SolutionIsFeasible(const CpModelProto& model,
     const ConstraintProto& ct = model.constraints(c);
 
     if (!checker.ConstraintIsEnforced(ct)) continue;
-    if (checker.ConstraintHasNonEnforcedVariables(model, ct)) continue;
+    if (num_optional_vars > 0) {
+      // This function can be slow because it uses reflection. So we only
+      // call it if there is any optional variables.
+      if (checker.ConstraintHasNonEnforcedVariables(model, ct)) continue;
+    }
 
     bool is_feasible = true;
     const ConstraintProto::ConstraintCase type = ct.constraint_case();
@@ -684,6 +719,9 @@ bool SolutionIsFeasible(const CpModelProto& model,
         break;
       case ConstraintProto::ConstraintCase::kInverse:
         is_feasible = checker.InverseConstraintIsFeasible(model, ct);
+        break;
+      case ConstraintProto::ConstraintCase::kReservoir:
+        is_feasible = checker.ReservoirConstraintIsFeasible(model, ct);
         break;
       case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
         // Empty constraint is always feasible.

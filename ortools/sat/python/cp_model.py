@@ -77,7 +77,7 @@ def CapSub(x, y):
   if x == y:
     if x == INT_MAX or x == INT_MIN:
       raise OverflowError(
-          'Integer NaN: substracting INT_MAX or INT_MIN to itself')
+          'Integer NaN: subtracting INT_MAX or INT_MIN to itself')
     return 0
   if x == INT_MAX or x == INT_MIN:
     return x
@@ -628,13 +628,23 @@ class CpModel(object):
       model_ct.automata.transition_tail.append(t[0])
 
   def AddInverse(self, variables, inverse_variables):
-    """Adds AddInverse(variables, inverse_variables)."""
+    """Adds Inverse(variables, inverse_variables)."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.inverse.f_direct.extend(
         [self.GetOrMakeIndex(x) for x in variables])
     model_ct.inverse.f_inverse.extend(
         [self.GetOrMakeIndex(x) for x in inverse_variables])
+    return ct
+
+  def AddReservoirConstraint(self, times, demands, min_level, max_level):
+    """Adds a Reservoir(times, demands, min_level, max_level)."""
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
+    model_ct.reservoir.extend(demands)
+    model_ct.reservoir.min_level = min_level
+    model_ct.reservoir.max_level = max_level
     return ct
 
   def AddMapDomain(self, var, bool_var_array, offset=0):
@@ -764,22 +774,22 @@ class CpModel(object):
         [self.GetIntervalIndex(x) for x in interval_vars])
     return ct
 
-  def AddNoOverlap2D(self, x_transition_triples, y_transition_triples):
-    """Adds NoOverlap2D(x_transition_triples, y_transition_triples)."""
+  def AddNoOverlap2D(self, x_intervals, y_intervals):
+    """Adds NoOverlap2D(x_tintervals, y_intervals)."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.no_overlap_2d.x_intervals.extend(
-        [self.GetIntervalIndex(x) for x in x_transition_triples])
+        [self.GetIntervalIndex(x) for x in x_intervals])
     model_ct.no_overlap_2d.y_intervals.extend(
-        [self.GetIntervalIndex(x) for x in y_transition_triples])
+        [self.GetIntervalIndex(x) for x in y_intervals])
     return ct
 
-  def AddCumulative(self, transition_triples, demands, capacity):
-    """Adds Cumulative(transition_triples, demands, capacity)."""
+  def AddCumulative(self, intervals, demands, capacity):
+    """Adds Cumulative(intervals, demands, capacity)."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.cumulative.intervals.extend(
-        [self.GetIntervalIndex(x) for x in transition_triples])
+        [self.GetIntervalIndex(x) for x in intervals])
     model_ct.cumulative.demands.extend(
         [self.GetOrMakeIndex(x) for x in demands])
     model_ct.cumulative.capacity = self.GetOrMakeIndex(capacity)

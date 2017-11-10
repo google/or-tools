@@ -40,6 +40,7 @@
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
 #include "ortools/sat/cp_model_checker.h"
+#include "ortools/sat/cp_model_expand.h"
 #include "ortools/sat/cp_model_presolve.h"
 #include "ortools/sat/cp_model_search.h"
 #include "ortools/sat/cp_model_utils.h"
@@ -1552,7 +1553,7 @@ void FillSolutionInResponse(const CpModelProto& model_proto,
   response->clear_solution_lower_bounds();
   response->clear_solution_upper_bounds();
   if (!solution.empty()) {
-    CHECK(SolutionIsFeasible(model_proto, solution));
+    DCHECK(SolutionIsFeasible(model_proto, solution));
     for (const int64 value : solution) response->add_solution(value);
   } else {
     // Not all variables are fixed.
@@ -2080,13 +2081,12 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   // constraints have been added.
   for (auto* lp_constraint : lp_constraints) {
     lp_constraint->RegisterWith(m->GetOrCreate<GenericLiteralWatcher>());
+    VLOG(1) << "LP constraint: " << lp_constraint->DimensionString() << ".";
   }
 
   VLOG(1) << top_level_cp_terms.size()
           << " terms in the main objective linear equation ("
           << num_components_containing_objective << " from LP constraints).";
-  VLOG_IF(1, !lp_constraints.empty())
-      << "Added " << lp_constraints.size() << " LP constraints.";
   return main_objective_var;
 }
 
@@ -2418,7 +2418,7 @@ CpSolverResponse SolveCpModelInternal(
   response.set_wall_time(wall_timer.Get());
   response.set_user_time(user_timer.Get());
   response.set_deterministic_time(
-      model->Get<SatSolver>()->deterministic_time());
+      model->Get<TimeLimit>()->GetElapsedDeterministicTime());
   return response;
 }
 
@@ -2506,24 +2506,25 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                   file::Defaults()));
   }
 
+  const CpModelProto expanded_proto = ExpandCpModel(model_proto);
+
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
   const SatParameters& parameters =
       model->GetOrCreate<SatSolver>()->parameters();
   if (!parameters.cp_model_presolve()) {
-    return SolveCpModelInternal(
-        model_proto, true,
-        [&](const CpSolverResponse& response) {
-          for (const auto& observer : observers) {
-            observer(response);
-          }
-        },
-        model);
+    return SolveCpModelInternal(expanded_proto, true,
+                                [&](const CpSolverResponse& response) {
+                                  for (const auto& observer : observers) {
+                                    observer(response);
+                                  }
+                                },
+                                model);
   }
 
   CpModelProto presolved_proto;
   CpModelProto mapping_proto;
   std::vector<int> postsolve_mapping;
-  PresolveCpModel(model_proto, &presolved_proto, &mapping_proto,
+  PresolveCpModel(expanded_proto, &presolved_proto, &mapping_proto,
                   &postsolve_mapping);
   VLOG(1) << CpModelStats(presolved_proto);
 
