@@ -95,32 +95,6 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
   return Status::OK();
 }
 
-namespace {
-
-// Store a column with its update coefficient and ratio.
-// This is used during the dual phase I & II ratio tests.
-struct ColWithRatio {
-  ColWithRatio(ColIndex _col, Fractional reduced_cost, Fractional coeff_m)
-      : col(_col), ratio(reduced_cost / coeff_m), coeff_magnitude(coeff_m) {}
-
-  // Returns false if "this" is before "other" in a priority queue.
-  bool operator<(const ColWithRatio& other) const {
-    if (ratio == other.ratio) {
-      if (coeff_magnitude == other.coeff_magnitude) {
-        return col > other.col;
-      }
-      return coeff_magnitude < other.coeff_magnitude;
-    }
-    return ratio > other.ratio;
-  }
-
-  ColIndex col;
-  Fractional ratio;
-  Fractional coeff_magnitude;
-};
-
-}  // namespace
-
 Status EnteringVariable::DualChooseEnteringColumn(
     const UpdateRow& update_row, Fractional cost_variation,
     std::vector<ColIndex>* bound_flip_candidates, ColIndex* entering_col,
@@ -131,8 +105,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
   const DenseRow& reduced_costs = reduced_costs_->GetReducedCosts();
   SCOPED_TIME_STAT(&stats_);
 
-  std::vector<ColWithRatio> breakpoints;
-  breakpoints.reserve(update_row.GetNonZeroPositions().size());
+  breakpoints_.clear();
+  breakpoints_.reserve(update_row.GetNonZeroPositions().size());
   const Fractional threshold = parameters_.ratio_test_zero_threshold();
   const DenseBitRow& can_decrease = variables_info_.GetCanDecreaseBitRow();
   const DenseBitRow& can_increase = variables_info_.GetCanIncreaseBitRow();
@@ -162,7 +136,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
             harris_ratio, (-reduced_costs[col] + harris_tolerance) / coeff);
         harris_ratio = std::max(0.0, harris_ratio);
       }
-      breakpoints.push_back(ColWithRatio(col, -reduced_costs[col], coeff));
+      breakpoints_.push_back(ColWithRatio(col, -reduced_costs[col], coeff));
       continue;
     }
 
@@ -175,7 +149,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
             harris_ratio, (reduced_costs[col] + harris_tolerance) / -coeff);
         harris_ratio = std::max(0.0, harris_ratio);
       }
-      breakpoints.push_back(ColWithRatio(col, reduced_costs[col], -coeff));
+      breakpoints_.push_back(ColWithRatio(col, reduced_costs[col], -coeff));
       continue;
     }
   }
@@ -185,7 +159,7 @@ Status EnteringVariable::DualChooseEnteringColumn(
   // of Operational Research, 149(1):1-16, 2003.
   // We use directly make_heap() to avoid a copy of breakpoints, benchmark shows
   // that it is slightly faster.
-  std::make_heap(breakpoints.begin(), breakpoints.end());
+  std::make_heap(breakpoints_.begin(), breakpoints_.end());
 
   // Harris ratio test. Since we process the breakpoints by increasing ratio, we
   // do not need a two-pass algorithm as described in the literature. Each time
@@ -203,8 +177,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
   Fractional best_coeff = -1.0;
   Fractional variation_magnitude = std::abs(cost_variation);
   equivalent_entering_choices_.clear();
-  while (!breakpoints.empty()) {
-    const ColWithRatio top = breakpoints.front();
+  while (!breakpoints_.empty()) {
+    const ColWithRatio top = breakpoints_.front();
     if (top.ratio > harris_ratio) break;
 
     // If the column is boxed, we can just switch its bounds and
@@ -218,27 +192,28 @@ Status EnteringVariable::DualChooseEnteringColumn(
     //
     // Note that the actual flipping will be done afterwards by
     // MakeBoxedVariableDualFeasible() in revised_simplex.cc.
-    bool variable_can_flip = false;
-    if (variable_type[top.col] == VariableType::UPPER_AND_LOWER_BOUNDED) {
-      variation_magnitude -=
-          variables_info_.GetBoundDifference(top.col) * top.coeff_magnitude;
-      if (variation_magnitude > threshold) {
-        variable_can_flip = true;
-        bound_flip_candidates->push_back(top.col);
+    if (variation_magnitude > threshold) {
+      if (variable_type[top.col] == VariableType::UPPER_AND_LOWER_BOUNDED) {
+        variation_magnitude -=
+            variables_info_.GetBoundDifference(top.col) * top.coeff_magnitude;
+        if (variation_magnitude > threshold) {
+          bound_flip_candidates->push_back(top.col);
+          std::pop_heap(breakpoints_.begin(), breakpoints_.end());
+          breakpoints_.pop_back();
+          continue;
+        }
       }
     }
 
-    // Update harris_ratio (only if the variable cannot flip).
-    if (!variable_can_flip) {
-      harris_ratio = std::min(
-          harris_ratio, top.ratio + harris_tolerance / top.coeff_magnitude);
+    // Update harris_ratio.
+    harris_ratio = std::min(harris_ratio,
+                            top.ratio + harris_tolerance / top.coeff_magnitude);
 
-      // If the dual infeasibility is too high, the harris_ratio can be
-      // negative. In this case we set it to 0.0, allowing any infeasible
-      // position to enter the basis. This is quite important because its helps
-      // in the choice of a stable pivot.
-      harris_ratio = std::max(harris_ratio, 0.0);
-    }
+    // If the dual infeasibility is too high, the harris_ratio can be
+    // negative. In this case we set it to 0.0, allowing any infeasible
+    // position to enter the basis. This is quite important because its helps
+    // in the choice of a stable pivot.
+    harris_ratio = std::max(harris_ratio, 0.0);
 
     // TODO(user): We want to maximize both the ratio (objective improvement)
     // and the coeff_magnitude (stable pivot), so we have to make some
@@ -260,8 +235,8 @@ Status EnteringVariable::DualChooseEnteringColumn(
 
     // Remove the top breakpoint and maintain the heap structure.
     // This is the same as doing a pop() on a priority_queue.
-    std::pop_heap(breakpoints.begin(), breakpoints.end());
-    breakpoints.pop_back();
+    std::pop_heap(breakpoints_.begin(), breakpoints_.end());
+    breakpoints_.pop_back();
   }
 
   // Break the ties randomly.
@@ -309,8 +284,8 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
 
   // List of breakpoints where a variable change from feasibility to
   // infeasibility or the opposite.
-  std::vector<ColWithRatio> breakpoints;
-  breakpoints.reserve(update_row.GetNonZeroPositions().size());
+  breakpoints_.clear();
+  breakpoints_.reserve(update_row.GetNonZeroPositions().size());
 
   // Ratio test.
   const Fractional threshold = parameters_.ratio_test_zero_threshold();
@@ -357,12 +332,12 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     }
 
     // We are sure there is a transition, add it to the set of breakpoints.
-    breakpoints.push_back(
+    breakpoints_.push_back(
         ColWithRatio(col, std::abs(reduced_costs[col]), std::abs(coeff)));
   }
 
   // Process the breakpoints in priority order.
-  std::make_heap(breakpoints.begin(), breakpoints.end());
+  std::make_heap(breakpoints_.begin(), breakpoints_.end());
 
   // Because of our priority queue, it is easy to choose a sub-optimal step to
   // have a stable pivot. The pivot with the highest magnitude and that reduces
@@ -374,8 +349,8 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
   *entering_col = kInvalidCol;
   *step = -1.0;
   Fractional improvement = std::abs(cost_variation);
-  while (!breakpoints.empty()) {
-    const ColWithRatio top = breakpoints.front();
+  while (!breakpoints_.empty()) {
+    const ColWithRatio top = breakpoints_.front();
 
     // We keep the greatest coeff_magnitude for the same ratio.
     DCHECK(top.ratio > *step ||
@@ -396,8 +371,8 @@ Status EnteringVariable::DualPhaseIChooseEnteringColumn(
     }
 
     if (improvement <= 0.0) break;
-    std::pop_heap(breakpoints.begin(), breakpoints.end());
-    breakpoints.pop_back();
+    std::pop_heap(breakpoints_.begin(), breakpoints_.end());
+    breakpoints_.pop_back();
   }
   *pivot =
       (*entering_col == kInvalidCol) ? 0.0 : update_coefficient[*entering_col];

@@ -142,6 +142,31 @@ class EnteringVariable {
   // anyway.
   std::vector<ColIndex> equivalent_entering_choices_;
 
+  // Store a column with its update coefficient and ratio.
+  // This is used during the dual phase I & II ratio tests.
+  struct ColWithRatio {
+    ColWithRatio(ColIndex _col, Fractional reduced_cost, Fractional coeff_m)
+        : col(_col), ratio(reduced_cost / coeff_m), coeff_magnitude(coeff_m) {}
+
+    // Returns false if "this" is before "other" in a priority queue.
+    bool operator<(const ColWithRatio& other) const {
+      if (ratio == other.ratio) {
+        if (coeff_magnitude == other.coeff_magnitude) {
+          return col > other.col;
+        }
+        return coeff_magnitude < other.coeff_magnitude;
+      }
+      return ratio > other.ratio;
+    }
+
+    ColIndex col;
+    Fractional ratio;
+    Fractional coeff_magnitude;
+  };
+
+  // Temporary vector used to hold breakpoints.
+  std::vector<ColWithRatio> breakpoints_;
+
   DISALLOW_COPY_AND_ASSIGN(EnteringVariable);
 };
 
