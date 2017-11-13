@@ -34,11 +34,15 @@ def SolveRcpsp(problem, proto_file):
   # Determine problem type.
   problem_type = ('Resource investment' if problem.is_resource_investment
                                         else 'RCPSP')
-  if problem.is_rcpsp_max:
-    problem_type += '/Max'
 
-  print ('Solving %s with %i resources and %i tasks' % (
-      problem_type, len(problem.resources), len(problem.tasks)))
+  if problem.is_rcpsp_max:
+    problem_type += '/Max delay'
+  if problem.is_consumer_producer:
+    print ('Solving %s with %i reservoir resources and %i tasks' % (
+        problem_type, len(problem.resources), len(problem.tasks)))
+  else:
+    print ('Solving %s with %i resources and %i tasks' % (
+        problem_type, len(problem.resources), len(problem.tasks)))
 
   # Create the model.
   model = cp_model.CpModel()
@@ -56,9 +60,10 @@ def SolveRcpsp(problem, proto_file):
   print('  - horizon = %i' % horizon)
 
   # Containers used to build resources.
-  intervals_per_resources = defaultdict(list)
-  demands_per_resources = defaultdict(list)
-  presences_per_resources = defaultdict(list)
+  intervals_per_resource = defaultdict(list)
+  demands_per_resource = defaultdict(list)
+  presences_per_resource = defaultdict(list)
+  starts_per_resource = defaultdict(list)
 
   # Starts and ends for master interval variables.
   task_starts = {}
@@ -86,16 +91,18 @@ def SolveRcpsp(problem, proto_file):
       alternatives_per_task[t].append(interval)
       starts_per_task[t].append(task_starts[t])
       ends_per_task[t].append(task_ends[t])
+      presences_per_task[t].append(1)
 
       # Register for resources.
       for i in range(len(recipe.demands)):
         demand = recipe.demands[i]
         res = recipe.resources[i]
-        demands_per_resources[res].append(demand)
+        demands_per_resource[res].append(demand)
         if problem.resources[res].renewable:
-          intervals_per_resources[res].append(interval)
+          intervals_per_resource[res].append(interval)
         else:
-          presences_per_resources[res].append(1)
+          starts_per_resource[res].append(task_starts[t])
+          presences_per_resource[res].append(1)
     else:
       all_recipes = range(len(task.recipes))
 
@@ -124,11 +131,12 @@ def SolveRcpsp(problem, proto_file):
         for i in range(len(recipe.demands)):
           demand = recipe.demands[i]
           res = recipe.resources[i]
-          demands_per_resources[res].append(demand)
+          demands_per_resource[res].append(demand)
           if problem.resources[res].renewable:
-            intervals_per_resources[res].append(interval)
+            intervals_per_resource[res].append(interval)
           else:
-            presences_per_resources[res].append(is_present)
+            starts_per_resource[res].append(start)
+            presences_per_resource[res].append(is_present)
 
       # Create the master interval for the task.
       task_starts[t] = model.NewIntVar(0, horizon, 'start_of_task_%i' % t)
@@ -165,17 +173,27 @@ def SolveRcpsp(problem, proto_file):
           p1 = presences_per_task[t][m1]
           if n == num_tasks - 1:
             delay = delay_matrix.recipe_delays[m1].min_delays[0]
-            model.Add(s1 + delay <= makespan).OnlyEnforceIf(p1)
+            if p1 == 1:
+              model.Add(s1 + delay <= makespan)
+            else:
+              model.Add(s1 + delay <= makespan).OnlyEnforceIf(p1)
           else:
             for m2 in range(num_other_modes):
               delay = delay_matrix.recipe_delays[m1].min_delays[m2]
               s2 = starts_per_task[n][m2]
               p2 = presences_per_task[n][m2]
-              p = model.NewBoolVar('p[%i][%i] and p[%i][%i]' % (t, m1, n, m2))
-              model.Add(s1 + delay <= s2).OnlyEnforceIf(p)
-              model.AddImplication(p1.Not(), p.Not())
-              model.AddImplication(p2.Not(), p.Not())
-              model.AddBoolOr([p1.Not(), p2.Not(), p])
+              if p1 == 1 and p2 == 1:
+                model.Add(s1 + delay <= s2)
+              elif p1 == 1:
+                model.Add(s1 + delay <= s2).OnlyEnforceIf(p2)
+              elif p2 == 1:
+                model.Add(s1 + delay <= s2).OnlyEnforceIf(p1)
+              else:
+                p = model.NewBoolVar('p[%i][%i] and p[%i][%i]' % (t, m1, n, m2))
+                model.Add(s1 + delay <= s2).OnlyEnforceIf(p)
+                model.AddImplication(p1.Not(), p.Not())
+                model.AddImplication(p2.Not(), p.Not())
+                model.AddBoolOr([p1.Not(), p2.Not(), p])
   else:  # Normal dependencies (task ends before the start of successors).
     for t in all_active_tasks:
       for n in problem.tasks[t].successors:
@@ -193,21 +211,28 @@ def SolveRcpsp(problem, proto_file):
     resource = problem.resources[r]
     c = resource.max_capacity
     if c == -1:
-      c = sum(demands_per_resources[r])
+      c = sum(demands_per_resource[r])
 
     if problem.is_resource_investment:
       capacity = model.NewIntVar(0, c, 'capacity_of_%i' % r)
       model.AddCumulative(
-          intervals_per_resources[r], demands_per_resources[r], capacity)
+          intervals_per_resource[r], demands_per_resource[r], capacity)
       capacities.append(capacity)
       max_cost += c * resource.unit_cost
     elif resource.renewable:
-      if intervals_per_resources[r]:
+      if intervals_per_resource[r]:
         model.AddCumulative(
-            intervals_per_resources[r], demands_per_resources[r], c)
-    elif presences_per_resources[r]:  # Non empty non renewable resource.
-      model.Add(sum(presences_per_resources[r][i] * demands_per_resources[r][i]
-                    for i in range(len(presences_per_resources[r]))) <= c)
+            intervals_per_resource[r], demands_per_resource[r], c)
+    elif presences_per_resource[r]:  # Non empty non renewable resource.
+      if problem.is_consumer_producer:
+        model.AddReservoirConstraint(
+            starts_per_resource[r], demands_per_resource[r],
+            resource.min_capacity, resource.max_capacity)
+
+
+      else:
+        model.Add(sum(presences_per_resource[r][i] * demands_per_resource[r][i]
+                  for i in range(len(presences_per_resource[r]))) <= c)
 
   # Objective.
   if problem.is_resource_investment:
