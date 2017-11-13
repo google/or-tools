@@ -20,12 +20,14 @@
 
 namespace operations_research {
 namespace bop {
-// A Bop solution is a boolean assignment for each variable of the
-// problem. The cost value associated to the solution is the instantiation
-// of the objective cost of the problem.
+
+// A Bop solution is a Boolean assignment for each variable of the problem. The
+// cost value associated to the solution is the instantiation of the objective
+// cost of the problem.
+//
 // Note that a solution might not be a feasible solution, i.e. might violate
-// some constraints of the problem. The Check() method can be used to
-// test the feasibility.
+// some constraints of the problem. The IsFeasible() method can be used to test
+// the feasibility.
 class BopSolution {
  public:
   BopSolution(const LinearBooleanProblem& problem, const std::string& name);
