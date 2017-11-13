@@ -235,11 +235,18 @@ bool CircuitPropagator::Propagate() {
         const LiteralIndex literal_index = graph_[end_node][start_node];
         if (LiteralIndexIsFalse(literal_index)) continue;
 
-        // We would have detected a cycle otherwise.
-        // TODO(user): This may actually fail in corner cases where the same
-        // literal is used for more than one arc and we propagate it here. Fix
-        // if this happen.
-        CHECK(!LiteralIndexIsTrue(literal_index));
+        // This can happen if the same literal is used for more than one arc.
+        // We have a conflict.
+        if (LiteralIndexIsTrue(literal_index)) {
+          CHECK_NE(literal_index, kTrueLiteralIndex);
+          FillReasonForPath(start_node, trail_->MutableConflict());
+          if (extra_reason != kFalseLiteralIndex) {
+            trail_->MutableConflict()->push_back(Literal(extra_reason));
+          }
+          trail_->MutableConflict()->push_back(
+              Literal(literal_index).Negated());
+          return false;
+        }
 
         // Propagate.
         std::vector<Literal>* reason = trail_->GetVectorToStoreReason();
