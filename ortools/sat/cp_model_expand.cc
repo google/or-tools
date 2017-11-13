@@ -148,36 +148,94 @@ void ExpandReservoir(ConstraintProto* ct, RewriteContext* context) {
   const int num_variables = reservoir.times_size();
   CpModelProto& expanded = context->expanded_proto;
 
-  // Creates boolean variables equivalent to (start[i] <= start[j]) i != j,
-  for (int i = 0; i < num_variables - 1; ++i) {
-    const int ti = reservoir.times(i);
-    for (int j = i + 1; j < num_variables; ++j) {
-      const int tj = reservoir.times(j);
-      const std::pair<int, int> p = std::make_pair(ti, tj);
-      const std::pair<int, int> rev_p = std::make_pair(tj, ti);
-      if (ContainsKey(context->precedence_cache, p)) continue;
+  int num_positives = 0;
+  int num_negatives = 0;
+  int num_zeros = 0;
 
-      const int i_lesseq_j = AddBoolVar(&expanded);
-      context->precedence_cache[p] = i_lesseq_j;
-      const int j_lesseq_i = AddBoolVar(&expanded);
-      context->precedence_cache[rev_p] = j_lesseq_i;
-      AddVarEqualPrecedence(i_lesseq_j, ti, tj, &expanded);
-      AddVarEqualPrecedence(j_lesseq_i, tj, ti, &expanded);
-      // Consistency.
-      ConstraintProto* const bool_or = expanded.add_constraints();
-      bool_or->mutable_bool_or()->add_literals(i_lesseq_j);
-      bool_or->mutable_bool_or()->add_literals(j_lesseq_i);
-      const IntegerVariableProto& var_i = expanded.variables(ti);
-      if (IsOptional(var_i)) {
-        bool_or->mutable_bool_or()->add_literals(
-            Not(var_i.enforcement_literal(0)));
-      }
-      const IntegerVariableProto& var_j = expanded.variables(tj);
-      if (IsOptional(var_j)) {
-        bool_or->mutable_bool_or()->add_literals(
-            Not(var_j.enforcement_literal(0)));
+  for (const int demand : reservoir.demands()) {
+    if (demand > 0) {
+      num_positives++;
+    } else if (demand < 0) {
+      num_negatives++;
+    } else {
+      num_zeros++;
+    }
+  }
+
+  if (num_positives > 0 && num_negatives > 0) {
+    // Creates boolean variables equivalent to (start[i] <= start[j]) i != j,
+    for (int i = 0; i < num_variables - 1; ++i) {
+      const int ti = reservoir.times(i);
+      for (int j = i + 1; j < num_variables; ++j) {
+        const int tj = reservoir.times(j);
+        const std::pair<int, int> p = std::make_pair(ti, tj);
+        const std::pair<int, int> rev_p = std::make_pair(tj, ti);
+        if (ContainsKey(context->precedence_cache, p)) continue;
+
+        const int i_lesseq_j = AddBoolVar(&expanded);
+        context->precedence_cache[p] = i_lesseq_j;
+        const int j_lesseq_i = AddBoolVar(&expanded);
+        context->precedence_cache[rev_p] = j_lesseq_i;
+        AddVarEqualPrecedence(i_lesseq_j, ti, tj, &expanded);
+        AddVarEqualPrecedence(j_lesseq_i, tj, ti, &expanded);
+        // Consistency.
+        ConstraintProto* const bool_or = expanded.add_constraints();
+        bool_or->mutable_bool_or()->add_literals(i_lesseq_j);
+        bool_or->mutable_bool_or()->add_literals(j_lesseq_i);
+        const IntegerVariableProto& var_i = expanded.variables(ti);
+        if (IsOptional(var_i)) {
+          bool_or->mutable_bool_or()->add_literals(
+              Not(var_i.enforcement_literal(0)));
+        }
+        const IntegerVariableProto& var_j = expanded.variables(tj);
+        if (IsOptional(var_j)) {
+          bool_or->mutable_bool_or()->add_literals(
+              Not(var_j.enforcement_literal(0)));
+        }
       }
     }
+
+    // Constrains the running level to be consistent at all times.
+    for (int i = 0; i < num_variables; ++i) {
+      const int ti = reservoir.times(i);
+      // Accumulates demands of all predecessors.
+      ConstraintProto* const level = expanded.add_constraints();
+      for (int j = 0; j < num_variables; ++j) {
+        if (i == j) continue;
+        const int tj = reservoir.times(j);
+        const std::pair<int, int> p = std::make_pair(tj, ti);
+        level->mutable_linear()->add_vars(
+            FindOrDieNoPrint(context->precedence_cache, p));
+        level->mutable_linear()->add_coeffs(reservoir.demands(j));
+      }
+      // Accounts for own demand.
+      const int64 demand_i = reservoir.demands(i);
+      level->mutable_linear()->add_domain(reservoir.min_level() - demand_i);
+      level->mutable_linear()->add_domain(reservoir.max_level() - demand_i);
+      const IntegerVariableProto& var_i = expanded.variables(ti);
+      if (IsOptional(var_i)) {
+        level->add_enforcement_literal(var_i.enforcement_literal(0));
+      }
+    }
+  } else {
+    // If all demands have the same sign, we do not care about the order, just
+    // the sum.
+    int64 fixed = 0;
+    ConstraintProto* const sum = expanded.add_constraints();
+    for (int i = 0; i < num_variables; ++i) {
+      const int64 demand = reservoir.demands(i);
+      if (demand == 0) continue;
+      const IntegerVariableProto& var = expanded.variables(reservoir.times(i));
+      if (IsOptional(var)) {
+        sum->mutable_linear()->add_vars(var.enforcement_literal(0));
+        sum->mutable_linear()->add_coeffs(demand);
+      } else {
+        fixed += demand;
+      }
+      // TODO(user): overflow?
+    }
+    sum->mutable_linear()->add_domain(reservoir.min_level() - fixed);
+    sum->mutable_linear()->add_domain(reservoir.max_level() - fixed);
   }
 
   // Constrains the reservoir level to be consistent at time 0.
@@ -194,29 +252,6 @@ void ExpandReservoir(ConstraintProto* ct, RewriteContext* context) {
     }
     initial->mutable_linear()->add_domain(reservoir.min_level());
     initial->mutable_linear()->add_domain(reservoir.max_level());
-  }
-
-  // Constrains the running level to be consistent at all times.
-  for (int i = 0; i < num_variables; ++i) {
-    const int ti = reservoir.times(i);
-    // Accumulates demands of all predecessors.
-    ConstraintProto* const level = expanded.add_constraints();
-    for (int j = 0; j < num_variables; ++j) {
-      if (i == j) continue;
-      const int tj = reservoir.times(j);
-      const std::pair<int, int> p = std::make_pair(tj, ti);
-      level->mutable_linear()->add_vars(
-          FindOrDieNoPrint(context->precedence_cache, p));
-      level->mutable_linear()->add_coeffs(reservoir.demands(j));
-    }
-    // Accounts for own demand.
-    const int64 demand_i = reservoir.demands(i);
-    level->mutable_linear()->add_domain(reservoir.min_level() - demand_i);
-    level->mutable_linear()->add_domain(reservoir.max_level() - demand_i);
-    const IntegerVariableProto& var_i = expanded.variables(ti);
-    if (IsOptional(var_i)) {
-      level->add_enforcement_literal(var_i.enforcement_literal(0));
-    }
   }
 
   // Constrains all times to be >= 0.
