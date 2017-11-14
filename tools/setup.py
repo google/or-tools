@@ -32,10 +32,10 @@ setup(
         'ortools',
         'ortools.algorithms',
         'ortools.constraint_solver',
+        'ortools.data',
         'ortools.graph',
         'ortools.linear_solver',
-        'ortools.sat',
-        'ortools.util',],
+        'ortools.sat',],
     ext_modules = [dummy_module],
     install_requires = [
         'protobuf >= PROTOBUF_TAG',
@@ -43,11 +43,11 @@ setup(
     ],
     package_data = {
         'ortools.constraint_solver' : ['_pywrapcp.dll'],
+        'ortools.data' : ['_pywraprcpsp.dll'],
         'ortools.linear_solver' : ['_pywraplp.dll'],
         'ortools.graph' : ['_pywrapgraph.dll'],
         'ortools.algorithms' : ['_pywrapknapsack_solver.dll'],
         'ortools.sat' : ['_pywrapsat.dll'],
-        'ortools.util' : ['_pywraputil.dll'],
         DELETEWIN 'ortools' : ['libortools.DLL']
     },
     license='Apache 2.0',
