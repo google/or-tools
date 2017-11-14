@@ -399,9 +399,7 @@ bool AllDifferentConstraint::Propagate() {
         MakeAugmentingPath(old_variable);
         DCHECK_EQ(variable_to_value_[old_variable], -1);  // No reassignment.
 
-        // TODO(user): use a local temp vector, it is cleaner than reusing
-        // the one from MutableConflict().
-        std::vector<Literal>* reason = trail_->MutableConflict();
+        std::vector<Literal>* reason = trail_->GetVectorToStoreReason();
         reason->clear();
         for (int y = 0; y < num_variables_; y++) {
           if (!variable_visited_[y]) continue;
@@ -415,14 +413,11 @@ bool AllDifferentConstraint::Propagate() {
           }
         }
 
-        LiteralIndex li =
+        const LiteralIndex li =
             VariableLiteralIndexOf(x, offset_value + min_all_values_);
         DCHECK_NE(li, kTrueLiteralIndex);
         DCHECK_NE(li, kFalseLiteralIndex);
-
-        *trail_->GetVectorToStoreReason() = *reason;
-        trail_->EnqueueWithStoredReason(Literal(li).Negated());
-        return true;
+        return trail_->EnqueueWithStoredReason(Literal(li).Negated());
       }
     }
   }

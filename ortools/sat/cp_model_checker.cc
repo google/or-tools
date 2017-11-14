@@ -220,6 +220,17 @@ std::string ValidateCpModel(const CpModelProto& model) {
               ct.ShortDebugString());
         }
         break;
+      case ConstraintProto::ConstraintCase::kReservoir:
+        for (const int t : ct.reservoir().times()) {
+          const IntegerVariableProto& time = model.variables(t);
+          for (const int d : time.domain()) {
+            if (d < 0) {
+              return StrCat("Time variables must be >= 0 in constraint #",
+                                  c, " : ", ct.ShortDebugString());
+            }
+          }
+        }
+        break;
       default:
         break;
     }

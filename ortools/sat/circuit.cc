@@ -234,27 +234,15 @@ bool CircuitPropagator::Propagate() {
       if (start_node != end_node) {
         const LiteralIndex literal_index = graph_[end_node][start_node];
         if (LiteralIndexIsFalse(literal_index)) continue;
+        CHECK_NE(literal_index, kTrueLiteralIndex);
 
-        // This can happen if the same literal is used for more than one arc.
-        // We have a conflict.
-        if (LiteralIndexIsTrue(literal_index)) {
-          CHECK_NE(literal_index, kTrueLiteralIndex);
-          FillReasonForPath(start_node, trail_->MutableConflict());
-          if (extra_reason != kFalseLiteralIndex) {
-            trail_->MutableConflict()->push_back(Literal(extra_reason));
-          }
-          trail_->MutableConflict()->push_back(
-              Literal(literal_index).Negated());
-          return false;
-        }
-
-        // Propagate.
         std::vector<Literal>* reason = trail_->GetVectorToStoreReason();
         FillReasonForPath(start_node, reason);
         if (extra_reason != kFalseLiteralIndex) {
           reason->push_back(Literal(extra_reason));
         }
-        trail_->EnqueueWithStoredReason(Literal(literal_index).Negated());
+        return trail_->EnqueueWithStoredReason(
+            Literal(literal_index).Negated());
       }
     }
 
@@ -267,6 +255,10 @@ bool CircuitPropagator::Propagate() {
       if (in_current_path_[node]) continue;
       if (LiteralIndexIsTrue(graph_[node][node])) continue;
 
+      // This shouldn't happen because ExactlyOnePerRowAndPerColumn() should
+      // have executed first and propagated graph_[node][node] to false.
+      CHECK_EQ(next_[node], -1);
+
       // We should have detected that above (miss_some_nodes == true). But we
       // still need this for corner cases where the same literal is used for
       // many arcs, and we just propagated it here.
@@ -277,24 +269,12 @@ bool CircuitPropagator::Propagate() {
         return false;
       }
 
-      // This shouldn't happen because ExactlyOnePerRowAndPerColumn() should
-      // have executed first and propagated graph_[node][node] to false. We
-      // still keep the code for safety though.
-      if (next_[node] != -1) {
-        FillReasonForPath(start_node, trail_->MutableConflict());
-        if (next_literal_[node] != kNoLiteralIndex) {
-          trail_->MutableConflict()->push_back(
-              Literal(next_literal_[node]).Negated());
-        }
-        return false;
-      }
-
       // Propagate.
       const Literal literal(graph_[node][node]);
       if (variable_with_same_reason == kNoBooleanVariable) {
         variable_with_same_reason = literal.Variable();
         FillReasonForPath(start_node, trail_->GetVectorToStoreReason());
-        trail_->EnqueueWithStoredReason(literal);
+        CHECK(trail_->EnqueueWithStoredReason(literal));
       } else {
         trail_->EnqueueWithSameReasonAs(literal, variable_with_same_reason);
       }

@@ -44,19 +44,21 @@ MODEL_UNSAT = cp_model_pb2.MODEL_UNSAT
 OPTIMAL = cp_model_pb2.OPTIMAL
 
 
-def _AssertIsInt64(x):
+def AssertIsInt64(x):
+  """Asserts that x is integer and x is in [min_int_64, max_int_64]."""
   if not isinstance(x, numbers.Integral):
     raise TypeError('Not an integer: %s' % x)
   if x < INT_MIN or x > INT_MAX:
     raise OverflowError('Does not fit in an int64: %s' % x)
 
 
-def _AssertIsBoolean(x):
+def AssertIsBoolean(x):
+  """Asserts that x is integer x is x or 1."""
   if not isinstance(x, numbers.Integral) or x < 0 or x > 1:
     raise TypeError('Not an boolean: %s' % x)
 
 
-def _CapInt64(v):
+def CapInt64(v):
   if v > INT_MAX:
     return INT_MAX
   if v < INT_MIN:
@@ -64,14 +66,14 @@ def _CapInt64(v):
   return v
 
 
-def _CapSub(x, y):
-  """Saturated arithmetics."""
+def CapSub(x, y):
+  """Saturated arithmetics. Returns x - y truncated to int64 range."""
   if not isinstance(x, numbers.Integral):
     raise TypeError('Not integral: ' + str(x))
   if not isinstance(y, numbers.Integral):
     raise TypeError('Not integral: ' + str(y))
-  _AssertIsInt64(x)
-  _AssertIsInt64(y)
+  AssertIsInt64(x)
+  AssertIsInt64(y)
   if y == 0:
     return x
   if x == y:
@@ -85,10 +87,11 @@ def _CapSub(x, y):
     return INT_MIN
   if y == INT_MIN:
     return INT_MAX
-  return _CapInt64(x - y)
+  return CapInt64(x - y)
 
 
-def _DisplayBounds(bounds):
+def DisplayBounds(bounds):
+  """Short method to display a flattened list of intervals."""
   out = ''
   for i in range(0, len(bounds), 2):
     if i != 0:
@@ -100,16 +103,17 @@ def _DisplayBounds(bounds):
   return out
 
 
-def _ShortName(model, i):
+def ShortName(model, i):
+  """Returns a short name of an integer variable, or its negation."""
   if i < 0:
-    return 'Not(%s)' % _ShortName(model, -i-1)
+    return 'Not(%s)' % ShortName(model, -i - 1)
   v = model.variables[i]
   if v.name:
     return v.name
   elif len(v.domain) == 2 and v.domain[0] == v.domain[1]:
     return str(v.domain[0])
   else:
-    return '[%s]' % _DisplayBounds(v.domain)
+    return '[%s]' % DisplayBounds(v.domain)
 
 
 class IntegerExpression(object):
@@ -153,7 +157,7 @@ class IntegerExpression(object):
     if isinstance(arg, numbers.Integral):
       if arg == 1:
         return self
-      _AssertIsInt64(arg)
+      AssertIsInt64(arg)
       return _ProductCst(self, arg)
     elif isinstance(arg, IntegerExpression):
       return _Product(self, arg)
@@ -161,7 +165,7 @@ class IntegerExpression(object):
       raise TypeError('Not an integer expression: ' + str(arg))
 
   def __rmul__(self, arg):
-    _AssertIsInt64(arg)
+    AssertIsInt64(arg)
     if arg == 1:
       return self
     return _ProductCst(self, arg)
@@ -180,64 +184,64 @@ class IntegerExpression(object):
 
   def __eq__(self, arg):
     if isinstance(arg, numbers.Integral):
-      _AssertIsInt64(arg)
-      return _BoundIntegerExpression(self, [arg, arg])
+      AssertIsInt64(arg)
+      return BoundIntegerExpression(self, [arg, arg])
     else:
-      return _BoundIntegerExpression(self - arg, [0, 0])
+      return BoundIntegerExpression(self - arg, [0, 0])
 
   def __ge__(self, arg):
     if isinstance(arg, numbers.Integral):
-      _AssertIsInt64(arg)
-      return _BoundIntegerExpression(self, [arg, INT_MAX])
+      AssertIsInt64(arg)
+      return BoundIntegerExpression(self, [arg, INT_MAX])
     else:
-      return _BoundIntegerExpression(self - arg, [0, INT_MAX])
+      return BoundIntegerExpression(self - arg, [0, INT_MAX])
 
   def __le__(self, arg):
     if isinstance(arg, numbers.Integral):
-      _AssertIsInt64(arg)
-      return _BoundIntegerExpression(self, [INT_MIN, arg])
+      AssertIsInt64(arg)
+      return BoundIntegerExpression(self, [INT_MIN, arg])
     else:
-      return _BoundIntegerExpression(self - arg, [INT_MIN, 0])
+      return BoundIntegerExpression(self - arg, [INT_MIN, 0])
 
   def __lt__(self, arg):
     if isinstance(arg, numbers.Integral):
-      _AssertIsInt64(arg)
+      AssertIsInt64(arg)
       if arg == INT_MIN:
         raise ArithmeticError('< INT_MIN is not supported')
-      return _BoundIntegerExpression(self, [INT_MIN, _CapInt64(arg - 1)])
+      return BoundIntegerExpression(self, [INT_MIN, CapInt64(arg - 1)])
     else:
-      return _BoundIntegerExpression(self - arg, [INT_MIN, -1])
+      return BoundIntegerExpression(self - arg, [INT_MIN, -1])
 
   def __gt__(self, arg):
     if isinstance(arg, numbers.Integral):
-      _AssertIsInt64(arg)
+      AssertIsInt64(arg)
       if arg == INT_MAX:
         raise ArithmeticError('> INT_MAX is not supported')
-      return _BoundIntegerExpression(self, [_CapInt64(arg + 1), INT_MAX])
+      return BoundIntegerExpression(self, [CapInt64(arg + 1), INT_MAX])
     else:
-      return _BoundIntegerExpression(self - arg, [1, INT_MAX])
+      return BoundIntegerExpression(self - arg, [1, INT_MAX])
 
   def __ne__(self, arg):
     if isinstance(arg, numbers.Integral):
-      _AssertIsInt64(arg)
+      AssertIsInt64(arg)
       if arg == INT_MAX:
-        return _BoundIntegerExpression(self, [INT_MIN, INT_MAX - 1])
+        return BoundIntegerExpression(self, [INT_MIN, INT_MAX - 1])
       elif arg == INT_MIN:
-        return _BoundIntegerExpression(self, [INT_MIN + 1, INT_MAX])
+        return BoundIntegerExpression(self, [INT_MIN + 1, INT_MAX])
       else:
-        return _BoundIntegerExpression(
+        return BoundIntegerExpression(
             self, [INT_MIN,
-                   _CapInt64(arg - 1),
-                   _CapInt64(arg + 1), INT_MAX])
+                   CapInt64(arg - 1),
+                   CapInt64(arg + 1), INT_MAX])
     else:
-      return _BoundIntegerExpression(self - arg, [INT_MIN, -1, 1, INT_MAX])
+      return BoundIntegerExpression(self - arg, [INT_MIN, -1, 1, INT_MAX])
 
 
 class _ProductCst(IntegerExpression):
   """Represents the product of a IntegerExpression by a constant."""
 
   def __init__(self, expr, coef):
-    _AssertIsInt64(coef)
+    AssertIsInt64(coef)
     if isinstance(expr, _ProductCst):
       self.__expr = expr.Expression()
       self.__coef = expr.Coefficient() * coef
@@ -269,7 +273,7 @@ class _SumArray(IntegerExpression):
     self.__constant = 0
     for x in array:
       if isinstance(x, numbers.Integral):
-        _AssertIsInt64(x)
+        AssertIsInt64(x)
         self.__constant += x
       elif isinstance(x, IntegerExpression):
         self.__array.append(x)
@@ -315,7 +319,7 @@ class IntVar(IntegerExpression):
     return self.__var.name
 
   def __repr__(self):
-    return '%s(%s)' % (self.__var.name, _DisplayBounds(self.__var.domain))
+    return '%s(%s)' % (self.__var.name, DisplayBounds(self.__var.domain))
 
   def Not(self):
     for bound in self.__var.domain:
@@ -358,7 +362,7 @@ class _Product(IntegerExpression):
     return self.__right
 
 
-class _BoundIntegerExpression(object):
+class BoundIntegerExpression(object):
   """Represents a constraint: IntegerExpression in domain."""
 
   def __init__(self, expr, bounds):
@@ -381,7 +385,7 @@ class _BoundIntegerExpression(object):
       else:
         return 'True (unbounded expr ' + str(self.__expr) + ')'
     else:
-      return str(self.__expr) + ' in [' + _DisplayBounds(self.__bounds) + ']'
+      return str(self.__expr) + ' in [' + DisplayBounds(self.__bounds) + ']'
 
   def Expression(self):
     return self.__expr
@@ -433,15 +437,15 @@ class IntervalVar(object):
     interval = self.__ct.interval
     if self.__ct.enforcement_literal:
       return '%s(start = %s, size = %s, end = %s, is_present = %s)' % (
-          self.__ct.name, _ShortName(self.__model, interval.start),
-          _ShortName(self.__model, interval.size),
-          _ShortName(self.__model, interval.end),
-          _ShortName(self.__model, self.__ct.enforcement_literal[0]))
+          self.__ct.name, ShortName(self.__model, interval.start),
+          ShortName(self.__model, interval.size),
+          ShortName(self.__model, interval.end),
+          ShortName(self.__model, self.__ct.enforcement_literal[0]))
     else:
       return '%s(start = %s, size = %s, end = %s)' % (
-          self.__ct.name, _ShortName(self.__model, interval.start),
-          _ShortName(self.__model, interval.size),
-          _ShortName(self.__model, interval.end))
+          self.__ct.name, ShortName(self.__model, interval.start),
+          ShortName(self.__model, interval.size),
+          ShortName(self.__model, interval.end))
 
 
 class CpModel(object):
@@ -496,7 +500,7 @@ class CpModel(object):
     for t in terms:
       if not isinstance(t[0], IntVar):
         raise TypeError('Wrong argument' + str(t))
-      _AssertIsInt64(t[1])
+      AssertIsInt64(t[1])
       model_ct.linear.vars.append(t[0].Index())
       model_ct.linear.coeffs.append(t[1])
     model_ct.linear.domain.extend([lb, ub])
@@ -509,7 +513,7 @@ class CpModel(object):
     for t in terms:
       if not isinstance(t[0], IntVar):
         raise TypeError('Wrong argument' + str(t))
-      _AssertIsInt64(t[1])
+      AssertIsInt64(t[1])
       model_ct.linear.vars.append(t[0].Index())
       model_ct.linear.coeffs.append(t[1])
     model_ct.linear.domain.extend(bounds)
@@ -517,9 +521,9 @@ class CpModel(object):
 
   def Add(self, ct):
     """Adds a BoundIntegerExpression to the model."""
-    if isinstance(ct, _BoundIntegerExpression):
+    if isinstance(ct, BoundIntegerExpression):
       coeffs_map, constant = ct.Expression().GetVarValueMap()
-      bounds = [_CapSub(x, constant) for x in ct.Bounds()]
+      bounds = [CapSub(x, constant) for x in ct.Bounds()]
       return self.AddLinearConstraintWithBounds(coeffs_map.iteritems(), bounds)
     else:
       raise TypeError('Not supported: CpModel.Add(' + str(ct) + ')')
@@ -567,7 +571,7 @@ class CpModel(object):
       if len(t) != arity:
         raise TypeError('Tuple ' + str(t) + ' has the wrong arity')
       for v in t:
-        _AssertIsInt64(v)
+        AssertIsInt64(v)
       model_ct.table.values.extend(t)
 
   def AddForbiddenAssignments(self, variables, tuples):
@@ -612,17 +616,17 @@ class CpModel(object):
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.automata.vars.extend(
         [self.GetOrMakeIndex(x) for x in transition_variables])
-    _AssertIsInt64(starting_state)
+    AssertIsInt64(starting_state)
     model_ct.automata.starting_state = starting_state
     for v in final_states:
-      _AssertIsInt64(v)
+      AssertIsInt64(v)
       model_ct.automata.final_states.append(v)
     for t in transition_triples:
       if len(t) != 3:
         raise TypeError('Tuple ' + str(t) + ' has the wrong arity (!= 3)')
-      _AssertIsInt64(t[0])
-      _AssertIsInt64(t[1])
-      _AssertIsInt64(t[2])
+      AssertIsInt64(t[0])
+      AssertIsInt64(t[1])
+      AssertIsInt64(t[2])
       model_ct.automata.transition_head.append(t[0])
       model_ct.automata.transition_label.append(t[0])
       model_ct.automata.transition_tail.append(t[0])
@@ -813,7 +817,7 @@ class CpModel(object):
           isinstance(arg.Expression(), IntVar) and arg.Coefficient() == -1):
       return -arg.Expression().Index() - 1
     elif isinstance(arg, numbers.Integral):
-      _AssertIsInt64(arg)
+      AssertIsInt64(arg)
       return self.GetOrMakeIndexFromConstant(arg)
     else:
       raise TypeError('NotSupported: model.GetOrMakeIndex(' + str(arg) + ')')
@@ -825,7 +829,7 @@ class CpModel(object):
           isinstance(arg.Expression(), IntVar) and arg.Coefficient() == -1):
       return -arg.Expression().Index() - 1
     elif isinstance(arg, numbers.Integral):
-      _AssertIsInt64(arg)
+      AssertIsInt64(arg)
       return self.GetOrMakeOptionalIndexFromConstant(arg, is_present)
     else:
       raise TypeError('NotSupported: model.GetOrMakeOptionalIndex(%s, %s)' %
@@ -833,13 +837,13 @@ class CpModel(object):
 
   def GetOrMakeBooleanIndex(self, arg):
     if isinstance(arg, IntVar):
-      self.__AssertIsBooleanVariable(arg)
+      self.AssertIsBooleanVariable(arg)
       return arg.Index()
     elif isinstance(arg, _NotBooleanVariable):
-      self.__AssertIsBooleanVariable(arg.Not())
+      self.AssertIsBooleanVariable(arg.Not())
       return arg.Index()
     elif isinstance(arg, numbers.Integral):
-      _AssertIsBoolean(arg)
+      AssertIsBoolean(arg)
       return self.GetOrMakeIndexFromConstant(arg)
     else:
       raise TypeError('NotSupported: model.GetOrMakeBooleanIndex(' + str(arg) +
@@ -860,7 +864,7 @@ class CpModel(object):
     return index
 
   def GetOrMakeOptionalIndexFromConstant(self, value, is_present):
-    self.__AssertIsBooleanVariable(is_present)
+    self.AssertIsBooleanVariable(is_present)
     if (is_present, value) in self.__optional_constant_map:
       return self.__optional_constant_map[(is_present, value)]
     index = len(self.__model.variables)
@@ -880,15 +884,15 @@ class CpModel(object):
     var = self.VarIndexToVarProto(var_index)
     if var.enforcement_literal:
       raise TypeError('Variable %s should not be marked as optional' %
-                      _ShortName(self.__model, var_index))
+                      ShortName(self.__model, var_index))
 
   def CheckOptionalIntVarLiteral(self, var_index, lit_index):
     var = self.VarIndexToVarProto(var_index)
     if (len(var.enforcement_literal) != 1 or
         var.enforcement_literal[0] != lit_index):
       raise TypeError('Variable %s should be marked optional with literal %s' %
-                      (_ShortName(self.__model, var_index),
-                       _ShortName(self.__model, lit_index)))
+                      (ShortName(self.__model, var_index),
+                       ShortName(self.__model, lit_index)))
 
   def _SetObjective(self, obj, minimize):
     """Sets the objective of the model."""
@@ -931,7 +935,7 @@ class CpModel(object):
   def HasObjective(self):
     return self.__model.HasField('objective')
 
-  def __AssertIsBooleanVariable(self, x):
+  def AssertIsBooleanVariable(self, x):
     if isinstance(x, IntVar):
       var = self.__model.variables[x.Index()]
       if len(var.domain) != 2 or var.domain[0] < 0 or var.domain[1] > 1:
@@ -940,7 +944,7 @@ class CpModel(object):
       raise TypeError('TypeError: ' + str(x) + ' is not a boolean variable')
 
 
-def _EvaluateExpression(expression, solution):
+def EvaluateExpression(expression, solution):
   """Evaluate an integer expression against a solution."""
   value = 0
   to_process = [(expression, 1)]
@@ -973,7 +977,7 @@ class CpSolverSolutionCallback(pywrapsat.PySolutionCallback):
     """Returns the value of an integer expression."""
     if not self.__current_solution:
       raise RuntimeError('Solve() has not be called.')
-    return _EvaluateExpression(expression, self.__current_solution)
+    return EvaluateExpression(expression, self.__current_solution)
 
   def ObjectiveValue(self):
     """Returns the value of the objective."""
@@ -1020,7 +1024,7 @@ class CpSolver(object):
     """Returns the value of an integer expression."""
     if not self.__solution:
       raise RuntimeError('Solve() has not be called.')
-    return _EvaluateExpression(expression, self.__solution)
+    return EvaluateExpression(expression, self.__solution)
 
   def ObjectiveValue(self):
     """Returns the objective value found after solve."""

@@ -29,6 +29,7 @@
 #include "ortools/base/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
+#include "ortools/base/port.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
 
@@ -268,13 +269,25 @@ class Trail {
     Enqueue(true_literal, AssignmentType::kSameReasonAs);
   }
 
-  // Stores first the reason in GetVectorToStoreReason() before calling this.
-  void EnqueueWithStoredReason(Literal true_literal) {
+  // Enqueues the given literal using the current content of
+  // GetVectorToStoreReason() as the reason. This API is a bit more leanient and
+  // does not require the literal to be unassigned. If it is already assigned to
+  // false, then MutableConflict() will be set appropriately and this will
+  // return false otherwise this will enqueue the literal and returns true.
+  bool EnqueueWithStoredReason(Literal true_literal) MUST_USE_RESULT {
+    if (assignment_.LiteralIsTrue(true_literal)) return true;
+    if (assignment_.LiteralIsFalse(true_literal)) {
+      *MutableConflict() = *GetVectorToStoreReason();
+      MutableConflict()->push_back(true_literal);
+      return false;
+    }
+
     Enqueue(true_literal, AssignmentType::kCachedReason);
     const BooleanVariable var = true_literal.Variable();
     reasons_[var] = reasons_repository_[info_[var].trail_index];
     old_type_[var] = info_[var].type;
     info_[var].type = AssignmentType::kCachedReason;
+    return true;
   }
 
   // Returns the reason why this variable was assigned.
