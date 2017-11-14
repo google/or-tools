@@ -239,16 +239,6 @@ void ExpandReservoir(ConstraintProto* ct, ModelHelper* helper) {
     initial_ct->add_domain(reservoir.max_level());
   }
 
-  // Constrains all times to be >= 0.
-  for (int i = 0; i < num_variables; ++i) {
-    const int time_i = reservoir.times(i);
-    ConstraintProto* const positive = expanded_proto.add_constraints();
-    positive->mutable_linear()->add_vars(time_i);
-    positive->mutable_linear()->add_coeffs(1);
-    positive->mutable_linear()->add_domain(0);
-    positive->mutable_linear()->add_domain(kint64max);
-  }
-
   ct->Clear();
   helper->statistics["kReservoir"]++;
 }

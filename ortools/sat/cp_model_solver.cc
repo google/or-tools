@@ -76,13 +76,14 @@ namespace {
 // Helper classes.
 // =============================================================================
 
-// List all the CpModelProto references used.
+// List all the CpModelProto references used. This is just needed so that a
+// variable with a domain [0, 1] is only instantiated as Boolean variable or
+// as an IntegerVariable if possible instead of both.
 struct VariableUsage {
   const std::vector<int> integers;
   const std::vector<int> intervals;
   const std::vector<int> booleans;
 };
-
 VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
                                    bool view_all_booleans_as_integers = false) {
   // Since an interval is a constraint by itself, this will just list all
@@ -90,7 +91,7 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
   std::vector<int> used_intervals;
 
   // TODO(user): use std::vector<bool> instead of unordered_set<int> + sort if
-  // efficiency become an issue. Note that we need these to be sorted.
+  // efficiency become an issue.
   IndexReferences references;
   for (int c = 0; c < model_proto.constraints_size(); ++c) {
     const ConstraintProto& ct = model_proto.constraints(c);
@@ -116,12 +117,13 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
     }
   }
 
-  // Make sure a Booleans is created for each [0,1] Boolean variables.
+  // Make sure that an unused variable is instantiated as an IntegerVariable
   for (int i = 0; i < model_proto.variables_size(); ++i) {
-    if (model_proto.variables(i).domain_size() != 2) continue;
-    if (model_proto.variables(i).domain(0) != 0) continue;
-    if (model_proto.variables(i).domain(1) != 1) continue;
-    references.literals.insert(i);
+    if (ContainsKey(references.literals, i)) continue;
+    if (ContainsKey(references.literals, NegatedRef(i))) continue;
+    if (ContainsKey(references.variables, i)) continue;
+    if (ContainsKey(references.variables, NegatedRef(i))) continue;
+    references.variables.insert(i);
   }
 
   std::vector<int> used_integers;
@@ -1354,7 +1356,6 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       num_reif_constraints_by_type[ct.constraint_case()]++;
     }
   }
-  const VariableUsage usage = ComputeVariableUsage(model_proto);
 
   int num_constants = 0;
   std::set<int64> constant_values;
@@ -1411,6 +1412,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
     StrAppend(&result, Summarize(temp));
   }
 
+  const VariableUsage usage = ComputeVariableUsage(model_proto);
   StrAppend(&result, "#Booleans: ", usage.booleans.size(), "\n");
   StrAppend(&result, "#Integers: ", usage.integers.size(), "\n");
 

@@ -225,9 +225,10 @@ def SolveRcpsp(problem, proto_file):
             intervals_per_resource[r], demands_per_resource[r], c)
     elif presences_per_resource[r]:  # Non empty non renewable resource.
       if problem.is_consumer_producer:
-        model.AddReservoirConstraint(
-            starts_per_resource[r], demands_per_resource[r],
-            resource.min_capacity, resource.max_capacity)
+        pass
+#        model.AddReservoirConstraint(
+#            starts_per_resource[r], [-d for d in demands_per_resource[r]],
+#            resource.min_capacity, resource.max_capacity)
 
 
       else:

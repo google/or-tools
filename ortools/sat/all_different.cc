@@ -14,7 +14,6 @@
 #include "ortools/sat/all_different.h"
 
 #include <algorithm>
-#include <unordered_map>
 #include <unordered_set>
 #include <map>
 #include <memory>
@@ -32,40 +31,22 @@ namespace sat {
 std::function<void(Model*)> AllDifferentBinary(
     const std::vector<IntegerVariable>& vars) {
   return [=](Model* model) {
-    std::unordered_set<IntegerValue> fixed_values;
-
-    // First, we fully encode all the given integer variables.
-    for (const IntegerVariable var : vars) {
-      const IntegerValue lb(model->Get(LowerBound(var)));
-      const IntegerValue ub(model->Get(UpperBound(var)));
-      if (lb == ub) {
-        fixed_values.insert(lb);
-      } else {
-        model->Add(FullyEncodeVariable(var));
-      }
-    }
-
-    // Then we construct a mapping value -> List of literal each indicating
-    // that a given variable takes this value.
-    std::unordered_map<IntegerValue, std::vector<Literal>> value_to_literals;
+    // Fully encode all the given variables and construct a mapping value ->
+    // List of literal each indicating that a given variable takes this value.
+    //
+    // Note that we use a map to always add the constraints in the same order.
+    std::map<IntegerValue, std::vector<Literal>> value_to_literals;
     IntegerEncoder* encoder = model->GetOrCreate<IntegerEncoder>();
     for (const IntegerVariable var : vars) {
-      if (!encoder->VariableIsFullyEncoded(var)) continue;
+      model->Add(FullyEncodeVariable(var));
       for (const auto& entry : encoder->FullDomainEncoding(var)) {
         value_to_literals[entry.value].push_back(entry.literal);
       }
     }
 
-    // Finally, we add an at most one constraint for each value.
+    // Add an at most one constraint for each value.
     for (const auto& entry : value_to_literals) {
-      if (ContainsKey(fixed_values, entry.first)) {
-        VLOG(1) << "Case could be presolved.";
-        // Fix all the literal to false!
-        SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-        for (const Literal l : entry.second) {
-          sat_solver->AddUnitClause(l.Negated());
-        }
-      } else if (entry.second.size() > 1) {
+      if (entry.second.size() > 1) {
         model->Add(AtMostOneConstraint(entry.second));
       }
     }

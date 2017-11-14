@@ -401,9 +401,15 @@ class IntegerTrail : public SatPropagator {
   std::vector<ClosedInterval> InitialVariableDomain(IntegerVariable var) const;
 
   // Takes the intersection with the current initial variable domain.
+  //
   // TODO(user): There is some memory inefficiency if this is called many time
   // because of the underlying data structure we use. In practice, when used
   // with a presolve, this is not often used, so that is fine though.
+  //
+  // TODO(user): The Enqueue() done at level zero on a variable are not
+  // reflected on its initial domain. That can causes issue if the variable
+  // is fully encoded afterwards because literals will be created for the values
+  // no longer relevant, and these will not be propagated right away.
   bool UpdateInitialDomain(IntegerVariable var,
                            std::vector<ClosedInterval> domain);
 
