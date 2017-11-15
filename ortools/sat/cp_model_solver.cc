@@ -2535,13 +2535,15 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
       [&](const CpSolverResponse& response) {
         if (observers.empty()) return;
         CpSolverResponse copy = response;
-        PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &copy);
+        PostsolveResponse(expanded_proto, mapping_proto, postsolve_mapping,
+                          &copy);
         for (const auto& observer : observers) {
           observer(copy);
         }
       },
       model);
-  PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &response);
+  PostsolveResponse(expanded_proto, mapping_proto, postsolve_mapping,
+                    &response);
   return response;
 }
 

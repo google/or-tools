@@ -2468,7 +2468,6 @@ bool SatSolver::CanBeInferedFromConflictVariables(BooleanVariable variable) {
     // Expand the variable. This can be seen as making a recursive call.
     dfs_stack_.push_back(current_var);
     bool abort_early = false;
-    DCHECK(!trail_->Reason(current_var).empty());
     for (Literal literal : trail_->Reason(current_var)) {
       const BooleanVariable var = literal.Variable();
       DCHECK_NE(var, current_var);

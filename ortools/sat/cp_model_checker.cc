@@ -155,6 +155,27 @@ std::string ValidateLinearConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateReservoirConstraint(const CpModelProto& model,
+                                   const ConstraintProto& ct) {
+  for (const int t : ct.reservoir().times()) {
+    const IntegerVariableProto& time = model.variables(t);
+    for (const int64 bound : time.domain()) {
+      if (bound < 0) {
+        return StrCat("Time variables must be >= 0 in constraint ",
+                            ct.ShortDebugString());
+      }
+    }
+  }
+  int64 sum_abs = 0;
+  for (const int64 demand : ct.reservoir().demands()) {
+    sum_abs = CapAdd(sum_abs, std::abs(demand));
+    if (sum_abs == kint64max) {
+      return "Possible integer overflow in constraint: " + ct.DebugString();
+    }
+  }
+  return "";
+}
+
 std::string ValidateObjective(const CpModelProto& model,
                          const CpObjectiveProto& obj) {
   // TODO(user): share the code with ValidateLinearConstraint().
@@ -221,15 +242,7 @@ std::string ValidateCpModel(const CpModelProto& model) {
         }
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
-        for (const int t : ct.reservoir().times()) {
-          const IntegerVariableProto& time = model.variables(t);
-          for (const int d : time.domain()) {
-            if (d < 0) {
-              return StrCat("Time variables must be >= 0 in constraint #",
-                                  c, " : ", ct.ShortDebugString());
-            }
-          }
-        }
+        RETURN_IF_NOT_EMPTY(ValidateReservoirConstraint(model, ct));
         break;
       default:
         break;
@@ -612,12 +625,12 @@ class ConstraintChecker {
     std::map<int64, int64> deltas;
     deltas[0] = 0;
     for (int i = 0; i < num_variables; i++) {
-      const int t = Value(ct.reservoir().times(i));
-      if (t < 0) {
+      const int64 time = Value(ct.reservoir().times(i));
+      if (time < 0) {
         VLOG(1) << "reservoir times(" << i << ") is negative.";
         return false;
       }
-      deltas[t] += ct.reservoir().demands(i);
+      deltas[time] += ct.reservoir().demands(i);
     }
     int64 current_level = 0;
     for (const auto& delta : deltas) {

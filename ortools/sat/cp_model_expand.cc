@@ -20,12 +20,13 @@
 #include "ortools/base/hash.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_utils.h"
+#include "ortools/util/saturated_arithmetic.h"
 
 namespace operations_research {
 namespace sat {
 namespace {
 
-struct ModelHelper {
+struct ExpansionHelper {
   CpModelProto expanded_proto;
   std::unordered_map<std::pair<int, int>, int> precedence_cache;
   std::map<std::string, int> statistics;
@@ -54,29 +55,30 @@ struct ModelHelper {
     return expanded_proto.variables_size() - 1;
   }
 
-  int IsOptional(int index) const {
+  int VariableIsOptional(int index) const {
     return expanded_proto.variables(index).enforcement_literal_size() > 0;
   }
 
-  int EnforcementLiteral(int index) const {
+  int VariableEnforcementLiteral(int index) const {
+    DCHECK(VariableIsOptional(index));
     return expanded_proto.variables(index).enforcement_literal(0);
   }
 
-  // b <=> (x <= 0 && x performed).
-  void AddVarEqualLessOrEqualZero(int b, int x) {
-    AddImplyInDomain(b, x, kint64min, 0);
-    AddImplyInDomain(NegatedRef(b), x, 1, kint64max);
-    if (IsOptional(x)) {
-      AddImplication(b, EnforcementLiteral(x));
+  // lesseq_0 <=> (x <= 0 && x performed).
+  void AddReifiedLesssOrEqualThanZero(int lesseq_0, int x) {
+    AddImplyInDomain(lesseq_0, x, kint64min, 0);
+    AddImplyInDomain(NegatedRef(lesseq_0), x, 1, kint64max);
+    if (VariableIsOptional(x)) {
+      AddImplication(lesseq_0, VariableEnforcementLiteral(x));
     }
   }
 
   // x_lesseq_y <=> (x <= y && x enforced && y enforced).
-  void AddVarEqualPrecedence(int x_lesseq_y, int x, int y) {
-    const bool x_is_optional = IsOptional(x);
-    const bool y_is_optional = IsOptional(y);
-    const int x_enforced = x_is_optional ? EnforcementLiteral(x) : -1;
-    const int y_enforced = y_is_optional ? EnforcementLiteral(y) : -1;
+  void AddReifiedPrecedence(int x_lesseq_y, int x, int y) {
+    const bool x_is_optional = VariableIsOptional(x);
+    const bool y_is_optional = VariableIsOptional(y);
+    const int x_enforced = x_is_optional ? VariableEnforcementLiteral(x) : -1;
+    const int y_enforced = y_is_optional ? VariableEnforcementLiteral(y) : -1;
 
     // x_lesseq_y => (x <= y && x enforced && y enforced).
     ConstraintProto* const lesseq = expanded_proto.add_constraints();
@@ -115,7 +117,8 @@ struct ModelHelper {
       AddImplication(x_greater_y, y_enforced);
     }
 
-    // Consistency between x_lesseq_y, x_greater_y, x_enforced, y_enforced.
+    // Consistency between x_lesseq_y, x_greater_y, x_enforced, y_enfor
+    // TODO(user): Always do x_greater_y = NegatedRef(x_lesseq_y) instead?
     ConstraintProto* const bool_or = expanded_proto.add_constraints();
     bool_or->mutable_bool_or()->add_literals(x_lesseq_y);
     bool_or->mutable_bool_or()->add_literals(x_greater_y);
@@ -131,21 +134,17 @@ struct ModelHelper {
       AddImplication(not_y, NegatedRef(x_greater_y));
       bool_or->mutable_bool_or()->add_literals(not_y);
     }
-
-    // TODO(user): Do we add x_lesseq_y => NegatedRef(x_greater_y)
-    // and x_greater_y => NegatedRef(x_lesseq_y)?
   }
 };
 
-void ExpandReservoir(ConstraintProto* ct, ModelHelper* helper) {
+void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
   const ReservoirConstraintProto& reservoir = ct->reservoir();
   const int num_variables = reservoir.times_size();
   CpModelProto& expanded_proto = helper->expanded_proto;
 
   int num_positives = 0;
   int num_negatives = 0;
-
-  for (const int demand : reservoir.demands()) {
+  for (const int64 demand : reservoir.demands()) {
     if (demand > 0) {
       num_positives++;
     } else if (demand < 0) {
@@ -154,7 +153,7 @@ void ExpandReservoir(ConstraintProto* ct, ModelHelper* helper) {
   }
 
   if (num_positives > 0 && num_negatives > 0) {
-    // Creates boolean variables equivalent to (start[i] <= start[j]) i != j,
+    // Creates Boolean variables equivalent to (start[i] <= start[j]) i != j
     for (int i = 0; i < num_variables - 1; ++i) {
       const int time_i = reservoir.times(i);
       for (int j = i + 1; j < num_variables; ++j) {
@@ -167,23 +166,29 @@ void ExpandReservoir(ConstraintProto* ct, ModelHelper* helper) {
         helper->precedence_cache[p] = i_lesseq_j;
         const int j_lesseq_i = helper->AddBoolVar();
         helper->precedence_cache[rev_p] = j_lesseq_i;
-        helper->AddVarEqualPrecedence(i_lesseq_j, time_i, time_j);
-        helper->AddVarEqualPrecedence(j_lesseq_i, time_j, time_i);
-        // Consistency.
+        helper->AddReifiedPrecedence(i_lesseq_j, time_i, time_j);
+        helper->AddReifiedPrecedence(j_lesseq_i, time_j, time_i);
+
+        // Consistency. This is redundant but should improves performance.
         auto* const bool_or =
             expanded_proto.add_constraints()->mutable_bool_or();
         bool_or->add_literals(i_lesseq_j);
         bool_or->add_literals(j_lesseq_i);
-        if (helper->IsOptional(time_i)) {
-          bool_or->add_literals(NegatedRef(helper->EnforcementLiteral(time_i)));
+        if (helper->VariableIsOptional(time_i)) {
+          bool_or->add_literals(
+              NegatedRef(helper->VariableEnforcementLiteral(time_i)));
         }
-        if (helper->IsOptional(time_j)) {
-          bool_or->add_literals(NegatedRef(helper->EnforcementLiteral(time_j)));
+        if (helper->VariableIsOptional(time_j)) {
+          bool_or->add_literals(
+              NegatedRef(helper->VariableEnforcementLiteral(time_j)));
         }
       }
     }
 
     // Constrains the running level to be consistent at all times.
+    // For this we only add a constraint at the time a given demand
+    // take place. We also have a constraint for time zero if needed
+    // (added below).
     for (int i = 0; i < num_variables; ++i) {
       const int time_i = reservoir.times(i);
       // Accumulates demands of all predecessors.
@@ -197,30 +202,33 @@ void ExpandReservoir(ConstraintProto* ct, ModelHelper* helper) {
       }
       // Accounts for own demand.
       const int64 demand_i = reservoir.demands(i);
-      level->mutable_linear()->add_domain(reservoir.min_level() - demand_i);
-      level->mutable_linear()->add_domain(reservoir.max_level() - demand_i);
-      if (helper->IsOptional(time_i)) {
-        level->add_enforcement_literal(helper->EnforcementLiteral(time_i));
+      level->mutable_linear()->add_domain(
+          CapSub(reservoir.min_level(), demand_i));
+      level->mutable_linear()->add_domain(
+          CapSub(reservoir.max_level(), demand_i));
+      if (helper->VariableIsOptional(time_i)) {
+        level->add_enforcement_literal(
+            helper->VariableEnforcementLiteral(time_i));
       }
     }
   } else {
     // If all demands have the same sign, we do not care about the order, just
     // the sum.
-    int64 fixed = 0;
+    int64 fixed_demand = 0;
     auto* const sum = expanded_proto.add_constraints()->mutable_linear();
     for (int i = 0; i < num_variables; ++i) {
       const int time = reservoir.times(i);
       const int64 demand = reservoir.demands(i);
       if (demand == 0) continue;
-      if (helper->IsOptional(time)) {
-        sum->add_vars(helper->EnforcementLiteral(time));
+      if (helper->VariableIsOptional(time)) {
+        sum->add_vars(helper->VariableEnforcementLiteral(time));
         sum->add_coeffs(demand);
       } else {
-        fixed += demand;
+        fixed_demand += demand;
       }
     }
-    sum->add_domain(reservoir.min_level() - fixed);
-    sum->add_domain(reservoir.max_level() - fixed);
+    sum->add_domain(CapSub(reservoir.min_level(), fixed_demand));
+    sum->add_domain(CapSub(reservoir.max_level(), fixed_demand));
   }
 
   // Constrains the reservoir level to be consistent at time 0.
@@ -230,9 +238,9 @@ void ExpandReservoir(ConstraintProto* ct, ModelHelper* helper) {
     auto* const initial_ct = expanded_proto.add_constraints()->mutable_linear();
     for (int i = 0; i < num_variables; ++i) {
       const int time_i = reservoir.times(i);
-      const int b = helper->AddBoolVar();
-      initial_ct->add_vars(b);
-      helper->AddVarEqualLessOrEqualZero(b, time_i);
+      const int lesseq_0 = helper->AddBoolVar();
+      helper->AddReifiedLesssOrEqualThanZero(lesseq_0, time_i);
+      initial_ct->add_vars(lesseq_0);
       initial_ct->add_coeffs(reservoir.demands(i));
     }
     initial_ct->add_domain(reservoir.min_level());
@@ -246,9 +254,10 @@ void ExpandReservoir(ConstraintProto* ct, ModelHelper* helper) {
 }  // namespace
 
 CpModelProto ExpandCpModel(const CpModelProto& initial_model) {
-  ModelHelper helper;
+  ExpansionHelper helper;
   helper.expanded_proto = initial_model;
-  for (int i = 0; i < initial_model.constraints_size(); ++i) {
+  const int num_constraints = helper.expanded_proto.constraints_size();
+  for (int i = 0; i < num_constraints; ++i) {
     ConstraintProto* const ct = helper.expanded_proto.mutable_constraints(i);
     switch (ct->constraint_case()) {
       case ConstraintProto::ConstraintCase::kReservoir:
@@ -261,10 +270,10 @@ CpModelProto ExpandCpModel(const CpModelProto& initial_model) {
 
   for (const auto& entry : helper.statistics) {
     if (entry.second == 1) {
-      VLOG(1) << "- constraint '" << entry.first << "' was expanded 1 time.";
+      VLOG(1) << "Expanded 1 '" << entry.first << "' constraint.";
     } else {
-      VLOG(1) << "- constraint '" << entry.first << "' was expanded "
-              << entry.second << " times.";
+      VLOG(1) << "Expanded " << entry.second << " '" << entry.first
+              << "' constraints";
     }
   }
 
