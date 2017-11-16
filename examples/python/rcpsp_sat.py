@@ -57,6 +57,12 @@ def SolveRcpsp(problem, proto_file):
   horizon = problem.deadline if problem.deadline != -1 else problem.horizon
   if horizon == -1:  # Naive computation.
     horizon = sum(max(r.duration for r in t.recipes) for t in problem.tasks)
+    if problem.is_rcpsp_max:
+      for t in problem.tasks:
+        for sd in t.successor_delays:
+          for rd in sd.recipe_delays:
+            for d in rd.min_delays:
+              horizon += abs(d)
   print('  - horizon = %i' % horizon)
 
   # Containers used to build resources.
@@ -170,30 +176,14 @@ def SolveRcpsp(problem, proto_file):
         num_other_modes = len(problem.tasks[n].recipes)
         for m1 in range(num_modes):
           s1 = starts_per_task[t][m1]
-          p1 = presences_per_task[t][m1]
           if n == num_tasks - 1:
             delay = delay_matrix.recipe_delays[m1].min_delays[0]
-            if p1 == 1:
-              model.Add(s1 + delay <= makespan)
-            else:
-              model.Add(s1 + delay <= makespan).OnlyEnforceIf(p1)
+            model.Add(s1 + delay <= makespan)
           else:
             for m2 in range(num_other_modes):
               delay = delay_matrix.recipe_delays[m1].min_delays[m2]
               s2 = starts_per_task[n][m2]
-              p2 = presences_per_task[n][m2]
-              if p1 == 1 and p2 == 1:
-                model.Add(s1 + delay <= s2)
-              elif p1 == 1:
-                model.Add(s1 + delay <= s2).OnlyEnforceIf(p2)
-              elif p2 == 1:
-                model.Add(s1 + delay <= s2).OnlyEnforceIf(p1)
-              else:
-                p = model.NewBoolVar('p[%i][%i] and p[%i][%i]' % (t, m1, n, m2))
-                model.Add(s1 + delay <= s2).OnlyEnforceIf(p)
-                model.AddImplication(p1.Not(), p.Not())
-                model.AddImplication(p2.Not(), p.Not())
-                model.AddBoolOr([p1.Not(), p2.Not(), p])
+              model.Add(s1 + delay <= s2)
   else:  # Normal dependencies (task ends before the start of successors).
     for t in all_active_tasks:
       for n in problem.tasks[t].successors:
@@ -225,12 +215,9 @@ def SolveRcpsp(problem, proto_file):
             intervals_per_resource[r], demands_per_resource[r], c)
     elif presences_per_resource[r]:  # Non empty non renewable resource.
       if problem.is_consumer_producer:
-        pass
-#        model.AddReservoirConstraint(
-#            starts_per_resource[r], [-d for d in demands_per_resource[r]],
-#            resource.min_capacity, resource.max_capacity)
-
-
+        model.AddReservoirConstraint(
+            starts_per_resource[r], demands_per_resource[r],
+            resource.min_capacity, resource.max_capacity)
       else:
         model.Add(sum(presences_per_resource[r][i] * demands_per_resource[r][i]
                   for i in range(len(presences_per_resource[r]))) <= c)

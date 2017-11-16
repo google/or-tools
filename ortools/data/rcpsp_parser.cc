@@ -436,7 +436,11 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         }
       }
       if (current_task_ == num_declared_tasks_ + 1) {
-        load_status_ = RESOURCE_SECTION;
+        if (rcpsp_.is_consumer_producer()) {
+          load_status_ = RESOURCE_MIN_SECTION;
+        } else {
+          load_status_ = RESOURCE_SECTION;
+        }
       }
       break;
     }
@@ -449,11 +453,7 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
             rcpsp_.mutable_resources(i)->set_max_capacity(atoi32(words[i]));
           }
         }
-        if (rcpsp_.is_consumer_producer()) {
-          load_status_ = RESOURCE_MIN_SECTION;
-        } else {
-          load_status_ = PARSING_FINISHED;
-        }
+        load_status_ = PARSING_FINISHED;
       } else {
         ReportError(line);
       }
@@ -464,7 +464,7 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
         for (int i = 0; i < words.size(); ++i) {
           rcpsp_.mutable_resources(i)->set_min_capacity(atoi32(words[i]));
         }
-        load_status_ = PARSING_FINISHED;
+        load_status_ = RESOURCE_SECTION;
       } else {
         ReportError(line);
       }

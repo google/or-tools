@@ -215,20 +215,36 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
     // If all demands have the same sign, we do not care about the order, just
     // the sum.
     int64 fixed_demand = 0;
-    auto* const sum = expanded_proto.add_constraints()->mutable_linear();
+    int64 non_fixed_demand = 0;
     for (int i = 0; i < num_variables; ++i) {
       const int time = reservoir.times(i);
       const int64 demand = reservoir.demands(i);
       if (demand == 0) continue;
       if (helper->VariableIsOptional(time)) {
-        sum->add_vars(helper->VariableEnforcementLiteral(time));
-        sum->add_coeffs(demand);
+        non_fixed_demand += demand;
       } else {
         fixed_demand += demand;
       }
     }
-    sum->add_domain(CapSub(reservoir.min_level(), fixed_demand));
-    sum->add_domain(CapSub(reservoir.max_level(), fixed_demand));
+
+    if (fixed_demand < reservoir.min_level() ||
+        fixed_demand > reservoir.max_level() ||
+        fixed_demand + non_fixed_demand < reservoir.min_level() ||
+        fixed_demand + non_fixed_demand > reservoir.max_level()) {
+      // Sum constraint is not trivially true.
+      auto* const sum = expanded_proto.add_constraints()->mutable_linear();
+      for (int i = 0; i < num_variables; ++i) {
+        const int time = reservoir.times(i);
+        const int64 demand = reservoir.demands(i);
+        if (demand == 0) continue;
+        if (helper->VariableIsOptional(time)) {
+          sum->add_vars(helper->VariableEnforcementLiteral(time));
+          sum->add_coeffs(demand);
+        }
+      }
+      sum->add_domain(CapSub(reservoir.min_level(), fixed_demand));
+      sum->add_domain(CapSub(reservoir.max_level(), fixed_demand));
+    }
   }
 
   // Constrains the reservoir level to be consistent at time 0.
