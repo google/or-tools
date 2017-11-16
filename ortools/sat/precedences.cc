@@ -19,6 +19,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/cleanup.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/sat/cp_constraints.h"
 
 namespace operations_research {
 namespace sat {
@@ -670,6 +671,84 @@ bool PrecedencesPropagator::BellmanFordTarjan(Trail* trail) {
     }
   }
   return true;
+}
+
+void PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(
+    Model* model) {
+  VLOG(1) << "Detecting GreaterThanAtLeastOneOf() constraints...";
+  SatSolver* solver = model->GetOrCreate<SatSolver>();
+
+  // Fill the set of incoming conditional arcs for each variables.
+  ITIVector<IntegerVariable, std::vector<int>> incoming_arcs_;
+  for (int i = 0; i < arcs_.size(); ++i) {
+    const ArcInfo& arc = arcs_[i];
+
+    // Only keep arc whose presence is unknown and that have a fixed offset.
+    // We also don't deal with optional tail variable.
+    if (arc.offset_var != kNoIntegerVariable) continue;
+    if (arc.tail_var == arc.head_var) continue;
+    if (OptionalLiteralOf(arc.tail_var) != kNoLiteralIndex) continue;
+    if (arc.presence_l == kNoLiteralIndex) continue;
+    if (solver->Assignment().LiteralIsAssigned(Literal(arc.presence_l))) {
+      continue;
+    }
+
+    if (arc.head_var >= incoming_arcs_.size()) {
+      incoming_arcs_.resize(arc.head_var.value() + 1);
+    }
+    incoming_arcs_[arc.head_var].push_back(i);
+  }
+
+  int num_added_constraints = 0;
+  for (IntegerVariable target(0); target < incoming_arcs_.size(); ++target) {
+    if (incoming_arcs_[target].size() <= 1) continue;
+
+    // Detect set of incoming arcs for which at least one must be present.
+    // TODO(user): Find more than one disjoint set of incoming arcs.
+    // TODO(user): call MinimizeCoreWithPropagation() on the clause.
+    solver->Backtrack(0);
+    std::vector<Literal> clause;
+    for (const int a : incoming_arcs_[target]) {
+      const Literal literal(arcs_[a].presence_l);
+      if (solver->Assignment().LiteralIsFalse(literal)) continue;
+      const int old_level = solver->CurrentDecisionLevel();
+      solver->EnqueueDecisionAndBacktrackOnConflict(literal.Negated());
+      const int new_level = solver->CurrentDecisionLevel();
+      if (new_level <= old_level) {
+        clause = solver->GetLastIncompatibleDecisions();
+        break;
+      }
+    }
+    solver->Backtrack(0);
+
+    if (clause.size() > 1) {
+      // Extract the set of arc for which at least one must be present.
+      const std::set<Literal> clause_set(clause.begin(), clause.end());
+      std::vector<int> arcs_in_clause;
+      for (const int a : incoming_arcs_[target]) {
+        const Literal literal(arcs_[a].presence_l);
+        if (ContainsKey(clause_set, literal.Negated())) {
+          arcs_in_clause.push_back(a);
+        }
+      }
+
+      VLOG(2) << arcs_in_clause.size() << "/" << incoming_arcs_[target].size();
+
+      ++num_added_constraints;
+      std::vector<IntegerVariable> vars;
+      std::vector<IntegerValue> offsets;
+      std::vector<Literal> selectors;
+      for (const int a : arcs_in_clause) {
+        vars.push_back(arcs_[a].tail_var);
+        offsets.push_back(arcs_[a].offset);
+        selectors.push_back(Literal(arcs_[a].presence_l));
+      }
+      model->Add(GreaterThanAtLeastOneOf(target, vars, offsets, selectors));
+    }
+  }
+
+  VLOG(1) << "Added " << num_added_constraints
+          << " GreaterThanAtLeastOneOf() constraints.";
 }
 
 }  // namespace sat

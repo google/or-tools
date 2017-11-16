@@ -259,8 +259,7 @@ class SatSolver {
   // of the old stack. Note that decisions that are now consequence of the ones
   // before them will no longer be decisions.
   //
-  // Note(user): This function can be called with an already assigned literal,
-  // in which case, it will just do nothing.
+  // Note(user): This function can be called with an already assigned literal.
   int EnqueueDecisionAndBacktrackOnConflict(Literal true_literal);
 
   // Tries to enqueue the given decision and performs the propagation.

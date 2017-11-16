@@ -2284,6 +2284,13 @@ CpSolverResponse SolveCpModelInternal(
       ->AddAllImplicationsBetweenAssociatedLiterals();
   model->GetOrCreate<SatSolver>()->Propagate();
 
+  // TODO(user): add an option?
+  if (model->Mutable<PrecedencesPropagator>() != nullptr) {
+    model->Mutable<PrecedencesPropagator>()
+        ->AddGreaterThanAtLeastOneOfConstraints(model);
+    model->GetOrCreate<SatSolver>()->Propagate();
+  }
+
   // Probing Boolean variables. Because we don't have a good deterministic time
   // yet in the non-Boolean part of the problem, we disable it by default.
   //

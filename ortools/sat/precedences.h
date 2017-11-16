@@ -122,7 +122,7 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   struct IntegerPrecedences {
     int index;            // in vars.
     IntegerVariable var;  // An IntegerVariable that is >= to vars[index].
-    LiteralIndex reason;  // The reaon for it to be >= or kNoLiteralIndex.
+    LiteralIndex reason;  // The reason for it to be >= or kNoLiteralIndex.
 
     // Only needed for testing.
     bool operator==(const IntegerPrecedences& o) const {
@@ -132,6 +132,14 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
   void ComputePrecedences(const std::vector<IntegerVariable>& vars,
                           const std::vector<bool>& to_consider,
                           std::vector<IntegerPrecedences>* output);
+
+  // Advanced usage. To be called once all the constraints have been added to
+  // the model. This will loop over all "node" in this class, and if one of its
+  // optional incoming arcs must be chosen, it will add a corresponding
+  // GreaterThanAtLeastOneOfConstraint(). Note that this might be a bit slow as
+  // it relies on the propagation engine to detect clauses between incoming arcs
+  // presence literals.
+  void AddGreaterThanAtLeastOneOfConstraints(Model* model);
 
  private:
   // Information about an individual arc.
