@@ -141,6 +141,9 @@ class IntegerExpression(object):
 
     return coeffs, constant
 
+  def __hash__(self):
+    return object.__hash__(self)
+
   def __add__(self, expr):
     return _SumArray([self, expr])
 
@@ -524,7 +527,7 @@ class CpModel(object):
     if isinstance(ct, BoundIntegerExpression):
       coeffs_map, constant = ct.Expression().GetVarValueMap()
       bounds = [CapSub(x, constant) for x in ct.Bounds()]
-      return self.AddLinearConstraintWithBounds(coeffs_map.iteritems(), bounds)
+      return self.AddLinearConstraintWithBounds(iteritems(coeffs_map), bounds)
     else:
       raise TypeError('Not supported: CpModel.Add(' + str(ct) + ')')
 

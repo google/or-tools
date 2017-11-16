@@ -17,6 +17,7 @@ endif
 ifeq ($(shell $(PYTHON_EXECUTABLE) -c "from sys import version_info as v; print (str(v[0]))"),3)
   PYTHON3 = true
   SWIG_PYTHON3_FLAG=-py3 -DPY3
+  PYTHON3_CFLAGS=-DPY3
 endif
 
 # Main target
@@ -105,7 +106,7 @@ $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py: \
 $(GEN_DIR)/ortools/algorithms/knapsack_solver_python_wrap.cc: $(GEN_DIR)/ortools/algorithms/pywrapknapsack_solver.py
 
 $(OBJ_DIR)/swig/knapsack_solver_python_wrap.$O: $(GEN_DIR)/ortools/algorithms/knapsack_solver_python_wrap.cc $(ALGORITHMS_DEPS)
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sknapsack_solver_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) -c $(GEN_DIR)$Sortools$Salgorithms$Sknapsack_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sknapsack_solver_python_wrap.$O
 
 $(LIB_DIR)/_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX): $(OBJ_DIR)/swig/knapsack_solver_python_wrap.$O $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapknapsack_solver.$(SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sswig$Sknapsack_solver_python_wrap.$O $(OR_TOOLS_LNK) $(SYS_LNK) $(PYTHON_LNK)
@@ -131,7 +132,7 @@ $(GEN_DIR)/ortools/graph/pywrapgraph.py: \
 $(GEN_DIR)/ortools/graph/graph_python_wrap.cc: $(GEN_DIR)/ortools/graph/pywrapgraph.py
 
 $(OBJ_DIR)/swig/graph_python_wrap.$O: $(GEN_DIR)/ortools/graph/graph_python_wrap.cc $(GRAPH_DEPS)
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)/ortools/graph/graph_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC)  $(PYTHON3_CFLAGS) -c $(GEN_DIR)/ortools/graph/graph_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sgraph_python_wrap.$O
 
 $(LIB_DIR)/_pywrapgraph.$(SWIG_LIB_SUFFIX): $(OBJ_DIR)/swig/graph_python_wrap.$O $(OR_TOOLS_LIBS)
 	$(DYNAMIC_LD) $(LDOUT)$(LIB_DIR)$S_pywrapgraph.$(SWIG_LIB_SUFFIX) $(OBJ_DIR)$Sswig$Sgraph_python_wrap.$O $(OR_TOOLS_LNK) $(SYS_LNK) $(PYTHON_LNK)
@@ -187,7 +188,7 @@ $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py: \
 $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc: $(GEN_DIR)/ortools/constraint_solver/pywrapcp.py
 
 $(OBJ_DIR)/swig/constraint_solver_python_wrap.$O: $(GEN_DIR)/ortools/constraint_solver/constraint_solver_python_wrap.cc $(CP_DEPS)
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sconstraint_solver_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) -c $(GEN_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Sconstraint_solver_python_wrap.$O
 
 $(LIB_DIR)/_pywrapcp.$(SWIG_LIB_SUFFIX): \
 		$(OBJ_DIR)/swig/constraint_solver_python_wrap.$O \
@@ -218,7 +219,7 @@ $(GEN_DIR)/ortools/linear_solver/pywraplp.py: \
 $(GEN_DIR)/ortools/linear_solver/linear_solver_python_wrap.cc: $(GEN_DIR)/ortools/linear_solver/pywraplp.py
 
 $(OBJ_DIR)/swig/linear_solver_python_wrap.$O: $(GEN_DIR)/ortools/linear_solver/linear_solver_python_wrap.cc $(LP_DEPS)
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Slinear_solver_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) -c $(GEN_DIR)$Sortools$Slinear_solver$Slinear_solver_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Slinear_solver_python_wrap.$O
 
 $(LIB_DIR)/_pywraplp.$(SWIG_LIB_SUFFIX): \
 		$(OBJ_DIR)/swig/linear_solver_python_wrap.$O \
@@ -252,7 +253,7 @@ $(GEN_DIR)/ortools/sat/pywrapsat.py: \
 $(GEN_DIR)/ortools/sat/sat_python_wrap.cc: $(GEN_DIR)/ortools/sat/pywrapsat.py
 
 $(OBJ_DIR)/swig/sat_python_wrap.$O: $(GEN_DIR)/ortools/sat/sat_python_wrap.cc $(SAT_DEPS)
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Ssat$Ssat_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) -c $(GEN_DIR)$Sortools$Ssat$Ssat_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Ssat_python_wrap.$O
 
 $(LIB_DIR)/_pywrapsat.$(SWIG_LIB_SUFFIX): \
 		$(OBJ_DIR)/swig/sat_python_wrap.$O \
@@ -282,7 +283,7 @@ $(GEN_DIR)/ortools/data/pywraprcpsp.py: \
 $(GEN_DIR)/ortools/data/rcpsp_python_wrap.cc: $(GEN_DIR)/ortools/data/pywraprcpsp.py
 
 $(OBJ_DIR)/swig/rcpsp_python_wrap.$O: $(GEN_DIR)/ortools/data/rcpsp_python_wrap.cc $(DATA_DEPS)
-	$(CCC) $(CFLAGS) $(PYTHON_INC) -c $(GEN_DIR)$Sortools$Sdata$Srcpsp_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Srcpsp_python_wrap.$O
+	$(CCC) $(CFLAGS) $(PYTHON_INC) $(PYTHON3_CFLAGS) -c $(GEN_DIR)$Sortools$Sdata$Srcpsp_python_wrap.cc $(OBJ_OUT)$(OBJ_DIR)$Sswig$Srcpsp_python_wrap.$O
 
 $(LIB_DIR)/_pywraprcpsp.$(SWIG_LIB_SUFFIX): \
 		$(OBJ_DIR)/swig/rcpsp_python_wrap.$O \

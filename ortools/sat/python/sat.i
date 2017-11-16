@@ -26,6 +26,7 @@
 %}
 
 %pythoncode {
+import sys
 from ortools.sat import cp_model_pb2
 
 class PySolutionCallback(object):
@@ -33,10 +34,13 @@ class PySolutionCallback(object):
   def WrapAux(self, proto_str):
     try:
       response = cp_model_pb2.CpSolverResponse()
-      status = response.MergeFromString(proto_str)
+      if sys.version_info[0] < 3:
+        status = response.MergeFromString(proto_str)
+      else:
+        status = response.MergeFromString(bytes(proto_str))
       self.Wrap(response)
-    except Exception, e:
-      print(e)
+    except:
+      print("Unexpected error: %s" % sys.exc_info()[0])
 
   def Wrap(self, proto):
     pass
@@ -103,4 +107,3 @@ void CallSolutionCallback(PyObject* cb,
 %include "ortools/sat/swig_helper.h"
 
 %unignoreall
-
