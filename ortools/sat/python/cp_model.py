@@ -26,7 +26,7 @@ from six import iteritems
 
 from ortools.sat import cp_model_pb2
 from ortools.sat import sat_parameters_pb2
-from ortools.sat.python import pywrapsat
+from ortools.sat import pywrapsat
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
