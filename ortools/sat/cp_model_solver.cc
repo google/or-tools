@@ -553,6 +553,16 @@ ModelWithMapping::ModelWithMapping(const CpModelProto& model_proto,
     }
   }
 
+  // Now that the Boolean are created, mark the optional variable if any.
+  for (const int i : usage.integers) {
+    const auto& var_proto = model_proto.variables(i);
+    if (!var_proto.enforcement_literal().empty()) {
+      const sat::Literal l = Literal(var_proto.enforcement_literal(0));
+      model_->GetOrCreate<IntegerTrail>()->MarkIntegerVariableAsOptional(
+          Integer(i), l);
+    }
+  }
+
   for (const int i : usage.intervals) {
     const ConstraintProto& ct = model_proto.constraints(i);
     if (HasEnforcementLiteral(ct)) {
@@ -1227,25 +1237,38 @@ void LoadAutomataConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   m->Add(TransitionConstraint(vars, transitions, starting_state, final_states));
 }
 
-void LoadCircuitConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
-  const int num_nodes = ct.circuit().nexts_size();
-  const std::vector<IntegerVariable> nexts = m->Integers(ct.circuit().nexts());
-  std::vector<std::vector<LiteralIndex>> graph(
-      num_nodes, std::vector<LiteralIndex>(num_nodes, kFalseLiteralIndex));
-  for (int i = 0; i < num_nodes; ++i) {
-    if (m->Get(IsFixed(nexts[i]))) {
-      // This is just an optimization. Note that if nexts[i] is not used in
-      // other places, we didn't even need to create this constant variable in
-      // the IntegerTrail...
-      graph[i][m->Get(Value(nexts[i]))] = kTrueLiteralIndex;
-      continue;
-    } else {
-      const auto encoding = m->Add(FullyEncodeVariable(nexts[i]));
-      for (const auto& entry : encoding) {
-        graph[i][entry.value.value()] = entry.literal.Index();
+// From vector of n IntegerVariables, fill an n x n matrix of LiteralIndex
+// such that matrix[i][j] is the LiteralIndex of vars[i] == j.
+void FillLiteralIndexSquareMatrixFromIntegerVariableVector(
+    ModelWithMapping* m, const std::vector<IntegerVariable>& vars,
+    std::vector<std::vector<LiteralIndex>>* matrix) {
+  const int n = vars.size();
+  matrix->resize(n);
+  for (int i = 0; i < n; i++) {
+    (*matrix)[i].resize(n, kFalseLiteralIndex);
+    for (int j = 0; j < n; j++) {
+      if (m->Get(IsFixed(vars[i]))) {
+        const int value = m->Get(Value(vars[i]));
+        DCHECK_LE(0, value);
+        DCHECK_LT(value, n);
+        (*matrix)[i][value] = kTrueLiteralIndex;
+      } else {
+        const auto encoding = m->Add(FullyEncodeVariable(vars[i]));
+        for (const auto& entry : encoding) {
+          const int value = entry.value.value();
+          DCHECK_LE(0, value);
+          DCHECK_LT(value, n);
+          (*matrix)[i][value] = entry.literal.Index();
+        }
       }
     }
   }
+}
+
+void LoadCircuitConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
+  const std::vector<IntegerVariable> nexts = m->Integers(ct.circuit().nexts());
+  std::vector<std::vector<LiteralIndex>> graph;
+  FillLiteralIndexSquareMatrixFromIntegerVariableVector(m, nexts, &graph);
   m->Add(SubcircuitConstraint(graph));
 }
 
@@ -1267,6 +1290,19 @@ void LoadRoutesConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
     graph[arg.tails(i)][arg.heads(i)] = m->Literal(arg.literals(i)).Index();
   }
   m->Add(MultipleSubcircuitThroughZeroConstraint(graph));
+}
+
+void LoadCircuitCoveringConstraint(const ConstraintProto& ct,
+                                   ModelWithMapping* m) {
+  const std::vector<IntegerVariable> nexts =
+      m->Integers(ct.circuit_covering().nexts());
+  std::vector<std::vector<LiteralIndex>> graph;
+  FillLiteralIndexSquareMatrixFromIntegerVariableVector(m, nexts, &graph);
+  const std::vector<int> distinguished(
+      ct.circuit_covering().distinguished_nodes().begin(),
+      ct.circuit_covering().distinguished_nodes().end());
+  m->Add(ExactlyOnePerRowAndPerColumn(graph));
+  m->Add(CircuitCovering(graph, distinguished));
 }
 
 void LoadInverseConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
@@ -1537,6 +1573,9 @@ bool LoadConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
       return true;
     case ConstraintProto::ConstraintProto::kRoutes:
       LoadRoutesConstraint(ct, m);
+      return true;
+    case ConstraintProto::ConstraintProto::kCircuitCovering:
+      LoadCircuitCoveringConstraint(ct, m);
       return true;
     case ConstraintProto::ConstraintProto::kInverse:
       LoadInverseConstraint(ct, m);
@@ -2326,7 +2365,7 @@ CpSolverResponse SolveCpModelInternal(
       external_solution_observer(response);
 
       if (!parameters.enumerate_all_solutions()) break;
-      model->Add(ExcludeCurrentSolutionAndBacktrack());
+      model->Add(ExcludeCurrentSolutionWithoutIgnoredVariableAndBacktrack());
     }
     if (num_solutions > 0) {
       if (status == SatSolver::Status::MODEL_UNSAT) {

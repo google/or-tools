@@ -45,9 +45,7 @@ IntervalVariable IntervalsRepository::CreateInterval(IntegerVariable start,
   }
   if (IsOptional(i)) {
     const Literal literal(is_present);
-    precedences_->MarkIntegerVariableAsOptional(StartVar(i), literal);
     integer_trail_->MarkIntegerVariableAsOptional(StartVar(i), literal);
-    precedences_->MarkIntegerVariableAsOptional(EndVar(i), literal);
     integer_trail_->MarkIntegerVariableAsOptional(EndVar(i), literal);
   }
   return i;

@@ -26,7 +26,7 @@ from six import iteritems
 
 from ortools.sat import cp_model_pb2
 from ortools.sat import sat_parameters_pb2
-from ortools.sat import pywrapsat
+from ortools.sat.python import pywrapsat
 
 # The classes below allow linear expressions to be expressed naturally with the
 # usual arithmetic operators +-*/ and with constant numbers, which makes the
@@ -53,7 +53,7 @@ def AssertIsInt64(x):
 
 
 def AssertIsBoolean(x):
-  """Asserts that x is integer x is x or 1."""
+  """Asserts that x is 0 or 1."""
   if not isinstance(x, numbers.Integral) or x < 0 or x > 1:
     raise TypeError('Not an boolean: %s' % x)
 
@@ -67,7 +67,7 @@ def CapInt64(v):
 
 
 def CapSub(x, y):
-  """Saturated arithmetics. Returns x - y truncated to int64 range."""
+  """Saturated arithmetics. Returns x - y truncated to the int64 range."""
   if not isinstance(x, numbers.Integral):
     raise TypeError('Not integral: ' + str(x))
   if not isinstance(y, numbers.Integral):
@@ -91,7 +91,7 @@ def CapSub(x, y):
 
 
 def DisplayBounds(bounds):
-  """Short method to display a flattened list of intervals."""
+  """Displays a flattened list of intervals."""
   out = ''
   for i in range(0, len(bounds), 2):
     if i != 0:
@@ -645,7 +645,7 @@ class CpModel(object):
     return ct
 
   def AddReservoirConstraint(self, times, demands, min_level, max_level):
-    """Adds a Reservoir(times, demands, min_level, max_level)."""
+    """Adds Reservoir(times, demands, min_level, max_level)."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.reservoir.times.extend([self.GetOrMakeIndex(x) for x in times])
@@ -782,7 +782,7 @@ class CpModel(object):
     return ct
 
   def AddNoOverlap2D(self, x_intervals, y_intervals):
-    """Adds NoOverlap2D(x_tintervals, y_intervals)."""
+    """Adds NoOverlap2D(x_intervals, y_intervals)."""
     ct = Constraint(self.__model.constraints)
     model_ct = self.__model.constraints[ct.Index()]
     model_ct.no_overlap_2d.x_intervals.extend(

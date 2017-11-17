@@ -380,8 +380,7 @@ bool AllDifferentConstraint::Propagate() {
         MakeAugmentingPath(old_variable);
         DCHECK_EQ(variable_to_value_[old_variable], -1);  // No reassignment.
 
-        std::vector<Literal>* reason = trail_->GetVectorToStoreReason();
-        reason->clear();
+        std::vector<Literal>* reason = trail_->GetEmptyVectorToStoreReason();
         for (int y = 0; y < num_variables_; y++) {
           if (!variable_visited_[y]) continue;
           for (int value = variable_min_value_[y];

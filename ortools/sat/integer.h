@@ -298,16 +298,6 @@ class IntegerEncoder {
   // (x >= 2).
   LiteralIndex SearchForLiteralAtOrBefore(IntegerLiteral i) const;
 
- private:
-  // Only add the equivalence between i_lit and literal, if there is already an
-  // associated literal with i_lit, this make literal and this associated
-  // literal equivalent.
-  void HalfAssociateGivenLiteral(IntegerLiteral i_lit, Literal literal);
-
-  // Adds the new associated_lit to encoding_by_var_.
-  // Adds the implications: Literal(before) <= associated_lit <= Literal(after).
-  void AddImplications(IntegerLiteral i, Literal associated_lit);
-
   // Get the literal always set to true, make it if it does not exist.
   Literal GetLiteralTrue() {
     DCHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
@@ -319,6 +309,16 @@ class IntegerEncoder {
     }
     return Literal(literal_index_true_);
   }
+
+ private:
+  // Only add the equivalence between i_lit and literal, if there is already an
+  // associated literal with i_lit, this make literal and this associated
+  // literal equivalent.
+  void HalfAssociateGivenLiteral(IntegerLiteral i_lit, Literal literal);
+
+  // Adds the new associated_lit to encoding_by_var_.
+  // Adds the implications: Literal(before) <= associated_lit <= Literal(after).
+  void AddImplications(IntegerLiteral i, Literal associated_lit);
 
   SatSolver* sat_solver_;
   IntegerDomains* domains_;

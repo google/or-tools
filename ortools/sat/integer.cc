@@ -1049,10 +1049,8 @@ void IntegerTrail::MergeReasonIntoInternal(std::vector<Literal>* output) const {
 
 gtl::Span<Literal> IntegerTrail::Reason(const Trail& trail,
                                                int trail_index) const {
-  std::vector<Literal>* reason = trail.GetVectorToStoreReason(trail_index);
-  reason->clear();
-
   const int index = boolean_trail_index_to_integer_one_[trail_index];
+  std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);
   AppendLiteralsReason(index, reason);
   DCHECK(tmp_queue_.empty());
   for (const IntegerLiteral lit : Dependencies(index)) {

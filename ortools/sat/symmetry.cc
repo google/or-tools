@@ -148,7 +148,7 @@ gtl::Span<Literal> SymmetryPropagator::Reason(const Trail& trail,
                                                      int trail_index) const {
   SCOPED_TIME_STAT(&stats_);
   const ReasonInfo& reason_info = reasons_[trail_index];
-  std::vector<Literal>* reason = trail.GetVectorToStoreReason(trail_index);
+  std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);
   Permute(reason_info.symmetry_index,
           trail.Reason(trail[reason_info.source_trail_index].Variable()),
           reason);

@@ -966,7 +966,7 @@ gtl::Span<Literal> PbConstraints::Reason(const Trail& trail,
   SCOPED_TIME_STAT(&stats_);
   const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =
       enqueue_helper_.reasons[trail_index];
-  std::vector<Literal>* reason = trail.GetVectorToStoreReason(trail_index);
+  std::vector<Literal>* reason = trail.GetEmptyVectorToStoreReason(trail_index);
   reason_info.pb_constraint->FillReason(trail, reason_info.source_trail_index,
                                         trail[trail_index].Variable(), reason);
   return *reason;

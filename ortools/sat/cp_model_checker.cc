@@ -176,6 +176,17 @@ std::string ValidateReservoirConstraint(const CpModelProto& model,
   return "";
 }
 
+std::string ValidateCircuitCoveringConstraint(const ConstraintProto& ct) {
+  const int num_nodes = ct.circuit_covering().nexts_size();
+  for (const int d : ct.circuit_covering().distinguished_nodes()) {
+    if (d < 0 || d >= num_nodes) {
+      return StrCat("Distinguished node ", d, " not in [0, ", num_nodes,
+                          ").");
+    }
+  }
+  return "";
+}
+
 std::string ValidateObjective(const CpModelProto& model,
                          const CpObjectiveProto& obj) {
   // TODO(user): share the code with ValidateLinearConstraint().
@@ -243,6 +254,9 @@ std::string ValidateCpModel(const CpModelProto& model) {
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
         RETURN_IF_NOT_EMPTY(ValidateReservoirConstraint(model, ct));
+        break;
+      case ConstraintProto::ConstraintCase::kCircuitCovering:
+        RETURN_IF_NOT_EMPTY(ValidateCircuitCoveringConstraint(ct));
         break;
       default:
         break;
@@ -405,8 +419,7 @@ class ConstraintChecker {
     return true;
   }
 
-  bool IntervalsAreDisjoint(const CpModelProto& model,
-                            const IntervalConstraintProto& interval1,
+  bool IntervalsAreDisjoint(const IntervalConstraintProto& interval1,
                             const IntervalConstraintProto& interval2) {
     return Value(interval1.end()) <= Value(interval2.start()) ||
            Value(interval2.end()) <= Value(interval1.start());
@@ -438,8 +451,7 @@ class ConstraintChecker {
         const auto& yi = *enforced_intervals_xy[i].second;
         const auto& xj = *enforced_intervals_xy[j].first;
         const auto& yj = *enforced_intervals_xy[j].second;
-        if (!IntervalsAreDisjoint(model, xi, xj) &&
-            !IntervalsAreDisjoint(model, yi, yj)) {
+        if (!IntervalsAreDisjoint(xi, xj) && !IntervalsAreDisjoint(yi, yj)) {
           return false;
         }
       }
@@ -471,14 +483,12 @@ class ConstraintChecker {
     return true;
   }
 
-  bool ElementConstraintIsFeasible(const CpModelProto& model,
-                                   const ConstraintProto& ct) {
+  bool ElementConstraintIsFeasible(const ConstraintProto& ct) {
     const int index = Value(ct.element().index());
     return Value(ct.element().vars(index)) == Value(ct.element().target());
   }
 
-  bool TableConstraintIsFeasible(const CpModelProto& model,
-                                 const ConstraintProto& ct) {
+  bool TableConstraintIsFeasible(const ConstraintProto& ct) {
     const int size = ct.table().vars_size();
     if (size == 0) return true;
     for (int row_start = 0; row_start < ct.table().values_size();
@@ -492,8 +502,7 @@ class ConstraintChecker {
     return ct.table().negated();
   }
 
-  bool AutomataConstraintIsFeasible(const CpModelProto& model,
-                                    const ConstraintProto& ct) {
+  bool AutomataConstraintIsFeasible(const ConstraintProto& ct) {
     // Build the transition table {tail, label} -> head.
     std::unordered_map<std::pair<int64, int64>, int64> transition_map;
     const int num_transitions = ct.automata().transition_tail().size();
@@ -520,8 +529,7 @@ class ConstraintChecker {
     return false;
   }
 
-  bool CircuitConstraintIsFeasible(const CpModelProto& model,
-                                   const ConstraintProto& ct) {
+  bool CircuitConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_nodes = ct.circuit().nexts_size();
     int num_inactive = 0;
     int last_active = 0;
@@ -546,8 +554,7 @@ class ConstraintChecker {
     return num_visited + num_inactive == num_nodes;
   }
 
-  bool RoutesConstraintIsFeasible(const CpModelProto& model,
-                                  const ConstraintProto& ct) {
+  bool RoutesConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_arcs = ct.routes().tails_size();
     int num_used_arcs = 0;
     int num_self_arcs = 0;
@@ -604,8 +611,38 @@ class ConstraintChecker {
     return true;
   }
 
-  bool InverseConstraintIsFeasible(const CpModelProto& model,
-                                   const ConstraintProto& ct) {
+  bool CircuitCoveringConstraintIsFeasible(const ConstraintProto& ct) {
+    const int num_nodes = ct.circuit_covering().nexts_size();
+    std::vector<bool> distinguished(num_nodes, false);
+    std::vector<bool> visited(num_nodes, false);
+    for (const int node : ct.circuit_covering().distinguished_nodes()) {
+      distinguished[node] = true;
+    }
+
+    // By design, every node has exactly one neighbour.
+    // Check that distinguished nodes do not share a circuit,
+    // mark nodes visited during the process.
+    std::vector<int> next(num_nodes, -1);
+    for (const int d : ct.circuit_covering().distinguished_nodes()) {
+      visited[d] = true;
+      for (int node = Value(ct.circuit_covering().nexts(d)); node != d;
+           node = Value(ct.circuit_covering().nexts(node))) {
+        if (distinguished[node]) return false;
+        CHECK(!visited[node]);
+        visited[node] = true;
+      }
+    }
+
+    // Check that nodes that were not visited are all loops.
+    for (int node = 0; node < num_nodes; node++) {
+      if (!visited[node] && Value(ct.circuit_covering().nexts(node)) != node) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool InverseConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_variables = ct.inverse().f_direct_size();
     if (num_variables != ct.inverse().f_inverse_size()) return false;
     // Check that f_inverse(f_direct(i)) == i; this is sufficient.
@@ -617,8 +654,7 @@ class ConstraintChecker {
     return true;
   }
 
-  bool ReservoirConstraintIsFeasible(const CpModelProto& model,
-                                     const ConstraintProto& ct) {
+  bool ReservoirConstraintIsFeasible(const ConstraintProto& ct) {
     const int num_variables = ct.reservoir().times_size();
     const int64 min_level = ct.reservoir().min_level();
     const int64 max_level = ct.reservoir().min_level();
@@ -727,25 +763,28 @@ bool SolutionIsFeasible(const CpModelProto& model,
         is_feasible = checker.CumulativeConstraintIsFeasible(model, ct);
         break;
       case ConstraintProto::ConstraintCase::kElement:
-        is_feasible = checker.ElementConstraintIsFeasible(model, ct);
+        is_feasible = checker.ElementConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kTable:
-        is_feasible = checker.TableConstraintIsFeasible(model, ct);
+        is_feasible = checker.TableConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kAutomata:
-        is_feasible = checker.AutomataConstraintIsFeasible(model, ct);
+        is_feasible = checker.AutomataConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kCircuit:
-        is_feasible = checker.CircuitConstraintIsFeasible(model, ct);
+        is_feasible = checker.CircuitConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kRoutes:
-        is_feasible = checker.RoutesConstraintIsFeasible(model, ct);
+        is_feasible = checker.RoutesConstraintIsFeasible(ct);
+        break;
+      case ConstraintProto::ConstraintCase::kCircuitCovering:
+        is_feasible = checker.CircuitCoveringConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kInverse:
-        is_feasible = checker.InverseConstraintIsFeasible(model, ct);
+        is_feasible = checker.InverseConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::kReservoir:
-        is_feasible = checker.ReservoirConstraintIsFeasible(model, ct);
+        is_feasible = checker.ReservoirConstraintIsFeasible(ct);
         break;
       case ConstraintProto::ConstraintCase::CONSTRAINT_NOT_SET:
         // Empty constraint is always feasible.

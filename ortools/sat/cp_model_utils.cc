@@ -74,6 +74,9 @@ void AddReferencesUsedByConstraint(const ConstraintProto& ct,
     case ConstraintProto::ConstraintCase::kRoutes:
       AddIndices(ct.routes().literals(), &output->literals);
       break;
+    case ConstraintProto::ConstraintCase::kCircuitCovering:
+      AddIndices(ct.circuit_covering().nexts(), &output->variables);
+      break;
     case ConstraintProto::ConstraintCase::kInverse:
       AddIndices(ct.inverse().f_direct(), &output->variables);
       AddIndices(ct.inverse().f_inverse(), &output->variables);
@@ -156,6 +159,8 @@ void ApplyToAllLiteralIndices(const std::function<void(int*)>& f,
     case ConstraintProto::ConstraintCase::kRoutes:
       APPLY_TO_REPEATED_FIELD(routes, literals);
       break;
+    case ConstraintProto::ConstraintCase::kCircuitCovering:
+      break;
     case ConstraintProto::ConstraintCase::kInverse:
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
@@ -222,6 +227,9 @@ void ApplyToAllVariableIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
       break;
+    case ConstraintProto::ConstraintCase::kCircuitCovering:
+      APPLY_TO_REPEATED_FIELD(circuit_covering, nexts);
+      break;
     case ConstraintProto::ConstraintCase::kInverse:
       APPLY_TO_REPEATED_FIELD(inverse, f_direct);
       APPLY_TO_REPEATED_FIELD(inverse, f_inverse);
@@ -282,6 +290,8 @@ void ApplyToAllIntervalIndices(const std::function<void(int*)>& f,
       break;
     case ConstraintProto::ConstraintCase::kRoutes:
       break;
+    case ConstraintProto::ConstraintCase::kCircuitCovering:
+      break;
     case ConstraintProto::ConstraintCase::kInverse:
       break;
     case ConstraintProto::ConstraintCase::kReservoir:
@@ -338,6 +348,8 @@ std::string ConstraintCaseName(ConstraintProto::ConstraintCase constraint_case) 
       return "kCircuit";
     case ConstraintProto::ConstraintCase::kRoutes:
       return "kRoutes";
+    case ConstraintProto::ConstraintCase::kCircuitCovering:
+      return "kCircuitCovering";
     case ConstraintProto::ConstraintCase::kInverse:
       return "kInverse";
     case ConstraintProto::ConstraintCase::kReservoir:

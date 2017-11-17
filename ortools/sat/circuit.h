@@ -119,6 +119,51 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   DISALLOW_COPY_AND_ASSIGN(CircuitPropagator);
 };
 
+// This constraint ensures that the graph is a covering of all nodes by
+// circuits and loops, such that all circuits contain exactly one distinguished
+// node. Those distinguished nodes are meant to be depots.
+//
+// This constraint does not need ExactlyOnePerRowAndPerColumn() to be correct,
+// but it does not propagate degree deductions (only fails if a node has more
+// than one outgoing arc or more than one incoming arc), so that adding
+// ExactlyOnePerRowAndPerColumn() should work better.
+//
+// TODO(user): Make distinguished nodes an array of Boolean variables,
+// so this can be used for facility location problems.
+class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
+ public:
+  CircuitCoveringPropagator(std::vector<std::vector<Literal>> graph,
+                            const std::vector<int>& distinguished_nodes,
+                            Model* model);
+
+  void SetLevel(int level) final;
+  bool Propagate() final;
+  bool IncrementalPropagate(const std::vector<int>& watch_indices) final;
+  void RegisterWith(GenericLiteralWatcher* watcher);
+
+ private:
+  // Adds all literals on the path/circuit from tail to head in the graph of
+  // literals set to true.
+  // next_[i] should be filled with a node j s.t. graph_[i][j] is true, or -1.
+  void FillFixedPathInReason(int start, int end, std::vector<Literal>* reason);
+
+  // Input data.
+  const std::vector<std::vector<Literal>> graph_;
+  const int num_nodes_;
+  std::vector<bool> node_is_distinguished_;
+
+  // SAT incremental state.
+  Trail* trail_;
+  std::vector<std::pair<int, int>> watch_index_to_arc_;
+  std::vector<std::pair<int, int>> fixed_arcs_;
+  std::vector<int> level_ends_;
+
+  // Used in Propagate() to represent paths and circuits.
+  std::vector<int> next_;
+  std::vector<int> prev_;
+  std::vector<int> visited_;
+};
+
 // ============================================================================
 // Model based functions.
 // ============================================================================
@@ -161,6 +206,10 @@ inline std::function<void(Model*)> MultipleSubcircuitThroughZeroConstraint(
     model->TakeOwnership(constraint);
   };
 }
+
+std::function<void(Model*)> CircuitCovering(
+    const std::vector<std::vector<LiteralIndex>>& next,
+    const std::vector<int>& distinguished_nodes);
 
 }  // namespace sat
 }  // namespace operations_research

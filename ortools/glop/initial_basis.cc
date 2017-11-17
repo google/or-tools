@@ -185,9 +185,9 @@ bool InitialBasis::CompleteTriangularBasis(ColIndex num_cols,
 
     partial_diagonal_product *= coeff;
     if (std::abs(partial_diagonal_product) < kMinimumProductMagnitude) {
-      LOG(INFO) << "Numerical difficulties detected. The product of the "
-                << "diagonal coefficients is currently equal to "
-                << partial_diagonal_product;
+      VLOG(1) << "Numerical difficulties detected. The product of the "
+              << "diagonal coefficients is currently equal to "
+              << partial_diagonal_product;
       break;
     }
 

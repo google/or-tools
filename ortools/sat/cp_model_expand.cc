@@ -75,12 +75,15 @@ struct ExpansionHelper {
 
   // x_lesseq_y <=> (x <= y && x enforced && y enforced).
   void AddReifiedPrecedence(int x_lesseq_y, int x, int y) {
-    const bool x_is_optional = VariableIsOptional(x);
-    const bool y_is_optional = VariableIsOptional(y);
-    const int x_enforced = x_is_optional ? VariableEnforcementLiteral(x) : -1;
-    const int y_enforced = y_is_optional ? VariableEnforcementLiteral(y) : -1;
+    // x_lesseq_y => x enforced && y enforced
+    if (VariableIsOptional(x)) {
+      AddImplication(x_lesseq_y, VariableEnforcementLiteral(x));
+    }
+    if (VariableIsOptional(y)) {
+      AddImplication(x_lesseq_y, VariableEnforcementLiteral(y));
+    }
 
-    // x_lesseq_y => (x <= y && x enforced && y enforced).
+    // x_lesseq_y => (x <= y)
     ConstraintProto* const lesseq = expanded_proto.add_constraints();
     lesseq->add_enforcement_literal(x_lesseq_y);
     lesseq->mutable_linear()->add_vars(x);
@@ -90,50 +93,15 @@ struct ExpansionHelper {
     lesseq->mutable_linear()->add_domain(0);
     lesseq->mutable_linear()->add_domain(kint64max);
 
-    if (x_is_optional) {
-      AddImplication(x_lesseq_y, x_enforced);
-    }
-    if (y_is_optional) {
-      AddImplication(x_lesseq_y, y_enforced);
-    }
-
-    // x_greater_y => (x > y) && x enforced && y enforced.
-    const int x_greater_y =
-        x_is_optional || y_is_optional ? AddBoolVar() : NegatedRef(x_lesseq_y);
-
+    // Not(x_lesseq_y) => (x > y)
     ConstraintProto* const greater = expanded_proto.add_constraints();
-    greater->add_enforcement_literal(x_greater_y);
+    greater->add_enforcement_literal(NegatedRef(x_lesseq_y));
     greater->mutable_linear()->add_vars(x);
     greater->mutable_linear()->add_vars(y);
     greater->mutable_linear()->add_coeffs(-1);
     greater->mutable_linear()->add_coeffs(1);
     greater->mutable_linear()->add_domain(kint64min);
     greater->mutable_linear()->add_domain(-1);
-
-    if (x_is_optional) {
-      AddImplication(x_greater_y, x_enforced);
-    }
-    if (y_is_optional) {
-      AddImplication(x_greater_y, y_enforced);
-    }
-
-    // Consistency between x_lesseq_y, x_greater_y, x_enforced, y_enfor
-    // TODO(user): Always do x_greater_y = NegatedRef(x_lesseq_y) instead?
-    ConstraintProto* const bool_or = expanded_proto.add_constraints();
-    bool_or->mutable_bool_or()->add_literals(x_lesseq_y);
-    bool_or->mutable_bool_or()->add_literals(x_greater_y);
-    if (x_is_optional) {
-      const int not_x = NegatedRef(x_enforced);
-      AddImplication(not_x, NegatedRef(x_lesseq_y));
-      AddImplication(not_x, NegatedRef(x_greater_y));
-      bool_or->mutable_bool_or()->add_literals(not_x);
-    }
-    if (y_is_optional) {
-      const int not_y = NegatedRef(y_enforced);
-      AddImplication(not_y, NegatedRef(x_lesseq_y));
-      AddImplication(not_y, NegatedRef(x_greater_y));
-      bool_or->mutable_bool_or()->add_literals(not_y);
-    }
   }
 };
 
@@ -215,36 +183,20 @@ void ExpandReservoir(ConstraintProto* ct, ExpansionHelper* helper) {
     // If all demands have the same sign, we do not care about the order, just
     // the sum.
     int64 fixed_demand = 0;
-    int64 non_fixed_demand = 0;
+    auto* const sum = expanded_proto.add_constraints()->mutable_linear();
     for (int i = 0; i < num_variables; ++i) {
       const int time = reservoir.times(i);
       const int64 demand = reservoir.demands(i);
       if (demand == 0) continue;
       if (helper->VariableIsOptional(time)) {
-        non_fixed_demand += demand;
+        sum->add_vars(helper->VariableEnforcementLiteral(time));
+        sum->add_coeffs(demand);
       } else {
         fixed_demand += demand;
       }
     }
-
-    if (fixed_demand < reservoir.min_level() ||
-        fixed_demand > reservoir.max_level() ||
-        fixed_demand + non_fixed_demand < reservoir.min_level() ||
-        fixed_demand + non_fixed_demand > reservoir.max_level()) {
-      // Sum constraint is not trivially true.
-      auto* const sum = expanded_proto.add_constraints()->mutable_linear();
-      for (int i = 0; i < num_variables; ++i) {
-        const int time = reservoir.times(i);
-        const int64 demand = reservoir.demands(i);
-        if (demand == 0) continue;
-        if (helper->VariableIsOptional(time)) {
-          sum->add_vars(helper->VariableEnforcementLiteral(time));
-          sum->add_coeffs(demand);
-        }
-      }
-      sum->add_domain(CapSub(reservoir.min_level(), fixed_demand));
-      sum->add_domain(CapSub(reservoir.max_level(), fixed_demand));
-    }
+    sum->add_domain(CapSub(reservoir.min_level(), fixed_demand));
+    sum->add_domain(CapSub(reservoir.max_level(), fixed_demand));
   }
 
   // Constrains the reservoir level to be consistent at time 0.

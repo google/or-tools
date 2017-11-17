@@ -212,7 +212,6 @@ void PrecedencesPropagator::AdjustSizeFor(IntegerVariable i) {
 
 void PrecedencesPropagator::MarkIntegerVariableAsOptional(IntegerVariable i,
                                                           Literal is_present) {
-  AdjustSizeFor(i);
   optional_literals_[i] = is_present.Index();
   optional_literals_[NegationOf(i)] = is_present.Index();
   if (is_present.Index() >= potential_nodes_.size()) {
@@ -224,6 +223,24 @@ void PrecedencesPropagator::MarkIntegerVariableAsOptional(IntegerVariable i,
 void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
                                    IntegerValue offset,
                                    IntegerVariable offset_var, LiteralIndex l) {
+  AdjustSizeFor(tail);
+  AdjustSizeFor(head);
+  if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
+
+  // Deal with optional variables.
+  // TODO(user): the code would be a lot simpler if instead, for each arc, we
+  // tweak the literal controlling the arc presence.
+  if (integer_trail_->IsOptional(tail) &&
+      optional_literals_[tail] == kNoLiteralIndex) {
+    MarkIntegerVariableAsOptional(
+        tail, integer_trail_->IsIgnoredLiteral(tail).Negated());
+  }
+  if (integer_trail_->IsOptional(head) &&
+      optional_literals_[head] == kNoLiteralIndex) {
+    MarkIntegerVariableAsOptional(
+        head, integer_trail_->IsIgnoredLiteral(head).Negated());
+  }
+
   // Handle level zero stuff.
   DCHECK_EQ(trail_->CurrentDecisionLevel(), 0);
   if (l != kNoLiteralIndex) {
@@ -258,10 +275,6 @@ void PrecedencesPropagator::AddArc(IntegerVariable tail, IntegerVariable head,
       offset_var = kNoIntegerVariable;
     }
   }
-
-  AdjustSizeFor(tail);
-  AdjustSizeFor(head);
-  if (offset_var != kNoIntegerVariable) AdjustSizeFor(offset_var);
 
   if (l != kNoLiteralIndex && l.value() >= potential_arcs_.size()) {
     potential_arcs_.resize(l.value() + 1);

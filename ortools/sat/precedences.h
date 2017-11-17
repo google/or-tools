@@ -88,22 +88,6 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
                                    IntegerValue offset,
                                    IntegerVariable offset_var, LiteralIndex l);
 
-  // An optional integer variable has a special behavior:
-  // - If the bounds on i cross each other, then is_present must be false.
-  // - It will only propagate any outgoing arcs if is_present is true.
-  //
-  // TODO(user): Accept a BinaryImplicationGraph* here, so that and arc
-  // (tail -> head) can still propagate if tail.is_present => head.is_present.
-  // Note that such propagation is only useful if the status of tail presence
-  // is still undecided. Note that we do propagate if tail and head have the
-  // same presence literal (see ArcShouldPropagate()).
-  //
-  // TODO(user): use instead integer_trail_->VariableIsOptional()? Note that the
-  // meaning is not exactly the same, because here we also do not propagate the
-  // outgoing arcs. And we need to watch the is_present variable, so we still
-  // need to call this function.
-  void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_present);
-
   // Finds all the IntegerVariable that are "after" one of the IntegerVariable
   // in vars. Returns a vector of these precedences relation sorted by
   // IntegerPrecedences.var so that it is efficient to find all the
@@ -155,6 +139,22 @@ class PrecedencesPropagator : public SatPropagator, PropagatorInterface {
     // should be false at the beginning of BellmanFordTarjan().
     mutable bool is_marked;
   };
+
+  // An optional integer variable has a special behavior:
+  // - If the bounds on i cross each other, then is_present must be false.
+  // - It will only propagate any outgoing arcs if is_present is true.
+  //
+  // TODO(user): Accept a BinaryImplicationGraph* here, so that and arc
+  // (tail -> head) can still propagate if tail.is_present => head.is_present.
+  // Note that such propagation is only useful if the status of tail presence
+  // is still undecided. Note that we do propagate if tail and head have the
+  // same presence literal (see ArcShouldPropagate()).
+  //
+  // TODO(user): use instead integer_trail_->VariableIsOptional()? Note that the
+  // meaning is not exactly the same, because here we also do not propagate the
+  // outgoing arcs. And we need to watch the is_present variable, so we still
+  // need to call this function.
+  void MarkIntegerVariableAsOptional(IntegerVariable i, Literal is_present);
 
   // Internal functions to add new precedence relations.
   //

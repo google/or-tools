@@ -270,14 +270,15 @@ class Trail {
   }
 
   // Enqueues the given literal using the current content of
-  // GetVectorToStoreReason() as the reason. This API is a bit more leanient and
-  // does not require the literal to be unassigned. If it is already assigned to
-  // false, then MutableConflict() will be set appropriately and this will
-  // return false otherwise this will enqueue the literal and returns true.
+  // GetEmptyVectorToStoreReason() as the reason. This API is a bit more
+  // leanient and does not require the literal to be unassigned. If it is
+  // already assigned to false, then MutableConflict() will be set appropriately
+  // and this will return false otherwise this will enqueue the literal and
+  // returns true.
   bool EnqueueWithStoredReason(Literal true_literal) MUST_USE_RESULT {
     if (assignment_.LiteralIsTrue(true_literal)) return true;
     if (assignment_.LiteralIsFalse(true_literal)) {
-      *MutableConflict() = *GetVectorToStoreReason();
+      *MutableConflict() = reasons_repository_[Index()];
       MutableConflict()->push_back(true_literal);
       return false;
     }
@@ -304,18 +305,19 @@ class Trail {
   BooleanVariable ReferenceVarWithSameReason(BooleanVariable var) const;
 
   // This can be used to get a location at which the reason for the literal
-  // at trail_index on the trail can be stored.
-  std::vector<Literal>* GetVectorToStoreReason(int trail_index) const {
+  // at trail_index on the trail can be stored. This clears the vector before
+  // returning it.
+  std::vector<Literal>* GetEmptyVectorToStoreReason(int trail_index) const {
     if (trail_index >= reasons_repository_.size()) {
       reasons_repository_.resize(trail_index + 1);
     }
+    reasons_repository_[trail_index].clear();
     return &reasons_repository_[trail_index];
   }
 
-  // TODO(user): GetVectorToStoreReason() is always called with Index(), only
-  // keep this function instead.
-  std::vector<Literal>* GetVectorToStoreReason() const {
-    return GetVectorToStoreReason(Index());
+  // Shortcut for GetEmptyVectorToStoreReason(Index()).
+  std::vector<Literal>* GetEmptyVectorToStoreReason() const {
+    return GetEmptyVectorToStoreReason(Index());
   }
 
   // Dequeues the last assigned literal and returns it.
@@ -463,7 +465,7 @@ class SatPropagator {
   // assigned to false, we could deduce the assignement of the given variable.
   //
   // The returned Span has to be valid until the literal is untrailed. A client
-  // can use trail_.GetVectorToStoreReason() if it doesn't have a memory
+  // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
   virtual gtl::Span<Literal> Reason(const Trail& trail,
                                            int trail_index) const {

@@ -196,6 +196,14 @@ message RoutesConstraintProto {
   int64 capacity = 5;
 }
 
+// Another routing constraint. This one forces the nexts variables to form a
+// permutation, and cycles of this permutation of length more than 1 (nonloops)
+// to contain exactly one of the distinguished nodes.
+message CircuitCoveringConstraintProto {
+  repeated int32 nexts = 1;
+  repeated int64 distinguished_nodes = 2;
+}
+
 // The values of the n-tuple formed by the given variables can only be one of
 // the listed n-tuples in values. The n-tuples are encoded in a flattened way:
 //     [tuple0_v0, tuple0_v1, ..., tuple0_v{n-1}, tuple1_v0, ...].
@@ -235,6 +243,7 @@ message AutomataConstraintProto {
   repeated int32 vars = 7;
 }
 
+// Next id: 26
 message ConstraintProto {
   // For debug/logging only. Can be empty.
   string name = 1;
@@ -264,6 +273,7 @@ message ConstraintProto {
     ElementConstraintProto element = 14;
     CircuitConstraintProto circuit = 15;
     RoutesConstraintProto routes = 23;
+    CircuitCoveringConstraintProto circuit_covering = 25;
     TableConstraintProto table = 16;
     AutomataConstraintProto automata = 17;
     InverseConstraintProto inverse = 18;
