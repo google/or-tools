@@ -12,7 +12,7 @@ nbook = v4.upgrade(nbook)  # Upgrade v3 to v4
 jsonform = v4.writes(nbook) + "\n"
 output = input
 output = output.replace('.py', '.ipynb')
-output = output.replace('examples/python', 'examples/colab')
+output = output.replace('examples/python', 'examples/notebook')
 print('writing %s' % output)
 with open(output, "w") as fpout:
     fpout.write(jsonform)
