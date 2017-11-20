@@ -117,8 +117,14 @@ VariableUsage ComputeVariableUsage(const CpModelProto& model_proto,
     }
   }
 
-  // Make sure that an unused variable is instantiated as an IntegerVariable
   for (int i = 0; i < model_proto.variables_size(); ++i) {
+    // Take into account the presence literal of optional variables.
+    if (!model_proto.variables(i).enforcement_literal().empty()) {
+      references.literals.insert(
+          model_proto.variables(i).enforcement_literal(0));
+    }
+
+    // Make sure that an unused variable is instantiated as an IntegerVariable.
     if (ContainsKey(references.literals, i)) continue;
     if (ContainsKey(references.literals, NegatedRef(i))) continue;
     if (ContainsKey(references.variables, i)) continue;
@@ -186,9 +192,8 @@ class ModelWithMapping {
   }
 
   IntegerVariable Integer(int i) const {
-    CHECK_LT(PositiveRef(i), integers_.size());
+    DCHECK(IsInteger(i));
     const IntegerVariable var = integers_[PositiveRef(i)];
-    CHECK_NE(var, kNoIntegerVariable);
     return RefIsPositive(i) ? var : NegationOf(var);
   }
 
@@ -207,7 +212,7 @@ class ModelWithMapping {
   }
 
   sat::Literal Literal(int i) const {
-    CHECK_LT(PositiveRef(i), booleans_.size());
+    DCHECK(IsBoolean(i));
     return sat::Literal(booleans_[PositiveRef(i)], RefIsPositive(i));
   }
 
@@ -1237,39 +1242,41 @@ void LoadAutomataConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   m->Add(TransitionConstraint(vars, transitions, starting_state, final_states));
 }
 
-// From vector of n IntegerVariables, fill an n x n matrix of LiteralIndex
-// such that matrix[i][j] is the LiteralIndex of vars[i] == j.
-void FillLiteralIndexSquareMatrixFromIntegerVariableVector(
-    ModelWithMapping* m, const std::vector<IntegerVariable>& vars,
-    std::vector<std::vector<LiteralIndex>>* matrix) {
+// From vector of n IntegerVariables, returns an n x n matrix of Literal
+// such that matrix[i][j] is the Literal corresponding to vars[i] == j.
+std::vector<std::vector<Literal>> GetSquareMatrixFromIntegerVariables(
+    const std::vector<IntegerVariable>& vars, ModelWithMapping* m) {
   const int n = vars.size();
-  matrix->resize(n);
+  const Literal kTrueLiteral =
+      m->GetOrCreate<IntegerEncoder>()->GetTrueLiteral();
+  const Literal kFalseLiteral =
+      m->GetOrCreate<IntegerEncoder>()->GetFalseLiteral();
+  std::vector<std::vector<Literal>> matrix(
+      n, std::vector<Literal>(n, kFalseLiteral));
   for (int i = 0; i < n; i++) {
-    (*matrix)[i].resize(n, kFalseLiteralIndex);
     for (int j = 0; j < n; j++) {
       if (m->Get(IsFixed(vars[i]))) {
         const int value = m->Get(Value(vars[i]));
         DCHECK_LE(0, value);
         DCHECK_LT(value, n);
-        (*matrix)[i][value] = kTrueLiteralIndex;
+        matrix[i][value] = kTrueLiteral;
       } else {
         const auto encoding = m->Add(FullyEncodeVariable(vars[i]));
         for (const auto& entry : encoding) {
           const int value = entry.value.value();
           DCHECK_LE(0, value);
           DCHECK_LT(value, n);
-          (*matrix)[i][value] = entry.literal.Index();
+          matrix[i][value] = entry.literal;
         }
       }
     }
   }
+  return matrix;
 }
 
 void LoadCircuitConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   const std::vector<IntegerVariable> nexts = m->Integers(ct.circuit().nexts());
-  std::vector<std::vector<LiteralIndex>> graph;
-  FillLiteralIndexSquareMatrixFromIntegerVariableVector(m, nexts, &graph);
-  m->Add(SubcircuitConstraint(graph));
+  m->Add(SubcircuitConstraint(GetSquareMatrixFromIntegerVariables(nexts, m)));
 }
 
 // TODO(user): provide a sparse API.
@@ -1282,12 +1289,14 @@ void LoadRoutesConstraint(const ConstraintProto& ct, ModelWithMapping* m) {
   for (const int32 head : arg.heads()) {
     num_nodes = std::max(num_nodes, head + 1);
   }
-  std::vector<std::vector<LiteralIndex>> graph(
-      num_nodes, std::vector<LiteralIndex>(num_nodes, kFalseLiteralIndex));
 
+  const Literal kFalseLiteral =
+      m->GetOrCreate<IntegerEncoder>()->GetFalseLiteral();
+  std::vector<std::vector<Literal>> graph(
+      num_nodes, std::vector<Literal>(num_nodes, kFalseLiteral));
   const int num_arcs = arg.tails_size();
   for (int i = 0; i < num_arcs; ++i) {
-    graph[arg.tails(i)][arg.heads(i)] = m->Literal(arg.literals(i)).Index();
+    graph[arg.tails(i)][arg.heads(i)] = m->Literal(arg.literals(i));
   }
   m->Add(MultipleSubcircuitThroughZeroConstraint(graph));
 }
@@ -1296,8 +1305,8 @@ void LoadCircuitCoveringConstraint(const ConstraintProto& ct,
                                    ModelWithMapping* m) {
   const std::vector<IntegerVariable> nexts =
       m->Integers(ct.circuit_covering().nexts());
-  std::vector<std::vector<LiteralIndex>> graph;
-  FillLiteralIndexSquareMatrixFromIntegerVariableVector(m, nexts, &graph);
+  const std::vector<std::vector<Literal>> graph =
+      GetSquareMatrixFromIntegerVariables(nexts, m);
   const std::vector<int> distinguished(
       ct.circuit_covering().distinguished_nodes().begin(),
       ct.circuit_covering().distinguished_nodes().end());

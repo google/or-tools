@@ -51,8 +51,8 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   // being present when the given literal is true. The special values
   // kTrueLiteralIndex and kFalseLiteralIndex can be used for arcs that are
   // either always there or never there.
-  CircuitPropagator(std::vector<std::vector<LiteralIndex>> graph,
-                    Options options, Trail* trail);
+  CircuitPropagator(std::vector<std::vector<Literal>> graph, Options options,
+                    Model* model);
 
   void SetLevel(int level) final;
   bool Propagate() final;
@@ -60,18 +60,6 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   void RegisterWith(GenericLiteralWatcher* watcher);
 
  private:
-  // Helper to deal with kTrueLiteralIndex and kFalseLiteralIndex.
-  bool LiteralIndexIsTrue(LiteralIndex index) {
-    if (index == kTrueLiteralIndex) return true;
-    if (index == kFalseLiteralIndex) return false;
-    return assignment_.LiteralIsTrue(Literal(index));
-  }
-  bool LiteralIndexIsFalse(LiteralIndex index) {
-    if (index == kTrueLiteralIndex) return false;
-    if (index == kFalseLiteralIndex) return true;
-    return assignment_.LiteralIsFalse(Literal(index));
-  }
-
   // Updates the structures when the given arc is added to the paths.
   void AddArc(int tail, int head, LiteralIndex literal_index);
 
@@ -81,7 +69,7 @@ class CircuitPropagator : PropagatorInterface, ReversibleInterface {
   void FillReasonForPath(int start_node, std::vector<Literal>* reason) const;
 
   const int num_nodes_;
-  const std::vector<std::vector<LiteralIndex>> graph_;
+  const std::vector<std::vector<Literal>> graph_;
   const Options options_;
   Trail* trail_;
   const VariablesAssignment& assignment_;
@@ -161,7 +149,7 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
   // Used in Propagate() to represent paths and circuits.
   std::vector<int> next_;
   std::vector<int> prev_;
-  std::vector<int> visited_;
+  std::vector<bool> visited_;
 };
 
 // ============================================================================
@@ -176,39 +164,17 @@ class CircuitCoveringPropagator : PropagatorInterface, ReversibleInterface {
 // the other constraints are not changed, i.e. matrix[0][5] is still counted
 // in column 5.
 std::function<void(Model*)> ExactlyOnePerRowAndPerColumn(
-    const std::vector<std::vector<LiteralIndex>>& square_matrix,
+    const std::vector<std::vector<Literal>>& graph,
     bool ignore_row_and_column_zero = false);
 
-inline std::function<void(Model*)> SubcircuitConstraint(
-    const std::vector<std::vector<LiteralIndex>>& graph) {
-  return [=](Model* model) {
-    if (graph.empty()) return;
-    model->Add(ExactlyOnePerRowAndPerColumn(graph));
-    CircuitPropagator::Options options;
-    CircuitPropagator* constraint =
-        new CircuitPropagator(graph, options, model->GetOrCreate<Trail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
-}
+std::function<void(Model*)> SubcircuitConstraint(
+    const std::vector<std::vector<Literal>>& graph);
 
-inline std::function<void(Model*)> MultipleSubcircuitThroughZeroConstraint(
-    const std::vector<std::vector<LiteralIndex>>& graph) {
-  return [=](Model* model) {
-    if (graph.empty()) return;
-    model->Add(ExactlyOnePerRowAndPerColumn(
-        graph, /*ignore_row_and_column_zero=*/true));
-    CircuitPropagator::Options options;
-    options.multiple_subcircuit_through_zero = true;
-    CircuitPropagator* constraint =
-        new CircuitPropagator(graph, options, model->GetOrCreate<Trail>());
-    constraint->RegisterWith(model->GetOrCreate<GenericLiteralWatcher>());
-    model->TakeOwnership(constraint);
-  };
-}
+std::function<void(Model*)> MultipleSubcircuitThroughZeroConstraint(
+    const std::vector<std::vector<Literal>>& graph);
 
 std::function<void(Model*)> CircuitCovering(
-    const std::vector<std::vector<LiteralIndex>>& next,
+    const std::vector<std::vector<Literal>>& graph,
     const std::vector<int>& distinguished_nodes);
 
 }  // namespace sat

@@ -299,7 +299,7 @@ class IntegerEncoder {
   LiteralIndex SearchForLiteralAtOrBefore(IntegerLiteral i) const;
 
   // Get the literal always set to true, make it if it does not exist.
-  Literal GetLiteralTrue() {
+  Literal GetTrueLiteral() {
     DCHECK_EQ(0, sat_solver_->CurrentDecisionLevel());
     if (literal_index_true_ == kNoLiteralIndex) {
       const Literal literal_true =
@@ -309,6 +309,7 @@ class IntegerEncoder {
     }
     return Literal(literal_index_true_);
   }
+  Literal GetFalseLiteral() { return GetTrueLiteral().Negated(); }
 
  private:
   // Only add the equivalence between i_lit and literal, if there is already an

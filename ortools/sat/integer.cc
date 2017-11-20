@@ -49,7 +49,7 @@ void IntegerEncoder::FullyEncodeVariable(IntegerVariable var) {
 
   std::vector<Literal> literals;
   if (values.size() == 1) {
-    literals.push_back(GetLiteralTrue());
+    literals.push_back(GetTrueLiteral());
   } else if (values.size() == 2) {
     literals.push_back(GetOrCreateAssociatedLiteral(
         IntegerLiteral::LowerOrEqual(var, values[0])));

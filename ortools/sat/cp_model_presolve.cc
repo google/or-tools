@@ -1572,6 +1572,18 @@ void PresolveCpModel(const CpModelProto& initial_model,
     context.UpdateConstraintVariableUsage(c);
   }
 
+  // Hack for the optional variable so their literal is never considered to
+  // appear in only one constraint. TODO(user): if it appears in none, then we
+  // can remove the variable...
+  for (int i = 0; i < initial_model.variables_size(); ++i) {
+    if (!initial_model.variables(i).enforcement_literal().empty()) {
+      context
+          .var_to_constraints[PositiveRef(
+              initial_model.variables(i).enforcement_literal(0))]
+          .insert(-1);
+    }
+  }
+
   // Hack for the objective so that it is never considered to appear in only one
   // constraint.
   if (initial_model.has_objective()) {
