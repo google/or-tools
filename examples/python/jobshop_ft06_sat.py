@@ -1,4 +1,5 @@
 from ortools.sat.python import cp_model
+from ortools.sat.python import visualization
 
 
 def main():
@@ -63,7 +64,14 @@ def main():
   # Solve model.
   solver = cp_model.CpSolver()
   response = solver.Solve(model)
-  print(solver.ObjectiveValue())
+
+  # Output solution.
+  if visualization.RunFromIPython():
+    starts = [[solver.Value(all_tasks[(i, j)][0]) for j in all_machines]
+              for i in all_jobs]
+    visualization.DisplayJobshop(starts, durations, machines, 'FT06')
+  else:
+    print('Optimal makespan: %i' % solver.ObjectiveValue())
 
 
 if __name__ == '__main__':

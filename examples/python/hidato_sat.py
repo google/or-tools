@@ -1,4 +1,5 @@
 from ortools.sat.python import cp_model
+from ortools.sat.python import visualization
 
 
 def BuildPairs(rows, cols):
@@ -110,7 +111,7 @@ def BuildPuzzle(problem):
   return puzzle
 
 
-def SolveHidato(puzzle):
+def SolveHidato(puzzle, index):
   """Solve the given hidato table."""
   # Create the model.
   model = cp_model.CpModel()
@@ -118,8 +119,12 @@ def SolveHidato(puzzle):
   r = len(puzzle)
   c = len(puzzle[0])
 
-  print(('Initial game (%i x %i)' % (r, c)))
-  PrintMatrix(puzzle)
+  if not visualization.RunFromIPython():
+    print('')
+    print('----- Solving problem %i -----' % index)
+    print('')
+    print(('Initial game (%i x %i)' % (r, c)))
+    PrintMatrix(puzzle)
 
   #
   # declare variables
@@ -154,20 +159,29 @@ def SolveHidato(puzzle):
   status = solver.Solve(model)
 
   if status == cp_model.MODEL_SAT:
-    PrintSolution([solver.Value(x) for x in positions], r, c,)
+    if visualization.RunFromIPython():
+      output = visualization.SvgWrapper(10, r, 40.0)
+      for i in range(len(positions)):
+        val = solver.Value(positions[i])
+        x = val % c
+        y = val // c
+        color = 'white' if puzzle[y][x] == 0 else 'lightgreen'
+        value = solver.Value(positions[i])
+        output.AddRectangle(x, r - y - 1, 1, 1, color, 'black', str(i + 1))
 
-  print('Statistics')
-  print('  - conflicts : %i' % solver.NumConflicts())
-  print('  - branches  : %i' % solver.NumBranches())
-  print('  - wall time : %f ms' % solver.WallTime())
+      output.AddTitle('Puzzle %i solved in %f s' % (index, solver.WallTime()))
+      output.Display()
+    else:
+      PrintSolution([solver.Value(x) for x in positions], r, c,)
+      print('Statistics')
+      print('  - conflicts : %i' % solver.NumConflicts())
+      print('  - branches  : %i' % solver.NumBranches())
+      print('  - wall time : %f ms' % solver.WallTime())
 
 
 def main():
   for i in range(1, 7):
-    print('')
-    print('----- Solving problem %i -----' % i)
-    print('')
-    SolveHidato(BuildPuzzle(i))
+    SolveHidato(BuildPuzzle(i), i)
 
 
 if __name__ == '__main__':

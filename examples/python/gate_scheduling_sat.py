@@ -17,12 +17,13 @@ We have a set of jobs to perform (duration, width).
 We have two parallel machines that can perform this job.
 One machine can only perform one job at a time.
 At any point in time, the sum of the width of the two active jobs does not
-exceed a max_width.
+exceed a max_length.
 
 The objective is to minimize the max end time of all jobs.
 """
 
 from ortools.sat.python import cp_model
+from ortools.sat.python import visualization
 
 
 def main():
@@ -112,17 +113,39 @@ def main():
   # Solve model.
   solver = cp_model.CpSolver()
   solver.Solve(model)
-  print('Solution')
-  print('  - makespan = %i' % solver.ObjectiveValue())
-  for i in all_jobs:
-    performed_machine = 1 - solver.Value(performed[i])
-    start = solver.Value(starts[i])
-    print('  - Job %i starts at %i on machine %i' %
-          (i, start, performed_machine))
-  print('Statistics')
-  print('  - conflicts : %i' % solver.NumConflicts())
-  print('  - branches  : %i' % solver.NumBranches())
-  print('  - wall time : %f ms' % solver.WallTime())
+
+
+  # Output solution.
+  if visualization.RunFromIPython():
+    output = visualization.SvgWrapper(solver.ObjectiveValue(), max_length, 40.0)
+    output.AddTitle('Makespan = %i' % solver.ObjectiveValue())
+    color_manager = visualization.ColorManager()
+    color_manager.SeedRandomColor(0)
+
+    for i in all_jobs:
+      performed_machine = 1 - solver.Value(performed[i])
+      start = solver.Value(starts[i])
+      dx = jobs[i][0]
+      dy = jobs[i][1]
+      sy = performed_machine * (max_length - dy)
+      output.AddRectangle(start, sy, dx, dy, color_manager.RandomColor(),
+                          'black', 'j%i' % i)
+
+    output.AddXScale()
+    output.AddYScale()
+    output.Display()
+  else:
+    print('Solution')
+    print('  - makespan = %i' % solver.ObjectiveValue())
+    for i in all_jobs:
+      performed_machine = 1 - solver.Value(performed[i])
+      start = solver.Value(starts[i])
+      print('  - Job %i starts at %i on machine %i' %
+            (i, start, performed_machine))
+    print('Statistics')
+    print('  - conflicts : %i' % solver.NumConflicts())
+    print('  - branches  : %i' % solver.NumBranches())
+    print('  - wall time : %f ms' % solver.WallTime())
 
 
 if __name__ == '__main__':

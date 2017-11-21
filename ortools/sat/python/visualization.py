@@ -20,6 +20,14 @@ import plotly.offline as pyo
 import svgwrite
 
 
+def RunFromIPython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
+
+
 def ToDate(v):
   return '2016-01-01 6:%02i:%02i' % (v / 60, v % 60)
 
@@ -156,4 +164,3 @@ class SvgWrapper(object):
         font_family='sans-serif',
         font_size='%dpx' % (self.__scaling / 2))
     self.__dwg.add(text)
-
