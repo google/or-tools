@@ -28,11 +28,13 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/join.h"
 #include <unordered_set>
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/hash.h"
 #include "ortools/sat/cp_model_checker.h"
+#include "ortools/sat/cp_model_objective.h"
 #include "ortools/sat/cp_model_utils.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
@@ -282,7 +284,7 @@ struct PresolveContext {
   // For each constant variable appearing in the model, we maintain a reference
   // variable with the same constant value. If two variables end up having the
   // same fixed value, then we can detect it using this and add a new
-  // equivalence relation. See TestAndExploitFixedDomain().
+  // equivalence relation. See ExploitFixedDomain().
   std::unordered_map<int64, int> constant_to_ref;
 
   // Variable <-> constraint graph.
@@ -1538,14 +1540,7 @@ void PresolveCpModel(const CpModelProto& initial_model,
                      CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping) {
   // The list of modified domain.
-  SparseBitset<int64> modified_domains(initial_model.variables_size());
-
   PresolveContext context;
-  for (int i = 0; i < initial_model.variables_size(); ++i) {
-    context.domains.push_back(
-        Domain(initial_model.variables(i), i, &modified_domains));
-    if (context.domains[i].IsFixed()) context.ExploitFixedDomain(i);
-  }
   context.working_model = presolved_model;
   context.mapping_model = mapping_model;
   *presolved_model = initial_model;
@@ -1555,9 +1550,21 @@ void PresolveCpModel(const CpModelProto& initial_model,
     *mapping_model->add_search_strategy() = decision_strategy;
   }
 
+  // Encode linear objective, so that it can be presolved like a normal
+  // constraint.
+  EncodeObjectiveAsSingleVariable(context.working_model);
+
+  // Initialize the domains.
+  SparseBitset<int64> modified_domains(context.working_model->variables_size());
+  for (int i = 0; i < context.working_model->variables_size(); ++i) {
+    context.domains.push_back(
+        Domain(context.working_model->variables(i), i, &modified_domains));
+    if (context.domains[i].IsFixed()) context.ExploitFixedDomain(i);
+  }
+
   // The queue of "active" constraints, initialized to all of them.
-  std::vector<bool> in_queue(initial_model.constraints_size(), true);
-  std::deque<int> queue(initial_model.constraints_size());
+  std::vector<bool> in_queue(context.working_model->constraints_size(), true);
+  std::deque<int> queue(context.working_model->constraints_size());
   std::iota(queue.begin(), queue.end(), 0);
 
   // This is used for constraint having unique variables in them (i.e. not
@@ -1566,28 +1573,28 @@ void PresolveCpModel(const CpModelProto& initial_model,
   std::unordered_set<std::pair<int, int>> var_constraint_pair_already_called;
 
   // Initialize the constraint <-> variable graph.
-  context.constraint_to_vars.resize(initial_model.constraints_size());
-  context.var_to_constraints.resize(initial_model.variables_size());
-  for (int c = 0; c < initial_model.constraints_size(); ++c) {
+  context.constraint_to_vars.resize(context.working_model->constraints_size());
+  context.var_to_constraints.resize(context.working_model->variables_size());
+  for (int c = 0; c < context.working_model->constraints_size(); ++c) {
     context.UpdateConstraintVariableUsage(c);
   }
 
   // Hack for the optional variable so their literal is never considered to
   // appear in only one constraint. TODO(user): if it appears in none, then we
   // can remove the variable...
-  for (int i = 0; i < initial_model.variables_size(); ++i) {
-    if (!initial_model.variables(i).enforcement_literal().empty()) {
+  for (int i = 0; i < context.working_model->variables_size(); ++i) {
+    if (!context.working_model->variables(i).enforcement_literal().empty()) {
       context
           .var_to_constraints[PositiveRef(
-              initial_model.variables(i).enforcement_literal(0))]
+              context.working_model->variables(i).enforcement_literal(0))]
           .insert(-1);
     }
   }
 
   // Hack for the objective so that it is never considered to appear in only one
   // constraint.
-  if (initial_model.has_objective()) {
-    for (const int obj_var : initial_model.objective().vars()) {
+  if (context.working_model->has_objective()) {
+    for (const int obj_var : context.working_model->objective().vars()) {
       context.var_to_constraints[PositiveRef(obj_var)].insert(-1);
     }
   }
@@ -1602,19 +1609,17 @@ void PresolveCpModel(const CpModelProto& initial_model,
       ConstraintProto* ct = context.working_model->mutable_constraints(c);
 
       // Generic presolve to exploit variable/literal equivalence.
-      bool changed = ExploitEquivalenceRelations(ct, &context);
+      if (ExploitEquivalenceRelations(ct, &context)) {
+        context.UpdateConstraintVariableUsage(c);
+      }
 
       // Generic presolve for reified constraint.
-      changed |= PresolveEnforcementLiteral(ct, &context);
-
-      // Because the functions below relies on proper usage stats, we need
-      // to update it now.
-      if (changed) {
+      if (PresolveEnforcementLiteral(ct, &context)) {
         context.UpdateConstraintVariableUsage(c);
-        changed = false;
       }
 
       // Call the presolve function for this constraint if any.
+      bool changed = false;
       switch (ct->constraint_case()) {
         case ConstraintProto::ConstraintCase::kBoolOr:
           changed |= PresolveBoolOr(ct, &context);
@@ -1731,34 +1736,11 @@ void PresolveCpModel(const CpModelProto& initial_model,
     return;
   }
 
-  // If the objective is a single variable, try to find a linear equation that
-  // "defines" it and expand the objective into its longer linear
-  // representation.
-  // TODO(user): Insert in main loop.
-  if (context.working_model->has_objective() &&
-      context.working_model->objective().vars_size() == 1) {
-    // Canonicalize the objective to make it easier on us by always making the
-    // coefficient equal to 1.0.
-    {
-      const int old_ref = context.working_model->objective().vars(0);
-      const int64 old_coeff = context.working_model->objective().coeffs(0);
-      const double muliplier = static_cast<double>(std::abs(old_coeff));
-      if (old_coeff < 0) {
-        context.working_model->mutable_objective()->set_vars(
-            0, NegatedRef(old_ref));
-      }
-      if (muliplier != 1.0) {
-        double old_factor = context.working_model->objective().scaling_factor();
-        if (old_factor == 0.0) old_factor = 1.0;
-        const double old_offset = context.working_model->objective().offset();
-        context.working_model->mutable_objective()->set_scaling_factor(
-            old_factor * muliplier);
-        context.working_model->mutable_objective()->set_offset(old_offset /
-                                                               muliplier);
-      }
-      context.working_model->mutable_objective()->set_coeffs(0, 1.0);
-    }
-
+  // Because of EncodeObjectiveAsSingleVariable(), if we have an objective,
+  // it is a single variable and canonicalized.
+  if (context.working_model->has_objective()) {
+    CHECK_EQ(context.working_model->objective().vars_size(), 1);
+    CHECK_EQ(context.working_model->objective().coeffs(0), 1);
     const int initial_obj_ref = context.working_model->objective().vars(0);
 
     // TODO(user): Expand the linear equation recursively in order to have
@@ -1895,6 +1877,8 @@ void PresolveCpModel(const CpModelProto& initial_model,
   // with a fixed size.
   int num_affine_relations = 0;
   for (int var = 0; var < presolved_model->variables_size(); ++var) {
+    if (context.domains[var].IsFixed()) continue;
+
     const AffineRelation::Relation r = context.GetAffineRelation(var);
     if (r.representative == var) continue;
 

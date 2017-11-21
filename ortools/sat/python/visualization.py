@@ -164,3 +164,4 @@ class SvgWrapper(object):
         font_family='sans-serif',
         font_size='%dpx' % (self.__scaling / 2))
     self.__dwg.add(text)
+

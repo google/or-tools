@@ -1566,6 +1566,7 @@ SAT_LIB_OBJS = \
     $(OBJ_DIR)/sat/cp_constraints.$O \
     $(OBJ_DIR)/sat/cp_model_checker.$O \
     $(OBJ_DIR)/sat/cp_model_expand.$O \
+    $(OBJ_DIR)/sat/cp_model_objective.$O \
     $(OBJ_DIR)/sat/cp_model_presolve.$O \
     $(OBJ_DIR)/sat/cp_model_search.$O \
     $(OBJ_DIR)/sat/cp_model_solver.$O \
@@ -1654,6 +1655,9 @@ $(SRC_DIR)/ortools/sat/cp_model_checker.h: \
     $(SRC_DIR)/ortools/base/integral_types.h
 
 $(SRC_DIR)/ortools/sat/cp_model_expand.h: \
+    $(GEN_DIR)/ortools/sat/cp_model.pb.h
+
+$(SRC_DIR)/ortools/sat/cp_model_objective.h: \
     $(GEN_DIR)/ortools/sat/cp_model.pb.h
 
 $(SRC_DIR)/ortools/sat/cp_model_presolve.h: \
@@ -1827,6 +1831,7 @@ $(SRC_DIR)/ortools/sat/sat_base.h: \
     $(SRC_DIR)/ortools/base/int_type_indexed_vector.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h \
+    $(SRC_DIR)/ortools/base/port.h \
     $(SRC_DIR)/ortools/base/span.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/util/bitset.h
@@ -1971,13 +1976,22 @@ $(OBJ_DIR)/sat/cp_model_expand.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_expand.cc \
     $(SRC_DIR)/ortools/sat/cp_model_expand.h \
     $(GEN_DIR)/ortools/sat/cp_model.pb.h \
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h \
     $(SRC_DIR)/ortools/base/hash.h \
-    $(SRC_DIR)/ortools/base/map_util.h
+    $(SRC_DIR)/ortools/base/map_util.h \
+    $(SRC_DIR)/ortools/util/saturated_arithmetic.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_expand.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_expand.$O
+
+$(OBJ_DIR)/sat/cp_model_objective.$O: \
+    $(SRC_DIR)/ortools/sat/cp_model_objective.cc \
+    $(SRC_DIR)/ortools/sat/cp_model_objective.h \
+    $(SRC_DIR)/ortools/sat/cp_model_utils.h
+	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Ssat$Scp_model_objective.cc $(OBJ_OUT)$(OBJ_DIR)$Ssat$Scp_model_objective.$O
 
 $(OBJ_DIR)/sat/cp_model_presolve.$O: \
     $(SRC_DIR)/ortools/sat/cp_model_presolve.cc \
     $(SRC_DIR)/ortools/sat/cp_model_checker.h \
+    $(SRC_DIR)/ortools/sat/cp_model_objective.h \
     $(SRC_DIR)/ortools/sat/cp_model_presolve.h \
     $(SRC_DIR)/ortools/sat/cp_model_utils.h \
     $(SRC_DIR)/ortools/sat/sat_base.h \
@@ -1985,6 +1999,7 @@ $(OBJ_DIR)/sat/cp_model_presolve.$O: \
     $(SRC_DIR)/ortools/sat/simplification.h \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \
+    $(SRC_DIR)/ortools/base/join.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/map_util.h \
     $(SRC_DIR)/ortools/base/stl_util.h \
@@ -2181,6 +2196,7 @@ $(OBJ_DIR)/sat/pb_constraint.$O: \
 
 $(OBJ_DIR)/sat/precedences.$O: \
     $(SRC_DIR)/ortools/sat/precedences.cc \
+    $(SRC_DIR)/ortools/sat/cp_constraints.h \
     $(SRC_DIR)/ortools/sat/precedences.h \
     $(SRC_DIR)/ortools/base/cleanup.h \
     $(SRC_DIR)/ortools/base/logging.h \
