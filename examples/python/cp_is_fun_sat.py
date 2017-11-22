@@ -21,7 +21,6 @@ This problem has 72 different solutions in base 10.
 """
 
 from __future__ import print_function
-import time
 from ortools.sat.python import cp_model
 
 class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
@@ -30,20 +29,15 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
   def __init__(self, variables):
     self.__variables = variables
     self.__solution_count = 0
-    self.__start_time = time.time()
-
-  def SolutionCount(self):
-    return self.__solution_count
 
   def NewSolution(self):
-    current_time = time.time()
-    print('Solution %i, time = %f s' %
-          (self.__solution_count, current_time - self.__start_time), end=': ')
     self.__solution_count += 1
-
     for v in self.__variables:
       print('%s=%i' % (v, self.Value(v)), end = ' ')
     print()
+
+  def SolutionCount(self):
+    return self.__solution_count
 
 
 def CPIsFun():
@@ -84,6 +78,13 @@ def CPIsFun():
   solver = cp_model.CpSolver()
   solution_printer = VarArraySolutionPrinter(letters)
   status = solver.SearchForAllSolutions(model, solution_printer)
+
+  print()
+  print('Statistics')
+  print('  - conflicts       : %i' % solver.NumConflicts())
+  print('  - branches        : %i' % solver.NumBranches())
+  print('  - wall time       : %f ms' % solver.WallTime())
+  print('  - solutions found : %i' % solution_printer.SolutionCount())
 
 
 if __name__ == '__main__':
