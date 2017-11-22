@@ -70,7 +70,8 @@ def main():
     model.AddMaxEquality(works[i], x[i])
 
   # Each task is assigned to at least one worker.
-  [model.Add(sum(x[i][j] for i in all_workers) >= 1) for j in all_tasks]
+  for j in all_tasks:
+    model.Add(sum(x[i][j] for i in all_workers) >= 1)
 
   # Total task size for each worker is at most total_size_max
   for i in all_workers:
@@ -86,6 +87,7 @@ def main():
             sum(x[i][j] * cost[i][j] for j in all_tasks for i in all_workers))
   model.Minimize(total_cost)
 
+  # Solve and output solution.
   solver = cp_model.CpSolver()
   status = solver.Solve(model)
 
