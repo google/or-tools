@@ -1,5 +1,5 @@
+import collections
 from ortools.sat.python import cp_model
-from ortools.sat.python import visualization
 
 
 def main():
@@ -28,16 +28,18 @@ def main():
   # Computes horizon dynamically.
   horizon = sum([sum(durations[i]) for i in all_jobs])
 
+  Task = collections.namedtuple('Task', 'start end interval')
+
   # Creates jobs.
   all_tasks = {}
   for i in all_jobs:
     for j in all_machines:
-      start = model.NewIntVar(0, horizon, 'start_%i_%i' % (i, j))
+      start_var = model.NewIntVar(0, horizon, 'start_%i_%i' % (i, j))
       duration = durations[i][j]
-      end = model.NewIntVar(0, horizon, 'end_%i_%i' % (i, j))
-      interval = model.NewIntervalVar(start, duration, end,
-                                      'interval_%i_%i' % (i, j))
-      all_tasks[(i, j)] = (start, end, interval)
+      end_var = model.NewIntVar(0, horizon, 'end_%i_%i' % (i, j))
+      interval_var = model.NewIntervalVar(start_var, duration, end_var,
+                                         'interval_%i_%i' % (i, j))
+      all_tasks[(i, j)] = Task(start=start_var, end=end_var, interval=interval_var)
 
   # Create disjuctive constraints.
   machine_to_jobs = {}
@@ -46,32 +48,27 @@ def main():
     for j in all_jobs:
       for k in all_machines:
         if machines[j][k] == i:
-          machines_jobs.append(all_tasks[(j, k)][2])
+          machines_jobs.append(all_tasks[(j, k)].interval)
     machine_to_jobs[i] = machines_jobs
     model.AddNoOverlap(machines_jobs)
 
   # Precedences inside a job.
   for i in all_jobs:
     for j in range(0, machines_count - 1):
-      model.Add(all_tasks[(i, j + 1)][0] >= all_tasks[(i, j)][1])
+      model.Add(all_tasks[(i, j + 1)].start >= all_tasks[(i, j)].end)
 
   # Makespan objective.
   obj_var = model.NewIntVar(0, horizon, 'makespan')
   model.AddMaxEquality(
-      obj_var, [all_tasks[(i, machines_count - 1)][1] for i in all_jobs])
+      obj_var, [all_tasks[(i, machines_count - 1)].end for i in all_jobs])
   model.Minimize(obj_var)
 
   # Solve model.
   solver = cp_model.CpSolver()
   response = solver.Solve(model)
 
-  # Output solution.
-  if visualization.RunFromIPython():
-    starts = [[solver.Value(all_tasks[(i, j)][0]) for j in all_machines]
-              for i in all_jobs]
-    visualization.DisplayJobshop(starts, durations, machines, 'FT06')
-  else:
-    print('Optimal makespan: %i' % solver.ObjectiveValue())
+  # Print out makespan.
+  print('Optimal makespan: %i' % solver.ObjectiveValue())
 
 
 if __name__ == '__main__':
