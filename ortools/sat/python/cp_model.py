@@ -509,6 +509,16 @@ class CpModel(object):
     model_ct.linear.domain.extend([lb, ub])
     return ct
 
+  def AddSumConstraint(self, variables, lb, ub):
+    """Adds the constraints lb <= sum(variables) <= ub."""
+    ct = Constraint(self.__model.constraints)
+    model_ct = self.__model.constraints[ct.Index()]
+    for v in variables:
+      model_ct.linear.vars.append(v.Index())
+      model_ct.linear.coeffs.append(1)
+    model_ct.linear.domain.extend([lb, ub])
+    return ct
+
   def AddLinearConstraintWithBounds(self, terms, bounds):
     """Adds the constraints sum(terms) in bounds, where term = (var, coef)."""
     ct = Constraint(self.__model.constraints)

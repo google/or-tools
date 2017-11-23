@@ -80,7 +80,7 @@ def main():
   # Each nurse works 5 or 6 days in a week.
   # That is each nurse works shift 0 at most 2 times.
   for n in all_nurses:
-    model.Add(sum(shifts[(n, d, 0)] for d in all_days) <= 2)
+    model.AddSumConstraint([shifts[(n, d, 0)] for d in all_days], 1, 2)
 
   # works_shift[(n, s)] is 1 if nurse n works shift s at least one day in
   # the week.
