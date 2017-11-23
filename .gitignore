@@ -18,14 +18,17 @@ or-tools*.zip
 *.exp
 *.pdb
 *.ass
+*.swp
 
 bin/
 ortools/gen/
 objs/
 temp/
+temp-python*
 lib/
 examples/csharp/solution/*.csproj
 examples/csharp/*.sln
+examples/notebook/.ipynb_checkpoints
 
 ortools/bazel-*
 examples/bazel-*
