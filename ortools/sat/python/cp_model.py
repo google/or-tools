@@ -1006,6 +1006,7 @@ class CpSolver(object):
   def __init__(self):
     self.__model = None
     self.__solution = None
+    self.parameters = sat_parameters_pb2.SatParameters()
 
   def Solve(self, model):
     """Solves the given model and returns the solve status."""
@@ -1025,12 +1026,17 @@ class CpSolver(object):
     if model.HasObjective():
       raise TypeError('Search for all solutions is only defined on '
                       'satisfiability problems')
-    parameters = sat_parameters_pb2.SatParameters()
-    parameters.enumerate_all_solutions = True
-    parameters.cp_model_presolve = False
+    # Store old values.
+    enumerate_all = self.parameters.enumerate_all_solutions
+    presolve = self.parameters.cp_model_presolve
+    self.parameters.enumerate_all_solutions = True
+    self.parameters.cp_model_presolve = False
     self.__solution = (
         pywrapsat.SatHelper.SolveWithParametersAndSolutionObserver(
-            model.ModelProto(), parameters, callback))
+            model.ModelProto(), self.parameters, callback))
+    # Restore parameters.
+    self.parameters.enumerate_all_solutions = enumerate_all
+    self.parameters.cp_model_presolve = presolve
     return self.__solution.status
 
   def Value(self, expression):
