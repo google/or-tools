@@ -789,7 +789,12 @@ SatSolver::Status SatSolver::ReapplyDecisionsUpTo(
     DCHECK_GE(decision_index, current_decision_level_);
     const Literal previous_decision = decisions_[decision_index].literal;
     ++decision_index;
-    if (Assignment().LiteralIsTrue(previous_decision)) continue;
+    if (Assignment().LiteralIsTrue(previous_decision)) {
+      // Note that this particular position in decisions_ will be overridden,
+      // but that is fine since this is a consequence of the previous decision,
+      // so we will never need to take it into account again.
+      continue;
+    }
     if (Assignment().LiteralIsFalse(previous_decision)) {
       // Update decision so that GetLastIncompatibleDecisions() works.
       decisions_[current_decision_level_].literal = previous_decision;
@@ -1131,9 +1136,28 @@ SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
   SCOPED_TIME_STAT(&stats_);
-  std::vector<Literal> unsat_assumptions;
   const Literal false_assumption = decisions_[CurrentDecisionLevel()].literal;
-  DCHECK(trail_->Assignment().LiteralIsFalse(false_assumption));
+  std::vector<Literal> unsat_assumptions;
+  if (!trail_->Assignment().LiteralIsFalse(false_assumption)) {
+    // This can only happen in some corner cases where: we enqueued
+    // false_assumption, it leads to a conflict, but after re-enqueing the
+    // decisions that were backjumped over, there is no conflict anymore. This
+    // can only happen in the presence of propagators that are non-monotonic
+    // and do not propagate the same thing when there is more literal on the
+    // trail.
+    //
+    // In this case, we simply return all the decisions since we know that is
+    // a valid conflict. Since this should be rare, it is okay to not "minimize"
+    // what we return like we do below.
+    //
+    // TODO(user): unit-test this case with a mock propagator.
+    unsat_assumptions.reserve(CurrentDecisionLevel());
+    for (int i = 0; i < CurrentDecisionLevel(); ++i) {
+      unsat_assumptions.push_back(decisions_[i].literal);
+    }
+    return unsat_assumptions;
+  }
+
   unsat_assumptions.push_back(false_assumption);
 
   // This will be used to mark all the literals inspected while we process the

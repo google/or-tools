@@ -757,6 +757,7 @@ void PrecedencesPropagator::AddGreaterThanAtLeastOneOfConstraints(
         selectors.push_back(Literal(arcs_[a].presence_l));
       }
       model->Add(GreaterThanAtLeastOneOf(target, vars, offsets, selectors));
+      solver->Propagate();
     }
   }
 
