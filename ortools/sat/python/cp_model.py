@@ -1010,7 +1010,8 @@ class CpSolver(object):
 
   def Solve(self, model):
     """Solves the given model and returns the solve status."""
-    self.__solution = pywrapsat.SatHelper.Solve(model.ModelProto())
+    self.__solution = pywrapsat.SatHelper.SolveWithParameters(
+      model.ModelProto(), self.parameters)
     return self.__solution.status
 
   def SolveWithSolutionObserver(self, model, callback):
