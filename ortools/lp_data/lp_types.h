@@ -268,6 +268,8 @@ class StrictITIVector : public ITIVector<IntType, T> {
   void resize(IntType size) { ParentType::resize(size.value()); }
   void resize(IntType size, const T& v) { ParentType::resize(size.value(), v); }
 
+  void reserve(IntType size) { ParentType::reserve(size.value()); }
+
   void assign(IntType size, const T& v) { ParentType::assign(size.value(), v); }
 
   IntType size() const { return IntType(ParentType::size()); }
