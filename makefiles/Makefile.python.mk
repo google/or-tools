@@ -7,7 +7,7 @@
 OR_TOOLS_PYTHONPATH = $(OR_ROOT_FULL)$(CPSEP)$(OR_ROOT_FULL)$Sdependencies$Ssources$Sprotobuf-$(PROTOBUF_TAG)$Spython
 
 ifeq ($(SYSTEM),win)
-  PYTHON_EXECUTABLE = $(WINDOWS_PATH_TO_PYTHON)$Spython.exe
+  PYTHON_EXECUTABLE = "$(WINDOWS_PATH_TO_PYTHON)$Spython.exe"
   SET_PYTHONPATH = @set PYTHONPATH=$(OR_TOOLS_PYTHONPATH) &&
 else #UNIX
   PYTHON_EXECUTABLE = $(shell which python$(UNIX_PYTHON_VER))
@@ -424,5 +424,10 @@ endif
 	cd $(PYPI_ARCHIVE_TEMP_DIR)/ortools && twine upload dist/*
 
 detect_python:
+	@echo PYTHON_VERSION = $(PYTHON_VERSION)
+	@echo PYTHON_EXECUTABLE = $(PYTHON_EXECUTABLE)
+	@echo PYTHON_INC = $(PYTHON_INC)
+	@echo PYTHON_LNK = $(PYTHON_LNK)
 	@echo PYTHON3 = $(PYTHON3)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
+	@echo SET_PYTHONPATH = $(SET_PYTHONPATH)

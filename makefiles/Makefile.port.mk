@@ -174,7 +174,7 @@ ifeq ("$(SYSTEM)","win")
   else
     SELECTED_PATH_TO_PYTHON = WINDOWS_PATH_TO_PYTHON = $(DETECTED_PATH_TO_PYTHON)
   endif
-  WINDOWS_PYTHON_VERSION = $(shell $(WINDOWS_PATH_TO_PYTHON)\python -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
+  WINDOWS_PYTHON_VERSION = $(shell "$(WINDOWS_PATH_TO_PYTHON)\python" -c "from sys import version_info as v; print (str(v[0]) + str(v[1]))")
 
   #Detect csc
 
