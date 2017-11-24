@@ -28,6 +28,7 @@ create_dirs:
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Salgorithms
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbase
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sconstraint_solver
+	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sdata
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sgflags
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sglog
 	$(MKDIR) temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbop
@@ -82,6 +83,8 @@ cc_archive: cc
 	$(COPY) ortools$Sbase$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbase
 	$(COPY) ortools$Sconstraint_solver$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sconstraint_solver
 	$(COPY) ortools$Sgen$Sortools$Sconstraint_solver$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sconstraint_solver
+	$(COPY) ortools$Sdata$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sdata
+	$(COPY) ortools$Sgen$Sortools$Sdata$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sdata
 	$(COPY) ortools$Sbop$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbop
 	$(COPY) ortools$Sgen$Sortools$Sbop$S*.pb.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sbop
 	$(COPY) ortools$Sglop$S*.h temp$S$(INSTALL_DIR)$Sinclude$Sortools$Sglop
