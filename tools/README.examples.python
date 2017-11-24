@@ -1,9 +1,12 @@
-This file describes how to install the or-tools python binary archive.
+This file describes how to use OR-Tools in python with the binary archives.
 
 OR-Tools is located at https://developers.google.com/optimization
 
+Full installation instructions are located at:
+  https://developers.google.com/optimization/introduction/installing/binary
+
 These modules have been tested under:
-  - Ubuntu 14.04 and 16.04 up (64-bit).
+  - Ubuntu 14.04 and up, CentOS 7, Debian 9.
   - Mac OS X El Capitan with Xcode 7.x (64 bit).
   - Microsoft Windows with Visual Studio 2015 and 2017 (64-bit)
 
@@ -12,14 +15,10 @@ Upon decompressing the archive, you will get the following structure:
 or-tools/
   LICENSE-2.0.txt      <- Apache License
   README               <- This file
-  data/                <- Data for the examples.
-  examples/            <- Python examples
-  ortools/             <- ortools package
-    algorithms/        <- Directory containing non-graph algorithms.
-    constraint_solver/ <- The main directory for the constraint library.
-    graph/             <- Graph algorithms.
-    linear_solver/     <- Linear solver wrapper.
-    sat/               <- Sat solver.
+  data/                <- Data for the examples
+  examples/
+  examples/python      <- Python examples
+  examples/notebook    <- Jupyter/IPython notebooks
 
 To install the package :
   1/Make sure python and pip are installed
