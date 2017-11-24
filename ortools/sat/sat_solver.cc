@@ -1741,7 +1741,6 @@ void SatSolver::ResetPolarity(BooleanVariable from) {
 void SatSolver::InitializeVariableOrdering() {
   SCOPED_TIME_STAT(&stats_);
   var_ordering_.Clear();
-  pq_need_update_for_var_at_trail_index_.ClearAndResize(num_variables_.value());
 
   // First, extract the variables without activity, and add the other to the
   // priority queue.
@@ -1781,9 +1780,8 @@ void SatSolver::InitializeVariableOrdering() {
   }
 
   // Finish the queue initialization.
-  for (int i = 0; i < trail_->Index(); ++i) {
-    pq_need_update_for_var_at_trail_index_.Set(i);
-  }
+  pq_need_update_for_var_at_trail_index_.ClearAndResize(num_variables_.value());
+  pq_need_update_for_var_at_trail_index_.SetAllBefore(trail_->Index());
   var_ordering_is_initialized_ = true;
 }
 

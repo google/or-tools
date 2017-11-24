@@ -55,7 +55,8 @@ std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
 // for most of the function here, not a O(log(n)) one.
 class TaskSet {
  public:
-  TaskSet() : optimized_restart_(0) {}
+  explicit TaskSet(int num_tasks) { sorted_tasks_.reserve(num_tasks); }
+
   struct Entry {
     int task;
     IntegerValue min_start;
@@ -109,7 +110,7 @@ class TaskSet {
 
  private:
   std::vector<Entry> sorted_tasks_;
-  mutable int optimized_restart_;
+  mutable int optimized_restart_ = 0;
   DISALLOW_COPY_AND_ASSIGN(TaskSet);
 };
 
@@ -147,7 +148,9 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
  public:
   DisjunctiveDetectablePrecedences(bool time_direction,
                                    SchedulingConstraintHelper* helper)
-      : time_direction_(time_direction), helper_(helper) {}
+      : time_direction_(time_direction),
+        helper_(helper),
+        task_set_(helper->NumTasks()) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -160,7 +163,9 @@ class DisjunctiveDetectablePrecedences : public PropagatorInterface {
 class DisjunctiveNotLast : public PropagatorInterface {
  public:
   DisjunctiveNotLast(bool time_direction, SchedulingConstraintHelper* helper)
-      : time_direction_(time_direction), helper_(helper) {}
+      : time_direction_(time_direction),
+        helper_(helper),
+        task_set_(helper->NumTasks()) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -174,7 +179,9 @@ class DisjunctiveEdgeFinding : public PropagatorInterface {
  public:
   DisjunctiveEdgeFinding(bool time_direction,
                          SchedulingConstraintHelper* helper)
-      : time_direction_(time_direction), helper_(helper) {}
+      : time_direction_(time_direction),
+        helper_(helper),
+        task_set_(helper->NumTasks()) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -197,7 +204,9 @@ class DisjunctivePrecedences : public PropagatorInterface {
       : time_direction_(time_direction),
         helper_(helper),
         integer_trail_(integer_trail),
-        precedences_(precedences) {}
+        precedences_(precedences),
+        task_set_(helper->NumTasks()),
+        task_is_currently_present_(helper->NumTasks()) {}
   bool Propagate() final;
   int RegisterWith(GenericLiteralWatcher* watcher);
 
@@ -208,6 +217,7 @@ class DisjunctivePrecedences : public PropagatorInterface {
   PrecedencesPropagator* precedences_;
 
   TaskSet task_set_;
+  std::vector<bool> task_is_currently_present_;
   std::vector<LiteralIndex> reason_for_beeing_before_;
   std::vector<PrecedencesPropagator::IntegerPrecedences> before_;
 };

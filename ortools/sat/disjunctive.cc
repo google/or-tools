@@ -131,8 +131,8 @@ std::function<void(Model*)> DisjunctiveWithBooleanPrecedences(
 }
 
 void TaskSet::AddEntry(const Entry& e) {
+  int j = sorted_tasks_.size();
   sorted_tasks_.push_back(e);
-  int j = static_cast<int>(sorted_tasks_.size()) - 1;
   while (j > 0 && sorted_tasks_[j - 1].min_start > e.min_start) {
     sorted_tasks_[j] = sorted_tasks_[j - 1];
     --j;
@@ -187,9 +187,9 @@ IntegerValue TaskSet::ComputeEndMin(int task_to_ignore,
     if (e.min_start >= min_end) {
       *critical_index = i;
       if (!ignored) optimized_restart_ = i;
-      min_end = CapAdd(e.min_start, e.min_duration);
+      min_end = e.min_start + e.min_duration;
     } else {
-      min_end = CapAdd(min_end, e.min_duration);
+      min_end += e.min_duration;
     }
   }
   return min_end;
@@ -327,12 +327,13 @@ bool DisjunctiveDetectablePrecedences::Propagate() {
     if (helper_->IsAbsent(t)) continue;
 
     while (queue_index >= 0) {
-      const int to_insert =
-          task_by_decreasing_max_start[queue_index].task_index;
-      if (min_end <= helper_->StartMax(to_insert)) break;
-      if (helper_->IsPresent(to_insert)) {
-        task_set_.AddEntry({to_insert, helper_->StartMin(to_insert),
-                            helper_->DurationMin(to_insert)});
+      const auto to_insert = task_by_decreasing_max_start[queue_index];
+      const int task_index = to_insert.task_index;
+      const IntegerValue max_start = to_insert.time;
+      if (min_end <= max_start) break;
+      if (helper_->IsPresent(task_index)) {
+        task_set_.AddEntry({task_index, helper_->StartMin(task_index),
+                            helper_->DurationMin(task_index)});
       }
       --queue_index;
     }
@@ -397,14 +398,12 @@ int DisjunctiveDetectablePrecedences::RegisterWith(
 bool DisjunctivePrecedences::Propagate() {
   helper_->SetTimeDirection(time_direction_);
 
-  std::vector<bool> task_is_currently_present(helper_->EndVars().size());
-  for (int i = 0; i < helper_->NumTasks(); ++i) {
-    task_is_currently_present[i] = helper_->IsPresent(i);
+  const int num_tasks = helper_->NumTasks();
+  for (int t = 0; t < num_tasks; ++t) {
+    task_is_currently_present_[t] = helper_->IsPresent(t);
   }
   precedences_->ComputePrecedences(helper_->EndVars(),
-                                   task_is_currently_present, &before_);
-
-  const int num_tasks = helper_->NumTasks();
+                                   task_is_currently_present_, &before_);
 
   // We don't care about the initial content of this vector.
   reason_for_beeing_before_.resize(num_tasks, kNoLiteralIndex);
@@ -483,12 +482,13 @@ bool DisjunctiveNotLast::Propagate() {
     // These are the only candidates that have a chance to decrease the end-max
     // of t.
     while (queue_index >= 0) {
-      const int to_insert =
-          task_by_decreasing_max_start[queue_index].task_index;
-      if (max_end <= helper_->StartMax(to_insert)) break;
-      if (helper_->IsPresent(to_insert)) {
-        task_set_.AddEntry({to_insert, helper_->StartMin(to_insert),
-                            helper_->DurationMin(to_insert)});
+      const auto to_insert = task_by_decreasing_max_start[queue_index];
+      const int task_index = to_insert.task_index;
+      const IntegerValue max_start = to_insert.time;
+      if (max_end <= max_start) break;
+      if (helper_->IsPresent(task_index)) {
+        task_set_.AddEntry({task_index, helper_->StartMin(task_index),
+                            helper_->DurationMin(task_index)});
       }
       --queue_index;
     }
@@ -512,7 +512,8 @@ bool DisjunctiveNotLast::Propagate() {
     // end-max for t need to be smaller than or equal to this.
     IntegerValue largest_ct_max_start = kMinIntegerValue;
     const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
-    for (int i = critical_index; i < sorted_tasks.size(); ++i) {
+    const int sorted_tasks_size = sorted_tasks.size();
+    for (int i = critical_index; i < sorted_tasks_size; ++i) {
       const int ct = sorted_tasks[i].task;
       if (t == ct) continue;
       const IntegerValue max_start = helper_->StartMax(ct);
@@ -529,7 +530,7 @@ bool DisjunctiveNotLast::Propagate() {
       helper_->ClearReason();
 
       const IntegerValue window_start = sorted_tasks[critical_index].min_start;
-      for (int i = critical_index; i < sorted_tasks.size(); ++i) {
+      for (int i = critical_index; i < sorted_tasks_size; ++i) {
         const int ct = sorted_tasks[i].task;
         if (ct == t) continue;
         helper_->AddPresenceReason(ct);
@@ -619,8 +620,8 @@ bool DisjunctiveEdgeFinding::Propagate() {
       ++decreasing_max_end_index;
       CHECK_LT(decreasing_max_end_index, num_tasks);
     }
-    const IntegerValue non_gray_max_end = helper_->EndMax(
-        task_by_decreasing_max_end[decreasing_max_end_index].task_index);
+    const IntegerValue non_gray_max_end =
+        task_by_decreasing_max_end[decreasing_max_end_index].time;
 
     const std::vector<TaskSet::Entry>& sorted_tasks = task_set_.SortedTasks();
     for (int i = 0; i < sorted_tasks.size(); ++i) {
@@ -628,7 +629,7 @@ bool DisjunctiveEdgeFinding::Propagate() {
       if (is_gray_[e.task]) {
         if (e.min_start >= min_end_of_critical_tasks) {
           // Is this gray task increasing the end-min by itself?
-          const IntegerValue candidate = CapAdd(e.min_start, e.min_duration);
+          const IntegerValue candidate = e.min_start + e.min_duration;
           if (candidate >= min_end_of_critical_tasks_with_gray) {
             gray_critical_index = gray_task_index = i;
             min_end_of_critical_tasks_with_gray = candidate;
@@ -636,7 +637,7 @@ bool DisjunctiveEdgeFinding::Propagate() {
         } else {
           // Is the task at the end of the non-gray critical block better?
           const IntegerValue candidate =
-              CapAdd(min_end_of_critical_tasks, e.min_duration);
+              min_end_of_critical_tasks + e.min_duration;
           if (candidate >= min_end_of_critical_tasks_with_gray) {
             gray_critical_index = critical_index;
             gray_task_index = i;
@@ -651,15 +652,14 @@ bool DisjunctiveEdgeFinding::Propagate() {
         // this case because we will only trigger something if
         // min_end_of_critical_tasks_with_gray > min_end_of_critical_tasks.
         min_end_of_critical_tasks_with_gray =
-            CapAdd(min_end_of_critical_tasks_with_gray, e.min_duration);
+            min_end_of_critical_tasks_with_gray + e.min_duration;
 
         // Augment the non-gray block.
         if (e.min_start >= min_end_of_critical_tasks) {
           critical_index = i;
-          min_end_of_critical_tasks = CapAdd(e.min_start, e.min_duration);
+          min_end_of_critical_tasks = e.min_start + e.min_duration;
         } else {
-          min_end_of_critical_tasks =
-              CapAdd(min_end_of_critical_tasks, e.min_duration);
+          min_end_of_critical_tasks += e.min_duration;
         }
       }
     }
@@ -768,9 +768,8 @@ bool DisjunctiveEdgeFinding::Propagate() {
           ++decreasing_max_end_index;
           CHECK_LT(decreasing_max_end_index, num_tasks);
         }
-      } while (
-          helper_->EndMax(task_by_decreasing_max_end[decreasing_max_end_index]
-                              .task_index) >= threshold);
+      } while (task_by_decreasing_max_end[decreasing_max_end_index].time >=
+               threshold);
     }
   }
 
