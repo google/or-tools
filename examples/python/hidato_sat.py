@@ -131,7 +131,7 @@ def SolveHidato(puzzle, index):
 
   r = len(puzzle)
   c = len(puzzle[0])
-  if not visualization.run_from_ipython():
+  if not visualization.RunFromIPython():
     print('')
     print('----- Solving problem %i -----' % index)
     print('')
@@ -171,7 +171,7 @@ def SolveHidato(puzzle, index):
   status = solver.Solve(model)
 
   if status == cp_model.MODEL_SAT:
-    if visualization.run_from_ipython():
+    if visualization.RunFromIPython():
       output = visualization.SvgWrapper(10, r, 40.0)
       for i in range(len(positions)):
         val = solver.Value(positions[i])

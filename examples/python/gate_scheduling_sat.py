@@ -116,7 +116,7 @@ def main():
 
 
   # Output solution.
-  if visualization.run_from_ipython():
+  if visualization.RunFromIPython():
     output = visualization.SvgWrapper(solver.ObjectiveValue(), max_length, 40.0)
     output.AddTitle('Makespan = %i' % solver.ObjectiveValue())
     color_manager = visualization.ColorManager()
