@@ -309,8 +309,11 @@ python_examples_archive:
 	$(MKDIR) temp$Sortools_examples
 	$(MKDIR) temp$Sortools_examples$Sexamples
 	$(MKDIR) temp$Sortools_examples$Sexamples$Spython
+	$(MKDIR) temp$Sortools_examples$Sexamples$Snotebook
 	$(MKDIR) temp$Sortools_examples$Sexamples$Sdata
 	$(COPY) examples$Spython$S*.py temp$Sortools_examples$Sexamples$Spython
+	$(COPY) examples$Snotebook$S*.ipynb temp$Sortools_examples$Sexamples$Snotebook
+	$(COPY) examples$Snotebook$S*.md temp$Sortools_examples$Sexamples$Snotebook
 	$(COPY) tools$SREADME.examples.python temp$Sortools_examples$SREADME.txt
 	$(COPY) LICENSE-2.0.txt temp$Sortools_examples
 ifeq ($(SYSTEM),win)
