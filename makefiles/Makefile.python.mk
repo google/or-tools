@@ -21,9 +21,10 @@ ifeq ($(shell $(PYTHON_EXECUTABLE) -c "from sys import version_info as v; print 
 endif
 
 # Main target
-CANONIC_PYTHON_EXECUTABLE = $(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(PYTHON_EXECUTABLE))))
+CANONIC_PYTHON_EXECUTABLE = $(subst ",,$(subst $(SPACE),$(BACKSLASH_SPACE),$(subst \,/,$(subst \\,/,$(PYTHON_EXECUTABLE)))))
 ifeq ($(wildcard  $(CANONIC_PYTHON_EXECUTABLE)),)
 python:
+	@echo CANONIC_PYTHON_EXECUTABLE = $(CANONIC_PYTHON_EXECUTABLE)
 	@echo "The python executable was not set properly. Check Makefile.local for more information."
 test_python: python
 
