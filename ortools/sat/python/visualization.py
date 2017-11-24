@@ -24,7 +24,7 @@ except ImportError:
   correct_imports = False
 
 
-def run_from_ipython():
+def RunFromIPython():
   if not correct_imports:
     return False
   try:
