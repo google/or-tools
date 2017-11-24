@@ -716,6 +716,18 @@ class BitQueue64 {
     data_[BitOffset64(i)] |= OneBit64(BitPos64(i));
   }
 
+  // Sets all the bits from 0 up to i-1 to 1.
+  void SetAllBefore(int i) {
+    DCHECK_GE(i, 0);
+    DCHECK_LT(i, size_);
+    top_ = std::max(top_, i - 1);
+    int bucket_index = BitOffset64(i);
+    data_[bucket_index] |= OneBit64(BitPos64(i)) - 1;
+    for (--bucket_index; bucket_index >= 0; --bucket_index) {
+      data_[bucket_index] = kAllBits64;
+    }
+  }
+
   // Returns the position of the highest bit set in O(1) or -1 if no bit is set.
   int Top() const { return top_; }
 
