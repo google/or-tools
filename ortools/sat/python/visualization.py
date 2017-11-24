@@ -13,19 +13,15 @@
 """Collection of helpers to visualize cp_model solutions in colab."""
 
 import random
-from IPython.display import display
-from IPython.display import SVG
-import plotly.figure_factory as ff
-import plotly.offline as pyo
-import svgwrite
-
-
-def RunFromIPython():
-    try:
-        __IPYTHON__
-        return True
-    except NameError:
-        return False
+try:
+  from IPython.display import display
+  from IPython.display import SVG
+  import plotly.figure_factory as ff
+  import plotly.offline as pyo
+  import svgwrite
+  run_from_ipython = True
+except ImportError:
+  run_from_ipython = False
 
 
 def ToDate(v):
@@ -164,4 +160,3 @@ class SvgWrapper(object):
         font_family='sans-serif',
         font_size='%dpx' % (self.__scaling / 2))
     self.__dwg.add(text)
-
