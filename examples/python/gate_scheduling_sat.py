@@ -23,6 +23,7 @@ The objective is to minimize the max end time of all jobs.
 """
 
 from ortools.sat.python import cp_model
+from ortools.sat.python import visualization
 
 
 def main():
@@ -115,17 +116,36 @@ def main():
 
 
   # Output solution.
-  print('Solution')
-  print('  - makespan = %i' % solver.ObjectiveValue())
-  for i in all_jobs:
-    performed_machine = 1 - solver.Value(performed[i])
-    start = solver.Value(starts[i])
-    print('  - Job %i starts at %i on machine %i' %
-          (i, start, performed_machine))
-  print('Statistics')
-  print('  - conflicts : %i' % solver.NumConflicts())
-  print('  - branches  : %i' % solver.NumBranches())
-  print('  - wall time : %f ms' % solver.WallTime())
+  if visualization.run_from_ipython():
+    output = visualization.SvgWrapper(solver.ObjectiveValue(), max_length, 40.0)
+    output.AddTitle('Makespan = %i' % solver.ObjectiveValue())
+    color_manager = visualization.ColorManager()
+    color_manager.SeedRandomColor(0)
+
+    for i in all_jobs:
+      performed_machine = 1 - solver.Value(performed[i])
+      start = solver.Value(starts[i])
+      dx = jobs[i][0]
+      dy = jobs[i][1]
+      sy = performed_machine * (max_length - dy)
+      output.AddRectangle(start, sy, dx, dy, color_manager.RandomColor(),
+                          'black', 'j%i' % i)
+
+    output.AddXScale()
+    output.AddYScale()
+    output.Display()
+  else:
+    print('Solution')
+    print('  - makespan = %i' % solver.ObjectiveValue())
+    for i in all_jobs:
+      performed_machine = 1 - solver.Value(performed[i])
+      start = solver.Value(starts[i])
+      print('  - Job %i starts at %i on machine %i' %
+            (i, start, performed_machine))
+    print('Statistics')
+    print('  - conflicts : %i' % solver.NumConflicts())
+    print('  - branches  : %i' % solver.NumBranches())
+    print('  - wall time : %f ms' % solver.WallTime())
 
 
 if __name__ == '__main__':

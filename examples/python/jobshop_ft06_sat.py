@@ -83,8 +83,13 @@ def main():
   solver = cp_model.CpSolver()
   response = solver.Solve(model)
 
-  # Print out makespan.
-  print('Optimal makespan: %i' % solver.ObjectiveValue())
+  # Output solution.
+  if visualization.run_from_ipython():
+    starts = [[solver.Value(all_tasks[(i, j)][0]) for j in all_machines]
+              for i in all_jobs]
+    visualization.DisplayJobshop(starts, durations, machines, 'FT06')
+  else:
+    print('Optimal makespan: %i' % solver.ObjectiveValue())
 
 
 if __name__ == '__main__':

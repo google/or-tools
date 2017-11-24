@@ -19,9 +19,18 @@ try:
   import plotly.figure_factory as ff
   import plotly.offline as pyo
   import svgwrite
-  run_from_ipython = True
+  correct_imports = True
 except ImportError:
-  run_from_ipython = False
+  correct_imports = False
+
+
+def run_from_ipython():
+  if not correct_imports:
+    return False
+  try:
+    return __IPYTHON__ is not None
+  except NameError:
+    return False
 
 
 def ToDate(v):
