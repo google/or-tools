@@ -385,6 +385,12 @@ test_java: test_java_examples
 BUILT_LANGUAGES +=, java
 endif
 
+detect_java:
+	@echo JDK_DIRECTORY = $(JDK_DIRECTORY)
+	@echo JAVAC_BIN = $(JAVAC_BIN)
+	@echo JAVA_BIN = $(JAVA_BIN)
+	@echo JAVA_INC = $(JAVA_INC)
+	@echo JAR_BIN = $(JAR_BIN)
 
 # Clean target
 clean_java:
