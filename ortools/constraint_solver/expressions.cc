@@ -4919,51 +4919,47 @@ class DivIntExpr : public BaseIntExpr {
 
   ~DivIntExpr() override {}
 
+  // Due to VS 2015 cl.exe limitation, it is impossible to create locals
+  // (e.g. denom_min, denom_max)
+  // Once VS 2015 will be not supported please remove this comment and the associated commit.
   int64 Min() const override {
-    const int64 num_min = num_->Min();
-    const int64 num_max = num_->Max();
-    const int64 denom_min = denom_->Min();
-    const int64 denom_max = denom_->Max();
-
-    if (denom_min == 0 && denom_max == 0) {
+    if (denom_->Min() == 0 && denom_->Max() == 0) {
       return kint64max;  // TODO(user): Check this convention.
-    }
-
-    if (denom_min >= 0) {  // Denominator strictly positive.
-      DCHECK_GT(denom_max, 0);
-      const int64 adjusted_denom_min = denom_min == 0 ? 1 : denom_min;
-      return num_min >= 0 ? num_min / denom_max : num_min / adjusted_denom_min;
-    } else if (denom_max <= 0) {  // Denominator strictly negative.
-      DCHECK_LT(denom_min, 0);
-      const int64 adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
-      return num_max >= 0 ? num_max / adjusted_denom_max : num_max / denom_min;
+    } else if (denom_->Min() >= 0) {  // Denominator strictly positive.
+      DCHECK_GT(denom_->Max(), 0);
+      const int64 num_min = num_->Min();
+      const int64 adjusted_denom_min = (denom_->Min() == 0) ? 1 : denom_->Min();
+      return num_min >= 0 ? num_min / denom_->Max() : num_min / adjusted_denom_min;
+    } else if (denom_->Max() <= 0) {  // Denominator strictly negative.
+      DCHECK_LT(denom_->Min(), 0);
+      const int64 num_max = num_->Max();
+      const int64 adjusted_denom_max = (denom_->Max() == 0) ? -1 : denom_->Max();
+      return num_max >= 0 ? num_max / adjusted_denom_max : num_max / denom_->Min();
     } else {  // Denominator across 0.
-      return std::min(num_min, -num_max);
+      return std::min(num_->Min(), -num_->Max());
     }
   }
 
+  // Due to VS 2015 cl.exe limitation, it is impossible to create locals
+  // (e.g. denom_min, denom_max)
+  // Once VS 2015 will be not supported please remove this comment and the associated commit.
   int64 Max() const override {
-    const int64 num_min = num_->Min();
-    const int64 num_max = num_->Max();
-    const int64 denom_min = denom_->Min();
-    const int64 denom_max = denom_->Max();
-
-    if (denom_min == 0 && denom_max == 0) {
-      return kint64min;  // TODO(user): Check this convention.
-    }
-
-    if (denom_min >= 0) {  // Denominator strictly positive.
-      DCHECK_GT(denom_max, 0);
-      const int64 adjusted_denom_min = denom_min == 0 ? 1 : denom_min;
-      return num_max >= 0 ? num_max / adjusted_denom_min : num_max / denom_max;
-    } else if (denom_max <= 0) {  // Denominator strictly negative.
-      DCHECK_LT(denom_min, 0);
-      const int64 adjusted_denom_max = denom_max == 0 ? -1 : denom_max;
-      return num_min >= 0 ? num_min / denom_min
-                          : -num_min / -adjusted_denom_max;
-    } else {  // Denominator across 0.
-      return std::max(num_max, -num_min);
-    }
+     if (denom_->Min() == 0 && denom_->Max() == 0) {
+       return kint64min;  // TODO(user): Check this convention.
+     } else if (denom_->Min() >= 0) {  // Denominator strictly positive.
+       DCHECK_GT(denom_->Max(), 0);
+       const int64 num_max = num_->Max();
+       const int64 adjusted_denom_min = denom_->Min() == 0 ? 1 : denom_->Min();
+       return num_max >= 0 ? num_max / adjusted_denom_min : num_max / denom_->Max();
+     } else if (denom_->Max() <= 0) {  // Denominator strictly negative.
+       DCHECK_LT(denom_->Min(), 0);
+       const int64 num_min = num_->Min();
+       const int64 adjusted_denom_max = denom_->Max() == 0 ? -1 : denom_->Max();
+       return num_min >= 0 ? num_min / denom_->Min()
+                           : -num_min / -adjusted_denom_max;
+     } else {  // Denominator across 0.
+       return std::max(num_->Max(), -num_->Min());
+     }
   }
 
   void AdjustDenominator() {
