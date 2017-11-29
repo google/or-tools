@@ -1037,7 +1037,9 @@ bool PresolveInterval(ConstraintProto* ct, PresolveContext* context) {
     context->UpdateRuleStats("interval: reduced domains");
   }
 
-  if (size.IsFixed()) {
+  // TODO(user): This currently has a side effect that both the interval and
+  // a linear constraint are added to the presolved model. Fix.
+  if (false && size.IsFixed()) {
     // We add it even if the interval is optional.
     // TODO(user): we must verify that all the variable of an optional interval
     // do not appear in a constraint which is not reified by the same literal.

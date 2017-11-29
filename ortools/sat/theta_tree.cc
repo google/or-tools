@@ -24,18 +24,41 @@ namespace sat {
 ThetaLambdaTree::ThetaLambdaTree() {}
 
 void ThetaLambdaTree::Reset(int num_events) {
-  // Use 2^k leaves in the tree, with 2^k >= std::max(num_events, 2).
+  // Because the algorithm needs to access a node sibling (i.e. node_index ^ 1),
+  // our tree will always have an even number of leaves, just large enough to
+  // fit our number of events. And at least 2 for the empty tree case.
   num_events_ = num_events;
-  for (num_leaves_ = 2; num_leaves_ < num_events; num_leaves_ <<= 1) {
-  }
+  num_leaves_ = std::max(2, num_events + (num_events & 1));
 
-  // We will never access any indices larger than this because we require the
-  // event to exist when we call any of the GetEvent*() functions.
-  const int num_nodes = num_leaves_ + num_events_ + (num_events_ & 1);
+  const int num_nodes = 2 * num_leaves_;
   tree_envelope_.assign(num_nodes, kMinIntegerValue);
   tree_envelope_opt_.assign(num_nodes, kMinIntegerValue);
   tree_sum_of_energy_min_.assign(num_nodes, IntegerValue(0));
   tree_max_of_energy_delta_.assign(num_nodes, IntegerValue(0));
+
+  // If num_leaves is not a power or two, the last depth of the tree will not be
+  // full, and the array will looke like:
+  //   [( num_leafs parents)(leaves at depth d - 1)(leaves at depth d)
+  // The first leaves at depth p will have power_of_two_ as index.
+  for (power_of_two_ = 2; power_of_two_ < num_leaves_; power_of_two_ <<= 1) {
+  }
+}
+
+int ThetaLambdaTree::GetLeafFromEvent(int event) const {
+  DCHECK_LE(0, event);
+  DCHECK_LT(event, num_events_);
+  // Keeping the ordering of events is important, so the first set of events
+  // must be mapped to the set of leaves at depth d, and the second set of
+  // events must be mapped to the set of leaves at depth d-1.
+  const int r = power_of_two_ + event;
+  return r < 2 * num_leaves_ ? r : r - num_leaves_;
+}
+
+int ThetaLambdaTree::GetEventFromLeaf(int leaf) const {
+  DCHECK_GE(leaf, num_leaves_);
+  DCHECK_LT(leaf, 2 * num_leaves_);
+  const int r = leaf - power_of_two_;
+  return r >= 0 ? r : r + num_leaves_;
 }
 
 void ThetaLambdaTree::AddOrUpdateEvent(int event, IntegerValue initial_envelope,
@@ -43,7 +66,7 @@ void ThetaLambdaTree::AddOrUpdateEvent(int event, IntegerValue initial_envelope,
                                        IntegerValue energy_max) {
   DCHECK_LE(0, energy_min);
   DCHECK_LE(energy_min, energy_max);
-  const int node = GetLeaf(event);
+  const int node = GetLeafFromEvent(event);
   tree_envelope_[node] = initial_envelope + energy_min;
   tree_envelope_opt_[node] = initial_envelope + energy_max;
   tree_sum_of_energy_min_[node] = energy_min;
@@ -52,7 +75,7 @@ void ThetaLambdaTree::AddOrUpdateEvent(int event, IntegerValue initial_envelope,
 }
 
 void ThetaLambdaTree::RemoveEvent(int event) {
-  const int node = GetLeaf(event);
+  const int node = GetLeafFromEvent(event);
   tree_envelope_[node] = kMinIntegerValue;
   tree_envelope_opt_[node] = kMinIntegerValue;
   tree_sum_of_energy_min_[node] = IntegerValue(0);
@@ -69,8 +92,8 @@ int ThetaLambdaTree::GetMaxEventWithEnvelopeGreaterThan(
     IntegerValue target_envelope) const {
   DCHECK_LT(target_envelope, tree_envelope_[1]);
   IntegerValue unused;
-  return GetMaxLeafWithEnvelopeGreaterThan(1, target_envelope, &unused) -
-         num_leaves_;
+  return GetEventFromLeaf(
+      GetMaxLeafWithEnvelopeGreaterThan(1, target_envelope, &unused));
 }
 
 void ThetaLambdaTree::GetEventsWithOptionalEnvelopeGreaterThan(
@@ -80,17 +103,18 @@ void ThetaLambdaTree::GetEventsWithOptionalEnvelopeGreaterThan(
   int optional_leaf;
   GetLeavesWithOptionalEnvelopeGreaterThan(target_envelope, &critical_leaf,
                                            &optional_leaf, available_energy);
-  *critical_event = critical_leaf - num_leaves_;
-  *optional_event = optional_leaf - num_leaves_;
+  *critical_event = GetEventFromLeaf(critical_leaf);
+  *optional_event = GetEventFromLeaf(optional_leaf);
 }
 
 IntegerValue ThetaLambdaTree::GetEnvelopeOf(int event) const {
-  IntegerValue env = tree_envelope_[GetLeaf(event)];
-  for (int node = event + num_leaves_; node > 1; node >>= 1) {
+  const int leaf = GetLeafFromEvent(event);
+  IntegerValue envelope = tree_envelope_[leaf];
+  for (int node = leaf; node > 1; node >>= 1) {
     const int right = node | 1;
-    if (right != node) env += tree_sum_of_energy_min_[right];
+    if (node != right) envelope += tree_sum_of_energy_min_[right];
   }
-  return env;
+  return envelope;
 }
 
 void ThetaLambdaTree::RefreshNode(int node) {

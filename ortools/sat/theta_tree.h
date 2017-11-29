@@ -26,9 +26,8 @@ namespace sat {
 //
 // The tree structure itself is a binary tree coded in a vector, where node 0 is
 // unused, node 1 is the root, node 2 is the left child of the root, node 3 its
-// right child, etc. To represent num_events events, we use the smallest
-// possible amount of leaves, num_leaves = 2^k >= num_events. The unused leaves
-// are filled with dummy values, as if they were absent events.
+// right child, etc.
+//
 // The API gives access to rightmost events that realize a given envelope.
 //
 // See:
@@ -147,16 +146,12 @@ class ThetaLambdaTree {
 
   // Getters.
   IntegerValue EnergyMin(int event) const {
-    return tree_sum_of_energy_min_[GetLeaf(event)];
+    return tree_sum_of_energy_min_[GetLeafFromEvent(event)];
   }
 
  private:
-  // Returns the index of the leaf associated with the given event.
-  int GetLeaf(int event) const {
-    DCHECK_LE(0, event);
-    DCHECK_LT(event, num_events_);
-    return num_leaves_ + event;
-  }
+  int GetLeafFromEvent(int event) const;
+  int GetEventFromLeaf(int leaf) const;
 
   // Propagates the change of leaf energies and envelopes towards the root.
   void RefreshNode(int leaf);
@@ -177,12 +172,10 @@ class ThetaLambdaTree {
       IntegerValue target_envelope, int* critical_leaf, int* optional_leaf,
       IntegerValue* available_energy) const;
 
-  // Number of events of the last Reset();
+  // Number of events of the last Reset().
   int num_events_;
-
-  // Number of leaves used by the last Reset(), the smallest power of 2 such
-  // that 2 <= num_leaves_ and num_events_ <= num_leaves_.
   int num_leaves_;
+  int power_of_two_;
 
   // Envelopes and energies of nodes.
   std::vector<IntegerValue> tree_envelope_;
