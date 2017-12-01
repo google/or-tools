@@ -128,3 +128,6 @@ manylinux1-image-no-cache:
 
 manylinux1-pypi: export manylinux1-image
 	docker run -v `pwd`/export:/export or-tools-manylinux1-image:latest /bin/bash -c "/root/build/build-manylinux1.sh /root/src /root/build /export"
+
+manylinux1-bash: export manylinux1-image
+	docker run --rm -it --init or-tools-manylinux1-image:latest /bin/bash
