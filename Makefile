@@ -6,6 +6,7 @@ help:
 	@echo "  - Java: java test_java clean_java"
 	@echo "  - .NET: csharp test_csharp clean_csharp "
 	@echo "  - all: all test clean"
+	@echo "  - detect: detect_port detect_python detect_java detect_csharp"
 
 # OR_ROOT is the minimal prefix to define the root of or-tools, if we
 # are compiling in the or-tools root, it is empty. Otherwise, it is
@@ -27,7 +28,7 @@ else
   endif
 endif
 
-.PHONY : python cc java csharp sat third_party_check
+.PHONY : help detect cc python java csharp sat third_party_check
 all: third_party_check cc java python csharp
 	@echo Or-tools have been built for $(BUILT_LANGUAGES)
 clean: clean_cc clean_java clean_python clean_csharp clean_compat

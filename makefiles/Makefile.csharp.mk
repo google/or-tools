@@ -591,3 +591,6 @@ examples/csharp/Csharp_examples.sln: tools/template.sln $(ALL_CSPROJ)
 $(patsubst examples/csharp/solution/%.csproj, \"solution%.csproj\"$(COMMA)\"{}\"EndProject, $(wildcard examples/csharp/solution/*.csproj)) \
 )' examples/csharp/Csharp_examples.sln
 	$(SED) -i -e "s/solution/solution\\/g" -e "s/EndProject/\r\nEndProject\r\n/g" -e "s/ Project/Project/g" examples$Scsharp$SCsharp_examples.sln
+
+detect_csharp:
+	@echo CSC = $(CSC)

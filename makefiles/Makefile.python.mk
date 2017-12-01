@@ -426,9 +426,11 @@ endif
 
 detect_python:
 	@echo PYTHON_VERSION = $(PYTHON_VERSION)
+	@echo PYTHON3 = $(PYTHON3)
 	@echo PYTHON_EXECUTABLE = $(PYTHON_EXECUTABLE)
 	@echo PYTHON_INC = $(PYTHON_INC)
 	@echo PYTHON_LNK = $(PYTHON_LNK)
-	@echo PYTHON3 = $(PYTHON3)
 	@echo SWIG_PYTHON3_FLAG = $(SWIG_PYTHON3_FLAG)
+ifeq ($(SYSTEM),unix)
 	@echo SET_PYTHONPATH = $(SET_PYTHONPATH)
+endif
