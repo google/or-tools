@@ -59,7 +59,7 @@ WINDOWS_ZLIB_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
 WINDOWS_ZLIB_NAME ?= zlib.lib
 WINDOWS_GFLAGS_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
 WINDOWS_PROTOBUF_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
-WINDOWS_SWIG_BINARY ?= $(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe
+WINDOWS_SWIG_BINARY ?= "$(OR_ROOT_FULL)\\dependencies\\install\\swigwin-$(SWIG_TAG)\\swig.exe"
 WINDOWS_CLP_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
 WINDOWS_CBC_DIR ?= $(OR_ROOT_FULL)\\dependencies\\install
 
