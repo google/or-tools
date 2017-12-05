@@ -17,6 +17,7 @@
 
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/base/murmur.h"
 
 namespace operations_research {

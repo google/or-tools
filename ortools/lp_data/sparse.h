@@ -268,6 +268,15 @@ class MatrixView {
   StrictITIVector<ColIndex, SparseColumn const*> columns_;
 };
 
+extern template void SparseMatrix::PopulateFromTranspose<SparseMatrix>(
+    const SparseMatrix& input);
+extern template void SparseMatrix::PopulateFromPermutedMatrix<SparseMatrix>(
+    const SparseMatrix& a, const RowPermutation& row_perm,
+    const ColumnPermutation& inverse_col_perm);
+extern template void SparseMatrix::PopulateFromPermutedMatrix<MatrixView>(
+    const MatrixView& a, const RowPermutation& row_perm,
+    const ColumnPermutation& inverse_col_perm);
+
 // Another matrix representation which is more efficient than a SparseMatrix but
 // doesn't allow matrix modification. It is faster to construct, uses less
 // memory and provides a better cache locality when iterating over the non-zeros
