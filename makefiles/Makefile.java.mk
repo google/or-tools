@@ -387,9 +387,9 @@ endif
 
 detect_java:
 	@echo JDK_DIRECTORY = $(JDK_DIRECTORY)
-	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo JAVA_BIN = $(JAVA_BIN)
 	@echo JAVA_INC = $(JAVA_INC)
+	@echo JAVAC_BIN = $(JAVAC_BIN)
 	@echo JAR_BIN = $(JAR_BIN)
 
 # Clean target

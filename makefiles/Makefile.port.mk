@@ -200,21 +200,19 @@ OR_TOOLS_SHORT_VERSION := $(OR_TOOLS_MAJOR).$(OR_TOOLS_MINOR)
 INSTALL_DIR=or-tools_$(PORT)_v$(OR_TOOLS_VERSION)
 FZ_INSTALL_DIR=or-tools_flatzinc_$(PORT)_v$(OR_TOOLS_VERSION)
 
-printport:
-	@echo SHELL = $(SHELL)
-	@echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
+detect_port:
 	@echo SYSTEM = $(SYSTEM)
 	@echo PLATFORM = $(PLATFORM)
 	@echo PTRLENGTH = $(PTRLENGTH)
-	@echo GIT_REVISION = $(GIT_REVISION)
-	@echo GIT_HASH = $(GIT_HASH)
 	@echo PORT = $(PORT)
+	@echo SHELL = $(SHELL)
+	@echo OR_TOOLS_TOP = $(OR_TOOLS_TOP)
 	@echo OR_TOOLS_VERSION = $(OR_TOOLS_VERSION)
 	@echo OR_TOOLS_SHORT_VERSION = $(OR_TOOLS_SHORT_VERSION)
-ifeq ("$(SYSTEM)","unix")
-	@echo PATH_TO_CSHARP_COMPILER = $(PATH_TO_CSHARP_COMPILER)
-	@echo DETECTED_PYTHON_VERSION = $(DETECTED_PYTHON_VERSION)
-	@echo JDK_DIRECTORY = $(JDK_DIRECTORY)
-else
+	@echo GIT_REVISION = $(GIT_REVISION)
+	@echo GIT_HASH = $(GIT_HASH)
 	@echo CMAKE_PLATFORM = $(CMAKE_PLATFORM)
-endif
+	@echo SWIG_BINARY = $(SWIG_BINARY)
+	@echo SWIG_INC = $(SWIG_INC)
+
+detect: detect_port detect_python detect_java detect_csharp
