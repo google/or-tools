@@ -25,11 +25,11 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/sysinfo.h"
-#include "ortools/base/split.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
+#include "ortools/port/proto_utils.h"
+#include "ortools/port/sysinfo.h"
 #include "ortools/util/saturated_arithmetic.h"
-#include "ortools/base/adjustable_priority_queue-inl.h"
 
 namespace operations_research {
 namespace sat {
@@ -42,6 +42,10 @@ SatSolver::SatSolver(Model* model)
       pb_constraints_(),
       track_binary_clauses_(false),
       trail_(model->GetOrCreate<Trail>()),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
+      parameters_(model->GetOrCreate<SatParameters>()),
+      restart_(model->GetOrCreate<RestartPolicy>()),
+      decision_policy_(model->GetOrCreate<SatDecisionPolicy>()),
       current_decision_level_(0),
       last_decision_or_backtrack_trail_index_(0),
       assumption_level_(0),
@@ -49,28 +53,21 @@ SatSolver::SatSolver(Model* model)
       deterministic_time_of_last_fixed_variables_cleanup_(0.0),
       counters_(),
       is_model_unsat_(false),
-      var_ordering_is_initialized_(false),
-      variable_activity_increment_(1.0),
       clause_activity_increment_(1.0),
-      decision_heuristic_is_initialized_(false),
       num_learned_clause_before_cleanup_(0),
-      conflicts_until_next_restart_(0),
-      restart_count_(0),
-      luby_count_(0),
-      conflicts_until_next_strategy_change_(0),
-      strategy_counter_(0),
       same_reason_identifier_(*trail_),
       is_relevant_for_core_computation_(true),
-      time_limit_(TimeLimit::Infinite()),
       deterministic_time_at_last_advanced_time_limit_(0.0),
       problem_is_pure_sat_(true),
       drat_writer_(nullptr),
       stats_("SatSolver") {
+  // TODO(user): move these 3 classes in the Model so that everyone can access
+  // them if needed and we don't have the wiring here.
   trail_->RegisterPropagator(&binary_implication_graph_);
   trail_->RegisterPropagator(&clauses_propagator_);
   trail_->RegisterPropagator(&pb_constraints_);
   InitializePropagators();
-  SetParameters(parameters_);
+  SetParameters(*parameters_);
 }
 
 SatSolver::~SatSolver() {
@@ -82,33 +79,15 @@ void SatSolver::SetNumVariables(int num_variables) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK(!is_model_unsat_);
   CHECK_GE(num_variables, num_variables_);
-  const BooleanVariable old_num_variables = num_variables_;
 
   num_variables_ = num_variables;
   binary_implication_graph_.Resize(num_variables);
   clauses_propagator_.Resize(num_variables);
   trail_->Resize(num_variables);
+  decision_policy_->IncreaseNumVariables(num_variables);
   pb_constraints_.Resize(num_variables);
   decisions_.resize(num_variables);
   same_reason_identifier_.Resize(num_variables);
-
-  // Used by NextBranch() for the decision heuristic.
-  activities_.resize(num_variables, parameters_.initial_variables_activity());
-  num_bumps_.resize(num_variables, 0);
-  pq_need_update_for_var_at_trail_index_.IncreaseSize(num_variables);
-  weighted_sign_.resize(num_variables, 0.0);
-  queue_elements_.resize(num_variables);
-
-  // Only reset the polarity of the new variables.
-  // Note that this must be called after the trail_ has been resized.
-  ResetPolarity(/*from=*/old_num_variables);
-
-  // Important: Because there is new variables, we need to recompute the
-  // priority queue. Note that this will not reset the activity, it will however
-  // change the order of the element with the same priority.
-  //
-  // TODO(user): Not even do that and just push the new ones at the end?
-  var_ordering_is_initialized_ = false;
 }
 
 int64 SatSolver::num_branches() const { return counters_.num_branches; }
@@ -138,20 +117,20 @@ double SatSolver::deterministic_time() const {
 
 const SatParameters& SatSolver::parameters() const {
   SCOPED_TIME_STAT(&stats_);
-  return parameters_;
+  return *parameters_;
 }
 
 void SatSolver::SetParameters(const SatParameters& parameters) {
   SCOPED_TIME_STAT(&stats_);
-  parameters_ = parameters;
+  *parameters_ = parameters;
+
   clauses_propagator_.SetParameters(parameters);
   pb_constraints_.SetParameters(parameters);
-  random_.seed(parameters_.random_seed());
-  InitRestart();
-  time_limit_ = TimeLimit::FromParameters(parameters_);
-  dl_running_average_.Reset(parameters_.restart_running_window_size());
-  lbd_running_average_.Reset(parameters_.restart_running_window_size());
-  trail_size_running_average_.Reset(parameters_.blocking_restart_window_size());
+
+  random_.seed(parameters.random_seed());
+
+  restart_->Reset();
+  time_limit_->ResetLimitFromParameters(parameters);
   deterministic_time_at_last_advanced_time_limit_ = deterministic_time();
 }
 
@@ -168,7 +147,7 @@ std::string SatSolver::Indent() const {
 bool SatSolver::IsMemoryLimitReached() const {
   const int64 memory_usage = GetProcessMemoryUsage();
   const int64 kMegaByte = 1024 * 1024;
-  return memory_usage > kMegaByte * parameters_.max_memory_in_mb();
+  return memory_usage > kMegaByte * parameters_->max_memory_in_mb();
 }
 
 bool SatSolver::SetModelUnsat() {
@@ -241,7 +220,7 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals) {
     return true;
   }
 
-  if (parameters_.treat_binary_clauses_separately() && literals.size() == 2) {
+  if (parameters_->treat_binary_clauses_separately() && literals.size() == 2) {
     AddBinaryClauseInternal(literals[0], literals[1]);
   } else {
     std::unique_ptr<SatClause> clause(
@@ -262,16 +241,9 @@ bool SatSolver::AddLinearConstraintInternal(
   if (rhs < 0) return SetModelUnsat();  // Unsatisfiable constraint.
   if (rhs >= max_value) return true;    // Always satisfied constraint.
 
-  // Update the weighted_sign_.
-  // TODO(user): special case the rhs = 0 which just fix variables...
-  if (rhs > 0) {
-    for (const LiteralWithCoeff& term : cst) {
-      const double weight = static_cast<double>(term.coefficient.value()) /
-                            static_cast<double>(rhs.value());
-      weighted_sign_[term.literal.Variable()] +=
-          term.literal.IsPositive() ? -weight : weight;
-    }
-  }
+  // The case "rhs = 0" will just fix variables, so there is no need to
+  // updates the weighted sign.
+  if (rhs > 0) decision_policy_->UpdateWeightedSign(cst, rhs);
 
   // A linear upper bounded constraint is a clause if the only problematic
   // assignment is the one where all the literals are true. Since they are
@@ -348,7 +320,7 @@ bool SatSolver::AddLinearConstraint(bool use_lower_bound,
   return true;
 }
 
-void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
+int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     const std::vector<Literal>& literals, bool is_redundant) {
   SCOPED_TIME_STAT(&stats_);
 
@@ -365,40 +337,39 @@ void SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
     // ComputeBacktrackLevel() should have returned 0.
     CHECK_EQ(CurrentDecisionLevel(), 0);
     trail_->EnqueueWithUnitReason(literals[0]);
-    lbd_running_average_.Add(1);
-  } else if (literals.size() == 2 &&
-             parameters_.treat_binary_clauses_separately()) {
+    return /*lbd=*/1;
+  }
+
+  if (literals.size() == 2 && parameters_->treat_binary_clauses_separately()) {
     if (track_binary_clauses_) {
       CHECK(binary_clauses_.Add(BinaryClause(literals[0], literals[1])));
     }
     binary_implication_graph_.AddBinaryClauseDuringSearch(literals[0],
                                                           literals[1], trail_);
-    lbd_running_average_.Add(2);
-
     // In case this is the first binary clauses.
     InitializePropagators();
-  } else {
-    CleanClauseDatabaseIfNeeded();
-    SatClause* clause = SatClause::Create(literals, is_redundant);
-    clauses_.emplace_back(clause);
-
-    // Important: Even though the only literal at the last decision level has
-    // been unassigned, its level was not modified, so ComputeLbd() works.
-    const int lbd = ComputeLbd(*clause);
-    lbd_running_average_.Add(lbd);
-
-    if (is_redundant && lbd > parameters_.clause_cleanup_lbd_bound()) {
-      --num_learned_clause_before_cleanup_;
-
-      // BumpClauseActivity() must be called after clauses_info_[clause] has
-      // been created or it will have no effect.
-      DCHECK(clauses_info_.find(clause) == clauses_info_.end());
-      clauses_info_[clause].lbd = lbd;
-      BumpClauseActivity(clause);
-    }
-
-    CHECK(clauses_propagator_.AttachAndPropagate(clause, trail_));
+    return /*lbd=*/2;
   }
+
+  CleanClauseDatabaseIfNeeded();
+  SatClause* clause = SatClause::Create(literals, is_redundant);
+  clauses_.emplace_back(clause);
+
+  // Important: Even though the only literal at the last decision level has
+  // been unassigned, its level was not modified, so ComputeLbd() works.
+  const int lbd = ComputeLbd(*clause);
+  if (is_redundant && lbd > parameters_->clause_cleanup_lbd_bound()) {
+    --num_learned_clause_before_cleanup_;
+
+    // BumpClauseActivity() must be called after clauses_info_[clause] has
+    // been created or it will have no effect.
+    DCHECK(clauses_info_.find(clause) == clauses_info_.end());
+    clauses_info_[clause].lbd = lbd;
+    BumpClauseActivity(clause);
+  }
+
+  CHECK(clauses_propagator_.AttachAndPropagate(clause, trail_));
+  return lbd;
 }
 
 void SatSolver::AddPropagator(SatPropagator* propagator) {
@@ -532,21 +503,8 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   if (Propagate()) return true;
 
   ++counters_.num_failures;
-  dl_running_average_.Add(current_decision_level_);
-  trail_size_running_average_.Add(trail_->Index());
-
-  // Block the restart.
-  // Note(user): glucose only activate this after 10000 conflicts.
-  if (parameters_.use_blocking_restart()) {
-    if (lbd_running_average_.IsWindowFull() &&
-        dl_running_average_.IsWindowFull() &&
-        trail_size_running_average_.IsWindowFull() &&
-        trail_->Index() > parameters_.blocking_restart_multiplier() *
-                              trail_size_running_average_.WindowAverage()) {
-      dl_running_average_.ClearWindow();
-      lbd_running_average_.ClearWindow();
-    }
-  }
+  const int conflict_trail_index = trail_->Index();
+  const int conflict_decision_level = current_decision_level_;
 
   // A conflict occurred, compute a nice reason for this failure.
   same_reason_identifier_.Clear();
@@ -564,14 +522,11 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // Also update the activity of the last level variables expanded (and
   // thus discarded) during the first UIP computation. Note that both
   // sets are disjoint.
-  const int lbd_limit = parameters_.use_glucose_bump_again_strategy()
-                            ? ComputeLbd(learned_conflict_)
-                            : 0;
-  BumpVariableActivities(learned_conflict_, lbd_limit);
-  BumpVariableActivities(reason_used_to_infer_the_conflict_, lbd_limit);
-  if (parameters_.also_bump_variables_in_conflict_reasons()) {
+  decision_policy_->BumpVariableActivities(learned_conflict_);
+  decision_policy_->BumpVariableActivities(reason_used_to_infer_the_conflict_);
+  if (parameters_->also_bump_variables_in_conflict_reasons()) {
     ComputeUnionOfReasons(learned_conflict_, &extra_reason_literals_);
-    BumpVariableActivities(extra_reason_literals_, lbd_limit);
+    decision_policy_->BumpVariableActivities(extra_reason_literals_);
   }
 
   // Bump the clause activities.
@@ -583,33 +538,25 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   BumpReasonActivities(reason_used_to_infer_the_conflict_);
 
   // Decay the activities.
-  UpdateVariableActivityIncrement();
+  decision_policy_->UpdateVariableActivityIncrement();
   UpdateClauseActivityIncrement();
   pb_constraints_.UpdateActivityIncrement();
 
-  // Decrement the restart counter if needed.
-  if (conflicts_until_next_restart_ > 0) {
-    --conflicts_until_next_restart_;
-  }
-  if (conflicts_until_next_strategy_change_ > 0) {
-    --conflicts_until_next_strategy_change_;
-  }
-
   // Hack from Glucose that seems to perform well.
-  const int period = parameters_.glucose_decay_increment_period();
-  const double max_decay = parameters_.glucose_max_decay();
+  const int period = parameters_->glucose_decay_increment_period();
+  const double max_decay = parameters_->glucose_max_decay();
   if (counters_.num_failures % period == 0 &&
-      parameters_.variable_activity_decay() < max_decay) {
-    parameters_.set_variable_activity_decay(
-        parameters_.variable_activity_decay() +
-        parameters_.glucose_decay_increment());
+      parameters_->variable_activity_decay() < max_decay) {
+    parameters_->set_variable_activity_decay(
+        parameters_->variable_activity_decay() +
+        parameters_->glucose_decay_increment());
   }
 
   // PB resolution.
   // There is no point using this if the conflict and all the reasons involved
   // in its resolution where clauses.
   bool compute_pb_conflict = false;
-  if (parameters_.use_pb_resolution()) {
+  if (parameters_->use_pb_resolution()) {
     compute_pb_conflict = (pb_constraints_.ConflictingConstraint() != nullptr);
     if (!compute_pb_conflict) {
       for (Literal lit : reason_used_to_infer_the_conflict_) {
@@ -622,7 +569,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   }
 
   // TODO(user): Note that we use the clause above to update the variable
-  // activites and not the pb conflict. Experiment.
+  // activities and not the pb conflict. Experiment.
   if (compute_pb_conflict) {
     pb_conflict_.ClearAndResize(num_variables_.value());
     Coefficient initial_slack(-1);
@@ -714,11 +661,11 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // LBD of the learned conflict can change.
   DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
   if (binary_implication_graph_.NumberOfImplications() != 0) {
-    if (parameters_.binary_minimization_algorithm() ==
+    if (parameters_->binary_minimization_algorithm() ==
         SatParameters::BINARY_MINIMIZATION_FIRST) {
       binary_implication_graph_.MinimizeConflictFirst(
           *trail_, &learned_conflict_, &is_marked_);
-    } else if (parameters_.binary_minimization_algorithm() ==
+    } else if (parameters_->binary_minimization_algorithm() ==
                SatParameters::
                    BINARY_MINIMIZATION_FIRST_WITH_TRANSITIVE_REDUCTION) {
       binary_implication_graph_.MinimizeConflictFirstWithTransitiveReduction(
@@ -735,7 +682,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     // Note that on the contrary to the MinimizeConflict() above that
     // just uses the reason graph, this minimization can change the
     // clause LBD and even the backtracking level.
-    switch (parameters_.binary_minimization_algorithm()) {
+    switch (parameters_->binary_minimization_algorithm()) {
       case SatParameters::NO_BINARY_MINIMIZATION:
         FALLTHROUGH_INTENDED;
       case SatParameters::BINARY_MINIMIZATION_FIRST:
@@ -755,9 +702,6 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   }
 
   // Backtrack and add the reason to the set of learned clause.
-  if (parameters_.use_erwa_heuristic()) {
-    num_conflicts_stack_.push_back({trail_->Index(), 1});
-  }
   counters_.num_literals_learned += learned_conflict_.size();
   Backtrack(ComputeBacktrackLevel(learned_conflict_));
   DCHECK(ClauseIsValidUnderDebugAssignement(learned_conflict_));
@@ -766,7 +710,7 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   // clause cleanup phase.
   bool is_redundant = true;
   if (!subsumed_clauses_.empty() &&
-      parameters_.subsumption_during_conflict_analysis()) {
+      parameters_->subsumption_during_conflict_analysis()) {
     for (SatClause* clause : subsumed_clauses_) {
       DCHECK(ClauseSubsumption(learned_conflict_, clause));
       clauses_propagator_.LazyDetach(clause);
@@ -777,7 +721,11 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
   }
 
   // Create and attach the new learned clause.
-  AddLearnedClauseAndEnqueueUnitPropagation(learned_conflict_, is_redundant);
+  const int conflict_lbd = AddLearnedClauseAndEnqueueUnitPropagation(
+      learned_conflict_, is_redundant);
+  decision_policy_->OnConflict();
+  restart_->OnConflict(conflict_trail_index, conflict_decision_level,
+                       conflict_lbd);
   return false;
 }
 
@@ -908,11 +856,6 @@ int NextMultipleOf(int64 value, int64 interval) {
 
 SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
     const std::vector<Literal>& assumptions) {
-  return ResetAndSolveWithGivenAssumptions(assumptions, nullptr);
-}
-
-SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
-    const std::vector<Literal>& assumptions, TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
   if (is_model_unsat_) return MODEL_UNSAT;
   CHECK_LE(assumptions.size(), num_variables_);
@@ -921,11 +864,11 @@ SatSolver::Status SatSolver::ResetAndSolveWithGivenAssumptions(
   for (int i = 0; i < assumptions.size(); ++i) {
     decisions_[i].literal = assumptions[i];
   }
-  return SolveInternal(time_limit == nullptr ? time_limit_.get() : time_limit);
+  return SolveInternal(time_limit_);
 }
 
 SatSolver::Status SatSolver::StatusWithLog(Status status) {
-  if (parameters_.log_search_progress()) {
+  if (parameters_->log_search_progress()) {
     LOG(INFO) << RunningStatisticsString();
     LOG(INFO) << StatusString(status);
   }
@@ -938,9 +881,12 @@ void SatSolver::SetAssumptionLevel(int assumption_level) {
   assumption_level_ = assumption_level;
 }
 
-SatSolver::Status SatSolver::Solve() {
-  return SolveInternal(time_limit_.get());
+SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
+  deterministic_time_at_last_advanced_time_limit_ = deterministic_time();
+  return SolveInternal(time_limit == nullptr ? time_limit_ : time_limit);
 }
+
+SatSolver::Status SatSolver::Solve() { return SolveInternal(time_limit_); }
 
 SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   SCOPED_TIME_STAT(&stats_);
@@ -951,12 +897,8 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   // for exactly one Solve().
   timer_.Restart();
 
-  // This is done this way, so heuristics like the weighted_sign_ one can
-  // wait for all the constraint to be added before beeing initialized.
-  if (!decision_heuristic_is_initialized_) ResetDecisionHeuristic();
-
   // Display initial statistics.
-  if (parameters_.log_search_progress()) {
+  if (parameters_->log_search_progress()) {
     LOG(INFO) << "Initial memory usage: " << MemoryUsage();
     LOG(INFO) << "Number of variables: " << num_variables_;
     LOG(INFO) << "Number of clauses (size > 2): " << clauses_.size();
@@ -967,12 +909,12 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     LOG(INFO) << "Number of fixed variables: " << trail_->Index();
     LOG(INFO) << "Number of watched clauses: "
               << clauses_propagator_.num_watched_clauses();
-    LOG(INFO) << "Parameters: " << parameters_.ShortDebugString();
+    LOG(INFO) << "Parameters: " << ProtobufShortDebugString(*parameters_);
   }
 
   // Variables used to show the search progress.
   const int kDisplayFrequency = 10000;
-  int next_display = parameters_.log_search_progress()
+  int next_display = parameters_->log_search_progress()
                          ? NextMultipleOf(num_failures(), kDisplayFrequency)
                          : std::numeric_limits<int>::max();
 
@@ -983,28 +925,10 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
   // The max_number_of_conflicts is per solve but the counter is for the whole
   // solver.
   const int64 kFailureLimit =
-      parameters_.max_number_of_conflicts() == std::numeric_limits<int64>::max()
+      parameters_->max_number_of_conflicts() ==
+              std::numeric_limits<int64>::max()
           ? std::numeric_limits<int64>::max()
-          : counters_.num_failures + parameters_.max_number_of_conflicts();
-
-  // Compute the repeated field of restart algorithms using the std::string default
-  // if empty.
-  auto restart_algorithms = parameters_.restart_algorithms();
-  if (restart_algorithms.empty()) {
-    SatParameters::RestartAlgorithm tmp;
-    const std::vector<std::string> string_values = strings::Split(
-        parameters_.default_restart_algorithms(), ',', strings::SkipEmpty());
-    for (const std::string& string_value : string_values) {
-      if (!SatParameters::RestartAlgorithm_Parse(string_value, &tmp)) {
-        LOG(WARNING) << "Couldn't parse the RestartAlgorithm name: '"
-                     << string_value << "'.";
-      }
-      restart_algorithms.Add(tmp);
-    }
-    if (restart_algorithms.empty()) {
-      restart_algorithms.Add(SatParameters::NO_RESTART);
-    }
-  }
+          : counters_.num_failures + parameters_->max_number_of_conflicts();
 
   // Starts search.
   for (;;) {
@@ -1017,14 +941,14 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
       deterministic_time_at_last_advanced_time_limit_ =
           current_deterministic_time;
       if (time_limit->LimitReached()) {
-        if (parameters_.log_search_progress()) {
+        if (parameters_->log_search_progress()) {
           LOG(INFO) << "The time limit has been reached. Aborting.";
         }
         return StatusWithLog(LIMIT_REACHED);
       }
     }
     if (num_failures() >= kFailureLimit) {
-      if (parameters_.log_search_progress()) {
+      if (parameters_->log_search_progress()) {
         LOG(INFO) << "The conflict limit has been reached. Aborting.";
       }
       return StatusWithLog(LIMIT_REACHED);
@@ -1038,7 +962,7 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
     if (counters_.num_failures >= next_memory_check) {
       next_memory_check = NextMultipleOf(num_failures(), kMemoryCheckFrequency);
       if (IsMemoryLimitReached()) {
-        if (parameters_.log_search_progress()) {
+        if (parameters_->log_search_progress()) {
           LOG(INFO) << "The memory limit has been reached. Aborting.";
         }
         return StatusWithLog(LIMIT_REACHED);
@@ -1073,65 +997,14 @@ SatSolver::Status SatSolver::SolveInternal(TimeLimit* time_limit) {
         return StatusWithLog(MODEL_SAT);
       }
 
-      // Restart?
-      bool restart = false;
-      switch (restart_algorithms.Get(strategy_counter_ %
-                                     restart_algorithms.size())) {
-        case SatParameters::NO_RESTART:
-          break;
-        case SatParameters::LUBY_RESTART:
-          if (conflicts_until_next_restart_ == 0) {
-            ++luby_count_;
-            restart = true;
-          }
-          break;
-        case SatParameters::DL_MOVING_AVERAGE_RESTART:
-          if (dl_running_average_.IsWindowFull() &&
-              dl_running_average_.GlobalAverage() <
-                  parameters_.restart_dl_average_ratio() *
-                      dl_running_average_.WindowAverage()) {
-            restart = true;
-          }
-          break;
-        case SatParameters::LBD_MOVING_AVERAGE_RESTART:
-          if (lbd_running_average_.IsWindowFull() &&
-              lbd_running_average_.GlobalAverage() <
-                  parameters_.restart_lbd_average_ratio() *
-                      lbd_running_average_.WindowAverage()) {
-            restart = true;
-          }
-          break;
-      }
-      if (restart) {
-        restart_count_++;
+      if (restart_->ShouldRestart()) {
         Backtrack(assumption_level_);
-
-        // Strategy switch?
-        if (conflicts_until_next_strategy_change_ == 0) {
-          strategy_counter_++;
-          strategy_change_conflicts_ +=
-              parameters_.strategy_change_increase_ratio() *
-              strategy_change_conflicts_;
-          conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
-        }
-
-        // Reset the various restart strategies.
-        dl_running_average_.ClearWindow();
-        lbd_running_average_.ClearWindow();
-        conflicts_until_next_restart_ =
-            parameters_.luby_restart_period() * SUniv(luby_count_ + 1);
       }
 
       DCHECK_GE(CurrentDecisionLevel(), assumption_level_);
-      EnqueueNewDecision(NextBranch());
+      EnqueueNewDecision(decision_policy_->NextBranch());
     }
   }
-}
-
-SatSolver::Status SatSolver::SolveWithTimeLimit(TimeLimit* time_limit) {
-  if (time_limit == nullptr) SolveInternal(time_limit_.get());
-  deterministic_time_at_last_advanced_time_limit_ = deterministic_time();
-  return SolveInternal(time_limit);
 }
 
 std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
@@ -1197,40 +1070,6 @@ std::vector<Literal> SatSolver::GetLastIncompatibleDecisions() {
   return unsat_assumptions;
 }
 
-void SatSolver::BumpVariableActivities(const std::vector<Literal>& literals,
-                                       int bump_again_lbd_limit) {
-  SCOPED_TIME_STAT(&stats_);
-  if (parameters_.use_erwa_heuristic()) {
-    for (const Literal literal : literals) {
-      // Note that we don't really need to bump level 0 variables since they
-      // will never be backtracked over. However it is faster to simply bump
-      // them.
-      ++num_bumps_[literal.Variable()];
-    }
-    return;
-  }
-
-  const double max_activity_value = parameters_.max_variable_activity_value();
-  for (const Literal literal : literals) {
-    const BooleanVariable var = literal.Variable();
-    const int level = DecisionLevel(var);
-    if (level == 0) continue;
-    if (level == CurrentDecisionLevel() && bump_again_lbd_limit > 0) {
-      SatClause* clause = ReasonClauseOrNull(var);
-      if (clause != nullptr && clause->IsRedundant() &&
-          FindWithDefault(clauses_info_, clause, ClauseInfo()).lbd <
-              bump_again_lbd_limit) {
-        activities_[var] += variable_activity_increment_;
-      }
-    }
-    activities_[var] += variable_activity_increment_;
-    pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
-    if (activities_[var] > max_activity_value) {
-      RescaleVariableActivities(1.0 / max_activity_value);
-    }
-  }
-}
-
 void SatSolver::BumpReasonActivities(const std::vector<Literal>& literals) {
   SCOPED_TIME_STAT(&stats_);
   for (const Literal literal : literals) {
@@ -1266,13 +1105,13 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
   // indefinitely. Note that we use a +1 here because the LBD of a newly learned
   // clause decrease by 1 just after the backjump.
   const int new_lbd = ComputeLbd(*clause);
-  if (new_lbd + 1 <= parameters_.clause_cleanup_lbd_bound()) {
+  if (new_lbd + 1 <= parameters_->clause_cleanup_lbd_bound()) {
     clauses_info_.erase(clause);
     return;
   }
 
   // Eventually protect this clause for the next cleanup phase.
-  switch (parameters_.clause_cleanup_protection()) {
+  switch (parameters_->clause_cleanup_protection()) {
     case SatParameters::PROTECTION_NONE:
       break;
     case SatParameters::PROTECTION_ALWAYS:
@@ -1291,30 +1130,9 @@ void SatSolver::BumpClauseActivity(SatClause* clause) {
 
   // Increase the activity.
   const double activity = it->second.activity += clause_activity_increment_;
-  if (activity > parameters_.max_clause_activity_value()) {
-    RescaleClauseActivities(1.0 / parameters_.max_clause_activity_value());
+  if (activity > parameters_->max_clause_activity_value()) {
+    RescaleClauseActivities(1.0 / parameters_->max_clause_activity_value());
   }
-}
-
-void SatSolver::RescaleVariableActivities(double scaling_factor) {
-  SCOPED_TIME_STAT(&stats_);
-  variable_activity_increment_ *= scaling_factor;
-  for (BooleanVariable var(0); var < activities_.size(); ++var) {
-    activities_[var] *= scaling_factor;
-  }
-
-  // When rescaling the activities of all the variables, the order of the
-  // active variables in the heap will not change, but we still need to update
-  // their weights so that newly inserted elements will compare correctly with
-  // already inserted ones.
-  //
-  // IMPORTANT: we need to reset the full heap from scratch because just
-  // multiplying the current weight by scaling_factor is not guaranteed to
-  // preserve the order. This is because the activity of two entries may go to
-  // zero and the tie-breaking ordering may change their relative order.
-  //
-  // InitializeVariableOrdering() will be called lazily only if needed.
-  var_ordering_is_initialized_ = false;
 }
 
 void SatSolver::RescaleClauseActivities(double scaling_factor) {
@@ -1325,14 +1143,9 @@ void SatSolver::RescaleClauseActivities(double scaling_factor) {
   }
 }
 
-void SatSolver::UpdateVariableActivityIncrement() {
-  SCOPED_TIME_STAT(&stats_);
-  variable_activity_increment_ *= 1.0 / parameters_.variable_activity_decay();
-}
-
 void SatSolver::UpdateClauseActivityIncrement() {
   SCOPED_TIME_STAT(&stats_);
-  clause_activity_increment_ *= 1.0 / parameters_.clause_activity_decay();
+  clause_activity_increment_ *= 1.0 / parameters_->clause_activity_decay();
 }
 
 bool SatSolver::IsConflictValid(const std::vector<Literal>& literals) {
@@ -1374,7 +1187,7 @@ template <typename LiteralList>
 int SatSolver::ComputeLbd(const LiteralList& conflict) {
   SCOPED_TIME_STAT(&stats_);
   const int limit =
-      parameters_.count_assumption_levels_in_lbd() ? 0 : assumption_level_;
+      parameters_->count_assumption_levels_in_lbd() ? 0 : assumption_level_;
 
   // We know that the first literal of the conflict is always of the highest
   // level.
@@ -1398,13 +1211,8 @@ std::string SatSolver::StatusString(Status status) const {
          StringPrintf("  num failures: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
                       counters_.num_failures,
                       static_cast<double>(counters_.num_failures) / time_in_s) +
-         StringPrintf("  num branches: %" GG_LL_FORMAT
-                      "d"
-                      "  (%.2f%% random) (%.0f /sec)\n",
+         StringPrintf("  num branches: %" GG_LL_FORMAT "d (%.0f /sec)\n",
                       counters_.num_branches,
-                      100.0 *
-                          static_cast<double>(counters_.num_random_branches) /
-                          counters_.num_branches,
                       static_cast<double>(counters_.num_branches) / time_in_s) +
          StringPrintf("  num propagations: %" GG_LL_FORMAT "d  (%.0f /sec)\n",
                       num_propagations(),
@@ -1440,19 +1248,13 @@ std::string SatSolver::StatusString(Status status) const {
                           counters_.num_failures) +
          StringPrintf("  num subsumed clauses: %lld\n",
                       counters_.num_subsumed_clauses) +
-         StringPrintf("  num restarts: %d\n", restart_count_) +
          StringPrintf("  pb num threshold updates: %lld\n",
                       pb_constraints_.num_threshold_updates()) +
          StringPrintf("  pb num constraint lookups: %lld\n",
                       pb_constraints_.num_constraint_lookups()) +
          StringPrintf("  pb num inspected constraint literals: %lld\n",
                       pb_constraints_.num_inspected_constraint_literals()) +
-         StringPrintf("  conflict decision level avg: %f\n",
-                      dl_running_average_.GlobalAverage()) +
-         StringPrintf("  conflict lbd avg: %f\n",
-                      lbd_running_average_.GlobalAverage()) +
-         StringPrintf("  conflict trail size avg: %f\n",
-                      trail_size_running_average_.GlobalAverage()) +
+         restart_->InfoString() +
          StringPrintf("  deterministic time: %f\n", deterministic_time());
 }
 
@@ -1465,7 +1267,8 @@ std::string SatSolver::RunningStatisticsString() const {
       time_in_s, MemoryUsage().c_str(), counters_.num_failures,
       CurrentDecisionLevel(), clauses_.size() - clauses_info_.size(),
       clauses_info_.size(), binary_implication_graph_.NumberOfImplications(),
-      restart_count_, num_variables_.value() - num_processed_fixed_variables_);
+      restart_->NumRestarts(),
+      num_variables_.value() - num_processed_fixed_variables_);
 }
 
 void SatSolver::ProcessNewlyFixedVariables() {
@@ -1485,7 +1288,7 @@ void SatSolver::ProcessNewlyFixedVariables() {
         ++num_detached_clauses;
       } else if (clause->Size() != old_size) {
         if (clause->Size() == 2 &&
-            parameters_.treat_binary_clauses_separately()) {
+            parameters_->treat_binary_clauses_separately()) {
           // This clause is now a binary clause, treat it separately. Note that
           // it is safe to do that because this clause can't be used as a reason
           // since we are at level zero and the clause is not satisfied.
@@ -1660,279 +1463,15 @@ void SatSolver::EnqueueNewDecision(Literal literal) {
   trail_->EnqueueSearchDecision(literal);
 }
 
-Literal SatSolver::NextBranch() {
-  SCOPED_TIME_STAT(&stats_);
-
-  // Lazily initialize var_ordering_ if needed.
-  if (!var_ordering_is_initialized_) {
-    InitializeVariableOrdering();
-  }
-
-  // Choose the variable.
-  BooleanVariable var;
-  const double ratio = parameters_.random_branches_ratio();
-  auto zero_to_one = [this]() {
-    return std::uniform_real_distribution<double>()(random_);
-  };
-  if (ratio != 0.0 && zero_to_one() < ratio) {
-    ++counters_.num_random_branches;
-    while (true) {
-      // TODO(user): This may not be super efficient if almost all the
-      // variables are assigned.
-      std::uniform_int_distribution<int> index_dist(
-          0, var_ordering_.Raw()->size() - 1);
-      var = BooleanVariable((*var_ordering_.Raw())[index_dist(random_)] -
-                            &queue_elements_.front());
-      if (!trail_->Assignment().VariableIsAssigned(var)) break;
-      pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
-      var_ordering_.Remove(&queue_elements_[var]);
-    }
-  } else {
-    // The loop is done this way in order to leave the final choice in the heap.
-    DCHECK(!var_ordering_.IsEmpty());
-    var = BooleanVariable(var_ordering_.Top() - &queue_elements_.front());
-    while (trail_->Assignment().VariableIsAssigned(var)) {
-      var_ordering_.Pop();
-      pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
-      DCHECK(!var_ordering_.IsEmpty());
-      var = BooleanVariable(var_ordering_.Top() - &queue_elements_.front());
-    }
-  }
-
-  // Choose its polarity (i.e. True of False).
-  const double random_ratio = parameters_.random_polarity_ratio();
-  if (random_ratio != 0.0 && zero_to_one() < random_ratio) {
-    return Literal(var, std::uniform_int_distribution<int>(0, 1)(random_));
-  }
-  return Literal(var, var_use_phase_saving_[var]
-                          ? trail_->Info(var).last_polarity
-                          : var_polarity_[var]);
-}
-
-void SatSolver::ResetPolarity(BooleanVariable from) {
-  SCOPED_TIME_STAT(&stats_);
-  const int size = num_variables_.value();
-  var_use_phase_saving_.resize(size, parameters_.use_phase_saving());
-  var_polarity_.resize(size);
-  for (BooleanVariable var(from); var < size; ++var) {
-    bool initial_polarity;
-    switch (parameters_.initial_polarity()) {
-      case SatParameters::POLARITY_TRUE:
-        initial_polarity = true;
-        break;
-      case SatParameters::POLARITY_FALSE:
-        initial_polarity = false;
-        break;
-      case SatParameters::POLARITY_RANDOM:
-        initial_polarity = std::uniform_int_distribution<int>(0, 1)(random_);
-        break;
-      case SatParameters::POLARITY_WEIGHTED_SIGN:
-        initial_polarity = weighted_sign_[var] > 0;
-        break;
-      case SatParameters::POLARITY_REVERSE_WEIGHTED_SIGN:
-        initial_polarity = weighted_sign_[var] < 0;
-        break;
-    }
-    var_polarity_[var] = initial_polarity;
-    trail_->SetLastPolarity(var, initial_polarity);
-  }
-}
-
-void SatSolver::InitializeVariableOrdering() {
-  SCOPED_TIME_STAT(&stats_);
-  var_ordering_.Clear();
-
-  // First, extract the variables without activity, and add the other to the
-  // priority queue.
-  std::vector<BooleanVariable> variables;
-  for (BooleanVariable var(0); var < num_variables_; ++var) {
-    if (!trail_->Assignment().VariableIsAssigned(var)) {
-      if (activities_[var] > 0) {
-        queue_elements_[var].weight = activities_[var];
-        var_ordering_.Add(&queue_elements_[var]);
-      } else {
-        variables.push_back(var);
-      }
-    }
-  }
-
-  // Set the order of the other according to the parameters_.
-  // Note that this is just a "preference" since the priority queue will kind
-  // of randomize this. However, it is more efficient than using the tie_breaker
-  // which add a big overhead on the priority queue.
-  //
-  // TODO(user): Experiment and come up with a good set of heuristics.
-  switch (parameters_.preferred_variable_order()) {
-    case SatParameters::IN_ORDER:
-      break;
-    case SatParameters::IN_REVERSE_ORDER:
-      std::reverse(variables.begin(), variables.end());
-      break;
-    case SatParameters::IN_RANDOM_ORDER:
-      std::shuffle(variables.begin(), variables.end(), random_);
-      break;
-  }
-
-  // Add the variables without activity to the queue (in the default order)
-  for (BooleanVariable var : variables) {
-    queue_elements_[var].weight = 0.0;
-    var_ordering_.Add(&queue_elements_[var]);
-  }
-
-  // Finish the queue initialization.
-  pq_need_update_for_var_at_trail_index_.ClearAndResize(num_variables_.value());
-  pq_need_update_for_var_at_trail_index_.SetAllBefore(trail_->Index());
-  var_ordering_is_initialized_ = true;
-}
-
-void SatSolver::SetAssignmentPreference(Literal literal, double weight) {
-  SCOPED_TIME_STAT(&stats_);
-  DCHECK(!is_model_unsat_);
-  if (!decision_heuristic_is_initialized_) ResetDecisionHeuristic();
-  if (!parameters_.use_optimization_hints()) return;
-  DCHECK_GE(weight, 0.0);
-  DCHECK_LE(weight, 1.0);
-
-  var_use_phase_saving_[literal.Variable()] = false;
-  var_polarity_[literal.Variable()] = literal.IsPositive();
-
-  // The tie_breaker is changed, so we need to reinitialize the priority queue.
-  // Note that this doesn't change the activity though.
-  queue_elements_[literal.Variable()].tie_breaker = weight;
-  var_ordering_is_initialized_ = false;
-}
-
-std::vector<std::pair<Literal, double>> SatSolver::AllPreferences() const {
-  std::vector<std::pair<Literal, double>> prefs;
-  for (BooleanVariable var(0); var < var_polarity_.size(); ++var) {
-    // TODO(user): we currently assume that if the tie_breaker is zero then
-    // no preference was set (which is not 100% correct). Fix that.
-    if (queue_elements_[var].tie_breaker > 0.0) {
-      prefs.push_back(std::make_pair(Literal(var, var_polarity_[var]),
-                                     queue_elements_[var].tie_breaker));
-    }
-  }
-  return prefs;
-}
-
-void SatSolver::ResetDecisionHeuristic() {
-  DCHECK(!is_model_unsat_);
-
-  // Note that this will never be false again.
-  decision_heuristic_is_initialized_ = true;
-
-  // Reset the polarity heurisitic.
-  ResetPolarity(/*from=*/BooleanVariable(0));
-
-  // Reset the branching variable heuristic.
-  activities_.assign(num_variables_.value(),
-                     parameters_.initial_variables_activity());
-  num_bumps_.assign(num_variables_.value(), 0);
-  var_ordering_is_initialized_ = false;
-
-  // Reset the tie breaking.
-  for (BooleanVariable var(0); var < num_variables_; ++var) {
-    queue_elements_[var].tie_breaker = 0.0;
-  }
-}
-
-void SatSolver::ResetDecisionHeuristicAndSetAllPreferences(
-    const std::vector<std::pair<Literal, double>>& prefs) {
-  ResetDecisionHeuristic();
-  for (const std::pair<Literal, double> p : prefs) {
-    SetAssignmentPreference(p.first, p.second);
-  }
-}
 
 void SatSolver::Untrail(int target_trail_index) {
   SCOPED_TIME_STAT(&stats_);
   DCHECK_LT(target_trail_index, trail_->Index());
-
-  // Untrail the propagators.
   for (SatPropagator* propagator : propagators_) {
     propagator->Untrail(*trail_, target_trail_index);
   }
-
-  // Trail index of the next variable that will need a priority queue update.
-  int to_update = var_ordering_is_initialized_
-                      ? pq_need_update_for_var_at_trail_index_.Top()
-                      : -1;
-  DCHECK_LT(to_update, trail_->Index());
-
-  // The ERWA parameter between the new estimation of the learning rate and the
-  // old one. TODO(user): Expose parameters for these values. Note that
-  // num_failures() count the number of failures since the solver creation.
-  const double alpha = std::max(0.06, 0.4 - 1e-6 * num_failures());
-
-  // This counts the number of conflicts since the assignment of the variable at
-  // the current trail_index that we are about to untrail.
-  int num_conflicts = 0;
-  int next_num_conflicts_update = num_conflicts_stack_.empty()
-                                      ? -1
-                                      : num_conflicts_stack_.back().trail_index;
-
-  // Note(user): Depending on the value of use_erwa_heuristic(), we could
-  // optimize a bit more this loop, but the extra tests didn't seems to change
-  // the run time that much.
-  while (trail_->Index() > target_trail_index) {
-    if (next_num_conflicts_update == trail_->Index()) {
-      num_conflicts += num_conflicts_stack_.back().count;
-      num_conflicts_stack_.pop_back();
-      next_num_conflicts_update = num_conflicts_stack_.empty()
-                                      ? -1
-                                      : num_conflicts_stack_.back().trail_index;
-    }
-    const BooleanVariable var = trail_->Dequeue().Variable();
-    DCHECK_EQ(trail_->Index(), trail_->Info(var).trail_index);
-
-    bool update_pq = false;
-    if (parameters_.use_erwa_heuristic()) {
-      // TODO(user): This heuristic can make this code quite slow because
-      // all the untrailed variable will cause a priority queue update.
-      const int64 num_bumps = num_bumps_[var];
-      double new_rate = 0.0;
-      if (num_bumps > 0) {
-        DCHECK_GT(num_conflicts, 0);
-        num_bumps_[var] = 0;
-        new_rate = static_cast<double>(num_bumps) / num_conflicts;
-      }
-      activities_[var] = alpha * new_rate + (1 - alpha) * activities_[var];
-      update_pq = true;
-    } else {
-      if (trail_->Index() == to_update) {
-        pq_need_update_for_var_at_trail_index_.ClearTop();
-        to_update = pq_need_update_for_var_at_trail_index_.Top();
-        update_pq = true;
-      }
-    }
-
-    // Update the priority queue if needed. Note that the to_update logic is
-    // just here for optimization and that the code works without it.
-    if (update_pq) {
-      WeightedVarQueueElement* element = &(queue_elements_[var]);
-      if (var_ordering_.Contains(element)) {
-        // Note that because of the pq_need_update_for_var_at_trail_index_
-        // optimization the new weight should always be higher than the old one.
-        DCHECK_GT(activities_[var], element->weight);
-        element->weight = activities_[var];
-        var_ordering_.NoteChangedPriority(element);
-      } else {
-        element->weight = activities_[var];
-        var_ordering_.Add(element);
-      }
-    } else if (DEBUG_MODE && var_ordering_is_initialized_) {
-      DCHECK(var_ordering_.Contains(&(queue_elements_[var])));
-      DCHECK_EQ(activities_[var], queue_elements_[var].weight);
-    }
-  }
-  if (num_conflicts > 0) {
-    if (!num_conflicts_stack_.empty() &&
-        num_conflicts_stack_.back().trail_index == trail_->Index()) {
-      num_conflicts_stack_.back().count += num_conflicts;
-    } else {
-      num_conflicts_stack_.push_back({trail_->Index(), num_conflicts});
-    }
-  }
+  decision_policy_->Untrail(target_trail_index);
+  trail_->Untrail(target_trail_index);
 }
 
 std::string SatSolver::DebugString(const SatClause& clause) const {
@@ -2128,7 +1667,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
 
     if (conflict->GetCoefficient(var) > 0 &&
         trail_->Assignment().LiteralIsTrue(conflict->GetLiteral(var))) {
-      if (parameters_.minimize_reduction_during_pb_resolution()) {
+      if (parameters_->minimize_reduction_during_pb_resolution()) {
         // When this parameter is true, we don't call ReduceCoefficients() at
         // every loop. However, it is still important to reduce the "current"
         // variable coefficient, because this can impact the value of the new
@@ -2181,14 +1720,14 @@ void SatSolver::ComputePBConflict(int max_trail_index,
 
       if (clause_used) {
         // If a clause was used, we know that slack has the correct value.
-        if (!parameters_.minimize_reduction_during_pb_resolution()) {
+        if (!parameters_->minimize_reduction_during_pb_resolution()) {
           conflict->ReduceCoefficients();
         }
       } else {
         // TODO(user): The function below can take most of the running time on
         // some instances. The goal is to have slack updated to its new value
         // incrementally, but we are not here yet.
-        if (parameters_.minimize_reduction_during_pb_resolution()) {
+        if (parameters_->minimize_reduction_during_pb_resolution()) {
           slack =
               conflict->ComputeSlackForTrailPrefix(*trail_, trail_index + 1);
         } else {
@@ -2207,7 +1746,7 @@ void SatSolver::ComputePBConflict(int max_trail_index,
 
   // Reduce the conflit coefficients if it is not already done.
   // This is important to avoid integer overflow.
-  if (!parameters_.minimize_reduction_during_pb_resolution()) {
+  if (!parameters_->minimize_reduction_during_pb_resolution()) {
     conflict->ReduceCoefficients();
   }
 
@@ -2269,7 +1808,7 @@ void SatSolver::MinimizeConflict(
   SCOPED_TIME_STAT(&stats_);
 
   const int old_size = conflict->size();
-  switch (parameters_.minimization_algorithm()) {
+  switch (parameters_->minimization_algorithm()) {
     case SatParameters::NONE:
       return;
     case SatParameters::SIMPLE: {
@@ -2660,7 +2199,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
   }
   const int num_protected_clauses = clauses_info_.size() - entries.size();
 
-  if (parameters_.clause_cleanup_ordering() == SatParameters::CLAUSE_LBD) {
+  if (parameters_->clause_cleanup_ordering() == SatParameters::CLAUSE_LBD) {
     // Order the clauses by decreasing LBD and then increasing activity.
     std::sort(entries.begin(), entries.end(),
               [](const Entry& a, const Entry& b) {
@@ -2682,7 +2221,7 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
 
   // The clause we want to keep are at the end of the vector.
   int num_kept_clauses = std::min(static_cast<int>(entries.size()),
-                                  parameters_.clause_cleanup_target());
+                                  parameters_->clause_cleanup_target());
   int num_deleted_clauses = entries.size() - num_kept_clauses;
 
   // Tricky: Because the order of the clauses_info_ iteration is NOT
@@ -2709,21 +2248,10 @@ void SatSolver::CleanClauseDatabaseIfNeeded() {
     DeleteDetachedClauses();
   }
 
-  num_learned_clause_before_cleanup_ = parameters_.clause_cleanup_period();
+  num_learned_clause_before_cleanup_ = parameters_->clause_cleanup_period();
   VLOG(1) << "Database cleanup, #protected:" << num_protected_clauses
           << " #kept:" << num_kept_clauses
           << " #deleted:" << num_deleted_clauses;
-}
-
-void SatSolver::InitRestart() {
-  SCOPED_TIME_STAT(&stats_);
-  restart_count_ = 0;
-  luby_count_ = 0;
-  strategy_counter_ = 0;
-  strategy_change_conflicts_ =
-      parameters_.num_conflicts_before_strategy_changes();
-  conflicts_until_next_strategy_change_ = strategy_change_conflicts_;
-  conflicts_until_next_restart_ = parameters_.luby_restart_period();
 }
 
 std::string SatStatusString(SatSolver::Status status) {

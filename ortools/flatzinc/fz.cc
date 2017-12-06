@@ -325,10 +325,8 @@ int main(int argc, char** argv) {
                                                   !FLAGS_read_from_stdin);
 
   if (FLAGS_use_cp_sat) {
-    bool interrupt_solve = false;
     operations_research::sat::SolveFzWithCpModelProto(
-        model, operations_research::fz::SingleThreadParameters(),
-        &interrupt_solve);
+        model, operations_research::fz::SingleThreadParameters());
   } else {
     operations_research::fz::Solve(model);
   }

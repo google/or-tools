@@ -24,12 +24,15 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
+#if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/graph/io.h"
+#endif  // __PORTABLE_PLATFORM__
 #include "ortools/graph/util.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
 #include "ortools/algorithms/find_graph_symmetries.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/sat_parameters.pb.h"
 
 DEFINE_string(debug_dump_symmetry_graph_to_file, "",
@@ -255,7 +258,9 @@ bool LoadAndConsumeBooleanProblem(LinearBooleanProblem* problem,
     LOG(WARNING) << "The given problem is invalid! " << status.error_message();
   }
   if (solver->parameters().log_search_progress()) {
+#if !defined(__PORTABLE_PLATFORM__)
     LOG(INFO) << "LinearBooleanProblem memory: " << problem->SpaceUsed();
+#endif
     LOG(INFO) << "Loading problem '" << problem->name() << "', "
               << problem->num_variables() << " variables, "
               << problem->constraints_size() << " constraints.";
@@ -362,12 +367,12 @@ bool IsAssignmentValid(const LinearBooleanProblem& problem,
     }
     if (constraint.has_lower_bound() && sum < constraint.lower_bound()) {
       LOG(WARNING) << "Unsatisfied constraint! sum: " << sum << "\n"
-                   << constraint.DebugString();
+                   << ProtobufDebugString(constraint);
       return false;
     }
     if (constraint.has_upper_bound() && sum > constraint.upper_bound()) {
       LOG(WARNING) << "Unsatisfied constraint! sum: " << sum << "\n"
-                   << constraint.DebugString();
+                   << ProtobufDebugString(constraint);
       return false;
     }
   }
@@ -395,7 +400,7 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
   // This will be the weight of the "hard" clauses in the wcnf format. It must
   // be greater than the sum of the weight of all the soft clauses, so we will
   // just set it to this sum + 1.
-  int64 hard_weigth = 1;
+  int64 hard_weight = 1;
   if (is_wcnf) {
     int i = 0;
     for (int64 weight : objective.coefficients()) {
@@ -416,13 +421,13 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
       if (Literal(signed_literal).Variable() < first_slack_variable) {
         non_slack_objective.push_back(std::make_pair(signed_literal, weight));
       }
-      hard_weigth += weight;
+      hard_weight += weight;
       ++i;
     }
     output += StringPrintf("p wcnf %d %d %lld\n", first_slack_variable,
                            static_cast<int>(problem.constraints_size() +
                                             non_slack_objective.size()),
-                           hard_weigth);
+                           hard_weight);
   } else {
     output += StringPrintf("p cnf %d %d\n", problem.num_variables(),
                            problem.constraints_size());
@@ -432,7 +437,7 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
   for (const LinearBooleanConstraint& constraint : problem.constraints()) {
     if (constraint.literals_size() == 0) return "";  // Assumption.
     constraint_output.clear();
-    int64 weight = hard_weigth;
+    int64 weight = hard_weight;
     for (int i = 0; i < constraint.literals_size(); ++i) {
       if (constraint.coefficients(i) != 1) return "";  // Assumption.
       if (is_wcnf && abs(constraint.literals(i)) - 1 >= first_slack_variable) {
@@ -451,7 +456,7 @@ std::string LinearBooleanProblemToCnfString(const LinearBooleanProblem& problem)
   // Output the rest of the objective as singleton constraints.
   if (is_wcnf) {
     for (std::pair<int, int64> p : non_slack_objective) {
-      // Since it is falsifying this clause that cost "weigth", we need to take
+      // Since it is falsifying this clause that cost "weigtht", we need to take
       // its negation.
       const Literal literal(-p.first);
       output +=
@@ -511,7 +516,7 @@ class IdGenerator {
 // output can be mapped to a symmetry of the given problem simply by taking its
 // restriction on the first 2 * num_variables nodes and interpreting its index
 // as a literal index. In a sense, a node with a low enough index #i is in
-// one-to-one correspondance with a literals #i (using the index representation
+// one-to-one correspondence with a literals #i (using the index representation
 // of literal).
 //
 // The format of the initial_equivalence_classes is the same as the one
@@ -549,7 +554,7 @@ Graph* GenerateGraphForSymmetryDetection(
   for (int i = 0; i < num_variables; ++i) {
     // We have two nodes for each variable.
     // Note that the indices are in [0, 2 * num_variables) and in one to one
-    // correspondance with the index representation of a literal.
+    // correspondence with the index representation of a literal.
     const Literal literal = Literal(BooleanVariable(i), true);
     graph->AddArc(literal.Index().value(), literal.NegatedIndex().value());
     graph->AddArc(literal.NegatedIndex().value(), literal.Index().value());
@@ -666,6 +671,7 @@ void FindLinearBooleanProblemSymmetries(
       GenerateGraphForSymmetryDetection<Graph>(problem, &equivalence_classes));
   LOG(INFO) << "Graph has " << graph->num_nodes() << " nodes and "
             << graph->num_arcs() / 2 << " edges.";
+#if !defined(__PORTABLE_PLATFORM__)
   if (!FLAGS_debug_dump_symmetry_graph_to_file.empty()) {
     // Remap the graph nodes to sort them by equivalence classes.
     std::vector<int> new_node_index(graph->num_nodes(), -1);
@@ -688,6 +694,7 @@ void FindLinearBooleanProblemSymmetries(
                   << status;
     }
   }
+#endif  // __PORTABLE_PLATFORM__
   GraphSymmetryFinder symmetry_finder(*graph,
                                       /*is_undirected=*/true);
   std::vector<int> factorized_automorphism_group_size;

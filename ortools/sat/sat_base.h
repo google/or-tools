@@ -327,6 +327,12 @@ class Trail {
     assignment_.UnassignLiteral(l);
     return l;
   }
+  void Untrail(int target_trail_index) {
+    for (int i = target_trail_index; i < current_info_.trail_index; ++i) {
+      assignment_.UnassignLiteral(trail_[i]);
+    }
+    current_info_.trail_index = target_trail_index;
+  }
 
   // Changes the decision level used by the next Enqueue().
   void SetDecisionLevel(int level) { current_info_.level = level; }

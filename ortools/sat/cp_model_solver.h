@@ -36,9 +36,10 @@ std::string CpSolverResponseStats(const CpSolverResponse& response);
 //
 // Note that the API takes a Model* that will be filled with the in-memory
 // representation of the given CpModelProto. It is done this way so that it is
-// easy to set custom parameters or time limit on the model with calls like:
-//  - model->SetSingleton<TimeLimit>(std::move(time_limit));
+// easy to set custom parameters or interrupt the solver will calls like:
 //  - model->Add(NewSatParameters(parameters_as_string_or_proto));
+//  - model->GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stop);
+//  - model->GetOrCreate<SigintHandler>()->Register([&stop]() { stop = true; });
 CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model);
 
 // Allows to register a solution "observer" with the model with
@@ -55,7 +56,9 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
 // Allows to change the default parameters with
 //   model->Add(NewSatParameters(parameters_as_string_or_proto))
 // before calling SolveCpModel().
+#if !defined(__PORTABLE_PLATFORM__)
 std::function<SatParameters(Model*)> NewSatParameters(const std::string& params);
+#endif  // !__PORTABLE_PLATFORM__
 std::function<SatParameters(Model*)> NewSatParameters(
     const SatParameters& parameters);
 

@@ -1378,19 +1378,12 @@ std::function<LiteralIndex()> SequentialSearch(
 SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     const std::vector<Literal>& assumptions,
     const std::function<LiteralIndex()>& next_decision, Model* model) {
-  // TODO(user): Improve the time-limit situation, especially when
-  // use_fixed_search() is true where the deterministic time is not updated.
-  TimeLimit* time_limit = model->Mutable<TimeLimit>();
-  if (time_limit == nullptr) {
-    model->SetSingleton(TimeLimit::Infinite());
-    time_limit = model->Mutable<TimeLimit>();
-  }
   SatSolver* const solver = model->GetOrCreate<SatSolver>();
   if (solver->IsModelUnsat()) return SatSolver::MODEL_UNSAT;
   solver->Backtrack(0);
   solver->SetAssumptionLevel(0);
 
-  const SatParameters parameters = solver->parameters();
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   if (parameters.use_fixed_search()) {
     CHECK(assumptions.empty()) << "Not supported yet";
     // Note that it is important to do the level-zero propagation if it wasn't
@@ -1398,18 +1391,19 @@ SatSolver::Status SolveIntegerProblemWithLazyEncoding(
     // the solver is in a "propagated" state.
     if (!solver->Propagate()) return SatSolver::MODEL_UNSAT;
   }
+  TimeLimit* time_limit = model->GetOrCreate<TimeLimit>();
   while (!time_limit->LimitReached()) {
     // If we are not in fixed search, let the SAT solver do a full search to
     // instantiate all the already created Booleans.
     if (!parameters.use_fixed_search()) {
       if (assumptions.empty()) {
-        const SatSolver::Status status = solver->SolveWithTimeLimit(time_limit);
+        const SatSolver::Status status = solver->Solve();
         if (status != SatSolver::MODEL_SAT) return status;
       } else {
         // TODO(user): We actually don't want to reset the solver from one
         // loop to the next as it is less efficient.
         const SatSolver::Status status =
-            solver->ResetAndSolveWithGivenAssumptions(assumptions, time_limit);
+            solver->ResetAndSolveWithGivenAssumptions(assumptions);
         if (status != SatSolver::MODEL_SAT) return status;
       }
     }

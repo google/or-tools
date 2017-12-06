@@ -310,6 +310,8 @@ struct PresolveContext {
   // Temporary storage for PresolveLinear().
   std::vector<std::vector<ClosedInterval>> tmp_term_domains;
   std::vector<std::vector<ClosedInterval>> tmp_left_domains;
+
+  std::vector<int> tmp_literals;
 };
 
 // =============================================================================
@@ -388,7 +390,7 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
   // case the constraint is true. Remove duplicates too. Do the same for
   // the PresolveBoolAnd() function.
   bool changed = false;
-  google::protobuf::RepeatedField<int> new_literals;
+  context->tmp_literals.clear();
   for (const int literal : ct->bool_or().literals()) {
     if (context->LiteralIsFalse(literal)) {
       changed = true;
@@ -406,29 +408,34 @@ bool PresolveBoolOr(ConstraintProto* ct, PresolveContext* context) {
       context->SetLiteralToTrue(literal);
       return RemoveConstraint(ct, context);
     }
-    new_literals.Add(literal);
+    context->tmp_literals.push_back(literal);
   }
 
-  if (new_literals.empty()) {
+  if (context->tmp_literals.empty()) {
     context->UpdateRuleStats("bool_or: empty");
     return MarkConstraintAsFalse(ct, context);
   }
-  if (new_literals.size() == 1) {
+  if (context->tmp_literals.size() == 1) {
     context->UpdateRuleStats("bool_or: only one literal");
-    context->SetLiteralToTrue(new_literals.Get(0));
+    context->SetLiteralToTrue(context->tmp_literals[0]);
     return RemoveConstraint(ct, context);
   }
-  if (new_literals.size() == 2) {
+  if (context->tmp_literals.size() == 2) {
     // For consistency, we move all "implication" into half-reified bool_and.
     // TODO(user): merge by enforcement literal and detect implication cycles.
     context->UpdateRuleStats("bool_or: implications");
-    ct->add_enforcement_literal(NegatedRef(new_literals.Get(0)));
-    ct->mutable_bool_and()->add_literals(new_literals.Get(1));
+    ct->add_enforcement_literal(NegatedRef(context->tmp_literals[0]));
+    ct->mutable_bool_and()->add_literals(context->tmp_literals[1]);
     return changed;
   }
 
-  ct->mutable_bool_or()->mutable_literals()->Swap(&new_literals);
-  if (changed) context->UpdateRuleStats("bool_or: fixed literals");
+  if (changed) {
+    context->UpdateRuleStats("bool_or: fixed literals");
+    ct->mutable_bool_or()->mutable_literals()->Clear();
+    for (const int lit : context->tmp_literals) {
+      ct->mutable_bool_or()->add_literals(lit);
+    }
+  }
   return changed;
 }
 
@@ -442,7 +449,7 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
   }
 
   bool changed = false;
-  google::protobuf::RepeatedField<int> new_literals;
+  context->tmp_literals.clear();
   for (const int literal : ct->bool_and().literals()) {
     if (context->LiteralIsFalse(literal)) {
       context->UpdateRuleStats("bool_and: always false");
@@ -457,13 +464,18 @@ bool PresolveBoolAnd(ConstraintProto* ct, PresolveContext* context) {
       context->SetLiteralToTrue(literal);
       continue;
     }
-    new_literals.Add(literal);
+    context->tmp_literals.push_back(literal);
   }
 
-  if (new_literals.empty()) return RemoveConstraint(ct, context);
+  if (context->tmp_literals.empty()) return RemoveConstraint(ct, context);
 
-  ct->mutable_bool_and()->mutable_literals()->Swap(&new_literals);
-  if (changed) context->UpdateRuleStats("bool_and: fixed literals");
+  if (changed) {
+    ct->mutable_bool_and()->mutable_literals()->Clear();
+    for (const int lit : context->tmp_literals) {
+      ct->mutable_bool_and()->add_literals(lit);
+    }
+    context->UpdateRuleStats("bool_and: fixed literals");
+  }
   return changed;
 }
 
@@ -480,7 +492,6 @@ bool PresolveIntMax(ConstraintProto* ct, PresolveContext* context) {
   bool contains_target_ref = false;
   std::set<int> used_ref;
   int new_size = 0;
-  std::string old = ct->DebugString();
   for (const int ref : ct->int_max().vars()) {
     if (ref == target_ref) contains_target_ref = true;
     if (ContainsKey(used_ref, ref)) continue;
@@ -1538,17 +1549,14 @@ void PresolvePureSatPart(PresolveContext* context) {
 // - All the variables domain will be copied to the mapping_model.
 // - Everything will be remapped so that only the variables appearing in some
 //   constraints will be kept and their index will be in [0, num_new_variables).
-void PresolveCpModel(const CpModelProto& initial_model,
-                     CpModelProto* presolved_model, CpModelProto* mapping_model,
+void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping) {
-  // The list of modified domain.
   PresolveContext context;
   context.working_model = presolved_model;
   context.mapping_model = mapping_model;
-  *presolved_model = initial_model;
 
-  // We copy the search strategy from the initial_model to mapping_model.
-  for (const auto& decision_strategy : initial_model.search_strategy()) {
+  // We copy the search strategy to the mapping_model.
+  for (const auto& decision_strategy : presolved_model->search_strategy()) {
     *mapping_model->add_search_strategy() = decision_strategy;
   }
 
@@ -2014,15 +2022,21 @@ void PresolveCpModel(const CpModelProto& initial_model,
 
 void ApplyVariableMapping(const std::vector<int>& mapping,
                           CpModelProto* proto) {
-  // Remap all the variable/literal references in the contraints.
+  // Remap all the variable/literal references in the constraints and the
+  // enforcement literals in the variables.
+  auto mapping_function = [&mapping](int* ref) {
+    const int image = mapping[PositiveRef(*ref)];
+    CHECK_GE(image, 0);
+    *ref = *ref >= 0 ? image : NegatedRef(image);
+  };
   for (ConstraintProto& ct_ref : *proto->mutable_constraints()) {
-    auto f = [&mapping](int* ref) {
-      const int image = mapping[PositiveRef(*ref)];
-      CHECK_GE(image, 0);
-      *ref = *ref >= 0 ? image : NegatedRef(image);
-    };
-    ApplyToAllVariableIndices(f, &ct_ref);
-    ApplyToAllLiteralIndices(f, &ct_ref);
+    ApplyToAllVariableIndices(mapping_function, &ct_ref);
+    ApplyToAllLiteralIndices(mapping_function, &ct_ref);
+  }
+  for (IntegerVariableProto& variable_proto : *proto->mutable_variables()) {
+    for (int& ref : *variable_proto.mutable_enforcement_literal()) {
+      mapping_function(&ref);
+    }
   }
 
   // Remap the objective variables.

@@ -169,6 +169,12 @@ std::string Join(const Iterable& elements, const std::string& separator) {
   }
   return out;
 }
+
 }  // namespace strings
+
+template <class Iterable>
+std::string StrJoin(const Iterable& elements, const std::string& separator) {
+  return strings::Join<Iterable>(elements, separator);
+}
 
 #endif  // OR_TOOLS_BASE_JOIN_H_

@@ -39,14 +39,13 @@
 #include "ortools/sat/drat.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/restart.h"
 #include "ortools/sat/sat_base.h"
+#include "ortools/sat/sat_decision.h"
 #include "ortools/sat/sat_parameters.pb.h"
-#include "ortools/util/bitset.h"
 #include "ortools/util/random_engine.h"
-#include "ortools/util/running_stat.h"
 #include "ortools/util/stats.h"
 #include "ortools/util/time_limit.h"
-#include "ortools/base/adjustable_priority_queue.h"
 
 namespace operations_research {
 namespace sat {
@@ -66,8 +65,10 @@ class SatSolver {
   // Parameters management. Note that calling SetParameters() will reset the
   // value of many heuristics. For instance:
   // - The restart strategy will be reinitialized.
-  // - The random seed will be reset to the value given in parameters.
-  // - The time limit will be reset and counted from there.
+  // - The random seed and random generator will be reset to the value given in
+  //   parameters.
+  // - The global TimeLimit singleton will be reset and time will be
+  //   counted from this call.
   void SetParameters(const SatParameters& parameters);
   const SatParameters& parameters() const;
 
@@ -138,28 +139,26 @@ class SatSolver {
     owned_propagators_.push_back(std::move(propagator));
   }
 
-  // Gives a hint so the solver tries to find a solution with the given literal
-  // set to true. Currently this take precedence over the phase saving heuristic
-  // and a variable with a preference will always be branched on according to
-  // this preference.
+  // Wrapper around the same functions in SatDecisionPolicy.
   //
-  // The weight is used as a tie-breaker between variable with the same
-  // activities. Larger weight will be selected first. A weight of zero is the
-  // default value for the other variables.
-  //
-  // Note(user): Having a lot of different weights may slow down the priority
-  // queue operations if there is millions of variables.
-  void SetAssignmentPreference(Literal literal, double weight);
-
-  // Returns the vector of the current assignment preferences.
-  std::vector<std::pair<Literal, double>> AllPreferences() const;
-
-  // Reinitializes the decision heuristics (which variables to choose with which
-  // polarity) according to the current parameters. Note that this also resets
-  // the activity of the variables to 0.
-  void ResetDecisionHeuristic();
+  // TODO(user): Clean this up by making clients directly talk to
+  // SatDecisionPolicy.
+  void SetAssignmentPreference(Literal literal, double weight) {
+    decision_policy_->SetAssignmentPreference(literal, weight);
+  }
+  std::vector<std::pair<Literal, double>> AllPreferences() const {
+    return decision_policy_->AllPreferences();
+  }
+  void ResetDecisionHeuristic() {
+    return decision_policy_->ResetDecisionHeuristic();
+  }
   void ResetDecisionHeuristicAndSetAllPreferences(
-      const std::vector<std::pair<Literal, double>>& prefs);
+      const std::vector<std::pair<Literal, double>>& prefs) {
+    decision_policy_->ResetDecisionHeuristic();
+    for (const std::pair<Literal, double> p : prefs) {
+      decision_policy_->SetAssignmentPreference(p.first, p.second);
+    }
+  }
 
   // Solves the problem and returns its status.
   // An empty problem is considered to be SAT.
@@ -171,10 +170,9 @@ class SatSolver {
   // to Solve() was interrupted by a conflict or time limit, calling this again
   // will resume the search exactly as it would have continued.
   //
-  // Note that if a time limit has been defined earlier, using the SAT
-  // parameters or the SolveWithTimeLimit() method, it is still in use in this
-  // solve. To override the timelimit one should reset the parameters or use the
-  // SolveWithTimeLimit() with a new time limit.
+  // Note that this will use the TimeLimit singleton, so the time limit
+  // will be counted since the last time TimeLimit was reset, not from
+  // the start of this function.
   enum Status {
     ASSUMPTIONS_UNSAT,
     MODEL_UNSAT,
@@ -183,11 +181,8 @@ class SatSolver {
   };
   Status Solve();
 
-  // Same as Solve(), but with a given time limit. Note that this is slightly
-  // redundant with the max_time_in_seconds() and
-  // max_time_in_deterministic_seconds() parameters, but because SetParameters()
-  // resets more than just the time limit, it is useful to have this more
-  // specific api.
+  // Same as Solve(), but with a given time limit. Note that this will not
+  // update the TimeLimit singleton, but only the passed object instead.
   Status SolveWithTimeLimit(TimeLimit* time_limit);
 
   // Simple interface to solve a problem under the given assumptions. This
@@ -208,8 +203,6 @@ class SatSolver {
   // assumptions by calling GetLastIncompatibleDecisions().
   Status ResetAndSolveWithGivenAssumptions(
       const std::vector<Literal>& assumptions);
-  Status ResetAndSolveWithGivenAssumptions(
-      const std::vector<Literal>& assumptions, TimeLimit* time_limit);
 
   // Changes the assumption level. All the decisions below this level will be
   // treated as assumptions by the next Solve(). Note that this may impact some
@@ -492,7 +485,9 @@ class SatSolver {
   // Backtrack(). The backtrack is such that after it is applied, all the
   // literals of the learned close except one will be false. Thus the last one
   // will be implied True. This function also Enqueue() the implied literal.
-  void AddLearnedClauseAndEnqueueUnitPropagation(
+  //
+  // Returns the LBD of the clause.
+  int AddLearnedClauseAndEnqueueUnitPropagation(
       const std::vector<Literal>& literals, bool must_be_kept);
 
   // Creates a new decision which corresponds to setting the given literal to
@@ -508,10 +503,6 @@ class SatSolver {
   // Update the propagators_ list with the relevant propagators.
   void InitializePropagators();
 
-  // Asks for the next decision to branch upon. This shouldn't be called if
-  // there is no active variable (i.e. unassigned variable).
-  Literal NextBranch();
-
   // Unrolls the trail until a given point. This unassign the assigned variables
   // and add them to the priority queue with the correct weight.
   void Untrail(int target_trail_index);
@@ -521,9 +512,6 @@ class SatSolver {
 
   // Simplifies the problem when new variables are assigned at level 0.
   void ProcessNewlyFixedVariables();
-
-  // Compute an initial variable ordering.
-  void InitializeVariableOrdering();
 
   // Returns the maximum trail_index of the literals in the given clause.
   // All the literals must be assigned. Returns -1 if the clause is empty.
@@ -617,37 +605,12 @@ class SatSolver {
   // it if needed. Also updates the learned clause limit for the next cleanup.
   void CleanClauseDatabaseIfNeeded();
 
-  // Bumps the activity of all variables appearing in the conflict.
-  // See VSIDS decision heuristic: Chaff: Engineering an Efficient SAT Solver.
-  // M.W. Moskewicz et al. ANNUAL ACM IEEE DESIGN AUTOMATION CONFERENCE 2001.
-  //
-  // The second argument implements the Glucose strategy to reward good
-  // variables. Variables from the last decision level and with a reason of LBD
-  // lower than this limit and learned are bumped twice. Note that setting
-  // bump_again_lbd_limit to 0 disable this feature.
-  void BumpVariableActivities(const std::vector<Literal>& literals,
-                              int bump_again_lbd_limit);
-
-  // Rescales activity value of all variables when one of them reached the max.
-  void RescaleVariableActivities(double scaling_factor);
-
-  // Updates the increment used for activity bumps. This is basically the same
-  // as decaying all the variable activities, but it is a lot more efficient.
-  void UpdateVariableActivityIncrement();
-
   // Activity management for clauses. This work the same way at the ones for
   // variables, but with different parameters.
   void BumpReasonActivities(const std::vector<Literal>& literals);
   void BumpClauseActivity(SatClause* clause);
   void RescaleClauseActivities(double scaling_factor);
   void UpdateClauseActivityIncrement();
-
-  // Reinitializes the polarity of all the variables with an index greater than
-  // or equal to the given one.
-  void ResetPolarity(BooleanVariable from);
-
-  // Init restart period.
-  void InitRestart();
 
   std::string DebugString(const SatClause& clause) const;
   std::string StatusString(Status status) const;
@@ -698,8 +661,12 @@ class SatSolver {
   bool track_binary_clauses_;
   BinaryClauseManager binary_clauses_;
 
-  // The solver trail.
+  // Pointers to singleton Model objects.
   Trail* trail_;
+  TimeLimit* time_limit_;
+  SatParameters* parameters_;
+  RestartPolicy* restart_;
+  SatDecisionPolicy* decision_policy_;
 
   // Used for debugging only. See SaveDebugAssignment().
   VariablesAssignment debug_assignment_;
@@ -727,7 +694,6 @@ class SatSolver {
   // Tracks various information about the solver progress.
   struct Counters {
     int64 num_branches;
-    int64 num_random_branches;
     int64 num_failures;
 
     // Minimization stats.
@@ -744,7 +710,6 @@ class SatSolver {
 
     Counters()
         : num_branches(0),
-          num_random_branches(0),
           num_failures(0),
           num_minimizations(0),
           num_literals_removed(0),
@@ -762,110 +727,12 @@ class SatSolver {
   // constraints.
   bool is_model_unsat_;
 
-  // Parameters.
-  SatParameters parameters_;
-
-  // Variable ordering (priority will be adjusted dynamically). queue_elements_
-  // holds the elements used by var_ordering_ (it uses pointers).
-  //
-  // Note that we recover the variable that a WeightedVarQueueElement refers to
-  // by its position in the queue_elements_ vector, and we can recover the later
-  // using (pointer - &queue_elements_[0]).
-  struct WeightedVarQueueElement {
-    WeightedVarQueueElement() : heap_index(-1), tie_breaker(0.0), weight(0.0) {}
-
-    // Interface for the AdjustablePriorityQueue.
-    void SetHeapIndex(int h) { heap_index = h; }
-    int GetHeapIndex() const { return heap_index; }
-
-    // Priority order. The AdjustablePriorityQueue returns the largest element
-    // first.
-    //
-    // Note(user): We used to also break ties using the variable index, however
-    // this has two drawbacks:
-    // - On problem with many variables, this slow down quite a lot the priority
-    //   queue operations (which do as little work as possible and hence benefit
-    //   from having the majority of elements with a priority of 0).
-    // - It seems to be a bad heuristics. One reason could be that the priority
-    //   queue will automatically diversify the choice of the top variables
-    //   amongst the ones with the same priority.
-    //
-    // Note(user): For the same reason as explained above, it is probably a good
-    // idea not to have too many different values for the tie_breaker field. I
-    // am not even sure we should have such a field...
-    bool operator<(const WeightedVarQueueElement& other) const {
-      return weight < other.weight ||
-             (weight == other.weight && (tie_breaker < other.tie_breaker));
-    }
-
-    int32 heap_index;
-    float tie_breaker;
-
-    // TODO(user): Experiment with float. In the rest of the code, we use
-    // double, but maybe we don't need that much precision. Using float here may
-    // save memory and make the PQ operations faster.
-    double weight;
-  };
-  COMPILE_ASSERT(sizeof(WeightedVarQueueElement) == 16,
-                 ERROR_WeightedVarQueueElement_is_not_well_compacted);
-
-  bool var_ordering_is_initialized_;
-  AdjustablePriorityQueue<WeightedVarQueueElement> var_ordering_;
-  ITIVector<BooleanVariable, WeightedVarQueueElement> queue_elements_;
-
-  // This is used for the branching heuristic described in "Learning Rate Based
-  // Branching Heuristic for SAT solvers", J.H.Liang, V. Ganesh, P. Poupart,
-  // K.Czarnecki, SAT 2016.
-  //
-  // The entries are sorted by trail index, and one can get the number of
-  // conflicts during which a variable at a given trail index i was assigned by
-  // summing the entry.count for all entries with a trail index greater than i.
-  struct NumConflictsStackEntry {
-    int trail_index;
-    int64 count;
-  };
-  std::vector<NumConflictsStackEntry> num_conflicts_stack_;
-
-  // Whether the priority of the given variable needs to be updated in
-  // var_ordering_. Note that this is only accessed for assigned variables and
-  // that for efficiency it is indexed by trail indices. If
-  // pq_need_update_for_var_at_trail_index_[trail_->Info(var).trail_index] is
-  // true when we untrail var, then either var need to be inserted in the queue,
-  // or we need to notify that its priority has changed.
-  BitQueue64 pq_need_update_for_var_at_trail_index_;
-
   // Increment used to bump the variable activities.
-  double variable_activity_increment_;
   double clause_activity_increment_;
-
-  // Stores variable activity and the number of time each variable was "bumped".
-  // The later is only used with the ERWA heuristic.
-  ITIVector<BooleanVariable, double> activities_;
-  ITIVector<BooleanVariable, int64> num_bumps_;
-
-  // Used by NextBranch() to choose the polarity of the next decision. For the
-  // phase saving, the last polarity is stored in trail_->Info(var).
-  bool decision_heuristic_is_initialized_;
-  ITIVector<BooleanVariable, bool> var_use_phase_saving_;
-  ITIVector<BooleanVariable, bool> var_polarity_;
-  ITIVector<BooleanVariable, double> weighted_sign_;
-
-  // If true, leave the initial variable activities to their current value.
-  bool leave_initial_activities_unchanged_;
 
   // This counter is decremented each time we learn a clause that can be
   // deleted. When it reaches zero, a clause cleanup is triggered.
   int num_learned_clause_before_cleanup_;
-
-  // Conflicts credit to create until the next restart.
-  int conflicts_until_next_restart_;
-  int restart_count_;
-  int luby_count_;
-
-  // Conflicts credit until the next strategy change.
-  int conflicts_until_next_strategy_change_;
-  int strategy_change_conflicts_;
-  int strategy_counter_;
 
   // Temporary members used during conflict analysis.
   SparseBitset<BooleanVariable> is_marked_;
@@ -906,14 +773,6 @@ class SatSolver {
   // The current pseudo-Boolean conflict used in PB conflict analysis.
   MutableUpperBoundedLinearConstraint pb_conflict_;
 
-  // Running average used by some restart algorithms.
-  RunningAverage dl_running_average_;
-  RunningAverage lbd_running_average_;
-  RunningAverage trail_size_running_average_;
-
-  // The solver time limit.
-  std::unique_ptr<TimeLimit> time_limit_;
-
   // The deterministic time when the time limit was updated.
   // As the deterministic time in the time limit has to be advanced manually,
   // it is necessary to keep track of the last time the time was advanced.
@@ -927,28 +786,6 @@ class SatSolver {
   mutable StatsGroup stats_;
   DISALLOW_COPY_AND_ASSIGN(SatSolver);
 };
-
-// Returns the ith element of the strategy S^univ proposed by M. Luby et al. in
-// Optimal Speedup of Las Vegas Algorithms, Information Processing Letters 1993.
-// This is used to decide the number of conflicts allowed before the next
-// restart. This method, used by most SAT solvers, is usually referenced as
-// Luby.
-// Returns 2^{k-1} when i == 2^k - 1
-//    and  SUniv(i - 2^{k-1} + 1) when 2^{k-1} <= i < 2^k - 1.
-// The sequence is defined for i > 0 and starts with:
-//   {1, 1, 2, 1, 1, 2, 4, 1, 1, 2, 1, 1, 2, 4, 8, ...}
-inline int SUniv(int i) {
-  DCHECK_GT(i, 0);
-  while (i > 2) {
-    const int most_significant_bit_position =
-        MostSignificantBitPosition64(i + 1);
-    if ((1 << most_significant_bit_position) == i + 1) {
-      return 1 << (most_significant_bit_position - 1);
-    }
-    i -= (1 << most_significant_bit_position) - 1;
-  }
-  return 1;
-}
 
 // ============================================================================
 // Model based functions.

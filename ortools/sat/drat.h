@@ -17,7 +17,11 @@
 #include <string>
 #include <vector>
 
+#if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/base/file.h"
+#else
+class File {};
+#endif  // !__PORTABLE_PLATFORM__
 #include "ortools/base/span.h"
 #include "ortools/base/int_type_indexed_vector.h"
 #include "ortools/sat/sat_base.h"

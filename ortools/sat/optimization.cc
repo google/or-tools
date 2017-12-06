@@ -32,10 +32,11 @@
 #include "ortools/base/join.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/map_util.h"
-#if defined(USE_CBC) || defined(USE_SCIP)
+#if !defined(__PORTABLE_PLATFORM__)
 #include "ortools/linear_solver/linear_solver.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
-#endif  // defined(USE_CBC) || defined(USE_SCIP)
+#endif  // __PORTABLE_PLATFORM__
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/encoding.h"
 #include "ortools/sat/integer_expr.h"
@@ -44,6 +45,7 @@
 #include "ortools/sat/util.h"
 #include "ortools/util/time_limit.h"
 #include "ortools/base/random.h"
+
 
 namespace operations_research {
 namespace sat {
@@ -862,10 +864,10 @@ SatSolver::Status SolveWithRandomParameters(LogBehavior log,
     min_seen = std::min(min_seen, objective);
     max_seen = std::max(max_seen, objective);
 
-    logger.Log(StringPrintf("c %lld [%lld, %lld] objective preference: %s %s",
-                            objective.value(), min_seen.value(),
-                            max_seen.value(), use_obj ? "true" : "false",
-                            parameters.ShortDebugString().c_str()));
+    logger.Log(StrCat(
+        "c ", objective.value(), " [", min_seen.value(), ", ", max_seen.value(),
+        "] objective_preference: ", use_obj ? "true" : "false", " ",
+        ProtobufShortDebugString(parameters)));
   }
 
   // Retore the initial parameter (with an updated time limit).
@@ -1238,6 +1240,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     const std::function<LiteralIndex()>& next_decision,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model) {
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
@@ -1305,8 +1308,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
   // a weight not lower than this threshold. The threshold will decrease as the
   // algorithm progress.
   IntegerValue stratified_threshold =
-      sat_solver->parameters().max_sat_stratification() ==
-              SatParameters::STRATIFICATION_NONE
+      parameters.max_sat_stratification() == SatParameters::STRATIFICATION_NONE
           ? IntegerValue(0)
           : kMaxIntegerValue;
 
@@ -1420,7 +1422,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
 
     // Bulk cover optimization.
     bool some_cover_opt = false;
-    if (sat_solver->parameters().cover_optimization()) {
+    if (parameters.cover_optimization()) {
       for (const int index : term_indices) {
         // We currently skip the initial objective terms as there could be many
         // of them. TODO(user): provide an option to cover-optimize them? I
@@ -1606,7 +1608,6 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
              : result;
 }
 
-#if defined(USE_CBC) || defined(USE_SCIP)
 // TODO(user): take the MPModelRequest or MPModelProto directly, so that we can
 // have initial constraints!
 //
@@ -1618,6 +1619,7 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     const std::function<LiteralIndex()>& next_decision,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model) {
+#if !defined(__PORTABLE_PLATFORM__) && (defined(USE_CBC) || defined(USE_SCIP))
   SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
   IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
   IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
@@ -1821,8 +1823,10 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
   return num_solutions > 0 && result == SatSolver::MODEL_UNSAT
              ? SatSolver::MODEL_SAT
              : result;
+#else   // !__PORTABLE_PLATFORM__ && (USE_CBC || USE_SCIP)
+  LOG(FATAL) << "Not supported.";
+#endif  // __PORTABLE_PLATFORM || (!USE_CBC && !USE_SCIP)
 }
-#endif  // defined(USE_CBC) || defined(USE_SCIP)
 
 }  // namespace sat
 }  // namespace operations_research

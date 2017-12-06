@@ -393,7 +393,7 @@ void ReducedCosts::ComputeReducedCosts() {
       if (is_basic.IsSet(col)) {
         thread_local_dual_residual_error[omp_get_thread_num()] =
             std::max(thread_local_dual_residual_error[omp_get_thread_num()],
-                std::abs(reduced_costs_[col]));
+                     std::abs(reduced_costs_[col]));
       }
     }
     // end of omp parallel for
