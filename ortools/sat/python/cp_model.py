@@ -1016,10 +1016,9 @@ class CpSolver(object):
 
   def SolveWithSolutionObserver(self, model, callback):
     """Solves a problem and pass each solution found to the callback."""
-    parameters = sat_parameters_pb2.SatParameters()
     self.__solution = (
         pywrapsat.SatHelper.SolveWithParametersAndSolutionObserver(
-            model.ModelProto(), parameters, callback))
+            model.ModelProto(), self.parameters, callback))
     return self.__solution.status
 
   def SearchForAllSolutions(self, model, callback):
