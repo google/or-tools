@@ -36,6 +36,8 @@
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/table.h"
+#include "ortools/util/sigint.h"
+#include "ortools/util/time_limit.h"
 
 DEFINE_string(cp_sat_params, "", "SatParameters as a text proto.");
 DEFINE_bool(use_flatzinc_format, true, "Output uses the flatzinc format");
@@ -756,8 +758,7 @@ void LogInFlatzincFormat(const std::string& multi_line_input) {
 }  // namespace
 
 void SolveFzWithCpModelProto(const fz::Model& fz_model,
-                             const fz::FlatzincParameters& p,
-                             bool* interrupt_solve) {
+                             const fz::FlatzincParameters& p) {
   CpModelProtoWithMapping m;
   m.proto.set_name(fz_model.name());
 
@@ -826,8 +827,6 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
   // Fill the search order.
   m.TranslateSearchAnnotations(fz_model.search_annotations());
 
-  Model sat_model;
-
   // The order is important, we want the flag parameters to overwrite anything
   // set in m.parameters.
   sat::SatParameters flag_parameters;
@@ -840,17 +839,16 @@ void SolveFzWithCpModelProto(const fz::Model& fz_model,
     m.parameters.set_enumerate_all_solutions(true);
   }
   m.parameters.set_use_fixed_search(!p.free_search);
-  sat_model.GetOrCreate<SatSolver>()->SetParameters(m.parameters);
-
-  std::unique_ptr<TimeLimit> time_limit;
   if (p.time_limit_in_ms > 0) {
-    time_limit.reset(new TimeLimit(p.time_limit_in_ms * 1e-3));
-  } else {
-    // If the p.time_limit_in_ms is not set, we use the SatParameters one.
-    time_limit = TimeLimit::FromParameters(m.parameters);
+    m.parameters.set_max_time_in_seconds(p.time_limit_in_ms * 1e-3);
   }
-  time_limit->RegisterExternalBooleanAsLimit(interrupt_solve);
-  sat_model.SetSingleton(std::move(time_limit));
+
+  bool stopped = false;
+  Model sat_model;
+  sat_model.Add(NewSatParameters(m.parameters));
+  sat_model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
+  sat_model.GetOrCreate<SigintHandler>()->Register(
+      [&stopped]() { stopped = true; });
 
   // Print model statistics.
   if (!FLAGS_use_flatzinc_format) {

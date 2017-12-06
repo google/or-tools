@@ -154,7 +154,6 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
 
-#if defined(USE_CBC) || defined(USE_SCIP)
 // Generalization of the max-HS algorithm (HS stands for Hitting Set). This is
 // similar to MinimizeWithCoreAndLazyEncoding() but it uses an hybrid approach
 // with a MIP solver to handle the discovered infeasibility cores.
@@ -176,7 +175,6 @@ SatSolver::Status MinimizeWithHittingSetAndLazyEncoding(
     const std::function<LiteralIndex()>& next_decision,
     const std::function<void(const Model&)>& feasible_solution_observer,
     Model* model);
-#endif  // defined(USE_CBC) || defined(USE_SCIP)
 
 }  // namespace sat
 }  // namespace operations_research

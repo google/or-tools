@@ -19,6 +19,8 @@
 
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
+#if !defined(__PORTABLE_PLATFORM__)
+#endif  // !__PORTABLE_PLATFORM__
 #include "ortools/base/int_type.h"
 #include "ortools/base/status.h"
 
@@ -27,8 +29,10 @@ namespace sat {
 
 DratWriter::~DratWriter() {
   if (output_ != nullptr) {
+#if !defined(__PORTABLE_PLATFORM__)
     CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
     CHECK_OK(output_->Close(file::Defaults()));
+#endif  // !__PORTABLE_PLATFORM__
   }
 }
 
@@ -89,7 +93,9 @@ void DratWriter::WriteClause(gtl::Span<Literal> clause) {
   for (const int v : values_) StringAppendF(&buffer_, "%d ", v);
   buffer_ += "0\n";
   if (buffer_.size() > 10000) {
+#if !defined(__PORTABLE_PLATFORM__)
     CHECK_OK(file::WriteString(output_, buffer_, file::Defaults()));
+#endif  // !__PORTABLE_PLATFORM__
     buffer_.clear();
   }
 }

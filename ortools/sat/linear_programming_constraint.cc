@@ -25,26 +25,20 @@
 #include "ortools/base/map_util.h"
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/glop/status.h"
-#include "ortools/util/time_limit.h"
 
 namespace operations_research {
 namespace sat {
 
 const double LinearProgrammingConstraint::kEpsilon = 1e-6;
 
+// TODO(user): make SatParameters singleton too, otherwise changing them after
+// a constraint was added will have no effect on this class.
 LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
-    : sat_parameters_(model->GetOrCreate<SatSolver>()->parameters()),
+    : sat_parameters_(*(model->GetOrCreate<SatParameters>())),
+      time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()) {
-  // TODO(user): Find a way to make GetOrCreate<TimeLimit>() construct it by
-  // default.
-  time_limit_ = model->Mutable<TimeLimit>();
-  if (time_limit_ == nullptr) {
-    model->SetSingleton(TimeLimit::Infinite());
-    time_limit_ = model->Mutable<TimeLimit>();
-  }
-
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
   parameters.set_use_dual_simplex(true);

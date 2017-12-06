@@ -166,10 +166,16 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   IntegerVariable objective_cp_;
   std::vector<std::pair<glop::ColIndex, double>> objective_lp_;
 
-  // Structures for propagators.
-  const SatParameters sat_parameters_;
+  // Singletons from Model.
+  const SatParameters& sat_parameters_;
+  TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   Trail* trail_;
+
+  // The dispatcher for all LP propagators of the model, allows to find which
+  // LinearProgrammingConstraint has a given IntegerVariable.
+  LinearProgrammingDispatcher* dispatcher_;
+
   std::vector<IntegerLiteral> integer_reason_;
   std::vector<IntegerLiteral> deductions_;
 
@@ -181,13 +187,6 @@ class LinearProgrammingConstraint : public PropagatorInterface {
 
   // Linear constraints cannot be created or modified after this is registered.
   bool lp_constraint_is_registered_ = false;
-
-  // Time limit (shared with, owned by the sat solver).
-  TimeLimit* time_limit_;
-
-  // The dispatcher for all LP propagators of the model, allows to find which
-  // LinearProgrammingConstraint has a given IntegerVariable.
-  LinearProgrammingDispatcher* dispatcher_;
 
   int num_cuts_ = 0;
   std::vector<CutGenerator> cut_generators_;

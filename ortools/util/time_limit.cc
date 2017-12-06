@@ -19,7 +19,11 @@ DEFINE_bool(time_limit_use_usertime, false,
             "If true, rely on the user time in the TimeLimit class. This is "
             "only recommended for benchmarking on a non-isolated environment.");
 
+DEFINE_bool(time_limit_use_instruction_count, false,
+            "If true, measures the number of instructions executed");
+
 namespace operations_research {
+
 // static constants.
 const double TimeLimit::kSafetyBufferSeconds = 1e-4;
 const int TimeLimit::kHistorySize = 100;

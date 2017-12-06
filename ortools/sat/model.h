@@ -65,9 +65,9 @@ class Model {
     return f(*this);
   }
 
-  // Returns an object of type T that is unique to this model (this is a bit
-  // like a "local" singleton). This returns an already created instance or
-  // create a new one if needed using the T(Model* model) constructor.
+  // Returns an object of type T that is unique to this model (like a "local"
+  // singleton). This returns an already created instance or create a new one if
+  // needed using the T(Model* model) constructor if it exist or T() otherwise.
   //
   // This works a bit like in a dependency injection framework and allows to
   // really easily wire all the classes that make up a solver together. For
@@ -84,30 +84,12 @@ class Model {
     const size_t type_id = FastTypeId<T>();
     if (!ContainsKey(singletons_, type_id)) {
       // TODO(user): directly store std::unique_ptr<> in singletons_?
-      T* new_t = new T(this);
+      T* new_t = MyNew<T>(0);
       singletons_[type_id] = new_t;
       TakeOwnership(new_t);
       return new_t;
     }
     return static_cast<T*>(FindOrDie(singletons_, type_id));
-  }
-
-  // This returns a non-singleton object owned by the model.
-  template <typename T>
-  T* Create() {
-    T* new_t = new T(this);
-    TakeOwnership(new_t);
-    return new_t;
-  }
-
-  // Registers a given instance of type T as a "local singleton" for this type.
-  // For now this CHECKs that the object was not yet created.
-  template <typename T>
-  void SetSingleton(std::unique_ptr<T> t) {
-    const size_t type_id = FastTypeId<T>();
-    CHECK(!ContainsKey(singletons_, type_id));
-    singletons_[type_id] = t.get();
-    TakeOwnership(t.release());
   }
 
   // Likes GetOrCreate() but do not create the object if it is non-existing.
@@ -132,7 +114,31 @@ class Model {
     cleanup_list_.emplace_back(new Delete<T>(t));
   }
 
+  // This returns a non-singleton object owned by the model and created with the
+  // T(Model* model) constructor if it exist or the T() constructor otherwise.
+  // It is just a shortcut to new + TakeOwnership().
+  template <typename T>
+  T* Create() {
+    T* new_t = MyNew<T>(0);
+    TakeOwnership(new_t);
+    return new_t;
+  }
+
  private:
+  // We want to call the constructor T(model*) if it exists or just T() if
+  // it doesn't. For this we use some template "magic":
+  // - The first MyNew() will only be defined if the type in decltype() exist.
+  // - The second MyNew() will always be defined, but because of the ellipsis
+  //   it has lower priority that the first one.
+  template <typename T>
+  decltype(T(static_cast<Model*>(nullptr)))* MyNew(int) {
+    return new T(this);
+  }
+  template <typename T>
+  T* MyNew(...) {
+    return new T();
+  }
+
   // Map of FastTypeId<T> to a "singleton" of type T.
   std::map</*typeid*/ size_t, void*> singletons_;
 

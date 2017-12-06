@@ -17,19 +17,11 @@
 #include <queue>
 
 #include "ortools/base/timer.h"
-#include "ortools/base/numbers.h"
 #include "ortools/lp_data/lp_utils.h"
+#include "ortools/port/proto_utils.h"
 
 namespace operations_research {
 namespace glop {
-
-#if defined(ANDROID_JNI) && (defined(__ANDROID__) || defined(__APPLE__))
-// Enum -> std::string conversions are not present in MessageLite that is being used
-// on Android with ANDROID_JNI build.
-std::string GlopParameters_PricingRule_Name(int rule) {
-  return SimpleItoa(rule);
-}
-#endif  // ANDROID_JNI
 
 EnteringVariable::EnteringVariable(const VariablesInfo& variables_info,
                                    random_engine_t* random,
@@ -89,7 +81,7 @@ Status EnteringVariable::PrimalChooseEnteringColumn(ColIndex* entering_col) {
       return Status::OK();
   }
   LOG(DFATAL) << "Unknown pricing rule: "
-              << GlopParameters_PricingRule_Name(rule_)
+              << ProtoEnumToString<GlopParameters::PricingRule>(rule_)
               << ". Using steepest edge.";
   NormalizedChooseEnteringColumn<kSteepest>(entering_col);
   return Status::OK();

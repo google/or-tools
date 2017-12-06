@@ -28,9 +28,6 @@
 #else
 #include <fenv.h>  // NOLINT
 #endif
-#if !defined(__ANDROID__) && !defined(__APPLE__) && !defined(_MSC_VER)
-#include <fpu_control.h>
-#endif
 
 #ifdef __SSE__
 #include <xmmintrin.h>
@@ -103,40 +100,6 @@ class ScopedFloatingPointEnv {
   mutable fenv_t saved_fenv_;
 #endif
 };
-
-// The following macro does not change "var", but forces gcc to consider it
-// being modified. This can be used to avoid wrong over-optimizations by gcc.
-// See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=47617 for an explanation.
-#ifdef NDEBUG
-#define TOUCH(var) asm volatile("" : "+X"(var))
-#else
-#define TOUCH(var)
-#endif
-
-#if (defined(__i386__) || defined(__x86_64__)) && defined(__linux__) && \
-    !defined(__ANDROID__)
-inline fpu_control_t GetFPPrecision() {
-  fpu_control_t status = 0;  // Initialized to zero to please memory sanitizer.
-  _FPU_GETCW(status);
-  return status & (_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE);
-}
-
-
-// CPU precision control. Parameters can be:
-// _FPU_EXTENDED, _FPU_DOUBLE or _FPU_SINGLE.
-inline void SetFPPrecision(fpu_control_t precision) {
-  fpu_control_t status = 0;  // Initialized to zero to please memory sanitizer.
-  _FPU_GETCW(status);
-  TOUCH(status);
-  status &= ~(_FPU_EXTENDED | _FPU_DOUBLE | _FPU_SINGLE);
-  status |= precision;
-  _FPU_SETCW(status);
-  DCHECK_EQ(precision, GetFPPrecision());
-}
-#endif  // (defined(__i386__) || defined(__x86_64__)) && defined(__linux__) && \
-        // !defined(__ANDROID__)
-
-#undef TOUCH
 
 template <typename FloatType>
 inline bool IsPositiveOrNegativeInfinity(FloatType x) {

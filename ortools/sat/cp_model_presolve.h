@@ -21,7 +21,7 @@
 namespace operations_research {
 namespace sat {
 
-// Presolves the given CpModelProto into presolved_model.
+// Presolves the initial content of presolved_model.
 //
 // This also creates a mapping model that encode the correspondence between the
 // two problems. This works as follow:
@@ -42,8 +42,7 @@ namespace sat {
 // TODO(user): Identify disconnected components and returns a vector of
 // presolved model? If we go this route, it may be nicer to store the indices
 // inside the model. We can add a IntegerVariableProto::initial_index;
-void PresolveCpModel(const CpModelProto& initial_model,
-                     CpModelProto* presolved_model, CpModelProto* mapping_model,
+void PresolveCpModel(CpModelProto* presolved_model, CpModelProto* mapping_model,
                      std::vector<int>* postsolve_mapping);
 
 // Replaces all the instance of a variable i (and the literals referring to it)

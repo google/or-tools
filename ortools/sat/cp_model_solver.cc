@@ -28,7 +28,9 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#if !defined(__PORTABLE_PLATFORM__)
 #include "google/protobuf/text_format.h"
+#endif  // __PORTABLE_PLATFORM__
 #include "ortools/base/join.h"
 #include "ortools/base/join.h"
 #include "ortools/base/int_type.h"
@@ -36,6 +38,7 @@
 #include "ortools/base/map_util.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/graph/connectivity.h"
+#include "ortools/port/proto_utils.h"
 #include "ortools/sat/all_different.h"
 #include "ortools/sat/circuit.h"
 #include "ortools/sat/cp_constraints.h"
@@ -1418,14 +1421,15 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   StrAppend(&result, "Model '", model_proto.name(), "':\n");
 
   for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
-    StrAppend(&result, "Search strategy: on ", strategy.variables_size(),
-                    " variables, ",
-                    DecisionStrategyProto::VariableSelectionStrategy_Name(
-                        strategy.variable_selection_strategy()),
-                    ", ",
-                    DecisionStrategyProto::DomainReductionStrategy_Name(
-                        strategy.domain_reduction_strategy()),
-                    "\n");
+    StrAppend(
+        &result, "Search strategy: on ", strategy.variables_size(),
+        " variables, ",
+        ProtoEnumToString<DecisionStrategyProto::VariableSelectionStrategy>(
+            strategy.variable_selection_strategy()),
+        ", ",
+        ProtoEnumToString<DecisionStrategyProto::DomainReductionStrategy>(
+            strategy.domain_reduction_strategy()),
+        "\n");
   }
 
   StrAppend(&result, "#Variables: ", model_proto.variables_size(), "\n");
@@ -1453,7 +1457,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   if (num_constants > 0) {
     const std::string temp =
         StrCat(" - ", num_constants, " constants in {",
-                     strings::Join(constant_values, ","), "} \n");
+                     StrJoin(constant_values, ","), "} \n");
     StrAppend(&result, Summarize(temp));
   }
 
@@ -1470,7 +1474,7 @@ std::string CpModelStats(const CpModelProto& model_proto) {
                      " with enforcement literal)"));
   }
   std::sort(constraints.begin(), constraints.end());
-  StrAppend(&result, strings::Join(constraints, "\n"));
+  StrAppend(&result, StrJoin(constraints, "\n"));
 
   return result;
 }
@@ -1478,8 +1482,8 @@ std::string CpModelStats(const CpModelProto& model_proto) {
 std::string CpSolverResponseStats(const CpSolverResponse& response) {
   std::string result;
   StrAppend(&result, "CpSolverResponse:");
-  StrAppend(&result,
-                  "\nstatus: ", CpSolverStatus_Name(response.status()));
+  StrAppend(&result, "\nstatus: ",
+                  ProtoEnumToString<CpSolverStatus>(response.status()));
 
   // We special case the pure-decision problem for clarity.
   //
@@ -2169,6 +2173,8 @@ std::function<void(Model*)> NewFeasibleSolutionObserver(
   };
 }
 
+#if !defined(__PORTABLE_PLATFORM__)
+// TODO(user): Support it on android.
 std::function<SatParameters(Model*)> NewSatParameters(const std::string& params) {
   sat::SatParameters parameters;
   if (!params.empty()) {
@@ -2176,12 +2182,12 @@ std::function<SatParameters(Model*)> NewSatParameters(const std::string& params)
   }
   return NewSatParameters(parameters);
 }
+#endif  // __PORTABLE_PLATFORM__
 
 std::function<SatParameters(Model*)> NewSatParameters(
     const sat::SatParameters& parameters) {
   return [=](Model* model) {
     model->GetOrCreate<SatSolver>()->SetParameters(parameters);
-    model->SetSingleton(TimeLimit::FromParameters(parameters));
     return parameters;
   };
 }
@@ -2208,8 +2214,7 @@ CpSolverResponse SolveCpModelInternal(
   // We will add them all at once after model_proto is loaded.
   model->GetOrCreate<IntegerEncoder>()->DisableImplicationBetweenLiteral();
 
-  const SatParameters& parameters =
-      model->GetOrCreate<SatSolver>()->parameters();
+  const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
 
   // Instantiate all the needed variables. Note that if we have a fixed search
   // with no search strategy, then we instantiate all the Booleans as integers.
@@ -2228,7 +2233,6 @@ CpSolverResponse SolveCpModelInternal(
 
   // Load the constraints.
   std::set<std::string> unsupported_types;
-  Trail* trail = model->GetOrCreate<Trail>();
   int num_ignored_constraints = 0;
   for (const ConstraintProto& ct : model_proto.constraints()) {
     if (m.IgnoreConstraint(&ct)) {
@@ -2236,7 +2240,6 @@ CpSolverResponse SolveCpModelInternal(
       continue;
     }
 
-    const int old_num_fixed = trail->Index();
     if (!LoadConstraint(ct, &m)) {
       unsupported_types.insert(ConstraintCaseName(ct.constraint_case()));
       continue;
@@ -2251,15 +2254,17 @@ CpSolverResponse SolveCpModelInternal(
     // certain types of problems with millions of constraints.
     if (DEBUG_MODE) {
       model->GetOrCreate<SatSolver>()->Propagate();
+      Trail* trail = model->GetOrCreate<Trail>();
+      const int old_num_fixed = trail->Index();
       if (trail->Index() > old_num_fixed) {
         VLOG(1) << "Constraint fixed " << trail->Index() - old_num_fixed
-                << " Boolean variable(s): " << ct.ShortDebugString();
+                << " Boolean variable(s): " << ProtobufDebugString(ct);
       }
     }
     if (model->GetOrCreate<SatSolver>()->IsModelUnsat()) {
       VLOG(1) << "UNSAT during extraction (after adding '"
               << ConstraintCaseName(ct.constraint_case()) << "'). "
-              << ct.DebugString();
+              << ProtobufDebugString(ct);
       break;
     }
   }
@@ -2410,19 +2415,15 @@ CpSolverResponse SolveCpModelInternal(
       std::vector<IntegerVariable> linear_vars;
       std::vector<IntegerValue> linear_coeffs;
       ExtractLinearObjective(model_proto, &m, &linear_vars, &linear_coeffs);
-      #if defined(USE_CBC) || defined(USE_SCIP)
       if (parameters.optimize_with_max_hs()) {
         status = MinimizeWithHittingSetAndLazyEncoding(
             VLOG_IS_ON(1), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
       } else {
-        #endif  // defined(USE_CBC) || defined(USE_SCIP)
         status = MinimizeWithCoreAndLazyEncoding(
             VLOG_IS_ON(1), objective_var, linear_vars, linear_coeffs,
             next_decision, solution_observer, model);
-        #if defined(USE_CBC) || defined(USE_SCIP)
       }
-      #endif  // defined(USE_CBC) || defined(USE_SCIP)
     } else {
       status = MinimizeIntegerVariableWithLinearScanAndLazyEncoding(
           /*log_info=*/false, objective_var, next_decision, solution_observer,
@@ -2555,6 +2556,7 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     }
   }
 
+#if !defined(__PORTABLE_PLATFORM__)
   // Dump?
   if (!FLAGS_cp_model_dump_file.empty()) {
     LOG(INFO) << "Dumping cp model proto to '" << FLAGS_cp_model_dump_file
@@ -2562,14 +2564,14 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
     CHECK_OK(file::SetBinaryProto(FLAGS_cp_model_dump_file, model_proto,
                                   file::Defaults()));
   }
+#endif  // __PORTABLE_PLATFORM__
 
-  const CpModelProto expanded_proto = ExpandCpModel(model_proto);
+  // Starts by expanding some constraints if needed.
+  CpModelProto presolved_proto = ExpandCpModel(model_proto);
 
   const auto& observers = model->GetOrCreate<SolutionObservers>()->observers;
-  const SatParameters& parameters =
-      model->GetOrCreate<SatSolver>()->parameters();
-  if (!parameters.cp_model_presolve()) {
-    return SolveCpModelInternal(expanded_proto, true,
+  if (!model->GetOrCreate<SatParameters>()->cp_model_presolve()) {
+    return SolveCpModelInternal(presolved_proto, true,
                                 [&](const CpSolverResponse& response) {
                                   for (const auto& observer : observers) {
                                     observer(response);
@@ -2578,27 +2580,29 @@ CpSolverResponse SolveCpModel(const CpModelProto& model_proto, Model* model) {
                                 model);
   }
 
-  CpModelProto presolved_proto;
+  // Do the actual presolve.
   CpModelProto mapping_proto;
   std::vector<int> postsolve_mapping;
-  PresolveCpModel(expanded_proto, &presolved_proto, &mapping_proto,
-                  &postsolve_mapping);
+  PresolveCpModel(&presolved_proto, &mapping_proto, &postsolve_mapping);
   VLOG(1) << CpModelStats(presolved_proto);
 
+  // Note that it is okay to use the initial model_proto in the postsolve even
+  // though we called PresolveCpModel() on the expanded proto. This is because
+  // PostsolveResponse() only use the proto to known the number of variables to
+  // fill in the response and to check the solution feasibility of these
+  // variables.
   CpSolverResponse response = SolveCpModelInternal(
       presolved_proto, true,
       [&](const CpSolverResponse& response) {
         if (observers.empty()) return;
         CpSolverResponse copy = response;
-        PostsolveResponse(expanded_proto, mapping_proto, postsolve_mapping,
-                          &copy);
+        PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &copy);
         for (const auto& observer : observers) {
           observer(copy);
         }
       },
       model);
-  PostsolveResponse(expanded_proto, mapping_proto, postsolve_mapping,
-                    &response);
+  PostsolveResponse(model_proto, mapping_proto, postsolve_mapping, &response);
   return response;
 }
 

@@ -210,11 +210,6 @@ message SatParameters {
   optional double clause_activity_decay = 17 [default = 0.999];
   optional double max_clause_activity_value = 18 [default = 1e20];
 
-  // To try to reward good variables, Glucose bumps again the variable from the
-  // last decision level and with a learned reason of smaller LBD than the 1 UIP
-  // conflict. This needs use_lbd() to be true.
-  optional bool use_glucose_bump_again_strategy = 21 [ default = false];
-
   // ==========================================================================
   // Restart
   // ==========================================================================

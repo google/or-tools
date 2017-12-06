@@ -84,9 +84,8 @@ std::function<void(Model*)> Disjunctive(
       watcher->SetPropagatorPriority(id, 4);
       model->TakeOwnership(edge_finding);
     }
-    if (model->GetOrCreate<SatSolver>()
-            ->parameters()
-            .use_precedences_in_disjunctive_constraint()) {
+    if (model->GetOrCreate<SatParameters>()
+            ->use_precedences_in_disjunctive_constraint()) {
       for (const bool time_direction : {true, false}) {
         DisjunctivePrecedences* precedences = new DisjunctivePrecedences(
             time_direction, helper, model->GetOrCreate<IntegerTrail>(),

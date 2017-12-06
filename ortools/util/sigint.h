@@ -11,19 +11,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
-#define OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
+#ifndef OR_TOOLS_UTIL_SIGINT_H_
+#define OR_TOOLS_UTIL_SIGINT_H_
 
-#include "ortools/flatzinc/model.h"
-#include "ortools/flatzinc/solver.h"
+#include <functional>
 
 namespace operations_research {
-namespace sat {
 
-void SolveFzWithCpModelProto(const fz::Model& model,
-                             const fz::FlatzincParameters& p);
+class SigintHandler {
+ public:
+  SigintHandler() {}
+  ~SigintHandler();
 
-}  // namespace sat
+  // Catches ^C and call f() the first time this happen. If ^C is pressed 3
+  // times, kill the program.
+  void Register(const std::function<void()>& f);
+  static void ControlCHandler(int s);
+
+ private:
+  int num_sigint_calls_ = 0;
+  static std::function<void(int)> control_c_handler_;
+};
+
 }  // namespace operations_research
 
-#endif  // OR_TOOLS_FLATZINC_CP_MODEL_FZ_SOLVER_H_
+#endif  // OR_TOOLS_UTIL_SIGINT_H_

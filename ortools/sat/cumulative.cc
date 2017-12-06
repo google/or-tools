@@ -78,7 +78,7 @@ std::function<void(Model*)> Cumulative(
 
     if (vars.size() == 1) return;
 
-    const SatParameters& parameters = model->Get<SatSolver>()->parameters();
+    const SatParameters& parameters = *(model->GetOrCreate<SatParameters>());
 
     // Detect a subset of intervals that needs to be in disjunction and add a
     // Disjunctive() constraint over them.
