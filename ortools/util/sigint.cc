@@ -20,8 +20,7 @@
 namespace operations_research {
 
 void SigintHandler::Register(const std::function<void()>& f) {
-#if defined(__GNUC__)
-  control_c_handler_ = [this, f](int) {
+  handler_ = [this, f]() {
     ++num_sigint_calls_;
     if (num_sigint_calls_ >= 3) {
       LOG(INFO) << "^C pressed " << num_sigint_calls_
@@ -33,21 +32,19 @@ void SigintHandler::Register(const std::function<void()>& f) {
     if (num_sigint_calls_ == 1) f();
   };
   signal(SIGINT, &ControlCHandler);
-#endif  // defined(__GNUC__)
 }
 
-void SigintHandler::ControlCHandler(int s) {
-  control_c_handler_(0);
+// This method will be called by the system after the SIGINT signal.
+// The parameter is the signal received.
+void SigintHandler::ControlCHandler(int sig) {
+  handler_();
 }
-
 
 // Unregister the SIGINT handler.
 SigintHandler::~SigintHandler() {
-#if defined(__GNUC__)
   signal(SIGINT, SIG_DFL);
-#endif  // defined(__GNUC__)
 }
 
-std::function<void(int)> SigintHandler::control_c_handler_;
+std::function<void()> SigintHandler::handler_;
 
 }  // namespace operations_research
