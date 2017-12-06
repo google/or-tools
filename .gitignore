@@ -70,3 +70,5 @@ tools/docker/export
 .idea/*
 .idea/
 build/
+
+.DS_Store

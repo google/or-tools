@@ -9,11 +9,11 @@
 
 
   Answer:
-    Objective: -2.000000
-    var[0]    : 4.000000
+    Objective: 2.000000
+    var[0]    : 0.000000
     var[1]    : 1.000000
-    var[2]    : 9.000000
-    var[3]    : 0.000000
+    var[2]    : 1.000000
+    var[3]    : 12.000000
     var[4]    : 0.000000
 
   Note: When entering the matrix, it is reduced to standard form with appropriate slack variables.
@@ -31,7 +31,7 @@ let opts = SolverOpts.Default
             .Name("Equality/Inequality Constraints")
             .Goal(Minimize)
             .Objective([-3.0;1.0;1.0;0.0;0.0])
-            .MatrixEq([[1.0;-4.0;-2.0]; [-2.0;1.0;0.0]; [1.0;2.0;1.0]; [1.0;0.0;0.0]; [0.0;-1.0;0.0]])
+            .MatrixEq([[1.0;-4.0;2.0]; [-2.0;1.0;0.0]; [1.0;2.0;1.0]; [1.0;0.0;0.0]; [0.0;-1.0;0.0]])
             .VectorEq([11.0; 3.0; 1.0])
             .VarLowerBound(0. |> List.replicate 5)
             .VarUpperBound(Double.PositiveInfinity |> List.replicate 5)
