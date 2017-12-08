@@ -93,7 +93,8 @@ class ShiftMinimizationParser {
     load_status_ = STARTED;
 
     for (const std::string& line :
-             FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+         FileLines(file_name, FileLineIterator::REMOVE_LINEFEED |
+                                  FileLineIterator::REMOVE_INLINE_CR)) {
       ProcessLine(line);
     }
 
@@ -112,8 +113,8 @@ class ShiftMinimizationParser {
       return;
     }
 
-    const std::vector<std::string> words = strings::Split(
-        line, strings::delimiter::AnyOf(" :\t"), absl::SkipEmpty());
+    const std::vector<std::string> words = absl::StrSplit(
+        line, absl::delimiter::AnyOf(" :\t"), absl::SkipEmpty());
 
     switch (load_status_) {
       case NOT_STARTED: {

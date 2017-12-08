@@ -152,7 +152,7 @@ namespace {
 bool SafeParseInt64Array(const std::string& str, std::vector<int64>* parsed_int) {
   static const char kWhiteSpaces[] = " \t\n\v\f\r";
   std::vector<std::string> items = absl::StrSplit(
-      str, strings::delimiter::AnyOf(kWhiteSpaces), absl::SkipEmpty());
+      str, absl::delimiter::AnyOf(kWhiteSpaces), absl::SkipEmpty());
   parsed_int->assign(items.size(), 0);
   for (int i = 0; i < items.size(); ++i) {
     const char* item = items[i].c_str();

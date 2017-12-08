@@ -749,7 +749,7 @@ std::string SolutionString(
 
 void LogInFlatzincFormat(const std::string& multi_line_input) {
   std::vector<std::string> lines =
-      strings::Split(multi_line_input, '\n', absl::SkipEmpty());
+      absl::StrSplit(multi_line_input, '\n', absl::SkipEmpty());
   for (const std::string& line : lines) {
     FZLOG << line << FZENDL;
   }

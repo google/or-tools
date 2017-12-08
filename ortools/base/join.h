@@ -173,60 +173,62 @@ const T& LegacyPrecision(const T& t) {
 
 inline std::string StrCat(const AlphaNum& a) { return ::StrCat(a); }
 
-inline std::string StrCat(const AlphaNum& a, const AlphaNum& b) { return ::StrCat(a, b); }
+inline std::string StrCat(const AlphaNum& a, const AlphaNum& b) {
+  return ::StrCat(a, b);
+}
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c) {
   return ::StrCat(a, b, c);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d) {
+                     const AlphaNum& d) {
   return ::StrCat(a, b, c, d);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e) {
+                     const AlphaNum& d, const AlphaNum& e) {
   return ::StrCat(a, b, c, d, e);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f) {
+                     const AlphaNum& d, const AlphaNum& e, const AlphaNum& f) {
   return ::StrCat(a, b, c, d, e, f);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g) {
+                     const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                     const AlphaNum& g) {
   return ::StrCat(a, b, c, d, e, f, g);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h) {
+                     const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                     const AlphaNum& g, const AlphaNum& h) {
   return ::StrCat(a, b, c, d, e, f, g, h);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i) {
+                     const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                     const AlphaNum& g, const AlphaNum& h, const AlphaNum& i) {
   return ::StrCat(a, b, c, d, e, f, g, h, i);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j) {
+                     const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                     const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                     const AlphaNum& j) {
   return ::StrCat(a, b, c, d, e, f, g, h, i, j);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k) {
+                     const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                     const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                     const AlphaNum& j, const AlphaNum& k) {
   return ::StrCat(a, b, c, d, e, f, g, h, i, j, k);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l) {
+                     const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                     const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                     const AlphaNum& j, const AlphaNum& k, const AlphaNum& l) {
   return ::StrCat(a, b, c, d, e, f, g, h, i, j, k, l);
 }
 inline std::string StrCat(const AlphaNum& a, const AlphaNum& b, const AlphaNum& c,
-              const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
-              const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
-              const AlphaNum& j, const AlphaNum& k, const AlphaNum& l,
-              const AlphaNum& m) {
+                     const AlphaNum& d, const AlphaNum& e, const AlphaNum& f,
+                     const AlphaNum& g, const AlphaNum& h, const AlphaNum& i,
+                     const AlphaNum& j, const AlphaNum& k, const AlphaNum& l,
+                     const AlphaNum& m) {
   return ::StrCat(a, b, c, d, e, f, g, h, i, j, k, l, m);
 }
 
@@ -235,62 +237,62 @@ inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b) {
   ::StrAppend(s, a, b);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c) {
+                      const AlphaNum& c) {
   ::StrAppend(s, a, b, c);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d) {
+                      const AlphaNum& c, const AlphaNum& d) {
   ::StrAppend(s, a, b, c, d);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e) {
   ::StrAppend(s, a, b, c, d, e);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
-               const AlphaNum& f) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+                      const AlphaNum& f) {
   ::StrAppend(s, a, b, c, d, e, f);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
-               const AlphaNum& f, const AlphaNum& g) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+                      const AlphaNum& f, const AlphaNum& g) {
   ::StrAppend(s, a, b, c, d, e, f, g);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
-               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+                      const AlphaNum& f, const AlphaNum& g, const AlphaNum& h) {
   ::StrAppend(s, a, b, c, d, e, f, g, h);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
-               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
-               const AlphaNum& i) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+                      const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+                      const AlphaNum& i) {
   ::StrAppend(s, a, b, c, d, e, f, g, h, i);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
-               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
-               const AlphaNum& i, const AlphaNum& j) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+                      const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+                      const AlphaNum& i, const AlphaNum& j) {
   ::StrAppend(s, a, b, c, d, e, f, g, h, i, j);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
-               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
-               const AlphaNum& i, const AlphaNum& j, const AlphaNum& k) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+                      const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+                      const AlphaNum& i, const AlphaNum& j, const AlphaNum& k) {
   ::StrAppend(s, a, b, c, d, e, f, g, h, i, j, k);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
-               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
-               const AlphaNum& i, const AlphaNum& j, const AlphaNum& k,
-               const AlphaNum& l) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+                      const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+                      const AlphaNum& i, const AlphaNum& j, const AlphaNum& k,
+                      const AlphaNum& l) {
   ::StrAppend(s, a, b, c, d, e, f, g, h, i, j, k, l);
 }
 inline void StrAppend(std::string* s, const AlphaNum& a, const AlphaNum& b,
-               const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
-               const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
-               const AlphaNum& i, const AlphaNum& j, const AlphaNum& k,
-               const AlphaNum& l, const AlphaNum& m) {
+                      const AlphaNum& c, const AlphaNum& d, const AlphaNum& e,
+                      const AlphaNum& f, const AlphaNum& g, const AlphaNum& h,
+                      const AlphaNum& i, const AlphaNum& j, const AlphaNum& k,
+                      const AlphaNum& l, const AlphaNum& m) {
   ::StrAppend(s, a, b, c, d, e, f, g, h, i, j, k, l, m);
 }
 
