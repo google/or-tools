@@ -25,12 +25,13 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/file.h"
-#include "ortools/base/filelinereader.h"
+#include "ortools/util/filelineiter.h"
 #include "ortools/base/numbers.h"  // for safe_strtod
 #include "ortools/base/split.h"
 #include "ortools/base/strutil.h"
 #include "ortools/base/map_util.h"  // for FindOrNull, FindWithDefault
 #include "ortools/lp_data/lp_print_utils.h"
+#include "ortools/util/filelineiter.h"
 #include "ortools/base/status.h"
 
 DEFINE_bool(mps_free_form, false, "Read MPS files in free form.");
@@ -108,7 +109,7 @@ void MPSReader::DisplaySummary() {
 
 void MPSReader::SplitLineIntoFields() {
   if (free_form_) {
-    fields_ = strings::Split(line_, ' ', strings::SkipEmpty());
+    fields_ = strings::Split(line_, ' ', absl::SkipEmpty());
     CHECK_GE(kNumFields, fields_.size());
   } else {
     int length = line_.length();
@@ -141,21 +142,13 @@ bool MPSReader::LoadFile(const std::string& file_name, LinearProgram* data) {
   Reset();
   data_ = data;
   data_->Clear();
-  std::ifstream tmp_file(file_name.c_str());
-        const bool file_exists = tmp_file.good();
-        tmp_file.close();
-        if (file_exists) {
-          FileLineReader reader(file_name.c_str());
-          reader.set_line_callback(
-              NewPermanentCallback(this, &MPSReader::ProcessLine));
-          reader.Reload();
-    data->CleanUp();
-    DisplaySummary();
-    return reader.loaded_successfully() && parse_success_;
-  } else {
-    LOG(DFATAL) << "File not found: " << file_name;
-    return false;
+  for (const std::string& line :
+       FileLines(file_name, FileLineIterator::REMOVE_INLINE_CR)) {
+    ProcessLine(line);
   }
+  data->CleanUp();
+  DisplaySummary();
+  return parse_success_;
 }
 
 // TODO(user): Ideally have a method to compare instances of LinearProgram
@@ -199,7 +192,7 @@ bool MPSReader::IsCommentOrBlank() const {
   return true;
 }
 
-void MPSReader::ProcessLine(char* line) {
+void MPSReader::ProcessLine(const std::string& line) {
   ++line_num_;
   if (!parse_success_ && FLAGS_mps_stop_after_first_error) return;
   line_ = line;
@@ -207,7 +200,7 @@ void MPSReader::ProcessLine(char* line) {
     return;  // Skip blank lines and comments.
   }
   std::string section;
-  if (*line != '\0' && *line != ' ') {
+  if (line[0] != '\0' && line[0] != ' ') {
     section = GetFirstWord();
     section_ =
         FindWithDefault(section_name_to_id_map_, section, UNKNOWN_SECTION);

@@ -26,10 +26,10 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
+#include "ortools/base/port.h"
 #include "ortools/base/span.h"
 #include "ortools/base/int_type.h"
 #include "ortools/base/int_type_indexed_vector.h"
-#include "ortools/base/port.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/bitset.h"
 
@@ -292,7 +292,7 @@ class Trail {
   }
 
   // Returns the reason why this variable was assigned.
-  gtl::Span<Literal> Reason(BooleanVariable var) const;
+  absl::Span<Literal> Reason(BooleanVariable var) const;
 
   // Returns the "type" of an assignment (see AssignmentType). Note that this
   // function never returns kSameReasonAs or kCachedReason, it instead returns
@@ -348,7 +348,7 @@ class Trail {
   }
 
   // Returns the last conflict.
-  gtl::Span<Literal> FailingClause() const { return conflict_; }
+  absl::Span<Literal> FailingClause() const { return conflict_; }
 
   // Specific SatClause interface so we can update the conflict clause activity.
   // Note that MutableConflict() automatically sets this to nullptr, so we can
@@ -419,7 +419,7 @@ class Trail {
   // variables, the memory address of the vectors (kept in reasons_) are still
   // valid.
   mutable std::deque<std::vector<Literal>> reasons_repository_;
-  mutable ITIVector<BooleanVariable, gtl::Span<Literal>> reasons_;
+  mutable ITIVector<BooleanVariable, absl::Span<Literal>> reasons_;
   mutable ITIVector<BooleanVariable, int> old_type_;
 
   // This is used by RegisterPropagator() and Reason().
@@ -473,7 +473,7 @@ class SatPropagator {
   // The returned Span has to be valid until the literal is untrailed. A client
   // can use trail_.GetEmptyVectorToStoreReason() if it doesn't have a memory
   // location that already contains the reason.
-  virtual gtl::Span<Literal> Reason(const Trail& trail,
+  virtual absl::Span<Literal> Reason(const Trail& trail,
                                            int trail_index) const {
     LOG(FATAL) << "Not implemented.";
     return {};
@@ -565,7 +565,7 @@ inline int Trail::AssignmentType(BooleanVariable var) const {
   return type != AssignmentType::kCachedReason ? type : old_type_[var];
 }
 
-inline gtl::Span<Literal> Trail::Reason(BooleanVariable var) const {
+inline absl::Span<Literal> Trail::Reason(BooleanVariable var) const {
   // Special case for AssignmentType::kSameReasonAs to avoid a recursive call.
   var = ReferenceVarWithSameReason(var);
 

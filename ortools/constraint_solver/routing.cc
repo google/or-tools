@@ -4357,10 +4357,6 @@ void RoutingModel::SetupMetaheuristics(
                                          search_parameters.optimization_step(),
                                          nexts_, 10, 10, .8);
       break;
-    case LocalSearchMetaheuristic::OBJECTIVE_TABU_SEARCH:
-      optimize = solver_->MakeObjectiveTabuSearch(
-          false, cost_, search_parameters.optimization_step(), 100);
-      break;
     default:
       optimize =
           solver_->MakeMinimize(cost_, search_parameters.optimization_step());

@@ -70,13 +70,6 @@ sat::SatSolver::Status SatCoreBasedOptimizer::SolveWithAssumptions() {
       sat::ReduceNodesAndExtractAssumptions(upper_bound_,
                                             stratified_lower_bound_,
                                             &lower_bound_, &nodes_, &solver_);
-
-  // The lower bound is proved to equal the upper bound, the upper bound
-  // corresponding to the current solution value from the problem_state. As the
-  // optimizer is looking for a better solution (see
-  // LoadStateProblemToSatSolver), that means the current model is UNSAT and so
-  // the synchronized solution is optimal.
-  if (assumptions.empty()) return sat::SatSolver::MODEL_UNSAT;
   return solver_.ResetAndSolveWithGivenAssumptions(assumptions);
 }
 

@@ -592,7 +592,8 @@ class SecondPassVisitor : public ModelVisitor {
       if (variable->HasName()) {
         var_proto->set_name(variable->name());
       }
-      if (variable->Size() == variable->Max() - variable->Min() + 1) {
+      if (variable->Size() == static_cast<uint64>(variable->Max()) -
+                                  static_cast<uint64>(variable->Min()) + 1) {
         // Contiguous
         CpArgument* const min_proto = var_proto->add_arguments();
         min_proto->set_argument_index(TagIndex(ModelVisitor::kMinArgument));

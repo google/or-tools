@@ -26,13 +26,13 @@
 // array elements of type T.
 //
 // Implicit conversion operations are provided from types such as
-// std::vector<T> and util::gtl::InlinedVector<T, N>.  Note that Span
+// std::vector<T> and absl::InlinedVector<T, N>.  Note that Span
 // objects constructed from types in this way may be invalidated by
 // any operations that mutate the underlying vector.
 //
 // One common use for Span is when passing arguments to a
 // routine where you want to be able to accept a variety of array
-// types (e.g. a vector, a util::gtl::InlinedVector, a C-style array,
+// types (e.g. a vector, a absl::InlinedVector, a C-style array,
 // etc.).  The usual approach here is to have the client explicitly
 // pass in a pointer and a length, as in:
 //
@@ -45,7 +45,7 @@
 //   std::vector<int> my_vector;
 //   MyRoutine(vector_as_array(&my_vector), my_vector.size());
 //
-//   util::gtl::InlinedVector<int, 4> my_inline_vector;
+//   absl::InlinedVector<int, 4> my_inline_vector;
 //   MyRoutine(my_inline_vector.array(), my_inline_vector.size());
 //
 //   int my_array[10];
@@ -62,36 +62,14 @@
 //   std::vector<int> my_vector;
 //   MyRoutine(my_vector);
 //
-//   util::gtl::InlinedVector<int, 4> my_inline_vector;
+//   absl::InlinedVector<int, 4> my_inline_vector;
 //   MyRoutine(my_inline_vector);
 //
 //   int my_array[10];
 //   MyRoutine(my_array);
 //
 //   int* my_array = new int[10];
-//   MyRoutine(gtl::Span<int>(my_array, 10));
-//
-// MutableSpan<T> represents a mutable array of elements, and, like
-// Span, does not own the backing store. The implicit constructors it
-// provides allow functions not to worry about whether their mutable arguments
-// refer to vectors, arrays, google::protobuf::RepeatedFields, etc.:
-//
-//   void MyMutatingRoutine(MutableSpan<int> a) {
-//     for (int i = 0; i < a.size(); i++) { .. mutate a[i] .. }
-//   }
-//
-//   std::vector<int> my_vector;
-//   MyMutatingRoutine(&my_vector);
-//
-//   int my_array[10];
-//   MyMutatingRoutine(my_array);
-//
-//   int* my_array = new int[10];
-//   MyMutatingRoutine(gtl::MutableSpan<int>(my_array, 10));
-//
-//   MyProto my_proto;
-//   for (int i = 0; i < 10; ++i) { my_proto.add_value(i); }
-//   MyMutatingRoutine(my_proto.mutable_value());
+//   MyRoutine(absl::Span<int>(my_array, 10));
 
 #include <initializer_list>
 #include <type_traits>
@@ -99,7 +77,7 @@
 
 #include "ortools/base/inlined_vector.h"
 
-namespace gtl {
+namespace absl {
 namespace internal {
 
 // Template logic for generic constructors.
@@ -114,23 +92,11 @@ struct Data {
   }
 };
 
-struct MutableData {
-  template <typename C>
-  static decltype(std::declval<C>().mutable_data()) Get(C* v) {
-    return v->mutable_data();
-  }
-};
-
 struct Size {
   template <typename C>
   static decltype(std::declval<C>().size()) Get(C* v) {
     return v->size();
   }
-};
-
-struct MutableStringData {
-  // Defined only for std::string.
-  static char* Get(std::string* v) { return v->empty() ? nullptr : &*v->begin(); }
 };
 
 // Checks whether M::Get(C*) is defined and has a return type R such that
@@ -196,23 +162,11 @@ using FirstWithGet = typename std::conditional<A::HasGet(), A, B>::type;
 template <typename T, typename C>
 using ContainerData = Wrapper<Data, DataChecker<const T>, const C>;
 
-// Wraps a method returning a pointer to mutable data. Prefers data() over
-// mutable_data(), and handles strings when T==char. If data() returns a pointer
-// to mutable data, it is most likely overloaded, but may also be a single
-// method 'T* C::data() const' in a non-STL-compliant container.
-template <typename T, typename C>
-using ContainerMutableData =
-    FirstWithGet<Wrapper<Data, DataChecker<T>, C>,
-                 FirstWithGet<Wrapper<MutableData, DataChecker<T>, C>,
-                              Wrapper<MutableStringData, DataChecker<T>, C>>>;
-
 // Wraps C::size() const.
 template <typename C>
 using ContainerSize = Wrapper<Size, SizeChecker, const C>;
 
-// Implementation class for Span and MutableSpan. In the case of
-// Span, T will be a const type; for MutableSpan, T will be a
-// mutable type.
+// Implementation class for Span. T will be a const type.
 template <typename T>
 class SpanImplBase {
  public:
@@ -239,8 +193,8 @@ class SpanImplBase {
       : ptr_(x.ptr_ + pos), length_(std::min(x.length_ - pos, len)) {}
 
   // Some of the const methods below return pointers and references to mutable
-  // data. This is only the case in this internal class; Span and
-  // MutableSpan provide deep-constness.
+  // data. This is only the case in this internal class; Span provides
+  // deep-constness.
 
   pointer data() const { return ptr_; }
   size_type size() const { return length_; }
@@ -310,22 +264,6 @@ class SpanImpl : public SpanImplBase<const T> {
       : SpanImplBase<const T>(ContainerData<T, C>::Get(std::addressof(v)),
                               ContainerSize<C>::Get(std::addressof(v))) {}
 };
-
-template <typename T>
-class MutableSpanImpl : public SpanImplBase<T> {
- public:
-  using SpanImplBase<T>::SpanImplBase;
-
-  template <typename C>
-  using EnableIfConvertibleFrom =
-      typename std::enable_if<ContainerMutableData<T, C>::HasGet() &&
-                              ContainerSize<C>::HasGet()>::type;
-
-  template <typename C>
-  explicit MutableSpanImpl(C* v)
-      : SpanImplBase<T>(ContainerMutableData<T, C>::Get(v),
-                        ContainerSize<C>::Get(v)) {}
-};
 }  // namespace internal
 
 template <typename T>
@@ -385,6 +323,8 @@ class Span {
   Span(std::initializer_list<value_type> v)  // NOLINT(runtime/explicit)
       : impl_(v.begin(), v.size()) {}
 
+  Span(const Span& x) : impl_(x.impl_) {}
+
   // Substring of another Span.
   // pos must be non-negative and <= x.length().
   // len must be non-negative and will be pinned to at most x.length() - pos.
@@ -425,108 +365,9 @@ class Span {
   Impl impl_;
 };
 
-// Mutable version of Span, which allows the clients to mutate the
-// underlying data. It is implicitly convertible to Span since it provides
-// the data() and size() methods with correct signatures. When a
-// MutableSpan is created from a pointer to a container (as opposed to raw
-// memory pointer), the pointer must not be null.
-//
-// A note on const-ness: "mutable" here refers to the mutability of the
-// underlying data, not of the slice itself. It is perfectly reasonable to have
-// a variable of type "const MutableSpan<T>"; this means that the bounds
-// of the view on the array cannot be changed, but the underlying data in the
-// array still may be modified. This is akin to a "T* const" pointer, as opposed
-// to a "const T*" pointer (corresponding to a non-const Span<T>).
-template <typename T>
-class MutableSpan {
- private:
-  typedef internal::MutableSpanImpl<T> Impl;
-
- public:
-  typedef T value_type;
-  typedef typename Impl::pointer pointer;
-  typedef typename Impl::const_pointer const_pointer;
-  typedef typename Impl::reference reference;
-  typedef typename Impl::const_reference const_reference;
-  typedef typename Impl::iterator iterator;
-  typedef typename Impl::const_iterator const_iterator;
-  typedef typename Impl::reverse_iterator reverse_iterator;
-  typedef typename Impl::const_reverse_iterator const_reverse_iterator;
-  typedef typename Impl::size_type size_type;
-  typedef typename Impl::difference_type difference_type;
-
-  static const size_type npos = Impl::npos;
-
-  MutableSpan() : impl_(nullptr, 0) {}
-  MutableSpan(pointer array, size_type length) : impl_(array, length) {}
-
-  // Implicit conversion constructors
-  MutableSpan(std::vector<value_type>* v)  // NOLINT(runtime/explicit)
-      : impl_(v->data(), v->size()) {}
-
-  template <size_t N>
-  MutableSpan(value_type (&a)[N])  // NOLINT(runtime/explicit)
-      : impl_(a, N) {}
-
-  template <int N>
-  MutableSpan(InlinedVector<value_type, N>* v)  // NOLINT(runtime/explicit)
-      : impl_(v->data(), v->size()) {}
-
-  // The constructor for any class supplying 'T* data()' or 'T* mutable_data()'
-  // (the former is called if both exist), and 'some_integral_type size()
-  // const'. google::protobuf::RepeatedField is an example of this. Also supports std::string
-  // arguments, when T==char. The appropriate ctor is selected using SFINAE. See
-  // span_internal.h for details.
-  template <typename V,
-            typename = typename Impl::template EnableIfConvertibleFrom<V>>
-  MutableSpan(V* v)  // NOLINT(runtime/explicit)
-      : impl_(v) {}
-
-  // Substring of another MutableSpan.
-  // pos must be non-negative and <= x.length().
-  // len must be non-negative and will be pinned to at most x.length() - pos.
-  // If len==npos, the substring continues till the end of x.
-  MutableSpan(const MutableSpan& x, size_type pos, size_type len)
-      : impl_(x.impl_, pos, len) {}
-
-  // Accessors.
-  pointer data() const { return impl_.data(); }
-  size_type size() const { return impl_.size(); }
-  size_type length() const { return size(); }
-  bool empty() const { return size() == 0; }
-
-  void clear() { impl_.clear(); }
-
-  reference operator[](size_type i) const { return impl_[i]; }
-  reference at(size_type i) const { return impl_.at(i); }
-  reference front() const { return impl_.front(); }
-  reference back() const { return impl_.back(); }
-
-  iterator begin() const { return impl_.begin(); }
-  iterator end() const { return impl_.end(); }
-  reverse_iterator rbegin() const { return impl_.rbegin(); }
-  reverse_iterator rend() const { return impl_.rend(); }
-
-  void remove_prefix(size_type n) { impl_.remove_prefix(n); }
-  void remove_suffix(size_type n) { impl_.remove_suffix(n); }
-  void pop_back() { remove_suffix(1); }
-  void pop_front() { remove_prefix(1); }
-
-  bool operator==(Span<T> other) const { return Span<T>(*this) == other; }
-  bool operator!=(Span<T> other) const { return Span<T>(*this) != other; }
-
-  // DEPRECATED(jacobsa): Please use data() instead.
-  pointer mutable_data() const { return impl_.data(); }
-
- private:
-  Impl impl_;
-};
-
 template <typename T>
 const typename Span<T>::size_type Span<T>::npos;
-template <typename T>
-const typename MutableSpan<T>::size_type MutableSpan<T>::npos;
 
-}  // namespace gtl
+}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_SPAN_H_

@@ -15,7 +15,7 @@
 #include <iostream>  // NOLINT
 #include <utility>
 
-namespace operations_research {
+namespace absl {
 
 std::ostream& operator<<(std::ostream& o, const string_view& piece) {
   o.write(piece.data(), piece.size());
@@ -109,4 +109,4 @@ string_view string_view::substr(size_type pos, size_type n) const {
 
 const string_view::size_type string_view::npos = size_type(-1);
 
-}  // namespace operations_research
+}  // namespace absl

@@ -443,12 +443,12 @@ class RevBitSet {
   explicit RevBitSet(int64 size);
   ~RevBitSet();
 
-  // Sets the 'pos' bit.
-  void SetToOne(Solver* const solver, int64 pos);
-  // Erases the 'pos' bit.
-  void SetToZero(Solver* const solver, int64 pos);
-  // Returns whether the 'pos' bit is set.
-  bool IsSet(int64 pos) const;
+  // Sets the 'index' bit.
+  void SetToOne(Solver* const solver, int64 index);
+  // Erases the 'index' bit.
+  void SetToZero(Solver* const solver, int64 index);
+  // Returns whether the 'index' bit is set.
+  bool IsSet(int64 index) const;
   // Returns the number of bits set to one.
   int64 Cardinality() const;
   // Is bitset null?
@@ -542,7 +542,7 @@ Demon* MakeConstraintDemon0(Solver* const s, T* const ct, void (T::*method)(),
 
 template <class P>
 std::string ParameterDebugString(P param) {
-  return StrCat(param);
+  return absl::StrCat(param);
 }
 
 // Support limited to pointers to classes which define DebugString().
@@ -563,7 +563,7 @@ class CallMethod1 : public Demon {
   void Run(Solver* const s) override { (constraint_->*method_)(param1_); }
 
   std::string DebugString() const override {
-    return StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
+    return absl::StrCat("CallMethod_", name_, "(", constraint_->DebugString(),
                         ", ", ParameterDebugString(param1_), ")");
   }
 
@@ -719,7 +719,7 @@ class DelayedCallMethod1 : public Demon {
   }
 
   std::string DebugString() const override {
-    return StrCat("DelayedCallMethod_", name_, "(",
+    return absl::StrCat("DelayedCallMethod_", name_, "(",
                         constraint_->DebugString(), ", ",
                         ParameterDebugString(param1_), ")");
   }
@@ -1293,6 +1293,11 @@ class PathOperator : public IntVarLocalSearchOperator {
   virtual int64 GetBaseNodeRestartPosition(int base_index) {
     return StartNode(base_index);
   }
+  // Set the next base to increment on next iteration. All base > base_index
+  // will be reset to their start value.
+  virtual void SetNextBaseToIncrement(int64 base_index) {
+    next_base_to_increment_ = base_index;
+  }
 
   int64 OldNext(int64 node_index) const {
     DCHECK(!IsPathEnd(node_index));
@@ -1341,6 +1346,7 @@ class PathOperator : public IntVarLocalSearchOperator {
 
   const int number_of_nexts_;
   const bool ignore_path_vars_;
+  int next_base_to_increment_;
 
  private:
   void OnStart() override;
@@ -1364,7 +1370,7 @@ class PathOperator : public IntVarLocalSearchOperator {
   void InitializePathStarts();
   void InitializeInactives();
   void InitializeBaseNodes();
-  bool CheckChainValidity(int64 chain_start, int64 chain_end,
+  bool CheckChainValidity(int64 before_chain, int64 chain_end,
                           int64 exclude) const;
   void Synchronize();
 
@@ -1457,6 +1463,8 @@ class LocalSearchFilter : public BaseObject {
 
 class IntVarLocalSearchFilter : public LocalSearchFilter {
  public:
+  IntVarLocalSearchFilter(const std::vector<IntVar*>& vars,
+                          Solver::ObjectiveWatcher objective_callback);
   explicit IntVarLocalSearchFilter(const std::vector<IntVar*>& vars);
   ~IntVarLocalSearchFilter() override;
   // This method should not be overridden. Override OnSynchronize() instead
@@ -1473,6 +1481,10 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
     return *index != kUnassigned;
   }
 
+  virtual void InjectObjectiveValue(int64 objective_value) {
+    injected_objective_value_ = objective_value;
+  }
+
   // Add variables to "track" to the filter.
   void AddVars(const std::vector<IntVar*>& vars);
   int Size() const { return vars_.size(); }
@@ -1487,12 +1499,23 @@ class IntVarLocalSearchFilter : public LocalSearchFilter {
   virtual void OnSynchronize(const Assignment* delta) {}
   void SynchronizeOnAssignment(const Assignment* assignment);
 
+  bool CanPropagateObjectiveValue() const {
+    return objective_callback_ != nullptr;
+  }
+  void PropagateObjectiveValue(int64 objective_value) {
+    if (objective_callback_ != nullptr) {
+      objective_callback_(objective_value);
+    }
+  }
+  int64 injected_objective_value_;
+
  private:
   std::vector<IntVar*> vars_;
   std::vector<int64> values_;
   std::vector<bool> var_synced_;
   std::vector<int> var_index_to_index_;
   static const int kUnassigned;
+  Solver::ObjectiveWatcher objective_callback_;
 };
 
 // ---------- PropagationMonitor ----------
@@ -1603,7 +1626,7 @@ class BooleanVar : public IntVar {
   void SetMin(int64 m) override;
   int64 Max() const override { return (value_ != 0); }
   void SetMax(int64 m) override;
-  void SetRange(int64 l, int64 u) override;
+  void SetRange(int64 mi, int64 ma) override;
   bool Bound() const override { return (value_ != kUnboundBooleanVarValue); }
   int64 Value() const override {
     CHECK_NE(value_, kUnboundBooleanVarValue) << "variable is not bound";
@@ -2764,7 +2787,7 @@ inline int64 PosIntDivUp(int64 e, int64 v) {
   if (e >= 0) {
     return e % v == 0 ? e / v : e / v + 1;
   } else {
-    return -(-e / v);
+    return e / v;
   }
 }
 

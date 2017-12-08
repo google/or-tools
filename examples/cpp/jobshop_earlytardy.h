@@ -156,7 +156,7 @@ class EtJobShopData {
     // TODO(user): more robust logic to support single-task jobs.
     static const char kWordDelimiters[] = " ";
     std::vector<std::string> words =
-        strings::Split(line, " ", strings::SkipEmpty());
+        absl::StrSplit(line, " ", absl::SkipEmpty());
 
     if (words.size() == 2) {
       job_count_ = atoi32(words[0]);

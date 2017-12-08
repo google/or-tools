@@ -24,6 +24,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -638,14 +639,14 @@ class PrintTrace : public PropagationMonitor {
   void SetValues(IntVar* const var, const std::vector<int64>& values) override {
     DisplayModification(StringPrintf("SetValues(%s, %s)",
                                      var->DebugString().c_str(),
-                                     strings::Join(values, ", ").c_str()));
+                                     absl::StrJoin(values, ", ").c_str()));
   }
 
   void RemoveValues(IntVar* const var,
                     const std::vector<int64>& values) override {
     DisplayModification(StringPrintf("RemoveValues(%s, %s)",
                                      var->DebugString().c_str(),
-                                     strings::Join(values, ", ").c_str()));
+                                     absl::StrJoin(values, ", ").c_str()));
   }
 
   // ----- IntervalVar modifiers -----
@@ -731,9 +732,9 @@ class PrintTrace : public PropagationMonitor {
                     const std::vector<int>& unperformed) override {
     DisplayModification(StringPrintf(
         "RankSequence(%s, forward [%s], backward[%s], unperformed[%s])",
-        var->DebugString().c_str(), strings::Join(rank_first, ", ").c_str(),
-        strings::Join(rank_last, ", ").c_str(),
-        strings::Join(unperformed, ", ").c_str()));
+        var->DebugString().c_str(), absl::StrJoin(rank_first, ", ").c_str(),
+        absl::StrJoin(rank_last, ", ").c_str(),
+        absl::StrJoin(unperformed, ", ").c_str()));
   }
 
   void Install() override {

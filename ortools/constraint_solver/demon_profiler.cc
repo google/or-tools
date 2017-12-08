@@ -24,6 +24,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/file.h"
+#include "ortools/base/time_support.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -51,7 +52,7 @@ class DemonProfiler : public PropagationMonitor {
       : PropagationMonitor(solver),
         active_constraint_(nullptr),
         active_demon_(nullptr),
-        start_time_ns_(base::GetCurrentTimeNanos()) {}
+        start_time_ns_(absl::GetCurrentTimeNanos()) {}
 
   ~DemonProfiler() override {
     STLDeleteContainerPairSecondPointers(constraint_map_.begin(),
@@ -61,7 +62,7 @@ class DemonProfiler : public PropagationMonitor {
   // In microseconds.
   // TODO(user): rename and return nanoseconds.
   int64 CurrentTime() const {
-    return (base::GetCurrentTimeNanos() - start_time_ns_) / 1000;
+    return (absl::GetCurrentTimeNanos() - start_time_ns_) / 1000;
   }
 
   void BeginConstraintInitialPropagation(

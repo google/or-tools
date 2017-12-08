@@ -51,7 +51,7 @@ class SatPostsolver {
   // The postsolver will process the Add() calls in reverse order. If the given
   // clause has all its literals at false, it simply sets the literal x to true.
   // Note that x must be a literal of the given clause.
-  void Add(Literal x, const gtl::Span<Literal> clause);
+  void Add(Literal x, const absl::Span<Literal> clause);
 
   // Tells the postsolver that the given literal must be true in any solution.
   // We currently check that the variable is not already fixed.
@@ -82,7 +82,7 @@ class SatPostsolver {
   std::vector<Literal> Clause(int i) const {
     // TODO(user): we could avoid the copy here, but because clauses_literals_
     // is a deque, we do need a special return class and cannot juste use
-    // gtl::Span<Literal> for instance.
+    // absl::Span<Literal> for instance.
     const int begin = clauses_start_[i];
     const int end = i + 1 < clauses_start_.size() ? clauses_start_[i + 1]
                                                   : clauses_literals_.size();
@@ -153,7 +153,7 @@ class SatPresolver {
   // Adds new clause to the SatPresolver.
   void SetNumVariables(int num_variables);
   void AddBinaryClause(Literal a, Literal b);
-  void AddClause(gtl::Span<Literal> clause);
+  void AddClause(absl::Span<Literal> clause);
 
   // Presolves the problem currently loaded. Returns false if the model is
   // proven to be UNSAT during the presolving.

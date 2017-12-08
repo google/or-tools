@@ -38,7 +38,7 @@ void RestartPolicy::Reset() {
                      parameters_.restart_algorithms().end());
   if (strategies_.empty()) {
     const std::vector<std::string> string_values = strings::Split(
-        parameters_.default_restart_algorithms(), ',', strings::SkipEmpty());
+        parameters_.default_restart_algorithms(), ',', absl::SkipEmpty());
     for (const std::string& string_value : string_values) {
       SatParameters::RestartAlgorithm tmp;
 #if defined(__PORTABLE_PLATFORM__)

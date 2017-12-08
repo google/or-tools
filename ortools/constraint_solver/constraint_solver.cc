@@ -30,7 +30,6 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
 #include "ortools/base/stringprintf.h"
-#include "ortools/base/string_view.h"
 #include "ortools/base/file.h"
 #include "ortools/base/recordio.h"
 #include "zlib.h"
@@ -536,9 +535,9 @@ class NoCompressionTrailPacker : public TrailPacker<T> {
   void Pack(const addrval<T>* block, std::string* packed_block) override {
     DCHECK(block != nullptr);
     DCHECK(packed_block != nullptr);
-    string_view block_str;
-    block_str.set(block, this->input_size());
-    block_str.CopyToString(packed_block);
+    absl::string_view block_str(reinterpret_cast<const char*>(block),
+                                this->input_size());
+    packed_block->assign(block_str.data(), block_str.size());
   }
   void Unpack(const std::string& packed_block, addrval<T>* block) override {
     DCHECK(block != nullptr);
@@ -567,9 +566,9 @@ class ZlibTrailPacker : public TrailPacker<T> {
         compress(reinterpret_cast<Bytef*>(tmp_block_.get()), &size,
                  reinterpret_cast<const Bytef*>(block), this->input_size());
     CHECK_EQ(Z_OK, result);
-    string_view block_str;
-    block_str.set(tmp_block_.get(), size);
-    block_str.CopyToString(packed_block);
+    absl::string_view block_str;
+    block_str = absl::string_view(tmp_block_.get(), size);
+    packed_block->assign(block_str.data(), block_str.size());
   }
 
   void Unpack(const std::string& packed_block, addrval<T>* block) override {
@@ -989,8 +988,8 @@ class Search {
   void EnterSearch();
   void RestartSearch();
   void ExitSearch();
-  void BeginNextDecision(DecisionBuilder* const b);
-  void EndNextDecision(DecisionBuilder* const b, Decision* const d);
+  void BeginNextDecision(DecisionBuilder* const db);
+  void EndNextDecision(DecisionBuilder* const db, Decision* const d);
   void ApplyDecision(Decision* const d);
   void AfterDecision(Decision* const d, bool apply);
   void RefuteDecision(Decision* const d);
@@ -1018,7 +1017,7 @@ class Search {
   void set_created_by_solve(bool c) { created_by_solve_ = c; }
   bool created_by_solve() const { return created_by_solve_; }
   Solver::DecisionModification ModifyDecision();
-  void SetBranchSelector(Solver::BranchSelector s);
+  void SetBranchSelector(Solver::BranchSelector bs);
   void LeftMove() {
     search_depth_++;
     left_search_depth_++;
@@ -2868,7 +2867,8 @@ void SearchMonitor::Install() {
 }
 
 // ---------- Propagation Monitor -----------
-PropagationMonitor::PropagationMonitor(Solver* const s) : SearchMonitor(s) {}
+PropagationMonitor::PropagationMonitor(Solver* const solver)
+    : SearchMonitor(solver) {}
 
 PropagationMonitor::~PropagationMonitor() {}
 
@@ -2879,7 +2879,8 @@ void PropagationMonitor::Install() {
 }
 
 // ---------- Local Search Monitor -----------
-LocalSearchMonitor::LocalSearchMonitor(Solver* const s) : SearchMonitor(s) {}
+LocalSearchMonitor::LocalSearchMonitor(Solver* const solver)
+    : SearchMonitor(solver) {}
 
 LocalSearchMonitor::~LocalSearchMonitor() {}
 

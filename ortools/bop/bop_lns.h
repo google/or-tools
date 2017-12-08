@@ -64,7 +64,7 @@ class BopCompleteLNSOptimizer : public BopOptimizerBase {
 //
 // NOTE(user): Using a sat_propagator as the output of the algorithm allows for
 // a really simple and efficient interface for the generator that relies on it.
-// However, if a generator don't rely on it at all, it may slow down a bit the
+// However, if a generator doesn't rely on it at all, it may slow down a bit the
 // code (to investigate). If this happens, we will probably need another
 // function here and a way to select between which one to call.
 class NeighborhoodGenerator {

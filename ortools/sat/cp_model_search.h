@@ -20,6 +20,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 
 namespace operations_research {

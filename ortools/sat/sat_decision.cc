@@ -13,8 +13,6 @@
 
 #include "ortools/sat/sat_decision.h"
 
-#include "ortools/base/adjustable_priority_queue-inl.h"
-
 namespace operations_research {
 namespace sat {
 
@@ -29,23 +27,23 @@ void SatDecisionPolicy::IncreaseNumVariables(int num_variables) {
   DCHECK_GE(num_variables, activities_.size());
 
   activities_.resize(num_variables, parameters_.initial_variables_activity());
+  tie_breakers_.resize(num_variables, 0.0);
   num_bumps_.resize(num_variables, 0);
   pq_need_update_for_var_at_trail_index_.IncreaseSize(num_variables);
-  queue_elements_.resize(num_variables);
 
   weighted_sign_.resize(num_variables, 0.0);
   var_polarity_.resize(num_variables);
   var_use_phase_saving_.resize(num_variables, parameters_.use_phase_saving());
   ResetInitialPolarity(/*from=*/old_num_variables);
 
-  // Important: Because there is new variables, we need to recompute the
-  // priority queue. Note that this will not reset the activity, it will however
-  // change the order of the element with the same priority.
-  //
-  // TODO(user): Not even do that and just push the new ones at the end? It
-  // would be even better to simply deall with zero-activity variables
-  // differently, but that would change the current search order.
-  var_ordering_is_initialized_ = false;
+  // Update the priority queue. Note that each addition is in O(1) because
+  // the priority is 0.0.
+  var_ordering_.Reserve(num_variables);
+  if (var_ordering_is_initialized_) {
+    for (BooleanVariable var(old_num_variables); var < num_variables; ++var) {
+      var_ordering_.Add({var, 0.0, activities_[var]});
+    }
+  }
 }
 
 void SatDecisionPolicy::ResetDecisionHeuristic() {
@@ -54,8 +52,9 @@ void SatDecisionPolicy::ResetDecisionHeuristic() {
   const int num_variables = activities_.size();
   variable_activity_increment_ = 1.0;
   activities_.assign(num_variables, parameters_.initial_variables_activity());
+  tie_breakers_.assign(num_variables, 0.0);
   num_bumps_.assign(num_variables, 0);
-  queue_elements_.assign(num_variables, WeightedVarQueueElement());
+  var_ordering_.Clear();
 
   ResetInitialPolarity(/*from=*/0);
   var_use_phase_saving_.assign(num_variables, parameters_.use_phase_saving());
@@ -109,9 +108,9 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   std::vector<BooleanVariable> variables;
   for (BooleanVariable var(0); var < num_variables; ++var) {
     if (!trail_->Assignment().VariableIsAssigned(var)) {
-      if (activities_[var] > 0) {
-        queue_elements_[var].weight = activities_[var];
-        var_ordering_.Add(&queue_elements_[var]);
+      if (activities_[var] > 0.0) {
+        var_ordering_.Add(
+            {var, static_cast<float>(tie_breakers_[var]), activities_[var]});
       } else {
         variables.push_back(var);
       }
@@ -136,9 +135,8 @@ void SatDecisionPolicy::InitializeVariableOrdering() {
   }
 
   // Add the variables without activity to the queue (in the default order)
-  for (BooleanVariable var : variables) {
-    queue_elements_[var].weight = 0.0;
-    var_ordering_.Add(&queue_elements_[var]);
+  for (const BooleanVariable var : variables) {
+    var_ordering_.Add({var, static_cast<float>(tie_breakers_[var]), 0.0});
   }
 
   // Finish the queue initialization.
@@ -158,7 +156,7 @@ void SatDecisionPolicy::SetAssignmentPreference(Literal literal,
 
   // The tie_breaker is changed, so we need to reinitialize the priority queue.
   // Note that this doesn't change the activity though.
-  queue_elements_[literal.Variable()].tie_breaker = weight;
+  tie_breakers_[literal.Variable()] = weight;
   var_ordering_is_initialized_ = false;
 }
 
@@ -168,9 +166,9 @@ std::vector<std::pair<Literal, double>> SatDecisionPolicy::AllPreferences()
   for (BooleanVariable var(0); var < var_polarity_.size(); ++var) {
     // TODO(user): we currently assume that if the tie_breaker is zero then
     // no preference was set (which is not 100% correct). Fix that.
-    if (queue_elements_[var].tie_breaker > 0.0) {
-      prefs.push_back(std::make_pair(Literal(var, var_polarity_[var]),
-                                     queue_elements_[var].tie_breaker));
+    const double value = var_ordering_.GetElement(var.value()).tie_breaker;
+    if (value > 0.0) {
+      prefs.push_back(std::make_pair(Literal(var, var_polarity_[var]), value));
     }
   }
   return prefs;
@@ -251,23 +249,22 @@ Literal SatDecisionPolicy::NextBranch() {
     while (true) {
       // TODO(user): This may not be super efficient if almost all the
       // variables are assigned.
-      std::uniform_int_distribution<int> index_dist(
-          0, var_ordering_.Raw()->size() - 1);
-      var = BooleanVariable((*var_ordering_.Raw())[index_dist(random_)] -
-                            &queue_elements_.front());
+      std::uniform_int_distribution<int> index_dist(0,
+                                                    var_ordering_.Size() - 1);
+      var = var_ordering_.QueueElement(index_dist(random_)).var;
       if (!trail_->Assignment().VariableIsAssigned(var)) break;
       pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
-      var_ordering_.Remove(&queue_elements_[var]);
+      var_ordering_.Remove(var.value());
     }
   } else {
     // The loop is done this way in order to leave the final choice in the heap.
     DCHECK(!var_ordering_.IsEmpty());
-    var = BooleanVariable(var_ordering_.Top() - &queue_elements_.front());
+    var = var_ordering_.Top().var;
     while (trail_->Assignment().VariableIsAssigned(var)) {
       var_ordering_.Pop();
       pq_need_update_for_var_at_trail_index_.Set(trail_->Info(var).trail_index);
       DCHECK(!var_ordering_.IsEmpty());
-      var = BooleanVariable(var_ordering_.Top() - &queue_elements_.front());
+      var = var_ordering_.Top().var;
     }
   }
 
@@ -282,15 +279,12 @@ Literal SatDecisionPolicy::NextBranch() {
 }
 
 void SatDecisionPolicy::PqInsertOrUpdate(BooleanVariable var) {
-  WeightedVarQueueElement* element = &(queue_elements_[var]);
-  if (var_ordering_.Contains(element)) {
-    // Note that because of the pq_need_update_for_var_at_trail_index_
-    // optimization the new weight should always be higher than the old one.
-    DCHECK_GT(activities_[var], element->weight);
-    element->weight = activities_[var];
-    var_ordering_.NoteChangedPriority(element);
+  const WeightedVarQueueElement element{
+      var, static_cast<float>(tie_breakers_[var]), activities_[var]};
+  if (var_ordering_.Contains(var.value())) {
+    // Note that the new weight should always be higher than the old one.
+    var_ordering_.IncreasePriority(element);
   } else {
-    element->weight = activities_[var];
     var_ordering_.Add(element);
   }
 }
@@ -359,8 +353,8 @@ void SatDecisionPolicy::Untrail(int target_trail_index) {
     for (int trail_index = trail_->Index() - 1;
          trail_index > target_trail_index; --trail_index) {
       const BooleanVariable var = (*trail_)[trail_index].Variable();
-      CHECK(var_ordering_.Contains(&(queue_elements_[var])));
-      CHECK_EQ(activities_[var], queue_elements_[var].weight);
+      CHECK(var_ordering_.Contains(var.value()));
+      CHECK_EQ(activities_[var], var_ordering_.GetElement(var.value()).weight);
     }
   }
 }

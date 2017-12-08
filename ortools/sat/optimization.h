@@ -24,6 +24,7 @@
 
 #include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_solver.h"

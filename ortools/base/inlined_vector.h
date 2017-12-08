@@ -38,7 +38,7 @@
 
 #include "ortools/base/logging.h"
 
-namespace gtl {
+namespace absl {
 
 template <typename T, int N>
 class InlinedVector {
@@ -665,6 +665,6 @@ inline void InlinedVector<T, N>::AppendRange(Iter first, Iter last) {
   AppendRange(first, last, IterTag());
 }
 
-}  // namespace gtl
+}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_INLINED_VECTOR_H_

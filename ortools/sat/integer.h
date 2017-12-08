@@ -27,6 +27,7 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/macros.h"
+#include "ortools/base/port.h"
 #include "ortools/base/inlined_vector.h"
 #include "ortools/base/join.h"
 #include "ortools/base/span.h"
@@ -139,8 +140,8 @@ struct IntegerLiteral {
 
   std::string DebugString() const {
     return VariableIsPositive(var)
-               ? StrCat("I", var.value() / 2, ">=", bound.value())
-               : StrCat("I", var.value() / 2, "<=", -bound.value());
+               ? absl::StrCat("I", var.value() / 2, ">=", bound.value())
+               : absl::StrCat("I", var.value() / 2, "<=", -bound.value());
   }
 
   // Note that bound should be in [kMinIntegerValue, kMaxIntegerValue + 1].
@@ -153,12 +154,12 @@ inline std::ostream& operator<<(std::ostream& os, IntegerLiteral i_lit) {
   return os;
 }
 
-using InlinedIntegerLiteralVector = gtl::InlinedVector<IntegerLiteral, 2>;
+using InlinedIntegerLiteralVector = absl::InlinedVector<IntegerLiteral, 2>;
 
 // A singleton that holds the INITIAL integer variable domains.
 struct IntegerDomains
     : public ITIVector<IntegerVariable,
-                       gtl::InlinedVector<ClosedInterval, 1>> {
+                       absl::InlinedVector<ClosedInterval, 1>> {
   explicit IntegerDomains(Model* model) {}
 };
 
@@ -373,7 +374,7 @@ class IntegerTrail : public SatPropagator {
   // correct state before calling any of its functions.
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int literal_trail_index) final;
-  gtl::Span<Literal> Reason(const Trail& trail,
+  absl::Span<Literal> Reason(const Trail& trail,
                                    int trail_index) const final;
 
   // Returns the number of created integer variables.
@@ -484,22 +485,22 @@ class IntegerTrail : public SatPropagator {
   // reason is better? how to decide and what to do in this case? to think about
   // it. Currently we simply don't do anything.
   MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
-                               gtl::Span<Literal> literal_reason,
-                               gtl::Span<IntegerLiteral> integer_reason);
+                               absl::Span<Literal> literal_reason,
+                               absl::Span<IntegerLiteral> integer_reason);
 
   // Same as Enqueue(), but takes an extra argument which if smaller than
   // integer_trail_.size() is interpreted as the trail index of an old Enqueue()
   // that had the same reason as this one. Note that the given Span must still
   // be valid as they are used in case of conflict.
   MUST_USE_RESULT bool Enqueue(IntegerLiteral i_lit,
-                               gtl::Span<Literal> literal_reason,
-                               gtl::Span<IntegerLiteral> integer_reason,
+                               absl::Span<Literal> literal_reason,
+                               absl::Span<IntegerLiteral> integer_reason,
                                int trail_index_with_same_reason);
 
   // Enqueues the given literal on the trail.
   // See the comment of Enqueue() for the reason format.
-  void EnqueueLiteral(Literal literal, gtl::Span<Literal> literal_reason,
-                      gtl::Span<IntegerLiteral> integer_reason);
+  void EnqueueLiteral(Literal literal, absl::Span<Literal> literal_reason,
+                      absl::Span<IntegerLiteral> integer_reason);
 
   // Returns the reason (as set of Literal currently false) for a given integer
   // literal. Note that the bound must be less restrictive than the current
@@ -508,7 +509,7 @@ class IntegerTrail : public SatPropagator {
 
   // Appends the reason for the given integer literals to the output and call
   // STLSortAndRemoveDuplicates() on it.
-  void MergeReasonInto(gtl::Span<IntegerLiteral> bounds,
+  void MergeReasonInto(absl::Span<IntegerLiteral> bounds,
                        std::vector<Literal>* output) const;
 
   // Returns the number of enqueues that changed a variable bounds. We don't
@@ -529,14 +530,14 @@ class IntegerTrail : public SatPropagator {
 
   // Helper functions to report a conflict. Always return false so a client can
   // simply do: return integer_trail_->ReportConflict(...);
-  bool ReportConflict(gtl::Span<Literal> literal_reason,
-                      gtl::Span<IntegerLiteral> integer_reason) {
+  bool ReportConflict(absl::Span<Literal> literal_reason,
+                      absl::Span<IntegerLiteral> integer_reason) {
     std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->assign(literal_reason.begin(), literal_reason.end());
     MergeReasonInto(integer_reason, conflict);
     return false;
   }
-  bool ReportConflict(gtl::Span<IntegerLiteral> integer_reason) {
+  bool ReportConflict(absl::Span<IntegerLiteral> integer_reason) {
     std::vector<Literal>* conflict = trail_->MutableConflict();
     conflict->clear();
     MergeReasonInto(integer_reason, conflict);
@@ -559,7 +560,7 @@ class IntegerTrail : public SatPropagator {
  private:
   // Tests that all the literals in the given reason are assigned to false.
   // This is used to DCHECK the given reasons to the Enqueue*() functions.
-  bool AllLiteralsAreFalse(gtl::Span<Literal> literals) const;
+  bool AllLiteralsAreFalse(absl::Span<Literal> literals) const;
 
   // Does the work of MergeReasonInto() when queue_ is already initialized.
   void MergeReasonIntoInternal(std::vector<Literal>* output) const;
@@ -568,8 +569,8 @@ class IntegerTrail : public SatPropagator {
   // an integer literal and maintained by encoder_.
   bool EnqueueAssociatedLiteral(Literal literal,
                                 int trail_index_with_same_reason,
-                                gtl::Span<Literal> literal_reason,
-                                gtl::Span<IntegerLiteral> integer_reason,
+                                absl::Span<Literal> literal_reason,
+                                absl::Span<IntegerLiteral> integer_reason,
                                 BooleanVariable* variable_with_same_reason);
 
   // Returns a lower bound on the given var that will always be valid.
@@ -632,7 +633,7 @@ class IntegerTrail : public SatPropagator {
 
   // Start of each decision levels in integer_trail_.
   // TODO(user): use more general reversible mechanism?
-  std::vector<int> integer_decision_levels_;
+  std::vector<int> integer_search_levels_;
 
   // Buffer to store the reason of each trail entry.
   // Note that bounds_reason_buffer_ is an "union". It initially contains the
@@ -1116,46 +1117,6 @@ FullyEncodeVariable(IntegerVariable var) {
     return encoder->FullDomainEncoding(var);
   };
 }
-
-// A wrapper around SatSolver::Solve that handles integer variable with lazy
-// encoding. Repeatedly calls SatSolver::Solve() on the model until the given
-// next_decision() function return kNoLiteralIndex or the model is proved to
-// be UNSAT.
-//
-// Returns the status of the last call to SatSolver::Solve().
-//
-// Note that the next_decision() function must always return an unassigned
-// literal or kNoLiteralIndex to end the search.
-SatSolver::Status SolveIntegerProblemWithLazyEncoding(
-    const std::vector<Literal>& assumptions,
-    const std::function<LiteralIndex()>& next_decision, Model* model);
-
-// Shortcut for SolveIntegerProblemWithLazyEncoding() when there is no
-// assumption and we consider all variables in their index order for the next
-// search decision.
-SatSolver::Status SolveIntegerProblemWithLazyEncoding(Model* model);
-
-// Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Returns a
-// function that will return the literal corresponding to the fact that the
-// first currently non-fixed variable value is <= its min. The function will
-// return kNoLiteralIndex if all the given variables are fixed.
-//
-// Note that this function will create the associated literal if needed.
-std::function<LiteralIndex()> FirstUnassignedVarAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model);
-
-// Decision heuristic for SolveIntegerProblemWithLazyEncoding(). Like
-// FirstUnassignedVarAtItsMinHeuristic() but the function will return the
-// literal corresponding to the fact that the currently non-assigned variable
-// with the lowest min has a value <= this min.
-std::function<LiteralIndex()> UnassignedVarWithLowestMinAtItsMinHeuristic(
-    const std::vector<IntegerVariable>& vars, Model* model);
-
-// Combines search heuristics in order: if the i-th one returns kNoLiteralIndex,
-// ask the (i+1)-th. If every heuristic returned kNoLiteralIndex,
-// returns kNoLiteralIndex.
-std::function<LiteralIndex()> SequentialSearch(
-    std::vector<std::function<LiteralIndex()>> heuristics);
 
 // Same as ExcludeCurrentSolutionAndBacktrack() but this version works for an
 // integer problem with optional variables. The issue is that an optional

@@ -16,7 +16,7 @@
 
 #include "ortools/base/integral_types.h"
 
-namespace base {
+namespace absl {
 
 // Ideally, this should be a super-fast implementation that isn't too
 // unreliable:
@@ -36,9 +36,9 @@ int64 GetCurrentTimeNanos();
 
 inline int64 Now() { return GetCurrentTimeNanos(); }
 
-inline double WallTime_Now() { return base::GetCurrentTimeNanos() * 1e-9; }
+inline double WallTime_Now() { return GetCurrentTimeNanos() * 1e-9; }
 
-}  // namespace base
+}  // namespace absl
 
 inline double ToWallTime(int64 nanos) { return 1e-9 * nanos; }
 

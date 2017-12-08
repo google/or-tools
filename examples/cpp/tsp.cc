@@ -31,6 +31,7 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/integral_types.h"
+#include "google/protobuf/text_format.h"
 #include "ortools/base/join.h"
 #include "ortools/base/join.h"
 #include "ortools/constraint_solver/routing.h"

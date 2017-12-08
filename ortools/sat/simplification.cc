@@ -40,7 +40,7 @@ SatPostsolver::SatPostsolver(int num_variables)
   assignment_.Resize(num_variables);
 }
 
-void SatPostsolver::Add(Literal x, gtl::Span<Literal> clause) {
+void SatPostsolver::Add(Literal x, absl::Span<Literal> clause) {
   CHECK(!clause.empty());
   DCHECK(std::find(clause.begin(), clause.end(), x) != clause.end());
   associated_literal_.push_back(ApplyReverseMapping(x));
@@ -156,7 +156,7 @@ std::vector<bool> SatPostsolver::PostsolveSolution(
 
 void SatPresolver::AddBinaryClause(Literal a, Literal b) { AddClause({a, b}); }
 
-void SatPresolver::AddClause(gtl::Span<Literal> clause) {
+void SatPresolver::AddClause(absl::Span<Literal> clause) {
   CHECK_GT(clause.size(), 0) << "Added an empty clause to the presolver";
   const ClauseIndex ci(clauses_.size());
   clauses_.push_back(std::vector<Literal>(clause.begin(), clause.end()));

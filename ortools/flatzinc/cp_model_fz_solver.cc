@@ -701,17 +701,17 @@ std::string SolutionString(
   if (output.variable != nullptr) {
     const int64 value = value_func(output.variable);
     if (output.display_as_boolean) {
-      return StrCat(output.name, " = ", value == 1 ? "true" : "false",
+      return absl::StrCat(output.name, " = ", value == 1 ? "true" : "false",
                           ";");
     } else {
-      return StrCat(output.name, " = ", value, ";");
+      return absl::StrCat(output.name, " = ", value, ";");
     }
   } else {
     const int bound_size = output.bounds.size();
     std::string result = StrCat(output.name, " = array", bound_size, "d(");
     for (int i = 0; i < bound_size; ++i) {
       if (output.bounds[i].max_value != 0) {
-        StrAppend(&result, output.bounds[i].min_value, "..",
+        absl::StrAppend(&result, output.bounds[i].min_value, "..",
                         output.bounds[i].max_value, ", ");
       } else {
         result.append("{},");
@@ -723,7 +723,7 @@ std::string SolutionString(
       if (output.display_as_boolean) {
         result.append(value ? "true" : "false");
       } else {
-        StrAppend(&result, value);
+        absl::StrAppend(&result, value);
       }
       if (i != output.flat_variables.size() - 1) {
         result.append(", ");
@@ -749,7 +749,7 @@ std::string SolutionString(
 
 void LogInFlatzincFormat(const std::string& multi_line_input) {
   std::vector<std::string> lines =
-      strings::Split(multi_line_input, '\n', strings::SkipEmpty());
+      strings::Split(multi_line_input, '\n', absl::SkipEmpty());
   for (const std::string& line : lines) {
     FZLOG << line << FZENDL;
   }

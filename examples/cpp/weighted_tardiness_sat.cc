@@ -22,12 +22,11 @@
 #include "google/protobuf/text_format.h"
 #include "ortools/base/join.h"
 #include "ortools/base/split.h"
-#include "ortools/base/strtoint.h"
 #include "ortools/base/strutil.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/model.h"
-#include "ortools/util/filelineiter.h"
+#include "ortools/base/filelineiter.h"
 
 DEFINE_string(input, "examples/data/weighted_tardiness/wt40.txt",
               "wt data file name.");
@@ -262,10 +261,10 @@ int main(int argc, char** argv) {
 
   std::vector<int> numbers;
   std::vector<std::string> entries;
-  for (const std::string& line : operations_research::FileLines(FLAGS_input)) {
-    entries = strings::Split(line, ' ', strings::SkipEmpty());
+  for (const std::string& line : FileLines(FLAGS_input)) {
+    entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
     for (const std::string& entry : entries) {
-      numbers.push_back(operations_research::atoi32(entry));
+      numbers.push_back(atoi(entry.c_str()));
     }
   }
 

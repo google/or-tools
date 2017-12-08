@@ -30,18 +30,18 @@ const int TimeLimit::kHistorySize = 100;
 
 std::string TimeLimit::DebugString() const {
   std::string buffer =
-      StrCat("Time left: ", LegacyPrecision(GetTimeLeft()),
+      absl::StrCat("Time left: ", absl::LegacyPrecision(GetTimeLeft()),
                    "\nDeterministic time left: ",
-                   LegacyPrecision(GetDeterministicTimeLeft()),
-                   "\nElapsed time: ", LegacyPrecision(GetElapsedTime()),
+                   absl::LegacyPrecision(GetDeterministicTimeLeft()),
+                   "\nElapsed time: ", absl::LegacyPrecision(GetElapsedTime()),
                    "\nElapsed deterministic time: ",
-                   LegacyPrecision(GetElapsedDeterministicTime()));
+                   absl::LegacyPrecision(GetElapsedDeterministicTime()));
 #ifndef NDEBUG
   for (const auto& counter : deterministic_counters_) {
     const std::string& counter_name = counter.first;
     const double counter_value = counter.second;
-    StrAppend(&buffer, "\n", counter_name, ": ",
-                    LegacyPrecision(counter_value));
+    absl::StrAppend(&buffer, "\n", counter_name, ": ",
+                    absl::LegacyPrecision(counter_value));
   }
 #endif
   return buffer;

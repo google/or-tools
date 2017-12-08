@@ -29,7 +29,7 @@ class WallTimer {
   // When Start() is called multiple times, only the most recent is used.
   void Start() {
     running_ = true;
-    start_ = base::GetCurrentTimeNanos();
+    start_ = absl::GetCurrentTimeNanos();
   }
   void Restart() {
     sum_ = 0;
@@ -37,7 +37,7 @@ class WallTimer {
   }
   void Stop() {
     if (running_) {
-      sum_ += base::GetCurrentTimeNanos() - start_;
+      sum_ += absl::GetCurrentTimeNanos() - start_;
       running_ = false;
     }
   }
@@ -47,7 +47,7 @@ class WallTimer {
 
  protected:
   int64 GetNanos() const {
-    return running_ ? base::GetCurrentTimeNanos() - start_ + sum_ : sum_;
+    return running_ ? absl::GetCurrentTimeNanos() - start_ + sum_ : sum_;
   }
 
  private:
@@ -62,7 +62,7 @@ typedef WallTimer UserTimer;
 
 // This is meant to be a ultra-fast interface to the hardware cycle counter,
 // without periodic recalibration, to be even faster than
-// base::GetCurrentTimeNanos().
+// absl::GetCurrentTimeNanos().
 // But this current implementation just uses GetCurrentTimeNanos().
 // TODO(user): implement it.
 class CycleTimer : public WallTimer {

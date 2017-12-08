@@ -152,6 +152,7 @@
 #include "ortools/glop/parameters.pb.h"
 #include "ortools/linear_solver/linear_expr.h"
 #include "ortools/linear_solver/linear_solver.pb.h"
+#include "ortools/port/proto_utils.h"
 
 
 namespace operations_research {
@@ -441,13 +442,13 @@ class MPSolver {
   bool LoadSolutionFromProto(const MPSolutionResponse& response);
 
   // ----- Export model to files or strings -----
-#ifndef ANDROID_JNI
   // Shortcuts to the homonymous MPModelProtoExporter methods, via
   // exporting to a MPModelProto with ExportModelToProto() (see above).
+  //
+  // Produces empty std::string on portable platforms (e.g. android, ios).
   bool ExportModelAsLpFormat(bool obfuscated, std::string* model_str);
   bool ExportModelAsMpsFormat(bool fixed_format, bool obfuscated,
                               std::string* model_str);
-#endif
   // ----- Misc -----
 
   // Advanced usage: pass solver specific parameters in text format. The format
@@ -637,13 +638,11 @@ class MPSolver {
   DISALLOW_COPY_AND_ASSIGN(MPSolver);
 };
 
-#ifndef ANDROID_JNI
 inline std::ostream& operator<<(std::ostream& os,
                                 MPSolver::ResultStatus status) {
-  return os << MPSolverResponseStatus_Name(
+  return os << ProtoEnumToString<MPSolverResponseStatus>(
              static_cast<MPSolverResponseStatus>(status));
 }
-#endif
 
 // The data structure used to store the coefficients of the contraints and of
 // the objective. Also define a type to facilitate iteration over them with:

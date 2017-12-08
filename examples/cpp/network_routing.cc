@@ -398,7 +398,7 @@ class NetworkRoutingSolver {
 
   // This method will fill the all_paths_ data structure. all_paths
   // contains, for each demand, a vector of possible paths, stored as
-  // a std::unordered_set of arc indices.
+  // a hash_set of arc indices.
   int ComputeAllPaths(int extra_hops, int max_paths) {
     int num_paths = 0;
     for (int demand_index = 0; demand_index < demands_array_.size();

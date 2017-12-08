@@ -23,6 +23,7 @@
 #include "ortools/base/file.h"
 #include "ortools/base/recordio.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
 #include "ortools/constraint_solver/assignment.pb.h"
@@ -319,9 +320,9 @@ void SequenceVarElement::WriteToProto(
 std::string SequenceVarElement::DebugString() const {
   if (Activated()) {
     return StringPrintf("[forward %s, backward %s, unperformed [%s]]",
-                        strings::Join(forward_sequence_, " -> ").c_str(),
-                        strings::Join(backward_sequence_, " -> ").c_str(),
-                        strings::Join(unperformed_, ", ").c_str());
+                        absl::StrJoin(forward_sequence_, " -> ").c_str(),
+                        absl::StrJoin(backward_sequence_, " -> ").c_str(),
+                        absl::StrJoin(unperformed_, ", ").c_str());
   } else {
     return "(...)";
   }
@@ -930,40 +931,40 @@ void Assignment::SetObjectiveValue(int64 value) {
   }
 }
 
-void Assignment::Activate(const IntVar* const b) {
-  int_var_container_.MutableElement(b)->Activate();
+void Assignment::Activate(const IntVar* const var) {
+  int_var_container_.MutableElement(var)->Activate();
 }
 
-void Assignment::Deactivate(const IntVar* const b) {
-  int_var_container_.MutableElement(b)->Deactivate();
+void Assignment::Deactivate(const IntVar* const var) {
+  int_var_container_.MutableElement(var)->Deactivate();
 }
 
-bool Assignment::Activated(const IntVar* const b) const {
-  return int_var_container_.Element(b).Activated();
+bool Assignment::Activated(const IntVar* const var) const {
+  return int_var_container_.Element(var).Activated();
 }
 
-void Assignment::Activate(const IntervalVar* const b) {
-  interval_var_container_.MutableElement(b)->Activate();
+void Assignment::Activate(const IntervalVar* const var) {
+  interval_var_container_.MutableElement(var)->Activate();
 }
 
-void Assignment::Deactivate(const IntervalVar* const b) {
-  interval_var_container_.MutableElement(b)->Deactivate();
+void Assignment::Deactivate(const IntervalVar* const var) {
+  interval_var_container_.MutableElement(var)->Deactivate();
 }
 
-bool Assignment::Activated(const IntervalVar* const b) const {
-  return interval_var_container_.Element(b).Activated();
+bool Assignment::Activated(const IntervalVar* const var) const {
+  return interval_var_container_.Element(var).Activated();
 }
 
-void Assignment::Activate(const SequenceVar* const b) {
-  sequence_var_container_.MutableElement(b)->Activate();
+void Assignment::Activate(const SequenceVar* const var) {
+  sequence_var_container_.MutableElement(var)->Activate();
 }
 
-void Assignment::Deactivate(const SequenceVar* const b) {
-  sequence_var_container_.MutableElement(b)->Deactivate();
+void Assignment::Deactivate(const SequenceVar* const var) {
+  sequence_var_container_.MutableElement(var)->Deactivate();
 }
 
-bool Assignment::Activated(const SequenceVar* const b) const {
-  return sequence_var_container_.Element(b).Activated();
+bool Assignment::Activated(const SequenceVar* const var) const {
+  return sequence_var_container_.Element(var).Activated();
 }
 
 void Assignment::ActivateObjective() {
@@ -997,11 +998,40 @@ bool Assignment::Contains(const SequenceVar* const var) const {
   return sequence_var_container_.Contains(var);
 }
 
+void Assignment::CopyIntersection(const Assignment* assignment) {
+  int_var_container_.CopyIntersection(assignment->int_var_container_);
+  interval_var_container_.CopyIntersection(assignment->interval_var_container_);
+  sequence_var_container_.CopyIntersection(assignment->sequence_var_container_);
+  objective_element_ = assignment->objective_element_;
+}
+
 void Assignment::Copy(const Assignment* assignment) {
+  Clear();
   int_var_container_.Copy(assignment->int_var_container_);
   interval_var_container_.Copy(assignment->interval_var_container_);
   sequence_var_container_.Copy(assignment->sequence_var_container_);
   objective_element_ = assignment->objective_element_;
+}
+
+void SetAssignmentFromAssignment(Assignment* target_assignment,
+                                 const std::vector<IntVar*>& target_vars,
+                                 const Assignment* source_assignment,
+                                 const std::vector<IntVar*>& source_vars) {
+  const int vars_size = target_vars.size();
+  CHECK_EQ(source_vars.size(), vars_size);
+  CHECK(target_assignment != nullptr);
+
+  target_assignment->Clear();
+  const Solver* const target_solver = target_assignment->solver();
+  const Solver* const source_solver = source_assignment->solver();
+  for (int index = 0; index < vars_size; index++) {
+    IntVar* target_var = target_vars[index];
+    CHECK_EQ(target_var->solver(), target_solver);
+    IntVar* source_var = source_vars[index];
+    CHECK_EQ(source_var->solver(), source_solver);
+    target_assignment->Add(target_var)
+        ->SetValue(source_assignment->Value(source_var));
+  }
 }
 
 Assignment* Solver::MakeAssignment() { return RevAlloc(new Assignment(this)); }

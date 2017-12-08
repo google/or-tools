@@ -25,6 +25,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -1249,7 +1250,7 @@ class TransitionConstraint : public Constraint {
         "TransitionConstraint([%s], %d transitions, initial = %" GG_LL_FORMAT
         "d, final = [%s])",
         JoinDebugStringPtr(vars_, ", ").c_str(), transition_table_.NumTuples(),
-        initial_state_, strings::Join(final_states_, ", ").c_str());
+        initial_state_, absl::StrJoin(final_states_, ", ").c_str());
   }
 
  private:

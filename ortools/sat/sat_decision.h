@@ -21,8 +21,8 @@
 #include "ortools/sat/sat_base.h"
 #include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/util/bitset.h"
+#include "ortools/util/integer_pq.h"
 #include "ortools/util/random_engine.h"
-#include "ortools/base/adjustable_priority_queue.h"
 
 namespace operations_research {
 namespace sat {
@@ -120,13 +120,10 @@ class SatDecisionPolicy {
   // by its position in the queue_elements_ vector, and we can recover the later
   // using (pointer - &queue_elements_[0]).
   struct WeightedVarQueueElement {
-    WeightedVarQueueElement() : heap_index(-1), tie_breaker(0.0), weight(0.0) {}
+    // Interface for the IntegerPriorityQueue.
+    int Index() const { return var.value(); }
 
-    // Interface for the AdjustablePriorityQueue.
-    void SetHeapIndex(int h) { heap_index = h; }
-    int GetHeapIndex() const { return heap_index; }
-
-    // Priority order. The AdjustablePriorityQueue returns the largest element
+    // Priority order. The IntegerPriorityQueue returns the largest element
     // first.
     //
     // Note(user): We used to also break ties using the variable index, however
@@ -146,7 +143,7 @@ class SatDecisionPolicy {
              (weight == other.weight && (tie_breaker < other.tie_breaker));
     }
 
-    int32 heap_index;
+    BooleanVariable var;
     float tie_breaker;
 
     // TODO(user): Experiment with float. In the rest of the code, we use
@@ -158,8 +155,7 @@ class SatDecisionPolicy {
                  ERROR_WeightedVarQueueElement_is_not_well_compacted);
 
   bool var_ordering_is_initialized_ = false;
-  AdjustablePriorityQueue<WeightedVarQueueElement> var_ordering_;
-  ITIVector<BooleanVariable, WeightedVarQueueElement> queue_elements_;
+  IntegerPriorityQueue<WeightedVarQueueElement> var_ordering_;
 
   // This is used for the branching heuristic described in "Learning Rate Based
   // Branching Heuristic for SAT solvers", J.H.Liang, V. Ganesh, P. Poupart,
@@ -189,6 +185,7 @@ class SatDecisionPolicy {
   // Stores variable activity and the number of time each variable was "bumped".
   // The later is only used with the ERWA heuristic.
   ITIVector<BooleanVariable, double> activities_;
+  ITIVector<BooleanVariable, double> tie_breakers_;
   ITIVector<BooleanVariable, int64> num_bumps_;
 
   // Used by NextBranch() to choose the polarity of the next decision. For the

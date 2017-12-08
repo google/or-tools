@@ -32,7 +32,7 @@
 #include <iosfwd>
 #include <string>
 
-namespace operations_research {
+namespace absl {
 
 class string_view {
  private:
@@ -167,6 +167,6 @@ inline bool operator>=(const string_view& x, const string_view& y) {
 // Allow string_view to be logged.
 extern std::ostream& operator<<(std::ostream& o, const string_view& piece);
 
-}  // namespace operations_research
+}  // namespace absl
 
 #endif  // OR_TOOLS_BASE_STRING_VIEW_H_

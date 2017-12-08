@@ -18,7 +18,6 @@
 #include "ortools/base/integral_types.h"
 #include "ortools/base/join.h"
 
-namespace operations_research {
 // Convert strings to numerical values.
 // Leading and trailing spaces are allowed.
 // Values may be rounded on over- and underflow.
@@ -29,6 +28,5 @@ bool safe_strtod(const std::string& str, double* value);
 bool safe_strto64(const std::string& str, int64* value);
 // Converting int to std::string.
 inline std::string SimpleItoa(int i) { return StrCat(i); }
-}  // namespace operations_research
 
 #endif  // OR_TOOLS_BASE_NUMBERS_H_

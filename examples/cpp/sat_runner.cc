@@ -11,8 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "ortools/base/commandlineflags.h"
@@ -22,27 +25,29 @@
 #include "ortools/base/strtoint.h"
 #include "ortools/base/timer.h"
 #include "ortools/base/file.h"
-#include "google/protobuf/descriptor.h"
-#include "google/protobuf/message.h"
 #include "google/protobuf/text_format.h"
-#include "ortools/base/stringpiece_utils.h"
-#include "ortools/base/strutil.h"
-#include "ortools/base/threadpool.h"
+#include "ortools/base/join.h"
+#include "ortools/base/string_view_utils.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/boolean_problem.h"
+#include "ortools/sat/boolean_problem.pb.h"
 #include "ortools/sat/cp_model.pb.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/drat.h"
+#include "ortools/sat/lp_utils.h"
+#include "ortools/sat/model.h"
 #include "examples/cpp/opb_reader.h"
 #include "ortools/sat/optimization.h"
+#include "ortools/sat/pb_constraint.h"
+#include "ortools/sat/sat_base.h"
 #include "examples/cpp/sat_cnf_reader.h"
-#include "ortools/base/join.h"
+#include "ortools/sat/sat_parameters.pb.h"
 #include "ortools/sat/sat_solver.h"
 #include "ortools/sat/simplification.h"
 #include "ortools/sat/symmetry.h"
 #include "ortools/util/file_util.h"
+#include "ortools/util/sigint.h"
 #include "ortools/util/time_limit.h"
-#include "ortools/base/random.h"
 #include "ortools/base/status.h"
 
 DEFINE_string(
@@ -208,13 +213,6 @@ int Run() {
     solver->SetDratWriter(drat_writer.get());
   }
 
-  // The global time limit.
-  std::unique_ptr<TimeLimit> time_limit(TimeLimit::FromParameters(parameters));
-
-  // Catch ^C.
-  bool interrupt_solve = false;
-  time_limit->RegisterExternalBooleanAsLimit(&interrupt_solve);
-
   // Read the problem.
   LinearBooleanProblem problem;
   CpModelProto cp_model;
@@ -227,9 +225,13 @@ int Run() {
   // TODO(user): clean this hack. Ideally LinearBooleanProblem should be
   // completely replaced by the more general CpModelProto.
   if (cp_model.variables_size() != 0) {
+    problem.Clear();  // We no longer need it, release memory.
+    bool stopped = false;
     Model model;
-    model.GetOrCreate<SatSolver>()->SetParameters(parameters);
-    model.SetSingleton(std::move(time_limit));
+    model.Add(NewSatParameters(parameters));
+    model.GetOrCreate<TimeLimit>()->RegisterExternalBooleanAsLimit(&stopped);
+    model.GetOrCreate<SigintHandler>()->Register(
+        [&stopped]() { stopped = true; });
     LOG(INFO) << CpModelStats(cp_model);
     const CpSolverResponse response = SolveCpModel(cp_model, &model);
     LOG(INFO) << CpSolverResponseStats(response);
@@ -428,7 +430,12 @@ static const char kUsage[] =
     "This program solves a given Boolean linear problem.";
 
 int main(int argc, char** argv) {
+  // By default, we want to show how the solver progress. Note that this needs
+  // to be set before InitGoogle() which has the nice side-effect of allowing
+  // the user to override it.
+  base::SetFlag(&FLAGS_vmodule, "*cp_model*=1");
   gflags::SetUsageMessage(kUsage);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  base::SetFlag(&FLAGS_alsologtostderr, true);
   return operations_research::sat::Run();
 }

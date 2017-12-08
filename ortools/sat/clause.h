@@ -58,15 +58,16 @@ struct VariableInfo {
 };
 
 // This is how the SatSolver stores a clause. A clause is just a disjunction of
-// literals. In many places, we just use std::vector<literal> to encode one. However,
-// the solver needs to keep a few extra fields attached to each clause.
+// literals. In many places, we just use std::vector<literal> to encode one. But in
+// the critical propagation code, we use this class to remove one memory
+// indirection.
 class SatClause {
  public:
   // Creates a sat clause. There must be at least 2 literals. Smaller clause are
-  // treated separatly and never constructed. A redundant clause can be removed
-  // without changing the problem.
-  static SatClause* Create(const std::vector<Literal>& literals,
-                           bool is_redundant);
+  // treated separatly and never constructed. In practice, we do use
+  // BinaryImplicationGraph for the clause of size 2, so this is mainly used for
+  // size at least 3.
+  static SatClause* Create(const std::vector<Literal>& literals);
 
   // Non-sized delete because this is a tail-padded class.
   void operator delete(void* p) {
@@ -93,9 +94,9 @@ class SatClause {
 
   // Returns the reason for the last unit propagation of this clause. The
   // preconditions are the same as for PropagatedLiteral().
-  gtl::Span<Literal> PropagationReason() const {
+  absl::Span<Literal> PropagationReason() const {
     // Note that we don't need to include the propagated literal.
-    return gtl::Span<Literal>(&(literals_[1]), size_ - 1);
+    return absl::Span<Literal>(&(literals_[1]), size_ - 1);
   }
 
   // Removes literals that are fixed. This should only be called at level 0
@@ -106,46 +107,34 @@ class SatClause {
   // old_size) of literals().
   bool RemoveFixedLiteralsAndTestIfTrue(const VariablesAssignment& assignment);
 
-  // True if the clause can be safely removed without changing the current
-  // problem. Usually the clause we learn during the search are redundant since
-  // the original clauses are enough to define the problem.
-  bool IsRedundant() const { return is_redundant_; }
-
   // Returns true if the clause is satisfied for the given assignment. Note that
   // the assignment may be partial, so false does not mean that the clause can't
   // be satisfied by completing the assignment.
   bool IsSatisfied(const VariablesAssignment& assignment) const;
-
-  // Sorts the literals of the clause depending on the given parameters and
-  // statistics. Do not call this on an attached clause.
-  void SortLiterals(const ITIVector<BooleanVariable, VariableInfo>& statistics,
-                    const SatParameters& parameters);
 
   // Sets up the 2-watchers data structure. It selects two non-false literals
   // and attaches the clause to the event: one of the watched literals become
   // false. It returns false if the clause only contains literals assigned to
   // false. If only one literals is not false, it propagates it to true if it
   // is not already assigned.
+  //
+  // This MUST be called just once just after a clause has been created.
+  // TODO(user): merge with Create()?
   bool AttachAndEnqueuePotentialUnitPropagation(Trail* trail,
                                                 LiteralWatchers* demons);
 
   // Returns true if the clause is attached to a LiteralWatchers.
-  bool IsAttached() const { return is_attached_; }
+  bool IsAttached() const { return size_ > 0; }
 
   // Marks the clause so that the next call to CleanUpWatchers() can identify it
-  // and actually detach it.
-  void LazyDetach() { is_attached_ = false; }
+  // and actually detach it. We use size_ = 0 for this since the clause will
+  // never be used afterwards.
+  void LazyDetach() { size_ = 0; }
 
   std::string DebugString() const;
 
  private:
-  // The data is packed so that only 4 bytes are used for these fields.
-  //
-  // TODO(user): It should be possible to remove one or both of the Booleans.
-  // That may speed up the code slightly.
-  bool is_redundant_ : 1;
-  bool is_attached_ : 1;
-  unsigned int size_ : 30;
+  int32 size_;
 
   // This class store the literals inline, and literals_ mark the starts of the
   // variable length portion.
@@ -163,7 +152,7 @@ class LiteralWatchers : public SatPropagator {
   ~LiteralWatchers() override;
 
   bool Propagate(Trail* trail) final;
-  gtl::Span<Literal> Reason(const Trail& trail,
+  absl::Span<Literal> Reason(const Trail& trail,
                                    int trail_index) const final;
 
   // Resizes the data structure.
@@ -192,12 +181,6 @@ class LiteralWatchers : public SatPropagator {
   // Number of clauses currently watched.
   int64 num_watched_clauses() const { return num_watched_clauses_; }
 
-  // Returns some statistics on the number of appearance of this variable in
-  // all the attached clauses.
-  const VariableInfo& VariableStatistic(BooleanVariable var) const {
-    return statistics_[var];
-  }
-
   // Parameters management.
   void SetParameters(const SatParameters& parameters) {
     parameters_ = parameters;
@@ -224,10 +207,6 @@ class LiteralWatchers : public SatPropagator {
     reasons_[trail_index] = clause;
   }
 
-  // Updates statistics_ for the literals in the given clause. added indicates
-  // if we are adding the clause or deleting it.
-  void UpdateStatistics(const SatClause& clause, bool added);
-
   // Contains, for each literal, the list of clauses that need to be inspected
   // when the corresponding literal becomes false.
   struct Watcher {
@@ -246,7 +225,6 @@ class LiteralWatchers : public SatPropagator {
   SparseBitset<LiteralIndex> needs_cleaning_;
   bool is_clean_;
 
-  ITIVector<BooleanVariable, VariableInfo> statistics_;
   SatParameters parameters_;
   int64 num_inspected_clauses_;
   int64 num_inspected_clause_literals_;
@@ -344,7 +322,7 @@ class BinaryImplicationGraph : public SatPropagator {
   }
 
   bool Propagate(Trail* trail) final;
-  gtl::Span<Literal> Reason(const Trail& trail,
+  absl::Span<Literal> Reason(const Trail& trail,
                                    int trail_index) const final;
 
   // Resizes the data structure.
@@ -440,7 +418,7 @@ class BinaryImplicationGraph : public SatPropagator {
   //
   // TODO(user): We could be even more efficient since a size of int32 is enough
   // for us and we could store in common the inlined/not-inlined size.
-  ITIVector<LiteralIndex, gtl::InlinedVector<Literal, 6>> implications_;
+  ITIVector<LiteralIndex, absl::InlinedVector<Literal, 6>> implications_;
   int64 num_implications_;
 
   // Some stats.

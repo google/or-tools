@@ -59,7 +59,7 @@ class DratWriter {
   // newer variables always comes first. This is needed because in the DRAT
   // format, the clause is checked for the RAT property with only its first
   // literal.
-  void AddClause(gtl::Span<Literal> clause);
+  void AddClause(absl::Span<Literal> clause);
 
   // Writes a "deletion" information about a clause that has been added before
   // to the DRAT output. Note that it is also possible to delete a clause from
@@ -74,10 +74,10 @@ class DratWriter {
   //
   // TODO(user): an alternative would be to call AddClause() on all the problem
   // clause first.
-  void DeleteClause(gtl::Span<Literal> clause, bool ignore_call = true);
+  void DeleteClause(absl::Span<Literal> clause, bool ignore_call = true);
 
  private:
-  void WriteClause(gtl::Span<Literal> clause);
+  void WriteClause(absl::Span<Literal> clause);
 
   // We need to keep track of the variable newly created.
   int variable_index_;

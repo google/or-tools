@@ -43,6 +43,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 
 DEFINE_string(
@@ -164,7 +165,7 @@ void Jobshop(const JobShopData& data) {
     for (int m = 0; m < machine_count; ++m) {
       SequenceVar* const seq = all_sequences[m];
       LOG(INFO) << seq->name() << ": "
-                << strings::Join(collector->ForwardSequence(0, seq), ", ");
+                << absl::StrJoin(collector->ForwardSequence(0, seq), ", ");
     }
   }
 }

@@ -132,8 +132,7 @@ class FlexibleJobShopData {
  private:
   void ProcessNewLine(const std::string& line) {
     static const char kWordDelimiters[] = " ";
-    std::vector<string> words =
-        strings::Split(line, " ", strings::SkipEmpty());
+    std::vector<string> words = absl::StrSplit(line, " ", absl::SkipEmpty());
     if (machine_count_ == -1 && words.size() > 1) {
       job_count_ = atoi32(words[0]);
       machine_count_ = atoi32(words[1]);

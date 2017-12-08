@@ -117,7 +117,7 @@ class MPSReader {
   int GetFieldOffset() const { return free_form_ ? fields_.size() & 1 : 0; }
 
   // Line processor.
-  void ProcessLine(char* line);
+  void ProcessLine(const std::string& line);
 
   // Process section NAME in the MPS file.
   void ProcessNameSection();

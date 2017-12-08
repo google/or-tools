@@ -23,6 +23,7 @@
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/saturated_arithmetic.h"
@@ -1373,15 +1374,15 @@ class PathConnectedConstraint : public Constraint {
       elements.push_back(next->DebugString());
     }
     for (int i = 0; i < sources_.size(); ++i) {
-      elements.push_back(StrCat(sources_[i]));
+      elements.push_back(absl::StrCat(sources_[i]));
     }
     for (int64 sink : sinks_) {
-      elements.push_back(StrCat(sink));
+      elements.push_back(absl::StrCat(sink));
     }
     for (IntVar* const status : status_) {
       elements.push_back(status->DebugString());
     }
-    output += strings::Join(elements, ",") + ")";
+    output += absl::StrJoin(elements, ",") + ")";
     return output;
   }
 
@@ -1486,10 +1487,10 @@ class PathTransitPrecedenceConstraint : public Constraint {
     }
     for (int i = 0; i < predecessors_.size(); ++i) {
       for (const int predecessor : predecessors_[i]) {
-        elements.push_back(StrCat("(", predecessor, ", ", i, ")"));
+        elements.push_back(absl::StrCat("(", predecessor, ", ", i, ")"));
       }
     }
-    output += strings::Join(elements, ",") + ")";
+    output += absl::StrJoin(elements, ",") + ")";
     return output;
   }
   void Accept(ModelVisitor* const visitor) const override {

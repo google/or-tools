@@ -17,6 +17,8 @@
 #include "ortools/base/commandlineflags.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/timer.h"
+#include "ortools/data/rcpsp.pb.h"
+#include "ortools/data/rcpsp_parser.h"
 #include "ortools/sat/cp_model_solver.h"
 #include "ortools/sat/cumulative.h"
 #include "ortools/sat/disjunctive.h"
@@ -25,17 +27,17 @@
 #include "ortools/sat/model.h"
 #include "ortools/sat/optimization.h"
 #include "ortools/sat/precedences.h"
-#include "ortools/data/rcpsp_parser.h"
-#include "ortools/data/rcpsp.pb.h"
 
 DEFINE_string(input, "", "Input file.");
 DEFINE_string(params, "", "Sat parameters in text proto format.");
 
+// TODO(user): Convert to cp_model.proto
+
 using operations_research::data::rcpsp::RcpspParser;
 using operations_research::data::rcpsp::RcpspProblem;
-using operations_research::data::rcpsp::Task;
-using operations_research::data::rcpsp::Resource;
 using operations_research::data::rcpsp::Recipe;
+using operations_research::data::rcpsp::Resource;
+using operations_research::data::rcpsp::Task;
 
 namespace operations_research {
 namespace sat {
@@ -80,7 +82,7 @@ void LoadAndSolve(const std::string& file_name) {
   const int horizon =
       problem.deadline() == -1
           ? (problem.horizon() == -1 ? ComputeNaiveHorizon(problem)
-                                    : problem.horizon())
+                                     : problem.horizon())
           : problem.deadline();
   LOG(INFO) << "Horizon = " << horizon;
 
@@ -189,8 +191,7 @@ void LoadAndSolve(const std::string& file_name) {
             model.Add(LowerOrEqualWithOffset(s1, makespan, delay));
           } else {
             for (int m2 = 0; m2 < num_other_modes; ++m2) {
-              const int delay =
-                  delay_matrix.recipe_delays(m1).min_delays(m2);
+              const int delay = delay_matrix.recipe_delays(m1).min_delays(m2);
               const IntegerVariable s2 =
                   model.Get(StartVar(alternatives_per_task[n][m2]));
               model.Add(LowerOrEqualWithOffset(s1, s2, delay));

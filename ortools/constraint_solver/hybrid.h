@@ -24,7 +24,7 @@ SearchMonitor* MakeSimplexConnection(Solver* const solver,
                                      std::function<void(MPSolver*)> builder,
                                      std::function<void(MPSolver*)> modifier,
                                      std::function<void(MPSolver*)> runner,
-                                     int simplex_frequency);
+                                     int frequency);
 
 // ----- Linear Relaxation Constraint -----
 

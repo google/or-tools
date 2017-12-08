@@ -24,6 +24,7 @@
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/lp_data/matrix_scaler.h"
 #include "ortools/sat/integer.h"
+#include "ortools/sat/integer_search.h"
 #include "ortools/sat/model.h"
 #include "ortools/util/time_limit.h"
 
@@ -114,7 +115,7 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   // PropagatorInterface API.
   bool Propagate() override;
   bool IncrementalPropagate(const std::vector<int>& watch_indices) override;
-  void RegisterWith(GenericLiteralWatcher* watcher);
+  void RegisterWith(Model* model);
 
   std::string DimensionString() const { return lp_data_.GetDimensionString(); }
 
@@ -140,6 +141,34 @@ class LinearProgrammingConstraint : public PropagatorInterface {
 
   // Returns the variable value on the same scale as the CP variable value.
   glop::Fractional GetVariableValueAtCpScale(glop::ColIndex var);
+
+  // Returns a LiteralIndex guided by the underlying LP constraints.
+  // This looks at all unassigned 0-1 variables, takes the one with
+  // a support value closest to 0.5, and tries to assign it to 1.
+  // If all 0-1 variables have an integer support, returns kNoLiteralIndex.
+  // Tie-breaking is done using the variable natural order.
+  //
+  // TODO(user): This fixes to 1, but for some problems fixing to 0
+  // or to the std::round(support value) might work better. When this is the
+  // case, change behaviour automatically?
+  std::function<LiteralIndex()> HeuristicLPMostInfeasibleBinary(Model* model);
+
+  // Returns a LiteralIndex guided by the underlying LP constraints.
+  // This computes the mean of reduced costs over successive calls,
+  // and tries to fix the variable which has the highest reduced cost.
+  // Tie-breaking is done using the variable natural order.
+  //
+  // TODO(user): Try to get better pseudocosts than averaging every time
+  // the heuristic is called. MIP solvers initialize this with strong branching,
+  // then keep track of the pseudocosts when doing tree search. Also, this
+  // version only branches on var >= 1 and keeps track of reduced costs from var
+  // = 1 to var = 0. This works better than the conventional MIP where the
+  // chosen variable will be argmax_var std::min(pseudocost_var(0->1),
+  // pseudocost_var(1->0)), probably because we are doing DFS search where MIP
+  // does BFS. This might depend on the model, more trials are necessary. We
+  // could also do exponential smoothing instead of decaying every N calls, i.e.
+  // pseudo = a * pseudo + (1-a) reduced.
+  std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model);
 
   // TODO(user): use solver's precision epsilon.
   static const double kEpsilon;
@@ -171,6 +200,7 @@ class LinearProgrammingConstraint : public PropagatorInterface {
   TimeLimit* time_limit_;
   IntegerTrail* integer_trail_;
   Trail* trail_;
+  SearchHeuristicsVector* model_heuristics_;
 
   // The dispatcher for all LP propagators of the model, allows to find which
   // LinearProgrammingConstraint has a given IntegerVariable.
@@ -222,34 +252,6 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
                                     const std::vector<IntegerVariable>& vars,
                                     const std::vector<int64>& demands,
                                     int64 capacity);
-
-// Returns a LiteralIndex guided by the underlying LP constraints.
-// This looks at all unassigned 0-1 variables, takes the one with
-// a support value closest to 0.5, and tries to assign it to 1.
-// If all 0-1 variables have an integer support, returns kNoLiteralIndex.
-// Tie-breaking is done using the variable natural order.
-//
-// TODO(user): This fixes to 1, but for some problems fixing to 0
-// or to the std::round(support value) might work better. When this is the
-// case, change behaviour automatically?
-std::function<LiteralIndex()> HeuristicLPMostInfeasibleBinary(Model* model);
-
-// Returns a LiteralIndex guided by the underlying LP constraints.
-// This computes the mean of reduced costs over successive calls,
-// and tries to fix the variable which has the highest reduced cost.
-// Tie-breaking is done using the variable natural order.
-//
-// TODO(user): Try to get better pseudocosts than averaging every time the
-// heuristic is called. MIP solvers initialize this with strong branching, then
-// keep track of the pseudocosts when doing tree search. Also, this version only
-// branches on var >= 1 and keeps track of reduced costs from var = 1 to var =
-// 0. This works better than the conventional MIP where the chosen variable will
-// be argmax_var std::min(pseudocost_var(0->1), pseudocost_var(1->0)), probably
-// because we are doing DFS search where MIP does BFS. This might depend on the
-// model, more trials are necessary. We could also do exponential smoothing
-// instead of decaying every N calls, i.e. pseudo = a * pseudo + (1-a) reduced.
-std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model);
-
 }  // namespace sat
 }  // namespace operations_research
 

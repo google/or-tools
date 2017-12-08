@@ -24,7 +24,7 @@ namespace operations_research {
 
 using ::google::protobuf::TextFormat;
 
-bool ReadFileToProto(string_view filename, google::protobuf::Message* proto) {
+bool ReadFileToProto(absl::string_view filename, google::protobuf::Message* proto) {
   std::string data;
   CHECK_OK(file::GetContents(filename, &data, file::Defaults()));
   // Note that gzipped files are currently not supported.
@@ -35,7 +35,7 @@ bool ReadFileToProto(string_view filename, google::protobuf::Message* proto) {
   return false;
 }
 
-bool WriteProtoToFile(string_view filename, const google::protobuf::Message& proto,
+bool WriteProtoToFile(absl::string_view filename, const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped) {
   // Note that gzipped files are currently not supported.
     gzipped = false;
@@ -58,7 +58,7 @@ bool WriteProtoToFile(string_view filename, const google::protobuf::Message& pro
       }
       break;
   }
-  const std::string output_filename = StrCat(filename, file_type_suffix);
+  const std::string output_filename = absl::StrCat(filename, file_type_suffix);
   VLOG(1) << "Writing " << output_string.size() << " bytes to "
           << output_filename;
   if (!file::SetContents(output_filename, output_string, file::Defaults())
