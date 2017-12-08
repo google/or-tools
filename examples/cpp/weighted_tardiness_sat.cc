@@ -21,6 +21,7 @@
 #include "ortools/base/timer.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/join.h"
+#include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
 #include "ortools/base/strutil.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -264,7 +265,8 @@ int main(int argc, char** argv) {
   for (const std::string& line : FileLines(FLAGS_input)) {
     entries = absl::StrSplit(line, ' ', absl::SkipEmpty());
     for (const std::string& entry : entries) {
-      numbers.push_back(atoi(entry.c_str()));
+      numbers.push_back(0);
+      safe_strto32(entry, &numbers.back());
     }
   }
 

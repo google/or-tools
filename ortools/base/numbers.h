@@ -26,6 +26,7 @@ bool safe_strtod(const char* str, double* value);
 bool safe_strtof(const std::string& str, float* value);
 bool safe_strtod(const std::string& str, double* value);
 bool safe_strto64(const std::string& str, int64* value);
+bool safe_strto32(const std::string& str, int* value);
 // Converting int to std::string.
 inline std::string SimpleItoa(int i) { return StrCat(i); }
 

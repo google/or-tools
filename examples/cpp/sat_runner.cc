@@ -27,7 +27,7 @@
 #include "ortools/base/file.h"
 #include "google/protobuf/text_format.h"
 #include "ortools/base/join.h"
-#include "ortools/base/string_view_utils.h"
+#include "ortools/base/stringpiece_utils.h"
 #include "ortools/algorithms/sparse_permutation.h"
 #include "ortools/sat/boolean_problem.h"
 #include "ortools/sat/boolean_problem.pb.h"

@@ -115,7 +115,7 @@ class SatCnfReader {
 
   void ProcessNewLine(const std::string& line, LinearBooleanProblem* problem) {
     static const char kWordDelimiters[] = " ";
-    words_ = strings::Split(line, kWordDelimiters,
+    words_ = absl::StrSplit(line, kWordDelimiters,
         static_cast<int64>(strings::SkipEmpty()));
     if (words_.empty() || words_[0] == "c" || end_marker_seen_) return;
     if (words_[0] == "%") {

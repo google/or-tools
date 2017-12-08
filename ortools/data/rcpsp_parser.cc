@@ -20,7 +20,7 @@
 #include "ortools/data/rcpsp.pb.h"
 #include "ortools/util/filelineiter.h"
 
-using ::strings::delimiter::AnyOf;
+using ::absl::delimiter::AnyOf;
 
 namespace operations_research {
 namespace data {
@@ -79,7 +79,7 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
   if (strings::StartsWith(line, "---")) return;
 
   const std::vector<std::string> words =
-      strings::Split(line, AnyOf(" :\t\r"), absl::SkipEmpty());
+      absl::StrSplit(line, AnyOf(" :\t\r"), absl::SkipEmpty());
 
   if (words.empty()) return;
 
@@ -252,7 +252,7 @@ void RcpspParser::ProcessRcpspLine(const std::string& line) {
 
 void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
   const std::vector<std::string> words =
-      strings::Split(line, AnyOf(" :\t[]\r"), absl::SkipEmpty());
+      absl::StrSplit(line, AnyOf(" :\t[]\r"), absl::SkipEmpty());
 
   switch (load_status_) {
     case NOT_STARTED: {
@@ -481,7 +481,7 @@ void RcpspParser::ProcessRcpspMaxLine(const std::string& line) {
 
 void RcpspParser::ProcessPattersonLine(const std::string& line) {
   const std::vector<std::string> words =
-      strings::Split(line, AnyOf(" :\t[]\r"), absl::SkipEmpty());
+      absl::StrSplit(line, AnyOf(" :\t[]\r"), absl::SkipEmpty());
 
   if (words.empty()) return;
 
