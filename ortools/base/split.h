@@ -66,7 +66,7 @@ bool SplitStringAndParse(const std::string& source, const std::string& delim,
   CHECK(nullptr != parse);
   CHECK(nullptr != result);
   CHECK_GT(delim.size(), 0);
-  const std::vector<absl::string_view> pieces =
+  const std::vector<std::string> pieces =
       ::absl::StrSplit(source, absl::delimiter::AnyOf(delim.c_str()),
                        static_cast<int64>(absl::SkipEmpty()));
   T t;
