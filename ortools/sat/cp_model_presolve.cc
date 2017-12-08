@@ -28,6 +28,7 @@
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
+#include "ortools/base/port.h"
 #include "ortools/base/join.h"
 #include <unordered_set>
 #include "ortools/base/map_util.h"

@@ -25,6 +25,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
@@ -227,8 +228,8 @@ void Pack::InitialPropagate() {
     if (need_context) {
       solver()->GetPropagationMonitor()->PushContext(StringPrintf(
           "Pack(bin %d, forced = [%s], undecided = [%s])", bin_index,
-          strings::Join(forced_[bin_index], ", ").c_str(),
-          strings::Join(data->undecided(bin_index), ", ").c_str()));
+          absl::StrJoin(forced_[bin_index], ", ").c_str(),
+          absl::StrJoin(data->undecided(bin_index), ", ").c_str()));
     }
 
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
@@ -250,8 +251,8 @@ void Pack::InitialPropagate() {
   if (need_context) {
     solver()->GetPropagationMonitor()->PushContext(
         StringPrintf("Pack(assigned = [%s], unassigned = [%s])",
-                     strings::Join(data->assigned(), ", ").c_str(),
-                     strings::Join(data->unassigned(), ", ").c_str()));
+                     absl::StrJoin(data->assigned(), ", ").c_str(),
+                     absl::StrJoin(data->unassigned(), ", ").c_str()));
   }
   for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
     if (need_context) {
@@ -283,8 +284,8 @@ void Pack::Propagate() {
       if (need_context) {
         solver()->GetPropagationMonitor()->PushContext(StringPrintf(
             "Pack(bin %d, forced = [%s], removed = [%s])", bin_index,
-            strings::Join(forced_[bin_index], ", ").c_str(),
-            strings::Join(removed_[bin_index], ", ").c_str()));
+            absl::StrJoin(forced_[bin_index], ", ").c_str(),
+            absl::StrJoin(removed_[bin_index], ", ").c_str()));
       }
 
       for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {
@@ -307,8 +308,8 @@ void Pack::Propagate() {
     if (need_context) {
       solver()->GetPropagationMonitor()->PushContext(
           StringPrintf("Pack(removed = [%s], forced = [%s])",
-                       strings::Join(removed_[bins_], ", ").c_str(),
-                       strings::Join(forced_[bins_], ", ").c_str()));
+                       absl::StrJoin(removed_[bins_], ", ").c_str(),
+                       absl::StrJoin(forced_[bins_], ", ").c_str()));
     }
 
     for (int dim_index = 0; dim_index < dims_.size(); ++dim_index) {

@@ -223,8 +223,7 @@ bool SatSolver::AddProblemClauseInternal(const std::vector<Literal>& literals) {
   if (parameters_->treat_binary_clauses_separately() && literals.size() == 2) {
     AddBinaryClauseInternal(literals[0], literals[1]);
   } else {
-    std::unique_ptr<SatClause> clause(
-        SatClause::Create(literals, /*is_redundant=*/false));
+    std::unique_ptr<SatClause> clause(SatClause::Create(literals));
     if (!clauses_propagator_.AttachAndPropagate(clause.get(), trail_)) {
       return SetModelUnsat();
     }
@@ -352,7 +351,7 @@ int SatSolver::AddLearnedClauseAndEnqueueUnitPropagation(
   }
 
   CleanClauseDatabaseIfNeeded();
-  SatClause* clause = SatClause::Create(literals, is_redundant);
+  SatClause* clause = SatClause::Create(literals);
   clauses_.emplace_back(clause);
 
   // Important: Even though the only literal at the last decision level has
@@ -714,7 +713,9 @@ bool SatSolver::PropagateAndStopAfterOneConflictResolution() {
     for (SatClause* clause : subsumed_clauses_) {
       DCHECK(ClauseSubsumption(learned_conflict_, clause));
       clauses_propagator_.LazyDetach(clause);
-      if (!clause->IsRedundant()) is_redundant = false;
+      if (!ContainsKey(clauses_info_, clause)) {
+        is_redundant = false;
+      }
     }
     clauses_propagator_.CleanUpWatchers();
     counters_.num_subsumed_clauses += subsumed_clauses_.size();
@@ -1092,8 +1093,6 @@ void SatSolver::BumpReasonActivities(const std::vector<Literal>& literals) {
 }
 
 void SatSolver::BumpClauseActivity(SatClause* clause) {
-  if (!clause->IsRedundant()) return;
-
   // We only bump the activity of the clauses that have some info. So if we know
   // that we will keep a clause forever, we don't need to create its Info. More
   // than the speed, this allows to limit as much as possible the activity
@@ -1301,10 +1300,9 @@ void SatSolver::ProcessNewlyFixedVariables() {
 
       const size_t new_size = clause->Size();
       if (new_size != old_size && drat_writer_ != nullptr) {
-        // TODO(user): Instead delete the original clause in
-        // DeleteDetachedClause(). The problem is that we currently don't have
-        // the initial size anywhere.
-        drat_writer_->AddClause({clause->begin(), new_size});
+        if (new_size > 0) {
+          drat_writer_->AddClause({clause->begin(), new_size});
+        }
         drat_writer_->DeleteClause(
             {clause->begin(), old_size},
             /*ignore_call=*/clauses_info_.find(clause) == clauses_info_.end());
@@ -1491,7 +1489,7 @@ std::string SatSolver::DebugString(const SatClause& clause) const {
   return result;
 }
 
-int SatSolver::ComputeMaxTrailIndex(gtl::Span<Literal> clause) const {
+int SatSolver::ComputeMaxTrailIndex(absl::Span<Literal> clause) const {
   SCOPED_TIME_STAT(&stats_);
   int trail_index = -1;
   for (const Literal literal : clause) {
@@ -1542,7 +1540,7 @@ void SatSolver::ComputeFirstUIPConflict(
   //
   // This last literal will be the first UIP because by definition all the
   // propagation done at the current level will pass though it at some point.
-  gtl::Span<Literal> clause_to_expand = trail_->FailingClause();
+  absl::Span<Literal> clause_to_expand = trail_->FailingClause();
   SatClause* sat_clause = trail_->FailingSatClause();
   DCHECK(!clause_to_expand.empty());
   int num_literal_at_highest_level_that_needs_to_be_processed = 0;
@@ -1849,7 +1847,7 @@ void SatSolver::MinimizeConflictSimple(std::vector<Literal>* conflict) {
     bool can_be_removed = false;
     if (DecisionLevel(var) != current_level) {
       // It is important not to call Reason(var) when it can be avoided.
-      const gtl::Span<Literal> reason = trail_->Reason(var);
+      const absl::Span<Literal> reason = trail_->Reason(var);
       if (!reason.empty()) {
         can_be_removed = true;
         for (Literal literal : reason) {
@@ -2108,7 +2106,7 @@ void SatSolver::MinimizeConflictExperimental(std::vector<Literal>* conflict) {
 
     // A nullptr reason means that this was a decision variable from the
     // previous levels.
-    const gtl::Span<Literal> reason = trail_->Reason(var);
+    const absl::Span<Literal> reason = trail_->Reason(var);
     if (reason.empty()) continue;
 
     // Compute how many and which literals from the current reason do not appear

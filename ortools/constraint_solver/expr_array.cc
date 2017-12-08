@@ -27,6 +27,7 @@
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 
+#include "ortools/base/join.h"
 #include "ortools/util/saturated_arithmetic.h"
 #include "ortools/util/string_array.h"
 
@@ -1981,7 +1982,7 @@ class BooleanScalProdLessConstant : public Constraint {
   std::string DebugString() const override {
     return StringPrintf("BooleanScalProd([%s], [%s]) <= %" GG_LL_FORMAT "d)",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
-                        strings::Join(coefs_, ", ").c_str(), upper_bound_);
+                        absl::StrJoin(coefs_, ", ").c_str(), upper_bound_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -2102,7 +2103,7 @@ class PositiveBooleanScalProdEqVar : public CastConstraint {
   std::string DebugString() const override {
     return StringPrintf("PositiveBooleanScal([%s], [%s]) == %s",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
-                        strings::Join(coefs_, ", ").c_str(),
+                        absl::StrJoin(coefs_, ", ").c_str(),
                         target_var_->DebugString().c_str());
   }
 
@@ -2217,7 +2218,7 @@ class PositiveBooleanScalProd : public BaseIntExpr {
   std::string DebugString() const override {
     return StringPrintf("PositiveBooleanScalProd([%s], [%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
-                        strings::Join(coefs_, ", ").c_str());
+                        absl::StrJoin(coefs_, ", ").c_str());
   }
 
   void WhenRange(Demon* d) override {
@@ -2348,7 +2349,7 @@ class PositiveBooleanScalProdEqCst : public Constraint {
     return StringPrintf("PositiveBooleanScalProd([%s], [%s]) == %" GG_LL_FORMAT
                         "d",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
-                        strings::Join(coefs_, ", ").c_str(), constant_);
+                        absl::StrJoin(coefs_, ", ").c_str(), constant_);
   }
 
   void Accept(ModelVisitor* const visitor) const override {

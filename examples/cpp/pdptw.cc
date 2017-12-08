@@ -151,8 +151,8 @@ namespace {
 // of integers. Returns true iff the input std::string was entirely valid and parsed.
 bool SafeParseInt64Array(const std::string& str, std::vector<int64>* parsed_int) {
   static const char kWhiteSpaces[] = " \t\n\v\f\r";
-  std::vector<std::string> items = strings::Split(
-      str, strings::delimiter::AnyOf(kWhiteSpaces), strings::SkipEmpty());
+  std::vector<std::string> items = absl::StrSplit(
+      str, strings::delimiter::AnyOf(kWhiteSpaces), absl::SkipEmpty());
   parsed_int->assign(items.size(), 0);
   for (int i = 0; i < items.size(); ++i) {
     const char* item = items[i].c_str();
@@ -179,7 +179,7 @@ bool LoadAndSolve(const std::string& pdp_file) {
                    << kMaxInputFileSize << " bytes).";
       return false;
     }
-    lines = strings::Split(contents, '\n', strings::SkipEmpty());
+    lines = absl::StrSplit(contents, '\n', absl::SkipEmpty());
   }
   // Reading header.
   if (lines.empty()) {

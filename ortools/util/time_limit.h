@@ -217,7 +217,7 @@ class TimeLimit {
 
   // Returns the time elapsed in seconds since the construction of this object.
   double GetElapsedTime() const {
-    return 1e-9 * (base::GetCurrentTimeNanos() - start_ns_);
+    return 1e-9 * (absl::GetCurrentTimeNanos() - start_ns_);
   }
 
   // Returns the elapsed deterministic time since the construction of this
@@ -384,7 +384,7 @@ inline void TimeLimit::ResetTimers(double limit_in_seconds,
     perf_subsystem_.StartCollecting();
   }
 #endif  // HAS_PERF_SUBSYSTEM
-  start_ns_ = base::GetCurrentTimeNanos();
+  start_ns_ = absl::GetCurrentTimeNanos();
   last_ns_ = start_ns_;
   limit_ns_ = limit_in_seconds >= 1e-9 * (kint64max - start_ns_)
                   ? kint64max
@@ -423,7 +423,7 @@ inline bool TimeLimit::LimitReached() {
   }
 #endif  // HAS_PERF_SUBSYSTEM
 
-  const int64 current_ns = base::GetCurrentTimeNanos();
+  const int64 current_ns = absl::GetCurrentTimeNanos();
   running_max_.Add(std::max(safety_buffer_ns_, current_ns - last_ns_));
   last_ns_ = current_ns;
   if (current_ns + running_max_.GetCurrentMax() >= limit_ns_) {
@@ -447,7 +447,7 @@ inline bool TimeLimit::LimitReached() {
 
 inline double TimeLimit::GetTimeLeft() const {
   if (limit_ns_ == kint64max) return std::numeric_limits<double>::infinity();
-  const int64 delta_ns = limit_ns_ - base::GetCurrentTimeNanos();
+  const int64 delta_ns = limit_ns_ - absl::GetCurrentTimeNanos();
   if (delta_ns < 0) return 0.0;
   if (FLAGS_time_limit_use_usertime) {
     return std::max(limit_in_seconds_ - user_timer_.Get(), 0.0);

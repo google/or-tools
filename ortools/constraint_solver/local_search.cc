@@ -341,6 +341,7 @@ PathOperator::PathOperator(const std::vector<IntVar*>& next_vars,
     : IntVarLocalSearchOperator(next_vars),
       number_of_nexts_(next_vars.size()),
       ignore_path_vars_(path_vars.empty()),
+      next_base_to_increment_(number_of_base_nodes),
       base_nodes_(number_of_base_nodes),
       end_nodes_(number_of_base_nodes),
       base_paths_(number_of_base_nodes),
@@ -459,6 +460,7 @@ bool PathOperator::MakeChainInactive(int64 before_chain, int64 chain_end) {
 
 bool PathOperator::IncrementPosition() {
   const int base_node_size = base_nodes_.size();
+
   if (!just_started_) {
     const int number_of_paths = path_starts_.size();
     // Finding next base node positions.
@@ -468,13 +470,14 @@ bool PathOperator::IncrementPosition() {
     // action is called a restart).
     int last_restarted = base_node_size;
     for (int i = base_node_size - 1; i >= 0; --i) {
-      if (base_nodes_[i] < number_of_nexts_) {
+      if (base_nodes_[i] < number_of_nexts_ && i <= next_base_to_increment_) {
         base_nodes_[i] = OldNext(base_nodes_[i]);
         break;
       }
       base_nodes_[i] = StartNode(i);
       last_restarted = i;
     }
+    next_base_to_increment_ = base_node_size;
     // At the end of the loop, base nodes with indexes in
     // [last_restarted, base_node_size[ have been restarted.
     // Restarted base nodes are then repositioned by the virtual
@@ -802,7 +805,7 @@ class Relocate : public PathOperator {
            std::function<int(int64)> start_empty_path_class,
            int64 chain_length = 1LL, bool single_path = false)
       : Relocate(vars, secondary_vars,
-                 StrCat("Relocate<", chain_length, ">"),
+                 absl::StrCat("Relocate<", chain_length, ">"),
                  std::move(start_empty_path_class), chain_length, single_path) {
   }
   ~Relocate() override {}
@@ -1674,7 +1677,7 @@ class PathLns : public PathOperator {
 
  private:
   inline bool ChainsAreFullPaths() const { return chunk_size_ == 0; }
-  void DeactivateChain(int64 node0);
+  void DeactivateChain(int64 node);
   void DeactivateUnactives();
 
   const int number_of_chunks_;
@@ -1924,8 +1927,8 @@ bool RandomCompoundOperator::MakeNextNeighbor(Assignment* delta,
   std::vector<int> indices(size);
   std::iota(indices.begin(), indices.end(), 0);
   std::random_shuffle(indices.begin(), indices.end(), rand_);
-  for (int i = 0; i < size; ++i) {
-    if (operators_[indices[i]]->MakeNextNeighbor(delta, deltadelta)) {
+  for (int index : indices) {
+    if (operators_[index]->MakeNextNeighbor(delta, deltadelta)) {
       return true;
     }
   }
@@ -2227,9 +2230,16 @@ LocalSearchFilter* Solver::MakeVariableDomainFilter() {
 const int IntVarLocalSearchFilter::kUnassigned = -1;
 
 IntVarLocalSearchFilter::IntVarLocalSearchFilter(
-    const std::vector<IntVar*>& vars) {
+    const std::vector<IntVar*>& vars,
+    Solver::ObjectiveWatcher objective_callback)
+    : injected_objective_value_(0),
+      objective_callback_(std::move(objective_callback)) {
   AddVars(vars);
 }
+
+IntVarLocalSearchFilter::IntVarLocalSearchFilter(
+    const std::vector<IntVar*>& vars)
+    : IntVarLocalSearchFilter(vars, nullptr) {}
 
 void IntVarLocalSearchFilter::AddVars(const std::vector<IntVar*>& vars) {
   if (!vars.empty()) {
@@ -2298,11 +2308,10 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
                   Solver::ObjectiveWatcher delta_objective_callback,
                   const IntVar* const objective,
                   Solver::LocalSearchFilterBound filter_enum)
-      : IntVarLocalSearchFilter(vars),
+      : IntVarLocalSearchFilter(vars, std::move(delta_objective_callback)),
         primary_vars_size_(vars.size()),
         cache_(new int64[vars.size()]),
         delta_cache_(new int64[vars.size()]),
-        delta_objective_callback_(std::move(delta_objective_callback)),
         objective_(objective),
         filter_enum_(filter_enum),
         op_(),
@@ -2349,9 +2358,8 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
       var_min = std::max(var_min, delta->ObjectiveMin());
       var_max = std::min(var_max, delta->ObjectiveMax());
     }
-    if (delta_objective_callback_ != nullptr) {
-      delta_objective_callback_(value);
-    }
+    value = CapAdd(value, injected_objective_value_);
+    PropagateObjectiveValue(value);
     switch (filter_enum_) {
       case Solver::LE: {
         return value <= var_max;
@@ -2380,7 +2388,6 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
   const int primary_vars_size_;
   int64* const cache_;
   int64* const delta_cache_;
-  Solver::ObjectiveWatcher delta_objective_callback_;
   const IntVar* const objective_;
   Solver::LocalSearchFilterBound filter_enum_;
   Operator op_;
@@ -2400,9 +2407,7 @@ class ObjectiveFilter : public IntVarLocalSearchFilter {
     old_value_ = op_.value();
     old_delta_value_ = old_value_;
     incremental_ = false;
-    if (delta_objective_callback_ != nullptr) {
-      delta_objective_callback_(op_.value());
-    }
+    PropagateObjectiveValue(CapAdd(op_.value(), injected_objective_value_));
   }
   int64 Evaluate(const Assignment* delta, int64 current_value,
                  const int64* const out_values, bool cache_delta_values) {
@@ -2575,7 +2580,7 @@ class TernaryObjectiveFilter : public ObjectiveFilter<Operator> {
   }                                                                           \
   return nullptr;
 
-LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
+IntVarLocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const std::vector<IntVar*>& vars, Solver::IndexEvaluator2 values,
     IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
     Solver::LocalSearchOperation op_enum) {
@@ -2583,7 +2588,7 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
                          objective, filter_enum);
 }
 
-LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
+IntVarLocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const std::vector<IntVar*>& vars, Solver::IndexEvaluator2 values,
     ObjectiveWatcher delta_objective_callback, IntVar* const objective,
     Solver::LocalSearchFilterBound filter_enum,
@@ -2592,7 +2597,7 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
                          delta_objective_callback, objective, filter_enum);
 }
 
-LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
+IntVarLocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, Solver::IndexEvaluator3 values,
     IntVar* const objective, Solver::LocalSearchFilterBound filter_enum,
@@ -2601,7 +2606,7 @@ LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
                          values, nullptr, objective, filter_enum);
 }
 
-LocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
+IntVarLocalSearchFilter* Solver::MakeLocalSearchObjectiveFilter(
     const std::vector<IntVar*>& vars,
     const std::vector<IntVar*>& secondary_vars, Solver::IndexEvaluator3 values,
     ObjectiveWatcher delta_objective_callback, IntVar* const objective,
@@ -2636,14 +2641,14 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
     std::string overview = "Local search operator statistics:\n";
     StringAppendF(&overview,
-                  StrCat("%", op_name_size,
+                  absl::StrCat("%", op_name_size,
                                "s | Neighbors | Filtered | "
                                "Accepted | Time (s)\n")
                       .c_str(),
                   "");
     OperatorStats total_stats;
     const std::string row_format =
-        StrCat("%", op_name_size, "s | %9d | %8d | %8d | %7.2g\n");
+        absl::StrCat("%", op_name_size, "s | %9d | %8d | %8d | %7.2g\n");
     for (const auto& stat : operator_stats_) {
       StringAppendF(&overview, row_format.c_str(), stat.first.c_str(),
                     stat.second.neighbors, stat.second.filtered_neighbors,
@@ -2662,14 +2667,14 @@ class LocalSearchProfiler : public LocalSearchMonitor {
     }
     StringAppendF(
         &overview,
-        StrCat("Local search filter statistics:\n%", op_name_size,
+        absl::StrCat("Local search filter statistics:\n%", op_name_size,
                      "s |     Calls |   Rejects | Time (s) "
                      "| Rejects/s\n")
             .c_str(),
         "");
     FilterStats total_filter_stats;
     const std::string filter_row_format =
-        StrCat("%", op_name_size, "s | %9d | %9d | %7.2g  | %7.2g\n");
+        absl::StrCat("%", op_name_size, "s | %9d | %9d | %7.2g  | %7.2g\n");
     for (const auto& stat : filter_stats_) {
       StringAppendF(&overview, filter_row_format.c_str(), stat.first.c_str(),
                     stat.second.calls, stat.second.rejects, stat.second.seconds,
@@ -2849,7 +2854,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
 
     // Keeping the code in case a performance problem forces us to
     // use the old code with a zero test on pool_.
-    // reference_assignment_->Copy(assignment_);
+    // reference_assignment_->CopyIntersection(assignment_);
     pool_->Initialize(assignment_);
     SynchronizeAll(solver);
   }
@@ -2899,8 +2904,8 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
             ls_operator_, mh_filter && move_filter);
         if (mh_filter && move_filter) {
           solver->filtered_neighbors_ += 1;
-          assignment_copy->Copy(reference_assignment_.get());
-          assignment_copy->Copy(delta);
+          assignment_copy->CopyIntersection(reference_assignment_.get());
+          assignment_copy->CopyIntersection(delta);
           solver->GetLocalSearchMonitor()->BeginAcceptNeighbor(ls_operator_);
           const bool accept = solver->SolveAndCommit(restore);
           solver->GetLocalSearchMonitor()->EndAcceptNeighbor(ls_operator_,
@@ -2917,7 +2922,7 @@ Decision* FindOneNeighbor::Next(Solver* const solver) {
           AcceptNeighbor(solver->ParentSearch());
           // Keeping the code in case a performance problem forces us to
           // use the old code with a zero test on pool_.
-          //          reference_assignment_->Copy(assignment_);
+          //          reference_assignment_->CopyIntersection(assignment_);
           pool_->RegisterNewSolution(assignment_);
           SynchronizeAll(solver);
         } else {
@@ -2934,11 +2939,11 @@ bool FindOneNeighbor::FilterAccept(Solver* solver, const Assignment* delta,
                                    const Assignment* deltadelta) {
   bool ok = true;
   LocalSearchMonitor* const monitor = solver->GetLocalSearchMonitor();
-  for (int i = 0; i < filters_.size(); ++i) {
-    if (ok || filters_[i]->IsIncremental()) {
-      monitor->BeginFiltering(filters_[i]);
-      const bool accept = filters_[i]->Accept(delta, deltadelta);
-      monitor->EndFiltering(filters_[i], !accept);
+  for (LocalSearchFilter* filter : filters_) {
+    if (ok || filter->IsIncremental()) {
+      monitor->BeginFiltering(filter);
+      const bool accept = filter->Accept(delta, deltadelta);
+      monitor->EndFiltering(filter, !accept);
       ok = accept && ok;
     }
   }
@@ -2956,8 +2961,8 @@ void FindOneNeighbor::SynchronizeAll(Solver* solver) {
 }
 
 void FindOneNeighbor::SynchronizeFilters(const Assignment* assignment) {
-  for (int i = 0; i < filters_.size(); ++i) {
-    filters_[i]->Synchronize(assignment, nullptr);
+  for (LocalSearchFilter* filter : filters_) {
+    filter->Synchronize(assignment, nullptr);
   }
 }
 
@@ -3343,11 +3348,11 @@ class DefaultSolutionPool : public SolutionPool {
   }
 
   void RegisterNewSolution(Assignment* const assignment) override {
-    reference_assignment_->Copy(assignment);
+    reference_assignment_->CopyIntersection(assignment);
   }
 
   void GetNextSolution(Assignment* const assignment) override {
-    assignment->Copy(reference_assignment_.get());
+    assignment->CopyIntersection(reference_assignment_.get());
   }
 
   bool SyncNeeded(Assignment* const local_assignment) override { return false; }

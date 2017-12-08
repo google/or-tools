@@ -532,7 +532,7 @@ class PbConstraints : public SatPropagator {
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
-  gtl::Span<Literal> Reason(const Trail& trail,
+  absl::Span<Literal> Reason(const Trail& trail,
                                    int trail_index) const final;
 
   // Changes the number of variables.

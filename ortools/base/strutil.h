@@ -21,11 +21,13 @@ using std::string;
 
 namespace operations_research {
 
-inline bool HasSuffixString(const string_view& str, const string_view& suffix) {
+inline bool HasSuffixString(const absl::string_view& str,
+                            const absl::string_view& suffix) {
   return str.ends_with(suffix);
 }
 
-inline bool HasPrefixString(const string_view& str, const string_view& prefix) {
+inline bool HasPrefixString(const absl::string_view& str,
+                            const absl::string_view& prefix) {
   return str.starts_with(prefix);
 }
 

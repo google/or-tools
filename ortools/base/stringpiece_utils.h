@@ -20,14 +20,12 @@
 
 namespace strings {
 // Returns whether s begins with x.
-inline bool StartsWith(operations_research::string_view s,
-                       operations_research::string_view x) {
+inline bool StartsWith(absl::string_view s, absl::string_view x) {
   return s.size() >= x.size() && memcmp(s.data(), x.data(), x.size()) == 0;
 }
 
 // Returns whether s ends with x.
-inline bool EndsWith(operations_research::string_view s,
-                     operations_research::string_view x) {
+inline bool EndsWith(absl::string_view s, absl::string_view x) {
   return s.size() >= x.size() &&
          memcmp(s.data() + (s.size() - x.size()), x.data(), x.size()) == 0;
 }

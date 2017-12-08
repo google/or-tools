@@ -302,7 +302,7 @@ class SparseVector {
   //   for (const EntryIndex i : sparse_vector.AllEntryIndices()) { ... }
   // TODO(user): consider removing this, in favor of the natural range
   // iteration.
- ::util::IntegerRange<EntryIndex> AllEntryIndices() const {
+  ::util::IntegerRange<EntryIndex> AllEntryIndices() const {
     return ::util::IntegerRange<EntryIndex>(EntryIndex(0), num_entries_);
   }
 

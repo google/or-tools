@@ -16,8 +16,6 @@
 #include <cctype>
 #include <cstdlib>
 
-namespace operations_research {
-
 #ifdef _MSC_VER
 #define strtof strtod
 #define strtoll _strtoi64
@@ -65,5 +63,3 @@ bool safe_strto64(const std::string& str, int64* value) {
 
 #undef strtof
 #undef strtoll
-
-}  // namespace operations_research

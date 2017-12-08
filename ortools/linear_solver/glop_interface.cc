@@ -19,18 +19,11 @@
 
 #include "ortools/base/commandlineflags.h"
 
-#ifndef ANDROID_JNI
 #include "ortools/base/commandlineflags.h"
-#endif
 
 #include "ortools/base/integral_types.h"
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
-
-#ifndef ANDROID_JNI
-#include "ortools/base/file.h"
-#include "google/protobuf/text_format.h"
-#endif
 
 #include "ortools/base/hash.h"
 #include "ortools/glop/lp_solver.h"
@@ -40,6 +33,10 @@
 #include "ortools/lp_data/lp_data.h"
 #include "ortools/lp_data/lp_types.h"
 #include "ortools/util/time_limit.h"
+
+#ifndef __PORTABLE_PLATFORM__
+#include "google/protobuf/text_format.h"
+#endif
 
 namespace operations_research {
 
@@ -431,7 +428,7 @@ void GLOPInterface::SetLpAlgorithm(int value) {
 
 bool GLOPInterface::SetSolverSpecificParametersAsString(
     const std::string& parameters) {
-#ifdef ANDROID_JNI
+#ifdef __PORTABLE_PLATFORM__
   // NOTE(user): Android build uses protocol buffers in lite mode, and
   // parsing data from text format is not supported there. To allow solver
   // specific parameters from std::string on Android, we first need to switch to

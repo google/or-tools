@@ -29,7 +29,7 @@
 #include "ortools/base/file.h"
 #include "ortools/base/logging.h"
 
-File::File(FILE* const f_des, const operations_research::string_view& name)
+File::File(FILE* const f_des, const absl::string_view& name)
     : f_(f_des), name_(name) {}
 
 bool File::Delete(const char* const name) { return remove(name) == 0; }
@@ -55,9 +55,10 @@ bool File::Close() {
 
 util::Status File::Close(int flags) {
   if (flags != file::Defaults()) return false;
-  return Close() ? util::Status::OK
-                 : util::Status(util::error::INVALID_ARGUMENT,
-                                StrCat("Could not close file '", name_, "'"));
+  return Close()
+             ? util::Status::OK
+             : util::Status(util::error::INVALID_ARGUMENT,
+                            absl::StrCat("Could not close file '", name_, "'"));
 }
 
 void File::ReadOrDie(void* const buf, size_t size) {
@@ -129,16 +130,15 @@ bool File::WriteLine(const std::string& line) {
   return Write("\n", 1) == 1;
 }
 
-operations_research::string_view File::filename() const { return name_; }
+absl::string_view File::filename() const { return name_; }
 
 bool File::Open() const { return f_ != NULL; }
 
 void File::Init() {}
 
 namespace file {
-util::Status Open(const operations_research::string_view& filename,
-                  const operations_research::string_view& mode, File** f,
-                  int flags) {
+util::Status Open(const absl::string_view& filename,
+                  const absl::string_view& mode, File** f, int flags) {
   if (flags == Defaults()) {
     *f = File::Open(filename, mode.data());
     if (*f != nullptr) {
@@ -146,20 +146,20 @@ util::Status Open(const operations_research::string_view& filename,
     }
   }
   return util::Status(util::error::INVALID_ARGUMENT,
-                      StrCat("Could not open '", filename, "'"));
+                      absl::StrCat("Could not open '", filename, "'"));
 }
 
-File* OpenOrDie(const operations_research::string_view& filename,
-                const operations_research::string_view& mode, int flags) {
+File* OpenOrDie(const absl::string_view& filename,
+                const absl::string_view& mode, int flags) {
   File* f;
   CHECK_EQ(flags, Defaults());
   f = File::Open(filename, mode.data());
-  CHECK(f != nullptr) << StrCat("Could not open '", filename, "'");
+  CHECK(f != nullptr) << absl::StrCat("Could not open '", filename, "'");
   return f;
 }
 
-util::Status GetContents(const operations_research::string_view& filename,
-                         std::string* output, int flags) {
+util::Status GetContents(const absl::string_view& filename, std::string* output,
+                         int flags) {
   if (flags == Defaults()) {
     File* file = File::Open(filename, "r");
     if (file != NULL) {
@@ -168,31 +168,31 @@ util::Status GetContents(const operations_research::string_view& filename,
     }
   }
   return util::Status(util::error::INVALID_ARGUMENT,
-                      StrCat("Could not read '", filename, "'"));
+                      absl::StrCat("Could not read '", filename, "'"));
 }
 
-util::Status WriteString(File* file, const std::string& contents, int flags) {
+util::Status WriteString(File* file, const absl::string_view& contents,
+                         int flags) {
   if (flags == Defaults() && file != NULL &&
-      file->Write(contents.c_str(), contents.size()) == contents.size() &&
+      file->Write(contents.data(), contents.size()) == contents.size() &&
       file->Close()) {
     return util::Status::OK;
   }
-  return util::Status(util::error::INVALID_ARGUMENT,
-                      StrCat("Could not write ", contents.size(), " bytes"));
+  return util::Status(
+      util::error::INVALID_ARGUMENT,
+      absl::StrCat("Could not write ", contents.size(), " bytes"));
 }
 
-util::Status SetContents(const operations_research::string_view& filename,
-                         const std::string& contents, int flags) {
+util::Status SetContents(const absl::string_view& filename,
+                         const absl::string_view& contents, int flags) {
   return WriteString(File::Open(filename, "w"), contents, flags);
 }
 
-bool ReadFileToString(const operations_research::string_view& file_name,
-                      std::string* output) {
+bool ReadFileToString(const absl::string_view& file_name, std::string* output) {
   return GetContents(file_name, output, file::Defaults()).ok();
 }
 
-bool WriteStringToFile(const std::string& data,
-                       const operations_research::string_view& file_name) {
+bool WriteStringToFile(const std::string& data, const absl::string_view& file_name) {
   return SetContents(file_name, data, file::Defaults()).ok();
 }
 
@@ -203,7 +203,7 @@ class NoOpErrorCollector : public google::protobuf::io::ErrorCollector {
 };
 }  // namespace
 
-bool ReadFileToProto(const operations_research::string_view& file_name,
+bool ReadFileToProto(const absl::string_view& file_name,
                      google::protobuf::Message* proto) {
   std::string str;
   if (!ReadFileToString(file_name, &str)) {
@@ -232,59 +232,68 @@ bool ReadFileToProto(const operations_research::string_view& file_name,
   return false;
 }
 
-void ReadFileToProtoOrDie(const operations_research::string_view& file_name,
+void ReadFileToProtoOrDie(const absl::string_view& file_name,
                           google::protobuf::Message* proto) {
   CHECK(ReadFileToProto(file_name, proto)) << "file_name: " << file_name;
 }
 
 bool WriteProtoToASCIIFile(const google::protobuf::Message& proto,
-                           const operations_research::string_view& file_name) {
+                           const absl::string_view& file_name) {
   std::string proto_string;
   return google::protobuf::TextFormat::PrintToString(proto, &proto_string) &&
          WriteStringToFile(proto_string, file_name);
 }
 
-void WriteProtoToASCIIFileOrDie(
-    const google::protobuf::Message& proto,
-    const operations_research::string_view& file_name) {
+void WriteProtoToASCIIFileOrDie(const google::protobuf::Message& proto,
+                                const absl::string_view& file_name) {
   CHECK(WriteProtoToASCIIFile(proto, file_name)) << "file_name: " << file_name;
 }
 
 bool WriteProtoToFile(const google::protobuf::Message& proto,
-                      const operations_research::string_view& file_name) {
+                      const absl::string_view& file_name) {
   std::string proto_string;
   return proto.AppendToString(&proto_string) &&
          WriteStringToFile(proto_string, file_name);
 }
 
 void WriteProtoToFileOrDie(const google::protobuf::Message& proto,
-                           const operations_research::string_view& file_name) {
+                           const absl::string_view& file_name) {
   CHECK(WriteProtoToFile(proto, file_name)) << "file_name: " << file_name;
 }
 
-util::Status SetTextProto(const operations_research::string_view& filename,
+util::Status SetTextProto(const absl::string_view& filename,
                           const google::protobuf::Message& proto, int flags) {
   if (flags == Defaults()) {
     if (WriteProtoToASCIIFile(proto, filename)) return util::Status::OK;
   }
-  return util::Status(util::error::INVALID_ARGUMENT,
-                      StrCat("Could not write proto to '", filename, "'."));
+  return util::Status(
+      util::error::INVALID_ARGUMENT,
+      absl::StrCat("Could not write proto to '", filename, "'."));
 }
 
-util::Status SetBinaryProto(const operations_research::string_view& filename,
+util::Status SetBinaryProto(const absl::string_view& filename,
                             const google::protobuf::Message& proto, int flags) {
   if (flags == Defaults()) {
     if (WriteProtoToFile(proto, filename)) return util::Status::OK;
   }
-  return util::Status(util::error::INVALID_ARGUMENT,
-                      StrCat("Could not write proto to '", filename, "'."));
+  return util::Status(
+      util::error::INVALID_ARGUMENT,
+      absl::StrCat("Could not write proto to '", filename, "'."));
 }
 
-util::Status Delete(const operations_research::string_view& path, int flags) {
+util::Status Delete(const absl::string_view& path, int flags) {
   if (flags == Defaults()) {
     if (remove(path.data())) return util::Status::OK;
   }
   return util::Status(util::error::INVALID_ARGUMENT,
-                      StrCat("Could not delete '", path, "'."));
+                      absl::StrCat("Could not delete '", path, "'."));
+}
+
+util::Status Exists(const absl::string_view& path, int flags) {
+  if (flags == Defaults()) {
+    if (access(path.data(), F_OK) == 0) return util::Status::OK;
+  }
+  return util::Status(util::error::INVALID_ARGUMENT,
+                      absl::StrCat("File '", path, "' does not exist."));
 }
 }  // namespace file

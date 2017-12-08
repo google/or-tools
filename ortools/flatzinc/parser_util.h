@@ -23,8 +23,6 @@
 #include "ortools/base/map_util.h"
 #include "ortools/flatzinc/model.h"
 
-using operations_research::HasPrefixString;
-using operations_research::HasSuffixString;
 using operations_research::StringPrintf;
 
 namespace operations_research {

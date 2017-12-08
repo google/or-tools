@@ -36,7 +36,7 @@ std::string ProtobufShortDebugString(const P& message) {
 
 template <typename ProtoEnumType>
 std::string ProtoEnumToString(ProtoEnumType enum_value) {
-  return StrCat(enum_value);
+  return absl::StrCat(enum_value);
 }
 
 #else  // __PORTABLE_PLATFORM__
@@ -53,9 +53,9 @@ std::string ProtobufShortDebugString(const P& message) {
 template <typename ProtoEnumType>
 std::string ProtoEnumToString(ProtoEnumType enum_value) {
   auto enum_descriptor = google::protobuf::GetEnumDescriptor<ProtoEnumType>();
-  auto enum_value_descriptor = enum_descriptor->value(enum_value);
+  auto enum_value_descriptor = enum_descriptor->FindValueByNumber(enum_value);
   if (enum_value_descriptor == nullptr) {
-    return StrCat(
+    return absl::StrCat(
         "Invalid enum value of: ", enum_value,
         " for enum type: ", google::protobuf::GetEnumDescriptor<ProtoEnumType>()->name());
   }

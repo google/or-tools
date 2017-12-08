@@ -38,8 +38,8 @@ std::string StringifyRational(const double x, const double precision) {
   Fraction fraction = RationalApproximation(x, precision);
   const int64 numerator = fraction.first;
   const int64 denominator = fraction.second;
-  return denominator == 1 ? StrCat(numerator)
-                          : StrCat(numerator, "/", denominator);
+  return denominator == 1 ? absl::StrCat(numerator)
+                          : absl::StrCat(numerator, "/", denominator);
 }
 
 std::string Stringify(const Fractional x, bool fraction) {
@@ -53,13 +53,13 @@ std::string Stringify(const Fractional x, bool fraction) {
 std::string StringifyMonomial(const Fractional a, const std::string& x, bool fraction) {
   if (a == 0.0)  return "";
   return a > 0.0
-             ? StrCat(
+             ? absl::StrCat(
                    " + ",
-                   a == 1.0 ? x : StrCat(Stringify(a, fraction), " ", x))
-             : StrCat(
+                   a == 1.0 ? x : absl::StrCat(Stringify(a, fraction), " ", x))
+             : absl::StrCat(
                    " - ", a == -1.0
                               ? x
-                              : StrCat(Stringify(-a, fraction), " ", x));
+                              : absl::StrCat(Stringify(-a, fraction), " ", x));
 }
 
 }  // namespace glop

@@ -26,10 +26,10 @@ namespace operations_research {
 
 // Reads a proto from a file. Supports the following formats: binary, text,
 // JSON, all of those optionally gzipped. Returns false on failure.
-bool ReadFileToProto(string_view filename, google::protobuf::Message* proto);
+bool ReadFileToProto(absl::string_view filename, google::protobuf::Message* proto);
 
 template <typename Proto>
-Proto ReadFileToProtoOrDie(string_view filename) {
+Proto ReadFileToProtoOrDie(absl::string_view filename) {
   Proto proto;
   CHECK(ReadFileToProto(filename, &proto));
   return proto;
@@ -42,7 +42,7 @@ enum class ProtoWriteFormat { kProtoText, kProtoBinary, kJson };
 // If 'proto_write_format' is kProtoBinary, ".bin" is appended to file_name. If
 // 'proto_write_format' is kJson, ".json" is appended to file_name. If 'gzipped'
 // is true, ".gz" is appended to file_name.
-bool WriteProtoToFile(string_view filename, const google::protobuf::Message& proto,
+bool WriteProtoToFile(absl::string_view filename, const google::protobuf::Message& proto,
                       ProtoWriteFormat proto_write_format, bool gzipped);
 
 namespace internal {
@@ -73,7 +73,7 @@ std::vector<Proto> ReadNumRecords(File* file, int expected_num_records) {
 
 // Ditto, taking a filename as argument.
 template <typename Proto>
-std::vector<Proto> ReadNumRecords(string_view filename,
+std::vector<Proto> ReadNumRecords(absl::string_view filename,
                                   int expected_num_records) {
   return ReadNumRecords<Proto>(file::OpenOrDie(filename, "r", file::Defaults()),
                                expected_num_records);
@@ -84,7 +84,7 @@ std::vector<Proto> ReadNumRecords(string_view filename,
 // file is empty. Dies if the file doesn't exist or contains something else than
 // protos encoded in RecordIO format.
 template <typename Proto>
-std::vector<Proto> ReadAllRecordsOrDie(string_view filename) {
+std::vector<Proto> ReadAllRecordsOrDie(absl::string_view filename) {
   return internal::ReadNumRecords<Proto>(filename, -1);
 }
 template <typename Proto>
@@ -96,7 +96,7 @@ std::vector<Proto> ReadAllRecordsOrDie(File* file) {
 // doesn't contain exactly one record, or contains something else than protos
 // encoded in RecordIO format.
 template <typename Proto>
-Proto ReadOneRecordOrDie(string_view filename) {
+Proto ReadOneRecordOrDie(absl::string_view filename) {
   Proto p;
   p.Swap(&internal::ReadNumRecords<Proto>(filename, 1)[0]);
   return p;
@@ -105,7 +105,7 @@ Proto ReadOneRecordOrDie(string_view filename) {
 // Writes all records in Proto format to 'file'. Dies if it is unable to open
 // the file or write to it.
 template <typename Proto>
-void WriteRecordsOrDie(string_view filename,
+void WriteRecordsOrDie(absl::string_view filename,
                        const std::vector<Proto>& protos) {
   recordio::RecordWriter writer(
       file::OpenOrDie(filename, "w", file::Defaults()));

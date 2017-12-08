@@ -177,11 +177,6 @@ struct ThetaNode {
     // our case, we use StartMin() + DurationMin() for the earliest completion
     // time of a task, which should not break any assumptions, but may give
     // bounds that are too loose.
-    // LOG_IF_FIRST_N(WARNING,
-    //                (interval->DurationMin() != interval->DurationMax()), 1)
-    //     << "You are using the Theta-tree on tasks having variable durations. "
-    //        "This may lead to unexpected results, such as discarding valid "
-    //        "solutions or allowing invalid ones.";
   }
 
   void Compute(const ThetaNode& left, const ThetaNode& right) {
@@ -195,7 +190,7 @@ struct ThetaNode {
   }
 
   std::string DebugString() const {
-    return StrCat("ThetaNode{ p = ", total_processing,
+    return absl::StrCat("ThetaNode{ p = ", total_processing,
                         ", e = ", total_ect < 0LL ? -1LL : total_ect, " }");
   }
 
@@ -2278,7 +2273,7 @@ class CumulativeConstraint : public Constraint {
       if (high_demand_intervals.size() >= 2) {
         // If there are less than 2 such intervals, the constraint would do
         // nothing
-        std::string seq_name = StrCat(name(), "-HighDemandSequence");
+        std::string seq_name = absl::StrCat(name(), "-HighDemandSequence");
         constraint = solver()->MakeDisjunctiveConstraint(high_demand_intervals,
                                                          seq_name);
       }
@@ -2467,7 +2462,7 @@ class VariableDemandCumulativeConstraint : public Constraint {
       if (high_demand_intervals.size() >= 2) {
         // If there are less than 2 such intervals, the constraint would do
         // nothing
-        const std::string seq_name = StrCat(name(), "-HighDemandSequence");
+        const std::string seq_name = absl::StrCat(name(), "-HighDemandSequence");
         constraint = solver()->MakeStrictDisjunctiveConstraint(
             high_demand_intervals, seq_name);
       }

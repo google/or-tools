@@ -71,7 +71,7 @@ bool IntervalsAreSortedAndDisjoint(
 //
 // TODO(user): This works in O(n), but could be made to work in O(log n) for
 // long list of intervals.
-bool SortedDisjointIntervalsContain(gtl::Span<ClosedInterval> intervals,
+bool SortedDisjointIntervalsContain(absl::Span<ClosedInterval> intervals,
                                     int64 value);
 
 // Returns the intersection of two lists of sorted disjoint intervals in a

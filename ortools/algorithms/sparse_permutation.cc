@@ -16,6 +16,7 @@
 #include <algorithm>
 #include "ortools/base/logging.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 
 namespace operations_research {
 
@@ -70,7 +71,7 @@ std::string SparsePermutation::DebugString() const {
   for (const std::vector<int>& cycle : cycles) {
     if (!out.empty()) out += " ";
     out += "(";
-    out += strings::Join(cycle, " ");
+    out += absl::StrJoin(cycle, " ");
     out += ")";
   }
   return out;

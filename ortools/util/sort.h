@@ -24,7 +24,8 @@ template <class Iterator>
 using value_type_t = typename std::iterator_traits<Iterator>::value_type;
 
 // Sorts the elements in the range [begin, end) in ascending order using the
-// comp predicate.
+// comp predicate. The order of equal elements is guaranteed to be preserved
+// only if is_stable is true.
 //
 // This function performs well if the elements in the range [begin, end) are
 // almost sorted.
@@ -37,13 +38,13 @@ using value_type_t = typename std::iterator_traits<Iterator>::value_type;
 //    may actually use the comp predicate more than max_comparisons in order
 //    to complete its current insertion.
 // 3) If insertion sort exceeds the maximum number of comparisons, the range is
-//    sorted using std::sort.
+//    sorted using std::stable_sort if is_stable is true or std::sort otherwise.
 //
 // The first two steps of this algorithm are inspired by the ones recommended
 // in Algorithms, 4th Edition by Robert Sedgewick and Kevin Wayne.
 template <class Iterator, class Compare = std::less<value_type_t<Iterator>>>
 void IncrementalSort(int max_comparisons, Iterator begin, Iterator end,
-                     Compare comp = Compare{}) {
+                     Compare comp = Compare{}, bool is_stable = false) {
   // Ranges of at most one element are already sorted.
   if (std::distance(begin, end) <= 1) return;
 
@@ -57,17 +58,15 @@ void IncrementalSort(int max_comparisons, Iterator begin, Iterator end,
     }
   }
 
-  // Perform insertion sort with a limited number of comparisons.
-  int num_comps = max_comparisons;
   // We know that the elements in the range [begin, last_sorted) are the
   // smallest elements of [begin, end) and are sorted.
   Iterator it = std::next(last_sorted);
-  for (; it != end && num_comps > 0; ++it) {
+  for (; it != end && max_comparisons > 0; ++it) {
     const auto inserted = *it;
     Iterator j = it;
-    num_comps--;
+    max_comparisons--;
     while (comp(inserted, *std::prev(j))) {
-      num_comps--;
+      max_comparisons--;
       *j = *std::prev(j);
       j--;
     }
@@ -77,7 +76,11 @@ void IncrementalSort(int max_comparisons, Iterator begin, Iterator end,
   // Stop if insertion sort was able to sort the range.
   if (it == end) return;
 
-  std::sort(last_sorted, end, comp);
+  if (is_stable) {
+    std::stable_sort(last_sorted, end, comp);
+  } else {
+    std::sort(last_sorted, end, comp);
+  }
 }
 
 // Sorts the elements in the range [begin, end) in ascending order using the
@@ -117,17 +120,19 @@ void InsertionSort(Iterator begin, Iterator end, Compare comp = Compare{}) {
 }
 
 // Sorts the elements in the range [begin, end) in ascending order using the
-// comp predicate. The order of equal elements is guaranteed to be preserved.
+// comp predicate. The order of equal elements is guaranteed to be preserved
+// only if is_stable is true.
 //
 // This function performs well if the elements in the range [begin, end) are
 // almost sorted.
 template <class Iterator, class Compare = std::less<value_type_t<Iterator>>>
-void IncrementalSort(Iterator begin, Iterator end, Compare comp = Compare{}) {
+void IncrementalSort(Iterator begin, Iterator end, Compare comp = Compare{},
+                     bool is_stable = false) {
   const int size = std::distance(begin, end);
   if (size <= 32) {
     InsertionSort(begin, end, comp);
   } else {
-    IncrementalSort(size * 8, begin, end, comp);
+    IncrementalSort(size * 8, begin, end, comp, is_stable);
   }
 }
 

@@ -38,6 +38,7 @@ LinearProgrammingConstraint::LinearProgrammingConstraint(Model* model)
       time_limit_(model->GetOrCreate<TimeLimit>()),
       integer_trail_(model->GetOrCreate<IntegerTrail>()),
       trail_(model->GetOrCreate<Trail>()),
+      model_heuristics_(model->GetOrCreate<SearchHeuristicsVector>()),
       dispatcher_(model->GetOrCreate<LinearProgrammingDispatcher>()) {
   // Tweak the default parameters to make the solve incremental.
   glop::GlopParameters parameters;
@@ -87,7 +88,7 @@ void LinearProgrammingConstraint::SetObjectiveCoefficient(IntegerVariable ivar,
       std::make_pair(GetOrCreateMirrorVariable(pos_var), coeff));
 }
 
-void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
+void LinearProgrammingConstraint::RegisterWith(Model* model) {
   DCHECK(!lp_constraint_is_registered_);
   lp_constraint_is_registered_ = true;
 
@@ -102,6 +103,7 @@ void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
   lp_data_.ScaleObjective();
   lp_data_.AddSlackVariablesWhereNecessary(false);
 
+  GenericLiteralWatcher* watcher = model->GetOrCreate<GenericLiteralWatcher>();
   const int watcher_id = watcher->Register(this);
   const int num_vars = integer_variables_.size();
   for (int i = 0; i < num_vars; i++) {
@@ -111,6 +113,12 @@ void LinearProgrammingConstraint::RegisterWith(GenericLiteralWatcher* watcher) {
     watcher->WatchUpperBound(objective_cp_, watcher_id);
   }
   watcher->SetPropagatorPriority(watcher_id, 2);
+
+  if (integer_variables_.size() >= 20) {  // Do not use on small subparts.
+    auto* container = model->GetOrCreate<SearchHeuristicsVector>();
+    container->push_back(HeuristicLPPseudoCostBinary(model));
+    container->push_back(HeuristicLPMostInfeasibleBinary(model));
+  }
 }
 
 void LinearProgrammingConstraint::AddCutGenerator(CutGenerator generator) {
@@ -524,41 +532,35 @@ CutGenerator CreateCVRPCutGenerator(int num_nodes,
   return result;
 }
 
-std::function<LiteralIndex()> HeuristicLPMostInfeasibleBinary(Model* model) {
+std::function<LiteralIndex()>
+LinearProgrammingConstraint::HeuristicLPMostInfeasibleBinary(Model* model) {
+  IntegerTrail* integer_trail = integer_trail_;
+  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
   // Gather all 0-1 variables that appear in some LP.
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  LinearProgrammingDispatcher* dispatcher =
-      model->GetOrCreate<LinearProgrammingDispatcher>();
   std::vector<IntegerVariable> variables;
-  for (const auto entry : *dispatcher) {
-    IntegerVariable var = entry.first;
-    if (integer_trail->LowerBound(var) == 0 &&
-        integer_trail->UpperBound(var) == 1) {
+  for (IntegerVariable var : integer_variables_) {
+    if (integer_trail_->LowerBound(var) == 0 &&
+        integer_trail_->UpperBound(var) == 1) {
       variables.push_back(var);
     }
   }
-  std::sort(variables.begin(), variables.end());
-
   LOG(INFO) << "HeuristicLPMostInfeasibleBinary has " << variables.size()
             << " variables.";
 
-  IntegerEncoder* integer_encoder = model->GetOrCreate<IntegerEncoder>();
-  SatSolver* sat_solver = model->GetOrCreate<SatSolver>();
-  return [variables, dispatcher, integer_trail, integer_encoder, sat_solver]() {
+  return [this, variables, integer_trail, integer_encoder]() {
     const double kEpsilon = 1e-6;
     // Find most fractional value.
     IntegerVariable fractional_var = kNoIntegerVariable;
     double fractional_distance_best = -1.0;
     for (const IntegerVariable var : variables) {
-      // Check variable is not ignored and unfixed.
-      if (integer_trail->IsCurrentlyIgnored(var)) continue;
-      const IntegerValue lb = integer_trail->LowerBound(var);
-      const IntegerValue ub = integer_trail->UpperBound(var);
+      // Skip ignored and fixed variables.
+      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue ub = integer_trail_->UpperBound(var);
       if (lb == ub) continue;
 
       // Check variable's support is fractional.
-      LinearProgrammingConstraint* lp = (*dispatcher)[var];
-      const double lp_value = lp->GetSolutionValue(var);
+      const double lp_value = this->GetSolutionValue(var);
       const double fractional_distance =
           std::min(std::ceil(lp_value - kEpsilon) - lp_value,
                    lp_value - std::floor(lp_value + kEpsilon));
@@ -581,21 +583,16 @@ std::function<LiteralIndex()> HeuristicLPMostInfeasibleBinary(Model* model) {
   };
 }
 
-std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model) {
+std::function<LiteralIndex()>
+LinearProgrammingConstraint::HeuristicLPPseudoCostBinary(Model* model) {
   // Gather all 0-1 variables that appear in some LP.
-  IntegerTrail* integer_trail = model->GetOrCreate<IntegerTrail>();
-  LinearProgrammingDispatcher* dispatcher =
-      model->GetOrCreate<LinearProgrammingDispatcher>();
   std::vector<IntegerVariable> variables;
-  for (const auto entry : *dispatcher) {
-    IntegerVariable var = entry.first;
-    if (integer_trail->LowerBound(var) == 0 &&
-        integer_trail->UpperBound(var) == 1) {
+  for (IntegerVariable var : integer_variables_) {
+    if (integer_trail_->LowerBound(var) == 0 &&
+        integer_trail_->UpperBound(var) == 1) {
       variables.push_back(var);
     }
   }
-  std::sort(variables.begin(), variables.end());
-
   LOG(INFO) << "HeuristicLPPseudoCostBinary has " << variables.size()
             << " variables.";
 
@@ -624,15 +621,17 @@ std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model) {
     // Accumulate pseudo-costs of all unassigned variables.
     for (int i = 0; i < num_vars; i++) {
       const IntegerVariable var = variables[i];
-      if (integer_trail->LowerBound(var) == integer_trail->UpperBound(var))
-        continue;
+      // Skip ignored and fixed variables.
+      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue ub = integer_trail_->UpperBound(var);
+      if (lb == ub) continue;
 
-      LinearProgrammingConstraint* lp = (*dispatcher)[var];
-      const double rc = lp->GetSolutionReducedCost(var);
+      const double rc = this->GetSolutionReducedCost(var);
       // Skip reduced costs that are nonzero because of numerical issues.
       if (std::abs(rc) < kEpsilon) continue;
 
-      const double value = std::round(lp->GetSolutionValue(var));
+      const double value = std::round(this->GetSolutionValue(var));
       if (value == 1.0 && rc < 0.0) {
         cost_to_zero[i] -= rc;
         num_cost_to_zero[i]++;
@@ -644,9 +643,11 @@ std::function<LiteralIndex()> HeuristicLPPseudoCostBinary(Model* model) {
     double best_cost = 0.0;
     for (int i = 0; i < num_vars; i++) {
       const IntegerVariable var = variables[i];
-      if (integer_trail->LowerBound(var) == integer_trail->UpperBound(var)) {
-        continue;
-      }
+      // Skip ignored and fixed variables.
+      if (integer_trail_->IsCurrentlyIgnored(var)) continue;
+      const IntegerValue lb = integer_trail_->LowerBound(var);
+      const IntegerValue ub = integer_trail_->UpperBound(var);
+      if (lb == ub) continue;
 
       if (num_cost_to_zero[i] > 0 &&
           best_cost < cost_to_zero[i] / num_cost_to_zero[i]) {

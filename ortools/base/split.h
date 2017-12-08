@@ -34,17 +34,28 @@ std::vector<std::string> Split(const std::string& full, char delim, int flags);
 //
 // Hack: the int64 allow the C++ compiler to distinguish the two functions. It
 // is possible to implement this more cleanly at the cost of more complexity.
-std::vector<operations_research::string_view> Split(const std::string& full,
-                                                    const char* delim,
-                                                    int64 flags);
+std::vector<absl::string_view> Split(const std::string& full, const char* delim,
+                                     int64 flags);
 
 namespace delimiter {
 inline const char* AnyOf(const char* x) { return x; }
 }  // namespace delimiter
+}  // namespace strings
 
+namespace absl {
 inline int SkipEmpty() { return 0xDEADBEEF; }
 
-}  // namespace strings
+inline std::vector<std::string> StrSplit(const std::string& full,
+                                    const char* delim, int flags) {
+  return strings::Split(full, delim, flags);
+}
+
+inline std::vector<std::string> StrSplit(const std::string& full,
+                                    char delim, int flags) {
+  return strings::Split(full, delim, flags);
+}
+
+}  // namespace absl
 
 // Split a std::string using a nul-terminated list of character
 // delimiters.  For each component, parse using the provided
@@ -54,8 +65,7 @@ inline int SkipEmpty() { return 0xDEADBEEF; }
 // all of them.  This function will correctly handle parsing
 // strings that have embedded \0s.
 template <class T>
-bool SplitStringAndParse(operations_research::string_view source,
-                         const std::string& delim,
+bool SplitStringAndParse(absl::string_view source, const std::string& delim,
                          bool (*parse)(const std::string& str, T* value),
                          std::vector<T>* result);
 
@@ -63,7 +73,7 @@ bool SplitStringAndParse(operations_research::string_view source,
 // function. As of 2013-04, it can only be used like this:
 // const char* separators = ...;
 // std::vector<std::string> result = strings::Split(
-//    full, strings::delimiter::AnyOf(separators), strings::SkipEmpty());
+//    full, strings::delimiter::AnyOf(separators), absl::SkipEmpty());
 //
 // TODO(user): The current interface has a really bug prone side effect because
 // it can also be used without the AnyOf(). If separators contains only one
@@ -78,11 +88,11 @@ bool SplitStringAndParse(const std::string& source, const std::string& delim,
   CHECK(nullptr != parse);
   CHECK(nullptr != result);
   CHECK_GT(delim.size(), 0);
-  const std::vector<operations_research::string_view> pieces =
+  const std::vector<absl::string_view> pieces =
       ::strings::Split(source, strings::delimiter::AnyOf(delim.c_str()),
-                       static_cast<int64>(strings::SkipEmpty()));
+                       static_cast<int64>(absl::SkipEmpty()));
   T t;
-  for (operations_research::string_view piece : pieces) {
+  for (absl::string_view piece : pieces) {
     if (!parse(piece.as_string(), &t)) return false;
     result->push_back(t);
   }

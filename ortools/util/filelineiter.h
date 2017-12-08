@@ -131,7 +131,6 @@ class FileLines {
  private:
   File* file_;
   const int options_;
-  DISALLOW_COPY_AND_ASSIGN(FileLines);
 };
 
 }  // namespace operations_research

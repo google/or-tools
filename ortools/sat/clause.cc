@@ -70,7 +70,6 @@ void LiteralWatchers::Resize(int num_variables) {
   watchers_on_false_.resize(num_variables << 1);
   reasons_.resize(num_variables);
   needs_cleaning_.Resize(LiteralIndex(num_variables << 1));
-  statistics_.resize(num_variables);
 }
 
 // Note that this is the only place where we add Watcher so the DCHECK
@@ -154,7 +153,7 @@ bool LiteralWatchers::PropagateOnFalse(Literal false_literal, Trail* trail) {
       *new_it++ = *it;
     }
   }
-  num_inspected_clause_literals_ += watchers.size();
+  num_inspected_clause_literals_ += watchers.size();  // The blocking ones.
   watchers.erase(new_it, watchers.end());
   return true;
 }
@@ -168,7 +167,7 @@ bool LiteralWatchers::Propagate(Trail* trail) {
   return true;
 }
 
-gtl::Span<Literal> LiteralWatchers::Reason(const Trail& trail,
+absl::Span<Literal> LiteralWatchers::Reason(const Trail& trail,
                                                   int trail_index) const {
   return reasons_[trail_index]->PropagationReason();
 }
@@ -180,24 +179,12 @@ SatClause* LiteralWatchers::ReasonClause(int trail_index) const {
 bool LiteralWatchers::AttachAndPropagate(SatClause* clause, Trail* trail) {
   SCOPED_TIME_STAT(&stats_);
   ++num_watched_clauses_;
-  // Updating the statistics for each learned clause take quite a lot of time
-  // (like 6% of the total running time). So for now, we just compute the
-  // statistics depending on the problem clauses. Note that this do not take
-  // into account the other type of constraint though.
-  //
-  // TODO(user): This is actually not used a lot with the default parameters.
-  // Find a better way for the "initial" polarity choice and tie breaking
-  // between literal choices. Note that it seems none of the modern SAT solver
-  // relies on this.
-  if (!clause->IsRedundant()) UpdateStatistics(*clause, /*added=*/true);
-  clause->SortLiterals(statistics_, parameters_);
   return clause->AttachAndEnqueuePotentialUnitPropagation(trail, this);
 }
 
 void LiteralWatchers::LazyDetach(SatClause* clause) {
   SCOPED_TIME_STAT(&stats_);
   --num_watched_clauses_;
-  if (!clause->IsRedundant()) UpdateStatistics(*clause, /*added=*/false);
   clause->LazyDetach();
   is_clean_ = false;
   needs_cleaning_.Set(clause->FirstLiteral().Index());
@@ -213,22 +200,6 @@ void LiteralWatchers::CleanUpWatchers() {
   }
   needs_cleaning_.NotifyAllClear();
   is_clean_ = true;
-}
-
-void LiteralWatchers::UpdateStatistics(const SatClause& clause, bool added) {
-  SCOPED_TIME_STAT(&stats_);
-  for (const Literal literal : clause) {
-    const BooleanVariable var = literal.Variable();
-    const int direction = added ? 1 : -1;
-    statistics_[var].num_appearances += direction;
-    statistics_[var].weighted_num_appearances +=
-        1.0 / clause.Size() * direction;
-    if (literal.IsPositive()) {
-      statistics_[var].num_positive_clauses += direction;
-    } else {
-      statistics_[var].num_negative_clauses += direction;
-    }
-  }
 }
 
 // ----- BinaryImplicationGraph -----
@@ -308,7 +279,7 @@ bool BinaryImplicationGraph::Propagate(Trail* trail) {
   return true;
 }
 
-gtl::Span<Literal> BinaryImplicationGraph::Reason(
+absl::Span<Literal> BinaryImplicationGraph::Reason(
     const Trail& trail, int trail_index) const {
   return {&reasons_[trail_index], 1};
 }
@@ -562,8 +533,7 @@ void BinaryImplicationGraph::RemoveFixedVariables(
 // ----- SatClause -----
 
 // static
-SatClause* SatClause::Create(const std::vector<Literal>& literals,
-                             bool is_redundant) {
+SatClause* SatClause::Create(const std::vector<Literal>& literals) {
   CHECK_GE(literals.size(), 2);
   SatClause* clause = reinterpret_cast<SatClause*>(
       ::operator new(sizeof(SatClause) + literals.size() * sizeof(Literal)));
@@ -571,8 +541,6 @@ SatClause* SatClause::Create(const std::vector<Literal>& literals,
   for (int i = 0; i < literals.size(); ++i) {
     clause->literals_[i] = literals[i];
   }
-  clause->is_redundant_ = is_redundant;
-  clause->is_attached_ = false;
   return clause;
 }
 
@@ -580,7 +548,7 @@ SatClause* SatClause::Create(const std::vector<Literal>& literals,
 // any of the watched literal is assigned, then the clause is necessarily true.
 bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
     const VariablesAssignment& assignment) {
-  DCHECK(is_attached_);
+  DCHECK(IsAttached());
   if (assignment.VariableIsAssigned(literals_[0].Variable()) ||
       assignment.VariableIsAssigned(literals_[1].Variable())) {
     DCHECK(IsSatisfied(assignment));
@@ -602,68 +570,8 @@ bool SatClause::RemoveFixedLiteralsAndTestIfTrue(
   return false;
 }
 
-namespace {
-
-// Support struct to sort literals for ordering.
-struct WeightedLiteral {
-  WeightedLiteral(Literal l, int w) : literal(l), weight(w) {}
-
-  Literal literal;
-  int weight;
-};
-
-// Lexical order, by smaller weight, then by smaller literal to break ties.
-bool LiteralWithSmallerWeightFirst(const WeightedLiteral& wv1,
-                                   const WeightedLiteral& wv2) {
-  return (wv1.weight < wv2.weight) ||
-         (wv1.weight == wv2.weight &&
-          wv1.literal.SignedValue() < wv2.literal.SignedValue());
-}
-
-// Lexical order, by larger weight, then by smaller literal to break ties.
-bool LiteralWithLargerWeightFirst(const WeightedLiteral& wv1,
-                                  const WeightedLiteral& wv2) {
-  return (wv1.weight > wv2.weight) ||
-         (wv1.weight == wv2.weight &&
-          wv1.literal.SignedValue() < wv2.literal.SignedValue());
-}
-
-}  // namespace
-
-void SatClause::SortLiterals(
-    const ITIVector<BooleanVariable, VariableInfo>& statistics,
-    const SatParameters& parameters) {
-  DCHECK(!IsAttached());
-  const SatParameters::LiteralOrdering literal_order =
-      parameters.literal_ordering();
-  if (literal_order != SatParameters::LITERAL_IN_ORDER) {
-    std::vector<WeightedLiteral> order;
-    for (Literal literal : *this) {
-      int weight = literal.IsPositive()
-                       ? statistics[literal.Variable()].num_positive_clauses
-                       : statistics[literal.Variable()].num_negative_clauses;
-      order.push_back(WeightedLiteral(literal, weight));
-    }
-    switch (literal_order) {
-      case SatParameters::VAR_MIN_USAGE: {
-        std::sort(order.begin(), order.end(), LiteralWithSmallerWeightFirst);
-        break;
-      }
-      case SatParameters::VAR_MAX_USAGE: {
-        std::sort(order.begin(), order.end(), LiteralWithLargerWeightFirst);
-        break;
-      }
-      default: { break; }
-    }
-    for (int i = 0; i < order.size(); ++i) {
-      literals_[i] = order[i].literal;
-    }
-  }
-}
-
 bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
     Trail* trail, LiteralWatchers* demons) {
-  CHECK(!IsAttached());
   // Select the first two literals that are not assigned to false and put them
   // on position 0 and 1.
   int num_literal_not_false = 0;
@@ -702,7 +610,6 @@ bool SatClause::AttachAndEnqueuePotentialUnitPropagation(
   }
 
   // Attach the watchers.
-  is_attached_ = true;
   demons->AttachOnFalse(literals_[0], literals_[1], this);
   demons->AttachOnFalse(literals_[1], literals_[0], this);
   return true;

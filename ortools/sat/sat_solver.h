@@ -283,7 +283,7 @@ class SatSolver {
   // Extract the current problem clauses. The Output type must support the two
   // functions:
   //  - void AddBinaryClause(Literal a, Literal b);
-  //  - void AddClause(gtl::Span<Literal> clause);
+  //  - void AddClause(absl::Span<Literal> clause);
   //
   // TODO(user): also copy the learned clauses?
   template <typename Output>
@@ -303,9 +303,10 @@ class SatSolver {
     // currently process the clauses in order.
     binary_implication_graph_.ExtractAllBinaryClauses(out);
     for (SatClause* clause : clauses_) {
-      if (!clause->IsRedundant()) {
+      // We skip redundant clauses.
+      if (!ContainsKey(clauses_info_, clause)) {
         out->AddClause(
-            gtl::Span<Literal>(clause->begin(), clause->Size()));
+            absl::Span<Literal>(clause->begin(), clause->Size()));
       }
     }
   }
@@ -515,7 +516,7 @@ class SatSolver {
 
   // Returns the maximum trail_index of the literals in the given clause.
   // All the literals must be assigned. Returns -1 if the clause is empty.
-  int ComputeMaxTrailIndex(gtl::Span<Literal> clause) const;
+  int ComputeMaxTrailIndex(absl::Span<Literal> clause) const;
 
   // Computes what is known as the first UIP (Unique implication point) conflict
   // clause starting from the failing clause. For a definition of UIP and a
@@ -632,8 +633,9 @@ class SatSolver {
   // here either.
   std::vector<SatClause*> clauses_;
 
-  // Clause information used for the clause database management.
-  // Note that only the clauses that can be removed need to appear here.
+  // Clause information used for the clause database management. Note that only
+  // the clauses that can be removed appear here. The problem clauses and
+  // the learned one that we wants to keep forever do not appear.
   struct ClauseInfo {
     double activity = 0.0;
     int32 lbd = 0;

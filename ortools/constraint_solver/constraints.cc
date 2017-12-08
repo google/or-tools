@@ -98,7 +98,7 @@ class FalseConstraint : public Constraint {
   void Post() override {}
   void InitialPropagate() override { solver()->Fail(); }
   std::string DebugString() const override {
-    return StrCat("FalseConstraint(", explanation_, ")");
+    return absl::StrCat("FalseConstraint(", explanation_, ")");
   }
 
   void Accept(ModelVisitor* const visitor) const override {

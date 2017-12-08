@@ -589,9 +589,9 @@ std::string LinearProgram::DumpSolution(const DenseRow& variable_values) const {
   DCHECK_EQ(variable_values.size(), num_variables());
   std::string output;
   for (ColIndex col(0); col < variable_values.size(); ++col) {
-    if (!output.empty()) StrAppend(&output, ", ");
-    StrAppend(&output, GetVariableName(col), " = ",
-                    LegacyPrecision(variable_values[col]));
+    if (!output.empty()) absl::StrAppend(&output, ", ");
+    absl::StrAppend(&output, GetVariableName(col), " = ",
+                    absl::LegacyPrecision(variable_values[col]));
   }
   return output;
 }
@@ -678,7 +678,7 @@ void LinearProgram::AddSlackVariablesWhereNecessary(
     }
     const ColIndex slack_col = CreateNewSlackVariable(
         has_integer_slack_variable[row], -constraint_upper_bounds_[row],
-        -constraint_lower_bounds_[row], StrCat("s", row.value()));
+        -constraint_lower_bounds_[row], absl::StrCat("s", row.value()));
     SetCoefficient(row, slack_col, 1.0);
     SetConstraintBounds(row, 0.0, 0.0);
   }

@@ -961,7 +961,7 @@ void PbConstraints::Untrail(const Trail& trail, int trail_index) {
   }
 }
 
-gtl::Span<Literal> PbConstraints::Reason(const Trail& trail,
+absl::Span<Literal> PbConstraints::Reason(const Trail& trail,
                                                 int trail_index) const {
   SCOPED_TIME_STAT(&stats_);
   const PbConstraintsEnqueueHelper::ReasonInfo& reason_info =

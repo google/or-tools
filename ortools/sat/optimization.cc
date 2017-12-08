@@ -864,7 +864,7 @@ SatSolver::Status SolveWithRandomParameters(LogBehavior log,
     min_seen = std::min(min_seen, objective);
     max_seen = std::max(max_seen, objective);
 
-    logger.Log(StrCat(
+    logger.Log(absl::StrCat(
         "c ", objective.value(), " [", min_seen.value(), ", ", max_seen.value(),
         "] objective_preference: ", use_obj ? "true" : "false", " ",
         ProtobufShortDebugString(parameters)));
@@ -1406,7 +1406,7 @@ SatSolver::Status MinimizeWithCoreAndLazyEncoding(
               ? 0
               : static_cast<int>(std::ceil(
                     100.0 * (ub - lb) / std::max(std::abs(ub), std::abs(lb))));
-      LOG(INFO) << StrCat("unscaled_objective:[", lb, ",", ub,
+      LOG(INFO) << absl::StrCat("unscaled_objective:[", lb, ",", ub,
                                 "]"
                                 " gap:",
                                 gap, "%", " assumptions:", term_indices.size(),

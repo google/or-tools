@@ -70,4 +70,5 @@ class SatCoreBasedOptimizer : public BopOptimizerBase {
 
 }  // namespace bop
 }  // namespace operations_research
+
 #endif  // OR_TOOLS_BOP_COMPLETE_OPTIMIZER_H_

@@ -882,7 +882,7 @@ PROTO2_RETURN(operations_research::SearchLimitParameters,
 
 PROTO_INPUT(operations_research::CpModel,
             Google.OrTools.ConstraintSolver.CpModel,
-            proto)
+            model_proto)
 PROTO2_RETURN(operations_research::CpModel,
               Google.OrTools.ConstraintSolver.CpModel)
 

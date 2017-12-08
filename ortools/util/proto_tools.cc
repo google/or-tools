@@ -38,17 +38,17 @@ void WriteFullProtocolMessage(const google::protobuf::Message& message, int inde
     const int start = repeated ? 0 : -1;
     const int limit = repeated ? refl->FieldSize(message, fd) : 0;
     for (int j = start; j < limit; ++j) {
-      StrAppend(out, indent, fd->name());
+      absl::StrAppend(out, indent, fd->name());
       if (fd->cpp_type() == FieldDescriptor::CPPTYPE_MESSAGE) {
-        StrAppend(out, " {\n");
+        absl::StrAppend(out, " {\n");
         const google::protobuf::Message& nested_message =
             repeated ? refl->GetRepeatedMessage(message, fd, j)
                      : refl->GetMessage(message, fd);
         WriteFullProtocolMessage(nested_message, indent_level + 1, out);
-        StrAppend(out, indent, "}\n");
+        absl::StrAppend(out, indent, "}\n");
       } else {
         TextFormat::PrintFieldValueToString(message, fd, j, &temp_string);
-        StrAppend(out, ": ", temp_string, "\n");
+        absl::StrAppend(out, ": ", temp_string, "\n");
       }
     }
   }

@@ -22,10 +22,11 @@
 #include <string>
 #include <vector>
 
-#include "ortools/util/filelineiter.h"
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/join.h"
 #include "ortools/base/numbers.h"
 #include "ortools/base/split.h"
+#include "ortools/base/join.h"
 #include "ortools/base/join.h"
 #include "ortools/graph/graph.h"
 #include "ortools/base/status.h"
@@ -110,7 +111,7 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
     if (format == PRINT_GRAPH_ARCS) {
       for (const typename Graph::ArcIndex arc : graph.OutgoingArcs(node)) {
         if (!out.empty()) out += '\n';
-        StrAppend(&out, node, "->", graph.Head(arc));
+        absl::StrAppend(&out, node, "->", graph.Head(arc));
       }
     } else {  // PRINT_GRAPH_ADJACENCY_LISTS[_SORTED]
       adj.clear();
@@ -121,7 +122,7 @@ std::string GraphToString(const Graph& graph, GraphToStringFormat format) {
         std::sort(adj.begin(), adj.end());
       }
       if (node != 0) out += '\n';
-      StrAppend(&out, node, ": ", strings::Join(adj, " "));
+      absl::StrAppend(&out, node, ": ", absl::StrJoin(adj, " "));
     }
   }
   return out;
@@ -135,16 +136,15 @@ util::StatusOr<Graph*> ReadGraphFile(
   int64 num_nodes = -1;
   int64 num_expected_lines = -1;
   int64 num_lines_read = 0;
-  for (const std::string& line : operations_research::FileLines(filename)) {
+  for (const std::string& line : FileLines(filename)) {
     ++num_lines_read;
     if (num_lines_read == 1) {
       std::vector<int64> header_ints;
-      if (!SplitStringAndParse(line, " ", &operations_research::safe_strto64,
-                               &header_ints) ||
+      if (!SplitStringAndParse(line, " ", &safe_strto64, &header_ints) ||
           header_ints.size() < 2 || header_ints[0] < 0 || header_ints[1] < 0) {
         return util::Status(
             util::error::INVALID_ARGUMENT,
-            StrCat("First line of '", filename,
+            absl::StrCat("First line of '", filename,
                          "' should be at least two nonnegative integers."));
       }
       num_nodes = header_ints[0];
@@ -159,7 +159,7 @@ util::StatusOr<Graph*> ReadGraphFile(
           if (header_ints.size() != num_colors + 2) {
             return util::Status(
                 util::error::INVALID_ARGUMENT,
-                StrCat(
+                absl::StrCat(
                     "There should be num_colors-1 color cardinalities in the"
                     " header of '",
                     filename, "' (where num_colors=", num_colors,
@@ -173,7 +173,7 @@ util::StatusOr<Graph*> ReadGraphFile(
             if (header_ints[i] <= 0 || num_nodes_left <= 0) {
               return util::Status(
                   util::error::INVALID_ARGUMENT,
-                  StrCat(
+                  absl::StrCat(
                       "The color cardinalities in the header of '", filename,
                       " should always be >0 and add up to less than the"
                       " total number of nodes."));
@@ -192,7 +192,7 @@ util::StatusOr<Graph*> ReadGraphFile(
         node2 < 0 || node1 >= num_nodes || node2 >= num_nodes) {
       return util::Status(
           util::error::INVALID_ARGUMENT,
-          StrCat("In '", filename, "', line ", num_lines_read,
+          absl::StrCat("In '", filename, "', line ", num_lines_read,
                        ": Expected two", " integers in the range [0, ",
                        num_nodes, ")."));
     }
@@ -209,7 +209,7 @@ util::StatusOr<Graph*> ReadGraphFile(
   }
   if (num_lines_read != num_expected_lines + 1) {
     return util::Status(util::error::INVALID_ARGUMENT,
-                        StrCat("The number of arcs/edges in '", filename,
+                        absl::StrCat("The number of arcs/edges in '", filename,
                                      "' (", num_lines_read - 1,
                                      " does not match the value announced in",
                                      " the header (", num_expected_lines, ")"));

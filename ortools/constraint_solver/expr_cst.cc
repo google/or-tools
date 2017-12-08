@@ -24,6 +24,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/base/stl_util.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
@@ -462,7 +463,7 @@ IntVar* Solver::MakeIsEqualCstVar(IntExpr* const var, int64 value) {
   if (IsADifference(var, &left, &right)) {
     return MakeIsEqualVar(left, MakeSum(right, value));
   }
-  if (var->Max() - var->Min() == 1) {
+  if (CapSub(var->Max(), var->Min()) == 1) {
     if (value == var->Min()) {
       return MakeDifference(value + 1, var)->Var();
     } else if (value == var->Max()) {
@@ -486,13 +487,13 @@ Constraint* Solver::MakeIsEqualCstCt(IntExpr* const var, int64 value,
   CHECK_EQ(this, var->solver());
   CHECK_EQ(this, boolvar->solver());
   if (value == var->Min()) {
-    if (var->Max() - var->Min() == 1) {
+    if (CapSub(var->Max(), var->Min()) == 1) {
       return MakeEquality(MakeDifference(value + 1, var), boolvar);
     }
     return MakeIsLessOrEqualCstCt(var, value, boolvar);
   }
   if (value == var->Max()) {
-    if (var->Max() - var->Min() == 1) {
+    if (CapSub(var->Max(), var->Min()) == 1) {
       return MakeEquality(MakeSum(var, -value + 1), boolvar);
     }
     return MakeIsGreaterOrEqualCstCt(var, value, boolvar);
@@ -919,24 +920,24 @@ int64 ExtractExprProductCoeff(IntExpr** expr) {
 }
 }  // namespace
 
-Constraint* Solver::MakeBetweenCt(IntExpr* e, int64 l, int64 u) {
-  DCHECK_EQ(this, e->solver());
+Constraint* Solver::MakeBetweenCt(IntExpr* expr, int64 l, int64 u) {
+  DCHECK_EQ(this, expr->solver());
   // Catch empty and singleton intervals.
   if (l >= u) {
     if (l > u) return MakeFalseConstraint();
-    return MakeEquality(e, l);
+    return MakeEquality(expr, l);
   }
   int64 emin = 0;
   int64 emax = 0;
-  e->Range(&emin, &emax);
+  expr->Range(&emin, &emax);
   // Catch the trivial cases first.
   if (emax < l || emin > u) return MakeFalseConstraint();
   if (emin >= l && emax <= u) return MakeTrueConstraint();
   // Catch one-sided constraints.
-  if (emax <= u) return MakeGreaterOrEqual(e, l);
-  if (emin >= l) return MakeLessOrEqual(e, u);
+  if (emax <= u) return MakeGreaterOrEqual(expr, l);
+  if (emin >= l) return MakeLessOrEqual(expr, u);
   // Simplify the common factor, if any.
-  int64 coeff = ExtractExprProductCoeff(&e);
+  int64 coeff = ExtractExprProductCoeff(&expr);
   if (coeff != 1) {
     CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
     if (coeff < 0) {
@@ -945,15 +946,15 @@ Constraint* Solver::MakeBetweenCt(IntExpr* e, int64 l, int64 u) {
       l = -l;
       coeff = -coeff;
     }
-    return MakeBetweenCt(e, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff));
+    return MakeBetweenCt(expr, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff));
   } else {
     // No further reduction is possible.
-    return RevAlloc(new BetweenCt(this, e, l, u));
+    return RevAlloc(new BetweenCt(this, expr, l, u));
   }
 }
 
-Constraint* Solver::MakeNotBetweenCt(IntExpr* e, int64 l, int64 u) {
-  DCHECK_EQ(this, e->solver());
+Constraint* Solver::MakeNotBetweenCt(IntExpr* expr, int64 l, int64 u) {
+  DCHECK_EQ(this, expr->solver());
   // Catch empty interval.
   if (l > u) {
     return MakeTrueConstraint();
@@ -961,15 +962,16 @@ Constraint* Solver::MakeNotBetweenCt(IntExpr* e, int64 l, int64 u) {
 
   int64 emin = 0;
   int64 emax = 0;
-  e->Range(&emin, &emax);
+  expr->Range(&emin, &emax);
   // Catch the trivial cases first.
   if (emax < l || emin > u) return MakeTrueConstraint();
   if (emin >= l && emax <= u) return MakeFalseConstraint();
   // Catch one-sided constraints.
-  if (emin >= l) return MakeGreater(e, u);
-  if (emax <= u) return MakeLess(e, l);
-  // TODO(user): Add back simplification code if e is constant * other_expr.
-  return RevAlloc(new NotBetweenCt(this, e, l, u));
+  if (emin >= l) return MakeGreater(expr, u);
+  if (emax <= u) return MakeLess(expr, l);
+  // TODO(user): Add back simplification code if expr is constant *
+  // other_expr.
+  return RevAlloc(new NotBetweenCt(this, expr, l, u));
 }
 
 // ----- is_between_cst Constraint -----
@@ -1048,26 +1050,26 @@ class IsBetweenCt : public Constraint {
 };
 }  // namespace
 
-Constraint* Solver::MakeIsBetweenCt(IntExpr* e, int64 l, int64 u,
+Constraint* Solver::MakeIsBetweenCt(IntExpr* expr, int64 l, int64 u,
                                     IntVar* const b) {
-  CHECK_EQ(this, e->solver());
+  CHECK_EQ(this, expr->solver());
   CHECK_EQ(this, b->solver());
   // Catch empty and singleton intervals.
   if (l >= u) {
     if (l > u) return MakeEquality(b, Zero());
-    return MakeIsEqualCstCt(e, l, b);
+    return MakeIsEqualCstCt(expr, l, b);
   }
   int64 emin = 0;
   int64 emax = 0;
-  e->Range(&emin, &emax);
+  expr->Range(&emin, &emax);
   // Catch the trivial cases first.
   if (emax < l || emin > u) return MakeEquality(b, Zero());
   if (emin >= l && emax <= u) return MakeEquality(b, 1);
   // Catch one-sided constraints.
-  if (emax <= u) return MakeIsGreaterOrEqualCstCt(e, l, b);
-  if (emin >= l) return MakeIsLessOrEqualCstCt(e, u, b);
+  if (emax <= u) return MakeIsGreaterOrEqualCstCt(expr, l, b);
+  if (emin >= l) return MakeIsLessOrEqualCstCt(expr, u, b);
   // Simplify the common factor, if any.
-  int64 coeff = ExtractExprProductCoeff(&e);
+  int64 coeff = ExtractExprProductCoeff(&expr);
   if (coeff != 1) {
     CHECK_NE(coeff, 0);  // Would have been caught by the trivial cases already.
     if (coeff < 0) {
@@ -1076,11 +1078,11 @@ Constraint* Solver::MakeIsBetweenCt(IntExpr* e, int64 l, int64 u,
       l = -l;
       coeff = -coeff;
     }
-    return MakeIsBetweenCt(e, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff),
+    return MakeIsBetweenCt(expr, PosIntDivUp(l, coeff), PosIntDivDown(u, coeff),
                            b);
   } else {
     // No further reduction is possible.
-    return RevAlloc(new IsBetweenCt(this, e, l, u, b));
+    return RevAlloc(new IsBetweenCt(this, expr, l, u, b));
   }
 }
 
@@ -1112,7 +1114,7 @@ class MemberCt : public Constraint {
 
   std::string DebugString() const override {
     return StringPrintf("Member(%s, %s)", var_->DebugString().c_str(),
-                        strings::Join(values_, ", ").c_str());
+                        absl::StrJoin(values_, ", ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1143,7 +1145,7 @@ class NotMemberCt : public Constraint {
 
   std::string DebugString() const override {
     return StringPrintf("NotMember(%s, %s)", var_->DebugString().c_str(),
-                        strings::Join(values_, ", ").c_str());
+                        absl::StrJoin(values_, ", ").c_str());
   }
 
   void Accept(ModelVisitor* const visitor) const override {
@@ -1345,7 +1347,7 @@ class IsMemberCt : public Constraint {
 
   std::string DebugString() const override {
     return StringPrintf("IsMemberCt(%s, %s, %s)", var_->DebugString().c_str(),
-                        strings::Join(values_, ", ").c_str(),
+                        absl::StrJoin(values_, ", ").c_str(),
                         boolvar_->DebugString().c_str());
   }
 

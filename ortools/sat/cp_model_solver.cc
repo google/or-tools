@@ -1418,10 +1418,10 @@ std::string CpModelStats(const CpModelProto& model_proto) {
   }
 
   std::string result;
-  StrAppend(&result, "Model '", model_proto.name(), "':\n");
+  absl::StrAppend(&result, "Model '", model_proto.name(), "':\n");
 
   for (const DecisionStrategyProto& strategy : model_proto.search_strategy()) {
-    StrAppend(
+    absl::StrAppend(
         &result, "Search strategy: on ", strategy.variables_size(),
         " variables, ",
         ProtoEnumToString<DecisionStrategyProto::VariableSelectionStrategy>(
@@ -1432,12 +1432,12 @@ std::string CpModelStats(const CpModelProto& model_proto) {
         "\n");
   }
 
-  StrAppend(&result, "#Variables: ", model_proto.variables_size(), "\n");
+  absl::StrAppend(&result, "#Variables: ", model_proto.variables_size(), "\n");
   if (num_vars_per_domains.size() < 20) {
     for (const auto& entry : num_vars_per_domains) {
-      const std::string temp = StrCat(" - ", entry.second, " in ",
+      const std::string temp = absl::StrCat(" - ", entry.second, " in ",
                                        IntervalsAsString(entry.first), "\n");
-      StrAppend(&result, Summarize(temp));
+      absl::StrAppend(&result, Summarize(temp));
     }
   } else {
     int64 max_complexity = 0;
@@ -1449,40 +1449,40 @@ std::string CpModelStats(const CpModelProto& model_proto) {
       max_complexity =
           std::max(max_complexity, static_cast<int64>(entry.first.size()));
     }
-    StrAppend(&result, " - ", num_vars_per_domains.size(),
+    absl::StrAppend(&result, " - ", num_vars_per_domains.size(),
                     " different domains in [", min, ",", max,
                     "] with a largest complexity of ", max_complexity, ".\n");
   }
 
   if (num_constants > 0) {
     const std::string temp =
-        StrCat(" - ", num_constants, " constants in {",
-                     StrJoin(constant_values, ","), "} \n");
-    StrAppend(&result, Summarize(temp));
+        absl::StrCat(" - ", num_constants, " constants in {",
+                     absl::StrJoin(constant_values, ","), "} \n");
+    absl::StrAppend(&result, Summarize(temp));
   }
 
   const VariableUsage usage = ComputeVariableUsage(model_proto);
-  StrAppend(&result, "#Booleans: ", usage.booleans.size(), "\n");
-  StrAppend(&result, "#Integers: ", usage.integers.size(), "\n");
+  absl::StrAppend(&result, "#Booleans: ", usage.booleans.size(), "\n");
+  absl::StrAppend(&result, "#Integers: ", usage.integers.size(), "\n");
 
   std::vector<std::string> constraints;
   constraints.reserve(num_constraints_by_type.size());
   for (const auto entry : num_constraints_by_type) {
     constraints.push_back(
-        StrCat("#", ConstraintCaseName(entry.first), ": ", entry.second,
+        absl::StrCat("#", ConstraintCaseName(entry.first), ": ", entry.second,
                      " (", num_reif_constraints_by_type[entry.first],
                      " with enforcement literal)"));
   }
   std::sort(constraints.begin(), constraints.end());
-  StrAppend(&result, StrJoin(constraints, "\n"));
+  absl::StrAppend(&result, absl::StrJoin(constraints, "\n"));
 
   return result;
 }
 
 std::string CpSolverResponseStats(const CpSolverResponse& response) {
   std::string result;
-  StrAppend(&result, "CpSolverResponse:");
-  StrAppend(&result, "\nstatus: ",
+  absl::StrAppend(&result, "CpSolverResponse:");
+  absl::StrAppend(&result, "\nstatus: ",
                   ProtoEnumToString<CpSolverStatus>(response.status()));
 
   // We special case the pure-decision problem for clarity.
@@ -1492,32 +1492,32 @@ std::string CpSolverResponseStats(const CpSolverResponse& response) {
   // objective is zero...
   if (response.status() != CpSolverStatus::OPTIMAL &&
       response.objective_value() == 0 && response.best_objective_bound() == 0) {
-    StrAppend(&result, "\nobjective: NA");
-    StrAppend(&result, "\nbest_bound: NA");
+    absl::StrAppend(&result, "\nobjective: NA");
+    absl::StrAppend(&result, "\nbest_bound: NA");
   } else {
-    StrAppend(&result, "\nobjective: ",
-                    LegacyPrecision(response.objective_value()));
-    StrAppend(&result, "\nbest_bound: ",
-                    LegacyPrecision(response.best_objective_bound()));
+    absl::StrAppend(&result, "\nobjective: ",
+                    absl::LegacyPrecision(response.objective_value()));
+    absl::StrAppend(&result, "\nbest_bound: ",
+                    absl::LegacyPrecision(response.best_objective_bound()));
   }
 
-  StrAppend(&result, "\nbooleans: ", response.num_booleans());
-  StrAppend(&result, "\nconflicts: ", response.num_conflicts());
-  StrAppend(&result, "\nbranches: ", response.num_branches());
+  absl::StrAppend(&result, "\nbooleans: ", response.num_booleans());
+  absl::StrAppend(&result, "\nconflicts: ", response.num_conflicts());
+  absl::StrAppend(&result, "\nbranches: ", response.num_branches());
 
   // TODO(user): This is probably better named "binary_propagation", but we just
   // output "propagations" to be consistent with sat/analyze.sh.
-  StrAppend(&result,
+  absl::StrAppend(&result,
                   "\npropagations: ", response.num_binary_propagations());
-  StrAppend(
+  absl::StrAppend(
       &result, "\ninteger_propagations: ", response.num_integer_propagations());
-  StrAppend(&result,
-                  "\nwalltime: ", LegacyPrecision(response.wall_time()));
-  StrAppend(&result,
-                  "\nusertime: ", LegacyPrecision(response.user_time()));
-  StrAppend(&result, "\ndeterministic_time: ",
-                  LegacyPrecision(response.deterministic_time()));
-  StrAppend(&result, "\n");
+  absl::StrAppend(&result,
+                  "\nwalltime: ", absl::LegacyPrecision(response.wall_time()));
+  absl::StrAppend(&result,
+                  "\nusertime: ", absl::LegacyPrecision(response.user_time()));
+  absl::StrAppend(&result, "\ndeterministic_time: ",
+                  absl::LegacyPrecision(response.deterministic_time()));
+  absl::StrAppend(&result, "\n");
   return result;
 }
 
@@ -2134,7 +2134,7 @@ IntegerVariable AddLPConstraints(const CpModelProto& model_proto,
   // Register LP constraints. Note that this needs to be done after all the
   // constraints have been added.
   for (auto* lp_constraint : lp_constraints) {
-    lp_constraint->RegisterWith(m->GetOrCreate<GenericLiteralWatcher>());
+    lp_constraint->RegisterWith(m->model());
     VLOG(1) << "LP constraint: " << lp_constraint->DimensionString() << ".";
   }
 

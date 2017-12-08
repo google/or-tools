@@ -65,7 +65,7 @@ class SymmetryPropagator : public SatPropagator {
 
   bool Propagate(Trail* trail) final;
   void Untrail(const Trail& trail, int trail_index) final;
-  gtl::Span<Literal> Reason(const Trail& trail,
+  absl::Span<Literal> Reason(const Trail& trail,
                                    int trail_index) const final;
 
   // Adds a new permutation to this symmetry propagator. The ownership is
@@ -92,7 +92,7 @@ class SymmetryPropagator : public SatPropagator {
   // Permutes a list of literals from input into output using the permutation
   // with given index. This uses tmp_literal_mapping_ and has a complexity in
   // O(permutation_support + input_size).
-  void Permute(int index, gtl::Span<Literal> input,
+  void Permute(int index, absl::Span<Literal> input,
                std::vector<Literal>* output) const;
 
  private:

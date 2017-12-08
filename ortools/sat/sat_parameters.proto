@@ -18,7 +18,7 @@ package operations_research.sat;
 // Contains the definitions for all the sat algorithm parameters and their
 // default values.
 //
-// NEXT TAG: 94
+// NEXT TAG: 95
 message SatParameters {
   // ==========================================================================
   // Branching and polarity
@@ -65,7 +65,7 @@ message SatParameters {
   // Satisfiability Testing, 2007.
   optional bool use_phase_saving = 44 [default = true];
 
-  // The proportion of polarity choosen at random. Note that this take
+  // The proportion of polarity chosen at random. Note that this take
   // precedence over the phase saving heuristic. This is different from
   // initial_polarity:POLARITY_RANDOM because it will select a new random
   // polarity each time the variable is branched upon instead of selecting one
@@ -76,19 +76,6 @@ message SatParameters {
   // variables that are selected randomly instead of choosing the first variable
   // from the given variable_ordering strategy.
   optional double random_branches_ratio = 32 [default = 0];
-
-  // Specifies how literals should be initially sorted in a clause.
-  enum LiteralOrdering {
-    // Do nothing and keep literals in their current order.
-    LITERAL_IN_ORDER = 0;
-    // Sort the literals by increasing order of their variable appearance in the
-    // problem.
-    VAR_MIN_USAGE = 1;
-    // Sort the literals by decreasing order of their variable appearance in the
-    // problem.
-    VAR_MAX_USAGE = 2;
-  }
-  optional LiteralOrdering literal_ordering = 3 [default = LITERAL_IN_ORDER];
 
   // Whether we use the ERWA (Exponential Recency Weighted Average) heuristic as
   // described in "Learning Rate Based Branching Heuristic for SAT solvers",
@@ -500,6 +487,10 @@ message SatParameters {
   // really enforced properly, we don't support assumptions, and all the
   // decisions variables must be integers.
   optional bool use_fixed_search = 82 [default = false];
+
+  // If true, the solver will use generic heuristics to find solutions and
+  // prove optimality. Incompatible with use_fixed_search.
+  optional bool use_portfolio_search = 94 [default = false];
 
   // The default optimization method is a simple "linear scan", each time trying
   // to find a better solution than the previous one. If this is true, then we

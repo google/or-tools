@@ -73,6 +73,7 @@
 #ifdef HAS_PERF_SUBSYSTEM
 #include "absl/ortools/base/str_replace.h"
 #include "exegesis/exegesis/itineraries/perf_subsystem.h"
+#include "ortools/util/time_limit.h"
 #endif  // HAS_PERF_SUBSYSTEM
 #include "ortools/base/timer.h"
 
@@ -126,6 +127,11 @@ class Stat {
 // Base class to print a nice summary of a group of statistics.
 class StatsGroup {
  public:
+  enum PrintOrder {
+    SORT_BY_PRIORITY_THEN_VALUE = 0,
+    SORT_BY_NAME = 1,
+  };
+
   explicit StatsGroup(const std::string& name)
       : name_(name), stats_(), time_distributions_() {}
   ~StatsGroup();
@@ -139,6 +145,10 @@ class StatsGroup {
   // Note that only the stats WorthPrinting() are printed.
   std::string StatString() const;
 
+  // Changes the print ordering (will affect the order in which the stats
+  // registered with this group are printed via StatString()).
+  void SetPrintOrder(PrintOrder print_order) { print_order_ = print_order; }
+
   // Returns and if needed creates and registers a TimeDistribution with the
   // given name. Note that this involve a map lookup and his thus slower than
   // directly accessing a TimeDistribution variable.
@@ -149,6 +159,7 @@ class StatsGroup {
 
  private:
   std::string name_;
+  PrintOrder print_order_ = SORT_BY_PRIORITY_THEN_VALUE;
   std::vector<Stat*> stats_;
   std::map<std::string, TimeDistribution*> time_distributions_;
 
@@ -330,33 +341,24 @@ class DisabledScopedTimeDistributionUpdater {
 #ifdef HAS_PERF_SUBSYSTEM
 // Helper classes to count instructions during execution of a block of code and
 // add print the results to logs.
-// Creates new perf subsystem and start collecting 'inst_retired:any_p' event on
-// creation and stops collecting on destruction.
 class EnabledScopedInstructionCounter {
  public:
-  explicit EnabledScopedInstructionCounter(const std::string& name) : name_(name) {
-    perf_subsystem_.CleanUp();
-    perf_subsystem_.AddEvent("inst_retired:any_p:u,p");
-    perf_subsystem_.AddEvent("cycles:u,p");
-    perf_subsystem_.StartCollecting();
-  }
+  explicit EnabledScopedInstructionCounter(const std::string& name,
+                                           TimeLimit* time_limit);
   EnabledScopedInstructionCounter(const EnabledScopedInstructionCounter&) =
       delete;
   EnabledScopedInstructionCounter& operator=(
       const EnabledScopedInstructionCounter&) = delete;
-  ~EnabledScopedInstructionCounter() {
-    exegesis::PerfResult perf_result = perf_subsystem_.StopAndReadCounters();
-    LOG(INFO) << name_ << ": " << perf_result.ToString();
-  }
+  ~EnabledScopedInstructionCounter();
 
   // Used only for testing.
-  exegesis::PerfResult GetPerfResult() {
-    return perf_subsystem_.ReadCounters();
-  }
+  double ReadInstructionCount() { return ending_count_ - starting_count_; }
 
  private:
-  exegesis::PerfSubsystem perf_subsystem_;
+  TimeLimit* time_limit_;
   std::string name_;
+  double starting_count_;
+  double ending_count_;
 };
 #endif  // HAS_PERF_SUBSYSTEM
 
@@ -400,9 +402,10 @@ inline std::string RemoveOperationsResearchAndGlop(const std::string& pretty_fun
       pretty_function, {{"operations_research::", ""}, {"glop::", ""}});
 }
 
-#define SCOPED_INSTRUCTION_COUNT                                          \
-  operations_research::ScopedInstructionCounter scoped_instruction_count( \
-      RemoveOperationsResearchAndGlop(__PRETTY_FUNCTION__))
+#define SCOPED_INSTRUCTION_COUNT(time_limit)                                  \
+  operations_research::ScopedInstructionCounterTemp scoped_instruction_count( \
+      RemoveOperationsResearchAndGlop(__PRETTY_FUNCTION__), time_limit)
+
 #endif  // HAS_PERF_SUBSYSTEM
 
 #else  // OR_STATS
@@ -414,7 +417,7 @@ using ScopedInstructionCounter = DisabledScopedInstructionCounter;
 
 #define IF_STATS_ENABLED(instructions)
 #define SCOPED_TIME_STAT(stats)
-#define SCOPED_INSTRUCTION_COUNT
+#define SCOPED_INSTRUCTION_COUNT(time_limit)
 
 #endif  // OR_STATS
 

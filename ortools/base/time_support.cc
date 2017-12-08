@@ -23,7 +23,7 @@
 #endif
 #include <ctime>
 
-namespace base {
+namespace absl {
 
 int64 GetCurrentTimeNanos() {
 #if defined(_MSC_VER)
@@ -49,4 +49,4 @@ int64 GetCurrentTimeNanos() {
 #endif
 }
 
-}  // namespace base
+}  // namespace absl

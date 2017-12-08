@@ -23,9 +23,9 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
-#include "ortools/graph/iterators.h"
 #include "ortools/util/range_minimum_query.h"
 #include "ortools/util/string_array.h"
 
@@ -67,7 +67,7 @@ class VectorGreater {
 
 class BaseIntExprElement : public BaseIntExpr {
  public:
-  BaseIntExprElement(Solver* const s, IntVar* const expr);
+  BaseIntExprElement(Solver* const s, IntVar* const e);
   ~BaseIntExprElement() override {}
   int64 Min() const override;
   int64 Max() const override;
@@ -261,7 +261,7 @@ class IntElementConstraint : public CastConstraint {
 
   std::string DebugString() const override {
     return StringPrintf("IntElementConstraint(%s, %s, %s)",
-                        strings::Join(values_, ", ").c_str(),
+                        absl::StrJoin(values_, ", ").c_str(),
                         index_->DebugString().c_str(),
                         target_var_->DebugString().c_str());
   }
@@ -302,7 +302,7 @@ class IntExprElement : public BaseIntExprElement {
                           expr_->name().c_str());
     } else {
       return StringPrintf("IntElement(%s, %s)",
-                          strings::Join(values_, ", ").c_str(),
+                          absl::StrJoin(values_, ", ").c_str(),
                           expr_->name().c_str());
     }
   }
@@ -314,7 +314,7 @@ class IntExprElement : public BaseIntExprElement {
                           expr_->DebugString().c_str());
     } else {
       return StringPrintf("IntElement(%s, %s)",
-                          strings::Join(values_, ", ").c_str(),
+                          absl::StrJoin(values_, ", ").c_str(),
                           expr_->DebugString().c_str());
     }
   }
@@ -472,12 +472,12 @@ class IncreasingIntExprElement : public BaseIntExpr {
   // TODO(user) : improve me, the previous test is not always true
   std::string name() const override {
     return StringPrintf("IntElement(%s, %s)",
-                        strings::Join(values_, ", ").c_str(),
+                        absl::StrJoin(values_, ", ").c_str(),
                         index_->name().c_str());
   }
   std::string DebugString() const override {
     return StringPrintf("IntElement(%s, %s)",
-                        strings::Join(values_, ", ").c_str(),
+                        absl::StrJoin(values_, ", ").c_str(),
                         index_->DebugString().c_str());
   }
 
@@ -679,7 +679,7 @@ namespace {
 class IntExprFunctionElement : public BaseIntExprElement {
  public:
   IntExprFunctionElement(Solver* const s, Solver::IndexEvaluator1 values,
-                         IntVar* const expr);
+                         IntVar* const e);
   ~IntExprFunctionElement() override;
 
   std::string name() const override {
@@ -902,10 +902,10 @@ class IntIntExprFunctionElement : public BaseIntExpr {
   }
   int64 Min() const override;
   int64 Max() const override;
-  void Range(int64* mi, int64* ma) override;
-  void SetMin(int64 m) override;
-  void SetMax(int64 m) override;
-  void SetRange(int64 mi, int64 ma) override;
+  void Range(int64* lower_bound, int64* upper_bound) override;
+  void SetMin(int64 lower_bound) override;
+  void SetMax(int64 upper_bound) override;
+  void SetRange(int64 lower_bound, int64 upper_bound) override;
   bool Bound() const override { return expr1_->Bound() && expr2_->Bound(); }
   // TODO(user) : improve me, the previous test is not always true
   void WhenRange(Demon* d) override {
@@ -1206,7 +1206,7 @@ class IntExprEvaluatorElementCt : public CastConstraint {
  public:
   IntExprEvaluatorElementCt(Solver* const s, Solver::Int64ToIntVar evaluator,
                             int64 range_start, int64 range_end,
-                            IntVar* const index, IntVar* const target);
+                            IntVar* const index, IntVar* const target_var);
   ~IntExprEvaluatorElementCt() override {}
 
   void Post() override;

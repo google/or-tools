@@ -379,7 +379,7 @@ std::string Domain::DebugString() const {
   } else if (values.size() == 1) {
     return StrCat(values.back());
   } else {
-    return StringPrintf("[%s]", strings::Join(values, ", ").c_str());
+    return StringPrintf("[%s]", absl::StrJoin(values, ", ").c_str());
   }
 }
 
@@ -454,7 +454,7 @@ std::string Argument::DebugString() const {
       return StringPrintf("[%" GG_LL_FORMAT "d..%" GG_LL_FORMAT "d]", values[0],
                           values[1]);
     case INT_LIST:
-      return StringPrintf("[%s]", strings::Join(values, ", ").c_str());
+      return StringPrintf("[%s]", absl::StrJoin(values, ", ").c_str());
     case DOMAIN_LIST:
       return StringPrintf("[%s]", JoinDebugString(domains, ", ").c_str());
     case INT_VAR_REF:

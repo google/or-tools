@@ -1166,7 +1166,7 @@ std::string FixedDurationPerformedIntervalVar::DebugString() const {
 
 class StartVarPerformedIntervalVar : public IntervalVar {
  public:
-  StartVarPerformedIntervalVar(Solver* const s, IntVar* const start_var,
+  StartVarPerformedIntervalVar(Solver* const s, IntVar* const var,
                                int64 duration, const std::string& name);
   ~StartVarPerformedIntervalVar() override {}
 
@@ -2208,8 +2208,9 @@ class FixedDurationIntervalVarStartSyncedOnEnd
 
 // ----- API -----
 
-IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const t) {
-  return RegisterIntervalVar(RevAlloc(new MirrorIntervalVar(this, t)));
+IntervalVar* Solver::MakeMirrorInterval(IntervalVar* const interval_var) {
+  return RegisterIntervalVar(
+      RevAlloc(new MirrorIntervalVar(this, interval_var)));
 }
 
 IntervalVar* Solver::MakeIntervalRelaxedMax(IntervalVar* const interval_var) {

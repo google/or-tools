@@ -22,43 +22,45 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/constraint_solver/constraint_solver.h"
 #include "ortools/constraint_solver/constraint_solveri.h"
 #include "ortools/util/string_array.h"
 
 namespace operations_research {
-Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v,
-                              int64 c) {
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 value,
+                              int64 max_count) {
   std::vector<IntVar*> tmp_sum;
   for (int i = 0; i < vars.size(); ++i) {
-    if (vars[i]->Contains(v)) {
+    if (vars[i]->Contains(value)) {
       if (vars[i]->Bound()) {
-        c--;
+        max_count--;
       } else {
-        tmp_sum.push_back(MakeIsEqualCstVar(vars[i], v));
+        tmp_sum.push_back(MakeIsEqualCstVar(vars[i], value));
       }
     }
   }
-  return MakeSumEquality(tmp_sum, c);
+  return MakeSumEquality(tmp_sum, max_count);
 }
 
-Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 v,
-                              IntVar* c) {
-  if (c->Bound()) {
-    return MakeCount(vars, v, c->Min());
+Constraint* Solver::MakeCount(const std::vector<IntVar*>& vars, int64 value,
+                              IntVar* max_count) {
+  if (max_count->Bound()) {
+    return MakeCount(vars, value, max_count->Min());
   } else {
     std::vector<IntVar*> tmp_sum;
     int64 num_vars_bound_to_v = 0;
     for (int i = 0; i < vars.size(); ++i) {
-      if (vars[i]->Contains(v)) {
+      if (vars[i]->Contains(value)) {
         if (vars[i]->Bound()) {
           ++num_vars_bound_to_v;
         } else {
-          tmp_sum.push_back(MakeIsEqualCstVar(vars[i], v));
+          tmp_sum.push_back(MakeIsEqualCstVar(vars[i], value));
         }
       }
     }
-    return MakeSumEquality(tmp_sum, MakeSum(c, -num_vars_bound_to_v)->Var());
+    return MakeSumEquality(tmp_sum,
+                           MakeSum(max_count, -num_vars_bound_to_v)->Var());
   }
 }
 
@@ -163,15 +165,15 @@ class Distribute : public Constraint {
 
   void Post() override;
   void InitialPropagate() override;
-  void OneBound(int vindex);
-  void OneDomain(int vindex);
+  void OneBound(int index);
+  void OneDomain(int index);
   void CountVar(int cindex);
   void CardMin(int cindex);
   void CardMax(int cindex);
   std::string DebugString() const override {
     return StringPrintf("Distribute(vars = [%s], values = [%s], cards = [%s])",
                         JoinDebugStringPtr(vars_, ", ").c_str(),
-                        strings::Join(values_, ", ").c_str(),
+                        absl::StrJoin(values_, ", ").c_str(),
                         JoinDebugStringPtr(cards_, ", ").c_str());
   }
 
@@ -327,8 +329,8 @@ class FastDistribute : public Constraint {
 
   void Post() override;
   void InitialPropagate() override;
-  void OneBound(int vindex);
-  void OneDomain(int vindex);
+  void OneBound(int index);
+  void OneDomain(int index);
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
@@ -515,8 +517,8 @@ class BoundedDistribute : public Constraint {
 
   void Post() override;
   void InitialPropagate() override;
-  void OneBound(int vindex);
-  void OneDomain(int vindex);
+  void OneBound(int index);
+  void OneDomain(int index);
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
@@ -592,9 +594,9 @@ std::string BoundedDistribute::DebugString() const {
       "BoundedDistribute([%s], values = [%s], card_min = [%s], card_max = "
       "[%s]",
       JoinDebugStringPtr(vars_, ", ").c_str(),
-      strings::Join(values_, ", ").c_str(),
-      strings::Join(card_min_, ", ").c_str(),
-      strings::Join(card_max_, ", ").c_str());
+      absl::StrJoin(values_, ", ").c_str(),
+      absl::StrJoin(card_min_, ", ").c_str(),
+      absl::StrJoin(card_max_, ", ").c_str());
 }
 
 void BoundedDistribute::Post() {
@@ -719,8 +721,8 @@ class BoundedFastDistribute : public Constraint {
 
   void Post() override;
   void InitialPropagate() override;
-  void OneBound(int vindex);
-  void OneDomain(int vindex);
+  void OneBound(int index);
+  void OneDomain(int index);
   void CountVar(int card_index);
   void CardMin(int card_index);
   void CardMax(int card_index);
@@ -791,8 +793,8 @@ std::string BoundedFastDistribute::DebugString() const {
   return StringPrintf(
       "BoundedFastDistribute([%s], card_min = [%s], card_max = [%s]",
       JoinDebugStringPtr(vars_, ", ").c_str(),
-      strings::Join(card_min_, ", ").c_str(),
-      strings::Join(card_max_, ", ").c_str());
+      absl::StrJoin(card_min_, ", ").c_str(),
+      absl::StrJoin(card_max_, ", ").c_str());
 }
 
 void BoundedFastDistribute::Post() {

@@ -2947,7 +2947,7 @@ void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
     std::string output = "z = " + StringifyWithFlags(ComputeObjectiveValue());
     const DenseRow& reduced_costs = reduced_costs_.GetReducedCosts();
     for (const ColIndex col : variables_info_.GetNotBasicBitRow()) {
-      StrAppend(&output, StringifyMonomialWithFlags(reduced_costs[col],
+      absl::StrAppend(&output, StringifyMonomialWithFlags(reduced_costs[col],
                                                           variable_name_[col]));
     }
     VLOG(3) << output << ";";
@@ -2957,11 +2957,11 @@ void RevisedSimplex::DisplayRevisedSimplexDebugInfo() {
     for (const SparseRow& row : dictionary) {
       output.clear();
       ColIndex basic_col = basis_[r];
-      StrAppend(&output, variable_name_[basic_col], " = ",
+      absl::StrAppend(&output, variable_name_[basic_col], " = ",
                       StringifyWithFlags(variable_values_.Get(basic_col)));
       for (const SparseRowEntry e : row) {
         if (e.col() != basic_col) {
-          StrAppend(&output,
+          absl::StrAppend(&output,
                           StringifyMonomialWithFlags(e.coefficient(),
                                                      variable_name_[e.col()]));
         }
@@ -2984,17 +2984,17 @@ void RevisedSimplex::DisplayProblem() const {
     for (ColIndex col(0); col < num_cols_; ++col) {
       const Fractional coeff = objective_[col];
       has_objective |= (coeff != 0.0);
-      StrAppend(&output,
+      absl::StrAppend(&output,
                       StringifyMonomialWithFlags(coeff, variable_name_[col]));
     }
     if (!has_objective) {
-      StrAppend(&output, " 0");
+      absl::StrAppend(&output, " 0");
     }
     VLOG(3) << output << ";";
     for (RowIndex row(0); row < num_rows_; ++row) {
       output = "";
       for (ColIndex col(0); col < num_cols_; ++col) {
-        StrAppend(
+        absl::StrAppend(
             &output, StringifyMonomialWithFlags(
                          matrix_with_slack_.column(col).LookUpCoefficient(row),
                          variable_name_[col]));

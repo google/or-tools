@@ -198,7 +198,7 @@ std::string DynamicPartition::DebugString(DebugStringSorting sorting) const {
   std::string out;
   for (const std::vector<int>& part : parts) {
     if (!out.empty()) out += " | ";
-    out += strings::Join(part, " ");
+    out += absl::StrJoin(part, " ");
   }
   return out;
 }
@@ -287,7 +287,7 @@ std::string MergingPartition::DebugString() {
   std::string out;
   for (const std::vector<int>& part : sorted_parts) {
     if (!out.empty()) out += " | ";
-    out += strings::Join(part, " ");
+    out += absl::StrJoin(part, " ");
   }
   return out;
 }

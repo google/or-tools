@@ -28,7 +28,7 @@ DEFINE_bool(cp_disable_cache, false, "Disable caching of model objects");
 namespace operations_research {
 // ----- ModelCache -----
 
-ModelCache::ModelCache(Solver* const s) : solver_(s) {}
+ModelCache::ModelCache(Solver* const solver) : solver_(solver) {}
 
 ModelCache::~ModelCache() {}
 

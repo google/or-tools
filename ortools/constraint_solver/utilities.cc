@@ -20,6 +20,7 @@
 #include "ortools/base/logging.h"
 #include "ortools/base/stringprintf.h"
 #include "ortools/base/join.h"
+#include "ortools/base/join.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
 #include "ortools/constraint_solver/constraint_solver.h"
@@ -402,7 +403,7 @@ class PrintModelVisitor : public ModelVisitor {
 
   void VisitIntegerArrayArgument(const std::string& arg_name,
                                  const std::vector<int64>& values) override {
-    LOG(INFO) << Spaces() << arg_name << ": [" << strings::Join(values, ", ")
+    LOG(INFO) << Spaces() << arg_name << ": [" << absl::StrJoin(values, ", ")
               << "]";
   }
 

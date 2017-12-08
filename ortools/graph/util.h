@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-//#include "ortools/graph/connected_components.h"
+#include "ortools/graph/connected_components.h"
 #include "ortools/graph/graph.h"
 #include "ortools/base/map_util.h"
 #include "ortools/base/hash.h"
@@ -185,6 +185,22 @@ bool GraphIsSymmetric(const Graph& graph) {
     }
   }
   return true;
+}
+
+template <class Graph>
+bool GraphIsWeaklyConnected(const Graph& graph) {
+  typedef typename Graph::NodeIndex NodeIndex;
+  static_assert(std::numeric_limits<NodeIndex>::max() <= INT_MAX,
+                "GraphIsWeaklyConnected() isn't yet implemented for graphs"
+                " that support more than INT_MAX nodes. Reach out to"
+                " or-core-team@ if you need this.");
+  if (graph.num_nodes() == 0) return true;
+  DenseConnectedComponentsFinder union_find;
+  union_find.SetNumberOfNodes(graph.num_nodes());
+  for (typename Graph::ArcIndex arc = 0; arc < graph.num_arcs(); ++arc) {
+    union_find.AddEdge(graph.Tail(arc), graph.Head(arc));
+  }
+  return union_find.GetNumberOfComponents() == 1;
 }
 
 template <class Graph>
