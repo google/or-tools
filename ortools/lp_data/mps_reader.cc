@@ -30,7 +30,7 @@
 #include "ortools/base/strutil.h"
 #include "ortools/base/map_util.h"  // for FindOrNull, FindWithDefault
 #include "ortools/lp_data/lp_print_utils.h"
-#include "ortools/util/filelineiter.h"
+#include "ortools/base/filelineiter.h"
 #include "ortools/base/status.h"
 
 DEFINE_bool(mps_free_form, false, "Read MPS files in free form.");

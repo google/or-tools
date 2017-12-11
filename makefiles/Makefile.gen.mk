@@ -280,7 +280,8 @@ $(SRC_DIR)/ortools/port/utf8.h: \
 
 $(OBJ_DIR)/port/file_nonport.$O: \
     $(SRC_DIR)/ortools/port/file_nonport.cc \
-    $(SRC_DIR)/ortools/port/file.h
+    $(SRC_DIR)/ortools/port/file.h \
+    $(SRC_DIR)/ortools/base/file.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sport$Sfile_nonport.cc $(OBJ_OUT)$(OBJ_DIR)$Sport$Sfile_nonport.$O
 
 $(OBJ_DIR)/port/sysinfo_nonport.$O: \
@@ -343,12 +344,6 @@ $(SRC_DIR)/ortools/util/cached_log.h: \
     $(SRC_DIR)/ortools/base/integral_types.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/macros.h
-
-$(SRC_DIR)/ortools/util/filelineiter.h: \
-    $(SRC_DIR)/ortools/base/file.h \
-    $(SRC_DIR)/ortools/base/logging.h \
-    $(SRC_DIR)/ortools/base/stringpiece_utils.h \
-    $(SRC_DIR)/ortools/base/strutil.h
 
 $(SRC_DIR)/ortools/util/file_util.h: \
     $(SRC_DIR)/ortools/base/file.h \
@@ -593,11 +588,11 @@ $(OBJ_DIR)/data/rcpsp_parser.$O: \
     $(SRC_DIR)/ortools/data/rcpsp_parser.cc \
     $(SRC_DIR)/ortools/data/rcpsp_parser.h \
     $(GEN_DIR)/ortools/data/rcpsp.pb.h \
+    $(SRC_DIR)/ortools/base/filelineiter.h \
     $(SRC_DIR)/ortools/base/numbers.h \
     $(SRC_DIR)/ortools/base/split.h \
     $(SRC_DIR)/ortools/base/stringpiece_utils.h \
-    $(SRC_DIR)/ortools/base/strtoint.h \
-    $(SRC_DIR)/ortools/util/filelineiter.h
+    $(SRC_DIR)/ortools/base/strtoint.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sdata$Srcpsp_parser.cc $(OBJ_OUT)$(OBJ_DIR)$Sdata$Srcpsp_parser.$O
 
 $(GEN_DIR)/ortools/data/rcpsp.pb.cc: $(SRC_DIR)/ortools/data/rcpsp.proto
@@ -809,10 +804,10 @@ $(OBJ_DIR)/lp_data/mps_reader.$O: \
     $(SRC_DIR)/ortools/lp_data/mps_reader.cc \
     $(SRC_DIR)/ortools/lp_data/lp_print_utils.h \
     $(SRC_DIR)/ortools/lp_data/mps_reader.h \
-    $(SRC_DIR)/ortools/util/filelineiter.h \
     $(SRC_DIR)/ortools/base/callback.h \
     $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/file.h \
+    $(SRC_DIR)/ortools/base/filelineiter.h \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/map_util.h \
     $(SRC_DIR)/ortools/base/numbers.h \
@@ -1692,6 +1687,7 @@ $(SRC_DIR)/ortools/sat/circuit.h: \
     $(SRC_DIR)/ortools/util/rev.h
 
 $(SRC_DIR)/ortools/sat/clause.h: \
+    $(SRC_DIR)/ortools/sat/drat.h \
     $(SRC_DIR)/ortools/sat/sat_base.h \
     $(GEN_DIR)/ortools/sat/sat_parameters.pb.h \
     $(SRC_DIR)/ortools/base/hash.h \
@@ -3241,7 +3237,6 @@ $(OBJ_DIR)/constraint_solver/constraint_solver.$O: \
     $(SRC_DIR)/ortools/base/recordio.h \
     $(SRC_DIR)/ortools/base/stl_util.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
-    $(SRC_DIR)/ortools/base/string_view.h \
     $(SRC_DIR)/ortools/util/tuple_set.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Sconstraint_solver.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sconstraint_solver.$O
 
@@ -3282,7 +3277,8 @@ $(OBJ_DIR)/constraint_solver/demon_profiler.$O: \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/status.h \
     $(SRC_DIR)/ortools/base/stl_util.h \
-    $(SRC_DIR)/ortools/base/stringprintf.h
+    $(SRC_DIR)/ortools/base/stringprintf.h \
+    $(SRC_DIR)/ortools/base/time_support.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Sdemon_profiler.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Sdemon_profiler.$O
 
 $(OBJ_DIR)/constraint_solver/deviation.$O: \
@@ -3317,8 +3313,7 @@ $(OBJ_DIR)/constraint_solver/element.$O: \
     $(SRC_DIR)/ortools/base/logging.h \
     $(SRC_DIR)/ortools/base/stringprintf.h \
     $(SRC_DIR)/ortools/util/range_minimum_query.h \
-    $(SRC_DIR)/ortools/util/string_array.h \
-    $(SRC_DIR)/ortools/graph/iterators.h
+    $(SRC_DIR)/ortools/util/string_array.h
 	$(CCC) $(CFLAGS) -c $(SRC_DIR)$Sortools$Sconstraint_solver$Selement.cc $(OBJ_OUT)$(OBJ_DIR)$Sconstraint_solver$Selement.$O
 
 $(OBJ_DIR)/constraint_solver/expr_array.$O: \
@@ -3597,6 +3592,7 @@ $(OBJ_DIR)/constraint_solver/search.$O: \
     $(SRC_DIR)/ortools/constraint_solver/constraint_solveri.h \
     $(GEN_DIR)/ortools/constraint_solver/search_limit.pb.h \
     $(SRC_DIR)/ortools/base/bitmap.h \
+    $(SRC_DIR)/ortools/base/casts.h \
     $(SRC_DIR)/ortools/base/commandlineflags.h \
     $(SRC_DIR)/ortools/base/hash.h \
     $(SRC_DIR)/ortools/base/integral_types.h \

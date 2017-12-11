@@ -218,8 +218,8 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
     // relation.
     int64 objective = 0;
     for (int i = 0; i < num_tasks; ++i) {
-      objective +=
-          weights[i] * std::max<int64>(0ll, r.solution(tasks_end[i]) - due_dates[i]);
+      objective += weights[i] * std::max<int64>(0ll, r.solution(tasks_end[i]) -
+                                                         due_dates[i]);
     }
     LOG(INFO) << "Cost " << objective;
 
@@ -251,15 +251,7 @@ void Solve(const std::vector<int>& durations, const std::vector<int>& due_dates,
   LOG(INFO) << CpSolverResponseStats(response);
 }
 
-}  // namespace sat
-}  // namespace operations_research
-
-int main(int argc, char** argv) {
-  gflags::ParseCommandLineFlags( &argc, &argv, true);
-  if (FLAGS_input.empty()) {
-    LOG(FATAL) << "Please supply a data file with --input=";
-  }
-
+void ParseAndSolve() {
   std::vector<int> numbers;
   std::vector<std::string> entries;
   for (const std::string& line : FileLines(FLAGS_input)) {
@@ -287,6 +279,17 @@ int main(int argc, char** argv) {
   std::vector<int> due_dates;
   for (int j = 0; j < FLAGS_size; ++j) due_dates.push_back(numbers[index++]);
 
-  operations_research::sat::Solve(durations, due_dates, weights);
+  Solve(durations, due_dates, weights);
+}
+
+}  // namespace sat
+}  // namespace operations_research
+
+int main(int argc, char** argv) {
+  gflags::ParseCommandLineFlags( &argc, &argv, true);
+  if (FLAGS_input.empty()) {
+    LOG(FATAL) << "Please supply a data file with --input=";
+  }
+  operations_research::sat::ParseAndSolve();
   return EXIT_SUCCESS;
 }
